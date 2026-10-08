@@ -47,3 +47,4 @@ import IntegerMultBounds.NLogN.MainReduction
 import IntegerMultBounds.NLogN.NormFFT
 import IntegerMultBounds.NLogN.FixedOps
 import IntegerMultBounds.NLogN.MainParams
+import IntegerMultBounds.NLogN.ResamplingNorm

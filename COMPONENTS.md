@@ -240,6 +240,10 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `d` powers of two bounded by `r`; with the inequalities `α² < p`,
   `γ < b − 13`, `T < n < 2^p`, `2^(2d) ≤ T`, and the product comparison
   behind `S > T/2`. The short-interval prime selection is not here.
+- `NLogN/ResamplingNorm.lean`: Lemma 4.5 of the paper in its sharp form: the
+  periodized Gaussian is at most `1 + √(π/a)` by comparison with the Gaussian
+  integral, so the resampling map `S` has sup-norm at most `1 + 1/α`,
+  uniformly in the lengths.
 
 ## Top-level
 
