@@ -778,6 +778,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveInterchangeVolume.lean`: Along actual seven-factor child selections, proves exact row and logical-volume division by roleCount^depth, unchanged non-row volume, retained original chunk lower bound and power-width depth bound. Parked ancestors never enter logical child volume; physical recursive execution remains separate.
 
+- `Machine/RecursiveDimensionBank.lean`: Actual 13-tape dimension arithmetic preserves six canonical seven-factor headers, computes Q and successive A*rows, A*rows*beforeH, and full H-prefix count from blank outputs and scratch. Exact canonical outputs and 258 times volume plus 87 bound; physical installation into the shift bank is separate.
+
+- `Machine/RepeatedControlBootstrap.lean`: Actual 21-tape bootstrap constructs physical zero H and every repeated-control metadata marker from B/Q/C/N/width and payload. No precomputed offset or radix control is supplied; exact prepared output and 15 times width plus 30 cost. Dimension-bank installation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
