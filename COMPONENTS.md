@@ -897,6 +897,27 @@ Bit and complex networks.
   The join has zero downward loss and its actual projector rank saves exactly
   125,000 against separate terminal edges. Physical schedule reuse is separate.
 
+- `Networks/DAGSourceRoles.lean`: each actual source entry has a certified
+  finite role and actual input-node label, with no fallback value. Repeated
+  semantic labels retain their separate physical source locations.
+- `Networks/Shared50InitialLabels.lean`: every actual source role starts at
+  its source triple's indicator line; nonsource roles start at bottom. The
+  complementary reverse ends at the source line's orthogonal complement.
+- `Networks/Shared50OutputRoles.lean`: equal partial-output slots identify
+  both target and common point; physical slots have their exact arithmetic
+  output index, final partial-output span and target-line orthogonality.
+- `Networks/Shared50ComplementFrames.lean`: the actual fifty-copy circuit
+  has increasing nondegenerate complementary inverse edges, zero reverse loss,
+  exact endpoints and the target-line inclusion at every original output.
+- `Networks/Shared50StageFrames.lean`: lifts actual forward/complementary
+  inverse traces into the stage geometry and future tensor line. Exact edges,
+  endpoints, nesting, nondegeneracy, zero loss and physical source/output
+  attachments are proved; whole-invocation and global assembly remain separate.
+- `Networks/Shared50FiniteTrace.lean`: every actual declared label incidence,
+  including identity pivots, fits the certified 509,194-register bank. Finite
+  restriction preserves the complete ordered edge list and exact endpoints
+  under any stage label lift, without filtering any update.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
