@@ -38,7 +38,7 @@ the literal machine model is proved correct with a runtime bound.
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; tape partition and reinsertion primitives are proved, but full sorting and the repair pipeline remain open |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ | Synthetic ring, principal roots, and Bluestein are proved; layout and costs are open |
 | Gaussian resampling | §7 | 🟡 | ⬜ | The factorization `F_s = 2^γ B F_t A` with `‖A‖, ‖B‖ ≤ 1` is proved in one and `d` dimensions, with truncation and Neumann-series error bounds for its pieces; the numerical approximations of `A` and `B` have scaled error below `p²`; the permutation-left variant is open |
-| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ | Transforms, fixed-point errors, Bluestein and synthetic convolutions, the resampling factorization, steps 1 to 3 of the recursion, the parameter selection, and the final recurrence are proved; short-interval primes, the assembled numerical transform, and bit costs are open |
+| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ | The explicit numerical recursive step is proved exact for every admissible prime choice, with the parameter selection, the final recurrence, and an operation-count model; short-interval prime existence and bit costs on tapes are open |
 | Exact multiplication, parameters, time bound | §8 | 🟡 | ⬜ | Parameter margins, asymptotics, and prime existence are proved; short-interval primes and the complete time bound are open |
 | End-to-end theorem `EndToEnd` | — | ⬜ | ⬜ | Requires every row above |
 
