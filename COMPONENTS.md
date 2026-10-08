@@ -1127,6 +1127,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveBankReturn.lean`: Actual base interchange and ancestor-header restoration share the global bank. Exact payload/header/stack endpoints, linear role-volume return cost and literal pending-PC reset match the physical decoder.
 
+- `Machine/Shared50PieceSemantics.lean`: The actual segment/call/gate piece list expands exactly to the original fixed interleaved control; its full routed H/D transpose semantics follow in original execution order.
+
+- `Machine/Shared50NodePieceTransport.lean`: Actual segment/gate array folds match original scalar-coordinate fibers, preserve IO, and give routed transpose conditional on the exact selected-coordinate child interchange contract. No physical child execution is supplied by this theorem.
+
+- `Machine/Shared50RecursiveCallLayout.lean`: Fixed parking order includes exactly the original World roles except the active stream, excludes the separate IO tape and is duplicate-free. Used by actual controller call entry/recovery.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -1243,6 +1249,9 @@ Compact packed controls, repair, and density bounds.
   remains necessary.
 
 ## Networks
+
+- `Networks/AffineFieldBijective.lean`: Legal finite field programs are bijections, including reflected subtraction and literal coordinate interchange, validating original inverse-function address semantics.
+
 
 Bit and complex networks.
 

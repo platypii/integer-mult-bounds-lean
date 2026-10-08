@@ -765,3 +765,7 @@ import IntegerMultBounds.Machine.Shared50RecursiveNodeBinary
 import IntegerMultBounds.Machine.Shared50RecursiveBank
 import IntegerMultBounds.Machine.Shared50RecursiveBankNodes
 import IntegerMultBounds.Machine.Shared50RecursiveBankReturn
+import IntegerMultBounds.Networks.AffineFieldBijective
+import IntegerMultBounds.Machine.Shared50PieceSemantics
+import IntegerMultBounds.Machine.Shared50NodePieceTransport
+import IntegerMultBounds.Machine.Shared50RecursiveCallLayout
