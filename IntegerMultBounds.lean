@@ -114,6 +114,9 @@ import IntegerMultBounds.Machine.WordMoves
 import IntegerMultBounds.Machine.ColumnTransducer
 import IntegerMultBounds.Machine.Gather
 import IntegerMultBounds.Machine.PackedLine
+import IntegerMultBounds.Machine.GuardTest
+import IntegerMultBounds.Machine.GuardGadget
+import IntegerMultBounds.Machine.AnyFlag
 import IntegerMultBounds.Machine.PackedArith
 import IntegerMultBounds.Machine.PackedInverse
 import IntegerMultBounds.Machine.WordTape

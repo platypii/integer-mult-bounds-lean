@@ -147,6 +147,18 @@ Machine model, execution, composition, and tape routines.
   list-level word semantics, the input words and control preserved, the
   offset scratch blank again, intermediate and final words on their own tapes
   and every head at its origin; linear cost.
+- `Machine/GuardTest.lean`: comparing a fixed number of cells of a word with
+  a constant word, the order kept in a single cell updated column by column
+  (the `BinaryCompare` order semantics), and a flag cell writing whether the
+  order is "smaller" or "larger" onto a flag word and erasing the order cell.
+- `Machine/GuardGadget.lean`: the guard test on seven tapes: for each block
+  of the first word its upper bits are compared with two constants, for each
+  block of the second word the block with a third, each comparison appending
+  one flag bit; unrolled finite control, exact flag word, words and constants
+  preserved, linear cost.
+- `Machine/AnyFlag.lean`: a two-tape scan over a flag word writing whether
+  any flag is set at the key head, which advances; the flag word is preserved
+  with its head on its blank end.
 - `Machine/PackedInverse.lean`: the inverse packed program on nine tapes:
   the four packed updates undone in reverse order with negated offsets as
   five gather-and-transduce lines, with exact list-level word semantics, the
