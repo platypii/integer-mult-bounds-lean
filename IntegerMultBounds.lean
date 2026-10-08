@@ -592,3 +592,4 @@ import IntegerMultBounds.Machine.RecursiveInterchangeShift
 import IntegerMultBounds.Machine.FiniteReturnStack
 import IntegerMultBounds.Machine.FiniteDispatch
 import IntegerMultBounds.Machine.FiniteReturnDispatch
+import IntegerMultBounds.Machine.CyclicRowPermutedMerge

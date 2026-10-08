@@ -754,6 +754,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FiniteReturnDispatch.lean`: Actual binary stack pop in a selected tape slot followed by decoded return-address dispatch into a fixed continuation family. Preserves the entire other-tape frame and charges width plus 2 plus continuation time. Full cyclic recursion and descriptor frames remain separate.
 
+- `Machine/CyclicRowPermutedMerge.lean`: Fixed tape wiring restores logical cyclic row order when network output role j occupies physical tape rho j. Actual normalized merge retains exact role data/heads and unchanged runtime; no free payload permutation is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
