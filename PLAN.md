@@ -16,7 +16,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Composition, loops, frames, elementary streams | §2 | 🟡 | 🟡 |
 | Finite networks with a rank saving | §3 | 🟡 | ⬜ |
 | Faster interchange of address chunks | §4 | ✅ | ⬜ |
-| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | 🟡 |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ | 🟡 |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ |
 | Gaussian resampling | §7 | ✅ | ⬜ |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ |
