@@ -80,6 +80,7 @@ theorem items_count (data : α → List Bool) :
 
 variable (hT : ∀ x, bad (T x) ↔ bad x) (agree : ∀ x, ¬bad x → S x = T x)
 
+omit [Fintype α] in
 include hT agree in
 /-- The tape stage on the pipeline's keyed extracted records and the flagged
 actual output stream halts with the ideal stream on the output tape, within
