@@ -124,6 +124,12 @@ proof.
   with `ω^(2^n) = 1`, with an exact count of `n * 2^(n+1)` ring multiplications
   and additions, i.e. `2 N log₂ N`. Twiddle powers are taken as given and the
   count is of ring operations, not tape steps.
+- `NLogN/Recurrence.lean`: the Harvey-van der Hoeven master recurrence in the
+  abstract. A normalized cost satisfying `T(n) ≤ ρ T(n') + C` with `ρ < 1` and
+  `n' < n` is uniformly bounded, so a multiplication cost satisfying the
+  corresponding `n log n`-scaled recurrence is `O(n log n)`; also the geometric
+  tail bound. Nothing here constructs an algorithm or establishes the
+  recurrence for an actual cost.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
