@@ -54,6 +54,11 @@ proof.
   potential rule charging variable body runtimes. It introduces no counter
   comparison scans or output rewinds. Client routines must still establish
   the invariant and pay for their actual tape execution.
+- `Machine/Frame.lean`: finite-table tape extension and reindexing, with
+  exact-step simulation and time-contract transport. Extra tape contents and
+  heads are preserved literally, without parking assumptions or runtime
+  overhead. Combining extension and reindexing places fixed routines in a
+  larger fixed tape bank; it does not provide random access to fields on a tape.
 - `Compact/Ideal.lean` and `Compact/ExactRepair.lean`: a packed ideal toggle
   permutation, preservation of the actual guard predicate, and executable
   destination repair connected to both concrete packed programs. Correctness
