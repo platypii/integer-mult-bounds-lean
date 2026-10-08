@@ -152,6 +152,11 @@ import IntegerMultBounds.Networks.DAGFiniteCompile
 import IntegerMultBounds.Networks.SharedPointWitnessCheck
 import IntegerMultBounds.Networks.Shared50Certificate
 import IntegerMultBounds.Networks.Shared50Finite
+import IntegerMultBounds.Networks.FanoutFrames
+import IntegerMultBounds.Networks.DAGSupportTrace
+import IntegerMultBounds.Networks.SharedPointOutputLabels
+import IntegerMultBounds.Networks.Shared50Frames
+import IntegerMultBounds.Networks.DAGFramedExecution
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit

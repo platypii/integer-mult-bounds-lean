@@ -846,6 +846,23 @@ Bit and complex networks.
   registers, and executable reverse on arbitrary finite register states.
   Global rank-frame assembly and literal tape costs remain open.
 
+- `Networks/DAGFramedExecution.lean`: actual interleaved frame alignments and
+  unchanged scalar instructions telescope to initial decoding, literal module
+  execution and final trace encoding on arbitrary stored module states.
+  Erasing only frame changes recovers the compiler's exact scalar program.
+- `Networks/FanoutFrames.lean`: literal fanout alignment and scalar execution
+  in a common frame, including identity pivots; support-derived increasing
+  labels, nondegenerate endpoints and exact projection-difference ranks.
+- `Networks/DAGSupportTrace.lean`: support events erase to the actual compiler
+  gates; source initialization and allocator invariants prove every event
+  ready, output supports exact, and the forward label trace increasing with
+  zero dimension loss. Common-point nodes give nondegenerate edge endpoints.
+- `Networks/SharedPointOutputLabels.lean`: lifted exclusion supports have
+  exactly the partial-output span, nondegenerate and orthogonal to the target.
+- `Networks/Shared50Frames.lean`: the actual shared fifty-copy DAG satisfies
+  all forward support-trace premises; exact output labels hold at arithmetic
+  output slots. Inverse/complement labels and global rank assembly remain open.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
