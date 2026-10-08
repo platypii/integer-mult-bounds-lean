@@ -87,3 +87,4 @@ import IntegerMultBounds.NLogN.ResamplingNumeric
 import IntegerMultBounds.NLogN.PrecisionCheck
 import IntegerMultBounds.NLogN.PowerOfTwoExact
 import IntegerMultBounds.NLogN.NegacyclicKronecker
+import IntegerMultBounds.NLogN.CostModel

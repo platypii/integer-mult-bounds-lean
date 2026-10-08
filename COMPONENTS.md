@@ -475,6 +475,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   a base-`r M² + 1` digit of one integer product of two packed numbers below
   `B^r`, so the negacyclic product is read off from a single multiplication
   of integers of about `3rp` bits. This is where the recursion enters.
+- `NLogN/CostModel.lean`: an operation-count model for Section 3. The
+  synthetic FFT recursion costs `2 r t log₂ t` word operations, the
+  `d`-dimensional transform `2 r T′ log₂ T′`, and the convolution pipeline
+  `4 T′ M(3rp)` delegated integer products plus `O(r T′ p log T′)` word
+  operations; with the Section 5 parameters three pipelines cost at most
+  `(12 T/r) M(3rp) + 2880 n log₂ n`, the shape of the main recursion. Tape
+  steps, data rearrangement, and weight computation are not modeled.
 
 ## Top-level
 
