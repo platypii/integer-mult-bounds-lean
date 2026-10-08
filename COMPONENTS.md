@@ -497,6 +497,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixPowerDescriptor.lean`: Fixed four-tape, 53-state machine computes canonical binary q^b from one canonical binary b descriptor, for fixed q>=2 including b=0. Physical radix construction, conversion and cleanup compose with exact full-bank output, preserved exponent and blank scratch. Bound99*q^b; no precomputed power or arithmetic oracle. Assembly of all affine dimension descriptors remains separate.
 
+- `Machine/FlatAffineScalingPayload.lean`: Lifts the actual initialized normalized scaler to the common radix alphabet with the same runtime. Proves distinct physical source/output slots, exact canonical encoded input/output payload pairs with blank scratch and zero heads, and full concrete lifted Hoare execution. Supplies the scaling side of actual shared-payload handoff; no duplicate data or conversion work is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

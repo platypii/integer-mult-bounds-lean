@@ -485,3 +485,4 @@ import IntegerMultBounds.Machine.SharedPayloadPair
 import IntegerMultBounds.Machine.FlatControlledShiftPayload
 import IntegerMultBounds.Machine.RadixPowerWord
 import IntegerMultBounds.Machine.RadixPowerDescriptor
+import IntegerMultBounds.Machine.FlatAffineScalingPayload
