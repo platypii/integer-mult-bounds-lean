@@ -358,6 +358,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixZeroFill.lean`: Physical zero-radix-field construction from a supplied binary width descriptor. Writes markers and placeholders by actual counted iteration, recodes backward to radix zero, and returns the field head. Three tapes, twenty-three states; bound8*n+7*descriptorWidth+21, or15*n+28 for canonical widths. Field/work tapes start blank; dimension descriptor is preserved and control scratch returns to its explicit reusable marked state.
 
+- `Machine/PrefixCounterInit.lean`: Fixed-field-count physical initialization from canonical binary width descriptors, with all output and clock tapes initially blank. Sequential radix zero-fill constructs every field; exact full-bank endpoint and injective field projection identify the zero PrefixCounter bank. Cost15*sum(widths)+29*fieldCount; 3*fieldCount+1 tapes and23*fieldCount+1 states, including the empty family via an untouched spare. Width descriptors and explicit reusable clocks are retained; whole translation-bank assembly remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
