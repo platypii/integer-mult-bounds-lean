@@ -1635,3 +1635,15 @@ Parameters and asymptotics.
   finite exponential-series logarithm enclosure and strict branching inequality
   for the selected tau. Converting the numerical budget into an actual circuit
   bound still requires its proved rank balance and loss estimate.
+- `TimeBound.lean`: the complete time bound of §8 as a statement about cost
+  functions. With precision `p = 6 lg n`, which is at least `6`, tends to
+  infinity, and is at most `12 log n / log 2`, a dominant row
+  `C V (log p)^k p^e` with `e < 1 - κ` and volume `V ≤ cV n` is eventually at
+  most `C cV 6^(1-κ)` times the target time `n (lg n)^(1-κ)`; a setup cost
+  `D p^A` and a cost `D V φ(p)` with `φ` eventually bounded are eventually
+  fixed multiples of the target time as well. Finite lists of such rows sum to
+  `C n (lg n)^(1-κ)` for all large `n`, and the seven table rows with
+  exponents `1 - margin i` instantiate this at `κ = 83 / 10^12`, the exponent
+  of `Machine.EndToEnd`. The row costs themselves, and the translation of the
+  size parameters `d, K, ℓ, r` into powers of `p`, are supplied by the
+  components and remain open.
