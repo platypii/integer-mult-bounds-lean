@@ -489,3 +489,4 @@ import IntegerMultBounds.Machine.FlatAffineScalingPayload
 import IntegerMultBounds.Machine.FlatControlledShiftMetadata
 import IntegerMultBounds.Machine.SharedPayloadFrames
 import IntegerMultBounds.Machine.FlatScaleShiftPair
+import IntegerMultBounds.Machine.FlatAffineScalingMetadata

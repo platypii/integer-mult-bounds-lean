@@ -505,6 +505,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatScaleShiftPair.lean`: Concrete actual-network rational scale followed by controlled shift on the same two physical payload tapes. Initial second-stage metadata uses a blank dummy array; real first output supplies second input through proved canonical-word handoff. Exact full-bank endpoint, restored common heads/scratch and bound (2942+120*(abs numerator+denominator)+4*c)*volume+29*(c+1)+284. Canonical dimension descriptors remain supplied; arbitrary fixed-schedule assembly separate.
 
+- `Machine/FlatAffineScalingMetadata.lean`: Proves the entire lifted scaling private input bank, after removing the two permanent payload slots, is independent of the finite input array. Only fixed coefficients and dimension descriptors determine this metadata; later scaling stages can be prepared before their actual input is computed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
