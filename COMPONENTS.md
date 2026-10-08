@@ -790,6 +790,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryDescriptorStackRoundtrip.lean`: Concrete three-tape push/pop preserves source and complete older stack/head, restoring the exact canonical descriptor on an initially blank destination in 4 times bit length plus 15. Representation matches RadixZeroFill headers.
 
+- `Machine/RecursiveDescriptorSize.lean`: Actual child-selection paths bound recursion depth by log2 of logical child volume. Root-bounded canonical descriptor lengths are at most a fixed role-count-dependent multiple of child log-size, hence of child volume. This charges linear descriptor scans without counting parked ancestors; arbitrary polynomial descriptor algorithms and physical recursive execution are separate.
+
+- `Machine/RecursiveDescriptorStack.lean`: Connects the actual delimiter-based binary push/pop roundtrip to the recursive descriptor-size theorem. Exact restored descriptor and complete older-stack preservation cost at most (8*(log2 roles+2)+15) times logical child volume; an intervening recursive call remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

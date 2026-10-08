@@ -612,3 +612,5 @@ import IntegerMultBounds.Machine.DelimitedReverseCopy
 import IntegerMultBounds.Machine.DescriptorStackControl
 import IntegerMultBounds.Machine.BinaryDescriptorStack
 import IntegerMultBounds.Machine.BinaryDescriptorStackRoundtrip
+import IntegerMultBounds.Machine.RecursiveDescriptorSize
+import IntegerMultBounds.Machine.RecursiveDescriptorStack
