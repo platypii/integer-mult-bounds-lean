@@ -536,3 +536,6 @@ import IntegerMultBounds.Machine.FlatCoordinateScalingConstruct
 import IntegerMultBounds.Machine.SharedBankPair
 import IntegerMultBounds.Machine.SharedBankStage
 import IntegerMultBounds.Machine.SharedBankSkeleton
+import IntegerMultBounds.Machine.FlatCoordinateShiftSharedStage
+import IntegerMultBounds.Machine.FlatCoordinateScalingSharedBank
+import IntegerMultBounds.Machine.FlatCoordinateScalingSharedStage

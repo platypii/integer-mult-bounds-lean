@@ -629,6 +629,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SharedBankSkeleton.lean`: Extracts fixed machine data from shared-bank stages and proves finite compilation depends only on those skeletons. Transports exact execution to a program selected independently of runtime semantic data, including a stronger theorem with entirely blank private inputs.
 
+- `Machine/FlatCoordinateShiftSharedStage.lean`: Fully initialized controlled shift instantiates the four-common-tape Stage contract. Payload and sole b/W headers are shared, private input is literally blank, transition table independent of runtime dimensions, and exact affine transport and linear-volume cost are proved.
+
+- `Machine/FlatCoordinateScalingSharedBank.lean`: Four-common-tape interface for fully initialized scaling, proving unique actual source classification, injective payload/header slots, exact common input/output and entirely blank private input. The original b/W descriptors are preserved physically.
+
+- `Machine/FlatCoordinateScalingSharedStage.lean`: Actual initialized scaling instantiates the same four-common-tape Stage contract as shifts. Proves fixed skeleton, empty private metadata, coefficient/target-dependent linear cost and exact OrderedAffine transport; no computed dimensional input is supplied.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
