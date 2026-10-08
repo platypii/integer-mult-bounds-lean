@@ -15,7 +15,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
 | Composition, loops, frames, elementary streams | §2 | 🟡 (152/153) | 🟡 (134/145) |
 | Finite networks with a rank saving | §3 | ✅ (65/65) | ⬜ (0/41) |
-| Faster interchange of address chunks | §4 | ✅ (6/6) | ⬜ (0/4) |
+| Faster interchange of address chunks | §4 | ✅ (5/5) | ⬜ (0/3) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (2/6) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (9/9) | ⬜ (0/3) |
@@ -267,7 +267,6 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Lower triangular factorization (Lemma 4.1) | `LowerTriangular`, `PivotRank` | ✅ | — | `A = E₁ Π E₂` with lower triangular two-sided inverses and a partial permutation `Π` with exactly `rank A` ones |
 | Rational matrix shear (Lemma 4.2) | `Shear`, `Modular` | ✅ | ⬜ | Pivot programs, descending triangular updates, prime modulus beyond all denominators, shear modulo `q^b` with exactly `rank A` interchanges; tape cost of the linear operations open |
 | Power-width interchange (Prop 4.3) | `Interchange` | ✅ | ⬜ | Three-step interchange, routed frame identity under the shear contract, edge schedule with `Σ rank` interchanges, recursion `O(V (m^k)^τ)`; role-stream split and fixed-tape schedule open |
-| Recursive child layout with spectators | `RecursiveInterchangeLayout` | ✅ | ⬜ | Seven-factor child descriptors preserve literal row-major order and every spectator. Child volume is parent volume divided by role count, with positivity and next-depth row divisibility. Physical split/merge, descriptor arithmetic and fixed-machine recursion remain open |
 | Arbitrary-width interchange (Lemma 4.4) | `Recurrence`, `ArbitraryWidth` | ✅ | ⬜ | Row-range digits, row padding, radix padding, and the total `O(u^τ)` per unit volume with an explicit constant; field-order bookkeeping open |
 
 ## 5. Simultaneous butterfly layers with compact control (§5, §11, CrocSwap)
@@ -278,7 +277,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Dirty-temporary control identities | `DirtyControl` | ✅ | — | Universal integer statements |
 | Packed control gadgets | `PackedControl` | ✅ | ⬜ | Slot embedding and tape costs open |
 | Ideal toggle permutation and invertibility | `Ideal`, `Permutations` | ✅ | — | Every address, including bad ones |
-| Exact destination repair | `Repair`, `ExactRepair`, `PackedInverse`, `PackedInverseValue` | ✅ | 🟡 | Nine-tape inverse packed program undoes the four updates in reverse with negated offsets, linear cost; its recovered words are proved to be the packed permutation's preimage of the input words; the ideal toggle, the guard test and the rank bookkeeping on tapes remain |
+| Exact destination repair | `Repair`, `ExactRepair`, `PackedInverse`, `PackedInverseValue`, `ToggleValue` | ✅ | 🟡 | Nine-tape inverse packed program undoes the four updates in reverse with negated offsets, linear cost; its recovered words are proved to be the packed permutation's preimage of the input words; the ideal toggle is exclusive or with the control mask, proved to pack as the toggled digits; the guard test and the rank bookkeeping on tapes remain |
 | Exceptional-address counts and density | `Counting`, `Density`, `RepairBounds` | ✅ | — | Bound `5 / (128 p³)` |
 | Row layout and reservation capacities | `Layout` | ✅ | ⬜ | |
 | Extract, sort, reinsert repair records | `Partition`, `Reinsert`, `StripPrefix`, `ReturnOrigin`, `RepairStage`, `FlagCopy`, `MarkedReturn`, `LoopChain`, `RepairScan` | ✅ | ✅ | Extraction/sorting/reinsertion primitives done; the list-level composition is `RepairPipeline`; one fixed fourteen-tape machine scans the stream with a binary rank counter, flags each record from a key tape, extracts flagged records in the raw keyed format, returns both heads, then sorts, strips and reinserts, with an exact-run contract; the per-record key routine (membership test and destination-rank bits) is a program parameter with a per-rank contract, and the whole costs its key cost plus ten per record, three stream volumes, `74k+5` extracted volumes, `2k+3` per extracted record and `k+14` |

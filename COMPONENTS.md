@@ -647,8 +647,6 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50InitializedSegments.lean`: Actual nonrecursive Shared50 field-program segments execute from sole b/W and payload with all private tapes blank. The fixed machine has exact field-program symbol transport and a setup-inclusive linear-volume bound; recursive interchanges and heterogeneous spectator layouts remain separate.
 
-- `Machine/RecursiveInterchangeLayout.lean`: Seven-factor recursive address descriptors preserve all spectators in physical order. Child regrouping has exactly the role-stream addresses and volume; row divisibility propagates to the next recursion depth, positivity and spectator bounds are proved. Physical row splitting, descriptor construction and recursive control are separate.
-
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -718,6 +716,11 @@ Compact packed controls, repair, and density bounds.
   integers of its recovered words returns the integers of its input words,
   each forward line cancelling the corresponding inverse line modulo the
   radix power, so by injectivity the recovered address is the preimage.
+- `Compact/ToggleValue.lean`: the ideal selected-parity toggle on bit words
+  is exclusive or with the control mask, the control bits at stride `q`
+  (which is the controls gather); it flips the lowest bit of each block
+  exactly when its control is set and packs as `toggleList` of the block
+  digits.
 - `Compact/Layout.lean`: reversible whole-row splitting, preservation and
   completeness of every suffix, exact role volumes, padding to a multiple
   within twice the original volume, and ceiling-based reservation capacities.

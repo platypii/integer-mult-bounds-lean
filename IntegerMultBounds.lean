@@ -338,6 +338,7 @@ import IntegerMultBounds.Compact.TapeRepair
 import IntegerMultBounds.Compact.PowerTwoDigits
 import IntegerMultBounds.Compact.PackedArithValue
 import IntegerMultBounds.Compact.PackedInverseValue
+import IntegerMultBounds.Compact.ToggleValue
 import IntegerMultBounds.NLogN.DFT
 import IntegerMultBounds.NLogN.FFT
 import IntegerMultBounds.NLogN.Recurrence
@@ -544,4 +545,3 @@ import IntegerMultBounds.Machine.FlatCoordinateScalingSharedStage
 import IntegerMultBounds.Machine.SharedBankStageInput
 import IntegerMultBounds.Machine.FlatCoordinateInitializedSchedule
 import IntegerMultBounds.Machine.Shared50InitializedSegments
-import IntegerMultBounds.Machine.RecursiveInterchangeLayout
