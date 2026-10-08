@@ -434,3 +434,4 @@ import IntegerMultBounds.Machine.PrefixCounterInit
 import IntegerMultBounds.Machine.RadixLinearCombination
 import IntegerMultBounds.Machine.RadixLinearCombinationBinary
 import IntegerMultBounds.Machine.RationalPrefixTranslationExecution
+import IntegerMultBounds.Machine.RationalPrefixTranslationStream
