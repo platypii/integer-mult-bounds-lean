@@ -257,6 +257,7 @@ import IntegerMultBounds.Networks.Shared50CoefficientMachines
 import IntegerMultBounds.Networks.OrderedAffine
 import IntegerMultBounds.Networks.AffineFieldProgram
 import IntegerMultBounds.Networks.Shared50AffineControl
+import IntegerMultBounds.Networks.Shared50AffineCoefficients
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
