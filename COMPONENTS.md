@@ -1111,6 +1111,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50NodeGates.lean`: Literal gates on the complete node payload bank preserve common IO and arbitrary stacks; original binary module-gate semantics, exact whole-bank endpoints and fully charged linear-volume execution.
 
+- `Machine/Shared50RecursiveNodeLayout.lean`: Original World enumeration remains in its existing role slots, with common IO last; role count equals W and physical merge permutation is the conjugated involutive original route.
+
+- `Machine/Shared50RecursiveNodeRows.lean`: Cyclic split and permuted merge match the exact parent H/D transpose through row and suffix packing, including within-role address swapping.
+
+- `Machine/Shared50RecursiveNodeSemantics.lean`: Full fixed Shared50 control on binary cyclic fibers yields exactly the permuted merge input; actual node exit restores original headers and merges to parent transpose. Actual piece execution equivalence remains separate.
+
+- `Machine/Shared50RecursiveNodeTranspose.lean`: Quotient/remainder decomposition covers every original row; transpose semantics hold at every seven-factor and complete scalar-coordinate address.
+
+- `Machine/Shared50RecursiveNodeBinary.lean`: Actual split and fixed-control output arrays equal the node gate binary encodings with blank common IO. Flat cyclic serialization agrees with scalar-coordinate routed transpose, providing the binary induction bridge.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
