@@ -1055,6 +1055,9 @@ Bit and complex networks.
 
 - `Networks/OrderedAffine.lean`: Refines each lower-triangular matrix transform into descending target rows, with a diagonal scaling followed by individual shifts controlled only by earlier coordinates. Exact execution equals matrix multiplication; invertibility supplies diagonal units, coefficient specialization preserves the fixed operation order, and no new coefficients are introduced. Literal ordered-affine tape routines remain separate.
 
+- `Networks/AffineFieldProgram.lean`: Compiles whole-group triangular transforms to scalar ordered-affine steps while retaining explicit cross-group primitives. Exact run semantics, legality, unchanged recursive interchange counts and specialization by arbitrary coefficient maps are proved; the compiler introduces no extra recursive calls.
+- `Networks/Shared50AffineControl.lean`: The actual complete optimized interchange has fixed rational scalar-affine schedules, specialized at every width. Protected inverse factors prove every diagonal scaling is a unit; exact execution realizes every physical edge in its original order and retains exactly the improved recursive interchange budget. Literal tape runtime remains open.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
