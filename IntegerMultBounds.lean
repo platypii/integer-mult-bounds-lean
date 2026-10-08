@@ -30,6 +30,7 @@ import IntegerMultBounds.Machine.PartitionPass
 import IntegerMultBounds.Machine.KeySelectData
 import IntegerMultBounds.Machine.KeySelect
 import IntegerMultBounds.Machine.DropFlag
+import IntegerMultBounds.Machine.KeyPartition
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples

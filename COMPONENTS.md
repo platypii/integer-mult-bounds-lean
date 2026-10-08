@@ -111,6 +111,13 @@ Machine model, execution, composition, and tape routines.
   preserving its sentinel; output, untouched cells, endpoint heads, and halting
   are proved. Selection followed by flag removal restores the original records.
 
+- `Machine/KeyPartition.lean`: one fixed six-tape, fifteen-state program
+  composes physical key selection, a flagged-stream rewind, and the complete
+  partition pass. Output encodes the stable pass of the original records at
+  any valid key index; original input and selector survive. Exact runtime
+  includes every join and is at most eleven input volumes plus twelve.
+  Output still carries flags; repeated-pass buffer reuse remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
