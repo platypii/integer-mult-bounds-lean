@@ -629,3 +629,7 @@ import IntegerMultBounds.Networks.Shared50FramedShape
 import IntegerMultBounds.Networks.Shared50FixedControl
 import IntegerMultBounds.Machine.Shared50OrderedPieces
 import IntegerMultBounds.Machine.Shared50PieceSchedule
+import IntegerMultBounds.Machine.RecursiveDescriptorFrames
+import IntegerMultBounds.Machine.RecursiveHeaderBounds
+import IntegerMultBounds.Machine.FiniteReturnStackAt
+import IntegerMultBounds.Machine.RecursiveFrameControl

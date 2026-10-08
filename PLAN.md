@@ -15,7 +15,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
 | Composition, loops, frames, elementary streams | §2 | 🟡 (157/158) | 🟡 (139/150) |
 | Finite networks with a rank saving | §3 | ✅ (66/66) | 🟡 (1/42) |
-| Faster interchange of address chunks | §4 | ✅ (21/21) | 🟡 (12/18) |
+| Faster interchange of address chunks | §4 | ✅ (22/22) | 🟡 (12/19) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (4/6) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (9/9) | ⬜ (0/3) |
@@ -288,6 +288,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Fixed-many binary descriptor frames | `BinaryDescriptorStackAt`, `BinaryDescriptorFrames` | ✅ | ✅ | Actual fixed-list push and reverse pop preserve older stack and spectator tapes. Same-bank roundtrip restores descriptors into blank distinct destinations with exact total-bit-length cost. Integration around recursive execution remains open |
 | Fixed interleaved network control and call boundaries | `FramedControlSchedule`, `FramedControlShape`, `DAGFramedShape`, `Shared50OrderedControl`, `Shared50FramedShape`, `Shared50FixedControl`, `Shared50OrderedPieces`, `Shared50PieceSchedule` | ✅ | 🟡 | One literal control list for all widths retains every physical role, scalar gate and rational field operation. Certified segment/call/gate expansion has exact original order and recursive count; individual segment/gate machines verified. Heterogeneous header updates, shared-bank joining and actual recursive calls remain open |
 | Fixed cyclic block controller | `FiniteFlow`, `FiniteReturnFlow` | ✅ | ✅ | One fixed finite controller supports real decoded returns, back-edges and self-edges; exact execution and charged jumps proved for finite block traces. Binding its blocks to the recursive algorithm and proving recursive termination/cost remain open |
+| Concrete frame costs and static call/return assembly | `RecursiveDescriptorFrames`, `RecursiveHeaderBounds`, `FiniteReturnStackAt`, `RecursiveFrameControl` | ✅ | 🟡 | Actual active/saved layout headers discharge canonical size bounds; physical frame costs are linear in logical child volume. Static call/body/return physically saves descriptors and PC, restores descriptors and dispatches from decoded PC with every join charged. Child body must return intact stacks and blank restoration destinations; recursive execution remains open |
 | Physical operations with heterogeneous spectators | `RecursiveInterchangeScaling`, `FixedControlTranslationStream`, `FlatFixedControlShift`, `RepeatedControlTranslationExecution`, `RepeatedControlTranslationStream`, `FlatRepeatedControlShift`, `CountedHyperVolumeLoop`, `FlatHyperArrayNormalize`, `FlatRepeatedControlNormalize`, `FlatRepeatedControlArray`, `RecursiveInterchangeShift` | ✅ | 🟡 | Actual normalized H/D scaling and H-controlled D shift preserve arbitrary seven-factor spectators and return canonical payloads. Nested runtime counts and physical four-dimensional normalization give 1005 times volume plus 26 for shifts. Canonical dimension descriptors and prepared arithmetic bank remain supplied; bootstrap/cleanup and full recursion remain open |
 | Arbitrary-width interchange (Lemma 4.4) | `Recurrence`, `ArbitraryWidth` | ✅ | ⬜ | Row-range digits, row padding, radix padding, and the total `O(u^τ)` per unit volume with an explicit constant; field-order bookkeeping open |
 
@@ -378,4 +379,4 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compose the proved rational digit arithmetic into matrix routines and compile the finite network address permutations to literal tape steps.
-- Start the tape compilation of §4: ordered-affine field updates, the role-stream split, and the depth-first schedule.
+- Complete the §4 recursive controller: physically update child headers, park inactive role arrays, execute the fixed segment/call/gate schedule, restore parent headers and arrays, and derive the runtime recurrence from that execution.

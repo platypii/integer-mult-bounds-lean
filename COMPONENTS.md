@@ -812,6 +812,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50PieceSchedule.lean`: Fixed actual list of certified segments, explicit role-and-coordinate recursive calls, and scalar gates. Expansion equals the original control atom by atom, with exact improved recursive-call count. Whole-machine compilation remains separate.
 
+- `Machine/RecursiveDescriptorFrames.lean`: Actual fixed-list descriptor push/pop and same-bank roundtrip charged to logical child volume using canonical root-bounded header lengths. Six-field roundtrip costs at most (48*(log2 roles+2)+97) times child volume.
+
+- `Machine/RecursiveHeaderBounds.lean`: Every actual six-field recursive header is bounded by its layout volume and the original root volume. Canonical active or saved-ancestor headers therefore satisfy the child-volume scan bound without a separate descriptor-size assumption; parked ancestor storage is excluded.
+
+- `Machine/FiniteReturnStackAt.lean`: Places real binary PC push and decoded dispatch on one selected tape while framing all other tapes. Exact dispatch retains the finite terminal-state result for controller composition.
+
+- `Machine/RecursiveFrameControl.lean`: Concrete static call/body/return assembly physically saves descriptor fields and PC, restores fields, pops PC and dispatches to the decoded continuation. Exact tape and terminal-state contracts charge every join. The supplied body must establish intact saved stacks and blank restoration destinations; recursive child execution remains an explicit obligation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
