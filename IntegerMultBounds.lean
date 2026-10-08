@@ -397,3 +397,4 @@ import IntegerMultBounds.NLogN.Capstone
 import IntegerMultBounds.Machine.FamilyPlacement
 import IntegerMultBounds.Machine.SignedScalingPrepared
 import IntegerMultBounds.Machine.TranslationExecutionReuse
+import IntegerMultBounds.Machine.TranslationStream

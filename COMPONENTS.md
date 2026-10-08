@@ -284,6 +284,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/TranslationExecutionReuse.lean`: Literal split-length synthesis, rotation and complete derived-metadata cleanup in one reusable twelve-tape machine. Exact modular forward shift, immutable source and Q/a/B, and both payload heads advanced Q*B. Recurring 217-state bound 207*Q*B+241; initial 219-state program starts writable metadata blank and costs 207*Q*B+243. Changing the supplied offset between calls still requires physical preparation.
 
+- `Machine/TranslationStream.lean`: Repeated common-offset translation with literal descriptor recomputation and cleanup on each fiber. One fixed fourteen-tape, 235-state machine initializes all writable metadata from blank, preserves the source and supplied canonical Q/a/B/n, and proves the exact full final bank, including zero fibers. Runtime at most 461 times physical payload volume plus 25 for positive Q/B. Varying-offset preparation and prefix scheduling remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
