@@ -782,6 +782,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RepeatedControlBootstrap.lean`: Actual 21-tape bootstrap constructs physical zero H and every repeated-control metadata marker from B/Q/C/N/width and payload. No precomputed offset or radix control is supplied; exact prepared output and 15 times width plus 30 cost. Dimension-bank installation remains separate.
 
+- `Machine/DelimitedReverseCopy.lean`: Actual reverse copy scans non-delimiter data until a physical marker, preserving source and arbitrary outside regions with exact head and linear word-length contracts.
+
+- `Machine/DescriptorStackControl.lean`: Literal descriptor-stack seek and control steps, with genuine markers and scans rather than unknown-length seek primitives.
+
+- `Machine/BinaryDescriptorStack.lean`: Fixed eight-state push/pop store delimiter-framed reversed binary descriptors and restore original bit order. Each costs 2 times bit length plus 7, with exact source/stack frames and no supplied runtime length; empty descriptors supported.
+
+- `Machine/BinaryDescriptorStackRoundtrip.lean`: Concrete three-tape push/pop preserves source and complete older stack/head, restoring the exact canonical descriptor on an initially blank destination in 4 times bit length plus 15. Representation matches RadixZeroFill headers.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

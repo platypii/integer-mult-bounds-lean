@@ -15,7 +15,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
 | Composition, loops, frames, elementary streams | §2 | 🟡 (157/158) | 🟡 (139/150) |
 | Finite networks with a rank saving | §3 | ✅ (66/66) | 🟡 (1/42) |
-| Faster interchange of address chunks | §4 | ✅ (15/15) | 🟡 (7/12) |
+| Faster interchange of address chunks | §4 | ✅ (16/16) | 🟡 (8/13) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (4/6) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (9/9) | ⬜ (0/3) |
@@ -279,6 +279,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Normalized recursive role transport | `CyclicRowRewind`, `CyclicRowNormalized`, `RecursiveInterchangeRowsNormalized` | ✅ | ✅ | Actual split/merge now return every payload head to its original position with exact words and restored controls. Existing row/group descriptors drive all rewinds, no product descriptor assumed; bound 149 times parent volume. Descriptor synthesis and recursive call wiring remain open |
 | Fixed role-permutation merge | `CyclicRowPermutedMerge` | ✅ | ✅ | Actual normalized merge reads each logical role from its fixed permuted physical output slot, restores original row order and retains exact heads/frames with unchanged runtime. Whole network execution remains separate |
 | Binary return stack and finite dispatch | `FiniteReturnStack`, `FiniteDispatch`, `FiniteReturnDispatch` | ✅ | ✅ | Fixed-width binary push/pop restores older stack and decodes the actual finite return state; one charged transition dispatches into fixed continuations. Tape count/control size independent depth. Cyclic recursive controller and descriptor-frame processing remain open |
+| Variable-length binary descriptor stack | `DelimitedReverseCopy`, `DescriptorStackControl`, `BinaryDescriptorStack`, `BinaryDescriptorStackRoundtrip` | ✅ | ✅ | Actual fixed push/pop scan runtime binary headers without a length input, preserve older frames and restore exact descriptors. Three-tape roundtrip costs 4 times length plus 15 with explicit blank restoration destination; fixed-many recursive frame assembly remains separate |
 | Recursive logical-volume invariant | `RecursiveInterchangeVolume` | ✅ | — | Actual child-selection paths divide logical volume exactly by role count at each depth, retain all original chunk digits as spectators, and obey the power-width depth bound. Descriptor-cost absorption and physical recursion remain separate |
 | Generated recursive dimensions and control bootstrap | `RecursiveDimensionBank`, `RepeatedControlBootstrap` | ✅ | ✅ | Exact fixed machines separately construct Q/prefix products from six canonical layout headers and construct zero H/all control markers from dimension headers plus width/payload. Blank workspaces and explicit linear-volume costs; physical descriptor installation/composition remain open |
 | Fixed cyclic block controller | `FiniteFlow`, `FiniteReturnFlow` | ✅ | ✅ | One fixed finite controller supports real decoded returns, back-edges and self-edges; exact execution and charged jumps proved for finite block traces. Binding its blocks to the recursive algorithm and proving recursive termination/cost remain open |

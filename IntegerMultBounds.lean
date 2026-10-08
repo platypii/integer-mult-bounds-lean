@@ -608,3 +608,7 @@ import IntegerMultBounds.Machine.FiniteReturnFlow
 import IntegerMultBounds.Machine.RecursiveInterchangeVolume
 import IntegerMultBounds.Machine.RecursiveDimensionBank
 import IntegerMultBounds.Machine.RepeatedControlBootstrap
+import IntegerMultBounds.Machine.DelimitedReverseCopy
+import IntegerMultBounds.Machine.DescriptorStackControl
+import IntegerMultBounds.Machine.BinaryDescriptorStack
+import IntegerMultBounds.Machine.BinaryDescriptorStackRoundtrip
