@@ -68,3 +68,4 @@ import IntegerMultBounds.NLogN.NeumannApprox
 import IntegerMultBounds.NLogN.ResamplingApprox
 import IntegerMultBounds.NLogN.ResamplingAssembly
 import IntegerMultBounds.NLogN.SynthConv
+import IntegerMultBounds.NLogN.OffDiagApprox

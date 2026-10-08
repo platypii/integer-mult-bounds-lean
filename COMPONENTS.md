@@ -354,6 +354,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   vectors is `t` times the pointwise negacyclic product of the transforms,
   for any `t ∣ 2r`; and for `t` a power of two the inverse transform
   recovers the input up to `1/t`, by the half-period cancellation.
+- `NLogN/OffDiagApprox.lean`: the paper's Lemmas 4.11 and 4.8. Restricting
+  the off-diagonal series `E` to the `2m` terms with `0 < |h| ≤ m` loses at
+  most a geometric tail, below `3/2^p` once `9m ≥ p`; summing per-term
+  fixed-point approximations of scaled error `c` gives total `2mc + 3`; and
+  a rounded diagonal entry in `[0, 1]` times a unit-ball value has scaled
+  error at most four.
 
 ## Top-level
 
