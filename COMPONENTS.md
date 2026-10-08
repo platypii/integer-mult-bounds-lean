@@ -1667,3 +1667,10 @@ Parameters and asymptotics.
   the seven rows, plus polynomial setup and bounded overheads, is therefore
   `O(n (lg n)^(1 - κ))` with `κ = 83 / 10^12`. That the components achieve
   these rows is their own obligation.
+- `Assembly.lean`: the reduction of `Machine.EndToEnd` to a program with a
+  cost function. A program that halts with the correct product on every pair
+  of `n`-bit inputs within `total n` steps satisfies `ComputesWithin` whenever
+  `total` is eventually a fixed multiple of the target time, and a `total`
+  bounded by the volume times the cost table rows, polynomial setup, and
+  bounded overheads is such a function. The program, its correctness, and its
+  cost proofs are the remaining obligation.

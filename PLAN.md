@@ -222,7 +222,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | --- | --- | --- | --- | --- |
 | Explicit multiplication program | — | ⬜ | ⬜ | |
 | Correctness on every input length | — | ⬜ | ⬜ | Requires sections 2–9 |
-| Uniform runtime `O(n log^(1−83/10¹²) n)` | — | ⬜ | ⬜ | |
+| Uniform runtime `O(n log^(1−83/10¹²) n)` | `Assembly` | 🟡 | ⬜ | `EndToEnd` reduced to a program running within a cost of the cost-table shape |
 
 ## Next steps
 
