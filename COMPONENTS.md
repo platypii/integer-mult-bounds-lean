@@ -344,6 +344,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedLoopReuseAlphabet.lean`: Reusable counted loop over arbitrary body alphabets, encoding only its two binary control tapes and framing all body symbols literally. Exact whole-bank endpoints, immutable descriptor and restored clock; sum of body costs plus6*n+7*countWidth+16 includes preparation and cleanup. Adds two tapes and sixteen states; uses the exposed CountedLoopReuse.prepare_exact contract.
 
+- `Machine/PrefixCounterData.lean`: Multi-field radix carry semantics, exact flattened-prefix modular enumeration, width preservation and wraparound. Sum of maximal-digit potentials gives cost at most(4*c+2)*n+2*sum(widths), avoiding a spectator-width multiplier on each iteration.
+
+- `Machine/PrefixCounter.lean`: Concrete fixed-field-count carry scheduler over separate radix tapes with physical head restoration. 3*c+1-state incrementer and 3*c+2-state cyclic controller; exact joint address enumeration and preserved arbitrary frames. Full finite traversal restores every field and payload bank within(4*c+4)*q^sum(widths). Fields have radix-power sizes q^b_i with arbitrary widths, including long spectators; arbitrary non-power ranges and initialization are not covered. Cyclic finite-prefix execution does not assert halting.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

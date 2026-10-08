@@ -423,3 +423,5 @@ import IntegerMultBounds.Machine.RadixCounter
 import IntegerMultBounds.Machine.RationalTranslationExecution
 import IntegerMultBounds.Machine.CountedLoopAlphabet
 import IntegerMultBounds.Machine.CountedLoopReuseAlphabet
+import IntegerMultBounds.Machine.PrefixCounterData
+import IntegerMultBounds.Machine.PrefixCounter
