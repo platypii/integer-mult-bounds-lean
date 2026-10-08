@@ -762,3 +762,6 @@ import IntegerMultBounds.Machine.Shared50RecursiveNodeRows
 import IntegerMultBounds.Machine.Shared50RecursiveNodeSemantics
 import IntegerMultBounds.Machine.Shared50RecursiveNodeTranspose
 import IntegerMultBounds.Machine.Shared50RecursiveNodeBinary
+import IntegerMultBounds.Machine.Shared50RecursiveBank
+import IntegerMultBounds.Machine.Shared50RecursiveBankNodes
+import IntegerMultBounds.Machine.Shared50RecursiveBankReturn

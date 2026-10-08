@@ -1121,6 +1121,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveNodeBinary.lean`: Actual split and fixed-control output arrays equal the node gate binary encodings with blank common IO. Flat cyclic serialization agrees with scalar-coordinate routed transpose, providing the binary induction bridge.
 
+- `Machine/Shared50RecursiveBank.lean`: Fixed tape permutations align local common banks with the call bank without moving data or adding transitions. Distinct clock, count, payload, node-view, scalar-view, descriptor and PC slots; exact endpoint reconstruction and return-stack placement.
+
+- `Machine/Shared50RecursiveBankNodes.lean`: Actual split/merge, scalar-segment and gate skeletons execute on the single call-compatible permanent bank. Saved node frames and blank scalar-view stacks are distinct; exact bank endpoints and original runtime costs are retained.
+
+- `Machine/Shared50RecursiveBankReturn.lean`: Actual base interchange and ancestor-header restoration share the global bank. Exact payload/header/stack endpoints, linear role-volume return cost and literal pending-PC reset match the physical decoder.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
