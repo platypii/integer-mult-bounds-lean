@@ -481,6 +481,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/MultiControlPrefixTranslationInit.lean`: Physically generates every shared radix control field from blank storage using canonical width descriptors, then runs blank-workspace initialization and the complete multi-control prefix stream. Exact active output and preserved initializer frame; no supplied marked controls, stale copies, results or work sentinels. All initialization is absorbed into (28*leaves+2*expressionConstant+594+33*c)*volume. Canonical width/B/Q/count descriptors remain supplied; concrete flat-array adapter is separate.
 
+- `Machine/FlatMultiControlTranslation.lean`: Complete physical flat-array translation by a fixed rational expression over actual prefix coordinates. Proves generated counter field j is the jth radix slice of the physical prefix, computed offset equals modular expression evaluation, source fibers serialize exactly to the input array, and every suffix symbol reaches its correct output address. Full initialized machine costs (28*leaves+2*expressionConstant+594+33*c)*volume. Only canonical dimension descriptors and flat payload remain supplied; normalized output/schedule assembly separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
