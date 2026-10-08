@@ -141,3 +141,4 @@ import IntegerMultBounds.NLogN.ResamplingOps
 import IntegerMultBounds.NLogN.ModuliConstruction
 import IntegerMultBounds.NLogN.ContractFinal
 import IntegerMultBounds.NLogN.SmallMultiplierCost
+import IntegerMultBounds.NLogN.ExpEval

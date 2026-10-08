@@ -828,6 +828,13 @@ Faster interchange of address chunks (§4).
   two `q`-bit integers exactly within `10^6 · q · (log₂ q)²` bit operations;
   this fixed quasilinear bound serves the small products inside the weight
   evaluations of the main algorithm.
+- `NLogN/ExpEval.lean`: the paper's Lemma 2.13 at the model level. The
+  Taylor series with about `8 p / log₂ p` terms is within `2^(−p)` on
+  `|x| ≤ 1`; `e^(−z)` reduces to a power of `e^(−1)` times a Taylor sum with
+  error `3(⌊z⌋ + 1) · 2/K!`; and the binary-splitting recurrence with
+  superadditive multiplication cost evaluates such a series in
+  `O(M(80p) log p)` operations, the `O(p^(1+δ))` shape. The exact product tree
+  and the `p`-bit approximation of `π` times a rational are not written.
 
 ## Top-level
 
