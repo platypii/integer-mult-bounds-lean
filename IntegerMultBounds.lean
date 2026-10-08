@@ -36,6 +36,8 @@ import IntegerMultBounds.Machine.ScalingControl
 import IntegerMultBounds.Machine.BlockRotationData
 import IntegerMultBounds.Machine.ScalingPieces
 import IntegerMultBounds.Machine.CountedCopyReuse
+import IntegerMultBounds.Machine.Placement
+import IntegerMultBounds.Machine.CountedSeek
 import IntegerMultBounds.Machine.BinaryPad
 import IntegerMultBounds.Machine.BinaryArithmetic
 import IntegerMultBounds.Machine.WordTape
