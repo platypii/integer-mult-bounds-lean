@@ -171,6 +171,10 @@ import IntegerMultBounds.Networks.Shared50OutputRoles
 import IntegerMultBounds.Networks.Shared50ComplementFrames
 import IntegerMultBounds.Networks.Shared50StageFrames
 import IntegerMultBounds.Networks.Shared50FiniteTrace
+import IntegerMultBounds.Networks.SparseCircuit
+import IntegerMultBounds.Networks.Shared50SparseIO
+import IntegerMultBounds.Networks.Shared50SparseCentral
+import IntegerMultBounds.Networks.Shared50SparseInvocation
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit

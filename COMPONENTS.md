@@ -918,6 +918,20 @@ Bit and complex networks.
   restriction preserves the complete ordered edge list and exact endpoints
   under any stage label lift, without filtering any update.
 
+- `Networks/SparseCircuit.lean`: actual one-source XOR lists between disjoint
+  banks, with exact accumulation semantics, instruction count and incidences.
+- `Networks/Shared50SparseIO.lean`: copies only actual allocated source slots
+  and reads each target's three physical partial outputs. Proves arbitrary-state
+  equivalence to the dense matrices, unique source roles, exact gate incidences,
+  nonsource preservation and source/readout counts; no zero terms are emitted.
+- `Networks/Shared50SparseCentral.lean`: literal gather/scatter incidences are
+  precisely each triple's three coordinates. Both lists have 3n XORs and exact
+  central-matrix semantics on arbitrary scratch with spectators preserved.
+- `Networks/Shared50SparseInvocation.lean`: actual sparse twelve-block program,
+  inverse blocks, opposite orientation and three-invocation exchange, restoring
+  arbitrary scratch. Exact counts give at most 5,209,540 scalar instructions per
+  invocation and 15,628,620 per local exchange at h=50. These are not tape costs.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
