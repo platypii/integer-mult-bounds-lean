@@ -620,3 +620,4 @@ import IntegerMultBounds.Machine.RecursiveShiftInitialize
 import IntegerMultBounds.Machine.RecursiveInterchangeShiftConstruct
 import IntegerMultBounds.Machine.BinaryDescriptorStackAt
 import IntegerMultBounds.Machine.BinaryDescriptorFrames
+import IntegerMultBounds.Machine.RecursiveInterchangeShiftClean

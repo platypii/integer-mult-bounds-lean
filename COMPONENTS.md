@@ -806,6 +806,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryDescriptorFrames.lean`: Fixed lists of runtime binary headers push in order and pop in reverse with exact older-stack restoration. Actual same-bank roundtrip preserves source fields and writes initially blank distinct destinations, costing four times total bit length plus sixteen times field count plus one; programs are independent of descriptor lengths.
 
+- `Machine/RecursiveInterchangeShiftClean.lean`: Clean reusable 68-tape heterogeneous controlled shift from six canonical layout headers and sole payload. Exact transformed array, retained original headers, all generated private metadata and trackers erased at head zero, with setup/execution/cleanup bound 221536 times volume plus 32370. Fixed machine independent of runtime layout.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
