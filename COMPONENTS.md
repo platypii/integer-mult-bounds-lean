@@ -571,6 +571,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   clamped transforms; the multidimensional resampling tensors then
   approximate `A` and `B` with explicit errors below `d p²` and no
   hypotheses beyond the parameter ranges and the inverse identities.
+- `NLogN/PowerOfTwoNumericD.lean`: Theorem 3.1 of the paper for any number
+  of power-of-two coordinates: with numerical synthetic transforms of
+  elementwise scaled error `S` and an approximate chirp within `εa`, the
+  Bluestein pipeline approximates the normalized transform with scaled error
+  `T′ (3S + 2εa + 4) + εa + 2`, at most `3 T′ S + 8 T′ + 4` for a chirp
+  within two units. The synthetic transforms are abstracted by their error
+  and ball properties, which the `d`-dimensional synthetic file supplies.
 
 ## Top-level
 
