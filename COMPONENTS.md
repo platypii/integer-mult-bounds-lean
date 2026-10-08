@@ -270,6 +270,8 @@ Machine model, execution, composition, and tape routines.
 - `Machine/TranslationProduct.lean`: Literal product-length descriptor synthesis via nested counted growing increments, with input counts on immutable tapes and a fixed selected output slot. A telescoping carry proof pays total work linearly in N*B. Output is canonical when grown from empty even if the supplied N count has padding; no input-size-dependent controller or free arithmetic is used.
 - `Machine/TranslationDescriptors.lean`: Complete literal shift-length synthesis from canonical Q,a,B descriptors with a≤Q and positive B. Initializes markers, physically subtracts Q-a, then constructs canonical (Q-a)*B, a*B and Q*B descriptors by actual nested loops, preserving all inputs. Fixed ten tapes and 120 states; bound163*Q*B+92. Generated metadata is explicit at the endpoint; reuse cleanup remains separate.
 
+- `Machine/ActualAffineScaling.lean`: Instantiates the fixed signed-scaling machine for every actual Shared50 scalar coefficient. The program depends on the rational coefficient, never on radix exponent or payload width; the chosen-prime unit recipe discharges numerator/denominator legality. Exact symbol transport matches OrderedAffine target scaling at every prime-power width, with bound (1368+120*(absolute numerator+denominator))*payload volume. Canonical descriptor and blank scratch hypotheses remain explicit.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

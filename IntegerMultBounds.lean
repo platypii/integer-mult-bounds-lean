@@ -61,6 +61,7 @@ import IntegerMultBounds.Machine.ScalingDescriptors
 import IntegerMultBounds.Machine.ScalingPreparedExecution
 import IntegerMultBounds.Machine.SignedScalingExecution
 import IntegerMultBounds.Machine.SignedScalingSign
+import IntegerMultBounds.Machine.ActualAffineScaling
 import IntegerMultBounds.Machine.BinarySubReuse
 import IntegerMultBounds.Machine.TranslationProduct
 import IntegerMultBounds.Machine.TranslationDescriptors
