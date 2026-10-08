@@ -170,6 +170,11 @@ proof.
   transform, division by `2^n`, and rounding return exactly the product of two
   digit lists. Exact arithmetic over `ℂ`; the fixed-point version is covered by
   the error budget, and nothing is compiled to tapes.
+- `NLogN/Gaussian.lean`: summability of Gaussians over the integers, an
+  explicit geometric tail bound, the periodized Gaussian with its periodicity
+  and explicit uniform upper and lower bounds, and the Poisson summation
+  identity for Gaussians re-exported from mathlib. These are the analytic
+  inputs to Gaussian resampling; the resampling map itself is not yet defined.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
