@@ -456,6 +456,11 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `A` and `B` with explicit scaled errors, both below `p²` for the paper's
   per-term error seven. The per-term Gaussian evaluations and the clamping of
   the off-diagonal approximation into the unit ball are hypotheses.
+- `NLogN/PrecisionCheck.lean`: the paper's parameter choices satisfy the
+  recursive step's side conditions: with `b = ⌈log₂ n⌉`, `p = 6b`, `S ≤ T`,
+  and transform errors at most `2^(γ+5) T log₂ T`, the precision condition
+  `2^(2b) S² (εI + 2εF + 2) < 2^(p−1)` holds because `γ + 14 < b`; and the
+  digit counts fit in the cyclic length whenever `T < 2S`.
 
 ## Top-level
 
