@@ -153,7 +153,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Moduli selection (Lemma 5.1) | `Primes`, `PrimeSelection`, `ModuliConstruction` | ✅ | — | Elementary two-prime-power moduli via pigeonhole, no Chebyshev input; the Chebyshev-bound route is kept as an alternative |
 | Assembled numerical transform (Prop 5.2) | `ResamplingMultiNumeric`, `MainTransform`, `ExplicitNumeric`, `ContractPrep`, `PowerOfTwoContract` | ✅ | ⬜ | `F̃_s = 2^γ B̃ F̃_t Ã` with error `2^(γ+4) T log₂ T`; the explicit power-of-two transform meets the `8 T log₂ T` bound |
 | Headline recursive-step contract | `Contract`, `ContractSqrt`, `ContractFinal`, `PrimeSelection`, `ModuliConstruction` | ✅ | ⬜ | The explicit numerical step with the paper's windows is exact with no hypothesis beyond the threshold `n ≥ 2^(2^(1000 d³))` |
-| Operation counts | `CostModel`, `CostBound`, `ResamplingOps`, `SmallMultiplierCost` | ✅ | ⬜ | Word operations and delegated products for the pipelines and the resampling maps; a full step is `(12 T/r) M(3rp) + O(n log n)` given quasilinear weight evaluation; the plain FFT multiplier costs `10^6 q log₂² q` bits a priori; joint recurrence and exp evaluation in progress |
+| Operation counts | `CostModel`, `CostBound`, `ResamplingOps`, `SmallMultiplierCost`, `ExpEval`, `ExpCostBound`, `JointRecurrence`, `CostFinal` | ✅ | ⬜ | A full step is `(12 T/r) M(3rp) + O(n log n)` operations with the paper's windows; small products by the plain FFT multiplier, weights by binary splitting; the recurrence closes to `O(n log n)` above `2^(2^624)` |
 | Unit-ball clamping | `Clamp` | ✅ | — | Removes the ball side conditions of the composition lemmas |
 | Bit costs and tape compilation | — | ⬜ | ⬜ | |
 
