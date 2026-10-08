@@ -486,3 +486,6 @@ import IntegerMultBounds.Machine.FlatControlledShiftPayload
 import IntegerMultBounds.Machine.RadixPowerWord
 import IntegerMultBounds.Machine.RadixPowerDescriptor
 import IntegerMultBounds.Machine.FlatAffineScalingPayload
+import IntegerMultBounds.Machine.FlatControlledShiftMetadata
+import IntegerMultBounds.Machine.SharedPayloadFrames
+import IntegerMultBounds.Machine.FlatScaleShiftPair
