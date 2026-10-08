@@ -85,3 +85,4 @@ import IntegerMultBounds.NLogN.MainStep
 import IntegerMultBounds.NLogN.TensorApproxV
 import IntegerMultBounds.NLogN.ResamplingNumeric
 import IntegerMultBounds.NLogN.PrecisionCheck
+import IntegerMultBounds.NLogN.PowerOfTwoExact

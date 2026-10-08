@@ -461,6 +461,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   and transform errors at most `2^(γ+5) T log₂ T`, the precision condition
   `2^(2b) S² (εI + 2εF + 2) < 2^(p−1)` holds because `γ + 14 < b`; and the
   digit counts fit in the cyclic length whenever `T < 2S`.
+- `NLogN/PowerOfTwoExact.lean`: the exact algebra of Theorem 3.1. The
+  normalized synthetic convolution in `d` dimensions is `T′ r` times the
+  inverse synthetic transform of the `1/r`-scaled pointwise products of the
+  forward transforms; a normalized complex convolution on `G × Fin r` is the
+  untwisted synthetic one; and for two power-of-two coordinates the complex
+  transform is a chirp multiplication, a synthetic transform pipeline, and
+  another chirp multiplication. More than two coordinates is not written.
 
 ## Top-level
 
