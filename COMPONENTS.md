@@ -1101,6 +1101,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveCallProtocol.lean`: Actual child entry composes initialized payload parking/movement with same-row header and PC setup. Recovery regenerates the restored parent volume, retrieves payloads and clears controls. Exact banks and linear role-volume costs are proved; matching child execution to the recovery input and global auxiliary placement remain separate.
 
+- `Machine/RecursiveMixedClean.lean`: Physically erases the generated mixed-operation clock and volume descriptor after execution, retaining exact original headers, payloads and auxiliaries with all private work blank; linear-volume bound includes cleanup.
+
+- `Machine/RecursiveMixedRoleBank.lean`: Places complete initialized and cleaned mixed operations on permanent role/header banks, preserving arbitrary saved stacks and other auxiliaries without supplying any XOR controls.
+
+- `Machine/Shared50RecursiveGates.lean`: Every literal Shared50 scalar gate has an actual fixed tape machine with complete setup/cleanup and exact original module-gate semantics on arbitrary encoded bit streams, including dirty scratch. Cost is at most 51858 times logical volume.
+
+- `Machine/Shared50NodeSegments.lean`: Original paid nonrecursive segments run on unchanged World role indices plus a final common input/output tape. Exact field-coordinate semantics and IO preservation with fixed linear-volume costs.
+
+- `Machine/Shared50NodeGates.lean`: Literal gates on the complete node payload bank preserve common IO and arbitrary stacks; original binary module-gate semantics, exact whole-bank endpoints and fully charged linear-volume execution.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

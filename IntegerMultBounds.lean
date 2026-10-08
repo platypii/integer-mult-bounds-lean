@@ -751,3 +751,8 @@ import IntegerMultBounds.Machine.RecursiveCallCount
 import IntegerMultBounds.Machine.RecursiveCountedCallBoundary
 import IntegerMultBounds.Machine.RecursiveCallBank
 import IntegerMultBounds.Machine.RecursiveCallProtocol
+import IntegerMultBounds.Machine.RecursiveMixedClean
+import IntegerMultBounds.Machine.RecursiveMixedRoleBank
+import IntegerMultBounds.Machine.Shared50RecursiveGates
+import IntegerMultBounds.Machine.Shared50NodeSegments
+import IntegerMultBounds.Machine.Shared50NodeGates
