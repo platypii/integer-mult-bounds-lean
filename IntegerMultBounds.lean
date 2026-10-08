@@ -702,3 +702,5 @@ import IntegerMultBounds.Machine.RecursiveRowsDimensions
 import IntegerMultBounds.Machine.RecursiveWidthBranch
 import IntegerMultBounds.Machine.RecursiveWidthGuard
 import IntegerMultBounds.Machine.RecursiveStackAllocation
+import IntegerMultBounds.Machine.RecursiveDigitRoleBank
+import IntegerMultBounds.Machine.RecursiveBaseBranch

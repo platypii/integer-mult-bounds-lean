@@ -965,6 +965,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveStackAllocation.lean`: Blank suffix invariants discharge descriptor, PC and role-array free-interval premises. Actual pushes and child payload entry preserve availability at the advanced stack head; concrete saved header/PC stacks retain both free suffixes, without a recursion-depth capacity assumption.
 
+- `Machine/RecursiveDigitRoleBank.lean`: Places the fully initialized clean digit interchange at one permanent role, with canonical six headers, exact Fin4 serialization, all spectator roles/auxiliaries preserved and complete private cleanup. Symbolic port proofs and explicit linear-volume cost.
+
+- `Machine/RecursiveBaseBranch.lean`: Actual digit-role base machine bound into the physical width controller. Width-one input runs guard/edge and complete base interchange within the base linear bound plus three transitions, preserving the exact shared bank and terminal control; the recursive block remains supplied.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
