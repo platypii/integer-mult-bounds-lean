@@ -148,9 +148,9 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Steps 1–3 of the recursion (Props 5.2–5.4) | `MainReduction`, `MainStep`, `Section5Approx` | ✅ | ⬜ | |
 | Parameter selection and precision | `MainParams`, `PrecisionCheck` | ✅ | — | |
 | Final recurrence (Cor 5.5) | `MainRecurrence`, `Recurrence`, `RecurrenceParams` | ✅ | — | Parameter facts at `d = 1729` proved; the recursive inequality for an actual cost is a hypothesis |
-| Prime selection (Lemma 5.1) | `Primes`, `PrimeSelection` | 🟡 | — | Moduli selected from the Rosser–Schoenfeld bound on `ϑ`, isolated as a hypothesis; that bound is not in mathlib |
+| Moduli selection (Lemma 5.1) | `Primes`, `PrimeSelection`, `ModuliConstruction` | ✅ | — | Elementary two-prime-power moduli via pigeonhole, no Chebyshev input; the Chebyshev-bound route is kept as an alternative |
 | Assembled numerical transform (Prop 5.2) | `ResamplingMultiNumeric`, `MainTransform`, `ExplicitNumeric`, `ContractPrep`, `PowerOfTwoContract` | ✅ | ⬜ | `F̃_s = 2^γ B̃ F̃_t Ã` with error `2^(γ+4) T log₂ T`; the explicit power-of-two transform meets the `8 T log₂ T` bound |
-| Headline recursive-step contract | `Contract`, `ContractSqrt`, `PrimeSelection` | ✅ | ⬜ | The explicit numerical step is exact with the paper's windows; moduli supplied under the Chebyshev-bound hypothesis, elementary construction in progress |
+| Headline recursive-step contract | `Contract`, `ContractSqrt`, `PrimeSelection`, `ModuliConstruction` | ✅ | ⬜ | The explicit numerical step is exact with no hypothesis beyond the threshold `n ≥ 2^(2^(1000 d³))` |
 | Operation counts | `CostModel`, `CostBound`, `ResamplingOps` | ✅ | ⬜ | Word operations and delegated products for the pipelines and the resampling maps; a full step is `(12 T/r) M(3rp) + O(n log n)` given quasilinear weight evaluation; joint recurrence and exp evaluation in progress |
 | Unit-ball clamping | `Clamp` | ✅ | — | Removes the ball side conditions of the composition lemmas |
 | Bit costs and tape compilation | — | ⬜ | ⬜ | |

@@ -38,7 +38,7 @@ the literal machine model is proved correct with a runtime bound.
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; tape extraction, sorting and reinsertion primitives are proved, but repair-key computation and the assembled pipeline remain open |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ | Synthetic ring, principal roots, and Bluestein are proved; layout and costs are open |
 | Gaussian resampling | §7 | 🟡 | ⬜ | The factorization `F_s = 2^γ B F_t A` with `‖A‖, ‖B‖ ≤ 1` is proved in one and `d` dimensions, with truncation and Neumann-series error bounds for its pieces; the numerical approximations of `A` and `B` have scaled error below `p²`; the permutation-left variant is open |
-| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ | The explicit numerical recursive step is proved exact, with the moduli selected from the classical Chebyshev-function bound (isolated as the one external hypothesis), the final recurrence, and an operation-count model; the Chebyshev bound itself and bit costs on tapes are open |
+| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ | The explicit numerical recursive step is proved exact with no external hypothesis, the moduli being built elementarily above a constant threshold; the final recurrence and an operation-count model for the full step are proved; the step-level cost model is being joined to the recurrence; tape compilation is open |
 | Exact multiplication, parameters, time bound | §8 | 🟡 | ⬜ | Parameter margins, asymptotics, and prime existence are proved; short-interval primes and the complete time bound are open |
 | End-to-end theorem `EndToEnd` | — | ⬜ | ⬜ | Requires every row above |
 
@@ -58,9 +58,9 @@ transforms, convolution theorems, fixed-point error propagation, Bluestein and
 synthetic transforms, the Gaussian resampling identity with its norm bounds,
 the parameter selection, the explicit numerical recursive step proved exact,
 the final recurrence, and an operation-count model. What remains for the
-subroutine is the Rosser–Schoenfeld bound on Chebyshev's function, which
-the moduli selection takes as an explicit hypothesis because mathlib lacks
-it, and compiling the whole algorithm to tape steps with its bit cost. None of these algorithmic
+subroutine is compiling the whole algorithm to tape steps with its bit cost;
+the moduli are constructed elementarily, so no number-theoretic input beyond
+Bertrand's postulate is used. None of these algorithmic
 contracts may be assumed to claim the requested end-to-end result.
 
 ## Building and verification
