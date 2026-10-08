@@ -26,6 +26,7 @@ import IntegerMultBounds.Machine.Protected
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples
+import IntegerMultBounds.Networks.CircuitRouting
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal
 import IntegerMultBounds.Compact.ExactRepair

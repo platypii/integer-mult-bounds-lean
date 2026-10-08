@@ -139,6 +139,13 @@ Bit and complex networks.
   concrete cardinalities, residual rank savings, Gaussian-dyadic values, and
   tape compilation remain open.
 
+- `Networks/CircuitRouting.lean`: semantics-preserving register renaming and
+  the three executable dirty-scratch stages implementing signed bank exchange.
+  The middle stage uses the reversed inverse schedule with bank roles exchanged;
+  all scratch and spectators are restored. Exact instruction counts and the
+  neighboring-pair rational motif instance are proved. Tape movement, sparse
+  wire counts, and residual spaces remain separate obligations.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.
