@@ -604,6 +604,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatAffineScalingInputLayout.lean`: Fixed structural classification of every raw scaling input tape as workspace, payload or B/Q/P descriptor. Proves exact complete raw, ready and alphabet-lifted input banks, including all repeated dimensional words and blank head-zero workspace. Exposes the literal target layout for physical installation.
 
+- `Machine/SharedBank.lean`: Actual placement of any fixed number of common tapes shared with a stage. Proves exact whole-bank execution with unchanged runtime; unused private selected slots remain literally blank frames, without implicit copying or head movement.
+
+- `Machine/SharedBankFrames.lean`: Projection, clearing and frame lemmas for fixed shared banks, including exact empty private metadata through append/composition. Supports compiling initialized stages while keeping only permanent common inputs nonblank.
+
+- `Machine/FlatCoordinateShiftInitializedStage.lean`: Fully synthesized controlled shift instantiates the original two-payload Stage interface with exact transform, private input independence and charged setup-inclusive linear cost. Entire program skeleton is independent of runtime width/record size; each private bank still supplies b/W.
+
+- `Machine/FlatCoordinateShiftSharedBank.lean`: Four-tape common interface for initialized shifts: payload, output scratch and original b/W headers. Proves injective physical slots, exact common input/output with preserved headers, and literally blank entire private input after stripping common tapes; enables schedules with one physical b/W pair.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

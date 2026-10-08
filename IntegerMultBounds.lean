@@ -524,3 +524,7 @@ import IntegerMultBounds.Machine.FlatCoordinateShiftFromDimensions
 import IntegerMultBounds.Machine.FlatCoordinateShiftInput
 import IntegerMultBounds.Machine.BinaryDescriptorInstallList
 import IntegerMultBounds.Machine.FlatAffineScalingInputLayout
+import IntegerMultBounds.Machine.SharedBank
+import IntegerMultBounds.Machine.SharedBankFrames
+import IntegerMultBounds.Machine.FlatCoordinateShiftInitializedStage
+import IntegerMultBounds.Machine.FlatCoordinateShiftSharedBank
