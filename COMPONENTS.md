@@ -1091,6 +1091,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveRowsNode.lean`: Actual node entry saves six original headers, splits rows and installs reduced headers; exit restores occupied headers and performs permuted merge. Exact banks, linear-volume costs and nested descriptor-stack availability are proved; network execution remains separate.
 
+- `Machine/Shared50RecursiveReturnExecution.lean`: Actual placed and uniformly padded PC pop erases the encoded frame, restores the older stack and preserves every spectator tape. Its real finite-flow jump selects the encoded recovery or root halt node in exactly k+2 transitions, retaining decoded control states throughout.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
