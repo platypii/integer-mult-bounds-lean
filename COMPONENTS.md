@@ -213,6 +213,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   length-`t` transforms up to the two index permutations. Proved from shifted
   Poisson summation, derived from mathlib's Jacobi theta functional equation.
   Norm bounds on the resampling maps and the inversion of `T` are not here.
+- `NLogN/MainReduction.lean`: steps one and three of the paper's recursive
+  step. An `n`-bit product is the length-`S` cyclic convolution of its
+  `b`-bit digit vectors, with product digits below `2^(3b)`; the scaled
+  convolution `w = (u ∗ v)/S` of the `2^(-b)`-scaled digit vectors is
+  recovered exactly by rounding `2^(2b) S w'` from any approximation within
+  `1/(2 · 2^(2b) S)`, and the rounded list evaluates to the product.
 
 ## Top-level
 
