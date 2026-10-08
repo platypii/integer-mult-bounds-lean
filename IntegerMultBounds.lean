@@ -515,3 +515,5 @@ import IntegerMultBounds.Machine.BinaryDescriptorInstallRaw
 import IntegerMultBounds.Machine.DimensionProductDescriptor
 import IntegerMultBounds.Machine.TranslationDimensions
 import IntegerMultBounds.Machine.FlatCoordinateDimensions
+import IntegerMultBounds.Machine.PrefixWidthCopies
+import IntegerMultBounds.Machine.PrefixWidthCopiesAt

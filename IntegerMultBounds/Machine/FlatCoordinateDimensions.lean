@@ -72,5 +72,42 @@ theorem inputs_preserved (t : Fin d) (b W : ℕ) :
     (output t b W).tape TranslationDimensions.widthSlot = RadixZeroFill.encodedBinary (bits W) :=
   ⟨rfl,rfl,rfl,rfl⟩
 
+/-- Each supplied or computed dimension fits the complete physical volume. -/
+theorem descriptor_value_bounds (t : Fin d) (b W : ℕ) (hW : 0 < W) :
+    b ≤ (modulus b)^d*W ∧ modulus b ≤ (modulus b)^d*W ∧
+    prefixSize (Q := modulus b) t ≤ (modulus b)^d*W ∧
+    suffixSize (Q := modulus b) (W := W) t ≤ (modulus b)^d*W := by
+  let P := prefixSize (Q := modulus b) t
+  let B := suffixSize (Q := modulus b) (W := W) t
+  have hP : 0 < P := pow_pos (ActualAffineScaling.modulus_pos b) _
+  have hB : 0 < B := Nat.mul_pos (pow_pos (ActualAffineScaling.modulus_pos b) _) hW
+  have hQ := ActualAffineScaling.modulus_pos b
+  have hp : P ≤ P*(modulus b*B) := Nat.le_mul_of_pos_right _ (Nat.mul_pos hQ hB)
+  have hq : modulus b ≤ P*(modulus b*B) :=
+    (Nat.le_mul_of_pos_right _ hB).trans (Nat.le_mul_of_pos_left _ hP)
+  have hs : B ≤ P*(modulus b*B) :=
+    (Nat.le_mul_of_pos_left _ hQ).trans (Nat.le_mul_of_pos_left _ hP)
+  have hb : b ≤ modulus b := RadixToBinaryData.width_le_power hprime b
+  rw [split_volume t]
+  exact ⟨hb.trans hq,hq,hp,hs⟩
+
+/-- Canonical descriptor scans are absorbed into the same positive volume. -/
+theorem bits_length_le_twice {n V : ℕ} (hn : n ≤ V) (hV : 0 < V) :
+    (bits n).length ≤ 2*V := by
+  have hh := GrowingCounterData.canonical_width (bits n) (FlatCoordinateSchedule.bits_canonical n)
+  rw [FlatCoordinateSchedule.bits_value] at hh
+  have hl := Nat.log2_le_self n
+  omega
+
+theorem descriptor_length_bounds (t : Fin d) (b W : ℕ) (hW : 0 < W) :
+    (bits b).length ≤ 2*((modulus b)^d*W) ∧
+    (bits (modulus b)).length ≤ 2*((modulus b)^d*W) ∧
+    (bits (prefixSize (Q := modulus b) t)).length ≤ 2*((modulus b)^d*W) ∧
+    (bits (suffixSize (Q := modulus b) (W := W) t)).length ≤ 2*((modulus b)^d*W) := by
+  obtain ⟨hb,hq,hp,hs⟩ := descriptor_value_bounds t b W hW
+  have hv := Nat.mul_pos (pow_pos (ActualAffineScaling.modulus_pos b) d) hW
+  exact ⟨bits_length_le_twice hb hv,bits_length_le_twice hq hv,
+    bits_length_le_twice hp hv,bits_length_le_twice hs hv⟩
+
 end
 end IntegerMultBounds.Machine.FlatCoordinateDimensions

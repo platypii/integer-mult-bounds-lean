@@ -576,7 +576,11 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/TranslationDimensions.lean`: Actual nine-tape dimension bank from sole canonical b/W inputs. Fixed prefix/suffix counts select finite control; computes Q=q^b, P=q^(p*b), S=q^(s*b), B=S*W, preserves inputs and restores scratch. Exact canonical words and bound(24*p+24*s+333)*P*Q*B include every setup, conversion, product and join.
 
-- `Machine/FlatCoordinateDimensions.lean`: Specializes physical dimension synthesis to an actual shared-prime coordinate target. Proves the constructed words literally match the canonical Q/P/B expected by FlatCoordinateSchedule, with common-volume runtime, preserved b/W inputs and blank initial workspace. Full stage-input installation remains separate.
+- `Machine/FlatCoordinateDimensions.lean`: Specializes physical dimension synthesis to an actual shared-prime coordinate target. Proves the constructed words literally match the canonical Q/P/B expected by FlatCoordinateSchedule, with common-volume runtime, preserved b/W inputs and blank initial workspace. Canonical b/Q/P/B descriptor lengths are bounded by twice common volume, charging later setup scans. Full stage-input installation remains separate.
+
+- `Machine/PrefixWidthCopies.lean`: Replicates a sole preserved binary width into the exact physical PrefixCounterInit descriptor slots, with all fields, clocks and spare tapes initially blank. Proves full output-bank equality and runtime c*(2*length+6), including all copy joins.
+
+- `Machine/PrefixWidthCopiesAt.lean`: Places prefix-width replication beside an arbitrary retained dimension bank, sharing its existing width source. Preserves every dimension-bank tape/head and constructs exact prefix input from blank, with no extra supplied source and unchanged copy bound.
 
 ## Compact
 
