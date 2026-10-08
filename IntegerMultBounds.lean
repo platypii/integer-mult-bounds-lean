@@ -41,6 +41,9 @@ import IntegerMultBounds.Machine.BlockRotationData
 import IntegerMultBounds.Machine.ScalingPieces
 import IntegerMultBounds.Machine.CountedCopyReuse
 import IntegerMultBounds.Machine.CountedRotate
+import IntegerMultBounds.Machine.CountedRotateAdvance
+import IntegerMultBounds.Machine.WordSegments
+import IntegerMultBounds.Machine.FiberShift
 import IntegerMultBounds.Machine.GrowingCounterData
 import IntegerMultBounds.Machine.GrowingCounter
 import IntegerMultBounds.Machine.BinaryLength
