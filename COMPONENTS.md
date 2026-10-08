@@ -806,6 +806,11 @@ Faster interchange of address chunks (§4).
   step is exact with no number-theoretic hypothesis at all, for
   `n ≥ 2^(2^(1000 d³))`, a threshold larger than the paper's but still a
   constant.
+- `NLogN/ContractFinal.lean`: the headline theorem in its final form: for
+  `n ≥ 2^(2^(1000 d³))` and any `n`-bit inputs, the explicit numerical
+  recursive step with the paper's window sizes and elementarily constructed
+  moduli computes the exact product, given only per-level rounding oracles
+  within `2^(−p)`; instantiated at `d = 1729`.
 
 ## Top-level
 
