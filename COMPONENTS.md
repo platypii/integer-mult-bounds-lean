@@ -356,6 +356,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RationalTranslationAffineBridge.lean`: Exact physical symbol transport for the concrete cyclic rational-controlled translation stream. Connects destination offsets to OrderedAffine.shift on explicitly represented address fibers; realizes_hoare combines exact bank and transported-symbol claims with the linear runtime. Actual Shared50 coefficients discharge the denominator bound. Requires the represented control coordinates to match the physical cyclic counter; arbitrary multidimensional layout construction remains separate.
 
+- `Machine/RadixZeroFill.lean`: Physical zero-radix-field construction from a supplied binary width descriptor. Writes markers and placeholders by actual counted iteration, recodes backward to radix zero, and returns the field head. Three tapes, twenty-three states; bound8*n+7*descriptorWidth+21, or15*n+28 for canonical widths. Field/work tapes start blank; dimension descriptor is preserved and control scratch returns to its explicit reusable marked state.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
