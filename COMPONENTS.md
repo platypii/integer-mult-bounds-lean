@@ -37,6 +37,13 @@ Machine model, execution, composition, and tape routines.
   motion, and an actual one-tape scanning program with exactly `n` transitions
   through `n` nonblank cells. The program preserves the tape and halts at the
   first blank. This is a stream primitive, not a multiplier.
+- `Machine/WordTape.lean` and `Machine/Copy.lean`: finite-alphabet segment
+  placement and appending, plus concrete two-tape copy and move programs with
+  exactly one transition per symbol. The delimiter, complete source and
+  destination tapes, and cells outside both segments are tracked in the time
+  contract. Copying onto a blank tape gives the exact global blank-tail output
+  representation. These routines are ingredients for record-stream processing;
+  record extraction and radix sorting are not yet implemented.
 
 ## Compact
 

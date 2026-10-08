@@ -15,6 +15,8 @@ import IntegerMultBounds.Machine.Frame
 import IntegerMultBounds.Machine.Counter
 import IntegerMultBounds.Machine.BitTape
 import IntegerMultBounds.Machine.CounterTape
+import IntegerMultBounds.Machine.WordTape
+import IntegerMultBounds.Machine.Copy
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal
