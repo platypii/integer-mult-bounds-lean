@@ -334,6 +334,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RationalOffsetPrepare.lean`: Concrete five-tape recurring fixed-rational scalar offset computation, conversion, scratch cleanup and physical destination descriptor replacement. Both output copies are canonical and equal; marked radix source is preserved. At most67 times positive fiber volume for canonical prior descriptors below the modulus. Rational semantics require denominator below prime q; prefix scheduling and fixed linear combinations remain separate.
 
+- `Machine/RadixCounterData.lean`: Fixed-width radix increment with exact modular value, increasing enumeration and wraparound to zero. Maximal-digit potential proves cycle cost at most6*n+2*width and at most8*q^width for a complete traversal.
+
+- `Machine/RadixCounter.lean`: Literal three-state radix incrementer restores the digit head after carries and overflow. Four-state cyclic controller exposes exact finite-prefix runs with arbitrary payload frames preserved; complete traversal enumerates all radix values and returns the exact bank in at most8*q^width steps. The cyclic controller does not halt; counter initialization and mixed-field scheduling remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
