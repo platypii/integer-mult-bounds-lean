@@ -394,3 +394,6 @@ import IntegerMultBounds.NLogN.JointRecurrence
 import IntegerMultBounds.NLogN.ExpCostBound
 import IntegerMultBounds.NLogN.CostFinal
 import IntegerMultBounds.NLogN.Capstone
+import IntegerMultBounds.Machine.FamilyPlacement
+import IntegerMultBounds.Machine.SignedScalingPrepared
+import IntegerMultBounds.Machine.TranslationExecutionReuse

@@ -278,6 +278,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NegationDescriptors.lean`: Literal canonical tail metadata construction from supplied Q/B descriptors only. Writes its own constant one on blank tape, synthesizes (Q-1)*B and the padded difference, and uses counted multiplication by one to produce a canonical Q-1 descriptor. Preserves Q/B and leaves explicit generated metadata/control banks. Fixed eleven tapes and160states; bound216*Q*B+121 for positive Q/B.
 
+- `Machine/FamilyPlacement.lean`: Static pairing and framing of independent tape-bank placements, with exact active/extra bank laws and charged sequential execution. Placement wires finite transition tables without assuming physical transfers.
+
+- `Machine/SignedScalingPrepared.lean`: Constructs both numerator and denominator piece-descriptor families from canonical Q/B before executing signed rational scaling. Exact signedBlocks output and full-bank contracts; bound (1612+120*(a+d))*Q*B. Fixed 40+4*(a+d) tapes. Negative-tail descriptors and the fixed split-clock sentinel remain explicit input requirements; generated coefficient metadata is retained.
+
+- `Machine/TranslationExecutionReuse.lean`: Literal split-length synthesis, rotation and complete derived-metadata cleanup in one reusable twelve-tape machine. Exact modular forward shift, immutable source and Q/a/B, and both payload heads advanced Q*B. Recurring 217-state bound 207*Q*B+241; initial 219-state program starts writable metadata blank and costs 207*Q*B+243. Changing the supplied offset between calls still requires physical preparation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
