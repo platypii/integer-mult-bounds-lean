@@ -707,3 +707,10 @@ import IntegerMultBounds.Machine.RecursiveBaseBranch
 import IntegerMultBounds.Machine.RecursiveViewFrame
 import IntegerMultBounds.Machine.RecursiveViewFrameRoleBank
 import IntegerMultBounds.Machine.RecursiveViewedAction
+import IntegerMultBounds.Machine.TwosComplement
+import IntegerMultBounds.Machine.SignExtendAdd
+import IntegerMultBounds.Machine.Negate
+import IntegerMultBounds.Machine.RulerAdvance
+import IntegerMultBounds.Machine.RulerCopy
+import IntegerMultBounds.Machine.FixedMul
+import IntegerMultBounds.Machine.FixedMulValue

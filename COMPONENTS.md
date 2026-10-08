@@ -183,6 +183,41 @@ Machine model, execution, composition, and tape routines.
   closed cost `cost_le`: the input volume plus `10 L + 52` per record for a
   modulus of `L` bits.
 
+- `Machine/TwosComplement.lean`: two's complement words, least significant
+  bit first: the signed value `signed`, its bounds and its agreement with the
+  unsigned value modulo `2^n`, sign extension `extTo`, the modular sum
+  `addMod` of an extended word into a wider accumulator (exact when the sum
+  fits, `signed_addMod`), and negation `negWord` (`signed_negWord`, except for
+  the most negative value).
+
+- `Machine/SignExtendAdd.lean`: the two-tape, four-state adder realizing
+  `addMod`: one transition per accumulator cell, the addend head advancing
+  over its bits and parking on its blank, the final carry dropped
+  (`add_hoare`).
+
+- `Machine/Negate.lean`: in-place two's complement negation on one tape,
+  two states, one transition per bit (`neg_hoare`).
+
+- `Machine/RulerAdvance.lean`: advance (`RulerAdvance.advance_hoare`) or
+  retreat (`RulerRetreat.retreat_hoare`) a data head by the length of a
+  unary ruler word, with the ruler head parked at its end or origin.
+
+- `Machine/RulerCopy.lean`: copy as many zero-filled cells as a ruler is long
+  from a source head to a destination (`copy_hoare`, the same `cells`
+  semantics as the unrolled `CopyCells`), and `WriteSymbol`, a one-cell
+  writer of a fixed symbol.
+
+- `Machine/FixedMul.lean`: signed fixed-point multiplication on twelve tapes
+  (generated like the key routine): operand copies replaced by magnitudes
+  with the signs in two flag cells, the unsigned `BinaryMultiply` product
+  padded to `2w` bits by a ruler copy, bits `p` to `p + w` copied into the
+  output word, negated when the signs differ, all scratch erased
+  (`mul_hoare`, cost `w(7w+18) + 50w + 4p + 140`).
+
+- `Machine/FixedMulValue.lean`: the result word's signed value is the
+  product truncated toward zero by `p` bits, `(x * y).tdiv 2^p`
+  (`signed_result`), for widths `w ≥ p + 2` and magnitudes at most `2^p`.
+
 - `Machine/PackedInverse.lean`: the inverse packed program on nine tapes:
   the four packed updates undone in reverse order with negated offsets as
   five gather-and-transduce lines, with exact list-level word semantics, the
