@@ -555,3 +555,10 @@ import IntegerMultBounds.Machine.RecursiveInterchangeLayout
 import IntegerMultBounds.Machine.RecursiveInterchangeScaling
 import IntegerMultBounds.Machine.FixedControlTranslationStream
 import IntegerMultBounds.Machine.FlatFixedControlShift
+import IntegerMultBounds.Machine.CyclicRowCopy
+import IntegerMultBounds.Machine.CyclicRowCycle
+import IntegerMultBounds.Machine.CyclicRowSplit
+import IntegerMultBounds.Machine.CyclicRowMergeCopy
+import IntegerMultBounds.Machine.CyclicRowMergeCycle
+import IntegerMultBounds.Machine.CyclicRowMerge
+import IntegerMultBounds.Machine.StackPush

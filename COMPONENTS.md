@@ -673,6 +673,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatFixedControlShift.lean`: Flat-array bridge for stationary-control translation across arbitrary middle spectators. Literal source word, exact destination coordinate transport, preserved physical H control and 529 times volume plus23 runtime are proved. Outer H/prefix iteration and full bootstrap remain separate.
 
+- `Machine/CyclicRowCopy.lean`: Arbitrary-alphabet row copy into one fixed role tape, with literal source/destination symbols, exact entire bank and reusable binary clock. No payload terminator assumptions; row count descriptor preserved.
+
+- `Machine/CyclicRowCycle.lean`: One fixed finite cycle distributes successive equal-length rows over every fixed role tape using a shared reusable descriptor/clock. Exact role contents and all heads, with every copy and join charged.
+
+- `Machine/CyclicRowSplit.lean`: Runtime-counted grouping repeatedly executes a fixed role cycle. Role j receives precisely its row from every group, including arbitrary payload symbols; complete bank and restored controls, fixed tapes/states independent of runtime dimensions and explicit 74-times-volume bound. Descriptor construction and positioning are separate.
+
+- `Machine/CyclicRowMergeCopy.lean`: One actual arbitrary-symbol row transfer from a selected role back to a common output, preserving all other roles and restoring binary loop controls.
+
+- `Machine/CyclicRowMergeCycle.lean`: Fixed role-by-role physical merge cycle with exact output concatenation, preserved input streams and summed count/copy/join runtime.
+
+- `Machine/CyclicRowMerge.lean`: Runtime-counted physical merge restores cyclic row order from all role streams. Exact complete bank and advanced heads, restored controls and 74-times-volume bound; row permutation wiring, descriptor synthesis and rewinds remain caller work.
+
+- `Machine/StackPush.lean`: Destructive arbitrary-symbol parking append via actual reflected StackPop transitions. Exact forward head displacement, preserved symbol order, source erasure and outside-region frames; reusable clock and immutable descriptor, with the same explicit length-plus-descriptor runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
