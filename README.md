@@ -119,6 +119,11 @@ proof.
   theorem, orthogonality, double-transform inversion up to the factor `N`, and
   injectivity. This is the algebra behind every FFT multiplier, including the
   `O(n log n)` subroutine; no fast algorithm or rounding analysis is here.
+- `NLogN/FFT.lean`: the radix-2 Cooley-Tukey transform as an executable
+  recursion on `Fin (2^n)`, proved equal to the naive transform for any `ω`
+  with `ω^(2^n) = 1`, with an exact count of `n * 2^(n+1)` ring multiplications
+  and additions, i.e. `2 N log₂ N`. Twiddle powers are taken as given and the
+  count is of ring operations, not tape steps.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
