@@ -641,6 +641,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatCoordinateScalingSharedStage.lean`: Actual initialized scaling instantiates the same four-common-tape Stage contract as shifts. Proves fixed skeleton, empty private metadata, coefficient/target-dependent linear cost and exact OrderedAffine transport; no computed dimensional input is supplied.
 
+- `Machine/SharedBankStageInput.lean`: Literal common-bank input theorem: the first common tapes contain the supplied payload and headers, all others are blank at head zero. Fixed compiled Hoare execution preserves the exact final common bank and charges all stage costs and joins.
+
+- `Machine/FlatCoordinateInitializedSchedule.lean`: One fixed physical machine executes any supported finite mixed scaling/shift schedule from the array and sole canonical b/W inputs with blank private storage. Exact ordered-affine output, preserved headers and explicit linear-volume runtime include all dimension synthesis, descriptor installation and joins.
+
+- `Machine/Shared50InitializedSegments.lean`: Actual nonrecursive Shared50 field-program segments execute from sole b/W and payload with all private tapes blank. The fixed machine has exact field-program symbol transport and a setup-inclusive linear-volume bound; recursive interchanges and heterogeneous spectator layouts remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
