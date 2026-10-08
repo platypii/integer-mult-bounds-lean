@@ -44,6 +44,9 @@ import IntegerMultBounds.Machine.ScratchReset
 import IntegerMultBounds.Machine.BlockReverseStreamReuse
 import IntegerMultBounds.Machine.OneHot
 import IntegerMultBounds.Machine.ScalingMergeData
+import IntegerMultBounds.Machine.ScalingSplit
+import IntegerMultBounds.Machine.ScalingMerge
+import IntegerMultBounds.Machine.ScalingPieceBridge
 import IntegerMultBounds.Machine.BlockRotationData
 import IntegerMultBounds.Machine.ScalingPieces
 import IntegerMultBounds.Machine.CountedCopyReuse
