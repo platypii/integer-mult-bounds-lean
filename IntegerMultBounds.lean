@@ -704,3 +704,6 @@ import IntegerMultBounds.Machine.RecursiveWidthGuard
 import IntegerMultBounds.Machine.RecursiveStackAllocation
 import IntegerMultBounds.Machine.RecursiveDigitRoleBank
 import IntegerMultBounds.Machine.RecursiveBaseBranch
+import IntegerMultBounds.Machine.RecursiveViewFrame
+import IntegerMultBounds.Machine.RecursiveViewFrameRoleBank
+import IntegerMultBounds.Machine.RecursiveViewedAction

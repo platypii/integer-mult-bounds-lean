@@ -969,6 +969,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveBaseBranch.lean`: Actual digit-role base machine bound into the physical width controller. Width-one input runs guard/edge and complete base interchange within the base linear bound plus three transitions, preserving the exact shared bank and terminal control; the recursive block remains supplied.
 
+- `Machine/RecursiveViewFrame.lean`: Fixed six-header push and occupied-header cleanup/pop on a dedicated stack, exact older-stack preservation, explicit free interval and runtime bounds independent of word lengths in control.
+
+- `Machine/RecursiveViewFrameRoleBank.lean`: Places real six-header save/restore on the permanent role bank with a dedicated stack and clean private workspace, retaining all payloads and auxiliary tapes exactly.
+
+- `Machine/RecursiveViewedAction.lean`: One fixed physical push/view/shift-or-scale/restore composition returns parent headers, dedicated stack and private work exactly, retaining auxiliaries and producing the transformed array in its parent-volume type. Linear coefficient is view cost plus action cost plus202; matching ordered scalar descriptions remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
