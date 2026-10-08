@@ -56,6 +56,17 @@ Machine model, execution, composition, and tape routines.
   complete source tapes and retains the final borrow in finite control.
   The modular subtraction identity, exact underflow criterion, ordinary
   nonnegative subtraction, and globally blank-tail output are proved.
+- `Machine/BinaryPad.lean`: a one-state, two-tape scan physically pads two
+  little-endian operands to their maximum width with high zero bits. It
+  preserves both numeric values and halts in exactly that maximum width,
+  with complete padded word tapes and both heads at the common end. Rewinding
+  to the start for arithmetic is a separate charged operation.
+- `Machine/BinaryArithmetic.lean`: a fixed three-tape, seven-state adder
+  accepts unequal-width raw words, physically pads and rewinds both operands,
+  then runs binary addition. Both composition joins and all head movement are
+  charged: at most three times the maximum input width plus five transitions.
+  The output is the exact sum with globally blank tails, and the padded
+  sources retain their numeric values. Empty operands are included.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head
   motion, and an actual one-tape scanning program with exactly `n` transitions
   through `n` nonblank cells. The program preserves the tape and halts at the

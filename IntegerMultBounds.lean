@@ -17,6 +17,8 @@ import IntegerMultBounds.Machine.BitTape
 import IntegerMultBounds.Machine.CounterTape
 import IntegerMultBounds.Machine.BinaryAdd
 import IntegerMultBounds.Machine.BinarySub
+import IntegerMultBounds.Machine.BinaryPad
+import IntegerMultBounds.Machine.BinaryArithmetic
 import IntegerMultBounds.Machine.WordTape
 import IntegerMultBounds.Machine.Copy
 import IntegerMultBounds.Machine.Partition
