@@ -194,6 +194,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   synthetic ring `ℂ[y]/(y^r + 1)` with `y^(2r/t)` a principal `t`-th root for
   every power of two `t ∣ 2r`, and the exact synthetic FFT and its inverse.
   The coefficient norm bound on products in the synthetic ring is not here.
+- `NLogN/CRTMulti.lean`: the `d`-fold Agarwal-Cooley transport. Through the
+  Chinese remainder isomorphism, a cyclic convolution whose length is a
+  product of pairwise coprime moduli is the `d`-dimensional convolution, the
+  `d`-dimensional transform is injective over a domain, and the convolution
+  is recovered from the pointwise product of transforms; strictly increasing
+  primes are pairwise coprime.
 
 ## Top-level
 
