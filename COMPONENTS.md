@@ -444,6 +444,11 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   scaled errors `εF`, `εI`, the rounded output is the exact product whenever
   `2^(2b) S² (εI + 2εF + 2) < 2^(p−1)`. Discharging that precision condition
   from the parameter choices is not here.
+- `NLogN/TensorApproxV.lean`: the `d`-fold tensor lemma for arrays with
+  values in any normed space, indexed by `Fin`, in square and rectangular
+  form: coordinatewise approximations preserve balls, have norm at most one,
+  and accumulate the sum of the errors. The rectangular composition law is
+  not proved here.
 
 ## Top-level
 
