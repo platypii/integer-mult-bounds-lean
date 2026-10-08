@@ -148,6 +148,11 @@ proof.
   most `(2^n - 1) ε`, the exact transform grows by at most `2^n`, a complex
   value within `1/2` of an integer rounds to it exactly, and the product error
   bound. The forward, pointwise, inverse error budget is not yet assembled.
+- `NLogN/Carry.lean`: carry propagation from unnormalized convolution digits
+  to proper base-`B` digits preserving the value, fixed-width truncation, and
+  packing of base `2^k` digits into a most-significant-first bit string of
+  exactly `k * L` bits whose `Machine.binaryValue` is the digit value. This is
+  the output side of `Machine.outputCorrect`, at the list level only.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
