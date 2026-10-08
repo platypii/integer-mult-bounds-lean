@@ -2529,6 +2529,16 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   off-diagonal part, the Neumann inverse, and `B̃` keep their error bounds at
   the window `⌊√p⌋ + 1`, still below `p²`. This window is what makes the
   resampling maps cost `O(T p^(3/2+δ))`.
+- `NLogN/NeumannHalved.lean`: the manuscript's Neumann evaluation with no
+  clamp. Under `α²θ ≥ 1`, `‖E‖ ≤ 2.01 e^(−π/2) ≤ 0.46`
+  (`opNorm_offDiagCLM_le_unit`); halving and rounding the input first keeps
+  every rounded Horner iterate in the unit disk when the scaled error of `Ẽ`
+  is at most `2^p/25` (`hornerNeumannR_err_unit`, `inverse_approx_unit`), so
+  `J̃'` (`resampJNumH`) approximates `J(v/2)` and `B̃₀ = D̃' J̃' C`
+  (`resampB₀NumH`) approximates `B₀` with error `24m + 27`, stays in the unit
+  disk, and with the window `⌊√p⌋ + 1` has error below `p²` for `p ≥ 13`
+  (`approxMap_resampB₀NumH_sqrt`, `errB₀H_sqrt_lt_sq`). This is the form the
+  tape machines implement.
 - `NLogN/ContractSqrt.lean`: the recursive-step contract with the paper's
   window sizes, `(⌊√p⌋ + 1) α` for the resampling sums and `⌊√p⌋ + 1` for
   the off-diagonal part, so that the numerical maps match the ones the cost
