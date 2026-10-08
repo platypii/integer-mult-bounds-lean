@@ -749,6 +749,14 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   the off-diagonal part, so that the numerical maps match the ones the cost
   model counts; the errors stay below `p²` and the contract's hypotheses are
   unchanged.
+- `NLogN/ResamplingOps.lean`: operation counts for the resampling maps in
+  the word model, mirroring the explicit numerics: with the paper's windows
+  and `α² + 1` Neumann iterations the resampling part of a step costs
+  `270 d T α (√p + 1)` per-term operations, which is `O(n log n)` whenever a
+  weight evaluation plus a product costs quasilinearly in `p`; the `m = p`
+  windows are shown quadratic and hence not enough. One full step then costs
+  `(12 T/r) M(3rp) + O(n log n)`, and the recurrence closes to `O(n log n)`
+  for any cost bounded by a full step plus linear overhead.
 
 ## Top-level
 

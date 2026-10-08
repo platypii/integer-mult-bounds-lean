@@ -130,3 +130,4 @@ import IntegerMultBounds.NLogN.CostBound
 import IntegerMultBounds.NLogN.PrimeSelection
 import IntegerMultBounds.NLogN.OffDiagApproxSqrt
 import IntegerMultBounds.NLogN.ContractSqrt
+import IntegerMultBounds.NLogN.ResamplingOps
