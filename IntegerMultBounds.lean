@@ -29,6 +29,7 @@ import IntegerMultBounds.Machine.RadixRationalData
 import IntegerMultBounds.Machine.RadixRational
 import IntegerMultBounds.Machine.CountdownData
 import IntegerMultBounds.Machine.CountedCopy
+import IntegerMultBounds.Machine.CountedCopyReuse
 import IntegerMultBounds.Machine.BinaryPad
 import IntegerMultBounds.Machine.BinaryArithmetic
 import IntegerMultBounds.Machine.WordTape

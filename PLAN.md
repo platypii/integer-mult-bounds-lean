@@ -42,6 +42,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Scan, rewind, copy, move | `Execution`, `Rewind`, `WordTape`, `Copy` | ✅ | ✅ | One transition per symbol |
 | Binary counters | `Counter`, `BitTape`, `CounterTape` | ✅ | ✅ | `8n + 2·width` for `n` increments |
 | Terminating binary-counted raw transfer | `CountdownData`, `CountedCopy` | ✅ | ✅ | Literal three-tape, five-state copy, including all borrow scans, returns and final halt; runtime at most five times the count plus twice the clock width plus two. Prepared clock is explicit; descriptor preparation/reset remains separate |
+| Reusable binary-counted raw transfer | `CountedCopyReuse` | ✅ | ✅ | Immutable descriptor preserved; clock preparation, full erasure, control-head resets and all joins charged. Runtime at most five times count plus seven times width plus sixteen; descriptor construction remains separate |
 | Literal binary addition | `BinaryAdd` | ✅ | ✅ | Three tapes and three states; exact sum in at most width plus one transitions; equally padded operands required |
 | Literal binary subtraction | `BinarySub` | ✅ | ✅ | Three tapes and two states; exact width runtime, modular difference and final borrow; equally padded operands required |
 | Binary operand padding | `BinaryPad` | ✅ | ✅ | Two tapes, one state, exact maximum-width runtime; values preserved; heads finish at common end |
@@ -60,7 +61,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Arbitrary-key raw stable pass | `KeyPass` | ✅ | ✅ | Seven tapes; output flags removed; exact runtime ≤ seventeen raw volumes plus nineteen |
 | Reusable stable pass and cleanup | `Erase`, `KeyPassReuse` | ✅ | ✅ | Exact fresh physical bank restored; runtime ≤ twenty-six raw volumes plus forty-one |
 | Full tape radix sort | `UnarySelector`, `TapeRadixSort` | ✅ | ✅ | Fixed eight-tape machine, exact sort, runtime ≤ 74 × width × volume; prepared width/markers are preconditions |
-| Terminating stream scheduler | `CountedCopy` | 🟡 | 🟡 | Individual counted raw transfers halt with linear amortized cost; nested stream scheduling and reusable clock setup remain open |
+| Terminating stream scheduler | `CountedCopy`, `CountedCopyReuse` | 🟡 | 🟡 | Counted transfers and reusable clock setup halt with linear amortized cost; descriptor construction and nested stream scheduling remain open |
 
 ## 3. Finite networks with a rank saving (§3)
 
