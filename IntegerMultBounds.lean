@@ -454,3 +454,4 @@ import IntegerMultBounds.Machine.FlatAffineScaling
 import IntegerMultBounds.Machine.MarkedBinaryCleanup
 import IntegerMultBounds.Machine.RadixLinearCombinationReuse
 import IntegerMultBounds.Machine.MultiControlTranslationExecution
+import IntegerMultBounds.Machine.RationalPrefixTranslationBootstrap
