@@ -863,6 +863,18 @@ Bit and complex networks.
   all forward support-trace premises; exact output labels hold at arithmetic
   output slots. Inverse/complement labels and global rank assembly remain open.
 
+- `Networks/DirtyLinearCircuit.lean`: actual embedded compute/read/uncompute/
+  inject schedule restores arbitrary scratch; its shear is the actual linear
+  computation on the injected input. Additivity is proved from instructions.
+- `Networks/Shared50Dirty.lean`: actual finite source loading and three-output
+  readout recover the intersection-one neighbor map; the shared circuit's
+  concrete dirty wrapper restores every scratch register. Dense matrix
+  wrappers establish semantics, without sparse operation or tape-cost bounds.
+- `Networks/Shared50Invocation.lean`: literal twelve-block optimized schedule
+  combines the actual shared circuit with the fifty central sums. It performs
+  the full identity shear and restores arbitrary side and central scratch,
+  retaining spectators. Global stage reuse and frame/rank costs remain open.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.

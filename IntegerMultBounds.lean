@@ -157,6 +157,9 @@ import IntegerMultBounds.Networks.DAGSupportTrace
 import IntegerMultBounds.Networks.SharedPointOutputLabels
 import IntegerMultBounds.Networks.Shared50Frames
 import IntegerMultBounds.Networks.DAGFramedExecution
+import IntegerMultBounds.Networks.DirtyLinearCircuit
+import IntegerMultBounds.Networks.Shared50Dirty
+import IntegerMultBounds.Networks.Shared50Invocation
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
