@@ -447,3 +447,4 @@ import IntegerMultBounds.Machine.SharedPlacementAlphabet
 import IntegerMultBounds.Machine.RadixLinearCombinationRefresh
 import IntegerMultBounds.Machine.FlatControlledShift
 import IntegerMultBounds.Machine.RadixLinearCombinationShared
+import IntegerMultBounds.Machine.RadixLinearCombinationBootstrap

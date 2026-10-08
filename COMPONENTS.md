@@ -403,6 +403,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixLinearCombinationShared.lean`: One physical program refreshes stale expression leaves from a shared bounded control bank, computes the rational expression, converts to canonical binary and restores arithmetic/converter scratch. Exact shared-control preservation and output descriptor; finite-bank wrapper needs no unbounded extra source tapes. Cost(13*leafCount+expressionConstant+40)*q^b for common new width b and stale widths at most b. Leaf sentinels/head-one remain prepared inputs and binary output starts blank; first-use bootstrap and recurring output reset separate.
 
+- `Machine/RadixLinearCombinationBootstrap.lean`: First-use canonical offset computation from genuinely blank expression/converter scratch. Actual finite marker installation precedes shared-source refresh, arithmetic and binary conversion; shared marked controls are preserved and final state is the exact shared-computation output. Bound(15*leafCount+expressionConstant+40)*q^b, with a finite control-bank wrapper. Source control words remain supplied; recurring binary-output reset and translation-bank composition are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
