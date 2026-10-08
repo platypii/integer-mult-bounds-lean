@@ -42,6 +42,7 @@ import IntegerMultBounds.Machine.Dispatch
 import IntegerMultBounds.Machine.CountedErase
 import IntegerMultBounds.Machine.ScratchReset
 import IntegerMultBounds.Machine.BlockReverseStreamReuse
+import IntegerMultBounds.Machine.BlockNegationReuse
 import IntegerMultBounds.Machine.OneHot
 import IntegerMultBounds.Machine.ScalingMergeData
 import IntegerMultBounds.Machine.ScalingSplit

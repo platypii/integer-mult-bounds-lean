@@ -224,6 +224,8 @@ Machine model, execution, composition, and tape routines.
 - `Machine/ScalingMerge.lean`: Literal fixed-coefficient FIFO merge via scanned-symbol dispatch, counted block copies and one-hot residue updates. Actual repeated execution writes the exact inverse-scaled payload, preserves source tapes, descriptors and modulus control, and clears both clocks. Prepared canonical descriptors and positive block width give at most fifty-one times volume plus twenty-three steps. Source heads initially at piece starts and residue banks are explicit prerequisites.
 - `Machine/ScalingPieceBridge.lean`: Exact representation bridge from flat literal split pieces to contiguous block streams consumed by the merge. Proves arbitrary uniform-block interval slicing and preserves every intra-block cell, including zero-width blocks and empty pieces. This is a representation equality, not a free tape move.
 
+- `Machine/BlockNegationReuse.lean`: Complete eight-tape, 202-state reusable coordinate negation: copy block zero, reverse the raw tail, physically rewind, reverse individual blocks with reusable controls, then erase and rewind scratch. Source/descriptors survive; both clocks and the entire initially blank scratch interval with its original head are restored. Canonical prepared descriptors and positive width give actual cost at most 210 times volume plus 219.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
