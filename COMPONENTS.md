@@ -1651,6 +1651,15 @@ Faster interchange of address chunks (§4).
   the retained source permutation `R` by coordinatewise units satisfies
   `F R = R⁻¹ F` for any roots, so `R F [(R F u)·(R F v)] = (∏ Nᵢ) (u ∗ v)(-k)`
   in the unnormalized convention. Costs are not here.
+- `NLogN/ResamplingPermutedNumeric.lean`: §7, Lemmas 7.1 and 7.2 with their
+  numerical maps. Tensoring the permutation-left identity gives
+  `R F_s = 2^γ ℬ₀ Q F_t 𝒜` in `d` dimensions with `R = ⊗ P_{sᵢ}`,
+  `Q = ⊗ P_{tᵢ}`, `𝒜 = ⊗ Aᵢ`, `ℬ₀ = ⊗ B₀ᵢ`, both tensors contractions. The
+  numerical `B̃₀ = D̃' J̃ C / 2` uses the explicit clamped `Ẽ` and no
+  permutation; the clamped explicit `Ã` and `B̃₀` approximate `A` and `B₀`
+  with scaled errors `(8m+7)/2` and `(24m+23)/2`, below `p²` for `m ≤ p`,
+  `p ≥ 13`, and the linewise tensors have errors `d` times these. Costs are
+  not here.
 
 ## Top-level
 

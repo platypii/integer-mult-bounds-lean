@@ -190,7 +190,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | `d`-dimensional resampling (Thm 4.1) | `ResamplingMulti` | ✅ | — | |
 | Truncation and Neumann errors (Lemmas 4.8–4.12) | `ResamplingApprox`, `OffDiagApprox`, `OffDiagApproxSqrt`, `NeumannApprox` | ✅ | — | Square-root windows as in the paper |
 | Numerical `Ã`, `B̃` (Prop 4.7(ii)) | `ResamplingNumeric`, `ResamplingMultiNumeric`, `ExplicitNumeric` | ✅ | ⬜ | Explicit maps with error below `p²` in one dimension and `d p²` in `d`, no side conditions |
-| Permutation-left variant | `ResamplingPermuted` | ✅ | ⬜ | `P_s F_s = 2^γ B₀ P_t F_t A`; weighted chirp for the retained frequency permutation; source permutation cancels in convolutions |
+| Permutation-left variant | `ResamplingPermuted`, `ResamplingPermutedNumeric` | ✅ | ⬜ | `P_s F_s = 2^γ B₀ P_t F_t A` in one and `d` dimensions with explicit clamped `Ã`, `B̃₀` of error below `p²` per coordinate; weighted chirp for the retained frequency permutation; source permutation cancels in convolutions |
 
 ## 8. `O(n log n)` subroutine (Harvey–van der Hoeven)
 
