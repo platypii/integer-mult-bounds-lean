@@ -233,6 +233,9 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NegationStream.lean`: Fixed ten-tape, 218-state repeated coordinate negation on uniform fibers. Exact payload is the flattened map of fiber negation; both payload heads advance full volume, and shared scratch with its head plus every descriptor and work clock are restored. Canonical prepared descriptors and positive fiber dimensions give actual runtime at most 442 times payload volume plus twenty-three.
 
+- `Machine/ScalingExecution.lean`: Complete literal positive-unit scaling through fixed-coefficient split, physical buffer rewinds and FIFO merge. A static placement shares actual buffers; source and descriptors survive and destination block c*y modulo Q is original block y. Tape count ten plus four times fixed coefficient and state count forty-eight times coefficient plus twenty-one are independent of Q and B. Prepared canonical descriptors and residue banks give cost at most seventy-five times volume plus forty-eight times coefficient plus twenty-five.
+- `Machine/ScalingBuffersReset.lean`: Literal fixed-family scratch cleanup after scaling. Each buffer is physically rewound, erased and rewound again; initially blank intervals and original heads are restored with source and control tapes preserved. Canonical piece descriptors give cost at most thirty-eight times total volume plus seventy-two times fixed piece count.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
