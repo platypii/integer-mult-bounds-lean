@@ -211,6 +211,9 @@ Machine model, execution, composition, and tape routines.
 - `Machine/BlockReverseStream.lean`: Fixed five-tape, fifty-seven-state counted repetition reverses each uniform block while preserving block order, source and prior output. Both heads advance the full volume and inner controls reset; canonical descriptors and positive width give actual runtime at most 119 times volume plus four. The outer count remains consumed.
 - `Machine/BlockNegation.lean`: Complete literal seven-tape, 141-state single-fiber coordinate negation. Copies block zero, reverses the raw tail onto scratch, physically rewinds scratch and reverses each popped block to restore internal payload order. All moves and three joins cost at most 200 times volume plus 128 for positive width and canonical descriptors. Full source and descriptor preservation are proved; dirty scratch and consumed outer count are explicitly tracked.
 
+- `Machine/Dispatch.lean`: Literal dispatch among a fixed finite family of programs using only scanned symbols. One stationary tape-preserving transition selects the branch, and exact execution, true halt and Hoare contracts add exactly one step to the selected body cost.
+- `Machine/ScalingMergeData.lean`: Sequential FIFO semantics for positive unit scaling. Prefix selection counts equal the inverse source offset within each contiguous piece; selected streams never underflow, all pieces are completely consumed and recursive head-pop merging gives the exact inverse-scaled payload. Pure semantics only; no tape runtime is asserted.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

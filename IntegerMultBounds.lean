@@ -37,6 +37,8 @@ import IntegerMultBounds.Machine.Reflection
 import IntegerMultBounds.Machine.CountedReverse
 import IntegerMultBounds.Machine.BlockNegationData
 import IntegerMultBounds.Machine.ScalingControl
+import IntegerMultBounds.Machine.Dispatch
+import IntegerMultBounds.Machine.ScalingMergeData
 import IntegerMultBounds.Machine.BlockRotationData
 import IntegerMultBounds.Machine.ScalingPieces
 import IntegerMultBounds.Machine.CountedCopyReuse
