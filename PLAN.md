@@ -45,6 +45,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Literal binary subtraction | `BinarySub` | ✅ | ✅ | Three tapes and two states; exact width runtime, modular difference and final borrow; equally padded operands required |
 | Binary operand padding | `BinaryPad` | ✅ | ✅ | Two tapes, one state, exact maximum-width runtime; values preserved; heads finish at common end |
 | Addition with operand preparation | `BinaryArithmetic` | ✅ | ✅ | Raw unequal widths; physical padding, rewind and addition with both joins; runtime ≤ three times maximum width plus five |
+| Literal fixed-radix modular addition and subtraction | `RadixDigits`, `RadixAdd`, `RadixSub` | ✅ | ✅ | Finite digit alphabet and two carry/borrow states, three tapes; exact width runtime and halt, canonical modular output and final carry/borrow, complete source preservation; equally padded operands required |
 | Leading-bit stable partition | `Partition`, `PartitionMarked` | ✅ | ✅ | Sentinel-marked variant composes |
 | Concatenation and record reinsertion | `Concatenate`, `Reinsert` | ✅ | ✅ | Source positioning is a precondition |
 | One complete radix pass | `PartitionPass` | ✅ | ✅ | Runtime `3·len + 8` |

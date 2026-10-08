@@ -17,6 +17,9 @@ import IntegerMultBounds.Machine.BitTape
 import IntegerMultBounds.Machine.CounterTape
 import IntegerMultBounds.Machine.BinaryAdd
 import IntegerMultBounds.Machine.BinarySub
+import IntegerMultBounds.Machine.RadixDigits
+import IntegerMultBounds.Machine.RadixAdd
+import IntegerMultBounds.Machine.RadixSub
 import IntegerMultBounds.Machine.BinaryPad
 import IntegerMultBounds.Machine.BinaryArithmetic
 import IntegerMultBounds.Machine.WordTape

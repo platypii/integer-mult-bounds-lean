@@ -161,6 +161,10 @@ Machine model, execution, composition, and tape routines.
   empty streams halt immediately. Initial marked buffers and unary width are
   explicit preconditions; their preparation is not charged by this theorem.
 
+- `Machine/RadixDigits.lean`: Fixed-radix digit alphabet, decoder and least-significant-first word value, with exact encoding/decoding and word-width bounds.
+- `Machine/RadixAdd.lean`: Literal three-tape, two-state fixed-radix modular addition. Exactly one transition per padded digit, actual halting, exact output remainder and final carry, with arbitrary tape backgrounds and complete source preservation.
+- `Machine/RadixSub.lean`: Literal three-tape, two-state fixed-radix subtraction. Exactly one transition per padded digit; canonical modular difference, final borrow and underflow, actual halting and complete source preservation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
