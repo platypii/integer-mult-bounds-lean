@@ -937,6 +937,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveDigitInterchangeClean.lean`: Fully initialized clean recursive base case: sole six canonical headers and array, width one, fixed q-dependent program. Exact digit-swapped array on original source with blank scratch, original headers retained, every private tape/tracker erased at zero, and explicit full linear-volume bound.
 
+- `Machine/RoleArrayMove.lean`: Physical destructive arbitrary-symbol transfer into a blank origin tape, with source and reusable clock erased and both heads reset. Exact spectator preservation; canonical positive count gives87*N runtime.
+
+- `Machine/RoleArrayCall.lean`: Actual inactive-role parking, active-role move into common child source, explicitly framed child execution, move back and reverse recovery. Exact whole-bank result changes only the active array under the child contract; overhead(180*roleCount+178)*N, including every join.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
