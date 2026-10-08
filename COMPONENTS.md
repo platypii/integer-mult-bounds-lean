@@ -361,6 +361,24 @@ Bit and complex networks.
   balance. The rational negative-source sign change has its actual rank proved
   in `ProjectionRank.lean`. Global loss enumeration remains separate.
 
+- `Networks/StageLabels.lean`: actual tensor associator/unit isometries
+  embed all three local motif geometries into the common tensor cube. X/Y
+  output labels equal the next-stage input labels, and terminal labels are
+  exactly the tensor line/zero and full space/orthogonal line complement.
+  Attaching these subspaces to the global physical group history remains separate.
+
+- `Networks/MotifSupport.lean`: actual sparse support lemmas identify each
+  side wire with its unique copy/injection owner. Both concrete motifs have
+  nonzero injection coefficients precisely at the owning target; central
+  incidence tests and invariance under coefficient negation are also proved.
+
+- `Networks/BinaryColumns.lean`: concrete slice operators on arrays indexed
+  by multiple binary columns. Distinct-column operations commute, and the
+  finite product regroups each forward/reverse edge into exactly one
+  all-column factor per residual direction. The factor count is the actual
+  dimension difference. Concrete residual unit witnesses, Gaussian-dyadic
+  arithmetic closure, and tape implementation remain separate.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.

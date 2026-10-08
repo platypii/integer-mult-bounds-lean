@@ -180,4 +180,4 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compile the finite network interfaces and their arithmetic to literal tape steps.
-- Start §4, the faster interchange of address chunks.
+- Prove the lower triangular factorization and the rational matrix shear of §4.

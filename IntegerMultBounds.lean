@@ -57,9 +57,12 @@ import IntegerMultBounds.Networks.TensorSubspace
 import IntegerMultBounds.Networks.TensorCoordinates
 import IntegerMultBounds.Networks.LabelTransport
 import IntegerMultBounds.Networks.BinaryWalsh
+import IntegerMultBounds.Networks.BinaryColumns
 import IntegerMultBounds.Networks.MotifLabels
 import IntegerMultBounds.Networks.RankTrace
 import IntegerMultBounds.Networks.GroupedFrames
+import IntegerMultBounds.Networks.StageLabels
+import IntegerMultBounds.Networks.MotifSupport
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits
