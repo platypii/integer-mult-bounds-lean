@@ -647,6 +647,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50InitializedSegments.lean`: Actual nonrecursive Shared50 field-program segments execute from sole b/W and payload with all private tapes blank. The fixed machine has exact field-program symbol transport and a setup-inclusive linear-volume bound; recursive interchanges and heterogeneous spectator layouts remain separate.
 
+- `Machine/RecursiveInterchangeLayout.lean`: Seven-factor recursive address descriptors preserve all spectators in physical order. Child regrouping has exactly the role-stream addresses and volume; row divisibility propagates to the next recursion depth, positivity and spectator bounds are proved. Physical row splitting, descriptor construction and recursive control are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
