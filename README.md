@@ -164,6 +164,12 @@ proof.
   `5 * 4^n * A * ε`, and the precision statement: `2n + 4 + log₂ A` fixed-point
   bits make the rounded perturbed pipeline return the exact integer vector
   whenever the exact pipeline is integral.
+- `NLogN/Pipeline.lean`: the complex FFT multiplier as a function on
+  `Fin (2^n)`: inversion of the naive transform, the convolution theorem on
+  `Fin`, and the proof that forward transform, pointwise product, inverse
+  transform, division by `2^n`, and rounding return exactly the product of two
+  digit lists. Exact arithmetic over `ℂ`; the fixed-point version is covered by
+  the error budget, and nothing is compiled to tapes.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
