@@ -26,6 +26,7 @@ import IntegerMultBounds.Machine.Protected
 import IntegerMultBounds.Machine.PartitionMarked
 import IntegerMultBounds.Machine.Concatenate
 import IntegerMultBounds.Machine.Reinsert
+import IntegerMultBounds.Machine.PartitionPass
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples
@@ -77,3 +78,4 @@ import IntegerMultBounds.NLogN.OffDiagApprox
 import IntegerMultBounds.NLogN.SynthEmbed
 import IntegerMultBounds.NLogN.SynthConvApprox
 import IntegerMultBounds.NLogN.ResamplingMulti
+import IntegerMultBounds.NLogN.SynthMultiD

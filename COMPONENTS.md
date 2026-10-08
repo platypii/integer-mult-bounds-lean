@@ -55,7 +55,7 @@ Machine model, execution, composition, and tape routines.
   destination tapes, and cells outside both segments are tracked in the time
   contract. Copying onto a blank tape gives the exact global blank-tail output
   representation. These routines are ingredients for record-stream processing;
-  record extraction and radix sorting are not yet implemented.
+  complete radix sorting is not yet implemented.
 - `Machine/Partition.lean`: a concrete three-tape, three-state stable partition
   of delimiter-separated records by their leading key bit. The outputs are
   proved to be the encoded original-order filtered lists; the source is
@@ -69,7 +69,7 @@ Machine model, execution, composition, and tape routines.
   equal-key subsequence preservation, and a key-width-times-volume identity.
   The concrete partition's two outputs concatenate to precisely one such pass,
   with their total volume equal to its actual transition count. Full tape
-  sorting still needs key selection, output concatenation, and a controller;
+  sorting still needs subsequent key selection, buffer reuse, and a controller;
   the list traversal volume is not claimed as that implementation's runtime.
 
 - `Machine/PartitionMarked.lean`: a five-symbol version of the literal
@@ -89,6 +89,14 @@ Machine model, execution, composition, and tape routines.
   repair. Computing those replacements and sorting them into destination order
   still require separate machine proofs.
 
+- `Machine/PartitionPass.lean`: a fixed four-tape, nine-state, five-symbol
+  leading-bit stable pass, composing partition, both bucket resets, and
+  concatenation. Its exact runtime is three times encoded input length plus
+  eight, including every head movement and phase join. Complete output is
+  the list radix sort's stable pass. The precondition supplies left sentinels
+  and empty work/output tapes; setup, repeated key selection, and full sorting
+  remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -97,8 +105,9 @@ Compact packed controls, repair, and density bounds.
   permutation, preservation of the actual guard predicate, and executable
   destination repair connected to both concrete packed programs. Correctness
   holds for every address, including saturated temporary digits and failed
-  guards. These prove address semantics; extracting, sorting, and reinserting
-  records on fixed tapes remain open.
+  guards. These prove address semantics. Tape partition and reinsertion
+  primitives are proved separately; computing record keys, full sorting, and
+  assembling the complete repair pipeline remain open.
 - `Compact/Permutations.lean`: modular rotations as actual permutations,
   restoration of an arbitrary back field by swap/load/swap, and invertibility
   of both packed programs on every address, including bad addresses. The
@@ -409,6 +418,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   tensor of the one-dimensional ones; hence for coordinatewise coprime
   `s_i < t_i`, `α ≥ 1`, and `α²θ_i ≥ 1`, `F_s = 2^(dγ) · B ∘ F_t ∘ A` with
   `‖A‖, ‖B‖ ≤ 1`.
+- `NLogN/SynthMultiD.lean`: the `d`-dimensional synthetic transform over
+  the coefficient-form synthetic ring: coordinate splitting into a
+  one-dimensional transform of lower-dimensional ones, the convolution
+  theorem for any lengths dividing `2r`, orthogonality and inversion up to
+  `1/∏ N_i` for power-of-two lengths, and contraction bounds for both
+  directions.
 
 ## Top-level
 
