@@ -400,3 +400,4 @@ import IntegerMultBounds.Machine.TranslationExecutionReuse
 import IntegerMultBounds.Machine.TranslationStream
 import IntegerMultBounds.Machine.TranslationPreparedFamily
 import IntegerMultBounds.Machine.SignedScalingDimensions
+import IntegerMultBounds.Machine.RadixToBinaryData
