@@ -698,6 +698,44 @@ Bit and complex networks.
   is unconditionally correct with exactly 1,176 inputs and outputs. Active
   addition, global sharing and physical role counts remain separate.
 
+- `Networks/DisjointUnique.lean`: exact lookup absence, interning allocation
+  branches and support uniqueness through smart addition and balanced totals.
+  Valid DAG supports are nonempty; nonzero disjoint additions contain at least
+  two sources, and equal supports identify valid references in a unique DAG.
+
+- `Networks/PairedUnique.lean`: every literal paired constructor and the full
+  recursive block preserve support uniqueness. Together with validity, this
+  proves unique nonempty supports for the concrete 49-vertex local circuit.
+
+- `Networks/DuplicateBudget.lean`: deleting one endpoint of each disjoint
+  equal-support match preserves represented supports and saves a node. A
+  nontrivial triple sum has at most two common vertices. Concrete domain and
+  witness counts are required to instantiate the optimized numerical bound.
+
+- `Networks/SharedPointMatching.lean`: in actual common-point copy families,
+  a genuine ordered equal-support pair has exactly its two owners as common
+  vertices. Per-copy uniqueness forces distinct discarded endpoints and
+  excludes left/right overlap, discharging those counting prerequisites.
+
+- `Networks/MaskDAG.lean`: executable bitmask DAG certificate checkers prove
+  actual disjoint-support validity and evaluation semantics. A static balanced
+  bank permits independent indexed chunks, checking its own annotations and
+  all backward references; acceptance uses ordinary kernel reduction.
+
+- `Networks/MaskSignature.lean`: checked small-mask core/union annotations
+  equal the intersection and union of actual source endpoint sets. Inputs
+  use their source endpoints; additions intersect cores and union vertices.
+  Chunk composition and bank semantics avoid rescanning dense source masks.
+
+- `Networks/MaskUnique.lean`: a checked strictly increasing list of masks
+  with bounded, bank-verified node identifiers proves identifier uniqueness
+  and coverage, then bank injectivity and unique actual DAG supports.
+
+- `Networks/PairMask.lean`: canonical pair indexing and incident/exclusion
+  bitmasks encode exactly the original pairs avoiding specified vertices.
+  Decoded masks and weighted sums agree with actual canonical pair queries;
+  the 49-vertex specialization supplies the certificate output interface.
+
 - `Networks/ReversibleFanout.lean`: literal binary gate lists gather a sum
   into a pivot and fan it out. Full dirty-state semantics, reverse-list
   inversion, spectator preservation, exact instruction counts and support

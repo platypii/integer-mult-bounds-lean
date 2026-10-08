@@ -120,6 +120,14 @@ import IntegerMultBounds.Networks.PairedReconstructionSupport
 import IntegerMultBounds.Networks.PairedReconstructionKeys
 import IntegerMultBounds.Networks.PairedBlockCorrect
 import IntegerMultBounds.Networks.PairedInitialGraph
+import IntegerMultBounds.Networks.DisjointUnique
+import IntegerMultBounds.Networks.PairedUnique
+import IntegerMultBounds.Networks.DuplicateBudget
+import IntegerMultBounds.Networks.SharedPointMatching
+import IntegerMultBounds.Networks.MaskDAG
+import IntegerMultBounds.Networks.MaskSignature
+import IntegerMultBounds.Networks.MaskUnique
+import IntegerMultBounds.Networks.PairMask
 import IntegerMultBounds.Networks.ReversibleFanout
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
