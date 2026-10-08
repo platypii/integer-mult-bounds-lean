@@ -127,6 +127,18 @@ Bit and complex networks.
   and the common-frame linear-gate identity. Sparse network realization,
   residual bases, endpoint corrections, and tape compilation remain open.
 
+- `Networks/Circuit.lean`: executable finite linear register updates and matrix
+  blocks, the full eight-row dirty-scratch schedule, its reversed inverse, and
+  exact instruction counts. Arbitrary scratch and spectator registers are
+  restored. A register update may read many terms: these instruction counts
+  are neither sparse wire counts nor tape runtimes.
+- `Networks/CircuitTriples.lean`: explicit copy, injection, gather, and scatter
+  matrices for the complex motif, with neighboring-pair coefficient identities
+  and the resulting executable shear over rational scalars. Finite wire
+  enumerations and injective three-element labels parameterize the construction;
+  concrete cardinalities, residual rank savings, Gaussian-dyadic values, and
+  tape compilation remain open.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.
@@ -329,6 +341,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   norm at most two; and for `s < t` coprime, `α ≥ 1`, and `α²θ ≥ 1`, the
   length-`s` transform factors as `2^(2⌈α²⌉ + 2) · B ∘ F_t ∘ A` with explicit
   `A = S/2`, `B = P_s⁻¹ D J C P_t / 2^(γ−1)`, and `‖A‖, ‖B‖ ≤ 1`.
+- `NLogN/SynthConv.lean`: the synthetic ring in coefficient form is an
+  associative, commutative, unital algebra on which powers of `y` act by
+  shifts; the synthetic transform of a cyclic convolution of ring-valued
+  vectors is `t` times the pointwise negacyclic product of the transforms,
+  for any `t ∣ 2r`; and for `t` a power of two the inverse transform
+  recovers the input up to `1/t`, by the half-period cancellation.
 
 ## Top-level
 

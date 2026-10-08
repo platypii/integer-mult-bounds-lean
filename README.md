@@ -32,7 +32,7 @@ the literal machine model is proved correct with a runtime bound.
 | --- | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ | ✅ | — |
 | Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 | Scan, copy, counters, and a stable record-partition pass are proved; array-order scans and stream scheduling remain open |
-| Finite networks with a rank saving | §3 | 🟡 | ⬜ | Residual spaces, sparse wire counts, rational and phase interfaces |
+| Finite networks with a rank saving | §3 | 🟡 | ⬜ | Executable dirty-scratch circuits and rational motif coefficients are proved; residual spaces, sparse wire counts, and phase interfaces remain open |
 | Faster interchange of address chunks | §4 | ⬜ | ⬜ | Not started |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; extracting, sorting, and reinserting records on tapes is open |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ | Synthetic ring, principal roots, and Bluestein are proved; layout and costs are open |

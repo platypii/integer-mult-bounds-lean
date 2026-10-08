@@ -24,6 +24,8 @@ import IntegerMultBounds.Machine.Rewind
 import IntegerMultBounds.Machine.Alphabet
 import IntegerMultBounds.Machine.Protected
 import IntegerMultBounds.Networks.Scalar
+import IntegerMultBounds.Networks.Circuit
+import IntegerMultBounds.Networks.CircuitTriples
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal
 import IntegerMultBounds.Compact.ExactRepair
@@ -64,3 +66,4 @@ import IntegerMultBounds.NLogN.ResamplingCLM
 import IntegerMultBounds.NLogN.NeumannApprox
 import IntegerMultBounds.NLogN.ResamplingApprox
 import IntegerMultBounds.NLogN.ResamplingAssembly
+import IntegerMultBounds.NLogN.SynthConv
