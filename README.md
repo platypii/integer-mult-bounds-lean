@@ -23,6 +23,26 @@ analytic components are formalized and checked. See
 [COMPONENTS.md](COMPONENTS.md) for a file-by-file summary of what each
 component proves and what it leaves open.
 
+Rows follow the sections of the OpenAI manuscript, plus the Harvey–van der
+Hoeven `O(n log n)` multiplier it uses as a subroutine. *Mathematics* means the
+statements the algorithm relies on are proved in Lean. *Tape* means a program in
+the literal machine model is proved correct with a runtime bound.
+
+| Part of the proof | Source | Mathematics | Tape | Main gaps |
+| --- | --- | --- | --- | --- |
+| Machine model and target statement | §2 | ✅ | ✅ | — |
+| Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 | Array-order scans and stream scheduling; only scan, copy, and counter routines exist |
+| Finite networks with a rank saving | §3 | 🟡 | ⬜ | Residual spaces, sparse wire counts, rational and phase interfaces |
+| Faster interchange of address chunks | §4 | ⬜ | ⬜ | Not started |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; extracting, sorting, and reinserting records on tapes is open |
+| Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ | Synthetic ring, principal roots, and Bluestein are proved; layout and costs are open |
+| Gaussian resampling | §7 | 🟡 | ⬜ | Resampling identity is proved; left inverse, `‖E‖ < 1`, and the permutation-left variant are open |
+| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ | Transforms, fixed-point errors, steps 1 and 3 of the recursion, and the abstract recurrence are proved; step 2 and bit costs are open |
+| Exact multiplication, parameters, time bound | §8 | 🟡 | ⬜ | Parameter margins, asymptotics, and prime existence are proved; short-interval primes and the complete time bound are open |
+| End-to-end theorem `EndToEnd` | — | ⬜ | ⬜ | Requires every row above |
+
+✅ done · 🟡 partial · ⬜ not started
+
 ## Remaining obligations
 
 The target still requires an explicit multiplication program and proofs of its
