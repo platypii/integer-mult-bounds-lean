@@ -74,6 +74,12 @@ import IntegerMultBounds.Networks.GaussianCircuit
 import IntegerMultBounds.Networks.GaussianPrecision
 import IntegerMultBounds.Networks.LabeledMotif
 import IntegerMultBounds.Networks.SignedProjection
+import IntegerMultBounds.Networks.GlobalLabels
+import IntegerMultBounds.Networks.GlobalLabelsNondegenerate
+import IntegerMultBounds.Networks.GlobalLabelsResiduals
+import IntegerMultBounds.Networks.GlobalRank
+import IntegerMultBounds.Networks.NetworkBudget
+import IntegerMultBounds.Networks.SharedPointLabels
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits
