@@ -948,6 +948,21 @@ Bit and complex networks.
   scratch. Exact list accounting gives at most 3 × 19,600² × 5,209,540 scalar
   instructions. Projector-rank history and tape costs remain separate.
 
+- `Networks/FramedEmbedding.lean`: injective placement preserves actual
+  frame/scalar instructions, scalar erasure and complete module execution.
+  Full-register frame identities include exact preservation of all spectators.
+- `Networks/BoundedFramedCircuit.lean`: checked restriction of physical
+  frame-edge and scalar instructions to a finite bank, preserving module
+  execution, scalar erasure and full decode/execute/encode identities.
+- `Networks/Shared50FiniteFramed.lean`: actual finite forward and complementary
+  inverse physical schedules on 509,194 registers. Every declared incidence,
+  including scalar-empty pivots, has a proved bound; scalar erasure is exactly
+  the certified finite program or its reverse. Identities hold on arbitrary
+  module contents with no initialized-scratch premise.
+- `Networks/Shared50FiniteReverseTrace.lean`: complementary reverse updates
+  introduce no new roles; finite restriction after any stage-label lift retains
+  the exact endpoints and complete ordered edge list without filtering.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.

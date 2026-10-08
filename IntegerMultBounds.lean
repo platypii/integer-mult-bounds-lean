@@ -178,6 +178,10 @@ import IntegerMultBounds.Networks.Shared50SparseInvocation
 import IntegerMultBounds.Shared50Parameters
 import IntegerMultBounds.Networks.Shared50GlobalBudget
 import IntegerMultBounds.Networks.Shared50GlobalCircuit
+import IntegerMultBounds.Networks.BoundedFramedCircuit
+import IntegerMultBounds.Networks.Shared50FiniteFramed
+import IntegerMultBounds.Networks.Shared50FiniteReverseTrace
+import IntegerMultBounds.Networks.FramedEmbedding
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
