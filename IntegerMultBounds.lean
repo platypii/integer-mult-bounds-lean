@@ -98,3 +98,4 @@ import IntegerMultBounds.NLogN.SynthConvApproxD
 import IntegerMultBounds.NLogN.Clamp
 import IntegerMultBounds.NLogN.PowerOfTwoNumeric
 import IntegerMultBounds.NLogN.PowerOfTwoExactD
+import IntegerMultBounds.NLogN.MainTransform

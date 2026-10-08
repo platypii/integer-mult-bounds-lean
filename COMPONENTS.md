@@ -545,6 +545,16 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   additive isomorphism, the normalized complex transform is a chirp
   multiplication, the untwisted `d`-dimensional synthetic pipeline over the
   ring of dimension `t_{d+1}`, and another chirp multiplication.
+- `NLogN/MainTransform.lean`: Proposition 5.2 of the paper and its use in
+  the recursive step. The scaled composition of the numerical resampling
+  tensors with a numerical power-of-two transform approximates the
+  prime-grid transform with error `2^γ (d εB + εFt + d εA)`, which the
+  parameter choices bound by `2^(γ+4) T log₂ T` using `d p² ≤ 4 T log₂ T`;
+  the index-negated version approximates the inverse; radial shrinking keeps
+  outputs in the unit ball at the cost of a factor two; and the recursive
+  step returns the exact product with only the power-of-two transform, the
+  per-coordinate resampling maps, and the prime-choice condition as
+  hypotheses.
 
 ## Top-level
 
