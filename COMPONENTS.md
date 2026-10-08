@@ -458,6 +458,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatAffineScalingNormalize.lean`: Attaches physical three-pass payload normalization to the actual scaling output using existing B/Q/P descriptors and clocks. Exact original source/destination slots, retained complementary metadata, restored scratch and heads, and scaled symbols on common input. Full bound (2064+120*(abs numerator+denominator))*volume+252. Prepared scaling input remains explicit; blank-workspace wrapper and schedule composition separate.
 
+- `Machine/MultiControlPrefixTranslationBootstrap.lean`: Complete equal-width multi-control prefix stream from wholly blank writable arithmetic, translation and outer-clock workspace. Physically creates metadata markers/spare position and evaluates the shared expression before running the counter-driven stream; exact full-bank output and bound (28*leaves+2*expressionConstant+552+4*c)*volume+26. Actual marked initial radix controls and canonical B/Q/count descriptors remain supplied; field initialization is separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

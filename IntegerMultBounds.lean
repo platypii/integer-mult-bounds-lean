@@ -470,3 +470,4 @@ import IntegerMultBounds.Machine.MultiControlPrefixTranslationExecution
 import IntegerMultBounds.Machine.MultiControlPrefixTranslationStream
 import IntegerMultBounds.Machine.InjectivePlacement
 import IntegerMultBounds.Machine.FlatAffineScalingNormalize
+import IntegerMultBounds.Machine.MultiControlPrefixTranslationBootstrap
