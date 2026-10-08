@@ -38,6 +38,8 @@ import IntegerMultBounds.Networks.Wires
 import IntegerMultBounds.Networks.TensorLabels
 import IntegerMultBounds.Networks.ProjectionRank
 import IntegerMultBounds.Networks.FramedCircuit
+import IntegerMultBounds.Networks.GlobalCircuit
+import IntegerMultBounds.Networks.GlobalCircuitBits
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal
 import IntegerMultBounds.Compact.ExactRepair

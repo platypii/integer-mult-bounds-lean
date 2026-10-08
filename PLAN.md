@@ -61,7 +61,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Degree-one label spaces | `Labels` | ✅ | — | Rational form nondegenerate for size ≠ 9 |
 | Tensor-cube label spaces | `TensorLabels` | ✅ | — | Nondegeneracy, dimension, terminal line/complement decomposition |
 | Framed circuit compilation | `FramedCircuit` | ✅ | ⬜ | Full finite-circuit common-frame identity, including spectators; exact operators |
-| Global circuit with per-invocation scratch | `GlobalCircuit` 🚧 | 🟡 | ⬜ | Embedding and single-invocation effect |
+| Global circuit with per-invocation scratch | `GlobalCircuit`, `GlobalCircuitBits` | ✅ | ⬜ | Complete three-coordinate scalar schedule and restoration; grouped topology separate |
 | Full labeled schedule | — | ⬜ | ⬜ | |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
 | Residual rank saving | — | ⬜ | — | Nested gate labels, total saving |
@@ -150,7 +150,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 ## Next steps
 
-- Finish and import the drafted key-selection and global-circuit files.
+- Finish and import the drafted key-selection files, then remove temporary flags and reuse tape buffers.
 - Construct sparse grouped gates and nested labels before assembling the residual-rank budget.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.

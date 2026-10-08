@@ -220,6 +220,15 @@ Bit and complex networks.
   source projection, whose rank is exactly the source-label dimension. The network
   must still construct its comparable gate labels and sum these edge ranks.
 
+- `Networks/GlobalCircuit.lean` and `Networks/GlobalCircuitBits.lean`: the
+  full three-coordinate scalar schedule runs on the actual named wire layout,
+  with separate arbitrary scratch for every invocation in every stage. Finite
+  gate embedding and complete invocation enumeration prove global signed
+  exchange over rational values and true exchange over binary values, with all
+  scratch restored and exact elementary instruction counts. The dense row
+  lists prove scalar semantics; grouped sparse incidence topology, Gaussian-
+  dyadic scalar extension, and labeled rank/tape bounds remain separate.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.
