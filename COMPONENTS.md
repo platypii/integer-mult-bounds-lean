@@ -256,6 +256,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   rounded pointwise products, the Bluestein pipeline approximates the
   normalized transform with scaled error at most `εM + 3 εa + 4`. The
   normalized convolution is bounded and bilinear on unit balls.
+- `NLogN/Section5Approx.lean`: the error bookkeeping of the paper's
+  Propositions 5.2 and 5.3: a three-fold composition of unit-norm maps has
+  the sum of the errors, scaling by a natural number scales the error, so a
+  transform factored as `2^γ B F A` is approximated with error
+  `2^γ (εB + εF + εA)`; and the forward, rounded pointwise, inverse
+  convolution has error `εI + 2 εF + 2`, scaled by the length.
 
 ## Top-level
 

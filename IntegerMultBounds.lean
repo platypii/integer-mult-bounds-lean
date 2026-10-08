@@ -50,3 +50,4 @@ import IntegerMultBounds.NLogN.MainParams
 import IntegerMultBounds.NLogN.ResamplingNorm
 import IntegerMultBounds.NLogN.TensorApprox
 import IntegerMultBounds.NLogN.BluesteinApprox
+import IntegerMultBounds.NLogN.Section5Approx
