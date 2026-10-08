@@ -1631,6 +1631,16 @@ Faster interchange of address chunks (§4).
   cost bounded by one full step on the same grids and moduli with concrete
   small-product and weight-evaluation costs, plus linear overhead, is
   `O(n log n)`. Tape steps are not modeled.
+- `NLogN/ResamplingPermuted.lean`: §7, resampling with the permutations left
+  in the transform. From the explicit factorization `F_s = 2^γ B F_t A` with
+  `B = P_s⁻¹ D J C P_t`, moving `P_s` to the left gives the exact identity
+  `P_s F_s = 2^γ B₀ P_t F_t A` with `B₀ = D J C / 2^(γ-1)` and `‖B₀‖ ≤ 1`, so
+  neither coordinate permutation is executed. The retained frequency
+  permutation `Q : j ↦ (-sᵢ jᵢ)ᵢ` of the `d`-dimensional even-length transform
+  is a chirp identity with the weighted chirp `exp(π i Σ sᵢ jᵢ² / tᵢ)`, and
+  the retained source permutation `R` by coordinatewise units satisfies
+  `F R = R⁻¹ F` for any roots, so `R F [(R F u)·(R F v)] = (∏ Nᵢ) (u ∗ v)(-k)`
+  in the unnormalized convention. Costs are not here.
 
 ## Top-level
 
