@@ -192,6 +192,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedRotate.lean`: Literal six-tape, sixty-four-state raw cyclic rotation: seek past a prefix, copy the suffix, seek backwards over the total block, and copy the prefix. The source and three immutable descriptors are preserved and the clock is restored. Exact single-fiber controlled-shift semantics follow from block payload indexing; all seeks, clock setup/cleanup and joins cost at most fifteen times volume plus descriptor-width terms. Descriptor synthesis and multi-fiber scheduling remain open.
 
+- `Machine/CountedLoop.lean`: A fixed finite-state binary-counted body loop with a dedicated final clock tape. Actual Hoare chains with varying body costs execute in their summed costs plus at most six times the iteration count, twice the clock width and two. All decrement scans, returns, body joins and terminal underflow are charged; the clock finishes all ones. Preparation and cleanup remain explicit.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
