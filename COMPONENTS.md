@@ -1143,6 +1143,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveNodePieces.lean`: Actual segment/gate/child array fold equals the exact node networkData on every cell, assuming only the explicit selected-coordinate ChildSpec. Physical exit accepts this fold output and returns parent transpose. Establishing ChildSpec from actual recursive machine execution remains open.
 
+- `Machine/Shared50RecursiveRoot.lean`: Actual root header/sentinel initialization equals the existing savedStacks call frame on the global bank. Charged setup, preserved free suffixes and linear-volume setup bound; its root composition rule still requires the graph body.
+
+- `Machine/Shared50RecursiveBaseExecution.lean`: Complete width-one execution of the actual fixed root program: root frame setup, guard, digit interchange, occupied-header restoration, real PC decode/return edge and final halt. Exact transformed stream, all spectator banks/stacks restored and fixed-coefficient linear logical-volume runtime; recursive widths remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
