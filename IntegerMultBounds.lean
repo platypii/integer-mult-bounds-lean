@@ -225,6 +225,7 @@ import IntegerMultBounds.Networks.Shared50SignedFramed
 import IntegerMultBounds.Networks.Shared50ModularExecution
 import IntegerMultBounds.Networks.Shared50ModularControl
 import IntegerMultBounds.Networks.Shared50FiniteInterchange
+import IntegerMultBounds.Networks.Shared50CoefficientMachines
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
