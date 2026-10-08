@@ -46,6 +46,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Ordered-affine payload semantics | `BlockRotationData`, `BlockNegationData`, `ScalingPieces`, `ScalingControl` | ✅ | ⬜ | Exact block-shift and negation payload indices, flat split and reversal recipe; unique scaling-piece merge, inverse reconstruction, monotone streams, fixed residue selection and exact contiguous piece lengths. Literal split/merge scheduling remains open |
 | Literal single-fiber controlled block shift | `CountedRotate` | ✅ | ✅ | Six tapes, sixty-four states; exact shifted payload with source/descriptor preservation and empty final clock. All moves and joins bounded by fifteen times payload volume plus descriptor widths; descriptor synthesis and multi-fiber scheduling remain open |
 | Repeated common-offset fiber shifts | `CountedRotateAdvance`, `WordSegments`, `FiberShift` | ✅ | ✅ | Fixed seven-tape controller, source preservation, heads advance full volume, inner controls restored. Actual time at most 177 times volume plus four for canonical prepared descriptors and nonempty fibers; varying offsets and outer clock setup/cleanup remain open |
+| Literal block-preserving coordinate negation | `BlockReverseAdvance`, `BlockReverseStream`, `BlockNegation` | ✅ | ✅ | Full first-block-preserving negation through two actual reversals; runtime at most 200 times volume plus 128. Source/descriptors preserved, dirty scratch and consumed outer count tracked; repetition and their cleanup remain separate |
 | Reusable fiber shifts with full clock cleanup | `CountedLoopReuse`, `FiberShiftReuse`, `FiberShiftAddress` | ✅ | ✅ | Literal outer-clock preparation/erasure and immutable descriptor preservation. Repeated common-offset target-coordinate translation has actual cost at most 182 times volume plus twenty-three; derived descriptors and varying offsets remain open |
 | Actual scalar-affine physical schedules | `AffineFieldProgram`, `Shared50AffineControl` | ✅ | ⬜ | Fixed rational expanded schedules specialize at every width, preserve every physical edge and exact recursive call count, and have proved diagonal-unit legality. Tape routines and scheduling remain open |
 | Canonical length descriptor bootstrap | `GrowingCounterData`, `GrowingCounter`, `BinaryLength`, `BinaryLengthInit` | ✅ | ✅ | Growing counter needs no preset width; blank-work-tape setup and source scanning cost at most eight times source length plus two. Includes standard multiplication input; nonblank source segment required |
@@ -231,7 +232,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 ## Next steps
 
-- Extend common-offset fiber shifts to computed varying offsets; build unit-scaling split/merge and block-preserving negation, charging descriptor arithmetic and outer-control cleanup.
+- Extend common-offset fiber shifts to computed varying offsets; build positive unit-scaling split/merge and reusable negation, charging derived descriptor arithmetic and scratch/control cleanup.
 
 - Prepare sorting metadata and compute repair keys, then compose extraction, sorting and reinsertion.
 - Compile the proved optimized h=50 modular physical network and its fixed rational control schedule to literal tape execution and prove its recursive time bound.

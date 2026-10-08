@@ -44,6 +44,9 @@ import IntegerMultBounds.Machine.CountedRotate
 import IntegerMultBounds.Machine.CountedRotateAdvance
 import IntegerMultBounds.Machine.WordSegments
 import IntegerMultBounds.Machine.FiberShift
+import IntegerMultBounds.Machine.BlockReverseAdvance
+import IntegerMultBounds.Machine.BlockReverseStream
+import IntegerMultBounds.Machine.BlockNegation
 import IntegerMultBounds.Machine.CountedLoopReuse
 import IntegerMultBounds.Machine.FiberShiftReuse
 import IntegerMultBounds.Machine.FiberShiftAddress
