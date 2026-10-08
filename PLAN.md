@@ -46,6 +46,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | One complete radix pass | `PartitionPass` | ✅ | ✅ | Runtime `3·len + 8` |
 | Radix sort (list level) | `RadixSort`, `PartitionSort` | ✅ | — | Stable LSB sort, volume identity |
 | Key-bit selection for later passes | `KeySelectData`, `KeySelect` | ✅ | ✅ | Unary tape selects arbitrary valid index; exact runtime ≤ three input volumes |
+| Flag removal and source erasure | `DropFlag` | ✅ | ✅ | Exact flagged volume; arbitrary records; restores empty marked source |
 | Full tape radix sort | — | — | ⬜ | Needs composed flag removal, buffer reuse, controller |
 | Terminating stream scheduler | — | ⬜ | ⬜ | Counters prove finite-prefix execution only |
 
@@ -62,9 +63,12 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Tensor-cube label spaces | `TensorLabels` | ✅ | — | Nondegeneracy, dimension, terminal line/complement decomposition |
 | Framed circuit compilation | `FramedCircuit` | ✅ | ⬜ | Full finite-circuit common-frame identity, including spectators; exact operators |
 | Global circuit with per-invocation scratch | `GlobalCircuit`, `GlobalCircuitBits` | ✅ | ⬜ | Complete three-coordinate scalar schedule and restoration; grouped topology separate |
+| Sparse grouped motif gates | `GroupedCircuit` | ✅ | ⬜ | Exact support, eight-row semantics and framed refinement; full grouped exchange separate |
+| Binary orthonormalization | `BinaryOrthonormal` | ✅ | — | Nonalternating nondegenerate forms; concrete residual witnesses remain open |
 | Full labeled schedule | — | ⬜ | ⬜ | |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
 | Residual rank saving | — | ⬜ | — | Nested gate labels, total saving |
+| Rational address-shear interface | `ProjectionRank`, `ShearFrame` | 🟡 | ⬜ | Projection ranks and exact endpoint/frame identities; finite-radix realization and total budget open |
 | Phase interfaces and tape compilation | — | ⬜ | ⬜ | |
 
 ## 4. Faster interchange of address chunks (§4)
@@ -151,7 +155,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 ## Next steps
 
 - Compose key selection, partition, and flag removal; implement buffer reuse and the full sorting controller.
-- Construct sparse grouped gates and nested labels before assembling the residual-rank budget.
+- Extend sparse grouped motifs to the full exchange and construct nested labels before assembling the residual-rank budget.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Build the full tape radix sort from `PartitionPass` and key selection.

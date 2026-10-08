@@ -29,6 +29,7 @@ import IntegerMultBounds.Machine.Reinsert
 import IntegerMultBounds.Machine.PartitionPass
 import IntegerMultBounds.Machine.KeySelectData
 import IntegerMultBounds.Machine.KeySelect
+import IntegerMultBounds.Machine.DropFlag
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples
@@ -39,6 +40,9 @@ import IntegerMultBounds.Networks.NeighborCounts
 import IntegerMultBounds.Networks.Wires
 import IntegerMultBounds.Networks.TensorLabels
 import IntegerMultBounds.Networks.ProjectionRank
+import IntegerMultBounds.Networks.ShearFrame
+import IntegerMultBounds.Networks.BinaryOrthonormal
+import IntegerMultBounds.Networks.GroupedCircuit
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits

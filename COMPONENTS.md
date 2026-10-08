@@ -105,6 +105,12 @@ Machine model, execution, composition, and tape routines.
   volume for valid positions. Output is proved to match the partition format;
   repeated-pass control, flag removal, and buffer reuse remain to be composed.
 
+- `Machine/DropFlag.lean`: a fixed two-tape, two-state routine removes the
+  leading flag of arbitrary records in exactly their flagged encoded length.
+  Optional source erasure restores a completely empty marked buffer while
+  preserving its sentinel; output, untouched cells, endpoint heads, and halting
+  are proved. Selection followed by flag removal restores the original records.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -236,6 +242,26 @@ Bit and complex networks.
   scratch restored and exact elementary instruction counts. The dense row
   lists prove scalar semantics; grouped sparse incidence topology, Gaussian-
   dyadic scalar extension, and labeled rank/tape bounds remain separate.
+
+- `Networks/ShearFrame.lean`: exact address-shear permutations and linear
+  frames on arrays, with independent address and value rings. Composition
+  adds matrices, edge changes subtract matrices, and the routed complementary
+  projector endpoints give the full identity-matrix shear. Finite-radix
+  encoding, denominator reduction, and rank-dependent tape execution remain
+  open.
+
+- `Networks/BinaryOrthonormal.lean`: every finite-dimensional symmetric,
+  nondegenerate, nonalternating form over the binary field has an orthonormal
+  basis indexed by its dimension. Explicit absorption of a hyperbolic plane
+  into a unit line supports dimension induction. Concrete residual spaces
+  still need their nonalternation witnesses.
+
+- `Networks/GroupedCircuit.lean`: sparse simultaneous groups with read/write
+  separation refine to elementary circuits, with exact nonzero wire supports.
+  The eight motif rows use source-owned copy groups, target-owned injections,
+  and single central groups; their bit and rational dirty-shear semantics and
+  group count are proved. Framed compilation aligns each group once. Full
+  grouped exchange topology and the labeled rank budget remain separate.
 
 ## NLogN
 
