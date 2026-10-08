@@ -596,6 +596,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ControlledShiftDimensionInstall.lean`: Actual three-copy program installs B/Q/P from the retained nine-tape dimension bank into the controlled-shift suffix, starting each destination blank. Exact full-bank contract preserves dimensions and payload, with cost2*(length B+length Q+length P)+17 including joins.
 
+- `Machine/FlatCoordinateShiftFromDimensions.lean`: Complete actual earlier-control shift from sole canonical exponent/record-width descriptors and payload, with all generated storage blank. Physically builds dimensions, installs prefix widths and B/Q/P, executes normalized shift, retains exact dimension bank and canonical transformed array. One dimension-independent machine has explicit linear common-volume bound charging all setup, scans and joins.
+
+- `Machine/FlatCoordinateShiftInput.lean`: Exact initial common-payload contract and payload-independent private metadata for fully synthesized shift. Proves distinct physical payload slots and literal blank workspace at every slot except the sole exponent/record-width inputs and original payload. Supplies initialized-stage assembly contracts.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
