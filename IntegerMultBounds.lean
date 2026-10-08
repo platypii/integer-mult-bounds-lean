@@ -432,3 +432,4 @@ import IntegerMultBounds.Machine.RationalTranslationAffineBridge
 import IntegerMultBounds.Machine.RadixZeroFill
 import IntegerMultBounds.Machine.PrefixCounterInit
 import IntegerMultBounds.Machine.RadixLinearCombination
+import IntegerMultBounds.Machine.RadixLinearCombinationBinary

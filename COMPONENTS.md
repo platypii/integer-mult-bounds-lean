@@ -362,6 +362,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixLinearCombination.lean`: Fixed expression/list compiler executes rational leaves and modular addition nodes, physically erasing temporary operands and restoring source/scratch heads. Exact radix output equals the rational modular sum when denominators are below prime q. Coefficient-list bound(34*termCount+7)*q^b with3*termCount+2 tapes. Every leaf, including the zero seed, has a supplied marked source copy; repeated logical controls are not copied or refreshed for free. Binary endpoint and scheduler-source linkage remain separate.
 
+- `Machine/RadixLinearCombinationBinary.lean`: Fixed rational-expression arithmetic followed by one canonical binary conversion and physical erasure of the final radix result. Exact output descriptor/head, both converter work tapes blank/head zero, and original leaf-source workspace preserved. Coefficient-list bound(34*termCount+47)*q^b with3*termCount+4 tapes; binary value is the exact modular rational sum for denominators below prime q. Supplied per-leaf copies remain explicit; source duplication/refresh and recurring binary-output replacement are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
