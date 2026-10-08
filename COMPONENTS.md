@@ -858,6 +858,15 @@ Faster interchange of address chunks (§4).
   as the multiplication cost, one Gaussian weight to `q` bits costs at most
   `2 · 10^11 · q (log₂ q + 1)³` operations, which supplies the joint
   recurrence's quartic-log hypothesis, and the envelope itself is cubic-log.
+- `NLogN/CostFinal.lean`: the final cost theorem of the subroutine in the
+  operation-count model: any cost that, above `2^(2^624)`, is bounded by one
+  full recursive step (three convolution pipelines with the delegated
+  `3rp`-bit products at the recursive cost, plus the resampling maps with the
+  paper's windows, the plain-multiplier envelope for the small products, and
+  the binary-splitting exponential cost for the weights) plus a linear
+  overhead, and polylogarithmically below, is `O(n log n)`. The grids and
+  moduli are parameters; the correctness theorem supplies them above its own
+  larger threshold.
 
 ## Top-level
 
