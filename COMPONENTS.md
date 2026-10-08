@@ -377,6 +377,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   fixed-point approximations of scaled error `c` gives total `2mc + 3`; and
   a rounded diagonal entry in `[0, 1]` times a unit-ball value has scaled
   error at most four.
+- `NLogN/SynthEmbed.lean`: Section 3.2 of the paper. Twisting the last
+  coordinate by the `2r`-th roots of unity turns complex cyclic convolution
+  of length `r` into the negacyclic product, the twist is an isometry with an
+  inverse, and a cyclic convolution on `G × Fin r` for any finite group `G`
+  is the `R`-valued convolution on `G` of the twisted slices, which covers
+  the `d`-dimensional case.
 
 ## Top-level
 
