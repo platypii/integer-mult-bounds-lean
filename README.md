@@ -16,10 +16,16 @@ chosen before quantifying over inputs.
 
 ## Sources
 
-- CrocSwap/integer-mult-bounds, commit
-  `6e564879f51ae16f23d392e9e196c605f36d90df` (October 7, 2026).
-- Its pinned OpenAI manuscript, commit
-  `adc7f1241b42e322a6451854ab7e4b4c146bf78a`.
+- [CrocSwap/integer-mult-bounds](https://github.com/CrocSwap/integer-mult-bounds),
+  commit [`6e56487`](https://github.com/CrocSwap/integer-mult-bounds/tree/6e564879f51ae16f23d392e9e196c605f36d90df)
+  (October 7, 2026).
+- Its pinned OpenAI manuscript,
+  [*Integer multiplication below n log n*](https://github.com/openai/math/tree/adc7f1241b42e322a6451854ab7e4b4c146bf78a/preprints/Integer-multiplication-below-n-log-n-September-23-2026),
+  in [openai/math](https://github.com/openai/math), commit `adc7f12`.
+- [complexitylib](https://github.com/SamuelSchlesinger/complexitylib), commit
+  [`3f4b5fe`](https://github.com/SamuelSchlesinger/complexitylib/tree/3f4b5fee8bbd49721a5b70473c81bf3db2e7500d),
+  for the machine composition design (no code imported).
+- [mathlib4](https://github.com/leanprover-community/mathlib4), v4.34.1.
 
 The local `integer-mult-bounds/` checkout is reference material and is ignored
 by this project's Git repository. The Lean project does not execute or trust
@@ -46,7 +52,7 @@ proof.
   composition of finite transition tables, exact execution with one extra
   transition, preservation of all tapes and heads at the connection, and
   time-bounded contracts derived from actual runs. The existing tape scan is
-  connected to this contract interface. The design draws on complexitylib's
+  connected to this contract interface. The design draws on [complexitylib](https://github.com/SamuelSchlesinger/complexitylib)'s
   composition approach (commit `3f4b5fe`); no external machine semantics or
   runtime assumptions are imported.
 - `Machine/Loop.lean`: a concrete finite-state while loop testing only scanned
