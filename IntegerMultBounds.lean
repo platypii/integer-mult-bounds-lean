@@ -30,3 +30,4 @@ import IntegerMultBounds.NLogN.ErrorBudget
 import IntegerMultBounds.NLogN.Pipeline
 import IntegerMultBounds.NLogN.Gaussian
 import IntegerMultBounds.NLogN.MultidimD
+import IntegerMultBounds.NLogN.Primes

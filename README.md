@@ -185,6 +185,10 @@ proof.
   cyclic groups, its convolution theorem, orthogonality, inversion up to the
   product of the lengths, and the splitting of the first coordinate into a
   one-dimensional transform of lower-dimensional transforms.
+- `NLogN/Primes.lean`: from Bertrand's postulate, a strictly increasing chain
+  of distinct odd primes above any seed with explicit growth, pairwise
+  coprimality, and bounds on their product. This is the prime-selection step
+  without the short-interval prime theorems the paper cites.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
