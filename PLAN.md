@@ -93,10 +93,10 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Global physical label attachment | `GlobalLabels`, `GlobalLabelsNondegenerate` | ✅ | — | Exact schedule erasure, physical endpoints/stage boundaries, all vertex labels nondegenerate |
 | Sparse skipped-edge binary units | `GlobalLabelsResiduals` | ✅ | — | Actual witnesses for xIn→full, yIn→yOut, bot→full, including future factor |
 | Physical invocation rank loss | `GlobalRank` | ✅ | — | Actual embedded histories, comparable edges and loss bound; supports weaker input labels left by sparse predecessors |
-| Full labeled trace assembly | — | 🟡 | ⬜ | Global vertices attached; aggregate all stage traces and terminal edges |
+| Full labeled trace assembly | `GlobalRankStages`, `ProjectionTrace`, `GlobalProjectionRank` | ✅ | ⬜ | Actual global comparable nondegenerate edges, loss bound and projection-rank balance, including terminal alignment |
 | Terminal dimension and budget arithmetic | `NetworkBudget` | ✅ | — | Actual source/sink sums and h=25 role count; complex branching bound conditional on full trace balance/loss |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
-| Residual rank saving | — | ⬜ | — | Nested gate labels, total saving |
+| Residual rank saving | `ComplexRank25` | 🟡 | — | Actual h=25 projection-rank sum and complex branching exponent proved; full binary residual-factor coverage and optimized h=50 bit rank bound remain open |
 | Improved h=50 bit network | `SharedPointMap`, `DisjointCircuit`, `DisjointBuilder`, `ReversibleFanout` | 🟡 | ⬜ | Exact shared-point map, validated support-interning DAG primitives and reversible fanout proved; paired-exclusion generator, role sharing/counts and frame transfer remain open for the selected tau |
 | Shared-point source spans | `SharedPointLabels` | ✅ | — | Actual rational spans are positive definite and nested; no nondegeneracy hypothesis |
 | Rational address-shear interface | `ProjectionRank`, `ShearFrame` | 🟡 | ⬜ | Projection ranks and exact endpoint/frame identities; finite-radix realization and total budget open |
@@ -191,7 +191,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 ## Next steps
 
 - Prepare sorting metadata and compute repair keys, then compose extraction, sorting and reinsertion.
-- Attach nested labels to the global grouped exchange and assemble the residual-rank budget.
+- Complete binary residual-factor coverage of the actual global edges and the optimized h=50 bit-network construction/counts.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compile the finite network interfaces and their arithmetic to literal tape steps.

@@ -78,6 +78,10 @@ import IntegerMultBounds.Networks.GlobalLabels
 import IntegerMultBounds.Networks.GlobalLabelsNondegenerate
 import IntegerMultBounds.Networks.GlobalLabelsResiduals
 import IntegerMultBounds.Networks.GlobalRank
+import IntegerMultBounds.Networks.GlobalRankStages
+import IntegerMultBounds.Networks.ProjectionTrace
+import IntegerMultBounds.Networks.GlobalProjectionRank
+import IntegerMultBounds.Networks.ComplexRank25
 import IntegerMultBounds.Networks.NetworkBudget
 import IntegerMultBounds.Networks.SharedPointLabels
 import IntegerMultBounds.Networks.SharedPointMap

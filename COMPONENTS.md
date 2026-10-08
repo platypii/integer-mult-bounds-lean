@@ -459,7 +459,28 @@ Bit and complex networks.
   edges transport through tensor-stage maps and physical embeddings. Each
   real invocation loses at most the central-wire count times current dimension,
   also when prior sparse histories leave labels below the canonical input.
-  Wires outside the invocation remain unchanged. Stage aggregation is separate.
+  Wires outside the invocation remain unchanged.
+
+- `Networks/GlobalRankStages.lean`: disjoint physical invocation induction
+  assembles the complete three-stage loss bound and comparable label edges.
+  Sparse predecessors may leave weaker inputs; the invariant handles them.
+  Actual terminal alignment adds no loss. No stage-loss premise is assumed.
+
+- `Networks/ProjectionTrace.lean`: nondegeneracy propagates through actual
+  sequential label updates. The sum of genuine projector-difference ranks
+  equals dimension variation and telescopes with exactly twice the trace loss.
+
+- `Networks/GlobalProjectionRank.lean`: all labels in the actual physical
+  trace are nondegenerate; its projector ranks balance the actual terminal
+  dimensions. The full loss theorem gives a global rank upper bound without
+  supplying an assumed rank or loss budget.
+
+- `Networks/ComplexRank25.lean`: instantiates the actual rational-scalar
+  complex circuit at ground size twenty-five, its binary labels, sparse
+  injection support, neighbor orthogonality, and complete terminal list.
+  Its actual projection-rank sum is at most 916333630984500000 and meets the
+  selected complex branching exponent. Full binary edge-factor coverage
+  and tape implementation remain separate obligations.
 
 - `Networks/NetworkBudget.lean`: sums dimensions of actual physical source
   and sink subspaces, including the empty-data case. At complex ground size
