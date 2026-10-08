@@ -736,3 +736,5 @@ import IntegerMultBounds.Machine.Shared50RecursiveSegments
 import IntegerMultBounds.Machine.RecursiveRoleChildCallSetup
 import IntegerMultBounds.Machine.RecursiveChildCallReturn
 import IntegerMultBounds.Machine.RecursiveChildReturnRoleBank
+import IntegerMultBounds.Machine.RecordTape
+import IntegerMultBounds.Machine.GaussianLine

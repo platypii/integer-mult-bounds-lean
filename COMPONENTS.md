@@ -218,6 +218,25 @@ Machine model, execution, composition, and tape routines.
   product truncated toward zero by `p` bits, `(x * y).tdiv 2^p`
   (`signed_result`), for widths `w ≥ p + 2` and magnitudes at most `2^p`.
 
+- `Machine/RecordTape.lean`: blank-separated records: the cell before a
+  record's origin is blank (`bg_left`), bit words map to records
+  (`getD_map`), and `BackWord`, a four-state move from the origin of one
+  record back to the origin of the previous one (`back_hoare`).
+
+- `Machine/GaussianLine.lean`: the Gaussian window sums of the resampling
+  map on twenty-two tapes (generated like the key routine). For each output
+  `k`, the window loop runs `2m + 1` terms on a unary ruler: the weight word
+  times the real and imaginary input words by two placed `FixedMul`s, the
+  truncated products accumulated exactly into two `W`-bit accumulators
+  (`accR`, `accI`); then the accumulators are written to the output and
+  reset to zero words by a ruler copy, the input is rewound by `2(2m+1)`
+  records with `BackWord`, and a modular counter (`OrderedSelect.rWord`)
+  advances the input by one record exactly when the centre `⌊sk/t⌋` moves
+  (`centre_succ`). Exact loop-state contracts `body_hoare`, `inner_hoare`,
+  `rewind_hoare`, `cond_hoare`, `outer_hoare` and the whole line
+  `line_hoare`, with the outputs `outWords` and cost `t` times
+  `outerBound`.
+
 - `Machine/PackedInverse.lean`: the inverse packed program on nine tapes:
   the four packed updates undone in reverse order with negated offsets as
   five gather-and-transduce lines, with exact list-level word semantics, the
