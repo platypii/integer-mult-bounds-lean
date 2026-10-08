@@ -169,6 +169,13 @@ Bit and complex networks.
   shear and true bank exchange with full scratch restoration. Elementary
   instruction counts are proved; grouped-gate topology and tape costs are not.
 
+- `Networks/Labels.lean`: the degree-one rational and binary bilinear label
+  spaces, their nondegeneracy, triple-indicator pairing formulas, orthogonality
+  of neighboring triples, and nondegeneracy of each triple line. The rational
+  form is nondegenerate whenever the ground size differs from nine. These
+  label fields differ from the circuit scalar rings; tensor-cube labels,
+  nested gate labels, and total residual-rank savings remain open.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.

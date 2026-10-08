@@ -31,6 +31,7 @@ import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples
 import IntegerMultBounds.Networks.CircuitRouting
 import IntegerMultBounds.Networks.CircuitBits
+import IntegerMultBounds.Networks.Labels
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal
 import IntegerMultBounds.Compact.ExactRepair
