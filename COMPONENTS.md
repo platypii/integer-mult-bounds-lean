@@ -262,6 +262,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   transform factored as `2^γ B F A` is approximated with error
   `2^γ (εB + εF + εA)`; and the forward, rounded pointwise, inverse
   convolution has error `εI + 2 εF + 2`, scaled by the length.
+- `NLogN/ResamplingInverse.lean`: Section 4.2 of the paper. The row
+  selection `C`, the square subsystem `T′ = C T` with its explicit series,
+  the diagonal normalization `D` with `1 ≤ d_ℓ ≤ e^(πα²/4)`, the identity
+  `N = T′ D = 1 + E`, and Lemma 4.6: under `α²θ ≥ 1` every entry of `E u`
+  is at most `2.01 e^(−πα²θ/2) ≤ 1/2` on the unit ball. The operator-norm
+  packaging and the assembly `D N⁻¹ C` are not here.
 
 ## Top-level
 
