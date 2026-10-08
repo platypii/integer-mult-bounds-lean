@@ -510,6 +510,11 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   products has scaled error exactly `3 log₂ T′ + 2` before the final scaling
   by `T′ r`. Unit-ball preservation of each one-dimensional FFT is a
   hypothesis.
+- `NLogN/Clamp.lean`: the radial clamp of a complex number to the unit
+  disk, applied coordinatewise, is nonexpansive against every point of the
+  ball, so any approximation of a contraction can be clamped into the unit
+  ball at no cost in scaled error; with a radius-`R` version. This supplies
+  the unit-ball side conditions the composition lemmas require.
 
 ## Top-level
 

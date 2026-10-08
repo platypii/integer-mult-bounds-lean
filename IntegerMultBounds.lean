@@ -92,3 +92,4 @@ import IntegerMultBounds.NLogN.NegacyclicKronecker
 import IntegerMultBounds.NLogN.CostModel
 import IntegerMultBounds.NLogN.ResamplingMultiNumeric
 import IntegerMultBounds.NLogN.SynthConvApproxD
+import IntegerMultBounds.NLogN.Clamp
