@@ -401,3 +401,4 @@ import IntegerMultBounds.Machine.TranslationStream
 import IntegerMultBounds.Machine.TranslationPreparedFamily
 import IntegerMultBounds.Machine.SignedScalingDimensions
 import IntegerMultBounds.Machine.RadixToBinaryData
+import IntegerMultBounds.Machine.ActualAffineScalingDimensions
