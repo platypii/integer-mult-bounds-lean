@@ -42,6 +42,14 @@ proof.
 
 ## Checked components
 
+- `Machine/Execution.lean`: run composition, locality of writes, unit head
+  motion, and an actual one-tape scanning program with exactly `n` transitions
+  through `n` nonblank cells. The program preserves the tape and halts at the
+  first blank. This is a stream primitive, not a multiplier.
+- `Compact/RepairBounds.lean`: the uniform rational exceptional-density bound
+  under the stated dyadic cutoff, and the inequality reducing the written
+  repair-cost expression to three logical volumes. Bad-set cardinality and the
+  sorting implementation still need proofs.
 - `Asymptotics.lean`: logarithmic powers are little-o of every strictly larger
   real power, specialized to all seven assembly margins; a finite-depth,
   volume-normalized recurrence bound with explicit leaf and overhead costs.

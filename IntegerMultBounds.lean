@@ -6,3 +6,5 @@ import IntegerMultBounds.Asymptotics
 import IntegerMultBounds.Compact.Layout
 import IntegerMultBounds.Compact.Radix
 import IntegerMultBounds.Compact.PackedControl
+import IntegerMultBounds.Compact.RepairBounds
+import IntegerMultBounds.Machine.Execution
