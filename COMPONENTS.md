@@ -286,6 +286,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   recursion with shift twiddles computes the synthetic transform exactly,
   is a contraction, and has fixed-point error at most `n ε` after `n`
   levels, the paper's Lemma 3.2 for the synthetic ring.
+- `NLogN/ResamplingCLM.lean`: the normalized transform, the two index
+  permutations, and the resampling maps `S` and `T` as continuous linear
+  operators with `‖F‖, ‖P‖ ≤ 1` and `‖S‖ ≤ 1 + 1/α`; `P_s` is invertible
+  for coprime lengths with contractive inverse; the resampling identity as an
+  operator equation; and fixed-point approximability of any vector to two
+  scaled units.
 
 ## Top-level
 
