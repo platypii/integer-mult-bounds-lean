@@ -83,6 +83,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Stage boundaries and terminal labels | `StageLabels` | ✅ | — | Actual isometries and all X/Y interstage and source/sink identities |
 | Sparse physical motif incidences | `MotifSupport` | ✅ | — | Concrete nonzero coefficient/owner tests and central support |
 | Binary multi-column interface | `BinaryColumns` | ✅ | ⬜ | Concrete slice operators and exact residual-dimension factor count; unit premise explicit |
+| Local residual formulas and binary units | `MotifResiduals`, `BinaryMotifResiduals` | ✅ | — | Thirteen local comparisons plus future/sink at all three stages; physical sparse-history coverage remains |
+| Exact Gaussian-dyadic arithmetic | `GaussianDyadic`, `GaussianCircuit` | ✅ | ⬜ | Concrete motif coefficients, grouped updates, and both binary edge directions; denominator growth proved, numerator size and tape costs open |
 | Full labeled schedule | — | 🟡 | ⬜ | Local table and all stage boundaries proved; attach to global physical group history |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
 | Residual rank saving | — | ⬜ | — | Nested gate labels, total saving |

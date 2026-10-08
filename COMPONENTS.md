@@ -387,8 +387,33 @@ Bit and complex networks.
   by multiple binary columns. Distinct-column operations commute, and the
   finite product regroups each forward/reverse edge into exactly one
   all-column factor per residual direction. The factor count is the actual
-  dimension difference. Concrete residual unit witnesses, Gaussian-dyadic
-  arithmetic closure, and tape implementation remain separate.
+  dimension difference. Residual witnesses and arithmetic closure are supplied
+  by separate modules; attachment to physical edges and tape implementation remain.
+
+- `Networks/MotifResiduals.lean`: exact orthogonal residual formulas for the
+  local data, side, and central label comparisons. Residuals tensor with the
+  future line, and the final scratch residual is exactly the full earlier
+  space tensored with the future-line complement.
+
+- `Networks/BinaryMotifResiduals.lean`: all thirteen listed local comparisons
+  have zero residual or an actual norm-one vector, including the future
+  factor and scratch sink. Concrete witnesses discharge the earlier and
+  future premises at each of the three stages for ground size above six.
+  Isometries transport these witnesses. Matching every physical sparse-history
+  edge to these comparisons remains part of global attachment.
+
+- `Networks/GaussianDyadic.lean`: exact Gaussian-integer numerators on a common
+  binary scale, closed under addition, subtraction, multiplication and halving.
+  Actual binary translation kernels consume at most one binary place each;
+  all-column factors consume at most the column count. Both directions of a
+  nested projection edge have precision bounded by the actual residual
+  dimension times the column count, with the zero-or-unit premise explicit.
+
+- `Networks/GaussianCircuit.lean`: every actual rational motif coefficient
+  is Gaussian-dyadic with at most one binary denominator place. Simultaneous
+  grouped scalar updates preserve this arithmetic domain, increasing precision
+  once per group by the maximum coefficient precision. These are exact
+  arithmetic bounds; tape implementations and numerator-size bounds remain.
 
 ## NLogN
 

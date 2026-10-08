@@ -65,6 +65,10 @@ import IntegerMultBounds.Networks.RankTrace
 import IntegerMultBounds.Networks.GroupedFrames
 import IntegerMultBounds.Networks.StageLabels
 import IntegerMultBounds.Networks.MotifSupport
+import IntegerMultBounds.Networks.MotifResiduals
+import IntegerMultBounds.Networks.BinaryMotifResiduals
+import IntegerMultBounds.Networks.GaussianDyadic
+import IntegerMultBounds.Networks.GaussianCircuit
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits
