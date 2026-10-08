@@ -104,8 +104,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Interchange recurrence and padding arithmetic | `Recurrence` | ✅ | — | `F k ≤ K (m^k)^τ` from `s/W ≤ m^τ`; digit pieces `O(e^τ)`; row, row-range, and radix padding bounds |
 | Lower triangular factorization (Lemma 4.1) | `LowerTriangular`, `PivotRank` | ✅ | — | `A = E₁ Π E₂` with lower triangular two-sided inverses and a partial permutation `Π` with exactly `rank A` ones |
 | Rational matrix shear (Lemma 4.2) | `Shear`, `Modular` | ✅ | ⬜ | Pivot programs, descending triangular updates, prime modulus beyond all denominators, shear modulo `q^b` with exactly `rank A` interchanges; tape cost of the linear operations open |
-| Power-width interchange (Prop 4.3) | — | ⬜ | ⬜ | Role streams, frame identity, recursive call count `s` |
-| Arbitrary-width interchange (Lemma 4.4) | — | ⬜ | ⬜ | High-digit row field, digit pieces, radix padding |
+| Power-width interchange (Prop 4.3) | `Interchange` | ✅ | ⬜ | Three-step interchange, routed frame identity under the shear contract, edge schedule with `Σ rank` interchanges, recursion `O(V (m^k)^τ)`; role-stream split and fixed-tape schedule open |
+| Arbitrary-width interchange (Lemma 4.4) | `Recurrence` | 🟡 | ⬜ | Row-range digits, row padding, digit pieces `O(e^τ)`, radix padding proved; field-order bookkeeping and cost assembly open |
 
 ## 5. Simultaneous butterfly layers with compact control (§5, §11, CrocSwap)
 
@@ -190,4 +190,4 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compile the finite network interfaces and their arithmetic to literal tape steps.
-- Assemble the §4 power-width interchange from the role-stream frame identity and the shear programs.
+- Assemble the §4 arbitrary-width cost from the digit pieces, then start the tape compilation of the shear operations.

@@ -905,6 +905,20 @@ Faster interchange of address chunks (§4).
   exactly `rank A` interchanges, all other operations being lower triangular
   transformations and later-field updates. The `O(V)` tape cost of those
   operations is a separate obligation.
+- `Swap/Interchange.lean`: the mathematics of Proposition 4.3. The three
+  steps `D ← D - H`, `H ← H + D`, `D ← H - D` interchange the two chunks. The
+  field programs of `Shear` realize the address permutation `Φ_M` of
+  `ShearFrame` for the reduced matrix, so modulo every power of a suitable
+  prime every matrix of a finite collection, and every edge of a labeled
+  schedule, has a program with exactly its rank in interchanges, the schedule
+  total being the sum of the edge ranks. Under the finite shear contract
+  `M_out (ρ w) - M_in w = I` and a logical circuit routing role `w` to `ρ w`,
+  the framed circuit's physical output at `ρ w` is the full shear of the input
+  at `w`, for every wire including scratch roles. The recursion
+  `time (k+1) V ≤ s · time k (V / W) + C V` with `s / W ≤ m^τ` gives
+  `time k V ≤ K (m^k)^τ V` with an explicit constant. The role-stream split,
+  the depth-first fixed-tape schedule, and descriptor processing are tape
+  obligations.
 - `NLogN/ModuliConstruction.lean`: an elementary replacement for the paper's
   Lemma 5.1. The moduli need only be odd and pairwise coprime, so each is a
   product of powers of two coordinate-specific odd primes whose exponents are

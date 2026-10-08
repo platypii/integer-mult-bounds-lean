@@ -135,6 +135,7 @@ import IntegerMultBounds.Swap.Shear
 import IntegerMultBounds.Swap.LowerTriangular
 import IntegerMultBounds.Swap.PivotRank
 import IntegerMultBounds.Swap.Modular
+import IntegerMultBounds.Swap.Interchange
 import IntegerMultBounds.NLogN.ResamplingMultiNumeric
 import IntegerMultBounds.NLogN.SynthConvApproxD
 import IntegerMultBounds.NLogN.Clamp
