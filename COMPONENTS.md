@@ -846,6 +846,13 @@ Faster interchange of address chunks (§4).
   superadditive multiplication cost evaluates such a series in
   `O(M(80p) log p)` operations, the `O(p^(1+δ))` shape. The exact product tree
   and the `p`-bit approximation of `π` times a rational are not written.
+- `NLogN/JointRecurrence.lean`: the cost recurrence closed with no
+  hypothesis about the main cost on the resampling side: with the delegated
+  `3rp`-bit products costed by the cost being bounded and the `p`-bit
+  products inside the weights by an a priori quasilinear multiplier, any cost
+  bounded by one full step plus linear overhead above `2^(2^624)` and
+  polylogarithmically below is `O(n log n)`. The explicit constants need the
+  larger threshold.
 
 ## Top-level
 
