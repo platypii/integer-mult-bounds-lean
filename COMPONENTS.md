@@ -538,6 +538,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SharedPayloadStageSkeleton.lean`: Erases array types, semantic contracts and supplied descriptors to retain only finite machine data. Proves finite-stage compilation depends solely on these skeletons; transports exact bank execution and metadata independence to a previously fixed program. Concrete width-independent coordinate skeletons are established separately.
 
+- `Machine/FlatCoordinateSchedule.lean`: Fixed rational scale/earlier-control shift operation description, canonical dimension descriptors and concrete Stage instantiation. Proves exact primitive transport, costs, and equality of entire finite-machine skeleton to one selected independently of width and record size.
+
+- `Machine/FlatCoordinateScheduleCompile.lean`: One fixed multitape program executes every supported finite rational coordinate schedule for all widths and positive record sizes. Proves exact OrderedAffine.run symbol transport, input-independent private metadata, and explicit linear-volume runtime including all joins. Canonical dimension words remain supplied; their physical synthesis/installation and recursive interchanges are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

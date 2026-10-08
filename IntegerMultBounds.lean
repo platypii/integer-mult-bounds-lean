@@ -499,3 +499,5 @@ import IntegerMultBounds.Machine.RadixPowerMultipleWord
 import IntegerMultBounds.Machine.RadixPowerMultipleDescriptor
 import IntegerMultBounds.Machine.SharedPayloadStageCompose
 import IntegerMultBounds.Machine.SharedPayloadStageSkeleton
+import IntegerMultBounds.Machine.FlatCoordinateSchedule
+import IntegerMultBounds.Machine.FlatCoordinateScheduleCompile
