@@ -1073,6 +1073,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveChildReturnRoleBank.lean`: Places header restoration on the permanent bank independently or before actual PC pop/decode/continuation execution. Exact final continuation state survives both compositions; original roles/auxiliaries and older stacks restored. Same-root path bound is(48*(log2 roles+2)+PCwidth+82)*childVolume plus continuation cost.
 
+- `Machine/SharedBankFamilyExact.lean`: Uniform private workspace padding preserves exact execution lengths, terminal finite states and halted configurations; finite-family members retain both bank and control endpoints.
+
+- `Machine/Shared50RecursiveExecution.lean`: The actual uniformly padded cyclic width guard preserves the complete bank and selects the base or split block in at most three transitions, including its real finite-flow edge. Recursive body execution remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
