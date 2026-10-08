@@ -276,6 +276,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/TranslationPreparedExecution.lean`: Complete literal single-fiber translation from canonical Q,a,B descriptors, with a≤Q and positive dimensions. Starts derived-work tapes blank, constructs all split lengths, and physically rotates the payload through fixed shared placement. Source is preserved, both payload heads advance Q*B, and output block y+a modulo Q retains the exact source block y, including a=0 and a=Q. Fixed twelve tapes and200states; bound199*Q*B+212. Derived metadata is retained explicitly; iteration cleanup is separate.
 
+- `Machine/NegationDescriptors.lean`: Literal canonical tail metadata construction from supplied Q/B descriptors only. Writes its own constant one on blank tape, synthesizes (Q-1)*B and the padded difference, and uses counted multiplication by one to produce a canonical Q-1 descriptor. Preserves Q/B and leaves explicit generated metadata/control banks. Fixed eleven tapes and160states; bound216*Q*B+121 for positive Q/B.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
