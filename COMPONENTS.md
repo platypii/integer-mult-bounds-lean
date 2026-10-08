@@ -801,7 +801,29 @@ Bit and complex networks.
   certified local addition nodes has exactly 490,650 members before sharing.
   Nontrivial supports, common points and per-copy uniqueness discharge the
   matching theorem's structural hypotheses; the concrete duplicate count
-  and globally compiled circuit remain separate obligations.
+  remains separate, with global construction in SharedPointReplay.
+
+- `Networks/DAGReplay.lean`: executable topological import into an existing
+  DAG under injective source renaming, interning by exact support. Validity,
+  original-node reference alignment, evaluation, support uniqueness and
+  addition provenance are proved through the actual scan.
+- `Networks/DAGReplayBudget.lean`: for support-unique DAGs the addition count
+  equals the cardinality of actual addition supports; replayed additions are
+  bounded by the union of old and renamed source supports.
+- `Networks/SharedPointOutputMap.lean`: canonical pair inputs cover every
+  triple containing a fixed common point, and each lifted local exclusion
+  support is exactly the triples intersecting its target in that common point.
+- `Networks/SharedPointReplay.lean`: actual fifty-copy global DAG with exact
+  58,800 output keys and values, valid references, unique supports and every
+  addition support in the checked local family. The support-image bound of
+  450,394 implies at most 509,194 compiled roles and 959,588 XOR updates;
+  this file leaves that duplicate-count premise explicit.
+
+- `Networks/SharedPointExecution.lean`: actual compiled binary scalar program
+  computes every common-point partial sum for every target triple containing
+  that point. Output coverage, distinct bounded physical output slots and an
+  executable inverse on arbitrary states are proved; numerical global bounds
+  retain the explicit support-cardinality premise until its certificate lands.
 
 ### Networks/Certificates/Paired49
 

@@ -141,6 +141,11 @@ import IntegerMultBounds.Networks.DAGCompileCorrect
 import IntegerMultBounds.Networks.DAGAllocatorBudget
 import IntegerMultBounds.Networks.DAGValueTransfer
 import IntegerMultBounds.Networks.DAGInstructionCount
+import IntegerMultBounds.Networks.DAGReplay
+import IntegerMultBounds.Networks.DAGReplayBudget
+import IntegerMultBounds.Networks.SharedPointOutputMap
+import IntegerMultBounds.Networks.SharedPointReplay
+import IntegerMultBounds.Networks.SharedPointExecution
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
