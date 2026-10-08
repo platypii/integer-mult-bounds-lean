@@ -589,3 +589,6 @@ import IntegerMultBounds.Machine.FlatHyperArrayNormalize
 import IntegerMultBounds.Machine.FlatRepeatedControlNormalize
 import IntegerMultBounds.Machine.FlatRepeatedControlArray
 import IntegerMultBounds.Machine.RecursiveInterchangeShift
+import IntegerMultBounds.Machine.FiniteReturnStack
+import IntegerMultBounds.Machine.FiniteDispatch
+import IntegerMultBounds.Machine.FiniteReturnDispatch

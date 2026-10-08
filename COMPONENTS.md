@@ -748,6 +748,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveInterchangeShift.lean`: Actual normalized H-controlled D shift on arbitrary positive seven-factor layouts. Exact rational H offset, preserved rows/spectators, canonical input/output arrays and restored zero control, with linear-volume time. Canonical B/Q/C/N descriptors and prepared arithmetic bank remain explicit; construction/cleanup separate.
 
+- `Machine/FiniteReturnStack.lean`: Actual fixed-width binary return-address push/pop preserves all older frames, erases popped bits and restores the stack top. Pop halts in a finite state carrying the decoded address; width/state count depend only on fixed schedule, with depth-independent exact runtime.
+
+- `Machine/FiniteDispatch.lean`: Fixed finite family dispatcher branches from an actual front-program halt state into its selected continuation in one charged transition. Exact execution, halting state and Hoare composition; all continuation programs are fixed in the finite controller.
+
+- `Machine/FiniteReturnDispatch.lean`: Actual binary stack pop in a selected tape slot followed by decoded return-address dispatch into a fixed continuation family. Preserves the entire other-tape frame and charges width plus 2 plus continuation time. Full cyclic recursion and descriptor frames remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
