@@ -502,6 +502,14 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   tensor; hence the tensors of the one-dimensional numerical maps approximate
   `A` and `B` with scaled errors `d εA` and `d εB`, alongside the exact
   factorization.
+- `NLogN/SynthConvApproxD.lean`: Propositions 3.3 and 3.4 of the paper in
+  `d` dimensions. The `d`-dimensional synthetic transform is the tensor of
+  the one-dimensional ones, so its coordinatewise numerical version has
+  scaled error `∑ log₂ t_i`; the inverse is the forward transform at the
+  negated index; and the convolution pipeline with rounded `1/r`-scaled
+  products has scaled error exactly `3 log₂ T′ + 2` before the final scaling
+  by `T′ r`. Unit-ball preservation of each one-dimensional FFT is a
+  hypothesis.
 
 ## Top-level
 
