@@ -225,6 +225,14 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   equals `2^(-n)` times the plain FFT and packages as an approximation of the
   normalized transform with scaled error `n = log₂ N`, the paper's Lemma 3.2
   over `ℂ`. The synthetic-ring instance is not yet connected.
+- `NLogN/FixedOps.lean`: the elementary fixed-point operations. Fixed-point
+  numbers at `p` bits are closed under sums and integer scaling and are fixed
+  by rounding; a rounded half-sum or half-difference adds at most one unit of
+  scaled error, integer scaling multiplies the error, and rounded products
+  add two units; the negacyclic product of coefficient vectors satisfies
+  `‖ab‖ ≤ r ‖a‖ ‖b‖`, and multiplication by a power of `y` is a signed shift
+  of norm one. Bit costs and the bridge to the synthetic ring quotient are
+  not here.
 
 ## Top-level
 

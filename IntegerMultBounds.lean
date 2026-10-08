@@ -45,3 +45,4 @@ import IntegerMultBounds.NLogN.MainRecurrence
 import IntegerMultBounds.NLogN.Resampling
 import IntegerMultBounds.NLogN.MainReduction
 import IntegerMultBounds.NLogN.NormFFT
+import IntegerMultBounds.NLogN.FixedOps
