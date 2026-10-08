@@ -31,10 +31,10 @@ the literal machine model is proved correct with a runtime bound.
 | Part of the proof | Source | Mathematics | Tape | Main gaps |
 | --- | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ | ✅ | — |
-| Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 | Scan, copy, counters, and a stable record-partition pass are proved; array-order scans and stream scheduling remain open |
+| Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 | Scan, copy, counters, marked partition, concatenation, and record reinsertion are proved; array-order scans and stream scheduling remain open |
 | Finite networks with a rank saving | §3 | 🟡 | ⬜ | Executable dirty-scratch circuits and rational motif coefficients are proved; residual spaces, sparse wire counts, and phase interfaces remain open |
 | Faster interchange of address chunks | §4 | ⬜ | ⬜ | Not started |
-| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; extracting, sorting, and reinserting records on tapes is open |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; tape partition and reinsertion primitives are proved, but full sorting and the repair pipeline remain open |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ | Synthetic ring, principal roots, and Bluestein are proved; layout and costs are open |
 | Gaussian resampling | §7 | 🟡 | ⬜ | The one-dimensional factorization `F_s = 2^γ B F_t A` with `‖A‖, ‖B‖ ≤ 1` is proved, with truncation and Neumann-series error bounds for its pieces; the multidimensional form, the assembled numerical approximation, and the permutation-left variant are open |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ | Transforms, fixed-point errors, steps 1 to 3 of the recursion, the parameter selection, and the final recurrence are proved; short-interval primes, resampling inversion, and bit costs are open |

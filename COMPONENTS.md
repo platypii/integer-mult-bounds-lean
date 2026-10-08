@@ -72,6 +72,23 @@ Machine model, execution, composition, and tape routines.
   sorting still needs key selection, output concatenation, and a controller;
   the list traversal volume is not claimed as that implementation's runtime.
 
+- `Machine/PartitionMarked.lean`: a five-symbol version of the literal
+  partition retains a left sentinel on each tape. A proved nondecreasing-head
+  invariant supplies the alphabet simulation's footprint. Exact complete-tape
+  contracts and a distance-plus-one rewind theorem support stream composition.
+- `Machine/Concatenate.lean`: a three-tape, two-state program copies two
+  blank-terminated source words consecutively to a destination, preserving both
+  sources. Exact runtime is their combined length plus one phase-switch step;
+  the complete output and untouched background are specified. Source positioning
+  is a precondition; this routine does not perform its callers' rewinds.
+- `Machine/Reinsert.lean`: a three-tape, four-state program retains unflagged
+  records and replaces flagged records in order from a second stream. It
+  preserves both sources, halts after exactly the combined encoded input
+  lengths, and proves complete output correctness when replacement count equals
+  the number of flags. Selected-and-repaired records give pointwise flagged
+  repair. Computing those replacements and sorting them into destination order
+  still require separate machine proofs.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

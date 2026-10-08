@@ -23,6 +23,9 @@ import IntegerMultBounds.Machine.PartitionSort
 import IntegerMultBounds.Machine.Rewind
 import IntegerMultBounds.Machine.Alphabet
 import IntegerMultBounds.Machine.Protected
+import IntegerMultBounds.Machine.PartitionMarked
+import IntegerMultBounds.Machine.Concatenate
+import IntegerMultBounds.Machine.Reinsert
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples
