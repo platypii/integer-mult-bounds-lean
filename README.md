@@ -56,10 +56,11 @@ subroutine. The `NLogN/` directory formalizes the mathematics of the
 Harvey–van der Hoeven algorithm at the level of vectors and operators:
 transforms, convolution theorems, fixed-point error propagation, Bluestein and
 synthetic transforms, the Gaussian resampling identity with its norm bounds,
-the parameter selection, and the final recurrence. What remains for the
-subroutine is the assembled numerical approximation of the resampling
-inverse, the short-interval prime selection, and compiling the whole
-algorithm to tape steps with its bit cost. None of these algorithmic
+the parameter selection, the explicit numerical recursive step proved exact,
+the final recurrence, and an operation-count model. What remains for the
+subroutine is the existence of the moduli, which rests on short-interval
+prime bounds absent from mathlib, and compiling the whole algorithm to tape
+steps with its bit cost. None of these algorithmic
 contracts may be assumed to claim the requested end-to-end result.
 
 ## Building and verification
