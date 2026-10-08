@@ -562,6 +562,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryDescriptorInstall.lean`: Places the actual five-state descriptor copier between arbitrary distinct tape slots. Exact whole-bank output replaces only the blank destination with the copied canonical descriptor at head one; source and every complementary tape/head are preserved. Runtime 2*length+5 and placement size derived from distinctness.
 
+- `Machine/BinaryDescriptorInstallRaw.lean`: Actual copy followed by two-transition marker removal yields the marker-free descriptor at head zero required by bootstrap machines. Exact complete-bank setTape postcondition preserves source and all other tapes; fixed eight-state program costs2*length+8 including the join.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
