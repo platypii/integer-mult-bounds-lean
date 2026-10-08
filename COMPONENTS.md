@@ -401,6 +401,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatControlledShift.lean`: Complete physical controlled shift on a flat Fin(P*(Q*B)) array, with fibers constructed from the input itself. Actual prefix enumeration supplies the selected rational control; exact source List.ofFn and every destination symbol proved, preserving prefix and suffix coordinates. Full-bank Hoare theorem costs(536+4*c)*volume+23. Requires canonical B/Q/P descriptors and a prepared marked zero prefix/work bank; no assumed address family or offset oracle. Target and selected control share radix width, spectator widths arbitrary, denominator below prime radix. Physical initialization handoff remains separate.
 
+- `Machine/RadixLinearCombinationShared.lean`: One physical program refreshes stale expression leaves from a shared bounded control bank, computes the rational expression, converts to canonical binary and restores arithmetic/converter scratch. Exact shared-control preservation and output descriptor; finite-bank wrapper needs no unbounded extra source tapes. Cost(13*leafCount+expressionConstant+40)*q^b for common new width b and stale widths at most b. Leaf sentinels/head-one remain prepared inputs and binary output starts blank; first-use bootstrap and recurring output reset separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
