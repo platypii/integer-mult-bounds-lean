@@ -475,6 +475,26 @@ Bit and complex networks.
   spans. These supply frame lemmas for the optimized bit graph; its circuit,
   sharing counts, and frame transfer are separate.
 
+- `Networks/SharedPointMap.lean`: an exact bijection between excluded pairs
+  and triples sharing one point proves that the three partial outputs equal
+  the original bit-side matrix. Their actual source spans are nondegenerate
+  and orthogonal to the target line. Optimized DAG construction is separate.
+
+- `Networks/DisjointCircuit.lean`: executable addition DAGs carry checked
+  disjoint input supports. Structural validation proves actual evaluation is
+  the support sum; equal-support interning preserves values and validity.
+  The list implementation is reference semantics, without tape-cost claims.
+
+- `Networks/DisjointBuilder.lean`: executable zero-eliding, support-interning
+  addition and list totals preserve validity, old references, and values.
+  Pairwise-disjoint totals construct the exact support union with at most
+  one fewer new nodes than operands, including empty and singleton cases.
+
+- `Networks/ReversibleFanout.lean`: literal binary gate lists gather a sum
+  into a pivot and fan it out. Full dirty-state semantics, reverse-list
+  inversion, spectator preservation, exact instruction counts and support
+  are proved. The singleton identity correctly has empty instruction support.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.

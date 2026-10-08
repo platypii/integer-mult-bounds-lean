@@ -80,6 +80,10 @@ import IntegerMultBounds.Networks.GlobalLabelsResiduals
 import IntegerMultBounds.Networks.GlobalRank
 import IntegerMultBounds.Networks.NetworkBudget
 import IntegerMultBounds.Networks.SharedPointLabels
+import IntegerMultBounds.Networks.SharedPointMap
+import IntegerMultBounds.Networks.DisjointCircuit
+import IntegerMultBounds.Networks.DisjointBuilder
+import IntegerMultBounds.Networks.ReversibleFanout
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits

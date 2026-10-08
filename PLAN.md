@@ -97,7 +97,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Terminal dimension and budget arithmetic | `NetworkBudget` | ✅ | — | Actual source/sink sums and h=25 role count; complex branching bound conditional on full trace balance/loss |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
 | Residual rank saving | — | ⬜ | — | Nested gate labels, total saving |
-| Improved h=50 bit network | — | ⬜ | ⬜ | Shared-point/paired-exclusion circuit, role sharing and frame transfer required for the selected tau; original bit motif does not establish this exponent |
+| Improved h=50 bit network | `SharedPointMap`, `DisjointCircuit`, `DisjointBuilder`, `ReversibleFanout` | 🟡 | ⬜ | Exact shared-point map, validated support-interning DAG primitives and reversible fanout proved; paired-exclusion generator, role sharing/counts and frame transfer remain open for the selected tau |
 | Shared-point source spans | `SharedPointLabels` | ✅ | — | Actual rational spans are positive definite and nested; no nondegeneracy hypothesis |
 | Rational address-shear interface | `ProjectionRank`, `ShearFrame` | 🟡 | ⬜ | Projection ranks and exact endpoint/frame identities; finite-radix realization and total budget open |
 | Phase interfaces and tape compilation | — | ⬜ | ⬜ | |
