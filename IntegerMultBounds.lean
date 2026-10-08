@@ -651,3 +651,5 @@ import IntegerMultBounds.Machine.BinaryCanonicalTrim
 import IntegerMultBounds.Machine.BinaryQuotientNormalize
 import IntegerMultBounds.Machine.BinaryDivideQuotient
 import IntegerMultBounds.Machine.RecursiveQuotientDivision
+import IntegerMultBounds.Machine.RecursiveChildDimensions
+import IntegerMultBounds.Machine.RecursiveChildDimensionsClean

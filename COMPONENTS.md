@@ -856,6 +856,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveQuotientDivision.lean`: Physical division-plus-normalization runtime bounded by (40*A^2+58*A+9) times logical child volume, where A=log2 roles+2, for canonical root-bounded descriptors. No free quotient normalization; full canonical input preparation and remainder cleanup remain separate.
 
+- `Machine/RecursiveChildDimensions.lean`: Nineteen-tape physical construction of child layout powers and products from six parent headers plus explicit canonical divided-width and divided-row headers. Eight real arithmetic stages emit exact six child headers with bound (48*(m-1)+512) times child volume plus 119; no derived product oracle.
+
+- `Machine/RecursiveChildDimensionsClean.lean`: Thirty-eight-tape clean child-header constructor retains parent and quotient headers plus required child products, erasing all intermediate powers, scratch and trackers. Exact canonical child descriptor, volume division and bound 97*(48*(m-1)+512) times child volume plus 11756. Quotient production and child-bank installation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
