@@ -368,6 +368,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RationalPrefixTranslationStream.lean`: Actual counted translation across mixed-width prefix fields, with selected field zero supplying rational offsets and a fixed nonempty duplicate-free carry order. Exact evolving bank and modular offset semantics; cost(530+4*orderLength)*volume+2*initialTotalWidth+23. Full finRange traversal restores all prefix fields and costs(536+4*c)*volume+23 on18+c tapes for c+1 fields. Spectator widths incur no per-fiber full scan. Recurring marked initial bank remains explicit; initialization and whole-array layout assembly are separate.
 
+- `Machine/PrefixAddressData.lean`: Whole-prefix radix address semantics: flattening fastest-first field words equals reversed lexicographic field order; full-order width sum and selected-field extraction proved. Zero-start PrefixCounter enumeration yields the actual prefix rank and selected control via division/modulo, allowing arbitrary spectator widths without a supplied address-family assumption.
+
+- `Machine/FiberLayoutData.lean`: Constructs prefix/target/suffix fibers directly from a flat Fin(P*(Q*B)) array and proves flattening returns exactly its original List.ofFn. Per-prefix rotations transport each target entry while preserving every suffix symbol and total volume. scheduled_entry connects selected-counter extraction to these concrete flat-array addresses. Pure layout/address lemmas; physical runtime integration remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

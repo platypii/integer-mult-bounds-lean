@@ -435,3 +435,5 @@ import IntegerMultBounds.Machine.RadixLinearCombination
 import IntegerMultBounds.Machine.RadixLinearCombinationBinary
 import IntegerMultBounds.Machine.RationalPrefixTranslationExecution
 import IntegerMultBounds.Machine.RationalPrefixTranslationStream
+import IntegerMultBounds.Machine.PrefixAddressData
+import IntegerMultBounds.Machine.FiberLayoutData
