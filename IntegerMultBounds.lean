@@ -42,3 +42,4 @@ import IntegerMultBounds.NLogN.Approx
 import IntegerMultBounds.NLogN.Synthetic
 import IntegerMultBounds.NLogN.CRTMulti
 import IntegerMultBounds.NLogN.MainRecurrence
+import IntegerMultBounds.NLogN.Resampling

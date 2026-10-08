@@ -207,6 +207,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   normalized cost contracting by `1728/d · (1 + 1/(2d)) ≤ 0.9998` at
   `d = 1729`, hence `M(n) = O(n log n)`. The recursive inequality itself is
   a hypothesis here.
+- `NLogN/Resampling.lean`: the Gaussian resampling identity, Theorem 4.2 of
+  the paper, for all positive lengths `s`, `t` and every `α > 0`: the
+  Gaussian-weighted resampling maps `S` and `T` intertwine the length-`s` and
+  length-`t` transforms up to the two index permutations. Proved from shifted
+  Poisson summation, derived from mathlib's Jacobi theta functional equation.
+  Norm bounds on the resampling maps and the inversion of `T` are not here.
 
 ## Top-level
 
