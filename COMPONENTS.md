@@ -555,6 +555,14 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   step returns the exact product with only the power-of-two transform, the
   per-coordinate resampling maps, and the prime-choice condition as
   hypotheses.
+- `NLogN/ExplicitNumeric.lean`: the numerical maps with every side
+  condition discharged: per-term Gaussian weights rounded to `p` bits and
+  multiplied with rounding, the off-diagonal part clamped into the unit
+  ball, the Neumann inverse and `B̃` built from them, the synthetic FFTs
+  clamped, and the `d`-dimensional synthetic pipeline restated with the
+  clamped transforms; the multidimensional resampling tensors then
+  approximate `A` and `B` with explicit errors below `d p²` and no
+  hypotheses beyond the parameter ranges and the inverse identities.
 
 ## Top-level
 
