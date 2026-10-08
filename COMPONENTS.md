@@ -907,6 +907,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/DigitInterchangeClean.lean`: Physically initializes loop markers, executes the entire single-digit interchange, then erases all temporary streams, clocks and trackers. Same canonical source/scratch bank with four retained descriptors, exact transposed payload and explicit linear-volume cost. Counter synthesis from six recursive headers remains separate.
 
+- `Machine/RecursiveVolumeConstruct.lean`: Fixed 295-state machine physically computes full stream volume from six canonical layout headers and initializes the XOR clock. Exact canonical product and retained headers, with417 times volume plus176 setup cost.
+
+- `Machine/RecursiveVolumeClean.lean`: Clean 34-tape volume/clock constructor retains only six original headers and the two generated controls. Every private tape and tracker blank at zero; bound36279 times volume plus15503, hence51782 times positive volume. Canonical generated word has bit length at most volume.
+
+- `Machine/RecursiveVolumeRoleBank.lean`: Physical volume/clock initialization on the permanent recursive role bank, starting with both control tapes blank. Every role and arbitrary auxiliary tape is preserved; exact prepared endpoint and private cleanup.
+
+- `Machine/SharedBankRawCompose.lean`: Actual fixed-skeleton composition with changing leading common banks and blank private endpoints. Proves exact input/output bank and sum of runtimes plus one joining transition, independent of semantic-stage packaging.
+
+- `Machine/RecursiveMixedInitialized.lean`: One fixed machine initializes its own XOR clock and volume word from six canonical headers, then executes the actual mixed shift/scaling/XOR list. Exact role-array semantics and clean private endpoint, bound(51783+sum operation coefficients+operation count) times volume. Generated controls remain explicit at output; per-operation coordinate-view changes and recursive calls remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
