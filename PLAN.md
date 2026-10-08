@@ -93,7 +93,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | --- | --- | --- | --- | --- |
 | Interchange recurrence and padding arithmetic | `Recurrence` | ✅ | — | `F k ≤ K (m^k)^τ` from `s/W ≤ m^τ`; digit pieces `O(e^τ)`; row, row-range, and radix padding bounds |
 | Lower triangular factorization (Lemma 4.1) | — | ⬜ | — | `A = E₁ Π E₂`, `Π` with exactly `rank A` ones |
-| Rational matrix shear (Lemma 4.2) | — | ⬜ | ⬜ | Pivot sequence, triangular ordered updates, specialization to `ℤ/q^b` |
+| Rational matrix shear (Lemma 4.2) | `Shear` | 🟡 | ⬜ | Pivot programs, factorized shear with exact interchange count, descending triangular updates; specialization to `ℤ/q^b` open |
 | Power-width interchange (Prop 4.3) | — | ⬜ | ⬜ | Role streams, frame identity, recursive call count `s` |
 | Arbitrary-width interchange (Lemma 4.4) | — | ⬜ | ⬜ | High-digit row field, digit pieces, radix padding |
 
@@ -180,4 +180,4 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compile the finite network interfaces and their arithmetic to literal tape steps.
-- Prove the lower triangular factorization and the rational matrix shear of §4.
+- Prove the lower triangular factorization of §4 and specialize the shear to `ℤ/q^b`.

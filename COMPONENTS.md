@@ -798,6 +798,18 @@ Faster interchange of address chunks (§4).
   at most `u` and inflates the range by less than `q`. The lower triangular
   factorization, the rational matrix shear, and the interchange procedure
   itself are separate obligations.
+- `Swap/Shear.lean`: the algebra of the rational matrix shear. Field
+  programs on two groups `H`, `D` consist of later-field updates `D_j ← D_j +
+  H_i`, `D_j ← H_i - D_j`, interchanges of `H_i` with `D_j`, and within-group
+  matrix transformations. One interchange and two later-field updates realize
+  `H_i ← H_i + D_j`; a pivot list adds `Π D` to `H` for the matrix `Π` with a
+  one at each listed position; with `E₁ E₁' = 1` and `E₂' E₂ = 1` the program
+  transform `D` by `E₂`, `H` by `E₁'`, pivot, `H` by `E₁`, `D` by `E₂'`
+  computes `H ← H + E₁ Π E₂ D` with exactly as many interchanges as pivots.
+  A lower triangular transformation equals the strictly descending sequence of
+  its coordinate updates, each reading only the original values, and each row
+  reads only its own and earlier coordinates. Identities over any commutative
+  ring; the modulus choice, the factorization, and tape costs are separate.
 - `NLogN/ModuliConstruction.lean`: an elementary replacement for the paper's
   Lemma 5.1. The moduli need only be odd and pairwise coprime, so each is a
   product of powers of two coordinate-specific odd primes whose exponents are
