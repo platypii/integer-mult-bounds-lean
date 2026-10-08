@@ -426,6 +426,24 @@ Bit and complex networks.
   once per group by the maximum coefficient precision. These are exact
   arithmetic bounds; tape implementations and numerator-size bounds remain.
 
+- `Networks/GaussianPrecision.lean`: explicit integer numerator bounds for
+  the actual binary kernels, all-column factors, and forward/reverse projection
+  edges. One kernel increases the binary scale by one and multiplies the
+  numerator bound by at most four; a list across columns gives the corresponding
+  exponential bound in residual dimension times column count. Exact tape
+  arithmetic costs remain separate.
+
+- `Networks/LabeledMotif.lean`: literal labeled forward, inverse, and opposite
+  grouped motifs erase to the actual scalar schedules. Every physical wire
+  history is derived from sparse incidence. Edge comparability, nondegenerate
+  labels, and total loss bounded by central-wire count times current dimension
+  are proved, including sink alignment and skipped intermediate labels.
+
+- `Networks/SignedProjection.lean`: the first rational edge from a negative
+  source projection to any containing label has rank equal to that containing
+  label's dimension. The correction over ordinary edge rank is exactly the
+  source dimension, even when sparse support skips an initial repeated label.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.

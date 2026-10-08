@@ -87,9 +87,13 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Binary multi-column interface | `BinaryColumns` | ✅ | ⬜ | Concrete slice operators and exact residual-dimension factor count; unit premise explicit |
 | Local residual formulas and binary units | `MotifResiduals`, `BinaryMotifResiduals` | ✅ | — | Thirteen local comparisons plus future/sink at all three stages; physical sparse-history coverage remains |
 | Exact Gaussian-dyadic arithmetic | `GaussianDyadic`, `GaussianCircuit` | ✅ | ⬜ | Concrete motif coefficients, grouped updates, and both binary edge directions; denominator growth proved, numerator size and tape costs open |
+| Binary interface numerator bounds | `GaussianPrecision` | ✅ | ⬜ | Actual kernels and both projection-edge directions; explicit scale and integer numerator bounds |
+| Physical local label histories and loss | `LabeledMotif` | ✅ | — | Forward/opposite sparse histories; comparable nondegenerate edges, loss ≤ central count × current dimension, including sinks |
+| Rational negative-source correction | `SignedProjection` | ✅ | — | Exact extra source rank for arbitrary nested first label, including skipped vertices |
 | Full labeled schedule | — | 🟡 | ⬜ | Local table and all stage boundaries proved; attach to global physical group history |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
 | Residual rank saving | — | ⬜ | — | Nested gate labels, total saving |
+| Improved h=50 bit network | — | ⬜ | ⬜ | Shared-point/paired-exclusion circuit, role sharing and frame transfer required for the selected tau; original bit motif does not establish this exponent |
 | Rational address-shear interface | `ProjectionRank`, `ShearFrame` | 🟡 | ⬜ | Projection ranks and exact endpoint/frame identities; finite-radix realization and total budget open |
 | Phase interfaces and tape compilation | — | ⬜ | ⬜ | |
 

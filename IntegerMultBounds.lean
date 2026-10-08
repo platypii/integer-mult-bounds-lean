@@ -71,6 +71,9 @@ import IntegerMultBounds.Networks.MotifResiduals
 import IntegerMultBounds.Networks.BinaryMotifResiduals
 import IntegerMultBounds.Networks.GaussianDyadic
 import IntegerMultBounds.Networks.GaussianCircuit
+import IntegerMultBounds.Networks.GaussianPrecision
+import IntegerMultBounds.Networks.LabeledMotif
+import IntegerMultBounds.Networks.SignedProjection
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits
