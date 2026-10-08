@@ -143,6 +143,11 @@ proof.
   the zero-padded acyclic one; bit strings chunk into base `2^k` digits with
   each chunk below `2^k`, connected to the machine's `binaryValue`. Carry
   propagation of the convolved digits back to bits is not yet implemented.
+- `NLogN/FixedPoint.lean`: the radix-2 transform over `ℂ` with an arbitrary
+  per-step error of size at most `ε` deviates from the exact transform by at
+  most `(2^n - 1) ε`, the exact transform grows by at most `2^n`, a complex
+  value within `1/2` of an integer rounds to it exactly, and the product error
+  bound. The forward, pointwise, inverse error budget is not yet assembled.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
