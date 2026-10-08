@@ -653,6 +653,11 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   the two `n`-bit inputs. The existence of such moduli, the paper's
   short-interval prime lemma, is the one remaining mathematical hypothesis;
   bit costs and tape compilation are separate.
+- `NLogN/CostBound.lean`: the operation-count model closes the recursion.
+  With the paper's grid, three convolution pipelines cost exactly
+  `12 T/r` delegated products of size `3rp` plus `O(n log n)` word
+  operations, so any cost function bounded by three pipelines plus a linear
+  overhead for `n ≥ 2^(1729^12)`, and polynomially below, is `O(n log n)`.
 
 ## Top-level
 
