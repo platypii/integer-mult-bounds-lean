@@ -582,6 +582,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PrefixWidthCopiesAt.lean`: Places prefix-width replication beside an arbitrary retained dimension bank, sharing its existing width source. Preserves every dimension-bank tape/head and constructs exact prefix input from blank, with no extra supplied source and unchanged copy bound.
 
+- `Machine/FlatControlledShiftLayout.lean`: Exact complete input decomposition for the actual controlled-shift bootstrap. Exposes the prefix width bank and seventeen-tape suffix with only B/Q/P and payload supplied; every other tape/head is blank/zero. Identifies concrete descriptor slots for physical installation.
+
+- `Machine/ControlledShiftDimensionInstall.lean`: Actual three-copy program installs B/Q/P from the retained nine-tape dimension bank into the controlled-shift suffix, starting each destination blank. Exact full-bank contract preserves dimensions and payload, with cost2*(length B+length Q+length P)+17 including joins.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

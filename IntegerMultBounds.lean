@@ -517,3 +517,5 @@ import IntegerMultBounds.Machine.TranslationDimensions
 import IntegerMultBounds.Machine.FlatCoordinateDimensions
 import IntegerMultBounds.Machine.PrefixWidthCopies
 import IntegerMultBounds.Machine.PrefixWidthCopiesAt
+import IntegerMultBounds.Machine.FlatControlledShiftLayout
+import IntegerMultBounds.Machine.ControlledShiftDimensionInstall
