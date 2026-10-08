@@ -37,3 +37,4 @@ import IntegerMultBounds.NLogN.Multiplier
 import IntegerMultBounds.NLogN.Neumann
 import IntegerMultBounds.NLogN.Bluestein
 import IntegerMultBounds.NLogN.Approx
+import IntegerMultBounds.NLogN.Synthetic

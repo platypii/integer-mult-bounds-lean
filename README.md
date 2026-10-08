@@ -218,6 +218,11 @@ proof.
   map approximations as predicates, error propagation through a map of norm
   at most one, through compositions, through bilinear maps, through rounded
   products, and through slice-wise application in a tensor factor.
+- `NLogN/Synthetic.lean`: principal roots of unity, transform inversion over
+  an arbitrary commutative ring from the principal-root property alone, the
+  synthetic ring `ℂ[y]/(y^r + 1)` with `y^(2r/t)` a principal `t`-th root for
+  every power of two `t ∣ 2r`, and the exact synthetic FFT and its inverse.
+  The coefficient norm bound on products in the synthetic ring is not here.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
