@@ -411,3 +411,5 @@ import IntegerMultBounds.Machine.TranslationOffsetReplace
 import IntegerMultBounds.Machine.RadixToBinary
 import IntegerMultBounds.Machine.SignedScalingStream
 import IntegerMultBounds.Machine.OffsetPreparationCost
+import IntegerMultBounds.Machine.SignedScalingDimensionsStream
+import IntegerMultBounds.Machine.ActualAffineScalingStream
