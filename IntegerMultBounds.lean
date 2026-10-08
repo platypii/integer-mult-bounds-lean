@@ -670,3 +670,6 @@ import IntegerMultBounds.Machine.RecursiveChildQuotients
 import IntegerMultBounds.Machine.RecursiveChildQuotientsBound
 import IntegerMultBounds.Machine.RecursiveChildHeaderHandoff
 import IntegerMultBounds.Machine.RecursiveChildPrepare
+import IntegerMultBounds.Machine.DigitInterchangeBank
+import IntegerMultBounds.Machine.DigitInterchangeCompile
+import IntegerMultBounds.Machine.DigitInterchangeClean

@@ -901,6 +901,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveChildPrepare.lean`: One fixed 38-tape machine starts with only six canonical parent headers and ends with only the actual six canonical child headers. Divisors, quotients, powers, products, occupied-header replacement, copy erasure and joins are all physical and charged to logical child volume. Saving parent headers and array/recursive control remain caller operations.
 
+- `Machine/DigitInterchangeBank.lean`: One fixed bank for width-one interchange with source, role streams, radix-pair leaf streams, merge streams, clocks and four supplied counters. Exact per-pass placements and spectator preservation support the whole-bank sequence.
+
+- `Machine/DigitInterchangeCompile.lean`: Actual same-bank sequence of two outer passes and twice-radix inner passes transposes the digit fields and overwrites the original source. Exact intermediate serialization and head restoration; cost at most (597+2*q) times volume including joins.
+
+- `Machine/DigitInterchangeClean.lean`: Physically initializes loop markers, executes the entire single-digit interchange, then erases all temporary streams, clocks and trackers. Same canonical source/scratch bank with four retained descriptors, exact transposed payload and explicit linear-volume cost. Counter synthesis from six recursive headers remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
