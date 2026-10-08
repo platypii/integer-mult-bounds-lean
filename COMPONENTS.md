@@ -836,6 +836,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveInterchangeScalingClean.lean`: Clean reusable heterogeneous H/D scaling retains six original headers and normalized payload pair, erasing all generated metadata and trackers at head zero. Exact canonical bank independent of H/D selection and explicit setup/execution/cleanup linear-volume bound; coefficient and tape count are fixed independently of runtime layout.
 
+- `Machine/CleanSubbank.lean`: Fixed injective placement executes a clean local machine on selected permanent tapes with blank private storage. Exact input/output payload agreement and spectator framing imply the unchanged runtime contract for the whole bank; no implicit copies or head resets.
+
+- `Machine/CleanSubbankCompile.lean`: Finite physical composition of clean permanent-bank stages returns literal blank private input/output and charges every joining transition. Works for arbitrary permanent banks and heterogeneous layouts, with actual stage contracts supplied.
+
+- `Machine/RecursiveShiftRoleBank.lean`: One layout-independent machine shifts a selected permanent role in any positive seven-factor layout. Shared six canonical headers, all other roles and arbitrary auxiliary tapes are preserved, private work is blank again, and exact symbol transport costs 221536 times volume plus 32370. Header updates are separate.
+
+- `Machine/RecursiveCleanReturn.lean`: Actual header cleanup, saved-descriptor restoration and binary PC pop/dispatch composed into one return routine, with exact selected continuation terminal state. Conditional body interface allows nonblank child headers and charges all erasure and joins; recursive body implementation remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

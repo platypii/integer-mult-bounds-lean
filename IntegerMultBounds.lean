@@ -641,3 +641,7 @@ import IntegerMultBounds.Machine.RecursiveScalingDimensions
 import IntegerMultBounds.Machine.RecursiveScalingInstall
 import IntegerMultBounds.Machine.RecursiveInterchangeScalingConstruct
 import IntegerMultBounds.Machine.RecursiveInterchangeScalingClean
+import IntegerMultBounds.Machine.CleanSubbank
+import IntegerMultBounds.Machine.CleanSubbankCompile
+import IntegerMultBounds.Machine.RecursiveShiftRoleBank
+import IntegerMultBounds.Machine.RecursiveCleanReturn
