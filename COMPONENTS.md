@@ -738,6 +738,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   the explicit recursive step is exact with the moduli supplied. The
   Chebyshev bound itself is not in mathlib and remains the one external
   number-theoretic input.
+- `NLogN/OffDiagApproxSqrt.lean`: the paper's Lemma 4.11 window. Under
+  `α²θ ≥ 1` the off-diagonal terms decay like `e^(−2π(|h| − 1/2)²)`, so
+  truncating to `|h| ≤ m` with `9 m² ≥ p` loses at most `3/2^p`; the clamped
+  off-diagonal part, the Neumann inverse, and `B̃` keep their error bounds at
+  the window `⌊√p⌋ + 1`, still below `p²`. This window is what makes the
+  resampling maps cost `O(T p^(3/2+δ))`.
 
 ## Top-level
 
