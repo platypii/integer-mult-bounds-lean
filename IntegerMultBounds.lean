@@ -511,3 +511,6 @@ import IntegerMultBounds.Machine.Shared50NonrecursiveSegments
 import IntegerMultBounds.Networks.AffineFieldSegments
 import IntegerMultBounds.Machine.BinaryDescriptorInstall
 import IntegerMultBounds.Machine.BinaryDescriptorInstallRaw
+import IntegerMultBounds.Machine.DimensionProductDescriptor
+import IntegerMultBounds.Machine.TranslationDimensions
+import IntegerMultBounds.Machine.FlatCoordinateDimensions

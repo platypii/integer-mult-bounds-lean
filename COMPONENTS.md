@@ -564,6 +564,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryDescriptorInstallRaw.lean`: Actual copy followed by two-transition marker removal yields the marker-free descriptor at head zero required by bootstrap machines. Exact complete-bank setTape postcondition preserves source and all other tapes; fixed eight-state program costs2*length+8 including the join.
 
+- `Machine/DimensionProductDescriptor.lean`: Physical six-tape product-descriptor constructor from two canonical binary inputs and wholly blank workspace. Installs markers, executes counted multiplication, restores scratch and preserves both inputs; exact canonical product output with bound53*N*W+28 for positive W.
+
+- `Machine/TranslationDimensions.lean`: Actual nine-tape dimension bank from sole canonical b/W inputs. Fixed prefix/suffix counts select finite control; computes Q=q^b, P=q^(p*b), S=q^(s*b), B=S*W, preserves inputs and restores scratch. Exact canonical words and bound(24*p+24*s+333)*P*Q*B include every setup, conversion, product and join.
+
+- `Machine/FlatCoordinateDimensions.lean`: Specializes physical dimension synthesis to an actual shared-prime coordinate target. Proves the constructed words literally match the canonical Q/P/B expected by FlatCoordinateSchedule, with common-volume runtime, preserved b/W inputs and blank initial workspace. Full stage-input installation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
