@@ -499,7 +499,35 @@ Bit and complex networks.
   list has one finite family of binary kernel directions valid for every
   column count. Every edge operator is factored and total vector-factor count
   equals its actual rank sum, hence meets the concrete budget and exponent.
-  Whole scheduled execution and tape compilation remain separate.
+  Whole framed execution is supplied by `ComplexFramedExecution`; tape
+  compilation remains open.
+
+- `Networks/BinaryColumnFrame.lean`: actual invertible columnwise frames
+  have the proved forward and inverse operators for every column count.
+  Rational scalar restriction preserves the complex-array functions and
+  identifies their exact frame changes with the rank-factor edge operators.
+
+- `Networks/GroupedModuleFrames.lean`: the same grouped compiler acts on
+  any module over its scalar ring. Whole-run identities and exact ordered
+  instruction-edge extraction preserve the physical label history. Scalar
+  circuit equalities, including signed routing, lift by proved coefficient
+  rows to arbitrary module values without a freeness assumption.
+
+- `Networks/FramedFactorExecution.lean`: replaces each actual frame-change
+  instruction by its certified linear factors on the original physical wire.
+  Reversed list execution matches operator product order; whole state runs
+  agree and every scalar gate retains its position relative to the others.
+  Exact factor count and total length include the fixed scalar gate list.
+  These are finite linear-operation instructions, not tape transitions.
+
+- `Networks/ComplexFramedExecution.lean`: instantiates the complete physical
+  h=25 rational-scalar network on complex arrays. A fixed family of binary
+  directions works at every column count; its placed vector factors execute
+  exactly the signed bank exchange conjugated by the actual endpoint frames.
+  Total array-instruction length is the rank total plus the fixed scalar-row
+  count, and executed vector-factor count meets the budget and exponent.
+  Scratch has its prescribed output frame; endpoint simplification to the
+  desired transform and literal machine compilation remain separate.
 
 - `Networks/NetworkBudget.lean`: sums dimensions of actual physical source
   and sink subspaces, including the empty-data case. At complex ground size

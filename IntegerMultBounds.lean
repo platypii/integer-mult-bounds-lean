@@ -85,6 +85,10 @@ import IntegerMultBounds.Networks.ComplexRank25
 import IntegerMultBounds.Networks.GlobalBinaryResiduals
 import IntegerMultBounds.Networks.BinaryRankFactors
 import IntegerMultBounds.Networks.ComplexPhaseBudget
+import IntegerMultBounds.Networks.BinaryColumnFrame
+import IntegerMultBounds.Networks.GroupedModuleFrames
+import IntegerMultBounds.Networks.FramedFactorExecution
+import IntegerMultBounds.Networks.ComplexFramedExecution
 import IntegerMultBounds.Networks.NetworkBudget
 import IntegerMultBounds.Networks.SharedPointLabels
 import IntegerMultBounds.Networks.SharedPointMap

@@ -102,7 +102,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Paired-exclusion reconstruction | `PairedPartition`, `PairGrouping`, `PairedReconstruct` | ✅ | ⬜ | Literal pair grouping and recursive decrease; actual single/pair smart-add reconstruction with exact supports and node bounds; full recursive DAG assembly remains open |
 | Shared-point source spans | `SharedPointLabels` | ✅ | — | Actual rational spans are positive definite and nested; no nondegeneracy hypothesis |
 | Rational address-shear interface | `ProjectionRank`, `ShearFrame` | 🟡 | ⬜ | Projection ranks and exact endpoint/frame identities; finite-radix realization and total budget open |
-| Phase interfaces and tape compilation | `BinaryRankFactors`, `ComplexPhaseBudget` | 🟡 | ⬜ | Exact ordered per-edge operators and fixed kernel directions for every column count; full scheduled execution and literal tape costs remain open |
+| Phase interfaces and tape compilation | `BinaryRankFactors`, `ComplexPhaseBudget`, `BinaryColumnFrame`, `GroupedModuleFrames`, `FramedFactorExecution`, `ComplexFramedExecution` | 🟡 | ⬜ | Complete physically placed array-factor run is the endpoint-frame signed exchange, uniformly in columns; total instruction count includes all scalar gates; endpoint simplification and literal tape costs remain open |
 
 ## 4. Faster interchange of address chunks (§4)
 
@@ -193,7 +193,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 ## Next steps
 
 - Prepare sorting metadata and compute repair keys, then compose extraction, sorting and reinsertion.
-- Complete the optimized h=50 bit-network construction/counts and connect complex edge factors to full scheduled execution.
+- Complete the optimized h=50 bit-network construction/counts and simplify the complex network endpoint frames to the desired transform.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compile the finite network interfaces and their arithmetic to literal tape steps.
