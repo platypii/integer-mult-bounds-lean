@@ -522,6 +522,11 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   approximates the normalized transform with scaled error
   `t (4 log₂ t + 2εa + 4) + εa + 2`, at most `4 t log₂ t + 8 t + 4` for a
   chirp within two units. No unit-ball side conditions are needed.
+- `NLogN/PowerOfTwoExactD.lean`: the exact chain of Theorem 3.1 for any
+  number of coordinates: splitting off the last coordinate through an
+  additive isomorphism, the normalized complex transform is a chirp
+  multiplication, the untwisted `d`-dimensional synthetic pipeline over the
+  ring of dimension `t_{d+1}`, and another chirp multiplication.
 
 ## Top-level
 
