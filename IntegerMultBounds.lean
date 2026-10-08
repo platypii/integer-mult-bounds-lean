@@ -105,6 +105,16 @@ import IntegerMultBounds.Networks.DisjointPaired
 import IntegerMultBounds.Networks.PairedPartition
 import IntegerMultBounds.Networks.PairGrouping
 import IntegerMultBounds.Networks.PairedReconstruct
+import IntegerMultBounds.Networks.SupportInterpretation
+import IntegerMultBounds.Networks.PairedCircuit
+import IntegerMultBounds.Networks.PairedVectorCorrect
+import IntegerMultBounds.Networks.PairedGraphSpec
+import IntegerMultBounds.Networks.PairedCoarseSupport
+import IntegerMultBounds.Networks.PairedCoarseCorrect
+import IntegerMultBounds.Networks.PairedQuerySupport
+import IntegerMultBounds.Networks.PairedCoarseQuery
+import IntegerMultBounds.Networks.PairedStripCorrect
+import IntegerMultBounds.Networks.PairedStripSupport
 import IntegerMultBounds.Networks.ReversibleFanout
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit

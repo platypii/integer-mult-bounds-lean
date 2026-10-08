@@ -619,6 +619,55 @@ Bit and complex networks.
   extension, exact output supports/values, preservation and three/one new-node
   bounds are proved. Complete recursive construction and sharing counts remain.
 
+- `Networks/SupportInterpretation.lean`: expanding weighted source atoms
+  into original input supports preserves disjoint partitions and finite sums,
+  including empty weights required by initial graph vertices.
+
+- `Networks/PairedCircuit.lean`: full executable upstream paired-exclusion
+  recursion, with the literal balanced-total, prefix/suffix, coarse graph,
+  strip, and reconstruction order. Termination follows from actual pair
+  grouping. Correctness and optimized counts are separate proof obligations.
+
+- `Networks/PairedVectorCorrect.lean`: the literal prefix-first, suffix-second
+  vector builder preserves the DAG and produces the exact total and each
+  omission over arbitrary commutative additive monoids. It adds at most
+  three nodes per operand and preserves prior values.
+
+- `Networks/PairedGraphSpec.lean`: ordered graph/table invariants and a
+  semantic contract for recursive results, including exact query supports
+  and preserved references. The literal small-block branch satisfies the
+  complete contract; state-threaded balanced query loops are verified.
+
+- `Networks/PairedCoarseSupport.lean`: actual paired groups classify fine
+  sources into disjoint coarse vertex/edge cells that cover the graph.
+  Excluding coarse indices excludes exactly their fine vertices, with
+  domain validity and looplessness proved from the actual ordered keys.
+
+- `Networks/PairedCoarseCorrect.lean`: both literal coarse construction
+  passes establish the full recursive input invariant, with valid disjoint
+  DAG references and exact interpreted source-cell supports. Canonical
+  lookups, crossing queries, internal weights and persistence are proved.
+
+- `Networks/PairedQuerySupport.lean`: actual table-filter queries equal
+  interpreted fine sources avoiding the removed vertices. The source
+  domain is loopless and contained in its vertex set; crossing queries and
+  the weighted reconstruction partitions have their required disjointness.
+
+- `Networks/PairedCoarseQuery.lean`: actual coarse table queries contract
+  to fine-source exclusions. A correct recursive call supplies exactly the
+  fine total, outside and far references needed for reconstruction, with
+  the original graph invariant preserved at its returned DAG.
+
+- `Networks/PairedStripCorrect.lean`: literal carry, balanced edge totals,
+  prefix/suffix omissions and the entire strip loop are valid DAG extensions.
+  Exact total and keyed omission supports are anchored in original operands;
+  executable strip lookup retains those semantics after later extensions.
+
+- `Networks/PairedStripSupport.lean`: the original graph invariant supplies
+  every strip operand's validity and disjointness. Actual full and omitted
+  strip queries expand to precisely the source strips used by reconstruction,
+  with the remaining vertex weight retained and the selected group excluded.
+
 - `Networks/ReversibleFanout.lean`: literal binary gate lists gather a sum
   into a pivot and fan it out. Full dirty-state semantics, reverse-list
   inversion, spectator preservation, exact instruction counts and support
