@@ -633,3 +633,6 @@ import IntegerMultBounds.Machine.RecursiveDescriptorFrames
 import IntegerMultBounds.Machine.RecursiveHeaderBounds
 import IntegerMultBounds.Machine.FiniteReturnStackAt
 import IntegerMultBounds.Machine.RecursiveFrameControl
+import IntegerMultBounds.Machine.BinaryDescriptorCleanupList
+import IntegerMultBounds.Machine.BinaryDescriptorFrameRestore
+import IntegerMultBounds.Machine.RecursiveHeaderRestore

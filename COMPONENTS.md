@@ -820,6 +820,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveFrameControl.lean`: Concrete static call/body/return assembly physically saves descriptor fields and PC, restores fields, pops PC and dispatches to the decoded continuation. Exact tape and terminal-state contracts charge every join. The supplied body must establish intact saved stacks and blank restoration destinations; recursive child execution remains an explicit obligation.
 
+- `Machine/BinaryDescriptorCleanupList.lean`: Fixed physical list of marked binary-header erasures. Every bit and marker is erased, heads return to zero and all other tapes are framed; exact cost two times total bit length plus five times field count. No runtime length enters control.
+
+- `Machine/BinaryDescriptorFrameRestore.lean`: Actual cleanup followed by descriptor-frame pop accepts nonblank child headers, physically erases them and restores saved ancestor headers in the same slots. Exact older stack/head and spectator preservation, with cleanup, joining and pop costs explicit.
+
+- `Machine/RecursiveHeaderRestore.lean`: Actual parent-header restoration costs at most (fieldCount*(8*(log2 roles+2)+13)+1) times logical child volume. Canonical old/current layout headers and paths discharge size assumptions; six-field bound is (48*(log2 roles+2)+79) times child volume. No free header reset.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
