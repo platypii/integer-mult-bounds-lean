@@ -48,6 +48,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Literal scaling split with buffer rewinds | `ScalingSplitRewind` | ✅ | ✅ | Copies exact contiguous pieces then physically returns each buffer head to its merge-ready origin, preserving all descriptors and clocks. Actual canonical bound is twenty-four times volume plus forty-eight times fixed piece count plus one |
 | Literal inverse-piece concatenation | `ScalingConcatenate`, `ScalingPartitionData` | ✅ | ✅ | All physical source rewinds/copies and joins charged; exact family concatenation and inverse block-address identity proved. Assembly with scatter/cleanup remains separate |
 | Fully reusable positive-unit scaling | `ScalingExecutionReuse` | ✅ | ✅ | Actual residue initialization, split, rewinds, merge and buffer cleanup compose with full source/scratch/control guarantees and linear-volume runtime. Canonical B/Q/piece descriptors remain explicit inputs |
+| Fully reusable inverse-unit scaling | `ScalingInverseExecution` | ✅ | ✅ | Actual initialized scatter, rewind/concatenate and buffer cleanup have exact inverse block semantics and linear-volume runtime. Canonical binary descriptors remain supplied |
 | Literal scaling-piece descriptor synthesis | `ScalingDescriptorData`, `ScalingDescriptors` | ✅ | ✅ | Generates canonical exact piece lengths from blank descriptor tapes using supplied Q/B descriptors; all sentinels, residue setup, increments and cleanup charged, with bound seventy times Q*B plus fifty-one. Assembly with scaling remains separate |
 | Repeated reusable positive-unit scaling | `ScalingStream` | ✅ | ✅ | Exact uniform-fiber scaling with shared restored buffers and real reinitialization, fixed control and linear total-volume execution. Binary descriptors remain prepared |
 | Literal inverse-unit scatter | `ScalingScatter` | ✅ | 🟡 | Actual selected-buffer block routing has exact inverse-scaling piece semantics and linear-volume execution. Physical concatenation and full reusable inverse wrapper remain open |
@@ -248,7 +249,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 ## Next steps
 
-- Construct derived binary descriptors, assemble reusable inverse-unit scaling and repeated scaling, then compose signed rational scales and computed varying-offset translations.
+- Assemble synthesized piece descriptors with repeated scaling, repeat inverse scaling, then compose signed rational scales and computed varying-offset translations.
 
 - Compute repair keys and run extraction, sorting and reinsertion on tapes, with the `RepairPipeline` composition as the specification.
 - Compile the proved optimized h=50 modular physical network and its fixed rational control schedule to literal tape execution and prove its recursive time bound.

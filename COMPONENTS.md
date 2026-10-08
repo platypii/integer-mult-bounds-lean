@@ -248,6 +248,8 @@ Machine model, execution, composition, and tape routines.
 - `Machine/ScalingDescriptorData.lean`: Growing binary descriptor family for exact contiguous scaling-piece lengths. Selector prefix counts identify each value and final piece length; descriptors remain canonical. A telescoping family carry potential bounds all actual increment/return transitions by four times payload volume, avoiding a binary-width charge per increment.
 - `Machine/ScalingDescriptors.lean`: Literal piece-length descriptor synthesis from canonical Q/B descriptors and genuinely blank derived-descriptor/work tapes. Initializes sentinels and residue controls, dispatches B counted growing increments to the selected piece for Q iterations, and restores mutable clocks. All output descriptors are exact and canonical; actual cost at most seventy times Q*B plus fifty-one for positive B. No piece-length descriptor oracle is assumed.
 
+- `Machine/ScalingInverseExecution.lean`: Complete reusable inverse positive-unit scaling: initializes residue banks, scatters blocks to pieces, physically rewinds/concatenates them, then erases and resets all buffers. Output block y is original input block c*y modulo Q; entire source, scratch backgrounds/heads and immutable descriptors survive, all clocks reset. Fixed ten plus four-c tapes and ninety-eight-c plus forty-one states; prepared canonical descriptors give actual runtime at most 127 times volume plus 120 times fixed coefficient plus fifty-one.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
