@@ -263,6 +263,9 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SignedScalingExecution.lean`: Unsigned rational scaling core, despite the broader module name: literal positive numerator scaling, physical shared-intermediate rewind, denominator inverse scaling, and complete intermediate erase/reset. Exact numerator/denominator payload semantics with source, coefficient scratch and shared intermediate restored. Fixed twenty-five plus four times the sum of coefficients tapes; cost448*volume+120*(numerator+denominator)+200. Canonical per-coefficient descriptors remain prepared, and optional sign negation is not part of unsignedProgram.
 
+- `Machine/SignedScalingSign.lean`: Complete literal signed rational scaling with a compile-time sign choice. Positive coefficients use the unsigned numerator/denominator core; negative coefficients additionally perform real intermediate rewind, block-preserving coordinate negation and full scratch cleanup. Exact signedBlocks payload and all source/scratch/control guarantees proved. Bound is448*volume+120*(a+d)+200 for positive and852*volume+120*(a+d)+516 for negative. Canonical coefficient descriptors remain prepared; canonical tail length/count descriptors are required only in the negative branch.
+- `Machine/BinaryOneInit.lean`: Literal two-transition construction of a constant-one binary descriptor from a genuinely blank tape. Writes its sentinel and one digit, leaves the head on that digit and truly halts; exact value and canonicality proved. Supports the Q-minus-one descriptor bootstrap needed by negation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
