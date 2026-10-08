@@ -17,7 +17,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Finite networks with a rank saving | §3 | 🟡 | ⬜ |
 | Faster interchange of address chunks | §4 | ✅ | ⬜ |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ | 🟡 |
-| Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ |
+| Synthetic transforms and their tape layout | §6 | ✅ | ⬜ |
 | Gaussian resampling | §7 | ✅ | ⬜ |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ |
 | Exact multiplication, parameters, time bound | §8 | 🟡 | ⬜ |
@@ -192,7 +192,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Synthetic FFT with shift twiddles | `SynthFFT`, `SynthMultiD` | ✅ | ⬜ | One and `d` dimensions, error `n ε` |
 | Complex-to-synthetic embedding | `SynthEmbed` | ✅ | — | Twist is an isometry |
 | Bluestein reduction | `Bluestein`, `BluesteinApprox` | ✅ | ⬜ | |
-| Tape layout and costs | — | ⬜ | ⬜ | |
+| Tape layout and costs | `LayoutCost` | ✅ | ⬜ | Prefix slots `≤ dK`, chunk reorder by `≤ Dq−1` exchanges costing `≤ dℓK^(τ−1)`, exactly `ℓ` rounds with error `ℓ√2·2^(-p)` in the disk, descriptor length `≤ C_desc p`, bracket equals four cost-table rows; `K < ℓ` eventually |
 
 ## 7. Gaussian resampling (§7)
 

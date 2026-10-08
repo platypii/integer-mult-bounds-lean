@@ -1788,3 +1788,14 @@ Parameters and asymptotics.
   `L < k`, `γ ≤ k/4` and `p = 6k`, both margins follow from
   `896 k 2^(k/4) < 2^k`, which holds for all large `k`. Tape costs are not
   here.
+- `LayoutCost.lean`: the transform layout and its cost (§6, the transform
+  layout lemma). Any permutation of `n` positions is a product of at most
+  `n - 1` transpositions, so the chunk reorder takes at most `Dq - 1` chunk
+  exchanges, costing at most `d ℓ K^(τ-1)` for `qK ≤ ℓ`; at most `D (b+1) ≤ dK`
+  slots move to the prefix; the leading, chunk, and prefix rounds number
+  exactly `ℓ`; a chunk round sees `P · 2^(DK) · S` records; the nine
+  descriptor codes total at most `C_desc p`; `m` truncated contraction rounds
+  have error at most `m √2 2^(-p)` and keep the disk; the cost bracket
+  `dK + pK^(τ-1) + ℓ d^λ' + log(rp)` is the sum of four cost-table rows,
+  below the whole table; and `K + 1 ≤ ℓ` holds for all large `n`. Tape
+  execution is not here.
