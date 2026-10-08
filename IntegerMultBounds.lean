@@ -46,6 +46,8 @@ import IntegerMultBounds.Machine.BlockNegationReuse
 import IntegerMultBounds.Machine.OneHot
 import IntegerMultBounds.Machine.ScalingMergeData
 import IntegerMultBounds.Machine.ScalingSplitRewind
+import IntegerMultBounds.Machine.ScalingConcatenate
+import IntegerMultBounds.Machine.ScalingPartitionData
 import IntegerMultBounds.Machine.ScalingExecutionReuse
 import IntegerMultBounds.Machine.ScalingScatter
 import IntegerMultBounds.Machine.ScalingExecution

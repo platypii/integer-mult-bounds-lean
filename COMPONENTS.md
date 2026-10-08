@@ -240,6 +240,9 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ScalingExecutionReuse.lean`: Complete reusable positive-unit scaling with actual residue-control initialization, split, physical rewinds, merge, and temporary-buffer erasure/reset. Arbitrary initial residue cells are accepted; source, canonical immutable descriptors, complete scratch backgrounds and scratch heads are preserved. Fixed ten plus four-c tapes and ninety-eight-c plus forty-two states; actual runtime at most 127 times volume plus 120 times fixed coefficient plus fifty-two. Binary descriptors remain prepared inputs.
 
+- `Machine/ScalingConcatenate.lean`: Literal concatenation of a fixed family of raw piece buffers into one destination. Each source starts at its segment end, is physically rewound and copied, and ends at its original end position; source contents, descriptors and clock survive. Exact output is the flattened family in index order; canonical descriptors give cost at most twenty-four times total volume plus forty-eight times fixed piece count.
+- `Machine/ScalingPartitionData.lean`: Contiguous quotient pieces concatenate to the complete block list, both for natural-index and Fin-indexed physical buffer families. This pure representation bridge identifies inverse-scatter concatenation with input blocks indexed by c*y modulo Q, preserving every intra-block payload cell.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
