@@ -970,14 +970,23 @@ Bit and complex networks.
 - `Networks/Shared50InvocationRank.lean`: complete finite forward label
   history includes boundary alignments and every actual middle DAG incidence.
   Exact endpoints, nested nondegenerate edges and loss exactly 2,500 are proved,
-  for bottom or common auxiliary input. Physical wrapper linkage is separate.
+  for bottom or common auxiliary input. Physical linkage is proved in Shared50InvocationPhysicalEdges.
 - `Networks/Shared50OppositeLabels.lean`: concrete opposite-inverse profiles
   use actual complemented final spans for injection and complemented initial
   source lines for draining; common-frame attachments and nondegeneracy proved.
 - `Networks/Shared50OppositeRank.lean`: complete opposite history, including
   the actual finite complementary inverse trace. Common-input endpoints,
-  nested nondegenerate edges and exact loss 2,500 are proved; full physical
-  wrapper and global rank-sum linkage remain separate.
+  nested nondegenerate edges and exact loss 2,500 are proved; physical linkage
+  is proved in Shared50FramedOpposite; global rank assembly remains separate.
+
+- `Networks/FramedBlocks.lean`: Whole-bank frame alignment and scalar-block lifting with exact execution and erasure laws.
+- `Networks/FramedEdgeTrace.lean`: Extracts every ordered physical frame change, preserving identity edges and repetitions; extraction commutes with finite restriction and injective placement.
+- `Networks/Shared50BlockFrames.lean`: Every actual forward sparse block uses a common frame at its concrete invocation boundary profile.
+- `Networks/Shared50FramedInvocation.lean`: Complete physical forward wrapper around the actual finite shared DAG. Exact sparse scalar erasure and frame identity on arbitrary module contents, including dirty scratch.
+- `Networks/Shared50PhysicalEdges.lean`: Actual finite forward and complementary inverse middle frame changes equal the ordered support-label traces.
+- `Networks/Shared50InvocationPhysicalEdges.lean`: Every frame change of the complete physical forward wrapper equals the corresponding edge of its proved local rank history.
+- `Networks/Shared50OppositeBlockFrames.lean`: Common-frame proofs for every actual opposite-inverse sparse block at its concrete boundary profile.
+- `Networks/Shared50FramedOpposite.lean`: Complete physical opposite wrapper with literal complementary inverse middle, exact sparse scalar erasure, arbitrary-module frame identity and exact equality to its local rank edges.
 
 ### Networks/Certificates/Paired49
 
