@@ -177,6 +177,7 @@ import IntegerMultBounds.Networks.Shared50SparseCentral
 import IntegerMultBounds.Networks.Shared50SparseInvocation
 import IntegerMultBounds.Shared50Parameters
 import IntegerMultBounds.Networks.Shared50GlobalBudget
+import IntegerMultBounds.Networks.Shared50GlobalCircuit
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit

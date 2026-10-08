@@ -895,7 +895,8 @@ Bit and complex networks.
 - `Networks/Shared50ReuseLabels.lean`: actual stage-one and stage-three tensor
   boundary labels at the selected reuse pairs are nested and nondegenerate.
   The join has zero downward loss and its actual projector rank saves exactly
-  125,000 against separate terminal edges. Physical schedule reuse is separate.
+  125,000 against separate terminal edges. The reused scalar schedule is proved
+  in Shared50GlobalCircuit; its complete rank trace remains separate.
 
 - `Networks/DAGSourceRoles.lean`: each actual source entry has a certified
   finite role and actual input-node label, with no fallback value. Repeated
@@ -938,6 +939,14 @@ Bit and complex networks.
   dimensions. The existing three-bank world has a different count. Corrected
   rank and branching corollaries explicitly require actual trace balance and
   loss bounds; this file does not prove the reused schedule's rank estimate.
+
+- `Networks/Shared50GlobalCircuit.lean`: actual three-coordinate sparse
+  program on the optimized two-bank world. The outer stages share matching
+  side and center slots via the neighbor permutation; each stage's placements
+  are injective and the middle bank is separate. Every invocation, full stage
+  and fixed global program swaps/shears as specified, restoring arbitrary dirty
+  scratch. Exact list accounting gives at most 3 × 19,600² × 5,209,540 scalar
+  instructions. Projector-rank history and tape costs remain separate.
 
 ### Networks/Certificates/Paired49
 
