@@ -526,8 +526,19 @@ Bit and complex networks.
   exactly the signed bank exchange conjugated by the actual endpoint frames.
   Total array-instruction length is the rank total plus the fixed scalar-row
   count, and executed vector-factor count meets the budget and exponent.
-  Scratch has its prescribed output frame; endpoint simplification to the
-  desired transform and literal machine compilation remain separate.
+  Scratch has its prescribed output frame; `ComplexEndpoints` simplifies the
+  endpoint corrections to the desired transform. Tape compilation remains open.
+
+- `Networks/TensorTerminalWeight.lean`: tensor coordinates of the actual
+  terminal vector are the Cartesian-product indicator of its triple labels,
+  so its binary Hamming weight is exactly twenty-seven.
+
+- `Networks/ComplexEndpoints.lean`: explicit input/output character corrections,
+  the terminal phase, and signed bank rerouting turn the actual h=25 physical
+  network into the full product of forward coordinate kernels on every input,
+  including dirty scratch. The lowered instruction run has the same transform
+  and a uniform internal vector-factor budget. Correction costs, scalar-kernel
+  expansion and literal tape execution are separate obligations.
 
 - `Networks/NetworkBudget.lean`: sums dimensions of actual physical source
   and sink subspaces, including the empty-data case. At complex ground size

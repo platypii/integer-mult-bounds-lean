@@ -89,6 +89,8 @@ import IntegerMultBounds.Networks.BinaryColumnFrame
 import IntegerMultBounds.Networks.GroupedModuleFrames
 import IntegerMultBounds.Networks.FramedFactorExecution
 import IntegerMultBounds.Networks.ComplexFramedExecution
+import IntegerMultBounds.Networks.TensorTerminalWeight
+import IntegerMultBounds.Networks.ComplexEndpoints
 import IntegerMultBounds.Networks.NetworkBudget
 import IntegerMultBounds.Networks.SharedPointLabels
 import IntegerMultBounds.Networks.SharedPointMap
