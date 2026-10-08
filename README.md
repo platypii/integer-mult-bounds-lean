@@ -42,6 +42,12 @@ proof.
 
 ## Checked components
 
+- `Compact/Ideal.lean` and `Compact/ExactRepair.lean`: a packed ideal toggle
+  permutation, preservation of the actual guard predicate, and executable
+  destination repair connected to both concrete packed programs. Correctness
+  holds for every address, including saturated temporary digits and failed
+  guards. These prove address semantics; extracting, sorting, and reinserting
+  records on fixed tapes remain open.
 - `Compact/Permutations.lean`: modular rotations as actual permutations,
   restoration of an arbitrary back field by swap/load/swap, and invertibility
   of both packed programs on every address, including bad addresses. The
@@ -88,8 +94,9 @@ proof.
   integer statements, used by the guarded packed modular refinement above.
 - `Compact/Repair.lean`: for any two permutations agreeing outside an invariant
   exceptional set, the actual map preserves that set and destination repair
-  gives exactly the ideal map. Instantiating this result with a verified packed
-  program, and implementing the repair within the tape cost, remain necessary.
+  gives exactly the ideal map. `ExactRepair.lean` now instantiates this result
+  with both verified packed programs. Implementing repair within the tape cost
+  remains necessary.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.

@@ -11,3 +11,5 @@ import IntegerMultBounds.Machine.Execution
 import IntegerMultBounds.Machine.Counter
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Compact.Permutations
+import IntegerMultBounds.Compact.Ideal
+import IntegerMultBounds.Compact.ExactRepair

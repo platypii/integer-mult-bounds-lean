@@ -9,7 +9,7 @@ with the executable integer program in PackedControl.lean.
 namespace IntegerMultBounds.Compact
 open Radix
 
-def Field (M : ℤ) := {x : ℤ // 0 ≤ x ∧ x < M}
+abbrev Field (M : ℤ) := {x : ℤ // 0 ≤ x ∧ x < M}
 
 def fieldAdd {M : ℤ} (hM : 0 < M) (x : Field M) (a : ℤ) : Field M :=
   ⟨(x.val + a) % M, Int.emod_nonneg _ (ne_of_gt hM), Int.emod_lt_of_pos _ hM⟩

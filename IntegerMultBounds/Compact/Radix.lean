@@ -54,6 +54,27 @@ theorem digits_pack (B : ℤ) (hB : 0 < B) (ds : List ℤ) (h : Bounded B ds) :
       Int.add_mul_ediv_left _ _ (ne_of_gt hB), Int.ediv_eq_zero_of_lt hd.1 hd.2,
       zero_add, ih hds]
 
+theorem digits_bounded (B : ℤ) (hB : 0 < B) (n : ℕ) (x : ℤ) :
+    Bounded B (digits B n x) := by
+  induction n generalizing x with
+  | zero => simp [digits, Bounded]
+  | succ n ih =>
+    rw [digits, bounded_cons]
+    exact ⟨⟨Int.emod_nonneg _ (ne_of_gt hB), Int.emod_lt_of_pos _ hB⟩, ih _⟩
+
+theorem pack_digits (B : ℤ) (hB : 0 < B) (n : ℕ) (x : ℤ)
+    (hx : 0 ≤ x ∧ x < B ^ n) : pack B (digits B n x) = x := by
+  induction n generalizing x with
+  | zero => simp only [pow_zero] at hx; simp [digits, pack]; omega
+  | succ n ih =>
+    have hdiv : 0 ≤ x / B ∧ x / B < B ^ n := by
+      constructor
+      · exact Int.ediv_nonneg hx.1 hB.le
+      · apply (Int.ediv_lt_iff_lt_mul hB).mpr
+        simpa [pow_succ] using hx.2
+    simp only [digits, pack, ih _ hdiv]
+    exact Int.emod_add_mul_ediv x B
+
 theorem pack_injective (B : ℤ) (hB : 0 < B) (xs ys : List ℤ)
     (hx : Bounded B xs) (hy : Bounded B ys) (hlen : xs.length = ys.length)
     (hpack : pack B xs = pack B ys) : xs = ys := by
