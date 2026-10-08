@@ -50,6 +50,8 @@ import IntegerMultBounds.Networks.NeighborResidual
 import IntegerMultBounds.Networks.GlobalGrouped
 import IntegerMultBounds.Networks.BinaryPhase
 import IntegerMultBounds.Networks.TensorSubspace
+import IntegerMultBounds.Networks.TensorCoordinates
+import IntegerMultBounds.Networks.LabelTransport
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits

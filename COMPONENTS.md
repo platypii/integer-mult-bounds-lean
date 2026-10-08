@@ -309,6 +309,16 @@ Bit and complex networks.
   bilinear pairing, and proved preservation of nondegeneracy and orthogonality.
   These support the nested labels of the network schedule.
 
+- `Networks/TensorCoordinates.lean`: the actual binary tensor cube has an
+  explicit coordinate tensor basis with identity Gram matrix, giving a linear
+  isometry onto exactly `h^3` binary coordinates. This connects tensor labels
+  to the concrete dot-product and Hamming-weight phase formulas.
+
+- `Networks/LabelTransport.lean`: linear isometries transport actual label
+  subspaces, nondegeneracy, orthogonal residuals, dimensions, and projection
+  operators. Thus the coordinate bridge preserves the mathematical edge
+  operators as well as their ranks. No tape coordinate-conversion cost is claimed.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.
