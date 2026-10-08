@@ -1133,6 +1133,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveCallLayout.lean`: Fixed parking order includes exactly the original World roles except the active stream, excludes the separate IO tape and is duplicate-free. Used by actual controller call entry/recovery.
 
+- `Machine/Shared50RecursiveImplementation.lean`: Instantiates every Shared50 controller block with actual global-bank machines: base, node split/merge, return restoration, segments, gates and fixed-order child entry/recovery. One compile-time PC capacity, actual root header/sentinel setup and fixed cyclic graph; no runtime width/depth or supplied block implementation is a program parameter. Total recursive correctness and runtime recurrence remain unproved.
+
+- `Machine/Shared50RecursiveBlockExecution.lean`: Clean physical block contracts lift to exact runs of the padded cyclic machine and its real next-table edge, with full bank endpoints and at most one additional transition. These trace rules support assembly; recursive traces remain to prove.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
