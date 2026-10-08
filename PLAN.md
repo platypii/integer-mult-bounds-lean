@@ -107,7 +107,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Inversion of `T` (Lemma 4.6, Prop 4.7(i)) | `ResamplingInverse`, `ResamplingAssembly`, `Neumann` | ✅ | — | `F_s = 2^γ B F_t A`, `‖A‖, ‖B‖ ≤ 1` |
 | `d`-dimensional resampling (Thm 4.1) | `ResamplingMulti` | ✅ | — | |
 | Truncation and Neumann errors (Lemmas 4.8–4.12) | `ResamplingApprox`, `OffDiagApprox`, `NeumannApprox` | ✅ | — | |
-| Numerical `Ã`, `B̃` (Prop 4.7(ii)) | `ResamplingNumeric`, `ResamplingMultiNumeric` | 🟡 | ⬜ | Error below `p²` in one dimension, `d p²` in `d`; per-term Gaussian evaluations are hypotheses; clamping available via `Clamp` |
+| Numerical `Ã`, `B̃` (Prop 4.7(ii)) | `ResamplingNumeric`, `ResamplingMultiNumeric`, `ExplicitNumeric` | ✅ | ⬜ | Explicit maps with error below `p²` in one dimension and `d p²` in `d`, no side conditions |
 | Permutation-left variant | — | ⬜ | ⬜ | |
 
 ## 8. `O(n log n)` subroutine (Harvey–van der Hoeven)
@@ -125,7 +125,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Parameter selection and precision | `MainParams`, `PrecisionCheck` | ✅ | — | |
 | Final recurrence (Cor 5.5) | `MainRecurrence`, `Recurrence` | ✅ | — | Recursive inequality is a hypothesis |
 | Prime selection | `Primes` | 🟡 | — | Bertrand only; short-interval primes open |
-| Assembled numerical transform | `ResamplingMultiNumeric` | 🟡 | ⬜ | Numerical `⊗Ã_i`, `⊗B̃_i` with errors `d εA`, `d εB`; Proposition 5.2 assembly in progress |
+| Assembled numerical transform (Prop 5.2) | `ResamplingMultiNumeric`, `MainTransform`, `ExplicitNumeric` | 🟡 | ⬜ | `F̃_s = 2^γ B̃ F̃_t Ã` with error `2^(γ+4) T log₂ T`; the recursive step needs only `F̃_t` and the prime choice; the explicit numerics have no side conditions; final contract in progress |
 | Operation counts | `CostModel` | ✅ | ⬜ | Word operations and delegated products; `(12 T/r) M(3rp) + 2880 n log₂ n` |
 | Unit-ball clamping | `Clamp` | ✅ | — | Removes the ball side conditions of the composition lemmas |
 | Bit costs and tape compilation | — | ⬜ | ⬜ | |
