@@ -736,6 +736,37 @@ Bit and complex networks.
   Decoded masks and weighted sums agree with actual canonical pair queries;
   the 49-vertex specialization supplies the certificate output interface.
 
+- `Networks/DAGAllocator.lean`: literal active-node consumer order and role
+  allocation, sharing the first input pivot with the first output, retiring
+  other inputs and allocating remaining outputs fresh. The local transition
+  produces a valid reversible fanout layout from its live-slot invariant.
+
+- `Networks/DAGAllocatorCount.lean`: actual backward marking gives every
+  active node a consumer. Counting real ports proves the executable allocator
+  uses exactly active additions plus requested outputs, including repetitions.
+
+- `Networks/DAGAllocatorFrontier.lean`: each real allocation preserves unique
+  bounded live slots and consumer keys, with exact creation and retirement.
+  This is the invariant used by the complete compiler scan.
+
+- `Networks/DAGConsumers.lean`: actual consumer keys are unique, every active
+  addition reads earlier producers, and inactive nodes have no scheduled ports.
+  These facts discharge the compiler's scheduling requirements from the DAG.
+
+- `Networks/DAGAllocatorRun.lean`: whole-loop frontier propagation produces
+  valid layouts for actual emitted gates. Their scalar instruction lists have
+  an executable reverse on arbitrary dirty registers, with no assumed layout
+  or externally supplied allocator result.
+
+- `Networks/DAGCompileCorrect.lean`: the complete actual compiler has valid
+  shared-pivot gates, all intermediate slots within its role count, distinct
+  bounded requested-output slots, and no pending gate-input ports. DAG-value
+  transfer and support-frame nesting remain separate obligations.
+
+- `Networks/DAGAllocatorBudget.lean`: pruning cannot increase the number of
+  additions, so the actual compiler's roles are bounded by all certificate
+  additions plus requested outputs, without requiring a liveness certificate.
+
 - `Networks/ReversibleFanout.lean`: literal binary gate lists gather a sum
   into a pivot and fan it out. Full dirty-state semantics, reverse-list
   inversion, spectator preservation, exact instruction counts and support

@@ -129,6 +129,13 @@ import IntegerMultBounds.Networks.MaskSignature
 import IntegerMultBounds.Networks.MaskUnique
 import IntegerMultBounds.Networks.PairMask
 import IntegerMultBounds.Networks.ReversibleFanout
+import IntegerMultBounds.Networks.DAGAllocator
+import IntegerMultBounds.Networks.DAGAllocatorCount
+import IntegerMultBounds.Networks.DAGAllocatorFrontier
+import IntegerMultBounds.Networks.DAGConsumers
+import IntegerMultBounds.Networks.DAGAllocatorRun
+import IntegerMultBounds.Networks.DAGCompileCorrect
+import IntegerMultBounds.Networks.DAGAllocatorBudget
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits
