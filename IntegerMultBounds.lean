@@ -93,3 +93,4 @@ import IntegerMultBounds.NLogN.CostModel
 import IntegerMultBounds.NLogN.ResamplingMultiNumeric
 import IntegerMultBounds.NLogN.SynthConvApproxD
 import IntegerMultBounds.NLogN.Clamp
+import IntegerMultBounds.NLogN.PowerOfTwoNumeric

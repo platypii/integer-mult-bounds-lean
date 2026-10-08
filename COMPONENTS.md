@@ -515,6 +515,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   ball, so any approximation of a contraction can be clamped into the unit
   ball at no cost in scaled error; with a radius-`R` version. This supplies
   the unit-ball side conditions the composition lemmas require.
+- `NLogN/PowerOfTwoNumeric.lean`: Theorem 3.1 of the paper for two
+  power-of-two coordinates `t × r`: the numerical transform built from an
+  approximate chirp, the rounded pre-multiplication, the twisted synthetic
+  convolution pipeline, the untwist, and the rounded post-multiplication
+  approximates the normalized transform with scaled error
+  `t (4 log₂ t + 2εa + 4) + εa + 2`, at most `4 t log₂ t + 8 t + 4` for a
+  chirp within two units. No unit-ball side conditions are needed.
 
 ## Top-level
 
