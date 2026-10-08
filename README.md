@@ -77,12 +77,37 @@ builds the project and runs this audit.
 
 ## References
 
-- [CrocSwap/integer-mult-bounds](https://github.com/CrocSwap/integer-mult-bounds),
+### Primary sources
+
+- Douglas Colkitt, *A sharper exponent for integer multiplication*, research
+  draft, [CrocSwap/integer-mult-bounds](https://github.com/CrocSwap/integer-mult-bounds),
   commit [`6e56487`](https://github.com/CrocSwap/integer-mult-bounds/tree/6e564879f51ae16f23d392e9e196c605f36d90df)
   (October 7, 2026).
 - Its pinned OpenAI manuscript,
   [*Integer multiplication below n log n*](https://github.com/openai/math/tree/adc7f1241b42e322a6451854ab7e4b4c146bf78a/preprints/Integer-multiplication-below-n-log-n-September-23-2026),
   in [openai/math](https://github.com/openai/math), commit `adc7f12`.
+- David Harvey and Joris van der Hoeven,
+  [*Integer multiplication in time O(n log n)*](https://doi.org/10.4007/annals.2021.193.2.4),
+  Annals of Mathematics 193(2), 2021, 563–617. The upstream proof uses this
+  multiplier as a subroutine. Lemma and section numbers in `NLogN/` refer to the
+  [author-hosted manuscript](https://www.texmacs.org/joris/nlogn/nlogn.pdf).
+
+### Classical results formalized here
+
+- J. W. Cooley and J. W. Tukey, [*An algorithm for the machine calculation of
+  complex Fourier series*](https://doi.org/10.1090/S0025-5718-1965-0178586-1),
+  Mathematics of Computation 19(90), 1965, 297–301. (`NLogN/FFT.lean`)
+- L. I. Bluestein, [*A linear filtering approach to the computation of discrete
+  Fourier transform*](https://doi.org/10.1109/TAU.1970.1162132), IEEE
+  Transactions on Audio and Electroacoustics 18(4), 1970, 451–455.
+  (`NLogN/Bluestein.lean`)
+- R. C. Agarwal and J. W. Cooley, [*New algorithms for digital
+  convolution*](https://doi.org/10.1109/TASSP.1977.1162981), IEEE Transactions
+  on Acoustics, Speech, and Signal Processing 25(5), 1977, 392–410.
+  (`NLogN/Multidim.lean`, `NLogN/CRTMulti.lean`)
+
+### Lean libraries
+
 - [complexitylib](https://github.com/SamuelSchlesinger/complexitylib), commit
   [`3f4b5fe`](https://github.com/SamuelSchlesinger/complexitylib/tree/3f4b5fee8bbd49721a5b70473c81bf3db2e7500d),
   for the machine composition design (no code imported).
