@@ -292,6 +292,11 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   for coprime lengths with contractive inverse; the resampling identity as an
   operator equation; and fixed-point approximability of any vector to two
   scaled units.
+- `NLogN/NeumannApprox.lean`: the paper's Lemma 4.12. The truncated Neumann
+  series of `(1 + E)⁻¹` with `‖E‖ ≤ 1/2` is within `2 · 2^(−K)` of the
+  inverse; Horner evaluation with an approximate `E` and per-step rounding
+  has scaled error `2(εE + ρ)` uniformly in the number of steps, so `p` steps
+  approximate the inverse with scaled error `2(εE + ρ) + 1`.
 
 ## Top-level
 

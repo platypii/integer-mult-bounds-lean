@@ -56,3 +56,4 @@ import IntegerMultBounds.NLogN.ResamplingInverse
 import IntegerMultBounds.NLogN.TensorApproxD
 import IntegerMultBounds.NLogN.SynthFFT
 import IntegerMultBounds.NLogN.ResamplingCLM
+import IntegerMultBounds.NLogN.NeumannApprox
