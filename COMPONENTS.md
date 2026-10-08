@@ -243,6 +243,8 @@ Machine model, execution, composition, and tape routines.
 - `Machine/ScalingConcatenate.lean`: Literal concatenation of a fixed family of raw piece buffers into one destination. Each source starts at its segment end, is physically rewound and copied, and ends at its original end position; source contents, descriptors and clock survive. Exact output is the flattened family in index order; canonical descriptors give cost at most twenty-four times total volume plus forty-eight times fixed piece count.
 - `Machine/ScalingPartitionData.lean`: Contiguous quotient pieces concatenate to the complete block list, both for natural-index and Fin-indexed physical buffer families. This pure representation bridge identifies inverse-scatter concatenation with input blocks indexed by c*y modulo Q, preserving every intra-block payload cell.
 
+- `Machine/ScalingStream.lean`: Literal repeated positive-unit scaling on uniform fibers with real control reinitialization and shared restored scratch. Exact per-fiber payload permutation, unchanged source, advanced payload heads, preserved descriptors and fully reset inner/outer clocks. Fixed twelve plus four-c tapes and ninety-eight-c plus fifty-eight states; canonical prepared descriptors give actual bound (192 plus 120 times c) times total payload volume plus twenty-three.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -50,6 +50,7 @@ import IntegerMultBounds.Machine.ScalingSplitRewind
 import IntegerMultBounds.Machine.ScalingConcatenate
 import IntegerMultBounds.Machine.ScalingPartitionData
 import IntegerMultBounds.Machine.ScalingExecutionReuse
+import IntegerMultBounds.Machine.ScalingStream
 import IntegerMultBounds.Machine.ScalingScatter
 import IntegerMultBounds.Machine.ScalingExecution
 import IntegerMultBounds.Machine.ScalingBuffersReset
