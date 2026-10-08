@@ -1010,6 +1010,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveViewedAction.lean`: One fixed physical push/view/shift-or-scale/restore composition returns parent headers, dedicated stack and private work exactly, retaining auxiliaries and producing the transformed array in its parent-volume type. Linear coefficient is view cost plus action cost plus202; matching ordered scalar descriptions remains separate.
 
+- `Machine/CountedBankReset.lean`: Actual simultaneous counted erasure and rewind of selected arbitrary-symbol tapes, preserving spectators and physically restoring heads; descriptor-sensitive and linear runtime bounds.
+
+- `Machine/CountedBankResetHeader.lean`: Initializes counted bank reset from a canonical count header and two blank work tapes, including descriptor copy and clock setup with every transition charged.
+
+- `Machine/RecursiveRowsInstall.lean`: Physically copies generated row/group headers and initializes both loop clocks for the normalized cyclic transfer bank.
+
+- `Machine/RecursiveRowsConstruct.lean`: Composes quotient/product construction, descriptor installation and normalized split/permuted merge from sole six parent headers, with exact intermediate banks and charged setup.
+
+- `Machine/RecursiveRowsResetCount.lean`: Physically computes common or role volume from generated row dimensions for counted payload erasure.
+
+- `Machine/RecursiveRowsMove.lean`: Actual initialized cyclic split erases the copied common source; actual permuted merge erases every consumed role source. No supplied derived counters or free resets.
+
+- `Machine/RecursiveRowsClean.lean`: Complete tracked workspace cleanup after initialized destructive split/merge. Same reusable bank with original six headers and output payloads, all private tapes blank and heads restored; explicit linear parent-volume cost.
+
+- `Machine/RecursiveRowsRoleBank.lean`: Fixed injective placement of clean initialized split/permuted merge on permanent roles/scratch/six-header/auxiliary bank. Deterministic updated role payloads, exact spectators, blank consumed sources and private workspace; native arbitrary alphabet.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
