@@ -348,6 +348,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PrefixCounter.lean`: Concrete fixed-field-count carry scheduler over separate radix tapes with physical head restoration. 3*c+1-state incrementer and 3*c+2-state cyclic controller; exact joint address enumeration and preserved arbitrary frames. Full finite traversal restores every field and payload bank within(4*c+4)*q^sum(widths). Fields have radix-power sizes q^b_i with arbitrary widths, including long spectators; arbitrary non-power ranges and initialization are not covered. Cyclic finite-prefix execution does not assert halting.
 
+- `Machine/RationalTranslationStream.lean`: Concrete varying-offset family for one cyclic radix control: rational offset computation, translation, physical control increment and arbitrary-alphabet counted iteration. Exact recurring full-bank endpoints, cyclic control semantics and output length; bound534*physicalVolume+23 on eighteen tapes. Starts with explicit marked metadata, canonical Q/B/n and prior offset, and a marked radix control word. No derived descriptors or per-fiber preparation oracle; mixed-prefix scheduling and full field-layout identification remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

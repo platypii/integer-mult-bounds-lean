@@ -425,3 +425,4 @@ import IntegerMultBounds.Machine.CountedLoopAlphabet
 import IntegerMultBounds.Machine.CountedLoopReuseAlphabet
 import IntegerMultBounds.Machine.PrefixCounterData
 import IntegerMultBounds.Machine.PrefixCounter
+import IntegerMultBounds.Machine.RationalTranslationStream
