@@ -39,7 +39,7 @@ the literal machine model is proved correct with a runtime bound.
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ | Synthetic ring, principal roots, and Bluestein are proved; layout and costs are open |
 | Gaussian resampling | §7 | 🟡 | ⬜ | The factorization `F_s = 2^γ B F_t A` with `‖A‖, ‖B‖ ≤ 1` is proved in one and `d` dimensions, with truncation and Neumann-series error bounds for its pieces; the numerical approximations of `A` and `B` have scaled error below `p²`; the permutation-left variant is open |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ | The explicit numerical recursive step is proved exact with no external hypothesis, the moduli being built elementarily above a constant threshold; in the operation-count model a cost bounded by one full step with concrete small-product and weight-evaluation costs is proved `O(n log n)`; tape compilation is open |
-| Exact multiplication, parameters, time bound | §8 | 🟡 | ⬜ | Parameter margins, asymptotics, prime existence, and the assembly of the cost table into `O(n (lg n)^(1-κ))` are proved; short-interval primes and the row costs themselves remain open |
+| Exact multiplication, parameters, time bound | §8 | 🟡 | ⬜ | Parameter margins, asymptotics, prime existence, the size relations, and the cost table rows assembled into `O(n (lg n)^(1-κ))` are proved; short-interval primes and the components' row costs remain open |
 | End-to-end theorem `EndToEnd` | — | ⬜ | ⬜ | Requires every row above |
 
 ✅ done · 🟡 partial · ⬜ not started

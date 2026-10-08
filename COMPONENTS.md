@@ -1657,3 +1657,13 @@ Parameters and asymptotics.
   `ℓ = ⌈log₂ T / d⌉`, and the axis length `r = 2^ℓ` is at least
   `2^(p^(1-ε) / 12)`. These are the comparison constants `a_d = a_r = 1/12`,
   `b_d = 1`, `b_r = 1/3` of the layer and transform interfaces.
+- `CostTable.lean`: the cost table of §8 with the witness margins. Each row's
+  cost per unit volume, written in the size parameters, is eventually a fixed
+  multiple of `p^(1 - margin i)`: prefix-slot moves `d K`, chunk exchanges
+  `p K^(τ-1)`, simultaneous rounds `ℓ d^λ'`, CRT and axis layouts
+  `d (1 + ℓ^τ)`, Gaussian line maps `d p^(1/2+δ) α` with
+  `α = ⌈(12 d b)^(1/4)⌉`, chirps and twists `d p^δ`, and packed products
+  `log (r p)`, with explicit constants. A total cost at most the volume times
+  the seven rows, plus polynomial setup and bounded overheads, is therefore
+  `O(n (lg n)^(1 - κ))` with `κ = 83 / 10^12`. That the components achieve
+  these rows is their own obligation.

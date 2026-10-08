@@ -212,7 +212,8 @@ theorem complete_time_bound {κ : ℝ} (hκ1 : κ ≤ 1) (V : ℕ → ℝ) (cV :
     (bounded : List (ℝ × (ℝ → ℝ) × ℝ))
     (hbounded : ∀ b ∈ bounded, 0 ≤ b.1 ∧ 0 ≤ b.2.2 ∧ ∀ᶠ p in atTop, b.2.1 p ≤ b.2.2)
     (total : ℕ → ℝ)
-    (htotal : ∀ n, total n ≤ (rows.map fun r => r.cost (V n) (precision n)).sum +
+    (htotal : ∀ᶠ n : ℕ in atTop,
+      total n ≤ (rows.map fun r => r.cost (V n) (precision n)).sum +
       (setup.map fun s => s.1 * precision n ^ s.2).sum +
       (bounded.map fun b => b.1 * V n * b.2.1 (precision n)).sum) :
     ∃ (C : ℝ) (n₀ : ℕ), 0 < C ∧ ∀ n, n₀ ≤ n → total n ≤ C * targetTime κ n := by
@@ -228,9 +229,9 @@ theorem complete_time_bound {κ : ℝ} (hκ1 : κ ≤ 1) (V : ℕ → ℝ) (cV :
   set K := (rows.map fun r => r.C * cV * 6 ^ (1 - κ)).sum + (setup.map fun s => s.1).sum +
     (bounded.map fun b => b.1 * b.2.2 * cV).sum with hK
   have hall : ∀ᶠ n : ℕ in atTop, total n ≤ (K + 1) * targetTime κ n := by
-    filter_upwards [h1, h2, h3] with n hn1 hn2 hn3
+    filter_upwards [h1, h2, h3, htotal] with n hn1 hn2 hn3 hnt
     have ht := targetTime_nonneg κ n
-    calc total n ≤ _ := htotal n
+    calc total n ≤ _ := hnt
       _ ≤ K * targetTime κ n := by rw [hK]; linarith
       _ ≤ (K + 1) * targetTime κ n := by nlinarith
   obtain ⟨n₀, hn₀⟩ := eventually_atTop.mp hall
@@ -282,7 +283,7 @@ theorem multiplication_time_bound (V : ℕ → ℝ) (cV : ℝ) (hV0 : ∀ n, 0 �
     (bounded : List (ℝ × (ℝ → ℝ) × ℝ))
     (hbounded : ∀ b ∈ bounded, 0 ≤ b.1 ∧ 0 ≤ b.2.2 ∧ ∀ᶠ p in atTop, b.2.1 p ≤ b.2.2)
     (total : ℕ → ℝ)
-    (htotal : ∀ n, total n ≤
+    (htotal : ∀ᶠ n : ℕ in atTop, total n ≤
       ((assemblyRows C k).map fun r => r.cost (V n) (precision n)).sum +
       (setup.map fun s => s.1 * precision n ^ s.2).sum +
       (bounded.map fun b => b.1 * V n * b.2.1 (precision n)).sum) :

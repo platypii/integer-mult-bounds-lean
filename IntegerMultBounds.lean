@@ -5,6 +5,7 @@ import IntegerMultBounds.Parameters
 import IntegerMultBounds.Asymptotics
 import IntegerMultBounds.TimeBound
 import IntegerMultBounds.Sizes
+import IntegerMultBounds.CostTable
 import IntegerMultBounds.Compact.Layout
 import IntegerMultBounds.Compact.Radix
 import IntegerMultBounds.Compact.PackedControl
