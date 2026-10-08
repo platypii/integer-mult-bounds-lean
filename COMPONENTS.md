@@ -1723,3 +1723,10 @@ Parameters and asymptotics.
   bounded by the volume times the cost table rows, polynomial setup, and
   bounded overheads is such a function. The program, its correctness, and its
   cost proofs are the remaining obligation.
+- `LineCost.lean`: line counting for the tensor interface (§7, Lemma 7.2).
+  One-dimensional work `C tᵢ X` on the `T / tᵢ` lines of each axis sums to
+  `d C T X`, and with the Gaussian line cost `X = p^(3/2+δ) α` this is the
+  volume `T p` times the cost-table row `d p^(1/2+δ) α`; with every
+  `tᵢ ≥ r/2` at most `2 d T / r` lines are visited; and any fixed polynomial
+  `p^c` of setup per line totals `o(T p)` under the §8 size relations, since
+  `r ≥ 2^(p^(1-ε)/12)` outgrows every power of `p`.

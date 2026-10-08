@@ -193,6 +193,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Truncation and Neumann errors (Lemmas 4.8–4.12) | `ResamplingApprox`, `OffDiagApprox`, `OffDiagApproxSqrt`, `NeumannApprox` | ✅ | — | Square-root windows as in the paper |
 | Numerical `Ã`, `B̃` (Prop 4.7(ii)) | `ResamplingNumeric`, `ResamplingMultiNumeric`, `ExplicitNumeric` | ✅ | ⬜ | Explicit maps with error below `p²` in one dimension and `d p²` in `d`, no side conditions |
 | Permutation-left variant | `ResamplingPermuted`, `ResamplingPermutedNumeric` | ✅ | ⬜ | `P_s F_s = 2^γ B₀ P_t F_t A` in one and `d` dimensions with explicit clamped `Ã`, `B̃₀` of error below `p²` per coordinate; weighted chirp for the retained frequency permutation; source permutation cancels in convolutions |
+| Tensor interface line counts (Lemma 7.2 costs) | `LineCost` | ✅ | ⬜ | Linewise sums give `d C T X`, the Gaussian row times `T p`; at most `2 d T / r` lines; polynomial setup per line is `o(T p)` |
 
 ## 8. `O(n log n)` subroutine (Harvey–van der Hoeven)
 

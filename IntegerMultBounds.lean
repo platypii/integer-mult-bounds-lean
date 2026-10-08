@@ -7,6 +7,7 @@ import IntegerMultBounds.TimeBound
 import IntegerMultBounds.Sizes
 import IntegerMultBounds.CostTable
 import IntegerMultBounds.Assembly
+import IntegerMultBounds.LineCost
 import IntegerMultBounds.Compact.Layout
 import IntegerMultBounds.Compact.Radix
 import IntegerMultBounds.Compact.PackedControl
