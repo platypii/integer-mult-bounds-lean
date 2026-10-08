@@ -468,3 +468,5 @@ import IntegerMultBounds.Machine.StaticMarkerInit
 import IntegerMultBounds.Machine.FlatAffineScalingBootstrap
 import IntegerMultBounds.Machine.MultiControlPrefixTranslationExecution
 import IntegerMultBounds.Machine.MultiControlPrefixTranslationStream
+import IntegerMultBounds.Machine.InjectivePlacement
+import IntegerMultBounds.Machine.FlatAffineScalingNormalize

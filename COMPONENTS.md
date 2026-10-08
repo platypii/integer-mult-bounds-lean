@@ -454,6 +454,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/MultiControlPrefixTranslationStream.lean`: Real counted stream of multi-control translations with physical carry scheduling and exact current/stale-field invariant. Complete equal-width c-field cycle costs (13*leaves+expressionConstant+512+4*c)*volume+23 and restores shared controls; exact output tape and modular-expression offsets. Initial recurring metadata/old arithmetic state and canonical B/Q/count descriptors are explicit; blank bootstrap is separate.
 
+- `Machine/InjectivePlacement.lean`: Extends fixed injective physical tape slots to a complete static placement, with exact active-slot/bank lemmas. Existing placement Hoare rules preserve every complementary tape and head literally; no runtime relabeling or tape movement is introduced.
+
+- `Machine/FlatAffineScalingNormalize.lean`: Attaches physical three-pass payload normalization to the actual scaling output using existing B/Q/P descriptors and clocks. Exact original source/destination slots, retained complementary metadata, restored scratch and heads, and scaled symbols on common input. Full bound (2064+120*(abs numerator+denominator))*volume+252. Prepared scaling input remains explicit; blank-workspace wrapper and schedule composition separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
