@@ -13,15 +13,15 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Part of the proof | Source | Mathematics | Tape |
 | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ | ✅ |
-| Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 |
+| Composition, loops, frames, elementary streams | §2 | 🟡 | 🟡 |
 | Finite networks with a rank saving | §3 | 🟡 | ⬜ |
 | Faster interchange of address chunks | §4 | ✅ | ⬜ |
-| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | 🟡 |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ |
 | Gaussian resampling | §7 | ✅ | ⬜ |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ |
 | Exact multiplication, parameters, time bound | §8 | 🟡 | ⬜ |
-| End-to-end theorem `EndToEnd` | — | ⬜ | ⬜ |
+| End-to-end theorem `EndToEnd` | — | 🟡 | ⬜ |
 
 ## 1. Machine model and target statement (§2)
 
