@@ -1083,6 +1083,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveExecution.lean`: The actual uniformly padded cyclic width guard preserves the complete bank and selects the base or split block in at most three transitions, including its real finite-flow edge. Recursive body execution remains open.
 
+- `Machine/RecursiveRowsNodeLayout.lean`: Splitting once and then creating a divisor-one child equals the original child layout; reduced-row descriptors retain positivity under divisibility.
+
+- `Machine/RecursiveRowsNodeHeaders.lean`: Physically installs the quotient row header, erases its temporary source, and preserves the other five headers, with canonical reduced-row values and a linear-volume bound.
+
+- `Machine/RecursiveRowsNodeRoleBank.lean`: Places paid reduced-row header construction on the permanent role bank with exact payload and auxiliary preservation and blank private workspace.
+
+- `Machine/RecursiveRowsNode.lean`: Actual node entry saves six original headers, splits rows and installs reduced headers; exit restores occupied headers and performs permuted merge. Exact banks, linear-volume costs and nested descriptor-stack availability are proved; network execution remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
