@@ -335,6 +335,7 @@ import IntegerMultBounds.Compact.RepairPipeline
 import IntegerMultBounds.Compact.TapeRepairStage
 import IntegerMultBounds.Compact.TapeRepair
 import IntegerMultBounds.Compact.PowerTwoDigits
+import IntegerMultBounds.Compact.PackedArithValue
 import IntegerMultBounds.NLogN.DFT
 import IntegerMultBounds.NLogN.FFT
 import IntegerMultBounds.NLogN.Recurrence

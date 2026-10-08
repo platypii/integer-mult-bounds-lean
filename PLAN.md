@@ -13,10 +13,10 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Part of the proof | Source | Mathematics | Tape |
 | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
-| Composition, loops, frames, elementary streams | §2 | 🟡 (148/149) | 🟡 (130/141) |
+| Composition, loops, frames, elementary streams | §2 | 🟡 (150/151) | 🟡 (132/143) |
 | Finite networks with a rank saving | §3 | ✅ (65/65) | ⬜ (0/41) |
 | Faster interchange of address chunks | §4 | ✅ (5/5) | ⬜ (0/3) |
-| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (1/6) |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (2/6) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (9/9) | ⬜ (0/3) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
@@ -271,7 +271,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 | Subcomponent | Files | Mathematics | Tape | Notes |
 | --- | --- | --- | --- | --- |
-| Radix packing and signed packed additions | `Radix`, `PackedArith`, `PowerTwoDigits` | ✅ | 🟡 | Nine-tape forward packed program for the radices `2^q`, `2^b`: the four packed updates as gather-and-transduce lines with exact word semantics and linear cost; bit words are proved to pack as their block digits, and gathered words as their digit packings; the integer bridge of the four-line composition to `packedEarly` remains |
+| Radix packing and signed packed additions | `Radix`, `PackedArith`, `PowerTwoDigits`, `PackedArithValue` | ✅ | ✅ | Nine-tape forward packed program for the radices `2^q`, `2^b`: the four packed updates as gather-and-transduce lines with linear cost, and its output words are proved to be exactly `packedEarly` of the input words' integers, via bit words packing as their block digits and gathered words as their digit packings |
 | Dirty-temporary control identities | `DirtyControl` | ✅ | — | Universal integer statements |
 | Packed control gadgets | `PackedControl` | ✅ | ⬜ | Slot embedding and tape costs open |
 | Ideal toggle permutation and invertibility | `Ideal`, `Permutations` | ✅ | — | Every address, including bad ones |

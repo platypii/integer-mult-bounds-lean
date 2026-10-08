@@ -686,6 +686,13 @@ Compact packed controls, repair, and density bounds.
   the packing of its digit words, and the per-digit forms of the compact
   control arithmetic, a masked shifted block, a block's parity, a toggled
   parity, have their stated values.
+- `Compact/PackedArithValue.lean`: the forward packed program on tapes
+  computes `packedEarly` in the radices `2^q` and `2^b`: each gathered offset
+  word packs as the corresponding integer offset (masked shifted blocks,
+  controls, parities, toggled parities), each modular transduction is the
+  corresponding modular update, and the signed third line is the difference
+  of two packings; the final words are exactly the packed program's output
+  integers.
 - `Compact/Layout.lean`: reversible whole-row splitting, preservation and
   completeness of every suffix, exact role volumes, padding to a multiple
   within twice the original volume, and ceiling-based reservation capacities.
