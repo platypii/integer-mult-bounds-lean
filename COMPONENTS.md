@@ -219,6 +219,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   convolution `w = (u ∗ v)/S` of the `2^(-b)`-scaled digit vectors is
   recovered exactly by rounding `2^(2b) S w'` from any approximation within
   `1/(2 · 2^(2b) S)`, and the rounded list evaluates to the product.
+- `NLogN/NormFFT.lean`: the normalized radix-2 transform with abstract
+  isometric twiddles over any normed space, its norm bound, linearity, and
+  the fixed-point error bound of `n ε` after `n` levels; the complex instance
+  equals `2^(-n)` times the plain FFT and packages as an approximation of the
+  normalized transform with scaled error `n = log₂ N`, the paper's Lemma 3.2
+  over `ℂ`. The synthetic-ring instance is not yet connected.
 
 ## Top-level
 
