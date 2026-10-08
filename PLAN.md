@@ -129,7 +129,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Parameter selection and precision | `MainParams`, `PrecisionCheck` | ✅ | — | |
 | Final recurrence (Cor 5.5) | `MainRecurrence`, `Recurrence`, `RecurrenceParams` | ✅ | — | Parameter facts at `d = 1729` proved; the recursive inequality for an actual cost is a hypothesis |
 | Prime selection | `Primes` | 🟡 | — | Bertrand only; short-interval primes open |
-| Assembled numerical transform (Prop 5.2) | `ResamplingMultiNumeric`, `MainTransform`, `ExplicitNumeric`, `ContractPrep`, `PowerOfTwoContract` | 🟡 | ⬜ | `F̃_s = 2^γ B̃ F̃_t Ã` with error `2^(γ+4) T log₂ T`; the explicit power-of-two transform meets the `8 T log₂ T` bound; the recursive step needs only the prime choice; headline contract in progress |
+| Assembled numerical transform (Prop 5.2) | `ResamplingMultiNumeric`, `MainTransform`, `ExplicitNumeric`, `ContractPrep`, `PowerOfTwoContract` | ✅ | ⬜ | `F̃_s = 2^γ B̃ F̃_t Ã` with error `2^(γ+4) T log₂ T`; the explicit power-of-two transform meets the `8 T log₂ T` bound |
+| Headline recursive-step contract | `Contract` | ✅ | ⬜ | The explicit numerical step is exact for every admissible choice of moduli; moduli existence (Lemma 5.1) is the remaining hypothesis |
 | Operation counts | `CostModel` | ✅ | ⬜ | Word operations and delegated products; `(12 T/r) M(3rp) + 2880 n log₂ n` |
 | Unit-ball clamping | `Clamp` | ✅ | — | Removes the ball side conditions of the composition lemmas |
 | Bit costs and tape compilation | — | ⬜ | ⬜ | |
