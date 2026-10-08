@@ -5,3 +5,4 @@ import IntegerMultBounds.Parameters
 import IntegerMultBounds.Asymptotics
 import IntegerMultBounds.Compact.Layout
 import IntegerMultBounds.Compact.Radix
+import IntegerMultBounds.Compact.PackedControl

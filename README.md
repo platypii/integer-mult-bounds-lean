@@ -50,6 +50,12 @@ proof.
   within twice the original volume, and ceiling-based reservation capacities.
 - `Compact/Radix.lean`: bounded radix packing and decoding, injectivity, signed
   packed additions without carries, and preservation of lower/upper spectators.
+- `Compact/PackedControl.lean`: executable modular arithmetic implementations
+  of the earlier- and later-source gadgets, proved correct for arbitrarily many
+  guarded digits. Offsets decode the current packed fields. The target parities
+  are toggled and dirty temporary fields restored exactly. Physical front/back
+  swaps, embedding these segments in the complete slot, and tape costs are not
+  yet connected to this implementation.
 - `Parameters.lean`: every stated rational parameter slack, all seven assembly
   margins, their attained minimum and strict absorption gap, the two dyadic
   comparisons, the complex motif counts, and the strict complex branching-ratio
@@ -59,7 +65,7 @@ proof.
 - `Compact/DirtyControl.lean`: the four-update identity, restoration of an
   arbitrary dirty integer temporary, parity and guard invariance, the
   later-source identity, and guarded intermediate ranges. These are universal
-  integer statements. Their packed modular refinement is not yet proved.
+  integer statements, used by the guarded packed modular refinement above.
 - `Compact/Repair.lean`: for any two permutations agreeing outside an invariant
   exceptional set, the actual map preserves that set and destination repair
   gives exactly the ideal map. Instantiating this result with a verified packed
