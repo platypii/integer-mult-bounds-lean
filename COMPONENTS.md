@@ -446,6 +446,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatControlledShiftArray.lean`: Canonical finite-array representation of the physically normalized controlled-shift output. Proves the common input tape is exactly the new List.ofFn array on the original background, eliminating the nested old-word overlay. Supports subsequent operations with a different prefix/target/suffix split without an uncharged tape conversion.
 
+- `Machine/StaticMarkerInit.lean`: Two-state machine installs a fixed coefficient-dependent marker/head template in one actual transition. Exact raw-to-target full-bank proof, origin-zero input heads, off-origin data preservation and append lemmas. The template is part of fixed finite control, not input dimensions.
+
+- `Machine/FlatAffineScalingBootstrap.lean`: Actual rational scaling from blank generated storage, residue banks, intermediate payloads and sign scratch, with all heads initially zero. Physically installs coefficient-dependent sentinels and runs descriptor/residue synthesis and whole-array scaling; exact source and scaled destination symbols, bound nonemptyConstant*volume+251. Only canonical B/Q/P words in fixed input slots and payload remain supplied; dimension-word construction and common-input normalization are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
