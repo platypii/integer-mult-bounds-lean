@@ -480,3 +480,5 @@ import IntegerMultBounds.Machine.MultiControlPrefixTranslationInit
 import IntegerMultBounds.Machine.FlatMultiControlTranslation
 import IntegerMultBounds.Machine.FlatCoordinateScaling
 import IntegerMultBounds.Machine.FlatCoordinateShift
+import IntegerMultBounds.Machine.SharedPayload
+import IntegerMultBounds.Machine.SharedPayloadPair

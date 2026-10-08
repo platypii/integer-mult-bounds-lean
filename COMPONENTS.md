@@ -487,6 +487,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatCoordinateShift.lean`: Actual initialized normalized controlled shift on the common row-major coordinate layout. Constructs the counter order so the selected control is after exactly the less-significant prefix fields; proves the physical offset equation and exact OrderedAffine shift transport of every symbol. Ready-machine Hoare theorem returns the canonical common-volume array on its original source, with all initialization/normalization costs; canonical dimension words remain supplied.
 
+- `Machine/SharedPayload.lean`: Static injection shares a stage source/destination with two permanent payload tapes, retaining all private metadata and leaving private payload slots blank/head-zero. Exact active/frame identities and placed-stage Hoare rule; no runtime copies, head resets or relabeling operations.
+
+- `Machine/SharedPayloadPair.lean`: Literal composition of two stages on the same permanent payload pair and separate stripped metadata banks. Proved exact whole-bank handoff when first output pair equals second input pair; costs both proved runtimes plus one sequence step. Concrete scaling/shift compatibility and full fixed schedule instantiation are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
