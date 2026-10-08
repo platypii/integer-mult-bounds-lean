@@ -286,6 +286,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/TranslationStream.lean`: Repeated common-offset translation with literal descriptor recomputation and cleanup on each fiber. One fixed fourteen-tape, 235-state machine initializes all writable metadata from blank, preserves the source and supplied canonical Q/a/B/n, and proves the exact full final bank, including zero fibers. Runtime at most 461 times physical payload volume plus 25 for positive Q/B. Varying-offset preparation and prefix scheduling remain separate.
 
+- `Machine/TranslationPreparedFamily.lean`: Varying-offset translation composed with one supplied fixed physical preparation program and an actual counted loop. Exact full-bank contracts preserve payloads during preparation and preserve arbitrary preparation workspace during translation. Costs the sum of actual preparation bounds plus 462 times payload volume plus 23; fixed 14+s tapes and m+233 states. Explicitly conditional on preparation Hoare contracts, with recurring marked initial workspaces. Concrete offset arithmetic and spectator scheduling remain to be instantiated.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
