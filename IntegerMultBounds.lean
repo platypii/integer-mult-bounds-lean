@@ -495,3 +495,5 @@ import IntegerMultBounds.Machine.FlatScaleShiftPair
 import IntegerMultBounds.Machine.FlatAffineScalingMetadata
 import IntegerMultBounds.Machine.SharedPayloadStage
 import IntegerMultBounds.Machine.FlatCoordinateStages
+import IntegerMultBounds.Machine.RadixPowerMultipleWord
+import IntegerMultBounds.Machine.RadixPowerMultipleDescriptor

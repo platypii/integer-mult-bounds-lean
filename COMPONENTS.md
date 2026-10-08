@@ -530,6 +530,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatCoordinateStages.lean`: Concrete common-coordinate scale and earlier-control shift Stage constructors at the actual shared prime alphabet. Instantiates all program, payload, metadata-independence and runtime contracts from initialized normalized machines; exact transform theorems prove OrderedAffine symbol transport. Canonical dimension inputs remain explicit; finite-list assembly and uniform schedule theorem separate.
 
+- `Machine/RadixPowerMultipleWord.lean`: Fixed-many counted passes read one preserved binary width and construct its radix power word, with restored scratch and charged initialization, rewind and cleanup. The multiplier belongs to finite control.
+
+- `Machine/RadixPowerMultipleDescriptor.lean`: Actual four-tape constructor of canonical binary q^(k*b) from binary b, with k fixed in finite control. Preserves b and restores both scratch tapes blank; bound (24*k+75)*q^(k*b), including k=0 and b=0. Supplies prefix/suffix powers for coordinate dimension synthesis.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
