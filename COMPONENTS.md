@@ -1093,6 +1093,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveReturnExecution.lean`: Actual placed and uniformly padded PC pop erases the encoded frame, restores the older stack and preserves every spectator tape. Its real finite-flow jump selects the encoded recovery or root halt node in exactly k+2 transitions, retaining decoded control states throughout.
 
+- `Machine/RecursiveCallCount.lean`: Physically generates the role volume from six canonical headers on fixed private workspace, retaining a blank loop clock and preserving all other common tapes; exact count erasure restores its slot.
+
+- `Machine/RecursiveCountedCallBoundary.lean`: Separate payload entry and recovery machines construct their own volume count, park or recover role arrays, and erase the count. Clock and count are blank at recursive boundaries; all setup and cleanup are charged linearly in volume.
+
+- `Machine/RecursiveCallBank.lean`: Permanent bank places role payloads, scratch, six headers, clock/count/payload stack, auxiliary spectators and descriptor/PC stacks in fixed slots; actual payload entry preserves this layout.
+
+- `Machine/RecursiveCallProtocol.lean`: Actual child entry composes initialized payload parking/movement with same-row header and PC setup. Recovery regenerates the restored parent volume, retrieves payloads and clears controls. Exact banks and linear role-volume costs are proved; matching child execution to the recovery input and global auxiliary placement remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
