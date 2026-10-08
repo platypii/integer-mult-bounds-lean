@@ -41,6 +41,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Alphabet widening and protected regions | `Alphabet`, `Protected` | ✅ | ✅ | Foreign markers need a locality invariant |
 | Scan, rewind, copy, move | `Execution`, `Rewind`, `WordTape`, `Copy` | ✅ | ✅ | One transition per symbol |
 | Binary counters | `Counter`, `BitTape`, `CounterTape` | ✅ | ✅ | `8n + 2·width` for `n` increments |
+| Literal binary addition | `BinaryAdd` | ✅ | ✅ | Three tapes and three states; exact sum in at most width plus one transitions; equally padded operands required |
+| Literal binary subtraction | `BinarySub` | ✅ | ✅ | Three tapes and two states; exact width runtime, modular difference and final borrow; equally padded operands required |
 | Leading-bit stable partition | `Partition`, `PartitionMarked` | ✅ | ✅ | Sentinel-marked variant composes |
 | Concatenation and record reinsertion | `Concatenate`, `Reinsert` | ✅ | ✅ | Source positioning is a precondition |
 | One complete radix pass | `PartitionPass` | ✅ | ✅ | Runtime `3·len + 8` |

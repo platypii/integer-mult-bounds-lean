@@ -45,6 +45,17 @@ Machine model, execution, composition, and tape routines.
   `n` increments within `8*n + 2*width` actual transitions from arbitrary initial
   contents, counting loop-control steps. This proves finite-prefix execution;
   a terminating stream scheduler remains to be built.
+- `Machine/BinaryAdd.lean`: a fixed three-tape, three-state binary adder
+  processes equally padded little-endian operands. The finite control stores
+  carry; the exact transition count equals the output length, at most the
+  input width plus one. Both entire inputs are preserved, and blank output
+  initialization yields the exact sum with globally blank tails. Padding and
+  output initialization are explicit preconditions.
+- `Machine/BinarySub.lean`: a fixed three-tape, two-state subtractor
+  takes exactly one transition per padded input bit. It preserves both
+  complete source tapes and retains the final borrow in finite control.
+  The modular subtraction identity, exact underflow criterion, ordinary
+  nonnegative subtraction, and globally blank-tail output are proved.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head
   motion, and an actual one-tape scanning program with exactly `n` transitions
   through `n` nonblank cells. The program preserves the tape and halts at the
