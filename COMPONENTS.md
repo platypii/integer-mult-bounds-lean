@@ -846,6 +846,17 @@ Faster interchange of address chunks (§4).
   its coordinate updates, each reading only the original values, and each row
   reads only its own and earlier coordinates. Identities over any commutative
   ring; the modulus choice, the factorization, and tape costs are separate.
+- `Swap/LowerTriangular.lean`: Lemma 4.1. Every matrix over a field, square or
+  rectangular, is `E₁ Π E₂` with `E₁`, `E₂` lower triangular with explicit
+  lower triangular two-sided inverses and `Π` the pivot matrix of a list with
+  distinct rows and distinct columns. The elimination keeps finite active row
+  and column sets: the topmost nonzero active row and its rightmost nonzero
+  entry give the pivot, a square-zero lower triangular column operation clears
+  the pivot row, a square-zero lower triangular row operation clears the pivot
+  column, the pivot is scaled to one and subtracted, and strong induction on
+  the number of active indices finishes. Factors act as the identity outside
+  the active sets, which makes the pivot commute with the residual factors.
+  That the number of pivots equals the rank is a separate statement.
 - `NLogN/ModuliConstruction.lean`: an elementary replacement for the paper's
   Lemma 5.1. The moduli need only be odd and pairwise coprime, so each is a
   product of powers of two coordinate-specific odd primes whose exponents are

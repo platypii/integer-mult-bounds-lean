@@ -87,7 +87,7 @@ theorem pivotProgram_run_eq (i j : ι) (s : State ι R) :
   · simp [hk]
 
 /-- The matrix with a one at every listed position. -/
-def pivotMatrix : List (ι × ι) → Matrix ι ι R
+def pivotMatrix {κ : Type*} [DecidableEq κ] : List (ι × κ) → Matrix ι κ R
   | [] => 0
   | p :: rest => single p.1 p.2 1 + pivotMatrix rest
 

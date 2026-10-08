@@ -127,6 +127,7 @@ import IntegerMultBounds.NLogN.NegacyclicKronecker
 import IntegerMultBounds.NLogN.CostModel
 import IntegerMultBounds.Swap.Recurrence
 import IntegerMultBounds.Swap.Shear
+import IntegerMultBounds.Swap.LowerTriangular
 import IntegerMultBounds.NLogN.ResamplingMultiNumeric
 import IntegerMultBounds.NLogN.SynthConvApproxD
 import IntegerMultBounds.NLogN.Clamp
