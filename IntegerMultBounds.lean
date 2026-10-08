@@ -697,3 +697,5 @@ import IntegerMultBounds.Machine.RecursiveAffineDimensionsClean
 import IntegerMultBounds.Machine.RecursiveAffinePrepare
 import IntegerMultBounds.Machine.RecursiveCrossPrepare
 import IntegerMultBounds.Machine.RecursiveViewRoleBank
+import IntegerMultBounds.Machine.RecursiveRowsQuotient
+import IntegerMultBounds.Machine.RecursiveRowsDimensions

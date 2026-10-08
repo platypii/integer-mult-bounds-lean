@@ -955,6 +955,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveViewRoleBank.lean`: Fixed cross/within selector places paid view changes on permanent roles/scratch/header/aux bank; exact preservation of every payload and auxiliary, all private tapes blank. Parent header save/restore and scalar semantic composition remain separate.
 
+- `Machine/RecursiveRowsQuotient.lean`: Real constant-role initialization and clean marked division compute canonical rows/roles from parent headers. Fixed38-tape bank, preserved six headers and explicit linear parent-volume cost.
+
+- `Machine/RecursiveRowsDimensions.lean`: Actual quotient, scaling products and row/group products construct normalized cyclic-transfer descriptors from sole six parent headers. Exact generated values, canonicality, header preservation and linear volume bound; installation, source erasure and transfer assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
