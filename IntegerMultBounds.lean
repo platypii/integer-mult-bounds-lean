@@ -699,3 +699,6 @@ import IntegerMultBounds.Machine.RecursiveCrossPrepare
 import IntegerMultBounds.Machine.RecursiveViewRoleBank
 import IntegerMultBounds.Machine.RecursiveRowsQuotient
 import IntegerMultBounds.Machine.RecursiveRowsDimensions
+import IntegerMultBounds.Machine.RecursiveWidthBranch
+import IntegerMultBounds.Machine.RecursiveWidthGuard
+import IntegerMultBounds.Machine.RecursiveStackAllocation

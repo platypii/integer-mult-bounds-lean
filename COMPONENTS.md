@@ -959,6 +959,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveRowsDimensions.lean`: Actual quotient, scaling products and row/group products construct normalized cyclic-transfer descriptors from sole six parent headers. Exact generated values, canonicality, header preservation and linear volume bound; installation, source erasure and transfer assembly remain separate.
 
+- `Machine/RecursiveWidthBranch.lean`: Actual fixed three-block finite flow selects supplied base or recursive block from the physical guard, with at most three charged transitions. Canonical38-tape headers and power-width depth select the correct actual branch; branch bodies remain explicit.
+
+- `Machine/RecursiveWidthGuard.lean`: Physical four-state width-one test preserves the exact bank in at most two transitions; canonical descriptor value selects actual base/recurse terminal state for finite-flow dispatch.
+
+- `Machine/RecursiveStackAllocation.lean`: Blank suffix invariants discharge descriptor, PC and role-array free-interval premises. Actual pushes and child payload entry preserve availability at the advanced stack head; concrete saved header/PC stacks retain both free suffixes, without a recursion-depth capacity assumption.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
