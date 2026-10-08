@@ -290,6 +290,25 @@ Bit and complex networks.
   cube-tensor complements; triple and neighbor complements have orthonormal
   bases. The full nested tensor gate labels remain to be assembled.
 
+- `Networks/GlobalGrouped.lean`: actual grouped three-coordinate schedules
+  on the existing global wire layout, with distinct scratch per invocation.
+  Injective placement transports sparse supports exactly; the middle reversed
+  inverse retains physical side orientation. The complete bit swap and rational
+  signed exchange refine the scalar circuits, with exact grouped and incidence
+  counts. Nested labels and total rank bounds remain separate.
+
+- `Networks/BinaryPhase.lean`: exact rank-one decomposition of nested
+  projection differences, indexed by the residual dimension. Actual Hamming
+  weight modulo four is additive on orthogonal vectors, giving a diagonal
+  edge factorization into one phase per orthonormal residual direction; unit
+  directions have quarter-turn phases. Walsh conjugation, binary tensor
+  coordinate identification, and tape execution remain separate.
+
+- `Networks/TensorSubspace.lean`: actual embedded tensor subspaces, with
+  monotonicity, distribution over sums, multiplicative dimensions, restricted
+  bilinear pairing, and proved preservation of nondegeneracy and orthogonality.
+  These support the nested labels of the network schedule.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.

@@ -47,6 +47,9 @@ import IntegerMultBounds.Networks.BinaryOrthonormal
 import IntegerMultBounds.Networks.GroupedCircuit
 import IntegerMultBounds.Networks.GroupedRouting
 import IntegerMultBounds.Networks.NeighborResidual
+import IntegerMultBounds.Networks.GlobalGrouped
+import IntegerMultBounds.Networks.BinaryPhase
+import IntegerMultBounds.Networks.TensorSubspace
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits
