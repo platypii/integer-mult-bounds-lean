@@ -1,8 +1,8 @@
 import Mathlib.Tactic
 
-/-! A finite-width ripple counter and its amortized flip bound. Compiling this
-list-level routine into the tape machine, including resets and head returns,
-is a separate obligation. -/
+/-! A finite-width ripple counter and its amortized flip bound.
+`Machine/CounterTape.lean` implements this increment on literal tapes and
+accounts for head returns and the transitions between repeated calls. -/
 
 namespace IntegerMultBounds.Counter
 

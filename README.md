@@ -76,7 +76,14 @@ proof.
   residual bases, endpoint corrections, and tape compilation remain open.
 - `Machine/Counter.lean`: executable fixed-width binary increment, its exact
   modular value, and an amortized bound of `2*n + width` bit flips from arbitrary
-  initial contents. This list-level counter is not yet compiled to tape steps.
+  initial contents.
+- `Machine/BitTape.lean` and `Machine/CounterTape.lean`: a three-state tape
+  implementation of that increment, with exact carry and return runtimes,
+  overflow handling, preservation of cells outside the bit segment, and a
+  compositional time contract. A fixed four-state cyclic controller performs
+  `n` increments within `8*n + 2*width` actual transitions from arbitrary initial
+  contents, counting loop-control steps. This proves finite-prefix execution;
+  a terminating stream scheduler remains to be built.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head
   motion, and an actual one-tape scanning program with exactly `n` transitions
   through `n` nonblank cells. The program preserves the tape and halts at the
