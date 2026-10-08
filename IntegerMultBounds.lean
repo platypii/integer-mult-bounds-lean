@@ -194,6 +194,8 @@ import IntegerMultBounds.Networks.Shared50PhysicalEdges
 import IntegerMultBounds.Networks.Shared50InvocationPhysicalEdges
 import IntegerMultBounds.Networks.Shared50OppositeBlockFrames
 import IntegerMultBounds.Networks.Shared50FramedOpposite
+import IntegerMultBounds.Networks.Shared50InvocationProjectionRank
+import IntegerMultBounds.Networks.Shared50GlobalTrace
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
