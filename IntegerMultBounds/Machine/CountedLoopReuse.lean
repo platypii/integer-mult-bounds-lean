@@ -216,6 +216,16 @@ private theorem clean_exact (cs ds : List Bool) :
   have hh := exact_seq (clear_clock cs ds) hr
   simpa only [cleanControls,binary,show cs.length+1+(cs.length+1+2) = 2*cs.length+4 by omega] using hh
 
+/-- Erase any finite binary metadata word and physically reset its head, while
+preserving a second immutable descriptor. This contract includes both scans
+and the sequential join, and allows padded/noncanonical metadata. -/
+theorem clean_controls_hoare (cs ds : List Bool) :
+    HoareTime cleanControls (fun v => v = controls (binary cs) (binary ds) 1 1)
+      (fun v => v = controls empty (binary ds) 1 1) (2*cs.length+4) := by
+  rintro v rfl
+  obtain ⟨last,hr,hh,hf⟩ := clean_exact cs ds
+  exact ⟨2*cs.length+4,last,le_rfl,hr,hh,hf⟩
+
 /-- Body tapes come first; the dedicated clock and immutable descriptor follow. -/
 def bank (v : Tapes t 0) (clock descriptor : ℤ → Fin 4) (r s : ℤ) : Tapes (t+2) 0 :=
   v.append (controls clock descriptor r s)
