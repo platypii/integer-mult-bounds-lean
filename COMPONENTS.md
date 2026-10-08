@@ -848,6 +848,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/DigitInterchangePasses.lean`: Actual normalized tape contracts for both split and both merge levels of single-digit interchange. Input/output words match literally, heads and descriptors are restored, and the total pass cost including joins is at most (597+2*q) times volume. Whole-bank joining, counter synthesis and private cleanup remain separate.
 
+- `Machine/BinaryCanonicalTrim.lean`: Actual backward erasure of high zero bits in a marked binary word followed by origin reset. Four states, exact canonical value-preserving output at head one, including empty and all-zero words.
+
+- `Machine/BinaryQuotientNormalize.lean`: Nine-state two-tape erase-copy, zero trim and rewind normalizes a raw division quotient in two times its length plus eight transitions. Raw source is wholly blank at head zero; destination is canonical at head one.
+
+- `Machine/BinaryDivideQuotient.lean`: Six-tape physical division followed by quotient normalization. Exact quotient arithmetic and canonical output on sixth tape, erased raw quotient tape, with original division cost plus two times dividend length plus nine. Input head preparation and shifted remainder cleanup remain explicit.
+
+- `Machine/RecursiveQuotientDivision.lean`: Physical division-plus-normalization runtime bounded by (40*A^2+58*A+9) times logical child volume, where A=log2 roles+2, for canonical root-bounded descriptors. No free quotient normalization; full canonical input preparation and remainder cleanup remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

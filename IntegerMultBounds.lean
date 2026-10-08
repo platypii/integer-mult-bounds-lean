@@ -647,3 +647,7 @@ import IntegerMultBounds.Machine.RecursiveShiftRoleBank
 import IntegerMultBounds.Machine.RecursiveCleanReturn
 import IntegerMultBounds.Machine.DigitInterchangeRows
 import IntegerMultBounds.Machine.DigitInterchangePasses
+import IntegerMultBounds.Machine.BinaryCanonicalTrim
+import IntegerMultBounds.Machine.BinaryQuotientNormalize
+import IntegerMultBounds.Machine.BinaryDivideQuotient
+import IntegerMultBounds.Machine.RecursiveQuotientDivision
