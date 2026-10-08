@@ -238,6 +238,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ScalingScatter.lean`: Literal inverse-scaling routing from a single sequential source to finitely many piece buffers, selected by actual residue control and dispatch. Buffers acquire contiguous pieces of y mapped to input at c*y modulo Q, preserving every payload block. Both clocks reset and prepared descriptors survive; canonical descriptors and positive dimensions give at most fifty-one times volume plus twenty-three steps. Physical buffer concatenation remains separate.
 
+- `Machine/ScalingExecutionReuse.lean`: Complete reusable positive-unit scaling with actual residue-control initialization, split, physical rewinds, merge, and temporary-buffer erasure/reset. Arbitrary initial residue cells are accepted; source, canonical immutable descriptors, complete scratch backgrounds and scratch heads are preserved. Fixed ten plus four-c tapes and ninety-eight-c plus forty-two states; actual runtime at most 127 times volume plus 120 times fixed coefficient plus fifty-two. Binary descriptors remain prepared inputs.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

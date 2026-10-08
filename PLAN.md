@@ -46,6 +46,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Ordered-affine payload semantics | `BlockRotationData`, `BlockNegationData`, `ScalingPieces`, `ScalingControl` | ✅ | ⬜ | Exact block-shift and negation payload indices, flat split and reversal recipe; unique scaling-piece merge, inverse reconstruction, monotone streams, fixed residue selection and exact contiguous piece lengths. Literal split/merge scheduling remains open |
 | Sequential scaling merge and literal dispatch | `ScalingMergeData`, `Dispatch` | ✅ | 🟡 | FIFO cursor correctness, non-underflow and full consumption proved; literal finite-family dispatch costs one step. Connecting block copies, residue updates and counted iteration remains open |
 | Literal scaling split with buffer rewinds | `ScalingSplitRewind` | ✅ | ✅ | Copies exact contiguous pieces then physically returns each buffer head to its merge-ready origin, preserving all descriptors and clocks. Actual canonical bound is twenty-four times volume plus forty-eight times fixed piece count plus one |
+| Fully reusable positive-unit scaling | `ScalingExecutionReuse` | ✅ | ✅ | Actual residue initialization, split, rewinds, merge and buffer cleanup compose with full source/scratch/control guarantees and linear-volume runtime. Canonical B/Q/piece descriptors remain explicit inputs |
 | Literal inverse-unit scatter | `ScalingScatter` | ✅ | 🟡 | Actual selected-buffer block routing has exact inverse-scaling piece semantics and linear-volume execution. Physical concatenation and full reusable inverse wrapper remain open |
 | Complete literal positive-unit scaling | `ScalingExecution`, `ScalingBuffersReset` | ✅ | 🟡 | Split, real rewinds and merge compose into exact multiplication of block addresses with linear volume cost and fixed control. Buffer restoration is separately proved; initializer/cleanup wrapper and descriptor construction remain open |
 | Repeated reusable coordinate negation | `NegationStream` | ✅ | ✅ | Literal uniform-fiber negation restores shared scratch and all controls; exact map-negate payload and linear-volume bound proved. Derived descriptors remain prepared |
@@ -244,7 +245,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 ## Next steps
 
-- Extend common-offset fiber shifts to computed varying offsets; build positive unit-scaling split/merge and reusable negation, charging derived descriptor arithmetic and scratch/control cleanup.
+- Construct derived binary descriptors, assemble reusable inverse-unit scaling and repeated scaling, then compose signed rational scales and computed varying-offset translations.
 
 - Compute repair keys and run extraction, sorting and reinsertion on tapes, with the `RepairPipeline` composition as the specification.
 - Compile the proved optimized h=50 modular physical network and its fixed rational control schedule to literal tape execution and prove its recursive time bound.
