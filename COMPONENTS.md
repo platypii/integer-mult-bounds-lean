@@ -122,6 +122,14 @@ Machine model, execution, composition, and tape routines.
   writing one output bit, halting on the common blank in exactly the common
   width with both operands preserved. Modular addition (sum modulo two to the
   width) and bitwise exclusive or are proved instances.
+- `Machine/Gather.lean`: a stride gadget on three tapes, source, control and
+  target, unrolled into finite control: for each digit the source head skips
+  to a field, each field bit is combined with the digit's control bit by a
+  fixed Boolean operation into the target digit at a chosen offset, the other
+  target cells are zero, and the heads advance by one source stride, one
+  target stride and one control bit. The gathered word is exact and the cost
+  is `n(2(sx + st) + 7)`. `ExactFrame` gained step-right and write-zero moves
+  and the generic unrolling combinator `iterate` with its chain contract.
   The output is the exact sum with globally blank tails, and the padded
   sources retain their numeric values. Empty operands are included.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head

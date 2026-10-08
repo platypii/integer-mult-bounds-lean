@@ -166,6 +166,81 @@ theorem putWord_prepend (f : ℤ → Fin (a + 4)) (p : ℤ) (xs : List (Fin (a +
 
 end PrependZero
 
+namespace StepRight
+
+/-- One step right on a single tape, retaining every cell. -/
+def program : Program 1 2 a where
+  tapes_pos := by decide
+  start := 0
+  transition := fun s symbols =>
+    if s = 0 then some (1, fun i => (symbols i, .right)) else none
+
+def cfg (f : ℤ → Fin (a + 4)) (p : ℤ) (s : Fin 2) : Config 1 2 a := ⟨s, fun _ => p, fun _ => f⟩
+
+theorem step_hoare (f : ℤ → Fin (a + 4)) (p : ℤ) :
+    HoareTime program (fun v => v = (cfg f p 0).tapes) (fun v => v = (cfg f (p + 1) 0).tapes) 1 := by
+  rintro v rfl
+  refine ⟨1, cfg f (p + 1) 1, le_rfl, ?_, by simp [step, program, cfg], rfl⟩
+  rw [run_one]
+  simp only [step, program, cfg, Tapes.start, Config.tapes, ↓reduceIte, Move.offset]
+  congr 1
+  congr 1
+  funext i j
+  by_cases hj : j = p
+  · subst j; simp
+  · simp [hj]
+
+end StepRight
+
+namespace WriteZero
+
+/-- Write a zero bit and step right on a single tape. -/
+def program : Program 1 2 a where
+  tapes_pos := by decide
+  start := 0
+  transition := fun s _ =>
+    if s = 0 then some (1, fun _ => (bitSymbol false, .right)) else none
+
+def cfg (f : ℤ → Fin (a + 4)) (p : ℤ) (s : Fin 2) : Config 1 2 a := ⟨s, fun _ => p, fun _ => f⟩
+
+theorem write_hoare (f : ℤ → Fin (a + 4)) (p : ℤ) :
+    HoareTime program (fun v => v = (cfg f p 0).tapes)
+      (fun v => v = (cfg (Function.update f p (bitSymbol false)) (p + 1) 0).tapes) 1 := by
+  rintro v rfl
+  refine ⟨1, cfg (Function.update f p (bitSymbol false)) (p + 1) 1, le_rfl, ?_,
+    by simp [step, program, cfg], rfl⟩
+  rw [run_one]
+  simp only [step, program, cfg, Tapes.start, Config.tapes, ↓reduceIte, Move.offset]
+  congr 1
+  congr 1
+  funext i j
+  by_cases hj : j = p
+  · subst j; simp
+  · simp [hj]
+
+end WriteZero
+
+/-- The state count of `k` unrolled copies of a `q`-state program. -/
+def iterStates (q : ℕ) : ℕ → ℕ
+  | 0 => 1
+  | k + 1 => q + iterStates q k
+
+/-- `k` copies of a program in sequence, ending in the halting program. -/
+def iterate (M : Program t q a) : (k : ℕ) → Program t (iterStates q k) a
+  | 0 => skip t a M.tapes_pos
+  | k + 1 => seq M (iterate M k)
+
+/-- A uniform chain of exact contracts unrolls with one join per copy. -/
+theorem iterate_hoare (M : Program t q a) (k : ℕ) (X : ℕ → Tapes t a) (c : ℕ)
+    (h : ∀ i < k, HoareTime M (fun v => v = X i) (fun v => v = X (i + 1)) c) :
+    HoareTime (iterate M k) (fun v => v = X 0) (fun v => v = X k) (k * (c + 1)) := by
+  induction k generalizing X with
+  | zero => exact (skip_hoare M.tapes_pos (X 0)).consequence (fun v hv => hv) (fun v hv => hv) (by simp)
+  | succ k ih =>
+    have hrest := ih (fun i => X (i + 1)) (fun i hi => h (i + 1) (by omega))
+    exact ((h 0 (by omega)).seq hrest).consequence (fun v hv => hv) (fun v hv => hv)
+      (by rw [Nat.succ_mul]; omega)
+
 namespace EraseCell
 
 /-- Blank the scanned cell of a single tape without moving. -/
