@@ -600,6 +600,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatCoordinateShiftInput.lean`: Exact initial common-payload contract and payload-independent private metadata for fully synthesized shift. Proves distinct physical payload slots and literal blank workspace at every slot except the sole exponent/record-width inputs and original payload. Supplies initialized-stage assembly contracts.
 
+- `Machine/BinaryDescriptorInstallList.lean`: Compiles a fixed list of physical marker-free descriptor installations, with shared preserved sources and distinct blank destinations. Exact fold/setTape final bank, destination contents and frame preservation are proved. Costs sum(2*length+9), including cleanup and every join, with a uniform length bound.
+
+- `Machine/FlatAffineScalingInputLayout.lean`: Fixed structural classification of every raw scaling input tape as workspace, payload or B/Q/P descriptor. Proves exact complete raw, ready and alphabet-lifted input banks, including all repeated dimensional words and blank head-zero workspace. Exposes the literal target layout for physical installation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

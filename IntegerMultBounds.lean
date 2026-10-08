@@ -522,3 +522,5 @@ import IntegerMultBounds.Machine.FlatControlledShiftLayout
 import IntegerMultBounds.Machine.ControlledShiftDimensionInstall
 import IntegerMultBounds.Machine.FlatCoordinateShiftFromDimensions
 import IntegerMultBounds.Machine.FlatCoordinateShiftInput
+import IntegerMultBounds.Machine.BinaryDescriptorInstallList
+import IntegerMultBounds.Machine.FlatAffineScalingInputLayout
