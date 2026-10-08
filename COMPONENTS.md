@@ -383,6 +383,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   inverse, and a cyclic convolution on `G × Fin r` for any finite group `G`
   is the `R`-valued convolution on `G` of the twisted slices, which covers
   the `d`-dimensional case.
+- `NLogN/SynthConvApprox.lean`: the paper's Proposition 3.4 in one
+  dimension over the synthetic ring: the normalized convolution equals
+  `t r` times the inverse transform of the `1/r`-scaled pointwise products of
+  the forward transforms; the inverse transform is the forward one at the
+  negated index; and the pipeline computed with per-level error oracles and
+  rounded products has scaled error at most `4n + 2` for `n ≤ 2^p`.
 
 ## Top-level
 

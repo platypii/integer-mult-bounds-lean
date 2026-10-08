@@ -73,3 +73,4 @@ import IntegerMultBounds.NLogN.ResamplingAssembly
 import IntegerMultBounds.NLogN.SynthConv
 import IntegerMultBounds.NLogN.OffDiagApprox
 import IntegerMultBounds.NLogN.SynthEmbed
+import IntegerMultBounds.NLogN.SynthConvApprox
