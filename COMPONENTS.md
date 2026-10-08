@@ -903,6 +903,13 @@ Faster interchange of address chunks (§4).
   overhead, and polylogarithmically below, is `O(n log n)`. The grids and
   moduli are parameters; the correctness theorem supplies them above its own
   larger threshold.
+- `NLogN/Capstone.lean`: the capstone of the subroutine. Above
+  `2^(2^(1000 · 1729³))` the grids and moduli are chosen once as functions
+  of `n`; with that choice the explicit recursive step with the paper's
+  windows computes the exact product of any two `n`-bit inputs, and any
+  cost bounded by one full step on the same grids and moduli with concrete
+  small-product and weight-evaluation costs, plus linear overhead, is
+  `O(n log n)`. Tape steps are not modeled.
 
 ## Top-level
 
