@@ -448,3 +448,5 @@ import IntegerMultBounds.Machine.RadixLinearCombinationRefresh
 import IntegerMultBounds.Machine.FlatControlledShift
 import IntegerMultBounds.Machine.RadixLinearCombinationShared
 import IntegerMultBounds.Machine.RadixLinearCombinationBootstrap
+import IntegerMultBounds.Machine.PrefixCounterInitPlacement
+import IntegerMultBounds.Machine.RationalPrefixTranslationInit

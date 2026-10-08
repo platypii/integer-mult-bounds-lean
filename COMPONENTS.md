@@ -405,6 +405,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixLinearCombinationBootstrap.lean`: First-use canonical offset computation from genuinely blank expression/converter scratch. Actual finite marker installation precedes shared-source refresh, arithmetic and binary conversion; shared marked controls are preserved and final state is the exact shared-computation output. Bound(15*leafCount+expressionConstant+40)*q^b, with a finite control-bank wrapper. Source control words remain supplied; recurring binary-output reset and translation-bank composition are separate.
 
+- `Machine/PrefixCounterInitPlacement.lean`: Explicit static permutation hands physically initialized prefix-field tapes to a consumer while retaining all width descriptors, clocks and spare tapes as frames. initialize_then composes real initialization with a proved consumer execution and charges their join; no field copying is assumed.
+
+- `Machine/RationalPrefixTranslationInit.lean`: Composes actual blank-prefix initialization with FlatControlledShift on the same physical tapes. Exact active-stream output and transported flat-array symbols; bound(551+4*c)*volume+29*(c+1)+24 includes prefix setup. Canonical width/B/Q/P descriptors remain supplied; prefix outputs/clocks start blank. Fixed marked translation metadata is still explicit input, so this is not yet an entirely blank-workspace bootstrap.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
