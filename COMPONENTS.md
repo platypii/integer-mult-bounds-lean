@@ -1768,3 +1768,16 @@ Parameters and asymptotics.
   `tᵢ ≥ r/2` at most `2 d T / r` lines are visited; and any fixed polynomial
   `p^c` of setup per line totals `o(T p)` under the §8 size relations, since
   `r ≥ 2^(p^(1-ε)/12)` outgrows every power of `p`.
+- `ExactRecovery.lean`: precision and exact recovery (§8, the final integer
+  coefficients). With computed source and opposite transforms within scaled
+  error `E_s` of the exact contractions on the half ball and the pointwise
+  product truncated to the grid, quarter-ball inputs keep every computed
+  array in the disk and the computed opposite transform is within
+  `(3 E_s + 2) 2^(-p)` of `G (F u · F v)`. Through the convolution identity
+  `G (F u · F v) = (u ∗ v) / S²`, the numerator scaling `16 S` returns the
+  normalised convolution of the digit vectors within `16 S (3 E_s + 2) 2^(-p)`,
+  and the rounding recovery of `MainReduction` gives the exact product once
+  `2^(2k+4) S² (3 E_s + 2) < 2^(p-1)`. With `E_s = 9 · 2^γ T L`, `S ≤ T < 2^k`,
+  `L < k`, `γ ≤ k/4` and `p = 6k`, both margins follow from
+  `896 k 2^(k/4) < 2^k`, which holds for all large `k`. Tape costs are not
+  here.

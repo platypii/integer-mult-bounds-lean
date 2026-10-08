@@ -233,7 +233,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Parameter slacks and assembly margins | `Parameters` | ✅ | — | Log enclosure proved in Lean |
 | Asymptotics and finite-depth recurrence | `Asymptotics` | ✅ | — | |
 | Prime existence | `Primes` | 🟡 | — | Short-interval primes open |
-| Exact coefficient arithmetic, rounding, carries | `Carry`, `MainReduction` | 🟡 | ⬜ | List level only |
+| Exact coefficient arithmetic, rounding, carries | `Carry`, `MainReduction`, `ExactRecovery` | ✅ | ⬜ | Carries and packing at the list level; the §8 precision chain from transform errors `E_s` to the exact product, with the margins from the size relations for all large `k` |
 | Complete time bound | `TimeBound`, `Sizes`, `CostTable` | 🟡 | ⬜ | Size relations, every table row as a multiple of `p^(1-margin)`, and the assembly into `O(n (lg n)^(1-κ))` at `κ = 83/10^12` proved; the components must still supply the row costs |
 
 ## 10. End-to-end theorem `EndToEnd`
