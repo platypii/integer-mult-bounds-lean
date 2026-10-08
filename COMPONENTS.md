@@ -919,6 +919,16 @@ Faster interchange of address chunks (§4).
   `time k V ≤ K (m^k)^τ V` with an explicit constant. The role-stream split,
   the depth-first fixed-tape schedule, and descriptor processing are tape
   obligations.
+- `Swap/ArbitraryWidth.lean`: the cost assembly of Lemma 4.4. For binary
+  chunks of width `u`, the radix width `e` is at least one and at most `u`,
+  the row-range digit count `ρ` gives a row field of range at least `W^k`, and
+  the remaining width is split into base-`m` pieces. With per-volume overhead
+  `A (ρ + log (2e) + 1)` for the high-digit moves, padding, descriptors, and
+  cleanup, and the power-width calls on less than twice the volume, the total
+  per unit volume is at most `K u^τ` for every `u ≥ 1`, with `K` explicit and
+  independent of `u`; the logarithms are absorbed uniformly, not only
+  eventually. The field-order bookkeeping of the construction is a tape
+  obligation.
 - `NLogN/ModuliConstruction.lean`: an elementary replacement for the paper's
   Lemma 5.1. The moduli need only be odd and pairwise coprime, so each is a
   product of powers of two coordinate-specific odd primes whose exponents are

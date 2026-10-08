@@ -15,7 +15,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Machine model and target statement | §2 | ✅ | ✅ |
 | Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 |
 | Finite networks with a rank saving | §3 | 🟡 | ⬜ |
-| Faster interchange of address chunks | §4 | 🟡 | ⬜ |
+| Faster interchange of address chunks | §4 | ✅ | ⬜ |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ |
 | Gaussian resampling | §7 | 🟡 | ⬜ |
@@ -105,7 +105,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Lower triangular factorization (Lemma 4.1) | `LowerTriangular`, `PivotRank` | ✅ | — | `A = E₁ Π E₂` with lower triangular two-sided inverses and a partial permutation `Π` with exactly `rank A` ones |
 | Rational matrix shear (Lemma 4.2) | `Shear`, `Modular` | ✅ | ⬜ | Pivot programs, descending triangular updates, prime modulus beyond all denominators, shear modulo `q^b` with exactly `rank A` interchanges; tape cost of the linear operations open |
 | Power-width interchange (Prop 4.3) | `Interchange` | ✅ | ⬜ | Three-step interchange, routed frame identity under the shear contract, edge schedule with `Σ rank` interchanges, recursion `O(V (m^k)^τ)`; role-stream split and fixed-tape schedule open |
-| Arbitrary-width interchange (Lemma 4.4) | `Recurrence` | 🟡 | ⬜ | Row-range digits, row padding, digit pieces `O(e^τ)`, radix padding proved; field-order bookkeeping and cost assembly open |
+| Arbitrary-width interchange (Lemma 4.4) | `Recurrence`, `ArbitraryWidth` | ✅ | ⬜ | Row-range digits, row padding, radix padding, and the total `O(u^τ)` per unit volume with an explicit constant; field-order bookkeeping open |
 
 ## 5. Simultaneous butterfly layers with compact control (§5, §11, CrocSwap)
 
@@ -190,4 +190,4 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compile the finite network interfaces and their arithmetic to literal tape steps.
-- Assemble the §4 arbitrary-width cost from the digit pieces, then start the tape compilation of the shear operations.
+- Start the tape compilation of §4: ordered-affine field updates, the role-stream split, and the depth-first schedule.
