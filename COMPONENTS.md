@@ -711,6 +711,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50CleanSegments.lean`: Actual nonrecursive Shared50 field segments execute from sole canonical b/W and array, return the exact transformed canonical array and retained headers, and erase all private metadata/trackers with heads zero. Exact field-program semantics and linear-volume time; recursive heterogeneous execution remains separate.
 
+- `Machine/CyclicRowRewind.lean`: Actual counted rewind of common and role heads preserves every arbitrary symbol. A fixed role cycle reuses the existing row/group descriptors without constructing a product count, and restores exact original heads in linear-volume time.
+
+- `Machine/CyclicRowNormalized.lean`: Actual cyclic split/merge followed by counted rewinds return every payload head to its original position, retain exact source and role words, and restore both binary controllers. Canonical positive dimensions give a 149-times-volume bound.
+
+- `Machine/RecursiveInterchangeRowsNormalized.lean`: Normalized split/merge specialized to literal seven-factor recursive arrays: exact cyclic role semantics, original heads restored, preserved controls and 149-times-parent-volume time. Descriptor synthesis and full recursive dispatch remain caller obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

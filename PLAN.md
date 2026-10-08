@@ -15,7 +15,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
 | Composition, loops, frames, elementary streams | §2 | 🟡 (155/156) | 🟡 (137/148) |
 | Finite networks with a rank saving | §3 | ✅ (65/65) | ⬜ (0/41) |
-| Faster interchange of address chunks | §4 | ✅ (9/9) | 🟡 (2/7) |
+| Faster interchange of address chunks | §4 | ✅ (10/10) | 🟡 (3/8) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (2/6) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (9/9) | ⬜ (0/3) |
@@ -273,6 +273,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Recursive child layout with spectators | `RecursiveInterchangeLayout` | ✅ | ⬜ | Seven-factor child descriptors preserve literal row-major order and every spectator. Child volume is parent volume divided by role count, with positivity and next-depth row divisibility. Physical split/merge, descriptor arithmetic and fixed-machine recursion remain open |
 | Cyclic role transport and parking primitives | `CyclicRowCopy`, `CyclicRowCycle`, `CyclicRowSplit`, `CyclicRowMergeCopy`, `CyclicRowMergeCycle`, `CyclicRowMerge`, `StackPush`, `StackPop` | ✅ | ✅ | Fixed machines split/merge arbitrary-symbol rows in cyclic order with exact banks and 74-times-volume bounds. Destructive counted push/pop preserve order and erase exact regions. Recursive-layout wiring, descriptor construction, head positioning and the call controller remain separate |
 | Recursive role layout and counted positioning | `RecursiveInterchangeRows`, `CountedPosition` | ✅ | ✅ | Actual row split/merge now match literal seven-factor arrays and child role addresses with 74-times-parent-volume bounds. Fixed arbitrary-alphabet counted head motion has exact full-bank preservation and charged runtime. Descriptor synthesis and complete recursive call wiring remain open |
+| Normalized recursive role transport | `CyclicRowRewind`, `CyclicRowNormalized`, `RecursiveInterchangeRowsNormalized` | ✅ | ✅ | Actual split/merge now return every payload head to its original position with exact words and restored controls. Existing row/group descriptors drive all rewinds, no product descriptor assumed; bound 149 times parent volume. Descriptor synthesis and recursive call wiring remain open |
 | Physical operations with heterogeneous spectators | `RecursiveInterchangeScaling`, `FixedControlTranslationStream`, `FlatFixedControlShift` | ✅ | 🟡 | Actual H/D scaling preserves arbitrary seven-factor layouts. Actual fixed-H translation iterates arbitrary middle spectators with linear-volume time and exact D-fiber symbols. Dimension construction, outer H/prefix iteration and recursive controller remain open |
 | Arbitrary-width interchange (Lemma 4.4) | `Recurrence`, `ArbitraryWidth` | ✅ | ⬜ | Row-range digits, row padding, radix padding, and the total `O(u^τ)` per unit volume with an explicit constant; field-order bookkeeping open |
 

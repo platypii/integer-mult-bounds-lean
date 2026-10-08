@@ -575,3 +575,6 @@ import IntegerMultBounds.Machine.TrackedCleanupList
 import IntegerMultBounds.Machine.CleanExecution
 import IntegerMultBounds.Machine.FlatCoordinateCleanSchedule
 import IntegerMultBounds.Machine.Shared50CleanSegments
+import IntegerMultBounds.Machine.CyclicRowRewind
+import IntegerMultBounds.Machine.CyclicRowNormalized
+import IntegerMultBounds.Machine.RecursiveInterchangeRowsNormalized
