@@ -209,6 +209,9 @@ import IntegerMultBounds.Networks.Shared50ModularOperators
 import IntegerMultBounds.Networks.ModularFrameSchedule
 import IntegerMultBounds.Networks.ModularProgramShape
 import IntegerMultBounds.Networks.Shared50ModularSchedule
+import IntegerMultBounds.Networks.Shared50SignedFramed
+import IntegerMultBounds.Networks.Shared50ModularExecution
+import IntegerMultBounds.Networks.Shared50ModularControl
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
