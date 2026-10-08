@@ -1461,6 +1461,8 @@ Bit and complex networks.
 
 - `Networks/AffineFieldCoordinates.lean`: H-before-D coordinate embedding and exact expansion of nonrecursive field operations to ordered scalar operations, including reflected subtraction as negative-one scaling then earlier-control shift. Proves operation/segment semantics and coefficient-map commutation; recursive interchange excluded.
 
+- `Networks/AffineFieldSegments.lean`: Splits field programs into nonrecursive runs separated by explicit recursive interchange boundaries. Exact flattening and run semantics, original membership and nonrecursive hypotheses for each run, exact recursive-call count, and number of runs are proved. Enables segment compilation without concealing recursive-call obligations.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
