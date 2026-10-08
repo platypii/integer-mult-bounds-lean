@@ -244,6 +244,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   periodized Gaussian is at most `1 + √(π/a)` by comparison with the Gaussian
   integral, so the resampling map `S` has sup-norm at most `1 + 1/α`,
   uniformly in the lengths.
+- `NLogN/TensorApprox.lean`: the two-factor case of the paper's tensor
+  lemma: slice-wise application along either factor preserves approximation
+  error and unit norm, the composed tensor approximation has the sum of the
+  errors, and the normalized two-dimensional transform is exactly the tensor
+  of the two normalized one-dimensional transforms. The `d`-fold version is
+  not written.
 
 ## Top-level
 

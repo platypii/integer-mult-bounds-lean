@@ -48,3 +48,4 @@ import IntegerMultBounds.NLogN.NormFFT
 import IntegerMultBounds.NLogN.FixedOps
 import IntegerMultBounds.NLogN.MainParams
 import IntegerMultBounds.NLogN.ResamplingNorm
+import IntegerMultBounds.NLogN.TensorApprox
