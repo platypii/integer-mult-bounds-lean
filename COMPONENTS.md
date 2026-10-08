@@ -324,6 +324,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActualAffineScalingStream.lean`: Specializes dimension-based streams to each actual Shared50 scalar, proving exact output symbols at every concrete fiber offset and ordered-affine action for explicitly represented address fibers. Program depends only on coefficient; one-time setup charged, full-bank endpoint proved, nonempty linear constant 1737+120*(abs numerator+denominator). Arbitrary whole-field layout identification and full network scheduling remain separate.
 
+- `Machine/MarkedWordCleanup.lean`: Literal marker installation, nonblank-word erasure, rewind and marker removal over arbitrary finite alphabets. One tape, six states; exact fully blank/head-zero endpoint in 2*width+6. Requires a nonblank word at cell one on otherwise blank tape.
+
+- `Machine/BinaryDescriptorReset.lean`: Physically clears a binary descriptor including its sentinel and restores a genuinely blank output tape for reuse. Exact endpoint and charged scan bound; supports the recurring rational-to-binary pipeline.
+
+- `Machine/RadixRationalBinary.lean`: Fixed-rational radix arithmetic followed by actual canonical binary conversion and complete radix scratch cleanup. Four tapes over q+4 symbols; marked source preserved with head one, both scratch tapes blank with heads zero. Bound 10*resultValue+10*width+27, at most47 times positive fiber volume. Modular interpretation assumes denominator less than prime q.
+
+- `Machine/RadixRationalBinaryReuse.lean`: Recurring rational-to-binary computation erases the previous binary descriptor before recomputing. Exact marked-source preservation and blank scratch; bound 2*oldWidth+10*resultValue+10*width+32, at most54 times fiber volume for a canonical prior offset below the modulus.
+
+- `Machine/RationalOffsetPrepare.lean`: Concrete five-tape recurring fixed-rational scalar offset computation, conversion, scratch cleanup and physical destination descriptor replacement. Both output copies are canonical and equal; marked radix source is preserved. At most67 times positive fiber volume for canonical prior descriptors below the modulus. Rational semantics require denominator below prime q; prefix scheduling and fixed linear combinations remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -413,3 +413,8 @@ import IntegerMultBounds.Machine.SignedScalingStream
 import IntegerMultBounds.Machine.OffsetPreparationCost
 import IntegerMultBounds.Machine.SignedScalingDimensionsStream
 import IntegerMultBounds.Machine.ActualAffineScalingStream
+import IntegerMultBounds.Machine.MarkedWordCleanup
+import IntegerMultBounds.Machine.BinaryDescriptorReset
+import IntegerMultBounds.Machine.RadixRationalBinary
+import IntegerMultBounds.Machine.RadixRationalBinaryReuse
+import IntegerMultBounds.Machine.RationalOffsetPrepare
