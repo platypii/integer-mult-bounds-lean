@@ -801,7 +801,7 @@ Bit and complex networks.
   certified local addition nodes has exactly 490,650 members before sharing.
   Nontrivial supports, common points and per-copy uniqueness discharge the
   matching theorem's structural hypotheses; the concrete duplicate count
-  remains separate, with global construction in SharedPointReplay.
+  is checked in Certificates/Shared50, with global construction in SharedPointReplay.
 
 - `Networks/DAGReplay.lean`: executable topological import into an existing
   DAG under injective source renaming, interning by exact support. Validity,
@@ -817,13 +817,34 @@ Bit and complex networks.
   58,800 output keys and values, valid references, unique supports and every
   addition support in the checked local family. The support-image bound of
   450,394 implies at most 509,194 compiled roles and 959,588 XOR updates;
-  this file leaves that duplicate-count premise explicit.
+  the premise is discharged in Shared50Certificate.
 
 - `Networks/SharedPointExecution.lean`: actual compiled binary scalar program
   computes every common-point partial sum for every target triple containing
   that point. Output coverage, distinct bounded physical output slots and an
   executable inverse on arbitrary states are proved; numerical global bounds
-  retain the explicit support-cardinality premise until its certificate lands.
+  are discharged by Shared50Certificate and Shared50Finite.
+
+- `Networks/SharedPointOutputIndex.lean`: direct arithmetic index for each
+  common-point/pair output, proved to select its actual output record and
+  compiled partial sum; no output-list search is needed.
+- `Networks/BoundedCircuit.lean`: converts every bounded scalar instruction
+  to an actual finite register type, preserving forward/reverse execution
+  under restriction and preserving instruction count.
+- `Networks/DAGFiniteCompile.lean`: the actual allocator bounds every scalar
+  target/source; its finite-register program has exactly the same execution,
+  output values and length, with a proved inverse on arbitrary finite states.
+- `Networks/SharedPointWitnessCheck.lean`: compact duplicate checker with
+  proved omitted-point bit insertion, exact core/union signature semantics,
+  genuine cross-copy equality and sorted-row uniqueness/cardinality.
+- `Networks/Shared50Certificate.lean`: the global certificate discharges every
+  finite-count premise: actual additions at most 450,394, compiled roles at
+  most 509,194, and at most 959,588 scalar XOR instructions in the same program
+  that computes all common-point partial sums.
+- `Networks/Shared50Finite.lean`: concrete program on `Fin 509194` with the
+  certified instruction bound, exact partial sums at explicit distinct output
+  registers, and executable reverse on arbitrary finite register states.
+  Global rank-frame assembly and literal tape costs remain open.
 
 ### Networks/Certificates/Paired49
 
@@ -842,6 +863,19 @@ from the reference paired-exclusion implementation.
   `SignaturesChunk085.lean`, `Signatures.lean`: exact common/covered endpoint
   sets for every support; 4,389 additions have empty common-endpoint masks and
   5,424 have nonempty ones. These are local counts, not the global sharing count.
+
+### Networks/Certificates/Shared50
+
+- `Data.lean`, `Chunk000.lean` through `Chunk314.lean`, `Checked.lean`:
+  40,256 duplicate rows, each kernel-checked for increasing common points,
+  actual addition indices, matching lifted endpoint signatures, and strict
+  numeric ordering. Finset conversion preserves the full distinct-row count.
+- `Kinds.lean`: the addition-index range is checked against every actual local
+  certificate row, rather than assumed from the generator's numbering.
+- `Semantics.lean`, `Sound.lean`: the numeric checker describes the actual
+  common-point support family; all listed pairs are genuine duplicate
+  witnesses, yielding at most 450,394 distinct addition supports. The generator
+  `scripts/generate_shared50_witnesses.py` supplies only untrusted finite data.
 
 ## NLogN
 

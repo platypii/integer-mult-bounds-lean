@@ -1,0 +1,20 @@
+import IntegerMultBounds.Networks.Certificates.Shared50.Data
+import IntegerMultBounds.Networks.Certificates.Shared50.Chunk234
+
+/-! Generated untrusted duplicate witnesses. Lean checks IDs, signature equality and uniqueness.
+Regenerate with scripts/generate_shared50_witnesses.py. -/
+
+namespace IntegerMultBounds.Networks.Certificates.Shared50
+open SharedPointWitnessCheck
+set_option maxRecDepth 8192
+
+theorem chunk238_checked : checkFrom isAddition Paired49.signatureCoreBank.lookup Paired49.signatureUnionBank.lookup
+    (some 3582998062152652132491401959949) chunk238 = true := by
+  decide +kernel
+
+theorem chunk238_last : lastKey (some 3582998062152652132491401959949) chunk238 = some 3653121779173498850609148459053 := by
+  decide +kernel
+
+theorem chunk238_length : chunk238.length = 128 := by rfl
+
+end IntegerMultBounds.Networks.Certificates.Shared50

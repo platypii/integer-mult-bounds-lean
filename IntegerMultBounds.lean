@@ -146,6 +146,12 @@ import IntegerMultBounds.Networks.DAGReplayBudget
 import IntegerMultBounds.Networks.SharedPointOutputMap
 import IntegerMultBounds.Networks.SharedPointReplay
 import IntegerMultBounds.Networks.SharedPointExecution
+import IntegerMultBounds.Networks.SharedPointOutputIndex
+import IntegerMultBounds.Networks.BoundedCircuit
+import IntegerMultBounds.Networks.DAGFiniteCompile
+import IntegerMultBounds.Networks.SharedPointWitnessCheck
+import IntegerMultBounds.Networks.Shared50Certificate
+import IntegerMultBounds.Networks.Shared50Finite
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
