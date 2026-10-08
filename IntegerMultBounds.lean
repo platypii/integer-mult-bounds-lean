@@ -121,3 +121,4 @@ import IntegerMultBounds.NLogN.PowerOfTwoContract
 import IntegerMultBounds.NLogN.RecurrenceParams
 import IntegerMultBounds.NLogN.Contract
 import IntegerMultBounds.NLogN.CostBound
+import IntegerMultBounds.NLogN.PrimeSelection

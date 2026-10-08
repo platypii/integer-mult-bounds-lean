@@ -693,6 +693,16 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `12 T/r` delegated products of size `3rp` plus `O(n log n)` word
   operations, so any cost function bounded by three pipelines plus a linear
   overhead for `n ≥ 2^(1729^12)`, and polynomially below, is `O(n log n)`.
+- `NLogN/PrimeSelection.lean`: the paper's Lemma 5.1 and the moduli
+  selection, downstream of one isolated hypothesis: Rosser and Schoenfeld's
+  bound `y − y/(2 log y) < ϑ(y) < y + y/(2 log y)` for `y ≥ 563`, stated as
+  a definition and never assumed globally. From it, every window
+  `((1−2η)x, (1−η)x]` holds at least `ηx/(2 log x)` primes, a power-of-two
+  grid of lengths at least `2^(d^9)` admits distinct primes in its windows,
+  those moduli satisfy every condition of the recursive-step contract, and
+  the explicit recursive step is exact with the moduli supplied. The
+  Chebyshev bound itself is not in mathlib and remains the one external
+  number-theoretic input.
 
 ## Top-level
 
