@@ -253,6 +253,16 @@ theorem iterate_hoare (M : Program t q a) (k : ℕ) (X : ℕ → Tapes t a) (c :
     exact ((h 0 (by omega)).seq hrest).consequence (fun v hv => hv) (fun v hv => hv)
       (by rw [Nat.succ_mul]; omega)
 
+/-- Moving a single head left `k` cells by unrolled steps. -/
+theorem moveLeft_hoare (k : ℕ) (f : ℤ → Fin (a + 4)) (p : ℤ) :
+    HoareTime (iterate (StepLeft.program (a := a)) k) (fun v => v = (StepLeft.cfg f p 0).tapes)
+      (fun v => v = (StepLeft.cfg f (p - k) 0).tapes) (k * (1 + 1)) := by
+  have hit := iterate_hoare (StepLeft.program (a := a)) k (fun j => (StepLeft.cfg f (p - j) 0).tapes) 1
+    (fun j hj => by
+      refine (StepLeft.step_hoare f (p - j)).consequence (fun v hv => hv) (fun v hv => ?_) le_rfl
+      rw [hv]; congr 1; push_cast; ring)
+  simpa using hit
+
 namespace EraseCell
 
 /-- Blank the scanned cell of a single tape without moving. -/

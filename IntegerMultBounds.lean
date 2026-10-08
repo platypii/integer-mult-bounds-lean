@@ -117,6 +117,8 @@ import IntegerMultBounds.Machine.PackedLine
 import IntegerMultBounds.Machine.GuardTest
 import IntegerMultBounds.Machine.GuardGadget
 import IntegerMultBounds.Machine.AnyFlag
+import IntegerMultBounds.Machine.PlacementBank
+import IntegerMultBounds.Machine.KeyRoutine
 import IntegerMultBounds.Machine.PackedArith
 import IntegerMultBounds.Machine.PackedInverse
 import IntegerMultBounds.Machine.WordTape

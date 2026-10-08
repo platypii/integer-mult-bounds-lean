@@ -393,6 +393,24 @@ theorem digitW_hoare (i : ℕ) (hi : i < n) :
   rw [show p1 + (i : ℤ) * b + b = p1 + ((i + 1 : ℕ) : ℤ) * b by push_cast; ring,
     show p6 + 2 * (n : ℤ) + i + 1 = p6 + 2 * n + ((i + 1 : ℕ) : ℤ) by push_cast; ring]
 
+theorem stateV_zero :
+    stateV q V W C1 C2 C3 f g c1 c2 c3 p0 p1 p2 p3 p4 p5 p6 0 =
+      bank (putWord f p0 (V.map bitSymbol)) (putWord g p1 (W.map bitSymbol))
+        (putWord c1 p2 (C1.map bitSymbol)) (putWord c2 p3 (C2.map bitSymbol))
+        (putWord c3 p4 (C3.map bitSymbol)) (fun _ => blank) (fun _ => blank) p0 p1 p2 p3 p4 p5 p6 := by
+  simp [stateV, flagWordV, putWord]
+
+theorem stateW_final :
+    stateW q b n V W C1 C2 C3 f g c1 c2 c3 p0 p1 p2 p3 p4 p5 p6 n =
+      bank (putWord f p0 (V.map bitSymbol)) (putWord g p1 (W.map bitSymbol))
+        (putWord c1 p2 (C1.map bitSymbol)) (putWord c2 p3 (C2.map bitSymbol))
+        (putWord c3 p4 (C3.map bitSymbol)) (fun _ => blank)
+        (putWord (fun _ => blank) p6 ((flagWordW q b n V W C1 C2 C3 n).map bitSymbol))
+        (p0 + n * q) (p1 + n * b) p2 p3 p4 p5 (p6 + 3 * n) := by
+  simp only [stateW]
+  congr 1
+  ring
+
 /-- The total cost. -/
 def cost (q b n : ℕ) : ℕ := n * (digitVCost q + 1) + 1 + n * (digitWCost b + 1)
 

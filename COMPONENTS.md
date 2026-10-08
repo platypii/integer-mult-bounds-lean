@@ -159,6 +159,19 @@ Machine model, execution, composition, and tape routines.
 - `Machine/AnyFlag.lean`: a two-tape scan over a flag word writing whether
   any flag is set at the key head, which advances; the flag word is preserved
   with its head on its blank end.
+- `Machine/PlacementBank.lean`: reading a replaced bank cell by cell: at an
+  active slot the replacement appears, elsewhere the original bank is
+  unchanged; an exact contract placed by an injective slot map yields an exact
+  whole-bank contract once the banks are compared index by index.
+- `Machine/KeyRoutine.lean`: the repair key routine on seventeen tapes for
+  the compact-control instance in the radices `2^q`, `2^b`: copy the rank's
+  bits from the counter into the two address words, run the guard test and
+  write the membership flag at the key's origin, run the inverse packed
+  program and the ideal toggle, append the destination words to the key when
+  flagged, and erase every scratch word. The counter, control and constants
+  are preserved, the key holds the flag word of the repair scan, every head
+  returns to its origin; linear cost. The placements and frames are
+  generated mechanically.
 - `Machine/PackedInverse.lean`: the inverse packed program on nine tapes:
   the four packed updates undone in reverse order with negated offsets as
   five gather-and-transduce lines, with exact list-level word semantics, the

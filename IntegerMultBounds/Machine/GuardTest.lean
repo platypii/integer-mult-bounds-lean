@@ -67,7 +67,7 @@ theorem cmpCell_hoare (f g h : ℤ → Fin (a + 4)) (px pc po : ℤ) (x y : Bool
     · subst hj
       fin_cases i <;> simp [ho, symbolOrd_ordSymbol, hy']
       all_goals (try (intro hj'; rw [hj']))
-    · fin_cases i <;> simp [Function.update_apply, hj]
+    · fin_cases i <;> simp [hj]
       all_goals (try (intro hj'; rw [hj']))
 
 theorem rel_append_singleton (o : Ordering) (cols : List (Bool × Bool)) (x y : Bool) :
