@@ -44,6 +44,13 @@ Machine model, execution, composition, and tape routines.
   contract. Copying onto a blank tape gives the exact global blank-tail output
   representation. These routines are ingredients for record-stream processing;
   record extraction and radix sorting are not yet implemented.
+- `Machine/Partition.lean`: a concrete three-tape, three-state stable partition
+  of delimiter-separated records by their leading key bit. The outputs are
+  proved to be the encoded original-order filtered lists; the source is
+  unchanged, and the exact runtime is the encoded input length. The contract
+  retains complete tape contents, and blank outputs give globally blank tails.
+  Key selection for subsequent radix passes and the full sorting controller
+  remain open.
 
 ## Compact
 
@@ -268,6 +275,11 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `N = T′ D = 1 + E`, and Lemma 4.6: under `α²θ ≥ 1` every entry of `E u`
   is at most `2.01 e^(−πα²θ/2) ≤ 1/2` on the unit ball. The operator-norm
   packaging and the assembly `D N⁻¹ C` are not here.
+- `NLogN/TensorApproxD.lean`: the paper's tensor lemma with `d` factors:
+  applying approximations coordinate by coordinate preserves unit balls, has
+  operator norm at most one, and accumulates the sum of the errors; and the
+  normalized `d`-dimensional transform is exactly the tensor of the
+  normalized one-dimensional transforms.
 
 ## Top-level
 

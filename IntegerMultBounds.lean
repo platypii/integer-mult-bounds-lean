@@ -17,6 +17,7 @@ import IntegerMultBounds.Machine.BitTape
 import IntegerMultBounds.Machine.CounterTape
 import IntegerMultBounds.Machine.WordTape
 import IntegerMultBounds.Machine.Copy
+import IntegerMultBounds.Machine.Partition
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal
@@ -52,3 +53,4 @@ import IntegerMultBounds.NLogN.TensorApprox
 import IntegerMultBounds.NLogN.BluesteinApprox
 import IntegerMultBounds.NLogN.Section5Approx
 import IntegerMultBounds.NLogN.ResamplingInverse
+import IntegerMultBounds.NLogN.TensorApproxD

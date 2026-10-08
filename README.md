@@ -31,7 +31,7 @@ the literal machine model is proved correct with a runtime bound.
 | Part of the proof | Source | Mathematics | Tape | Main gaps |
 | --- | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ | ✅ | — |
-| Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 | Array-order scans and stream scheduling; only scan, copy, and counter routines exist |
+| Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 | Scan, copy, counters, and a stable record-partition pass are proved; array-order scans and stream scheduling remain open |
 | Finite networks with a rank saving | §3 | 🟡 | ⬜ | Residual spaces, sparse wire counts, rational and phase interfaces |
 | Faster interchange of address chunks | §4 | ⬜ | ⬜ | Not started |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; extracting, sorting, and reinserting records on tapes is open |
