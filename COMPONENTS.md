@@ -194,6 +194,11 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedLoop.lean`: A fixed finite-state binary-counted body loop with a dedicated final clock tape. Actual Hoare chains with varying body costs execute in their summed costs plus at most six times the iteration count, twice the clock width and two. All decrement scans, returns, body joins and terminal underflow are charged; the clock finishes all ones. Preparation and cleanup remain explicit.
 
+- `Machine/GrowingCounterData.lean`: Growing-width binary increment from the empty zero word, exact value increment, canonical highest-one invariant and logarithmic width. A bit-weight potential bounds all increment-and-return costs by four times the increment count plus twice initial width.
+- `Machine/GrowingCounter.lean`: Literal growing binary increment writes a new high bit at the end blank and returns to its sentinel. Exact execution and halting, canonical growth from an empty marked tape and amortized costs including cycle joins are proved; no counter width is prepared in advance.
+- `Machine/BinaryLength.lean`: Literal two-tape, six-state scanner constructs a canonical binary source-length descriptor from an empty marked counter. The source is preserved, its first blank causes true halt, and all growth, movement and joins cost at most eight transitions per source symbol. Internal blank payloads are excluded by the source contract.
+- `Machine/BinaryLengthInit.lean`: Initializes the counter sentinel from a genuinely blank second tape, then measures the source. Exact execution costs at most eight times source length plus two; canonical output and logarithmic width are proved. The literal standard multiplication input is covered, including its separator symbol.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
