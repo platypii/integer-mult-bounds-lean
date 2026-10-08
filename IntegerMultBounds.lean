@@ -29,6 +29,8 @@ import IntegerMultBounds.Machine.RadixRationalData
 import IntegerMultBounds.Machine.RadixRational
 import IntegerMultBounds.Machine.CountdownData
 import IntegerMultBounds.Machine.CountedCopy
+import IntegerMultBounds.Machine.Reflection
+import IntegerMultBounds.Machine.CountedReverse
 import IntegerMultBounds.Machine.BlockNegationData
 import IntegerMultBounds.Machine.ScalingControl
 import IntegerMultBounds.Machine.BlockRotationData
