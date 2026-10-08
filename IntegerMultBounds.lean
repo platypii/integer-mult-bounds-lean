@@ -463,3 +463,4 @@ import IntegerMultBounds.Machine.FlatArrayNormalize
 import IntegerMultBounds.Machine.FlatControlledShiftNormalize
 import IntegerMultBounds.Machine.FlatControlledShiftReady
 import IntegerMultBounds.Machine.MultiControlTranslationBootstrap
+import IntegerMultBounds.Machine.FlatControlledShiftArray
