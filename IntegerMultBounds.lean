@@ -29,6 +29,10 @@ import IntegerMultBounds.Machine.RadixRationalData
 import IntegerMultBounds.Machine.RadixRational
 import IntegerMultBounds.Machine.CountdownData
 import IntegerMultBounds.Machine.CountedCopy
+import IntegerMultBounds.Machine.BlockNegationData
+import IntegerMultBounds.Machine.ScalingControl
+import IntegerMultBounds.Machine.BlockRotationData
+import IntegerMultBounds.Machine.ScalingPieces
 import IntegerMultBounds.Machine.CountedCopyReuse
 import IntegerMultBounds.Machine.BinaryPad
 import IntegerMultBounds.Machine.BinaryArithmetic
