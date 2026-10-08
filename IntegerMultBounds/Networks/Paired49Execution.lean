@@ -1,5 +1,6 @@
 import IntegerMultBounds.Networks.Paired49Certificate
 import IntegerMultBounds.Networks.DAGValueTransfer
+import IntegerMultBounds.Networks.DAGInstructionCount
 
 /-! The checked local witness compiled to its actual scalar register program.
 Preloading the physical input roles and zeroing other roles gives the complete
@@ -39,6 +40,12 @@ theorem run_output (input : ℕ × ℕ → ZMod 2) (i : ℕ) (hi : i < outputs.l
   exact hrun.trans (Option.some.inj hs)
 
 theorem role_bound : code.state.next ≤ 10989 := allocated_roles
+
+/-- A bound on the number of literal scalar XOR updates, not tape steps. -/
+theorem instruction_bound : code.program.length ≤ 20802 := by
+  have h := DAGAllocator.compile_program_le_additions nodes outputRefs valid output_bounds
+  rw [Paired49Certificate.additions, Paired49Certificate.output_count] at h
+  exact h
 
 /-- The same concrete program is reversible even away from clean inputs. -/
 theorem reverse_run (state : ℕ → ZMod 2) :

@@ -140,6 +140,7 @@ import IntegerMultBounds.Networks.DAGAllocatorRun
 import IntegerMultBounds.Networks.DAGCompileCorrect
 import IntegerMultBounds.Networks.DAGAllocatorBudget
 import IntegerMultBounds.Networks.DAGValueTransfer
+import IntegerMultBounds.Networks.DAGInstructionCount
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
