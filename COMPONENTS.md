@@ -272,6 +272,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActualAffineScaling.lean`: Instantiates the fixed signed-scaling machine for every actual Shared50 scalar coefficient. The program depends on the rational coefficient, never on radix exponent or payload width; the chosen-prime unit recipe discharges numerator/denominator legality. Exact symbol transport matches OrderedAffine target scaling at every prime-power width, with bound (1368+120*(absolute numerator+denominator))*payload volume. Canonical descriptor and blank scratch hypotheses remain explicit.
 
+- `Machine/TranslationDescriptorsReuse.lean`: Reusable shift-length synthesis and literal metadata cleanup. From marked empty output counters, subtraction and three products create canonical split lengths while preserving Q,a,B; fixed118-state execution costs163*Q*B+90. A fixed19-state cleanup erases all three generated counters and the padded subtraction word, resets every metadata head, and physically removes the scratch sentinel, restoring the exact next-iteration bank. Cleanup costs at most8*Q*B+30 under the supplied canonical dimension assumptions.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

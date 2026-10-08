@@ -65,6 +65,7 @@ import IntegerMultBounds.Machine.ActualAffineScaling
 import IntegerMultBounds.Machine.BinarySubReuse
 import IntegerMultBounds.Machine.TranslationProduct
 import IntegerMultBounds.Machine.TranslationDescriptors
+import IntegerMultBounds.Machine.TranslationDescriptorsReuse
 import IntegerMultBounds.Machine.BinaryOneInit
 import IntegerMultBounds.Machine.ScalingPreparedStream
 import IntegerMultBounds.Machine.ScalingStream
