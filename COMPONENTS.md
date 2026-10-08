@@ -203,6 +203,10 @@ Machine model, execution, composition, and tape routines.
 - `Machine/WordSegments.lean`: Exact local tape-word indexing and matching-segment replacement. A middle word of a placed concatenation is already present at its length-offset origin; these representation identities justify local stream views without asserting free tape operations.
 - `Machine/FiberShift.lean`: A fixed seven-tape, eighty-five-state counted controller rotates successive uniform raw fibers by a common prepared cut. Source and prior output are preserved, both data heads advance the entire volume, and inner controls reset. Canonical prepared descriptors and nonempty fibers give actual runtime at most 177 times payload volume plus four; outer count preparation/cleanup and varying offsets remain separate.
 
+- `Machine/CountedLoopReuse.lean`: Generic fixed counted body loop with an immutable count descriptor. Physically prepares the mutable clock, runs the counted body chain, erases the clock and resets both control heads, preserving the descriptor. All body costs plus six times the count, seven times descriptor width and sixteen bound the actual execution.
+- `Machine/FiberShiftReuse.lean`: Fixed eight-tape, ninety-six-state common-offset fiber shifts with full inner and outer clock cleanup. Source and four immutable descriptors survive; both data heads advance the full volume. Canonical prepared descriptors and nonempty fibers give actual runtime at most 182 times payload volume plus twenty-three.
+- `Machine/FiberShiftAddress.lean`: Instantiates the reusable fiber machine as actual forward target-coordinate translation modulo Q on arbitrarily many Q-by-B fibers, preserving every intra-block payload position. The same linear-volume execution restores all clocks; the common offset and derived binary descriptors remain explicit prepared inputs.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
