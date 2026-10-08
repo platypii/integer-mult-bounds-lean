@@ -182,6 +182,10 @@ import IntegerMultBounds.Networks.BoundedFramedCircuit
 import IntegerMultBounds.Networks.Shared50FiniteFramed
 import IntegerMultBounds.Networks.Shared50FiniteReverseTrace
 import IntegerMultBounds.Networks.FramedEmbedding
+import IntegerMultBounds.Networks.Shared50LabeledInvocation
+import IntegerMultBounds.Networks.Shared50InvocationRank
+import IntegerMultBounds.Networks.Shared50OppositeLabels
+import IntegerMultBounds.Networks.Shared50OppositeRank
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit

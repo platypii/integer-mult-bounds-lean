@@ -963,6 +963,22 @@ Bit and complex networks.
   introduce no new roles; finite restriction after any stage-label lift retains
   the exact endpoints and complete ordered edge list without filtering.
 
+- `Networks/Shared50LabeledInvocation.lean`: concrete forward sparse-block
+  boundary profiles and unique physical readout owners. Every source/readout
+  attachment and all profile nondegeneracy facts are proved, including reused
+  scratch entering at the stage-common label.
+- `Networks/Shared50InvocationRank.lean`: complete finite forward label
+  history includes boundary alignments and every actual middle DAG incidence.
+  Exact endpoints, nested nondegenerate edges and loss exactly 2,500 are proved,
+  for bottom or common auxiliary input. Physical wrapper linkage is separate.
+- `Networks/Shared50OppositeLabels.lean`: concrete opposite-inverse profiles
+  use actual complemented final spans for injection and complemented initial
+  source lines for draining; common-frame attachments and nondegeneracy proved.
+- `Networks/Shared50OppositeRank.lean`: complete opposite history, including
+  the actual finite complementary inverse trace. Common-input endpoints,
+  nested nondegenerate edges and exact loss 2,500 are proved; full physical
+  wrapper and global rank-sum linkage remain separate.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
