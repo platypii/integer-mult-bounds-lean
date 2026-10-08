@@ -436,6 +436,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatControlledShiftReady.lean`: Composes physical blank-workspace marker setup, prefix initialization, concrete controlled shift and payload normalization. Exact full bank retains initializer and operation metadata; transformed symbols return to common input with output scratch/head origins restored. Bound (878+4*c)*volume+29*(c+1)+29 includes every stage. Canonical width/B/Q/P descriptors remain supplied; full fixed affine schedule and dimension construction remain separate.
 
+- `Machine/MultiControlTranslationBootstrap.lean`: First-use physical shared-source expression evaluation and translation starts all writable arithmetic/translation scratch blank at head zero. Explicit spare-head setup, leaf marking, canonical offset computation, translation metadata initialization and rotation are charged; the exact output matches the recurring MultiControlTranslationExecution bank. Bound (15*leaves+expressionConstant+493)*Q*B. Only physical marked radix controls, canonical B/Q descriptors and payload remain supplied; full prefix scheduling is separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
