@@ -617,7 +617,8 @@ Bit and complex networks.
   reconstruct a cross-pair exclusion from concrete far, strip and cross
   supports; one smart addition reconstructs a single exclusion. Valid DAG
   extension, exact output supports/values, preservation and three/one new-node
-  bounds are proved. Complete recursive construction and sharing counts remain.
+  bounds are proved. `PairedBlockCorrect` supplies complete recursive semantics;
+  optimized sharing counts remain open.
 
 - `Networks/SupportInterpretation.lean`: expanding weighted source atoms
   into original input supports preserves disjoint partitions and finite sums,
@@ -626,7 +627,8 @@ Bit and complex networks.
 - `Networks/PairedCircuit.lean`: full executable upstream paired-exclusion
   recursion, with the literal balanced-total, prefix/suffix, coarse graph,
   strip, and reconstruction order. Termination follows from actual pair
-  grouping. Correctness and optimized counts are separate proof obligations.
+  grouping. `PairedBlockCorrect` proves its complete recursive semantics;
+  optimized counts remain separate.
 
 - `Networks/PairedVectorCorrect.lean`: the literal prefix-first, suffix-second
   vector builder preserves the DAG and produces the exact total and each
@@ -667,6 +669,34 @@ Bit and complex networks.
   every strip operand's validity and disjointness. Actual full and omitted
   strip queries expand to precisely the source strips used by reconstruction,
   with the remaining vertex weight retained and the selected group excluded.
+
+- `Networks/PairedCircuitCorrect.lean`: literal single-output and nested
+  cross-pair loops preserve the shared DAG and produce exact keyed support
+  tables. The left partial sum is allocated once and shared through the
+  inner loop, retaining the upstream constructor order.
+
+- `Networks/PairedReconstructionSupport.lean`: the actual fine graph and
+  contracted coarse outputs discharge all local reconstruction requirements.
+  Executable strip lookups, single exclusions, reused within-group outputs
+  and cross-pair loops give exactly the original graph's query supports.
+
+- `Networks/PairedReconstructionKeys.lean`: literal group-member enumeration
+  returns the original vertices, and internal pairs followed by cross pairs
+  are a permutation of all original pairs. These list identities require no
+  sortedness assumption and account for the actual output table order.
+
+- `Networks/PairedBlockCorrect.lean`: full correctness of the literal weighted
+  paired-exclusion recursion by strong induction, with no assumed recursive
+  result or checker acceptance. Every total, single and pair output has its
+  exact support and weighted value; the DAG remains valid and every prior
+  reference retains its value. Optimized node counts and tape costs are open.
+
+- `Networks/PairedInitialGraph.lean`: concrete singleton pair inputs in literal
+  enumeration order, indexed edge references and zero vertex weights establish
+  the full input invariant. The resulting circuit has exact surviving-pair
+  output sums for all ordered vertex lists; the actual 49-vertex local circuit
+  is unconditionally correct with exactly 1,176 inputs and outputs. Active
+  addition, global sharing and physical role counts remain separate.
 
 - `Networks/ReversibleFanout.lean`: literal binary gate lists gather a sum
   into a pivot and fan it out. Full dirty-state semantics, reverse-list

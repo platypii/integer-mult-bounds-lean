@@ -115,6 +115,11 @@ import IntegerMultBounds.Networks.PairedQuerySupport
 import IntegerMultBounds.Networks.PairedCoarseQuery
 import IntegerMultBounds.Networks.PairedStripCorrect
 import IntegerMultBounds.Networks.PairedStripSupport
+import IntegerMultBounds.Networks.PairedCircuitCorrect
+import IntegerMultBounds.Networks.PairedReconstructionSupport
+import IntegerMultBounds.Networks.PairedReconstructionKeys
+import IntegerMultBounds.Networks.PairedBlockCorrect
+import IntegerMultBounds.Networks.PairedInitialGraph
 import IntegerMultBounds.Networks.ReversibleFanout
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
