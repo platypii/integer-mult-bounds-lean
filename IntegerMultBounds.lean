@@ -27,6 +27,8 @@ import IntegerMultBounds.Machine.PartitionMarked
 import IntegerMultBounds.Machine.Concatenate
 import IntegerMultBounds.Machine.Reinsert
 import IntegerMultBounds.Machine.PartitionPass
+import IntegerMultBounds.Machine.KeySelectData
+import IntegerMultBounds.Machine.KeySelect
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples

@@ -97,6 +97,14 @@ Machine model, execution, composition, and tape routines.
   and empty work/output tapes; setup, repeated key selection, and full sorting
   remain open.
 
+- `Machine/KeySelectData.lean` and `Machine/KeySelect.lean`: one fixed
+  three-tape, four-state machine scans a supplied unary key index, physically
+  selects that bit from each record, rewinds, and emits a leading flag followed
+  by all original bits. Source and selector are preserved. Exact runtime is
+  input volume plus `recordCount * (2*index + 2)`, at most three times input
+  volume for valid positions. Output is proved to match the partition format;
+  repeated-pass control, flag removal, and buffer reuse remain to be composed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

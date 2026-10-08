@@ -45,8 +45,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Concatenation and record reinsertion | `Concatenate`, `Reinsert` | ✅ | ✅ | Source positioning is a precondition |
 | One complete radix pass | `PartitionPass` | ✅ | ✅ | Runtime `3·len + 8` |
 | Radix sort (list level) | `RadixSort`, `PartitionSort` | ✅ | — | Stable LSB sort, volume identity |
-| Key-bit selection for later passes | `KeySelectData` 🚧 | 🟡 | ⬜ | Data-level `keyAt` and flagged split only |
-| Full tape radix sort | — | — | ⬜ | Needs key selection, buffer reuse, controller |
+| Key-bit selection for later passes | `KeySelectData`, `KeySelect` | ✅ | ✅ | Unary tape selects arbitrary valid index; exact runtime ≤ three input volumes |
+| Full tape radix sort | — | — | ⬜ | Needs composed flag removal, buffer reuse, controller |
 | Terminating stream scheduler | — | ⬜ | ⬜ | Counters prove finite-prefix execution only |
 
 ## 3. Finite networks with a rank saving (§3)
@@ -150,7 +150,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 ## Next steps
 
-- Finish and import the drafted key-selection files, then remove temporary flags and reuse tape buffers.
+- Compose key selection, partition, and flag removal; implement buffer reuse and the full sorting controller.
 - Construct sparse grouped gates and nested labels before assembling the residual-rank budget.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
