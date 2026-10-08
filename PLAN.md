@@ -74,7 +74,10 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Embedded tensor subspaces | `TensorSubspace` | ✅ | — | Actual dimensions, nondegeneracy, orthogonality and sum/inclusion laws |
 | Binary diagonal phase decomposition | `BinaryPhase` | ✅ | ⬜ | Rank-one residual and weight-mod-four factorization; Walsh conjugation separate |
 | Binary tensor coordinate bridge | `TensorCoordinates`, `LabelTransport` | ✅ | — | Actual isometry to h³ bits; transports labels, residuals and projections |
-| Full labeled schedule | — | ⬜ | ⬜ | |
+| Local nested gate labels | `MotifLabels` | ✅ | — | Actual tensor subspaces and unique central decrease; future factor and scratch endpoints included |
+| Projection-rank trace accounting | `RankTrace` | ✅ | — | Actual edge ranks telescope; concrete endpoint and loss enumeration separate |
+| Binary one-column translation interface | `BinaryWalsh` | ✅ | ⬜ | Exact finite Walsh conjugation and residual-dimension kernel sequence |
+| Full labeled schedule | — | 🟡 | ⬜ | Local table proved; global attachment and interstage identifications remain |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
 | Residual rank saving | — | ⬜ | — | Nested gate labels, total saving |
 | Rational address-shear interface | `ProjectionRank`, `ShearFrame` | 🟡 | ⬜ | Projection ranks and exact endpoint/frame identities; finite-radix realization and total budget open |
@@ -164,8 +167,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 ## Next steps
 
-- Compose key selection, partition, and flag removal; implement buffer reuse and the full sorting controller.
-- Extend sparse grouped motifs to the full exchange and construct nested labels before assembling the residual-rank budget.
+- Add physical selector advancement and the terminating radix-sort controller to the reusable stable pass.
+- Attach nested labels to the global grouped exchange and assemble the residual-rank budget.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Build the full tape radix sort from `PartitionPass` and key selection.

@@ -54,6 +54,9 @@ import IntegerMultBounds.Networks.BinaryPhase
 import IntegerMultBounds.Networks.TensorSubspace
 import IntegerMultBounds.Networks.TensorCoordinates
 import IntegerMultBounds.Networks.LabelTransport
+import IntegerMultBounds.Networks.BinaryWalsh
+import IntegerMultBounds.Networks.MotifLabels
+import IntegerMultBounds.Networks.RankTrace
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits

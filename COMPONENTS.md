@@ -327,6 +327,26 @@ Bit and complex networks.
   operators. Thus the coordinate bridge preserves the mathematical edge
   operators as well as their ranks. No tape coordinate-conversion cost is claimed.
 
+- `Networks/BinaryWalsh.lean`: an explicit finite Walsh transform with
+  checked orthogonality and inverse normalization conjugates the diagonal
+  phase factors to actual address translations. Increasing and decreasing
+  edges run exactly one forward/inverse manuscript kernel per residual
+  dimension, given the proved local geometric premises. Multi-column lifting,
+  Gaussian-dyadic closure, and tape execution remain separate.
+
+- `Networks/MotifLabels.lean`: the actual eight-row local tensor-label table,
+  with all labels nondegenerate and all data/neighbor-side paths increasing.
+  The central return is the unique decrease and removes exactly the past line
+  tensored with the current space. Tensoring by the future line preserves
+  dimensions and comparability, including scratch source/sink edges. Global
+  attachment and interstage coordinate identification remain separate.
+
+- `Networks/RankTrace.lean`: finite wire-label update histories record the
+  actual source/target subspaces. For comparable nondegenerate labels, the
+  true projection-rank sum plus source dimensions equals sink dimensions
+  plus twice the total dimension loss. Concrete schedule attachment and
+  enumeration of decreasing edges must still establish the network budget.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.
