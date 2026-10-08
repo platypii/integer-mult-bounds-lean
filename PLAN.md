@@ -127,9 +127,9 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Power-of-two transforms (Thm 3.1) | `SynthEmbed`, `SynthMultiD`, `PowerOfTwoExact`, `PowerOfTwoExactD`, `PowerOfTwoNumeric`, `PowerOfTwoNumericD`, `SynthConvApprox`, `SynthConvApproxD` | ✅ | ⬜ | Exact chain and numerical error `T′ (3S + 2εa + 4) + εa + 2` in every dimension; packaging as the recursive step's `F̃_t` in progress |
 | Steps 1–3 of the recursion (Props 5.2–5.4) | `MainReduction`, `MainStep`, `Section5Approx` | ✅ | ⬜ | |
 | Parameter selection and precision | `MainParams`, `PrecisionCheck` | ✅ | — | |
-| Final recurrence (Cor 5.5) | `MainRecurrence`, `Recurrence` | ✅ | — | Recursive inequality is a hypothesis |
+| Final recurrence (Cor 5.5) | `MainRecurrence`, `Recurrence`, `RecurrenceParams` | ✅ | — | Parameter facts at `d = 1729` proved; the recursive inequality for an actual cost is a hypothesis |
 | Prime selection | `Primes` | 🟡 | — | Bertrand only; short-interval primes open |
-| Assembled numerical transform (Prop 5.2) | `ResamplingMultiNumeric`, `MainTransform`, `ExplicitNumeric` | 🟡 | ⬜ | `F̃_s = 2^γ B̃ F̃_t Ã` with error `2^(γ+4) T log₂ T`; the recursive step needs only `F̃_t` and the prime choice; the explicit numerics have no side conditions; final contract in progress |
+| Assembled numerical transform (Prop 5.2) | `ResamplingMultiNumeric`, `MainTransform`, `ExplicitNumeric`, `ContractPrep`, `PowerOfTwoContract` | 🟡 | ⬜ | `F̃_s = 2^γ B̃ F̃_t Ã` with error `2^(γ+4) T log₂ T`; the explicit power-of-two transform meets the `8 T log₂ T` bound; the recursive step needs only the prime choice; headline contract in progress |
 | Operation counts | `CostModel` | ✅ | ⬜ | Word operations and delegated products; `(12 T/r) M(3rp) + 2880 n log₂ n` |
 | Unit-ball clamping | `Clamp` | ✅ | — | Removes the ball side conditions of the composition lemmas |
 | Bit costs and tape compilation | — | ⬜ | ⬜ | |
