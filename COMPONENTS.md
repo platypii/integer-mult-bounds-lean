@@ -691,6 +691,26 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveInterchangeRows.lean`: Actual cyclic split/merge instantiated for seven-factor recursive descriptors. Proves literal flat source and role serialization, original row roles*g+j, exact role descriptor addresses and 74-times-parent-volume bounds. Canonical row/group descriptors, prepositioned heads and role permutation wiring remain explicit.
 
+- `Machine/TrackedCleanup.lean`: Actual data/tracker cleanup from a visited interval with an origin marker. Erases internally blank arbitrary data and tracker cells, restores both heads to zero, and proves a linear-radius bound without scanning parked ancestors.
+
+- `Machine/TrackedExecution.lean`: Fixed two-transition simulation of each original transition on doubled tapes/states, same alphabet. Synchronized tracker heads and marked visited intervals preserve exact original execution and bound every private written cell; no runtime size changes the finite controller.
+
+- `Machine/TrackedInit.lean`: Physically constructs tracker origin/initial-position marks from blank extra tapes for a fixed zero/one initial head pattern in two transitions, preserving original data.
+
+- `Machine/TrackedHoare.lean`: Initialization plus tracked execution has exact original output, generated visited intervals, private support and 2 times original bound plus3 cost. No prebuilt trackers or runtime boundary descriptors are assumed.
+
+- `Machine/TrackedCleanupOne.lean`: Tracker-only erasure restores its blank tape and head zero while permitting the associated common data tape and head to remain untouched.
+
+- `Machine/TrackedCleanupAt.lean`: Physical placement of data/tracker or tracker-only cleanup in fixed bank slots with exact frame preservation and complete resulting banks.
+
+- `Machine/TrackedCleanupList.lean`: Fixed finite list cleans every tracker and every selected private data tape, retaining designated common tapes/heads. Runtime is tapeCount times (5 times radius plus6); all runtime interval boundaries come from actual trackers.
+
+- `Machine/CleanExecution.lean`: Generic actual composition initializes trackers, executes a fixed machine, and erases all private data/tracking storage. Exact retained output and blank workspace have explicit constant-factor time overhead.
+
+- `Machine/FlatCoordinateCleanSchedule.lean`: One fixed initialized mixed affine schedule starts and ends with literal common array/scratch/b/W plus wholly blank private tapes and trackers. Every symbol has exact ordered-affine semantics; all initialization, execution and cleanup are linear in volume, enabling workspace reuse.
+
+- `Machine/Shared50CleanSegments.lean`: Actual nonrecursive Shared50 field segments execute from sole canonical b/W and array, return the exact transformed canonical array and retained headers, and erase all private metadata/trackers with heads zero. Exact field-program semantics and linear-volume time; recursive heterogeneous execution remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
