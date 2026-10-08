@@ -13,7 +13,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Part of the proof | Source | Mathematics | Tape |
 | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
-| Composition, loops, frames, elementary streams | §2 | 🟡 (122/123) | 🟡 (106/117) |
+| Composition, loops, frames, elementary streams | §2 | 🟡 (127/128) | 🟡 (110/121) |
 | Finite networks with a rank saving | §3 | ✅ (65/65) | ⬜ (0/41) |
 | Faster interchange of address chunks | §4 | ✅ (5/5) | ⬜ (0/3) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (1/6) |
