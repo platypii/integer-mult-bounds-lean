@@ -404,3 +404,4 @@ import IntegerMultBounds.Machine.RadixToBinaryData
 import IntegerMultBounds.Machine.ActualAffineScalingDimensions
 import IntegerMultBounds.Machine.BinaryReplace
 import IntegerMultBounds.Machine.TranslationOffsetReplace
+import IntegerMultBounds.Machine.RadixToBinary

@@ -298,6 +298,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/TranslationOffsetReplace.lean`: Places literal descriptor replacement on the translation offset tape and a physical scheduler-output tape, preserving arbitrary additional workspace. Composes an actual scheduler contract with replacement and varying-offset counted translation; charges the sum of scheduler runtimes and replacement scans plus 462*volume+23. The concrete scheduler and its complete tape/time contract remain required.
 
+- `Machine/RadixToBinary.lean`: Literal radix-to-canonical-binary converter for fixed q at least two, using three tapes, eighteen states and a q+4-symbol alphabet. Physically initializes markers, copies and rewinds source, runs amortized radix countdown with binary growth, erases work and removes the temporary source marker. Exact full-bank output, original source/head preserved, scratch blank/head restored. Bound 10*value+6*width+14, hence 16*q^width+14 and 30 times nonempty fiber volume. Handles empty words, zero and leading radix zeroes; alphabet-lifted connection to translation is separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
