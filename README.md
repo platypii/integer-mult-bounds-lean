@@ -36,7 +36,7 @@ lake build
 lake env lean AxiomAudit.lean
 ```
 
-Lean and mathlib are pinned to v4.33.1; `lake-manifest.json` pins transitive
+Lean and mathlib are pinned to v4.34.1; `lake-manifest.json` pins transitive
 dependencies. No theorem in this project uses a custom axiom or an admitted
 proof.
 
