@@ -468,6 +468,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   untwisted synthetic one; and for two power-of-two coordinates the complex
   transform is a chirp multiplication, a synthetic transform pipeline, and
   another chirp multiplication. More than two coordinates is not written.
+- `NLogN/NegacyclicKronecker.lean`: the paper's Lemma 2.5 in exact
+  arithmetic. The integer negacyclic product is the fold of the polynomial
+  product; a signed product splits into four nonnegative ones; and for
+  nonnegative inputs below `M` every coefficient of the polynomial product is
+  a base-`r M² + 1` digit of one integer product of two packed numbers below
+  `B^r`, so the negacyclic product is read off from a single multiplication
+  of integers of about `3rp` bits. This is where the recursion enters.
 
 ## Top-level
 
