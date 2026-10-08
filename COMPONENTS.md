@@ -112,6 +112,16 @@ Machine model, execution, composition, and tape routines.
   divisor are preserved, the remainder and quotient words have the exact
   values, and the cost is at most `m(4m + 6k + 27)` for an `m`-bit dividend
   and `k`-bit divisor.
+- `Machine/WordMoves.lean`: scan to a blank-terminated word's end, copy a
+  word onto another tape, erase a word backwards onto a blank background
+  returning to its origin, and copy a fixed number of cells with blanks read
+  as zero bits, the last unrolled with a state count linear in the count.
+  Each has an exact contract and transition count.
+- `Machine/ColumnTransducer.lean`: a generic three-tape column transducer on
+  equally padded words, a finite control reading one bit from each operand and
+  writing one output bit, halting on the common blank in exactly the common
+  width with both operands preserved. Modular addition (sum modulo two to the
+  width) and bitwise exclusive or are proved instances.
   The output is the exact sum with globally blank tails, and the padded
   sources retain their numeric values. Empty operands are included.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head
