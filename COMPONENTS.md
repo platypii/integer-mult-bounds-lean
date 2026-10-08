@@ -340,6 +340,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RationalTranslationExecution.lean`: Concrete sixteen-tape rational-controlled single-fiber translation: physical rational arithmetic, binary conversion, descriptor replacement, rotation and cleanup share the actual offset tape. Exact recurring full bank, source preserved, both payload heads advanced, marked radix control untouched. Cost274*Q*B+242, hence516*Q*B for positive B. Only active binary/payload tapes are alphabet-lifted; foreign radix cells are preserved as frames. Rational interpretation requires denominator below prime radix; multi-control combinations and prefix scheduling remain separate.
 
+- `Machine/CountedLoopAlphabet.lean`: Binary-counted iteration of an arbitrary-alphabet body, with exact physical countdown/head-reset semantics and actual body transitions preserved. Core exact-bank cost is sum of body bounds plus6*n+2*countWidth+2; binary cleanup is supplied by the reusable wrapper.
+
+- `Machine/CountedLoopReuseAlphabet.lean`: Reusable counted loop over arbitrary body alphabets, encoding only its two binary control tapes and framing all body symbols literally. Exact whole-bank endpoints, immutable descriptor and restored clock; sum of body costs plus6*n+7*countWidth+16 includes preparation and cleanup. Adds two tapes and sixteen states; uses the exposed CountedLoopReuse.prepare_exact contract.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

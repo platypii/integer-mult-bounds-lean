@@ -192,7 +192,9 @@ private theorem copy_exact (bs : List Bool) :
 /-- Descriptor-to-clock copy followed by both physical head resets. -/
 def prepareControls : Program 2 7 0 := seq (seq copyProgram (atControl resetProgram 1)) (atControl resetProgram 0)
 
-private theorem prepare_exact (bs : List Bool) :
+/-- Exact binary-control preparation, reusable through alphabet encoding while
+framing arbitrary payload tapes. Both control heads are physically reset. -/
+theorem prepare_exact (bs : List Bool) :
     ExactRun prepareControls (3*bs.length+8) (controls empty (binary bs) 1 1)
       (controls (binary bs) (binary bs) 1 1) := by
   have hd := reset_descriptor bs bs (1+bs.length) (bs.length+1)
