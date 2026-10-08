@@ -35,3 +35,4 @@ import IntegerMultBounds.NLogN.MultidimD
 import IntegerMultBounds.NLogN.Primes
 import IntegerMultBounds.NLogN.Multiplier
 import IntegerMultBounds.NLogN.Neumann
+import IntegerMultBounds.NLogN.Bluestein

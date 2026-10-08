@@ -209,6 +209,10 @@ proof.
   with explicit norm bounds, and after scaling as `2^γ B F A` with
   `‖A‖, ‖B‖ ≤ 1`; diagonal and coordinate-selection maps have the expected
   operator norms. The analytic hypotheses are not yet discharged.
+- `NLogN/Bluestein.lean`: Bluestein's chirp identity for even lengths, in one
+  and `d` dimensions: the transform is a chirp multiplication, a cyclic
+  convolution with the chirp, and another chirp multiplication, so a
+  power-of-two transform reduces to a convolution.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
