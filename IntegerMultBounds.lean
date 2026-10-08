@@ -482,3 +482,4 @@ import IntegerMultBounds.Machine.FlatCoordinateScaling
 import IntegerMultBounds.Machine.FlatCoordinateShift
 import IntegerMultBounds.Machine.SharedPayload
 import IntegerMultBounds.Machine.SharedPayloadPair
+import IntegerMultBounds.Machine.FlatControlledShiftPayload

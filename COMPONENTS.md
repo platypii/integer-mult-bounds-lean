@@ -491,6 +491,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SharedPayloadPair.lean`: Literal composition of two stages on the same permanent payload pair and separate stripped metadata banks. Proved exact whole-bank handoff when first output pair equals second input pair; costs both proved runtimes plus one sequence step. Concrete scaling/shift compatibility and full fixed schedule instantiation are separate.
 
+- `Machine/FlatControlledShiftPayload.lean`: Exact payload-pair interface for the initialized normalized controlled-shift machine. Proves distinct actual source/destination slots and identifies input as the encoded original array and output as the encoded canonical shifted array on the same heads, with destination scratch restored. Supplies concrete tape compatibility for shared-payload stage assembly.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
