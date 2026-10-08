@@ -18,6 +18,7 @@ import IntegerMultBounds.Machine.Execution
 import IntegerMultBounds.Machine.Composition
 import IntegerMultBounds.Machine.Hoare
 import IntegerMultBounds.Machine.Loop
+import IntegerMultBounds.Machine.Branch
 import IntegerMultBounds.Machine.Frame
 import IntegerMultBounds.Machine.Counter
 import IntegerMultBounds.Machine.BitTape
@@ -102,6 +103,7 @@ import IntegerMultBounds.Machine.Placement
 import IntegerMultBounds.Machine.CountedSeek
 import IntegerMultBounds.Machine.BinaryPad
 import IntegerMultBounds.Machine.BinaryArithmetic
+import IntegerMultBounds.Machine.BinaryCompare
 import IntegerMultBounds.Machine.WordTape
 import IntegerMultBounds.Machine.Copy
 import IntegerMultBounds.Machine.Partition
@@ -457,4 +459,3 @@ import IntegerMultBounds.Machine.MultiControlTranslationExecution
 import IntegerMultBounds.Machine.RationalPrefixTranslationBootstrap
 import IntegerMultBounds.Machine.CountedVolumeLoop
 import IntegerMultBounds.Machine.FlatArrayNormalize
-import IntegerMultBounds.Machine.FlatControlledShiftNormalize

@@ -18,6 +18,10 @@ Machine model, execution, composition, and tape routines.
   potential rule charging variable body runtimes. It introduces no counter
   comparison scans or output rewinds. Client routines must still establish
   the invariant and pay for their actual tape execution.
+- `Machine/Branch.lean`: a finite-state conditional testing only scanned
+  symbols. One transition enters the selected branch with every tape and head
+  preserved, and the branch's halt halts the whole machine. The contract
+  charges the larger branch bound plus one.
 - `Machine/Frame.lean`: finite-table tape extension and reindexing, with
   exact-step simulation and time-contract transport. Extra tape contents and
   heads are preserved literally, without parking assumptions or runtime
@@ -65,6 +69,11 @@ Machine model, execution, composition, and tape routines.
   accepts unequal-width raw words, physically pads and rewinds both operands,
   then runs binary addition. Both composition joins and all head movement are
   charged: at most three times the maximum input width plus five transitions.
+- `Machine/BinaryCompare.lean`: a fixed three-tape, four-state comparator for
+  LSF binary words of unequal widths, reading a missing high bit as zero and
+  keeping the order so far in control. It writes one bit, whether the first
+  operand is strictly smaller, at the output head and preserves both operands;
+  cost the larger width plus one, with the exact value correspondence proved.
   The output is the exact sum with globally blank tails, and the padded
   sources retain their numeric values. Empty operands are included.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head
@@ -422,8 +431,6 @@ Machine model, execution, composition, and tape routines.
 - `Machine/CountedVolumeLoop.lean`: Three actual nested counted loops over separate canonical B/Q/P descriptors; restores all clocks and preserves arbitrary body symbols. Exact per-cell iteration contract and explicit runtime; one-step body costs at most 109*volume. No total-volume descriptor is assumed.
 
 - `Machine/FlatArrayNormalize.lean`: Eight-tape, 150-state three-pass payload transfer: physically rewind both heads, copy old output into common input while erasing it, then rewind both again. Exact full-bank contract restores output scratch and both origins, reuses B/Q/P descriptors, and charges 327*volume+2. Placement into concrete operation banks is separate.
-
-- `Machine/FlatControlledShiftNormalize.lean`: Composes full concrete controlled shift with physical payload normalization on the same tape bank. Actual B/Q/P descriptors and clocks are reused by static placement; exact final offset/prefix metadata is retained, both payload heads return to origin, output scratch is restored and shifted symbols are on common input tape10. Bound (863+4*c)*volume+26 includes every pass. Prepared shift input remains explicit; blank-workspace wrapper and full schedule assembly are separate.
 
 ## Compact
 
