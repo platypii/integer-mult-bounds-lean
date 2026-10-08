@@ -883,6 +883,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveChildHeaderInstall.lean`: Fixed five-header replacement in the actual child-constructor bank, retaining A in place. Generated-output source and destination conditions are discharged; exact installed child words and (40*(log2 roles+2)+56) times child-volume bound. Parent values must be saved before destructive installation; duplicate source cleanup and full caller composition remain separate.
 
+- `Machine/RecursiveScalingRoleBank.lean`: Layout-independent physical H/D scaling of a selected role on the same permanent bank used by recursive shifts. Retains six headers, other roles, arbitrary auxiliary data and clean private storage; exact array transport and coefficient-dependent linear-volume cost.
+
+- `Machine/RecursiveXorRoleBank.lean`: Actual selected-role XOR on the permanent recursive bank, preserving all headers, spectators and supplied length/clock control. Exact binary addition and 14 times volume plus 14 times descriptor length plus 33 runtime; length synthesis is separate.
+
+- `Machine/RecursiveRoleSerialization.lean`: Exact equality between canonical four-symbol shift/scaling payload words and the pointwise XOR bit-stream encoding. Mixed operations need no uncharged representation conversion.
+
+- `Machine/RecursiveMixedSchedule.lean`: One runtime-independent fixed mixed shift/scaling/XOR program on a shared permanent bank. Exact whole-block semantics, literal blank private input/output and sum-of-stage-costs plus charged joins; explicit compile-time linear-volume coefficient. Uses one unchanged six-header view and a supplied short stream-length descriptor; paid coordinate regrouping and recursive calls remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -661,3 +661,7 @@ import IntegerMultBounds.Machine.BinaryDescriptorDivision
 import IntegerMultBounds.Machine.RecursiveCleanDescriptorDivision
 import IntegerMultBounds.Machine.BinaryDescriptorReplaceList
 import IntegerMultBounds.Machine.RecursiveChildHeaderInstall
+import IntegerMultBounds.Machine.RecursiveScalingRoleBank
+import IntegerMultBounds.Machine.RecursiveXorRoleBank
+import IntegerMultBounds.Machine.RecursiveRoleSerialization
+import IntegerMultBounds.Machine.RecursiveMixedSchedule
