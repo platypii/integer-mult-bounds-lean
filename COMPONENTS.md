@@ -654,8 +654,20 @@ Bit and complex networks.
   the terminal phase, and signed bank rerouting turn the actual h=25 physical
   network into the full product of forward coordinate kernels on every input,
   including dirty scratch. The lowered instruction run has the same transform
-  and a uniform internal vector-factor budget. Correction costs, scalar-kernel
-  expansion and literal tape execution are separate obligations.
+  and a uniform internal vector-factor budget. `ComplexCorrections` supplies
+  the correction instructions and kernel expansion; literal tape execution is
+  a separate obligation.
+
+- `Networks/ComplexCorrections.lean`: the endpoint corrections as literal
+  single-wire instructions around the lowered h=25 factor program. Each
+  terminal sign character is the product of one sign flip per support
+  coordinate (27 of them), so the corrected program costs the rank total plus
+  28 instructions per data wire and sends every input, including dirty
+  scratch, to its full forward tensor on the exchanged bank. Every vector
+  factor expands into its per-column two-term kernels `aI + bX_v` with
+  `a = (1+i)/2`, `b = (1-i)/2` (inverse factors swap the coefficients), giving
+  the column-expanded program with `k` kernels per rank factor and `54k+2`
+  corrections per address. Literal tape costs remain open.
 
 - `Networks/NetworkBudget.lean`: sums dimensions of actual physical source
   and sink subspaces, including the empty-data case. At complex ground size

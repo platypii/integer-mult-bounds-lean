@@ -14,7 +14,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ | ✅ |
 | Composition, loops, frames, elementary streams | §2 | 🟡 | 🟡 |
-| Finite networks with a rank saving | §3 | 🟡 | ⬜ |
+| Finite networks with a rank saving | §3 | ✅ | ⬜ |
 | Faster interchange of address chunks | §4 | ✅ | ⬜ |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ | 🟡 |
 | Synthetic transforms and their tape layout | §6 | ✅ | ⬜ |
@@ -165,7 +165,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Optimized two-bank endpoint and numerical budgets | `Shared50GlobalBudget`, `Shared50Parameters` | ✅ | — | Actual padded two-bank world count and rational terminal dimension totals; strict branching inequality for the numerical rank budget. Actual trace balance and loss premises are discharged in Shared50GlobalProjectionRank |
 | Actual optimized two-bank global program | `Shared50GlobalCircuit` | ✅ | ⬜ | Literal sparse three-coordinate schedule, exact first/third scratch reuse, injective per-stage placements, full data-bank exchange and arbitrary scratch restoration; exact scalar list counts. Physical projector-rank assembly is proved in Shared50GlobalShear; tape costs remain open |
 | Rational address-shear interface | `ProjectionRank`, `ShearFrame` | ✅ | ⬜ | Projection ranks, full signed physical frames, finite-radix realization and actual total budget proved; tape realization remains open |
-| Phase interfaces and tape compilation | `BinaryRankFactors`, `ComplexPhaseBudget`, `BinaryColumnFrame`, `GroupedModuleFrames`, `FramedFactorExecution`, `ComplexFramedExecution`, `TensorTerminalWeight`, `ComplexEndpoints` | 🟡 | ⬜ | Complete physically placed array-factor run with explicit character/phase corrections equals the full coordinate transform on data and dirty scratch, uniformly in columns; internal instruction count includes all scalar gates; correction costs, scalar-kernel expansion and literal tape costs remain open |
+| Phase interfaces and tape compilation | `BinaryRankFactors`, `ComplexPhaseBudget`, `BinaryColumnFrame`, `GroupedModuleFrames`, `FramedFactorExecution`, `ComplexFramedExecution`, `TensorTerminalWeight`, `ComplexEndpoints`, `ComplexCorrections` | ✅ | ⬜ | Complete physically placed array-factor run with explicit character/phase corrections equals the full coordinate transform on data and dirty scratch, uniformly in columns; internal instruction count includes all scalar gates; the corrections are literal single-wire instructions (27 sign factors per X input, 28 per Y output, one negation per X output, i.e. 28 per data wire beyond the rank total) and every vector factor expands into its per-column Gaussian-dyadic kernels `aI + bX_v` (k per factor, 54k+2 corrections per address); literal tape costs remain open |
 
 ## 4. Faster interchange of address chunks (§4)
 
