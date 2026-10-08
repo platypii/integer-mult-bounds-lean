@@ -118,6 +118,27 @@ Machine model, execution, composition, and tape routines.
   contract lists every tape and head, and the cost is at most `74k + 4`
   extracted volumes plus one full-stream volume plus `k + 7`. Radix sorting
   commutes with key-preserving record maps.
+- `Machine/FlagCopy.lean`: a four-tape, six-state routine rewrites one
+  record's flag from a key tape and, when the flag is set, moves the key's
+  destination bits to the extracted stream and copies the record behind them
+  in the raw keyed format, erasing the key tape back to its marked blank
+  state. Exact cost: the record length, plus twice the key width plus three
+  when flagged.
+- `Machine/MarkedReturn.lean`: a one-tape, three-state routine returns a head
+  from the end of a word to its origin over either a blank or a marked
+  background in the word length plus two transitions.
+- `Machine/LoopChain.lean`: a while loop whose iterations form a chain of
+  exact-tape contracts runs from the first bank to the last within the sum of
+  the iteration bounds plus two control transitions each.
+- `Machine/RepairScan.lean`: the flagging and extraction scan of the
+  exceptional-address repair on the fourteen-slot repair bank. A binary rank
+  counter drives a loop whose body runs a key routine (a program parameter
+  with a per-rank contract: read the counter, write the flag and destination
+  bits), the flag copier, and the counter increment; two head returns and the
+  sort-strip-reinsert stage follow. The complete machine has an exact-run
+  contract, and its cost is the key cost plus ten per record, three stream
+  volumes, `74k + 5` extracted volumes, `2k + 3` per extracted record, and
+  `k + 14`.
 - `Machine/Reinsert.lean`: a three-tape, four-state program retains unflagged
   records and replaces flagged records in order from a second stream. It
   preserves both sources, halts after exactly the combined encoded input
@@ -422,6 +443,13 @@ Compact packed controls, repair, and density bounds.
   within `74k + 4` extracted volumes, one full-stream volume, and `k + 7`,
   the extracted volume being at most `|ℬ|·(k + 2 + w)`. The flagging scan and
   the destination-rank arithmetic that produce the keyed records remain open.
+- `Compact/TapeRepair.lean`: the complete repair machine `Machine/RepairScan`
+  on the unflagged actual output stream, with the scan's flags and keys being
+  membership and the destination rank `e (T (S⁻¹ q))` of the rank's address,
+  halts with the ideal stream on the output slot, within the key cost plus
+  ten per record, three stream volumes, `74k + 5` extracted volumes,
+  `2k + 3` per exceptional address, and `k + 14`. The key routine's tape
+  arithmetic is the parameter that remains open.
 - `Compact/Layout.lean`: reversible whole-row splitting, preservation and
   completeness of every suffix, exact role volumes, padding to a multiple
   within twice the original volume, and ceiling-based reservation capacities.

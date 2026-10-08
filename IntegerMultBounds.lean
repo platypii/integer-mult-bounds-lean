@@ -126,6 +126,10 @@ import IntegerMultBounds.Machine.TapeRadixSort
 import IntegerMultBounds.Machine.StripPrefix
 import IntegerMultBounds.Machine.ReturnOrigin
 import IntegerMultBounds.Machine.RepairStage
+import IntegerMultBounds.Machine.FlagCopy
+import IntegerMultBounds.Machine.MarkedReturn
+import IntegerMultBounds.Machine.LoopChain
+import IntegerMultBounds.Machine.RepairScan
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples
@@ -316,6 +320,7 @@ import IntegerMultBounds.Compact.Counting
 import IntegerMultBounds.Compact.Density
 import IntegerMultBounds.Compact.RepairPipeline
 import IntegerMultBounds.Compact.TapeRepairStage
+import IntegerMultBounds.Compact.TapeRepair
 import IntegerMultBounds.NLogN.DFT
 import IntegerMultBounds.NLogN.FFT
 import IntegerMultBounds.NLogN.Recurrence
