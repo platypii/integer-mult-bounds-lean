@@ -42,6 +42,12 @@ proof.
 
 ## Checked components
 
+- `Parameters.lean`: every stated rational parameter slack, all seven assembly
+  margins, their attained minimum and strict absorption gap, the two dyadic
+  comparisons, the complex motif counts, and the strict complex branching-ratio
+  bound. The logarithm enclosure is proved from a finite exponential-series
+  lower bound inside Lean. These do not establish the motif's circuit interface
+  or the costs of an implementation.
 - `Compact/DirtyControl.lean`: the four-update identity, restoration of an
   arbitrary dirty integer temporary, parity and guard invariance, the
   later-source identity, and guarded intermediate ranges. These are universal
