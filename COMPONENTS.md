@@ -789,6 +789,16 @@ Bit and complex networks.
   inversion, spectator preservation, exact instruction counts and support
   are proved. The singleton identity correctly has empty instruction support.
 
+- `Networks/SharedPointLift.lean`: injective local pair-to-triple lifting under
+  the actual omitted-point embedding; exact common/covered vertex formulas,
+  preservation of support cardinality and cross-copy equality from verified
+  endpoint signatures. Includes the canonical 49-vertex pair payload.
+- `Networks/SharedPointFamily.lean`: the actual fifty-copy family formed from
+  certified local addition nodes has exactly 490,650 members before sharing.
+  Nontrivial supports, common points and per-copy uniqueness discharge the
+  matching theorem's structural hypotheses; the concrete duplicate count
+  and globally compiled circuit remain separate obligations.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.

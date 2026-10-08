@@ -124,6 +124,8 @@ import IntegerMultBounds.Networks.DisjointUnique
 import IntegerMultBounds.Networks.PairedUnique
 import IntegerMultBounds.Networks.DuplicateBudget
 import IntegerMultBounds.Networks.SharedPointMatching
+import IntegerMultBounds.Networks.SharedPointLift
+import IntegerMultBounds.Networks.SharedPointFamily
 import IntegerMultBounds.Networks.MaskDAG
 import IntegerMultBounds.Networks.MaskSignature
 import IntegerMultBounds.Networks.MaskUnique
