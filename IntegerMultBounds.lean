@@ -410,3 +410,4 @@ import IntegerMultBounds.Machine.BinaryReplace
 import IntegerMultBounds.Machine.TranslationOffsetReplace
 import IntegerMultBounds.Machine.RadixToBinary
 import IntegerMultBounds.Machine.SignedScalingStream
+import IntegerMultBounds.Machine.OffsetPreparationCost
