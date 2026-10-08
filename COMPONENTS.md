@@ -744,6 +744,11 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   off-diagonal part, the Neumann inverse, and `B̃` keep their error bounds at
   the window `⌊√p⌋ + 1`, still below `p²`. This window is what makes the
   resampling maps cost `O(T p^(3/2+δ))`.
+- `NLogN/ContractSqrt.lean`: the recursive-step contract with the paper's
+  window sizes, `(⌊√p⌋ + 1) α` for the resampling sums and `⌊√p⌋ + 1` for
+  the off-diagonal part, so that the numerical maps match the ones the cost
+  model counts; the errors stay below `p²` and the contract's hypotheses are
+  unchanged.
 
 ## Top-level
 
