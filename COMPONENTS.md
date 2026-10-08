@@ -647,6 +647,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50InitializedSegments.lean`: Actual nonrecursive Shared50 field-program segments execute from sole b/W and payload with all private tapes blank. The fixed machine has exact field-program symbol transport and a setup-inclusive linear-volume bound; recursive interchanges and heterogeneous spectator layouts remain separate.
 
+- `Machine/RunSupport.lean`: Actual transition induction bounds head displacement and changed cells by elapsed transitions, with exact preservation of all exterior cells. Hoare contracts from blank inputs yield concrete blank-workspace support bounds.
+
+- `Machine/FlatCoordinateScheduleSupport.lean`: The verified initialized mixed schedule has private heads and nonblank private cells within its explicit linear-volume runtime interval. Exact common-bank output and affine semantics are retained; physical cleanup is not inferred from support alone.
+
+- `Machine/StackPop.lean`: Fixed arbitrary-alphabet destructive stack transfer, controlled by a reusable binary clock. Heads move left together, preserving original data order and erasing exactly the popped region; all exterior cells, the immutable length descriptor and restored clock are retained. Exact whole-bank semantics and 7n+7 descriptor-length+16 time; initial head positioning and descriptor construction remain caller obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
