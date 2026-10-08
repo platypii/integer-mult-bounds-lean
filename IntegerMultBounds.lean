@@ -200,6 +200,10 @@ import IntegerMultBounds.Networks.Shared50GlobalTracePlacement
 import IntegerMultBounds.Networks.Shared50GlobalTraceNondegenerate
 import IntegerMultBounds.Networks.Shared50GlobalTraceStages
 import IntegerMultBounds.Networks.Shared50GlobalProjectionRank
+import IntegerMultBounds.Networks.Shared50GlobalFramed
+import IntegerMultBounds.Networks.Shared50SignedBoundary
+import IntegerMultBounds.Networks.Shared50ShearEndpoints
+import IntegerMultBounds.Networks.Shared50GlobalShear
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
