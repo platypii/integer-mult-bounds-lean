@@ -717,6 +717,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveInterchangeRowsNormalized.lean`: Normalized split/merge specialized to literal seven-factor recursive arrays: exact cyclic role semantics, original heads restored, preserved controls and 149-times-parent-volume time. Descriptor synthesis and full recursive dispatch remain caller obligations.
 
+- `Machine/PointwiseBinary.lean`: Fixed finite binary symbol operation executed over a runtime-counted pair of streams. Exact source preservation and pointwise destination/frame theorem, physical head advancement, restored clock and explicit runtime. XOR specializes correctly on encoded bits; payload rewinds and full sparse-circuit assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

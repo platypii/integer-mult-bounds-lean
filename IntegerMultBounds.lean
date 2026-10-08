@@ -578,3 +578,4 @@ import IntegerMultBounds.Machine.Shared50CleanSegments
 import IntegerMultBounds.Machine.CyclicRowRewind
 import IntegerMultBounds.Machine.CyclicRowNormalized
 import IntegerMultBounds.Machine.RecursiveInterchangeRowsNormalized
+import IntegerMultBounds.Machine.PointwiseBinary
