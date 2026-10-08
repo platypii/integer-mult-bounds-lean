@@ -26,3 +26,4 @@ import IntegerMultBounds.NLogN.Kronecker
 import IntegerMultBounds.NLogN.FixedPoint
 import IntegerMultBounds.NLogN.Carry
 import IntegerMultBounds.NLogN.Multidim
+import IntegerMultBounds.NLogN.ErrorBudget

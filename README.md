@@ -159,6 +159,11 @@ proof.
   factors into row and column transforms and satisfies the convolution
   theorem. Higher dimensions follow by iterating; the `d`-fold form is not
   stated.
+- `NLogN/ErrorBudget.lean`: the total error of the perturbed forward,
+  pointwise, inverse pipeline against the exact one, an explicit envelope
+  `5 * 4^n * A * ε`, and the precision statement: `2n + 4 + log₂ A` fixed-point
+  bits make the rounded perturbed pipeline return the exact integer vector
+  whenever the exact pipeline is integral.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
