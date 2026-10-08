@@ -213,6 +213,11 @@ proof.
   and `d` dimensions: the transform is a chirp multiplication, a cyclic
   convolution with the chirp, and another chirp multiplication, so a
   power-of-two transform reduces to a convolution.
+- `NLogN/Approx.lean`: the fixed-point approximation framework. Rounding
+  toward zero at `p` bits with its norm bounds, the scaled error of vector and
+  map approximations as predicates, error propagation through a map of norm
+  at most one, through compositions, through bilinear maps, through rounded
+  products, and through slice-wise application in a tensor factor.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
