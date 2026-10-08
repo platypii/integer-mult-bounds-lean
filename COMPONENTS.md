@@ -808,6 +808,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveInterchangeShiftClean.lean`: Clean reusable 68-tape heterogeneous controlled shift from six canonical layout headers and sole payload. Exact transformed array, retained original headers, all generated private metadata and trackers erased at head zero, with setup/execution/cleanup bound 221536 times volume plus 32370. Fixed machine independent of runtime layout.
 
+- `Machine/Shared50OrderedPieces.lean`: Actual fixed clean machines for certified nonrecursive segments and globally wired scalar XOR gates from the ordered control. Segment semantics use equal-width coordinates; heterogeneous header construction, whole-bank joining and recursive continuations remain separate.
+
+- `Machine/Shared50PieceSchedule.lean`: Fixed actual list of certified segments, explicit role-and-coordinate recursive calls, and scalar gates. Expansion equals the original control atom by atom, with exact improved recursive-call count. Whole-machine compilation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -1784,6 +1788,18 @@ from the reference paired-exclusion implementation.
   common-point support family; all listed pairs are genuine duplicate
   witnesses, yielding at most 450,394 distinct addition supports. The generator
   `scripts/generate_shared50_witnesses.py` supplies only untrusted finite data.
+
+- `Networks/FramedControlSchedule.lean`: Role-preserving zipper attaches field programs to framed edges while retaining every scalar gate and original instruction order, with exact execution under edge realization.
+
+- `Networks/FramedControlShape.lean`: Exact shape forgets only frame operators, retaining edge roles and scalar gates; equal shapes imply identical attached controls, including restriction and renaming.
+
+- `Networks/DAGFramedShape.lean`: Frame-independent instruction shape for forward and complementary DAG schedules, including finite-bank restriction.
+
+- `Networks/Shared50OrderedControl.lean`: Actual Shared50 interleaved rational control with exact routed transpose semantics, original scalar program, exact recursive-call count and certified nonrecursive segments.
+
+- `Networks/Shared50FramedShape.lean`: All actual Shared50 role names, edges and scalar-gate positions are independent of frame realization, proved symbolically without evaluating the huge circuit.
+
+- `Networks/Shared50FixedControl.lean`: One literal rational control list for all runtime widths. Exact schedule equality preserves role names, scalar-gate order, routed transpose semantics and the improved recursive-call count.
 
 ## NLogN
 
