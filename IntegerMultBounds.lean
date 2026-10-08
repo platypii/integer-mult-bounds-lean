@@ -52,6 +52,7 @@ import IntegerMultBounds.Machine.ScalingConcatenate
 import IntegerMultBounds.Machine.ScalingPartitionData
 import IntegerMultBounds.Machine.ScalingExecutionReuse
 import IntegerMultBounds.Machine.ScalingInverseExecution
+import IntegerMultBounds.Machine.ScalingInverseStream
 import IntegerMultBounds.Machine.CountedSpanSeek
 import IntegerMultBounds.Machine.CountedSpanReset
 import IntegerMultBounds.Machine.ScalingDescriptorData
