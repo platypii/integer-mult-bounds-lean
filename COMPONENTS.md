@@ -411,6 +411,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatAffineScaling.lean`: Concrete flat-array theorem for every actual Shared50 rational scalar. Identifies the physical source with the supplied array and proves every output symbol keeps its prefix/suffix while the target is multiplied modulo Q. Exact full-bank execution includes descriptor synthesis and bound (1737+120*(abs numerator+denominator))*volume+249. Canonical dimension descriptors and inherited sentinel/scratch conditions remain explicit; composition of successive operations is separate.
 
+- `Machine/MarkedBinaryCleanup.lean`: Four-state physical erasure of an encoded binary descriptor and its sentinel, returning a wholly blank tape/head zero without a supplied length descriptor; exact runtime bound 2*bits.length+4.
+
+- `Machine/RadixLinearCombinationReuse.lean`: Recurring shared-bank expression evaluation physically erases the old binary output and refreshes all stale leaf copies. Exact finite-control-bank contract and bound (13*leaves+expressionConstant+47)*q^b. Physical advancement of the shared controls remains the caller scheduler responsibility.
+
+- `Machine/MultiControlTranslationExecution.lean`: Actual shared-source expression evaluation composes with fiber translation using the same physical binary offset tape through static placement. Exact recurring full-bank state, preserved controls, payload/head contracts and modular expression semantics; bound (13*leaves+expressionConstant+496)*Q*B. No fresh copies or supplied computed offset; canonical dimensions, initial metadata and control advancement remain explicit, and prefix-stream scheduling is separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

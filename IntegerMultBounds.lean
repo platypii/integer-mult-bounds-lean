@@ -451,3 +451,6 @@ import IntegerMultBounds.Machine.RadixLinearCombinationBootstrap
 import IntegerMultBounds.Machine.PrefixCounterInitPlacement
 import IntegerMultBounds.Machine.RationalPrefixTranslationInit
 import IntegerMultBounds.Machine.FlatAffineScaling
+import IntegerMultBounds.Machine.MarkedBinaryCleanup
+import IntegerMultBounds.Machine.RadixLinearCombinationReuse
+import IntegerMultBounds.Machine.MultiControlTranslationExecution
