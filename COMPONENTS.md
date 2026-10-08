@@ -623,6 +623,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatCoordinateScalingConstruct.lean`: Complete actual coordinate scaling from sole canonical b/W and array. One coefficient/target-dependent program constructs dimensions, installs all descriptor copies, executes and normalizes the scaler, retaining dimension bank. Exact canonical scaled payload and blank workspace contract; explicit linear-volume bound includes every setup, scan and join.
 
+- `Machine/SharedBankPair.lean`: Actual composition of two heterogeneous machines sharing any fixed common tape bank. Exact private frames and payload handoff are preserved with one charged join; unused private common slots remain blank.
+
+- `Machine/SharedBankStage.lean`: Concrete stage contract and physical finite-list compiler over any fixed common-bank size. Proves folded common-state semantics, exact complete output, sum of stage runtimes plus all joins, and propagation of literally blank private input storage.
+
+- `Machine/SharedBankSkeleton.lean`: Extracts fixed machine data from shared-bank stages and proves finite compilation depends only on those skeletons. Transports exact execution to a program selected independently of runtime semantic data, including a stronger theorem with entirely blank private inputs.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
