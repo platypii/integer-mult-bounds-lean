@@ -917,6 +917,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveMixedInitialized.lean`: One fixed machine initializes its own XOR clock and volume word from six canonical headers, then executes the actual mixed shift/scaling/XOR list. Exact role-array semantics and clean private endpoint, bound(51783+sum operation coefficients+operation count) times volume. Generated controls remain explicit at output; per-operation coordinate-view changes and recursive calls remain separate.
 
+- `Machine/RecursiveChildCallSetup.lean`: Actual fixed 40-tape call entry saves six parent headers and compile-time return PC, then physically computes/installs child headers. Both saved stacks survive complete arithmetic. Exact child bank and coefficient RecursiveChildPrepare.constant+24*(log2 roles+2)+50+PCwidth times child volume; array parking and recursive body remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
