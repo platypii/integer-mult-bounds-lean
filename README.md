@@ -21,7 +21,8 @@ chosen before quantifying over inputs.
 The machine model, the target statement, and a growing set of algorithmic and
 analytic components are formalized and checked. See
 [COMPONENTS.md](COMPONENTS.md) for a file-by-file summary of what each
-component proves and what it leaves open.
+component proves and what it leaves open, and [PLAN.md](PLAN.md) for a
+detailed status of each row below, broken down by subcomponent.
 
 Rows follow the sections of the OpenAI manuscript, plus the Harvey–van der
 Hoeven `O(n log n)` multiplier it uses as a subroutine. *Mathematics* means the
