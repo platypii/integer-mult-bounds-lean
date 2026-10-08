@@ -888,6 +888,15 @@ Bit and complex networks.
   all restoring arbitrary side/central scratch and spectators. Inverse matrix
   blocks retain their internal row order; full global placement is separate.
 
+- `Networks/TripleNeighborPermutation.lean`: double counting proves Hall's
+  condition for positive regular relations; the exact triple-neighbor degree
+  supplies a fixed bijection at h=50 pairing every triple with a neighbor.
+  This uses classical finite choice, not the upstream paired-point generator.
+- `Networks/Shared50ReuseLabels.lean`: actual stage-one and stage-three tensor
+  boundary labels at the selected reuse pairs are nested and nondegenerate.
+  The join has zero downward loss and its actual projector rank saves exactly
+  125,000 against separate terminal edges. Physical schedule reuse is separate.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
