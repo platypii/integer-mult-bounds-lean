@@ -153,6 +153,12 @@ proof.
   packing of base `2^k` digits into a most-significant-first bit string of
   exactly `k * L` bits whose `Machine.binaryValue` is the digit value. This is
   the output side of `Machine.outputCorrect`, at the list level only.
+- `NLogN/Multidim.lean`: convolution transports along any additive group
+  isomorphism, so by the Chinese remainder map a cyclic convolution of coprime
+  composite length is a two-dimensional one; the two-dimensional transform
+  factors into row and column transforms and satisfies the convolution
+  theorem. Higher dimensions follow by iterating; the `d`-fold form is not
+  stated.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
