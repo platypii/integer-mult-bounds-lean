@@ -34,3 +34,4 @@ import IntegerMultBounds.NLogN.Gaussian
 import IntegerMultBounds.NLogN.MultidimD
 import IntegerMultBounds.NLogN.Primes
 import IntegerMultBounds.NLogN.Multiplier
+import IntegerMultBounds.NLogN.Neumann

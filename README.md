@@ -202,6 +202,13 @@ proof.
   parameter choice `m = ⌈log₂ 2L⌉` fits, and the count is `6 m 2^m + 2^m`
   fixed-point complex operations. Chunking, rounding, carries, twiddles, and
   tape steps are not counted.
+- `NLogN/Neumann.lean`: the linear-algebra skeleton of the resampling
+  inversion. A map `1 + E` with `‖E‖ < 1` has an inverse of norm at most
+  `1/(1 - ‖E‖)`; given the resampling identity and a normalized square
+  subsystem, the source transform factors as `B ∘ (target transform) ∘ A`
+  with explicit norm bounds, and after scaling as `2^γ B F A` with
+  `‖A‖, ‖B‖ ≤ 1`; diagonal and coordinate-selection maps have the expected
+  operator norms. The analytic hypotheses are not yet discharged.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
