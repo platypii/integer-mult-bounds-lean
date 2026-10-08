@@ -756,6 +756,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CyclicRowPermutedMerge.lean`: Fixed tape wiring restores logical cyclic row order when network output role j occupies physical tape rho j. Actual normalized merge retains exact role data/heads and unchanged runtime; no free payload permutation is assumed.
 
+- `Machine/PointwiseBinaryNormalized.lean`: Counted finite-symbol operations followed by real two-head rewind preserve exact pointwise arrays and return both payload heads; immutable count and clock restored, with explicit normalized runtime and encoded XOR semantics.
+
+- `Machine/PointwiseRoleGate.lean`: Actual normalized XOR placed between arbitrary distinct fixed role tapes, sharing one preserved binary length descriptor and restored clock. Exact complete bank and all unrelated words/heads retained.
+
+- `Machine/PointwiseRoleCircuit.lean`: Fixed list of physical role XOR gates composes with exact folded array semantics and charged gate/join runtime. The finite machine is selected independently of runtime stream length.
+
+- `Machine/SparseRoleCircuit.lean`: Literal tape execution of existing SparseCircuit.copies lists equals their Circuit.run and pointwise sum semantics on encoded ZMod2 arrays, with normalized heads and linear-volume bounds.
+
+- `Machine/OneSourceCircuit.lean`: Proof-carrying compiler retains actual scalar instruction lists certified as distinct-source XOR gates, supporting finite restriction/embedding/renaming and exact tape-level Circuit.run semantics.
+
+- `Machine/Shared50XorLists.lean`: Symbolic certificates show the actual optimized DAG, sparse input/output/central lists, invocation/inverse/exchange and reused-world global program are distinct-source XOR lists without expanding enormous instruction sequences.
+
+- `Machine/Shared50TapeInvocation.lean`: Actual optimized local sparse invocation and exchange compile into fixed tape machines with exact data-bank transformations and arbitrary dirty-scratch restoration, preserved heads/backgrounds and charged linear stream runtime.
+
+- `Machine/Shared50TapeGlobal.lean`: Actual complete reused-world Shared50 XOR program exchanges its data banks and restores arbitrary scratch streams on one fixed machine, with explicit linear tape-transition bound from the certified gate count. Canonical stream-length descriptor supplied; framed address transforms and recursive scheduling remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

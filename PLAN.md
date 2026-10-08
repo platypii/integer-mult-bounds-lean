@@ -14,7 +14,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
 | Composition, loops, frames, elementary streams | §2 | 🟡 (157/158) | 🟡 (139/150) |
-| Finite networks with a rank saving | §3 | ✅ (65/65) | ⬜ (0/41) |
+| Finite networks with a rank saving | §3 | ✅ (66/66) | 🟡 (1/42) |
 | Faster interchange of address chunks | §4 | ✅ (12/12) | 🟡 (5/10) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (2/6) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
@@ -261,6 +261,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Optimized stage-reuse matching and labels | `TripleNeighborPermutation`, `Shared50ReuseLabels` | ✅ | ⬜ | Hall-selected actual neighbor bijection, nested nondegenerate stage boundary joins, zero join loss and exact 125,000 rank saving per joined role; reused scalar schedule proved in Shared50GlobalCircuit; global rank trace is proved in Shared50GlobalTraceStages |
 | Optimized two-bank endpoint and numerical budgets | `Shared50GlobalBudget`, `Shared50Parameters` | ✅ | — | Actual padded two-bank world count and rational terminal dimension totals; strict branching inequality for the numerical rank budget. Actual trace balance and loss premises are discharged in Shared50GlobalProjectionRank |
 | Actual optimized two-bank global program | `Shared50GlobalCircuit` | ✅ | ⬜ | Literal sparse three-coordinate schedule, exact first/third scratch reuse, injective per-stage placements, full data-bank exchange and arbitrary scratch restoration; exact scalar list counts. Physical projector-rank assembly is proved in Shared50GlobalShear; tape costs remain open |
+| Actual Shared50 XOR tape circuit | `PointwiseBinaryNormalized`, `PointwiseRoleGate`, `PointwiseRoleCircuit`, `SparseRoleCircuit`, `OneSourceCircuit`, `Shared50XorLists`, `Shared50TapeInvocation`, `Shared50TapeGlobal` | ✅ | ✅ | Actual local/global scalar XOR lists execute on fixed role tapes, exchanging data banks and restoring arbitrary dirty scratch, all heads and binary clock. Concrete linear stream-time bound uses certified gate count; length descriptor supplied. Interleaved address transforms and recursive calls remain separate |
 | Rational address-shear interface | `ProjectionRank`, `ShearFrame` | ✅ | ⬜ | Projection ranks, full signed physical frames, finite-radix realization and actual total budget proved; tape realization remains open |
 | Phase interfaces and tape compilation | `BinaryRankFactors`, `ComplexPhaseBudget`, `BinaryColumnFrame`, `GroupedModuleFrames`, `FramedFactorExecution`, `ComplexFramedExecution`, `TensorTerminalWeight`, `ComplexEndpoints`, `ComplexCorrections` | ✅ | ⬜ | Complete physically placed array-factor run with explicit character/phase corrections equals the full coordinate transform on data and dirty scratch, uniformly in columns; internal instruction count includes all scalar gates; the corrections are literal single-wire instructions (27 sign factors per X input, 28 per Y output, one negation per X output, i.e. 28 per data wire beyond the rank total) and every vector factor expands into its per-column Gaussian-dyadic kernels `aI + bX_v` (k per factor, 54k+2 corrections per address); literal tape costs remain open |
 

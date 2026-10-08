@@ -594,3 +594,11 @@ import IntegerMultBounds.Machine.FiniteReturnStack
 import IntegerMultBounds.Machine.FiniteDispatch
 import IntegerMultBounds.Machine.FiniteReturnDispatch
 import IntegerMultBounds.Machine.CyclicRowPermutedMerge
+import IntegerMultBounds.Machine.PointwiseBinaryNormalized
+import IntegerMultBounds.Machine.PointwiseRoleGate
+import IntegerMultBounds.Machine.PointwiseRoleCircuit
+import IntegerMultBounds.Machine.SparseRoleCircuit
+import IntegerMultBounds.Machine.OneSourceCircuit
+import IntegerMultBounds.Machine.Shared50XorLists
+import IntegerMultBounds.Machine.Shared50TapeInvocation
+import IntegerMultBounds.Machine.Shared50TapeGlobal
