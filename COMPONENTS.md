@@ -1030,6 +1030,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveChildSetupRoleBank.lean`: Places actual40-tape header/PC save and child preparation on permanent role bank with fixed two-stack auxiliary suffix, preserving payloads and other auxiliaries with blank private workspace. Generic placed_hoare also lifts exact header/stack return contracts.
 
+- `Machine/RecursiveRowsSerialization.lean`: Exact Fin4 parent-array to cyclic child-role serialization and inverse permuted merge on the permanent shared bank, inheriting the physical clean-transfer runtime. Deterministic data banks supply all frame equalities; spectator child-layout casts preserve literal tape words with parent headers retained until physical child setup.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
