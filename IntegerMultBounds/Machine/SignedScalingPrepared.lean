@@ -202,11 +202,13 @@ private theorem handoff {a d : ℕ} (ha : 0 < a) (hd : 0 < d) (negative : Bool)
       ready_forward,ready_inverse hd Q B D middle r signMiddle t (SignedScalingExecution.numeratorPayload ha Q payload)]
     rfl
 
-private def allPrepareProgram {a d : ℕ} (ha : 0 < a) (hd : 0 < d) :
+/-- Public setup stage for once-only descriptor synthesis before stream execution. -/
+def allPrepareProgram {a d : ℕ} (ha : 0 < a) (hd : 0 < d) :
     Program (TapeCount a d) (SynthesisStates a+SynthesisStates d) 0 :=
   extend (extend (extend (FamilyPlacement.sequence (prepareProgram ha) (prepareProgram hd)) 5) 8) 5
 
-private theorem allPrepare_hoare {Q a d B : ℕ} (ha : 0 < a) (hd : 0 < d) (hB : 0 < B)
+/-- Exact setup endpoint and charged runtime, independently of payload execution. -/
+theorem allPrepare_hoare {Q a d B : ℕ} (ha : 0 < a) (hd : 0 < d) (hB : 0 < B)
     (negative : Bool) (A : Setup a) (D : Setup d) (S : SignControls) (hA : A.Valid Q B) (hD : D.Valid Q B)
     (source : ℤ → Fin 4) (p : ℤ) (middle : ℤ → Fin 4) (r : ℤ) (signMiddle : ℤ → Fin 4) (t : ℤ)
     (dest : ℤ → Fin 4) (q : ℤ) (payload : ℕ → List (Fin 4)) :

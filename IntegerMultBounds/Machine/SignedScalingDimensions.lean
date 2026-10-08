@@ -152,11 +152,13 @@ private theorem leftFrame_hoare {s q r : ℕ} {M : Program s q 0} {v w : Tapes s
   rw [Placement.replace,he]
   simpa only [ha,he] using Placement.view e (frame.append w)
 
-private def bootstrapProgram (a d : ℕ) : Program (TapeCount a d) 160 0 :=
+/-- Public setup stage for once-only descriptor synthesis before stream execution. -/
+def bootstrapProgram (a d : ℕ) : Program (TapeCount a d) 160 0 :=
   extend (Placement.placed (extend NegationDescriptors.program 6)
     (finAddFlip : Fin ((11+6)+FrontTapes a d) ≃ Fin (FrontTapes a d+(11+6)))) 5
 
-private theorem bootstrap_hoare {Q a d B : ℕ} (hQ : 0 < Q) (hB : 0 < B)
+/-- Exact setup endpoint and charged runtime, independently of payload execution. -/
+theorem bootstrap_hoare {Q a d B : ℕ} (hQ : 0 < Q) (hB : 0 < B)
     (negative : Bool) (A : Setup a) (D : Setup d) (S : Scratch) (hA : A.Valid Q B)
     (source : ℤ → Fin 4) (p : ℤ) (middle : ℤ → Fin 4) (r : ℤ) (signMiddle : ℤ → Fin 4) (t : ℤ)
     (dest : ℤ → Fin 4) (q : ℤ) (payload : ℕ → List (Fin 4)) :
