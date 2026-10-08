@@ -932,6 +932,13 @@ Bit and complex networks.
   arbitrary scratch. Exact counts give at most 5,209,540 scalar instructions per
   invocation and 15,628,620 per local exchange at h=50. These are not tape costs.
 
+- `Networks/Shared50GlobalBudget.lean`: explicit padded world with two
+  auxiliary banks and 406,321,422,080,000 roles; embeds all certified local
+  roles, defines actual rational terminal labels, and proves their total
+  dimensions. The existing three-bank world has a different count. Corrected
+  rank and branching corollaries explicitly require actual trace balance and
+  loss bounds; this file does not prove the reused schedule's rank estimate.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
@@ -1515,3 +1522,7 @@ Parameters and asymptotics.
   bound. The logarithm enclosure is proved from a finite exponential-series
   lower bound inside Lean. These do not establish the motif's circuit interface
   or the costs of an implementation.
+- `Shared50Parameters.lean`: exact h=50 two-bank counts, positive deficit,
+  finite exponential-series logarithm enclosure and strict branching inequality
+  for the selected tau. Converting the numerical budget into an actual circuit
+  bound still requires its proved rank balance and loss estimate.
