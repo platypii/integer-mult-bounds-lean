@@ -826,6 +826,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveHeaderRestore.lean`: Actual parent-header restoration costs at most (fieldCount*(8*(log2 roles+2)+13)+1) times logical child volume. Canonical old/current layout headers and paths discharge size assumptions; six-field bound is (48*(log2 roles+2)+79) times child volume. No free header reset.
 
+- `Machine/RecursiveDescriptorDivision.lean`: Bounds the actual five-tape binary long-division runtime by (40*(log2 roles+2)^2+54*(log2 roles+2)) times logical child volume for canonical root-bounded input descriptors. Proves the quadratic logarithm estimate and retains exact shifted remainder/quotient output banks; canonical output normalization and caller integration remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
