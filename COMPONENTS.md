@@ -270,6 +270,20 @@ Bit and complex networks.
   group count are proved. Framed compilation aligns each group once. Full
   grouped exchange topology and the labeled rank budget remain separate.
 
+- `Networks/GroupedRouting.lean`: the inverse grouped motif and local
+  three-stage exchange refine the existing bit swap and rational signed
+  exchange, preserving dirty scratch. Renaming transports sparse supports
+  exactly; the grouped gate count and threefold incidence count are proved.
+  The global grouped embedding and labeled rank sum remain separate.
+
+- `Networks/NeighborResidual.lean`: orthogonal anisotropic pairs span a
+  nondegenerate plane, and their complement is the side residual with dimension
+  two less than the ambient space. For neighboring rational and binary triples
+  this gives the actual degree-one residual. Binary coordinate vectors outside
+  supports prove norm-one witnesses for triple, pair, square-tensor, and
+  cube-tensor complements; triple and neighbor complements have orthonormal
+  bases. The full nested tensor gate labels remain to be assembled.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.

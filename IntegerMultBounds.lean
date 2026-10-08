@@ -44,6 +44,8 @@ import IntegerMultBounds.Networks.ProjectionRank
 import IntegerMultBounds.Networks.ShearFrame
 import IntegerMultBounds.Networks.BinaryOrthonormal
 import IntegerMultBounds.Networks.GroupedCircuit
+import IntegerMultBounds.Networks.GroupedRouting
+import IntegerMultBounds.Networks.NeighborResidual
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits
