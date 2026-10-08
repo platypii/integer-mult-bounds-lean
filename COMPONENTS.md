@@ -1647,3 +1647,13 @@ Parameters and asymptotics.
   of `Machine.EndToEnd`. The row costs themselves, and the translation of the
   size parameters `d, K, ℓ, r` into powers of `p`, are supplied by the
   components and remain open.
+- `Sizes.lean`: the input and transform sizes of §8. From `b = lg n`, with
+  `2^(b-1) < n ≤ 2^b` and `b ≤ n`, the number of axes `d = ⌊b^ε⌋` satisfies
+  `1 ≤ d ≤ b` and `d ≤ p^ε`, and eventually `p^ε / 12 ≤ d`; the chunk width
+  `K = ⌊d^c⌋` with `c = spacing` satisfies `K ≤ p^(εc)` and eventually
+  `p^(εc) / 24 ≤ K`; the transform length `T = 2^⌈log₂ (4n/b)⌉` lies in
+  `[4n/b, 8n/b)`, so `24 n ≤ T p < 48 n` for every `n ≥ 1`; eventually
+  `b / 2 ≤ log₂ T ≤ b`, hence `p / (12 d) ≤ ℓ ≤ p / (3 d)` for
+  `ℓ = ⌈log₂ T / d⌉`, and the axis length `r = 2^ℓ` is at least
+  `2^(p^(1-ε) / 12)`. These are the comparison constants `a_d = a_r = 1/12`,
+  `b_d = 1`, `b_r = 1/3` of the layer and transform interfaces.
