@@ -74,6 +74,12 @@ Machine model, execution, composition, and tape routines.
   keeping the order so far in control. It writes one bit, whether the first
   operand is strictly smaller, at the output head and preserves both operands;
   cost the larger width plus one, with the exact value correspondence proved.
+- `Machine/BinaryAccumulate.lean`: a fixed two-tape, three-state in-place
+  adder: the addend is scanned together with the accumulator, a missing high
+  bit on either tape read as zero, each column sum written back over the
+  accumulator and a final carry extending it by one cell. The addend is
+  preserved; the exact sum word, its value and width bounds, and the cost of
+  the larger width plus one are proved.
   The output is the exact sum with globally blank tails, and the padded
   sources retain their numeric values. Empty operands are included.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head

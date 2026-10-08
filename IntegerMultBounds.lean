@@ -104,6 +104,7 @@ import IntegerMultBounds.Machine.CountedSeek
 import IntegerMultBounds.Machine.BinaryPad
 import IntegerMultBounds.Machine.BinaryArithmetic
 import IntegerMultBounds.Machine.BinaryCompare
+import IntegerMultBounds.Machine.BinaryAccumulate
 import IntegerMultBounds.Machine.WordTape
 import IntegerMultBounds.Machine.Copy
 import IntegerMultBounds.Machine.Partition
