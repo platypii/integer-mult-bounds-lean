@@ -59,10 +59,11 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Binary motif matrices over `ZMod 2` | `CircuitBits` | ✅ | ⬜ | Grouped-gate topology open |
 | Neighbor and wire counts | `NeighborCounts`, `Wires` | ✅ | — | Matches manuscript totals at ground size 100 |
 | Degree-one label spaces | `Labels` | ✅ | — | Rational form nondegenerate for size ≠ 9 |
-| Tensor-cube label spaces | `TensorLabels` 🚧 | 🟡 | — | Tensor nondegeneracy, cube line decomposition |
-| Framed circuit compilation | `FramedCircuit` 🚧 | 🟡 | ⬜ | Per-gate frame changes, exact operators |
+| Tensor-cube label spaces | `TensorLabels` | ✅ | — | Nondegeneracy, dimension, terminal line/complement decomposition |
+| Framed circuit compilation | `FramedCircuit` | ✅ | ⬜ | Full finite-circuit common-frame identity, including spectators; exact operators |
 | Global circuit with per-invocation scratch | `GlobalCircuit` 🚧 | 🟡 | ⬜ | Embedding and single-invocation effect |
 | Full labeled schedule | — | ⬜ | ⬜ | |
+| Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
 | Residual rank saving | — | ⬜ | — | Nested gate labels, total saving |
 | Phase interfaces and tape compilation | — | ⬜ | ⬜ | |
 
@@ -106,7 +107,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Inversion of `T` (Lemma 4.6, Prop 4.7(i)) | `ResamplingInverse`, `ResamplingAssembly`, `Neumann` | ✅ | — | `F_s = 2^γ B F_t A`, `‖A‖, ‖B‖ ≤ 1` |
 | `d`-dimensional resampling (Thm 4.1) | `ResamplingMulti` | ✅ | — | |
 | Truncation and Neumann errors (Lemmas 4.8–4.12) | `ResamplingApprox`, `OffDiagApprox`, `NeumannApprox` | ✅ | — | |
-| Numerical `Ã`, `B̃` (Prop 4.7(ii)) | `ResamplingNumeric` | 🟡 | ⬜ | Error below `p²`; per-term evaluations and clamping are hypotheses |
+| Numerical `Ã`, `B̃` (Prop 4.7(ii)) | `ResamplingNumeric`, `ResamplingMultiNumeric` | 🟡 | ⬜ | Error below `p²` in one dimension, `d p²` in `d`; per-term Gaussian evaluations are hypotheses; clamping available via `Clamp` |
 | Permutation-left variant | — | ⬜ | ⬜ | |
 
 ## 8. `O(n log n)` subroutine (Harvey–van der Hoeven)
@@ -118,13 +119,15 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Fixed-point framework and error budget | `FixedPoint`, `FixedOps`, `Approx`, `ErrorBudget` | ✅ | — | |
 | Tensor approximation lemma | `TensorApprox`, `TensorApproxD`, `TensorApproxV` | ✅ | — | Rectangular composition law open |
 | Plain FFT multiplier | `Pipeline`, `Multiplier`, `Kronecker`, `Carry` | ✅ | ⬜ | Exact on bit strings |
-| Negacyclic Kronecker substitution (Lemma 2.5) | `NegacyclicKronecker` 🚧 | 🟡 | ⬜ | Exact arithmetic; bit costs open |
-| Power-of-two transforms (Thm 3.1) | `PowerOfTwoExact`, `SynthConvApprox` | 🟡 | ⬜ | Exact chain for two coordinates; general `d` open |
+| Negacyclic Kronecker substitution (Lemma 2.5) | `NegacyclicKronecker` | ✅ | ⬜ | Exact arithmetic; bit costs open |
+| Power-of-two transforms (Thm 3.1) | `SynthEmbed`, `SynthMultiD`, `PowerOfTwoExact`, `SynthConvApprox`, `SynthConvApproxD` | 🟡 | ⬜ | `d`-dimensional synthetic pipeline with error `3 log₂ T′ + 2`; exact chain for two coordinates; general `d` chain and the Bluestein error assembly in progress |
 | Steps 1–3 of the recursion (Props 5.2–5.4) | `MainReduction`, `MainStep`, `Section5Approx` | ✅ | ⬜ | |
 | Parameter selection and precision | `MainParams`, `PrecisionCheck` | ✅ | — | |
 | Final recurrence (Cor 5.5) | `MainRecurrence`, `Recurrence` | ✅ | — | Recursive inequality is a hypothesis |
 | Prime selection | `Primes` | 🟡 | — | Bertrand only; short-interval primes open |
-| Assembled numerical transform | — | ⬜ | ⬜ | |
+| Assembled numerical transform | `ResamplingMultiNumeric` | 🟡 | ⬜ | Numerical `⊗Ã_i`, `⊗B̃_i` with errors `d εA`, `d εB`; Proposition 5.2 assembly in progress |
+| Operation counts | `CostModel` | ✅ | ⬜ | Word operations and delegated products; `(12 T/r) M(3rp) + 2880 n log₂ n` |
+| Unit-ball clamping | `Clamp` | ✅ | — | Removes the ball side conditions of the composition lemmas |
 | Bit costs and tape compilation | — | ⬜ | ⬜ | |
 
 ## 9. Exact multiplication, parameters, time bound (§8)
@@ -147,8 +150,9 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 ## Next steps
 
-- Finish and import the drafted files: `KeySelectData`, `TensorLabels`,
-  `FramedCircuit`, `GlobalCircuit`, `NegacyclicKronecker`.
+- Finish and import the drafted key-selection and global-circuit files.
+- Construct sparse grouped gates and nested labels before assembling the residual-rank budget.
+- Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Build the full tape radix sort from `PartitionPass` and key selection.
 - Start §4, the faster interchange of address chunks.
