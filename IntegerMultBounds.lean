@@ -94,7 +94,10 @@ import IntegerMultBounds.Networks.ComplexEndpoints
 import IntegerMultBounds.Networks.NetworkBudget
 import IntegerMultBounds.Networks.SharedPointLabels
 import IntegerMultBounds.Networks.SharedPointMap
+import IntegerMultBounds.Networks.SharedPointKey
+import IntegerMultBounds.Networks.SharedPointIntern
 import IntegerMultBounds.Networks.DisjointCircuit
+import IntegerMultBounds.Networks.DisjointPruning
 import IntegerMultBounds.Networks.DisjointBuilder
 import IntegerMultBounds.Networks.DisjointBalanced
 import IntegerMultBounds.Networks.DisjointExclusion

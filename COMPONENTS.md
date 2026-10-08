@@ -559,6 +559,22 @@ Bit and complex networks.
   the original bit-side matrix. Their actual source spans are nondegenerate
   and orthogonal to the target line. Optimized DAG construction is separate.
 
+- `Networks/SharedPointKey.lean`: the upstream common-vertex/vertex-union
+  key determines the exact triple support whenever at least two common
+  vertices remain. Any sharing between distinct common-point copies lies
+  in this branch, so the compressed key cannot merge unequal sums.
+
+- `Networks/SharedPointIntern.lean`: executable compressed-key lookup among
+  addition nodes and conditional interning preserve DAG validity and exact
+  values over any commutative additive monoid. One-common-point nodes are
+  freshly allocated; global sharing counts remain separate.
+
+- `Networks/DisjointPruning.lean`: an executable backwards ancestor pass
+  computes the least parent-closed set containing requested outputs. The
+  instrumented run skips inactive additions and preserves every output of
+  a valid DAG, with an exact marked-addition count. It retains index
+  placeholders; compact physical role allocation and tape costs are open.
+
 - `Networks/DisjointCircuit.lean`: executable addition DAGs carry checked
   disjoint input supports. Structural validation proves actual evaluation is
   the support sum; equal-support interning preserves values and validity.
