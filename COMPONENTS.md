@@ -217,6 +217,9 @@ Machine model, execution, composition, and tape routines.
 - `Machine/CountedErase.lean`: Delimiter-free scratch erasure using a literal one-cell body and reusable counted loop. Preserves all cells outside the interval and restores an initially blank scratch segment, with immutable descriptor and empty clock restored. Actual cost is at most seven times length plus seven times descriptor width plus sixteen, or fourteen times length plus twenty-three for canonical descriptors.
 - `Machine/OneHot.lean`: Fixed finite residue encoding on control tapes under their current heads. Decoding reads scanned symbols only, and one literal stationary transition increments the residue modulo the fixed bank size, preserves every head and background cell and truly halts. Exact execution and Hoare contracts charge one step.
 
+- `Machine/ScratchReset.lean`: Fully reusable raw scratch cleanup: physically rewind from the segment end, erase the exact interval, and rewind to its origin. Initially blank scratch is restored including its head, while surrounding cells and immutable length descriptor survive. All three routines and joins cost at most seventeen times length plus twenty-one times descriptor width plus fifty, or thirty-eight times length plus seventy-one with a canonical descriptor.
+- `Machine/BlockReverseStreamReuse.lean`: Fixed six-tape, sixty-eight-state blockwise reversal with immutable block-count and block-width descriptors. Both inner and outer mutable clocks are prepared and cleared, control heads reset, and payload heads advance the full volume. Canonical descriptors and positive block width give actual runtime at most 124 times payload volume plus twenty-three.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

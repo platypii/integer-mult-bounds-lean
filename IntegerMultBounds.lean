@@ -40,6 +40,8 @@ import IntegerMultBounds.Machine.BlockNegationData
 import IntegerMultBounds.Machine.ScalingControl
 import IntegerMultBounds.Machine.Dispatch
 import IntegerMultBounds.Machine.CountedErase
+import IntegerMultBounds.Machine.ScratchReset
+import IntegerMultBounds.Machine.BlockReverseStreamReuse
 import IntegerMultBounds.Machine.OneHot
 import IntegerMultBounds.Machine.ScalingMergeData
 import IntegerMultBounds.Machine.BlockRotationData
