@@ -1,1 +1,3 @@
 import IntegerMultBounds.Machine
+import IntegerMultBounds.Compact.DirtyControl
+import IntegerMultBounds.Compact.Repair

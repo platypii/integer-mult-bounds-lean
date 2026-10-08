@@ -33,11 +33,28 @@ Install the version of Lean in `lean-toolchain`, then run:
 lake update
 lake exe cache get
 lake build
+lake env lean AxiomAudit.lean
 ```
 
 Lean and mathlib are pinned to v4.33.1; `lake-manifest.json` pins transitive
 dependencies. No theorem in this project uses a custom axiom or an admitted
 proof.
+
+## Checked components
+
+- `Compact/DirtyControl.lean`: the four-update identity, restoration of an
+  arbitrary dirty integer temporary, parity and guard invariance, the
+  later-source identity, and guarded intermediate ranges. These are universal
+  integer statements. Their packed modular refinement is not yet proved.
+- `Compact/Repair.lean`: for any two permutations agreeing outside an invariant
+  exceptional set, the actual map preserves that set and destination repair
+  gives exactly the ideal map. Instantiating this result with a verified packed
+  program, and implementing the repair within the tape cost, remain necessary.
+
+`AxiomAudit.lean` checks all declarations in the project namespace, transitively,
+allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
+It rejects admitted proofs, custom axioms, and native-evaluation axioms. CI
+builds the project and runs this audit.
 
 ## Remaining end-to-end obligations
 
