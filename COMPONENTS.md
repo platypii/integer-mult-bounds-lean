@@ -1032,6 +1032,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveRowsSerialization.lean`: Exact Fin4 parent-array to cyclic child-role serialization and inverse permuted merge on the permanent shared bank, inheriting the physical clean-transfer runtime. Deterministic data banks supply all frame equalities; spectator child-layout casts preserve literal tape words with parent headers retained until physical child setup.
 
+- `Machine/SharedBankFamily.lean`: Pads a finite family of clean leading-bank machines to one fixed sum-bounded tape count, preserving each state count, every common slot, exact blank private endpoints and original runtime. No tape movement or runtime dimension enters the workspace bound.
+
+- `Machine/Shared50RecursiveControl.lean`: Fixed finite graph over the exact Shared50 piece list: physical width guard, split/body/merge nodes, shared header restoration and real PC pop, per-call entry/recovery nodes, and a root halt sentinel. Actual call-site codes decode to their recovery nodes; root header/PC initialization is physically charged. Different fixed private banks are padded to one finite-family tape count; block implementations and recursive execution remain explicit obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
