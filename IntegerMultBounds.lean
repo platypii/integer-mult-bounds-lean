@@ -31,6 +31,7 @@ import IntegerMultBounds.Machine.KeySelectData
 import IntegerMultBounds.Machine.KeySelect
 import IntegerMultBounds.Machine.DropFlag
 import IntegerMultBounds.Machine.KeyPartition
+import IntegerMultBounds.Machine.KeyPass
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples

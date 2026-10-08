@@ -48,6 +48,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Key-bit selection for later passes | `KeySelectData`, `KeySelect` | ✅ | ✅ | Unary tape selects arbitrary valid index; exact runtime ≤ three input volumes |
 | Flag removal and source erasure | `DropFlag` | ✅ | ✅ | Exact flagged volume; arbitrary records; restores empty marked source |
 | Arbitrary-key flagged stable pass | `KeyPartition` | ✅ | ✅ | Six tapes, fifteen states; exact runtime ≤ eleven raw volumes plus twelve |
+| Arbitrary-key raw stable pass | `KeyPass` | ✅ | ✅ | Seven tapes; output flags removed; exact runtime ≤ seventeen raw volumes plus nineteen |
 | Full tape radix sort | — | — | ⬜ | Needs composed flag removal, buffer reuse, controller |
 | Terminating stream scheduler | — | ⬜ | ⬜ | Counters prove finite-prefix execution only |
 

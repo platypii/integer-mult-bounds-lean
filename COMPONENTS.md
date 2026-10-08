@@ -118,6 +118,12 @@ Machine model, execution, composition, and tape routines.
   includes every join and is at most eleven input volumes plus twelve.
   Output still carries flags; repeated-pass buffer reuse remains separate.
 
+- `Machine/KeyPass.lean`: a fixed seven-tape, twenty-one-state stable pass
+  returns raw records after key selection, partition, and destructive flag
+  removal. It resets the emptied sorted-flag buffer and tracks all other
+  tape contents and heads. Exact runtime is bounded by seventeen raw volumes
+  plus nineteen. Remaining old input/flag/bucket buffers need cleanup for reuse.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
