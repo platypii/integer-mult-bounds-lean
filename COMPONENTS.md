@@ -130,6 +130,16 @@ Machine model, execution, composition, and tape routines.
   target stride and one control bit. The gathered word is exact and the cost
   is `n(2(sx + st) + 7)`. `ExactFrame` gained step-right and write-zero moves
   and the generic unrolling combinator `iterate` with its chain contract.
+- `Machine/PackedLine.lean`: one line of packed address arithmetic on five
+  tapes, source, control, offset scratch, accumulator and target: gather the
+  packed offset, rewind source, control and offset, combine accumulator and
+  offset by a column transducer into the target, erase the offset and rewind
+  accumulator and target. Source, control and accumulator are preserved, the
+  target holds the exact transduced word, the scratch is blank again and the
+  cost is linear in the widths. `ColumnTransducer` gained the modular
+  subtraction instance with its integer-residue value; `ExactFrame` a rewind
+  from inside a longer word; `Gather` accepts a source longer than the
+  scanned strides.
   The output is the exact sum with globally blank tails, and the padded
   sources retain their numeric values. Empty operands are included.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head

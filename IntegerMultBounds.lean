@@ -113,6 +113,7 @@ import IntegerMultBounds.Machine.BinaryDivide
 import IntegerMultBounds.Machine.WordMoves
 import IntegerMultBounds.Machine.ColumnTransducer
 import IntegerMultBounds.Machine.Gather
+import IntegerMultBounds.Machine.PackedLine
 import IntegerMultBounds.Machine.WordTape
 import IntegerMultBounds.Machine.Copy
 import IntegerMultBounds.Machine.Partition

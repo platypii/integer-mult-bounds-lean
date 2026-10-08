@@ -72,6 +72,18 @@ theorem return_hoare_at (f : ℤ → Fin (a + 4)) (p : ℤ) (xs : List (Fin (a +
   obtain ⟨hr, hh⟩ := return_exact_at f p xs hx hleft
   exact ⟨_, _, le_rfl, hr, hh, rfl⟩
 
+/-- Returning from inside a longer word: the head sits after a nonblank
+prefix, and the rest of the word is part of the background. -/
+theorem return_hoare_prefix (f : ℤ → Fin (a + 4)) (p : ℤ) (xs ys : List (Fin (a + 4)))
+    (hx : ∀ x ∈ xs, x ≠ blank) (hleft : f (p - 1) = blank) :
+    HoareTime program
+      (fun v => v = (cfg (putWord f p (xs ++ ys)) (p + xs.length) 0).tapes)
+      (fun v => v = (cfg (putWord f p (xs ++ ys)) p 2).tapes)
+      (xs.length + 2) := by
+  have h := return_hoare_at (putWord f (p + xs.length) ys) p xs hx (by
+    rw [putWord_outside _ _ _ _ (Or.inl (by omega))]; exact hleft)
+  rwa [← putWord_append] at h
+
 theorem bits_nonblank (bs : List Bool) : ∀ x ∈ bs.map (bitSymbol (a := a)), x ≠ blank := by
   intro x hx
   obtain ⟨b, _, rfl⟩ := List.mem_map.mp hx

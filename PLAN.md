@@ -13,7 +13,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Part of the proof | Source | Mathematics | Tape |
 | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
-| Composition, loops, frames, elementary streams | §2 | 🟡 (142/143) | 🟡 (124/135) |
+| Composition, loops, frames, elementary streams | §2 | 🟡 (145/146) | 🟡 (127/138) |
 | Finite networks with a rank saving | §3 | ✅ (65/65) | ⬜ (0/41) |
 | Faster interchange of address chunks | §4 | ✅ (5/5) | ⬜ (0/3) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (1/6) |
@@ -165,6 +165,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Literal binary long division | `BinaryDecrease`, `PrependRead`, `BinaryDivide` | ✅ | ✅ | Five tapes and thirty-three states; restoring division over the dividend's bits with remainder and quotient origins moving left, in-place subtraction, one erased flag cell and physical rewinds; exact remainder and quotient words, operands preserved, cost at most `m(4m + 6k + 27)` |
 | Word moves and column transducers | `WordMoves`, `ColumnTransducer` | ✅ | ✅ | Scan to end, copy, backward erase and fixed-count zero-filled copies with exact costs; a generic equal-width column transducer with modular addition and exclusive or as instances, one transition per column, operands preserved |
 | Packed-offset stride gadget | `Gather` | ✅ | ✅ | Unrolled finite control assembles a packed word from digit fields of a source under a per-digit control bit and a Boolean combination, with chosen source and target strides and offsets; exact gathered word and cost `n(2(sx + st) + 7)`; the compact-control packed offsets and toggle masks are instances |
+| Packed arithmetic line | `PackedLine` | ✅ | ✅ | Five tapes: gather an offset, rewind, combine the accumulator with it by a column transducer (modular add, subtract or exclusive or) into a fresh word, erase the offset and rewind; source, control and accumulator preserved, exact target word, linear cost |
 | Literal fixed-radix modular addition and subtraction | `RadixDigits`, `RadixAdd`, `RadixSub` | ✅ | ✅ | Finite digit alphabet and two carry/borrow states, three tapes; exact width runtime and halt, canonical modular output and final carry/borrow, complete source preservation; equally padded operands required |
 | Literal fixed-coefficient scaling and modular division | `RadixUnary`, `RadixScaleData`, `RadixScale`, `RadixDivisionData`, `RadixDivide` | ✅ | ✅ | Fixed finite-state two-tape digit transducers, exact one transition per digit, actual halt and complete source preservation. Natural scaling and positive-denominator division below a fixed prime radix have proved modular arithmetic and final carry; full rational coefficients are proved separately; matrix composition remains open |
 | Literal rational-coefficient multiplication | `RadixRationalData`, `RadixRational` | ✅ | ✅ | Arbitrary signed rational coefficient below the fixed prime denominator bound; fixed finite carry states, two tapes, exactly one transition per digit. Output equals the network coefficient ratMod times the input at the exact word modulus; halting/source preservation proved. Matrix composition and address-array permutation scheduling remain open |

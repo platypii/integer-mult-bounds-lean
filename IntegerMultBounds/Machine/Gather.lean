@@ -288,7 +288,7 @@ theorem digitCost_le (S : Shape) : digitCost S ≤ 2 * (S.sx + S.st) + 6 := by
   omega
 
 /-- One digit carries the bank from `i` digits to `i + 1`. -/
-theorem digit_hoare (hxs : xs.length = zs.length * S.sx) (i : ℕ) (hi : i < zs.length) :
+theorem digit_hoare (hxs : zs.length * S.sx ≤ xs.length) (i : ℕ) (hi : i < zs.length) :
     HoareTime (digit op S a) (fun v => v = state op S xs zs f g h px pz pt i)
       (fun v => v = state op S xs zs f g h px pz pt (i + 1)) (digitCost S) := by
   set w := gather op S xs zs i with hw
@@ -300,7 +300,7 @@ theorem digit_hoare (hxs : xs.length = zs.length * S.sx) (i : ℕ) (hi : i < zs.
   have h2 := zeros_hoare xs zs f g h px pz pt w (px + i * S.sx + S.ox) (pz + i) S.ot
   -- the field
   have h3 := ops_hoare op xs zs f g h px pz pt (w ++ List.replicate S.ot false) i hi
-    (i * S.sx + S.ox) S.d (by have := S.hx; rw [hxs]; nlinarith)
+    (i * S.sx + S.ox) S.d (by have := S.hx; nlinarith)
   rw [show px + ((i * S.sx + S.ox : ℕ) : ℤ) = px + i * S.sx + S.ox by push_cast; ring] at h3
   -- trailing zeros
   have h4 := zeros_hoare xs zs f g h px pz pt
@@ -360,7 +360,7 @@ theorem digit_hoare (hxs : xs.length = zs.length * S.sx) (i : ℕ) (hi : i < zs.
 
 /-- The gadget's contract: the target word is the gathered packing; every
 head advances past its word. -/
-theorem gather_hoare (hxs : xs.length = zs.length * S.sx) :
+theorem gather_hoare (hxs : zs.length * S.sx ≤ xs.length) :
     HoareTime (program op S zs.length a)
       (fun v => v = bank (putWord f px (xs.map bitSymbol)) (putWord g pz (zs.map bitSymbol)) h px pz pt)
       (fun v => v = bank (putWord f px (xs.map bitSymbol)) (putWord g pz (zs.map bitSymbol))

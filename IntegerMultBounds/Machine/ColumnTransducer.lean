@@ -177,6 +177,48 @@ theorem addRule_value (xs ys : List Bool) (hlen : xs.length = ys.length) :
 
 end AddMod
 
+section SubMod
+
+/-- Modular subtraction: state one borrows. -/
+def subRule : Rule 1 where
+  out := fun st x y => BinarySub.diffBit (decide (st = 1)) x y
+  next := fun st x y => BinarySub.borrowState (BinarySub.borrowBit (decide (st = 1)) x y)
+
+theorem subRule_digits (c : Bool) (cols : List (Bool × Bool)) :
+    digits subRule (BinarySub.borrowState c) cols = BinarySub.digits c cols := by
+  induction cols generalizing c with
+  | nil => rfl
+  | cons col rest ih =>
+    rcases col with ⟨x, y⟩
+    have hc : decide (BinarySub.borrowState c = (1 : Fin 2)) = c := by
+      cases c <;> simp [BinarySub.borrowState]
+    simp only [digits, BinarySub.digits]
+    rw [show subRule.out (BinarySub.borrowState c) x y = BinarySub.diffBit c x y by simp [subRule, hc],
+      show subRule.next (BinarySub.borrowState c) x y =
+        BinarySub.borrowState (BinarySub.borrowBit c x y) by simp [subRule, hc], ih]
+
+/-- The difference modulo two to the common width, as an integer residue. -/
+theorem subRule_value (xs ys : List Bool) (hlen : xs.length = ys.length) :
+    (Counter.value (digits subRule 0 (xs.zip ys)) : ℤ) =
+      ((Counter.value xs : ℤ) - Counter.value ys) % 2 ^ xs.length := by
+  have h0 : (0 : Fin 2) = BinarySub.borrowState false := rfl
+  rw [h0, subRule_digits]
+  have hv := BinarySub.digits_value false xs ys hlen
+  simp only [BinarySub.bitValue, BinaryAdd.bitValue, Bool.false_eq_true, ↓reduceIte,
+    Nat.add_zero] at hv
+  have hd := Counter.value_lt (BinarySub.digits false (xs.zip ys))
+  rw [BinarySub.digits_length, List.length_zip, ← hlen, min_self] at hd
+  set c : ℕ := if BinarySub.overflow false (xs.zip ys) then 1 else 0 with hc
+  have hz : (Counter.value xs : ℤ) - Counter.value ys =
+      Counter.value (BinarySub.digits false (xs.zip ys)) + 2 ^ xs.length * (-(c : ℤ)) := by
+    have : (Counter.value xs : ℤ) + 2 ^ xs.length * c =
+        Counter.value ys + Counter.value (BinarySub.digits false (xs.zip ys)) := by
+      exact_mod_cast hv
+    linarith
+  rw [hz, Int.add_mul_emod_self_left, Int.emod_eq_of_lt (by positivity) (by exact_mod_cast hd)]
+
+end SubMod
+
 section Xor
 
 /-- Bitwise exclusive or: a single control state. -/
