@@ -94,6 +94,8 @@ import IntegerMultBounds.Networks.DisjointBalanced
 import IntegerMultBounds.Networks.DisjointExclusion
 import IntegerMultBounds.Networks.DisjointPaired
 import IntegerMultBounds.Networks.PairedPartition
+import IntegerMultBounds.Networks.PairGrouping
+import IntegerMultBounds.Networks.PairedReconstruct
 import IntegerMultBounds.Networks.ReversibleFanout
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit

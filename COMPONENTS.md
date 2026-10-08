@@ -553,6 +553,17 @@ Bit and complex networks.
   unions; finite-sum identities match the script's addition grouping.
   These justify recursive builder additions, without assuming partitions.
 
+- `Networks/PairGrouping.lean`: literal consecutive-pair slicing has exact
+  ceiling-half length, covers the original list, and gives nonempty disjoint
+  groups of size at most two for distinct inputs. The coarse recursive call
+  strictly decreases after the size-four base case.
+
+- `Networks/PairedReconstruct.lean`: the script's actual three smart additions
+  reconstruct a cross-pair exclusion from concrete far, strip and cross
+  supports; one smart addition reconstructs a single exclusion. Valid DAG
+  extension, exact output supports/values, preservation and three/one new-node
+  bounds are proved. Complete recursive construction and sharing counts remain.
+
 - `Networks/ReversibleFanout.lean`: literal binary gate lists gather a sum
   into a pivot and fan it out. Full dirty-state semantics, reverse-list
   inversion, spectator preservation, exact instruction counts and support
