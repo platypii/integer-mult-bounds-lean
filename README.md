@@ -42,6 +42,14 @@ proof.
 
 ## Checked components
 
+- `Asymptotics.lean`: logarithmic powers are little-o of every strictly larger
+  real power, specialized to all seven assembly margins; a finite-depth,
+  volume-normalized recurrence bound with explicit leaf and overhead costs.
+- `Compact/Layout.lean`: reversible whole-row splitting, preservation and
+  completeness of every suffix, exact role volumes, padding to a multiple
+  within twice the original volume, and ceiling-based reservation capacities.
+- `Compact/Radix.lean`: bounded radix packing and decoding, injectivity, signed
+  packed additions without carries, and preservation of lower/upper spectators.
 - `Parameters.lean`: every stated rational parameter slack, all seven assembly
   margins, their attained minimum and strict absorption gap, the two dyadic
   comparisons, the complex motif counts, and the strict complex branching-ratio

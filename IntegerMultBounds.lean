@@ -2,3 +2,6 @@ import IntegerMultBounds.Machine
 import IntegerMultBounds.Compact.DirtyControl
 import IntegerMultBounds.Compact.Repair
 import IntegerMultBounds.Parameters
+import IntegerMultBounds.Asymptotics
+import IntegerMultBounds.Compact.Layout
+import IntegerMultBounds.Compact.Radix
