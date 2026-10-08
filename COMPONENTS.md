@@ -253,6 +253,18 @@ Compact packed controls, repair, and density bounds.
   one, and its uniform bound `5 / (128*p^3)` under the dyadic cutoff. The density
   is derived from actual address cardinalities rather than assumed. Extracting,
   sorting, and reinserting the counted records on tapes remains open.
+- `Compact/RepairPipeline.lean`: the assembled exceptional-address repair at
+  the list level. On the rank-ordered stream of the actual program's output,
+  flag the exceptional addresses, extract those records with their
+  destination ranks `e (T (S⁻¹ q))`, radix sort them by destination with the
+  stable passes of `RadixSort`, and reinsert them into the flagged holes with
+  `Reinsert.fill`; the result is the stream of the ideal map everywhere, for
+  any `S`, `T`, exceptional set with the agreement and preservation
+  properties, and in particular for both packed programs. The extracted
+  records are exactly the exceptional addresses, so their count is the
+  exceptional fraction times the volume, the radix passes traverse
+  `k · |ℬ| · w` cells, and the written cost expression is at most three
+  volumes under the density bound. Tape execution of the scan is not here.
 - `Compact/Layout.lean`: reversible whole-row splitting, preservation and
   completeness of every suffix, exact role volumes, padding to a multiple
   within twice the original volume, and ceiling-based reservation capacities.

@@ -172,8 +172,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Exact destination repair | `Repair`, `ExactRepair` | ✅ | ⬜ | |
 | Exceptional-address counts and density | `Counting`, `Density`, `RepairBounds` | ✅ | — | Bound `5 / (128 p³)` |
 | Row layout and reservation capacities | `Layout` | ✅ | ⬜ | |
-| Extract, sort, reinsert repair records | `Partition`, `Reinsert` | ✅ | 🟡 | Extraction/sorting/reinsertion primitives done; repair key computation and composition open |
-| Assembled repair pipeline with cost | — | ⬜ | ⬜ | |
+| Extract, sort, reinsert repair records | `Partition`, `Reinsert` | ✅ | 🟡 | Extraction/sorting/reinsertion primitives done; the list-level composition is `RepairPipeline`; tape repair-key computation and composition open |
+| Assembled repair pipeline with cost | `RepairPipeline` | ✅ | ⬜ | Flag, extract with destination ranks, radix sort, reinsert gives the ideal stream for both packed programs; extracted count is the exceptional fraction times the volume; cost expression at most three volumes |
 
 ## 6. Synthetic transforms and their tape layout (§6)
 
@@ -242,7 +242,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 - Extend common-offset fiber shifts to computed varying offsets; build positive unit-scaling split/merge and reusable negation, charging derived descriptor arithmetic and scratch/control cleanup.
 
-- Prepare sorting metadata and compute repair keys, then compose extraction, sorting and reinsertion.
+- Compute repair keys and run extraction, sorting and reinsertion on tapes, with the `RepairPipeline` composition as the specification.
 - Compile the proved optimized h=50 modular physical network and its fixed rational control schedule to literal tape execution and prove its recursive time bound.
 - Account for complex endpoint corrections in the tape implementation.
 - Finish the `NegacyclicKronecker` subroutine component.
