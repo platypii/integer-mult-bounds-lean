@@ -172,6 +172,17 @@ Machine model, execution, composition, and tape routines.
   are preserved, the key holds the flag word of the repair scan, every head
   returns to its origin; linear cost. The placements and frames are
   generated mechanically.
+- `Machine/OrderedSelect.lean`: ordered selection of records by a modular
+  counter on six tapes (input, output, counter, addend, modulus, flag). One
+  pass over nonblank records separated by single blanks: before each record the
+  addend is accumulated into the counter and compared with the modulus; at or
+  above it the modulus is subtracted and the record is copied, otherwise the
+  record is skipped. Exact bank contract `select_hoare` with the counter word
+  and selected records given by recursion, the value identity (running sum
+  modulo the modulus, `rWord_value`, `sel_eq`), width invariants, and the
+  closed cost `cost_le`: the input volume plus `10 L + 52` per record for a
+  modulus of `L` bits.
+
 - `Machine/PackedInverse.lean`: the inverse packed program on nine tapes:
   the four packed updates undone in reverse order with negated offsets as
   five gather-and-transduce lines, with exact list-level word semantics, the
@@ -859,6 +870,18 @@ Machine model, execution, composition, and tape routines.
 - `Machine/RecursiveChildDimensions.lean`: Nineteen-tape physical construction of child layout powers and products from six parent headers plus explicit canonical divided-width and divided-row headers. Eight real arithmetic stages emit exact six child headers with bound (48*(m-1)+512) times child volume plus 119; no derived product oracle.
 
 - `Machine/RecursiveChildDimensionsClean.lean`: Thirty-eight-tape clean child-header constructor retains parent and quotient headers plus required child products, erasing all intermediate powers, scratch and trackers. Exact canonical child descriptor, volume division and bound 97*(48*(m-1)+512) times child volume plus 11756. Quotient production and child-bank installation remain separate.
+
+- `Machine/BinaryDescriptorDivisionRaw.lean`: Physical raw division and quotient normalization at cell-one origins, exposing exact shifted remainder and retained dividend/divisor banks for boundary setup and cleanup.
+
+- `Machine/BinaryDescriptorDivisionBoundary.lean`: Actual marked-input preparation, dividend scan, division invocation and marker restoration. Every seek and boundary operation is charged; supplies fixed zero/one input heads for physical workspace tracking.
+
+- `Machine/BinaryDescriptorDivision.lean`: Complete fixed 12-tape marked binary division from two input headers and blank workspace. Inputs preserved, canonical quotient returned at head one, and all nine other private tapes physically erased at head zero, including shifted remainder. No free input setup, quotient normalization or cleanup.
+
+- `Machine/RecursiveCleanDescriptorDivision.lean`: The complete clean descriptor divider has runtime at most (1280*A^2+1920*A+710) times logical child volume for canonical root-bounded inputs, A=log2 roles+2. Exact division arithmetic, input preservation and clean quotient endpoint share the same fixed machine.
+
+- `Machine/BinaryDescriptorReplaceList.lean`: Fixed physical replacement of occupied binary-header slots: erase old marked words, install new words from disjoint sources, preserve all other tapes. Exact bank theorem and fieldCount*(4*maxWidth+11)+1 runtime include every erased bit, copy and join.
+
+- `Machine/RecursiveChildHeaderInstall.lean`: Fixed five-header replacement in the actual child-constructor bank, retaining A in place. Generated-output source and destination conditions are discharged; exact installed child words and (40*(log2 roles+2)+56) times child-volume bound. Parent values must be saved before destructive installation; duplicate source cleanup and full caller composition remain separate.
 
 ## Compact
 
@@ -2252,6 +2275,16 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   windows are shown quadratic and hence not enough. One full step then costs
   `(12 T/r) M(3rp) + O(n log n)`, and the recurrence closes to `O(n log n)`
   for any cost bounded by a full step plus linear overhead.
+
+## Resampling
+
+- `Resampling/RowSelect.lean`: the row-selecting map `C` of the resampling
+  interface on tapes. With the addend `2s`, modulus `2t` and initial counter
+  `2t - s - 1`, the selection machine copies exactly the records at the indices
+  `[tj/s] = rowIndexNat s t j`, `0 ≤ j < s`, in increasing order
+  (`crossing_iff`, `rowIndexNat_eq`, `selected_eq`); `rowSelect_hoare` is the
+  exact tape contract with cost the input volume plus `O(log t)` per record and
+  no numerical error.
 
 ## Swap
 
