@@ -8,6 +8,8 @@ import IntegerMultBounds.Compact.Radix
 import IntegerMultBounds.Compact.PackedControl
 import IntegerMultBounds.Compact.RepairBounds
 import IntegerMultBounds.Machine.Execution
+import IntegerMultBounds.Machine.Composition
+import IntegerMultBounds.Machine.Hoare
 import IntegerMultBounds.Machine.Counter
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Compact.Permutations

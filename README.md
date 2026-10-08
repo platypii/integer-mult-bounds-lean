@@ -42,6 +42,13 @@ proof.
 
 ## Checked components
 
+- `Machine/Composition.lean` and `Machine/Hoare.lean`: a concrete sequential
+  composition of finite transition tables, exact execution with one extra
+  transition, preservation of all tapes and heads at the connection, and
+  time-bounded contracts derived from actual runs. The existing tape scan is
+  connected to this contract interface. The design draws on complexitylib's
+  composition approach (commit `3f4b5fe`); no external machine semantics or
+  runtime assumptions are imported.
 - `Compact/Ideal.lean` and `Compact/ExactRepair.lean`: a packed ideal toggle
   permutation, preservation of the actual guard predicate, and executable
   destination repair connected to both concrete packed programs. Correctness
