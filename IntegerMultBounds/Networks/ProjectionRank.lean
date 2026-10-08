@@ -162,4 +162,13 @@ theorem negative_source_rank (U : Submodule K E) (hu : (B.restrict U).Nondegener
     finrank K (LinearMap.range (-project B hs U hu)) = finrank K U := by
   rw [LinearMap.range_neg, project_rank B hs U hu]
 
+/-- The actual first edge from a negative source projector to the same
+positive line costs its dimension: its matrix is twice that projector.
+This is the extra source rank in the rational address-shear interface. -/
+theorem source_sign_change_rank (htwo : (2 : K) ≠ 0)
+    (U : Submodule K E) (hu : (B.restrict U).Nondegenerate) :
+    finrank K (LinearMap.range (project B hs U hu - (-project B hs U hu))) = finrank K U := by
+  rw [sub_neg_eq_add, ← two_smul K (project B hs U hu), LinearMap.range_smul _ 2 htwo,
+    project_rank B hs U hu]
+
 end IntegerMultBounds.Networks.ProjectionRank

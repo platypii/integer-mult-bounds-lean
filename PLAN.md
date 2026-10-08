@@ -77,6 +77,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Local nested gate labels | `MotifLabels` | ✅ | — | Actual tensor subspaces and unique central decrease; future factor and scratch endpoints included |
 | Projection-rank trace accounting | `RankTrace` | ✅ | — | Actual edge ranks telescope; concrete endpoint and loss enumeration separate |
 | Binary one-column translation interface | `BinaryWalsh` | ✅ | ⬜ | Exact finite Walsh conjugation and residual-dimension kernel sequence |
+| Full grouped frame compiler | `GroupedFrames` | ✅ | ⬜ | Scalar array identity and actual label history linked to projection-rank balance |
 | Full labeled schedule | — | 🟡 | ⬜ | Local table proved; global attachment and interstage identifications remain |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
 | Residual rank saving | — | ⬜ | — | Nested gate labels, total saving |

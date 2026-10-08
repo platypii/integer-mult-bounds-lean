@@ -347,6 +347,13 @@ Bit and complex networks.
   plus twice the total dimension loss. Concrete schedule attachment and
   enumeration of decreasing edges must still establish the network budget.
 
+- `Networks/GroupedFrames.lean`: the full common-frame compiler preserves
+  actual multi-output group boundaries, tracks each wire’s last label, and
+  appends all sink edges. Its exact array identity uses the original scalar
+  grouped program; its complete label history feeds the checked projection-rank
+  balance. The rational negative-source sign change has its actual rank proved
+  in `ProjectionRank.lean`. Global loss enumeration remains separate.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.

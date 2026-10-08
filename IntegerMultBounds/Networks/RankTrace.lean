@@ -61,6 +61,21 @@ theorem edges_append (current : ι → L) (xs ys : List (ι × L)) :
   | nil => rfl
   | cons p rest ih => simp only [List.cons_append, edges, finish, ih]
 
+theorem finish_append (current : ι → L) (xs ys : List (ι × L)) :
+    finish current (xs ++ ys) = finish (finish current xs) ys := by
+  induction xs generalizing current with
+  | nil => rfl
+  | cons p rest ih => exact ih _
+
+theorem finish_align (current desired : ι → L) (wires : List ι) (i : ι) :
+    finish current (wires.map fun j => (j, desired j)) i =
+      if i ∈ wires then desired i else current i := by
+  induction wires generalizing current with
+  | nil => simp [finish]
+  | cons j rest ih =>
+    simp only [List.map_cons, finish, ih, List.mem_cons]
+    by_cases hr : i ∈ rest <;> by_cases hij : i = j <;> simp [hr, hij]
+
 end Traces
 
 section Projections

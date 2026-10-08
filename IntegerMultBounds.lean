@@ -57,6 +57,7 @@ import IntegerMultBounds.Networks.LabelTransport
 import IntegerMultBounds.Networks.BinaryWalsh
 import IntegerMultBounds.Networks.MotifLabels
 import IntegerMultBounds.Networks.RankTrace
+import IntegerMultBounds.Networks.GroupedFrames
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
 import IntegerMultBounds.Networks.GlobalCircuitBits
