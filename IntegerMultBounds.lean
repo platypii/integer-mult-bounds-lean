@@ -683,3 +683,8 @@ import IntegerMultBounds.Machine.RoleArrayStackMoves
 import IntegerMultBounds.Machine.RoleArrayStack
 import IntegerMultBounds.Machine.RoleArrayStackAt
 import IntegerMultBounds.Machine.RoleArrayFrames
+import IntegerMultBounds.Machine.RecursiveDigitLayout
+import IntegerMultBounds.Machine.RecursiveDigitDimensions
+import IntegerMultBounds.Machine.RecursiveDigitInstall
+import IntegerMultBounds.Machine.RecursiveDigitInterchangeConstruct
+import IntegerMultBounds.Machine.RecursiveDigitInterchangeClean

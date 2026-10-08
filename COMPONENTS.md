@@ -927,6 +927,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RoleArrayFrames.lean`: Fixed-list inactive role parking and reverse recovery, independent of runtime lengths. Every vacated role/work clock becomes blank/head zero; exact older stack and original roles recovered with allocated-interval blank precondition. Canonical positive volume gives88*count*N push,92*count*N pop, and(180*count+1)*N actual roundtrip.
 
+- `Machine/RecursiveDigitLayout.lean`: Width-one recursive array view with exact full row-major serialization and digit-transpose address semantics, preserving every outer/middle/suffix spectator for arbitrary native alphabet payloads.
+
+- `Machine/RecursiveDigitDimensions.lean`: Physical construction of all four base-case counters from six recursive layout headers: scaling suffix products plus a real outer-times-middle product. No derived counter inputs;417 times volume plus174 setup cost.
+
+- `Machine/RecursiveDigitInstall.lean`: Four actual marked copies install generated dimensions into the single-digit interchange bank, preserving original headers and payload and charging every copy and join.
+
+- `Machine/RecursiveDigitInterchangeConstruct.lean`: Complete width-one interchange from six original headers and sole array. Physically constructs/install counters, initializes loop markers, executes the whole-bank interchange and returns exact transposed source; explicit setup-inclusive linear-volume bound.
+
+- `Machine/RecursiveDigitInterchangeClean.lean`: Fully initialized clean recursive base case: sole six canonical headers and array, width one, fixed q-dependent program. Exact digit-swapped array on original source with blank scratch, original headers retained, every private tape/tracker erased at zero, and explicit full linear-volume bound.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
