@@ -160,6 +160,9 @@ import IntegerMultBounds.Networks.DAGFramedExecution
 import IntegerMultBounds.Networks.DirtyLinearCircuit
 import IntegerMultBounds.Networks.Shared50Dirty
 import IntegerMultBounds.Networks.Shared50Invocation
+import IntegerMultBounds.Networks.DAGComplementTrace
+import IntegerMultBounds.Networks.DAGComplementExecution
+import IntegerMultBounds.Networks.Shared50Exchange
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit

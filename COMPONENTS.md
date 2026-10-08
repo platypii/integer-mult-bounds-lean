@@ -875,6 +875,19 @@ Bit and complex networks.
   the full identity shear and restores arbitrary side and central scratch,
   retaining spectators. Global stage reuse and frame/rank costs remain open.
 
+- `Networks/DAGComplementTrace.lean`: reverse each actual label assignment
+  and complement both endpoints, retaining repeated incidences. Exact endpoint
+  restoration, increasing reverse edges, zero loss and nondegenerate complements
+  are proved; scalar event reversal equals the compiler's reversed program.
+- `Networks/DAGComplementExecution.lean`: physical complementary inverse
+  execution retains gate boundaries and identity pivots. Its exact label trace
+  is the proved reversed-complement trace, its scalar erasure is the literal
+  reverse program, and its frame identity holds on arbitrary module states.
+- `Networks/Shared50Exchange.lean`: explicit inverse of the optimized twelve
+  blocks, opposite data orientation, and three-invocation local bank exchange,
+  all restoring arbitrary side/central scratch and spectators. Inverse matrix
+  blocks retain their internal row order; full global placement is separate.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
