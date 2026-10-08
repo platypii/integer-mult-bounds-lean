@@ -130,6 +130,12 @@ proof.
   corresponding `n log n`-scaled recurrence is `O(n log n)`; also the geometric
   tail bound. Nothing here constructs an algorithm or establishes the
   recurrence for an actual cost.
+- `NLogN/Kronecker.lean`: the reduction of integer multiplication to digit
+  convolution. Acyclic convolution of digit lists evaluates to the product,
+  with a coefficient bound; a cyclic convolution of sufficient length equals
+  the zero-padded acyclic one; bit strings chunk into base `2^k` digits with
+  each chunk below `2^k`, connected to the machine's `binaryValue`. Carry
+  propagation of the convolved digits back to bits is not yet implemented.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.

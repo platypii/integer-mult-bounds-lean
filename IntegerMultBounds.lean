@@ -20,3 +20,4 @@ import IntegerMultBounds.Compact.ExactRepair
 import IntegerMultBounds.NLogN.DFT
 import IntegerMultBounds.NLogN.FFT
 import IntegerMultBounds.NLogN.Recurrence
+import IntegerMultBounds.NLogN.Kronecker
