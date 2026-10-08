@@ -78,7 +78,10 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Projection-rank trace accounting | `RankTrace` | ✅ | — | Actual edge ranks telescope; concrete endpoint and loss enumeration separate |
 | Binary one-column translation interface | `BinaryWalsh` | ✅ | ⬜ | Exact finite Walsh conjugation and residual-dimension kernel sequence |
 | Full grouped frame compiler | `GroupedFrames` | ✅ | ⬜ | Scalar array identity and actual label history linked to projection-rank balance |
-| Full labeled schedule | — | 🟡 | ⬜ | Local table proved; global attachment and interstage identifications remain |
+| Stage boundaries and terminal labels | `StageLabels` | ✅ | — | Actual isometries and all X/Y interstage and source/sink identities |
+| Sparse physical motif incidences | `MotifSupport` | ✅ | — | Concrete nonzero coefficient/owner tests and central support |
+| Binary multi-column interface | `BinaryColumns` | ✅ | ⬜ | Concrete slice operators and exact residual-dimension factor count; unit premise explicit |
+| Full labeled schedule | — | 🟡 | ⬜ | Local table and all stage boundaries proved; attach to global physical group history |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
 | Residual rank saving | — | ⬜ | — | Nested gate labels, total saving |
 | Rational address-shear interface | `ProjectionRank`, `ShearFrame` | 🟡 | ⬜ | Projection ranks and exact endpoint/frame identities; finite-radix realization and total budget open |
@@ -176,5 +179,5 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 - Attach nested labels to the global grouped exchange and assemble the residual-rank budget.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
-- Build the full tape radix sort from `PartitionPass` and key selection.
-- Prove the lower triangular factorization and the rational matrix shear of §4.
+- Compile the finite network interfaces and their arithmetic to literal tape steps.
+- Start §4, the faster interchange of address chunks.

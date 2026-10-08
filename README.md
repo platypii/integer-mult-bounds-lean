@@ -33,7 +33,7 @@ the literal machine model is proved correct with a runtime bound.
 | --- | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ | ✅ | — |
 | Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 | Scan, copy, counters, full stable tape radix sorting, buffer reuse, and record reinsertion are proved; metadata preparation and general stream scheduling remain open |
-| Finite networks with a rank saving | §3 | 🟡 | ⬜ | Global scalar circuits, wire counts, tensor label spaces, frame identities, and projection ranks are proved; the full labeled schedule, total rank saving, and tape interfaces remain open |
+| Finite networks with a rank saving | §3 | 🟡 | ⬜ | Global grouped circuits, tensor labels, stage boundaries, frame identities, and binary phase kernels are proved; global label attachment, total rank saving, and tape interfaces remain open |
 | Faster interchange of address chunks | §4 | 🟡 | ⬜ | The interchange recurrence and the padding arithmetic are proved; the triangular factorization, the rational matrix shear, and the interchange procedure remain open |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; tape extraction, sorting and reinsertion primitives are proved, but repair-key computation and the assembled pipeline remain open |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ | Synthetic ring, principal roots, and Bluestein are proved; layout and costs are open |

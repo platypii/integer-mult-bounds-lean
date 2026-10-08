@@ -780,6 +780,14 @@ Faster interchange of address chunks (§4).
   at most `u` and inflates the range by less than `q`. The lower triangular
   factorization, the rational matrix shear, and the interchange procedure
   itself are separate obligations.
+- `NLogN/ModuliConstruction.lean`: an elementary replacement for the paper's
+  Lemma 5.1. The moduli need only be odd and pairwise coprime, so each is a
+  product of powers of two coordinate-specific odd primes whose exponents are
+  found by pigeonhole in log scale; this lands in every window once the
+  lengths exceed a double exponential in `d`. Hence the explicit recursive
+  step is exact with no number-theoretic hypothesis at all, for
+  `n ≥ 2^(2^(1000 d³))`, a threshold larger than the paper's but still a
+  constant.
 
 ## Top-level
 
