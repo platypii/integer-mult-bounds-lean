@@ -34,6 +34,8 @@ import IntegerMultBounds.Machine.KeyPartition
 import IntegerMultBounds.Machine.KeyPass
 import IntegerMultBounds.Machine.Erase
 import IntegerMultBounds.Machine.KeyPassReuse
+import IntegerMultBounds.Machine.UnarySelector
+import IntegerMultBounds.Machine.TapeRadixSort
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples

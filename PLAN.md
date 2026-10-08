@@ -50,7 +50,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Arbitrary-key flagged stable pass | `KeyPartition` | ✅ | ✅ | Six tapes, fifteen states; exact runtime ≤ eleven raw volumes plus twelve |
 | Arbitrary-key raw stable pass | `KeyPass` | ✅ | ✅ | Seven tapes; output flags removed; exact runtime ≤ seventeen raw volumes plus nineteen |
 | Reusable stable pass and cleanup | `Erase`, `KeyPassReuse` | ✅ | ✅ | Exact fresh physical bank restored; runtime ≤ twenty-six raw volumes plus forty-one |
-| Full tape radix sort | — | — | ⬜ | Needs selector advancement and terminating controller |
+| Full tape radix sort | `UnarySelector`, `TapeRadixSort` | ✅ | ✅ | Fixed eight-tape machine, exact sort, runtime ≤ 74 × width × volume; prepared width/markers are preconditions |
 | Terminating stream scheduler | — | ⬜ | ⬜ | Counters prove finite-prefix execution only |
 
 ## 3. Finite networks with a rank saving (§3)
@@ -105,7 +105,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Exact destination repair | `Repair`, `ExactRepair` | ✅ | ⬜ | |
 | Exceptional-address counts and density | `Counting`, `Density`, `RepairBounds` | ✅ | — | Bound `5 / (128 p³)` |
 | Row layout and reservation capacities | `Layout` | ✅ | ⬜ | |
-| Extract, sort, reinsert repair records | `Partition`, `Reinsert` | ✅ | 🟡 | Primitives done; key computation and sorting open |
+| Extract, sort, reinsert repair records | `Partition`, `Reinsert` | ✅ | 🟡 | Extraction/sorting/reinsertion primitives done; repair key computation and composition open |
 | Assembled repair pipeline with cost | — | ⬜ | ⬜ | |
 
 ## 6. Synthetic transforms and their tape layout (§6)
@@ -172,7 +172,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 ## Next steps
 
-- Add physical selector advancement and the terminating radix-sort controller to the reusable stable pass.
+- Prepare sorting metadata and compute repair keys, then compose extraction, sorting and reinsertion.
 - Attach nested labels to the global grouped exchange and assemble the residual-rank budget.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.

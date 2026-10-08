@@ -61,16 +61,15 @@ Machine model, execution, composition, and tape routines.
   proved to be the encoded original-order filtered lists; the source is
   unchanged, and the exact runtime is the encoded input length. The contract
   retains complete tape contents, and blank outputs give globally blank tails.
-  Key selection for subsequent radix passes and the full sorting controller
-  remain open.
+  `TapeRadixSort` supplies the complete subsequent-key controller.
 
 - `Machine/RadixSort.lean` and `Machine/PartitionSort.lean`: executable stable
   least-significant-bit sorting, with permutation, numeric sortedness, exact
   equal-key subsequence preservation, and a key-width-times-volume identity.
   The concrete partition's two outputs concatenate to precisely one such pass,
   with their total volume equal to its actual transition count. Full tape
-  sorting still needs subsequent key selection, buffer reuse, and a controller;
-  the list traversal volume is not claimed as that implementation's runtime.
+  sorting is supplied separately by `TapeRadixSort`; the list traversal volume
+  is not itself claimed as the machine runtime.
 
 - `Machine/PartitionMarked.lean`: a five-symbol version of the literal
   partition retains a left sentinel on each tape. A proved nondecreasing-head
@@ -131,6 +130,14 @@ Machine model, execution, composition, and tape routines.
   slot. All heads return to zero, every work tape is empty, and the selector
   survives; total time is at most twenty-six raw volumes plus forty-one.
   The repeated-pass selector controller remains separate.
+
+- `Machine/UnarySelector.lean` and `Machine/TapeRadixSort.lean`: one fixed
+  eight-tape, forty-state program performs the entire stable least-significant-
+  bit radix sort, physically advancing and rewinding its unary selector and
+  testing the width cursor. All work buffers return empty. Exact execution
+  yields the list-level sort, with time at most `74 * width * rawVolume`;
+  empty streams halt immediately. Initial marked buffers and unary width are
+  explicit preconditions; their preparation is not charged by this theorem.
 
 ## Compact
 
