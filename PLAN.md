@@ -136,9 +136,9 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Steps 1–3 of the recursion (Props 5.2–5.4) | `MainReduction`, `MainStep`, `Section5Approx` | ✅ | ⬜ | |
 | Parameter selection and precision | `MainParams`, `PrecisionCheck` | ✅ | — | |
 | Final recurrence (Cor 5.5) | `MainRecurrence`, `Recurrence`, `RecurrenceParams` | ✅ | — | Parameter facts at `d = 1729` proved; the recursive inequality for an actual cost is a hypothesis |
-| Prime selection | `Primes` | 🟡 | — | Bertrand only; short-interval primes open |
+| Prime selection (Lemma 5.1) | `Primes`, `PrimeSelection` | 🟡 | — | Moduli selected from the Rosser–Schoenfeld bound on `ϑ`, isolated as a hypothesis; that bound is not in mathlib |
 | Assembled numerical transform (Prop 5.2) | `ResamplingMultiNumeric`, `MainTransform`, `ExplicitNumeric`, `ContractPrep`, `PowerOfTwoContract` | ✅ | ⬜ | `F̃_s = 2^γ B̃ F̃_t Ã` with error `2^(γ+4) T log₂ T`; the explicit power-of-two transform meets the `8 T log₂ T` bound |
-| Headline recursive-step contract | `Contract` | ✅ | ⬜ | The explicit numerical step is exact for every admissible choice of moduli; moduli existence (Lemma 5.1) is the remaining hypothesis |
+| Headline recursive-step contract | `Contract`, `PrimeSelection` | ✅ | ⬜ | The explicit numerical step is exact, with moduli supplied under the Chebyshev-bound hypothesis |
 | Operation counts | `CostModel`, `CostBound` | ✅ | ⬜ | Word operations and delegated products; any cost bounded by three pipelines plus linear overhead is `O(n log n)` |
 | Unit-ball clamping | `Clamp` | ✅ | — | Removes the ball side conditions of the composition lemmas |
 | Bit costs and tape compilation | — | ⬜ | ⬜ | |
