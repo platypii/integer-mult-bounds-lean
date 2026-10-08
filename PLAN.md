@@ -123,7 +123,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Norm bound on `S` (Lemma 4.5) | `ResamplingNorm` | ✅ | — | `‖S‖ ≤ 1 + 1/α` |
 | Inversion of `T` (Lemma 4.6, Prop 4.7(i)) | `ResamplingInverse`, `ResamplingAssembly`, `Neumann` | ✅ | — | `F_s = 2^γ B F_t A`, `‖A‖, ‖B‖ ≤ 1` |
 | `d`-dimensional resampling (Thm 4.1) | `ResamplingMulti` | ✅ | — | |
-| Truncation and Neumann errors (Lemmas 4.8–4.12) | `ResamplingApprox`, `OffDiagApprox`, `NeumannApprox` | ✅ | — | |
+| Truncation and Neumann errors (Lemmas 4.8–4.12) | `ResamplingApprox`, `OffDiagApprox`, `OffDiagApproxSqrt`, `NeumannApprox` | ✅ | — | Square-root windows as in the paper |
 | Numerical `Ã`, `B̃` (Prop 4.7(ii)) | `ResamplingNumeric`, `ResamplingMultiNumeric`, `ExplicitNumeric` | ✅ | ⬜ | Explicit maps with error below `p²` in one dimension and `d p²` in `d`, no side conditions |
 | Permutation-left variant | — | ⬜ | ⬜ | |
 
@@ -143,8 +143,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Final recurrence (Cor 5.5) | `MainRecurrence`, `Recurrence`, `RecurrenceParams` | ✅ | — | Parameter facts at `d = 1729` proved; the recursive inequality for an actual cost is a hypothesis |
 | Prime selection (Lemma 5.1) | `Primes`, `PrimeSelection` | 🟡 | — | Moduli selected from the Rosser–Schoenfeld bound on `ϑ`, isolated as a hypothesis; that bound is not in mathlib |
 | Assembled numerical transform (Prop 5.2) | `ResamplingMultiNumeric`, `MainTransform`, `ExplicitNumeric`, `ContractPrep`, `PowerOfTwoContract` | ✅ | ⬜ | `F̃_s = 2^γ B̃ F̃_t Ã` with error `2^(γ+4) T log₂ T`; the explicit power-of-two transform meets the `8 T log₂ T` bound |
-| Headline recursive-step contract | `Contract`, `PrimeSelection` | ✅ | ⬜ | The explicit numerical step is exact, with moduli supplied under the Chebyshev-bound hypothesis |
-| Operation counts | `CostModel`, `CostBound` | ✅ | ⬜ | Word operations and delegated products; any cost bounded by three pipelines plus linear overhead is `O(n log n)` |
+| Headline recursive-step contract | `Contract`, `ContractSqrt`, `PrimeSelection` | ✅ | ⬜ | The explicit numerical step is exact with the paper's windows; moduli supplied under the Chebyshev-bound hypothesis, elementary construction in progress |
+| Operation counts | `CostModel`, `CostBound`, `ResamplingOps` | ✅ | ⬜ | Word operations and delegated products for the pipelines and the resampling maps; a full step is `(12 T/r) M(3rp) + O(n log n)` given quasilinear weight evaluation; joint recurrence and exp evaluation in progress |
 | Unit-ball clamping | `Clamp` | ✅ | — | Removes the ball side conditions of the composition lemmas |
 | Bit costs and tape compilation | — | ⬜ | ⬜ | |
 
