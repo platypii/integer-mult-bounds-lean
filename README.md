@@ -37,7 +37,7 @@ the literal machine model is proved correct with a runtime bound.
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; extracting, sorting, and reinserting records on tapes is open |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ | Synthetic ring, principal roots, and Bluestein are proved; layout and costs are open |
 | Gaussian resampling | §7 | 🟡 | ⬜ | Resampling identity is proved; left inverse, `‖E‖ < 1`, and the permutation-left variant are open |
-| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ | Transforms, fixed-point errors, steps 1 and 3 of the recursion, and the abstract recurrence are proved; step 2 and bit costs are open |
+| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ | Transforms, fixed-point errors, steps 1 to 3 of the recursion, the parameter selection, and the final recurrence are proved; short-interval primes, resampling inversion, and bit costs are open |
 | Exact multiplication, parameters, time bound | §8 | 🟡 | ⬜ | Parameter margins, asymptotics, and prime existence are proved; short-interval primes and the complete time bound are open |
 | End-to-end theorem `EndToEnd` | — | ⬜ | ⬜ | Requires every row above |
 

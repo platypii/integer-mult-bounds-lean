@@ -233,6 +233,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `‖ab‖ ≤ r ‖a‖ ‖b‖`, and multiplication by a power of `y` is a signed shift
   of norm one. Bit costs and the bridge to the synthetic ring quotient are
   not here.
+- `NLogN/MainParams.lean`: the paper's Section 5.1 parameter selection as
+  natural-number definitions: chunk size `b = ⌈log₂ n⌉`, precision `6b`,
+  `α`, `γ = 2dα²`, the power-of-two transform size `T` in `[4n/b, 8n/b)`, the
+  root size `r` with `T ≤ r^d < 2^d T`, and the factorization of `T` into
+  `d` powers of two bounded by `r`; with the inequalities `α² < p`,
+  `γ < b − 13`, `T < n < 2^p`, `2^(2d) ≤ T`, and the product comparison
+  behind `S > T/2`. The short-interval prime selection is not here.
 
 ## Top-level
 
