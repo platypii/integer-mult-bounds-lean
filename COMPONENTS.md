@@ -124,6 +124,14 @@ Machine model, execution, composition, and tape routines.
   tape contents and heads. Exact runtime is bounded by seventeen raw volumes
   plus nineteen. Remaining old input/flag/bucket buffers need cleanup for reuse.
 
+- `Machine/Erase.lean` and `Machine/KeyPassReuse.lean`: backwards cleanup
+  preserves the sentinel and restores a marked blank stream in its length plus
+  two transitions. A fixed seven-tape, thirty-six-state pass clears every old
+  buffer and physically moves the sorted raw output back to the original input
+  slot. All heads return to zero, every work tape is empty, and the selector
+  survives; total time is at most twenty-six raw volumes plus forty-one.
+  The repeated-pass selector controller remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

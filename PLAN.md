@@ -49,7 +49,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Flag removal and source erasure | `DropFlag` | ✅ | ✅ | Exact flagged volume; arbitrary records; restores empty marked source |
 | Arbitrary-key flagged stable pass | `KeyPartition` | ✅ | ✅ | Six tapes, fifteen states; exact runtime ≤ eleven raw volumes plus twelve |
 | Arbitrary-key raw stable pass | `KeyPass` | ✅ | ✅ | Seven tapes; output flags removed; exact runtime ≤ seventeen raw volumes plus nineteen |
-| Full tape radix sort | — | — | ⬜ | Needs composed flag removal, buffer reuse, controller |
+| Reusable stable pass and cleanup | `Erase`, `KeyPassReuse` | ✅ | ✅ | Exact fresh physical bank restored; runtime ≤ twenty-six raw volumes plus forty-one |
+| Full tape radix sort | — | — | ⬜ | Needs selector advancement and terminating controller |
 | Terminating stream scheduler | — | ⬜ | ⬜ | Counters prove finite-prefix execution only |
 
 ## 3. Finite networks with a rank saving (§3)
