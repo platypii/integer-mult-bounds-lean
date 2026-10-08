@@ -776,6 +776,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FiniteReturnFlow.lean`: Binary return-address pop is a real block of the cyclic controller; decoded terminal states jump into fixed continuations and may revisit entry or pop. Exact charged return execution preserves other tapes. Recursive algorithm termination/correctness is separate.
 
+- `Machine/RecursiveInterchangeVolume.lean`: Along actual seven-factor child selections, proves exact row and logical-volume division by roleCount^depth, unchanged non-row volume, retained original chunk lower bound and power-width depth bound. Parked ancestors never enter logical child volume; physical recursive execution remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
