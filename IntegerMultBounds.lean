@@ -204,6 +204,11 @@ import IntegerMultBounds.Networks.Shared50GlobalFramed
 import IntegerMultBounds.Networks.Shared50SignedBoundary
 import IntegerMultBounds.Networks.Shared50ShearEndpoints
 import IntegerMultBounds.Networks.Shared50GlobalShear
+import IntegerMultBounds.Networks.Shared50OperatorPairs
+import IntegerMultBounds.Networks.Shared50ModularOperators
+import IntegerMultBounds.Networks.ModularFrameSchedule
+import IntegerMultBounds.Networks.ModularProgramShape
+import IntegerMultBounds.Networks.Shared50ModularSchedule
 import IntegerMultBounds.Networks.Paired49Execution
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit
