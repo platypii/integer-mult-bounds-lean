@@ -63,3 +63,4 @@ import IntegerMultBounds.NLogN.SynthFFT
 import IntegerMultBounds.NLogN.ResamplingCLM
 import IntegerMultBounds.NLogN.NeumannApprox
 import IntegerMultBounds.NLogN.ResamplingApprox
+import IntegerMultBounds.NLogN.ResamplingAssembly

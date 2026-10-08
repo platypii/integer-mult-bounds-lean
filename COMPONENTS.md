@@ -323,6 +323,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   once `m² ≥ p α²` and `α² ≤ p`; summing per-term fixed-point approximations
   of scaled error `c` gives total scaled error `c (2m + 1) + 3`. The
   per-term evaluation cost is not modeled.
+- `NLogN/ResamplingAssembly.lean`: Proposition 4.7(i) of the paper. The row
+  selection, diagonal normalization, and off-diagonal part are operators
+  with `C T D = 1 + E` and `‖E‖ ≤ 1/2`; any left inverse of `1 + E` has
+  norm at most two; and for `s < t` coprime, `α ≥ 1`, and `α²θ ≥ 1`, the
+  length-`s` transform factors as `2^(2⌈α²⌉ + 2) · B ∘ F_t ∘ A` with explicit
+  `A = S/2`, `B = P_s⁻¹ D J C P_t / 2^(γ−1)`, and `‖A‖, ‖B‖ ≤ 1`.
 
 ## Top-level
 
