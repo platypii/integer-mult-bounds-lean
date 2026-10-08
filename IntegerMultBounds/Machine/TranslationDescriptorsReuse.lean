@@ -25,14 +25,15 @@ private theorem active_packed (ds : Fin 4 → List Bool) (bs qs as : List Bool) 
       CountedLoopReuse.controls (binary (ds j)) (binary bs) 1 1 := by
   apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases j <;> fin_cases i <;> rfl
 
-set_option maxHeartbeats 1000000 in
 private theorem replace_packed (ds : Fin 4 → List Bool) (bs qs as : List Bool) (j : Fin 4) :
     Placement.replace (placement j) (packed ds bs qs as)
       (CountedLoopReuse.controls empty (binary bs) 1 1) =
       packed (Function.update ds j []) bs qs as := by
   have he : Placement.extra (placement j) (packed ds bs qs as) =
       Placement.extra (placement j) (packed (Function.update ds j []) bs qs as) := by
-    apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases j <;> fin_cases i <;> rfl
+    unfold Placement.extra placement packed bank TranslationProduct.bank ScalingDescriptors.innerBank
+      ScalingDescriptors.counters CountedLoopReuse.bank CountedLoopReuse.controls Tapes.append
+    congr 1; funext i; fin_cases j <;> fin_cases i <;> rfl
   have ha := active_packed (Function.update ds j []) bs qs as j
   simp only [Function.update_self] at ha
   change Placement.active (placement j) (packed (Function.update ds j []) bs qs as) =
