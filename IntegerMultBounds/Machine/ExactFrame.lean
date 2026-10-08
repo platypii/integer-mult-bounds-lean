@@ -150,14 +150,57 @@ theorem prepend_hoare (f : ℤ → Fin (a + 4)) (p : ℤ) :
   rw [h0, run_add program 1 1, run_one, first_step]
   simp only [Option.bind_some, run_one, write_step]
 
-/-- Prepending a zero to a placed word. -/
-theorem putWord_prepend (f : ℤ → Fin (a + 4)) (p : ℤ) (xs : List (Fin (a + 4))) :
-    Function.update (putWord f p xs) (p - 1) (bitSymbol false) =
-      putWord f (p - 1) (bitSymbol false :: xs) := by
+/-- Prepending a symbol to a placed word. -/
+theorem putWord_prepend_symbol (f : ℤ → Fin (a + 4)) (p : ℤ) (x : Fin (a + 4))
+    (xs : List (Fin (a + 4))) :
+    Function.update (putWord f p xs) (p - 1) x = putWord f (p - 1) (x :: xs) := by
   rw [putWord_cons, putWord_update_before _ _ _ _ _ (by omega)]
   congr 1
   simp
 
+/-- Prepending a zero to a placed word. -/
+theorem putWord_prepend (f : ℤ → Fin (a + 4)) (p : ℤ) (xs : List (Fin (a + 4))) :
+    Function.update (putWord f p xs) (p - 1) (bitSymbol false) =
+      putWord f (p - 1) (bitSymbol false :: xs) :=
+  putWord_prepend_symbol f p _ xs
+
 end PrependZero
+
+namespace EraseCell
+
+/-- Blank the scanned cell of a single tape without moving. -/
+def program : Program 1 2 a where
+  tapes_pos := by decide
+  start := 0
+  transition := fun s _ =>
+    if s = 0 then some (1, fun _ => (blank, .stay)) else none
+
+def cfg (f : ℤ → Fin (a + 4)) (p : ℤ) (s : Fin 2) : Config 1 2 a := ⟨s, fun _ => p, fun _ => f⟩
+
+theorem erase_hoare (f : ℤ → Fin (a + 4)) (p : ℤ) :
+    HoareTime program (fun v => v = (cfg f p 0).tapes)
+      (fun v => v = (cfg (Function.update f p blank) p 0).tapes) 1 := by
+  rintro v rfl
+  refine ⟨1, cfg (Function.update f p blank) p 1, le_rfl, ?_, by simp [step, program, cfg], rfl⟩
+  rw [run_one]
+  simp only [step, program, cfg, Tapes.start, Config.tapes, ↓reduceIte, Move.offset]
+  congr 1
+  congr 1
+  · funext i; simp
+  · funext i j
+    by_cases hj : j = p
+    · subst j; simp
+    · simp [hj]
+
+/-- Erasing the single written cell of a word of length one restores the
+blank background. -/
+theorem erase_single (p : ℤ) (x : Fin (a + 4)) :
+    Function.update (putWord (fun _ => blank) p [x]) p blank = fun _ => blank := by
+  funext j
+  by_cases hj : j = p
+  · subst j; simp
+  · simp [hj, putWord]
+
+end EraseCell
 
 end IntegerMultBounds.Machine

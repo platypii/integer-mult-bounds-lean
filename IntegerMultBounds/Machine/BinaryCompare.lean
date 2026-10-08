@@ -59,6 +59,8 @@ def isInput (x : Fin (a + 4)) : Prop := x = blank ∨ x = bitSymbol false ∨ x 
 
 instance (x : Fin (a + 4)) : Decidable (isInput x) := by unfold isInput; infer_instance
 
+/-- Each operand head advances only over its own bits and parks on its blank
+end; the output head stays until the result is written. -/
 def program (a : ℕ) : Program 3 4 a where
   tapes_pos := by decide
   start := 0
@@ -69,7 +71,8 @@ def program (a : ℕ) : Program 3 4 a where
     else if isInput (symbols 0) ∧ isInput (symbols 1) then
       let x := decide (symbols 0 = bitSymbol true)
       let y := decide (symbols 1 = bitSymbol true)
-      some (ordState (cmpBit (stateOrd state) x y), fun i => (symbols i, if i = 2 then .stay else .right))
+      some (ordState (cmpBit (stateOrd state) x y), fun i =>
+        (symbols i, if i = 2 then .stay else if symbols i = blank then .stay else .right))
     else none
 
 def cfg (f g out : ℤ → Fin (a + 4)) (p q r : ℤ) (state : Fin 4) : Config 3 4 a where
@@ -77,53 +80,137 @@ def cfg (f g out : ℤ → Fin (a + 4)) (p q r : ℤ) (state : Fin 4) : Config 3
   head := fun i => if i = 0 then p else if i = 1 then q else r
   tape := fun i => if i = 0 then f else if i = 1 then g else out
 
+/-- A head moves only over an actual bit. -/
+def shift (x : Option Bool) : ℤ := if x = none then 0 else 1
+
 private theorem column_step (o : Ordering) (x y : Option Bool) (hv : x ≠ none ∨ y ≠ none)
     (f g out : ℤ → Fin (a + 4)) (p q r : ℤ)
     (hx : f p = inputSymbol x) (hy : g q = inputSymbol y) :
     step (program a) (cfg f g out p q r (ordState o)) =
-      some (cfg f g out (p + 1) (q + 1) r (ordState (cmpBit o (outputBit x) (outputBit y)))) := by
+      some (cfg f g out (p + shift x) (q + shift y) r
+        (ordState (cmpBit o (outputBit x) (outputBit y)))) := by
   have ht : (program a).transition (ordState o)
       (fun i => (cfg f g out p q r (ordState o)).tape i ((cfg f g out p q r (ordState o)).head i)) =
       some (ordState (cmpBit o (outputBit x) (outputBit y)), fun i =>
         ((cfg f g out p q r (ordState o)).tape i ((cfg f g out p q r (ordState o)).head i),
-          if i = 2 then Move.stay else Move.right)) := by
+          if i = 2 then Move.stay else if i = 0 then (if x = none then Move.stay else Move.right)
+          else (if y = none then Move.stay else Move.right))) := by
     cases o <;> rcases x with _ | x <;> rcases y with _ | y <;> simp at hv <;>
       (try cases x) <;> (try cases y) <;>
       simp [program, cfg, ordState, stateOrd, cmpBit, isInput, hx, hy, inputSymbol, outputBit,
         blank, bitSymbol]
+    all_goals (funext i; fin_cases i <;> simp [hx, hy, inputSymbol, blank, bitSymbol])
   unfold step
   simp only [cfg] at ht ⊢
   rw [ht]
   simp only [Move.offset]
   congr 1
   congr 1
-  · funext i; fin_cases i <;> simp
+  · funext i; fin_cases i <;> rcases x with _ | x <;> rcases y with _ | y <;> simp [shift]
   · funext i j; fin_cases i <;> simp <;> intro hj <;> rw [hj]
 
-/-- One transition per aligned column; every cell of all three tapes is retained. -/
-theorem columns_run (o : Ordering) (cols : List (Option Bool × Option Bool))
-    (hv : ∀ c ∈ cols, c.1 ≠ none ∨ c.2 ≠ none)
-    (f g out : ℤ → Fin (a + 4)) (p q r : ℤ) :
-    run (program a) cols.length
-      (cfg (putWord f p (cols.map (fun c => inputSymbol c.1)))
-        (putWord g q (cols.map (fun c => inputSymbol c.2))) out p q r (ordState o)) =
-      some (cfg (putWord f p (cols.map (fun c => inputSymbol c.1)))
-        (putWord g q (cols.map (fun c => inputSymbol c.2))) out
-        (p + cols.length) (q + cols.length) r
-        (ordState (rel o (cols.map (fun c => (outputBit c.1, outputBit c.2)))))) := by
-  induction cols generalizing o f g p q with
-  | nil => simp [run, putWord, rel]
-  | cons col cols ih =>
-    rcases col with ⟨x, y⟩
-    have hs := column_step o x y (hv (x, y) (by simp))
-      (putWord f p (((x, y) :: cols).map (fun c => inputSymbol c.1)))
-      (putWord g q (((x, y) :: cols).map (fun c => inputSymbol c.2))) out p q r
-      (by rw [List.map_cons, putWord_head]) (by rw [List.map_cons, putWord_head])
-    simp only [List.length_cons, run, hs, Option.bind_some]
-    simp only [List.map_cons, putWord_cons]
-    have hr := ih (cmpBit o (outputBit x) (outputBit y)) (fun c hc => hv c (by simp [hc]))
-      (Function.update f p (inputSymbol x)) (Function.update g q (inputSymbol y)) (p + 1) (q + 1)
-    simpa only [rel, Nat.cast_add, Nat.cast_one, add_assoc, add_comm, add_left_comm] using hr
+/-- The common width of two operands. -/
+def width (xs ys : List Bool) : ℕ := max xs.length ys.length
+
+/-- The aligned columns of the operands, read as bits. -/
+def pairs (xs ys : List Bool) : List (Bool × Bool) :=
+  (padded xs (width xs ys)).zip (padded ys (width xs ys))
+
+theorem padded_left_length (xs ys : List Bool) :
+    (padded xs (width xs ys)).length = width xs ys :=
+  BinaryPad.padded_length _ _ (Nat.le_max_left _ _)
+
+theorem padded_right_length (xs ys : List Bool) :
+    (padded ys (width xs ys)).length = width xs ys :=
+  BinaryPad.padded_length _ _ (Nat.le_max_right _ _)
+
+theorem pairs_cons_cons (x y : Bool) (xs ys : List Bool) :
+    pairs (x :: xs) (y :: ys) = (x, y) :: pairs xs ys := by
+  simp [pairs, padded, width, List.length_cons, max_add_add_right, Nat.add_sub_add_right]
+
+theorem pairs_nil_cons (y : Bool) (ys : List Bool) :
+    pairs [] (y :: ys) = (false, y) :: pairs [] ys := by
+  simp [pairs, padded, width, List.replicate_succ]
+
+theorem pairs_cons_nil (x : Bool) (xs : List Bool) :
+    pairs (x :: xs) [] = (x, false) :: pairs xs [] := by
+  simp [pairs, padded, width, List.replicate_succ]
+
+theorem width_cons_cons (x y : Bool) (xs ys : List Bool) :
+    width (x :: xs) (y :: ys) = width xs ys + 1 := by
+  simp [width, max_add_add_right]
+
+theorem width_nil_cons (y : Bool) (ys : List Bool) : width [] (y :: ys) = width [] ys + 1 := by
+  simp [width]
+
+theorem width_cons_nil (x : Bool) (xs : List Bool) : width (x :: xs) [] = width xs [] + 1 := by
+  simp [width]
+
+/-- One transition per aligned column; every cell of all three tapes is
+retained and each operand head parks on its own blank end. -/
+theorem columns_run (o : Ordering) (xs ys : List Bool) (f g out : ℤ → Fin (a + 4)) (p q r : ℤ)
+    (hf : f (p + xs.length) = blank) (hg : g (q + ys.length) = blank) :
+    run (program a) (width xs ys)
+      (cfg (putWord f p (xs.map bitSymbol)) (putWord g q (ys.map bitSymbol)) out p q r (ordState o)) =
+      some (cfg (putWord f p (xs.map bitSymbol)) (putWord g q (ys.map bitSymbol)) out
+        (p + xs.length) (q + ys.length) r (ordState (rel o (pairs xs ys)))) := by
+  induction xs generalizing ys o f g p q with
+  | nil =>
+    induction ys generalizing o g q with
+    | nil => simp [run, putWord, pairs, padded, width, rel]
+    | cons y ys ih =>
+      have hs := column_step o none (some y) (by simp) (putWord f p ([].map bitSymbol))
+        (putWord g q ((y :: ys).map bitSymbol)) out p q r (by simpa [putWord, inputSymbol] using hf)
+        (by rw [List.map_cons, putWord_head]; rfl)
+      rw [width_nil_cons, add_comm, run_add, run_one, hs]
+      simp only [Option.bind_some, List.map_cons, List.map_nil, shift, ↓reduceIte, add_zero,
+        reduceCtorEq, outputBit, Option.getD_none, Option.getD_some]
+      rw [putWord_cons g]
+      have hr := ih (cmpBit o false y) (Function.update g q (bitSymbol y)) (q + 1)
+        (by rw [Function.update_of_ne (by omega), show q + 1 + (ys.length : ℤ) = q + ((y :: ys).length : ℕ) by
+            simp; ring]; exact hg)
+      simp only [List.map_nil] at hr
+      rw [hr]
+      simp only [pairs_nil_cons, rel, List.length_cons, List.length_nil, Nat.cast_zero, add_zero]
+      congr 2
+      push_cast; ring
+  | cons x xs ih =>
+    cases ys with
+    | nil =>
+      have hs := column_step o (some x) none (by simp) (putWord f p ((x :: xs).map bitSymbol))
+        (putWord g q ([].map bitSymbol)) out p q r (by rw [List.map_cons, putWord_head]; rfl)
+        (by simpa [putWord, inputSymbol] using hg)
+      rw [width_cons_nil, add_comm, run_add, run_one, hs]
+      simp only [Option.bind_some, List.map_cons, List.map_nil, shift, ↓reduceIte, add_zero,
+        reduceCtorEq, outputBit, Option.getD_none, Option.getD_some]
+      rw [putWord_cons f]
+      have hr := ih (cmpBit o x false) [] (Function.update f p (bitSymbol x)) g (p + 1) q
+        (by rw [Function.update_of_ne (by omega), show p + 1 + (xs.length : ℤ) = p + ((x :: xs).length : ℕ) by
+            simp; ring]; exact hf) hg
+      simp only [List.map_nil] at hr
+      rw [hr]
+      simp only [pairs_cons_nil, rel, List.length_cons, List.length_nil, Nat.cast_zero, add_zero]
+      congr 2
+      push_cast; ring
+    | cons y ys =>
+      have hs := column_step o (some x) (some y) (by simp) (putWord f p ((x :: xs).map bitSymbol))
+        (putWord g q ((y :: ys).map bitSymbol)) out p q r (by rw [List.map_cons, putWord_head]; rfl)
+        (by rw [List.map_cons, putWord_head]; rfl)
+      rw [width_cons_cons, add_comm, run_add, run_one, hs]
+      simp only [Option.bind_some, List.map_cons, shift, ↓reduceIte, reduceCtorEq, outputBit,
+        Option.getD_some]
+      rw [putWord_cons f, putWord_cons g]
+      have hr := ih (cmpBit o x y) ys (Function.update f p (bitSymbol x))
+        (Function.update g q (bitSymbol y)) (p + 1) (q + 1)
+        (by rw [Function.update_of_ne (by omega), show p + 1 + (xs.length : ℤ) = p + ((x :: xs).length : ℕ) by
+            simp; ring]; exact hf)
+        (by rw [Function.update_of_ne (by omega), show q + 1 + (ys.length : ℤ) = q + ((y :: ys).length : ℕ) by
+            simp; ring]; exact hg)
+      rw [hr]
+      simp only [pairs_cons_cons, rel, List.length_cons]
+      congr 2
+      · push_cast; ring
+      · push_cast; ring
 
 private theorem final_step (o : Ordering) (f g out : ℤ → Fin (a + 4)) (p q r : ℤ)
     (hf : f p = blank) (hg : g q = blank) :
@@ -149,96 +236,46 @@ theorem halt (f g out : ℤ → Fin (a + 4)) (p q r : ℤ) :
     step (program a) (cfg f g out p q r 3) = none := by
   simp [step, program, cfg]
 
-/-- Blank cells beyond a word may be absorbed into the written word. -/
-theorem putWord_blank_tail (f : ℤ → Fin (a + 4)) (p : ℤ) (n : ℕ)
-    (h : ∀ j : ℕ, j < n → f (p + j) = blank) :
-    putWord f p (List.replicate n blank) = f := by
-  induction n generalizing f p with
-  | zero => rfl
-  | succ n ih =>
-    rw [List.replicate_succ, putWord_cons, ih (Function.update f p blank) (p + 1) (fun j hj => by
-      rw [Function.update_of_ne (by omega), show p + 1 + (j : ℤ) = p + ((j + 1 : ℕ) : ℤ) by push_cast; ring]
-      exact h (j + 1) (by omega))]
-    funext j
-    by_cases hj : j = p
-    · subst j; simpa using (h 0 (by omega)).symm
-    · simp [hj]
-
-/-- The common width of two operands. -/
-def width (xs ys : List Bool) : ℕ := max xs.length ys.length
-
 /-- The result word: one bit, whether the first operand is strictly smaller. -/
 def resultWord (xs ys : List Bool) : List (Fin (a + 4)) :=
   [bitSymbol (decide (Counter.value xs < Counter.value ys))]
 
+theorem rel_pairs_lt (xs ys : List Bool) :
+    decide (rel .eq (pairs xs ys) = .lt) = decide (Counter.value xs < Counter.value ys) := by
+  apply decide_eq_decide.mpr
+  rw [← BinaryPad.padded_value xs (width xs ys), ← BinaryPad.padded_value ys (width xs ys)]
+  exact iff_of_eq (rel_lt _ _ (by rw [padded_left_length, padded_right_length]))
+
 /-- Exact execution: scan to the common width, write the result bit, halt. -/
 theorem compare_exact (xs ys : List Bool) (f g out : ℤ → Fin (a + 4)) (p q r : ℤ)
-    (hf : ∀ j : ℕ, xs.length ≤ j → j ≤ width xs ys → f (p + j) = blank)
-    (hg : ∀ j : ℕ, ys.length ≤ j → j ≤ width xs ys → g (q + j) = blank) :
+    (hf : f (p + xs.length) = blank) (hg : g (q + ys.length) = blank) :
     run (program a) (width xs ys + 1)
       (cfg (putWord f p (xs.map bitSymbol)) (putWord g q (ys.map bitSymbol)) out p q r 0) =
       some (cfg (putWord f p (xs.map bitSymbol)) (putWord g q (ys.map bitSymbol))
-        (putWord out r (resultWord xs ys)) (p + width xs ys) (q + width xs ys) (r + 1) 3) ∧
+        (putWord out r (resultWord xs ys)) (p + xs.length) (q + ys.length) (r + 1) 3) ∧
     step (program a) (cfg (putWord f p (xs.map bitSymbol)) (putWord g q (ys.map bitSymbol))
-        (putWord out r (resultWord xs ys)) (p + width xs ys) (q + width xs ys) (r + 1) 3) = none := by
+        (putWord out r (resultWord xs ys)) (p + xs.length) (q + ys.length) (r + 1) 3) = none := by
   refine ⟨?_, halt _ _ _ _ _ _⟩
-  simp only [width] at hf hg ⊢
-  have hfx : putWord f p (xs.map bitSymbol) =
-      putWord f p ((columns xs ys).map (fun c => inputSymbol c.1)) := by
-    rw [BinaryPad.columns_left_input, putWord_append, putWord_blank_tail]
-    intro j hj
-    rw [show p + (xs.map (bitSymbol (a := a))).length + (j : ℤ) = p + ((xs.length + j : ℕ) : ℤ) by
-      push_cast; simp; ring]
-    exact hf _ (by omega) (by omega)
-  have hgy : putWord g q (ys.map bitSymbol) =
-      putWord g q ((columns xs ys).map (fun c => inputSymbol c.2)) := by
-    rw [BinaryPad.columns_right_input, putWord_append, putWord_blank_tail]
-    intro j hj
-    rw [show q + (ys.map (bitSymbol (a := a))).length + (j : ℤ) = q + ((ys.length + j : ℕ) : ℤ) by
-      push_cast; simp; ring]
-    exact hg _ (by omega) (by omega)
-  have hr := columns_run .eq (columns xs ys) (BinaryPad.columns_valid xs ys) f g out p q r
-  have hw : (columns xs ys).length = max xs.length ys.length := BinaryPad.columns_length xs ys
-  have hrel : rel .eq ((columns xs ys).map (fun c => (outputBit c.1, outputBit c.2))) =
-      rel .eq ((padded xs (max xs.length ys.length)).zip (padded ys (max xs.length ys.length))) := by
-    rw [← BinaryPad.columns_left_output, ← BinaryPad.columns_right_output, List.zip_map']
-  have hlt : rel .eq ((padded xs (max xs.length ys.length)).zip
-      (padded ys (max xs.length ys.length))) = .lt ↔
-      Counter.value xs < Counter.value ys := by
-    rw [← BinaryPad.padded_value xs (max xs.length ys.length),
-      ← BinaryPad.padded_value ys (max xs.length ys.length)]
-    exact iff_of_eq (rel_lt _ _ (by
-      rw [BinaryPad.padded_length _ _ (Nat.le_max_left _ _),
-        BinaryPad.padded_length _ _ (Nat.le_max_right _ _)]))
-  have hblankf : putWord f p ((columns xs ys).map (fun c => inputSymbol c.1))
-      (p + (columns xs ys).length) = blank := by
-    rw [putWord_outside _ _ _ _ (Or.inr (by simp)), hw]
-    exact hf _ (Nat.le_max_left _ _) le_rfl
-  have hblankg : putWord g q ((columns xs ys).map (fun c => inputSymbol c.2))
-      (q + (columns xs ys).length) = blank := by
-    rw [putWord_outside _ _ (q + (columns xs ys).length) _ (Or.inr (by simp)), hw]
-    exact hg _ (Nat.le_max_right _ _) le_rfl
-  have hfin := final_step (rel .eq ((columns xs ys).map (fun c => (outputBit c.1, outputBit c.2))))
-    (putWord f p ((columns xs ys).map (fun c => inputSymbol c.1)))
-    (putWord g q ((columns xs ys).map (fun c => inputSymbol c.2))) out
-    (p + (columns xs ys).length) (q + (columns xs ys).length) r hblankf hblankg
-  have hbit : (decide (rel .eq ((columns xs ys).map (fun c => (outputBit c.1, outputBit c.2))) = .lt)) =
-      decide (Counter.value xs < Counter.value ys) := by
-    rw [hrel]; exact decide_eq_decide.mpr hlt
-  rw [hfx, hgy, run_add, ← hw, show ordState .eq = 0 from rfl] at *
-  rw [hr]
-  simp only [Option.bind_some, run_one, hfin, hbit, resultWord, putWord]
+  have hr := columns_run .eq xs ys f g out p q r hf hg
+  rw [show ordState .eq = (0 : Fin 4) from rfl] at hr
+  have hblankf : putWord f p (xs.map bitSymbol) (p + xs.length) = blank := by
+    rw [putWord_outside _ _ _ _ (Or.inr (by simp)), hf]
+  have hblankg : putWord g q (ys.map bitSymbol) (q + ys.length) = blank := by
+    rw [putWord_outside _ _ _ _ (Or.inr (by simp)), hg]
+  have hfin := final_step (rel .eq (pairs xs ys)) (putWord f p (xs.map bitSymbol))
+    (putWord g q (ys.map bitSymbol)) out (p + xs.length) (q + ys.length) r hblankf hblankg
+  rw [run_add, hr]
+  simp only [Option.bind_some, run_one, hfin, rel_pairs_lt, resultWord, putWord]
 
-/-- The comparison contract: both operands are preserved, the result bit is
-written at the output head, and the heads advance to the common width. -/
+/-- The comparison contract: both operands are preserved with their heads
+parked on their blank ends, and the result bit is written at the output head. -/
 theorem compare_hoare (xs ys : List Bool) (f g out : ℤ → Fin (a + 4)) (p q r : ℤ)
-    (hf : ∀ j : ℕ, xs.length ≤ j → j ≤ width xs ys → f (p + j) = blank)
-    (hg : ∀ j : ℕ, ys.length ≤ j → j ≤ width xs ys → g (q + j) = blank) :
+    (hf : f (p + xs.length) = blank) (hg : g (q + ys.length) = blank) :
     HoareTime (program a)
       (fun v => v = (cfg (putWord f p (xs.map bitSymbol)) (putWord g q (ys.map bitSymbol)) out
         p q r 0).tapes)
       (fun v => v = (cfg (putWord f p (xs.map bitSymbol)) (putWord g q (ys.map bitSymbol))
-        (putWord out r (resultWord xs ys)) (p + width xs ys) (q + width xs ys) (r + 1) 0).tapes)
+        (putWord out r (resultWord xs ys)) (p + xs.length) (q + ys.length) (r + 1) 0).tapes)
       (width xs ys + 1) := by
   rintro v rfl
   obtain ⟨hr, hh⟩ := compare_exact xs ys f g out p q r hf hg

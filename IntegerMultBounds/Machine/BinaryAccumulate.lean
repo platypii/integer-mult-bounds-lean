@@ -14,7 +14,7 @@ variable {a : ℕ}
 
 open BinaryPad (columns inputSymbol outputBit padded)
 open BinaryAdd (sumBit carryBit digits overflow carryWord result carryState finalState)
-open BinaryCompare (isInput putWord_blank_tail)
+open BinaryCompare (isInput)
 
 /-- Zero for no carry, one for a carry, two after writing a final carry. The
 addend head advances only over addend bits and parks on the addend's blank. -/

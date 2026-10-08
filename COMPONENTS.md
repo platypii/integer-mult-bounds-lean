@@ -72,8 +72,9 @@ Machine model, execution, composition, and tape routines.
 - `Machine/BinaryCompare.lean`: a fixed three-tape, four-state comparator for
   LSF binary words of unequal widths, reading a missing high bit as zero and
   keeping the order so far in control. It writes one bit, whether the first
-  operand is strictly smaller, at the output head and preserves both operands;
-  cost the larger width plus one, with the exact value correspondence proved.
+  operand is strictly smaller, at the output head and preserves both operands
+  with each head parked on its own blank end; cost the larger width plus one,
+  with the exact value correspondence proved.
 - `Machine/BinaryAccumulate.lean`: a fixed two-tape, three-state in-place
   adder: the addend is scanned together with the accumulator, a missing high
   bit on either tape read as zero, each column sum written back over the
@@ -93,6 +94,24 @@ Machine model, execution, composition, and tape routines.
   and no word is copied. Both operands are preserved, the accumulator holds
   the exact product with a proved width bound, and the cost is at most
   `m(5w + 2m + 18)` for a `w`-bit multiplicand and `m`-bit multiplier.
+- `Machine/BinaryDecrease.lean`: a fixed two-tape, two-state in-place
+  subtractor: the subtrahend is scanned together with the minuend, a missing
+  high bit read as zero, each column difference written back over the minuend
+  with the borrow in control, halting on the common blank. The subtrahend is
+  preserved with its head parked on its end; the modular difference word, its
+  exact value without underflow and the cost of the common width are proved.
+- `Machine/PrependRead.lean`: a two-tape, four-state move that reads the bit
+  under the first head, optionally steps that head left, and writes the bit
+  or its negation one cell left of the second head, in two transitions.
+- `Machine/BinaryDivide.lean`: a fixed five-tape, thirty-three-state
+  restoring long divider. Each dividend bit, from the most significant down,
+  is prepended to the remainder, the remainder is compared with the divisor,
+  the divisor is subtracted in place when it fits, the quotient bit is
+  prepended to the quotient word and the one-cell comparison flag is erased;
+  remainder and quotient origins move left one cell per bit. Dividend and
+  divisor are preserved, the remainder and quotient words have the exact
+  values, and the cost is at most `m(4m + 6k + 27)` for an `m`-bit dividend
+  and `k`-bit divisor.
   The output is the exact sum with globally blank tails, and the padded
   sources retain their numeric values. Empty operands are included.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head
