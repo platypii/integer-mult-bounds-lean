@@ -684,7 +684,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FixedControlTranslationStream.lean`: Actual counted family of rational-controlled D-fiber translations with a stationary physical H control. The middle-spectator count is arbitrary, every offset refresh/copy/join is charged, and the exact recurring endpoint preserves control. Prepared descriptors and markers remain explicit.
 
-- `Machine/FlatFixedControlShift.lean`: Flat-array bridge for stationary-control translation across arbitrary middle spectators. Literal source word, exact destination coordinate transport, preserved physical H control and 529 times volume plus23 runtime are proved. Outer H/prefix iteration and full bootstrap remain separate.
+- `Machine/FlatFixedControlShift.lean`: Flat-array bridge for stationary-control translation across arbitrary middle spectators. Literal source word, exact destination coordinate transport, preserved physical H control and 529 times volume plus 23 runtime are proved. Outer H/prefix iteration and full bootstrap remain separate.
 
 - `Machine/CyclicRowCopy.lean`: Arbitrary-alphabet row copy into one fixed role tape, with literal source/destination symbols, exact entire bank and reusable binary clock. No payload terminator assumptions; row count descriptor preserved.
 
@@ -731,6 +731,22 @@ Machine model, execution, composition, and tape routines.
 - `Machine/RecursiveInterchangeRowsNormalized.lean`: Normalized split/merge specialized to literal seven-factor recursive arrays: exact cyclic role semantics, original heads restored, preserved controls and 149-times-parent-volume time. Descriptor synthesis and full recursive dispatch remain caller obligations.
 
 - `Machine/PointwiseBinary.lean`: Fixed finite binary symbol operation executed over a runtime-counted pair of streams. Exact source preservation and pointwise destination/frame theorem, physical head advancement, restored clock and explicit runtime. XOR specializes correctly on encoded bits; payload rewinds and full sparse-circuit assembly remain separate.
+
+- `Machine/RepeatedControlTranslationExecution.lean`: Actual middle-spectator translation group followed by one physical H increment. Exact recurring bank and charged arithmetic/control transitions; arbitrary middle count uses binary runtime control.
+
+- `Machine/RepeatedControlTranslationStream.lean`: Nested physical middle-spectator/H loops handle arbitrary outer prefix cardinality, preserve exact source/output streams and restore zero H after complete cycles. Fixed20-tape machine,570 times volume plus 23; canonical descriptors and prepared metadata remain explicit.
+
+- `Machine/FlatRepeatedControlShift.lean`: Literal flat-array source and every destination symbol for heterogeneous H-controlled D shifts, including exact rational offset and zero-control restoration across arbitrary prefix cycles.
+
+- `Machine/CountedHyperVolumeLoop.lean`: Four independently counted runtime dimensions drive actual fixed finite loops, restoring all binary loop controls and charging every countdown/copy/join. No product descriptor or unrolled runtime-dependent program is assumed.
+
+- `Machine/FlatHyperArrayNormalize.lean`: Physical four-dimensional array normalization copies the result, erases old payload scratch and returns both payload heads, using supplied dimension descriptors with all scans charged.
+
+- `Machine/FlatRepeatedControlNormalize.lean`: Four-dimensional normalization placed on the existing 20-tape repeated-control bank, preserving all arithmetic metadata while returning canonical payload pair.
+
+- `Machine/FlatRepeatedControlArray.lean`: Exact canonical transformed array for the normalized heterogeneous shift, with source/scratch payload interface and full-bank runtime 1005 times volume plus 26.
+
+- `Machine/RecursiveInterchangeShift.lean`: Actual normalized H-controlled D shift on arbitrary positive seven-factor layouts. Exact rational H offset, preserved rows/spectators, canonical input/output arrays and restored zero control, with linear-volume time. Canonical B/Q/C/N descriptors and prepared arithmetic bank remain explicit; construction/cleanup separate.
 
 ## Compact
 
