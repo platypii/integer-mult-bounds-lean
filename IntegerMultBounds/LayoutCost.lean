@@ -157,8 +157,8 @@ theorem record_count (nP D K nS : ℕ) :
 with `ℓ + n_P + n_S ≤ C_ℓ p`, `log₂ d, log₂ D ≤ log₂ max{C_ℓ,1} + log₂ p`,
 `log₂ K, log₂ (ρ+1), log₂ p ≤ p` and `log₂ w ≤ log₂ C_w + log₂ p`. -/
 theorem descriptor_length_le (p Cℓ Cw lp lmax lCw ld lD lK lρ lw ℓ nP nS : ℝ)
-    (hp : 1 ≤ p) (hlp : lp ≤ p) (hlp0 : 0 ≤ lp) (hCℓ : 0 ≤ Cℓ) (hCw : 0 ≤ Cw)
-    (hlmax : 0 ≤ lmax) (hlmax' : lmax ≤ max Cℓ 1) (hlCw : 0 ≤ lCw) (hlCw' : lCw ≤ Cw)
+    (hp : 1 ≤ p) (hlp : lp ≤ p) (hCℓ : 0 ≤ Cℓ) (hCw : 0 ≤ Cw)
+    (hlmax' : lmax ≤ max Cℓ 1) (hlCw' : lCw ≤ Cw)
     (hsum : ℓ + nP + nS ≤ Cℓ * p) (hd : ld ≤ lmax + lp) (hD : lD ≤ lmax + lp)
     (hK : lK ≤ lp) (hρ : lρ ≤ lp) (hw : lw ≤ lCw + lp) :
     (2 * lp + 1) + (2 * ld + 1) + (2 * ℓ + 1) + (2 * lK + 1) + (2 * lw + 1) +
