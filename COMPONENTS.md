@@ -140,6 +140,13 @@ Machine model, execution, composition, and tape routines.
   subtraction instance with its integer-residue value; `ExactFrame` a rewind
   from inside a longer word; `Gather` accepts a source longer than the
   scanned strides.
+- `Machine/PackedArith.lean`: the forward packed program of the
+  compact-control address arithmetic on nine tapes for digit widths `q` and
+  `b` with `b + 1 ≤ q`: the four packed updates of `packedEarly` in the
+  radices `2^q` and `2^b` as five gather-and-transduce lines, with exact
+  list-level word semantics, the input words and control preserved, the
+  offset scratch blank again, intermediate and final words on their own tapes
+  and every head at its origin; linear cost.
   The output is the exact sum with globally blank tails, and the padded
   sources retain their numeric values. Empty operands are included.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head
@@ -663,6 +670,12 @@ Compact packed controls, repair, and density bounds.
   ten per record, three stream volumes, `74k + 5` extracted volumes,
   `2k + 3` per exceptional address, and `k + 14`. The key routine's tape
   arithmetic is the parameter that remains open.
+- `Compact/PowerTwoDigits.lean`: bit words as packed integers in a
+  power-of-two radix: a word of `n·q` bits is the packed integer whose
+  base-`2^q` digits are its `q`-bit block values, the gather gadget's word is
+  the packing of its digit words, and the per-digit forms of the compact
+  control arithmetic, a masked shifted block, a block's parity, a toggled
+  parity, have their stated values.
 - `Compact/Layout.lean`: reversible whole-row splitting, preservation and
   completeness of every suffix, exact role volumes, padding to a multiple
   within twice the original volume, and ceiling-based reservation capacities.
