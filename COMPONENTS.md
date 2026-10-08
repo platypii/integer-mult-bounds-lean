@@ -493,6 +493,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatControlledShiftPayload.lean`: Exact payload-pair interface for the initialized normalized controlled-shift machine. Proves distinct actual source/destination slots and identifies input as the encoded original array and output as the encoded canonical shifted array on the same heads, with destination scratch restored. Supplies concrete tape compatibility for shared-payload stage assembly.
 
+- `Machine/RadixPowerWord.lean`: Fixed 29-state physical machine reads binary b, constructs an unmarked radix word of b zeros followed by one (value q^b), clears its clock and preserves the exponent tape. All high-digit writes, scans and marker removal charged; runtime 10*b+7*inputWidth+27.
+
+- `Machine/RadixPowerDescriptor.lean`: Fixed four-tape, 53-state machine computes canonical binary q^b from one canonical binary b descriptor, for fixed q>=2 including b=0. Physical radix construction, conversion and cleanup compose with exact full-bank output, preserved exponent and blank scratch. Bound99*q^b; no precomputed power or arithmetic oracle. Assembly of all affine dimension descriptors remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
