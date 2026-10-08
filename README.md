@@ -42,6 +42,10 @@ proof.
 
 ## Checked components
 
+- `Compact/Permutations.lean`: modular rotations as actual permutations,
+  restoration of an arbitrary back field by swap/load/swap, and invertibility
+  of both packed programs on every address, including bad addresses. The
+  permutations are proved to agree with the integer implementations.
 - `Networks/Scalar.lean`: the eight-step arbitrary-scratch cancellation
   schedule, three-stage signed exchange, bit and complex triple-intersection
   coefficients, the resulting complex bank identity at any finite ground size,
@@ -69,9 +73,9 @@ proof.
 - `Compact/PackedControl.lean`: executable modular arithmetic implementations
   of the earlier- and later-source gadgets, proved correct for arbitrarily many
   guarded digits. Offsets decode the current packed fields. The target parities
-  are toggled and dirty temporary fields restored exactly. Physical front/back
-  swaps, embedding these segments in the complete slot, and tape costs are not
-  yet connected to this implementation.
+  are toggled and dirty temporary fields restored exactly. Embedding these
+  segments in the complete physical slot, compiling the operations to tapes,
+  and bounding their tape costs remain open.
 - `Parameters.lean`: every stated rational parameter slack, all seven assembly
   margins, their attained minimum and strict absorption gap, the two dyadic
   comparisons, the complex motif counts, and the strict complex branching-ratio
@@ -87,7 +91,7 @@ proof.
   gives exactly the ideal map. Instantiating this result with a verified packed
   program, and implementing the repair within the tape cost, remain necessary.
 
-`AxiomAudit.lean` checks all declarations in the project namespace, transitively,
+`AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
 It rejects admitted proofs, custom axioms, and native-evaluation axioms. CI
 builds the project and runs this audit.

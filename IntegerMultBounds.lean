@@ -10,3 +10,4 @@ import IntegerMultBounds.Compact.RepairBounds
 import IntegerMultBounds.Machine.Execution
 import IntegerMultBounds.Machine.Counter
 import IntegerMultBounds.Networks.Scalar
+import IntegerMultBounds.Compact.Permutations

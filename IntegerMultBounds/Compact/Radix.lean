@@ -16,6 +16,11 @@ def digits (B : ℤ) : ℕ → ℤ → List ℤ
   | 0, _ => []
   | n + 1, x => x % B :: digits B n (x / B)
 
+theorem digits_length (B : ℤ) (n : ℕ) (x : ℤ) : (digits B n x).length = n := by
+  induction n generalizing x with
+  | zero => rfl
+  | succ n ih => simp [digits, ih]
+
 theorem bounded_cons (B d : ℤ) (ds : List ℤ) :
     Bounded B (d :: ds) ↔ (0 ≤ d ∧ d < B) ∧ Bounded B ds := by
   simp [Bounded]
