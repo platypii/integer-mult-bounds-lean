@@ -578,6 +578,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `T′ (3S + 2εa + 4) + εa + 2`, at most `3 T′ S + 8 T′ + 4` for a chirp
   within two units. The synthetic transforms are abstracted by their error
   and ball properties, which the `d`-dimensional synthetic file supplies.
+- `NLogN/ContractPrep.lean`: the recursive step with the resampling side
+  fully explicit: at window `m = p` the parameter ranges hold, the clamped
+  per-coordinate numerical maps approximate `A_i` and `B_i` with errors
+  below `p²`, and the recursive step returns the exact product given only
+  the prime choice, the size conditions, and a numerical power-of-two
+  transform with error at most `8 T log₂ T`; plus the arithmetic showing
+  the power-of-two transform's error shape meets that bound.
 
 ## Top-level
 
