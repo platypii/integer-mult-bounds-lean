@@ -534,6 +534,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixPowerMultipleDescriptor.lean`: Actual four-tape constructor of canonical binary q^(k*b) from binary b, with k fixed in finite control. Preserves b and restores both scratch tapes blank; bound (24*k+75)*q^(k*b), including k=0 and b=0. Supplies prefix/suffix powers for coordinate dimension synthesis.
 
+- `Machine/SharedPayloadStageCompose.lean`: Actual finite-list compilation of heterogeneous machine stages onto one common payload pair, preserving each private metadata bank. Proves literal final bank and folded payload semantics, with sum of stage costs plus every joining transition. Concrete coordinate schedule instantiation and runtime-independent skeleton are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
