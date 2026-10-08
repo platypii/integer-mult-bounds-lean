@@ -856,7 +856,13 @@ Faster interchange of address chunks (§4).
   column, the pivot is scaled to one and subtracted, and strong induction on
   the number of active indices finishes. Factors act as the identity outside
   the active sets, which makes the pivot commute with the residual factors.
-  That the number of pivots equals the rank is a separate statement.
+  The identification of the pivot count with the rank is in `PivotRank`.
+- `Swap/PivotRank.lean`: the pivot count of a factorization is the rank. A
+  pivot matrix `Π` with distinct rows and distinct columns has entries given
+  by list membership, `Πᵀ Π` is the diagonal indicator `D` of its columns, and
+  `Π D = Π`, so `rank Π = rank D` equals the number of pivots over any field;
+  the invertible triangular factors do not change the rank. Lemma 4.1 is thus
+  complete: every matrix over a field factors with exactly `rank A` pivots.
 - `NLogN/ModuliConstruction.lean`: an elementary replacement for the paper's
   Lemma 5.1. The moduli need only be odd and pairwise coprime, so each is a
   product of powers of two coordinate-specific odd primes whose exponents are

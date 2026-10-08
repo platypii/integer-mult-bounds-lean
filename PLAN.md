@@ -96,7 +96,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Subcomponent | Files | Mathematics | Tape | Notes |
 | --- | --- | --- | --- | --- |
 | Interchange recurrence and padding arithmetic | `Recurrence` | ✅ | — | `F k ≤ K (m^k)^τ` from `s/W ≤ m^τ`; digit pieces `O(e^τ)`; row, row-range, and radix padding bounds |
-| Lower triangular factorization (Lemma 4.1) | `LowerTriangular` | 🟡 | — | `A = E₁ Π E₂` with lower triangular two-sided inverses and a partial permutation `Π`; pivot count equal to the rank open |
+| Lower triangular factorization (Lemma 4.1) | `LowerTriangular`, `PivotRank` | ✅ | — | `A = E₁ Π E₂` with lower triangular two-sided inverses and a partial permutation `Π` with exactly `rank A` ones |
 | Rational matrix shear (Lemma 4.2) | `Shear` | 🟡 | ⬜ | Pivot programs, factorized shear with exact interchange count, descending triangular updates; specialization to `ℤ/q^b` open |
 | Power-width interchange (Prop 4.3) | — | ⬜ | ⬜ | Role streams, frame identity, recursive call count `s` |
 | Arbitrary-width interchange (Lemma 4.4) | — | ⬜ | ⬜ | High-digit row field, digit pieces, radix padding |
@@ -184,4 +184,4 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compile the finite network interfaces and their arithmetic to literal tape steps.
-- Identify the pivot count of the §4 factorization with the rank and specialize the shear to `ℤ/q^b`.
+- Specialize the §4 shear to `ℤ/q^b` and assemble the power-width interchange.
