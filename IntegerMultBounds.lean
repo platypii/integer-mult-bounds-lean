@@ -18,6 +18,8 @@ import IntegerMultBounds.Machine.CounterTape
 import IntegerMultBounds.Machine.WordTape
 import IntegerMultBounds.Machine.Copy
 import IntegerMultBounds.Machine.Partition
+import IntegerMultBounds.Machine.RadixSort
+import IntegerMultBounds.Machine.PartitionSort
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal

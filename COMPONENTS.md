@@ -52,6 +52,14 @@ Machine model, execution, composition, and tape routines.
   Key selection for subsequent radix passes and the full sorting controller
   remain open.
 
+- `Machine/RadixSort.lean` and `Machine/PartitionSort.lean`: executable stable
+  least-significant-bit sorting, with permutation, numeric sortedness, exact
+  equal-key subsequence preservation, and a key-width-times-volume identity.
+  The concrete partition's two outputs concatenate to precisely one such pass,
+  with their total volume equal to its actual transition count. Full tape
+  sorting still needs key selection, output concatenation, and a controller;
+  the list traversal volume is not claimed as that implementation's runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
