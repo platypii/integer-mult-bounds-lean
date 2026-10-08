@@ -941,6 +941,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RoleArrayCall.lean`: Actual inactive-role parking, active-role move into common child source, explicitly framed child execution, move back and reverse recovery. Exact whole-bank result changes only the active array under the child contract; overhead(180*roleCount+178)*N, including every join.
 
+- `Machine/RecursiveAffineViews.lean`: Within-H, within-D and cross coordinate views preserve exact index/volume identities and literal serialized payload words.
+
+- `Machine/RecursiveAffineDimensions.lean`: Actual four-power/four-product constructor for within-group coordinate-view headers, with all seven joins charged.
+
+- `Machine/RecursiveAffineDimensionsBound.lean`: Every generated power and product is bounded by unchanged stream volume; physical constructor costs at most(96*m+512)*V+119.
+
+- `Machine/RecursiveAffineDimensionsClean.lean`: Fixed output relabelling aligns generated view headers with handoff ports; physical tracked cleanup erases all private intermediates.
+
+- `Machine/RecursiveAffinePrepare.lean`: Complete within-group view preparation from sole six canonical headers: quotient synthesis, powers/products, occupied-header replacement and source erasure, with linear unchanged-volume cost.
+
+- `Machine/RecursiveCrossPrepare.lean`: Complete cross-group view preparation on canonical38-tape bank with preserved row count and linear volume cost, requiring no root-path hypotheses.
+
+- `Machine/RecursiveViewRoleBank.lean`: Fixed cross/within selector places paid view changes on permanent roles/scratch/header/aux bank; exact preservation of every payload and auxiliary, all private tapes blank. Parent header save/restore and scalar semantic composition remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
