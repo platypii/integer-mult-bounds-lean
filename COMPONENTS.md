@@ -511,6 +511,29 @@ Bit and complex networks.
   Pairwise-disjoint totals construct the exact support union with at most
   one fewer new nodes than operands, including empty and singleton cases.
 
+- `Networks/DisjointBalanced.lean`: the upstream balanced total with literal
+  floor-half splitting and left-before-right DAG construction. Zero elision,
+  support interning, exact sums and preservation are verified with at most
+  one fewer new nodes than operands. Construction order matches the source.
+
+- `Networks/DisjointExclusion.lean`: executable prefix/suffix sharing builds
+  all leave-one-out sums. Each output has exactly the support and value of
+  the original list with that position removed; all old references survive.
+  The constructed DAG adds at most three nodes per input. This variant does
+  not certify the upstream allocation order or optimized certificate count.
+
+- `Networks/DisjointPaired.lean`: a shared DAG batch builder using balanced totals computes the
+  weighted paired-exclusion base-case queries: total, all single omissions,
+  and all pair omissions. Ordered output values and supports, old-reference
+  preservation and a sum-of-query-lengths node bound are proved. Recursive
+  coarse-graph assembly and exact optimized counts remain separate.
+
+- `Networks/PairedPartition.lean`: actual weighted-graph source supports
+  partition into coarse vertex weights, crossing edges and remaining-vertex
+  strips. Single, same-pair and cross-pair exclusions reconstruct by disjoint
+  unions; finite-sum identities match the script's addition grouping.
+  These justify recursive builder additions, without assuming partitions.
+
 - `Networks/ReversibleFanout.lean`: literal binary gate lists gather a sum
   into a pivot and fan it out. Full dirty-state semantics, reverse-list
   inversion, spectator preservation, exact instruction counts and support

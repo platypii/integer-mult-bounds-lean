@@ -87,6 +87,10 @@ import IntegerMultBounds.Networks.SharedPointLabels
 import IntegerMultBounds.Networks.SharedPointMap
 import IntegerMultBounds.Networks.DisjointCircuit
 import IntegerMultBounds.Networks.DisjointBuilder
+import IntegerMultBounds.Networks.DisjointBalanced
+import IntegerMultBounds.Networks.DisjointExclusion
+import IntegerMultBounds.Networks.DisjointPaired
+import IntegerMultBounds.Networks.PairedPartition
 import IntegerMultBounds.Networks.ReversibleFanout
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Networks.GlobalCircuit

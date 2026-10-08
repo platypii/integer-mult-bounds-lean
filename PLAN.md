@@ -63,30 +63,30 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | --- | --- | --- | --- | --- |
 | Scalar cancellation schedule and bank identity | `Scalar` | ✅ | ⬜ | Eight-step dirty scratch, signed exchange |
 | Executable linear circuits | `Circuit`, `CircuitRouting` | ✅ | ⬜ | Instruction counts, not wire counts |
-| Complex (rational) motif matrices | `CircuitTriples` | ✅ | ⬜ | Gaussian-dyadic values open |
-| Binary motif matrices over `ZMod 2` | `CircuitBits` | ✅ | ⬜ | Grouped-gate topology open |
+| Complex (rational) motif matrices | `CircuitTriples` | ✅ | ⬜ | Exact matrices; dyadic coefficient bounds in `GaussianCircuit` |
+| Binary motif matrices over `ZMod 2` | `CircuitBits` | ✅ | ⬜ | Original motif; optimized h=50 replacement is separate |
 | Neighbor and wire counts | `NeighborCounts`, `Wires` | ✅ | — | Matches manuscript totals at ground size 100 |
 | Degree-one label spaces | `Labels` | ✅ | — | Rational form nondegenerate for size ≠ 9 |
 | Tensor-cube label spaces | `TensorLabels` | ✅ | — | Nondegeneracy, dimension, terminal line/complement decomposition |
 | Framed circuit compilation | `FramedCircuit` | ✅ | ⬜ | Full finite-circuit common-frame identity, including spectators; exact operators |
 | Global circuit with per-invocation scratch | `GlobalCircuit`, `GlobalCircuitBits` | ✅ | ⬜ | Complete three-coordinate scalar schedule and restoration; grouped topology separate |
 | Sparse grouped motif gates | `GroupedCircuit` | ✅ | ⬜ | Exact support, eight-row semantics and framed refinement; full grouped exchange separate |
-| Binary orthonormalization | `BinaryOrthonormal` | ✅ | — | Nonalternating nondegenerate forms; concrete residual witnesses remain open |
-| Local grouped inverse and exchange | `GroupedRouting` | ✅ | ⬜ | Bit/rational semantics and exact support transport; global grouped embedding separate |
+| Binary orthonormalization | `BinaryOrthonormal` | ✅ | — | Nonalternating nondegenerate forms; local witnesses proved, global edge coverage remains open |
+| Local grouped inverse and exchange | `GroupedRouting` | ✅ | ⬜ | Bit/rational semantics and exact support transport; globally embedded by `GlobalGrouped` |
 | Neighbor residuals and binary units | `NeighborResidual` | ✅ | — | Actual pair-complement dimension and bases; coordinate witnesses for tensor-line complements |
 | Global grouped schedule | `GlobalGrouped` | ✅ | ⬜ | Physical scratch per invocation, middle inverse, sparse support transport and counts |
 | Embedded tensor subspaces | `TensorSubspace` | ✅ | — | Actual dimensions, nondegeneracy, orthogonality and sum/inclusion laws |
 | Binary diagonal phase decomposition | `BinaryPhase` | ✅ | ⬜ | Rank-one residual and weight-mod-four factorization; Walsh conjugation separate |
 | Binary tensor coordinate bridge | `TensorCoordinates`, `LabelTransport` | ✅ | — | Actual isometry to h³ bits; transports labels, residuals and projections |
 | Local nested gate labels | `MotifLabels` | ✅ | — | Actual tensor subspaces and unique central decrease; future factor and scratch endpoints included |
-| Projection-rank trace accounting | `RankTrace` | ✅ | — | Actual edge ranks telescope; concrete endpoint and loss enumeration separate |
+| Projection-rank trace accounting | `RankTrace` | ✅ | — | Actual edge ranks telescope; global physical instantiation in `GlobalProjectionRank` |
 | Binary one-column translation interface | `BinaryWalsh` | ✅ | ⬜ | Exact finite Walsh conjugation and residual-dimension kernel sequence |
 | Full grouped frame compiler | `GroupedFrames` | ✅ | ⬜ | Scalar array identity and actual label history linked to projection-rank balance |
 | Stage boundaries and terminal labels | `StageLabels` | ✅ | — | Actual isometries and all X/Y interstage and source/sink identities |
 | Sparse physical motif incidences | `MotifSupport` | ✅ | — | Concrete nonzero coefficient/owner tests and central support |
 | Binary multi-column interface | `BinaryColumns` | ✅ | ⬜ | Concrete slice operators and exact residual-dimension factor count; unit premise explicit |
 | Local residual formulas and binary units | `MotifResiduals`, `BinaryMotifResiduals` | ✅ | — | Thirteen local comparisons plus future/sink at all three stages; physical sparse-history coverage remains |
-| Exact Gaussian-dyadic arithmetic | `GaussianDyadic`, `GaussianCircuit` | ✅ | ⬜ | Concrete motif coefficients, grouped updates, and both binary edge directions; denominator growth proved, numerator size and tape costs open |
+| Exact Gaussian-dyadic arithmetic | `GaussianDyadic`, `GaussianCircuit` | ✅ | ⬜ | Concrete motif coefficients, grouped updates, and both binary edge directions; denominator growth proved, numerator bounds in `GaussianPrecision`; tape costs open |
 | Binary interface numerator bounds | `GaussianPrecision` | ✅ | ⬜ | Actual kernels and both projection-edge directions; explicit scale and integer numerator bounds |
 | Physical local label histories and loss | `LabeledMotif` | ✅ | — | Forward/opposite sparse histories; comparable nondegenerate edges, loss ≤ central count × current dimension, including sinks |
 | Rational negative-source correction | `SignedProjection` | ✅ | — | Exact extra source rank for arbitrary nested first label, including skipped vertices |
@@ -94,10 +94,12 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Sparse skipped-edge binary units | `GlobalLabelsResiduals` | ✅ | — | Actual witnesses for xIn→full, yIn→yOut, bot→full, including future factor |
 | Physical invocation rank loss | `GlobalRank` | ✅ | — | Actual embedded histories, comparable edges and loss bound; supports weaker input labels left by sparse predecessors |
 | Full labeled trace assembly | `GlobalRankStages`, `ProjectionTrace`, `GlobalProjectionRank` | ✅ | ⬜ | Actual global comparable nondegenerate edges, loss bound and projection-rank balance, including terminal alignment |
-| Terminal dimension and budget arithmetic | `NetworkBudget` | ✅ | — | Actual source/sink sums and h=25 role count; complex branching bound conditional on full trace balance/loss |
+| Terminal dimension and budget arithmetic | `NetworkBudget` | ✅ | — | Actual source/sink sums and h=25 role count; trace balance/loss premises discharged for h=25 by `ComplexRank25` |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
 | Residual rank saving | `ComplexRank25` | 🟡 | — | Actual h=25 projection-rank sum and complex branching exponent proved; full binary residual-factor coverage and optimized h=50 bit rank bound remain open |
 | Improved h=50 bit network | `SharedPointMap`, `DisjointCircuit`, `DisjointBuilder`, `ReversibleFanout` | 🟡 | ⬜ | Exact shared-point map, validated support-interning DAG primitives and reversible fanout proved; paired-exclusion generator, role sharing/counts and frame transfer remain open for the selected tau |
+| Exclusion-circuit building blocks | `DisjointBalanced`, `DisjointExclusion`, `DisjointPaired` | ✅ | ⬜ | Literal balanced totals, shared prefix/suffix leave-one-out sums and weighted base-case query batches; exact support/value preservation and node upper bounds, not the optimized certificate count |
+| Paired-exclusion reconstruction | `PairedPartition` | ✅ | ⬜ | Concrete disjoint source partitions and exact weighted sums for coarse aggregation, strips and cross-pair outputs; recursive DAG assembly remains open |
 | Shared-point source spans | `SharedPointLabels` | ✅ | — | Actual rational spans are positive definite and nested; no nondegeneracy hypothesis |
 | Rational address-shear interface | `ProjectionRank`, `ShearFrame` | 🟡 | ⬜ | Projection ranks and exact endpoint/frame identities; finite-radix realization and total budget open |
 | Phase interfaces and tape compilation | — | ⬜ | ⬜ | |
