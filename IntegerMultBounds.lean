@@ -345,6 +345,7 @@ import IntegerMultBounds.Compact.PackedArithValue
 import IntegerMultBounds.Compact.PackedInverseValue
 import IntegerMultBounds.Compact.ToggleValue
 import IntegerMultBounds.Compact.GuardValue
+import IntegerMultBounds.Compact.KeyValue
 import IntegerMultBounds.NLogN.DFT
 import IntegerMultBounds.NLogN.FFT
 import IntegerMultBounds.NLogN.Recurrence

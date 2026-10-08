@@ -835,6 +835,13 @@ Compact packed controls, repair, and density bounds.
   words of the block widths, some flag is set exactly when the address fails
   `earlyGood` in the radices `2^q` and `2^b`, the upper bits of a block
   being its digit halved.
+- `Compact/KeyValue.lean`: the key routine's words are the repair scan's
+  key data for the concrete early instance with ranks in lexicographic
+  order: the fixed-width counter's word at rank `j` has value `j` and splits
+  into the address words, the guard flags are the membership flag of the
+  rank's address, the inverse program's words are the packed permutation's
+  preimage, the exclusive or with the control mask is the ideal map, and the
+  appended words are the binary expansion of the destination rank.
 - `Compact/Layout.lean`: reversible whole-row splitting, preservation and
   completeness of every suffix, exact role volumes, padding to a multiple
   within twice the original volume, and ceiling-based reservation capacities.

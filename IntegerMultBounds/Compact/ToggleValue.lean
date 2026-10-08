@@ -24,6 +24,15 @@ theorem toggleMask_cons (q : ℕ) (z : Bool) (zs : List Bool) :
     toggleMask q (z :: zs) = (z :: List.replicate (q - 1) false) ++ toggleMask q zs := by
   simp [toggleMask]
 
+theorem toggleMask_length (q : ℕ) (hq : 1 ≤ q) (zs : List Bool) :
+    (toggleMask q zs).length = zs.length * q := by
+  induction zs with
+  | nil => simp [toggleMask]
+  | cons z zs ih =>
+    simp only [toggleMask_cons, List.length_append, List.length_cons, List.length_replicate, ih,
+      Nat.succ_mul]
+    omega
+
 /-- The controls gather is the control mask. -/
 theorem gather_controls (q b : ℕ) (hb : 1 ≤ b) (hbq : b + 1 ≤ q) (X zs : List Bool) :
     gather (fun _ z => z) (controlsAt q b hb hbq) X zs zs.length = toggleMask q zs := by
