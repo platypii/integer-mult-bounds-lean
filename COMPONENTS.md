@@ -828,6 +828,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveDescriptorDivision.lean`: Bounds the actual five-tape binary long-division runtime by (40*(log2 roles+2)^2+54*(log2 roles+2)) times logical child volume for canonical root-bounded input descriptors. Proves the quadratic logarithm estimate and retains exact shifted remainder/quotient output banks; canonical output normalization and caller integration remain separate.
 
+- `Machine/RecursiveScalingDimensions.lean`: Physical 16-tape construction of heterogeneous scaling dimensions from six canonical layout headers, including required suffix or prefix products for H or D. Exact outputs, preserved headers and 364 times volume plus 145 setup cost.
+
+- `Machine/RecursiveScalingInstall.lean`: Fixed physical marked-header installation and scaling workspace setup connects synthesized dimensions to the normalized scaler; exact canonical metadata and framed payload, with every copy and join charged.
+
+- `Machine/RecursiveInterchangeScalingConstruct.lean`: Complete initialized H/D scaling from six original headers and payload with blank private input. Physical dimensions, installation, arithmetic and normalization give exact spectator-preserving array transport and an explicit coefficient-dependent linear-volume bound.
+
+- `Machine/RecursiveInterchangeScalingClean.lean`: Clean reusable heterogeneous H/D scaling retains six original headers and normalized payload pair, erasing all generated metadata and trackers at head zero. Exact canonical bank independent of H/D selection and explicit setup/execution/cleanup linear-volume bound; coefficient and tape count are fixed independently of runtime layout.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
