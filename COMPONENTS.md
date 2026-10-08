@@ -618,6 +618,11 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   with scaled error `2^S (3S + 8) + 4`, `S = ∑ e_i`, which is at most
   `8 T log₂ T`, and keeps the unit ball. The transforms of the resampling
   and Bluestein files are identified.
+- `NLogN/RecurrenceParams.lean`: the parameter facts the final recurrence
+  needs at `d = 1729`: `T p ≤ 48 n`, `2 ≤ 3rp < n`, and
+  `log(3rp) ≤ (1/d + 1/(2d²)) log n`, the last through a real sixth root of
+  the chunk size; hence any cost satisfying the recursive inequality with
+  these parameters is `O(n log n)`.
 
 ## Top-level
 

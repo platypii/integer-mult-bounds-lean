@@ -109,3 +109,4 @@ import IntegerMultBounds.NLogN.ExplicitNumeric
 import IntegerMultBounds.NLogN.PowerOfTwoNumericD
 import IntegerMultBounds.NLogN.ContractPrep
 import IntegerMultBounds.NLogN.PowerOfTwoContract
+import IntegerMultBounds.NLogN.RecurrenceParams
