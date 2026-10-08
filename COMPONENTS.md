@@ -544,6 +544,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryDescriptorCopy.lean`: Actual two-tape, five-state binary descriptor copier from a preserved source to a wholly blank destination. Installs the destination sentinel, copies every bit, restores both heads to one and proves exact whole-bank output in 2*length+5 steps; alphabet-lifted contract uses standard encodedBinary tapes.
 
+- `Machine/Shared50NonrecursiveCoordinates.lean`: Actual Shared50 nonrecursive field operations instantiate supported fixed coordinate schedules with proven coefficient occurrence and order. Negative-one scaling support is derived from an actual preFields transform. Proves exact H/D output and one dimension-independent physical machine with linear-volume cost; canonical dimensions supplied and recursive interchange excluded.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -1442,6 +1444,8 @@ Bit and complex networks.
 - `Networks/Shared50AffineControl.lean`: The actual complete optimized interchange has fixed rational scalar-affine schedules, specialized at every width. Protected inverse factors prove every diagonal scaling is a unit; exact execution realizes every physical edge in its original order and retains exactly the improved recursive interchange budget. Literal tape runtime remains open.
 
 - `Networks/Shared50AffineCoefficients.lean`: Every actual scalar-affine coefficient originates in protected matrix entries or cross-group signs, giving its denominator bound and exact literal arithmetic kernel. Actual scale legality at the chosen prime proves numerator coprimality; the fixed signed numerator/denominator recipe is valid at every prime-power width. No numerator-size assumption or tape-permutation runtime is introduced.
+
+- `Networks/AffineFieldCoordinates.lean`: H-before-D coordinate embedding and exact expansion of nonrecursive field operations to ordered scalar operations, including reflected subtraction as negative-one scaling then earlier-control shift. Proves operation/segment semantics and coefficient-map commutation; recursive interchange excluded.
 
 ### Networks/Certificates/Paired49
 

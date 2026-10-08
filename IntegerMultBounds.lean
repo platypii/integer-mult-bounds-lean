@@ -502,3 +502,5 @@ import IntegerMultBounds.Machine.SharedPayloadStageSkeleton
 import IntegerMultBounds.Machine.FlatCoordinateSchedule
 import IntegerMultBounds.Machine.FlatCoordinateScheduleCompile
 import IntegerMultBounds.Machine.BinaryDescriptorCopy
+import IntegerMultBounds.Networks.AffineFieldCoordinates
+import IntegerMultBounds.Machine.Shared50NonrecursiveCoordinates
