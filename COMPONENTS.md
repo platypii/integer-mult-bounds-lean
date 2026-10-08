@@ -891,6 +891,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveMixedSchedule.lean`: One runtime-independent fixed mixed shift/scaling/XOR program on a shared permanent bank. Exact whole-block semantics, literal blank private input/output and sum-of-stage-costs plus charged joins; explicit compile-time linear-volume coefficient. Uses one unchanged six-header view and a supplied short stream-length descriptor; paid coordinate regrouping and recursive calls remain separate.
 
+- `Machine/RecursiveChildQuotientsConstant.lean`: Fixed compile-time divisor word is physically initialized with marker and head restoration, charging three times bit length plus six transitions.
+
+- `Machine/RecursiveChildQuotients.lean`: Two clean divisions plus actual fixed-divisor initialization/erasure generate width/m and rows/roles from six parent headers. Exact 38-tape output matches the child-dimension constructor input, with no supplied divisor or quotient words.
+
+- `Machine/RecursiveChildQuotientsBound.lean`: The actual paired quotient computation has linear logical-child-volume cost, absorbing fixed divisor lengths into its constant without assuming divisors are root-volume bounded.
+
+- `Machine/RecursiveChildHeaderHandoff.lean`: Physically installs generated child headers and erases temporary quotient/product copies. Exact final standard six-header bank, every other tape blank at zero; bound30 times maximum header length plus82. Composes directly with dimension generation.
+
+- `Machine/RecursiveChildPrepare.lean`: One fixed 38-tape machine starts with only six canonical parent headers and ends with only the actual six canonical child headers. Divisors, quotients, powers, products, occupied-header replacement, copy erasure and joins are all physical and charged to logical child volume. Saving parent headers and array/recursive control remain caller operations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
