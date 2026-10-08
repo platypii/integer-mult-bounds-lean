@@ -892,6 +892,19 @@ Faster interchange of address chunks (§4).
   `Π D = Π`, so `rank Π = rank D` equals the number of pivots over any field;
   the invertible triangular factors do not change the rank. Lemma 4.1 is thus
   complete: every matrix over a field factors with exactly `rank A` pivots.
+- `Swap/Modular.lean`: Lemma 4.2, the specialization to `ℤ/q^bℤ`. Rationals
+  with denominator prime to `m` form a subring of `ℚ`, and `num · den⁻¹` is a
+  ring homomorphism from it to `ZMod m`, proved through the integer identities
+  behind fraction addition and multiplication and cancellation of coprime
+  denominators. Entrywise reduction of admissible matrices preserves products,
+  the identity, inverse pairs, lower triangularity, and pivot matrices, so a
+  rational factorization reduces to one over `ZMod m` with the same pivots.
+  For a finite collection of rational matrices there is an odd prime `q`
+  beyond every denominator of the chosen factorizations, and modulo every
+  `q^b` each matrix `A` has a shear program computing `H ← H + A D` with
+  exactly `rank A` interchanges, all other operations being lower triangular
+  transformations and later-field updates. The `O(V)` tape cost of those
+  operations is a separate obligation.
 - `NLogN/ModuliConstruction.lean`: an elementary replacement for the paper's
   Lemma 5.1. The moduli need only be odd and pairwise coprime, so each is a
   product of powers of two coordinate-specific odd primes whose exponents are

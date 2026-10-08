@@ -19,8 +19,8 @@ section Pivots
 variable [DecidableEq ι] [DecidableEq κ]
 
 omit [Fintype ι] [Fintype κ] in
-theorem pivotMatrix_apply (L : List (ι × κ)) (hL : L.Nodup) (i : ι) (j : κ) :
-    pivotMatrix L i j = if (i, j) ∈ L then (1 : F) else 0 := by
+theorem pivotMatrix_apply {R : Type*} [CommRing R] (L : List (ι × κ)) (hL : L.Nodup)
+    (i : ι) (j : κ) : pivotMatrix L i j = if (i, j) ∈ L then (1 : R) else 0 := by
   induction L with
   | nil => simp [pivotMatrix]
   | cons p rest ih =>
@@ -29,7 +29,7 @@ theorem pivotMatrix_apply (L : List (ι × κ)) (hL : L.Nodup) (i : ι) (j : κ)
     by_cases hp : (i, j) = p
     · subst hp
       simp [Matrix.single, hL.1]
-    · have hs : single p.1 p.2 (1 : F) i j = 0 := by
+    · have hs : single p.1 p.2 (1 : R) i j = 0 := by
         simp only [Matrix.single, of_apply]
         rw [ite_eq_right]
         rintro ⟨h1, h2⟩
