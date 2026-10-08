@@ -237,6 +237,12 @@ Machine model, execution, composition, and tape routines.
   `line_hoare`, with the outputs `outWords` and cost `t` times
   `outerBound`.
 
+- `Machine/GaussianLineValue.lean`: the accumulators of the Gaussian line
+  hold the exact sums of truncated products: `accR_signed`, `accI_signed`
+  give `signed (accR k i) = ∑_{j<i} (w_j · a_j).tdiv 2^p` when every word has
+  magnitude at most `2^p`, width at least `p + 2`, and the accumulator width
+  exceeds `p + log₂(2m+1) + 1` (`abs_tdiv_pow_le`, `abs_sum_le`).
+
 - `Machine/PackedInverse.lean`: the inverse packed program on nine tapes:
   the four packed updates undone in reverse order with negated offsets as
   five gather-and-transduce lines, with exact list-level word semantics, the
@@ -2479,6 +2485,16 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   (`crossing_iff`, `rowIndexNat_eq`, `selected_eq`); `rowSelect_hoare` is the
   exact tape contract with cost the input volume plus `O(log t)` per record and
   no numerical error.
+
+- `Resampling/WindowSum.lean`: the window sums of the machine are the
+  numerical map `Ã`: rounding toward zero of a dyadic rational is the
+  truncated division (`rho0_div_pow`), one fixed-point term has the
+  truncated products as parts (`term_parts`), the truncated window reindexes
+  to a range (`sum_Icc_eq_range`, `floor_centre`), and `accumulators_eq`
+  shows `resampANum s t m (resampTermNum p s t α) u k` has parts
+  `signed accR / 2^(p+1)` and `signed accI / 2^(p+1)` when the weight words
+  hold `ρ(2^p·w)` and the input words the numerators of `u`, cyclically
+  extended by `m` records.
 
 ## Swap
 

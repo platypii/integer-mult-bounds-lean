@@ -740,3 +740,5 @@ import IntegerMultBounds.Machine.RecordTape
 import IntegerMultBounds.Machine.GaussianLine
 import IntegerMultBounds.Machine.SharedBankFamilyExact
 import IntegerMultBounds.Machine.Shared50RecursiveExecution
+import IntegerMultBounds.Machine.GaussianLineValue
+import IntegerMultBounds.Resampling.WindowSum
