@@ -37,7 +37,7 @@ variable (wtWords uWords : List (List Bool)) (s t m p w W : ℕ)
   (hwt : ∀ x ∈ wtWords, x.length = w) (hu : ∀ x ∈ uWords, x.length = w)
   (hwb : ∀ x ∈ wtWords, |signed x| ≤ 2 ^ p) (hub : ∀ x ∈ uWords, |signed x| ≤ 2 ^ p)
   (hwtl : wtWords.length = t * (2 * m + 1)) (hul : 2 * (s + 2 * m + 1) ≤ uWords.length)
-  (hst : s < t) (hs : 0 < s)
+  (hst : s ≤ t) (hs : 0 < s)
 
 /-- The real-part term of window `k`, index `j`. -/
 def termR (k j : ℕ) : ℤ :=

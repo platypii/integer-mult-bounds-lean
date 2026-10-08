@@ -81,7 +81,7 @@ theorem sum_Icc_eq_range (a : ℤ) (n : ℕ) (f : ℤ → ℂ) :
     · simp only [Finset.coe_range, Set.mem_Iio]; omega
     · simp only; omega
 
-theorem floor_centre (hst : s < t) (k : ℕ) (hk : k < t) :
+theorem floor_centre (hst : s ≤ t) (k : ℕ) (hk : k < t) :
     ⌊resampCentre s t (k : ZMod t)⌋ = (centre s t k : ℤ) := by
   unfold resampCentre centre
   rw [ZMod.val_natCast_of_lt hk, show ((s : ℝ) * k / t) = ((s * k : ℕ) : ℝ) / ((t : ℕ) : ℝ) by push_cast; ring,
@@ -103,7 +103,7 @@ variable (wtWords uWords : List (List Bool)) (s t m p w W : ℕ) [NeZero s] [NeZ
   (hwt : ∀ x ∈ wtWords, x.length = w) (hul' : ∀ x ∈ uWords, x.length = w)
   (hwb : ∀ x ∈ wtWords, |signed x| ≤ 2 ^ p) (hub : ∀ x ∈ uWords, |signed x| ≤ 2 ^ p)
   (hwtl : wtWords.length = t * (2 * m + 1)) (hul : 2 * (s + 2 * m + 1) ≤ uWords.length)
-  (hst : s < t) (hs : 0 < s)
+  (hst : s ≤ t) (hs : 0 < s)
 
 include hu hwt' hre hst hs hul in
 /-- The real part of the window sum is the sum of the machine's real terms. -/

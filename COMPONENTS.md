@@ -2534,6 +2534,15 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   hold `ρ(2^p·w)` and the input words the numerators of `u`, cyclically
   extended by `m` records.
 
+- `Resampling/OffDiagSum.lean`: the same machine computes the off-diagonal
+  map `Ẽ` of the Neumann iteration. With stride one (`s` outputs over `s`
+  inputs, `centre_self`) and a zero weight word at each window centre, the
+  excluded term `h = 0` contributes nothing (`offDiag_sum_range`), each
+  rounded term has the machine's truncated products as parts
+  (`round_term_parts`, `term_eq`), and `accumulators_eq` shows
+  `offDiagNum m (offDiagTermNum p s t α) u ℓ` has parts `signed accR / 2^p`
+  and `signed accI / 2^p`. The line machine now only needs `s ≤ t`.
+
 ## Swap
 
 Faster interchange of address chunks (§4).
