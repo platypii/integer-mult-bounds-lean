@@ -128,6 +128,7 @@ import IntegerMultBounds.Networks.MaskDAG
 import IntegerMultBounds.Networks.MaskSignature
 import IntegerMultBounds.Networks.MaskUnique
 import IntegerMultBounds.Networks.PairMask
+import IntegerMultBounds.Networks.Paired49Certificate
 import IntegerMultBounds.Networks.ReversibleFanout
 import IntegerMultBounds.Networks.DAGAllocator
 import IntegerMultBounds.Networks.DAGAllocatorCount

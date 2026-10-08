@@ -767,10 +767,35 @@ Bit and complex networks.
   additions, so the actual compiler's roles are bounded by all certificate
   additions plus requested outputs, without requiring a liveness certificate.
 
+- `Networks/Paired49Certificate.lean`: unconditional finite witness for all
+  1,176 canonical pair-exclusion sums on 49 vertices, over every commutative
+  additive monoid; exactly 9,813 additions, unique supports, and exact endpoint
+  signatures. Its actual pruned allocator uses at most 10,989 scalar roles,
+  with distinct bounded output slots. Equality with the literal recursive
+  builder and tape costs are not claimed.
+
 - `Networks/ReversibleFanout.lean`: literal binary gate lists gather a sum
   into a pivot and fan it out. Full dirty-state semantics, reverse-list
   inversion, spectator preservation, exact instruction counts and support
   are proved. The singleton identity correctly has empty instruction support.
+
+### Networks/Certificates/Paired49
+
+Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
+The four generators in `scripts/generate_paired49_*.py` reproduce the witness
+from the reference paired-exclusion implementation.
+
+- `Data.lean`, `Chunk000.lean` through `Chunk085.lean`, `Checked.lean`:
+  10,989 support masks with checked input masks, backward references, disjoint
+  addition operands and exact support unions; DAG validity and 9,813 additions.
+- `Incidents.lean`, `Outputs.lean`: checked endpoint-incidence masks, the full
+  canonical output list, output bounds, and exact pair-exclusion semantics.
+- `Unique.lean`: a sorted mask certificate checks coverage and injectivity of
+  the actual bank, proving all node supports are distinct.
+- `SignaturesData.lean`, `SignaturesChunk000.lean` through
+  `SignaturesChunk085.lean`, `Signatures.lean`: exact common/covered endpoint
+  sets for every support; 4,389 additions have empty common-endpoint masks and
+  5,424 have nonempty ones. These are local counts, not the global sharing count.
 
 ## NLogN
 
