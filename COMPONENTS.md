@@ -794,6 +794,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveDescriptorStack.lean`: Connects the actual delimiter-based binary push/pop roundtrip to the recursive descriptor-size theorem. Exact restored descriptor and complete older-stack preservation cost at most (8*(log2 roles+2)+15) times logical child volume; an intervening recursive call remains separate.
 
+- `Machine/BinaryDescriptorInstallMarkedList.lean`: Fixed lists of physical marked binary-header copies preserve the source bank and charge all copies, markers and joins; runtime descriptor values never enter the transition table.
+
+- `Machine/RecursiveShiftInstall.lean`: Five physical descriptor copies connect the generated recursive dimensions to a blank shift workspace, preserving original headers and payload.
+
+- `Machine/RecursiveShiftInitialize.lean`: One fixed machine constructs all heterogeneous shift metadata from six canonical layout headers and payload, with exact prepared endpoint and linear-volume setup cost.
+
+- `Machine/RecursiveInterchangeShiftConstruct.lean`: Complete 34-tape heterogeneous H-controlled D shift from six original headers and payload, with all private input blank. Exact seven-factor symbol transport and normalized payload cost 1288 times volume plus 186, including physical setup; generated metadata remains at output.
+
+- `Machine/BinaryDescriptorStackAt.lean`: Places actual variable-length descriptor push/pop on any two distinct tape slots, preserving every other tape and charging exact runtime.
+
+- `Machine/BinaryDescriptorFrames.lean`: Fixed lists of runtime binary headers push in order and pop in reverse with exact older-stack restoration. Actual same-bank roundtrip preserves source fields and writes initially blank distinct destinations, costing four times total bit length plus sixteen times field count plus one; programs are independent of descriptor lengths.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
