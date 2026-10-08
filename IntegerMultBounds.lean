@@ -771,3 +771,6 @@ import IntegerMultBounds.Machine.Shared50NodePieceTransport
 import IntegerMultBounds.Machine.Shared50RecursiveCallLayout
 import IntegerMultBounds.Machine.Shared50RecursiveImplementation
 import IntegerMultBounds.Machine.Shared50RecursiveBlockExecution
+import IntegerMultBounds.Machine.RecursiveScalarIndex
+import IntegerMultBounds.Machine.Shared50RecursiveNodeBoundary
+import IntegerMultBounds.Machine.Shared50RecursiveNodePieces

@@ -1137,6 +1137,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveBlockExecution.lean`: Clean physical block contracts lift to exact runs of the padded cyclic machine and its real next-table edge, with full bank endpoints and at most one additional transition. These trace rules support assembly; recursive traces remain to prove.
 
+- `Machine/RecursiveScalarIndex.lean`: Every flat payload cell has an original heterogeneous scalar-coordinate address, for general field count and digit width; no fiber or row is omitted.
+
+- `Machine/Shared50RecursiveNodeBoundary.lean`: Binary node entry yields the exact encoded World split bank and saved-stack availability; binary exit consumes encoded routed output and restores the parent transpose with symbolic linear-volume bounds.
+
+- `Machine/Shared50RecursiveNodePieces.lean`: Actual segment/gate/child array fold equals the exact node networkData on every cell, assuming only the explicit selected-coordinate ChildSpec. Physical exit accepts this fold output and returns parent transpose. Establishing ChildSpec from actual recursive machine execution remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
