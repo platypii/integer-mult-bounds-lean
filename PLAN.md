@@ -120,7 +120,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Tensor approximation lemma | `TensorApprox`, `TensorApproxD`, `TensorApproxV` | ✅ | — | Rectangular composition law open |
 | Plain FFT multiplier | `Pipeline`, `Multiplier`, `Kronecker`, `Carry` | ✅ | ⬜ | Exact on bit strings |
 | Negacyclic Kronecker substitution (Lemma 2.5) | `NegacyclicKronecker` | ✅ | ⬜ | Exact arithmetic; bit costs open |
-| Power-of-two transforms (Thm 3.1) | `SynthEmbed`, `SynthMultiD`, `PowerOfTwoExact`, `PowerOfTwoNumeric`, `SynthConvApprox`, `SynthConvApproxD` | 🟡 | ⬜ | `d`-dimensional synthetic pipeline with error `3 log₂ T′ + 2`; full numerical transform for two coordinates with error `4 t log₂ t + 8 t + 4`; general `d` chain in progress |
+| Power-of-two transforms (Thm 3.1) | `SynthEmbed`, `SynthMultiD`, `PowerOfTwoExact`, `PowerOfTwoExactD`, `PowerOfTwoNumeric`, `SynthConvApprox`, `SynthConvApproxD` | 🟡 | ⬜ | exact chain in every dimension; `d`-dimensional synthetic pipeline with error `3 log₂ T′ + 2`; full numerical transform for two coordinates with error `4 t log₂ t + 8 t + 4`; general `d` numerical assembly in progress |
 | Steps 1–3 of the recursion (Props 5.2–5.4) | `MainReduction`, `MainStep`, `Section5Approx` | ✅ | ⬜ | |
 | Parameter selection and precision | `MainParams`, `PrecisionCheck` | ✅ | — | |
 | Final recurrence (Cor 5.5) | `MainRecurrence`, `Recurrence` | ✅ | — | Recursive inequality is a hypothesis |
