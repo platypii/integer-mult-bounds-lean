@@ -261,6 +261,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ScalingPreparedStream.lean`: Once-only piece-descriptor synthesis from blank work followed by actual repeated positive-unit scaling. Complete initial/final banks retain generated descriptors and explicit spare/sentinel state while source and restored temporary buffers survive. Only canonical Q/B/family-count descriptors are supplied. Fixed thirteen plus four-c tapes and 117-c plus 103 states; cost is (192+120*c)*volume+70*Q*B+79, or (262+120*c)*volume+79 for a nonempty family.
 
+- `Machine/SignedScalingExecution.lean`: Unsigned rational scaling core, despite the broader module name: literal positive numerator scaling, physical shared-intermediate rewind, denominator inverse scaling, and complete intermediate erase/reset. Exact numerator/denominator payload semantics with source, coefficient scratch and shared intermediate restored. Fixed twenty-five plus four times the sum of coefficients tapes; cost448*volume+120*(numerator+denominator)+200. Canonical per-coefficient descriptors remain prepared, and optional sign negation is not part of unsignedProgram.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -59,6 +59,7 @@ import IntegerMultBounds.Machine.CountedSpanReset
 import IntegerMultBounds.Machine.ScalingDescriptorData
 import IntegerMultBounds.Machine.ScalingDescriptors
 import IntegerMultBounds.Machine.ScalingPreparedExecution
+import IntegerMultBounds.Machine.SignedScalingExecution
 import IntegerMultBounds.Machine.ScalingPreparedStream
 import IntegerMultBounds.Machine.ScalingStream
 import IntegerMultBounds.Machine.ScalingScatter
