@@ -428,3 +428,4 @@ import IntegerMultBounds.Machine.PrefixCounter
 import IntegerMultBounds.Machine.RationalTranslationStream
 import IntegerMultBounds.Machine.FamilyPlacementAlphabet
 import IntegerMultBounds.Machine.RadixAddReusable
+import IntegerMultBounds.Machine.RationalTranslationAffineBridge
