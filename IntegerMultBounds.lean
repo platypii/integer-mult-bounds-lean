@@ -445,3 +445,4 @@ import IntegerMultBounds.Machine.FiberLayoutData
 import IntegerMultBounds.Machine.MarkedRadixRefresh
 import IntegerMultBounds.Machine.SharedPlacementAlphabet
 import IntegerMultBounds.Machine.RadixLinearCombinationRefresh
+import IntegerMultBounds.Machine.FlatControlledShift
