@@ -25,6 +25,8 @@ import IntegerMultBounds.Machine.RadixDivisionData
 import IntegerMultBounds.Machine.RadixDivide
 import IntegerMultBounds.Machine.RadixScaleData
 import IntegerMultBounds.Machine.RadixScale
+import IntegerMultBounds.Machine.RadixRationalData
+import IntegerMultBounds.Machine.RadixRational
 import IntegerMultBounds.Machine.BinaryPad
 import IntegerMultBounds.Machine.BinaryArithmetic
 import IntegerMultBounds.Machine.WordTape

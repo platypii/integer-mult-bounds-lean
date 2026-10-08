@@ -46,7 +46,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Binary operand padding | `BinaryPad` | ✅ | ✅ | Two tapes, one state, exact maximum-width runtime; values preserved; heads finish at common end |
 | Addition with operand preparation | `BinaryArithmetic` | ✅ | ✅ | Raw unequal widths; physical padding, rewind and addition with both joins; runtime ≤ three times maximum width plus five |
 | Literal fixed-radix modular addition and subtraction | `RadixDigits`, `RadixAdd`, `RadixSub` | ✅ | ✅ | Finite digit alphabet and two carry/borrow states, three tapes; exact width runtime and halt, canonical modular output and final carry/borrow, complete source preservation; equally padded operands required |
-| Literal fixed-coefficient scaling and modular division | `RadixUnary`, `RadixScaleData`, `RadixScale`, `RadixDivisionData`, `RadixDivide` | ✅ | ✅ | Fixed finite-state two-tape digit transducers, exact one transition per digit, actual halt and complete source preservation. Natural scaling and positive-denominator division below a fixed prime radix have proved modular arithmetic and final carry; full rational/matrix composition remains separate |
+| Literal fixed-coefficient scaling and modular division | `RadixUnary`, `RadixScaleData`, `RadixScale`, `RadixDivisionData`, `RadixDivide` | ✅ | ✅ | Fixed finite-state two-tape digit transducers, exact one transition per digit, actual halt and complete source preservation. Natural scaling and positive-denominator division below a fixed prime radix have proved modular arithmetic and final carry; full rational coefficients are proved separately; matrix composition remains open |
+| Literal rational-coefficient multiplication | `RadixRationalData`, `RadixRational` | ✅ | ✅ | Arbitrary signed rational coefficient below the fixed prime denominator bound; fixed finite carry states, two tapes, exactly one transition per digit. Output equals the network coefficient ratMod times the input at the exact word modulus; halting/source preservation proved. Matrix composition and address-array permutation scheduling remain open |
 | Leading-bit stable partition | `Partition`, `PartitionMarked` | ✅ | ✅ | Sentinel-marked variant composes |
 | Concatenation and record reinsertion | `Concatenate`, `Reinsert` | ✅ | ✅ | Source positioning is a precondition |
 | One complete radix pass | `PartitionPass` | ✅ | ✅ | Runtime `3·len + 8` |
@@ -222,5 +223,5 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 - Account for complex endpoint corrections in the tape implementation.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
-- Compile the finite network interfaces and their arithmetic to literal tape steps.
+- Compose the proved rational digit arithmetic into matrix routines and compile the finite network address permutations to literal tape steps.
 - Start the tape compilation of §4: ordered-affine field updates, the role-stream split, and the depth-first schedule.
