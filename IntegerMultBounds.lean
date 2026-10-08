@@ -45,6 +45,7 @@ import IntegerMultBounds.Machine.BlockReverseStreamReuse
 import IntegerMultBounds.Machine.BlockNegationReuse
 import IntegerMultBounds.Machine.OneHot
 import IntegerMultBounds.Machine.ScalingMergeData
+import IntegerMultBounds.Machine.ScalingSplitRewind
 import IntegerMultBounds.Machine.ScalingSplit
 import IntegerMultBounds.Machine.ScalingMerge
 import IntegerMultBounds.Machine.ScalingPieceBridge

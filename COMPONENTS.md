@@ -226,6 +226,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BlockNegationReuse.lean`: Complete eight-tape, 202-state reusable coordinate negation: copy block zero, reverse the raw tail, physically rewind, reverse individual blocks with reusable controls, then erase and rewind scratch. Source/descriptors survive; both clocks and the entire initially blank scratch interval with its original head are restored. Canonical prepared descriptors and positive width give actual cost at most 210 times volume plus 219.
 
+- `Machine/ScalingSplitRewind.lean`: Literal fixed-coefficient buffer rewinds after splitting. Each buffer physically returns to its original head using its preserved piece-length descriptor, with no data changes and full clock cleanup. The combined split-and-rewind machine writes exact contiguous pieces at merge-ready heads; canonical descriptors give actual cost at most twenty-four times volume plus forty-eight times fixed piece count plus one.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
