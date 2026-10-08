@@ -54,3 +54,4 @@ import IntegerMultBounds.NLogN.BluesteinApprox
 import IntegerMultBounds.NLogN.Section5Approx
 import IntegerMultBounds.NLogN.ResamplingInverse
 import IntegerMultBounds.NLogN.TensorApproxD
+import IntegerMultBounds.NLogN.SynthFFT

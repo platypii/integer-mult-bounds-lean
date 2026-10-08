@@ -280,6 +280,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   operator norm at most one, and accumulates the sum of the errors; and the
   normalized `d`-dimensional transform is exactly the tensor of the
   normalized one-dimensional transforms.
+- `NLogN/SynthFFT.lean`: the synthetic transform in coefficient form.
+  Multiplication by `y^e` in `ℂ[y]/(y^r + 1)` is a signed cyclic shift of
+  norm one with the semigroup law and period `2r`; the normalized radix-2
+  recursion with shift twiddles computes the synthetic transform exactly,
+  is a contraction, and has fixed-point error at most `n ε` after `n`
+  levels, the paper's Lemma 3.2 for the synthetic ring.
 
 ## Top-level
 
