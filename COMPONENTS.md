@@ -449,6 +449,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   form: coordinatewise approximations preserve balls, have norm at most one,
   and accumulate the sum of the errors. The rectangular composition law is
   not proved here.
+- `NLogN/ResamplingNumeric.lean`: Proposition 4.7(ii) of the paper. The
+  numerical `Ã` from truncated Gaussian sums and the numerical `B̃` from the
+  permutations, rounded diagonal, Horner-evaluated Neumann inverse with a
+  truncated off-diagonal part, and row selection are approximations of
+  `A` and `B` with explicit scaled errors, both below `p²` for the paper's
+  per-term error seven. The per-term Gaussian evaluations and the clamping of
+  the off-diagonal approximation into the unit ball are hypotheses.
 
 ## Top-level
 

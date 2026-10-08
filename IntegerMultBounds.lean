@@ -83,3 +83,4 @@ import IntegerMultBounds.NLogN.ResamplingMulti
 import IntegerMultBounds.NLogN.SynthMultiD
 import IntegerMultBounds.NLogN.MainStep
 import IntegerMultBounds.NLogN.TensorApproxV
+import IntegerMultBounds.NLogN.ResamplingNumeric
