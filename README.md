@@ -42,6 +42,11 @@ proof.
 
 ## Checked components
 
+- `Networks/Scalar.lean`: the eight-step arbitrary-scratch cancellation
+  schedule, three-stage signed exchange, bit and complex triple-intersection
+  coefficients, the resulting complex bank identity at any finite ground size,
+  and the common-frame linear-gate identity. Sparse network realization,
+  residual bases, endpoint corrections, and tape compilation remain open.
 - `Machine/Counter.lean`: executable fixed-width binary increment, its exact
   modular value, and an amortized bound of `2*n + width` bit flips from arbitrary
   initial contents. This list-level counter is not yet compiled to tape steps.
