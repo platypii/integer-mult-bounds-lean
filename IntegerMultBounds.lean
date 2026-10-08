@@ -457,3 +457,4 @@ import IntegerMultBounds.Machine.MultiControlTranslationExecution
 import IntegerMultBounds.Machine.RationalPrefixTranslationBootstrap
 import IntegerMultBounds.Machine.CountedVolumeLoop
 import IntegerMultBounds.Machine.FlatArrayNormalize
+import IntegerMultBounds.Machine.FlatControlledShiftNormalize
