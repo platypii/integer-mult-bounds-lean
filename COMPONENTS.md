@@ -811,6 +811,11 @@ Faster interchange of address chunks (§4).
   recursive step with the paper's window sizes and elementarily constructed
   moduli computes the exact product, given only per-level rounding oracles
   within `2^(−p)`; instantiated at `d = 1729`.
+- `NLogN/SmallMultiplierCost.lean`: the plain FFT multiplier with chunk size
+  `⌈log₂ q⌉`, zero rounding error, and schoolbook word arithmetic multiplies
+  two `q`-bit integers exactly within `10^6 · q · (log₂ q)²` bit operations;
+  this fixed quasilinear bound serves the small products inside the weight
+  evaluations of the main algorithm.
 
 ## Top-level
 
