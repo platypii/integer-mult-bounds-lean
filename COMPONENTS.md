@@ -102,6 +102,22 @@ Machine model, execution, composition, and tape routines.
   sources. Exact runtime is their combined length plus one phase-switch step;
   the complete output and untouched background are specified. Source positioning
   is a precondition; this routine does not perform its callers' rewinds.
+- `Machine/StripPrefix.lean`: a fixed three-tape, four-state routine removes
+  a unary-counted key prefix from every raw record: it rewinds the width tape
+  from wherever the sorter left it, then per record advances over the prefix
+  in lockstep with the width tape, rewinds it, and copies the remainder. Source
+  and width tapes are retained; exact runtime is the input volume plus the
+  width plus two per record, plus the initial rewind.
+- `Machine/ReturnOrigin.lean`: a one-tape, three-state routine returns a head
+  from the end of a blank-backed nonblank word to its origin in the word
+  length plus two transitions, retaining the tape.
+- `Machine/RepairStage.lean`: one fixed eleven-tape machine sequences the
+  radix sorter, the prefix stripper, the head return, and the alphabet-widened
+  reinserter. Keyed records (key bits then the flagged record) are sorted by
+  key, stripped, and reinserted into the flagged full stream; the exact-run
+  contract lists every tape and head, and the cost is at most `74k + 4`
+  extracted volumes plus one full-stream volume plus `k + 7`. Radix sorting
+  commutes with key-preserving record maps.
 - `Machine/Reinsert.lean`: a three-tape, four-state program retains unflagged
   records and replaces flagged records in order from a second stream. It
   preserves both sources, halts after exactly the combined encoded input
@@ -339,6 +355,13 @@ Compact packed controls, repair, and density bounds.
   exceptional fraction times the volume, the radix passes traverse
   `k · |ℬ| · w` cells, and the written cost expression is at most three
   volumes under the density bound. Tape execution of the scan is not here.
+- `Compact/TapeRepairStage.lean`: the pipeline's extracted records, keyed by
+  their destination ranks in binary, are the keyed records of the fixed
+  eleven-tape stage machine `Machine/RepairStage`; on them and the flagged
+  actual output stream it halts with the ideal stream on its output tape,
+  within `74k + 4` extracted volumes, one full-stream volume, and `k + 7`,
+  the extracted volume being at most `|ℬ|·(k + 2 + w)`. The flagging scan and
+  the destination-rank arithmetic that produce the keyed records remain open.
 - `Compact/Layout.lean`: reversible whole-row splitting, preservation and
   completeness of every suffix, exact role volumes, padding to a multiple
   within twice the original volume, and ceiling-based reservation capacities.

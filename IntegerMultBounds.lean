@@ -123,6 +123,9 @@ import IntegerMultBounds.Machine.Erase
 import IntegerMultBounds.Machine.KeyPassReuse
 import IntegerMultBounds.Machine.UnarySelector
 import IntegerMultBounds.Machine.TapeRadixSort
+import IntegerMultBounds.Machine.StripPrefix
+import IntegerMultBounds.Machine.ReturnOrigin
+import IntegerMultBounds.Machine.RepairStage
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Networks.Circuit
 import IntegerMultBounds.Networks.CircuitTriples
@@ -312,6 +315,7 @@ import IntegerMultBounds.Compact.ExactRepair
 import IntegerMultBounds.Compact.Counting
 import IntegerMultBounds.Compact.Density
 import IntegerMultBounds.Compact.RepairPipeline
+import IntegerMultBounds.Compact.TapeRepairStage
 import IntegerMultBounds.NLogN.DFT
 import IntegerMultBounds.NLogN.FFT
 import IntegerMultBounds.NLogN.Recurrence

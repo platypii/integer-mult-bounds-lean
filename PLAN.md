@@ -203,8 +203,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Exact destination repair | `Repair`, `ExactRepair` | ✅ | ⬜ | |
 | Exceptional-address counts and density | `Counting`, `Density`, `RepairBounds` | ✅ | — | Bound `5 / (128 p³)` |
 | Row layout and reservation capacities | `Layout` | ✅ | ⬜ | |
-| Extract, sort, reinsert repair records | `Partition`, `Reinsert` | ✅ | 🟡 | Extraction/sorting/reinsertion primitives done; the list-level composition is `RepairPipeline`; tape repair-key computation and composition open |
-| Assembled repair pipeline with cost | `RepairPipeline` | ✅ | ⬜ | Flag, extract with destination ranks, radix sort, reinsert gives the ideal stream for both packed programs; extracted count is the exceptional fraction times the volume; cost expression at most three volumes |
+| Extract, sort, reinsert repair records | `Partition`, `Reinsert`, `StripPrefix`, `ReturnOrigin`, `RepairStage` | ✅ | 🟡 | Extraction/sorting/reinsertion primitives done; the list-level composition is `RepairPipeline`; one fixed eleven-tape machine sorts the keyed extracted records, strips the keys, and reinserts them with an exact-run contract and cost `(74k+4)` extracted volumes plus one full-stream volume plus `k+7`; the flagging scan and destination-rank key computation on tapes remain open |
+| Assembled repair pipeline with cost | `RepairPipeline`, `TapeRepairStage` | ✅ | 🟡 | Flag, extract with destination ranks, radix sort, reinsert gives the ideal stream for both packed programs; extracted count is the exceptional fraction times the volume; cost expression at most three volumes; the sort-strip-reinsert half runs on literal tapes from the pipeline's keyed records and leaves the ideal stream on the output tape within `(74k+4)·|ℬ|·(k+2+w)` plus the stream volume; the key-producing scan on tapes is open |
 
 ## 6. Synthetic transforms and their tape layout (§6)
 
