@@ -105,6 +105,8 @@ import IntegerMultBounds.Machine.BinaryPad
 import IntegerMultBounds.Machine.BinaryArithmetic
 import IntegerMultBounds.Machine.BinaryCompare
 import IntegerMultBounds.Machine.BinaryAccumulate
+import IntegerMultBounds.Machine.ExactFrame
+import IntegerMultBounds.Machine.BinaryMultiply
 import IntegerMultBounds.Machine.WordTape
 import IntegerMultBounds.Machine.Copy
 import IntegerMultBounds.Machine.Partition

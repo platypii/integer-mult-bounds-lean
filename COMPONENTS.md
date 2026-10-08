@@ -78,8 +78,21 @@ Machine model, execution, composition, and tape routines.
   adder: the addend is scanned together with the accumulator, a missing high
   bit on either tape read as zero, each column sum written back over the
   accumulator and a final carry extending it by one cell. The addend is
-  preserved; the exact sum word, its value and width bounds, and the cost of
+  preserved and its head parks on the addend's blank end, so a plain rewind
+  returns it; the exact sum word, its value and width bounds, and the cost of
   the larger width plus one are proved.
+- `Machine/ExactFrame.lean`: exact-bank forms of the extend and reindex rules
+  for any alphabet, a halting empty program for conditional branches, the
+  rewind to a word's origin from an arbitrary position over an arbitrary
+  background, and two one-tape moves, step left and prepend a zero bit.
+- `Machine/BinaryMultiply.lean`: a fixed three-tape, seventeen-state
+  multiplier by Horner's rule. The multiplier is read from its most
+  significant bit down; each bit doubles the accumulator by writing a zero one
+  cell left of its origin and, when set, adds the multiplicand in place and
+  rewinds both heads, so the accumulator's origin moves left one cell per bit
+  and no word is copied. Both operands are preserved, the accumulator holds
+  the exact product with a proved width bound, and the cost is at most
+  `m(5w + 2m + 18)` for a `w`-bit multiplicand and `m`-bit multiplier.
   The output is the exact sum with globally blank tails, and the padded
   sources retain their numeric values. Empty operands are included.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head
