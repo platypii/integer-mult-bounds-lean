@@ -200,6 +200,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `d`-dimensional transform is injective over a domain, and the convolution
   is recovered from the pointwise product of transforms; strictly increasing
   primes are pairwise coprime.
+- `NLogN/MainRecurrence.lean`: Corollary 5.5 and the final induction of the
+  paper, stated abstractly: a cost satisfying the recursive inequality
+  `M(n) ≤ 12 T/r · M(3rp) + A n log n` with the parameter facts
+  `T p ≤ 48 n`, `3rp < n`, and `log(3rp) ≤ (1/d + 1/(2d²)) log n` has
+  normalized cost contracting by `1728/d · (1 + 1/(2d)) ≤ 0.9998` at
+  `d = 1729`, hence `M(n) = O(n log n)`. The recursive inequality itself is
+  a hypothesis here.
 
 ## Top-level
 
