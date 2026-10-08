@@ -145,3 +145,4 @@ import IntegerMultBounds.NLogN.ContractFinal
 import IntegerMultBounds.NLogN.SmallMultiplierCost
 import IntegerMultBounds.NLogN.ExpEval
 import IntegerMultBounds.NLogN.JointRecurrence
+import IntegerMultBounds.NLogN.ExpCostBound

@@ -853,6 +853,11 @@ Faster interchange of address chunks (§4).
   bounded by one full step plus linear overhead above `2^(2^624)` and
   polylogarithmically below is `O(n log n)`. The explicit constants need the
   larger threshold.
+- `NLogN/ExpCostBound.lean`: the concrete weight-evaluation cost: with the
+  plain multiplier's monotone superadditive envelope `10^6 q (log₂ q + 1)²`
+  as the multiplication cost, one Gaussian weight to `q` bits costs at most
+  `2 · 10^11 · q (log₂ q + 1)³` operations, which supplies the joint
+  recurrence's quartic-log hypothesis, and the envelope itself is cubic-log.
 
 ## Top-level
 
