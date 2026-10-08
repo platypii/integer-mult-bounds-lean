@@ -619,6 +619,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatCoordinateShiftSharedBank.lean`: Four-tape common interface for initialized shifts: payload, output scratch and original b/W headers. Proves injective physical slots, exact common input/output with preserved headers, and literally blank entire private input after stripping common tapes; enables schedules with one physical b/W pair.
 
+- `Machine/FlatAffineScalingInstall.lean`: Physical fixed descriptor-copy list installs every marker-free B/Q/P copy in the actual scaling input. Proves source-bank preservation, exact full layout handoff from blank workspace and coefficient-dependent linear-volume copying cost.
+
+- `Machine/FlatCoordinateScalingConstruct.lean`: Complete actual coordinate scaling from sole canonical b/W and array. One coefficient/target-dependent program constructs dimensions, installs all descriptor copies, executes and normalizes the scaler, retaining dimension bank. Exact canonical scaled payload and blank workspace contract; explicit linear-volume bound includes every setup, scan and join.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
