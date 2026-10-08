@@ -181,6 +181,10 @@ proof.
   and explicit uniform upper and lower bounds, and the Poisson summation
   identity for Gaussians re-exported from mathlib. These are the analytic
   inputs to Gaussian resampling; the resampling map itself is not yet defined.
+- `NLogN/MultidimD.lean`: the `d`-dimensional transform on a product of
+  cyclic groups, its convolution theorem, orthogonality, inversion up to the
+  product of the lengths, and the splitting of the first coordinate into a
+  one-dimensional transform of lower-dimensional transforms.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
