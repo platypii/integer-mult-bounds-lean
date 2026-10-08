@@ -1,8 +1,9 @@
 import Mathlib.Tactic
 
 /-! Uniform numerical bounds used in the local exceptional-record repair cost.
-Counting the actual bad-address set and realizing sorting on tapes remain
-separate obligations. The hypotheses here are explicit arithmetic inequalities.
+`Counting.lean` and `Density.lean` connect these estimates to the actual
+bad-address sets. Realizing sorting on tapes remains a separate obligation.
+The hypotheses here are explicit arithmetic inequalities.
 -/
 
 namespace IntegerMultBounds.Compact

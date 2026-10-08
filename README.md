@@ -96,8 +96,14 @@ proof.
   first blank. This is a stream primitive, not a multiplier.
 - `Compact/RepairBounds.lean`: the uniform rational exceptional-density bound
   under the stated dyadic cutoff, and the inequality reducing the written
-  repair-cost expression to three logical volumes. Bad-set cardinality and the
-  sorting implementation still need proofs.
+  repair-cost expression to three logical volumes. The sorting implementation
+  still needs a proof.
+- `Compact/Counting.lean` and `Compact/Density.lean`: exact good- and bad-address
+  counts for both concrete repair predicates, using a restricted radix
+  bijection. These establish the common exceptional fraction bound capped by
+  one, and its uniform bound `5 / (128*p^3)` under the dyadic cutoff. The density
+  is derived from actual address cardinalities rather than assumed. Extracting,
+  sorting, and reinserting the counted records on tapes remains open.
 - `Asymptotics.lean`: logarithmic powers are little-o of every strictly larger
   real power, specialized to all seven assembly margins; a finite-depth,
   volume-normalized recurrence bound with explicit leaf and overhead costs.
@@ -189,6 +195,13 @@ proof.
   of distinct odd primes above any seed with explicit growth, pairwise
   coprimality, and bounds on their product. This is the prime-selection step
   without the short-interval prime theorems the paper cites.
+- `NLogN/Multiplier.lean`: the assembled fixed-point FFT multiplier on bit
+  strings. With chunk size `k`, transform length `2^m`, and `2m + 4 + k` bits
+  of precision, the rounded perturbed pipeline followed by carry propagation
+  returns the exact `2n`-bit product for every pair of `n`-bit inputs; the
+  parameter choice `m = ⌈log₂ 2L⌉` fits, and the count is `6 m 2^m + 2^m`
+  fixed-point complex operations. Chunking, rounding, carries, twiddles, and
+  tape steps are not counted.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.

@@ -19,6 +19,8 @@ import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal
 import IntegerMultBounds.Compact.ExactRepair
+import IntegerMultBounds.Compact.Counting
+import IntegerMultBounds.Compact.Density
 import IntegerMultBounds.NLogN.DFT
 import IntegerMultBounds.NLogN.FFT
 import IntegerMultBounds.NLogN.Recurrence
@@ -31,3 +33,4 @@ import IntegerMultBounds.NLogN.Pipeline
 import IntegerMultBounds.NLogN.Gaussian
 import IntegerMultBounds.NLogN.MultidimD
 import IntegerMultBounds.NLogN.Primes
+import IntegerMultBounds.NLogN.Multiplier
