@@ -114,6 +114,11 @@ proof.
   gives exactly the ideal map. `ExactRepair.lean` now instantiates this result
   with both verified packed programs. Implementing repair within the tape cost
   remains necessary.
+- `NLogN/DFT.lean`: the discrete Fourier transform over an integral domain
+  with a primitive root of unity, its linearity, the cyclic convolution
+  theorem, orthogonality, double-transform inversion up to the factor `N`, and
+  injectivity. This is the algebra behind every FFT multiplier, including the
+  `O(n log n)` subroutine; no fast algorithm or rounding analysis is here.
 
 `AxiomAudit.lean` checks public and private project declarations, transitively,
 allowing only Lean's standard `propext`, `Quot.sound`, and `Classical.choice`.
