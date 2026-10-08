@@ -82,6 +82,9 @@ import IntegerMultBounds.Networks.GlobalRankStages
 import IntegerMultBounds.Networks.ProjectionTrace
 import IntegerMultBounds.Networks.GlobalProjectionRank
 import IntegerMultBounds.Networks.ComplexRank25
+import IntegerMultBounds.Networks.GlobalBinaryResiduals
+import IntegerMultBounds.Networks.BinaryRankFactors
+import IntegerMultBounds.Networks.ComplexPhaseBudget
 import IntegerMultBounds.Networks.NetworkBudget
 import IntegerMultBounds.Networks.SharedPointLabels
 import IntegerMultBounds.Networks.SharedPointMap

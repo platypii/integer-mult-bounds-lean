@@ -33,7 +33,7 @@ the literal machine model is proved correct with a runtime bound.
 | --- | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ | ✅ | — |
 | Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 | Scan, copy, counters, full stable tape radix sorting, buffer reuse, and record reinsertion are proved; metadata preparation and general stream scheduling remain open |
-| Finite networks with a rank saving | §3 | 🟡 | ⬜ | The actual three-stage projection-rank balance and h=25 complex rank budget are proved; binary edge-factor coverage, the optimized h=50 bit-network construction/counts, and tape interfaces remain open |
+| Finite networks with a rank saving | §3 | 🟡 | ⬜ | The actual h=25 complex-network rank budget and uniform per-edge binary factors are proved; full scheduled execution, optimized h=50 bit-network construction/counts, and tape interfaces remain open |
 | Faster interchange of address chunks | §4 | ✅ | ⬜ | The lower triangular factorization with exactly `rank A` pivots, the shear modulo `q^b` with exactly `rank A` interchanges, the routed frame identity, the interchange recursion, and the arbitrary-width cost `O(u^τ)` are proved; the tape compilation remains open |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; tape extraction, sorting and reinsertion primitives are proved, but repair-key computation and the assembled pipeline remain open |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ | Synthetic ring, principal roots, and Bluestein are proved; layout and costs are open |

@@ -479,8 +479,27 @@ Bit and complex networks.
   complex circuit at ground size twenty-five, its binary labels, sparse
   injection support, neighbor orthogonality, and complete terminal list.
   Its actual projection-rank sum is at most 916333630984500000 and meets the
-  selected complex branching exponent. Full binary edge-factor coverage
-  and tape implementation remain separate obligations.
+  selected complex branching exponent. Binary edge-factor coverage is supplied
+  by `GlobalBinaryResiduals` and `ComplexPhaseBudget`; tape costs remain open.
+
+- `Networks/GlobalBinaryResiduals.lean`: complete norm-one-or-zero residual
+  coverage for the actual binary-labeled global trace. Certified growth
+  survives sparse skipped incidences and weaker stage inputs; disjoint
+  invocation induction handles every stage and terminal edge. No global
+  residual-unit premise replaces this concrete coverage proof.
+
+- `Networks/BinaryRankFactors.lean`: genuine projector ranks count exact
+  all-column binary vector factors in either edge direction. Isometric
+  coordinate transport preserves the rank and the coordinate-label operator.
+  One fixed kernel list works for every column count. Ordered trace lists
+  retain each edge identity and the aggregate rank count; scalar-kernel or
+  tape costs and physical instruction placement are separate.
+
+- `Networks/ComplexPhaseBudget.lean`: the actual h=25 complex-network edge
+  list has one finite family of binary kernel directions valid for every
+  column count. Every edge operator is factored and total vector-factor count
+  equals its actual rank sum, hence meets the concrete budget and exponent.
+  Whole scheduled execution and tape compilation remain separate.
 
 - `Networks/NetworkBudget.lean`: sums dimensions of actual physical source
   and sink subspaces, including the empty-data case. At complex ground size

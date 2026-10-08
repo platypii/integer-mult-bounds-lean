@@ -71,7 +71,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Framed circuit compilation | `FramedCircuit` | ✅ | ⬜ | Full finite-circuit common-frame identity, including spectators; exact operators |
 | Global circuit with per-invocation scratch | `GlobalCircuit`, `GlobalCircuitBits` | ✅ | ⬜ | Complete three-coordinate scalar schedule and restoration; grouped topology separate |
 | Sparse grouped motif gates | `GroupedCircuit` | ✅ | ⬜ | Exact support, eight-row semantics and framed refinement; full grouped exchange separate |
-| Binary orthonormalization | `BinaryOrthonormal` | ✅ | — | Nonalternating nondegenerate forms; local witnesses proved, global edge coverage remains open |
+| Binary orthonormalization | `BinaryOrthonormal` | ✅ | — | Nonalternating nondegenerate forms; local witnesses and full global edge coverage proved |
 | Local grouped inverse and exchange | `GroupedRouting` | ✅ | ⬜ | Bit/rational semantics and exact support transport; globally embedded by `GlobalGrouped` |
 | Neighbor residuals and binary units | `NeighborResidual` | ✅ | — | Actual pair-complement dimension and bases; coordinate witnesses for tensor-line complements |
 | Global grouped schedule | `GlobalGrouped` | ✅ | ⬜ | Physical scratch per invocation, middle inverse, sparse support transport and counts |
@@ -85,7 +85,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Stage boundaries and terminal labels | `StageLabels` | ✅ | — | Actual isometries and all X/Y interstage and source/sink identities |
 | Sparse physical motif incidences | `MotifSupport` | ✅ | — | Concrete nonzero coefficient/owner tests and central support |
 | Binary multi-column interface | `BinaryColumns` | ✅ | ⬜ | Concrete slice operators and exact residual-dimension factor count; unit premise explicit |
-| Local residual formulas and binary units | `MotifResiduals`, `BinaryMotifResiduals` | ✅ | — | Thirteen local comparisons plus future/sink at all three stages; physical sparse-history coverage remains |
+| Local residual formulas and binary units | `MotifResiduals`, `BinaryMotifResiduals` | ✅ | — | Thirteen local comparisons plus future/sink at all three stages; physical sparse-history coverage in `GlobalBinaryResiduals` |
 | Exact Gaussian-dyadic arithmetic | `GaussianDyadic`, `GaussianCircuit` | ✅ | ⬜ | Concrete motif coefficients, grouped updates, and both binary edge directions; denominator growth proved, numerator bounds in `GaussianPrecision`; tape costs open |
 | Binary interface numerator bounds | `GaussianPrecision` | ✅ | ⬜ | Actual kernels and both projection-edge directions; explicit scale and integer numerator bounds |
 | Physical local label histories and loss | `LabeledMotif` | ✅ | — | Forward/opposite sparse histories; comparable nondegenerate edges, loss ≤ central count × current dimension, including sinks |
@@ -96,13 +96,13 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Full labeled trace assembly | `GlobalRankStages`, `ProjectionTrace`, `GlobalProjectionRank` | ✅ | ⬜ | Actual global comparable nondegenerate edges, loss bound and projection-rank balance, including terminal alignment |
 | Terminal dimension and budget arithmetic | `NetworkBudget` | ✅ | — | Actual source/sink sums and h=25 role count; trace balance/loss premises discharged for h=25 by `ComplexRank25` |
 | Orthogonal residual and projection rank | `ProjectionRank` | ✅ | — | Nested nondegenerate labels give actual projection-difference rank |
-| Residual rank saving | `ComplexRank25` | 🟡 | — | Actual h=25 projection-rank sum and complex branching exponent proved; full binary residual-factor coverage and optimized h=50 bit rank bound remain open |
+| Residual rank saving | `ComplexRank25`, `GlobalBinaryResiduals`, `ComplexPhaseBudget` | 🟡 | — | Actual h=25 rank sum, full binary residual-factor coverage and uniform complex edge-factor budget proved; optimized h=50 bit rank bound remains open |
 | Improved h=50 bit network | `SharedPointMap`, `DisjointCircuit`, `DisjointBuilder`, `ReversibleFanout` | 🟡 | ⬜ | Exact shared-point map, validated support-interning DAG primitives and reversible fanout proved; paired-exclusion generator, role sharing/counts and frame transfer remain open for the selected tau |
 | Exclusion-circuit building blocks | `DisjointBalanced`, `DisjointExclusion`, `DisjointPaired` | ✅ | ⬜ | Literal balanced totals, shared prefix/suffix leave-one-out sums and weighted base-case query batches; exact support/value preservation and node upper bounds, not the optimized certificate count |
 | Paired-exclusion reconstruction | `PairedPartition` | ✅ | ⬜ | Concrete disjoint source partitions and exact weighted sums for coarse aggregation, strips and cross-pair outputs; recursive DAG assembly remains open |
 | Shared-point source spans | `SharedPointLabels` | ✅ | — | Actual rational spans are positive definite and nested; no nondegeneracy hypothesis |
 | Rational address-shear interface | `ProjectionRank`, `ShearFrame` | 🟡 | ⬜ | Projection ranks and exact endpoint/frame identities; finite-radix realization and total budget open |
-| Phase interfaces and tape compilation | — | ⬜ | ⬜ | |
+| Phase interfaces and tape compilation | `BinaryRankFactors`, `ComplexPhaseBudget` | 🟡 | ⬜ | Exact ordered per-edge operators and fixed kernel directions for every column count; full scheduled execution and literal tape costs remain open |
 
 ## 4. Faster interchange of address chunks (§4)
 
@@ -193,7 +193,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 ## Next steps
 
 - Prepare sorting metadata and compute repair keys, then compose extraction, sorting and reinsertion.
-- Complete binary residual-factor coverage of the actual global edges and the optimized h=50 bit-network construction/counts.
+- Complete the optimized h=50 bit-network construction/counts and connect complex edge factors to full scheduled execution.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compile the finite network interfaces and their arithmetic to literal tape steps.
