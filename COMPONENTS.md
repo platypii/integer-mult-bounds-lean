@@ -250,6 +250,9 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ScalingInverseExecution.lean`: Complete reusable inverse positive-unit scaling: initializes residue banks, scatters blocks to pieces, physically rewinds/concatenates them, then erases and resets all buffers. Output block y is original input block c*y modulo Q; entire source, scratch backgrounds/heads and immutable descriptors survive, all clocks reset. Fixed ten plus four-c tapes and ninety-eight-c plus forty-one states; prepared canonical descriptors give actual runtime at most 127 times volume plus 120 times fixed coefficient plus fifty-one.
 
+- `Machine/CountedSpanSeek.lean`: Whole-fiber forward/backward positioning from separate block-width and block-count descriptors. A fixed five-tape, thirty-two-state reusable loop performs every physical move and restores both clocks/descriptors without a product-length descriptor. Canonical descriptors and positive width give rewind cost at most forty-eight times fiber volume plus twenty-three.
+- `Machine/CountedSpanReset.lean`: Complete intermediate-fiber cleanup from separate width/count descriptors. Physically rewinds, erases all blocks using reusable counted loops, and rewinds again; initially blank scratch contents and original head are restored, with all other cells and both descriptors preserved. Fixed five tapes and ninety-eight states, canonical cost at most 146 times fiber volume plus seventy-one.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
