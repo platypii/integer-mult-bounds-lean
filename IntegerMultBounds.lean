@@ -466,3 +466,5 @@ import IntegerMultBounds.Machine.MultiControlTranslationBootstrap
 import IntegerMultBounds.Machine.FlatControlledShiftArray
 import IntegerMultBounds.Machine.StaticMarkerInit
 import IntegerMultBounds.Machine.FlatAffineScalingBootstrap
+import IntegerMultBounds.Machine.MultiControlPrefixTranslationExecution
+import IntegerMultBounds.Machine.MultiControlPrefixTranslationStream
