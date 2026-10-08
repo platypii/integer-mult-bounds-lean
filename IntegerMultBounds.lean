@@ -722,3 +722,5 @@ import IntegerMultBounds.Machine.RecursiveRowsResetCount
 import IntegerMultBounds.Machine.RecursiveRowsMove
 import IntegerMultBounds.Machine.RecursiveRowsClean
 import IntegerMultBounds.Machine.RecursiveRowsRoleBank
+import IntegerMultBounds.Machine.RoleArrayCallBoundary
+import IntegerMultBounds.Machine.RecursiveChildSetupRoleBank

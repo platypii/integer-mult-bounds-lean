@@ -1026,6 +1026,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveRowsRoleBank.lean`: Fixed injective placement of clean initialized split/permuted merge on permanent roles/scratch/six-header/auxiliary bank. Deterministic updated role payloads, exact spectators, blank consumed sources and private workspace; native arbitrary alphabet.
 
+- `Machine/RoleArrayCallBoundary.lean`: Separate fixed physical entry park/move and return move/recover blocks expose exact entered banks without embedding a child program. Entry(88*roleCount+88)*V and return(92*roleCount+88)*V, including joins, support cyclic control edges.
+
+- `Machine/RecursiveChildSetupRoleBank.lean`: Places actual40-tape header/PC save and child preparation on permanent role bank with fixed two-stack auxiliary suffix, preserving payloads and other auxiliaries with blank private workspace. Generic placed_hoare also lifts exact header/stack return contracts.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
