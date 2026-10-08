@@ -115,6 +115,7 @@ import IntegerMultBounds.Machine.ColumnTransducer
 import IntegerMultBounds.Machine.Gather
 import IntegerMultBounds.Machine.PackedLine
 import IntegerMultBounds.Machine.PackedArith
+import IntegerMultBounds.Machine.PackedInverse
 import IntegerMultBounds.Machine.WordTape
 import IntegerMultBounds.Machine.Copy
 import IntegerMultBounds.Machine.Partition
@@ -336,6 +337,7 @@ import IntegerMultBounds.Compact.TapeRepairStage
 import IntegerMultBounds.Compact.TapeRepair
 import IntegerMultBounds.Compact.PowerTwoDigits
 import IntegerMultBounds.Compact.PackedArithValue
+import IntegerMultBounds.Compact.PackedInverseValue
 import IntegerMultBounds.NLogN.DFT
 import IntegerMultBounds.NLogN.FFT
 import IntegerMultBounds.NLogN.Recurrence

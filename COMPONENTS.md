@@ -147,6 +147,12 @@ Machine model, execution, composition, and tape routines.
   list-level word semantics, the input words and control preserved, the
   offset scratch blank again, intermediate and final words on their own tapes
   and every head at its origin; linear cost.
+- `Machine/PackedInverse.lean`: the inverse packed program on nine tapes:
+  the four packed updates undone in reverse order with negated offsets as
+  five gather-and-transduce lines, with exact list-level word semantics, the
+  input words and control preserved, the offset scratch blank again and the
+  recovered words on their own tapes with every head at its origin; linear
+  cost.
   The output is the exact sum with globally blank tails, and the padded
   sources retain their numeric values. Empty operands are included.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head
@@ -699,6 +705,11 @@ Compact packed controls, repair, and density bounds.
   corresponding modular update, and the signed third line is the difference
   of two packings; the final words are exactly the packed program's output
   integers.
+- `Compact/PackedInverseValue.lean`: the inverse packed program on tapes
+  computes the packed permutation's inverse: `packedEarly` applied to the
+  integers of its recovered words returns the integers of its input words,
+  each forward line cancelling the corresponding inverse line modulo the
+  radix power, so by injectivity the recovered address is the preimage.
 - `Compact/Layout.lean`: reversible whole-row splitting, preservation and
   completeness of every suffix, exact role volumes, padding to a multiple
   within twice the original volume, and ceiling-based reservation capacities.

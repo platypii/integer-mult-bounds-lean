@@ -13,7 +13,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Part of the proof | Source | Mathematics | Tape |
 | --- | --- | --- | --- |
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
-| Composition, loops, frames, elementary streams | §2 | 🟡 (150/151) | 🟡 (132/143) |
+| Composition, loops, frames, elementary streams | §2 | 🟡 (151/152) | 🟡 (133/144) |
 | Finite networks with a rank saving | §3 | ✅ (65/65) | ⬜ (0/41) |
 | Faster interchange of address chunks | §4 | ✅ (5/5) | ⬜ (0/3) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (2/6) |
@@ -276,7 +276,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Dirty-temporary control identities | `DirtyControl` | ✅ | — | Universal integer statements |
 | Packed control gadgets | `PackedControl` | ✅ | ⬜ | Slot embedding and tape costs open |
 | Ideal toggle permutation and invertibility | `Ideal`, `Permutations` | ✅ | — | Every address, including bad ones |
-| Exact destination repair | `Repair`, `ExactRepair` | ✅ | ⬜ | |
+| Exact destination repair | `Repair`, `ExactRepair`, `PackedInverse`, `PackedInverseValue` | ✅ | 🟡 | Nine-tape inverse packed program undoes the four updates in reverse with negated offsets, linear cost; its recovered words are proved to be the packed permutation's preimage of the input words; the ideal toggle, the guard test and the rank bookkeeping on tapes remain |
 | Exceptional-address counts and density | `Counting`, `Density`, `RepairBounds` | ✅ | — | Bound `5 / (128 p³)` |
 | Row layout and reservation capacities | `Layout` | ✅ | ⬜ | |
 | Extract, sort, reinsert repair records | `Partition`, `Reinsert`, `StripPrefix`, `ReturnOrigin`, `RepairStage`, `FlagCopy`, `MarkedReturn`, `LoopChain`, `RepairScan` | ✅ | ✅ | Extraction/sorting/reinsertion primitives done; the list-level composition is `RepairPipeline`; one fixed fourteen-tape machine scans the stream with a binary rank counter, flags each record from a key tape, extracts flagged records in the raw keyed format, returns both heads, then sorts, strips and reinserts, with an exact-run contract; the per-record key routine (membership test and destination-rank bits) is a program parameter with a per-rank contract, and the whole costs its key cost plus ten per record, three stream volumes, `74k+5` extracted volumes, `2k+3` per extracted record and `k+14` |
