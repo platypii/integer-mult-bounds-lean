@@ -8,3 +8,4 @@ import IntegerMultBounds.Compact.Radix
 import IntegerMultBounds.Compact.PackedControl
 import IntegerMultBounds.Compact.RepairBounds
 import IntegerMultBounds.Machine.Execution
+import IntegerMultBounds.Machine.Counter

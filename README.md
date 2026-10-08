@@ -42,6 +42,9 @@ proof.
 
 ## Checked components
 
+- `Machine/Counter.lean`: executable fixed-width binary increment, its exact
+  modular value, and an amortized bound of `2*n + width` bit flips from arbitrary
+  initial contents. This list-level counter is not yet compiled to tape steps.
 - `Machine/Execution.lean`: run composition, locality of writes, unit head
   motion, and an actual one-tape scanning program with exactly `n` transitions
   through `n` nonblank cells. The program preserves the tape and halts at the

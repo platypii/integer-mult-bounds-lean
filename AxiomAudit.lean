@@ -7,7 +7,8 @@ run_cmd do
   let env ← getEnv
   let mut count : Nat := 0
   for (name, _) in env.constants.toList do
-    if (`IntegerMultBounds).isPrefixOf name then
+    if (`IntegerMultBounds).isPrefixOf name ||
+        name.toString.startsWith "_private.IntegerMultBounds." then
       for ax in ← collectAxioms name do
         unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
           throwError "{name} depends on unapproved axiom {ax}"
