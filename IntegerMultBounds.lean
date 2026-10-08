@@ -478,3 +478,4 @@ import IntegerMultBounds.Machine.FlatAffineScalingArray
 import IntegerMultBounds.Machine.FlatCoordinateLayout
 import IntegerMultBounds.Machine.MultiControlPrefixTranslationInit
 import IntegerMultBounds.Machine.FlatMultiControlTranslation
+import IntegerMultBounds.Machine.FlatCoordinateScaling
