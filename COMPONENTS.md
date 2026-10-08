@@ -288,6 +288,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/TranslationPreparedFamily.lean`: Varying-offset translation composed with one supplied fixed physical preparation program and an actual counted loop. Exact full-bank contracts preserve payloads during preparation and preserve arbitrary preparation workspace during translation. Costs the sum of actual preparation bounds plus 462 times payload volume plus 23; fixed 14+s tapes and m+233 states. Explicitly conditional on preparation Hoare contracts, with recurring marked initial workspaces. Concrete offset arithmetic and spectator scheduling remain to be instantiated.
 
+- `Machine/SignedScalingDimensions.lean`: Complete signed rational scaling from canonical Q/B numeric inputs, synthesizing both coefficient-piece families and negative-tail descriptors by literal machines. Exact signedBlocks destination, full-bank endpoint, restored negation scratch and explicit retained metadata. Bound (1950+120*(a+d))*Q*B; fixed 49+4*(a+d) tapes. Scratch blankness and inherited fixed sentinel layouts remain explicit; it does not claim a blank-workspace bootstrap or full stream scheduler.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
