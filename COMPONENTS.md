@@ -1036,6 +1036,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveControl.lean`: Fixed finite graph over the exact Shared50 piece list: physical width guard, split/body/merge nodes, shared header restoration and real PC pop, per-call entry/recovery nodes, and a root halt sentinel. Actual call-site codes decode to their recovery nodes; root header/PC initialization is physically charged. Different fixed private banks are padded to one finite-family tape count; block implementations and recursive execution remain explicit obligations.
 
+- `Machine/RecursiveCoordinateDigits.lean`: Exact one-field and ordered control/target decompositions of the existing MSB-first rank encoding, with literal coordinate-update identities.
+
+- `Machine/RecursiveScalarSelection.lean`: Static compiler maps actual ordered scalar descriptions to within-H, within-D or cross paid views and exact rational shift/scaling operations, preserving reflected subtraction order.
+
+- `Machine/RecursiveScalarCoordinates.lean`: Selected-view typed indices equal original heterogeneous positions exactly; writes to exposed H/D coordinates are writes to the original numbered fields.
+
+- `Machine/RecursiveScalarTransport.lean`: Paid view/action/restore arrays implement the original scalar instruction on original field coordinates, preserving every other role; compile_entry and compile_other bridge actual scalar descriptions.
+
+- `Machine/RecursiveScalarSchedule.lean`: Finite physical composition of paid varying-view scalar wrappers restores parent headers, dedicated stack and auxiliaries between stages, with exact ordered semantics and a fixed linear-volume coefficient.
+
+- `Machine/Shared50RecursiveSegments.lean`: Instantiates every actual Shared50OrderedPieces.Segment on its original wire. Clean permanent-bank output implements exactly original AffineFieldProgram.run on heterogeneous coordinates, preserves all other roles, and costs coefficient times volume. Applicable to row-reduced role descriptors without another row division.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
