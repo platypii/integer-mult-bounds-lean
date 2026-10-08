@@ -6,22 +6,22 @@ the statements the algorithm relies on are proved in Lean. *Tape* means a
 program in the literal machine model is proved correct with a runtime bound.
 See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
-✅ done · 🟡 partial · ⬜ not started · 🚧 drafted, not yet in the build
+✅ done · 🟡 partial · ⬜ not started · 🚧 drafted, not yet in the build. Overview counts are done subcomponents out of the section total.
 
 ## Overview
 
 | Part of the proof | Source | Mathematics | Tape |
 | --- | --- | --- | --- |
-| Machine model and target statement | §2 | ✅ | ✅ |
-| Composition, loops, frames, elementary streams | §2 | 🟡 | 🟡 |
-| Finite networks with a rank saving | §3 | ✅ | ⬜ |
-| Faster interchange of address chunks | §4 | ✅ | ⬜ |
-| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ | 🟡 |
-| Synthetic transforms and their tape layout | §6 | ✅ | ⬜ |
-| Gaussian resampling | §7 | ✅ | ⬜ |
-| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ |
-| Exact multiplication, parameters, time bound | §8 | 🟡 | ⬜ |
-| End-to-end theorem `EndToEnd` | — | 🟡 | ⬜ |
+| Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
+| Composition, loops, frames, elementary streams | §2 | 🟡 (122/123) | 🟡 (106/117) |
+| Finite networks with a rank saving | §3 | ✅ (65/65) | ⬜ (0/41) |
+| Faster interchange of address chunks | §4 | ✅ (5/5) | ⬜ (0/3) |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (1/6) |
+| Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
+| Gaussian resampling | §7 | ✅ (9/9) | ⬜ (0/3) |
+| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
+| Exact multiplication, parameters, time bound | §8 | 🟡 (3/5) | ⬜ (0/2) |
+| End-to-end theorem `EndToEnd` | — | 🟡 (0/3) | ⬜ (0/3) |
 
 ## 1. Machine model and target statement (§2)
 
