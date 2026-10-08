@@ -36,6 +36,7 @@ import IntegerMultBounds.Networks.Labels
 import IntegerMultBounds.Networks.NeighborCounts
 import IntegerMultBounds.Networks.Wires
 import IntegerMultBounds.Networks.TensorLabels
+import IntegerMultBounds.Networks.ProjectionRank
 import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal

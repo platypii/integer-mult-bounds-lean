@@ -211,6 +211,15 @@ Bit and complex networks.
   approximate frame implementations, grouped motif topology, and tape costs
   remain separate obligations.
 
+- `Networks/ProjectionRank.lean`: actual orthogonal projectors on finite
+  nondegenerate labels, their commutation along nested labels, and the exact
+  range of their difference as the larger label intersected with the smaller
+  orthogonal complement. This residual is nondegenerate, and the projector
+  difference has rank equal to the label-dimension difference. Complementary
+  projections also verify the routed endpoint identity with the required negative
+  source projection, whose rank is exactly the source-label dimension. The network
+  must still construct its comparable gate labels and sum these edge ranks.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.
