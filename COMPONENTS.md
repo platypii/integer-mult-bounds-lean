@@ -26,6 +26,18 @@ Machine model, execution, composition, and tape routines.
 - `Machine/Counter.lean`: executable fixed-width binary increment, its exact
   modular value, and an amortized bound of `2*n + width` bit flips from arbitrary
   initial contents.
+- `Machine/Rewind.lean`: a one-state backwards scan over any finite alphabet,
+  with exact runtime to a sentinel, arbitrary integer head origins, complete
+  tape preservation, and a Hoare contract.
+- `Machine/Alphabet.lean`: finite-alphabet encodings preserve exact execution,
+  halting, and time contracts; the widening instance preserves blank, bits,
+  and separator. Decoding also simulates arbitrary larger-alphabet tapes.
+  That weaker observation does not itself preserve foreign marker symbols;
+  their preservation requires a separate locality invariant.
+- `Machine/Protected.lean`: exact alphabet simulation on a proof-side region
+  of each tape, with arbitrary larger-alphabet cells retained literally outside
+  that region. Head-trajectory hypotheses establish preservation of foreign
+  markers and exact runtime; halting also requires the final read in-region.
 - `Machine/BitTape.lean` and `Machine/CounterTape.lean`: a three-state tape
   implementation of that increment, with exact carry and return runtimes,
   overflow handling, preservation of cells outside the bit segment, and a
@@ -305,6 +317,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   inverse; Horner evaluation with an approximate `E` and per-step rounding
   has scaled error `2(εE + ρ)` uniformly in the number of steps, so `p` steps
   approximate the inverse with scaled error `2(εE + ρ) + 1`.
+- `NLogN/ResamplingApprox.lean`: the paper's Lemma 4.9. Restricting the
+  resampling series of `S` to the `2m + 1` terms nearest the row centre
+  loses at most `(2/α)` times a Gaussian tail, which is below `3/(α 2^p)`
+  once `m² ≥ p α²` and `α² ≤ p`; summing per-term fixed-point approximations
+  of scaled error `c` gives total scaled error `c (2m + 1) + 3`. The
+  per-term evaluation cost is not modeled.
 
 ## Top-level
 

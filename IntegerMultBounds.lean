@@ -20,6 +20,9 @@ import IntegerMultBounds.Machine.Copy
 import IntegerMultBounds.Machine.Partition
 import IntegerMultBounds.Machine.RadixSort
 import IntegerMultBounds.Machine.PartitionSort
+import IntegerMultBounds.Machine.Rewind
+import IntegerMultBounds.Machine.Alphabet
+import IntegerMultBounds.Machine.Protected
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal
@@ -59,3 +62,4 @@ import IntegerMultBounds.NLogN.TensorApproxD
 import IntegerMultBounds.NLogN.SynthFFT
 import IntegerMultBounds.NLogN.ResamplingCLM
 import IntegerMultBounds.NLogN.NeumannApprox
+import IntegerMultBounds.NLogN.ResamplingApprox
