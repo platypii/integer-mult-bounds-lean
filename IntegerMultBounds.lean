@@ -507,3 +507,4 @@ import IntegerMultBounds.Machine.BinaryDescriptorCopy
 import IntegerMultBounds.Networks.AffineFieldCoordinates
 import IntegerMultBounds.Machine.Shared50NonrecursiveCoordinates
 import IntegerMultBounds.Machine.BinaryDescriptorCopies
+import IntegerMultBounds.Machine.Shared50NonrecursiveSegments
