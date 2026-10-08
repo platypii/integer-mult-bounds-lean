@@ -250,6 +250,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   errors, and the normalized two-dimensional transform is exactly the tensor
   of the two normalized one-dimensional transforms. The `d`-fold version is
   not written.
+- `NLogN/BluesteinApprox.lean`: the error bookkeeping of the paper's
+  Theorem 3.1 in one and `d` dimensions: with an approximate chirp of scaled
+  error `εa`, an approximate normalized convolution of scaled error `εM`, and
+  rounded pointwise products, the Bluestein pipeline approximates the
+  normalized transform with scaled error at most `εM + 3 εa + 4`. The
+  normalized convolution is bounded and bilinear on unit balls.
 
 ## Top-level
 

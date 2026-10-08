@@ -49,3 +49,4 @@ import IntegerMultBounds.NLogN.FixedOps
 import IntegerMultBounds.NLogN.MainParams
 import IntegerMultBounds.NLogN.ResamplingNorm
 import IntegerMultBounds.NLogN.TensorApprox
+import IntegerMultBounds.NLogN.BluesteinApprox
