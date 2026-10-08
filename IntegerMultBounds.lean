@@ -548,3 +548,7 @@ import IntegerMultBounds.Machine.Shared50InitializedSegments
 import IntegerMultBounds.Machine.RunSupport
 import IntegerMultBounds.Machine.FlatCoordinateScheduleSupport
 import IntegerMultBounds.Machine.StackPop
+import IntegerMultBounds.Machine.RecursiveInterchangeLayout
+import IntegerMultBounds.Machine.RecursiveInterchangeScaling
+import IntegerMultBounds.Machine.FixedControlTranslationStream
+import IntegerMultBounds.Machine.FlatFixedControlShift

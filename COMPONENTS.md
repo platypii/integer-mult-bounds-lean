@@ -653,6 +653,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/StackPop.lean`: Fixed arbitrary-alphabet destructive stack transfer, controlled by a reusable binary clock. Heads move left together, preserving original data order and erasing exactly the popped region; all exterior cells, the immutable length descriptor and restored clock are retained. Exact whole-bank semantics and 7n+7 descriptor-length+16 time; initial head positioning and descriptor construction remain caller obligations.
 
+- `Machine/RecursiveInterchangeLayout.lean`: Seven-factor recursive child descriptors preserve literal spectator order, exact role volume and next-depth row divisibility; physical scheduling is separate.
+
+- `Machine/RecursiveInterchangeScaling.lean`: Actual normalized rational scaling on either H or D in an arbitrary positive seven-factor recursive layout. Exact serialized input/output and address transport preserve all rows and spectators, with a linear-volume runtime; canonical prefix/modulus/suffix descriptors remain supplied.
+
+- `Machine/FixedControlTranslationStream.lean`: Actual counted family of rational-controlled D-fiber translations with a stationary physical H control. The middle-spectator count is arbitrary, every offset refresh/copy/join is charged, and the exact recurring endpoint preserves control. Prepared descriptors and markers remain explicit.
+
+- `Machine/FlatFixedControlShift.lean`: Flat-array bridge for stationary-control translation across arbitrary middle spectators. Literal source word, exact destination coordinate transport, preserved physical H control and 529 times volume plus23 runtime are proved. Outer H/prefix iteration and full bootstrap remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
