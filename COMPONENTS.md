@@ -163,6 +163,12 @@ Bit and complex networks.
   neighboring-pair rational motif instance are proved. Tape movement, sparse
   wire counts, and residual spaces remain separate obligations.
 
+- `Networks/CircuitBits.lean`: explicit binary motif matrices over `ZMod 2`,
+  with intersection-one side pairs and coordinate-only central sums. Actual
+  matrix coefficients reconstruct the source, proving executable dirty-scratch
+  shear and true bank exchange with full scratch restoration. Elementary
+  instruction counts are proved; grouped-gate topology and tape costs are not.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.
@@ -389,6 +395,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   the forward transforms; the inverse transform is the forward one at the
   negated index; and the pipeline computed with per-level error oracles and
   rounded products has scaled error at most `4n + 2` for `n ≤ 2^p`.
+- `NLogN/ResamplingMulti.lean`: Theorem 4.1 of the paper. Rectangular
+  tensor products of operators on sup-normed coordinate spaces are defined
+  through matrix entries, compose and scale factorwise, and are contractions
+  when the factors are; the normalized `d`-dimensional transform is the
+  tensor of the one-dimensional ones; hence for coordinatewise coprime
+  `s_i < t_i`, `α ≥ 1`, and `α²θ_i ≥ 1`, `F_s = 2^(dγ) · B ∘ F_t ∘ A` with
+  `‖A‖, ‖B‖ ≤ 1`.
 
 ## Top-level
 
