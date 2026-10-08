@@ -197,6 +197,20 @@ Bit and complex networks.
   on these roles and attaching nested labels remain open; this is a layout
   cardinality proof, not yet the complete rank-saving network theorem.
 
+- `Networks/TensorLabels.lean`: tensor products of finite nondegenerate
+  bilinear forms are proved nondegenerate using their Kronecker matrices.
+  The actual tensor-cube label spaces have dimension `h^3`; pure triple
+  tensors have rational self-pairing eight or binary self-pairing one.
+  Their terminal lines and orthogonal complements give nondegenerate direct
+  decompositions with dimensions one and `h^3 - 1`. Intermediate gate labels
+  and the complete residual budget still need construction.
+- `Networks/FramedCircuit.lean`: explicit edge-frame instructions and finite
+  circuit compilation prove the full common-frame identity, including all
+  scratch and spectator wires. At every address the logical circuit is the
+  existing executable scalar circuit. Intermediate frames cancel exactly;
+  approximate frame implementations, grouped motif topology, and tape costs
+  remain separate obligations.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.
@@ -482,6 +496,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   operations; with the Section 5 parameters three pipelines cost at most
   `(12 T/r) M(3rp) + 2880 n log₂ n`, the shape of the main recursion. Tape
   steps, data rearrangement, and weight computation are not modeled.
+- `NLogN/ResamplingMultiNumeric.lean`: the numerical half of Theorem 4.1.
+  The rectangular coordinatewise tensor on Chinese-remainder grids preserves
+  balls, accumulates the sum of the errors, and agrees with the matrix-defined
+  tensor; hence the tensors of the one-dimensional numerical maps approximate
+  `A` and `B` with scaled errors `d εA` and `d εB`, alongside the exact
+  factorization.
 
 ## Top-level
 

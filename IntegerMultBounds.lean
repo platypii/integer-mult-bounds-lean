@@ -35,6 +35,8 @@ import IntegerMultBounds.Networks.CircuitBits
 import IntegerMultBounds.Networks.Labels
 import IntegerMultBounds.Networks.NeighborCounts
 import IntegerMultBounds.Networks.Wires
+import IntegerMultBounds.Networks.TensorLabels
+import IntegerMultBounds.Networks.FramedCircuit
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal
 import IntegerMultBounds.Compact.ExactRepair
@@ -88,3 +90,4 @@ import IntegerMultBounds.NLogN.PrecisionCheck
 import IntegerMultBounds.NLogN.PowerOfTwoExact
 import IntegerMultBounds.NLogN.NegacyclicKronecker
 import IntegerMultBounds.NLogN.CostModel
+import IntegerMultBounds.NLogN.ResamplingMultiNumeric
