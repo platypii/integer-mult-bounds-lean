@@ -761,11 +761,21 @@ Bit and complex networks.
 - `Networks/DAGCompileCorrect.lean`: the complete actual compiler has valid
   shared-pivot gates, all intermediate slots within its role count, distinct
   bounded requested-output slots, and no pending gate-input ports. DAG-value
-  transfer and support-frame nesting remain separate obligations.
+  transfer is proved in DAGValueTransfer; support-frame nesting remains open.
 
 - `Networks/DAGAllocatorBudget.lean`: pruning cannot increase the number of
   additions, so the actual compiler's roles are bounded by all certificate
   additions plus requested outputs, without requiring a liveness certificate.
+
+- `Networks/DAGValueTransfer.lean`: the actual emitted scalar program computes
+  every requested DAG support sum when its distinct physical source slots are
+  loaded from input labels and all other roles start zero. Proved by induction
+  over the allocator, including pending values, future source initialization,
+  source provenance and distinctness; repeated semantic input labels work.
+- `Networks/Paired49Execution.lean`: the checked local witness's actual
+  emitted program computes all 1,176 pair-exclusion sums over the binary field
+  with at most 10,989 scalar roles. It also has an executable reverse on
+  arbitrary states; tape execution and support-frame nesting are still open.
 
 - `Networks/Paired49Certificate.lean`: unconditional finite witness for all
   1,176 canonical pair-exclusion sums on 49 vertices, over every commutative
