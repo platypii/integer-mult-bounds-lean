@@ -623,6 +623,15 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `log(3rp) ≤ (1/d + 1/(2d²)) log n`, the last through a real sixth root of
   the chunk size; hence any cost satisfying the recursive inequality with
   these parameters is `O(n log n)`.
+- `NLogN/Contract.lean`: the headline correctness contract of the
+  subroutine's recursive step in the vector model. For `n ≥ 2^(d^12)` there
+  is a power-of-two grid of total size `T` bounded by `r`, and for every
+  choice of moduli `s_i < t_i` pairwise coprime with `∏ s_i ∈ (T/2, T]` and
+  `α²(t_i/s_i − 1) ≥ 1`, the fully explicit numerical algorithm, with
+  per-level rounding oracles within `2^(−p)`, outputs exactly the product of
+  the two `n`-bit inputs. The existence of such moduli, the paper's
+  short-interval prime lemma, is the one remaining mathematical hypothesis;
+  bit costs and tape compilation are separate.
 
 ## Top-level
 
