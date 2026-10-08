@@ -526,6 +526,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FlatAffineScalingMetadata.lean`: Proves the entire lifted scaling private input bank, after removing the two permanent payload slots, is independent of the finite input array. Only fixed coefficients and dimension descriptors determine this metadata; later scaling stages can be prepared before their actual input is computed.
 
+- `Machine/SharedPayloadStage.lean`: Exact stage interface bundling an actual program, canonical shared payload pair, input-independent private metadata and proved execution cost. Intended for physical finite-list assembly; actual machine constructors must discharge every contract.
+
+- `Machine/FlatCoordinateStages.lean`: Concrete common-coordinate scale and earlier-control shift Stage constructors at the actual shared prime alphabet. Instantiates all program, payload, metadata-independence and runtime contracts from initialized normalized machines; exact transform theorems prove OrderedAffine symbol transport. Canonical dimension inputs remain explicit; finite-list assembly and uniform schedule theorem separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
