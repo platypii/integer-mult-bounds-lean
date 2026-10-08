@@ -10,6 +10,7 @@ import IntegerMultBounds.Compact.RepairBounds
 import IntegerMultBounds.Machine.Execution
 import IntegerMultBounds.Machine.Composition
 import IntegerMultBounds.Machine.Hoare
+import IntegerMultBounds.Machine.Loop
 import IntegerMultBounds.Machine.Counter
 import IntegerMultBounds.Networks.Scalar
 import IntegerMultBounds.Compact.Permutations

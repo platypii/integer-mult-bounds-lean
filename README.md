@@ -49,6 +49,11 @@ proof.
   connected to this contract interface. The design draws on complexitylib's
   composition approach (commit `3f4b5fe`); no external machine semantics or
   runtime assumptions are imported.
+- `Machine/Loop.lean`: a concrete finite-state while loop testing only scanned
+  symbols, exact body-plus-two-transition iteration cost, and a telescoping
+  potential rule charging variable body runtimes. It introduces no counter
+  comparison scans or output rewinds. Client routines must still establish
+  the invariant and pay for their actual tape execution.
 - `Compact/Ideal.lean` and `Compact/ExactRepair.lean`: a packed ideal toggle
   permutation, preservation of the actual guard predicate, and executable
   destination repair connected to both concrete packed programs. Correctness
