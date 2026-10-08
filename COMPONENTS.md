@@ -214,6 +214,9 @@ Machine model, execution, composition, and tape routines.
 - `Machine/Dispatch.lean`: Literal dispatch among a fixed finite family of programs using only scanned symbols. One stationary tape-preserving transition selects the branch, and exact execution, true halt and Hoare contracts add exactly one step to the selected body cost.
 - `Machine/ScalingMergeData.lean`: Sequential FIFO semantics for positive unit scaling. Prefix selection counts equal the inverse source offset within each contiguous piece; selected streams never underflow, all pieces are completely consumed and recursive head-pop merging gives the exact inverse-scaled payload. Pure semantics only; no tape runtime is asserted.
 
+- `Machine/CountedErase.lean`: Delimiter-free scratch erasure using a literal one-cell body and reusable counted loop. Preserves all cells outside the interval and restores an initially blank scratch segment, with immutable descriptor and empty clock restored. Actual cost is at most seven times length plus seven times descriptor width plus sixteen, or fourteen times length plus twenty-three for canonical descriptors.
+- `Machine/OneHot.lean`: Fixed finite residue encoding on control tapes under their current heads. Decoding reads scanned symbols only, and one literal stationary transition increments the residue modulo the fixed bank size, preserves every head and background cell and truly halts. Exact execution and Hoare contracts charge one step.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
