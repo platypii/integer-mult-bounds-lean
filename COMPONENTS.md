@@ -919,6 +919,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveChildCallSetup.lean`: Actual fixed 40-tape call entry saves six parent headers and compile-time return PC, then physically computes/installs child headers. Both saved stacks survive complete arithmetic. Exact child bank and coefficient RecursiveChildPrepare.constant+24*(log2 roles+2)+50+PCwidth times child volume; array parking and recursive body remain separate.
 
+- `Machine/RoleArrayStackMoves.lean`: Physical counted role-array head movement and control-marker setup/erasure used by destructive parking and recovery. Arbitrary payload symbols and exact whole-bank endpoints; no delimiter-based payload scan.
+
+- `Machine/RoleArrayStack.lean`: Actual destructive role-array push with source reset to blank/head zero and inverse pop restoring source and older stack exactly. Work clock initialized and erased physically; push14*N+14*bitLength+45, pop14*N+14*bitLength+49.
+
+- `Machine/RoleArrayStackAt.lean`: Injective placement of the actual four-tape role-array push/pop routines into a fixed larger bank with exact spectator framing.
+
+- `Machine/RoleArrayFrames.lean`: Fixed-list inactive role parking and reverse recovery, independent of runtime lengths. Every vacated role/work clock becomes blank/head zero; exact older stack and original roles recovered with allocated-interval blank precondition. Canonical positive volume gives88*count*N push,92*count*N pop, and(180*count+1)*N actual roundtrip.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

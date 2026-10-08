@@ -679,3 +679,7 @@ import IntegerMultBounds.Machine.RecursiveVolumeRoleBank
 import IntegerMultBounds.Machine.SharedBankRawCompose
 import IntegerMultBounds.Machine.RecursiveMixedInitialized
 import IntegerMultBounds.Machine.RecursiveChildCallSetup
+import IntegerMultBounds.Machine.RoleArrayStackMoves
+import IntegerMultBounds.Machine.RoleArrayStack
+import IntegerMultBounds.Machine.RoleArrayStackAt
+import IntegerMultBounds.Machine.RoleArrayFrames
