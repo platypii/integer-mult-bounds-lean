@@ -185,6 +185,18 @@ Bit and complex networks.
   label fields differ from the circuit scalar rings; tensor-cube labels,
   nested gate labels, and total residual-rank savings remain open.
 
+- `Networks/NeighborCounts.lean`: an explicit intersection/outside splitting
+  equivalence proves the generic fixed-size-subset intersection census. It
+  yields exact triple-bank, bit-neighbor, complex-neighbor, and ordered-pair
+  cardinalities, including 161700 triples, 13968 bit neighbors per triple,
+  and 147731 complex neighbors at ground size 100. Enumeration transport
+  connects these counts to the finite-index circuit side-wire predicates.
+- `Networks/Wires.lean`: named roles for both data banks and every stage's
+  separate invocation scratch, with exact cardinalities. The ground-size-100
+  counts match both manuscript wire totals. Compiling the global gate schedule
+  on these roles and attaching nested labels remain open; this is a layout
+  cardinality proof, not yet the complete rank-saving network theorem.
+
 ## NLogN
 
 The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.
@@ -424,6 +436,14 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   theorem for any lengths dividing `2r`, orthogonality and inversion up to
   `1/∏ N_i` for power-of-two lengths, and contraction bounds for both
   directions.
+- `NLogN/MainStep.lean`: Proposition 5.4 at the vector level. The
+  normalized `d`-dimensional transform and its index-negated form are
+  contractions with `F(a ∗ b) = S · Fa · Fb` and `F⁻ F = id/S`; the scaled
+  digit convolution of the recursive step lives on the Chinese-remainder
+  grid; and given approximations of the transform and its inverse with
+  scaled errors `εF`, `εI`, the rounded output is the exact product whenever
+  `2^(2b) S² (εI + 2εF + 2) < 2^(p−1)`. Discharging that precision condition
+  from the parameter choices is not here.
 
 ## Top-level
 

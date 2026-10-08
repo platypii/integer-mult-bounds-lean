@@ -33,6 +33,8 @@ import IntegerMultBounds.Networks.CircuitTriples
 import IntegerMultBounds.Networks.CircuitRouting
 import IntegerMultBounds.Networks.CircuitBits
 import IntegerMultBounds.Networks.Labels
+import IntegerMultBounds.Networks.NeighborCounts
+import IntegerMultBounds.Networks.Wires
 import IntegerMultBounds.Compact.Permutations
 import IntegerMultBounds.Compact.Ideal
 import IntegerMultBounds.Compact.ExactRepair
@@ -79,3 +81,4 @@ import IntegerMultBounds.NLogN.SynthEmbed
 import IntegerMultBounds.NLogN.SynthConvApprox
 import IntegerMultBounds.NLogN.ResamplingMulti
 import IntegerMultBounds.NLogN.SynthMultiD
+import IntegerMultBounds.NLogN.MainStep
