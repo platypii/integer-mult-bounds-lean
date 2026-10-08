@@ -864,6 +864,14 @@ Compact packed controls, repair, and density bounds.
   rank's address, the inverse program's words are the packed permutation's
   preimage, the exclusive or with the control mask is the ideal map, and the
   appended words are the binary expansion of the destination rank.
+- `Compact/KeyInstance.lean`: the key routine placed into the repair scan's
+  bank (key at slot twelve, counter at thirteen, scratch from fourteen) meets
+  the scan's key contract for the concrete early instance: the scan's counter
+  tape is the counter word over the separator, the active bank is the
+  routine's input, and the replaced bank is the scan bank with the key word
+  written. With it, `repair_instance` is the complete repair machine: scan
+  with the key routine, sort, strip and reinsert, carrying the unflagged
+  actual stream to the ideal stream within the pipeline's bound.
 - `Compact/Layout.lean`: reversible whole-row splitting, preservation and
   completeness of every suffix, exact role volumes, padding to a multiple
   within twice the original volume, and ceiling-based reservation capacities.
