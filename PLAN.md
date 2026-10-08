@@ -15,7 +15,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
 | Composition, loops, frames, elementary streams | §2 | 🟡 (157/158) | 🟡 (139/150) |
 | Finite networks with a rank saving | §3 | ✅ (66/66) | 🟡 (1/42) |
-| Faster interchange of address chunks | §4 | ✅ (26/26) | 🟡 (15/23) |
+| Faster interchange of address chunks | §4 | ✅ (27/27) | 🟡 (15/24) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (4/6) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (9/9) | ⬜ (0/3) |
@@ -273,6 +273,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Lower triangular factorization (Lemma 4.1) | `LowerTriangular`, `PivotRank` | ✅ | — | `A = E₁ Π E₂` with lower triangular two-sided inverses and a partial permutation `Π` with exactly `rank A` ones |
 | Rational matrix shear (Lemma 4.2) | `Shear`, `Modular` | ✅ | ⬜ | Pivot programs, descending triangular updates, prime modulus beyond all denominators, shear modulo `q^b` with exactly `rank A` interchanges; tape cost of the linear operations open |
 | Power-width interchange (Prop 4.3) | `Interchange` | ✅ | ⬜ | Three-step interchange, routed frame identity under the shear contract, edge schedule with `Σ rank` interchanges, recursion `O(V (m^k)^τ)`; role-stream split and fixed-tape schedule open |
+| Single-digit base-case pass contracts | `DigitInterchangeRows`, `DigitInterchangePasses` | ✅ | 🟡 | Two fixed-radix cyclic splits and two inverse merges have exact tape contracts; transposed fixed leaf wiring preserves every spectator and the sum of real pass costs plus joins is linear in volume. One complete bank, descriptor synthesis and private cleanup remain open |
 | Recursive child layout with spectators | `RecursiveInterchangeLayout` | ✅ | ⬜ | Seven-factor child descriptors preserve literal row-major order and every spectator. Child volume is parent volume divided by role count, with positivity and next-depth row divisibility. Physical split/merge, descriptor arithmetic and fixed-machine recursion remain open |
 | Cyclic role transport and parking primitives | `CyclicRowCopy`, `CyclicRowCycle`, `CyclicRowSplit`, `CyclicRowMergeCopy`, `CyclicRowMergeCycle`, `CyclicRowMerge`, `StackPush`, `StackPop` | ✅ | ✅ | Fixed machines split/merge arbitrary-symbol rows in cyclic order with exact banks and 74-times-volume bounds. Destructive counted push/pop preserve order and erase exact regions. Recursive-layout wiring, descriptor construction, head positioning and the call controller remain separate |
 | Recursive role layout and counted positioning | `RecursiveInterchangeRows`, `CountedPosition` | ✅ | ✅ | Actual row split/merge now match literal seven-factor arrays and child role addresses with 74-times-parent-volume bounds. Fixed arbitrary-alphabet counted head motion has exact full-bank preservation and charged runtime. Descriptor synthesis and complete recursive call wiring remain open |

@@ -844,6 +844,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveCleanReturn.lean`: Actual header cleanup, saved-descriptor restoration and binary PC pop/dispatch composed into one return routine, with exact selected continuation terminal state. Conditional body interface allows nonblank child headers and charges all erasure and joins; recursive body implementation remains open.
 
+- `Machine/DigitInterchangeRows.lean`: Literal serialization for width-one interchange: the first cyclic split role word equals the second split input, and transposing fixed radix-role indices gives exactly the transposed leaf words while preserving arbitrary outer, middle and suffix fields.
+
+- `Machine/DigitInterchangePasses.lean`: Actual normalized tape contracts for both split and both merge levels of single-digit interchange. Input/output words match literally, heads and descriptors are restored, and the total pass cost including joins is at most (597+2*q) times volume. Whole-bank joining, counter synthesis and private cleanup remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

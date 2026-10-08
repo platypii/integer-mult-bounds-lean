@@ -645,3 +645,5 @@ import IntegerMultBounds.Machine.CleanSubbank
 import IntegerMultBounds.Machine.CleanSubbankCompile
 import IntegerMultBounds.Machine.RecursiveShiftRoleBank
 import IntegerMultBounds.Machine.RecursiveCleanReturn
+import IntegerMultBounds.Machine.DigitInterchangeRows
+import IntegerMultBounds.Machine.DigitInterchangePasses
