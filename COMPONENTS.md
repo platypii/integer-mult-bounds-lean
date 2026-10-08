@@ -758,6 +758,22 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `(12 T/r) M(3rp) + O(n log n)`, and the recurrence closes to `O(n log n)`
   for any cost bounded by a full step plus linear overhead.
 
+## Swap
+
+Faster interchange of address chunks (§4).
+
+- `Swap/Recurrence.lean`: the arithmetic of the chunk-interchange recurrence.
+  A normalized cost satisfying `F (k+1) ≤ a F k + C` with `a ≤ m^τ` is bounded
+  by an explicit constant times `(m^k)^τ`, with no case split on the ratio.
+  The base-`m` digit pieces of a general width `n ≥ m^k` cost
+  `O(n^τ)` in total, with the digit expansion `n = Σ (n / m^j % m) m^j`
+  proved. Row padding to a multiple of `W^k ≤ R` stays below `2R`; the
+  row-range digit count `⌈k log W / (2 log q)⌉` gives `q^(2ρ) ≥ W^k` and is
+  eventually below the width; the least radix-`q` width covering `[2^u]` is
+  at most `u` and inflates the range by less than `q`. The lower triangular
+  factorization, the rational matrix shear, and the interchange procedure
+  itself are separate obligations.
+
 ## Top-level
 
 Parameters and asymptotics.

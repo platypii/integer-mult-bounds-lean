@@ -15,7 +15,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Machine model and target statement | §2 | ✅ | ✅ |
 | Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 |
 | Finite networks with a rank saving | §3 | 🟡 | ⬜ |
-| Faster interchange of address chunks | §4 | ⬜ | ⬜ |
+| Faster interchange of address chunks | §4 | 🟡 | ⬜ |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ |
 | Gaussian resampling | §7 | 🟡 | ⬜ |
@@ -88,7 +88,11 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 | Subcomponent | Files | Mathematics | Tape | Notes |
 | --- | --- | --- | --- | --- |
-| Chunk interchange algorithm and cost | — | ⬜ | ⬜ | Not started |
+| Interchange recurrence and padding arithmetic | `Recurrence` | ✅ | — | `F k ≤ K (m^k)^τ` from `s/W ≤ m^τ`; digit pieces `O(e^τ)`; row, row-range, and radix padding bounds |
+| Lower triangular factorization (Lemma 4.1) | — | ⬜ | — | `A = E₁ Π E₂`, `Π` with exactly `rank A` ones |
+| Rational matrix shear (Lemma 4.2) | — | ⬜ | ⬜ | Pivot sequence, triangular ordered updates, specialization to `ℤ/q^b` |
+| Power-width interchange (Prop 4.3) | — | ⬜ | ⬜ | Role streams, frame identity, recursive call count `s` |
+| Arbitrary-width interchange (Lemma 4.4) | — | ⬜ | ⬜ | High-digit row field, digit pieces, radix padding |
 
 ## 5. Simultaneous butterfly layers with compact control (§5, §11, CrocSwap)
 
@@ -173,4 +177,4 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Build the full tape radix sort from `PartitionPass` and key selection.
-- Start §4, the faster interchange of address chunks.
+- Prove the lower triangular factorization and the rational matrix shear of §4.

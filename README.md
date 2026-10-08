@@ -34,7 +34,7 @@ the literal machine model is proved correct with a runtime bound.
 | Machine model and target statement | §2 | ✅ | ✅ | — |
 | Composition, loops, frames, elementary streams | §2 | ✅ | 🟡 | Scan, copy, counters, arbitrary-key stable partition, flag removal, and record reinsertion are proved; full tape sorting and stream scheduling remain open |
 | Finite networks with a rank saving | §3 | 🟡 | ⬜ | Global scalar circuits, wire counts, tensor label spaces, frame identities, and projection ranks are proved; the full labeled schedule, total rank saving, and tape interfaces remain open |
-| Faster interchange of address chunks | §4 | ⬜ | ⬜ | Not started |
+| Faster interchange of address chunks | §4 | 🟡 | ⬜ | The interchange recurrence and the padding arithmetic are proved; the triangular factorization, the rational matrix shear, and the interchange procedure remain open |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | 🟡 | ⬜ | Address semantics, repair, and density counts are proved; tape partition and reinsertion primitives are proved, but full sorting and the repair pipeline remain open |
 | Synthetic transforms and their tape layout | §6 | 🟡 | ⬜ | Synthetic ring, principal roots, and Bluestein are proved; layout and costs are open |
 | Gaussian resampling | §7 | 🟡 | ⬜ | The factorization `F_s = 2^γ B F_t A` with `‖A‖, ‖B‖ ≤ 1` is proved in one and `d` dimensions, with truncation and Neumann-series error bounds for its pieces; the numerical approximations of `A` and `B` have scaled error below `p²`; the permutation-left variant is open |
