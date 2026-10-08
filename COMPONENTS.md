@@ -611,6 +611,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   the prime choice, the size conditions, and a numerical power-of-two
   transform with error at most `8 T log₂ T`; plus the arithmetic showing
   the power-of-two transform's error shape meets that bound.
+- `NLogN/PowerOfTwoContract.lean`: the explicit numerical power-of-two
+  transform as the recursive step's input. For a grid of lengths `2^(e_i)`
+  with last length `2^g`, the clamped Bluestein pipeline with clamped
+  synthetic FFTs and a rounded chirp approximates the normalized transform
+  with scaled error `2^S (3S + 8) + 4`, `S = ∑ e_i`, which is at most
+  `8 T log₂ T`, and keeps the unit ball. The transforms of the resampling
+  and Bluestein files are identified.
 
 ## Top-level
 
