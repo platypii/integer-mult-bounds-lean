@@ -772,6 +772,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50TapeGlobal.lean`: Actual complete reused-world Shared50 XOR program exchanges its data banks and restores arbitrary scratch streams on one fixed machine, with explicit linear tape-transition bound from the certified gate count. Canonical stream-length descriptor supplied; framed address transforms and recursive scheduling remain separate.
 
+- `Machine/FiniteFlow.lean`: Actual fixed finite block controller permits terminal-state-dependent cycles, back-edges and self-edges. Each real block trace yields an exact machine run with one charged tape-preserving transition per jump; states equal the fixed sum of block states, independent of runtime depth.
+
+- `Machine/FiniteReturnFlow.lean`: Binary return-address pop is a real block of the cyclic controller; decoded terminal states jump into fixed continuations and may revisit entry or pop. Exact charged return execution preserves other tapes. Recursive algorithm termination/correctness is separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

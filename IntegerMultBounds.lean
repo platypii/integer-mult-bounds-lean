@@ -602,3 +602,5 @@ import IntegerMultBounds.Machine.OneSourceCircuit
 import IntegerMultBounds.Machine.Shared50XorLists
 import IntegerMultBounds.Machine.Shared50TapeInvocation
 import IntegerMultBounds.Machine.Shared50TapeGlobal
+import IntegerMultBounds.Machine.FiniteFlow
+import IntegerMultBounds.Machine.FiniteReturnFlow
