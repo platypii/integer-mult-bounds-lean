@@ -419,6 +419,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RationalPrefixTranslationBootstrap.lean`: Full flat-array controlled shift from blank writable prefix and translation metadata tapes. One actual transition installs eight markers and moves the spare head, then physical prefix initialization and stream execution run. Exact complete output bank inherits the transported-symbol theorem; bound (551+4*c)*volume+29*(c+1)+26. Only canonical width/B/Q/P descriptors and payload remain supplied; dimension construction and successive-operation composition are separate.
 
+- `Machine/CountedVolumeLoop.lean`: Three actual nested counted loops over separate canonical B/Q/P descriptors; restores all clocks and preserves arbitrary body symbols. Exact per-cell iteration contract and explicit runtime; one-step body costs at most 109*volume. No total-volume descriptor is assumed.
+
+- `Machine/FlatArrayNormalize.lean`: Eight-tape, 150-state three-pass payload transfer: physically rewind both heads, copy old output into common input while erasing it, then rewind both again. Exact full-bank contract restores output scratch and both origins, reuses B/Q/P descriptors, and charges 327*volume+2. Placement into concrete operation banks is separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

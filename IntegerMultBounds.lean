@@ -455,3 +455,5 @@ import IntegerMultBounds.Machine.MarkedBinaryCleanup
 import IntegerMultBounds.Machine.RadixLinearCombinationReuse
 import IntegerMultBounds.Machine.MultiControlTranslationExecution
 import IntegerMultBounds.Machine.RationalPrefixTranslationBootstrap
+import IntegerMultBounds.Machine.CountedVolumeLoop
+import IntegerMultBounds.Machine.FlatArrayNormalize
