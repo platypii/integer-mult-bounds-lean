@@ -190,6 +190,8 @@ Machine model, execution, composition, and tape routines.
 - `Machine/Placement.lean`: Generic whole-bank placement of a fixed-tape program. Active projection and replacement preserve the complete complementary tapes and heads; exact runs, real halts and Hoare contracts lift without extra transitions. Sequential exact contracts charge their connecting transition.
 - `Machine/CountedSeek.lean`: Literal three-tape, sixteen-state forward and backward positioning by a binary descriptor. Proven projection of the reusable copying machine discards its irrelevant destination; every payload cell and the immutable descriptor survive, the work clock is restored, and all preparation/cleanup costs fit five times the count plus seven times descriptor width plus sixteen.
 
+- `Machine/CountedRotate.lean`: Literal six-tape, sixty-four-state raw cyclic rotation: seek past a prefix, copy the suffix, seek backwards over the total block, and copy the prefix. The source and three immutable descriptors are preserved and the clock is restored. Exact single-fiber controlled-shift semantics follow from block payload indexing; all seeks, clock setup/cleanup and joins cost at most fifteen times volume plus descriptor-width terms. Descriptor synthesis and multi-fiber scheduling remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

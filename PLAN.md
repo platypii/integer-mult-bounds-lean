@@ -44,6 +44,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Terminating binary-counted raw transfer | `CountdownData`, `CountedCopy` | ✅ | ✅ | Literal three-tape, five-state copy, including all borrow scans, returns and final halt; runtime at most five times the count plus twice the clock width plus two. Prepared clock is explicit; descriptor preparation/reset remains separate |
 | Counted backwards payload copy | `Reflection`, `CountedReverse` | ✅ | ✅ | Literal reflected transition tables preserve exact runtime; backwards source traversal outputs the reversed word within the linear countdown bound. Reusable variant includes clock setup/cleanup; initial positioning and descriptor construction remain separate |
 | Ordered-affine payload semantics | `BlockRotationData`, `BlockNegationData`, `ScalingPieces`, `ScalingControl` | ✅ | ⬜ | Exact block-shift and negation payload indices, flat split and reversal recipe; unique scaling-piece merge, inverse reconstruction, monotone streams, fixed residue selection and exact contiguous piece lengths. Literal split/merge scheduling remains open |
+| Literal single-fiber controlled block shift | `CountedRotate` | ✅ | ✅ | Six tapes, sixty-four states; exact shifted payload with source/descriptor preservation and empty final clock. All moves and joins bounded by fifteen times payload volume plus descriptor widths; descriptor synthesis and multi-fiber scheduling remain open |
 | Ordered-affine matrix decomposition | `OrderedAffine` | ✅ | ⬜ | Descending row schedule of diagonal units and earlier-control shifts exactly realizes every invertible lower-triangular transform; coefficient reduction preserves order and introduces no new coefficients |
 | Counted positioning and general tape placement | `CountedSeek`, `Placement` | ✅ | ✅ | Raw forward/backward head movement preserves every payload cell and restores reusable controls; generic selected tape-bank lifting preserves exact runtime and the complete frame |
 | Reusable binary-counted raw transfer | `CountedCopyReuse` | ✅ | ✅ | Immutable descriptor preserved; clock preparation, full erasure, control-head resets and all joins charged. Runtime at most five times count plus seven times width plus sixteen; descriptor construction remains separate |
@@ -224,6 +225,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Uniform runtime `O(n log^(1−83/10¹²) n)` | — | ⬜ | ⬜ | |
 
 ## Next steps
+
+- Build multi-fiber ordered-affine routines from the proved single-fiber block shift and reusable counted seek/copy; charge descriptor synthesis, finite control updates, and head positioning.
 
 - Prepare sorting metadata and compute repair keys, then compose extraction, sorting and reinsertion.
 - Compile the proved optimized h=50 modular physical network and its fixed rational control schedule to literal tape execution and prove its recursive time bound.
