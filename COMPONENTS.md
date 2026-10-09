@@ -3362,6 +3362,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyAxisPorts.lean`: Injective native axis tape placements and prepared-header interfaces preserving the original shape bank.
 
+- `Machine/SymbolTripleArray.lean`: Literal three-bit Boolean arrays encode native coefficient records followed by arbitrary spectator bits. Exact decode round trip, whole-record permutation transport and physical encoder/decoder contracts use those same literal words; spectators need not be zero.
+
+- `Machine/ActivePrefixStageTripleTransport.lean`: The actual all-width runtime stage transports literal encoded native symbols to contiguous destination payload cells. Original symbols decode exactly and arbitrary payload spectators are retained; actual destination action commutes with payload changes. Conversion placement, cleanup and whole-stage tape assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

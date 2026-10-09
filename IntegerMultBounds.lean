@@ -1902,3 +1902,5 @@ import IntegerMultBounds.Machine.ButterflyAxisHeadersGeometry
 import IntegerMultBounds.Machine.ButterflyAxisHeadersInstall
 import IntegerMultBounds.Machine.ButterflyAxisHeadersCleanup
 import IntegerMultBounds.Machine.ButterflyAxisPorts
+import IntegerMultBounds.Machine.SymbolTripleArray
+import IntegerMultBounds.Machine.ActivePrefixStageTripleTransport
