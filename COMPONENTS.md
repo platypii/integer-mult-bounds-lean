@@ -2808,6 +2808,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixDirtyControlSourceSemantics.lean`: Actual source-load and unload offset rows equal the selected original active-after bits padded to compact digits and their modular negations at every serialized address, including exceptional addresses.
 
+- `Machine/ActiveRepairLayoutRecordsHeadersData.lean`: Original fourteen early descriptors determine valid full-layout repair metadata, row-word length and the exact row-count/address-width bounds.
+
+- `Machine/ActiveRepairLayoutRecordsHeadersLength.lean`: Actual binary descriptor length measurement retains its source and restores both heads with nine-times-word-length-plus-six cost; no row logarithm is supplied.
+
+- `Machine/ActiveRepairLayoutRecordsHeadersSchedule.lean`: A fixed actual arithmetic schedule generates n plus one, source width and full record-address width, then erases its initialized constant.
+
+- `Machine/ActiveRepairLayoutRecordsHeadersRun.lean`: Physical preparation starts from the literal fourteen original descriptor words and blank auxiliary tapes, measures row width and executes generated repair metadata arithmetic.
+
+- `Machine/ActiveRepairLayoutRecordsHeadersCount.lean`: Actual subtraction, power construction and multiplication generate the formatter record count from original rows and address width; exponent/power temporaries are erased.
+
+- `Machine/ActiveRepairLayoutRecordsBankHeaders.lean`: Actual fixed-many copies install all fifteen generated repair metadata words on blank output tapes while retaining the complete original producer bank.
+
+- `Machine/ActiveRepairLayoutRecordsHeadersBudget.lean`: Complete physical original-header preparation, record-count construction and fifteen metadata copies have proved linear original payload-volume costs; literal original-input Hoare execution is included.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
