@@ -1277,6 +1277,28 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixRangeDescriptors.lean`: One fixed twelve-tape program constructs the binary chunk range 2^u, then the least enclosing fixed-radix power and its runtime exponent from the sole canonical binary width. The original width is retained, all scratch is cleared, and exact canonical outputs satisfy the range overshoot and exponent bounds. Construction and descriptor cleanup cost linearly in 2^u. Composition with the physical numerical padding scans remains separate.
 
+- `Machine/RadixDigitMoveCore.lean`: Actual cyclic split, rewind, merge and rewind redistributes compatible literal row plans, with exact payload and role-bank endpoints.
+
+- `Machine/RadixDigitMoveInitialized.lean`: Physical initialization of two runtime clocks and full erasure of roles, clocks and trackers around actual redistribution; four original descriptors retained.
+
+- `Machine/RadixDigitMoveCounts.lean`: Construct and erase digit-movement dimensions from sole prefix and spectator lengths, including the constant one and prefix-times-spectator count; linear-volume cost.
+
+- `Machine/RadixDigitMovePrepared.lean`: Exact forward and inverse fixed-radix digit permutation for prepared canonical controls, with physically rewound payload and erased private storage.
+
+- `Machine/RadixDigitMovePlacement.lean`: Fixed injective placements compose count synthesis and redistribution while preserving original descriptors and spectator tapes.
+
+- `Machine/RadixDigitMoveExecution.lean`: Complete suffix-one digit movement from sole canonical prefix/spectator descriptors and arbitrary payload. All generated controls and private tapes are erased, with fixed-radix linear-volume forward/inverse bounds.
+
+- `Machine/RadixDigitMoveBlockRows.lean`: Literal digit exchange across a spectator block with an arbitrary trailing block. Exact split/merge word identity, role compatibility and mutually inverse forward/backward array permutations.
+
+- `Machine/RadixDigitMoveBlockCounts.lean`: Construct spectator-times-suffix and prefix-times-spectator descriptors from the three original positive canonical lengths. All arithmetic workspace is cleared; construction and cleanup have linear-volume bounds.
+
+- `Machine/RadixDigitMoveBlockPrepared.lean`: Prepared arbitrary-suffix digit movement and its actual inverse, with exact serialized endpoints, restored payload origin, erased role storage and paid linear-volume cost.
+
+- `Machine/RadixDigitMoveBlockPlacement.lean`: Fixed tape placements share retained shape controls between block-dimension construction and the redistribution machine, preserving unrelated payload and descriptor tapes.
+
+- `Machine/RadixDigitMoveBlockExecution.lean`: One fixed machine and its inverse exchange a radix digit across arbitrary spectator and suffix blocks, from sole prefix/spectator/suffix controls. Every derived count, clock, tracker and role tape is erased; payload is rewound. Tape count is 2Q+18 and runtime is at most (1516Q+11403) times volume. The repeated high-field joining/separation loop remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
