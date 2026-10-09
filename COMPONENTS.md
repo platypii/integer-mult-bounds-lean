@@ -3064,6 +3064,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactGlobalRowInitialEndpoint.lean`: Literal original canonical words survive physical padding, all private tapes return blank, and the padded record width equals the complete reserved shape.
 
+- `Machine/CompactScalarAllowances.lean`: The actual multiplier choices d,K,p derive complete D*K+3 cubic repair sizing and selected-count bounds; the actual dyadic precision log fits K eventually, and literal polynomial-record bits eventually pay padded address width. No independent cubic-width or sufficiently-large-guard premise is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

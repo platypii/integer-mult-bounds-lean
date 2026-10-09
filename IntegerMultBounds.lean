@@ -1771,3 +1771,4 @@ import IntegerMultBounds.Machine.CompactGlobalRowInitialCleanup
 import IntegerMultBounds.Machine.CompactGlobalRowInitialRun
 import IntegerMultBounds.Machine.CompactGlobalRowInitialBudget
 import IntegerMultBounds.Machine.CompactGlobalRowInitialEndpoint
+import IntegerMultBounds.Machine.CompactScalarAllowances
