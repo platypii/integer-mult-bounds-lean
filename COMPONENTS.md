@@ -5492,6 +5492,11 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   children's shifts and block loop on the 48-tape bank; one whole forward
   layer computes `layerF` and `kids` exactly (`runs_blocksF`).
 
+- `Schoenhage/Recursive.lean`: the whole recursion as a function, step for
+  step as the tapes compute it (`ssMul`), and `ssMul_correct`: the result is
+  `x y mod 2^N + 1` whenever `2^(kOf N) ∣ N` and `x, y < 2^N + 1`; one level
+  with correct pointwise products is `levelOut_correct`.
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.

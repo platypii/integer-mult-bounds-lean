@@ -1,5 +1,5 @@
 import IntegerMultBounds.Schoenhage.Butterfly
-import IntegerMultBounds.Schoenhage.Iter
+import IntegerMultBounds.Schoenhage.IterCorrect
 
 /-! Transform layers on word tapes. The pair loop runs the butterfly over the
 two half-block tapes; the block loop splits the data into blocks, runs the
@@ -23,6 +23,8 @@ abbrev tE2 : Fin 𝕋 := 22
 abbrev tH : Fin 𝕋 := 23
 abbrev cH : Fin 𝕋 := 24
 abbrev cHN : Fin 𝕋 := 25
+abbrev cH2 : Fin 𝕋 := 26
+abbrev tL : Fin 𝕋 := 27
 end Tp
 
 /-- Residue words. -/
@@ -306,6 +308,186 @@ theorem runs_blocksF {N H : ℕ} (hN : 0 < N) (hH0 : 0 < H) :
       rw [hlay]
       funext i; fin_cases i <;> tsimp [σ₁, rwds_append, kids]
     · simp only [List.length_cons, List.length_replicate]; nlinarith
+
+/-! ### Swapping layers -/
+
+/-- Make the new data and shifts current. -/
+noncomputable def swapData : Cmd 0 𝕋 :=
+  .seq (clear tD) <| .seq (rewind tD2) <| .seq (appendAll tD2 tD (by decide)) <|
+  .seq (clear tD2) <| .seq (rewind tD) <|
+  .seq (clear tE) <| .seq (rewind tE2) <| .seq (appendAll tE2 tE (by decide)) <|
+  .seq (clear tE2) (rewind tE)
+
+theorem runs_swapData (σ : Fin 𝕋 → WTape) (W : ℕ) {LD LE : List (List Bool)}
+    (hLD : ∀ w ∈ LD, w.length ≤ W) (hLE : ∀ w ∈ LE, w.length ≤ W)
+    (hD2 : σ tD2 = ⟨LD, []⟩) (hE2 : σ tE2 = ⟨LE, []⟩) :
+    Runs swapData σ (· = Function.update (Function.update (Function.update (Function.update σ
+        tD ⟨[], LD.reverse⟩) tD2 emp) tE ⟨[], LE.reverse⟩) tE2 emp)
+      (2 * clen (σ tD).words + 2 * clen (σ tE).words + (LD.length + LE.length + 4) * (6 * W + 30)) := by
+  unfold swapData
+  have hLD' : ∀ w ∈ LD.reverse, w.length ≤ W := fun w hw => hLD w (by simpa using hw)
+  have hLE' : ∀ w ∈ LE.reverse, w.length ≤ W := fun w hw => hLE w (by simpa using hw)
+  refine (Runs.then (runs_clear tD σ) <| Runs.then (runs_rewind tD2 _) <|
+    Runs.then (runs_appendAll (s := tD2) (d := tD) (by decide) W LD.reverse _ [] [] (by tsimp [hD2])
+      (by tsimp) hLD') <|
+    Runs.then (runs_clear tD2 _) <| Runs.then (runs_rewind tD _) <|
+    Runs.then (runs_clear tE _) <| Runs.then (runs_rewind tE2 _) <|
+    Runs.then (runs_appendAll (s := tE2) (d := tE) (by decide) W LE.reverse _ [] [] (by tsimp [hE2])
+      (by tsimp) hLE') <|
+    Runs.then (runs_clear tE2 _) (runs_rewind tE _)).mono ?_ ?_
+  · intro σ' h; rw [h]
+    funext i; fin_cases i <;> tsimp [emp]
+  · have c1 := clen_le hLD
+    have c2 := clen_le hLE
+    tsimp [hD2, hE2, WTape.words, clen_reverse]
+    nlinarith
+
+/-- Halve the half-block size and regenerate its ticks. -/
+noncomputable def swapH : Cmd 0 𝕋 :=
+  .seq (op0 Rules.half false cH cH2 (by decide)) <| .seq (clear cH) <| .seq (rewind cH2) <|
+  .seq (regMove cH2 cH (by decide)) <|
+  .seq (clear tH) <| .seq (op0 Rules.ticks false cH tH (by decide)) <| .seq (rewind tH) (rewind cH)
+
+theorem runs_swapH (σ : Fin 𝕋 → WTape) (H : ℕ) (hcH : σ cH = reg (ones H)) (hcH2 : σ cH2 = emp) :
+    Runs swapH σ (· = Function.update (Function.update σ cH (reg (ones (H / 2))))
+        tH ⟨[], List.replicate (H / 2) []⟩) (2 * clen (σ tH).words + 20 * H + 100) := by
+  apply Runs.of_wp
+  simp only [swapH, regMove, regIn, cpy, WP, wp_op0, wp_rewind, wp_clear]
+  tsimp [hcH, hcH2, emp, reg, Rules.output_half_ones, Rules.output_ticks, Rules.output_copy]
+  have t1 := time_le Rules.half (ones H) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t2 := time_le Rules.copy (ones (H / 2)) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t3 := time_le Rules.ticks (ones (H / 2)) (fun j => j.elim0) 0 (fun j => j.elim0)
+  refine ⟨?_, ?_⟩
+  · funext i; fin_cases i <;> tsimp [hcH, hcH2, emp, reg]
+  · simp [clen, WTape.words] at t1 t2 t3 ⊢; omega
+
+/-! ### The forward transform -/
+
+theorem clen_rwds (N : ℕ) (l : List ℕ) : clen (rwds N l) = l.length * (N + 2) := by
+  induction l with
+  | nil => simp [rwds]
+  | cons x l ih =>
+    simp only [rwds, List.map_cons, clen_cons, rwd_length, List.length_cons] at ih ⊢
+    rw [ih]; ring
+
+theorem clen_map_ones_le (N : ℕ) (E : List ℕ) (h : ∀ t ∈ E, t ≤ N) :
+    clen (E.map ones) ≤ E.length * (N + 1) := by
+  have := clen_le (L := E.map ones) (W := N) (fun w hw => by
+    simp only [List.mem_map] at hw; obtain ⟨t, ht, rfl⟩ := hw; simpa using h t ht)
+  simpa using this
+
+theorem replicate_append_cons {α : Type*} (a : α) (L : List α) :
+    ∀ n, List.replicate n a ++ a :: L = a :: (List.replicate n a ++ L)
+  | 0 => rfl
+  | n + 1 => by simp [List.replicate_succ, replicate_append_cons a L n]
+
+/-- One forward layer. -/
+noncomputable def layerFwd : Cmd 0 𝕋 := .seq blocksF <| .seq swapData swapH
+
+/-- Forward layers, one per tick of `tL`. -/
+noncomputable def fwdLoop : Cmd 0 𝕋 := .loop tL (.seq layerFwd (skp tL tJ (by decide)))
+
+theorem kids_le (N : ℕ) (E : List ℕ) (h : ∀ t ∈ E, t ≤ N) : ∀ t ∈ kids N E, t ≤ N := by
+  intro t ht
+  simp only [kids, List.mem_flatMap, List.mem_cons, List.not_mem_nil, or_false] at ht
+  obtain ⟨s, hs, rfl | rfl⟩ := ht
+  · have := h s hs; omega
+  · have := h s hs; omega
+
+theorem kidsIter_le (N : ℕ) : ∀ (n : ℕ) (E : List ℕ), (∀ t ∈ E, t ≤ N) → ∀ t ∈ (kids N)^[n] E, t ≤ N
+  | 0, E, h => h
+  | n + 1, E, h => by
+    rw [Function.iterate_succ_apply]
+    exact kidsIter_le N n _ (kids_le N E h)
+
+theorem runs_fwdLoop {N : ℕ} (hN : 0 < N) :
+    ∀ (n H : ℕ) (E D : List ℕ) (σ : Fin 𝕋 → WTape) (TLl : List (List Bool)),
+      H = 2 ^ n / 2 → D.length = E.length * 2 ^ n → E ≠ [] → (∀ t ∈ E, t ≤ N) →
+      (∀ d ∈ D, d < 2 ^ N + 1) →
+      AluReady N σ → σ cT = emp → σ tH = ⟨[], List.replicate H []⟩ → σ tD = ⟨[], rwds N D⟩ →
+      σ tE = ⟨[], E.map ones⟩ → σ tD2 = emp → σ tE2 = emp → σ cHN = reg (ones (N / 2)) →
+      σ tU = emp → σ tV = emp → σ tO1 = emp → σ tO2 = emp → σ tJ = emp →
+      σ cH = reg (ones H) → σ cH2 = emp → σ tL = ⟨TLl, List.replicate n []⟩ →
+      Runs fwdLoop σ (· = Function.update (Function.update (Function.update (Function.update
+          (Function.update σ tD ⟨[], rwds N (fwdIter N n H E D)⟩) tE ⟨[], ((kids N)^[n] E).map ones⟩)
+          cH (reg (ones (H / 2 ^ n)))) tH ⟨[], List.replicate (H / 2 ^ n) []⟩)
+          tL ⟨List.replicate n [] ++ TLl, []⟩)
+        (n * (4000 * (D.length + 1) * (N + 2)))
+  | 0, H, E, D, σ, TLl, hH, hl, _, hEt, hDv, hr, hcT, htH, hD, hE, hD2, hE2, hHN, hU, hV, h1, h2, hJ,
+      hcH, hcH2, htL => by
+    show Runs (Cmd.loop tL _) _ _ _
+    refine (Runs.loop_done (by simp [htL]) rfl).mono (fun σ' h' => ?_) (by simp)
+    subst h'
+    have : H = 0 := by simpa using hH
+    subst this
+    funext i; fin_cases i <;> tsimp [hD, hE, hcH, htH, htL, fwdIter]
+  | n + 1, H, E, D, σ, TLl, hH, hl, hE0, hEt, hDv, hr, hcT, htH, hD, hE, hD2, hE2, hHN, hU, hV, h1, h2, hJ,
+      hcH, hcH2, htL => by
+    show Runs (Cmd.loop tL _) _ _ _
+    have hH' : H = 2 ^ n := by rw [hH, pow_succ]; simp
+    have hH0 : 0 < H := by rw [hH']; exact Nat.two_pow_pos n
+    have hl' : D.length = E.length * (2 * H) := by rw [hl, hH', pow_succ]; ring
+    have hb := runs_blocksF hN hH0 E D σ [] [] [] [] [] hr hcT hl' hEt hDv htH (by simp [hD])
+      (by simp [hE]) (by simpa [emp] using hD2) (by simpa [emp] using hE2) hHN hU hV h1 h2 hJ
+    set L := layerF N H E D
+    have hLl : L.length = (kids N E).length * 2 ^ n := by
+      rw [layerF_length N H E D hl', length_kids, hH']; ring
+    have hLv : ∀ x ∈ L, x < 2 ^ N + 1 := layerF_lt N H E D
+    set σ₁ := Function.update (Function.update (Function.update (Function.update σ
+          tD ⟨(rwds N D).reverse ++ [], []⟩) tE ⟨(E.map ones).reverse ++ [], []⟩)
+          tD2 ⟨(rwds N L).reverse ++ [], []⟩)
+          tE2 ⟨((kids N E).map ones).reverse ++ [], []⟩ with hσ₁
+    have hs1 := runs_swapData σ₁ (N + 1) (LD := (rwds N L).reverse ++ [])
+      (LE := ((kids N E).map ones).reverse ++ [])
+      (fun w hw => rwds_length_le N L w (by simpa using hw))
+      (fun w hw => by
+        simp only [List.append_nil, List.mem_reverse, List.mem_map] at hw
+        obtain ⟨t, ht, rfl⟩ := hw; simp; exact kids_le N E hEt t ht |>.trans (Nat.le_succ N))
+      (by tsimp [σ₁]) (by tsimp [σ₁])
+    set σ₂ := Function.update (Function.update (Function.update (Function.update σ₁
+        tD ⟨[], ((rwds N L).reverse ++ []).reverse⟩) tD2 emp)
+        tE ⟨[], (((kids N E).map ones).reverse ++ []).reverse⟩) tE2 emp with hσ₂
+    have hs2 := runs_swapH σ₂ H (by tsimp [σ₂, σ₁, hcH]) (by tsimp [σ₂, σ₁, hcH2])
+    set σ₃ := Function.update (Function.update σ₂ cH (reg (ones (H / 2))))
+        tH ⟨[], List.replicate (H / 2) []⟩ with hσ₃
+    have hs3 := runs_skp (a := 0) (s := tL) (j := tJ) (by decide) σ₃ (by tsimp [σ₃, σ₂, σ₁, htL])
+      (by tsimp [σ₃, σ₂, σ₁, hJ, emp])
+    set σ₄ := Function.update σ₃ tL (σ₃ tL).next with hσ₄
+    have hr₄ : AluReady N σ₄ := by
+      refine ((((((((((hr.update tD _ (by decide)).update tE _ (by decide)).update tD2 _ (by decide)).update
+        tE2 _ (by decide)).update tD _ (by decide)).update tD2 _ (by decide)).update tE _ (by decide)).update
+        tE2 _ (by decide)).update cH _ (by decide)).update tH _ (by decide)).update tL _ (by decide)
+    have hk0 : kids N E ≠ [] := by
+      rw [← List.length_pos_iff, length_kids]
+      have := List.length_pos_iff.mpr hE0
+      omega
+    have ih := runs_fwdLoop hN n (H / 2) (kids N E) L σ₄ ([] :: TLl) (by rw [hH']; try simp [pow_succ])
+      hLl hk0 (kids_le N E hEt) hLv hr₄ (by tsimp [σ₄, σ₃, σ₂, σ₁, hcT]) (by tsimp [σ₄, σ₃, σ₂, σ₁])
+      (by tsimp [σ₄, σ₃, σ₂, σ₁]) (by tsimp [σ₄, σ₃, σ₂, σ₁]) (by tsimp [σ₄, σ₃, σ₂, σ₁])
+      (by tsimp [σ₄, σ₃, σ₂, σ₁]) (by tsimp [σ₄, σ₃, σ₂, σ₁, hHN]) (by tsimp [σ₄, σ₃, σ₂, σ₁, hU])
+      (by tsimp [σ₄, σ₃, σ₂, σ₁, hV]) (by tsimp [σ₄, σ₃, σ₂, σ₁, h1]) (by tsimp [σ₄, σ₃, σ₂, σ₁, h2])
+      (by tsimp [σ₄, σ₃, σ₂, σ₁, hJ]) (by tsimp [σ₄, σ₃, σ₂, σ₁]) (by tsimp [σ₄, σ₃, σ₂, σ₁, hcH2])
+      (by tsimp [σ₄, σ₃, σ₂, σ₁, htL, List.replicate_succ])
+    refine (Runs.loop_step (by simp [htL])
+      (Runs.then (Runs.then hb (Runs.then hs1 hs2))
+        (hs3.mono (fun σ' h' => by rw [h']; exact ih) le_rfl))).mono (fun σ' h' => ?_) ?_
+    · rw [h']
+      have e1 : H / 2 / 2 ^ n = H / 2 ^ (n + 1) := by rw [Nat.div_div_eq_div_mul, pow_succ, mul_comm]
+      funext i; fin_cases i <;> tsimp [σ₄, σ₃, σ₂, σ₁, L, fwdIter, Function.iterate_succ_apply, e1,
+        htL, List.replicate_succ, hD2, hE2, hcH2, hcT, hU, hV, h1, h2, replicate_append_cons]
+    · have hE2H : E.length * (H + 1) ≤ D.length := by rw [hl']; nlinarith
+      have hkl := length_kids N E
+      have cD := clen_rwds N D
+      have cE := clen_map_ones_le N E hEt
+      have hE1 : 1 ≤ E.length := List.length_pos_iff.mpr hE0
+      have hHD : H ≤ D.length := by rw [hl']; nlinarith [Nat.zero_le E.length, hH0]
+      have hED : 2 * E.length ≤ D.length := by rw [hl']; nlinarith
+      have cH : clen (List.replicate H ([] : List Bool)) = H := by simp [clen]
+      tsimp [σ₃, σ₂, σ₁, htH, WTape.words, clen_reverse, clen_append, length_rwds, hLl, hkl, cH,
+        replicate_append_cons, htL]
+      have hDE : 2 * E.length * 2 ^ n = D.length := by rw [hl, pow_succ]; ring
+      simp only [List.replicate_succ, List.head?_cons, Option.getD_some, List.length_nil, hDE, cD] at *
+      nlinarith [Nat.zero_le N, Nat.zero_le D.length, Nat.zero_le n, cE, hE2H, hHD, hED]
 
 end IntegerMultBounds.Schoenhage
 

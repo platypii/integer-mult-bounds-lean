@@ -2128,3 +2128,4 @@ import IntegerMultBounds.Machine.CompactNativeRowMerge
 import IntegerMultBounds.Machine.CompactNativeRoleGeometry
 import IntegerMultBounds.Machine.CompactNativeRoleTransfer
 import IntegerMultBounds.Machine.CompactNativeRoleHeaders
+import IntegerMultBounds.Schoenhage.Recursive
