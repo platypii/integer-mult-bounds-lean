@@ -1173,6 +1173,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveBudgetAssembly.lean`: Symbolic arithmetic absorbs all actual node controller joins, header-return costs and literal-schedule overhead into the natural recursive budget, using only positive logical volume and reduced role volume bounded by parent volume. Raw fixed coefficients avoid expanding enormous closed constants during proof checking.
 
+- `Machine/Shared50RecursiveCallInductionBridge.lean`: Canonical binary child input and full-transpose return banks equal the actual parked call and recovery endpoints. Exact payload/node/descriptor/PC readiness bridges permit recursive induction without an assumed child trace.
+
+- `Machine/Shared50RecursiveInduction.lean`: Depth induction proves actual fixed cyclic graph termination, exact binary full-chunk transpose, physically decoded caller return, all restored bank/stack endpoints and the natural recursive runtime budget. Every literal child trace is derived from the induction hypothesis; no abstract execution oracle remains.
+
+- `Machine/Shared50RecursiveRootExecution.lean`: One concrete fixed root program physically sets up its sentinel and headers, executes the proved recursion, restores all stacks/spectators and genuinely halts with exact binary chunk transpose. Its actual steps obey one uniform positive constant times logical volume times width to exponent 1−296/10^11, for power widths and recursively divisible rows.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
