@@ -2692,6 +2692,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutKeysPipelineBudgetLate.lean`: Actual clean later endpoint returns the ideal record stream within linear payload-volume time. Manuscript scalar dyadic inequalities discharge the sparse-hole bound with unit constant; wide array formatting and original parameter synthesis remain separate.
 
+- `Machine/ActivePrefixDirtyControlLoadProducer.lean`: Four physical selected/correction/pure/negative producers share51 private tapes; every mode reads actual compact-U parities, with no supplied offset stream.
+
+- `Machine/ActivePrefixDirtyControlLoadData.lean`: Original six layout words, row/suffix descriptors and full array define one load bank with five initially blank work tapes.
+
+- `Machine/ActivePrefixDirtyControlLoadHeaders.lean`: Real power and two product programs synthesize prefix cardinality, target/compact rotation width and repeated fiber count.
+
+- `Machine/ActivePrefixDirtyControlLoadRun.lean`: Actual producer, dimension construction, physical row repetition and full-array payload rotation compose on a shared bank.
+
+- `Machine/ActivePrefixDirtyControlLoadCleanup.lean`: Physically erases both offset streams and all generated dimension words and restores all private storage.
+
+- `Machine/ActivePrefixDirtyControlLoad.lean`: Each of four complete dirty-U payload loads has exact bit destinations and paid linear full-array volume cost under explicit producer-work absorption.
+
+- `Machine/ActivePrefixDirtyControlLoadPlaced.lean`: Arbitrary nine-port caller placement retains original descriptors and spectators and restores65 private tapes; no generated offsets/dimensions are supplied.
+
+- `Machine/ActivePrefixDirtyControlLayoutAbsorption.lean`: Actual target and compact-back geometries absorb explicit wide producer work using the existing address-sized payload allowance, positive digit count and compact digit width at least two; no wide target fits H premise.
+
+- `Machine/ActivePrefixDirtyControlLayoutFields.lean`: Exact original compact-U fields in both target/back prefixes generate valid dirty-control producer shapes; actual geometry discharges their paid-work absorption without wide source padding.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
