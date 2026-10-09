@@ -3396,6 +3396,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyAxisDecoded.lean`: Decoded global outputs of the actual native axis schedule equal successive true complex two-point butterfly axes. Normalized-input hypotheses derive every intermediate grid and guard, without a supplied codec or grid invariant.
 
+- `Machine/CompactComplexRootDigitRound.lean`: Fixed physical root digit step divides the actual remaining-prefix word, installs its quotient, retains the next low-to-high base digit and clears every private operand while framing native/controller tapes.
+
+- `Machine/BinaryDescriptorQueueEmit.lean`: Physical transfer of a canonical marked binary descriptor into a forward delimiter-separated queue consumes its source bits and marker with exact appended field and cursor endpoint.
+
+- `Machine/CompactComplexRootDigits.lean`: Fixed while controller enumerates actual base digits from the original active-prefix word, writes their literal binary-field queue, clears digit/private temporaries and halts with canonical remaining zero. Polynomial scalar cost times actual digit count is proved.
+
+- `Machine/CompactComplexRootDigitsFromHeader.lean`: Fixed original-header copy and root digit generator uses appended controller tapes and retains every native head/cell. Exact generated Nat.digits fields and all copy/quotient/emission costs are proved; root-piece reader and canonical Visit descriptor/controller expansion remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

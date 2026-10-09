@@ -1919,3 +1919,7 @@ import IntegerMultBounds.Machine.SymbolTriplePlaced
 import IntegerMultBounds.Machine.ActivePrefixStageTripleEndpoint
 import IntegerMultBounds.Machine.ButterflyAxisSemantics
 import IntegerMultBounds.Machine.ButterflyAxisDecoded
+import IntegerMultBounds.Machine.CompactComplexRootDigitRound
+import IntegerMultBounds.Machine.BinaryDescriptorQueueEmit
+import IntegerMultBounds.Machine.CompactComplexRootDigits
+import IntegerMultBounds.Machine.CompactComplexRootDigitsFromHeader
