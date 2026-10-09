@@ -3314,6 +3314,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PackedMultiplierPolylogBudget.lean`: At the actual packed product size, every fixed nonnegative power of the clamped log-log overhead is bounded by a fixed multiple of a power of log precision. The existing packed-product margin absorbs it into the exact certified final time exponent; the physical fast subroutine still must provide its execution and bit-cost bound.
 
+- `Machine/BinaryCurrentAddress.lean`: A fixed live binary counter copies the complete current address word, rewinds both heads and increments for the next record in five times address width plus ten transitions; a previous same-width readout is overwritten.
+
+- `Machine/BinaryCurrentAddressInit.lean`: The original retained runtime width header initializes both current-address counter and readout on tapes with paid cost sixty-five times width plus one, retaining original headers and clearing copied loop controls.
+
+- `Machine/CompactComplexPhaseRecordAddress.lean`: Full live record counters identify the actual destination address and original residual phase controls, including wrap across global rows. This removes materialized address tables; phase stride/offset synthesis and record-stream composition remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
