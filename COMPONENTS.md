@@ -1311,6 +1311,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthPiecePrefix.lean`: The runtime outer dispatcher has an exact base-digit prefix schedule. Cumulative offset plus the remaining quotient contribution equals original width, proving every step fits. Literal repeated-slice images compose at successive levels and the final image is the full transpose, including zero width. Selected levels satisfy the common padded-row divisor bound.
 
+- `Machine/ArbitraryWidthHighBudget.lean`: The actual high-digit selector satisfies an explicit constant times every positive width exponent, for all positive widths. The logarithmic construction cost and every fixed-coefficient per-digit movement therefore preserve the certified exponent rather than weakening it to a linear-width bound.
+
+- `Machine/ArbitraryWidthHighExchangeControls.lean`: Actual setup writes zero offset, unit slice width and zero recursion depth, and copies the retained runtime high-digit count into the slice dispatcher. Paid cleanup erases generated offset, width and depth; count source is retained.
+
+- `Machine/ArbitraryWidthHighExchangePlacement.lean`: Injective tape placement shares high-exchange controls with the complete recursive slice bank. Exact framed initialization and cleanup preserve every original parent descriptor, stack and payload spectator.
+
+- `Machine/ArbitraryWidthHighExchangeSemantics.lean`: Exact numeric high-prefix swap agrees with the literal width-rho slice permutation on every serialized address, including unchanged low digits and gap fields.
+
+- `Machine/ArbitraryWidthHighExchange.lean`: One actual fixed program initializes controls, executes rho real depth-zero slice calls and clears every created descriptor. Sole original canonical headers and retained rho suffice; exact high-field interchange and constant times (rho+1) times parent volume include all root calls, offset advances and cleanup. Joining and separation loops remain distinct.
+
+- `Machine/ArbitraryWidthHighGuard.lean`: The concrete integer depth and high-row selectors equal the manuscript real ceilings. High depth is positive beyond unit width and eventually below the original width, proving a fixed bounded set suffices for the elementary fallback. This proves the branch arithmetic, not the fallback machine.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
