@@ -1886,6 +1886,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryCorrectionOffsetPlaced.lean`: Places the complete original-input correction producer on five caller ports with twenty-six appended private tapes, preserving arbitrary larger-alphabet spectators and literal output words with identical paid runtime.
 
+- `Machine/BinaryCorrectionOffsetRepeatData.lean`: Literal repeated independently subtracted correction rows, with spectators and dirty-back coordinates repeating the source-address word.
+
+- `Machine/BinaryCorrectionOffsetRepeatConstruct.lean`: Fixed fifty-tape constructor synthesizes nq,2^nb and P*H*2^nq from original descriptors, builds the actual correction table, physically repeats it, and erases generated metadata while retaining original control.
+
+- `Machine/BinaryCorrectionOffsetRepeatBudget.lean`: Pays all correction table construction, repetition and erasure in actual full rotation volume, with constant selectedRepeatConstant+1000 and an explicit record-width allowance.
+
+- `Machine/BinaryCorrectionOffsetRepeatCoordinates.lean`: Exact physical row alignment for every source address, spectator and dirty-back value. Signed field value is packed z*(1-2*w) modulo2^nq; full output length and exact modular row value are proved.
+
+- `Machine/BinaryCorrectionOffsetRepeatAlphabet.lean`: Lifts the complete repeated correction constructor to arbitrary larger alphabets with literal output, retained original inputs and identical runtime.
+
+- `Machine/BinaryCorrectionOffsetRepeatPlaced.lean`: Eight shared caller ports for b/q/n/P/H/L/control/output, with forty-two private tapes appended and returned blank. Proves exact signed correction words, spectator retention and paid volume bound.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
