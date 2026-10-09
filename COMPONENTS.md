@@ -1631,6 +1631,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedPackedLatePlacement.lean`: Places the reusable guarded early and late gadgets into any static injective caller tape slots. Literal target toggles, original descriptors, blank private workspace, all heads and the complete complementary frame are proved together; fixed control and existing2720/7000 full-stride costs are retained.
 
+- `Machine/CountedGuardTest.lean`: A fixed six-tape comparison-and-flag machine reads its runtime width from an original canonical descriptor, compares exactly those physical bits, appends the exact ordering flag, erases order/countdown scratch and retains the descriptor. Cost14 times width plus32 includes zero; outer record traversal and the complete uniform repair-key routine remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
