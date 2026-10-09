@@ -1639,7 +1639,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PackedOffsetPayloadPlaced.lean`: Shares caller payload, packed source and B/n/w descriptors directly through static injective wiring. Twelve private tapes start and return wholly blank; all caller spectators and heads are retained, with an exact canonical-array endpoint and paid power-synthesis cost.
 
-- `Machine/BinaryRepeatedOffsetAction.lean`: identifies the physically generated repeated parity and selected offset words with the actual swap/rotate/swap permutation. Proves exact packed parity and selected two-times-control-times-digit offsets and destination entries, retaining the dirty back coordinate and every suffix bit. Physical producer/action sequencing remains separate.
+- `Machine/BinaryRepeatedOffsetAction.lean`: identifies the physically generated repeated parity, selected and correction offset words with the actual swap/rotate/swap permutation. Proves exact packed parity, selected two-times-control-times-digit, and signed correction offsets and destination entries, retaining the dirty back coordinate and every suffix bit. Physical producer/action sequencing remains separate.
 - `Machine/BinaryPackedOffsetData.lean`: Exact swap/packed-back-rotation/swap array semantics. The front field reaches its modular offset destination, indexed by the original dirty back coordinate; that back coordinate and every suffix bit are retained literally.
 
 - `Machine/BinaryPackedOffsetRun.lean`: One fixed shared-caller machine executes two actual binary field interchanges around the placed original-header packed-offset rotation. Both private banks are blank on return, caller headers and packed source are retained, and every call and sequencing transition is charged. Complete packed-arithmetic and reservation assembly remains separate.
@@ -1897,6 +1897,16 @@ Machine model, execution, composition, and tape routines.
 - `Machine/BinaryCorrectionOffsetRepeatAlphabet.lean`: Lifts the complete repeated correction constructor to arbitrary larger alphabets with literal output, retained original inputs and identical runtime.
 
 - `Machine/BinaryCorrectionOffsetRepeatPlaced.lean`: Eight shared caller ports for b/q/n/P/H/L/control/output, with forty-two private tapes appended and returned blank. Proves exact signed correction words, spectator retention and paid volume bound.
+
+- `Machine/BinaryPackedOffsetOriginalPlaced.lean`: Places the actual original-header packed action on six arbitrary caller tapes with blank appended workspace. Executes count preparation, both physical interchanges, payload rotation and cleanup internally; exact output and every spectator head/tape are retained.
+
+- `Machine/BinaryParityOffsetLoad.lean`: One fixed shared-bank machine physically generates repeated parity offsets from original q/b/n/P/H/L, executes the real swap/rotate/swap with the supplied physical action shape headers, and erases the generated offset word. No offset word or action Hoare premise is supplied. Exact payload permutation, restored original inputs and all private storage blank are proved; upstream reservation shape synthesis remains separate.
+
+- `Machine/BinarySelectedOffsetLoad.lean`: One fixed shared-bank machine physically generates selected offsets from original b/q/n/P/H/L and retained control, invokes the actual original-header packed action and erases its offsets. Exact selected front-field permutation and clean private endpoint include zero digits; supplied physical action shape headers are explicit, and upstream reservation wiring remains separate.
+
+- `Machine/BinaryCorrectionOffsetLoad.lean`: One fixed shared-bank machine generates actual repeated early-correction offsets from original descriptors and control, executes the real original-header packed action, and erases its offsets. Exact correction permutation, unchanged caller originals and blank private endpoint are proved without a supplied offset/action oracle; reservation routing remains separate.
+
+- `Machine/BinaryRepeatedOffsetLoadBudget.lean`: Complete parity/selected/correction production-action-erasure cost preserves the certified interchange width exponent. Physically generated table costs and full offset erasure are absorbed into actual payload volume when the explicit producer allowance fits suffix width; every join and cleanup is charged.
 
 ## Compact
 

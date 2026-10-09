@@ -1,5 +1,6 @@
 import IntegerMultBounds.Machine.BinaryAddressOffsetRepeatCoordinates
 import IntegerMultBounds.Machine.BinarySelectedOffsetRepeatCoordinates
+import IntegerMultBounds.Machine.BinaryCorrectionOffsetRepeatCoordinates
 import IntegerMultBounds.Machine.BinaryPackedOffsetData
 
 /-! The physically constructed repeated words drive the actual packed-field
@@ -96,6 +97,55 @@ theorem selected_entry (q b n P H L B : ℕ) (Z : List Bool) (hb : 1≤b) (hbq :
   have ha := BinaryPackedOffsetData.result_entry _ P (n*q) (H*2^(n*b)*L) B
     hlen x p front back (pack (pack h y) l) j
   simpa only [selected_offset q b n P H L Z hb hbq p back h y l] using ha
+
+theorem correction_offset (q b n P H L : ℕ) (Z : List Bool) (hb : 1≤b) (hbq : b+1≤q)
+    (hZ : Z.length=n) (p : Fin P) (back : Fin (2^(n*q))) (h : Fin H) (y : Fin (2^(n*b))) (l : Fin L) :
+    PackedOffsetPayloadValue.offset
+      (BinaryCorrectionOffsetRepeatData.destination q b n L ((P*H)*2^(n*q)) Z hb hbq)
+      (n*q) (BinaryPackedOffsetData.rowIndex p back (pack (pack h y) l)).val =
+      Counter.value (BinaryCorrectionOffsetValue.rowWord q b n y.val Z hb hbq) := by
+  unfold PackedOffsetPayloadValue.offset
+  have hi : (BinaryPackedOffsetData.rowIndex p back (pack (pack h y) l)).val =
+      BinaryCorrectionOffsetRepeatCoordinates.row q b n H L p.val back.val h.val y.val l.val := by
+    simp only [BinaryPackedOffsetData.rowIndex,pack_val,
+      BinaryCorrectionOffsetRepeatCoordinates.row]
+    ring
+  rw [hi,BinaryCorrectionOffsetRepeatCoordinates.field_eq q b n P H L
+    p.val back.val h.val y.val l.val Z hb hbq p.isLt back.isLt h.isLt y.isLt l.isLt hZ]
+
+theorem correction_offset_value (q b n P H L : ℕ) (Z : List Bool) (hb : 1≤b) (hbq : b+1≤q)
+    (hZ : Z.length=n) (p : Fin P) (back : Fin (2^(n*q)))
+    (h : Fin H) (y : Fin (2^(n*b))) (l : Fin L) :
+    (PackedOffsetPayloadValue.offset
+      (BinaryCorrectionOffsetRepeatData.destination q b n L ((P*H)*2^(n*q)) Z hb hbq)
+      (n*q) (BinaryPackedOffsetData.rowIndex p back (pack (pack h y) l)).val : ℤ) =
+      Compact.Radix.pack ((2 : ℤ)^q)
+        (List.zipWith (fun z w => z*(1-2*w)) (Z.map Compact.PowerTwo.ctrl)
+          (Compact.Radix.digits ((2 : ℤ)^b) n y.val)) % (2 : ℤ)^(n*q) := by
+  unfold PackedOffsetPayloadValue.offset
+  have hi : (BinaryPackedOffsetData.rowIndex p back (pack (pack h y) l)).val =
+      BinaryCorrectionOffsetRepeatCoordinates.row q b n H L p.val back.val h.val y.val l.val := by
+    simp only [BinaryPackedOffsetData.rowIndex,pack_val,BinaryCorrectionOffsetRepeatCoordinates.row]
+    ring
+  rw [hi]
+  exact BinaryCorrectionOffsetRepeatCoordinates.signed_field_value q b n P H L
+    p.val back.val h.val y.val l.val Z hb hbq p.isLt back.isLt h.isLt y.isLt l.isLt hZ
+
+theorem correction_entry (q b n P H L B : ℕ) (Z : List Bool) (hb : 1≤b) (hbq : b+1≤q)
+    (hZ : Z.length=n) (x : Fin (volume P (2^(n*q)) (H*2^(n*b)*L) B) → Bool)
+    (p : Fin P) (front back : Fin (2^(n*q)))
+    (h : Fin H) (y : Fin (2^(n*b))) (l : Fin L) (j : Fin B) :
+    BinaryPackedOffsetData.result
+      (BinaryCorrectionOffsetRepeatData.destination q b n L ((P*H)*2^(n*q)) Z hb hbq)
+      P (n*q) (H*2^(n*b)*L) B x
+      (index p ⟨(front.val+Counter.value
+        (BinaryCorrectionOffsetValue.rowWord q b n y.val Z hb hbq))%2^(n*q),
+        Nat.mod_lt _ (by positivity)⟩ (pack (pack h y) l) back j) =
+      x (index p front (pack (pack h y) l) back j) := by
+  have hlen := BinaryCorrectionOffsetRepeatCoordinates.word_length q b n P H L Z hb hbq hZ
+  have ha := BinaryPackedOffsetData.result_entry _ P (n*q) (H*2^(n*b)*L) B
+    hlen x p front back (pack (pack h y) l) j
+  simpa only [correction_offset q b n P H L Z hb hbq hZ p back h y l] using ha
 
 end
 end IntegerMultBounds.Machine.BinaryRepeatedOffsetAction
