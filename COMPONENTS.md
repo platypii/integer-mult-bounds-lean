@@ -2322,6 +2322,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixParityOnlyPlaced.lean`: Clean original-eight-plus-output caller placement produces exact pure-parity offsets, retains all original descriptors and spectators and restores forty-one private tapes with unchanged runtime.
 
+- `Machine/ActivePrefixParityNegativeData.lean`: Exact rowwise modular-negative parity-XOR offsets use each actual prefix target and current source controls. Uniform compact width, exact negative row/value semantics and empty output at zero digits are proved.
+
+- `Machine/ActivePrefixParityNegativeNegate.lean`: Actual modular-negation machine lifted to arbitrary alphabets consumes and erases the complete positive table, retains width/count descriptors and returns the exact negative stream at origin with shared forty-one private tapes blank.
+
+- `Machine/ActivePrefixParityNegativeBank.lean`: Original eight-descriptor caller stores generated positive/negative tables and five derived width/count headers. Exact shared-bank interfaces connect physical positive production, header synthesis, negation and cleanup.
+
+- `Machine/ActivePrefixParityNegativeRun.lean`: One fixed original-input sequence physically generates positive parity-XOR offsets, synthesizes row count2^W and compact width n*b, negates every row and erases the positive operand plus all five derived headers. Exact endpoint and linear prefix-table bound include zero digits.
+
+- `Machine/ActivePrefixParityNegative.lean`: Complete fixed fifty-six-tape negative parity-XOR producer starts solely from eight original canonical descriptors and blank work. Only exact negative offsets survive; every original and private tape/head is restored with a linear2^W*(W+1) bound.
+
+- `Machine/ActivePrefixParityNegativePlaced.lean`: Actual negative parity-XOR production on arbitrary original-eight-plus-output caller ports retains all descriptors and spectators, erases fifty-six private tapes and returns output at origin. Compact payload rotation and full schedule composition remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
