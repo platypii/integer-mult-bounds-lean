@@ -2602,6 +2602,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLateOriginalPipelineBudget.lean`: Actual clean original-input later endpoint has paid word-volume and linear Hoare runtime contracts including preparation and cleanup. The sparse-hole inequality remains an explicit mathematical premise.
 
+- `Machine/ActivePrefixEarlySequenceSemantics.lean`: Every bit in the actual four-load shared-array schedule follows the composed original-layout destination on all addresses. Selected and correction offsets equal current compact-T arithmetic; compact loads retain every spectator.
+
+- `Machine/ActivePrefixEarlySequencePacked.lean`: Actual four-load destination equals the packedEarly arithmetic with the address-dependent selected source controls, on every address including the bad set. Only target and compact T change; all source, dirty-back and payload spectators remain unchanged.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
