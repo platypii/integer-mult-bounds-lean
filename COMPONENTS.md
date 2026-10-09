@@ -1353,6 +1353,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryDescriptorDifference.lean`: One fixed three-tape finite-alphabet program subtracts arbitrary-width immutable marked operands and physically normalizes the result. Both original words and heads are preserved, the output is canonical at head one, and no padded operands or derived result are supplied. Exact runtime is bounded by six times the larger descriptor length plus21, or six times the original minuend value plus27 for canonical inputs.
 
+- `Machine/ArbitraryWidthPieceCost.lean`: The complete actual piece dispatcher runtime is bounded by the fully paid digit-weighted slice budgets plus explicit physical control overhead. Its sole-header setup, all runtime digit steps and complete cleanup satisfy a fixed positive coefficient times volume times positive width to the unchanged certified exponent; a width-plus-one version includes zero. No callback execution or cost oracle is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
