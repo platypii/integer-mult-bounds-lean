@@ -1501,6 +1501,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryRadixRootEncoding.lean`: Identifies the numerical padded-range array with the recursive root descriptor at every serialized cell and full-transpose output. Literal bit encoding and padding zero-fill bridges eliminate any assumed payload conversion between the two actual machines.
 
+- `Machine/BinaryAdjacentWidthInterchange.lean`: Proves exact rectangular transposition for binary widths differing by one as an equal-width transpose and one actual fixed-radix-two movement, with the inverse orientation using real unmovement first. Literal serialized endpoints and paid movement proofs cover arbitrary spectators and zero shorter width. Header construction and full composition with the equal-width wrapper remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
