@@ -3212,6 +3212,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStagePairCoordinates.lean`: The actual physical literal-list array action equals chronological Boolean row additions on canonical original addresses, with exact entrywise semantics; its selected coordinates perform the requested binary basis change without an assumed address action.
 
+- `Machine/CompactComplexPhaseSchedule.lean`: Actual complex25 phase words map to literal original-node Stage pairs with proved Fin-slot transport, fixed word length and exact coordinate action, under explicit consecutive-node geometry and 15625 slots.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -4181,6 +4183,8 @@ Bit and complex networks.
 - `Networks/BinaryPhaseBasisExtension.lean`: An actual nondegenerate phase-subspace basis extends to a full binary address basis with its original vectors in literal first slots. The generated row-addition word computes the exact bilinear controls, and the original projector phase equals the diagonal phase on those computed coordinates.
 
 - `Networks/BinaryPhaseResidualRowProgram.lean`: Nested nondegenerate binary labels with the existing zero-or-unit residual witness determine their own orthonormal basis and full ambient row-addition word. Its literal first residual-dimension coordinates compute the exact controls, and its diagonal phase equals the original nested projector phase difference; no basis or word decomposition is supplied.
+
+- `Networks/ComplexPhaseRowSchedule.lean`: Every actual fixed complex25 edge internally supplies orientation, transported nondegeneracy, comparable labels and its zero-or-unit residual witness, generating its own ambient row-addition word; the original phase difference retains descending-edge sign and original edge order.
 
 ### Networks/Certificates/Paired49
 
