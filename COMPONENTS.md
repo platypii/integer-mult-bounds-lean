@@ -3214,6 +3214,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexPhaseSchedule.lean`: Actual complex25 phase words map to literal original-node Stage pairs with proved Fin-slot transport, fixed word length and exact coordinate action, under explicit consecutive-node geometry and 15625 slots.
 
+- `Machine/CompactActualPairInverse.lean`: Actual multiplier scalar/cutoff/global-row choices instantiate physical reverse-list and full-bank round-trip execution on original symbolic stage banks whose row count is the inherited global count; every literal pair allowance is derived at density one, with no supplied branch or direction.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
