@@ -2638,6 +2638,54 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixEarlySequenceGlobal.lean`: The actual early four-load destination equals the complete global varying-source permutation on every original address, including exceptional ones; literal array bits follow that exact permutation.
 
+- `Machine/ActivePrefixDirtyControlParityPlaced.lean`: Clean caller wrapper for actual compact-U block-parity extraction with real clock and complete retained frame.
+
+- `Machine/ActivePrefixDirtyControlData.lean`: Six-original-header shape and exact compact source fields, generated descriptor words and prefix-ordered stream endpoints.
+
+- `Machine/ActivePrefixDirtyControlHeaders.lean`: Physical synthesis of prefix cardinality and three width/count products from the original six descriptors.
+
+- `Machine/ActivePrefixDirtyControlBank.lean`: Exact gather head/content endpoints and complementary frame for dirty-U offset production.
+
+- `Machine/ActivePrefixDirtyControlRun.lean`: Three physical prefix projections, compact-U parity extraction and actual selected/control-mask/parity-XOR gather.
+
+- `Machine/ActivePrefixDirtyControlCleanup.lean`: Erases target/U/control streams, real clock and all four generated descriptors, and rewinds the generated offset.
+
+- `Machine/ActivePrefixDirtyControl.lean`: Complete clean selected/control/parity-XOR producer with explicit prefix volume bound, retaining wide target costs without assuming nq fits the compact prefix.
+
+- `Machine/ActivePrefixDirtyControlPlaced.lean`: Arbitrary-caller seven-port clean producer with39 appended private tapes; only six original descriptors and blank output are required.
+
+- `Machine/ActivePrefixDirtyControlSemantics.lean`: Physically generated prefix-ordered controls equal compact radix digit parities; selected/control-mask/parity-XOR output rows have exact current-address semantics.
+
+- `Machine/ActivePrefixDirtyControlCorrectionData.lean`: Rowwise correction operands and modular difference match current-prefix compact-U control semantics.
+
+- `Machine/ActivePrefixDirtyControlCorrectionBank.lean`: Six-original-header correction bank and exact generated subtraction width/count and operand storage.
+
+- `Machine/ActivePrefixDirtyControlCorrectionRun.lean`: Actual selected and control-mask producers feed fresh-row subtraction; both operands and all generated headers are erased.
+
+- `Machine/ActivePrefixDirtyControlCorrection.lean`: Complete dirty-U correction has the same explicit prefix-volume bound, including all operand production and cleanup.
+
+- `Machine/ActivePrefixDirtyControlCorrectionPlaced.lean`: Arbitrary-caller seven-port correction restores50 private tapes and the original frame.
+
+- `Machine/ActivePrefixDirtyControlNegativeData.lean`: Current-prefix parity-XOR rows and independent modular negative semantics include zero digits.
+
+- `Machine/ActivePrefixDirtyControlNegativeBank.lean`: Six-original-header negative bank with positive/output streams and only synthesized compact width/count.
+
+- `Machine/ActivePrefixDirtyControlNegativeRun.lean`: Actual positive producer, physical width/count construction, source-consuming rowwise negation and both header erasures.
+
+- `Machine/ActivePrefixDirtyControlNegative.lean`: Complete clean dirty-U negative parity-XOR producer has explicit uniform prefix-volume cost, including all preparation and erasure.
+
+- `Machine/ActivePrefixDirtyControlNegativePlaced.lean`: Arbitrary-caller seven-port negative producer restores51 private tapes and all original descriptors.
+
+- `Machine/ActivePrefixDirtyControlPureBank.lean`: Target-only parity gather has exact endpoints in the common dirty-U prefix bank.
+
+- `Machine/ActivePrefixDirtyControlPureCleanup.lean`: Physically erases all shared projected streams, real clock and generated metadata after target-only parity gather.
+
+- `Machine/ActivePrefixDirtyControlPure.lean`: Complete actual projection and extraction prefix followed by target-only parity gather has a paid uniform prefix-volume bound; no wide source padding is required.
+
+- `Machine/ActivePrefixDirtyControlPurePlaced.lean`: Clean seven-port pure-parity caller restores39 appended private tapes and every original descriptor.
+
+- `Machine/ActivePrefixDirtyControlPureSemantics.lean`: Each physically generated pure-parity row reads current target low bits with compact padding and is independent of dirty U.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
