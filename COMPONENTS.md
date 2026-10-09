@@ -3180,6 +3180,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualStageInverse.lean`: Actual multiplier scalar, cutoff and descendant-row choices provide the packed original-input direction-dispatch reverse and round trip at density one, deriving readiness and repair allowances.
 
+- `Machine/ActivePrefixStageSingletonInverseData.lean`: Both actual singleton coordinate and array actions, including runtime source-order selection, square to identity with original source preserved.
+
+- `Machine/ActivePrefixStageRuntimeInverseRun.lean`: The fixed all-positive-width stage is involutive and implements its own reverse and two-run full-bank restoration, including singleton width and both runtime selectors.
+
+- `Machine/ActivePrefixStageRuntimeInverseBudget.lean`: Complete all-width runtime round trips have a uniform full-volume bound at the same certified exponent, paying both actual executions and the join.
+
+- `Machine/CompactActualStageRuntimeInverse.lean`: Actual scalar/cutoff/global-row choices instantiate complete all-positive-width physical reverse and round-trip execution at density one without caller-supplied readiness or branch decisions.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
