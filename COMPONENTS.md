@@ -3426,6 +3426,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageTripleWords.lean`: For payload capacity a multiple of three, literal native records in original row-major full-address order encode to exactly the physical raw Boolean stage tape. Complete actual stage output is the exact code word of derived native output coefficients, with no supplied serialization or output-codec premise. Record count is rows times two to shape.bits; combined encode-stage-decode machine remains open.
 
+- `Machine/ActivePrefixStageNative.lean`: One fixed finite machine destructively encodes canonical native coefficient words, executes the actual all-width/source-order stage, and destructively decodes its explicitly derived native output. Original stage descriptors and clean private storage remain, both heads normalize and obsolete native/Boolean words are erased. A generic composition proof supplies an actual fixed-machine existential witness without expanding giant control types; no stage oracle or supplied Boolean/output codec is required. Payload capacity must be a multiple of three. Full conversion and joins add thirty-two times native-symbol count plus twenty-two to the actual stage cost, preserving its certified width exponent with one uniform constant.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
