@@ -3308,6 +3308,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyStreamOriginal.lean`: A fixed fifty-five-tape coefficient scan starts from an original retained count header and blank private workspace, producing both complete exact butterfly streams at at most 200 times serialized logical volume. Original count and all inputs are retained, controls return blank and actual end positions are stated; paid normalization and selected-axis split/merge remain separate.
 
+- `Machine/ButterflyStreamCleanData.lean`: Exact stream-end geometry connects complete record scanning to counted source erasure and all four physical head rewinds, preserving resulting serialized coefficients and original headers.
+
+- `Machine/ButterflyStreamClean.lean`: One fixed fifty-six-tape machine executes complete paired butterflies, rewinds all stream heads and erases old source streams from original count and length headers. Only the two result streams remain, all workspace and stream heads are reset, both generated controls return blank and total cost is at most 400 times serialized logical volume; selected-axis split/merge and header generation remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
