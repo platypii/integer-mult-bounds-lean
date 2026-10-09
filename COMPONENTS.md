@@ -2346,6 +2346,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixLayoutSwap.lean`: Literal compact T/back exchange equals the existing physical rectangular transpose and retains active target/source coordinates. Its back fiber contains original T; exact repeated pure/negative rows after that swap read the actual active target and source. Physical header synthesis and complete four-load sequencing remain separate.
 
+- `Machine/ActivePrefixSelectedLoadData.lean`: Original-ten-descriptor plus array bank exposes static producer, header arithmetic, original-row repeat and rotation placements. Exact generated/repeated offsets have length original rows times2^W times n*q; no offset or rotation metadata is supplied.
+
+- `Machine/ActivePrefixSelectedLoadHeaders.lean`: Actual runtime header synthesis generates2^W and n*q, then a paid original-row product constructs P=rows*2^W. Original descriptors and payload survive; every arithmetic scratch tape is erased.
+
+- `Machine/ActivePrefixSelectedLoadRun.lean`: One fixed sixty-tape program generates selected offsets from current prefix/source fields, synthesizes rotation dimensions, repeats for arbitrary original rows and physically rotates the full active target array. Every stage and join is charged.
+
+- `Machine/ActivePrefixSelectedLoadCleanup.lean`: Physically erases both generated offset tables and all six derived dimension headers after the selected rotation. All ten originals and the transformed array remain; every other tape/head returns blank at origin.
+
+- `Machine/ActivePrefixSelectedLoad.lean`: Complete original-input selected load has exact full-array rotation semantics and full workspace cleanup, with linear full-volume cost under explicit prefix-table absorption W+1≤2^(n*q)*B. Rows/B are positive; n=0 is supported. This is one actual load, not the complete compact gadget or multiplier.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
