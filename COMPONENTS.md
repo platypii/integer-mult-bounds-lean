@@ -3282,6 +3282,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStopRun.lean`: One fixed ten-tape original-input stop machine physically generates the actual threshold and compares the remaining exponent. It retains original global dimension, exponent and generated threshold, clears all other workspace, returns the literal stop flag and costs a fixed constant times dimension plus exponent plus one. Recursive controller wiring and per-node flag cleanup remain open.
 
+- `Machine/SparseWeightedUnitPhase.lean`: One fixed sixteen-tape machine extracts sparse address controls and directly feeds the weighted phase scanner and signed unit kernel, retaining original address and headers without supplied controls or phase flags.
+
+- `Machine/CompactActualSparseUnitPhase.lean`: Actual compact inputs produce the literal target-minus-source signed phase on coefficient words at unchanged precision. Existing payload capacity pays extraction; the full runtime is at most 400 times payload plus twice residual dimension plus twelve times coefficient width plus forty-seven. Complete coefficient-stream traversal remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

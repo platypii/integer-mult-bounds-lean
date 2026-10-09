@@ -1886,3 +1886,5 @@ import IntegerMultBounds.Machine.CompactComplexPhaseSparseControls
 import IntegerMultBounds.Machine.CompactComplexStopThreshold
 import IntegerMultBounds.Machine.CompactComplexStopCompare
 import IntegerMultBounds.Machine.CompactComplexStopRun
+import IntegerMultBounds.Machine.SparseWeightedUnitPhase
+import IntegerMultBounds.Machine.CompactActualSparseUnitPhase
