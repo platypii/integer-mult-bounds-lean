@@ -1461,6 +1461,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighExecutionInitializeCleanup.lean`: Actually erases all high execution headers in reverse padding, movement and exchange order, restoring three blank private banks and retaining the arbitrary caller. The two-hundred-times-volume cleanup includes physical erasure of the canonical-zero clock marker.
 
+- `Machine/ArbitraryWidthZeroHeaderShared.lean`: An actual fixed writer constructs the canonical-zero descriptor marker from a blank appended tape, and an actual eraser restores blank storage. Every caller tape is preserved; exact six-transition setup and four-transition cleanup are proved.
+
+- `Machine/ArbitraryWidthHighHeaderBounds.lean`: Derives canonicality and twice-original-volume bounds for every exchange, movement and padding/root header from the semantic descriptor and runtime high-layout contracts. No separate header-size oracle is supplied.
+
+- `Machine/ArbitraryWidthHighInitializedRun.lean`: One actual program initializes all twenty-two execution headers in blank private banks, runs the complete high-width body and physically erases every header afterward. Exact transpose and blank-bank restoration are proved without Ready or Free premises. All copying, execution, cleanup and sequential edges retain the certified exponent.
+
+- `Machine/ArbitraryWidthHighOriginalEncoding.lean`: Proves that folding the original prefix/row factors changes no literal serialized source cell, and that the high branch output is exactly the original full transpose for any valid positive row divisor.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
