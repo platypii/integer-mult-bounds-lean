@@ -1303,6 +1303,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FixedBaseDescriptorQuotient.lean`: One fixed fourteen-tape program replaces its sole canonical runtime descriptor by the canonical quotient by a compiled fixed base and physically erases the remainder. All thirteen private tapes are blank again. Exact divisible suffix shrinking and a fixed-base linear-input-value bound support the repeated high-digit movement controller.
 
+- `Machine/ArbitraryWidthConsumePlacement.lean`: Injective placement of the actual runtime-counted slice consume program into the fourteen-tape digit dispatcher prefix and shared slice bank. The emitted digit and clock are shared physically while all other dispatcher controls and auxiliary tapes are preserved.
+
+- `Machine/ArbitraryWidthLevelPlacement.lean`: Actual depth and power-width advance shares the slice-width descriptor while preserving the recursive bank, offset, original parent headers and remaining-width controls. Fixed placements have exact clean framed endpoints.
+
+- `Machine/ArbitraryWidthPieceConsume.lean`: The actual continuation first executes the digit-counted paid slice calls, then physically advances recursion depth and power width. Exact repeated-window output, digit erasure, offset increment and clean level update are derived without a callback execution assumption. Certified cost includes both programs and their composition; whole dispatcher initialization, invariant and final cleanup remain separate.
+
+- `Machine/ArbitraryWidthPiecePrefix.lean`: The runtime outer dispatcher has an exact base-digit prefix schedule. Cumulative offset plus the remaining quotient contribution equals original width, proving every step fits. Literal repeated-slice images compose at successive levels and the final image is the full transpose, including zero width. Selected levels satisfy the common padded-row divisor bound.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
