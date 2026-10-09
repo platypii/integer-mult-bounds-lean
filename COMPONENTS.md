@@ -1870,6 +1870,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactGadgetReservationHeadersEndpoint.lean`: The generated P/G/B/w tapes satisfy the actual original-header load Sources contract with canonical words and exact geometry values. Original seven descriptors remain unchanged, fourteen intermediates and fifteen private tapes are blank. Upstream role-row synthesis and whole reserve/load sequencing remain separate.
 
+- `Machine/BinaryCorrectionOffsetData.lean`: Literal selected/control operand streams and independently reset modular subtraction rows for early correction offsets; specifies exact lengths and per-address words.
+
+- `Machine/BinaryCorrectionOffsetGather.lean`: Executes the original-header control gather over the physically generated address source, with exact consumed-prefix lengths and retained source/control words.
+
+- `Machine/BinaryCorrectionOffsetRewind.lean`: Physically rewinds exactly the source prefix read by control gather while retaining its unread tail, with all return transitions charged.
+
+- `Machine/BinaryCorrectionOffsetPrepare.lean`: Places actual gathers and runtime nq synthesis into the shared correction bank from canonical original b/q/n and retained original control, preserving literal operand words for independent row subtraction.
+
+- `Machine/BinaryCorrectionOffsetValue.lean`: Each correction row is the packed original control minus packed two-times-control-times-source digits modulo the target power of two. Uses the actual rowwise subtraction output; no borrow crosses address boundaries.
+
+- `Machine/BinaryCorrectionOffsetFinish.lean`: Physically erases every remaining descriptor and generated source/control word, including the unread source suffix, and restores original heads after correction subtraction.
+
+- `Machine/BinaryCorrectionOffset.lean`: Complete fixed thirty-one-tape early-correction constructor from original b/q/n and control. Output14 holds every address correction; all other twenty-six generated/private slots are blank. Cost at most(selectedBaseConstant+1000)*2^(n*b)*(n+1)*(q+b+1). Full repetition and action composition remain separate.
+
+- `Machine/BinaryCorrectionOffsetPlaced.lean`: Places the complete original-input correction producer on five caller ports with twenty-six appended private tapes, preserving arbitrary larger-alphabet spectators and literal output words with identical paid runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
