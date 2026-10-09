@@ -3456,6 +3456,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyIndependentGuardRoundtrip.lean`: One fixed paid machine derives the two-pass guard, executes all forward axes, physically resets the axis counter, executes all inverse axes and restores original q. Exact original decoded values at final precision q+2D and linear reserved-volume-times-dimension runtime are proved; reservation increases volume by at most two.
 
+- `Machine/BinaryDescriptorQueueRead.lean`: Physical delimited canonical-field reader retains the generated queue, installs a real numeric descriptor and pays cursor advance and rewind.
+
+- `Machine/CompactComplexRootPieceNumbers.lean`: Physical seed initializes exponent zero, left zero and width one; boundary/decrement and width-multiply/exponent-increment operations clean all private scalar work with paid bounds.
+
+- `Machine/BinaryDescriptorQueueRewind.lean`: Paid EOF-to-start rewind of the actual generated descriptor queue uses physical left/scan/right movements and retains the entire queue.
+
+- `Machine/CompactComplexRootPieceQueue.lean`: Places actual root digit queue reads into the numeric piece clock, retaining the complete native and controller frame.
+
+- `Machine/CompactComplexRootPieceClock.lean`: Fixed physical per-digit clock loop invokes a fixed callback, advances generated left boundaries and decrements actual digit clock, with exact control and callback costs. Callback execution remains an explicit interface premise; closed recursive dispatch remains open.
+
+- `Machine/CompactComplexRootPieceVisits.lean`: Generated preceding-digit and within-level boundaries equal literal Visit.root occurrences of the original active input. Actual outer enumeration and closed recursive callback execution remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
