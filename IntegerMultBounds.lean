@@ -1887,3 +1887,5 @@ import IntegerMultBounds.Machine.SparsePhaseHeadersData
 import IntegerMultBounds.Machine.SparsePhaseHeadersBudget
 import IntegerMultBounds.Machine.RecursiveRowsFromWords
 import IntegerMultBounds.Machine.ButterflyAxisRouting
+import IntegerMultBounds.Machine.ButterflyAxisBank
+import IntegerMultBounds.Machine.ButterflyAxisRun

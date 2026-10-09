@@ -3332,6 +3332,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyAxisRouting.lean`: Literal six-symbol coefficient rows instantiate actual clean selected-bit splitting and merging, and exact routing volume equals the paired arithmetic scan volume.
 
+- `Machine/ButterflyAxisBank.lean`: One permanent native coefficient bank shares original count, stream-length and routing headers across split, arithmetic and merge placements, with physically blank reusable private workspace.
+
+- `Machine/ButterflyAxisRun.lean`: One fixed native coefficient machine physically splits a selected axis, executes all paired complex butterfly arithmetic, erases old source streams, rewinds heads and destructively merges the exact transformed stream. Uniform linear-volume cost includes all three stages; deriving its routing/count/length headers from original shape data and scheduling axes remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
