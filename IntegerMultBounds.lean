@@ -1865,3 +1865,6 @@ import IntegerMultBounds.Machine.CompactReservationRate
 import IntegerMultBounds.Machine.UnitPhaseNumerator
 import IntegerMultBounds.Machine.UnitPhaseSigned
 import IntegerMultBounds.Networks.ComplexRecursiveCallSchema
+import IntegerMultBounds.Machine.WeightedPhaseAccumulator
+import IntegerMultBounds.Machine.WeightedUnitPhase
+import IntegerMultBounds.Machine.CompactComplexPhaseControlCodec

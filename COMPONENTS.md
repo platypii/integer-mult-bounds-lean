@@ -3240,6 +3240,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhaseSigned.lean`: Centered signed decoding identifies the actual runtime unit-phase output with exact multiplication by one, i, minus one or minus i. A strict signed guard excludes the unrepresentable minimum negation; coefficient width and denominator precision are retained.
 
+- `Machine/WeightedPhaseAccumulator.lean`: A three-tape scanner computes the weighted modulo-four sum of a literal Boolean control word in twice its length, preserving the word and writing two physical phase flags.
+
+- `Machine/WeightedUnitPhase.lean`: The weighted scanner feeds the signed unit-phase kernel on nine tapes with exact cost twice control length plus twelve times coefficient width plus forty-six. Actual control-word materialization remains separate.
+
+- `Machine/CompactComplexPhaseControlCodec.lean`: Actual residual weights and original descending signs identify the scanner readout and signed coefficient rotation with the target-minus-source projected phase. The input control word is explicitly defined from computed address controls; producing that word on live streams remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
