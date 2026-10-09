@@ -1245,6 +1245,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighLayout.lean`: Literal finite row-major address bijections implement the manuscript high-field exchange/join and reverse separation. Exact numeric index/volume identities identify joined high digits as rows. The low recursive transpose, even with row padding and cropping, returns the original full-width transpose after separation. Physical high-field movement remains separate.
 
+- `Machine/BinaryDescriptorAdvance.lean`: One fixed three-tape program physically advances a marked binary offset by a retained runtime count through repeated growing increments. It initializes and erases its work clock and restores the immutable count. Exact offset addition, canonicality and amortized cost 10 times count plus twice offset width plus seven times count width plus 28.
+
+- `Machine/RadixDigitMoveRows.lean`: Moving one fixed-radix digit across an arbitrary spectator block is exactly a cyclic split into long rows followed by a cyclic merge of singleton rows. Literal source/output words and exact equal role words connect the two actual streaming primitives; head positioning and complete physical composition remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

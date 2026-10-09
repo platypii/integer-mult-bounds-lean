@@ -840,3 +840,5 @@ import IntegerMultBounds.Machine.FixedBasePowerUntilBound
 import IntegerMultBounds.Machine.FixedBasePowerUntilRange
 import IntegerMultBounds.Machine.FixedBasePowerUntil
 import IntegerMultBounds.Machine.ArbitraryWidthHighLayout
+import IntegerMultBounds.Machine.BinaryDescriptorAdvance
+import IntegerMultBounds.Machine.RadixDigitMoveRows
