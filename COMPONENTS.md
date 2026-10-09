@@ -2992,6 +2992,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveTargetHighestLayoutFullSelected.lean`: The actual high destination composed with the global repaired low ideal equals the exact full selected target XOR word in both source orders, retaining every other Address field and original disjoint source interval.
 
+- `Machine/ActiveRepairLayoutRecordsFullEarlyData.lean`: The actual early repaired low stage and original-header highest-bit action share one original caller; their full-array entry equation is exactly the composed low/high destination on every original address.
+
+- `Machine/ActiveRepairLayoutRecordsFullEarlyRun.lean`: One fixed complete early machine executes repaired low action then the physically original-header-derived highest toggle, returns the exact full low/high array on the original tape and restores all private metadata and storage.
+
+- `Machine/ActiveRepairLayoutRecordsFullEarlyBudget.lean`: The complete original-input early low/high machine retains the certified full-volume compact-width exponent, paying repair, copy-back, both highest metadata layers and all transitions.
+
+- `Machine/ActiveRepairLayoutRecordsFullEarlySelected.lean`: The actual complete early physical machine has the canonical full-selected XOR destination at every original array address; source retention carries the explicit original source-interval nonoverlap premise.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
