@@ -1489,6 +1489,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighCommonSelector.lean`: Runs the actual high/fallback comparison on constructed high-count and original-width descriptors, using a proven blank common slot for its flag. The complete bank is restored, slot separation is proved, and comparison time has a uniform linear original-volume bound even on fallback widths.
 
+- `Machine/ArbitraryWidthHighCommonDispatch.lean`: Instantiates the actual physical selector with the complete prepared high and framed elementary programs on one bank. Only original descriptor headers and payload are assumed; the selected real branch yields the same exact original transpose and restores all branch-private storage.
+
+- `Machine/ArbitraryWidthHighCommonDispatchCost.lean`: Proves one positive uniform coefficient for the actual selector and selected high/fallback execution at the certified width exponent. The finite fallback cutoff follows from the actual high-count selector; comparison, real branch work and the jump are all charged.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
