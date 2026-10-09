@@ -1933,3 +1933,4 @@ import IntegerMultBounds.Machine.UnitPhaseRecordFull
 import IntegerMultBounds.Machine.UnitPhaseRecordRestore
 import IntegerMultBounds.Machine.UnitPhaseStreamLoop
 import IntegerMultBounds.Machine.UnitPhaseStreamBudget
+import IntegerMultBounds.Machine.ActivePrefixStageTripleWords

@@ -3424,6 +3424,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhaseStreamBudget.lean`: Uniform full-record bound10600 times payload plus24 times coefficient width and complete original-header loop bound rows times(10620 times payload plus24 times width) plus46 pay all address, metadata, IO, phase and cleanup work. Original-width initialization and final whole-stream normalization remain separate.
 
+- `Machine/ActivePrefixStageTripleWords.lean`: For payload capacity a multiple of three, literal native records in original row-major full-address order encode to exactly the physical raw Boolean stage tape. Complete actual stage output is the exact code word of derived native output coefficients, with no supplied serialization or output-codec premise. Record count is rows times two to shape.bits; combined encode-stage-decode machine remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
