@@ -2812,6 +2812,12 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `expPi` equals the natural `expPiNat` (even minus odd partial sums, shifted)
   and the three tables equal `tableANat`, `tableENat`, `tableDNat`.
 
+- `Machine/Registers.lean`: natural-number registers on tapes. A register of
+  `n` is the canonical binary word `canon n` at origin zero; canonical words
+  are unique for their value (`canonical_unique`), and the trim machine
+  (scan, step left, erase high zeros, return; `Trim.trim_hoare`) turns any
+  word into the register of its value (`norm_hoare`).
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line

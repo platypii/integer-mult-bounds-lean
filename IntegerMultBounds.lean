@@ -752,6 +752,7 @@ import IntegerMultBounds.Machine.SubPass
 import IntegerMultBounds.Machine.NeumannStepLemmas
 import IntegerMultBounds.Machine.NeumannLoop
 import IntegerMultBounds.Machine.PairJoin
+import IntegerMultBounds.Machine.Registers
 import IntegerMultBounds.Resampling.B0Words
 import IntegerMultBounds.Resampling.TabledMaps
 import IntegerMultBounds.Resampling.PiApprox
