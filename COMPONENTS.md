@@ -2356,6 +2356,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixSelectedLoad.lean`: Complete original-input selected load has exact full-array rotation semantics and full workspace cleanup, with linear full-volume cost under explicit prefix-table absorption W+1≤2^(n*q)*B. Rows/B are positive; n=0 is supported. This is one actual load, not the complete compact gadget or multiplier.
 
+- `Machine/ActiveRepairEarlyFieldsBank.lean`: Extracted-field early repair bank retains actual V/T/current source controls, q/b/n and the original full scan counter. Inverse, guard and ideal toggle use blank scratch; no precomputed local rank or key sentinel is supplied.
+
+- `Machine/ActiveRepairEarlyFieldsRun.lean`: Actual fixed inverse, original-address guard and ideal toggle compose on supplied extracted fields with exact recovered T/target and physical flag. Controls may differ for every full source address; runtime is4300 times packed stride.
+
+- `Machine/ActiveRepairEarlyFieldsCleanup.lean`: Physically erases the four inverse intermediates while retaining original extracted words, recovered T, ideal recovered target and the actual guard flag. Exact endpoint and linear packed-stride cleanup cost are proved.
+
+- `Machine/ActiveRepairEarlyFields.lean`: Reusable fixed early repair computation retains extracted originals and produces only exact repaired local fields and flag, erasing every private intermediate within4400 times packed stride. Full destination-rank patching remains separate.
+
+- `Machine/ActiveRepairEarlyFieldsPlaced.lean`: Actual early inverse/guard/toggle calculation on arbitrary V/T/current controls/q/b/n/full-rank/output caller ports retains the complementary frame and restores thirty private tapes. Recovered T and ideal target are at origin; the actual guard flag is at its writer-ready head.
+
+- `Machine/ActiveRepairEarlyFieldsValue.lean`: The extracted-field physical outputs have exact existing local exceptional-membership and repair-destination rank semantics. Mathematical V-plus-T concatenation identifies the rank but is never supplied to the machine; in-range bounds follow from genuine field widths.
+
+- `Machine/ActiveRepairRankParserPlaced.lean`: Complete genuine short-rank field/source parser on arbitrary eighteen caller ports retains every descriptor and spectator and restores twenty-seven native private tapes. Physical current controls and V/T/U/full source are produced with a linear address-width bound.
+
+- `Machine/ActiveRepairEarlySourceRun.lean`: One fixed fifty-two-tape sequence physically parses the original full rank, extracts that address’s source controls and directly executes actual early inverse/guard/ideal-toggle calculation. Private scratch is erased and recovered fields/flag are exact; total cost27600 times address width plus one, plus five. Runtime field descriptors remain supplied; their synthesis, full-rank patching and conditional key composition are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
