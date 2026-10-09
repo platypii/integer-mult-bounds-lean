@@ -2046,6 +2046,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PackedEarlyRepeatHeadersBudget.lean`: Shared two-factor construction and physical cleanup cost at most14 and2 header coefficients times the actual complete reserved role volume. All powers and products fit by the actual geometry and carved-width capacities; no setup-cost premise or supplied repetition factor is assumed.
 
+- `Machine/BinaryPackedEarlyRunBank.lean`: Fixed eighteen-port caller bank with both actual shape header sets, original q/b/n/control/rows and repeated-source factors. All four child loads share one blank fixed workspace and preserve the unchanged serialized reservation.
+
+- `Machine/BinaryPackedEarlyRunGap.lean`: Both gap-source early loads physically execute their original-input selected/correction producers, actual packed actions and offset erasure on the same caller bank. Literal casts identify the common array word without a data move.
+
+- `Machine/BinaryPackedEarlyRunPrefix.lean`: Both prefix-source early loads physically execute their original-input parity/negative producers, actual packed actions and offset erasure on the same caller bank with all spectators retained.
+
+- `Machine/BinaryPackedEarlyRun.lean`: One actual fixed four-load sequence executes the complete early packed array permutation on the unchanged reserved word, retaining original descriptors/control and restoring all private workspace. Exact output is BinaryPackedEarlyArray.run, with all four child costs and three joins paid. Shape/repetition words are still explicit upstream interfaces.
+
+- `Machine/BinaryPackedEarlyRunBudget.lean`: The actual four-load sequence preserves the certified width exponent with full reserved role volume and explicit sufficient record-width allowances for both suffixes. No child setup, cleanup or sequencing charge is omitted.
+
+- `Machine/PackedEarlyRepeatHeadersCaller.lean`: Original row and packing descriptors physically construct the carved control gap and role-row count, then feed both early repetition factors on their actual caller ports. Exact combined execution and charged setup bound need no supplied gap/row/repetition word; placement into the final four-load sequence remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
