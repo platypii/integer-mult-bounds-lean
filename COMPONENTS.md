@@ -3080,6 +3080,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactReservationCutoff.lean`: Exact fallback/nonfallback axis split, a twice-reservation cutoff retaining half the selected axes, eventual fit for any positive dimension fraction and actual physical initial-padding cost/record-width bridges. Individual fallback kernels and complete recursive layers remain separate.
 
+- `Machine/ActiveRepairLayoutRecordsFullInvolution.lean`: Exact full selected destinations are involutions: source retention fixes the selected mask, two target XORs cancel and every original address field is recovered. Early action explicitly requires source/target disjointness.
+
+- `Machine/ActiveRepairLayoutRecordsFullInverseData.lean`: Actual complete early/later full-array transformations square to identity, via original-index surjectivity and the proved literal coordinate involutions.
+
+- `Machine/ActiveRepairLayoutRecordsFullInverseRun.lean`: The same actual placed full stage reverses its transformed raw array at one native cost, retaining all caller descriptors and blank private tapes; paid twice-execution programs restore the entire caller with both costs and sequence join.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
