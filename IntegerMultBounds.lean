@@ -1881,3 +1881,5 @@ import IntegerMultBounds.Machine.ButterflyRecord
 import IntegerMultBounds.Machine.ButterflyStreamData
 import IntegerMultBounds.Machine.ButterflyStreamRun
 import IntegerMultBounds.Machine.ButterflyStreamEndpoint
+import IntegerMultBounds.Machine.SparseSourceBitsRun
+import IntegerMultBounds.Machine.CompactComplexPhaseSparseControls

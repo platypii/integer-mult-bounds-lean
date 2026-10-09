@@ -3272,6 +3272,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyStreamEndpoint.lean`: The actual fixed stream machine preserves both serialized inputs and produces both complete butterfly outputs with clean arithmetic workspace and restored loop controls. Canonical count cost is at most 200 times the complete four-field delimiter volume; selected-axis split/merge assembly remains open.
 
+- `Machine/SparseSourceBitsRun.lean`: An eight-tape physical sparse address scanner samples the selected source bits without padded input, retains address and headers, clears clock workspace and produces the exact reversed sample word.
+
+- `Machine/CompactComplexPhaseSparseControls.lean`: Actual residual phase controls are materialized from the full runtime destination address word, with exact reversed-weight original phase readout. Existing input record capacity pays address generation and extraction; full coefficient-stream phase execution remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
