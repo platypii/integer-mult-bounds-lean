@@ -1385,6 +1385,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RowPaddingConstructedAlphabet.lean`: The actual twelve-tape row padding/cropping machines are adapted by exact finite-alphabet simulation to the recursive interchange alphabet. Literal larger-alphabet bank endpoints preserve canonical dimensions, erase consumed source words and write exact zero-padded or cropped arrays. Both general encoded-symbol and literal bit-array contracts retain the complete413-times-padded-volume bound, including all descriptor construction and erasure.
 
+- `Machine/ArbitraryWidthJoinedHeaders.lean`: One actual twelve-tape program copies retained prefix, rounded rows and spectator headers, writes the unit before-H header and computes the low width by immutable canonical subtraction. It produces all six literal padded-joined root headers, preserves all originals and proves their semantic Headers predicate; paid initialization costs at most83 times a dominating volume.
+
+- `Machine/ArbitraryWidthJoinedHeadersCleanup.lean`: The actual six-header cleanup erases every generated padded-joined root descriptor and returns all target heads to zero while retaining the original six headers. Exact output-to-input restoration and a54-times-dominating-volume cost are proved.
+
+- `Machine/ArbitraryWidthHighPaddingSuffix.lean`: The actual product constructor operates directly on retained generated high-movement lengths and produces the exact joined row suffix, preserving originals and restoring arithmetic scratch. Literal rowLength equality and original/padded-volume bounds are proved; construction and subsequent erasure cost at most81 and8 times the suffix length.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
