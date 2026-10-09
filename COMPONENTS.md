@@ -3276,6 +3276,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexPhaseSparseControls.lean`: Actual residual phase controls are materialized from the full runtime destination address word, with exact reversed-weight original phase readout. Existing input record capacity pays address generation and extraction; full coefficient-stream phase execution remains separate.
 
+- `Machine/CompactComplexStopThreshold.lean`: One fixed nine-tape threshold generator computes the least exponent for the actual fixed base 15625 to the thousandth power from the original global dimension, with linear dimension cost and all workspace cleared except the retained input and generated exponent. The manuscript stop predicate is equivalent to exponent-zero or exponent below this generated threshold; physical recursive comparison and controller wiring remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
