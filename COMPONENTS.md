@@ -1233,6 +1233,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixRangePadding.lean`: Numerical enlargement of both chunk ranges is exactly two grouped row extensions with literal flat-word regrouping. Reverse grouped crops equal direct restriction; padding, padded chunk transpose and cropping yield exactly the original chunk transpose. The enlarged volume is bounded by the square of the range factor. Whole physical two-range preparation and runtime dimension synthesis remain separate.
 
+- `Machine/SliceHeaderPlacement.lean`: Injective generic placement shares the six actual root header tapes and appends exactly twelve offset/width/work/frame tapes. Exact active-bank and complement preservation lemmas avoid enumerating the large compiled recursive tape bank.
+
+- `Machine/ArbitrarySliceCall.lean`: One fixed complete prepare/root/restore program executes any runtime selected power-width window. Actual slice dimensions and occupied headers are constructed, the fixed recursive root program executes, and original headers, frame stack, controls and spectators are restored. Exact window output and runtime rootBudget plus 1030 times parent volume; only canonical input, stack availability and the proved width/row shape are required.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

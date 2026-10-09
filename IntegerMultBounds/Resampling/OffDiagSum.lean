@@ -59,15 +59,22 @@ theorem offDiag_sum_range (f : ℤ → ℂ) (m : ℕ) :
 
 end Terms
 
+/-- An off-diagonal term with an arbitrary real weight function. -/
+noncomputable def offTermW (p : ℕ) {s : ℕ} (ef : ZMod s → ℤ → ℝ) (u : ZMod s → ℂ) (ℓ : ZMod s) (h : ℤ) : ℂ :=
+  rhoC p (rhoC p (ef ℓ h : ℂ) * u (ℓ + h))
+
+theorem offDiagTermNum_eq (p s t : ℕ) [NeZero s] [NeZero t] (α : ℝ) :
+    offDiagTermNum p s t α = offTermW p (fun ℓ h => Real.exp (normExp s t α ℓ.val h)) := rfl
+
 section Bridge
 
-variable (wtWords uWords : List (List Bool)) (s t m p w W : ℕ) (α : ℝ)
+variable (wtWords uWords : List (List Bool)) (s m p w W : ℕ) (ef : ZMod s → ℤ → ℝ)
   (u : ZMod s → ℂ) (ar ai : ℤ → ℤ)
   (hu : ∀ j : ℤ, u (j : ZMod s) = ⟨(ar j : ℝ) / 2 ^ p, (ai j : ℝ) / 2 ^ p⟩)
   (hwt' : ∀ k j, k < s → j < 2 * m + 1 →
     signed (wtWords.getD (k * (2 * m + 1) + j) []) =
       if -(m : ℤ) + j = 0 then 0
-      else rho0 (2 ^ p * Real.exp (normExp s t α (k : ZMod s).val (-(m : ℤ) + j))))
+      else rho0 (2 ^ p * ef (k : ZMod s) (-(m : ℤ) + j)))
   (hre : ∀ q, q < s + 2 * m → signed (uWords.getD (2 * q) []) = ar ((q : ℤ) - m))
   (him : ∀ q, q < s + 2 * m → signed (uWords.getD (2 * q + 1) []) = ai ((q : ℤ) - m))
   (hw : p + 2 ≤ w) (hwW : w ≤ W) (hW : ((2 * m + 1 : ℕ) : ℤ) * 2 ^ p < 2 ^ (W - 1))
@@ -79,7 +86,7 @@ variable (wtWords uWords : List (List Bool)) (s t m p w W : ℕ) (α : ℝ)
 include hu hwt' hre him hs in
 /-- One window term of output `k`: its parts are the machine's terms over `2^p`. -/
 theorem term_eq (k j : ℕ) (hk : k < s) (hj : j < 2 * m + 1) :
-    (if -(m : ℤ) + j = 0 then 0 else offDiagTermNum p s t α u (k : ZMod s) (-(m : ℤ) + j)) =
+    (if -(m : ℤ) + j = 0 then 0 else offTermW p ef u (k : ZMod s) (-(m : ℤ) + j)) =
       ⟨(termR wtWords uWords s s m p k j : ℝ) / 2 ^ p, (termI wtWords uWords s s m p k j : ℝ) / 2 ^ p⟩ := by
   have hcen := centre_self s k hs
   unfold termR termI
@@ -87,7 +94,7 @@ theorem term_eq (k j : ℕ) (hk : k < s) (hj : j < 2 * m + 1) :
     show 2 * (k + j) + 1 = 2 * (k + j) + 1 from rfl, hre (k + j) (by omega), him (k + j) (by omega)]
   split_ifs with h0
   · apply Complex.ext <;> simp
-  · unfold offDiagTermNum
+  · unfold offTermW
     rw [show (k : ZMod s) + ((-(m : ℤ) + j : ℤ) : ZMod s) = (((k : ℤ) + (-(m : ℤ) + j) : ℤ) : ZMod s) by
       push_cast; ring, round_term_parts p u ar ai hu,
       show ((k + j : ℕ) : ℤ) - m = (k : ℤ) + (-(m : ℤ) + j) by push_cast; ring]
@@ -96,7 +103,7 @@ include hu hwt' hre him hw hwW hW hwt hul' hwb hub hwtl hul hs in
 /-- The accumulator words of output `k` are `2^p` times the parts of the
 numerical off-diagonal map `Ẽ` at `k`. -/
 theorem accumulators_eq (k : ℕ) (hk : k < s) :
-    offDiagNum m (offDiagTermNum p s t α) u (k : ZMod s) =
+    offDiagNum m (offTermW p ef) u (k : ZMod s) =
       ⟨(signed (accR wtWords uWords s s m p w W k (2 * m + 1)) : ℝ) / 2 ^ p,
        (signed (accI wtWords uWords s s m p w W k (2 * m + 1)) : ℝ) / 2 ^ p⟩ := by
   rw [accR_signed wtWords uWords s s m p w W hw hwW hW hwt hul' hwb hub hwtl hul le_rfl hs k hk _ le_rfl,
@@ -104,7 +111,7 @@ theorem accumulators_eq (k : ℕ) (hk : k < s) :
   unfold offDiagNum
   rw [offDiag_sum_range]
   have ht := fun j (hj : j ∈ Finset.range (2 * m + 1)) =>
-    term_eq wtWords uWords s t m p α u ar ai hu hwt' hre him hs k j hk (Finset.mem_range.mp hj)
+    term_eq wtWords uWords s m p ef u ar ai hu hwt' hre him hs k j hk (Finset.mem_range.mp hj)
   rw [Finset.sum_congr rfl ht]
   apply Complex.ext
   · rw [Complex.re_sum]; push_cast; rw [Finset.sum_div]

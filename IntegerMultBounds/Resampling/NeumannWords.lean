@@ -190,16 +190,16 @@ end Entry
 
 section Main
 
-variable (wt v0 : List (List Bool)) (s t m p w W : ℕ) [NeZero s] (α : ℝ)
+variable (wt v0 : List (List Bool)) (s m p w W : ℕ) [NeZero s] (ef : ZMod s → ℤ → ℝ)
   (hwt' : ∀ k j, k < s → j < 2 * m + 1 →
     signed (wt.getD (k * (2 * m + 1) + j) []) =
       if -(m : ℤ) + j = 0 then 0
-      else rho0 (2 ^ p * Real.exp (normExp s t α (k : ZMod s).val (-(m : ℤ) + j))))
+      else rho0 (2 ^ p * ef (k : ZMod s) (-(m : ℤ) + j)))
   (hw : p + 3 ≤ w) (hwW : w ≤ W) (hW : ((2 * m + 1 : ℕ) : ℤ) * 2 ^ p < 2 ^ (W - 1))
   (hwt : ∀ x ∈ wt, x.length = w) (hwb : ∀ x ∈ wt, |signed x| ≤ 2 ^ p)
   (hwtl : wt.length = s * (2 * m + 1))
   (hv0 : v0.length = 2 * s) (hv0w : ∀ x ∈ v0, x.length = w) (hs : 0 < s)
-  (hball : ∀ K, ‖hornerNeumannR (rdV p) (offDiagNum m (offDiagTermNum p s t α)) (vec s p v0) K‖ ≤ 1)
+  (hball : ∀ K, ‖hornerNeumannR (rdV p) (offDiagNum m (OffDiagSum.offTermW p ef)) (vec s p v0) K‖ ≤ 1)
 
 /-- Words of a vector in the unit disk have numerators of magnitude at most `2^p`. -/
 theorem num_bound (ys : List (List Bool)) (h : ‖vec s p ys‖ ≤ 1)
@@ -221,7 +221,7 @@ theorem num_bound (ys : List (List Bool)) (h : ‖vec s p ys‖ ≤ 1)
 
 include hball in
 theorem num_bound_iter (K : ℕ) (ys : List (List Bool)) (hyl : ys.length = 2 * s)
-    (hK : hornerNeumannR (rdV p) (offDiagNum m (offDiagTermNum p s t α)) (vec s p v0) K = vec s p ys) :
+    (hK : hornerNeumannR (rdV p) (offDiagNum m (OffDiagSum.offTermW p ef)) (vec s p v0) K = vec s p ys) :
     ∀ x ∈ ys, |signed x| ≤ 2 ^ p := by
   intro x hx
   obtain ⟨i, hi, rfl⟩ := List.getElem_of_mem hx
@@ -237,7 +237,7 @@ include hwt' hw hwW hW hwt hwb hwtl hv0 hv0w hs hball in
 /-- The word iterates hold the numerators of the rounded Horner iterates. -/
 theorem iter_spec (K : ℕ) :
     (iter wt v0 s m p w W K).length = 2 * s ∧ (∀ x ∈ iter wt v0 s m p w W K, x.length = w) ∧
-      hornerNeumannR (rdV p) (offDiagNum m (offDiagTermNum p s t α)) (vec s p v0) K =
+      hornerNeumannR (rdV p) (offDiagNum m (OffDiagSum.offTermW p ef)) (vec s p v0) K =
         vec s p (iter wt v0 s m p w W K) := by
   have hp : (0 : ℝ) < 2 ^ p := by positivity
   induction K with
@@ -254,14 +254,14 @@ theorem iter_spec (K : ℕ) :
     have him : ∀ q, q < s + 2 * m → signed ((ext s m ys).getD (2 * q + 1) []) = ai ((q : ℤ) - m) := by
       intro q hq; rw [ext_odd _ _ _ _ hq]; rfl
     have hext : ∀ x ∈ ext s m ys, x ∈ ys := ext_mem s m ys hs hyl
-    have hyb := num_bound_iter (v0 := v0) (s := s) (t := t) (m := m) (p := p) (α := α) hball K ys hyl hyv
+    have hyb := num_bound_iter (v0 := v0) (s := s) (m := m) (p := p) (ef := ef) hball K ys hyl hyv
     have hacc := fun k (hk : k < s) => IntegerMultBounds.Resampling.OffDiagSum.accumulators_eq wt
-      (ext s m ys) s t m p w W α (vec s p ys) ar ai hu hwt' hre him (by omega) hwW hW hwt
+      (ext s m ys) s m p w W ef (vec s p ys) ar ai hu hwt' hre him (by omega) hwW hW hwt
       (fun x hx => hyw x (hext x hx)) hwb (fun x hx => hyb x (hext x hx)) hwtl
       (by rw [ext_length]) hs k hk
     -- the next Horner iterate, entry by entry
     have hstep : ∀ ℓ : ZMod s,
-        hornerNeumannR (rdV p) (offDiagNum m (offDiagTermNum p s t α)) (vec s p v0) (K + 1) ℓ =
+        hornerNeumannR (rdV p) (offDiagNum m (OffDiagSum.offTermW p ef)) (vec s p v0) (K + 1) ℓ =
           ⟨((signed (v0.getD (2 * ℓ.val) []) -
               signed (accR wt (ext s m ys) s s m p w W ℓ.val (2 * m + 1)) : ℤ) : ℝ) / 2 ^ p,
            ((signed (v0.getD (2 * ℓ.val + 1) []) -
@@ -270,7 +270,7 @@ theorem iter_spec (K : ℕ) :
       have hk := ZMod.val_lt ℓ
       have h := hacc ℓ.val hk
       rw [ZMod.natCast_zmod_val] at h
-      show rdV p (vec s p v0 - offDiagNum m (offDiagTermNum p s t α) (hornerNeumannR (rdV p) (offDiagNum m (offDiagTermNum p s t α)) (vec s p v0) K)) ℓ = _
+      show rdV p (vec s p v0 - offDiagNum m (OffDiagSum.offTermW p ef) (hornerNeumannR (rdV p) (offDiagNum m (OffDiagSum.offTermW p ef)) (vec s p v0) K)) ℓ = _
       rw [hyv]
       simp only [rdV, Pi.sub_apply]
       rw [h]
@@ -358,9 +358,9 @@ theorem resampJNumH_eq_iter (hst : s < t) (hα : 0 < α) (hθ : 1 ≤ α ^ 2 * (
     fun y hy => offDiagNum_err_unit_sqrt hst hα hθ (sqrtWindow_bound p) y hy
   have hroom : 25 * (6 * (2 * (sqrtWindow p : ℝ)) + 6) ≤ 2 ^ p := room_of_le (sqrtWindow_le p (by omega)) hp
   have hball : ∀ K, ‖hornerNeumannR (rdV p) (offDiagNum (sqrtWindow p)
-      (offDiagTermNum p s t α)) (vec s p v0) K‖ ≤ 1 := fun K =>
+      (OffDiagSum.offTermW p (fun ℓ h => Real.exp (normExp s t α ℓ.val h)))) (vec s p v0) K‖ ≤ 1 := fun K =>
     (hornerNeumannR_err_unit hE hE' hroom (norm_rdV_sub_le p) (norm_rdV_le p) hv0b K).1
-  have h := (iter_spec wt v0 s t (sqrtWindow p) p w W α hwt' hw hwW hW hwt hwb hwtl hv0 hv0w hs
+  have h := (iter_spec wt v0 s (sqrtWindow p) p w W (fun ℓ h => Real.exp (normExp s t α ℓ.val h)) hwt' hw hwW hW hwt hwb hwtl hv0 hv0w hs
     hball p).2.2
   unfold resampJNumH
   rw [← hv0v]
