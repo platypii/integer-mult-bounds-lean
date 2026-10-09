@@ -1237,6 +1237,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitrarySliceCall.lean`: One fixed complete prepare/root/restore program executes any runtime selected power-width window. Actual slice dimensions and occupied headers are constructed, the fixed recursive root program executes, and original headers, frame stack, controls and spectators are restored. Exact window output and runtime rootBudget plus 1030 times parent volume; only canonical input, stack availability and the proved width/row shape are required.
 
+- `Machine/FixedBasePowerUntilBound.lean`: Least stopping exponent and repeated descriptor-scan bounds for a fixed-base growing-power loop. Canonical threshold widths and all repeated comparisons are absorbed into a fixed-base constant times the final power.
+
+- `Machine/FixedBasePowerUntilRange.lean`: The actual least-power selector has runtime linear in its positive input threshold, using strict less-than-one-base overshoot of the final power. Exact paired-digit exponent and range identities connect its output to the manuscript high-row selector.
+
+- `Machine/FixedBasePowerUntil.lean`: One fixed nine-tape program physically initializes base/current/exponent, repeatedly compares and multiplies while below a retained runtime threshold, increments its exponent and clears each flag. It genuinely terminates at Nat.clog B D, retains canonical final power and exponent, clears all other workspace and costs at most a fixed-base constant times the final power.
+
+- `Machine/ArbitraryWidthHighLayout.lean`: Literal finite row-major address bijections implement the manuscript high-field exchange/join and reverse separation. Exact numeric index/volume identities identify joined high digits as rows. The low recursive transpose, even with row padding and cropping, returns the original full-width transpose after separation. Physical high-field movement remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -833,3 +833,7 @@ import IntegerMultBounds.Machine.BinaryDescriptorIncrement
 import IntegerMultBounds.Machine.RadixRangePadding
 import IntegerMultBounds.Machine.SliceHeaderPlacement
 import IntegerMultBounds.Machine.ArbitrarySliceCall
+import IntegerMultBounds.Machine.FixedBasePowerUntilBound
+import IntegerMultBounds.Machine.FixedBasePowerUntilRange
+import IntegerMultBounds.Machine.FixedBasePowerUntil
+import IntegerMultBounds.Machine.ArbitraryWidthHighLayout
