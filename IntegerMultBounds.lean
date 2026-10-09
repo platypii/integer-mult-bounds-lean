@@ -1011,3 +1011,7 @@ import IntegerMultBounds.Machine.CountedPackedArith
 import IntegerMultBounds.Machine.CountedPackedInverse
 import IntegerMultBounds.Machine.ElementaryMultiplyOutputData
 import IntegerMultBounds.Machine.ElementaryMultiply
+import IntegerMultBounds.Machine.EqualWordReplace
+import IntegerMultBounds.Machine.WordBankCleanup
+import IntegerMultBounds.Machine.CountedPackedRecycle
+import IntegerMultBounds.Machine.CountedPackedReusable

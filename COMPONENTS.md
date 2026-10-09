@@ -1565,6 +1565,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ElementaryMultiply.lean`: One fixed four-tape machine parses original multiplication input, computes the Horner accumulator, physically erases input and copies exactly twice-length MSB product bits using an operand clock. Genuine halting, literal outputCorrect and Assembly.RunsWithin at40 times n squared plus n plus one hold for every equal input length, including zero. This completes the ordinary quadratic fallback; fast-path assembly and the sub-n-log-n bound remain open.
 
+- `Machine/EqualWordReplace.lean`: One fixed two-tape seven-state machine copies an equal-width word over an existing target, rewinds both heads and preserves arbitrary exteriors. A literal overwrite lemma justifies replacing every target cell without a preliminary erasure; total cost is at most three lengths plus six, including empty words.
+
+- `Machine/WordBankCleanup.lean`: Generic fixed-slot word replacement and physical scan/erase act on a selected caller bank, preserving the full complementary frame. The target and source heads return to their original positions; exact contracts charge all transitions and handle zero widths.
+
+- `Machine/CountedPackedRecycle.lean`: One fixed nine-tape seven-stage cleanup copies both new packed outputs into the original target and temporary tapes, then physically erases five intermediate payload words. Exact restored heads and a uniform affine word-length bound work for forward and inverse layouts, including unguarded addresses.
+
+- `Machine/CountedPackedReusable.lean`: Complete fixed forward and inverse packed arithmetic reads original q/b/n, copies both output words back into the original payload slots and physically erases every generated payload and metadata tape. Exact word endpoints retain all source/control exteriors and original descriptors, restore every head and have uniform2720-times-full-stride cost, including zero digits. Physical payload permutation and late-control load/unload remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
