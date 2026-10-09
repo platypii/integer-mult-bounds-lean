@@ -20,7 +20,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (6/9) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
-| Exact multiplication, parameters, time bound | §8 | 🟡 (3/5) | ⬜ (0/2) |
+| Exact multiplication, parameters, time bound | §8 | 🟡 (4/6) | ⬜ (0/2) |
 | End-to-end theorem `EndToEnd` | — | 🟡 (0/3) | ⬜ (0/3) |
 
 ## 1. Machine model and target statement (§2)
@@ -482,6 +482,7 @@ The concrete section endpoint is complete in `BinaryInterchangeRun.runs` and `Bi
 | Asymptotics and finite-depth recurrence | `Asymptotics` | ✅ | — | |
 | Prime existence | `Primes` | 🟡 | — | Short-interval primes open |
 | Exact coefficient arithmetic, rounding, carries | `Carry`, `MainReduction`, `ExactRecovery` | ✅ | ⬜ | Carries and packing at the list level; the §8 precision chain from transform errors `E_s` to the exact product, with the margins from the size relations for all large `k` |
+| Exact-width recovered output | `ExactRecoveryOutput` | ✅ | — | Direct numerical recovery yields exactly twice the input length in bits, including nondivisible chunk widths; leading-padding removal preserves the product, and the literal machine output contract follows once that word is installed. Physical carry normalization and installation remain open. |
 | Complete time bound | `TimeBound`, `Sizes`, `CostTable` | 🟡 | ⬜ | Size relations, every table row as a multiple of `p^(1-margin)`, and the assembly into `O(n (lg n)^(1-κ))` at `κ = 83/10^12` proved; the components must still supply the row costs |
 
 ## 10. End-to-end theorem `EndToEnd`
