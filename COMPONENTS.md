@@ -1515,6 +1515,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryRadixEqualRun.lean`: One actual fixed five-stage machine prepares binary-to-radix data, physically constructs six root headers, runs the complete total radix interchange, erases the root headers, and crops while erasing numerical range metadata. Exact original binary transpose, wholly blank private endpoints, zero-width coverage and one positive uniform coefficient at the certified exponent are proved.
 
+- `Machine/BinaryRadixEqualShared.lean`: Physically copies the four original caller shape/width headers into blank private storage, shares the literal payload with the complete binary interchange, and erases the copied headers afterward. Exact transpose and preservation of all other caller fields and private blank storage are proved, with the unchanged certified exponent.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

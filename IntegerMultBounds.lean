@@ -985,3 +985,4 @@ import IntegerMultBounds.Machine.BinaryAdjacentWidthHeadersShared
 import IntegerMultBounds.Machine.BinaryAdjacentWidthMovementShared
 import IntegerMultBounds.Machine.BinaryRadixRangeRuntimeBudget
 import IntegerMultBounds.Machine.BinaryRadixEqualRun
+import IntegerMultBounds.Machine.BinaryRadixEqualShared
