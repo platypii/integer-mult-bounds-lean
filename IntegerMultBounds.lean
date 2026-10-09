@@ -2077,3 +2077,4 @@ import IntegerMultBounds.Machine.UnitPhasePolynomialSourceEndpoint
 import IntegerMultBounds.Machine.UnitPhasePolynomialBudget
 import IntegerMultBounds.Machine.UnitPhasePolynomialNative
 import IntegerMultBounds.Machine.UnitPhasePolynomialNativeBudget
+import IntegerMultBounds.Machine.ActivePrefixStageNativePairBudget

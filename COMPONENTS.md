@@ -3704,6 +3704,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhasePolynomialNativeBudget.lean`: Includes every traversal, initialization, cleanup, rewind and source overwrite transition in a uniform serialized-volume bound when actual polynomial multiplicity fits payload capacity. Actual aligned payloads must discharge this explicit bound and uniform kernel selection remains separate.
 
+- `Machine/ActivePrefixStageNativePairBudget.lean`: The actual complete native basis-word executable retains the certified stage exponent, with uniform constant times literal instruction count times original serialized-volume scale. Header frames, rewrites, conversions, restoration and joins are all charged. The cost theorem includes the genuine program witness and exact row output; recursive network/phase assembly remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
