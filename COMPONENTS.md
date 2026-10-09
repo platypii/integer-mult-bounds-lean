@@ -1551,6 +1551,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ElementaryMultiplyCore.lean`: One fixed four-tape machine parses original packed input, physically positions the reversed operands and executes the literal Horner multiplier. The original input is retained and the literal accumulator has exact product value; equal-length runtime is at most24 times n squared plus n plus one, including empty operands. Exact twice-length MSB output installation and the fast path remain separate; no sublogarithmic claim is made.
 
+- `Machine/CountedPackedOriginalLine.lean`: One fixed seventeen-tape modular line constructs and erases all gather suffixes and both clocks from blank workspace, performs exact gathered column arithmetic, erases offset scratch and restores every payload head. Only the six original canonical gather headers remain inputs; they are retained, all six private tapes return blank, and the total uniform full-stride bound includes zero cases. Runtime q/b/n shape construction and multi-line composition are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
