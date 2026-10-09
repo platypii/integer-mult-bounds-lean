@@ -3626,6 +3626,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerChildReturn.lean`: The actual child-return continuation physically erases child descriptors, restores exact parent headers and the older descriptor stack, restores the parent exponent and retains the computed native payload. Complete recursive execution and return-site role-network continuation remain separate.
 
+- `Machine/CompactComplexControllerStopSetup.lean`: Physically copies original dimension and live exponent into a blank appended stop bank and computes the actual stop threshold and flag with paid setup. No leaf or internal network execution is asserted.
+
+- `Machine/CompactComplexControllerStopCleanup.lean`: Physically erases all generated stop descriptors, flag and work, restores every private head and preserves the original native/controller/persistent-storage frame with linear descriptor cost.
+
+- `Machine/CompactComplexControllerStopBranch.lean`: Reads the physically computed runtime stop flag, reclaims all stop storage and reaches the selected finite continuation start with paid branching and cleanup. Concrete leaf/internal continuations and recursive execution remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
