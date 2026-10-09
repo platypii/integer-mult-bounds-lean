@@ -2710,6 +2710,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixDirtyControlLayoutFields.lean`: Exact original compact-U fields in both target/back prefixes generate valid dirty-control producer shapes; actual geometry discharges their paid-work absorption without wide source padding.
 
+- `Machine/ActiveRepairLayoutRecordsShape.lean`: Separates actual wide payload cells from address-only record ranks by a complete equivalence; literal cell index is record rank times original payload width plus bit offset.
+
+- `Machine/ActiveRepairLayoutRecordsPermutation.lean`: Both early/later actual and ideal permutations commute with whole-record cell lifting, and bad membership is independent of the payload bit.
+
+- `Machine/ActiveRepairLayoutRecordsData.lean`: Complete original-width records serialize exactly to the original physical array; address-only repair geometry descriptors equal the original wide geometry.
+
+- `Machine/ActiveRepairLayoutRecordsMove.lean`: Whole-record permutation of the actual array equals serialization of moved records, and serialized ideal flagged streams equal the ideal physical bit array.
+
+- `Machine/ActiveRepairLayoutRecordsEarly.lean`: Actual four-load output records equal the true global early repairRecords input, and the full unchanged physical array equals the actual global permutation image.
+
+- `Machine/ActiveRepairLayoutRecordsPipelineEarly.lean`: Actual original-input early repair on full-width records returns the ideal record stream and correct full-bit serialization with exact retained bank/runtime; wide payload is unrestricted. Physical formatting and final flattening remain separate.
+
+- `Machine/ActiveRepairLayoutRecordsPipelineLate.lean`: Actual original-input later repair on full-width records returns the ideal record stream and correct full-bit serialization with exact retained bank/runtime; wide payload is unrestricted. Physical later schedule, formatting and final flattening remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
