@@ -1179,6 +1179,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveRootExecution.lean`: One concrete fixed root program physically sets up its sentinel and headers, executes the proved recursion, restores all stacks/spectators and genuinely halts with exact binary chunk transpose. Its actual steps obey one uniform positive constant times logical volume times width to exponent 1−296/10^11, for power widths and recursively divisible rows.
 
+- `Machine/ArbitraryWidthPieceBudget.lean`: The sum of the completed fixed root machine budgets over the literal base-125000 piece list obeys one uniform positive constant times logical volume times full width to the certified exponent. This proves the actual call-budget sum; physical wrapper preparation, padding and tape composition must still be charged.
+
+- `Machine/ArbitraryWidthPieces.lean`: The literal base-125000 power-piece list covers every chunk width, with certified depth/count/offset bounds. Consecutive piece swaps compose to the exact numerical full-address swap; each slice descriptor preserves total logical volume and satisfies the proved power-width Shape on common divisible rows. Its finite cost sum equals the manuscript digit-weighted sum. Physical padding and paid slice/list construction remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

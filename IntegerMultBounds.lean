@@ -798,3 +798,5 @@ import IntegerMultBounds.Machine.Shared50RecursiveBudgetAssembly
 import IntegerMultBounds.Machine.Shared50RecursiveCallInductionBridge
 import IntegerMultBounds.Machine.Shared50RecursiveInduction
 import IntegerMultBounds.Machine.Shared50RecursiveRootExecution
+import IntegerMultBounds.Machine.ArbitraryWidthPieceBudget
+import IntegerMultBounds.Machine.ArbitraryWidthPieces
