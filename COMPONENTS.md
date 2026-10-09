@@ -3558,6 +3558,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerHeaderStack.lean`: Saves native child headers seven/eight/nine on a chosen appended stack and physically restores them after destination erasure, preserving all other controller/native/storage cells. The caller must choose persistent stack slots beyond any appended native-stage workspace.
 
+- `Machine/CompactFallbackInverseAxis.lean`: One fixed sparse inverse-axis body reuses original-header geometry synthesis, executes the genuine negative-phase inverse butterfly, clears derived headers and increments the ordinal.
+
+- `Machine/CompactFallbackInverseSchedule.lean`: A physical counted sparse inverse loop visits rho+i*K, preserves the actual binary dimension and polynomial multiplicity, and pays every ordinal/count transition and private cleanup.
+
+- `Machine/CompactFallbackInverseOriginal.lean`: Original scalar headers and a reserved-width native array feed the complete sparse inverse wrapper, including paid ordinal initialization/erasure and linear native-volume-times-D runtime for positive D.
+
+- `Machine/CompactFallbackInverseSemantics.lean`: The actual sparse inverse consumes the existing accrued bounded grid, preserves signed width and gives exact negative-phase Walsh semantics at the incremented precision without free renormalization.
+
+- `Machine/CompactFallbackRoundtrip.lean`: One physical forward-then-inverse sparse machine retains original headers, erases ordinal/private work after both passes and recovers exact decoded coefficients at precision q+2D. Binary dimension remains D*K and polynomial multiplicity remains two to ell; normalized pre-encoded enlarged-width input and positive D remain explicit caller contracts.
+
+- `Machine/CompactFallbackRoundtripBudget.lean`: The complete sparse roundtrip cost, including both passes and the sequencing transition, fits the actual certified cutoff allowance relative to original polynomial volume.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
