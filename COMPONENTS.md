@@ -2240,6 +2240,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixSelectedOffsetPlaced.lean`: Actual clean first-offset producer on arbitrary nine caller ports reads only the eight original canonical descriptors and blank output. Exact varying offsets at origin, all retained original/spectator tapes and forty-one blank private tapes are proved with unchanged linear prefix-table cost. Original-row repetition and direct active rotation composition remain separate.
 
+- `Machine/ActivePrefixOffsetRepeatRun.lean`: One fixed four-tape machine physically repeats a generated base offset word using the original canonical row descriptor. An actual empty-source branch avoids per-row overhead for empty words. Exact repeated output, retained source/descriptor, erased clock and cost54 times repeated volume plus one include arbitrary rows, zero rows and empty input.
+
+- `Machine/ActivePrefixOffsetRepeatAlphabet.lean`: Lifts the actual fixed row-repetition machine to any larger alphabet, preserving literal binary words, canonical descriptor, full workspace cleanup and the same runtime bound.
+
+- `Machine/ActivePrefixOffsetRepeatPlaced.lean`: Clean repetition on arbitrary rows/base/output caller ports returns exactly the flattened original-row copies, retaining all original descriptors, source and spectators and erasing four private tapes. No power-of-two row assumption or supplied repetition table is needed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
