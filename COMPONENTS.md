@@ -1147,6 +1147,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveBaseExecution.lean`: Complete width-one execution of the actual fixed root program: root frame setup, guard, digit interchange, occupied-header restoration, real PC decode/return edge and final halt. Exact transformed stream, all spectator banks/stacks restored and fixed-coefficient linear logical-volume runtime; recursive widths remain open.
 
+- `Machine/Shared50RecursiveCallSemantics.lean`: Actual parking/movement leaves all original World work tapes blank and the active word on common IO; header setup has the exact canonical child bank. Source replacement commutes with entry into IO replacement, array support is derived, and the payload stack preserves an unbounded blank suffix.
+
+- `Machine/Shared50RecursiveCallRecovery.lean`: Actual initialized count/move/reverse-parking/cleanup recovery consumes the returned IO word and restores precisely the parent array with one selected World stream updated. Source support and free intervals follow from canonical arrays and blank suffix; binary child outputs preserve all World bit encodings.
+
+- `Machine/Shared50RecursiveChildPermutation.lean`: Full transpose of the actual cross-child layout equals exactly the selected parent H_i/D_j swap. Literal serialized input/return words match, spectators are preserved, and binary selected-coordinate ChildSpec follows, independently of row-split divisor.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
