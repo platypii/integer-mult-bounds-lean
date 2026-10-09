@@ -2846,6 +2846,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryPackedLatePermutation.lean`: The actual fixed-width late word algorithm equals the exact packed permutation used by global repair, including all dirty carries and borrows on exceptional addresses.
 
+- `Machine/ActivePrefixDirtyControlGlobalCoordinates.lean`: Literal T/U field-update equations remove every physical compact conjugation wrapper and identify all four parity and source offset values at current original addresses.
+
+- `Machine/ActivePrefixDirtyControlSourcePacked.lean`: Actual source load/unload equals the fixed-width packed late control arithmetic; current compact-U controls are exactly digit parities, including carries and borrows.
+
+- `Machine/ActivePrefixDirtyControlPackedEarly.lean`: Each actual dirty-U early block equals the packed late algorithm early step and retains every original source and spectator coordinate.
+
+- `Machine/ActivePrefixDirtyControlPackedLate.lean`: The complete actual prepared later coordinate schedule is the packed late algorithm on every address, with exact state and integer value identities.
+
+- `Machine/ActivePrefixDirtyControlLateGlobal.lean`: The physical prepared later schedule equals the exact global lateActual permutation used by repair on all original addresses, including exceptional addresses; both forward and inverse full-array entry semantics are proved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
