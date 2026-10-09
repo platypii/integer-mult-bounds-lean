@@ -1355,6 +1355,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthPieceCost.lean`: The complete actual piece dispatcher runtime is bounded by the fully paid digit-weighted slice budgets plus explicit physical control overhead. Its sole-header setup, all runtime digit steps and complete cleanup satisfy a fixed positive coefficient times volume times positive width to the unchanged certified exponent; a width-plus-one version includes zero. No callback execution or cost oracle is assumed.
 
+- `Machine/RadixHighBlockJoinSemantics.lean`: Successive single-radix movements join an entire runtime high block in its original digit order. Exact indexed cells and equality to the whole block transpose are proved for arbitrary payload symbols and all spectators.
+
+- `Machine/ArbitraryWidthHighMovementSemantics.lean`: The actual high-prefix exchange followed by ordered joining has exactly the manuscript joined-row layout, with literal prefix/spectator/suffix dimensions and explicit finite-index casts. Separation agrees with the return layout, and exchange, join, low transpose and separation compose to the exact original full transpose.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

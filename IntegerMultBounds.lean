@@ -905,3 +905,5 @@ import IntegerMultBounds.Machine.ScanRight
 import IntegerMultBounds.Machine.BinaryDescriptorNormalize
 import IntegerMultBounds.Machine.BinaryDescriptorDifference
 import IntegerMultBounds.Machine.ArbitraryWidthPieceCost
+import IntegerMultBounds.Machine.RadixHighBlockJoinSemantics
+import IntegerMultBounds.Machine.ArbitraryWidthHighMovementSemantics
