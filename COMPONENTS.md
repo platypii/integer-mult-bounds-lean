@@ -1976,6 +1976,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactGadgetReservationHeadersBudget.lean`: Entire original-R row synthesis, reservation shape preparation and actual load preserve the certified width exponent with constant depending only static role count; no extra chunk-size factor. Width is n*globalGuard; distinct narrower packed widths and generated-offset reservation routing remain separate.
 
+- `Machine/CountedLateRepairInverse.lean`: Fixed twenty-eight-tape reverse eight-stage later packed arithmetic machine reads original runtime headers/control, restores an unconditional true packedLate preimage and erases parity/arithmetic/header scratch. Unrestricted word/value semantics and cost7000*(n+1)*(q+b+1) are proved; later guard, destination key and full repair pipeline remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
