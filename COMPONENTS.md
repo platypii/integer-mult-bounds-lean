@@ -3000,6 +3000,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsFullEarlySelected.lean`: The actual complete early physical machine has the canonical full-selected XOR destination at every original array address; source retention carries the explicit original source-interval nonoverlap premise.
 
+- `Machine/ActiveRepairLayoutRecordsPayloadLatePlaced.lean`: The complete original-input later payload machine executes on twenty-three arbitrary numeric/array caller ports, restoring its native workspace and preserving every complementary tape/head.
+
+- `Machine/ActiveRepairLayoutRecordsPayloadLateData.lean`: One original twenty-two-word later caller shares its actual raw array with the complete after-source repair; actual payload output is exactly repair input and physical copy-back restores the original caller.
+
+- `Machine/ActiveRepairLayoutRecordsPayloadLateRun.lean`: The full original-input later low-selected stage executes all actual payload operations, clean raw repair and physical copy-back/erasure on one caller, returning exact lateIdeal array with all generated/private tapes blank.
+
+- `Machine/ActiveRepairLayoutRecordsPayloadLateBudget.lean`: The entire original-input later payload/clean repair/copy-back stage retains the certified full-volume compact-width exponent, paying all metadata, actions, sorting, erasures and joins; a certified execution theorem combines its correctness and runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
