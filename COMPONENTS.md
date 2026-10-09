@@ -1159,6 +1159,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveCallReady.lean`: Actual call entry constructs child headers and canonical binary source bank, preserving available payload/node/descriptor/PC stack suffixes and blank scalar-view workspace. All child induction input invariants follow from parent readiness and physical entry.
 
+- `Machine/Shared50RecursivePieceExecution.lean`: Actual segment/gate graph transitions and call entry-child-return-recovery composition execute every remaining literal schedule piece. Binary invariant-aware suffix induction charges all graph edges, exact s child calls and fixed linear logical-volume overhead; each recursive child trace remains the induction premise.
+
+- `Machine/Shared50RecursiveBasePermutation.lean`: Width-one digit interchange equals full parent H/D transpose at every flat cell, and canonical source-bank IO updates match the exact recursive output serialization.
+
+- `Machine/Shared50RecursiveBudget.lean`: Natural-valued recursion budget charges fixed base/node work and exactly s child budgets at logical volume parent/W. Occupied-header cleanup/return costs are bounded from actual word lengths; proving execution meets the recursive budget remains separate.
+
+- `Machine/Shared50RecursiveInductionBase.lean`: The actual fixed graph executes canonical binary width-one input to the complete transpose and decoded caller address, preserving all stacks/spectators and meeting the same logical-volume budget used by the recursive induction.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
