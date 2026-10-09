@@ -3237,7 +3237,8 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   by `lalgen.py`). Each step copies line `ℓ` (`2s` words) off the array tape,
   builds its cyclic extension, runs the line machine with `t` windows
   (`gaussA_run`), appends the `2t` accumulator words to the output and cleans
-  up; `loop_hoare` runs `L` lines, leaving `outs wt arr s t m p w W L`.
+  up; `loop_hoare` runs `L` lines, leaving `outs wt arr s t m p w W L`, in
+  time `L (lineBound + 2)`.
 - `Resampling/LineValue.lean`: `outs_getD` locates line `ℓ`'s words, and
   `line_value` identifies them with the `Ã` numerators of that line for the
   A-table words.
