@@ -2112,6 +2112,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedLateTapeRepairLinear.lean`: Density absorption proves an actual Hoare execution bound(12304*C+228)*lateMi*(recordWidth+2), under explicit key-width, stride and small-density conditions. Together with the earlier endpoint, both repair pipelines now have full physical correctness and charged bounds.
 
+- `Machine/CompactGadgetReservationHeadersCarvedPlaced.lean`: The actual carved-header schedule shares eleven arbitrary caller ports without copying original descriptors, preserves every spectator and restores forty private tapes. Exact P/G/B synthesis and full-volume setup cost hold for any compact carved width within the fixed reservation.
+
+- `Machine/CompactGadgetReservationHeadersCarvedPlacedWidth.lean`: Physically multiplies original n and packing-factor words through three arbitrary caller ports with one shared forty-tape workspace, preserving originals and returning exact canonical width with full paid cost.
+
+- `Machine/CompactGadgetReservationHeadersCarvedPlacedRun.lean`: Actual original packing factor and seven original shape descriptors generate width/P/G/B on distinct caller outputs with complete workspace restoration. Setup cost is at most(31*headerCoefficient+82)*roleVolume; compact-width capacity remains explicit.
+
+- `Machine/CompactGadgetReservationHeadersCarvedPlacedCleanup.lean`: Four actual shape descriptors are physically erased after use, preserving every other caller tape/head. Exact cost2 times all descriptor lengths plus19 is bounded by35*roleVolume from the carved geometry.
+
+- `Machine/BinaryDescriptorCopyPlaced.lean`: Actual marked descriptor duplication reads caller source at head one and blank destination at head zero, returns both words at head one and frames every other caller tape/head. No supplied duplicate word or workspace copy is assumed; cost2*length+5.
+
+- `Machine/BinaryPackedEarlyRunPlaced.lean`: The complete certified front-target early kernel executes on eighteen arbitrary caller ports and changes only the payload, retaining every descriptor/control/spectator and restoring all native workspace. This retains the existing explicit target-width capacity and fixed-source-control premises; it is not the active-target algorithm assembly.
+
+- `Machine/PackedEarlyHeaderCleanup.lean`: Actual twelve-descriptor sequential cleanup restores the exact initial bank and frames all originals at paid108 times containing volume. The explicit derived-word family is the existing front-target kernel header family; applying it to selected-algorithm metadata remains separate.
+
+- `Machine/ActiveTargetRotation.lean`: A direct actual caller-owned active-target rotation retains original prefix/suffix/width descriptors, packed offsets and all spectators with twelve private tapes blank. Full destination semantics and a uniform linear-volume bound hold for every target width, without target interchanges or front-capacity premises. Offset production remains an explicit physical stage input.
+
+- `Machine/BinaryPackedLateData.lean`: Actual late row-word arithmetic composes early, dirty-control load, early and unload with exact unrestricted packedLate values and unconditional dirty-control restoration. Guarded ideal toggling and arbitrary spectator preservation are proved; varying-prefix offset tables and active-target physical assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
