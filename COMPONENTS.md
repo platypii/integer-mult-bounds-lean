@@ -1363,6 +1363,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighBranchPlacement.lean`: Injective shared-bank placement of the actual high-width selector takes only literal canonical descriptor, head and blank flag premises. It proves the exact selected state, genuine halt and complete tape/head preservation with no supplied comparison result or active-view oracle.
 
+- `Machine/RadixHighBlockJoinPlacement.lean`: Exact shared-bank views place the existing digit movement machine and its arithmetic tail into the ordered high-block body while preserving all other tapes.
+
+- `Machine/RadixHighBlockJoinArithmetic.lean`: Actual prefix growth and suffix shrinking operate on the shared movement bank, preserving arbitrary payload, original headers, spectators and all framed arithmetic storage.
+
+- `Machine/RadixHighBlockJoinBody.lean`: One fixed body physically shrinks the working suffix, executes the literal ordered radix digit movement, and grows the prefix. Both forward and inverse directions have exact serialized endpoints and fixed-radix linear-volume cost.
+
+- `Machine/RadixHighBlockJoinLoop.lean`: A concrete runtime-counted loop executes every high digit in order from a canonical retained exponent. Its computed trace is proved step by step from the actual body; the final payload is exactly the whole-block ordered join, with paid clocks and preserved inputs.
+
+- `Machine/RadixHighBlockJoinRun.lean`: The complete actual forward high-block join starts from sole original shape/count descriptors and blank private storage. It constructs movement controls, executes the real counted loop and erases every private descriptor. Exact ordered payload output and fixed-coefficient volume-times-count bound are proved; the actual high-depth selector retains every positive target width exponent.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
