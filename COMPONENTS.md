@@ -2214,6 +2214,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/VaryingControlRepairLayoutRank.lean`: Actual unchanged active-layout ranks recover V/T/U and active-before/after coordinates exactly, including arbitrary payload suffix. Explicit source-slot offsets yield exact source-word/value recovery from genuine short counter values; no padded-counter input or physical rank parser is assumed.
 
+- `Machine/ActivePrefixOffsetStreamsCleanup.lean`: Fixed thirteen-state caller-placed cleanup physically erases the temporary, full-source and varying-control streams and rewinds the retained offset output. Exact stream-length cost, empty cases and the complete complementary frame are proved; no private workspace is appended.
+
+- `Machine/ActivePrefixSelectedOffsetBank.lean`: Defines the original eight-descriptor bank and shared prefix-field, source-extraction and selected-gather placements. Exact physical gathered output equals the canonical varying first-offset stream; original descriptors and complementary bank are retained.
+
+- `Machine/ActivePrefixSelectedOffsetRun.lean`: One fixed forty-one-tape producer physically synthesizes all five derived headers, projects temporary and full-source fields from every prefix address, extracts current source controls and emits selected offsets. Every stage has actual tape semantics and charged runtime; cleanup is provided separately.
+
+- `Machine/ActivePrefixSelectedOffsetCleanup.lean`: Physically erases all generated source/control streams and five derived descriptors after the selected gather. Exact final bank retains only the original eight descriptors and offset output at origin, with all twenty-four private tapes blank and every head restored.
+
+- `Machine/ActivePrefixSelectedOffset.lean`: Complete fixed first-offset producer reads only eight original canonical descriptors, generates the exact varying-source offsets and clears all derived tables, headers and workspace. A uniform constant times two-to-W times W-plus-one bound includes every stage and cleanup. Arbitrary caller placement, repetition over original rows and active rotation composition remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
