@@ -2372,6 +2372,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairEarlySourceRun.lean`: One fixed fifty-two-tape sequence physically parses the original full rank, extracts that address’s source controls and directly executes actual early inverse/guard/ideal-toggle calculation. Private scratch is erased and recovered fields/flag are exact; total cost27600 times address width plus one, plus five. Runtime field descriptors remain supplied; their synthesis, full-rank patching and conditional key composition are separate.
 
+- `Machine/ActivePrefixCompactParityLoadData.lean`: Exact compact n*b payload dimensions and actual repeated pure-parity offset words; no wide target is placed in the reserved front.
+
+- `Machine/ActivePrefixCompactParityLoadHeaders.lean`: Actual power, width and prefix-count synthesis from original eight shape descriptors and row count, with retained originals and paid arithmetic.
+
+- `Machine/ActivePrefixCompactParityLoadRun.lean`: Fixed sixty-tape pure-parity payload load executes original-input generation, physical row repetition and compact-width rotation on one shared bank.
+
+- `Machine/ActivePrefixCompactParityLoadCleanup.lean`: Physically erases base/repeated offsets and every derived descriptor after the compact pure-parity rotation, restoring all auxiliary slots.
+
+- `Machine/ActivePrefixCompactParityLoad.lean`: Complete pure-parity compact load retains original descriptors and rotates exact payload records with clean private storage and linear volume cost under explicit prefix-table absorption, including n=0.
+
+- `Machine/ActivePrefixCompactParityLoadPlaced.lean`: Places the complete compact pure-parity load on arbitrary eleven caller ports, preserves the complementary frame and restores sixty appended private tapes.
+
+- `Machine/ActivePrefixCompactParityLoadLayout.lean`: Exact unchanged-layout compact pure-parity destinations and full-record cost, with explicit whole-back absorption; surrounding swaps remain separate.
+
+- `Machine/ActivePrefixCompactParityLoadLayoutAfter.lean`: Exact after-source layout destinations identify the compact pure-parity action on original T after semantic T/back exchange; physical surrounding swaps are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
