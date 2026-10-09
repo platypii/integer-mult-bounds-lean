@@ -2734,6 +2734,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairRecordFlattenAlphabet.lean`: Actual unmarked-record decoder lifts to larger alphabets with unchanged runtime and literal payload bit codes; complete source erasure and raw output at origin are retained.
 
+- `Machine/ActiveRepairRecordFormatRecord.lean`: One fixed binary-counted record producer installs its false flag, copies the runtime payload width and emits its delimiter, retaining source/width and restoring its clock.
+
+- `Machine/ActiveRepairRecordFormatWords.lean`: Exact raw and delimited record words, stream segment views and prefix identities support repeated physical formatting.
+
+- `Machine/ActiveRepairRecordFormatStream.lean`: Actual nested binary-counted stream program formats every fixed-width original record; finite control is independent of count and width, with exact original source retention.
+
+- `Machine/ActiveRepairRecordFormatEndpointAt.lean`: Physical clock initialization and one-tape caller operations support the complete formatter endpoint.
+
+- `Machine/ActiveRepairRecordFormatEndpoint.lean`: Six-tape raw-to-record formatter synthesizes and erases both clocks, retains binary width/count descriptors and original raw source, and returns data heads to origin with paid linear record-volume cost.
+
+- `Machine/ActiveRepairRecordFormatAlphabet.lean`: Complete raw formatter runs on larger alphabets with unchanged time; literal bit/flag/delimiter codes, original source and blank clock storage are retained.
+
+- `Machine/ActiveRepairRecordFormatPlaced.lean`: Four-port formatter consumes original raw source, blank record output and binary width/count headers on arbitrary caller banks; six private tapes and every spectator are restored.
+
+- `Machine/ActiveRepairRecordFlattenPlaced.lean`: Actual unmarked-record decoder runs on arbitrary two-port caller banks with exact source erasure, raw output at origin, restored private storage and complementary frame.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
