@@ -2892,6 +2892,32 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsAssemblyLayoutLate.lean`: The complete later raw-array/format/repair/decode/cleanup machine returns literal ideal whole-width array bits, with all metadata/raw inputs retained and a combined linear volume and count-header bound.
 
+- `Machine/ActiveTargetHighestPairData.lean`: Two actual one-bit fields have full-array geometry with arbitrary positive outer row counts, genuine numeric load/swap descriptors and exact earlier/later actions.
+
+- `Machine/ActiveTargetHighestPairRun.lean`: Prepared highest-bit early and later machines execute literal pure loads and actual width-one swap/load/swap, retain all original arrays and descriptors and restore every private tape.
+
+- `Machine/ActiveTargetHighestPairBudget.lean`: Both physical highest-bit actions have uniform linear original-volume runtime; width-one interchanges introduce no fractional width factor.
+
+- `Machine/ActiveTargetHighestPairSemantics.lean`: Actual arbitrary-row highest-bit actions equal the exact earlier-source and later-source XOR at every full-array address.
+
+- `Machine/ActiveTargetHighestPairPlaced.lean`: Prepared highest-bit actions execute on arbitrary eleven-port caller banks, preserving every complementary tape and head and restoring private storage.
+
+- `Machine/ActiveTargetHighestPairHeadersData.lean`: Five original L/G/K/rows/payload descriptors determine the fixed arithmetic, three-power and two-product highest-bit header schedule and physical generated-word cleanup.
+
+- `Machine/ActiveTargetHighestPairHeadersAtomic.lean`: Actual placed constant, power and multiplication machines execute on the shared highest-bit producer bank with exact header endpoints and clean private workspace.
+
+- `Machine/ActiveTargetHighestPairHeadersRun.lean`: Physical highest-bit metadata synthesis generates every ten-word consumer descriptor from original five inputs and erases all temporary powers/products; post-use cleanup restores the originals.
+
+- `Machine/ActiveTargetHighestPairHeadersEndpoint.lean`: Literal canonical original-five words produce the exact canonical ten-word highest-bit consumer bank and are retained literally through generated-header cleanup.
+
+- `Machine/ActiveTargetHighestPairHeadersBudget.lean`: Complete highest-bit header production and erasure costs are bounded linearly by the actual full array volume without an additional record-width allowance.
+
+- `Machine/ActiveTargetHighestPairOriginalData.lean`: Original five numeric descriptors and the actual array form the literal highest-bit input bank, with all derived descriptors and private storage initially blank.
+
+- `Machine/ActiveTargetHighestPairOriginalRun.lean`: One fixed original-input highest-bit machine produces every load/swap header, executes the actual earlier or later action and erases every generated header, retaining original words and exact transformed array.
+
+- `Machine/ActiveTargetHighestPairOriginalBudget.lean`: The complete original-input highest-bit machines have uniform linear full-volume runtime including every metadata producer, action, erasure and sequencing transition.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
