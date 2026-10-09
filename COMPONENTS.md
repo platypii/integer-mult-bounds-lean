@@ -1521,6 +1521,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryAdjacentWidthRun.lean`: One actual long-H program performs prefix construction, the complete caller-shared equal-width binary transpose, constructed binary movement and all cleanup. The long-D program performs actual inverse movement before the equal-width call. Both return the exact original rectangular transpose from sole original headers with every private bank blank, including zero shorter width, and a positive uniform coefficient at the certified exponent.
 
+- `Machine/BinaryAdjacentWidthSelector.lean`: Actually compares both canonical original widths, reuses and erases a blank flag, and halts in one of three finite states: equal, longer H, or longer D. All original cells and heads are restored. Exact state/value equivalences, adjacent-width consequences and a linear original-volume comparison budget cover zero-width cases.
+
+- `Machine/BinaryAdjacentWidthSelectorDispatch.lean`: A real finite-flow composition connects the physical three-way selector to the selected supplied branch program and its genuine halt. Conditional branch contracts and all selector/jump/branch costs are proved. Instantiating the final concrete equal/adjacent machine is separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -988,3 +988,5 @@ import IntegerMultBounds.Machine.BinaryRadixEqualRun
 import IntegerMultBounds.Machine.BinaryRadixEqualShared
 import IntegerMultBounds.Machine.BinaryAdjacentWidthPrefixShared
 import IntegerMultBounds.Machine.BinaryAdjacentWidthRun
+import IntegerMultBounds.Machine.BinaryAdjacentWidthSelector
+import IntegerMultBounds.Machine.BinaryAdjacentWidthSelectorDispatch
