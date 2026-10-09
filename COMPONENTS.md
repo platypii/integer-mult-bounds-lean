@@ -1495,6 +1495,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthOriginalZeroBranch.lean`: A real one-transition branch reads the retained canonical width header, whose scanned symbol is blank exactly at zero width. The zero branch runs the actual elementary machine on the full blank global workspace and restores every private bank. The positive body still requires concrete outer-run instantiation.
 
+- `Machine/BinaryRadixRangePrepareAlphabet.lean`: Executes binary-to-radix range preparation and inverse cropping on the recursive alphabet through the actual alphabet lift. Literal encoded bit and descriptor banks, exact pad/transpose/crop endpoints and unchanged paid runtime are proved.
+
+- `Machine/BinaryRadixRootHeadersShared.lean`: Physically writes a temporary canonical one, copies six recursive root headers from the prepared binary bank, and erases the temporary one. All caller storage is retained; exact root Headers, literal copy slots, and original-binary-volume setup/cleanup bounds are proved.
+
+- `Machine/BinaryRadixRootEncoding.lean`: Identifies the numerical padded-range array with the recursive root descriptor at every serialized cell and full-transpose output. Literal bit encoding and padding zero-fill bridges eliminate any assumed payload conversion between the two actual machines.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
