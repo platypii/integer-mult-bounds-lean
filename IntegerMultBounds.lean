@@ -1047,3 +1047,4 @@ import IntegerMultBounds.Machine.MarkedControlStreamReset
 import IntegerMultBounds.Machine.PackedOffsetPayload
 import IntegerMultBounds.Machine.PackedOffsetPayloadValue
 import IntegerMultBounds.Machine.PackedOffsetPowerHeader
+import IntegerMultBounds.Machine.PackedOffsetPayloadOriginal
