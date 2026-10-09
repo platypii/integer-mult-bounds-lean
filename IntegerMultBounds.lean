@@ -1063,3 +1063,7 @@ import IntegerMultBounds.Machine.CountedGuardGadgetPosition
 import IntegerMultBounds.Machine.CountedGuardGadgetHeaders
 import IntegerMultBounds.Machine.CompactRowPaddingRound
 import IntegerMultBounds.Machine.CompactRowPaddingRun
+import IntegerMultBounds.Machine.BinaryAddressTableData
+import IntegerMultBounds.Machine.BinaryAddressTableStep
+import IntegerMultBounds.Machine.BinaryAddressTableFill
+import IntegerMultBounds.Machine.BinaryAddressTable

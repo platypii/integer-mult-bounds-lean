@@ -1659,6 +1659,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactRowPaddingRun.lean`: A fixed twenty-five-tape machine rounds original row count, constructs all span descriptors, pads complete binary records and physically erases all twenty-one private tapes. Original headers/heads and tape exteriors survive. Bound4600 times padded volume,9200 times original volume when roles≤rows, and a fixed-role bound handle all positive rows. Padding-to-role-split composition remains separate.
 
+- `Machine/BinaryAddressTableData.lean`: Defines the literal little-endian fixed-width address rows, proves every row has its stated rank and width, and proves enumeration wraps exactly to zeros after2^w rows, including width zero.
+
+- `Machine/BinaryAddressTableStep.lean`: A fixed physical body copies one address row, restores its source head and increments the counter. Exact next-row and wrap semantics have cost at most4 times width plus7.
+
+- `Machine/BinaryAddressTableFill.lean`: Physically initializes the fixed-width zero counter from the original width descriptor and blank storage, with exact literal cells and restored descriptor; no prepared address table is supplied.
+
+- `Machine/BinaryAddressTable.lean`: A fixed nine-tape machine generates the entire regular address table from the sole original canonical width, physically synthesizes its2^w loop bound, executes every copy/rewind/increment, returns output head zero and erases all seven private tapes. Cost is proportional to(w+1)*2^w; payload-volume absorption requires record width at least w+1. Selected/parity gather composition remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
