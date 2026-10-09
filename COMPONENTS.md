@@ -2562,6 +2562,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixLayoutHeadersLayout.lean`: All physical target/compact header generation and cleanup costs fit linear original-record volume from source fit, positive rows and record payload exceeding address width. Reservation-width synthesis and consumer wiring remain separate.
 
+- `Machine/ActiveRepairLateOriginalScan.lean`: Real original-width late key reads the genuine growing counter, generates all parser/patch headers, extracts current controls, writes the full conditional V/T/U destination and restores175 scratch tapes in the exact scan contract.
+
+- `Machine/ActiveRepairLateOriginalPipelineRun.lean`: Actual189-tape later scan/sort/strip/reinsert uses original-input per-record keys, returns the exact filled stream and retains all original key metadata/private storage, with the full closed cost formula. Shared scan initialization/final cleanup and global ideal-permutation/density identification remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
