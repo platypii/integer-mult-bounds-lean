@@ -804,3 +804,5 @@ import IntegerMultBounds.Machine.ArbitraryWidthPieceBudget
 import IntegerMultBounds.Machine.ArbitraryWidthPieces
 import IntegerMultBounds.Machine.ArbitraryWidthSliceTranspose
 import IntegerMultBounds.Machine.RecursiveRowPadding
+import IntegerMultBounds.Machine.BoundedProductDescriptor
+import IntegerMultBounds.Machine.RowPaddingSpanCounts

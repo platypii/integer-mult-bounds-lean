@@ -1187,6 +1187,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveRowPadding.lean`: Flat prefix/row/suffix zero extension and cropping are exact inverses on retained rows and commute with arbitrary within-row permutations. The original descriptor chunk transpose is exactly such a permutation, so padding/interchange/cropping yields the full original transpose. Padded logical volume is bounded by the row enlargement factor. Physical movement and generated controls remain separate.
 
+- `Machine/BoundedProductDescriptor.lean`: One fixed forty-state six-tape machine generates a canonical binary product from bounded possibly noncanonical outer counts. All workspace markers are physically initialized and erased; original inputs remain exact and cost is at most 53 times the bounded product plus 28.
+
+- `Machine/RowPaddingSpanCounts.lean`: One fixed nine-tape machine preserves canonical row, padded-row and suffix-length inputs and actually constructs canonical valid-span R*L and zero-padding-span (R′−R)*L, erasing subtraction and arithmetic scratch completely. Runtime is at most 112*(R′*L)+83; constructing the rounded row count R′ itself is separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
