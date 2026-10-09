@@ -1153,6 +1153,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveChildPermutation.lean`: Full transpose of the actual cross-child layout equals exactly the selected parent H_i/D_j swap. Literal serialized input/return words match, spectators are preserved, and binary selected-coordinate ChildSpec follows, independently of row-split divisor.
 
+- `Machine/Shared50RecursiveDepth.lean`: Positive power-width descriptors with W^depth dividing rows remain valid after exactly one split and divisor-one child preparation. Child width/depth decrease, exact parent volume/W and old/current header bounds are proved.
+
+- `Machine/Shared50RecursiveBinaryInvariant.lean`: Binary World arrays and blank common IO are preserved by every actual piece array operation and literal schedule, using the exact selected child contract and coverage of every flat coordinate. Dirty work roles may hold arbitrary bits.
+
+- `Machine/Shared50RecursiveCallReady.lean`: Actual call entry constructs child headers and canonical binary source bank, preserving available payload/node/descriptor/PC stack suffixes and blank scalar-view workspace. All child induction input invariants follow from parent readiness and physical entry.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
