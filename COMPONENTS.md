@@ -1493,6 +1493,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighCommonDispatchCost.lean`: Proves one positive uniform coefficient for the actual selector and selected high/fallback execution at the certified width exponent. The finite fallback cutoff follows from the actual high-count selector; comparison, real branch work and the jump are all charged.
 
+- `Machine/ArbitraryWidthOriginalZeroBranch.lean`: A real one-transition branch reads the retained canonical width header, whose scanned symbol is blank exactly at zero width. The zero branch runs the actual elementary machine on the full blank global workspace and restores every private bank. The positive body still requires concrete outer-run instantiation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
