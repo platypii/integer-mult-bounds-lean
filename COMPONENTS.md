@@ -2200,6 +2200,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixOffsetHeadersCleanup.lean`: Five generated prefix-offset descriptors are physically erased on arbitrary caller ports, preserving all original tapes and restoring output heads. Complete cleanup is paid by44*2^W*(W+1).
 
+- `Machine/ActiveTargetHighestRun.lean`: A fixed tracked physical coefficient-one shift executes the highest selected one-bit toggle from an earlier source-address bit, retaining six supplied canonical descriptors and returning the exact array at origin. All private and tracking tapes are blank; complete cost137575*volume, with no offset table or target front-capacity premise.
+
+- `Machine/ActiveTargetHighestValue.lean`: Exact full-array transport of the actual highest-bit machine is target XOR with the real earlier prefix bit, preserving all preceding/intervening/suffix coordinates. The combined realizes theorem includes actual execution, cleanup and linear bound; source-layout/header synthesis and later-source placement remain separate.
+
+- `Machine/VaryingControlRepairFiber.lean`: Dependent source-address families of actual/ideal permutations retain their current source and every spectator through inverse and repair destinations. Full rank arithmetic is explicit; a separate original-layout bridge identifies physical ranks.
+
+- `Machine/VaryingControlRepairPacked.lean`: Existing exact early/later packed permutations and repaired endpoints lift uniformly to controls Z(x) computed for each retained source address, with no one-fixed-control-word assumption across the stream.
+
+- `Machine/VaryingControlRepairDensity.lean`: Explicit finite fiber sums bound total bad addresses and normalized exceptional density uniformly across varying source controls, including empty source and spectator ranges.
+
+- `Machine/VaryingControlRepairKeys.lean`: Full varying-source flags and destination keys include source/local/spectator ranks. Arbitrary supplied physical-index equivalences preserve exact destination/key identities; actual runtime full-rank extraction and key assembly remain separate.
+
+- `Machine/VaryingControlRepairLayoutRank.lean`: Actual unchanged active-layout ranks recover V/T/U and active-before/after coordinates exactly, including arbitrary payload suffix. Explicit source-slot offsets yield exact source-word/value recovery from genuine short counter values; no padded-counter input or physical rank parser is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
