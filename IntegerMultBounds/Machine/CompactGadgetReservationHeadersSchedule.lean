@@ -66,7 +66,7 @@ theorem ready (hs : Fin 7 → List Bool) (s : Shape) (n rows : ℕ) (f : Front)
     simp [schedule,construction,cleanup,eraseSlots,ReadyList,Ready,transform,Source,install,
       initial,Fin.addCases,value,word,hv,hc,originalValues,gapSource,prefixSource,
       RecursiveChildQuotientsConstant.bits_value,RecursiveChildQuotientsConstant.bits_canonical,
-      Shape.H,CompactGadgetReservationCapacity.capacity] <;> omega
+      ] <;> omega
 
 theorem executes (hs : Fin 7 → List Bool) (s : Shape) (n rows : ℕ) (f : Front)
     (hv : ∀ i, Counter.value (hs i) = originalValues s n rows i)

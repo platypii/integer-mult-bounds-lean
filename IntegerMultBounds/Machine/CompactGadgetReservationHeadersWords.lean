@@ -27,8 +27,8 @@ theorem installs (xs : Words) (i : Fin 25) (N : ℕ) :
   apply congrArg₂ Tapes.mk <;> funext j
   all_goals by_cases hj : j = i
   all_goals first
-    | (subst j; simp [common,install,setTape,head,tape])
-    | simp only [common,install,setTape,Function.update_of_ne hj]
+    | (subst j; simp [common,install,head,tape])
+    | simp only [common,install,Function.update_of_ne hj]
 
 theorem erases (xs : Words) (i : Fin 25) :
     common (a := a) (Function.update xs i none) =
@@ -36,8 +36,8 @@ theorem erases (xs : Words) (i : Fin 25) :
   apply congrArg₂ Tapes.mk <;> funext j
   all_goals by_cases hj : j = i
   all_goals first
-    | (subst j; simp [common,setTape,head,tape])
-    | simp only [common,setTape,Function.update_of_ne hj]
+    | (subst j; simp [common,head,tape])
+    | simp only [common,Function.update_of_ne hj]
 
 theorem source_head (xs : Words) (i : Fin 25) (hs : Source xs i) :
     (common (a := a) xs).head i = 1 := by simp only [common,hs.1,head]

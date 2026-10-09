@@ -82,9 +82,9 @@ theorem product (v : Tapes t a) (focus : Fin 3 → Fin t) (hf : Function.Injecti
   rw [← SharedPlacementAlphabet.setTape_append_left] at hr
   apply single (productCore (a := a)) productPorts product_injective focus hf v X 2 _ _ ?_ ?_ hr
   · apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i
-    all_goals simp [X,SharedBank.payload,productPorts,DimensionProductDescriptor.input,Tapes.append,Fin.addCases,Fin.exists_fin_succ,h0,h1,h2,p0,p1,p2]
+    all_goals simp [X,productPorts,DimensionProductDescriptor.input,Tapes.append,Fin.addCases,h0,h1,h2,p0,p1,p2]
   · apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i
-    all_goals simp [X,SharedBank.strip,productPorts,DimensionProductDescriptor.input,Tapes.append,Fin.addCases,Fin.exists_fin_succ,SharedBank.empty]
+    all_goals simp [X,productPorts,DimensionProductDescriptor.input,Tapes.append,Fin.addCases,Fin.exists_fin_succ,SharedBank.empty]
 
 def differencePorts : Fin 3 → Fin 15 := Fin.castAdd 12
 theorem difference_injective : Function.Injective differencePorts := by
@@ -116,10 +116,10 @@ theorem difference (v : Tapes t a) (focus : Fin 3 → Fin t) (hf : Function.Inje
   rw [he,← SharedPlacementAlphabet.setTape_append_left] at hr
   apply single (differenceCore (a := a)) differencePorts difference_injective focus hf v X 2 _ _ ?_ ?_ hr
   · apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i
-    all_goals simp [X,SharedBank.payload,differencePorts,BinaryDescriptorDifference.input,
-      BinaryDescriptorDifference.bank,Tapes.append,Fin.addCases,Fin.exists_fin_succ,h0,h1,h2,p0,p1,p2,encoded_binary]
+    all_goals simp [X,differencePorts,BinaryDescriptorDifference.input,
+      BinaryDescriptorDifference.bank,Tapes.append,Fin.addCases,h0,h1,h2,p0,p1,p2,encoded_binary]
   · apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i
-    all_goals simp [X,SharedBank.strip,differencePorts,BinaryDescriptorDifference.input,
+    all_goals simp [X,differencePorts,BinaryDescriptorDifference.input,
       BinaryDescriptorDifference.bank,Tapes.append,Fin.addCases,Fin.exists_fin_succ,SharedBank.empty]
 
 end

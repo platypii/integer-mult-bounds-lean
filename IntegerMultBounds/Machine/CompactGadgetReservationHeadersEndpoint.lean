@@ -22,11 +22,11 @@ theorem headerSlots_injective : Function.Injective headerSlots := by
 theorem header_values (s : Shape) (n rows : ℕ) (f : Front) :
     ∀ i, Counter.value (headerWords s n rows f i) =
       BinaryRadixRangePrepare.values (s.prefixRange rows f) (s.gap n f) (s.suffix n) (s.width n) i :=
-  fun i => RecursiveChildQuotientsConstant.bits_value _
+  fun _i => RecursiveChildQuotientsConstant.bits_value _
 
 theorem header_canonical (s : Shape) (n rows : ℕ) (f : Front) :
     ∀ i, GrowingCounterData.Canonical (headerWords s n rows f i) :=
-  fun i => RecursiveChildQuotientsConstant.bits_canonical _
+  fun _i => RecursiveChildQuotientsConstant.bits_canonical _
 
 /-- These are literal marked tape words at original-header ports, ready for
 the already proved original-header field-swap/rotation/swap machine. -/

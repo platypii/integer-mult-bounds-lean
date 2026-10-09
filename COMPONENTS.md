@@ -1908,6 +1908,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryRepeatedOffsetLoadBudget.lean`: Complete parity/selected/correction production-action-erasure cost preserves the certified interchange width exponent. Physically generated table costs and full offset erasure are absorbed into actual payload volume when the explicit producer allowance fits suffix width; every join and cleanup is charged.
 
+- `Machine/CompactGadgetReservationHeadersDivision.lean`: Physical fixed divisor command computes the canonical role quotient on the shared descriptor bank, preserves its sources and clears its fifteen-tape private work. Divisor is the static role count.
+
+- `Machine/CompactGadgetReservationHeadersRows.lean`: Actual original-R to paddedRows(R,c)/c synthesis on arbitrary permanent caller ports. Initializes staticc, roundsR, divides, erasesc and roundedR, preserves originalR and all caller frame, and returns fifteen private tapes blank. Full cost at most(RecursiveRowsQuotient.constant c+4106)*(c+1)*R for positive original rows.
+
+- `Machine/CompactGadgetReservationHeadersAssembled.lean`: Actual reservation followed by the real selected-role load, with load source/offset contracts proved internally from literal canonical supplied originals; no hload Hoare callback. Synthesized role-count/header placement into this reservation caller remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

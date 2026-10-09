@@ -32,10 +32,10 @@ theorem power (v : Tapes t a) (focus : Fin 2 → Fin t) (hf : Function.Injective
   rw [FixedBasePowerDescriptor.output,he,← SharedPlacementAlphabet.setTape_append_left] at hr
   apply single (powerCore (a := a)) powerPorts power_injective focus hf v X 1 _ _ ?_ ?_ hr
   · apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i
-    all_goals simp [X,SharedBank.payload,powerPorts,FixedBasePowerDescriptor.input,Tapes.append,Fin.addCases,Fin.exists_fin_succ,
+    all_goals simp [X,powerPorts,FixedBasePowerDescriptor.input,Tapes.append,Fin.addCases,
       CountedLoopReuseAlphabet.controls,SharedBank.empty,h0,h1,p0,p1,encoded_binary]
   · apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i
-    all_goals simp [X,SharedBank.strip,powerPorts,FixedBasePowerDescriptor.input,Tapes.append,Fin.addCases,Fin.exists_fin_succ,
+    all_goals simp [X,powerPorts,FixedBasePowerDescriptor.input,Tapes.append,Fin.addCases,Fin.exists_fin_succ,
       CountedLoopReuseAlphabet.controls,SharedBank.empty]
 
 def roundPorts : Fin 3 → Fin 15 := ![0,1,5]
@@ -68,12 +68,12 @@ theorem round (v : Tapes t a) (focus : Fin 3 → Fin t) (hf : Function.Injective
   rw [hout] at hr0
   apply single _ roundPorts round_injective focus hf v X 2 _ _ ?_ ?_ hr0
   · apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i
-    all_goals simp [X,SharedBank.payload,roundPorts,RoundedRowDescriptor.input,
+    all_goals simp [X,roundPorts,RoundedRowDescriptor.input,
       RoundedRowDescriptor.bank,h0,h1,h2,p0,p1,p2]
     all_goals rfl
   · apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i
-    all_goals simp [X,SharedBank.strip,roundPorts,RoundedRowDescriptor.input,
-      RoundedRowDescriptor.bank,SharedBank.empty,Fin.exists_fin_succ]
+    all_goals simp [X,roundPorts,RoundedRowDescriptor.input,
+      RoundedRowDescriptor.bank,Fin.exists_fin_succ]
     all_goals rfl
 
 end
