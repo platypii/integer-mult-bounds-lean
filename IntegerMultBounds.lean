@@ -1808,3 +1808,5 @@ import IntegerMultBounds.Machine.ActivePrefixStageWidthSelector
 import IntegerMultBounds.Machine.ActivePrefixStageWidthPlaced
 import IntegerMultBounds.Machine.ActivePrefixStageWidthBranch
 import IntegerMultBounds.Machine.ActivePrefixStageWidthOriginal
+import IntegerMultBounds.Machine.CompactActualStageRuns
+import IntegerMultBounds.Machine.CompactActualStageDispatch

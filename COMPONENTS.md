@@ -3138,6 +3138,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageWidthOriginal.lean`: The original stage f word at port seven physically determines packed versus singleton selection on the shared original caller; exact predicates and linear full-volume overhead are proved.
 
+- `Machine/CompactActualStageRuns.lean`: Both actual original-input source-order stage machines execute at density constant one with no supplied per-node repair-width or density hypotheses. Literal multiplier scalar/record contracts and the nonfallback cutoff discharge those prerequisites; later packed execution requires at least two axes.
+
+- `Machine/CompactActualStageDispatch.lean`: Actual multiplier scalar/cutoff/global-row choices instantiate the fixed runtime source-order dispatcher at density constant one, deriving geometry and both repair envelopes; the ready-runs theorem supplies all per-node geometry and direction decisions from original inputs.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
