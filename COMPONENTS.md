@@ -1978,6 +1978,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedLateRepairInverse.lean`: Fixed twenty-eight-tape reverse eight-stage later packed arithmetic machine reads original runtime headers/control, restores an unconditional true packedLate preimage and erases parity/arithmetic/header scratch. Unrestricted word/value semantics and cost7000*(n+1)*(q+b+1) are proved; later guard, destination key and full repair pipeline remain separate.
 
+- `Machine/CompactGadgetReservationHeadersCarvedData.lean`: General carved-width geometry keeps one fixed globalShape/H/layout while selecting n*packingFactor front/back bits; unused interval bits remain literal spectators. Simultaneous n*b/n*q capacities and disjoint slots are proved.
+
+- `Machine/CompactGadgetReservationHeadersCarvedSchedule.lean`: One fixed actual header schedule physically reads original n/packingFactor, constructs width n*packingFactor and exact P/G/B descriptors inside the unchanged global reservation, with generated intermediate cleanup.
+
+- `Machine/CompactGadgetReservationHeadersCarvedRouting.lean`: Shared-bank placement of narrow-width construction and original-R role-count synthesis retains all original global descriptors and caller spectators.
+
+- `Machine/CompactGadgetReservationHeadersCarvedCaller.lean`: Fixed original-R and original packing-factor caller derives actual roleRows/width/P/G/B and invokes the real packed load. Same finite program for b and q; no derived shape words or action callback supplied.
+
+- `Machine/CompactGadgetReservationHeadersCarvedReserved.lean`: Actual selected-role load from the physical reservation endpoint supports both narrower packed widths inside the same global layout; retains unused bits and every other role. Physical offset word remains explicit; producer alignment and whole reservation-stage composition remain separate.
+
+- `Machine/CompactGadgetReservationHeadersCarvedVolume.lean`: All real row/header/width setup values and products are bounded within actual role volume, including n*packingFactor product preparation.
+
+- `Machine/CompactGadgetReservationHeadersCarvedBudget.lean`: Full actual carved-width row synthesis, header setup, load and cleanup preserve the certified width exponent with C(staticRoleCount)*roleVolume and no extra chunk factor. Source-prefix/gap offset-generator wiring remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
