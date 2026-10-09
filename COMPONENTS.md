@@ -3726,6 +3726,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactSpectatorLeafPlacement.lean`: Executes the actual forward leaf at original native source65 inside the controller bank, preserving every exterior caller tape and head. Immutable ell and baseline precision occupy explicit ports after existing native workspace and persistent storage; every private leaf tape is restored. Inverse leaf, decoded semantics, guard derivation, uniform cost and recursive dispatcher composition remain open.
 
+- `Machine/CompactReservationPaddingHeaders.lean`: Original retained D/K/rho/ell/q/d/G physically generate row counts, remaining global binary dimension and exact stored signed width for genuine native padding. Final paid erasure restores all original scalars and private metadata.
+
+- `Machine/CompactReservationNativePadding.lean`: One fixed executable runs original-coordinate reservation before row reinterpretation, physically adapts its scalar headers, pads genuine zero coefficients once and erases metadata. Exact full geometry, stored width and padded coefficient cardinality are derived; original descriptors/source head and private storage are restored. Complete combined certified budget and later role integration remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

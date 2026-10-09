@@ -2092,3 +2092,5 @@ import IntegerMultBounds.Machine.CompactSpectatorLeafLoop
 import IntegerMultBounds.Machine.CompactSpectatorLeafSetup
 import IntegerMultBounds.Machine.CompactSpectatorLeafOriginal
 import IntegerMultBounds.Machine.CompactSpectatorLeafPlacement
+import IntegerMultBounds.Machine.CompactReservationPaddingHeaders
+import IntegerMultBounds.Machine.CompactReservationNativePadding
