@@ -3300,6 +3300,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexRecursiveChildHeaders.lean`: Literal occurrence-indexed schema calls supply their actual residual slot to paid internal or scalar child-header execution, retaining selected role rows. Physical controller path generation, exponent bookkeeping and role parking remain open.
 
+- `Machine/CompactComplexChildHeadersUniform.lean`: Canonical internal-node and scalar child-header costs are bounded by one fixed constant times the original global dimension plus one squared, uniformly over all residual slots, rows and payloads. This pays actual descriptor execution rather than taking an independent per-node scalar budget.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

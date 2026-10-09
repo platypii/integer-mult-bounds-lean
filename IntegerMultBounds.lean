@@ -1895,3 +1895,4 @@ import IntegerMultBounds.Machine.CompactComplexLeafHeadersData
 import IntegerMultBounds.Machine.CompactChildHeadersStack
 import IntegerMultBounds.Machine.CompactComplexChildHeaderFrames
 import IntegerMultBounds.Machine.CompactComplexRecursiveChildHeaders
+import IntegerMultBounds.Machine.CompactComplexChildHeadersUniform
