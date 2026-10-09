@@ -815,3 +815,7 @@ import IntegerMultBounds.Machine.RowPaddingStream
 import IntegerMultBounds.Machine.RowPaddingReset
 import IntegerMultBounds.Machine.RowPaddingExecution
 import IntegerMultBounds.Machine.RowPaddingWord
+import IntegerMultBounds.Machine.FixedBasePowerStep
+import IntegerMultBounds.Machine.FixedBasePowerDescriptor
+import IntegerMultBounds.Machine.RecursiveRowDivisor
+import IntegerMultBounds.Machine.RoundedRowDescriptor

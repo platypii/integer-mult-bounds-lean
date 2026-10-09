@@ -1207,6 +1207,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RowPaddingWord.lean`: Flat descriptor arrays serialize to exactly the physical per-prefix row words and appended binary-zero spans. Padding/cropping word identities and the full transpose-after-padding output bridge connect the semantic row wrapper to the actual streamed data layout.
 
+- `Machine/FixedBasePowerStep.lean`: One fixed binary-descriptor multiplication step retains the fixed base, replaces the old power with the canonical product, physically erases both old value and temporary product and restores every workspace tape. Cost is at most 110 times the new positive value.
+
+- `Machine/FixedBasePowerDescriptor.lean`: One fixed eight-tape program computes B^k from a retained canonical runtime exponent for a fixed base B≥2. It physically writes the base and initial one, executes all k multiplication steps, and erases the base and countdown workspace. Exact canonical output and uniform fixed-base constant times B^k runtime.
+
+- `Machine/RecursiveRowDivisor.lean`: Specializes the actual fixed-base power program to the fixed Shared50 World count W. The runtime depth produces canonical W^k on the unchanged finite alphabet, with preserved exponent and blank workspace; a dominating row range absorbs the complete construction cost linearly.
+
+- `Machine/RoundedRowDescriptor.lean`: One fixed fifteen-tape program physically computes the least multiple of a positive canonical divisor that encloses a positive canonical row count. Original inputs are retained, the output is canonical and all temporary tapes are erased. Exact ceiling formula, divisibility, minimality and less-than-twice-row bound when D≤R; runtime is at most 4096 times the rounded row count.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
