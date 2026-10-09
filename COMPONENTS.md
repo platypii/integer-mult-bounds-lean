@@ -1709,6 +1709,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedGuardConstants.lean`: One fixed eight-tape machine constructs all three literal guard constants from sole original canonical q/b headers, with exact widths/values, retained headers and blank private descriptor/one/clock. Cost40q+80b+300 charges fills, edits, returns and cleanup. Composition into the fifteen-tape guard remains separate.
 
+- `Machine/CountedGuardOriginalSetup.lean`: Places the physical q/b constant constructor into the existing fifteen-tape guard bank, preserving literal V/W and original q/b/n while synthesizing exact constants from blank private storage.
+
+- `Machine/CountedGuardOriginalCleanup.lean`: Physically scans and erases all three generated guard constants, retaining source words, original descriptors and the actual result bit with charged linear cleanup.
+
+- `Machine/CountedGuardOriginal.lean`: Complete fixed fifteen-tape exceptional-address guard from only original V/W and canonical q/b/n. Physically constructs constants, executes the actual guard, decides not earlyGood and erases every private tape except the result bit. Original heads are restored; bound1000*(n+1)*(q+b+1) includes zero records. Repair-key assembly remains separate.
+
+- `Machine/CountedIdealToggle.lean`: Fixed twenty-two-tape ideal selected-parity toggle from original q/b/n descriptors: actual controls-at gather plus XOR returns exactly the target word exclusive-or the padded control mask, retains all original inputs/heads and erases every generated descriptor, clock and mask. Integer toggle semantics and bound533*(n+1)*(q+b+1) are proved; repair-key placement remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -1088,3 +1088,7 @@ import IntegerMultBounds.Machine.CountedGuardConstantsFill
 import IntegerMultBounds.Machine.CountedGuardConstantsEdit
 import IntegerMultBounds.Machine.CountedGuardConstantsPlacement
 import IntegerMultBounds.Machine.CountedGuardConstants
+import IntegerMultBounds.Machine.CountedGuardOriginalSetup
+import IntegerMultBounds.Machine.CountedGuardOriginalCleanup
+import IntegerMultBounds.Machine.CountedGuardOriginal
+import IntegerMultBounds.Machine.CountedIdealToggle
