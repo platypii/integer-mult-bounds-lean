@@ -21,7 +21,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (6/9) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
 | Exact multiplication, parameters, time bound | §8 | 🟡 (4/6) | ⬜ (0/2) |
-| End-to-end theorem `EndToEnd` | — | 🟡 (4/7) | 🟡 (4/7) |
+| End-to-end theorem `EndToEnd` | — | 🟡 (5/8) | 🟡 (5/8) |
 
 ## 1. Machine model and target statement (§2)
 
@@ -504,7 +504,8 @@ The final section theorem is complete in `BinaryInterchangeRun.runs` and `Binary
 | Original-input elementary multiplication core | `ElementaryMultiplyCore` | ✅ | ✅ | The actual fixed four-tape core computes the exact accumulator product from original packed input, with genuine halting and quadratic runtime. Fixed-width output installation and the fast branch remain open; this is the ordinary fallback core. |
 | Unary word-clock output movement and copying | `DoubleClockReverseCopy` | ✅ | ✅ | Actual fixed-state double seeking and reverse copying perform exactly twice the operand-clock length, preserving operands and producing false bits for blank accumulator padding. Product-specific semantics and final output installation remain separate. |
 | ElementaryMultiplyOutputData | `ElementaryMultiplyOutputData` | ✅ | ✅ | Connects literal descending accumulator reads to exactly twice-length MSB product bits, padding blanks as zero. Proves output length and value for the Horner accumulator including empty operands; actual output installation is provided separately. |
-| Explicit multiplication program | — | ⬜ | ⬜ | |
+| ElementaryMultiply | `ElementaryMultiply` | ✅ | ✅ | One fixed four-tape machine parses original multiplication input, computes the Horner accumulator, physically erases input and copies exactly twice-length MSB product bits using an operand clock. Genuine halting, literal outputCorrect and Assembly.RunsWithin at40 times n squared plus n plus one hold for every equal input length, including zero. This completes the ordinary quadratic fallback; fast-path assembly and the sub-n-log-n bound remain open. |
+| Explicit multiplication program | `ElementaryMultiply` | 🟡 | 🟡 | Complete ordinary quadratic fallback is proved; fast program assembly and target bound remain open. |
 | Correctness on every input length | — | ⬜ | ⬜ | Requires sections 2–9 |
 | Uniform runtime `O(n log^(1−83/10¹²) n)` | `Assembly` | 🟡 | ⬜ | `EndToEnd` reduced to a program running within a cost of the cost-table shape |
 

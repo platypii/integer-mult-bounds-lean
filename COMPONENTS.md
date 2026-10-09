@@ -1563,6 +1563,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ElementaryMultiplyOutputData.lean`: Connects literal descending accumulator reads to exactly twice-length MSB product bits, padding blanks as zero. Proves output length and value for the Horner accumulator including empty operands; actual output installation is provided separately.
 
+- `Machine/ElementaryMultiply.lean`: One fixed four-tape machine parses original multiplication input, computes the Horner accumulator, physically erases input and copies exactly twice-length MSB product bits using an operand clock. Genuine halting, literal outputCorrect and Assembly.RunsWithin at40 times n squared plus n plus one hold for every equal input length, including zero. This completes the ordinary quadratic fallback; fast-path assembly and the sub-n-log-n bound remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

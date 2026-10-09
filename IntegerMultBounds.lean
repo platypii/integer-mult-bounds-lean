@@ -1010,3 +1010,4 @@ import IntegerMultBounds.Machine.DoubleClockReverseCopy
 import IntegerMultBounds.Machine.CountedPackedArith
 import IntegerMultBounds.Machine.CountedPackedInverse
 import IntegerMultBounds.Machine.ElementaryMultiplyOutputData
+import IntegerMultBounds.Machine.ElementaryMultiply
