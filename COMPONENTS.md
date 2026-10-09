@@ -2170,6 +2170,36 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryVaryingControlOffsetData.lean`: Each physical control-offset row equals its own stride-q toggle mask and has exact packed control value. These varying masks and selected offsets supply the existing rowwise correction subtraction without any whole-stream fixed-source premise.
 
+- `Machine/BinaryPrefixFieldTableData.lean`: Literal runtime field projection from every full-width address has exact row-major order, lengths and individual fields, including zero-width addresses/fields.
+
+- `Machine/BinaryPrefixFieldTablePrimitives.lean`: Actual generated range/count, zero descriptor, descriptor duplication, address table and dummy-control fill share a framed original-header bank with charged execution.
+
+- `Machine/BinaryPrefixFieldTableSetup.lean`: From sole W/start/d originals, physically generates the complete prefix-address table, 2^W dummy controls and every required derived descriptor; all individual setup costs are charged.
+
+- `Machine/BinaryPrefixFieldTableGather.lean`: The runtime counted gather physically projects each original address field in order and restores all internal gather metadata; exact projected word is proved.
+
+- `Machine/BinaryPrefixFieldTableCleanup.lean`: Physically erases generated address/control tables and count/zero/copy descriptors, rewinds projected output and retains all three originals with paid cost.
+
+- `Machine/BinaryPrefixFieldTableRun.lean`: One fixed original-input field-table producer generates and erases all intermediate streams and returns exact projected fields at origin. Full cost at most(powerConstant+addressTableConstant+1000)*2^W*(W+1), including W/d zero.
+
+- `Machine/BinaryPrefixFieldTableAlphabet.lean`: Checked literal field-table construction is encoded on arbitrary larger alphabets without changing runtime, source order, restored originals or blank native workspace.
+
+- `Machine/BinaryPrefixFieldTablePlaced.lean`: Actual projected-field table generation on four arbitrary caller ports requires only canonical W/start/d and blank output, retains every spectator and restores twenty-four private tapes. Exact row words and full linear table cost are proved.
+
+- `Machine/BinaryVaryingParityOffsetGather.lean`: Actual parity-XOR gather reads current target digits and independently varying controls with only original q/b/count descriptors. Exact positive fourth-load word, preserved original streams and blank fourteen private tapes have full320-times-stride cost; rowwise negative residues and complete load assembly remain separate.
+
+- `Machine/BinaryVaryingOffsetGatherPlaced.lean`: All selected/control-mask/parity-XOR runtime gathers execute on six arbitrary caller ports, preserving all original header/stream contents and every complementary tape. Exact source/control/output heads and literal output follow the actual native machine; twenty private tapes are restored with unchanged320-times-stride bound.
+
+- `Machine/ActivePrefixSelectedOffsetData.lean`: Physically projected full-source rows and batch-extracted controls agree with selected testBits of each original prefix address. The varying selected gather therefore uses each current temporary/source field in the unchanged prefix, with exact offsets and row order; physical producer assembly remains separate.
+
+- `Machine/ActivePrefixOffsetHeadersData.lean`: Original W/q/b/n/f descriptors have explicit source/destination port maps for P,f*q,n*b,n*P,n*q, with exact generated value families and full source/temp fit premises.
+
+- `Machine/ActivePrefixOffsetHeadersRun.lean`: One real power and four physical products synthesize all five varying-offset descriptors on arbitrary caller ports, retaining originals/spectators and restoring fifteen shared private tapes. No supplied derived descriptor is assumed.
+
+- `Machine/ActivePrefixOffsetHeadersBudget.lean`: Every actual header-setup transition is bounded by(powerConstant+328)*2^W*(W+1) under source/temp fit and n+1=f. Applies to the actual caller machine, not a semantic arithmetic cost.
+
+- `Machine/ActivePrefixOffsetHeadersCleanup.lean`: Five generated prefix-offset descriptors are physically erased on arbitrary caller ports, preserving all original tapes and restoring output heads. Complete cleanup is paid by44*2^W*(W+1).
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
