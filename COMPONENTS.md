@@ -2856,6 +2856,32 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixDirtyControlLateGlobal.lean`: The physical prepared later schedule equals the exact global lateActual permutation used by repair on all original addresses, including exceptional addresses; both forward and inverse full-array entry semantics are proved.
 
+- `Machine/ActivePrefixDirtyControlHeadersData.lean`: Three original-input dirty-control header kinds compute genuine target/U/source starts using fixed retained arithmetic patches, with exact post-use erasure.
+
+- `Machine/ActivePrefixDirtyControlHeadersRun.lean`: Actual forty-three-tape original header producers execute target/compact/source construction and all arithmetic patches, retaining originals and erasing scratch.
+
+- `Machine/ActivePrefixDirtyControlHeadersEndpoint.lean`: Literal canonical original fourteen descriptor words generate the exact retained dirty-control consumer words and have a complete physical cleanup contract.
+
+- `Machine/ActivePrefixDirtyControlHeadersPlaced.lean`: Original-input dirty-control metadata producers and erasers run on arbitrary caller banks with exact complementary frames and restored private storage.
+
+- `Machine/ActivePrefixDirtyControlHeadersGeometry.lean`: All physically generated six-word groups equal the actual target, compact-back and shifted-source geometries of the original unchanged array.
+
+- `Machine/ActivePrefixDirtyControlHeadersBudget.lean`: Every actual original-input dirty-control header producer, arithmetic patch and generated-word cleanup has a linear containing-volume cost.
+
+- `Machine/ActivePrefixDirtyControlSequenceOriginalData.lean`: Literal original twenty-two descriptor words and the original array form a fifty-three-port later caller; three generated ten-word consumer banks start blank.
+
+- `Machine/ActivePrefixDirtyControlSequenceOriginalInputs.lean`: Three actual producer outputs give the complete prepared later-sequence inputs from original descriptors and unchanged geometry.
+
+- `Machine/ActivePrefixDirtyControlSequenceOriginalHeaders.lean`: All three physical metadata producers and reverse cleanups operate on one original-array caller with exact retention of complementary banks.
+
+- `Machine/ActivePrefixDirtyControlSequenceOriginalPayload.lean`: The actual complete later payload schedule runs on the physically generated metadata bank, with exact output and clean native scratch.
+
+- `Machine/ActivePrefixDirtyControlSequenceOriginalRun.lean`: One fixed later machine generates all consumer metadata, performs twelve swaps and ten rotations and erases every generated header, retaining only original descriptors and exact output array.
+
+- `Machine/ActivePrefixDirtyControlSequenceOriginalBudget.lean`: The complete original-input later machine retains the certified full-volume sublinear width-exponent runtime, paying all three metadata producers, cleanups and joins.
+
+- `Machine/ActiveRepairLayoutRecordsLate.lean`: The actual later machine output is the full global lateActual array and exactly its wide repairRecords input; both prepared and original-input machines return that array with paid execution contracts.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
