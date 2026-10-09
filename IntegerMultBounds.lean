@@ -944,3 +944,5 @@ import IntegerMultBounds.Machine.ArbitraryWidthHighRun
 import IntegerMultBounds.Machine.FixedHeaderBankCopy
 import IntegerMultBounds.Machine.FixedHeaderSparseBankCopy
 import IntegerMultBounds.Machine.ArbitraryWidthHighDimensionsShared
+import IntegerMultBounds.Machine.ArbitraryWidthElementaryShared
+import IntegerMultBounds.Machine.ArbitraryWidthHighBranchComposition

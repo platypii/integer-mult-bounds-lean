@@ -1433,6 +1433,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighDimensionsShared.lean`: The actual shared dimension lifecycle first copies five original caller headers into a blank seventeen-tape bank, computes low width/radix powers/movement dimensions and later erases both generated and copied descriptors. Every caller tape/head is preserved; complete setup and cleanup have fixed-radix linear original-volume bounds. No preconstructed generated bank is supplied.
 
+- `Machine/ArbitraryWidthElementaryShared.lean`: The actual elementary multiplier-width transpose fallback shares its recursive I/O source with an arbitrary caller. It physically copies the original width, performs every digit swap and erases the count, while retaining all other caller and private-bank fields. Exact full transpose, bounded-width linear cost and the certified positive-exponent budget are proved.
+
+- `Machine/ArbitraryWidthHighBranchComposition.lean`: One actual finite-flow composition runs the physical high-width selector and jumps into the selected high or elementary branch program with its flag erased and bank restored. Exact conditional outputs, genuine halting and all selector/jump/branch costs follow from branch contracts. The actual high-depth fallback set has a fixed cutoff. Instantiating the complete original-header wrapper remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
