@@ -2068,3 +2068,6 @@ import IntegerMultBounds.Machine.NativeZeroPaddingPlaced
 import IntegerMultBounds.Machine.NativeZeroPaddingArray
 import IntegerMultBounds.Machine.NativeZeroPaddingBudget
 import IntegerMultBounds.Machine.CompactReservationNativeRows
+import IntegerMultBounds.Machine.FiniteReturnGuard
+import IntegerMultBounds.Machine.GuardedFiniteReturnFlow
+import IntegerMultBounds.Machine.CompactComplexControllerFlow

@@ -3686,6 +3686,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactReservationNativeRows.lean`: The actual original reservation output has exact unchanged global row-major native serialization with polynomial spectators. Genuine zero extension pads this row view once, and exact later descendant role volumes retain the role divisor. Physical reservation-to-padding caller header adaptation remains open.
 
+- `Machine/FiniteReturnGuard.lean`: A real two-transition left peek and right restore detects empty root storage versus a saved nonblank last bit without changing any tape or head.
+
+- `Machine/GuardedFiniteReturnFlow.lean`: A shared finite cyclic control table physically guards root exit and pops an occupied positive-width return PC into the decoded continuation start. Saved frames are erased and the older stack restored; control size is independent of runtime depth. Actual continuation execution remains separate.
+
+- `Machine/CompactComplexControllerFlow.lean`: Places guarded cyclic return control on the real controller/queue/native bank and appended PC storage. Empty root halts in two transitions; a saved positive-width PC reaches its selected continuation in exactly width plus five while preserving the full native/controller frame. Concrete role-block execution and recursive trace remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
