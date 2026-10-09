@@ -2804,6 +2804,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixDirtyControlSequencePlaced.lean`: The complete prepared later schedule runs on arbitrary thirty-port caller banks, retaining all descriptors and spectators and restoring native scratch; original-input header preparation remains open.
 
+- `Machine/ActivePrefixDirtyControlSequenceGeometry.lean`: All prepared later-sequence geometry is derived from the unchanged original array and compact parameters: three concrete shapes, exact physical volumes, absorption and positivity; no independent geometry witness is required.
+
+- `Machine/ActivePrefixDirtyControlSourceSemantics.lean`: Actual source-load and unload offset rows equal the selected original active-after bits padded to compact digits and their modular negations at every serialized address, including exceptional addresses.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
