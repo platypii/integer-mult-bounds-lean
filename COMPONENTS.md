@@ -1379,6 +1379,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixHighBlockSeparateRun.lean`: The complete inverse high-block separator constructs its movement controls from sole original shape/count headers, executes the actual counted loop and erases every private descriptor. The exact whole-block move and fixed-coefficient volume-times-count bound are proved, preserving every positive target width exponent for the actual runtime high-depth selector.
 
+- `Machine/ArbitraryWidthHighDimensions.lean`: An actual seventeen-tape constructor takes only retained canonical P/G/B/width/high-depth headers and blank private storage. It physically computes low width by normalized immutable subtraction, both radix powers and all three high-block movement dimensions, preserving original inputs and restoring all six arithmetic tapes. Exact generated values and a fixed-radix linear original-volume runtime bound are proved.
+
+- `Machine/ArbitraryWidthHighDimensionsCleanup.lean`: One actual finite list-erasure program clears all six generated high-layout descriptors and restores their heads to zero while retaining the original five headers and all arithmetic storage. Exact constructor-output to sole-header-input cleanup is proved, with runtime at most54 times the original positive volume.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
