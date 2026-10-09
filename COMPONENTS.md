@@ -3344,6 +3344,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SymbolTripleDecodeStream.lean`: Fixed physical stream decoder reconstructs every native symbol from its actual three-bit code with exact whole-word output, retained source and arbitrary destination frame. Runtime is nine times native symbol count; whole-stage representation transport remains open.
 
+- `Machine/CompactComplexExponentStep.lean`: Physical canonical exponent descent and ascent with exact parent restoration, clean private work and linear exponent bounds. Generic placement preserves the native bank on appended controller tapes; recursive controller assembly remains open.
+
+- `Machine/CompactComplexCallReturn.lean`: Actual recursive call occurrences have injective packed return addresses retaining role, slot and site. Physical fixed-width stack push and generic pop-to-continuation dispatch are proved; closed recursive controller assembly remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
