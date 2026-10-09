@@ -3142,6 +3142,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualStageDispatch.lean`: Actual multiplier scalar/cutoff/global-row choices instantiate the fixed runtime source-order dispatcher at density constant one, deriving geometry and both repair envelopes; the ready-runs theorem supplies all per-node geometry and direction decisions from original inputs.
 
+- `Machine/ActivePrefixStageSingletonDispatch.lean`: One fixed singleton machine compares original source and target slots, executes the selected one-axis stage and erases its direction flag with exact original-input endpoints.
+
+- `Machine/ActivePrefixStageSingletonDispatchBudget.lean`: The runtime singleton direction comparison, chosen stage and flag cleanup have a uniform linear full-volume bound.
+
+- `Machine/ActivePrefixStageRuntimePlaced.lean`: Packed and singleton dispatchers place on one shared original caller with both selector flags and complementary private banks preserved.
+
+- `Machine/ActivePrefixStageRuntimeData.lean`: Runtime width determines the literal array action and actual selected-branch cost; packed repair prerequisites are required only when the original width exceeds one.
+
+- `Machine/ActivePrefixStageRuntimeProgram.lean`: One fixed original-input stage program combines physical width selection with the packed and singleton direction dispatchers.
+
+- `Machine/ActivePrefixStageRuntimeRun.lean`: The fixed stage program executes for every positive width and both source orders, retaining original headers and restoring both flags and all private storage.
+
+- `Machine/ActivePrefixStageRuntimeBudget.lean`: The complete all-width runtime stage retains the certified width exponent, including both physical selectors and the singleton branch.
+
+- `Machine/ActivePrefixStageRuntimeEndpoint.lean`: The actual all-width stage returns its raw array at origin, retains every original descriptor and blanks every private tape and both runtime flags.
+
+- `Machine/ActivePrefixStageRuntimeSelected.lean`: The runtime-selected array action gives literal original source-selected XOR on target fields, preserves the full source and every other field, for every positive width.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
