@@ -1021,3 +1021,4 @@ import IntegerMultBounds.Machine.BinaryPackedFieldSwap
 import IntegerMultBounds.Machine.BinaryOffsetStreamRead
 import IntegerMultBounds.Machine.StreamedFiberTranslation
 import IntegerMultBounds.Machine.StreamedFiberTranslationArray
+import IntegerMultBounds.Machine.StreamedFiberTranslationAlphabet

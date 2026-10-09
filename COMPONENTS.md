@@ -1583,6 +1583,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/StreamedFiberTranslationArray.lean`: Connects the actual streamed-offset machine to literal finite arrays: each prefix/back/suffix entry reaches back address plus its physically read offset modulo Q. Exact source/control preservation, destination tape and advanced heads are proved, including empty prefix families. No payload permutation or preparation callback is assumed.
 
+- `Machine/StreamedFiberTranslationAlphabet.lean`: Lifts the real fixed streamed-offset rotation to any larger finite alphabet with unchanged runtime, literal encoded array source, exact bit destinations, retained original Q/B/n headers and full control stream. The first four symbols preserve their actual blank/bit/separator identities, enabling placement with the binary interchange alphabet. Recurring markers and retained final offset remain explicit; initialization and normalization are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
