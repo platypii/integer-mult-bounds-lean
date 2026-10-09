@@ -1231,6 +1231,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryDescriptorIncrement.lean`: A fixed widened-alphabet one-tape three-state incrementer retains the marked descriptor representation, grows its highest bit as needed and returns to head one. Exact value increment, canonicality preservation and cost twice carry length, bounded by twice input width plus two.
 
+- `Machine/RadixRangePadding.lean`: Numerical enlargement of both chunk ranges is exactly two grouped row extensions with literal flat-word regrouping. Reverse grouped crops equal direct restriction; padding, padded chunk transpose and cropping yield exactly the original chunk transpose. The enlarged volume is bounded by the square of the range factor. Whole physical two-range preparation and runtime dimension synthesis remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
