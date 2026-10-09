@@ -2002,6 +2002,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryPackedEarlyLayout.lean`: Serializes the mixed n*q/n*b target/temp fields, all unused fixed-H tails, active/slack fields, full dirty back and payload into exactly rows*globalShape.recordWidth. Establishes one unchanged common early address layout; machine assembly remains separate.
 
+- `Machine/BinaryPackedEarlyPrefixHeaders.lean`: Physically derives prefix-source repeat width and source range from original q/b/n with paid setup and complete metadata erasure. The upstream L/K ports retain their literal marked words.
+
+- `Machine/BinaryPackedEarlyPrefixNegative.lean`: Fixed fifty-tape prefix-source negative parity-XOR constructor runs the actual base offset producer, inner/outer repetition and full cleanup. Exact output keeps the original q/b/n/L/K/control words; source spectators retain their real row order.
+
+- `Machine/BinaryPackedEarlyPrefixParity.lean`: Fixed fifty-tape prefix-source parity constructor composes physical base generation, actual repetition and erasure, restoring all private storage while retaining original descriptors.
+
+- `Machine/BinaryPackedEarlyPrefixBudget.lean`: All prefix-source base production, nested repetition and cleanup costs are absorbed into explicit full payload volume with a sufficient suffix record-width allowance. No repetition or setup cost is omitted.
+
+- `Machine/BinaryPackedEarlyPrefixAction.lean`: Both physically repeated prefix-source offset words select the correct current source address in actual rotation-row order. Parity and negative parity-XOR entries preserve the dirty back, prefix tail and gap spectators.
+
+- `Machine/BinaryPackedEarlyPrefixAlphabet.lean`: Lifts both complete prefix-source constructors to larger alphabets with identical costs and literal clean output banks.
+
+- `Machine/BinaryPackedEarlyPrefixPlaced.lean`: Actual arbitrary seven-port caller placement retains q/b/n/L/K/control and returns the generated parity or negative parity-XOR offset word with all forty-three appended private tapes blank. Actual payload actions and post-use offset erasure remain separate.
+
+- `Machine/PackedPrefixRepeatHeadersPlaced.lean`: Places the paid repetition-factor construction and actual L erasure on eight arbitrary caller ports. Preserves all caller spectators and the seven original descriptors, retains K on its upstream port and restores all forty native workspace tapes. Volume absorption and composition into the full load remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
