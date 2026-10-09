@@ -907,3 +907,5 @@ import IntegerMultBounds.Machine.BinaryDescriptorDifference
 import IntegerMultBounds.Machine.ArbitraryWidthPieceCost
 import IntegerMultBounds.Machine.RadixHighBlockJoinSemantics
 import IntegerMultBounds.Machine.ArbitraryWidthHighMovementSemantics
+import IntegerMultBounds.Machine.ArbitraryWidthHighBranch
+import IntegerMultBounds.Machine.ArbitraryWidthHighBranchPlacement

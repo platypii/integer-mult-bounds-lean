@@ -1359,6 +1359,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighMovementSemantics.lean`: The actual high-prefix exchange followed by ordered joining has exactly the manuscript joined-row layout, with literal prefix/spectator/suffix dimensions and explicit finite-index casts. Separation agrees with the return layout, and exchange, join, low transpose and separation compose to the exact original full transpose.
 
+- `Machine/ArbitraryWidthHighBranch.lean`: One fixed fifteen-state finite controller physically compares retained high depth with width, tests positive canonical high depth, selects the exact manuscript high or fallback branch and erases its comparison flag. Both operands and every head are preserved, with exact selected terminal state and length/value/volume runtime bounds.
+
+- `Machine/ArbitraryWidthHighBranchPlacement.lean`: Injective shared-bank placement of the actual high-width selector takes only literal canonical descriptor, head and blank flag premises. It proves the exact selected state, genuine halt and complete tape/head preservation with no supplied comparison result or active-view oracle.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
