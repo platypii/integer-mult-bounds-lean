@@ -3622,6 +3622,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactReservedActualBudget.lean`: Actual scalar choices produce a fixed forward or inverse reservation executable with its real Original.cost witness and certified asymptotic allowance. The actual roundtrip similarly has decoded recovery and its real paid cost bound. These theorems use the original full-address native serialization; the arbitrary recursive caller row/spectator view bridge remains separate.
 
+- `Machine/CompactComplexControllerChildPrefix.lean`: An actual internal-child prefix physically saves parent headers, pushes a literal return site, descends the controller exponent and installs the selected child headers while framing the entire native/controller/persistent bank. The child recursive execution remains separate.
+
+- `Machine/CompactComplexControllerChildReturn.lean`: The actual child-return continuation physically erases child descriptors, restores exact parent headers and the older descriptor stack, restores the parent exponent and retains the computed native payload. Complete recursive execution and return-site role-network continuation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

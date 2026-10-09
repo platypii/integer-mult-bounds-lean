@@ -2032,3 +2032,5 @@ import IntegerMultBounds.Machine.UnitPhaseStageHeaders
 import IntegerMultBounds.Machine.CompactReservedHeaderBudget
 import IntegerMultBounds.Machine.CompactReservedVolumeBudget
 import IntegerMultBounds.Machine.CompactReservedActualBudget
+import IntegerMultBounds.Machine.CompactComplexControllerChildPrefix
+import IntegerMultBounds.Machine.CompactComplexControllerChildReturn
