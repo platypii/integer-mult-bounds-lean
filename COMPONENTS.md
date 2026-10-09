@@ -1617,6 +1617,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/StreamedFiberTranslationReusable.lean`: Complete fixed streamed binary payload rotation physically initializes private metadata, rotates every fiber, rewinds source/output, copies equal-width rotated output back over the original source and erases the temporary output. Source exterior/head, original B/Q/n and all private tapes are restored; control symbols retained with its head explicitly at stream end. Uniform500-volume-plus70 cost includes empty arrays. Control-head normalization and full packed-offset/interchange assembly remain separate.
 
+- `Machine/MarkedControlStreamReset.lean`: Fixed one-tape machines rewind and erase a separator-marked control stream even when it contains internal blank delimiters. Exact costs retain every stream cell during rewind and erase the complete stream during reset, with the final head at zero.
+
+- `Machine/PackedOffsetPayload.lean`: One fixed seventeen-tape machine synthesizes canonical controls from a literal packed bit word, rotates each payload fiber in place, erases the generated stream and restores both original heads. Original B/Q/n/w descriptors and tape exteriors survive, all private tapes return blank and cost is at most600 times payload volume plus150.
+
+- `Machine/PackedOffsetPayloadValue.lean`: Identifies each physical fiber rotation offset with the actual integer value of its corresponding fixed-width packed source field, connecting the tape endpoint to the original packed bits rather than a supplied offset stream.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

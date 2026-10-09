@@ -1043,3 +1043,6 @@ import IntegerMultBounds.Machine.PackedOffsetStreamRaw
 import IntegerMultBounds.Machine.CountedPackedLateData
 import IntegerMultBounds.Machine.CountedPackedLateRun
 import IntegerMultBounds.Machine.StreamedFiberTranslationReusable
+import IntegerMultBounds.Machine.MarkedControlStreamReset
+import IntegerMultBounds.Machine.PackedOffsetPayload
+import IntegerMultBounds.Machine.PackedOffsetPayloadValue
