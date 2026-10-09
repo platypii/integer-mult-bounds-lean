@@ -2154,6 +2154,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveTargetSubsegmentAddress.lean`: Early/later guarded packed kernels lift to the actual full active-target Address, changing only target while restoring both dirty compact fields and every other source, spectator, back and payload coordinate. This is a mathematical destination bridge; physical stage and repair assembly remain separate.
 
+- `Machine/SelectedSourceBitsStreamData.lean`: Literal per-source-row selected controls have exact P*n length and full-stream testBit positions r*(f*q)+rho+i*q, with all selected positions proved inside the source stream.
+
+- `Machine/SelectedSourceBitsStreamCore.lean`: Physical runtime-rho backward positioning retains arbitrary stream cells and provides exact paid head movements for advancing between full source rows.
+
+- `Machine/SelectedSourceBitsStreamBank.lean`: Four independent original-header countdown clocks are physically initialized and erased, retaining q/n/rho/f/P and restoring all private cells and heads.
+
+- `Machine/SelectedSourceBitsStreamRow.lean`: One actual row positions by rho, samples n selected bits with runtime-q movements and reaches the next full f*q-row boundary. Complete stream contents are retained, with no temporary row copy or supplied selected controls.
+
+- `Machine/SelectedSourceBitsStreamRun.lean`: One fixed batch extractor physically enumerates all P original source rows, returns P*n exact selected controls at origin and restores source/head/originals and every private clock. Cost400*(sourceStream.length+1) includes empty batches, scans, all head returns and cleanup.
+
+- `Machine/SelectedSourceBitsStreamPlaced.lean`: Complete batch extraction on seven arbitrary caller ports retains source/original descriptors and every spectator, restores eleven appended private tapes and returns the literal varying control stream at origin with400-times-stream-plus-one cost.
+
+- `Machine/BinaryVaryingControlOffsetGather.lean`: A fixed original-q/b/count machine physically builds stride-q control offsets from independently varying controls, retaining source/control words and all originals. Fourteen private tapes are constructed and erased; complete cost320 times full stride and exact output length hold. Full control-stream generation and final head returns remain separate.
+
+- `Machine/BinaryVaryingControlOffsetData.lean`: Each physical control-offset row equals its own stride-q toggle mask and has exact packed control value. These varying masks and selected offsets supply the existing rowwise correction subtraction without any whole-stream fixed-source premise.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
