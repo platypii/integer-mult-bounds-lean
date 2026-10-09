@@ -1541,6 +1541,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedPackedLine.lean`: A uniform thirteen-tape line executes the actual runtime-counted gather, physical source/control/offset rewinds, modular column transduction, offset erasure and accumulator/result rewinds. Exact result semantics retain all inputs and controls, restore every payload head, and have canonical runtime at most140 times total digit stride plus three accumulator lengths plus42, including zero cases. Shape metadata and complete multi-line packed-control execution remain separate.
 
+- `Machine/CountedGatherClockPair.lean`: Physically writes two independent marked-zero clocks from blank storage in one transition and erases both in two transitions. Exact native and arbitrary-caller placement contracts preserve every spectator; no prepared marker or input initialization is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
