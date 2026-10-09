@@ -3778,6 +3778,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactAllAxisPhaseReadout.lean`: Actual all-axis retained flags equal the sum of original complex-edge coordinate phases. One signed coefficient phase application realizes the product of every coordinate-axis phase under explicit width and negation guards; physical polynomial caller integration remains separate.
 
+- `Machine/CompactNativeRowMerge.lean`: Symmetric fixed complete-row role merge on the generic native alphabet restores row order and destructively cleans role storage with exact paid time.
+
+- `Machine/CompactNativeRoleGeometry.lean`: Exact genuine coefficient record serialization for cyclic complete-row roles. Proves role source index (c*g+j)*inner+k while retaining immutable full address geometry and polynomial spectators.
+
+- `Machine/CompactNativeRoleTransfer.lean`: Real normalized native complete-row split and merge preserve exact coefficient arrays; a separate fixed paid reset erases retained copied sources and restores their heads. Original-header caller composition remains separate.
+
+- `Machine/CompactNativeRoleHeaders.lean`: Original13 plus immutable ell and precision physically generate full global bits, stored coefficient width, complete row length, role quotient and source erasure count. Every numeric operation and generated-header cleanup is paid, and all originals are retained.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

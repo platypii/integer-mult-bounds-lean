@@ -2124,3 +2124,7 @@ import IntegerMultBounds.Machine.SparseRepeatedPhaseFlags
 import IntegerMultBounds.Machine.CompactAllAxisPhaseControls
 import IntegerMultBounds.Machine.RepeatedWeightedPhaseTensor
 import IntegerMultBounds.Machine.CompactAllAxisPhaseReadout
+import IntegerMultBounds.Machine.CompactNativeRowMerge
+import IntegerMultBounds.Machine.CompactNativeRoleGeometry
+import IntegerMultBounds.Machine.CompactNativeRoleTransfer
+import IntegerMultBounds.Machine.CompactNativeRoleHeaders
