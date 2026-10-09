@@ -2685,6 +2685,14 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `iter K` to `iter (K + 1)` within `stepBound`, and `loop_hoare` runs `p`
   iterations counted by a ruler.
 
+- `Machine/PairJoin.lean`: complex coordinates as single records. The join
+  machine writes a separator over every other blank of a tape of word
+  records, turning real/imaginary word pairs into records
+  `re ++ separator :: im` (`pairs`); the split machine writes blanks over the
+  separators. One tape each, `join_hoare` and `split_hoare` are exact with
+  cost the tape volume; they let the record-selecting machine move complex
+  coordinates.
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line

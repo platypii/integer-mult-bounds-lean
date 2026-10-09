@@ -751,6 +751,7 @@ import IntegerMultBounds.Machine.RecordCopy
 import IntegerMultBounds.Machine.SubPass
 import IntegerMultBounds.Machine.NeumannStepLemmas
 import IntegerMultBounds.Machine.NeumannLoop
+import IntegerMultBounds.Machine.PairJoin
 import IntegerMultBounds.Machine.RecursiveRowsNodeLayout
 import IntegerMultBounds.Machine.RecursiveRowsNodeHeaders
 import IntegerMultBounds.Machine.RecursiveRowsNodeRoleBank
