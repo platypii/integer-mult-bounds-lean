@@ -901,3 +901,6 @@ import IntegerMultBounds.Machine.RadixHighBlockJoinBank
 import IntegerMultBounds.Machine.RadixHighBlockJoinSetup
 import IntegerMultBounds.Machine.RadixHighBlockJoinInitialize
 import IntegerMultBounds.Machine.RadixHighBlockJoinCleanup
+import IntegerMultBounds.Machine.ScanRight
+import IntegerMultBounds.Machine.BinaryDescriptorNormalize
+import IntegerMultBounds.Machine.BinaryDescriptorDifference

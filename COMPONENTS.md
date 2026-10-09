@@ -1347,6 +1347,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixHighBlockJoinCleanup.lean`: Actual cleanup erases mutable prefix, suffix and radix descriptors after either direction, preserving payload and sole original shape/count/clock. Any canonical terminal working lengths bounded by volume satisfy the explicit fixed-radix linear cleanup cost.
 
+- `Machine/ScanRight.lean`: One fixed single-tape sentinel scan preserves all symbols and charges exactly one transition per traversed cell, at arbitrary integer head positions.
+
+- `Machine/BinaryDescriptorNormalize.lean`: Physically scan a marked descriptor from head one to its end, trim high zero bits and return to head one. Exact canonical output of unchanged value, including zero, with all scans and rewinds paid.
+
+- `Machine/BinaryDescriptorDifference.lean`: One fixed three-tape finite-alphabet program subtracts arbitrary-width immutable marked operands and physically normalizes the result. Both original words and heads are preserved, the output is canonical at head one, and no padded operands or derived result are supplied. Exact runtime is bounded by six times the larger descriptor length plus21, or six times the original minuend value plus27 for canonical inputs.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
