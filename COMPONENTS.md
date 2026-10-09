@@ -3022,6 +3022,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutGlobalAllowance.lean`: Original D-axis geometry and once-padded descendant rows bound complete repair width by D*K+3, including actual descriptor paths, and pay both dyadic densities at one from explicit original precision/record bounds. Physical initial padding and scalar sizing remain separate.
 
+- `Machine/ActiveRepairLayoutRecordsFullLateData.lean`: Original later repaired low action and original-header highest action share one unchanged caller; complete array semantics equal their full-selected low/high destination with explicit original-port and blank-private bank helpers.
+
+- `Machine/ActiveRepairLayoutRecordsFullLateRun.lean`: One fixed full later machine physically executes payload, clean repair, recycle and highest action on the original raw tape, returning exact full-selected array with all original descriptors preserved and all private tapes blank.
+
+- `Machine/ActiveRepairLayoutRecordsFullLateBudget.lean`: The full original-input later low/high execution pays every metadata/action/cleanup/join and retains the certified compact-width tau exponent with one uniform coefficient.
+
+- `Machine/ActiveRepairLayoutRecordsFullLateSelected.lean`: The actual full later physical stage acts by the literal complete selected XOR mask on every original address and retains the entire original after-source interval.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
