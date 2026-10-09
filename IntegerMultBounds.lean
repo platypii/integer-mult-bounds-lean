@@ -1876,3 +1876,8 @@ import IntegerMultBounds.Machine.ButterflyRecordRead
 import IntegerMultBounds.Machine.ButterflyRecordOutputData
 import IntegerMultBounds.Machine.ButterflyGuard
 import IntegerMultBounds.Machine.CompactFallbackBudget
+import IntegerMultBounds.Machine.ButterflyRecordEmit
+import IntegerMultBounds.Machine.ButterflyRecord
+import IntegerMultBounds.Machine.ButterflyStreamData
+import IntegerMultBounds.Machine.ButterflyStreamRun
+import IntegerMultBounds.Machine.ButterflyStreamEndpoint

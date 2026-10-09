@@ -3262,6 +3262,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactFallbackBudget.lean`: The literal sum of the actually selected individual-axis costs is bounded by processed-axis count times a fixed per-axis volume allowance. Actual cutoff savings absorb this sum into an arbitrarily small certified dimension-power allowance uniformly in selected dimension and volume; physical kernels must supply the linear per-axis estimate.
 
+- `Machine/ButterflyRecordEmit.lean`: A fixed physical emitter appends both computed complex coefficient outputs and erases all four output controls, preserving source streams.
+
+- `Machine/ButterflyRecord.lean`: One fixed fifty-two-tape machine reads, computes and emits an exact signed complex butterfly in 192 times component width plus 667 steps. All forty-eight arithmetic tapes are blank afterward; actual prefix grids supply the no-overflow guard.
+
+- `Machine/ButterflyStreamData.lean`: Actual flattened coefficient arrays derive each record context, stream position and clean per-record state, with literal input/output serialization identities.
+
+- `Machine/ButterflyStreamRun.lean`: A fixed counted loop repeatedly executes the coefficient record body on fifty-four tapes, paying iteration and preserving its binary loop count.
+
+- `Machine/ButterflyStreamEndpoint.lean`: The actual fixed stream machine preserves both serialized inputs and produces both complete butterfly outputs with clean arithmetic workspace and restored loop controls. Canonical count cost is at most 200 times the complete four-field delimiter volume; selected-axis split/merge assembly remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
