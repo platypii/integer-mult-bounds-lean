@@ -1313,3 +1313,6 @@ import IntegerMultBounds.Machine.SelectedSourceBitsRun
 import IntegerMultBounds.Machine.SelectedSourceBitsPlaced
 import IntegerMultBounds.Machine.BinaryVaryingSelectedOffsetGather
 import IntegerMultBounds.Machine.BinaryVaryingSelectedOffsetData
+import IntegerMultBounds.Compact.ActiveTargetSubsegmentValue
+import IntegerMultBounds.Compact.ActiveTargetSubsegmentWords
+import IntegerMultBounds.Machine.ActiveTargetSubsegmentAddress

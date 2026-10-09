@@ -2152,6 +2152,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryVaryingSelectedOffsetData.lean`: Each physically gathered offset row equals mask-shift arithmetic applied to that row’s current source digits and controls. Arbitrary varying rows have exact widths and order; there is no fixed-control repetition hypothesis.
 
+- `Machine/ActiveTargetSubsegmentAddress.lean`: Early/later guarded packed kernels lift to the actual full active-target Address, changing only target while restoring both dirty compact fields and every other source, spectator, back and payload coordinate. This is a mathematical destination bridge; physical stage and repair assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -2275,6 +2277,10 @@ Compact packed controls, repair, and density bounds.
 - `Compact/LatePowerTwoWords.lean`: Literal split words encode every later address, including unrestricted dirty source/temporary digits and physical blank-tail padding.
 
 - `Compact/LatePowerTwoBridges.lean`: Actual late inverse words, ideal toggle and destination key bits agree with the later permutation inverse and exact destination rank encoding.
+
+- `Compact/ActiveTargetSubsegmentValue.lean`: Lifts actual early/later packed kernels on good addresses to the full containing target slot, with exact low/high spectator reconstruction and restoration of all dirty companions. No target front-capacity premise or unguarded full-slot equality is assumed.
+
+- `Compact/ActiveTargetSubsegmentWords.lean`: Guarded packed toggles equal the literal stride-q selected XOR mask inside the full target slot, with exact spectator intervals. The omitted highest selected toggle acts separately on the first retained high bit; the combined full-selected mask and full slot width are proved. Physical highest-toggle execution remains separate.
 
 ## Networks
 
