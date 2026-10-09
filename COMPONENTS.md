@@ -1675,6 +1675,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryPackedRowCountBudget.lean`: The actual original-header count preparation has bound(constant2+110)*fiberCount+75 for positive P/G. Retained count erasure costs at most2*fiberCount+6; every power/product/setup/join/cleanup is paid. Wiring this producer into the full payload permutation remains separate.
 
+- `Machine/CountedGuardGadgetArray.lean`: Two actual fixed counted n loops generate exactly the legacy V/W guard flag word, physically initialize and erase the outer clock, retain q−1/b/n descriptors, and include zero records. Canonical n gives cost n*(44q+15b+165)+54; original-q setup and finalization are separate.
+
+- `Machine/CountedGuardGadgetFinish.lean`: Physically rewinds both guarded sources and flag word, scans the actual AnyFlag result into blank output, erases the complete flags and retains all spectators. The exact cleanup/finalization budget is source lengths plus three flag lengths plus13.
+
+- `Machine/CountedGuardGadgetOriginal.lean`: Actual original-q/b/n preparation, fixed runtime n loops and physical q−1 cleanup produce the exact legacy guard flag word. Original headers, sources and constant words survive; no derived comparison descriptor or flags are supplied.
+
+- `Machine/CountedGuardGadget.lean`: Complete fixed fifteen-tape guard gadget physically constructs q−1, traverses both runtime n loops, rewinds inputs, scans AnyFlag and erases flags/private workspace. Exact legacy result, all original q/b/n and constant words/heads retained, and350-times-full-stride cost include n=0 and q=1. Certified mathematical membership and complete repair-key assembly are separate.
+
+- `Machine/CountedGuardGadgetValue.lean`: Connects the actual fixed-control guard result cell to exceptional-address membership under the certified power-of-two comparison constants. Full paid execution decides not earlyGood within350 times full stride, deriving field-range bounds from literal word lengths. Constant synthesis and complete rank/key assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

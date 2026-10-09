@@ -1071,3 +1071,8 @@ import IntegerMultBounds.Machine.CountedGuardGadgetRecord
 import IntegerMultBounds.Machine.BinaryPackedRowCount
 import IntegerMultBounds.Machine.BinaryPackedRowCountPlaced
 import IntegerMultBounds.Machine.BinaryPackedRowCountBudget
+import IntegerMultBounds.Machine.CountedGuardGadgetArray
+import IntegerMultBounds.Machine.CountedGuardGadgetFinish
+import IntegerMultBounds.Machine.CountedGuardGadgetOriginal
+import IntegerMultBounds.Machine.CountedGuardGadget
+import IntegerMultBounds.Machine.CountedGuardGadgetValue
