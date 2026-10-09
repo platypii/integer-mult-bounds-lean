@@ -2852,6 +2852,10 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   (the bit `x < y`). Each runs the binary machine, returns the heads, trims
   the result, and has an explicit cost bound in the word lengths.
 
+- `Machine/RegConst.lean`: the register of a constant, written bit by bit by a
+  machine whose state counts the bits, then returned to the origin
+  (`const_hoare`).
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line
