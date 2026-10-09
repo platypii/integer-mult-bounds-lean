@@ -4331,7 +4331,7 @@ from the reference paired-exclusion implementation.
 
 ## NLogN
 
-The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling.
+Transform, fixed-point, Kronecker and Gaussian resampling mathematics used by the main proof. The Harvey–van der Hoeven recursion itself is not needed: the main proof's packed products only require a multiplier within `m log m (log log m)^c`, which the cost table absorbs, so Schönhage–Strassen (`Schoenhage/`) replaces it. Its 28 recursion-only files (step contract, recurrence, cost model, moduli, power-of-two transforms) were removed; restore them with `git checkout 834ad45 -- IntegerMultBounds/NLogN/CRTMulti.lean IntegerMultBounds/NLogN/Capstone.lean IntegerMultBounds/NLogN/Contract.lean IntegerMultBounds/NLogN/ContractFinal.lean IntegerMultBounds/NLogN/ContractPrep.lean IntegerMultBounds/NLogN/ContractSqrt.lean IntegerMultBounds/NLogN/CostBound.lean IntegerMultBounds/NLogN/CostFinal.lean IntegerMultBounds/NLogN/CostModel.lean IntegerMultBounds/NLogN/ExpCostBound.lean IntegerMultBounds/NLogN/ExpEval.lean IntegerMultBounds/NLogN/JointRecurrence.lean IntegerMultBounds/NLogN/MainParams.lean IntegerMultBounds/NLogN/MainRecurrence.lean IntegerMultBounds/NLogN/MainStep.lean IntegerMultBounds/NLogN/MainTransform.lean IntegerMultBounds/NLogN/ModuliConstruction.lean IntegerMultBounds/NLogN/PowerOfTwoContract.lean IntegerMultBounds/NLogN/PowerOfTwoExact.lean IntegerMultBounds/NLogN/PowerOfTwoExactD.lean IntegerMultBounds/NLogN/PowerOfTwoNumeric.lean IntegerMultBounds/NLogN/PowerOfTwoNumericD.lean IntegerMultBounds/NLogN/PrecisionCheck.lean IntegerMultBounds/NLogN/PrimeSelection.lean IntegerMultBounds/NLogN/Recurrence.lean IntegerMultBounds/NLogN/RecurrenceParams.lean IntegerMultBounds/NLogN/ResamplingOps.lean IntegerMultBounds/NLogN/SmallMultiplierCost.lean` and re-add their imports to `IntegerMultBounds.lean`.
 
 - `NLogN/DFT.lean`: the discrete Fourier transform over an integral domain
   with a primitive root of unity, its linearity, the cyclic convolution
@@ -4343,12 +4343,6 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   with `ω^(2^n) = 1`, with an exact count of `n * 2^(n+1)` ring multiplications
   and additions, i.e. `2 N log₂ N`. Twiddle powers are taken as given and the
   count is of ring operations, not tape steps.
-- `NLogN/Recurrence.lean`: the Harvey-van der Hoeven master recurrence in the
-  abstract. A normalized cost satisfying `T(n) ≤ ρ T(n') + C` with `ρ < 1` and
-  `n' < n` is uniformly bounded, so a multiplication cost satisfying the
-  corresponding `n log n`-scaled recurrence is `O(n log n)`; also the geometric
-  tail bound. Nothing here constructs an algorithm or establishes the
-  recurrence for an actual cost.
 - `NLogN/Kronecker.lean`: the reduction of integer multiplication to digit
   convolution. Acyclic convolution of digit lists evaluates to the product,
   with a coefficient bound; a cyclic convolution of sufficient length equals
@@ -4423,19 +4417,6 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   synthetic ring `ℂ[y]/(y^r + 1)` with `y^(2r/t)` a principal `t`-th root for
   every power of two `t ∣ 2r`, and the exact synthetic FFT and its inverse.
   The coefficient norm bound on products in the synthetic ring is not here.
-- `NLogN/CRTMulti.lean`: the `d`-fold Agarwal-Cooley transport. Through the
-  Chinese remainder isomorphism, a cyclic convolution whose length is a
-  product of pairwise coprime moduli is the `d`-dimensional convolution, the
-  `d`-dimensional transform is injective over a domain, and the convolution
-  is recovered from the pointwise product of transforms; strictly increasing
-  primes are pairwise coprime.
-- `NLogN/MainRecurrence.lean`: Corollary 5.5 and the final induction of the
-  paper, stated abstractly: a cost satisfying the recursive inequality
-  `M(n) ≤ 12 T/r · M(3rp) + A n log n` with the parameter facts
-  `T p ≤ 48 n`, `3rp < n`, and `log(3rp) ≤ (1/d + 1/(2d²)) log n` has
-  normalized cost contracting by `1728/d · (1 + 1/(2d)) ≤ 0.9998` at
-  `d = 1729`, hence `M(n) = O(n log n)`. The recursive inequality itself is
-  a hypothesis here.
 - `NLogN/Resampling.lean`: the Gaussian resampling identity, Theorem 4.2 of
   the paper, for all positive lengths `s`, `t` and every `α > 0`: the
   Gaussian-weighted resampling maps `S` and `T` intertwine the length-`s` and
@@ -4462,13 +4443,6 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `‖ab‖ ≤ r ‖a‖ ‖b‖`, and multiplication by a power of `y` is a signed shift
   of norm one. Bit costs and the bridge to the synthetic ring quotient are
   not here.
-- `NLogN/MainParams.lean`: the paper's Section 5.1 parameter selection as
-  natural-number definitions: chunk size `b = ⌈log₂ n⌉`, precision `6b`,
-  `α`, `γ = 2dα²`, the power-of-two transform size `T` in `[4n/b, 8n/b)`, the
-  root size `r` with `T ≤ r^d < 2^d T`, and the factorization of `T` into
-  `d` powers of two bounded by `r`; with the inequalities `α² < p`,
-  `γ < b − 13`, `T < n < 2^p`, `2^(2d) ≤ T`, and the product comparison
-  behind `S > T/2`. The short-interval prime selection is not here.
 - `NLogN/ResamplingNorm.lean`: Lemma 4.5 of the paper in its sharp form: the
   periodized Gaussian is at most `1 + √(π/a)` by comparison with the Gaussian
   integral, so the resampling map `S` has sup-norm at most `1 + 1/α`,
@@ -4568,14 +4542,6 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   theorem for any lengths dividing `2r`, orthogonality and inversion up to
   `1/∏ N_i` for power-of-two lengths, and contraction bounds for both
   directions.
-- `NLogN/MainStep.lean`: Proposition 5.4 at the vector level. The
-  normalized `d`-dimensional transform and its index-negated form are
-  contractions with `F(a ∗ b) = S · Fa · Fb` and `F⁻ F = id/S`; the scaled
-  digit convolution of the recursive step lives on the Chinese-remainder
-  grid; and given approximations of the transform and its inverse with
-  scaled errors `εF`, `εI`, the rounded output is the exact product whenever
-  `2^(2b) S² (εI + 2εF + 2) < 2^(p−1)`. Discharging that precision condition
-  from the parameter choices is not here.
 - `NLogN/TensorApproxV.lean`: the `d`-fold tensor lemma for arrays with
   values in any normed space, indexed by `Fin`, in square and rectangular
   form: coordinatewise approximations preserve balls, have norm at most one,
@@ -4588,18 +4554,6 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `A` and `B` with explicit scaled errors, both below `p²` for the paper's
   per-term error seven. The per-term Gaussian evaluations and the clamping of
   the off-diagonal approximation into the unit ball are hypotheses.
-- `NLogN/PrecisionCheck.lean`: the paper's parameter choices satisfy the
-  recursive step's side conditions: with `b = ⌈log₂ n⌉`, `p = 6b`, `S ≤ T`,
-  and transform errors at most `2^(γ+5) T log₂ T`, the precision condition
-  `2^(2b) S² (εI + 2εF + 2) < 2^(p−1)` holds because `γ + 14 < b`; and the
-  digit counts fit in the cyclic length whenever `T < 2S`.
-- `NLogN/PowerOfTwoExact.lean`: the exact algebra of Theorem 3.1. The
-  normalized synthetic convolution in `d` dimensions is `T′ r` times the
-  inverse synthetic transform of the `1/r`-scaled pointwise products of the
-  forward transforms; a normalized complex convolution on `G × Fin r` is the
-  untwisted synthetic one; and for two power-of-two coordinates the complex
-  transform is a chirp multiplication, a synthetic transform pipeline, and
-  another chirp multiplication. More than two coordinates is not written.
 - `NLogN/NegacyclicKronecker.lean`: the paper's Lemma 2.5 in exact
   arithmetic. The integer negacyclic product is the fold of the polynomial
   product; a signed product splits into four nonnegative ones; and for
@@ -4607,13 +4561,6 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   a base-`r M² + 1` digit of one integer product of two packed numbers below
   `B^r`, so the negacyclic product is read off from a single multiplication
   of integers of about `3rp` bits. This is where the recursion enters.
-- `NLogN/CostModel.lean`: an operation-count model for Section 3. The
-  synthetic FFT recursion costs `2 r t log₂ t` word operations, the
-  `d`-dimensional transform `2 r T′ log₂ T′`, and the convolution pipeline
-  `4 T′ M(3rp)` delegated integer products plus `O(r T′ p log T′)` word
-  operations; with the Section 5 parameters three pipelines cost at most
-  `(12 T/r) M(3rp) + 2880 n log₂ n`, the shape of the main recursion. Tape
-  steps, data rearrangement, and weight computation are not modeled.
 - `NLogN/ResamplingMultiNumeric.lean`: the numerical half of Theorem 4.1.
   The rectangular coordinatewise tensor on Chinese-remainder grids preserves
   balls, accumulates the sum of the errors, and agrees with the matrix-defined
@@ -4633,28 +4580,6 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   ball, so any approximation of a contraction can be clamped into the unit
   ball at no cost in scaled error; with a radius-`R` version. This supplies
   the unit-ball side conditions the composition lemmas require.
-- `NLogN/PowerOfTwoNumeric.lean`: Theorem 3.1 of the paper for two
-  power-of-two coordinates `t × r`: the numerical transform built from an
-  approximate chirp, the rounded pre-multiplication, the twisted synthetic
-  convolution pipeline, the untwist, and the rounded post-multiplication
-  approximates the normalized transform with scaled error
-  `t (4 log₂ t + 2εa + 4) + εa + 2`, at most `4 t log₂ t + 8 t + 4` for a
-  chirp within two units. No unit-ball side conditions are needed.
-- `NLogN/PowerOfTwoExactD.lean`: the exact chain of Theorem 3.1 for any
-  number of coordinates: splitting off the last coordinate through an
-  additive isomorphism, the normalized complex transform is a chirp
-  multiplication, the untwisted `d`-dimensional synthetic pipeline over the
-  ring of dimension `t_{d+1}`, and another chirp multiplication.
-- `NLogN/MainTransform.lean`: Proposition 5.2 of the paper and its use in
-  the recursive step. The scaled composition of the numerical resampling
-  tensors with a numerical power-of-two transform approximates the
-  prime-grid transform with error `2^γ (d εB + εFt + d εA)`, which the
-  parameter choices bound by `2^(γ+4) T log₂ T` using `d p² ≤ 4 T log₂ T`;
-  the index-negated version approximates the inverse; radial shrinking keeps
-  outputs in the unit ball at the cost of a factor two; and the recursive
-  step returns the exact product with only the power-of-two transform, the
-  per-coordinate resampling maps, and the prime-choice condition as
-  hypotheses.
 - `NLogN/ExplicitNumeric.lean`: the numerical maps with every side
   condition discharged: per-term Gaussian weights rounded to `p` bits and
   multiplied with rounding, the off-diagonal part clamped into the unit
@@ -4663,56 +4588,6 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   clamped transforms; the multidimensional resampling tensors then
   approximate `A` and `B` with explicit errors below `d p²` and no
   hypotheses beyond the parameter ranges and the inverse identities.
-- `NLogN/PowerOfTwoNumericD.lean`: Theorem 3.1 of the paper for any number
-  of power-of-two coordinates: with numerical synthetic transforms of
-  elementwise scaled error `S` and an approximate chirp within `εa`, the
-  Bluestein pipeline approximates the normalized transform with scaled error
-  `T′ (3S + 2εa + 4) + εa + 2`, at most `3 T′ S + 8 T′ + 4` for a chirp
-  within two units. The synthetic transforms are abstracted by their error
-  and ball properties, which the `d`-dimensional synthetic file supplies.
-- `NLogN/ContractPrep.lean`: the recursive step with the resampling side
-  fully explicit: at window `m = p` the parameter ranges hold, the clamped
-  per-coordinate numerical maps approximate `A_i` and `B_i` with errors
-  below `p²`, and the recursive step returns the exact product given only
-  the prime choice, the size conditions, and a numerical power-of-two
-  transform with error at most `8 T log₂ T`; plus the arithmetic showing
-  the power-of-two transform's error shape meets that bound.
-- `NLogN/PowerOfTwoContract.lean`: the explicit numerical power-of-two
-  transform as the recursive step's input. For a grid of lengths `2^(e_i)`
-  with last length `2^g`, the clamped Bluestein pipeline with clamped
-  synthetic FFTs and a rounded chirp approximates the normalized transform
-  with scaled error `2^S (3S + 8) + 4`, `S = ∑ e_i`, which is at most
-  `8 T log₂ T`, and keeps the unit ball. The transforms of the resampling
-  and Bluestein files are identified.
-- `NLogN/RecurrenceParams.lean`: the parameter facts the final recurrence
-  needs at `d = 1729`: `T p ≤ 48 n`, `2 ≤ 3rp < n`, and
-  `log(3rp) ≤ (1/d + 1/(2d²)) log n`, the last through a real sixth root of
-  the chunk size; hence any cost satisfying the recursive inequality with
-  these parameters is `O(n log n)`.
-- `NLogN/Contract.lean`: the headline correctness contract of the
-  subroutine's recursive step in the vector model. For `n ≥ 2^(d^12)` there
-  is a power-of-two grid of total size `T` bounded by `r`, and for every
-  choice of moduli `s_i < t_i` pairwise coprime with `∏ s_i ∈ (T/2, T]` and
-  `α²(t_i/s_i − 1) ≥ 1`, the fully explicit numerical algorithm, with
-  per-level rounding oracles within `2^(−p)`, outputs exactly the product of
-  the two `n`-bit inputs. The existence of such moduli, the paper's
-  short-interval prime lemma, is the one remaining mathematical hypothesis;
-  bit costs and tape compilation are separate.
-- `NLogN/CostBound.lean`: the operation-count model closes the recursion.
-  With the paper's grid, three convolution pipelines cost exactly
-  `12 T/r` delegated products of size `3rp` plus `O(n log n)` word
-  operations, so any cost function bounded by three pipelines plus a linear
-  overhead for `n ≥ 2^(1729^12)`, and polynomially below, is `O(n log n)`.
-- `NLogN/PrimeSelection.lean`: the paper's Lemma 5.1 and the moduli
-  selection, downstream of one isolated hypothesis: Rosser and Schoenfeld's
-  bound `y − y/(2 log y) < ϑ(y) < y + y/(2 log y)` for `y ≥ 563`, stated as
-  a definition and never assumed globally. From it, every window
-  `((1−2η)x, (1−η)x]` holds at least `ηx/(2 log x)` primes, a power-of-two
-  grid of lengths at least `2^(d^9)` admits distinct primes in its windows,
-  those moduli satisfy every condition of the recursive-step contract, and
-  the explicit recursive step is exact with the moduli supplied. The
-  Chebyshev bound itself is not in mathlib and remains the one external
-  number-theoretic input.
 - `NLogN/OffDiagApproxSqrt.lean`: the paper's Lemma 4.11 window. Under
   `α²θ ≥ 1` the off-diagonal terms decay like `e^(−2π(|h| − 1/2)²)`, so
   truncating to `|h| ≤ m` with `9 m² ≥ p` loses at most `3/2^p`; the clamped
@@ -4736,19 +4611,6 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `permuted_numeric_manuscript` gives the permutation-left identity with the
   unclamped window sums `Ã` and the clamp-free `B̃₀`, errors below `p²`, and
   both maps sending the unit disk to itself.
-- `NLogN/ContractSqrt.lean`: the recursive-step contract with the paper's
-  window sizes, `(⌊√p⌋ + 1) α` for the resampling sums and `⌊√p⌋ + 1` for
-  the off-diagonal part, so that the numerical maps match the ones the cost
-  model counts; the errors stay below `p²` and the contract's hypotheses are
-  unchanged.
-- `NLogN/ResamplingOps.lean`: operation counts for the resampling maps in
-  the word model, mirroring the explicit numerics: with the paper's windows
-  and `α² + 1` Neumann iterations the resampling part of a step costs
-  `270 d T α (√p + 1)` per-term operations, which is `O(n log n)` whenever a
-  weight evaluation plus a product costs quasilinearly in `p`; the `m = p`
-  windows are shown quadratic and hence not enough. One full step then costs
-  `(12 T/r) M(3rp) + O(n log n)`, and the recurrence closes to `O(n log n)`
-  for any cost bounded by a full step plus linear overhead.
 
 ## Resampling
 
@@ -5055,59 +4917,6 @@ Faster interchange of address chunks (§4).
   independent of `u`; the logarithms are absorbed uniformly, not only
   eventually. The field-order bookkeeping of the construction is a tape
   obligation.
-- `NLogN/ModuliConstruction.lean`: an elementary replacement for the paper's
-  Lemma 5.1. The moduli need only be odd and pairwise coprime, so each is a
-  product of powers of two coordinate-specific odd primes whose exponents are
-  found by pigeonhole in log scale; this lands in every window once the
-  lengths exceed a double exponential in `d`. Hence the explicit recursive
-  step is exact with no number-theoretic hypothesis at all, for
-  `n ≥ 2^(2^(1000 d³))`, a threshold larger than the paper's but still a
-  constant.
-- `NLogN/ContractFinal.lean`: the headline theorem in its final form: for
-  `n ≥ 2^(2^(1000 d³))` and any `n`-bit inputs, the explicit numerical
-  recursive step with the paper's window sizes and elementarily constructed
-  moduli computes the exact product, given only per-level rounding oracles
-  within `2^(−p)`; instantiated at `d = 1729`.
-- `NLogN/SmallMultiplierCost.lean`: the plain FFT multiplier with chunk size
-  `⌈log₂ q⌉`, zero rounding error, and schoolbook word arithmetic multiplies
-  two `q`-bit integers exactly within `10^6 · q · (log₂ q)²` bit operations;
-  this fixed quasilinear bound serves the small products inside the weight
-  evaluations of the main algorithm.
-- `NLogN/ExpEval.lean`: the paper's Lemma 2.13 at the model level. The
-  Taylor series with about `8 p / log₂ p` terms is within `2^(−p)` on
-  `|x| ≤ 1`; `e^(−z)` reduces to a power of `e^(−1)` times a Taylor sum with
-  error `3(⌊z⌋ + 1) · 2/K!`; and the binary-splitting recurrence with
-  superadditive multiplication cost evaluates such a series in
-  `O(M(80p) log p)` operations, the `O(p^(1+δ))` shape. The exact product tree
-  and the `p`-bit approximation of `π` times a rational are not written.
-- `NLogN/JointRecurrence.lean`: the cost recurrence closed with no
-  hypothesis about the main cost on the resampling side: with the delegated
-  `3rp`-bit products costed by the cost being bounded and the `p`-bit
-  products inside the weights by an a priori quasilinear multiplier, any cost
-  bounded by one full step plus linear overhead above `2^(2^624)` and
-  polylogarithmically below is `O(n log n)`. The explicit constants need the
-  larger threshold.
-- `NLogN/ExpCostBound.lean`: the concrete weight-evaluation cost: with the
-  plain multiplier's monotone superadditive envelope `10^6 q (log₂ q + 1)²`
-  as the multiplication cost, one Gaussian weight to `q` bits costs at most
-  `2 · 10^11 · q (log₂ q + 1)³` operations, which supplies the joint
-  recurrence's quartic-log hypothesis, and the envelope itself is cubic-log.
-- `NLogN/CostFinal.lean`: the final cost theorem of the subroutine in the
-  operation-count model: any cost that, above `2^(2^624)`, is bounded by one
-  full recursive step (three convolution pipelines with the delegated
-  `3rp`-bit products at the recursive cost, plus the resampling maps with the
-  paper's windows, the plain-multiplier envelope for the small products, and
-  the binary-splitting exponential cost for the weights) plus a linear
-  overhead, and polylogarithmically below, is `O(n log n)`. The grids and
-  moduli are parameters; the correctness theorem supplies them above its own
-  larger threshold.
-- `NLogN/Capstone.lean`: the capstone of the subroutine. Above
-  `2^(2^(1000 · 1729³))` the grids and moduli are chosen once as functions
-  of `n`; with that choice the explicit recursive step with the paper's
-  windows computes the exact product of any two `n`-bit inputs, and any
-  cost bounded by one full step on the same grids and moduli with concrete
-  small-product and weight-evaluation costs, plus linear overhead, is
-  `O(n log n)`. Tape steps are not modeled.
 - `NLogN/ResamplingPermuted.lean`: §7, resampling with the permutations left
   in the transform. From the explicit factorization `F_s = 2^γ B F_t A` with
   `B = P_s⁻¹ D J C P_t`, moving `P_s` to the left gives the exact identity
@@ -5127,6 +4936,31 @@ Faster interchange of address chunks (§4).
   with scaled errors `(8m+7)/2` and `(24m+23)/2`, below `p²` for `m ≤ p`,
   `p ≥ 13`, and the linewise tensors have errors `d` times these. Costs are
   not here.
+
+## Schoenhage
+
+Schönhage–Strassen multiplication, the fast multiplier used for the packed products.
+
+- `Schoenhage/Transform.lean`: the twisted transform over any commutative
+  ring, on lists whose halves stay contiguous as on a tape. A forward layer
+  maps a list modulo `X^(2K) - ζ²` to its residues `a₀ + ζ a₁` modulo
+  `X^K - ζ` and `a₀ - ζ a₁` modulo `X^K + ζ`, the roots being powers of one
+  `ψ` with `ψ^H = -1`; the inverse layer recombines without halving.
+  `inv_fwd_mul`: the inverse of the pointwise product of two forward
+  transforms is `2^k` times the product modulo `X^(2^k) - ψ^e`.
+- `Schoenhage/Level.lean`: one level modulo `2^n + 1` with `n = 2^k M`.
+  Operands are cut into `2^k` pieces of `M` bits (the top piece keeps the
+  possible bit `2^n`), transformed in `ℤ/(2^N + 1)` with `ψ = 2^(N/2^k)`,
+  multiplied pointwise, inverted, divided by `2^k` (a multiplication by
+  `2^(2N-k)`), lifted to signed representatives and evaluated at `2^M`.
+  `level_correct`: the result is `x y` modulo `2^n + 1` whenever `2^k ∣ N`
+  and `2M + k + 1 ≤ N`; the pointwise products are left abstract.
+- `Schoenhage/FMachine.lean`: machines whose control is any finite type
+  compile to literal programs by numbering states; runs correspond step for
+  step, so contracts transfer with the same bound.
+- `Schoenhage/Words.lean`: tapes holding lists of binary words, each followed
+  by a separator, laid out from cell zero; the abstract tape is a zipper with
+  the head at a word boundary. Reading lemmas and writing words at the end.
 
 ## Top-level
 

@@ -19,7 +19,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (904/904) | 🟡 (704/706) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (7/9) |
-| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
+| Fast multiplication subroutine | Schönhage–Strassen | 🟡 (11/12) | 🟡 (0/4) |
 | Exact multiplication, parameters, time bound | §8 | 🟡 (4/6) | ⬜ (0/2) |
 | End-to-end theorem `EndToEnd` | — | 🟡 (5/8) | 🟡 (5/8) |
 
@@ -1348,26 +1348,30 @@ The main binary interchange theorem is proved in `BinaryInterchangeRun.runs` and
 | Weight evaluation | `PiApprox`, `ExpApprox`, `WeightTable`, `WeightNat`, `PiNat`, `PiTape`, `ExpTape`, `TableIdx`, `TabATape`, `TabETape`, `TabDTape`, `TableValue` | ✅ | ✅ | Integer tables within 2 units of `2^p` times the weights (`tables_ok`), from Machin's `π` and a Taylor `exp` in fixed point; register machines compute `π`, `exp` and the A, E, D and halving tables as `w`-bit word tapes (D and halving negated); `TableValue.a_tables` and `b0_tables` feed these words to the `Ã` window sums and the `B̃₀` machine with the tables of `tables_ok` |
 | Tensor interface line counts (Lemma 7.2 costs) | `LineCost`, `LineApply`, `LineValue` | ✅ | 🟡 | Linewise sums give `d C T X`, the Gaussian row times `T p`; at most `2 d T / r` lines; polynomial setup per line is `o(T p)`. On tapes, the innermost axis is done: a twenty-nine-tape loop applies `Ã` to each of `L` consecutive lines (`LineApply.loop_hoare`) and line `ℓ`'s output words are its `Ã` numerators with the machine-built weights (`line_value`); each line costs at most `lineBound`, linear in the extended line `2(s+2m+1)(W+1)` plus `t` window passes of the line machine, so `L` lines cost `L (lineBound + 2)`; other axes need an interchange for non-power-of-two lengths |
 
-## 8. `O(n log n)` subroutine (Harvey–van der Hoeven)
+## 8. Fast multiplication subroutine (Schönhage–Strassen)
+
+The main proof's packed products (`lem:signed-ring-product`, cost-table row
+`packedProducts`) need a multiplier within `m log m (log log m)^c`; the extra
+`log log` factor is absorbed by the `(log p)^k` slack of `TimeBound`. Schönhage–Strassen
+replaces the Harvey–van der Hoeven recursion. The Harvey–van der Hoeven recursion itself is not needed: the main proof's packed products only require a multiplier within `m log m (log log m)^c`, which the cost table absorbs, so Schönhage–Strassen (`Schoenhage/`) replaces it. Its 28 recursion-only files (step contract, recurrence, cost model, moduli, power-of-two transforms) were removed; restore them with `git checkout 834ad45 -- IntegerMultBounds/NLogN/CRTMulti.lean IntegerMultBounds/NLogN/Capstone.lean IntegerMultBounds/NLogN/Contract.lean IntegerMultBounds/NLogN/ContractFinal.lean IntegerMultBounds/NLogN/ContractPrep.lean IntegerMultBounds/NLogN/ContractSqrt.lean IntegerMultBounds/NLogN/CostBound.lean IntegerMultBounds/NLogN/CostFinal.lean IntegerMultBounds/NLogN/CostModel.lean IntegerMultBounds/NLogN/ExpCostBound.lean IntegerMultBounds/NLogN/ExpEval.lean IntegerMultBounds/NLogN/JointRecurrence.lean IntegerMultBounds/NLogN/MainParams.lean IntegerMultBounds/NLogN/MainRecurrence.lean IntegerMultBounds/NLogN/MainStep.lean IntegerMultBounds/NLogN/MainTransform.lean IntegerMultBounds/NLogN/ModuliConstruction.lean IntegerMultBounds/NLogN/PowerOfTwoContract.lean IntegerMultBounds/NLogN/PowerOfTwoExact.lean IntegerMultBounds/NLogN/PowerOfTwoExactD.lean IntegerMultBounds/NLogN/PowerOfTwoNumeric.lean IntegerMultBounds/NLogN/PowerOfTwoNumericD.lean IntegerMultBounds/NLogN/PrecisionCheck.lean IntegerMultBounds/NLogN/PrimeSelection.lean IntegerMultBounds/NLogN/Recurrence.lean IntegerMultBounds/NLogN/RecurrenceParams.lean IntegerMultBounds/NLogN/ResamplingOps.lean IntegerMultBounds/NLogN/SmallMultiplierCost.lean` and re-add their imports to `IntegerMultBounds.lean`.
 
 | Subcomponent | Files | Mathematics | Tape | Notes |
 | --- | --- | --- | --- | --- |
-| DFT, convolution theorem, inversion | `DFT`, `Multidim`, `MultidimD`, `CRTMulti` | ✅ | — | |
-| Radix-2 FFT and normalized FFT | `FFT`, `NormFFT` | ✅ | ⬜ | Ring-operation counts only |
+| DFT, convolution theorem, inversion | `DFT`, `Multidim`, `MultidimD` | ✅ | — | |
+| Radix-2 FFT and normalized FFT | `FFT`, `NormFFT` | ✅ | — | Ring-operation counts only |
 | Fixed-point framework and error budget | `FixedPoint`, `FixedOps`, `Approx`, `ErrorBudget` | ✅ | — | |
 | Tensor approximation lemma | `TensorApprox`, `TensorApproxD`, `TensorApproxV` | ✅ | — | Rectangular composition law open |
-| Plain FFT multiplier | `Pipeline`, `Multiplier`, `Kronecker`, `Carry` | ✅ | ⬜ | Exact on bit strings |
-| Negacyclic Kronecker substitution (Lemma 2.5) | `NegacyclicKronecker` | ✅ | ⬜ | Exact arithmetic; bit costs open |
-| Power-of-two transforms (Thm 3.1) | `SynthEmbed`, `SynthMultiD`, `PowerOfTwoExact`, `PowerOfTwoExactD`, `PowerOfTwoNumeric`, `PowerOfTwoNumericD`, `SynthConvApprox`, `SynthConvApproxD` | ✅ | ⬜ | Exact chain and numerical error `T′ (3S + 2εa + 4) + εa + 2` in every dimension; packaging as the recursive step's `F̃_t` in progress |
-| Steps 1–3 of the recursion (Props 5.2–5.4) | `MainReduction`, `MainStep`, `Section5Approx` | ✅ | ⬜ | |
-| Parameter selection and precision | `MainParams`, `PrecisionCheck` | ✅ | — | |
-| Final recurrence (Cor 5.5) | `MainRecurrence`, `Recurrence`, `RecurrenceParams` | ✅ | — | Parameter facts at `d = 1729` proved; the recursive inequality for an actual cost is a hypothesis |
-| Moduli selection (Lemma 5.1) | `Primes`, `PrimeSelection`, `ModuliConstruction` | ✅ | — | Elementary two-prime-power moduli via pigeonhole, no Chebyshev input; the Chebyshev-bound route is kept as an alternative |
-| Assembled numerical transform (Prop 5.2) | `ResamplingMultiNumeric`, `MainTransform`, `ExplicitNumeric`, `ContractPrep`, `PowerOfTwoContract` | ✅ | ⬜ | `F̃_s = 2^γ B̃ F̃_t Ã` with error `2^(γ+4) T log₂ T`; the explicit power-of-two transform meets the `8 T log₂ T` bound |
-| Headline recursive-step contract | `Contract`, `ContractSqrt`, `ContractFinal`, `PrimeSelection`, `ModuliConstruction`, `Capstone` | ✅ | ⬜ | The explicit numerical step with the paper's windows is exact with no hypothesis beyond the threshold `n ≥ 2^(2^(1000 d³))`; the capstone ties correctness and the `O(n log n)` operation count to one choice of grids and moduli |
-| Operation counts | `CostModel`, `CostBound`, `ResamplingOps`, `SmallMultiplierCost`, `ExpEval`, `ExpCostBound`, `JointRecurrence`, `CostFinal` | ✅ | ⬜ | A full step is `(12 T/r) M(3rp) + O(n log n)` operations with the paper's windows; small products by the plain FFT multiplier, weights by binary splitting; the recurrence closes to `O(n log n)` above `2^(2^624)` |
+| Plain FFT multiplier | `Pipeline`, `Multiplier`, `Kronecker`, `Carry` | ✅ | — | Exact on bit strings |
+| Negacyclic Kronecker substitution | `NegacyclicKronecker` | ✅ | — | Exact arithmetic; reduces signed ring products to one integer product |
+| Synthetic embeddings and convolution approximations | `SynthEmbed`, `SynthMultiD`, `SynthConvApprox`, `SynthConvApproxD`, `MainReduction`, `Section5Approx` | ✅ | — | Used by the resampling and exact-recovery sections |
 | Unit-ball clamping | `Clamp` | ✅ | — | Removes the ball side conditions of the composition lemmas |
-| Bit costs and tape compilation | — | ⬜ | ⬜ | |
+| Twisted transform convolution theorem | `Schoenhage/Transform` | ✅ | — | Contiguous-halves forward and unscaled inverse transforms modulo `X^(2^k) - ψ^e` over any commutative ring with `ψ^H = -1`; inverse of the pointwise product is `2^k` times the product (`inv_fwd_mul`), no division by two |
+| One level modulo `2^n + 1` | `Schoenhage/Level` | ✅ | — | Pieces, transform in `ℤ/(2^N + 1)` with `ψ = 2^(N/2^k)`, descale, signed lift and evaluation give `x y mod 2^(2^k M) + 1` whenever `2^k ∣ N` and `2M + k + 1 ≤ N` (`level_correct`) |
+| Recursion, size schedule and cost bound | — | ⬜ | — | Level-batched recursion with near-doubling sizes; `M(m) = O(m log m log log m)` |
+| Word tapes and finite-type machines | `Schoenhage/FMachine`, `Schoenhage/Words` | ✅ | 🟡 | Machines over any finite state type compile to programs with equal runs; tapes as zippers of separator-terminated binary words |
+| Streaming word primitive | `Schoenhage/Stream` | — | ⬜ | One generic lockstep transducer for copy, add, subtract, shifts |
+| Word-program compiler | — | — | ⬜ | Sequencing, loops and branches over word tapes with exact costs |
+| Schönhage–Strassen on tapes | — | — | ⬜ | Exact product and runtime within the packed-products row |
 
 ## 9. Exact multiplication, parameters, time bound (§8)
 
@@ -1401,5 +1405,4 @@ The main binary interchange theorem is proved in `BinaryInterchangeRun.runs` and
 - Compile the proved optimized h=50 modular physical network and its fixed rational control schedule to literal tape execution and prove its recursive time bound.
 - Account for complex endpoint corrections in the tape implementation.
 - Finish the `NegacyclicKronecker` subroutine component.
-- Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compose the proved rational digit arithmetic into matrix routines and compile the finite network address permutations to literal tape steps.

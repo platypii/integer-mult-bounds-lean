@@ -38,7 +38,7 @@ the literal machine model is proved correct with a runtime bound.
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ | 🟡 | One fixed original-input stage machine handles every positive width and source order with exact selected XOR, complete cleanup, paid reversal and the certified width exponent. Literal lists physically regenerate and restore pair headers; their original address semantics equal binary basis changes. Actual complex25 edges supply all residual witnesses and their words, including the original signed phase identities. Actual multiplier scalars and once-padded descendant rows give a uniform complete-list machine bound without supplied repair allowances or branch decisions. The actual individual-axis cutoff now has the required quantitative saving relative to the certified dimension exponent. An actual signed dyadic butterfly arithmetic kernel now has exact coefficient semantics, clean private storage and linear word-width runtime with a guard derived from normalized input and prefix depth. Physical delimited record readers now fill its four input controls with linear width cost; A fixed counted record loop now produces both complete butterfly streams with clean arithmetic workspace and linear serialized-volume cost from an original retained count header and blank controls; physical source erasure and all stream-head rewinds are also paid with linear volume cost; selected-axis split/merge and its header generation remain open. A fixed runtime unit-phase multiplier also has exact signed coefficient semantics and linear width cost; A physical weighted control scanner now feeds the phase kernel with proved original signed phase semantics; Residual control words are now physically extracted from runtime address words, with original phase readout and extraction cost paid by actual payload capacity; A fixed machine now extracts these controls and applies the exact signed phase without supplied controls or phase flags; complete coefficient-stream traversal remains open. Actual active-axis power pieces and child-slot paths now derive recursive node geometry; one fixed original-input machine now generates the threshold and computes the exact recursive stop flag with linear scalar cost, and physical child-header production, scalar leaves and exact parent-header restoration are proved; controller path/exponent synthesis remains open, together with connecting computed phases to coefficient streams, coefficient record split/merge and guard propagation, complete layer execution and recursive network assembly. Multiplication EndToEnd is unproved. |
 | Synthetic transforms and their tape layout | §6 | ✅ | ⬜ | Synthetic ring, principal roots, Bluestein, and the layout counts, round error accumulation, and cost bracket matching the cost table are proved; tape execution is open |
 | Gaussian resampling | §7 | ✅ | 🟡 | The factorization `F_s = 2^γ B F_t A` with `‖A‖, ‖B‖ ≤ 1` is proved in one and `d` dimensions, with truncation and Neumann-series error bounds for its pieces; the numerical approximations of `A` and `B` have scaled error below `p²`; the permutation-left variant with its explicit numerical maps, in one and `d` dimensions, and its chirp and cancellation identities is proved; the line counts of the tensor interface match the cost table with negligible setup; on tapes, the row-selecting map `C` is realized by a modular-counter selection machine at linear cost with no numerical error, a signed fixed-point word layer (sign-extending accumulation, negation, truncating multiplication with a quadratic inner product) is in place, and the Gaussian window sums of `Ã` run on a fixed twenty-two-tape machine given the rounded weights, with its accumulators proved equal to the numerical map `Ã`; weight evaluation, `B̃` and the line machines remain open |
-| `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 | ⬜ | The explicit numerical recursive step is proved exact with no external hypothesis, the moduli being built elementarily above a constant threshold; in the operation-count model a cost bounded by one full step with concrete small-product and weight-evaluation costs is proved `O(n log n)`; tape compilation is open |
+| Fast multiplication subroutine | Schönhage–Strassen | 🟡 | ⬜ | The packed products need a multiplier within `m log m (log log m)^c`, which the cost table absorbs; the twisted-transform convolution theorem and one Schönhage–Strassen level modulo `2^n + 1` are proved; the recursion, its cost and the tape machines are open |
 | Exact multiplication, parameters, time bound | §8 | 🟡 | ⬜ | Parameter margins, asymptotics, prime existence, the size relations, the precision chain to exact recovery of the product, and the cost table rows assembled into `O(n (lg n)^(1-κ))` are proved; short-interval primes and the components' row costs remain open. Exact recovered output now has exactly twice the input length even for nondivisible chunk widths; physical carry propagation and installation remain open. |
 | End-to-end theorem `EndToEnd` | — | 🟡 | 🟡 | The complete fixed ordinary multiplier is proved from original input through genuine halting and exact twice-length product output, with quadratic runtime including empty inputs. Fast-path assembly and the final sub-n-log-n bound remain open. |
 
@@ -51,17 +51,15 @@ execution, stream primitives and counters, finite bit and complex networks,
 recursive tape scheduling, modular compact controls and their repair costs,
 synthetic transforms, Gaussian resampling, prime selection, exact coefficient
 arithmetic, rounding, carry propagation, and the final uniform complexity bound.
-The upstream proof also invokes an existing `O(n log n)` multiplier as a
-subroutine. The `NLogN/` directory formalizes the mathematics of the
-Harvey–van der Hoeven algorithm at the level of vectors and operators:
-transforms, convolution theorems, fixed-point error propagation, Bluestein and
-synthetic transforms, the Gaussian resampling identity with its norm bounds,
-the parameter selection, the explicit numerical recursive step proved exact,
-the final recurrence, and an operation-count model. What remains for the
-subroutine is compiling the whole algorithm to tape steps with its bit cost;
-the moduli are constructed elementarily, so no number-theoretic input beyond
-Bertrand's postulate is used. None of these algorithmic
-contracts may be assumed to claim the requested end-to-end result.
+The upstream proof also invokes an existing fast multiplier as a subroutine,
+citing Harvey and van der Hoeven's `O(n log n)` algorithm. Any multiplier within
+`m log m (log log m)^c` suffices, since the cost table absorbs the extra factor,
+so the `Schoenhage/` directory formalizes Schönhage–Strassen instead: its
+transform, one level modulo `2^n + 1`, and (in progress) the recursion and its
+tape machines. The `NLogN/` directory keeps the transform, fixed-point,
+Kronecker and Gaussian resampling mathematics that the main proof uses. The Harvey–van der Hoeven recursion itself is not needed: the main proof's packed products only require a multiplier within `m log m (log log m)^c`, which the cost table absorbs, so Schönhage–Strassen (`Schoenhage/`) replaces it. Its 28 recursion-only files (step contract, recurrence, cost model, moduli, power-of-two transforms) were removed; restore them with `git checkout 834ad45 -- IntegerMultBounds/NLogN/CRTMulti.lean IntegerMultBounds/NLogN/Capstone.lean IntegerMultBounds/NLogN/Contract.lean IntegerMultBounds/NLogN/ContractFinal.lean IntegerMultBounds/NLogN/ContractPrep.lean IntegerMultBounds/NLogN/ContractSqrt.lean IntegerMultBounds/NLogN/CostBound.lean IntegerMultBounds/NLogN/CostFinal.lean IntegerMultBounds/NLogN/CostModel.lean IntegerMultBounds/NLogN/ExpCostBound.lean IntegerMultBounds/NLogN/ExpEval.lean IntegerMultBounds/NLogN/JointRecurrence.lean IntegerMultBounds/NLogN/MainParams.lean IntegerMultBounds/NLogN/MainRecurrence.lean IntegerMultBounds/NLogN/MainStep.lean IntegerMultBounds/NLogN/MainTransform.lean IntegerMultBounds/NLogN/ModuliConstruction.lean IntegerMultBounds/NLogN/PowerOfTwoContract.lean IntegerMultBounds/NLogN/PowerOfTwoExact.lean IntegerMultBounds/NLogN/PowerOfTwoExactD.lean IntegerMultBounds/NLogN/PowerOfTwoNumeric.lean IntegerMultBounds/NLogN/PowerOfTwoNumericD.lean IntegerMultBounds/NLogN/PrecisionCheck.lean IntegerMultBounds/NLogN/PrimeSelection.lean IntegerMultBounds/NLogN/Recurrence.lean IntegerMultBounds/NLogN/RecurrenceParams.lean IntegerMultBounds/NLogN/ResamplingOps.lean IntegerMultBounds/NLogN/SmallMultiplierCost.lean` and re-add their imports to `IntegerMultBounds.lean`.
+None of these algorithmic contracts may be assumed to claim the requested
+end-to-end result.
 
 ## Building and verification
 
@@ -105,6 +103,9 @@ builds the project and runs this audit.
 - J. W. Cooley and J. W. Tukey, [*An algorithm for the machine calculation of
   complex Fourier series*](https://doi.org/10.1090/S0025-5718-1965-0178586-1),
   Mathematics of Computation 19(90), 1965, 297–301. (`NLogN/FFT.lean`)
+- A. Schönhage and V. Strassen, [*Schnelle Multiplikation großer
+  Zahlen*](https://doi.org/10.1007/BF02242355), Computing 7, 1971, 281–292.
+  (`Schoenhage/`)
 - L. I. Bluestein, [*A linear filtering approach to the computation of discrete
   Fourier transform*](https://doi.org/10.1109/TAU.1970.1162132), IEEE
   Transactions on Audio and Electroacoustics 18(4), 1970, 451–455.
@@ -112,7 +113,7 @@ builds the project and runs this audit.
 - R. C. Agarwal and J. W. Cooley, [*New algorithms for digital
   convolution*](https://doi.org/10.1109/TASSP.1977.1162981), IEEE Transactions
   on Acoustics, Speech, and Signal Processing 25(5), 1977, 392–410.
-  (`NLogN/Multidim.lean`, `NLogN/CRTMulti.lean`)
+  (`NLogN/Multidim.lean`)
 
 ### Lean libraries
 
