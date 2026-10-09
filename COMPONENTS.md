@@ -581,7 +581,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/MarkedRadixRefresh.lean`: Physical replacement of a stale marked radix word from a shared source tape. Erases the old copy, copies actual source digits and restores both heads to one, preserving the source cell-for-cell and removing stale longer suffixes. Two tapes, seven states; exact whole-bank bound2*oldWidth+2*sourceWidth+8. Wiring this primitive across all expression leaves and scheduler controls is separate.
 
-- `Machine/SharedPlacementAlphabet.lean`: Alphabet-polymorphic placement sharing one physical tape between an active program and a retained bank. Exact complete-tape/head replacement and framed Hoare contracts use static finite wiring, without a physical copy assumption.
+- `Machine/SharedPlacementAlphabet.lean`: Alphabet-polymorphic placement sharing one physical tape between an active program and a retained bank. Exact complete-tape/head replacement and framed Hoare contracts use static finite wiring, without a physical copy assumption. Complete-tape replacement commutes with appending either caller bank, including exact heads.
 
 - `Machine/RadixLinearCombinationRefresh.lean`: Concrete refresh of every expression leaf from one shared physical control bank. Fin-bounded references determine fixed tape placements; recursive erase/copy programs preserve the shared bank and synchronize all stale leaf copies, including repeated references. Exact complete-bank theorem and runtime+1 at most leafCount*(4*width+9) when source/stale widths are bounded. Actual binary arithmetic composition and recurring output reset remain separate.
 
@@ -3652,7 +3652,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhasePolynomialStreamInit.lean`: Physically initializes the original full-address count and live counter from retained stage geometry, charging setup and retaining the immutable polynomial exponent.
 
-- `Machine/UnitPhasePolynomialStream.lean`: For fixed supplied m and ws, executes initialization, once-per-address phase plus two-to-ell coefficient traversal, and final numeric cleanup. Runtime phase-weight generation for one uniform machine, prepared stage headers, literal source contexts and stream endpoint normalization remain open caller obligations.
+- `Machine/UnitPhasePolynomialStream.lean`: For fixed supplied m and ws, executes initialization, once-per-address phase plus two-to-ell coefficient traversal, and final numeric cleanup. Physical finite dispatch over the actual fixed-network phase kernels for one uniform machine, prepared stage headers, literal source contexts and stream endpoint normalization remain open caller obligations.
 
 - `Machine/ButterflySpectatorGeometry.lean`: Literal row-major reshape and unshape retain arbitrary outer rows and polynomial coefficients while applying a selected binary axis. Exact source serialization and signed field widths are preserved; outer rows are never treated as binary axes.
 
@@ -3661,6 +3661,8 @@ Machine model, execution, composition, and tape routines.
 - `Machine/ButterflySpectatorOriginal.lean`: One fixed actual native axis machine executes header synthesis, coefficient split/arithmetic/merge and final descriptor cleanup on arbitrary outer rows with exact row-major output and paid runtime. Sparse multi-axis scheduling and uniform schedule cost remain separate.
 
 - `Machine/CompactSpectatorVisitGeometry.lean`: Descendant coordinates use immutable original global address bits with proved fit, injectivity, descending chunk stride, role volume and exact unchanged outer rows. Each descendant coordinate has a real paid native-axis execution theorem; complete recursive assembly remains open.
+
+- `Machine/ActivePrefixStageNativeRows.lean`: Canonical serialized ordinal rows give literal native tape words independent of source/target decomposition. A fixed actual native stage transports these rows with exact clean banks and its full paid cost, without a caller-supplied reshape or codec equality. Repeated native pair/list execution remains separate.
 
 ## Compact
 

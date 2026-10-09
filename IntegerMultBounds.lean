@@ -2056,3 +2056,4 @@ import IntegerMultBounds.Schoenhage.Stream
 import IntegerMultBounds.Schoenhage.StreamPrim
 import IntegerMultBounds.Schoenhage.Cmd
 import IntegerMultBounds.Schoenhage.Moves
+import IntegerMultBounds.Machine.ActivePrefixStageNativeRows

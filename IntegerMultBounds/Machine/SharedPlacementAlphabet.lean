@@ -24,6 +24,13 @@ theorem setTape_append_left {l r : ℕ} (v : Tapes l a) (w : Tapes r a) (i : Fin
   congr 1 <;> funext j <;> induction j using Fin.addCases <;> simp [Function.update_apply,Fin.ext_iff]
   all_goals intro h; have hi := i.isLt; omega
 
+theorem setTape_append_right {l r : ℕ} (v : Tapes l a) (w : Tapes r a) (i : Fin r)
+    (f : ℤ → Fin (a+4)) (p : ℤ) :
+    setTape (v.append w) (Fin.natAdd l i) f p = v.append (setTape w i f p) := by
+  unfold setTape Tapes.append
+  congr 1 <;> funext j <;> induction j using Fin.addCases <;> simp [Function.update_apply,Fin.ext_iff]
+  all_goals omega
+
 /-- Run a right-hand bank while sharing its selected slot with a left-hand
 payload slot. The right-hand bank's original slot becomes stationary frame. -/
 def sharedPlacement {l r : ℕ} (i : Fin l) (j : Fin r) : Fin (r+l) ≃ Fin (l+r) :=
