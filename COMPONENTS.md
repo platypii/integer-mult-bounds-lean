@@ -2944,6 +2944,26 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairArrayRecycle.lean`: Actual fixed caller-tape copy-back replaces the original array with an equal-length repaired output, erases the separate raw output and preserves every head/spectator tape, charging five times array volume plus ten including empty arrays.
 
+- `Machine/ActiveTargetHighestPairOriginalPlaced.lean`: Complete original-five-input highest-bit actions run on six arbitrary caller ports, retaining original descriptors and all spectator tapes and clearing every private tape.
+
+- `Machine/ActiveTargetHighestPairLayoutGeometry.lean`: The highest-bit split has exact early/later source and target bit positions in the unchanged active layout, with arbitrary outer rows and full volume equality; source/target positivity conditions remain explicit.
+
+- `Machine/ActiveTargetHighestLayoutHeadersData.lean`: Fixed arithmetic derives the highest-bit L/G/K/rows/payload words from the same fourteen original layout descriptors used by the compact low-bit schedule, with exact early/later geometry and generated-header cleanup.
+
+- `Machine/ActiveTargetHighestLayoutHeadersRun.lean`: Actual original-fourteen-input header synthesis computes and erases all five highest-bit geometry words on physical tapes, preserving original words and restoring arithmetic scratch with paid costs.
+
+- `Machine/ActiveTargetHighestLayoutHeadersGeometry.lean`: Physically synthesized highest-bit words equal the literal original-layout early/later pair geometry under the actual source-fit inequalities.
+
+- `Machine/ActiveTargetHighestLayoutHeadersBudget.lean`: All highest-bit geometry synthesis and erasure costs are bounded linearly by any positive numeric volume containing the original layout descriptors.
+
+- `Machine/ActiveTargetHighestLayoutOriginalData.lean`: Literal original fourteen layout words and array form the highest-bit input; the derived geometry words and both layers of private workspace start blank.
+
+- `Machine/ActiveTargetHighestLayoutOriginalRun.lean`: One fixed highest-bit machine synthesizes geometry from original fourteen descriptors, generates all load/swap metadata, performs the actual early/later action and erases every generated word with exact array semantics.
+
+- `Machine/ActiveTargetHighestLayoutOriginalPlaced.lean`: The complete original-fourteen-input highest-bit machine executes on fifteen arbitrary caller ports, changing only the array while restoring both metadata banks and preserving all spectators.
+
+- `Machine/ActiveTargetHighestLayoutOriginalBudget.lean`: Both complete original-layout highest-bit machines have uniform linear actual full-array runtime including geometry synthesis, load/swap headers, payload actions, both cleanup layers and joins; original numeric-volume premises follow from the source-fit bounds.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
