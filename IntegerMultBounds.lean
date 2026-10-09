@@ -800,3 +800,5 @@ import IntegerMultBounds.Machine.Shared50RecursiveInduction
 import IntegerMultBounds.Machine.Shared50RecursiveRootExecution
 import IntegerMultBounds.Machine.ArbitraryWidthPieceBudget
 import IntegerMultBounds.Machine.ArbitraryWidthPieces
+import IntegerMultBounds.Machine.ArbitraryWidthSliceTranspose
+import IntegerMultBounds.Machine.RecursiveRowPadding

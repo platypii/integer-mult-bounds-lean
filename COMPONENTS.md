@@ -1183,6 +1183,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthPieces.lean`: The literal base-125000 power-piece list covers every chunk width, with certified depth/count/offset bounds. Consecutive piece swaps compose to the exact numerical full-address swap; each slice descriptor preserves total logical volume and satisfies the proved power-width Shape on common divisible rows. Its finite cost sum equals the manuscript digit-weighted sum. Physical padding and paid slice/list construction remain separate.
 
+- `Machine/ArbitraryWidthSliceTranspose.lean`: Literal slice descriptors and serialized words implement exactly the selected MSB digit-window exchange, preserving all original seven-factor spectators and binary encodings. Generic interval-rank decomposition handles arbitrary offsets and lengths. This supplies the semantic interface for calls to the completed power-width machine; paid view construction remains open.
+
+- `Machine/RecursiveRowPadding.lean`: Flat prefix/row/suffix zero extension and cropping are exact inverses on retained rows and commute with arbitrary within-row permutations. The original descriptor chunk transpose is exactly such a permutation, so padding/interchange/cropping yields the full original transpose. Padded logical volume is bounded by the row enlargement factor. Physical movement and generated controls remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
