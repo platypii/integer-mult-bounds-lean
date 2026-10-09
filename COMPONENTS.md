@@ -1695,6 +1695,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactRowReservationEndpoint.lean`: Explicit whole-bank endpoint for the original-descriptor binary reservation path: original row/width headers and heads retained, complete padded role words installed, original source/padding destination and every private tape blank at head zero. Reserved compact-gadget slot/capacity instantiation remains separate.
 
+- `Machine/BinaryPackedOffsetOriginalRun.lean`: One fixed original-header wrapper computes P*2^w*G from the four original interchange headers, executes the actual swap/rotate/swap on the supplied literal packed-offset word and canonical payload, physically erases the generated count and restores every private bank. Exact result and all preparation/action/cleanup/sequencing costs are proved; implicit-address offset production and packed arithmetic assembly remain separate.
+
+- `Machine/BinaryPackedOffsetOriginalBudget.lean`: The complete original-header count/action/erasure path preserves the certified interchange exponent. Actual count preparation and cleanup are absorbed into nonempty payload volume; no derived count word or free preparation is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

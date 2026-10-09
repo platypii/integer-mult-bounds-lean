@@ -1081,3 +1081,5 @@ import IntegerMultBounds.Machine.CompactRowReservationData
 import IntegerMultBounds.Machine.CompactRowReservationRun
 import IntegerMultBounds.Machine.CompactRowReservationBudget
 import IntegerMultBounds.Machine.CompactRowReservationEndpoint
+import IntegerMultBounds.Machine.BinaryPackedOffsetOriginalRun
+import IntegerMultBounds.Machine.BinaryPackedOffsetOriginalBudget
