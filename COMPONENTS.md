@@ -4170,6 +4170,10 @@ Bit and complex networks.
 
 - `Networks/BinaryRowColumns.lean`: Literal Boolean XOR execution of a fixed row-addition word on arbitrary columns equals its F2 coordinate action; a chosen basis word converts all columns exactly and its reversal restores their bits.
 
+- `Networks/BinaryPhaseBasisExtension.lean`: An actual nondegenerate phase-subspace basis extends to a full binary address basis with its original vectors in literal first slots. The generated row-addition word computes the exact bilinear controls, and the original projector phase equals the diagonal phase on those computed coordinates.
+
+- `Networks/BinaryPhaseResidualRowProgram.lean`: Nested nondegenerate binary labels with the existing zero-or-unit residual witness determine their own orthonormal basis and full ambient row-addition word. Its literal first residual-dimension coordinates compute the exact controls, and its diagonal phase equals the original nested projector phase difference; no basis or word decomposition is supplied.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.

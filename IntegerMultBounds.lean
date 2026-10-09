@@ -1843,3 +1843,5 @@ import IntegerMultBounds.Machine.ActivePrefixStagePairBudget
 import IntegerMultBounds.Machine.CompactActualPairSchedule
 import IntegerMultBounds.Machine.CompactActualPairScheduleBudget
 import IntegerMultBounds.Machine.ActivePrefixStagePairInverse
+import IntegerMultBounds.Networks.BinaryPhaseBasisExtension
+import IntegerMultBounds.Networks.BinaryPhaseResidualRowProgram
