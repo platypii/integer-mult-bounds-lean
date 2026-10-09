@@ -18,7 +18,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Faster interchange of address chunks | §4 | ✅ (75/75) | 🟡 (53/72) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (4/6) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
-| Gaussian resampling | §7 | ✅ (17/17) | 🟡 (5/9) |
+| Gaussian resampling | §7 | ✅ (17/17) | 🟡 (6/9) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
 | Exact multiplication, parameters, time bound | §8 | 🟡 (3/5) | ⬜ (0/2) |
 | End-to-end theorem `EndToEnd` | — | 🟡 (0/3) | ⬜ (0/3) |
@@ -393,7 +393,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Gaussian window sums of `Ã` | `GaussianLine`, `GaussianLineValue`, `WindowSum` | ✅ | ✅ | Fixed twenty-two-tape machine; its accumulators are `2^(p+1)` times the parts of `resampANum` (`WindowSum.accumulators_eq`); rounded weights are supplied as a word tape |
 | Off-diagonal map `Ẽ` | `OffDiagSum` | ✅ | ✅ | The same machine with stride one and a zero centre weight; accumulators are `2^p` times the parts of `offDiagNum` |
 | Neumann iteration `J̃'` | `NeumannWords`, `SubPass`, `NeumannStepLemmas`, `NeumannLoop` | ✅ | ✅ | Word-level recursion gives `J̃'` exactly (`resampJNumH_eq_iter`); the twenty-seven-tape loop runs `p` steps around the Gaussian line machine (`loop_hoare`) |
-| Assembled `B̃₀ = D̃' J̃' C` on tapes | — | ✅ | ⬜ | Join, select, split, halve, loop, then `D̃'`, with a value bridge to the clamp-free `resampB₀NumH` |
+| Assembled `B̃₀ = D̃' J̃' C` on tapes | `B0Words`, `B0Tape`, `B0Value` | ✅ | ✅ | Forty-two-tape machine: join, select, split, halve (one window-radius-zero step with weights `-2^(p-1)`), copy to the start tape, `p` Neumann steps, then `D̃'` (weights `-ρ(2^p d')`); runtime `b0Bound`; `b0_value` identifies its output words with the numerators of `resampB₀NumH p (⌊√p⌋+1) s t α w`; weight tables are supplied |
 | Weight evaluation | — | ✅ | ⬜ | Rounded Gaussian and `D̃'` weights; the manuscript cites Lemma 2.12 for roots of unity |
 | Tensor interface line counts (Lemma 7.2 costs) | `LineCost` | ✅ | ⬜ | Linewise sums give `d C T X`, the Gaussian row times `T p`; at most `2 d T / r` lines; polynomial setup per line is `o(T p)` |
 
