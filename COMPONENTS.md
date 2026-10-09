@@ -3066,6 +3066,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactScalarAllowances.lean`: The actual multiplier choices d,K,p derive complete D*K+3 cubic repair sizing and selected-count bounds; the actual dyadic precision log fits K eventually, and literal polynomial-record bits eventually pay padded address width. No independent cubic-width or sufficiently-large-guard premise is assumed.
 
+- `Machine/ActiveRepairLayoutRecordsFullPlacedCommon.lean`: Symbolic original-port and blank-private adapters transport the complete low/high banks through padding without giant closed state normalization.
+
+- `Machine/ActiveRepairLayoutRecordsFullEarlyPlaced.lean`: The complete early low/high machine executes on arbitrary twenty-three original caller ports, changing only raw array, preserving descriptors and caller frame, restoring every private tape and retaining actual native cost.
+
+- `Machine/ActiveRepairLayoutRecordsFullLatePlaced.lean`: The complete later low/high machine executes on arbitrary twenty-three original caller ports, changing only raw array, preserving descriptors and caller frame, restoring every private tape and retaining actual native cost.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
