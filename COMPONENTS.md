@@ -2022,6 +2022,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactGadgetReservationHeadersCarvedEndToEnd.lean`: Actual original-array padding, role splitting, carved-header setup and reserved load have exact payload semantics and a certified width-exponent bound including every join and cleanup. Only the explicit physical offset word remains to be connected to its generator; derived role/load headers remain retained for reuse.
 
+- `Machine/BinaryPackedEarlyGeometry.lean`: Both carved temp/control rectangle ordinals equal one unchanged serialized reservation index, including arbitrary dirty-back splits and every unused field. These are array geometry lemmas; physical sequence assembly remains separate.
+
+- `Machine/BinaryPackedEarlyAddress.lean`: The common mixed-width address serialization is bijective onto the full role volume, covering every dirty back, slack, active and payload cell without a free permutation.
+
+- `Machine/BinaryPackedEarlyArray.lean`: The four literal actual packed-offset result functions compose in current-source order on one unchanged global layout. Exact array entries agree with the four-stage state update; physical sequencing remains separate.
+
+- `Machine/BinaryPackedEarlyCorrect.lean`: Every serialized array cell satisfies packedEarly semantics, and good addresses have the ideal selected target toggle with temporary/spectator restoration. These full-array correctness lemmas do not assert execution of the complete physical sequence.
+
+- `Machine/BinaryPackedEarlyPrefixParityLoad.lean`: One fixed child machine constructs prefix-source parity offsets, executes the actual original-header swap/rotate/swap and erases the entire offset word. Original q/b/n/L/K, action headers and all spectators are retained with private storage blank; upstream header wiring remains separate.
+
+- `Machine/BinaryPackedEarlyPrefixNegativeLoad.lean`: One fixed child machine constructs prefix-source negative parity-XOR offsets, executes the actual original-header field action and physically erases the offsets. Original controls/descriptors and all spectator tapes survive; complete shared-sequence wiring remains separate.
+
+- `Machine/BinaryPackedEarlyPrefixLoadBudget.lean`: Both prefix-source generation/action/erasure machines preserve the certified width exponent with actual payload volume and an explicit sufficient suffix-width allowance. Every preparation, join and cleanup cost is charged.
+
+- `Machine/PackedPrefixRepeatHeadersBudget.lean`: The actual fifteen-command repetition-factor setup and physical final erasure have linear containing-volume bounds. All intermediate powers/products are charged and bounded by the actual repetition factor.
+
+- `Machine/PackedPrefixRepeatHeadersReserved.lean`: Discharges the repetition-factor volume inequalities from the actual unchanged reservation geometry and carved control gap. Arbitrary-caller construction and real cleanup have uniform full-role-volume costs without supplied cost bounds.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
