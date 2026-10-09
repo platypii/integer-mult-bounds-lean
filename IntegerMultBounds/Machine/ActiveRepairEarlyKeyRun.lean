@@ -107,7 +107,7 @@ theorem cleanup_cost (d : Data) (h : Valid d) :
   obtain ⟨hvl,htl,_⟩ := lengths d h
   have hd : d.destination.length=d.A := ActiveRepairDestinationPatchRun.destination_length _ _ _ _ _ _ _ _
   simp only [ActiveRepairEarlyKeyCleanup.cost,ActiveRepairEarlyKeyCleanup.slots,
-    List.map_cons,List.map_nil,List.sum_cons,List.sum_nil,words] 
+    List.map_cons,List.map_nil,List.sum_cons,List.sum_nil,words]
   norm_num only [Fin.reduceEq,ite_true,ite_false,List.length_singleton]
   simp only [V,T,U,X,Gather.field_length] at *
   omega

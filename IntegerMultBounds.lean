@@ -1478,3 +1478,5 @@ import IntegerMultBounds.Machine.ActiveRepairLateFieldsCleanup
 import IntegerMultBounds.Machine.ActiveRepairLateFields
 import IntegerMultBounds.Machine.ActiveRepairLateFieldsPlaced
 import IntegerMultBounds.Machine.ActiveRepairLateFieldsValue
+import IntegerMultBounds.Machine.ActiveRepairEarlyKeyScan
+import IntegerMultBounds.Machine.ActiveRepairEarlyPipelineRun

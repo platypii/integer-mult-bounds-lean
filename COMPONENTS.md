@@ -2478,6 +2478,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLateFieldsValue.lean`: Actual late extracted-field guard and repaired target/T/U equal the existing late exceptional rank flag and repaired rank key. Local word concatenation is only a mathematical identification, never a supplied machine rank.
 
+- `Machine/ActiveRepairEarlyKeyScan.lean`: Actual current-address early full-key machine satisfies RepairScan.KeyContract on the genuine growing counter for every record. Varying controls are parsed inside the fixed128-tape routine, key output changes only the actual scan key tape and all114 scratch tapes are retained.
+
+- `Machine/ActiveRepairEarlyPipelineRun.lean`: Fixed actual scan/sort/strip/reinsert program calls the varying-address early key, returns the exact filled stream and has a closed key/record/extracted-volume bound. Prepared scan inputs, global ideal-permutation identification, density budgeting and final working-tape cleanup remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
