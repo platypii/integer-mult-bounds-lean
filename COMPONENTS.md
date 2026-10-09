@@ -2482,6 +2482,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairEarlyPipelineRun.lean`: Fixed actual scan/sort/strip/reinsert program calls the varying-address early key, returns the exact filled stream and has a closed key/record/extracted-volume bound. Prepared scan inputs, global ideal-permutation identification, density budgeting and final working-tape cleanup remain separate.
 
+- `Machine/ActivePrefixCompactConjugationData.lean`: Exact common nineteen-caller-tape bank and shape/cast alignment for actual compact T/back exchange around pure or negative parity-XOR loads. Numeric load shape/row/suffix words remain prepared inputs.
+
+- `Machine/ActivePrefixCompactConjugationMiddle.lean`: The middle action is the actual original-input pure-parity or negative-parity-XOR producer, repetition, compact rotation and cleanup on a shared clean bank.
+
+- `Machine/ActivePrefixCompactConjugationRun.lean`: One fixed branch-selected swap/load/swap executes both complete physical swaps and the real compact middle action, with every private bank restored and all joins paid.
+
+- `Machine/ActivePrefixCompactConjugationLayout.lean`: Physical pure and negative compact conjugations in both literal source orders discharge prefix absorption from original payload exceeding address width, retaining all prepared headers.
+
+- `Machine/ActivePrefixCompactConjugationSemantics.lean`: Every original coordinate and payload bit reaches exact compact T-plus-current-offset destination after the two physical swaps; arbitrary dirty back/spectators are preserved.
+
+- `Machine/ActivePrefixCompactConjugationBudget.lean`: One uniform full-record certified width-exponent bound covers both kinds and source orders, including actual swaps, offset generation/repetition, rotation, cleanup and joins.
+
+- `Machine/ActivePrefixCompactConjugationPlaced.lean`: Both complete compact conjugations on nineteen arbitrary caller ports retain original/prepared header words and all caller spectators, changing only payload and restoring all appended private storage.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
