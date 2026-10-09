@@ -3222,6 +3222,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualComplexPhase.lean`: Actual multiplier scalar/cutoff/global-row choices instantiate each original complex-edge physical basis compiler with exact original-address controls and a uniform certified list runtime bound; per-stage readiness and repair allowances are derived internally, while original consecutive-node slot geometry remains explicit.
 
+- `Machine/RawLinearCombinationCleanup.lean`: Direct radix-expression execution physically erases all temporary copied leaves with exact output retention and an affine word-width runtime; no value-linear binary conversion is used.
+
+- `Machine/RawLinearCombination.lean`: Shared original radix-two source words are physically copied to expression leaves, combined by real signed radix arithmetic, and restored with all temporary copies erased at linear width cost.
+
+- `Machine/SharedControlPair.lean`: Two native routines place on disjoint private banks while sharing two retained control tapes, preserving exact original inputs and clean complementary workspace.
+
+- `Machine/ButterflyNumerator.lean`: One fixed 48-tape six-symbol machine computes the four exact modular complex-butterfly numerators from shared radix-two input words, retains the four inputs and four outputs, blanks all other storage and runs in 168 times width plus 591 steps.
+
+- `Machine/ButterflySigned.lean`: Centered signed decoding with explicit coefficient guard identifies the actual numerator outputs as literal integers. The physical 48-tape kernel computes the exact manuscript complex butterfly with denominator precision increased by one and linear word-width runtime; record split/merge and global guard propagation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

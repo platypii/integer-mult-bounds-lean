@@ -1855,3 +1855,8 @@ import IntegerMultBounds.Machine.CompactActualPairInverse
 import IntegerMultBounds.Machine.CompactComplexPhasePhysical
 import IntegerMultBounds.Machine.CompactComplexPhasePhysicalBudget
 import IntegerMultBounds.Machine.CompactActualComplexPhase
+import IntegerMultBounds.Machine.RawLinearCombinationCleanup
+import IntegerMultBounds.Machine.RawLinearCombination
+import IntegerMultBounds.Machine.SharedControlPair
+import IntegerMultBounds.Machine.ButterflyNumerator
+import IntegerMultBounds.Machine.ButterflySigned
