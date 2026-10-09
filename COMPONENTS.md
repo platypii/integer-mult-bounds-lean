@@ -2512,6 +2512,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairEarlyOriginalPipelineRun.lean`: Fixed180-tape original-descriptor scan/sort/strip/reinsert program returns exact filled stream with paid per-record synthesis, extraction and sorting costs. Scan initialization, final working-tape cleanup, global ideal-permutation and density bridges remain separate.
 
+- `Machine/ActiveRepairLateSourceRun.lean`: Genuine full-rank parser physically extracts V/T/U and current source controls, then executes the retained-input late guard/inverse/toggle, with clean35-tape shared work and linear address-width bound.
+
+- `Machine/ActiveRepairLateKeyPatch.lean`: Real destination writer reconstructs the full original rank and replaces repaired V/T/U on the shared late-key bank, preserving all spectators.
+
+- `Machine/ActiveRepairLateKeyAppend.lean`: Actual conditional late key append writes complete full-layout destination bits from the computed guard and destination, with every copied bit charged.
+
+- `Machine/ActiveRepairLateKeyCleanup.lean`: Physically erases all ten parsed, recovered and destination words while retaining the original counter/descriptors and written key.
+
+- `Machine/ActiveRepairLateKeyData.lean`: Exact thirty-three-caller states for genuine-rank varying late repair through three-field patching, conditional full key and cleanup.
+
+- `Machine/ActiveRepairLateKeyRun.lean`: One fixed91-tape late-key program parses actual current rank/controls, computes exact late repair, reconstructs full destination, writes conditional key and erases workspace within61000 times address width plus one. Field descriptors remain supplied.
+
+- `Machine/ActiveRepairLateKeyPlaced.lean`: Complete late full-key machine on thirty-three arbitrary caller ports preserves original/spectator tapes and heads and restores91 appended private tapes with unchanged cost.
+
+- `Machine/ActiveRepairLateKeyValue.lean`: Actual late flag/local key equal late rank semantics; generated full original-layout destination replaces recovered V/T/U and retains all source/back/spectator fields.
+
+- `Machine/ActiveRepairLateKey.lean`: Complete genuine-current-rank later key computation, three-field destination patch, conditional key write and cleanup. Original-width header synthesis wiring and scan/pipeline integration remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
