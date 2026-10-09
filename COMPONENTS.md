@@ -3366,6 +3366,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageTripleTransport.lean`: The actual all-width runtime stage transports literal encoded native symbols to contiguous destination payload cells. Original symbols decode exactly and arbitrary payload spectators are retained; actual destination action commutes with payload changes. Conversion placement, cleanup and whole-stage tape assembly remain open.
 
+- `Machine/SymbolTripleClean.lean`: Fixed destructive native-to-Boolean and Boolean-to-native converters physically restore both heads and erase the obsolete source. Exact whole-word endpoints have blank source and head zero; every join, rewind and erasure is paid in bounds thirteen times native length plus ten and nineteen times native length plus ten. Native coefficient words require nonblank interiors for sentinel rewind; stage placement remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
