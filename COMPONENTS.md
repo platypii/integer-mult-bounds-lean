@@ -3692,6 +3692,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerFlow.lean`: Places guarded cyclic return control on the real controller/queue/native bank and appended PC storage. Empty root halts in two transitions; a saved positive-width PC reaches its selected continuation in exactly width plus five while preserving the full native/controller frame. Concrete role-block execution and recursive trace remain open.
 
+- `Machine/UnitPhasePolynomialLiteral.lean`: Derives all polynomial coefficient contexts and adjacent source/row endpoints from the literal flat native row-major coefficient word, including genuine final EOF with no supplied serialization premise.
+
+- `Machine/UnitPhasePolynomialLiteralEndpoint.lean`: Identifies the actual emitted full native coefficient array with exact per-address phase action; flat coefficient phase address is coefficient index divided by two to ell.
+
+- `Machine/UnitPhasePolynomialSourceEndpoint.lean`: Proves the retained source tape and true EOF after complete polynomial traversal, supplying exact nonblank stream endpoints for physical rewind and overwrite.
+
+- `Machine/UnitPhasePolynomialBudget.lean`: Bounds actual count setup, once-per-address control extraction, coefficient arithmetic loops and final numeric cleanup by explicit serialized-volume terms for supplied phase-kernel parameters.
+
+- `Machine/UnitPhasePolynomialNative.lean`: For supplied phase-kernel parameters, physically transforms the literal whole polynomial array, rewinds both streams, overwrites the original source and erases the output. All heads and nonstream metadata are restored, including immutable ell; uniform actual-network kernel selection remains separate.
+
+- `Machine/UnitPhasePolynomialNativeBudget.lean`: Includes every traversal, initialization, cleanup, rewind and source overwrite transition in a uniform serialized-volume bound when actual polynomial multiplicity fits payload capacity. Actual aligned payloads must discharge this explicit bound and uniform kernel selection remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
