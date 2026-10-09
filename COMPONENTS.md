@@ -3572,6 +3572,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageNativeCore.lean`: One fixed reindexed actual native-stage machine reads/writes the native coefficient word at original caller tape sixty-five. Its Boolean converter source and full runtime-stage workspace are appended and physically blank at both endpoints; exact native output, head restoration and full paid stage cost are unchanged. The sixty-six-tape original bank is distinct from the larger compiled stage machine; persistent controller storage must be framed beyond its workspace.
 
+- `Machine/CompactPhaseRecordEmbedding.lean`: Explicit zero-payload-offset record starts are preserved by the actual stage destination and complete basis word. Derives the resulting full-address ordinal instead of identifying an arbitrary payload cell with a coefficient address.
+
+- `Machine/SparsePhaseFlags.lean`: Fixed physical sparse control extraction computes retained phase flags once for an address, with all local initialization and weighted accumulation costs charged.
+
+- `Machine/SparsePhaseFlagsCaller.lean`: Original stage geometry and live address produce sparse headers and phase flags once per address, preserving an arbitrary coefficient workspace and charging preparation independently of polynomial multiplicity.
+
+- `Machine/UnitPhaseMultiplicity.lean`: Physically computes two to ell from an immutable canonical ell scalar on an appended caller port, installs the polynomial count and restores all power-construction scratch. No multiplicity is inferred from payload width or supplied for free.
+
+- `Machine/UnitPhaseSharedCoefficient.lean`: A real read/phase/emit/reset body applies retained computed phase flags to one coefficient, preserves those flags and every other caller tape, and erases numerator work with exact native output and linear stored-width cost.
+
+- `Machine/UnitPhasePolynomialLoop.lean`: One fixed counted loop applies shared phase flags across the actual polynomial multiplicity, preserving the count and flags while erasing loop workspace. Runtime pays every coefficient and counted-control transition.
+
+- `Machine/UnitPhaseControlReset.lean`: Physically erases sparse control readout, retained flags and generated sparse descriptors after a polynomial, preserving coefficient streams and all other caller storage.
+
+- `Machine/UnitPhasePolynomialArray.lean`: The counted shared-phase loop consumes literal finite polynomial coefficient contexts and emits exact fixed-phase native serialization, preserving widths and proving both real serialized EOF positions without a fictitious terminal record.
+
+- `Machine/UnitPhasePolynomialFrame.lean`: The actual polynomial traversal preserves every nonstream cell and head, including node metadata, live full-address counter and outer count. Full once-per-address and outer node traversal composition remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
