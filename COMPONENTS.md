@@ -3642,6 +3642,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ContiguousBankPlacement.lean`: Places a complete subroutine in a contiguous caller bank between arbitrary prefix/suffix storage, proving literal replacement endpoints and exact preservation of all exterior tape cells and heads.
 
+- `Machine/UnitPhasePolynomialAdvance.lean`: The actual per-address body executes the complete polynomial traversal, advances the live address and preserves the outer countdown state with paid runtime.
+
+- `Machine/UnitPhasePolynomialStreamLoop.lean`: One fixed counted outer traversal processes rows times two to address width addresses, each with a real inner polynomial loop. Source contexts and coefficient adjacency remain explicit contracts.
+
+- `Machine/UnitPhasePolynomialStreamClean.lean`: Physically erases final address/counter and outer/polynomial count storage after traversal, restoring all numeric work heads while retaining source/output streams at their true serialized endpoints.
+
+- `Machine/UnitPhasePolynomialMultiplicity.lean`: Derives the actual polynomial count two to ell from the immutable ell scalar and restores all synthesis scratch, rather than inferring multiplicity from payload capacity.
+
+- `Machine/UnitPhasePolynomialStreamInit.lean`: Physically initializes the original full-address count and live counter from retained stage geometry, charging setup and retaining the immutable polynomial exponent.
+
+- `Machine/UnitPhasePolynomialStream.lean`: Executes initialization, once-per-address phase plus two-to-ell coefficient traversal, and final numeric cleanup on a fixed machine. Prepared stage headers, kernel parameters, literal source contexts and stream endpoint normalization remain separate caller obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
