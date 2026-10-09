@@ -3710,6 +3710,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageNativePairInverse.lean`: Reversing the actual literal native word physically restores exact original row data, caller headers and private storage. Both directions and every conversion/frame/join cost are paid, and the complete roundtrip retains the certified stage exponent with a genuine executable witness.
 
+- `Machine/ActivePrefixStageNativePolynomial.lean`: Explicit polynomial coefficient rows yield canonical native row symbols with proved literal full-stream serialization, real separators and nonblank converter input. Original caller source65 is exactly the alphabet-encoded phase source word; basis address actions retain polynomial indices and every stored digit. No codec or multiplicity-from-width premise is supplied.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

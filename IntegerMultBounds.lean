@@ -2084,3 +2084,4 @@ import IntegerMultBounds.Schoenhage.Wp
 import IntegerMultBounds.Schoenhage.Alu
 import IntegerMultBounds.Machine.ActivePrefixStageNativePairCoordinates
 import IntegerMultBounds.Machine.ActivePrefixStageNativePairInverse
+import IntegerMultBounds.Machine.ActivePrefixStageNativePolynomial
