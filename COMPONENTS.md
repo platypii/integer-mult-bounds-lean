@@ -3046,6 +3046,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageHeadersBudget.lean`: The complete arithmetic, duplicate copies, descriptor erasures and joins cost at most one million times original full volume, with no external numeric allowance premise.
 
+- `Machine/CompactGlobalRowHeaderPrimitives.lean`: Fixed-base ceiling logarithm physically erases its power witness; exact primitive runtime and output contracts support original global row construction.
+
+- `Machine/CompactGlobalRowHeaderOps.lean`: Fixed-base logarithm/power descriptor commands have actual execution, checked arithmetic and paid runtimes on the global header bank.
+
+- `Machine/CompactGlobalRowHeaders.lean`: Original K,d,D,payload words physically produce row-axis count, depth, divisor, original rows, complete row width and rounded row count; no derived header is supplied.
+
+- `Machine/CompactGlobalRowHeaderCost.lean`: The real global descriptor schedule has an exact phase runtime formula covering every logarithm, product, power, round and join.
+
+- `Machine/CompactGlobalRowInitialData.lean`: Actual global header preparation and literal whole-row padding share a fixed forty-five-tape bank, with a retained-header intermediate boundary for recursion setup.
+
+- `Machine/CompactGlobalRowInitialCleanup.lean`: Actual generated-descriptor erasures restore every public input and private tape after initial whole-row padding.
+
+- `Machine/CompactGlobalRowInitialRun.lean`: One fixed physical machine prepares all original-input global row descriptors, pads complete records and erases every generated/private tape.
+
+- `Machine/CompactGlobalRowInitialBudget.lean`: Original-header synthesis, once-only whole-row pad and cleanup have uniform linear original-volume cost for fixed network constants, including actual d and recursion depth.
+
+- `Machine/CompactGlobalRowInitialEndpoint.lean`: Literal original canonical words survive physical padding, all private tapes return blank, and the padded record width equals the complete reserved shape.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
