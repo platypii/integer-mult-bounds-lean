@@ -2922,6 +2922,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsAssemblyOriginalLate.lean`: Actual original-fourteen-input later repair for the before-source layout constructs metadata/count, formats and repairs the literal full array, decodes ideal output and restores the producer with a full linear volume bound. Fifteen consumer metadata words remain retained; the actual after-source payload connection is separate.
 
+- `Machine/ActiveRepairLayoutRecordsHeadersAfterBudget.lean`: Actual unchanged original-header producer/copy costs have linear full-volume bounds under source fit in the active-after field, without an active-before source-fit premise.
+
+- `Machine/ActiveRepairLayoutRecordsBankAfterBudget.lean`: Physical repair metadata installation and producer erasure have paid linear full-volume bounds for the active-after source layout.
+
+- `Machine/ActiveRepairLayoutRecordsAssemblyOriginalLateAfter.lean`: Actual original-fourteen-input later repair now uses the after-source layout of the real payload schedule, with literal full-array input and ideal output, physical metadata/count production and producer cleanup, and linear full-volume runtime. Copied consumer metadata remains retained.
+
+- `Machine/ActiveRepairLayoutRecordsAlphabet.lean`: Exact five-symbol repair embedding into the fixed prime alphabet preserves all symbols and runtimes; literal descriptors/header banks, raw arrays, payload frames and equality Hoare contracts have proved bridges.
+
+- `Machine/ActiveRepairLayoutRecordsOriginalEarlyAlphabet.lean`: The complete original-input early raw-array repair executes in the actual payload prime alphabet with literal original headers, raw source and ideal output, producer restoration and unchanged linear-volume runtime.
+
+- `Machine/ActiveRepairLayoutRecordsOriginalLateAlphabet.lean`: The complete original-input after-source later raw-array repair executes in the actual payload prime alphabet with literal original headers, raw source and ideal output, producer restoration and unchanged linear-volume runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
