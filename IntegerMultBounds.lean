@@ -941,3 +941,6 @@ import IntegerMultBounds.Machine.ArbitraryWidthPaddedPieceRun
 import IntegerMultBounds.Machine.ArbitraryWidthPaddedPieceShared
 import IntegerMultBounds.Machine.ArbitraryWidthHighCost
 import IntegerMultBounds.Machine.ArbitraryWidthHighRun
+import IntegerMultBounds.Machine.FixedHeaderBankCopy
+import IntegerMultBounds.Machine.FixedHeaderSparseBankCopy
+import IntegerMultBounds.Machine.ArbitraryWidthHighDimensionsShared

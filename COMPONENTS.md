@@ -1427,6 +1427,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighRun.lean`: One actual fixed high-width body composes high-prefix exchange, ordered joining, physical row padding, the complete low-width dispatcher, physical cropping and inverse separation on the same caller source. The result is exactly the original full transpose and every private execution bank is restored. Runtime-selected depth/divisibility premises are derived internally, all five sequential edges are charged, and the actual natural runtime retains the certified exponent. Canonical derived headers are still explicit inputs; their constructors and branch/outer-wrapper assembly remain separate.
 
+- `Machine/FixedHeaderBankCopy.lean`: One actual finite program copies a fixed family of retained canonical caller descriptors into appended blank target tapes, preserving every caller tape/head even when sources repeat. Exact target bank and fixed-family linear-volume construction and erasure costs are proved.
+
+- `Machine/FixedHeaderSparseBankCopy.lean`: Actual header copying and cleanup are placed into fixed injective named slots of a larger private bank. All other private tapes remain blank, all caller storage is retained, repeated sources are supported, and both exact banks and linear-volume costs are proved.
+
+- `Machine/ArbitraryWidthHighDimensionsShared.lean`: The actual shared dimension lifecycle first copies five original caller headers into a blank seventeen-tape bank, computes low width/radix powers/movement dimensions and later erases both generated and copied descriptors. Every caller tape/head is preserved; complete setup and cleanup have fixed-radix linear original-volume bounds. No preconstructed generated bank is supplied.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
