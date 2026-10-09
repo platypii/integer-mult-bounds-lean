@@ -2542,6 +2542,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLateKeyOriginal.lean`: Complete original-width later key needs no supplied computed starts, varying controls, local rank or destination. Final original packing parameter synthesis, scan initialization and repair assembly remain open.
 
+- `Machine/ActivePrefixEarlySequenceData.lean`: One unchanged original-array bank aligns target and compact views for all four early actions and retains prepared stage headers. Literal result composes selected, pure parity, correction and negative parity-XOR in source order.
+
+- `Machine/ActivePrefixEarlySequenceRun.lean`: One fixed physical shared-bank program runs the real selected load, compact parity swap/load/swap, correction load and compact negative swap/load/swap in order. Every offset/private tape is blank between calls and at output; prepared numeric headers remain retained inputs.
+
+- `Machine/ActivePrefixEarlySequenceBudget.lean`: Uniform certified full-record width-exponent bound charges all four actual producers, repetitions, swaps, rotations, erasures and three joins. Original numeric-header preparation and local packed-permutation identification remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
