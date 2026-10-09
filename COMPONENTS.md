@@ -1589,6 +1589,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedPackedParityRun.lean`: One fixed nineteen-tape program extracts the lowest bit of every dirty b-bit source block into an n-bit control word, clocked by a literal dummy control word and original b/n headers. Source/control and original descriptors are retained, every head restored and fourteen private tapes returned wholly blank, with bound330 times full stride. Includes b=1 and n=0; later-source load/unload remains separate.
 
+- `Machine/StreamedFiberTranslationInitialized.lean`: Complete fixed fifteen-tape streamed rotation lifecycle reads only original B/Q/n headers and a literal offset stream, physically initializes recurring markers, executes every payload fiber rotation and erases the last offset and all private markers. All nine private slots return wholly blank at head zero; source/control and original headers are retained. Actual payload/control heads advance explicitly; total cost is at most483 times payload volume plus35, including empty streams.
+
+- `Machine/StreamedFiberTranslationInitializedAlphabet.lean`: Executes the complete blank-private-storage streamed rotation on any larger finite alphabet with literal input/output banks and unchanged483-volume-plus35 cost. Exact encoded array and control words, retained original B/Q/n headers and all nine private tapes blank/head zero enable interchange-alphabet integration. Final payload/control normalization and complete packed-gadget assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
