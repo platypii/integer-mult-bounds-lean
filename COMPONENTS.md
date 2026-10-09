@@ -2296,6 +2296,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixCorrectionOffsetPlaced.lean`: Clean correction producer on arbitrary original-eight-plus-output caller ports returns exact correction offsets at origin, retains every original/spectator and erases all fifty-seven private tapes. Zero-width rows are included.
 
+- `Machine/ActiveTargetHighestLaterValue.lean`: Exact rectangular later-source target XOR is swap–earlier-XOR–swap, preserving arbitrary prefix, gap and suffix coordinates. Native-array geometry and full-volume casts identify the conjugated mathematical action.
+
+- `Machine/ActiveTargetHighestLaterClean.lean`: Earlier highest-bit physical output is exactly its original native input bank with only the array transformed. Every supplied descriptor and private/tracking tape is retained or erased literally, allowing actual repeated machine composition.
+
+- `Machine/ActiveTargetHighestLaterAlphabet.lean`: Executes the actual earlier-source highest machine in the prime interchange alphabet with exact literal array input/output, retained original headers, blank workspace and unchanged137575-times-full-volume runtime.
+
+- `Machine/ActiveTargetHighestLaterBank.lean`: Full native highest-bit bank plus four supplied swap descriptors has an exact payload-only update bridge to binary interchange, including the non-definitional full-volume cast and unchanged complementary bank.
+
+- `Machine/ActiveTargetHighestLaterRun.lean`: Actual fixed swap–earlier-toggle–swap-back sequence realizes later-source highest-bit XOR on the full array, retains all ten supplied canonical descriptors and clears all scratch. Exact charged costs and one uniform linear full-volume bound are proved. Descriptor synthesis and final compact-caller placement remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
