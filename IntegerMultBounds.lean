@@ -995,3 +995,5 @@ import IntegerMultBounds.Machine.BinaryInterchangeBudget
 import IntegerMultBounds.ExactRecoveryOutput
 import IntegerMultBounds.Machine.CountedGatherField
 import IntegerMultBounds.Machine.CountedGatherPadding
+import IntegerMultBounds.Machine.CountedGatherDigit
+import IntegerMultBounds.Machine.CountedGatherRun

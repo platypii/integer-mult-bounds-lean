@@ -1533,6 +1533,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedGatherPadding.lean`: Fixed five-tape eighteen-state machines seek either direction or write an exact runtime-counted run of false symbols, preserving all spectators and arbitrary exterior. Immutable descriptors and reusable clocks are restored; zero counts and canonical linear bounds are proved.
 
+- `Machine/CountedGatherDigit.lean`: Composes runtime-counted source prefix/suffix seeks, target zero prefix/suffix writes, mapped field copying and one control-head step in one fixed nine-tape ninety-two-state machine. Exact digitWord output preserves source/control and target exterior, restores all five immutable descriptors and the clock, and costs at most fourteen times both strides plus121 for canonical counts.
+
+- `Machine/CountedGatherRun.lean`: A fixed eleven-tape108-state machine loops the concrete gather digit using an independent runtime digit-count descriptor. Proves the exact whole gathered word with arbitrary exterior and all eight controls restored, including zero counts/strides. Paid canonical runtime is at most134 times digit count times source stride plus target stride plus one, plus23. Shape metadata construction and packed arithmetic composition remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
