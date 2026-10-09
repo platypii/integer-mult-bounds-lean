@@ -3654,6 +3654,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhasePolynomialStream.lean`: Executes initialization, once-per-address phase plus two-to-ell coefficient traversal, and final numeric cleanup on a fixed machine. Prepared stage headers, kernel parameters, literal source contexts and stream endpoint normalization remain separate caller obligations.
 
+- `Machine/ButterflySpectatorGeometry.lean`: Literal row-major reshape and unshape retain arbitrary outer rows and polynomial coefficients while applying a selected binary axis. Exact source serialization and signed field widths are preserved; outer rows are never treated as binary axes.
+
+- `Machine/ButterflySpectatorHeaders.lean`: Physically multiplies the higher native group count by the retained outer-row scalar, synthesizes and installs axis descriptors, and erases generated headers with all setup and cleanup costs paid.
+
+- `Machine/ButterflySpectatorOriginal.lean`: One fixed actual native axis machine executes header synthesis, coefficient split/arithmetic/merge and final descriptor cleanup on arbitrary outer rows with exact row-major output and paid runtime. Sparse multi-axis scheduling and uniform schedule cost remain separate.
+
+- `Machine/CompactSpectatorVisitGeometry.lean`: Descendant coordinates use immutable original global address bits with proved fit, injectivity, descending chunk stride, role volume and exact unchanged outer rows. Each descendant coordinate has a real paid native-axis execution theorem; complete recursive assembly remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
