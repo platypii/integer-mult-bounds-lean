@@ -2094,3 +2094,4 @@ import IntegerMultBounds.Machine.CompactSpectatorLeafOriginal
 import IntegerMultBounds.Machine.CompactSpectatorLeafPlacement
 import IntegerMultBounds.Machine.CompactReservationPaddingHeaders
 import IntegerMultBounds.Machine.CompactReservationNativePadding
+import IntegerMultBounds.Machine.CompactNativePhaseCoordinates

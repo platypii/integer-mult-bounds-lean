@@ -3730,6 +3730,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactReservationNativePadding.lean`: One fixed executable runs original-coordinate reservation before row reinterpretation, physically adapts its scalar headers, pads genuine zero coefficients once and erases metadata. Exact full geometry, stored width and padded coefficient cardinality are derived; original descriptors/source head and private storage are restored. Complete combined certified budget and later role integration remain separate.
 
+- `Machine/CompactNativePhaseCoordinates.lean`: The row ordinal actually reached by the native basis word is exactly the original complex-edge phase readout address. The actual per-axis polynomial stream phase therefore has the original signed target-minus-source phase semantics under explicit width and no-negation-overflow guards; all-axis aggregation and recursive execution remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
