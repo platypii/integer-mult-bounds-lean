@@ -1885,3 +1885,5 @@ import IntegerMultBounds.Machine.ButterflyAxisSerialization
 import IntegerMultBounds.Machine.ButterflyStreamSemantics
 import IntegerMultBounds.Machine.SparsePhaseHeadersData
 import IntegerMultBounds.Machine.SparsePhaseHeadersBudget
+import IntegerMultBounds.Machine.RecursiveRowsFromWords
+import IntegerMultBounds.Machine.ButterflyAxisRouting

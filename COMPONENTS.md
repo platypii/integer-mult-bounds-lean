@@ -3328,6 +3328,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SparsePhaseHeadersBudget.lean`: The complete original-header sparse phase descriptor schedule costs at most 10000 times address bits plus one, hence at most 10000 times actual payload capacity. Every product, subtraction, initialization and erasure is charged; complete phase-stream assembly remains open.
 
+- `Machine/RecursiveRowsFromWords.lean`: Actual literal row words generate the native source/role arrays consumed by clean recursive row splitting and merging, eliminating a supplied array-codec hypothesis.
+
+- `Machine/ButterflyAxisRouting.lean`: Literal six-symbol coefficient rows instantiate actual clean selected-bit splitting and merging, and exact routing volume equals the paired arithmetic scan volume.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
