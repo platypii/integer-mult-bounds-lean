@@ -3758,6 +3758,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactPolynomialPhasePlacement.lean`: Physically places the actual fixed phase-family call on the caller native source in the stage alphabet. Every other caller tape, including the full native workspace and persistent storage, is framed; all appended phase workspace and ready metadata are restored literally with exact paid runtime. Metadata synthesis and all-axis aggregation remain separate.
 
+- `Machine/CompactReservationPaddingHeaderBudget.lean`: Under actual original scalar geometry, paid adapter descriptor generation and complete cleanup fit a uniform constant times original native volume; every temporary numeric header bound is derived.
+
+- `Machine/CompactReservationNativePaddingBudget.lean`: The actual fixed original reservation, header adapter, genuine zero padding and complete cleanup have combined runtime at most a fixed constant times original volume times reserved axes, using literal stored Width and derived row geometry. No supplied cost witness is needed.
+
+- `Machine/CompactReservationNativePaddingActualBudget.lean`: Actual multiplier scalar choices pay the complete fixed reservation-and-padding machine with the certified lam-prime saving. Eventual executable correctness retains exact original input descriptors and native padded output, including all metadata and cleanup.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
