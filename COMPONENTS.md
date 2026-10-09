@@ -1437,6 +1437,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighBranchComposition.lean`: One actual finite-flow composition runs the physical high-width selector and jumps into the selected high or elementary branch program with its flag erased and bank restored. Exact conditional outputs, genuine halting and all selector/jump/branch costs follow from branch contracts. The actual high-depth fallback set has a fixed cutoff. Instantiating the complete original-header wrapper remains separate.
 
+- `Machine/ArbitraryWidthHighFoldHeadersShared.lean`: Copies the six original caller descriptors into blank private storage, constructs the folded prefix and root headers, and erases the complete private bank after use. Literal caller and generated-header views and paid linear construction/cleanup bounds are proved.
+
+- `Machine/ArbitraryWidthJoinedHeadersShared.lean`: Constructs canonical padded joined-root headers from retained caller descriptors in a wholly blank twelve-tape bank, preserving the caller and paying all copying, subtraction, unit writing and cleanup.
+
+- `Machine/ArbitraryWidthHighDimensionsAndSuffixShared.lean`: Constructs the high movement dimensions and joined-row suffix from original caller headers in a blank seventeen-tape bank, then erases every copied and generated descriptor. Literal header values, canonicality, source slots, and linear-volume lifecycle costs are proved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
