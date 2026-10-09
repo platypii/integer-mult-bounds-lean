@@ -2548,6 +2548,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixEarlySequenceBudget.lean`: Uniform certified full-record width-exponent bound charges all four actual producers, repetitions, swaps, rotations, erasures and three joins. Original numeric-header preparation and local packed-permutation identification remain separate.
 
+- `Machine/ActivePrefixLayoutHeadersData.lean`: Fourteen original geometric/stage words and ten blank output slots define actual target-before or compact-before/after header arithmetic schedules, with no supplied starts/f/suffix.
+
+- `Machine/ActivePrefixLayoutHeadersRun.lean`: Fixed copy/add/subtract/constant/power/product programs derive all ten consumer headers, preserve originals, erase arithmetic workspace and provide matching post-use output cleanup.
+
+- `Machine/ActivePrefixLayoutHeadersBudget.lean`: Uniform linear address-width construction/cleanup bounds include real power and product synthesis of payload suffix, all copies and joins.
+
+- `Machine/ActivePrefixLayoutHeadersEndpoint.lean`: Actual generated canonical words and head positions match the ten intended W/start/source/q/b/n/rho/n-plus-one/rows/suffix fields, retaining originals and blank private workspace.
+
+- `Machine/ActivePrefixLayoutHeadersGeometry.lean`: Literal target and both compact source-order consumer shapes and suffix counts equal the real outputs from original layout widths and stage controls.
+
+- `Machine/ActivePrefixLayoutHeadersPlaced.lean`: Arbitrary twenty-four-port header generation and post-use erasure preserve every caller spectator and restore43 appended private tapes; ten generated headers are physically exposed to consumers.
+
+- `Machine/ActivePrefixLayoutHeadersLayout.lean`: All physical target/compact header generation and cleanup costs fit linear original-record volume from source fit, positive rows and record payload exceeding address width. Reservation-width synthesis and consumer wiring remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
