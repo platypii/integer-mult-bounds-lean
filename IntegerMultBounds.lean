@@ -1015,3 +1015,4 @@ import IntegerMultBounds.Machine.EqualWordReplace
 import IntegerMultBounds.Machine.WordBankCleanup
 import IntegerMultBounds.Machine.CountedPackedRecycle
 import IntegerMultBounds.Machine.CountedPackedReusable
+import IntegerMultBounds.Machine.CountedPackedGuarded
