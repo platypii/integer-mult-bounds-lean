@@ -32,7 +32,7 @@ def syms (ws : List (List Bool)) : List (Option Bool) := ws.flatMap fun w => w.m
 
 @[simp] theorem syms_nil : syms [] = [] := rfl
 
-@[simp] theorem syms_cons (w : List Bool) (ws : List (List Bool)) :
+theorem syms_cons (w : List Bool) (ws : List (List Bool)) :
     syms (w :: ws) = w.map some ++ [none] ++ syms ws := by simp [syms]
 
 theorem syms_append (ws vs : List (List Bool)) : syms (ws ++ vs) = syms ws ++ syms vs := by
@@ -56,7 +56,33 @@ theorem parseAux_syms (cur w : List Bool) (ws : List (List Bool)) :
     simp only [List.map_cons, List.cons_append, parseAux]
     rw [this]; simp
 
-theorem parse_syms (ws : List (List Bool)) : parse (syms ws) = ws := by
+theorem parseAux_some_append (cur w : List Bool) (os : List (Option Bool)) :
+    parseAux cur (w.map some ++ os) = parseAux (w.reverse ++ cur) os := by
+  induction w generalizing cur with
+  | nil => rfl
+  | cons b w ih => simp [parseAux, ih]
+
+@[simp] theorem parse_nil : parse [] = [] := rfl
+
+@[simp] theorem parse_some_sep (w : List Bool) (os : List (Option Bool)) :
+    parse (w.map some ++ none :: os) = w :: parse os := by
+  simp [parse, parseAux_some_append, parseAux]
+
+@[simp] theorem parse_replicate_sep (n : ℕ) (b : Bool) (os : List (Option Bool)) :
+    parse (List.replicate n (some b) ++ none :: os) = List.replicate n b :: parse os := by
+  have := parse_some_sep (List.replicate n b) os
+  simpa [List.map_replicate] using this
+
+@[simp] theorem parse_drop_sep (k : ℕ) (w : List Bool) (os : List (Option Bool)) :
+    parse ((w.map some).drop k ++ none :: os) = w.drop k :: parse os := by
+  rw [← List.map_drop]; exact parse_some_sep _ os
+
+@[simp] theorem parse_sep (os : List (Option Bool)) : parse (none :: os) = [] :: parse os := rfl
+
+@[simp] theorem parse_bit_sep (b : Bool) (os : List (Option Bool)) :
+    parse (some b :: none :: os) = [b] :: parse os := rfl
+
+@[simp] theorem parse_syms (ws : List (List Bool)) : parse (syms ws) = ws := by
   induction ws with
   | nil => rfl
   | cons w ws ih =>
@@ -80,7 +106,7 @@ theorem clen_reverse (ws : List (List Bool)) : clen ws.reverse = clen ws := by
 theorem length_syms (ws : List (List Bool)) : (syms ws).length = clen ws := by
   induction ws with
   | nil => rfl
-  | cons w ws ih => simp [ih]; ring
+  | cons w ws ih => simp [syms_cons, ih]; ring
 
 /-- The cells of a word list. -/
 def cells (ws : List (List Bool)) : List (Fin (a + 4)) := (syms ws).map sym
@@ -185,7 +211,7 @@ theorem put_ext (T : WTape) {u : List Bool} {L : List (List Bool)} (hl : T.left 
       (⟨vs.reverse ++ (u ++ v) :: L, []⟩ : WTape).tape := by
   set A : List (Fin (a + 4)) := cells L.reverse ++ u.map bitSymbol
   have hT : T.tape (a := a) = wordTape (A ++ [separator]) := by
-    simp [tape, words, h, hl, A, cells, syms_append, sym, List.append_assoc, Function.comp_def]
+    simp [tape, words, h, hl, A, cells, syms_append, syms_cons, sym, List.append_assoc, Function.comp_def]
   have hp : T.pos - 1 = (A.length : ℤ) := by
     simp [pos, hl, A, length_cells, clen_reverse]; ring
   rw [hT, hp]
@@ -196,7 +222,7 @@ theorem put_ext (T : WTape) {u : List Bool} {L : List (List Bool)} (hl : T.left 
   rw [hbB, putWord_cons, update_wordTape_last,
     show (A.length : ℤ) + 1 = ((A ++ [b]).length : ℤ) by simp, put_wordTape, List.append_assoc,
     List.singleton_append, ← hbB]
-  simp [tape, words, A, cells, syms_append, sym, List.append_assoc, Function.comp_def]
+  simp [tape, words, A, cells, syms_append, syms_cons, sym, List.append_assoc, Function.comp_def]
 
 end WTape
 

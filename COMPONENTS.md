@@ -5374,6 +5374,21 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   first word, step back over the previous word, erase the whole tape, and
   append fixed words.
 
+- `Schoenhage/Rules.lean`: streaming rules for word arithmetic, least
+  significant bit first: copy, constant fill, fit to a width, drop a prefix,
+  ripple-carry addition, ripple-borrow subtraction (borrow as its own word),
+  halving a unary word, and a delayed marker, each with its exact output and
+  value lemmas (`bval`, `bits`).
+- `Schoenhage/Ops.lean`: word-program commands on named tapes (streams with
+  zero, one or two extra inputs; rewind, back, clear, emit), their exact
+  effects, and `Runs` combinators for sequencing, branches and counted loops.
+- `Schoenhage/Wp.lean`: weakest preconditions for word programs; `wp_sound`
+  and `wp_of_runs` let straight-line correctness proofs unfold symbolically.
+- `Schoenhage/Alu.lean`: residue arithmetic modulo `2^N + 1` on a fixed
+  48-tape bank: `runs_subMod`, `runs_addMod`, `runs_mulPow2` (`t ≤ N`), each
+  from registers into a register with all scratch returned empty and an
+  `O(N)` step bound.
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.

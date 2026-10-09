@@ -99,7 +99,7 @@ theorem scan_run (f : ℤ → Fin (a + 4)) :
     · push_cast; ring
 
 /-- Rewind: all words to the right of the head. -/
-noncomputable def prim : Prim a where
+noncomputable abbrev prim : Prim a where
   s := 1
   hs := by omega
   M := machine
@@ -168,7 +168,7 @@ theorem scan_run (f : ℤ → Fin (a + 4)) :
     · push_cast; ring
 
 /-- Back: the previous word becomes current. -/
-noncomputable def prim : Prim a where
+noncomputable abbrev prim : Prim a where
   s := 1
   hs := by omega
   M := machine
@@ -295,7 +295,7 @@ theorem erase_run (f : ℤ → Fin (a + 4)) (hneg : ∀ j < 0, f j = blank) :
         by_cases h1 : j < n <;> by_cases h2 : j < (n : ℤ) + 1 <;> simp [h1, h2] <;> omega
 
 /-- Clear: erase the whole tape. -/
-noncomputable def prim : Prim a where
+noncomputable abbrev prim : Prim a where
   s := 1
   hs := by omega
   M := machine
@@ -361,7 +361,7 @@ theorem run (X : List (Fin (a + 4))) :
     · rw [List.drop_eq_getElem_cons hlt, putWord_cons]
 
 /-- Emit: append fixed words at the end of the tape. -/
-noncomputable def prim (ws : List (List Bool)) : Prim a where
+noncomputable abbrev prim (ws : List (List Bool)) : Prim a where
   s := 1
   hs := by omega
   M := machine (cells ws)

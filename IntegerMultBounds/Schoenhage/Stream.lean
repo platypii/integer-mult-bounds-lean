@@ -136,6 +136,22 @@ def rest (R : Rule r) (w : List Bool) (ws : Fin r → List Bool) : ℕ :=
 def time (R : Rule r) (w : List Bool) (ws : Fin r → List Bool) : ℕ :=
   w.length + rest R w ws + (R.flush (go R R.q0 w ws).1).length + 5
 
+theorem go_rest_le (R : Rule r) : ∀ (q : R.Q) (w : List Bool) (ws : Fin r → List Bool) (j : Fin r),
+    ((go R q w ws).2.2 j).length ≤ (ws j).length
+  | q, [], ws, j => by simp [go]
+  | q, b :: bs, ws, j => by
+    simp only [go]
+    refine (go_rest_le R _ bs _ j).trans ?_
+    split_ifs <;> simp
+
+theorem time_le (R : Rule r) (w : List Bool) (ws : Fin r → List Bool) (L : ℕ)
+    (hL : ∀ j, (ws j).length ≤ L) : time R w ws ≤ w.length + L + R.B + 5 := by
+  unfold time rest
+  have h1 : (Finset.univ.sup fun j => ((go R R.q0 w ws).2.2 j).length) ≤ L :=
+    Finset.sup_le fun j _ => (go_rest_le R _ w ws j).trans (hL j)
+  have h2 := R.hB (go R R.q0 w ws).1
+  omega
+
 /-! ### Raw runs -/
 
 /-- `l` is written from `h` on, followed by a separator. -/

@@ -59,7 +59,7 @@ theorem exists_cons {l : List (List Bool)} (h : l ≠ []) : ∃ w R, l = w :: R 
   | cons w R => exact ⟨w, R, rfl⟩
 
 /-- The streaming primitive. -/
-noncomputable def streamPrim (R : Rule r) (ext : Bool) : Prim a where
+noncomputable abbrev streamPrim (R : Rule r) (ext : Bool) : Prim a where
   s := r + 2
   hs := by omega
   M := machine R ext

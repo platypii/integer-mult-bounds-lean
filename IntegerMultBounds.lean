@@ -2078,3 +2078,7 @@ import IntegerMultBounds.Machine.UnitPhasePolynomialBudget
 import IntegerMultBounds.Machine.UnitPhasePolynomialNative
 import IntegerMultBounds.Machine.UnitPhasePolynomialNativeBudget
 import IntegerMultBounds.Machine.ActivePrefixStageNativePairBudget
+import IntegerMultBounds.Schoenhage.Rules
+import IntegerMultBounds.Schoenhage.Ops
+import IntegerMultBounds.Schoenhage.Wp
+import IntegerMultBounds.Schoenhage.Alu

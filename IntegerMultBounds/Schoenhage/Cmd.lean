@@ -101,9 +101,9 @@ theorem onWord_enc (σ : Fin t → WTape) (i : Fin t) :
   unfold onWord
   rw [reads_enc]
   rcases h : (σ i).right with _ | ⟨w, R⟩
-  · simp
+  · simp [syms_cons]
   · rcases w with _ | ⟨b, w⟩
-    · simp [sym, separator, blank]
+    · simp [syms_cons, sym, separator, blank]
     · simp only [syms_cons, List.map_cons, List.cons_append, List.getElem?_cons_zero,
         Option.map_some, Option.getD_some, ne_eq, reduceCtorEq, not_false_eq_true, decide_true,
         decide_eq_true_eq]
@@ -114,18 +114,18 @@ theorem onOne_enc_true (σ : Fin t → WTape) (i : Fin t) (h : StartsOne (σ i))
   obtain ⟨w, R, hr⟩ := h
   unfold onOne
   rw [reads_enc, hr]
-  simp [sym]
+  simp [syms_cons, sym]
 
 theorem onOne_enc_false (σ : Fin t → WTape) (i : Fin t) (h : ¬ StartsOne (σ i)) :
     onOne i (enc (a := a) σ).reads = false := by
   unfold onOne StartsOne at *
   rw [reads_enc]
   rcases hr : (σ i).right with _ | ⟨w, R⟩
-  · simp [bitSymbol, blank, Fin.ext_iff]
+  · simp [syms_cons, bitSymbol, blank, Fin.ext_iff]
   · rcases w with _ | ⟨b, w⟩
-    · simp [sym, separator, bitSymbol, Fin.ext_iff]
+    · simp [syms_cons, sym, separator, bitSymbol, Fin.ext_iff]
     · cases b
-      · simp [sym, bitSymbol, Fin.ext_iff]
+      · simp [syms_cons, sym, bitSymbol, Fin.ext_iff]
       · exact absurd ⟨w, R, hr⟩ h
 
 /-- Every execution is a run of the compiled machine within its cost. -/
