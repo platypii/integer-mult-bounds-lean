@@ -889,3 +889,5 @@ import IntegerMultBounds.Machine.ArbitraryWidthHighExchangePlacement
 import IntegerMultBounds.Machine.ArbitraryWidthHighExchangeSemantics
 import IntegerMultBounds.Machine.ArbitraryWidthHighExchange
 import IntegerMultBounds.Machine.ArbitraryWidthHighGuard
+import IntegerMultBounds.Machine.ArbitraryWidthHighMetadataBudget
+import IntegerMultBounds.Machine.ArbitraryWidthElementary

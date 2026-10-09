@@ -1323,6 +1323,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighGuard.lean`: The concrete integer depth and high-row selectors equal the manuscript real ceilings. High depth is positive beyond unit width and eventually below the original width, proving a fixed bounded set suffices for the elementary fallback. This proves the branch arithmetic, not the fallback machine.
 
+- `Machine/ArbitraryWidthHighMetadataBudget.lean`: The actual rounded high-row count is uniformly bounded by a fixed multiple of the original array volume, for every width. The large-width branch uses the selected high-depth guard; the bounded fallback uses monotonicity of the runtime divisor. Thus constructing row metadata before branch selection has a paid linear-volume bound on both branches.
+
+- `Machine/ArbitraryWidthElementary.lean`: One actual fixed program takes sole original canonical parent headers and a completely blank sixteen-tape private bank. It copies the width header, executes all corresponding unit-digit swaps with the proved recursive base machine, and erases the copy. Exact full transpose, restored headers/stacks and complete private cleanup hold even at zero width. Every fixed bounded set of positive widths has linear-volume runtime and therefore satisfies the unchanged positive width exponent.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
