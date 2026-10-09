@@ -1507,6 +1507,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthOriginalTotalRun.lean`: Instantiates the actual zero-width read with the complete positive-width original run. The fixed program handles every width from only original canonical headers and payload, produces the exact full transpose and restores all private banks to blank. Its paid runtime has one positive uniform coefficient times original volume times max-one-width to the certified exponent.
 
+- `Machine/BinaryAdjacentWidthHeadersShared.lean`: Actually writes the zero high-count control and constructs P, binary-range times G, and binary-range times B from the four original P/G/B/width headers. Named movement source slots, literal canonical values, caller preservation and reverse erasure of every generated field have linear rectangular-volume bounds.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
