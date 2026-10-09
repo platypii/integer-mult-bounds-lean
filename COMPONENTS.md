@@ -3516,6 +3516,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexRootPieceEntry.lean`: Original retained active header and fresh controller storage physically generate and rewind the actual root digit queue, seed exponent/left/width and execute outer root enumeration. Exact literal Visit boundaries and full paid control/callback sum are proved. Recursive callback execution is still a hypothesis; final queue/counters, native-header installation and recursive stop/role/return assembly remain open.
 
+- `Machine/UnitPhaseStreamAddressReset.lean`: Physically erases the final live raw address, copied clock and binary counter with exact head returns and paid linear address-width cost, preserving both coefficient streams and all original descriptors.
+
+- `Machine/UnitPhaseFullStreamClean.lean`: Composes literal one-coefficient-per-address phase traversal with final live-address/counter cleanup. Every generated phase/count/address workspace is erased; source and result streams remain explicit.
+
+- `Machine/UnitPhaseSourceEndpoint.lean`: Derives the retained literal input stream and its exact serialized EOF head after the full phase traversal and address cleanup.
+
+- `Machine/BlankWordReturnAt.lean`: Places paid backwards rewind of a literal nonblank blank-backed word at an arbitrary caller tape, preserving all other tapes and charging every return transition.
+
+- `Machine/UnitPhaseFullStreamNormalized.lean`: One fixed phase machine processes a literal array with one coefficient per address, erases generated address/count/arithmetic storage and physically returns both source and result heads to zero. Exact pointwise native serialization and linear-volume runtime are proved. Polynomial multiplicity within each payload and final result overwrite/caller placement remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
