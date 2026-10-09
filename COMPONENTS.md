@@ -3030,6 +3030,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsFullLateSelected.lean`: The actual full later physical stage acts by the literal complete selected XOR mask on every original address and retains the entire original after-source interval.
 
+- `Machine/ActivePrefixStageHeadersOps.lean`: Actual paid product, ceiling-round and constant descriptor primitives extend the fixed header command machine without supplying derived dimensions.
+
+- `Machine/ActivePrefixStageHeadersData.lean`: The original thirteen stage/node/slot words determine every low/high consumer dimension in either source order, with literal original input and derived-output banks.
+
+- `Machine/ActivePrefixStageHeadersSchedule.lean`: Fixed arithmetic schedules from original slot words compute complete reservation/layout widths and source offsets with proved validity and cleaned intermediate storage.
+
+- `Machine/ActivePrefixStageHeadersRun.lean`: The real fixed forty-three-tape arithmetic producer executes both source-order schedules and returns exact computed descriptors with original words retained.
+
+- `Machine/ActivePrefixStageHeadersRouting.lean`: Paid physical descriptor copies and erasures route header words on one bank; no aliasing or free duplicate consumers are used.
+
+- `Machine/ActivePrefixStageHeadersPlaced.lean`: Original thirteen words physically generate twenty-two distinct consumer words on a sixty-five-tape bank, retaining originals and erasing derived arithmetic/private storage.
+
+- `Machine/ActivePrefixStageHeadersEndpoint.lean`: Actual copied consumer words equal the exact typed early/later stage Inputs; original canonical words and source-order geometry determine every descriptor.
+
+- `Machine/ActivePrefixStageHeadersBudget.lean`: The complete arithmetic, duplicate copies, descriptor erasures and joins cost at most one million times original full volume, with no external numeric allowance premise.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
