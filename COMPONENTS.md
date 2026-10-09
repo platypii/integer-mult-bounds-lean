@@ -3320,6 +3320,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexPhaseRecordAddress.lean`: Full live record counters identify the actual destination address and original residual phase controls, including wrap across global rows. This removes materialized address tables; phase stride/offset synthesis and record-stream composition remain open.
 
+- `Machine/ButterflyAxisSerialization.lean`: Literal selected-bit coefficient serialization has exact higher/bit/lower source order and higher/lower role-stream order, preserving complete radix digits and delimiters without a supplied array codec.
+
+- `Machine/ButterflyStreamSemantics.lean`: Decoded complete paired stream outputs equal the forward complex butterfly at every coefficient and propagate the actual bounded-grid prefix invariant to the next precision and numerator bound. Physical selected-axis split/merge routing remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
