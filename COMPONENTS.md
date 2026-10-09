@@ -2970,6 +2970,28 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsPayloadEarlyClean.lean`: The full original-input early low-selected stage executes payload, complete clean repair, physical copy-back and output erasure on one caller bank. Exact global earlyIdeal array replaces the original raw array; every other original tape/head is retained and all private metadata blank. Its complete uniform runtime retains the certified compact-width exponent.
 
+- `Machine/ActiveRepairLayoutIdealCoordinates.lean`: Both global repaired low-bit ideals change only the original target coordinate by the literal CountedIdealToggle selected XOR word; all source, dirty, row and spectator fields are retained exactly.
+
+- `Machine/ActiveTargetHighestBits.lean`: Exact finite-rank decompositions describe the actual early/later one-bit highest-toggle destinations, including all surrounding original address bits.
+
+- `Machine/ActiveTargetHighestBitsWords.lean`: Fixed-width binary rows of the highest-toggle destinations are literal one-bit XOR updates with exact unchanged prefixes and suffixes.
+
+- `Machine/ActiveTargetHighestLayoutLateCoordinates.lean`: Actual later highest-bit geometry is the unchanged full-array ordinal and its destination changes only activeBefore bit zero using the selected original activeAfter high bit.
+
+- `Machine/ActiveTargetHighestLayoutEarlyCoordinates.lean`: Actual early highest-bit geometry is the unchanged full-array ordinal and its destination changes only activeBefore bit zero using the selected original activeBefore high bit.
+
+- `Machine/ActiveTargetHighestLayoutGlobal.lean`: Both genuine highest-bit array actions have exact original Address entry semantics at every physical full-array address.
+
+- `Machine/ActiveTargetHighestLayoutOriginalGlobal.lean`: The actual original-fourteen-header highest-bit programs realize exact full-array high-bit coordinate destinations on arbitrary caller banks, with all derived metadata and private storage restored.
+
+- `Machine/ActiveTargetHighestLayoutWords.lean`: The physical high-bit XOR joins the low selected toggle into the exact full selected target mask; its control is the final bit of the original stride-q source selection.
+
+- `Machine/ActiveTargetHighestLayoutCompose.lean`: Composing the highest-bit action with any retained-source low selected toggle gives the literal full selected XOR mask in both original source orders.
+
+- `Machine/ActiveTargetHighestLayoutSourceFrames.lean`: The highest-bit action retains the entire later source interval; the early source interval is retained under the explicit nonoverlap source-offset positivity premise.
+
+- `Machine/ActiveTargetHighestLayoutFullSelected.lean`: The actual high destination composed with the global repaired low ideal equals the exact full selected target XOR word in both source orders, retaining every other Address field and original disjoint source interval.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
