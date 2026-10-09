@@ -979,3 +979,5 @@ import IntegerMultBounds.Machine.BinaryRadixRangePrepareAlphabet
 import IntegerMultBounds.Machine.BinaryRadixRootHeadersShared
 import IntegerMultBounds.Machine.BinaryRadixRootEncoding
 import IntegerMultBounds.Machine.BinaryAdjacentWidthInterchange
+import IntegerMultBounds.Machine.ArbitraryWidthOriginalRun
+import IntegerMultBounds.Machine.ArbitraryWidthOriginalTotalRun

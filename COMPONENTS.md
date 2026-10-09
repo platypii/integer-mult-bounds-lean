@@ -1503,6 +1503,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryAdjacentWidthInterchange.lean`: Proves exact rectangular transposition for binary widths differing by one as an equal-width transpose and one actual fixed-radix-two movement, with the inverse orientation using real unmovement first. Literal serialized endpoints and paid movement proofs cover arbitrary spectators and zero shorter width. Header construction and full composition with the equal-width wrapper remain separate.
 
+- `Machine/ArbitraryWidthOriginalRun.lean`: One actual positive-width program constructs common metadata from the original six descriptor fields, executes the physical selector and selected complete high/fallback branch, and erases all common and branch-private storage. Exact original transpose and a positive uniform coefficient at the certified width exponent are proved without derived metadata or execution callbacks.
+
+- `Machine/ArbitraryWidthOriginalTotalRun.lean`: Instantiates the actual zero-width read with the complete positive-width original run. The fixed program handles every width from only original canonical headers and payload, produces the exact full transpose and restores all private banks to blank. Its paid runtime has one positive uniform coefficient times original volume times max-one-width to the certified exponent.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
