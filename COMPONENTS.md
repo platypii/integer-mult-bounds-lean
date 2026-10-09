@@ -1555,6 +1555,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedPackedRuntimeLine.lean`: One fixed twenty-two-tape line constructs shape headers from only original q/b/n, executes the original-header gathered modular arithmetic and erases all fourteen private tapes. Exact result semantics retain source/control/accumulator and original q/b/n, restore every payload head and offset scratch, and have uniform530-times-full-stride plus three accumulator lengths, including zero digits. The static shape kind and Boolean/rule operations are compile-time choices; no runtime dimensions appear in the program.
 
+- `Machine/DoubleClockReverseCopy.lean`: Fixed two-state machines use a literal bit word as a length clock to seek two source cells or copy two descending source cells per clock symbol. Exact twice-length execution retains every source/clock cell, preserves arbitrary target exterior and maps blank source cells to false bits, including empty clocks. Product-specific output semantics and final multiplication installation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

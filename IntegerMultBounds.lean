@@ -1006,3 +1006,4 @@ import IntegerMultBounds.Machine.CountedGatherOriginalRun
 import IntegerMultBounds.Machine.ElementaryMultiplyCore
 import IntegerMultBounds.Machine.CountedPackedOriginalLine
 import IntegerMultBounds.Machine.CountedPackedRuntimeLine
+import IntegerMultBounds.Machine.DoubleClockReverseCopy
