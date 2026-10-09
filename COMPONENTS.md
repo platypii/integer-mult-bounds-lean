@@ -1920,6 +1920,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryParityXorOffsetNegate.lean`: Complete fixed seven-tape row-negation constructor from original canonical width/count and literal packed input. Physically initializes/clears clocks, erases consumed input, rewinds output and restores all private storage; bound120*N*(W+1) for positive count. Original-address parity-XOR operand construction and repetition remain separate.
 
+- `Machine/BinaryParityXorOffsetData.lean`: Literal per-address parity-XOR rows and independently negated output words, specifying the fourth early-source correction with exact widths and total lengths.
+
+- `Machine/BinaryParityXorOffsetPositive.lean`: Proves original-address parity-XOR row semantics with retained original control, identifying the positive packed parity/control XOR operand before physical negation.
+
+- `Machine/BinaryParityXorOffsetValue.lean`: Exact fourth-offset integer value is negative packed parity-XOR modulo2^(n*b); bridges actual independent row negation to the required modular arithmetic.
+
+- `Machine/BinaryParityXorOffsetGather.lean`: Actual original-header parity-XOR gather consumes the generated address source and original-control repetitions, with exact resulting words and paid runtime.
+
+- `Machine/BinaryParityXorOffsetPrepare.lean`: Physically constructs and gathers original-input operands, synthesizes runtime target width and positions source/output heads for counted per-row negation.
+
+- `Machine/BinaryParityXorOffsetFinish.lean`: Physically clears all generated address/control words and metadata, including complete source tails, while retaining original headers/control and the negative offset output.
+
+- `Machine/BinaryParityXorOffset.lean`: Complete fixed thirty-one-tape fourth-offset constructor from original q/b/n and control. Output14 holds exact negative packed parity-XOR offsets; all twenty-six private tapes are blank. Paid cost at most(selectedBaseConstant+1000)*2^(n*q)*(n+1)*(q+b+1).
+
+- `Machine/BinaryParityXorOffsetPlaced.lean`: Five arbitrary larger-alphabet caller ports q/b/n/control/output with twenty-six blank private tapes appended and restored. Exact output word and every caller spectator/head are preserved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
