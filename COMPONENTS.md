@@ -2306,6 +2306,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveTargetHighestLaterRun.lean`: Actual fixed swap–earlier-toggle–swap-back sequence realizes later-source highest-bit XOR on the full array, retains all ten supplied canonical descriptors and clears all scratch. Exact charged costs and one uniform linear full-volume bound are proved. Descriptor synthesis and final compact-caller placement remain separate.
 
+- `Machine/BinaryVaryingParityOnlyGather.lean`: Actual fixed runtime-header gather uses the pure source-parity operation and ignores control values logically. Source/control words and original q/b/count survive; every derived descriptor/clock is generated and erased with a uniform stride bound.
+
+- `Machine/BinaryVaryingParityOnlyPlaced.lean`: Own clean six-port placement of the physical pure-parity gather preserves every complementary caller tape and restores its twenty native private tapes. Exact output, retained originals and charged runtime are proved.
+
+- `Machine/ActivePrefixParityOnlyData.lean`: Per-prefix pure-parity rows are exactly each current target digit’s low bit followed by compact padding. Full row/stream identity, original prefix testBit semantics and output length2^W*(n*b) include zero digits.
+
+- `Machine/ActivePrefixParityOnlyBank.lean`: Original eight-descriptor pure-parity bank physically projects current target/full-source fields, extracts controls and runs an actual source-only parity gather. Every control row may vary, but none enters the offset value.
+
+- `Machine/ActivePrefixParityOnlyRun.lean`: One fixed forty-one-tape original-input sequence generates all headers, prefix fields and source controls before actual pure-parity gathering, charging every stage.
+
+- `Machine/ActivePrefixParityOnlyCleanup.lean`: Physically erases projected target/source/control tables and every derived header after pure-parity emission. Originals and exact output remain at origin; all private storage and heads are restored.
+
+- `Machine/ActivePrefixParityOnly.lean`: Complete fixed pure-parity offset producer has exact current-prefix semantics and full cleanup with a uniform constant times2^W*(W+1) bound, including zero digits. Compact swap/rotation composition remains separate.
+
+- `Machine/ActivePrefixParityOnlyPlaced.lean`: Clean original-eight-plus-output caller placement produces exact pure-parity offsets, retains all original descriptors and spectators and restores forty-one private tapes with unchanged runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
