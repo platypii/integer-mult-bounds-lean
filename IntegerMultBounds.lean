@@ -1114,3 +1114,4 @@ import IntegerMultBounds.Machine.BinarySelectedOffsetGather
 import IntegerMultBounds.Machine.BinarySelectedOffsetCleanup
 import IntegerMultBounds.Machine.BinarySelectedOffset
 import IntegerMultBounds.Machine.BinarySelectedOffsetValue
+import IntegerMultBounds.Machine.BinarySelectedOffsetPlaced
