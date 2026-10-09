@@ -1593,6 +1593,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/StreamedFiberTranslationInitializedAlphabet.lean`: Executes the complete blank-private-storage streamed rotation on any larger finite alphabet with literal input/output banks and unchanged483-volume-plus35 cost. Exact encoded array and control words, retained original B/Q/n headers and all nine private tapes blank/head zero enable interchange-alphabet integration. Final payload/control normalization and complete packed-gadget assembly remain separate.
 
+- `Machine/CountedPackedParityValue.lean`: Proves physically extracted low block bits equal the parities of the power-of-two radix digits, then connects the actual clean parity-extraction run to the later-source packed integer specification with its exact uniform stride bound. No control word is supplied by an arithmetic oracle; full late-gadget composition remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
