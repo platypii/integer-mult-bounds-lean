@@ -3072,6 +3072,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsFullLatePlaced.lean`: The complete later low/high machine executes on arbitrary twenty-three original caller ports, changing only raw array, preserving descriptors and caller frame, restoring every private tape and retaining actual native cost.
 
+- `Machine/CompactActualStageAllowance.lean`: Every original-slot stage of the actual multiplier on once-padded descendant rows has paid complete repair width and both density bounds at constant one for sufficiently large inputs. Cubic size, selected count, guard and payload allowances are derived from actual d,K,p and literal polynomial-record bits; reservation fit remains the explicit nonfallback condition.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
