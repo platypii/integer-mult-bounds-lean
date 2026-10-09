@@ -1481,6 +1481,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighCommonHighBody.lean`: Instantiates the prepared high execution using only the actual common preparation output and original descriptor headers. It returns the exact original full transpose and restores every high-private bank to blank. No supplied derived headers or execution contracts enter its correctness or certified runtime bound.
 
+- `Machine/ArbitraryWidthHighCommonFallback.lean`: Composes actual common preparation, initialized elementary transpose and common cleanup from original headers, paying every transition and restoring all private banks. A separate zero-width execution avoids positive-width metadata preparation.
+
+- `Machine/ArbitraryWidthHighCommonFallbackBody.lean`: Runs the actual elementary transpose after common preparation without repeating metadata setup. It preserves every common generated field and restores elementary private storage, with exact original transpose and bounded-width cost.
+
+- `Machine/ArbitraryWidthHighFramedFallback.lean`: Places the actual original-header elementary fallback on the same complete private-bank layout as the high branch. Every unused high bank and common metadata field is preserved; the payload becomes the original full transpose and elementary storage is restored blank.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
