@@ -1053,3 +1053,6 @@ import IntegerMultBounds.Machine.CountedGuardTest
 import IntegerMultBounds.Machine.PackedOffsetPayloadArray
 import IntegerMultBounds.Machine.PackedOffsetPayloadAlphabet
 import IntegerMultBounds.Machine.PackedOffsetPayloadPlaced
+import IntegerMultBounds.Machine.BinaryPackedOffsetData
+import IntegerMultBounds.Machine.BinaryPackedOffsetRun
+import IntegerMultBounds.Machine.BinaryPackedOffsetBudget
