@@ -3204,6 +3204,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStagePairInverse.lean`: Reversing the actual literal stage list undoes its complete array action; the physical reverse has exactly the forward charged sum, restores the complete caller, and paid forward/reverse round trips retain the certified width exponent, including the empty word.
 
+- `Machine/ActivePrefixStageRuntimeWord.lean`: The actual runtime stage destination has an exact whole-active-word XOR mask; original source bits are extracted at their literal selected positions and the mask support is fully characterized.
+
+- `Machine/ActivePrefixStageRuntimeCoordinates.lean`: Every actual selected target coordinate receives its original source XOR, the destination equals Boolean row-addition execution on all columns, and every other complete original slot is preserved.
+
+- `Machine/ActivePrefixStageRuntimeOrdinal.lean`: A canonical active ordinal is extracted from the original serialized raw index independently of the stage target split; exact original high-to-low axis positions are related to physical little-endian selected columns.
+
+- `Machine/ActivePrefixStagePairCoordinates.lean`: The actual physical literal-list array action equals chronological Boolean row additions on canonical original addresses, with exact entrywise semantics; its selected coordinates perform the requested binary basis change without an assumed address action.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
