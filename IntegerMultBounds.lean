@@ -1877,3 +1877,4 @@ import IntegerMultBounds.Schoenhage.FMachine
 import IntegerMultBounds.Schoenhage.Words
 import IntegerMultBounds.Schoenhage.Transform
 import IntegerMultBounds.Schoenhage.Level
+import IntegerMultBounds.Machine.PackedMultiplierPolylogBudget

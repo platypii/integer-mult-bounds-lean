@@ -3312,6 +3312,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyStreamClean.lean`: One fixed fifty-six-tape machine executes complete paired butterflies, rewinds all stream heads and erases old source streams from original count and length headers. Only the two result streams remain, all workspace and stream heads are reset, both generated controls return blank and total cost is at most 400 times serialized logical volume; selected-axis split/merge and header generation remain open.
 
+- `Machine/PackedMultiplierPolylogBudget.lean`: At the actual packed product size, every fixed nonnegative power of the clamped log-log overhead is bounded by a fixed multiple of a power of log precision. The existing packed-product margin absorbs it into the exact certified final time exponent; the physical fast subroutine still must provide its execution and bit-cost bound.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
