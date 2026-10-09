@@ -3670,6 +3670,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageNativePairSchedule.lean`: Compiles a chronological literal basis word to a finite native machine using one actual uniform stage. Every instruction restores common headers and private storage, preserves native nonblank symbols and transports exact canonical rows; the full sum of paid stage/frame/join costs is proved. Original-coordinate network/phase assembly remains separate.
 
+- `Machine/NativeZeroRecord.lean`: One fixed runtime-width coefficient emitter writes genuine signed radix zero digits and real separators for both complex fields, with nonblank native interiors and exact numerical zero semantics. All counted-digit work is reclaimed and every transition charged.
+
+- `Machine/NativeZeroStream.lean`: A fixed runtime-counted loop appends genuine zero coefficient records, retaining width/count descriptors, erasing loop work and charging every emitted symbol and countdown transition.
+
+- `Machine/NativeZeroPadding.lean`: Physically seeks the actual nonblank native stream EOF, appends valid zero records and rewinds to its original source head, retaining input records and restoring every private control.
+
+- `Machine/NativeZeroPaddingHeaders.lean`: Physically derives the missing coefficient count from original and padded row counts, full immutable binary dimension and polynomial exponent, then erases it with paid synthesis/cleanup. The exact padded coefficient-volume identity is proved.
+
+- `Machine/NativeZeroPaddingPlaced.lean`: Places actual native padding on the scalar-header/source bank, composes paid count synthesis, zero emission, source rewind and final descriptor erasure, returning exact original headers and blank private storage.
+
+- `Machine/NativeZeroPaddingArray.lean`: One fixed actual padding machine returns the literal original row-major coefficient array extended by genuine signed-zero records, preserving stored widths and source head zero with all count generation, scanning, emission and cleanup paid. Uniform global-volume absorption and recursive reservation/role integration remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
