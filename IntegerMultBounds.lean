@@ -1915,3 +1915,4 @@ import IntegerMultBounds.Machine.UnitPhaseCoreReset
 import IntegerMultBounds.Machine.RawBitWordReset
 import IntegerMultBounds.Machine.UnitPhaseFlagsLifecycle
 import IntegerMultBounds.Machine.UnitPhaseLocalReset
+import IntegerMultBounds.Machine.SymbolTriplePlaced

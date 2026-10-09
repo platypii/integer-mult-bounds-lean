@@ -3388,6 +3388,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhaseLocalReset.lean`: Paid cleanup of the sixty-tape phase caller erases numerator sources, extracted controls, flags and generated sparse descriptors while framing addresses, streams and controller state. Full per-record and coefficient-loop composition remain open.
 
+- `Machine/SymbolTriplePlaced.lean`: Clean destructive native/Boolean converters execute in any stage alphabet containing the six native symbols and at any distinct caller tape slots. Exact literal raw Boolean array output, restored heads and blank obsolete source retain the same linear transition bounds; arbitrary headers/controller tapes outside the two slots are framed. Complete encode-stage-decode assembly remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
