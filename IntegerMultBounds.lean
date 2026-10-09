@@ -1050,3 +1050,6 @@ import IntegerMultBounds.Machine.PackedOffsetPowerHeader
 import IntegerMultBounds.Machine.PackedOffsetPayloadOriginal
 import IntegerMultBounds.Machine.CountedPackedLatePlacement
 import IntegerMultBounds.Machine.CountedGuardTest
+import IntegerMultBounds.Machine.PackedOffsetPayloadArray
+import IntegerMultBounds.Machine.PackedOffsetPayloadAlphabet
+import IntegerMultBounds.Machine.PackedOffsetPayloadPlaced

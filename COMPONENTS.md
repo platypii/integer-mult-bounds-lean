@@ -1633,6 +1633,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedGuardTest.lean`: A fixed six-tape comparison-and-flag machine reads its runtime width from an original canonical descriptor, compares exactly those physical bits, appends the exact ordering flag, erases order/countdown scratch and retains the descriptor. Cost14 times width plus32 includes zero; outer record traversal and the complete uniform repair-key routine remain open.
 
+- `Machine/PackedOffsetPayloadArray.lean`: Returns the physically rotated payload as a canonical Bool array and proves exact per-address packed-offset destination semantics. This supplies a literal array handoff for subsequent binary interchanges without a free copy or permutation.
+
+- `Machine/PackedOffsetPayloadAlphabet.lean`: Lifts the original-header packed-offset rotation to any larger fixed alphabet with exact literal payload array, original head retention, complete private cleanup and unchanged charged runtime.
+
+- `Machine/PackedOffsetPayloadPlaced.lean`: Shares caller payload, packed source and B/n/w descriptors directly through static injective wiring. Twelve private tapes start and return wholly blank; all caller spectators and heads are retained, with an exact canonical-array endpoint and paid power-synthesis cost.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
