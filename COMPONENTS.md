@@ -1627,6 +1627,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PackedOffsetPayloadOriginal.lean`: One fixed seventeen-tape machine generates Q=2^w from the original width, synthesizes offsets from the packed source, rotates full payload records and erases both the control stream and Q. Only original B/n/w and bit words are inputs; every private tape and both source heads are restored. Cost explicitly includes Q for zero fibers and is linear in payload volume when n is positive.
 
+- `Machine/CountedPackedLatePlacement.lean`: Places the reusable guarded early and late gadgets into any static injective caller tape slots. Literal target toggles, original descriptors, blank private workspace, all heads and the complete complementary frame are proved together; fixed control and existing2720/7000 full-stride costs are retained.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
