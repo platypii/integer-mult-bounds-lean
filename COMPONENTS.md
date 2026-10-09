@@ -3596,6 +3596,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerExponent.lean`: Physically descends the live controller exponent using clean numeric scratch and restores the parent exponent on return, preserving the complete native and persistent-storage frame.
 
+- `Machine/CompactReservedAxisPorts.lean`: A fixed public native-axis wrapper shares original node parameters with runtime reservation controls and preserves all external descriptor storage.
+
+- `Machine/CompactReservedHeaders.lean`: Original D/K/rho/ell/q/d/G words physically derive row-axis count, back/front ceiling counts and high-interval start using paid logarithm, product and division; all synthesis scratch is erased.
+
+- `Machine/CompactReservedAxisRun.lean`: Actual forward and inverse sparse native-axis bodies preserve external reservation controls and retain coefficient widths under repeated paid execution.
+
+- `Machine/CompactReservedSchedule.lean`: Fixed counted interval execution reads physically generated low/high counts and visits every sparse native axis, preserving all external original descriptors and charging loop transitions.
+
+- `Machine/CompactReservedLifecycle.lean`: Physically prepares original-geometry interval controls, switches from the low-back interval to the high-row/front interval and erases generated ordinal/count controls before returning.
+
+- `Machine/CompactReservedOriginal.lean`: One fixed forward or inverse nonfallback reservation controller executes both actual low-back and high-row/front intervals from original geometry, including paid setup, switch, body loops and final cleanup. Exact native-array output is proved; its full native-volume/asymptotic cost bound is tracked separately.
+
+- `Machine/CompactReservedSemantics.lean`: Both counted reservation intervals have exact signed Walsh semantics at the actual accrued precision, preserving polynomial spectators and propagating the existing bounded grid.
+
+- `Machine/CompactReservedCorrect.lean`: The complete physical low/high reservation controller implements precisely its two sparse signed-kernel lists, retaining original headers and all polynomial coefficients with all counted control costs paid.
+
+- `Machine/CompactReservedRoundtrip.lean`: Actual forward and inverse reservation controllers compose with shared signed-width guard and recover exact decoded values at precision q plus twice the reserved count. Both physical passes and the sequencing transition are paid; full uniform cost absorption remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
