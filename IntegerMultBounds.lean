@@ -1852,3 +1852,6 @@ import IntegerMultBounds.Machine.ActivePrefixStagePairCoordinates
 import IntegerMultBounds.Networks.ComplexPhaseRowSchedule
 import IntegerMultBounds.Machine.CompactComplexPhaseSchedule
 import IntegerMultBounds.Machine.CompactActualPairInverse
+import IntegerMultBounds.Machine.CompactComplexPhasePhysical
+import IntegerMultBounds.Machine.CompactComplexPhasePhysicalBudget
+import IntegerMultBounds.Machine.CompactActualComplexPhase

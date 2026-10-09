@@ -3216,6 +3216,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualPairInverse.lean`: Actual multiplier scalar/cutoff/global-row choices instantiate physical reverse-list and full-bank round-trip execution on original symbolic stage banks whose row count is the inherited global count; every literal pair allowance is derived at density one, with no supplied branch or direction.
 
+- `Machine/CompactComplexPhasePhysical.lean`: Actual complex-edge words physically executed by the literal list machine compute the original bilinear phase controls on canonical original high-axis addresses; exact raw-array payload entries and original signed projector-phase identities, including descending edges, are proved. Applying the phase to coefficient records remains separate.
+
+- `Machine/CompactComplexPhasePhysicalBudget.lean`: The finite actual complex-edge list bounds every generated row-word length by one fixed instruction count, giving one uniform certified complexity constant for the complete physical basis compiler and all descriptor restoration.
+
+- `Machine/CompactActualComplexPhase.lean`: Actual multiplier scalar/cutoff/global-row choices instantiate each original complex-edge physical basis compiler with exact original-address controls and a uniform certified list runtime bound; per-stage readiness and repair allowances are derived internally, while original consecutive-node slot geometry remains explicit.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
