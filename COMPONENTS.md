@@ -2724,6 +2724,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsPipelineLate.lean`: Actual original-input later repair on full-width records returns the ideal record stream and correct full-bit serialization with exact retained bank/runtime; wide payload is unrestricted. Physical later schedule, formatting and final flattening remain separate.
 
+- `Machine/ActiveRepairRecordFlatten.lean`: Literal two-state tape scan removes flags and delimiters and copies all payload bits contiguously, with actual halting and one transition per input symbol.
+
+- `Machine/ActiveRepairRecordFlattenEndpoint.lean`: Complete two-tape decoder erases the entire marked source and returns raw output to origin, with linear record-volume cost and no private tapes or clocks.
+
+- `Machine/ActiveRepairRecordFlattenPrepare.lean`: Fixed two-transition initializer physically installs the left source marker while preserving the entire raw record word.
+
+- `Machine/ActiveRepairRecordFlattenOriginal.lean`: Complete decoder starts from literal unmarked records, installs its own marker, flattens payloads and erases the source/marker with both heads at origin and paid linear runtime.
+
+- `Machine/ActiveRepairRecordFlattenAlphabet.lean`: Actual unmarked-record decoder lifts to larger alphabets with unchanged runtime and literal payload bit codes; complete source erasure and raw output at origin are retained.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
