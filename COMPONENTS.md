@@ -2530,6 +2530,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLateKey.lean`: Complete genuine-current-rank later key computation, three-field destination patch, conditional key write and cleanup. Original-width header synthesis wiring and scan/pipeline integration remain separate.
 
+- `Machine/ActiveRepairLateKeyOriginalData.lean`: Original geometric/source/b descriptors, genuine rank and marked empty key form the late input, with all derived headers and parsed/repaired fields blank.
+
+- `Machine/ActiveRepairLateKeyOriginalValid.lean`: Original width descriptors and packing identities imply every late parsing/inverse/patch premise, including recovered-U geometry without supplied computed starts.
+
+- `Machine/ActiveRepairLateKeyOriginalRun.lean`: Fixed134-tape actual header generation, full late key and generated-header erasure return the exact original bank except written key, with all work blank and linear address-width runtime.
+
+- `Machine/ActiveRepairLateKeyOriginalGeometry.lean`: Both original-layout source orders derive all width bounds and V/T/U/source fits from active geometry, compact capacity and source containment.
+
+- `Machine/ActiveRepairLateKeyOriginalPlaced.lean`: Forty-three-port original-input late key caller placement preserves every original/spectator and restores134 appended private tapes, paying all synthesis and erasure.
+
+- `Machine/ActiveRepairLateKeyOriginal.lean`: Complete original-width later key needs no supplied computed starts, varying controls, local rank or destination. Final original packing parameter synthesis, scan initialization and repair assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
