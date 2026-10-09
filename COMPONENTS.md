@@ -3112,6 +3112,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageSingletonSelected.lean`: Actual singleton endpoints XOR exactly the sole selected original target bit by its original source bit, retain source and spectator fields and identify literal source/target slot bit positions.
 
+- `Machine/CompactActualStageGeometry.lean`: Actual multiplier choices, the nonfallback cutoff and once-padded descendant depth derive positive rows, guard room, record and full repair address allowances, and highest-bit geometry for every original stage node.
+
+- `Machine/CompactActualStageInputs.lean`: Actual scalar/row readiness fills original-input stage records, and both generated source-order descriptor banks have full repair width and density allowances at constant one from original multiplier choices.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

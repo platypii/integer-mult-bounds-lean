@@ -1795,3 +1795,5 @@ import IntegerMultBounds.Machine.ActivePrefixStageSingletonData
 import IntegerMultBounds.Machine.ActivePrefixStageSingletonRun
 import IntegerMultBounds.Machine.ActivePrefixStageSingletonBudget
 import IntegerMultBounds.Machine.ActivePrefixStageSingletonSelected
+import IntegerMultBounds.Machine.CompactActualStageGeometry
+import IntegerMultBounds.Machine.CompactActualStageInputs
