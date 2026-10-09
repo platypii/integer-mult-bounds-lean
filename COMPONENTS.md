@@ -2749,6 +2749,16 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `-ρ(2^p d')` give `D̃'` (`diag_vec`); with `resampJNumH_eq_iter`,
   `b0_value` identifies the output with `resampB₀NumH p (⌊√p⌋+1) s t α w`.
 
+- `Resampling/TabledMaps.lean`: the numerical maps with supplied weight
+  tables. Exact rounding of an exponential cannot be computed in a provable
+  time, so the machines use integer tables within two units of `2^p` times
+  the weights; each term keeps its error (`termW_err`, `offTermW_err`,
+  `diagW_err`), and `permuted_numeric_tabled` gives Lemma 7.1 for `Ã` and
+  the clamp-free `B̃₀` built from any such tables (`resampB₀NumW`), errors
+  below `p²` and the unit disk preserved. `accumulators_eq_W` and
+  `B0Value.b0_value_W` connect the tape machines fed integer tables to these
+  maps.
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line
