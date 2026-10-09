@@ -1337,6 +1337,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthPieceRun.lean`: The actual fixed dispatcher composes sole-header initialization, every real extracted-digit slice call, exact full transpose and final control cleanup. All fourteen dispatcher, eleven slice-work and six level private controls return blank, while original metadata and caller banks are restored. A complete paid natural cost expression is proved; converting its accumulated cost to the certified exponent remains separate.
 
+- `Machine/PlacedDescriptorConstruction.lean`: Exact single-output framing places power and product constructors into an arbitrary larger bank. Every tape and head outside the generated output is retained literally; no supplied runtime result is assumed.
+
+- `Machine/RadixHighBlockJoinBank.lean`: Fixed shared bank for high-block joining and separation, retaining source, spectator size, original prefix/suffix and outer count. Mutable prefix/suffix/base and thirteen arithmetic tapes have exact descriptor and blank-workspace layouts.
+
+- `Machine/RadixHighBlockJoinSetup.lean`: Fixed injective placements route the retained runtime exponent into actual power construction and original lengths into product construction, sharing the movement bank. Exact descriptor updates and blank-workspace views preserve every outer tape.
+
+- `Machine/RadixHighBlockJoinInitialize.lean`: Complete actual sole-original-header setup for both ordered high-block movement directions. Physically copy one original length, write the fixed radix, construct its runtime power and enlarged length, then erase the intermediate power. Original payload, shape, count and clock are retained; a fixed-radix linear-volume bound pays every step.
+
+- `Machine/RadixHighBlockJoinCleanup.lean`: Actual cleanup erases mutable prefix, suffix and radix descriptors after either direction, preserving payload and sole original shape/count/clock. Any canonical terminal working lengths bounded by volume satisfy the explicit fixed-radix linear cleanup cost.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
