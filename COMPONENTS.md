@@ -3236,6 +3236,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactReservationRate.lean`: Actual reservation and cutoff are negligible relative to every dimension power above one minus spacing, including the certified layer exponent. Individually processed axes satisfy the same bound uniformly in the selected dimension; actual linear-volume per-axis kernel execution remains a separate requirement.
 
+- `Machine/UnitPhaseNumerator.lean`: One fixed eight-tape runtime dispatcher reads two retained phase bits and applies the corresponding signed real/imag numerator rotation, preserving both source words and flags, returning two same-width outputs and clearing scratch at twelve times width plus forty-five steps.
+
+- `Machine/UnitPhaseSigned.lean`: Centered signed decoding identifies the actual runtime unit-phase output with exact multiplication by one, i, minus one or minus i. A strict signed guard excludes the unrepresentable minimum negation; coefficient width and denominator precision are retained.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
