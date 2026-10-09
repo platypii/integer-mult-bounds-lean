@@ -1639,7 +1639,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PackedOffsetPayloadPlaced.lean`: Shares caller payload, packed source and B/n/w descriptors directly through static injective wiring. Twelve private tapes start and return wholly blank; all caller spectators and heads are retained, with an exact canonical-array endpoint and paid power-synthesis cost.
 
-- `Machine/BinaryRepeatedOffsetAction.lean`: identifies the physically generated repeated parity, selected and correction offset words with the actual swap/rotate/swap permutation. Proves exact packed parity, selected two-times-control-times-digit, and signed correction offsets and destination entries, retaining the dirty back coordinate and every suffix bit. Physical producer/action sequencing remains separate.
+- `Machine/BinaryRepeatedOffsetAction.lean`: identifies the physically generated repeated parity, selected, correction and negative parity-XOR offset words with the actual swap/rotate/swap permutation. Proves exact packed parity, selected two-times-control-times-digit, and signed correction offsets and destination entries, retaining the dirty back coordinate and every suffix bit. Physical producer/action sequencing remains separate.
 - `Machine/BinaryPackedOffsetData.lean`: Exact swap/packed-back-rotation/swap array semantics. The front field reaches its modular offset destination, indexed by the original dirty back coordinate; that back coordinate and every suffix bit are retained literally.
 
 - `Machine/BinaryPackedOffsetRun.lean`: One fixed shared-caller machine executes two actual binary field interchanges around the placed original-header packed-offset rotation. Both private banks are blank on return, caller headers and packed source are retained, and every call and sequencing transition is charged. Complete packed-arithmetic and reservation assembly remains separate.
@@ -1906,7 +1906,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryCorrectionOffsetLoad.lean`: One fixed shared-bank machine generates actual repeated early-correction offsets from original descriptors and control, executes the real original-header packed action, and erases its offsets. Exact correction permutation, unchanged caller originals and blank private endpoint are proved without a supplied offset/action oracle; reservation routing remains separate.
 
-- `Machine/BinaryRepeatedOffsetLoadBudget.lean`: Complete parity/selected/correction production-action-erasure cost preserves the certified interchange width exponent. Physically generated table costs and full offset erasure are absorbed into actual payload volume when the explicit producer allowance fits suffix width; every join and cleanup is charged.
+- `Machine/BinaryRepeatedOffsetLoadBudget.lean`: Complete parity/selected/correction/negative parity-XOR production-action-erasure cost preserves the certified interchange width exponent. Physically generated table costs and full offset erasure are absorbed into actual payload volume when the explicit producer allowance fits suffix width; every join and cleanup is charged.
 
 - `Machine/CompactGadgetReservationHeadersDivision.lean`: Physical fixed divisor command computes the canonical role quotient on the shared descriptor bank, preserves its sources and clears its fifteen-tape private work. Divisor is the static role count.
 
@@ -1995,6 +1995,12 @@ Machine model, execution, composition, and tape routines.
 - `Machine/BinaryParityXorOffsetLoad.lean`: Complete fixed shared-bank fourth-offset generation, actual original-header swap/rotate/swap and physical offset erasure, with exact negative parity-XOR destination semantics and blank private return. Physical action shape inputs are explicit; final source-prefix placement into the common early reservation remains separate.
 
 - `Machine/PackedPrefixRepeatHeaders.lean`: Physically derives L=2^(d*globalGuard-n*q)*2^(n*b)*actualGap from canonical original d/globalGuard/n/q/b and paid upstream gap/role-row words, retaining K=roleRows. Fixed fifteen-command forty-tape schedule clears every intermediate and private tape; actual post-use L erasure restores the original bank. Full exact setup/cleanup costs are proved; placement and volume absorption into the final prefix repeat remain separate.
+
+- `Machine/CompactPackedSourceGeometry.lean`: Exact serialized source extraction and actual rotation-row alignment for source fields in either gap or prefix. Generic physically repeated words select precisely that source address while all dirty-back, prefix-tail and gap spectators survive; no free coordinate move or tape execution is asserted.
+
+- `Machine/BinaryPackedEarlyData.lean`: Actual selected/parity/signed-correction/negative row-word translations compose in current-source order to packedEarly. On good addresses, the target is the ideal toggle and temporary value restores, with arbitrary spectators unchanged. Physical common-bank execution remains separate.
+
+- `Machine/BinaryPackedEarlyLayout.lean`: Serializes the mixed n*q/n*b target/temp fields, all unused fixed-H tails, active/slack fields, full dirty back and payload into exactly rows*globalShape.recordWidth. Establishes one unchanged common early address layout; machine assembly remains separate.
 
 ## Compact
 
