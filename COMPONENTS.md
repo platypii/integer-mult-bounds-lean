@@ -3086,6 +3086,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsFullInverseRun.lean`: The same actual placed full stage reverses its transformed raw array at one native cost, retaining all caller descriptors and blank private tapes; paid twice-execution programs restore the entire caller with both costs and sequence join.
 
+- `Machine/ActivePrefixStageOrderCompare.lean`: A real reusable comparison of original binary source/target slot words yields the early/late bit, preserves operand tapes and heads and erases its flag at paid cost. Actual stage geometry pays comparison and cleanup in linear full volume; source-order dispatch composition remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
