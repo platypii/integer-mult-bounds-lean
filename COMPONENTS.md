@@ -1763,6 +1763,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinarySelectedOffsetPlaced.lean`: Places the complete selected mask-shift producer on any larger alphabet and five distinct caller ports for b/q/n, original controls and output. Preserves all complementary caller tapes/heads, retains original controls/headers, returns literal packed offsets and restores26 appended private tapes with unchanged certified cost.
 
+- `Machine/CountedRepairKeyBank.lean`: Thirty-tape fixed repair-key bank and exact shared placements for rank splitting, inverse arithmetic, original-input guard and ideal toggle. The original short scan counter/control/q/b/n are retained.
+
+- `Machine/CountedRepairKeyPrefix.lean`: Actual fixed-control rank split, exceptional guard, inverse packed arithmetic and ideal toggle composition. Exact flags/recovered words and all sequencing costs are proved from original runtime descriptors.
+
+- `Machine/CountedRepairKeyAppendMoves.lean`: Physical flag write, source-head positioning, destination copies and marked-key returns for the conditional repair key, preserving all framed tapes.
+
+- `Machine/CountedRepairKeyAppend.lean`: Actual conditional destination append: true flags receive the exact toggled-inverse destination words, false flags receive only the flag. Source/key rewinds are paid.
+
+- `Machine/CountedRepairKeyWrite.lean`: Thirty-tape actual guard-controlled key write preserves original words/headers/counter, returns every source/key head and charges the conditional branch and all copied destination cells.
+
+- `Machine/CountedRepairKeyCleanup.lean`: Physically erases every generated rank/inverse/toggle word and the guard result, restoring complete private storage while retaining the written key and original inputs.
+
+- `Machine/CountedRepairKeyRun.lean`: One fixed thirty-tape complete repair-key machine from original canonical q/b/n, control and actual short scan counter. Exact conditional key, original-input preservation and full workspace restoration hold within5100*(n+1)*(q+b+1).
+
+- `Machine/CountedRepairKeyValue.lean`: Actual short-counter membership flag and destination-word semantics equal the compact instance rankFlag/rankKey. Zero extension is justified by physical blank-tail copies; no padded counter is supplied.
+
+- `Machine/CountedRepairKeyScan.lean`: Places the fixed key machine into the actual forty-two-tape repair scan bank and proves RepairScan.KeyContract with exact rank flags/destination keys, retained non-key scan tapes and reusable28-tape scratch. Full outer scan/sort/reinsert initialization and assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
