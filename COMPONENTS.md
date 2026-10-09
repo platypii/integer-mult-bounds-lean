@@ -3336,6 +3336,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyAxisRun.lean`: One fixed native coefficient machine physically splits a selected axis, executes all paired complex butterfly arithmetic, erases old source streams, rewinds heads and destructively merges the exact transformed stream. Uniform linear-volume cost includes all three stages; deriving its routing/count/length headers from original shape data and scheduling axes remain open.
 
+- `Machine/SymbolTripleEncode.lean`: An injective three-bit code for the six native coefficient symbols has a fixed two-tape physical encoder body. Three output bits are actually written, the source symbol is retained and both heads reach exact endpoints in five transitions.
+
+- `Machine/SymbolTripleStream.lean`: One fixed stream loop converts nonblank-interior native coefficient words to Boolean-symbol triples, retaining the source and framing arbitrary output backgrounds. Output length is exactly three times source length and total runtime is seven times source length; decoder and whole-stage representation transport remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
