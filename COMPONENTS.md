@@ -3246,6 +3246,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexPhaseControlCodec.lean`: Actual residual weights and original descending signs identify the scanner readout and signed coefficient rotation with the target-minus-source projected phase. The input control word is explicitly defined from computed address controls; producing that word on live streams remains open.
 
+- `Machine/DelimitedRadixRead.lean`: One fixed finite-control reader copies a delimited radix word to a marked control word, retaining source digits and advancing beyond the separator in twice width plus six steps.
+
+- `Machine/DelimitedRadixEmit.lean`: One fixed destructive emitter appends a marked radix word and delimiter to a stream, clearing the source control in twice width plus six steps.
+
+- `Machine/DelimitedRadixRecord.lean`: Literal real and imaginary radix record serialization supplies source contexts and separator correctness for actual stream readers.
+
+- `Machine/TwoTapeAt.lean`: An injective two-tape placement adapter preserves every complementary tape and transports exact timed stream endpoints.
+
+- `Machine/ButterflyRecordRead.lean`: A fixed fifty-two-tape reader fills all four butterfly input words from two literal complex record streams in eight times width plus twenty-seven steps, retaining streams and framing outputs.
+
+- `Machine/ButterflyRecordOutputData.lean`: Physical erasure of all four retained arithmetic input controls costs eight times width plus nineteen steps and preserves stream and output tapes.
+
+- `Machine/ButterflyGuard.lean`: Normalized dyadic input and prefix-grid growth imply a strict signed butterfly guard at every depth. Width p plus twice D plus four suffices and is at most three p plus four when D is at most p; full physical stream propagation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
