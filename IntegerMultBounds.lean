@@ -748,6 +748,7 @@ import IntegerMultBounds.Resampling.OffDiagSum
 import IntegerMultBounds.Resampling.NeumannWords
 import IntegerMultBounds.Machine.RecordRewind
 import IntegerMultBounds.Machine.RecordCopy
+import IntegerMultBounds.Machine.SubPass
 import IntegerMultBounds.Machine.RecursiveRowsNodeLayout
 import IntegerMultBounds.Machine.RecursiveRowsNodeHeaders
 import IntegerMultBounds.Machine.RecursiveRowsNodeRoleBank
