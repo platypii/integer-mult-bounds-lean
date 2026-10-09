@@ -1457,6 +1457,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthElementaryInitializedRun.lean`: Composes actual header initialization, the complete elementary transpose and private cleanup. All private storage starts and ends blank; no ready-bank or generated-header premise is supplied. Exact transpose and bounded-width linear and certified-exponent budgets include every sequential edge.
 
+- `Machine/ArbitraryWidthHighExecutionInitialize.lean`: Physically copies seven exchange, five movement and ten padding/root descriptors from retained caller sources into three wholly blank execution banks. Repeated source slots are allowed; exact literal private banks and a two-hundred-twenty-two-times-volume setup bound are proved, including the movement clock marker.
+
+- `Machine/ArbitraryWidthHighExecutionInitializeCleanup.lean`: Actually erases all high execution headers in reverse padding, movement and exchange order, restoring three blank private banks and retaining the arbitrary caller. The two-hundred-times-volume cleanup includes physical erasure of the canonical-zero clock marker.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
