@@ -3490,19 +3490,21 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhaseFullStreamLoop.lean`: Actual counted phase traversal uses the generated full coefficient count, handles genuine final EOF without fabricated separators, and erases count/loop controls. Final live address/counter and stream heads remain explicit.
 
-- `Machine/UnitPhaseFullStream.lean`: One fixed phase-stream machine derives rows times two to address width and processes every coefficient with paid initialization, record bodies and count cleanup. Original headers are retained; final live address/counter and stream normalization remain separate.
+- `Machine/UnitPhaseFullStream.lean`: One fixed phase-stream machine derives rows times two to address width and processes one coefficient per full address with paid initialization, record bodies and count cleanup. Original headers are retained; polynomial multiplicity within a payload, final live address/counter and stream normalization remain separate.
 
 - `Machine/UnitPhaseStreamData.lean`: Derives record contexts from one literal finite coefficient array, including exact successive starts, widths and a genuine terminal EOF context.
 
 - `Machine/UnitPhaseStreamEndpoint.lean`: Proves exact emitted pointwise phase serialization and output head position for every counted prefix of the literal coefficient array.
 
-- `Machine/UnitPhaseFullStreamArray.lean`: Connects the actual full-count physical phase machine to literal finite coefficient arrays with exact pointwise output words and paid serialized-volume runtime.
+- `Machine/UnitPhaseFullStreamArray.lean`: Connects the actual full-count physical phase machine to literal finite arrays containing one coefficient per address, with exact pointwise output words and paid serialized-volume runtime. Repeating phases over the polynomial coefficients within each native payload remains separate.
 
 - `Machine/CompactLiteralUnitPhase.lean`: The physically derived sparse offset and original-address readout equal the actual ordered target-minus-source complex25 phase; signed coefficient words realize multiplication by that phase.
 
 - `Machine/CompactZeroUnitPhase.lean`: Zero residual dimension has identically zero ordered phase and exact coefficient identity, implemented by a tape-preserving halted machine with zero transitions.
 
 - `Machine/UnitPhaseGuard.lean`: Derives the strict signed-negation guard from the existing bounded-grid invariant and fallback signed width, without a caller-supplied extra numeric guard.
+
+- `Machine/CompactActualNativeWidth.lean`: One fixed native stage machine uniformly handles every actual stored signed field width above the precision allowance. Literal complex serialization includes both fields and separators and equals the selected native symbol capacity exactly; an explicit finite native row reconstructs that word and derives its nonblank converter condition from actual digits and delimiters. Readiness and packed costs follow from original multiplier choices at every eventual nonfallback descendant; a linear stored-width bound gives fixed-factor Boolean payload overhead, including arithmetic guard bits.
 
 ## Compact
 

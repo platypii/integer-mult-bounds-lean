@@ -1973,3 +1973,4 @@ import IntegerMultBounds.Machine.UnitPhaseFullStreamArray
 import IntegerMultBounds.Machine.CompactLiteralUnitPhase
 import IntegerMultBounds.Machine.CompactZeroUnitPhase
 import IntegerMultBounds.Machine.UnitPhaseGuard
+import IntegerMultBounds.Machine.CompactActualNativeWidth
