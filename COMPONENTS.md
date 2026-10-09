@@ -2759,6 +2759,15 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `B0Value.b0_value_W` connect the tape machines fed integer tables to these
   maps.
 
+- `Resampling/PiApprox.lean`, `Resampling/ExpApprox.lean`: certified integer
+  approximations for the weight tables. `piApprox q K` sums Machin's series
+  with exact floored terms `⌊2^q/((2k+1) m^(2k+1))⌋` and is within
+  `20K + 40·2^q·5^-(2K+1)` of `2^q π` (`piApprox_err`, from
+  `arctan_tail` and Mathlib's `four_mul_arctan_inv_5_sub_arctan_inv_239`).
+  `expApprox X q N` sums Taylor terms each obtained by one multiplication and
+  one truncated division, within `N e^|x| + 2^q |x|^N/N! e^|x|` of
+  `2^q e^x`, `x = X/2^q` (`expTerm_err`, `exp_tail`, `expApprox_err`).
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line

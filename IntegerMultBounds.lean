@@ -754,6 +754,8 @@ import IntegerMultBounds.Machine.NeumannLoop
 import IntegerMultBounds.Machine.PairJoin
 import IntegerMultBounds.Resampling.B0Words
 import IntegerMultBounds.Resampling.TabledMaps
+import IntegerMultBounds.Resampling.PiApprox
+import IntegerMultBounds.Resampling.ExpApprox
 import IntegerMultBounds.Resampling.B0Tape
 import IntegerMultBounds.Resampling.B0Value
 import IntegerMultBounds.Machine.RecursiveRowsNodeLayout
