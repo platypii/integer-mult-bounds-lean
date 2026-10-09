@@ -993,3 +993,5 @@ import IntegerMultBounds.Machine.BinaryAdjacentWidthSelectorDispatch
 import IntegerMultBounds.Machine.BinaryInterchangeRun
 import IntegerMultBounds.Machine.BinaryInterchangeBudget
 import IntegerMultBounds.ExactRecoveryOutput
+import IntegerMultBounds.Machine.CountedGatherField
+import IntegerMultBounds.Machine.CountedGatherPadding

@@ -1529,6 +1529,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryInterchangeBudget.lean`: Proves one positive uniform coefficient bounds the actual comparison, dispatch and selected concrete branch runtime by original rectangular volume times max-one maximum width to the certified exponent 1−296/10^11.
 
+- `Machine/CountedGatherField.lean`: A fixed five-tape eighteen-state machine copies and applies a Boolean operation to a runtime-counted field while holding the control head fixed. Exact whole-word and interior-field semantics retain source/control and arbitrary target exterior, restore both binary controls and pay linear field time, including zero.
+
+- `Machine/CountedGatherPadding.lean`: Fixed five-tape eighteen-state machines seek either direction or write an exact runtime-counted run of false symbols, preserving all spectators and arbitrary exterior. Immutable descriptors and reusable clocks are restored; zero counts and canonical linear bounds are proved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
