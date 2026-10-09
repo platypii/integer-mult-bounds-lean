@@ -857,3 +857,5 @@ import IntegerMultBounds.Machine.RangePaddingDimensions
 import IntegerMultBounds.Machine.RowCropAny
 import IntegerMultBounds.Machine.RadixRangePaddingExecution
 import IntegerMultBounds.Machine.ArbitrarySliceRepeat
+import IntegerMultBounds.Machine.BinaryRadixRangePrepare
+import IntegerMultBounds.Machine.RadixRangeDescriptors

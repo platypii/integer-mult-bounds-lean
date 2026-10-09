@@ -1273,6 +1273,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitrarySliceRepeat.lean`: One fixed counted controller executes the actual paid slice-step program as many times as specified by a runtime base digit. Every slice trace is derived from the completed recursive root proof; offsets advance physically and exact repeated window swaps compose in order. Clock setup and cleanup are paid; optional consume also clears the digit descriptor. Certified digit-weighted budgets include all loop and erase costs. Whole outer dispatcher composition with level updates remains separate.
 
+- `Machine/BinaryRadixRangePrepare.lean`: One fixed nineteen-tape program constructs both numerical ranges and the least radix exponent from the sole binary width, then physically pads both chunk coordinates. It retains original prefix/gap/suffix/width headers and exact generated metadata, with all private workspace blank. The inverse arbitrary-content crop clears all generated metadata and returns the exact original transpose after a padded transpose. Both bounds are fixed-radix constants times original volume; the intervening interchange must still be composed.
+
+- `Machine/RadixRangeDescriptors.lean`: One fixed twelve-tape program constructs the binary chunk range 2^u, then the least enclosing fixed-radix power and its runtime exponent from the sole canonical binary width. The original width is retained, all scratch is cleared, and exact canonical outputs satisfy the range overshoot and exponent bounds. Construction and descriptor cleanup cost linearly in 2^u. Composition with the physical numerical padding scans remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
