@@ -14,6 +14,29 @@ open Machine Strm
 
 variable {a t : ℕ}
 
+/-- A register holding `w`. -/
+def reg (w : List Bool) : WTape := ⟨[], [w]⟩
+
+/-- An empty tape. -/
+def emp : WTape := ⟨[], []⟩
+
+@[simp] theorem reg_cur (w : List Bool) : (reg w).cur = w := rfl
+@[simp] theorem reg_right (w : List Bool) : (reg w).right = [w] := rfl
+@[simp] theorem reg_left (w : List Bool) : (reg w).left = [] := rfl
+@[simp] theorem reg_next (w : List Bool) : (reg w).next = ⟨[w], []⟩ := rfl
+@[simp] theorem emp_right : emp.right = [] := rfl
+@[simp] theorem emp_left : emp.left = [] := rfl
+@[simp] theorem WTape.next_mk (L R : List (List Bool)) :
+    (⟨L, R⟩ : WTape).next = ⟨R.headD [] :: L, R.tail⟩ := rfl
+@[simp] theorem WTape.cur_mk (L R : List (List Bool)) : (⟨L, R⟩ : WTape).cur = R.headD [] := rfl
+@[simp] theorem WTape.put_true_cons (u : List Bool) (L : List (List Bool)) (v : List Bool)
+    (vs : List (List Bool)) : (⟨u :: L, []⟩ : WTape).put true (v :: vs) = ⟨vs.reverse ++ (u ++ v) :: L, []⟩ :=
+  rfl
+
+@[simp] theorem WTape.put_false (L : List (List Bool)) (vs : List (List Bool)) :
+    (⟨L, []⟩ : WTape).put false vs = ⟨vs.reverse ++ L, []⟩ := by
+  cases L <;> rfl
+
 /-- `c` runs from `σ` into `Q` within `B` steps. -/
 def Runs (c : Cmd a t) (σ : Fin t → WTape) (Q : (Fin t → WTape) → Prop) (B : ℕ) : Prop :=
   ∃ σ' k, Exec c σ σ' k ∧ Q σ' ∧ k ≤ B

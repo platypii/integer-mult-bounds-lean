@@ -153,6 +153,47 @@ theorem output_fill (c : Bool) (w : List Bool) (ws : Fin 0 → List Bool) :
     output (fill c) w ws = syms [List.replicate w.length c] := by
   simp [output, syms_cons, go_fill]
 
+/-- Emit nothing: the driver's word is skipped. -/
+abbrev skip : Rule 0 where
+  Q := Unit
+  q0 := ()
+  step _ _ _ := ((), none, fun _ => false)
+  flush _ := []
+  B := 0
+  hB _ := le_rfl
+
+theorem go_skip (w : List Bool) (ws : Fin 0 → List Bool) : (go skip () w ws).2.1 = [] := by
+  induction w generalizing ws with
+  | nil => simp [go]
+  | cons b w ih => simp [go, ih]
+
+theorem output_skip (w : List Bool) (ws : Fin 0 → List Bool) : output skip w ws = syms [] := by
+  simp [output, go_skip]
+
+/-- Emit a separator per driver bit: a unary word becomes that many empty words. -/
+abbrev ticks : Rule 0 where
+  Q := Unit
+  q0 := ()
+  step _ _ _ := ((), some none, fun _ => false)
+  flush _ := []
+  B := 0
+  hB _ := le_rfl
+
+theorem go_ticks (w : List Bool) (ws : Fin 0 → List Bool) :
+    (go ticks () w ws).2.1 = List.replicate w.length none := by
+  induction w generalizing ws with
+  | nil => simp [go]
+  | cons b w ih => simp [go, ih, List.replicate_succ]
+
+theorem syms_replicate_nil (n : ℕ) : syms (List.replicate n []) = List.replicate n none := by
+  induction n with
+  | zero => rfl
+  | succ n ih => simp [List.replicate_succ, syms_cons, ih]
+
+theorem output_ticks (w : List Bool) (ws : Fin 0 → List Bool) :
+    output ticks w ws = syms (List.replicate w.length []) := by
+  simp [output, go_ticks, syms_replicate_nil]
+
 /-! ### Fit to the driver's width -/
 
 /-- The first `n` bits of `x`, padded with zeros. -/

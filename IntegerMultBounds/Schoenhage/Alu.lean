@@ -14,12 +14,6 @@ open Machine Strm
 /-- The number of tapes of the Schönhage–Strassen machine. -/
 scoped notation "𝕋" => (48 : ℕ)
 
-/-- A register holding `w`. -/
-def reg (w : List Bool) : WTape := ⟨[], [w]⟩
-
-/-- An empty tape. -/
-def emp : WTape := ⟨[], []⟩
-
 namespace Tp
 abbrev aX : Fin 𝕋 := 0
 abbrev aY : Fin 𝕋 := 1
@@ -35,23 +29,6 @@ abbrev cN : Fin 𝕋 := 11
 end Tp
 
 open Tp
-
-@[simp] theorem reg_cur (w : List Bool) : (reg w).cur = w := rfl
-@[simp] theorem reg_right (w : List Bool) : (reg w).right = [w] := rfl
-@[simp] theorem reg_left (w : List Bool) : (reg w).left = [] := rfl
-@[simp] theorem reg_next (w : List Bool) : (reg w).next = ⟨[w], []⟩ := rfl
-@[simp] theorem emp_right : emp.right = [] := rfl
-@[simp] theorem emp_left : emp.left = [] := rfl
-@[simp] theorem WTape.next_mk (L R : List (List Bool)) :
-    (⟨L, R⟩ : WTape).next = ⟨R.headD [] :: L, R.tail⟩ := rfl
-@[simp] theorem WTape.cur_mk (L R : List (List Bool)) : (⟨L, R⟩ : WTape).cur = R.headD [] := rfl
-@[simp] theorem WTape.put_true_cons (u : List Bool) (L : List (List Bool)) (v : List Bool)
-    (vs : List (List Bool)) : (⟨u :: L, []⟩ : WTape).put true (v :: vs) = ⟨vs.reverse ++ (u ++ v) :: L, []⟩ :=
-  rfl
-
-@[simp] theorem WTape.put_false (L : List (List Bool)) (vs : List (List Bool)) :
-    (⟨L, []⟩ : WTape).put false vs = ⟨vs.reverse ++ L, []⟩ := by
-  cases L <;> rfl
 
 /-- The word of `2^N + 1`. -/
 def fword (N : ℕ) : List Bool := bits (N + 1) (2 ^ N + 1)
@@ -399,5 +376,12 @@ theorem runs_mulPow2 {N t : ℕ} (hN : 0 < N) (htN : t ≤ N) (σ : Fin 𝕋 →
   intro σ' h
   rw [h, shift_mod hN htN hlv hv]
   funext i; fin_cases i <;> tsimp [hY, hO, h1, h2, h3, emp]
+
+@[simp] theorem subRes_length (N : ℕ) (x y : List Bool) : (subRes N x y).length = N + 1 := by
+  simp [subRes]
+@[simp] theorem addRes_length (N : ℕ) (x y : List Bool) : (addRes N x y).length = N + 1 := by
+  simp [addRes]
+@[simp] theorem mulRes_length (N t : ℕ) (v : List Bool) : (mulRes N t v).length = N + 1 := by
+  simp [mulRes]
 
 end IntegerMultBounds.Schoenhage

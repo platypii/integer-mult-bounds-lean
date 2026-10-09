@@ -5419,6 +5419,19 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   from registers into a register with all scratch returned empty and an
   `O(N)` step bound.
 
+- `Schoenhage/Schedule.lean`: the level schedule (`kOf N ≈ (log N − log log N)/2`,
+  `nextN N` the multiple of `2^k` above `2M + k + 1`, base case below `2^2047`):
+  divisibility propagates down the recursion (`dvd_chain`), the level
+  hypotheses hold (`next_facts`), total size grows by `2 + O(1/s)` per level
+  (`growth`), the cost recurrence is `O(N log N log log N)` (`cost_le`), and
+  `topN m ∈ (2m, 4m]` is a valid top-level size (`topN_facts`, `cost_topN`).
+- `Schoenhage/Lists.lean`: word-list fragments on arbitrary tapes (copy,
+  skip, append all, copy as many words as a tick tape holds) and register
+  moves, with exact effects and linear step bounds.
+- `Schoenhage/Butterfly.lean`: the forward butterfly on the 48-tape bank:
+  `u` and `v` from the half-block tapes give `u + 2^t v` and `u − 2^t v`
+  modulo `2^N + 1` on the output tapes (`runs_bflyF`), within `O(N)` steps.
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
