@@ -1059,3 +1059,5 @@ import IntegerMultBounds.Machine.BinaryPackedOffsetBudget
 import IntegerMultBounds.Machine.CompactRowHeaders
 import IntegerMultBounds.Machine.CompactRowSplit
 import IntegerMultBounds.Machine.CompactRowArray
+import IntegerMultBounds.Machine.CountedGuardGadgetPosition
+import IntegerMultBounds.Machine.CountedGuardGadgetHeaders

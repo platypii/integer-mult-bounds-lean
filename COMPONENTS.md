@@ -1651,6 +1651,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactRowArray.lean`: Connects actual row splitting to Compact.Layout.splitRows on literal finite arrays. Every suffix cell, including dirty temporary fields, is preserved. Positive rows/width and static positive role count are explicit; runtime and full cleanup are linear in total payload volume.
 
+- `Machine/CountedGuardGadgetPosition.lean`: Fixed placed runtime-counted left/right head movements retain the full caller frame and clean countdown workspace. These replace within-record width-unrolled guard replays; no free head normalization is assumed.
+
+- `Machine/CountedGuardGadgetHeaders.lean`: Physically constructs the q−1 comparison descriptor from original q/b/n and blank work, erases the temporary one and retains originals. Exact width value, canonical form and cleanup include q=1; full multi-record guard execution remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
