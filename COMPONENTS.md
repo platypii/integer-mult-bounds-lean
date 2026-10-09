@@ -2270,6 +2270,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixControlOffsetPlaced.lean`: Actual control-mask production on arbitrary original-eight-plus-output caller ports retains every descriptor and spectator and restores forty-one private tapes, with unchanged certified linear prefix-table runtime.
 
+- `Machine/GatherStreamData.lean`: Generic Boolean gathers preserve uniform source/control row boundaries for independently varying rows. Exact per-row semantics and reconstruction from fixed-width fields include zero-width rows; no repeated-control premise is needed.
+
+- `Machine/ActivePrefixParityOffsetData.lean`: Exact parity-XOR offsets use the current target field and source controls of each original prefix rank. Per-row identity, uniform width n*b, row count2^W and flatten equality connect the physical output to rowwise modular negation.
+
+- `Machine/ActivePrefixParityOffsetBank.lean`: Original eight-descriptor bank physically projects the current n*q-bit target and full source fields, extracts varying controls and gathers positive parity-XOR offsets. Exact bank identity retains every original descriptor.
+
+- `Machine/ActivePrefixParityOffsetRun.lean`: One fixed forty-one-tape producer shares actual original-header synthesis, target/source projections, source-bit extraction and parity-XOR gather, with complete charged stage contracts.
+
+- `Machine/ActivePrefixParityOffsetCleanup.lean`: Physically erases projected target/source/control words and every derived descriptor after parity-XOR emission. Only original descriptors and output survive at origin, with all private storage blank and heads restored.
+
+- `Machine/ActivePrefixParityOffset.lean`: Complete fixed positive parity-XOR producer runs from eight original canonical descriptors and erases all generated metadata and streams within a uniform constant times2^W*(W+1) bound. The actual negative compact load additionally requires rowwise modular negation and rotation.
+
+- `Machine/ActivePrefixParityOffsetPlaced.lean`: Clean positive parity-XOR production on arbitrary nine caller ports preserves all original descriptors and spectators, restores forty-one private tapes and retains the complete linear prefix-table runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
