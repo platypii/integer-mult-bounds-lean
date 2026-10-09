@@ -2058,6 +2058,60 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PackedEarlyRepeatHeadersCaller.lean`: Original row and packing descriptors physically construct the carved control gap and role-row count, then feed both early repetition factors on their actual caller ports. Exact combined execution and charged setup bound need no supplied gap/row/repetition word; placement into the final four-load sequence remains separate.
 
+- `Machine/CountedLateRankBank.lean`: Native thirteen-tape short-rank splitter bank keeps the actual counter, original q/b/n and arbitrary destination exteriors, using blank-backed zero extension rather than a supplied padded counter.
+
+- `Machine/CountedLateRankRun.lean`: Actual fixed-control split extracts target V of width n*q and both W/U source fields of width n*b, restores heads and erases split scratch with a fully charged runtime.
+
+- `Machine/CountedLateRankEndpoint.lean`: Clean original-header later rank splitter has exact V/W/U words and a uniform600-times-full-stride bound, preserving original counter and destination spectators.
+
+- `Machine/CountedLateRepairFlag.lean`: Physical later exceptional comparisons on original V/W and V/U words produce exact individual flags and erase all comparison scratch.
+
+- `Machine/CountedLateRepairGuard.lean`: Fixed thirty-tape later exceptional guard physically ORs both flags, erases the second flag and decides exactly the lateGood complement within2004 times full stride.
+
+- `Machine/CountedLateRepairPrefix.lean`: Actual original-input later guard and unrestricted packed inverse compose with exact retained flag/recovered V/W/U words and paid9005-times-full-stride cost.
+
+- `Machine/CountedLateRepairToggle.lean`: Fixed thirty-one-tape ideal toggle uses the actual recovered target/control and preserves the original exceptional flag and dirty source words with paid533-times-full-stride cost.
+
+- `Machine/CountedLateRepairConcat.lean`: Actual W/U destination concatenation returns the exact combined source word and restores all heads within3 times the combined lengths plus10.
+
+- `Machine/CountedLateRepairKeyBank.lean`: Fixed thirty-four-tape later key bank and physical placements for actual rank splitting, guard/inverse/toggle and W/U concatenation.
+
+- `Machine/CountedLateRepairKeyPrefix.lean`: Original-input later guard, inverse, toggle and source concatenation compose with exact full-bank endpoints and all joins paid.
+
+- `Machine/CountedLateRepairKeyWrite.lean`: Actual conditional later key writer emits the exceptional flag and, only when flagged, the exact recovered/toggled destination words, with all source/key rewinds charged.
+
+- `Machine/CountedLateRepairKeyCleanup.lean`: Physically erases all six generated later key words and restores complete scratch while retaining original counter/control/headers and the written key.
+
+- `Machine/CountedLateRepairKeyRun.lean`: One fixed thirty-four-tape later key machine executes genuine short-rank splitting through conditional key writing and full cleanup from original runtime descriptors within10300 times full stride.
+
+- `Machine/CountedLateRepairKeyValue.lean`: Actual later key flag and literal destination bits equal the later compact instance rankFlag/rankKey for every short scan counter.
+
+- `Machine/CountedLateRepairScanBank.lean`: Physical placement of the actual thirty-four-tape later key inside the forty-six-tape repair scan bank, preserving every non-key scan tape.
+
+- `Machine/CountedLateRepairScan.lean`: The real later key machine satisfies the full RepairScan.KeyContract with exact exceptional flags/destination keys, retained originals and reusable blank scratch.
+
+- `Machine/CountedLateRepairMetadata.lean`: Actual original n*q/n*b products and counted replay construct the later selector/counter width n*q+2*n*b, erasing every generated product and clock.
+
+- `Machine/CountedLateRepairPrepare.lean`: Fixed forty-six-tape later preparation physically creates all scan sentinels/selectors/counters from original q/b/n/control and blank workspace within2004 times full stride.
+
+- `Machine/CountedLateTapeRepairBank.lean`: Literal original-input later repair bank and exact actual/ideal stream definitions, with distinct source/output and retained original key scratch.
+
+- `Machine/CountedLateTapeRepairCleanupAt.lean`: Physical later repair head positioning and framed erasures preserve the source/output tapes and original key scratch.
+
+- `Machine/CountedLateTapeRepairCleanup.lean`: Actual fourteen-stage later final cleanup erases every stage marker/work word and restores all stage heads.
+
+- `Machine/CountedLateTapeRepairCleanupRun.lean`: Complete later physical cleanup returns only the ideal output and retained source at origin; all other stage tapes blank and original scratch retained.
+
+- `Machine/CountedLateTapeRepairRun.lean`: Actual fixed original-input later preparation, keyed scan, radix sort, stripping and reinsertion produce the exact ideal stream with all stages and joins charged.
+
+- `Machine/CountedLateTapeRepairBudget.lean`: Every later setup/key/sort/strip/reinsert/final-cleanup transition enters a complete runtime bound linear in volume plus exceptional count times the paid repair coefficient.
+
+- `Machine/CountedLateTapeRepairDensity.lean`: Actual later exceptional-address count is bounded by the proved density and absorbed into the complete paid tape runtime expression.
+
+- `Machine/CountedLateTapeRepairEndpoint.lean`: One reusable fixed forty-six-tape later repair machine executes the full initialized pipeline and final cleanup, returning the exact ideal output/source at head zero and restoring all workspace.
+
+- `Machine/CountedLateTapeRepairLinear.lean`: Density absorption proves an actual Hoare execution bound(12304*C+228)*lateMi*(recordWidth+2), under explicit key-width, stride and small-density conditions. Together with the earlier endpoint, both repair pipelines now have full physical correctness and charged bounds.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -2175,6 +2229,12 @@ Compact packed controls, repair, and density bounds.
   gives exactly the ideal map. `ExactRepair.lean` now instantiates this result
   with both verified packed programs. Implementing repair within the tape cost
   remains necessary.
+
+- `Compact/LatePowerTwoRank.lean`: Exact short-counter modular splitting matches the later address order U followed by V/W, without a counter-length assumption.
+
+- `Compact/LatePowerTwoWords.lean`: Literal split words encode every later address, including unrestricted dirty source/temporary digits and physical blank-tail padding.
+
+- `Compact/LatePowerTwoBridges.lean`: Actual late inverse words, ideal toggle and destination key bits agree with the later permutation inverse and exact destination rank encoding.
 
 ## Networks
 
