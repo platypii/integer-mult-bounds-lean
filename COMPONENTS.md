@@ -1257,6 +1257,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthPieceLoop.lean`: One fixed finite outer loop repeatedly extracts actual runtime base digits until the canonical remaining width is zero, then clears all fourteen control tapes. Deterministic emitted digits match the manuscript partition. A fixed consume continuation must still implement repeated slice calls and depth/width/offset updates; no concrete whole piece driver is claimed.
 
+- `Machine/SliceOffsetAdvance.lean`: Fixed placement advances the runtime offset in the existing twelve-tape slice tail, using its blank arithmetic work tape as the paid clock. The complete recursive root bank, saved frame and all other controls are exact spectators.
+
+- `Machine/ArbitrarySliceStepBudget.lean`: The complete paid slice step is bounded by rootBudget plus 1087 times volume under explicit width bounds. This includes header preparation/restoration and physical offset updates; summing its literal power-piece budgets preserves the exact certified width exponent with a positive fixed constant.
+
+- `Machine/ArbitrarySliceStep.lean`: One fixed program composes paid slice-header preparation, actual recursive root execution, original-header restoration and physical runtime offset advancement. Exact selected-window output and next offset, with every join, scan, carry and cleanup included in the cost.
+
+- `Machine/ArbitraryWidthLevelAdvance.lean`: One fixed seven-tape program increments the canonical recursion-depth descriptor and multiplies the canonical selected width by the fixed base. Setup physically initializes the base, width one and depth zero; separate base or full cleanup is paid. Arbitrary framed data/offset controls are preserved; level advancement costs at most 120 times the new width.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

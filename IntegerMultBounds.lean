@@ -846,3 +846,7 @@ import IntegerMultBounds.Machine.BinaryCanonicalData
 import IntegerMultBounds.Machine.BinaryDescriptorDivMod
 import IntegerMultBounds.Machine.ArbitraryWidthPieceCounter
 import IntegerMultBounds.Machine.ArbitraryWidthPieceLoop
+import IntegerMultBounds.Machine.SliceOffsetAdvance
+import IntegerMultBounds.Machine.ArbitrarySliceStepBudget
+import IntegerMultBounds.Machine.ArbitrarySliceStep
+import IntegerMultBounds.Machine.ArbitraryWidthLevelAdvance
