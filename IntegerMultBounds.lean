@@ -1061,3 +1061,5 @@ import IntegerMultBounds.Machine.CompactRowSplit
 import IntegerMultBounds.Machine.CompactRowArray
 import IntegerMultBounds.Machine.CountedGuardGadgetPosition
 import IntegerMultBounds.Machine.CountedGuardGadgetHeaders
+import IntegerMultBounds.Machine.CompactRowPaddingRound
+import IntegerMultBounds.Machine.CompactRowPaddingRun

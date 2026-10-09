@@ -1655,6 +1655,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedGuardGadgetHeaders.lean`: Physically constructs the q−1 comparison descriptor from original q/b/n and blank work, erases the temporary one and retains originals. Exact width value, canonical form and cleanup include q=1; full multi-record guard execution remains separate.
 
+- `Machine/CompactRowPaddingRound.lean`: Physically writes the static role count, derives the least enclosing row multiple from original runtime row count/width, erases role-count arithmetic scratch and returns the exact Compact.Layout.paddedRows descriptor. Every positive row/role case is included.
+
+- `Machine/CompactRowPaddingRun.lean`: A fixed twenty-five-tape machine rounds original row count, constructs all span descriptors, pads complete binary records and physically erases all twenty-one private tapes. Original headers/heads and tape exteriors survive. Bound4600 times padded volume,9200 times original volume when roles≤rows, and a fixed-role bound handle all positive rows. Padding-to-role-split composition remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
