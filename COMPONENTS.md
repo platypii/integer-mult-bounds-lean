@@ -1948,6 +1948,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryParityXorOffsetRepeatPlaced.lean`: Eight shared caller ports q/b/n/P/H/L/control/output and forty-two appended private tapes restored blank. Exact negative-offset field semantics and volume bound are proved.
 
+- `Machine/CountedTapeRepairCleanupWord.lean`: Actual marked/unmarked word erasure and physical return primitives remove sentinels as well as data, with literal endpoints and paid transition counts.
+
+- `Machine/CountedTapeRepairCleanupAt.lean`: Places physical erase/return operations on selected repair-stage tapes, preserving complementary tapes and restoring erased heads.
+
+- `Machine/CountedTapeRepairCleanup.lean`: Fixed fourteen-slot final cleanup schedule erases stage/key/counter words and sentinels while returning preserved source/output heads to origin.
+
+- `Machine/CountedTapeRepairCleanupRun.lean`: Concrete cleanup of actual early scan/sort/reinsert endpoint leaves ideal output10 and source11 at origin, every other first-fourteen tape blank, and retained twenty-eight key scratch tapes.
+
+- `Machine/CountedTapeRepairBudget.lean`: Uniform record-width and exceptional-count bound for the complete early repair execution including all final cleanup; exact full cost is at most base+badCount*coefficient.
+
+- `Machine/CountedTapeRepairDensity.lean`: Actual early exceptional count is bounded by rho*M with rho=n/2^b+8*n*2^b/2^q; the paid full repair cost obeys the corresponding density bound.
+
+- `Machine/CountedTapeRepairEndpoint.lean`: One fixed forty-two-tape original-input early repair plus final cleanup has exact ideal output and retained original source at origin, blank stage/key/counter work and unchanged key scratch. Later-gadget repair remains separate.
+
+- `Machine/CountedTapeRepairLinear.lean`: Absorbs early exceptional density into full record volume under explicit record-width/setup/density inequalities, paying all preparation, key scans, sorting, reinsertion and cleanup. Later-gadget inverse/guard/key/pipeline execution remains unproved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
