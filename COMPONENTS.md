@@ -2803,6 +2803,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   off-diagonal and `D'` weights, and `tableD ∈ [0, 2^p]` (`tables_ok`, for
   natural `α ≥ 2`, `α² ≤ p`).
 
+- `Resampling/WeightNat.lean`: the weight routine in natural numbers, as the
+  tape machines compute it. The Taylor terms are `±M_n` with
+  `M_{n+1} = ⌊M_n Y/(2^q (n+1))⌋` (`expTerm_neg`, `expTerm_pos`); below the
+  shortcut the alternating sum stays positive (`E_close`, `odd_le_even`), so
+  `expPi` equals the natural `expPiNat` (even minus odd partial sums, shifted)
+  and the three tables equal `tableANat`, `tableENat`, `tableDNat`.
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line
