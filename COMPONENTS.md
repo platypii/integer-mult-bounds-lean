@@ -2622,6 +2622,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `rewind_records` returns any head on a record tape to the origin in
   `x + 4` steps and `erase_records` blanks the whole tape from its end.
 
+- `Machine/RecordCopy.lean`: walking over blank-separated records. One
+  three-tape machine (source, destination, ruler) moves the source head over
+  whole records, copying them to the destination when `cp`, and stops at a
+  record origin when the source reads blank (`ct = false`) or after one record
+  per ruler cell (`ct = true`); `walk_hoare` is the exact contract, cost the
+  volume walked, covering copy-all, copy-`n`, skip-all and skip-`n`.
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line
