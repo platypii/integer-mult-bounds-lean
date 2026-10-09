@@ -1016,3 +1016,4 @@ import IntegerMultBounds.Machine.WordBankCleanup
 import IntegerMultBounds.Machine.CountedPackedRecycle
 import IntegerMultBounds.Machine.CountedPackedReusable
 import IntegerMultBounds.Machine.CountedPackedGuarded
+import IntegerMultBounds.Machine.BinaryPackedFieldSwap

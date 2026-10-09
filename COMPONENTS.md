@@ -1575,6 +1575,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedPackedGuarded.lean`: Proves literal word equality for the fixed runtime-driven packed early gadget on good input blocks: only selected low target bits toggle, and every temporary bit is restored. Connects actual block/control words to the packed integer correctness theorem, then lifts this to the reusable physical gadget with all intermediate payload and metadata tapes blank, heads restored and uniform2720-times-full-stride cost. The physical payload permutation remains separate.
 
+- `Machine/BinaryPackedFieldSwap.lean`: Actual runtime-header binary field interchange retains complete payload records, arbitrary prefix/intervening/suffix fields and dirty back coordinates. Two real calls restore the entire caller payload and every private tape, charging both executions and the join; the uniform certified width exponent is retained. A data conjugation lemma identifies front actions by swap/back-action/swap. The physical packed-controlled back action and row reservation wiring remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
