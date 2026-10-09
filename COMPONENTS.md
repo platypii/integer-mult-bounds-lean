@@ -3736,6 +3736,26 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactPolynomialPhaseDispatch.lean`: One fixed physical family selector executes the actual complex25 per-axis polynomial kernels, including a genuine zero-dimensional skip. Call sites physically emit the edge token, decode/erase it and execute the selected kernel without a supplied callback. Native source/result restoration and exact dispatch overhead are proved; aggregating all coordinate-axis phases in one traversal and full caller placement remain open.
 
+- `Machine/ButterflyInverseSpectatorGeometry.lean`: Derives the exact full-address spectator geometry for the negative-phase butterfly split and swapped merge, retaining arbitrary outer rows and polynomial coefficients.
+
+- `Machine/ButterflyInverseSpectatorOriginal.lean`: Actual inverse spectator axis synthesizes geometry from original descriptors, executes negative-phase arithmetic and swapped merge, then erases every generated header with exact paid cost.
+
+- `Machine/ButterflySpectatorSemantics.lean`: Literal spectator row slices equal ordinary butterfly axes. Decoded forward and inverse native arrays have exact complex-axis semantics with propagated prefix precision and grid.
+
+- `Machine/CompactSpectatorInverseLeafAxis.lean`: Actual inverse leaf body synthesizes each immutable global selected bit, executes the inverse spectator axis and erases generated controls while advancing Visit ordinal.
+
+- `Machine/CompactSpectatorInverseLeafLoop.lean`: One fixed counted inverse Visit loop executes every selected spectator axis and restores its private clock and ordinal, with literal folded output and exact paid runtime.
+
+- `Machine/CompactSpectatorInverseLeafOriginal.lean`: Actual inverse leaf derives immutable geometry from copied original headers, executes its full counted interval and restores every generated descriptor, retaining original row and polynomial spectators.
+
+- `Machine/CompactSpectatorLeafGuardHeaders.lean`: Physically generates private q plus twice full global bits from immutable baseline q and erases it after a leaf pass. Original precision is retained and all setup and cleanup costs are paid.
+
+- `Machine/CompactSpectatorLeafSemantics.lean`: Complete literal forward Walsh list and inverse negated list equal decoded native leaf outputs at each propagated prefix precision. Their mathematical roundtrip follows from one initially normalized array; inverse consumes the actual forward output grid.
+
+- `Machine/CompactSpectatorLeafGuardOriginal.lean`: One fixed original-header forward/inverse roundtrip physically reserves private precision on each pass and cleans all controls twice, with explicit stored-field readiness and exact paid runtime.
+
+- `Machine/CompactSpectatorLeafGuardPlacement.lean`: Places the actual two guarded leaf passes at original native source65/global109. Whole decoded arrays recover their original values at final precision q plus twice the Visit length; immutable original descriptors and every other caller tape are retained and all appended private storage is blank. Uniform budget and recursive integration remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
