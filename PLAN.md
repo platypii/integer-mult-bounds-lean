@@ -16,7 +16,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Composition, loops, frames, elementary streams | §2 | 🟡 (163/164) | 🟡 (145/156) |
 | Finite networks with a rank saving | §3 | ✅ (66/66) | 🟡 (1/42) |
 | Faster interchange of address chunks | §4 | ✅ (concrete endpoint) | ✅ (concrete endpoint) |
-| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (14/14) | 🟡 (9/11) |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (15/15) | 🟡 (10/12) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (6/9) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
@@ -418,6 +418,7 @@ The concrete section endpoint is complete in `BinaryInterchangeRun.runs` and `Bi
 | Runtime gather suffix-header construction and erasure | `CountedGatherMetadata` | ✅ | ✅ | Four real subtraction calls derive both suffix counts from the six original gather dimensions, retaining every original and physically erasing all four generated headers. Canonical values and digit sources are proved, including zero; shared gather composition and blank clock initialization remain separate. |
 | Uniform runtime-counted modular packed line | `CountedPackedLine` | ✅ | ✅ | The concrete fixed gather now composes with modular transduction, offset erasure and all physical rewinds on thirteen tapes, preserving all inputs and descriptors with a linear bound, including zero cases. Metadata setup and complete five-line packed arithmetic remain separate. |
 | Physical independent gather clock lifecycle | `CountedGatherClockPair` | ✅ | ✅ | Two independent inner/outer clocks have actual blank initialization and erasure, retaining every other tape; original-header gather composition remains separate. |
+| Packed gather original-header construction | `CountedPackedShapeHeaders` | ✅ | ✅ | All three static packed shapes now have actual original-header construction from q/b/n, with paid zero/one initialization and complete eight-tape cleanup. Full packed-control composition remains open. |
 | Packed control gadgets | `PackedControl` | ✅ | ⬜ | Current packed arithmetic unrolls widths and digit counts into finite control; uniform runtime-driven composition, physical payload permutation and slot embedding remain open |
 | Ideal toggle permutation and invertibility | `Ideal`, `Permutations` | ✅ | — | Every address, including bad ones |
 | Exact destination repair | `Repair`, `ExactRepair`, `PackedInverse`, `PackedInverseValue`, `ToggleValue`, `GuardValue`, `KeyValue`, `KeyInstance` | ✅ | ✅ | Nine-tape inverse packed program undoes the four updates in reverse with negated offsets, linear cost, proved to recover the packed permutation's preimage; the ideal toggle is exclusive or with the control mask; the seven-tape guard test's flags decide `earlyGood`; the seventeen-tape key routine assembles rank split, guard test, inverse, toggle and the conditional key write, its words are the scan's key data for ranks in lexicographic order, and placed into the scan bank it meets the repair scan's key contract |

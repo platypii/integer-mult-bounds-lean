@@ -1000,3 +1000,4 @@ import IntegerMultBounds.Machine.CountedGatherRun
 import IntegerMultBounds.Machine.CountedGatherMetadata
 import IntegerMultBounds.Machine.CountedPackedLine
 import IntegerMultBounds.Machine.CountedGatherClockPair
+import IntegerMultBounds.Machine.CountedPackedShapeHeaders
