@@ -1685,6 +1685,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedGuardGadgetValue.lean`: Connects the actual fixed-control guard result cell to exceptional-address membership under the certified power-of-two comparison constants. Full paid execution decides not earlyGood within350 times full stride, deriving field-range bounds from literal word lengths. Constant synthesis and complete rank/key assembly remain separate.
 
+- `Machine/CompactRowReservationPlacement.lean`: Places complete-row splitting onto the actual padded destination and role outputs with retained physical rounded/role/width headers. Original row count and the complete padding workspace are framed.
+
+- `Machine/CompactRowReservationData.lean`: Literal padded role-array specification, with exact source/role/suffix coordinates. Original rows retain every payload bit and dirty suffix field; added whole rows are zero.
+
+- `Machine/CompactRowReservationRun.lean`: One fixed-role machine executes original-header rounding and padding, writes static role count, splits the padded complete records, and physically erases all retained role/rounded headers. Exact final original headers, erased source/padding destination, literal role words and clean private banks are proved.
+
+- `Machine/CompactRowReservationBudget.lean`: The complete physical pad/split/erase path costs a static-role constant times original row count and record width for all positive cases, including fewer input rows than roles. The usual roles≤rows range has the sharper twice-original-volume bound.
+
+- `Machine/CompactRowReservationEndpoint.lean`: Explicit whole-bank endpoint for the original-descriptor binary reservation path: original row/width headers and heads retained, complete padded role words installed, original source/padding destination and every private tape blank at head zero. Reserved compact-gadget slot/capacity instantiation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
