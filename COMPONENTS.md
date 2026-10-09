@@ -1171,6 +1171,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveBudgetBound.lean`: The concrete natural-valued budget is bounded uniformly by logical volume times width to the certified exponent 1−296/10^11, including natural floor division and all fixed coefficients. This proves the analytic bound without assuming a runtime recurrence; actual recursive execution must still meet the budget.
 
+- `Machine/Shared50RecursiveBudgetAssembly.lean`: Symbolic arithmetic absorbs all actual node controller joins, header-return costs and literal-schedule overhead into the natural recursive budget, using only positive logical volume and reduced role volume bounded by parent volume. Raw fixed coefficients avoid expanding enormous closed constants during proof checking.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

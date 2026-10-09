@@ -16,7 +16,8 @@ attribute [local irreducible] Shared50PieceSchedule.pieces Shared50RecursiveCall
 def base (k : ℕ) := RecursiveDigitRoleBank.coefficient+134+k
 
 def node (k : ℕ) :=
-  Shared50RecursiveNodeBoundary.entryConstant+Shared50RecursiveNodeBoundary.exitConstant+
+  (74+RecursiveRowsNode.rowConstant roleCount+RecursiveRowsNodeRoleBank.constant roleCount)+
+    (128+RecursiveRowsNode.rowConstant roleCount)+
     (Shared50PieceSchedule.pieces.map (Shared50RecursivePieceExecution.overhead k)).sum+135+k
 
 /-- The target budget includes all actual nonrecursive work and one same-volume
