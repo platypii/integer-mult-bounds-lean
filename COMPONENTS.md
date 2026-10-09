@@ -2594,6 +2594,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLateOriginalPipelineEndpoint.lean`: Fixed192-tape original-input later repair starts with literal source stream and retained original metadata, initializes its own scan, runs varying-control full-rank repair and erases final work. Exact output adds only repaired output10 at origin, retains source11 and restores all scan/key/private storage. Global ideal-permutation and sparse-density/full-volume identification remain separate.
 
+- `Machine/ActiveRepairEarlyOriginalPipelineBudgetWords.lean`: Bounds every actual extracted, sorted, replacement and repaired stream by record count, payload length and selected-hole count; prep and cleanup words are included.
+
+- `Machine/ActiveRepairEarlyOriginalPipelineBudgetArithmetic.lean`: Generic arithmetic absorbs the complete physical scan/sort/reinsert cost into record and sparse-hole volume, then into linear payload volume under explicit width and density hypotheses.
+
+- `Machine/ActiveRepairEarlyOriginalPipelineBudget.lean`: Actual clean original-input early endpoint has paid word-volume and linear Hoare runtime contracts including preparation and cleanup. The sparse-hole inequality remains an explicit mathematical premise.
+
+- `Machine/ActiveRepairLateOriginalPipelineBudget.lean`: Actual clean original-input later endpoint has paid word-volume and linear Hoare runtime contracts including preparation and cleanup. The sparse-hole inequality remains an explicit mathematical premise.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
