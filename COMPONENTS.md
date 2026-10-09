@@ -3088,6 +3088,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageOrderCompare.lean`: A real reusable comparison of original binary source/target slot words yields the early/late bit, preserves operand tapes and heads and erases its flag at paid cost. Actual stage geometry pays comparison and cleanup in linear full volume; source-order dispatch composition remains separate.
 
+- `Machine/ActivePrefixStageFullData.lean`: The sole caller inputs are original thirteen shape/node/slot words and raw array; every full-stage consumer descriptor is identified with its actual physical producer output.
+
+- `Machine/ActivePrefixStageFullCompose.lean`: Symbolic three-program composition retains default Lean limits while proving paid producer/action/cleanup execution on one fixed bank.
+
+- `Machine/ActivePrefixStageFullErase.lean`: Physical erasure of all twenty-two copied consumer words returns exactly the original caller, with linear original-volume cleanup cost.
+
+- `Machine/ActivePrefixStageFullEarlyRun.lean`: The complete fixed early original-input stage physically synthesizes descriptors, executes full selected low/high action and erases every consumer/private word on one original raw array.
+
+- `Machine/ActivePrefixStageFullLateRun.lean`: The complete fixed later original-input stage physically synthesizes descriptors, executes full selected low/high action and erases every consumer/private word on one original raw array.
+
+- `Machine/ActivePrefixStageFullBudget.lean`: Both original-only full-stage wrappers retain the certified compact-width exponent after paying all descriptor synthesis, duplicate copies, erasures and joins.
+
+- `Machine/ActivePrefixStageFullEndpoint.lean`: Original thirteen literal canonical words and heads survive; only the raw array changes and every generated/private tape is blank at the actual full-stage boundary.
+
+- `Machine/ActivePrefixStageFullSelected.lean`: Actual original-input stage endpoints have the exact complete selected XOR destination on every original address and preserve the whole original source slot.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
