@@ -2750,6 +2750,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairRecordFlattenPlaced.lean`: Actual unmarked-record decoder runs on arbitrary two-port caller banks with exact source erasure, raw output at origin, restored private storage and complementary frame.
 
+- `Machine/ActiveRepairLayoutRecordsDecodeCommon.lean`: Exact literal alphabet and tape bridge prepares the real unmarked record decoder from the actual repair output.
+
+- `Machine/ActiveRepairLayoutRecordsDecodeEarly.lean`: Actual early repair followed by physical decoding returns the ideal whole-width raw array, erases its repaired record buffer and restores decoder scratch while retaining original source and metadata.
+
+- `Machine/ActiveRepairLayoutRecordsDecodeLate.lean`: Actual later repair followed by physical decoding returns the ideal whole-width raw array, erases its repaired record buffer and restores decoder scratch while retaining original source and metadata; actual later payload schedule remains separate.
+
+- `Machine/ActiveRepairLayoutRecordsDecodeBudgetEarly.lean`: Complete early repair plus physical decoding has linear original payload-volume runtime; full-layout density and dyadic manuscript inequalities pay sparse holes without payload-one restriction.
+
+- `Machine/ActiveRepairLayoutRecordsDecodeBudgetLate.lean`: Complete later repair plus physical decoding has linear original payload-volume runtime; full-layout density and dyadic manuscript inequalities pay sparse holes without payload-one restriction.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
