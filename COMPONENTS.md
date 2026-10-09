@@ -3130,6 +3130,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageDispatchSelected.lean`: Runtime-derived selected destination matches every original array address; the whole actual dispatched array action squares to identity under original source disjointness.
 
+- `Machine/ActivePrefixStageWidthSelector.lean`: The real reusable width selector physically writes fixed one, compares the original f word, erases the generated constant and yields the packed-versus-singleton flag with paid cleanup.
+
+- `Machine/ActivePrefixStageWidthPlaced.lean`: The actual width selector and flag cleanup place on arbitrary original-width/flag ports while retaining all caller tapes and blank native private storage.
+
+- `Machine/ActivePrefixStageWidthBranch.lean`: Actual runtime width flag chooses a supplied packed or singleton program, clears the flag before the stage and charges only the chosen execution plus paid selection overhead; concrete whole-stage branch assembly remains separate.
+
+- `Machine/ActivePrefixStageWidthOriginal.lean`: The original stage f word at port seven physically determines packed versus singleton selection on the shared original caller; exact predicates and linear full-volume overhead are proved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
