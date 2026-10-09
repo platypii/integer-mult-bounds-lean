@@ -3632,6 +3632,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerStopBranch.lean`: Reads the physically computed runtime stop flag, reclaims all stop storage and reaches the selected finite continuation start with paid branching and cleanup. Concrete leaf/internal continuations and recursive execution remain open.
 
+- `Machine/UnitPhasePolynomialRecord.lean`: Computes sparse phase flags once from the actual live address, traverses every supplied polynomial coefficient with those flags and erases generated phase controls with paid runtime. The polynomial multiplicity descriptor is an explicit input at this layer.
+
+- `Machine/UnitPhasePolynomialRestore.lean`: Proves actual per-address polynomial traversal retains every nonstream caller cell and restores phase workspace, identifying the next exact stream endpoint for outer-loop composition.
+
+- `Machine/UnitPhasePolynomialFull.lean`: Composes live address extraction/increment, once-per-address phase computation and the physical inner polynomial loop with complete phase cleanup and actual next caller banks. Polynomial multiplicity remains supplied here.
+
+- `Machine/BlankWordOverwriteAt.lean`: Physically erases an old nonblank native word and installs an equal-width computed result at arbitrary distinct caller tape slots, charging copy, erase and head restoration while preserving the complementary frame.
+
+- `Machine/ContiguousBankPlacement.lean`: Places a complete subroutine in a contiguous caller bank between arbitrary prefix/suffix storage, proving literal replacement endpoints and exact preservation of all exterior tape cells and heads.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
