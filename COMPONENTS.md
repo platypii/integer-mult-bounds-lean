@@ -3168,6 +3168,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactBinaryBasisSchedule.lean`: Actual old/new binary bases determine literal selected-bit Stage instructions on a supplied consecutive-slot Node, retaining its width and selected column; fixed word length and independent-column basis-change semantics are proved. Ambient phase-basis extension, physical address-coordinate correspondence and repeated tape execution remain separate.
 
+- `Machine/ActivePrefixStageInverseMachine.lean`: A single proved involutive array machine implements its own reverse with unchanged runtime, and its actual two-run composition restores the complete caller at twice the cost plus one join.
+
+- `Machine/ActivePrefixStageFullInverseData.lean`: Both original-input full stage array actions are involutions under the actual ordered-slot disjointness proofs.
+
+- `Machine/ActivePrefixStageFullInverseRun.lean`: Both original-input physical full stage machines undo their forward action and make exact paid round trips, restoring every descriptor and private tape.
+
+- `Machine/ActivePrefixStageDispatchInverseRun.lean`: The fixed original-input runtime direction dispatcher executes its own inverse and exact paid round trip, retaining original slot words and clearing its computed flag.
+
+- `Machine/ActivePrefixStageInverseBudget.lean`: Full-stage and direction-dispatch round trips pay two physical executions and their join while retaining the certified width exponent.
+
+- `Machine/CompactActualStageInverse.lean`: Actual multiplier scalar, cutoff and descendant-row choices provide the packed original-input direction-dispatch reverse and round trip at density one, deriving readiness and repair allowances.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
