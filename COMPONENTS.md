@@ -2246,6 +2246,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixOffsetRepeatPlaced.lean`: Clean repetition on arbitrary rows/base/output caller ports returns exactly the flattened original-row copies, retaining all original descriptors, source and spectators and erasing four private tapes. No power-of-two row assumption or supplied repetition table is needed.
 
+- `Machine/ActiveRepairDestinationPatchOverwrite.lean`: Fixed five-tape runtime seek/copy/rewind physically overwrites one selected address field while retaining the replacement word, original offset/width descriptors, heads and every exterior bit. Exact charged time and a linear address-width bound are proved.
+
+- `Machine/ActiveRepairDestinationPatchData.lean`: Literal same-width field replacement preserves every outside bit, installs the exact selected interval and commutes for disjoint intervals. Connects the actual overwrite tape to the resulting finite address word.
+
+- `Machine/ActiveRepairDestinationPatchPlaced.lean`: Actual field overwrite on arbitrary caller replacement/destination/offset/width ports preserves the complementary bank and erases all nine shared private tapes, with exact physical runtime.
+
+- `Machine/ActiveRepairDestinationPatchRun.lean`: One fixed twenty-one-tape machine zero-extends a genuine short rank counter to the runtime full address width, then physically replaces V/T/U at three runtime offsets. Original rank, replacement words, seven descriptors and all heads survive; nine private tapes are erased. Exact output and cost800 times address width plus one, plus three are proved.
+
+- `Machine/ActiveRepairDestinationPatchGeometry.lean`: Encodes the unchanged active-layout rank including arbitrary rows, source/spectator bits, front slack, U/T tails and dirty back. With payload one and rows below the explicit row-bit capacity, the generated three-patch word is exactly the original physical index with V/T/U replaced.
+
+- `Machine/ActiveRepairDestinationPatchEndpoint.lean`: Instantiates the actual fixed twenty-one-tape rank reconstruction at active target/T/U offsets and proves output equals the full fixed-width destination rank, retaining every spectator. Canonical runtime offsets/widths are supplied; physical synthesis of these headers, guard/inverse/toggle computation and conditional full-key composition remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
