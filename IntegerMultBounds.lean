@@ -1891,3 +1891,5 @@ import IntegerMultBounds.Machine.ButterflyAxisBank
 import IntegerMultBounds.Machine.ButterflyAxisRun
 import IntegerMultBounds.Machine.SymbolTripleEncode
 import IntegerMultBounds.Machine.SymbolTripleStream
+import IntegerMultBounds.Machine.SymbolTripleDecode
+import IntegerMultBounds.Machine.SymbolTripleDecodeStream

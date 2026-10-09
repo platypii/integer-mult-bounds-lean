@@ -3338,7 +3338,11 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SymbolTripleEncode.lean`: An injective three-bit code for the six native coefficient symbols has a fixed two-tape physical encoder body. Three output bits are actually written, the source symbol is retained and both heads reach exact endpoints in five transitions.
 
-- `Machine/SymbolTripleStream.lean`: One fixed stream loop converts nonblank-interior native coefficient words to Boolean-symbol triples, retaining the source and framing arbitrary output backgrounds. Output length is exactly three times source length and total runtime is seven times source length; decoder and whole-stage representation transport remain open.
+- `Machine/SymbolTripleStream.lean`: One fixed stream loop converts nonblank-interior native coefficient words to Boolean-symbol triples, retaining the source and framing arbitrary output backgrounds. Output length is exactly three times source length and total runtime is seven times source length; the decoder is proved separately; whole-stage representation transport remains open.
+
+- `Machine/SymbolTripleDecode.lean`: Fixed two-tape decoder branches on the three actual Boolean tape cells and writes their recovered native coefficient symbol in seven transitions. All six valid symbol codes, including native blank, are recovered exactly; the source is retained with exact head endpoints.
+
+- `Machine/SymbolTripleDecodeStream.lean`: Fixed physical stream decoder reconstructs every native symbol from its actual three-bit code with exact whole-word output, retained source and arbitrary destination frame. Runtime is nine times native symbol count; whole-stage representation transport remains open.
 
 ## Compact
 
