@@ -3732,6 +3732,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativePhaseCoordinates.lean`: The row ordinal actually reached by the native basis word is exactly the original complex-edge phase readout address. The actual per-axis polynomial stream phase therefore has the original signed target-minus-source phase semantics under explicit width and no-negation-overflow guards; all-axis aggregation and recursive execution remain separate.
 
+- `Machine/FiniteTapeKernelDispatch.lean`: A real binary token decoder erases its PC and starts the selected member of a fixed finite kernel family with exact paid dispatch and restored token storage; concrete family correctness discharges its member contracts.
+
+- `Machine/CompactPolynomialPhaseDispatch.lean`: One fixed physical family selector executes the actual complex25 per-axis polynomial kernels, including a genuine zero-dimensional skip. Call sites physically emit the edge token, decode/erase it and execute the selected kernel without a supplied callback. Native source/result restoration and exact dispatch overhead are proved; aggregating all coordinate-axis phases in one traversal and full caller placement remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
