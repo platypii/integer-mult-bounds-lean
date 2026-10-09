@@ -33,5 +33,33 @@ theorem source_head (d : Inputs s)
     (hw : ∀ i j,(xs i j).1.length=w ∧ (xs i j).2.length=w) :
     (ActivePrefixStageNativePairRun.bank d (rows d xs hw)).head source=0 := rfl
 
+private theorem raw_setTape {k t a : ℕ} (c : Tapes k a) (j : Fin k) (i : Fin t)
+    (hij : i.val=j.val) (f : ℤ → Fin (a+4)) (p : ℤ) :
+    SharedPlacementAlphabet.setTape (SharedBankStageInput.raw c t) i f p=
+      SharedBankStageInput.raw (SharedPlacementAlphabet.setTape c j f p) t := by
+  apply congrArg₂ Tapes.mk <;> funext r
+  all_goals by_cases hr : r.val<k
+  all_goals simp [SharedPlacementAlphabet.setTape,SharedBankStageInput.raw,Function.update_apply,Fin.ext_iff,hr,hij]
+  all_goals intro he; have := j.isLt; omega
+
+/-- A physical replacement of the sole native source has exactly the bank
+needed by the next basis instruction; every original header and private tape
+remains unchanged. -/
+theorem replace_rows {B : ℕ} (d : Inputs s) (xs ys : ActivePrefixStageNativeRows.Rows d B) :
+    SharedPlacementAlphabet.setTape (ActivePrefixStageNativePairRun.bank d xs) source
+      (SymbolTriplePlaced.native ActivePrefixStageNative.ha (ActivePrefixStageNativeRows.flat ys)) 0=
+      ActivePrefixStageNativePairRun.bank d ys := by
+  unfold ActivePrefixStageNativePairRun.bank source
+  rw [SharedPlacementAlphabet.setTape_append_left]
+  apply congrArg (fun z : Tapes ActivePrefixStageNative.tapes Networks.Shared50ModularControl.prime => z.append (SharedBank.empty 1 Networks.Shared50ModularControl.prime))
+  unfold ActivePrefixStageNativeRows.bank
+  rw [raw_setTape _ (65 : Fin 66) ActivePrefixStageNative.raw rfl]
+  apply congrArg (fun z : Tapes 66 Networks.Shared50ModularControl.prime => SharedBankStageInput.raw z ActivePrefixStageNative.tapes)
+  unfold ActivePrefixStageNativeRows.core
+  rw [show (65 : Fin 66)=Fin.natAdd 65 (0 : Fin 1) from rfl,
+    SharedPlacementAlphabet.setTape_append_right]
+  congr 1
+  apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i <;> rfl
+
 end
 end IntegerMultBounds.Machine.NativePolynomialPhaseCaller
