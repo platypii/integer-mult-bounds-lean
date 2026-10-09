@@ -2130,6 +2130,28 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryPackedLateData.lean`: Actual late row-word arithmetic composes early, dirty-control load, early and unload with exact unrestricted packedLate values and unconditional dirty-control restoration. Guarded ideal toggling and arbitrary spectator preservation are proved; varying-prefix offset tables and active-target physical assembly remain separate.
 
+- `Machine/CompactActiveTargetLayout.lean`: Exact full-volume address bijection places the wide target inside active coordinates, with compact U/T fields, all dirty tails, active spectators, back and payload independent. Only compact width fits H; no target-capacity premise or target move is assumed.
+
+- `Machine/CompactActiveTargetGeometry.lean`: Literal active-target rotation fibers and both compact interchange rectangles equal the original unchanged array ordinal. Carved descriptor shapes, real source-prefix factors and the common back-rotation prefix are proved; physical varying-offset production and whole schedule remain separate.
+
+- `Machine/SelectedSourceBitsData.lean`: Least-significant-first source-bit selection has exact length and testBit semantics at rho+i*q, including zero selected digits and the source-span bounds.
+
+- `Machine/SelectedSourceBitsCore.lean`: Actual source-bit copy and runtime-q counted head movement retain arbitrary source cells and append exactly one physical selected bit with charged cost.
+
+- `Machine/SelectedSourceBitsBank.lean`: Three independent countdown clocks are physically initialized and erased on the exact original-header source/output bank, retaining originals and restoring all clock cells and heads.
+
+- `Machine/SelectedSourceBitsScan.lean`: Actual runtime-rho positioning followed by the runtime-n sampling loop returns the exact selected source word, preserving complete source cells without requiring interior blanks.
+
+- `Machine/SelectedSourceBitsRewind.lean`: Physical source and selected-output rewinds restore both heads from actual scan endpoints, retaining full words and exterior cells with charged source-span cost.
+
+- `Machine/SelectedSourceBitsRun.lean`: One fixed extraction machine reads the full f*q-bit original source and q/n/rho/f descriptors, returns exactly n selected source bits, retains originals and restores every private clock. Actual cost at most400 times original source length includes all positioning, scans, rewinds and cleanup.
+
+- `Machine/SelectedSourceBitsPlaced.lean`: Complete extraction on six injective caller ports preserves all complementary tapes and heads and restores nine appended private tapes. Output controls are physically derived from the full source address, with exact testBit semantics and400-times-source-length cost.
+
+- `Machine/BinaryVaryingSelectedOffsetGather.lean`: One fixed mask-shift gather reads a literal source-digit stream and independently varying controls using sole original q/b/count descriptors. Actual derived-header construction, scan and cleanup restore fourteen private tapes; output length and full320-times-stride cost are proved. Source/control stream generation and final head returns remain separate.
+
+- `Machine/BinaryVaryingSelectedOffsetData.lean`: Each physically gathered offset row equals mask-shift arithmetic applied to that row’s current source digits and controls. Arbitrary varying rows have exact widths and order; there is no fixed-control repetition hypothesis.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
