@@ -1822,3 +1822,6 @@ import IntegerMultBounds.Machine.ActivePrefixStageRuntimeSelected
 import IntegerMultBounds.Machine.ActivePrefixStageSlotRewrite
 import IntegerMultBounds.Machine.CompactActualStageRuntime
 import IntegerMultBounds.Machine.CompactActualStageRuntimeBudget
+import IntegerMultBounds.Networks.BinaryRowProgram
+import IntegerMultBounds.Networks.BinaryRowColumns
+import IntegerMultBounds.Machine.CompactBinaryBasisSchedule

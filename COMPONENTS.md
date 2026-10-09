@@ -3166,6 +3166,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualStageRuntimeBudget.lean`: One positive uniform constant bounds the actual all-width runtime stage on every admissible descendant row level by full physical volume times the certified compact-width exponent; both actual selectors and singleton execution are paid.
 
+- `Machine/CompactBinaryBasisSchedule.lean`: Actual old/new binary bases determine literal selected-bit Stage instructions on a supplied consecutive-slot Node, retaining its width and selected column; fixed word length and independent-column basis-change semantics are proved. Ambient phase-basis extension, physical address-coordinate correspondence and repeated tape execution remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -4127,6 +4129,10 @@ Bit and complex networks.
 - `Networks/AffineFieldCoordinates.lean`: H-before-D coordinate embedding and exact expansion of nonrecursive field operations to ordered scalar operations, including reflected subtraction as negative-one scaling then earlier-control shift. Proves operation/segment semantics and coefficient-map commutation; recursive interchange excluded.
 
 - `Networks/AffineFieldSegments.lean`: Splits field programs into nonrecursive runs separated by explicit recursive interchange boundaries. Exact flattening and run semantics, original membership and nonrecursive hypotheses for each run, exact recursive-call count, and number of runs are proved. Enables segment compilation without concealing recursive-call obligations.
+
+- `Networks/BinaryRowProgram.lean`: Every invertible binary matrix and genuine binary coordinate equivalence yields a literal finite chronological word of distinct source/target row additions, with exact matrix and basis-change execution; reversing the same word restores coordinates.
+
+- `Networks/BinaryRowColumns.lean`: Literal Boolean XOR execution of a fixed row-addition word on arbitrary columns equals its F2 coordinate action; a chosen basis word converts all columns exactly and its reversal restores their bits.
 
 ### Networks/Certificates/Paired49
 
