@@ -171,7 +171,9 @@ Machine model, execution, composition, and tape routines.
   flagged, and erase every scratch word. The counter, control and constants
   are preserved, the key holds the flag word of the repair scan, every head
   returns to its origin; linear cost. The placements and frames are
-  generated mechanically.
+  generated mechanically. Widths and digit counts are built into finite control
+  through counted copies and iterated guard/packed programs; this is a proved
+  program family, not the fixed runtime-driven key required by EndToEnd.
 - `Machine/OrderedSelect.lean`: ordered selection of records by a modular
   counter on six tapes (input, output, counter, addend, modulus, flag). One
   pass over nonblank records separated by single blanks: before each record the
@@ -1679,7 +1681,8 @@ Compact packed controls, repair, and density bounds.
   halts with the ideal stream on the output slot, within the key cost plus
   ten per record, three stream volumes, `74k + 5` extracted volumes,
   `2k + 3` per exceptional address, and `k + 14`. The key routine's tape
-  arithmetic is the parameter that remains open.
+  arithmetic is a program parameter; the concrete legacy instance still depends
+  on runtime dimensions in finite control, so uniform key compilation remains open.
 - `Compact/PowerTwoDigits.lean`: bit words as packed integers in a
   power-of-two radix: a word of `n·q` bits is the packed integer whose
   base-`2^q` digits are its `q`-bit block values, the gather gadget's word is
@@ -1722,7 +1725,9 @@ Compact packed controls, repair, and density bounds.
   routine's input, and the replaced bank is the scan bank with the key word
   written. With it, `repair_instance` is the complete repair machine: scan
   with the key routine, sort, strip and reinsert, carrying the unflagged
-  actual stream to the ideal stream within the pipeline's bound.
+  actual stream to the ideal stream within the pipeline's bound. Its placed key
+  still depends on q, b and the control count in finite control; replacing it
+  with one runtime-driven machine remains open.
 - `Compact/Layout.lean`: reversible whole-row splitting, preservation and
   completeness of every suffix, exact role volumes, padding to a multiple
   within twice the original volume, and ceiling-based reservation capacities.
