@@ -3768,6 +3768,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactPolynomialPhaseDispatchBudget.lean`: Actual fixed edge token emission and decode overhead are absorbed into the genuine polynomial phase serialized-volume bound. Applies to one per-axis pass; all-axis aggregation remains separate.
 
+- `Machine/RepeatedWeightedPhaseAccumulator.lean`: A fixed five-tape scanner per static weight list reads runtime f from an actual descriptor and sums one weight over each adjacent f-control block, traversing the control word once and restoring every clock. Exact accumulated phase and paid linear m-times-f cost are proved.
+
+- `Machine/SparseRepeatedPhaseFlags.lean`: One fixed twelve-tape machine physically extracts one sparse complete-address control word then accumulates fixed weights over runtime-width axis blocks. It restores the address head, descriptor, counter and private clocks, retaining exact phase flags with every extraction and scan transition paid.
+
+- `Machine/CompactAllAxisPhaseControls.lean`: All residual-slot and coordinate-axis controls form one contiguous chunk-stride sparse stream. Proves exact reversed slot/axis order, full span fit and equality of every extracted bit with the original phase codec. Original-header descriptor synthesis and tensor phase readout remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -2119,3 +2119,6 @@ import IntegerMultBounds.Schoenhage.Iter
 import IntegerMultBounds.Schoenhage.IterCorrect
 import IntegerMultBounds.Schoenhage.Layers
 import IntegerMultBounds.Machine.CompactPolynomialPhaseDispatchBudget
+import IntegerMultBounds.Machine.RepeatedWeightedPhaseAccumulator
+import IntegerMultBounds.Machine.SparseRepeatedPhaseFlags
+import IntegerMultBounds.Machine.CompactAllAxisPhaseControls
