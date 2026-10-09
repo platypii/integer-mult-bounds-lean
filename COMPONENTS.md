@@ -1964,6 +1964,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedTapeRepairLinear.lean`: Absorbs early exceptional density into full record volume under explicit record-width/setup/density inequalities, paying all preparation, key scans, sorting, reinsertion and cleanup. Later-gadget inverse/guard/key/pipeline execution remains unproved.
 
+- `Machine/CompactGadgetReservationHeadersRouting.lean`: Fixed routing shares the actual fifteen-tape header workspace across original-R row synthesis and header construction, while retaining arbitrary caller spectators.
+
+- `Machine/CompactGadgetReservationHeadersCaller.lean`: One fixed machine derives padded roleRows from originalR, synthesizes P/G/B/w, and executes the actual packed load on arbitrary retained spectators. No supplied derived shape words or action Hoare premise; the offset word remains a physical input.
+
+- `Machine/CompactGadgetReservationHeadersReserved.lean`: Specializes synthesized-header execution to the actual reservation endpoint, reading retained originalR and acting on the actual selected role tape. Other roles and originals are retained; payload contract is discharged internally.
+
+- `Machine/CompactGadgetReservationHeadersCost.lean`: Uniform physical header opcode/list cost charges arithmetic and descriptor erasure to a bound on actual stored values and canonical word lengths.
+
+- `Machine/CompactGadgetReservationHeadersVolume.lean`: All thirty-two header commands are proved to stay within actual role volume. Complete header preparation costs at most32*(4196+fixedBasePowerConstant2)*roleVolume.
+
+- `Machine/CompactGadgetReservationHeadersBudget.lean`: Entire original-R row synthesis, reservation shape preparation and actual load preserve the certified width exponent with constant depending only static role count; no extra chunk-size factor. Width is n*globalGuard; distinct narrower packed widths and generated-offset reservation routing remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
