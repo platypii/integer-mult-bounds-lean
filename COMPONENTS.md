@@ -3428,6 +3428,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageNative.lean`: One fixed finite machine destructively encodes canonical native coefficient words, executes the actual all-width/source-order stage, and destructively decodes its explicitly derived native output. Original stage descriptors and clean private storage remain, both heads normalize and obsolete native/Boolean words are erased. A generic composition proof supplies an actual fixed-machine existential witness without expanding giant control types; no stage oracle or supplied Boolean/output codec is required. Payload capacity must be a multiple of three. Full conversion and joins add thirty-two times native-symbol count plus twenty-two to the actual stage cost, preserving its certified width exponent with one uniform constant.
 
+- `Machine/ButterflyInverseAxisRouting.lean`: Physical inverse-axis routing uses an actual role-swapped destructive merge, preserving the forward routing cost and exact source erasure.
+
+- `Machine/ButterflyInverseAxisRun.lean`: Complete split/arithmetic/swapped-merge native inverse butterfly has clean bank endpoints and the same uniform linear serialized-volume bound as the forward axis.
+
+- `Machine/ButterflyInverseAxisPrepared.lean`: Places the complete inverse axis on physically installed controls while framing original shape and arithmetic headers.
+
+- `Machine/ButterflyInverseAxisOriginal.lean`: Original-header inverse body synthesizes all controls, executes the inverse axis, erases every generated descriptor and increments actual selected-axis header.
+
+- `Machine/ButterflyInverseAxisArray.lean`: Actual inverse-axis execution acts on the common literal global coefficient serialization with no free tape reorder.
+
+- `Machine/ButterflyInverseAxisSchedule.lean`: Fixed original-header counted inverse-axis schedule includes per-axis descriptor construction, arithmetic, swapped merge and cleanup with linear-volume-times-axis-count runtime.
+
+- `Machine/ButterflyInverseAxisSemantics.lean`: Every inverse-axis prefix preserves signed widths and Gaussian grid under the derived numerator guard.
+
+- `Machine/ButterflyInverseAxisCorrect.lean`: Actual normalized-start inverse schedules equal negative-phase BinaryWalsh kernelRun; range_correct/all_correct combine physical clean endpoints, exact existing-kernel semantics and paid cost. Independent two-pass reservation is proved separately.
+
+- `Machine/ButterflyInverseAxisContinuation.lean`: Inverse semantic continuation accepts an accrued Gaussian grid and precision stage, avoiding a fresh normalization premise within its explicit total-depth guard budget.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
