@@ -3202,6 +3202,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualPairScheduleBudget.lean`: One positive uniform constant bounds complete actual fixed-list execution by fixed word length times full physical volume and the certified width exponent, including pair saving, rewriting, execution, restoration and all joins.
 
+- `Machine/ActivePrefixStagePairInverse.lean`: Reversing the actual literal stage list undoes its complete array action; the physical reverse has exactly the forward charged sum, restores the complete caller, and paid forward/reverse round trips retain the certified width exponent, including the empty word.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
