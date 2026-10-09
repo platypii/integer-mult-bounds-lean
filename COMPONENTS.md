@@ -1217,6 +1217,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RowPaddingConstructed.lean`: One fixed twelve-tape padding or cropping program generates both span descriptors from retained canonical prefix, row, rounded-row and suffix dimensions, executes the physical grouped scan and erases every generated counter. Exact serialized array endpoints, restored payload origins and entirely blank workspace; complete runtime at most 413 times padded volume.
 
+- `Machine/SliceExponentPowers.lean`: One fixed nine-tape machine physically subtracts selected offset and width from the parent exponent, constructs both required fixed-radix powers, and erases temporary differences. Original exponent, offset and width are retained; complete runtime is linear in a dominating volume.
+
+- `Machine/ArbitrarySliceDimensions.lean`: One fixed seventeen-tape machine constructs all three canonical arbitrary-window slice dimensions from six original headers and runtime offset/width controls. Original inputs are retained, every power/difference/intermediate product is erased, and the exact slice dimensions cost at most 700 times parent volume. Physical header installation is separate.
+
+- `Machine/ArbitrarySliceHeaders.lean`: One fixed eighteen-tape wrapper physically saves six parent headers, constructs runtime slice dimensions, replaces occupied fields, and erases generated descriptors. Paid restoration returns the exact original headers and older frame stack. Entry costs at most 900 times volume and return at most 128 times volume; offset/width controls and all scratch endpoints are exact.
+
+- `Machine/ArbitraryWidthSchedule.lean`: The literal power-piece schedule has computed offsets and depths and composes to the exact full chunk transpose. Each slice has an actual fixed recursive root execution contract with certified budget and exact serialized endpoints. Installed slice headers are an explicit premise; runtime schedule construction and whole driver remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

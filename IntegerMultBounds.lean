@@ -822,3 +822,7 @@ import IntegerMultBounds.Machine.FixedBasePowerDescriptor
 import IntegerMultBounds.Machine.RecursiveRowDivisor
 import IntegerMultBounds.Machine.RoundedRowDescriptor
 import IntegerMultBounds.Machine.RowPaddingConstructed
+import IntegerMultBounds.Machine.SliceExponentPowers
+import IntegerMultBounds.Machine.ArbitrarySliceDimensions
+import IntegerMultBounds.Machine.ArbitrarySliceHeaders
+import IntegerMultBounds.Machine.ArbitraryWidthSchedule
