@@ -1751,6 +1751,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinarySelectedOffsetPrepare.lean`: Fixed seventeen-tape preparation for the selected mask-shift offset load. From original b/q/n and one original control word, builds the complete regular temporary-address table and its physically repeated controls, retains originals and clears local clocks. Exact table/control words and all setup/copy/return costs are proved; selected gather, value linkage and final table/header erasure remain separate.
 
+- `Machine/BinarySelectedOffsetData.lean`: Literal selected mask-shift offsets over regular temporary addresses with physically repeated original controls. Exact source/control/output widths are proved, including zero digits.
+
+- `Machine/BinarySelectedOffsetGather.lean`: Actual fixed original-header mask-shift gather traverses the generated regular table and repeated controls, retains the original b/q/n and control word, and restores all generated shape/count metadata with charged runtime.
+
+- `Machine/BinarySelectedOffsetCleanup.lean`: Physically erases both generated streams and every derived width/range/count descriptor, rewinds the packed offset output and retains original headers/control. Exact whole-bank endpoint and every cleanup transition are proved.
+
+- `Machine/BinarySelectedOffset.lean`: Fixed thirty-one-tape selected mask-shift offset producer from original b/q/n and one original control word. Builds every table/control/header, executes the actual gather, erases generated inputs and private storage, and returns the exact packed offset word at origin. CostK*2^(n*b)*(n+1)*(q+b+1) includes zero digits; payload absorption requires an explicit record-width allowance. Caller repetition and full packed-gadget assembly remain separate.
+
+- `Machine/BinarySelectedOffsetValue.lean`: Each physically generated selected-offset row is exactly the packed2*z*w load for the first early-source update. Proves original-control alignment, complete literal row equality and integer offset value for every regular temporary address; no repeated controls or offset oracle are supplied.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
