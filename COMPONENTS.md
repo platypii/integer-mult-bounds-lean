@@ -1585,6 +1585,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/StreamedFiberTranslationAlphabet.lean`: Lifts the real fixed streamed-offset rotation to any larger finite alphabet with unchanged runtime, literal encoded array source, exact bit destinations, retained original Q/B/n headers and full control stream. The first four symbols preserve their actual blank/bit/separator identities, enabling placement with the binary interchange alphabet. Recurring markers and retained final offset remain explicit; initialization and normalization are separate.
 
+- `Machine/CountedPackedParityHeaders.lean`: Constructs gather headers [b,0,1,1,0,n] from only original canonical b/n on physical tapes, with paid zero/one initialization, exact source preservation and cleanup of all private header storage. Width one is supported without a stronger artificial width restriction.
+
+- `Machine/CountedPackedParityRun.lean`: One fixed nineteen-tape program extracts the lowest bit of every dirty b-bit source block into an n-bit control word, clocked by a literal dummy control word and original b/n headers. Source/control and original descriptors are retained, every head restored and fourteen private tapes returned wholly blank, with bound330 times full stride. Includes b=1 and n=0; later-source load/unload remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -1022,3 +1022,5 @@ import IntegerMultBounds.Machine.BinaryOffsetStreamRead
 import IntegerMultBounds.Machine.StreamedFiberTranslation
 import IntegerMultBounds.Machine.StreamedFiberTranslationArray
 import IntegerMultBounds.Machine.StreamedFiberTranslationAlphabet
+import IntegerMultBounds.Machine.CountedPackedParityHeaders
+import IntegerMultBounds.Machine.CountedPackedParityRun
