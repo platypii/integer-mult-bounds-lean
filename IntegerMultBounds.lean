@@ -2115,3 +2115,6 @@ import IntegerMultBounds.Machine.CompactReservationPaddingHeaderBudget
 import IntegerMultBounds.Machine.CompactReservationNativePaddingBudget
 import IntegerMultBounds.Machine.CompactReservationNativePaddingActualBudget
 import IntegerMultBounds.Machine.NativePolynomialPhaseCaller
+import IntegerMultBounds.Schoenhage.Iter
+import IntegerMultBounds.Schoenhage.IterCorrect
+import IntegerMultBounds.Schoenhage.Layers

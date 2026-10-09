@@ -5462,6 +5462,16 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   `u` and `v` from the half-block tapes give `u + 2^t v` and `u − 2^t v`
   modulo `2^N + 1` on the output tapes (`runs_bflyF`), within `O(N)` steps.
 
+- `Schoenhage/Iter.lean`: the transform as the tape computes it, layer by
+  layer over residues with one unary shift per block (`layerF`, `layerI`,
+  `kids`, `shiftsAt`, `fwdIter`, `invIter`).
+- `Schoenhage/IterCorrect.lean`: the iterated layers equal the recursive
+  transform over `ZMod (2^N + 1)` with `ψ = 2^(N/K)` (`fwdIter_eq_fwd`,
+  `invIter_eq_inv`), with value bounds and lengths.
+- `Schoenhage/Layers.lean`: the forward pair loop, block split, collection,
+  children's shifts and block loop on the 48-tape bank; one whole forward
+  layer computes `layerF` and `kids` exactly (`runs_blocksF`).
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
