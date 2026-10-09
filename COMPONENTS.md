@@ -2018,6 +2018,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PackedPrefixRepeatHeadersPlaced.lean`: Places the paid repetition-factor construction and actual L erasure on eight arbitrary caller ports. Preserves all caller spectators and the seven original descriptors, retains K on its upstream port and restores all forty native workspace tapes. Volume absorption and composition into the full load remain separate.
 
+- `Machine/CompactGadgetReservationHeadersCarvedReservationRouting.lean`: Routes the actual original-array pad/split/erase endpoint directly into synthesized carved-width reserved load setup. Retains original descriptors and every reservation spectator without assuming a supplied reservation-final bank.
+
+- `Machine/CompactGadgetReservationHeadersCarvedEndToEnd.lean`: Actual original-array padding, role splitting, carved-header setup and reserved load have exact payload semantics and a certified width-exponent bound including every join and cleanup. Only the explicit physical offset word remains to be connected to its generator; derived role/load headers remain retained for reuse.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
