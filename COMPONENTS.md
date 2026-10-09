@@ -1856,6 +1856,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryCorrectionOffsetSubtract.lean`: Complete nine-tape per-row subtraction from two literal packed operand tables and original canonical width/count. Physically initializes and clears clocks, erases both full operand tables, rewinds output and restores all private storage; cost at most160*N*(W+1) for positive N. Original-address operand construction remains separate.
 
+- `Machine/CompactGadgetReservationHeadersData.lean`: Runtime descriptor values for concrete reserved temp/control geometry: products, rounded capacities, nonnegative gaps and fixed-base powers from seven original K/d/G/n/activeAxes/roleRows/payloadWidth inputs.
+
+- `Machine/CompactGadgetReservationHeadersCore.lean`: A fixed canonical-bank compiler physically executes products, differences, rounding, powers, constants and erasure through one fifteen-tape shared private bank. Static slot commands do not encode runtime values in finite control.
+
+- `Machine/CompactGadgetReservationHeadersPowerRound.lean`: Paid fixed-base power and rounded-multiple commands construct actual canonical descriptor words and retain original source descriptors with private cleanup.
+
+- `Machine/CompactGadgetReservationHeadersWords.lean`: Literal forty-tape bank words identify original inputs, the four surviving P/G/B/w outputs, erased intermediate descriptors and blank shared scratch.
+
+- `Machine/CompactGadgetReservationHeadersOps.lean`: Physical original-input command rules discharge exact tape readiness, output words, source retention and cost for every arithmetic/erasure command in the reservation schedule.
+
+- `Machine/CompactGadgetReservationHeadersSchedule.lean`: One fixed thirty-two-command forty-tape schedule physically computes all concrete reserved-slot P/G/B/w headers from seven canonical originals, clears fourteen intermediate descriptors and all fifteen shared scratch tapes, and proves its full paid runtime. RoleRows is a supplied original child-boundary descriptor; synthesis from original R/static role count remains separate.
+
+- `Machine/CompactGadgetReservationHeadersEndpoint.lean`: The generated P/G/B/w tapes satisfy the actual original-header load Sources contract with canonical words and exact geometry values. Original seven descriptors remain unchanged, fourteen intermediates and fifteen private tapes are blank. Upstream role-row synthesis and whole reserve/load sequencing remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
