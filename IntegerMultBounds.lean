@@ -1007,3 +1007,5 @@ import IntegerMultBounds.Machine.ElementaryMultiplyCore
 import IntegerMultBounds.Machine.CountedPackedOriginalLine
 import IntegerMultBounds.Machine.CountedPackedRuntimeLine
 import IntegerMultBounds.Machine.DoubleClockReverseCopy
+import IntegerMultBounds.Machine.CountedPackedArith
+import IntegerMultBounds.Machine.CountedPackedInverse

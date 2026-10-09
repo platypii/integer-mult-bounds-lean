@@ -1557,6 +1557,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/DoubleClockReverseCopy.lean`: Fixed two-state machines use a literal bit word as a length clock to seek two source cells or copy two descending source cells per clock symbol. Exact twice-length execution retains every source/clock cell, preserves arbitrary target exterior and maps blank source cells to false bits, including empty clocks. Product-specific output semantics and final multiplication installation remain separate.
 
+- `Machine/CountedPackedArith.lean`: Fixed twenty-six-tape forward packed arithmetic composes five runtime-driven modular lines from original q/b/n and blank metadata storage. Exact packedEarly values, restored original descriptors and all fourteen private metadata tapes blank are proved, with uniform2669-times-full-stride cost. Intermediate payload words remain; reusable copy-back and payload erasure are separate.
+
+- `Machine/CountedPackedInverse.lean`: Fixed twenty-six-tape inverse packed arithmetic composes five runtime-driven lines, proves a true packedEarly preimage and restores original q/b/n and fourteen private metadata tapes with the same uniform stride bound. Intermediate payload words remain; physical permutation and reusable payload cleanup are separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
