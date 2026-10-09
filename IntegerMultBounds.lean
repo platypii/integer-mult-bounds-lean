@@ -997,3 +997,4 @@ import IntegerMultBounds.Machine.CountedGatherField
 import IntegerMultBounds.Machine.CountedGatherPadding
 import IntegerMultBounds.Machine.CountedGatherDigit
 import IntegerMultBounds.Machine.CountedGatherRun
+import IntegerMultBounds.Machine.CountedGatherMetadata
