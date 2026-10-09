@@ -3198,6 +3198,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStagePairBudget.lean`: Complete pair wrappers and fixed literal lists retain the certified width exponent; physical saving, rewriting, restoring and every join are paid, with only the fixed word length multiplying the uniform full-volume bound.
 
+- `Machine/CompactActualPairSchedule.lean`: Actual multiplier scalar/cutoff/global-row choices derive density-one repair allowances for every literal pair and execute the complete fixed list on original inputs, synthesizing readiness without supplied per-stage bounds or runtime branch decisions.
+
+- `Machine/CompactActualPairScheduleBudget.lean`: One positive uniform constant bounds complete actual fixed-list execution by fixed word length times full physical volume and the certified width exponent, including pair saving, rewriting, execution, restoration and all joins.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

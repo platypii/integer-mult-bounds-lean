@@ -1840,3 +1840,5 @@ import IntegerMultBounds.Machine.ActivePrefixStagePairData
 import IntegerMultBounds.Machine.ActivePrefixStagePairRun
 import IntegerMultBounds.Machine.ActivePrefixStagePairSchedule
 import IntegerMultBounds.Machine.ActivePrefixStagePairBudget
+import IntegerMultBounds.Machine.CompactActualPairSchedule
+import IntegerMultBounds.Machine.CompactActualPairScheduleBudget
