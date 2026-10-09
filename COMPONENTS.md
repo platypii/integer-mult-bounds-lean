@@ -2258,6 +2258,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairDestinationPatchEndpoint.lean`: Instantiates the actual fixed twenty-one-tape rank reconstruction at active target/T/U offsets and proves output equals the full fixed-width destination rank, retaining every spectator. Canonical runtime offsets/widths are supplied; physical synthesis of these headers, guard/inverse/toggle computation and conditional full-key composition remain open.
 
+- `Machine/ActivePrefixControlOffsetData.lean`: The complete generated control-mask stream uses selected source bits of each actual prefix rank. Exact length and per-prefix toggleMask identity are proved; the auxiliary width-n projected source is only a paid physical clock.
+
+- `Machine/ActivePrefixControlOffsetBank.lean`: Original eight-descriptor caller bank generates a width-n clock projection, full source projection and current source controls. Exact gathered bank equals the canonical control-mask offsets, retaining all original descriptors.
+
+- `Machine/ActivePrefixControlOffsetRun.lean`: One fixed forty-one-tape machine physically constructs derived headers, both prefix projections, all varying controls and control-mask offsets from sole original descriptors. Every setup/extraction/gather stage has an actual charged contract.
+
+- `Machine/ActivePrefixControlOffsetCleanup.lean`: Physically erases clock/source/control streams and all five generated descriptors after the control-mask gather, leaving only original descriptors and exact offsets at origin with all private tapes blank.
+
+- `Machine/ActivePrefixControlOffset.lean`: Complete fixed varying control-mask producer, including actual source-address extraction and full metadata/stream cleanup, has a uniform constant times2^W*(W+1) bound. This supplies B for the B-minus-A correction; subtraction and payload rotation are separate.
+
+- `Machine/ActivePrefixControlOffsetPlaced.lean`: Actual control-mask production on arbitrary original-eight-plus-output caller ports retains every descriptor and spectator and restores forty-one private tapes, with unchanged certified linear prefix-table runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
