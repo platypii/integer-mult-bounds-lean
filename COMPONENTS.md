@@ -2792,6 +2792,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixDirtyControlConjugationPlaced.lean`: All four compact conjugations run on arbitrary seventeen-port caller banks, changing only the array and restoring all native scratch; geometry/header synthesis remains separate.
 
+- `Machine/ActivePrefixDirtyControlSourceGeometry.lean`: The literal shifted active-after source and compact-T controls give the later source-loading producer shape; original full-array volume and unchanged payload allowance pay its load cost.
+
+- `Machine/ActivePrefixDirtyControlSequenceData.lean`: Literal later schedule data on one unchanged array has three actual producer shapes and thirty caller ports; supplied prepared headers contain only canonical numeric geometry.
+
+- `Machine/ActivePrefixDirtyControlSequenceStages.lean`: All six actual later stages execute on one common bank with exact caller framing and private cleanup: early four loads, source loading, repeated early loads and source unloading.
+
+- `Machine/ActivePrefixDirtyControlSequenceRun.lean`: The complete prepared-header later-source schedule physically performs twelve swaps and ten rotations with exact full-array endpoint, retained numeric descriptors and blank scratch; original header synthesis and global permutation semantics remain separate.
+
+- `Machine/ActivePrefixDirtyControlSequenceBudget.lean`: The entire prepared-header later schedule retains the certified full-volume sublinear width-exponent bound, including all stage joins and load costs.
+
+- `Machine/ActivePrefixDirtyControlSequencePlaced.lean`: The complete prepared later schedule runs on arbitrary thirty-port caller banks, retaining all descriptors and spectators and restoring native scratch; original-input header preparation remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
