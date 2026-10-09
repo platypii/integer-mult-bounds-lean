@@ -2496,6 +2496,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixCompactConjugationPlaced.lean`: Both complete compact conjugations on nineteen arbitrary caller ports retain original/prepared header words and all caller spectators, changing only payload and restoring all appended private storage.
 
+- `Machine/ActiveRepairEarlyKeyOriginalData.lean`: Original geometric/source/b words and genuine current rank form the input bank; parser/patch and all address-dependent slots start blank. Header/key/cleanup endpoints share exact caller states.
+
+- `Machine/ActiveRepairEarlyKeyOriginalValid.lean`: Original widths and packing identities imply every runtime parser, source, inverse and destination patch premise for the actual early key; no computed starts are supplied.
+
+- `Machine/ActiveRepairEarlyKeyOriginalRun.lean`: Fixed126-tape original-input early key physically generates parser8/patch7, executes the full varying-current-address key and erases all fifteen headers. Exact final bank changes only key and runtime is linear in address width.
+
+- `Machine/ActiveRepairEarlyKeyOriginalGeometry.lean`: Both literal before/after source placements derive every original width bound and field fit from compact capacity, active geometry and source containment.
+
+- `Machine/ActiveRepairEarlyKeyOriginalPlaced.lean`: Arbitrary forty-two-port original-input caller placement retains all originals/spectators and restores126 appended private tapes, with the actual original-header generation and erasure costs.
+
+- `Machine/ActiveRepairEarlyKeyOriginal.lean`: Complete original-width early key endpoint requires no supplied parser/patch starts, source control word, local rank or destination. Final packing parameter synthesis, scan initialization and repair assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
