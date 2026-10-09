@@ -3548,6 +3548,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualNativeBudget.lean`: One fixed native stage machine has a uniform actual original-polynomial-volume cost bound with the certified stage exponent. Multiplying descendant costs by their exact role divisor recovers the single global padding, whose overhead is at most two; stored signed guard widths and Boolean conversion contribute only a fixed factor. No recursive network or repeated-call execution is supplied by this cost-row bridge.
 
+- `Machine/BinaryDescriptorQueueCleanup.lean`: Physically rewinds the literal generated descriptor queue from EOF, moves to its origin and erases the whole word and boundary marker, restoring blank storage and head zero with all transitions paid.
+
+- `Machine/CompactComplexRootPieceCleanup.lean`: Erases the completed actual root queue and all four generated exponent/left/width/control descriptors, restoring the exact fresh numeric controller and queue while retaining the entire appended native/stack bank.
+
+- `Machine/CompactComplexRootPieceRun.lean`: One fixed original-header root enumeration machine now includes both paid entry and paid exit, returning every numeric/queue tape to its original fresh state. Actual recursive callback execution remains an explicit exact Hoare contract, not a closed recursive dispatch proof.
+
+- `Machine/CompactComplexControllerNativeFrame.lean`: Places genuine sixty-six-tape native subroutines into the original native bank while preserving every controller, queue and appended persistent-storage cell/head. The larger native-stage machine requires separate workspace placement.
+
+- `Machine/CompactComplexControllerHeaderStack.lean`: Saves native child headers seven/eight/nine on a chosen appended stack and physically restores them after destination erasure, preserving all other controller/native/storage cells. The caller must choose persistent stack slots beyond any appended native-stage workspace.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
