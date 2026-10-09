@@ -21,7 +21,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (6/9) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
 | Exact multiplication, parameters, time bound | §8 | 🟡 (4/6) | ⬜ (0/2) |
-| End-to-end theorem `EndToEnd` | — | 🟡 (1/4) | 🟡 (1/4) |
+| End-to-end theorem `EndToEnd` | — | 🟡 (2/5) | 🟡 (2/5) |
 
 ## 1. Machine model and target statement (§2)
 
@@ -497,6 +497,7 @@ The final section theorem is complete in `BinaryInterchangeRun.runs` and `Binary
 | Subcomponent | Files | Mathematics | Tape | Notes |
 | --- | --- | --- | --- | --- |
 | Literal multiplication input front end | `MultiplicationInputSplit` | ✅ | ✅ | The actual fixed parser reads the literal input, retains it and produces reversed operands with linear cost, including empty lists. Multiplication execution and exact-width output installation remain separate. |
+| Original-input elementary multiplication core | `ElementaryMultiplyCore` | ✅ | ✅ | The actual fixed four-tape core computes the exact accumulator product from original packed input, with genuine halting and quadratic runtime. Fixed-width output installation and the fast branch remain open; this is the ordinary fallback core. |
 | Explicit multiplication program | — | ⬜ | ⬜ | |
 | Correctness on every input length | — | ⬜ | ⬜ | Requires sections 2–9 |
 | Uniform runtime `O(n log^(1−83/10¹²) n)` | `Assembly` | 🟡 | ⬜ | `EndToEnd` reduced to a program running within a cost of the cost-table shape |

@@ -1549,6 +1549,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedGatherOriginalRun.lean`: One actual fixed gather constructs four suffix headers and two independent clocks from blank storage, executes the complete runtime-driven gather through caller-owned payload and original six headers, then physically erases every private tape. Exact gathered output, retained source/control and originals, arbitrary target exterior and a uniform169-times-full-stride bound include zero dimensions/counts; no prepared metadata or branch callbacks are supplied.
 
+- `Machine/ElementaryMultiplyCore.lean`: One fixed four-tape machine parses original packed input, physically positions the reversed operands and executes the literal Horner multiplier. The original input is retained and the literal accumulator has exact product value; equal-length runtime is at most24 times n squared plus n plus one, including empty operands. Exact twice-length MSB output installation and the fast path remain separate; no sublogarithmic claim is made.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

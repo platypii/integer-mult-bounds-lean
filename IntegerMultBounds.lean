@@ -1003,3 +1003,4 @@ import IntegerMultBounds.Machine.CountedGatherClockPair
 import IntegerMultBounds.Machine.CountedPackedShapeHeaders
 import IntegerMultBounds.Machine.MultiplicationInputSplit
 import IntegerMultBounds.Machine.CountedGatherOriginalRun
+import IntegerMultBounds.Machine.ElementaryMultiplyCore
