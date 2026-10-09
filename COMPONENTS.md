@@ -1525,6 +1525,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryAdjacentWidthSelectorDispatch.lean`: A real finite-flow composition connects the physical three-way selector to the selected supplied branch program and its genuine halt. Conditional branch contracts and all selector/jump/branch costs are proved. Instantiating the final concrete equal/adjacent machine is separate.
 
+- `Machine/BinaryInterchangeRun.lean`: A fixed concrete binary rectangular interchange machine reads the original five canonical headers, physically selects equal or adjacent-width branches, returns the exact transpose, and preserves all other caller tapes while restoring every private tape and head. Covers zero widths with no branch callbacks or derived-header inputs.
+
+- `Machine/BinaryInterchangeBudget.lean`: Proves one positive uniform coefficient bounds the actual comparison, dispatch and selected concrete branch runtime by original rectangular volume times max-one maximum width to the certified exponent 1−296/10^11.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

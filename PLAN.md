@@ -15,7 +15,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Machine model and target statement | §2 | ✅ (3/3) | ✅ (2/2) |
 | Composition, loops, frames, elementary streams | §2 | 🟡 (163/164) | 🟡 (145/156) |
 | Finite networks with a rank saving | §3 | ✅ (66/66) | 🟡 (1/42) |
-| Faster interchange of address chunks | §4 | ✅ (128/128) | 🟡 (102/125) |
+| Faster interchange of address chunks | §4 | ✅ (concrete endpoint) | ✅ (concrete endpoint) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (9/9) | 🟡 (4/6) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (6/9) |
@@ -273,6 +273,8 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 
 ## 4. Faster interchange of address chunks (§4)
 
+The concrete section endpoint is complete in `BinaryInterchangeRun.runs` and `BinaryInterchangeRun.uniform_bound`. Historical intermediate rows below retain their individual status; conditional contracts are not used as evidence of endpoint closure.
+
 | Subcomponent | Files | Mathematics | Tape | Notes |
 | --- | --- | --- | --- | --- |
 | Interchange recurrence and padding arithmetic | `Recurrence` | ✅ | — | `F k ≤ K (m^k)^τ` from `s/W ≤ m^τ`; digit pieces `O(e^τ)`; row, row-range, and radix padding bounds |
@@ -398,6 +400,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Caller-shared complete equal-width binary interchange | `BinaryRadixEqualShared` | ✅ | ✅ | The complete equal-width binary machine now operates through caller-owned source and original headers, paying copying and cleanup and restoring its entire private bank. It is ready for composition with the adjacent-width movement |
 | Complete adjacent-width binary interchange in both directions | `BinaryAdjacentWidthPrefixShared`, `BinaryAdjacentWidthRun` | ✅ | ✅ | Both adjacent-width binary directions now have complete actual original-header execution, exact rectangular transpose, blank private storage and uniform certified runtime. Instantiating the physical three-way width selector with equal and adjacent machines remains open |
 | Physical three-way binary width selector and paid dispatch rule | `BinaryAdjacentWidthSelector`, `BinaryAdjacentWidthSelectorDispatch` | ✅ | ✅ | The physical selector now distinguishes equal, longer-H and longer-D widths while restoring all tapes and its flag; its paid finite-control dispatch rule is proved. The final original-five-header binary wrapper still requires concrete branch instantiation |
+| Concrete original-five-header binary interchange endpoint | `BinaryInterchangeRun`, `BinaryInterchangeBudget` | ✅ | ✅ | The concrete §4 endpoint is complete: one fixed machine uses original five canonical headers, physically selects equal or adjacent widths, returns exact binary rectangular transpose, and restores all private storage. Its actual runtime, including comparisons and dispatch, has the certified exponent 1−296/10^11, including zero widths. Multiplication EndToEnd remains open. |
 | Fixed cyclic block controller | `FiniteFlow`, `FiniteReturnFlow` | ✅ | ✅ | One fixed finite controller supports real decoded returns, back-edges and self-edges; exact execution and charged jumps proved for finite block traces. Binding its blocks to the recursive algorithm and proving recursive termination/cost remain open |
 | Concrete frame costs and static call/return assembly | `RecursiveDescriptorFrames`, `RecursiveHeaderBounds`, `FiniteReturnStackAt`, `RecursiveFrameControl` | ✅ | 🟡 | Actual active/saved layout headers discharge canonical size bounds; physical frame costs are linear in logical child volume. Static call/body/return physically saves descriptors and PC, restores descriptors and dispatches from decoded PC with every join charged. Child body must return intact stacks and blank restoration destinations; recursive execution remains open |
 | Physical child-header cleanup and parent restoration | `BinaryDescriptorCleanupList`, `BinaryDescriptorFrameRestore`, `RecursiveHeaderRestore` | ✅ | ✅ | Real erasure of nonblank child headers precedes stack restoration into the same slots. Exact older stack/head and spectator preservation; actual old/current canonical layout paths give six-field cost (48*(log2 roles+2)+79) times child volume. No free reset; recursive child execution remains separate |
@@ -499,4 +502,3 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 - Finish the `NegacyclicKronecker` subroutine component.
 - Extend `PowerOfTwoExact` from two coordinates to `d`.
 - Compose the proved rational digit arithmetic into matrix routines and compile the finite network address permutations to literal tape steps.
-- Complete the §4 original-five-header binary wrapper: instantiate actual runtime comparison and dispatch among the complete equal, longer-H and longer-D machines, preserving every original header and returning all private banks blank. The total radix, equal-width binary and both adjacent-width wrappers are proved with exact transpose and the certified exponent.

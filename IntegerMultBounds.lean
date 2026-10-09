@@ -990,3 +990,5 @@ import IntegerMultBounds.Machine.BinaryAdjacentWidthPrefixShared
 import IntegerMultBounds.Machine.BinaryAdjacentWidthRun
 import IntegerMultBounds.Machine.BinaryAdjacentWidthSelector
 import IntegerMultBounds.Machine.BinaryAdjacentWidthSelectorDispatch
+import IntegerMultBounds.Machine.BinaryInterchangeRun
+import IntegerMultBounds.Machine.BinaryInterchangeBudget
