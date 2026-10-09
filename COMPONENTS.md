@@ -1539,6 +1539,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedGatherMetadata.lean`: A fixed ten-tape machine executes four immutable descriptor subtractions from six original gather controls to construct both suffix lengths. Original and derived literal cells, canonical values and the five digit-header sources are identified; complete derived-header erasure and linear setup/cleanup costs include zero dimensions. Sharing this bank with the gather and initializing its clocks remain separate.
 
+- `Machine/CountedPackedLine.lean`: A uniform thirteen-tape line executes the actual runtime-counted gather, physical source/control/offset rewinds, modular column transduction, offset erasure and accumulator/result rewinds. Exact result semantics retain all inputs and controls, restore every payload head, and have canonical runtime at most140 times total digit stride plus three accumulator lengths plus42, including zero cases. Shape metadata and complete multi-line packed-control execution remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

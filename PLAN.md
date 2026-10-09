@@ -16,7 +16,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Composition, loops, frames, elementary streams | §2 | 🟡 (163/164) | 🟡 (145/156) |
 | Finite networks with a rank saving | §3 | ✅ (66/66) | 🟡 (1/42) |
 | Faster interchange of address chunks | §4 | ✅ (concrete endpoint) | ✅ (concrete endpoint) |
-| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (12/12) | 🟡 (7/9) |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (13/13) | 🟡 (8/10) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (6/9) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
@@ -416,6 +416,7 @@ The concrete section endpoint is complete in `BinaryInterchangeRun.runs` and `Bi
 | Fixed runtime-counted packed-field primitives | `CountedGatherField`, `CountedGatherPadding` | ✅ | ✅ | Fixed-state field copying, source seeking and zero padding use runtime binary descriptors, retain complete spectators and restore controls, including zero counts. Digit and whole-gather composition, descriptor synthesis and replacement of the unrolled packed arithmetic remain separate. |
 | Uniform runtime-driven packed gather | `CountedGatherDigit`, `CountedGatherRun` | ✅ | ✅ | One fixed108-state machine reads field layout and digit count from runtime descriptors, emits the exact gathered word, and restores all controls with a linear total-stride bound, including zero counts. Metadata construction and integration into the modular packed updates remain separate. |
 | Runtime gather suffix-header construction and erasure | `CountedGatherMetadata` | ✅ | ✅ | Four real subtraction calls derive both suffix counts from the six original gather dimensions, retaining every original and physically erasing all four generated headers. Canonical values and digit sources are proved, including zero; shared gather composition and blank clock initialization remain separate. |
+| Uniform runtime-counted modular packed line | `CountedPackedLine` | ✅ | ✅ | The concrete fixed gather now composes with modular transduction, offset erasure and all physical rewinds on thirteen tapes, preserving all inputs and descriptors with a linear bound, including zero cases. Metadata setup and complete five-line packed arithmetic remain separate. |
 | Packed control gadgets | `PackedControl` | ✅ | ⬜ | Current packed arithmetic unrolls widths and digit counts into finite control; uniform runtime-driven composition, physical payload permutation and slot embedding remain open |
 | Ideal toggle permutation and invertibility | `Ideal`, `Permutations` | ✅ | — | Every address, including bad ones |
 | Exact destination repair | `Repair`, `ExactRepair`, `PackedInverse`, `PackedInverseValue`, `ToggleValue`, `GuardValue`, `KeyValue`, `KeyInstance` | ✅ | ✅ | Nine-tape inverse packed program undoes the four updates in reverse with negated offsets, linear cost, proved to recover the packed permutation's preimage; the ideal toggle is exclusive or with the control mask; the seven-tape guard test's flags decide `earlyGood`; the seventeen-tape key routine assembles rank split, guard test, inverse, toggle and the conditional key write, its words are the scan's key data for ranks in lexicographic order, and placed into the scan bank it meets the repair scan's key contract |
