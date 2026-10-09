@@ -3160,6 +3160,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageRuntimeSelected.lean`: The runtime-selected array action gives literal original source-selected XOR on target fields, preserves the full source and every other field, for every positive width.
 
+- `Machine/ActivePrefixStageSlotRewrite.lean`: Physical fixed-control replacement of original source and target slot descriptors between row-addition instructions scans and erases both old words, writes and rewinds the literal next pair, frames every other tape and pays all joins with a linear index-bound cost.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

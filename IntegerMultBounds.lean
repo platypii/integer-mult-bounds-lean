@@ -1819,3 +1819,4 @@ import IntegerMultBounds.Machine.ActivePrefixStageRuntimeRun
 import IntegerMultBounds.Machine.ActivePrefixStageRuntimeBudget
 import IntegerMultBounds.Machine.ActivePrefixStageRuntimeEndpoint
 import IntegerMultBounds.Machine.ActivePrefixStageRuntimeSelected
+import IntegerMultBounds.Machine.ActivePrefixStageSlotRewrite
