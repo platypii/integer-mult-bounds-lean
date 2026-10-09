@@ -1509,6 +1509,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryAdjacentWidthHeadersShared.lean`: Actually writes the zero high-count control and constructs P, binary-range times G, and binary-range times B from the four original P/G/B/width headers. Named movement source slots, literal canonical values, caller preservation and reverse erasure of every generated field have linear rectangular-volume bounds.
 
+- `Machine/BinaryAdjacentWidthMovementShared.lean`: One actual shared-source lifecycle constructs binary movement dimensions from only the original four P/G/B/width headers, physically copies the three execution headers, executes radix-two movement or inverse movement, and erases every generated and copied descriptor. All forty private tapes start and finish blank; exact movement words, arbitrary caller preservation and linear rectangular-volume runtime are proved without generated-header or preimage assumptions.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
