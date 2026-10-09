@@ -1837,6 +1837,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinarySelectedOffsetRepeatPlaced.lean`: Eight caller ports carry original b/q/n/P/H/L, control and output; the complete selected repetition appends/restores42 private tapes while preserving every complementary caller tape/head. Output coordinate semantics and explicit volume bound are proved; upstream geometry and full packed-gadget assembly remain separate.
 
+- `Machine/CountedRepairScanMetadata.lean`: Fixed twelve-tape runtime metadata constructor reads original q/b/n, derives nq/nb, and physically fills the actual unary sort selector and zero rank counter. Original descriptors are retained; generated widths and private work are erased.
+
+- `Machine/CountedRepairScanMetadataRun.lean`: Proves the complete selector/counter construction and cleanup with cost1000*(n+1)*(q+b+1), including zero digit counts and no supplied derived width words.
+
+- `Machine/CountedRepairScanSeed.lean`: Physically writes actual repair-stage marked sentinels and the initial counter separator into blank storage, with exact tape endpoints and a fixed paid cost.
+
+- `Machine/CountedRepairScanPrepare.lean`: Places physical seed and runtime metadata construction into the actual forty-two-tape repair bank. Produces exactly the scan bank from original source/control/q/b/n within1004*(n+1)*(q+b+1).
+
+- `Machine/CountedTapeRepairBank.lean`: Literal original-input and full repair-stage output banks, including the exact ideal stream on output10 and retained key scratch. Defines paid preparation plus scan/sort/strip/reinsert costs. Stage streams, selectors and sentinels remain explicit at the endpoint.
+
+- `Machine/CountedTapeRepairRun.lean`: One fixed forty-two-tape machine physically prepares scan metadata, invokes the fixed runtime-driven repair key and executes actual scan, radix sort, prefix stripping and reinsertion. The exact output is the ideal early permutation, with all preparation and execution charged. Uniform record-volume/density budgeting and reusable final stage cleanup remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
