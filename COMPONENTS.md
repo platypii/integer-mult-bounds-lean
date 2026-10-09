@@ -1545,6 +1545,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedPackedShapeHeaders.lean`: Constructs the six original gather headers for each of the three static packed-line shapes from caller-owned canonical q/b/n alone. Physically writes and erases temporary zero/one, copies all six headers, preserves the caller and erases all eight private tapes on cleanup; setup and cleanup are linear in q+b+n+1. No derived-header input is supplied.
 
+- `Machine/MultiplicationInputSplit.lean`: A fixed three-tape thirteen-state parser preserves the original MSB-first x/separator/y input and physically writes least-significant-first copies of both operands to blank tapes. Literal endpoint, genuine halting and cost at most three x lengths plus two y lengths plus twelve include empty operands. Connecting multiplication and exact-width output installation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
