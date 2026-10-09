@@ -3348,6 +3348,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCallReturn.lean`: Actual recursive call occurrences have injective packed return addresses retaining role, slot and site. Physical fixed-width stack push and generic pop-to-continuation dispatch are proved; closed recursive controller assembly remains open.
 
+- `Machine/ButterflyAxisHeadersArithmetic.lean`: Physical arithmetic schedule derives signed guard width, selected-axis powers and coefficient stream products from original D,t,R,p headers.
+
+- `Machine/ButterflyAxisHeadersData.lean`: Exact whole-bank contract for original-shape axis descriptor synthesis with retained originals and clean arithmetic workspace.
+
+- `Machine/ButterflyAxisHeadersBudget.lean`: Uniform axis header synthesis cost paid by actual serialized coefficient volume, independent of selected axis.
+
+- `Machine/ButterflyAxisHeadersGeometry.lean`: Synthesized descriptor words equal the exact native axis split and scan geometry, including paired count and stream length.
+
+- `Machine/ButterflyAxisHeadersInstall.lean`: Physical installation of eight generated axis control words in distinct caller slots with retained originals and paid copy costs.
+
+- `Machine/ButterflyAxisHeadersCleanup.lean`: Physical erasure of generated axis descriptors and increment of actual axis counter with exact clean endpoint and volume bound.
+
+- `Machine/ButterflyAxisPorts.lean`: Injective native axis tape placements and prepared-header interfaces preserving the original shape bank.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
