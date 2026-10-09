@@ -3008,6 +3008,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsPayloadLateBudget.lean`: The entire original-input later payload/clean repair/copy-back stage retains the certified full-volume compact-width exponent, paying all metadata, actions, sorting, erasures and joins; a certified execution theorem combines its correctness and runtime.
 
+- `Machine/ActivePrefixStageParameters.lean`: Actual ordered source/target slots and node decomposition determine all active-target Parameters; compact capacity, active partition, highest geometry and dyadic side conditions are derived rather than supplied.
+
+- `Machine/ActivePrefixStageGeometry.lean`: Original distinct slot order derives early/late source offsets, full source fits, early disjointness and exact selected source bit positions in both directions.
+
+- `Machine/ActiveRepairLayoutRecordsAllowance.lean`: Canonical original row headers bound full repair address width by original layout bits plus log2(rows)+2, pay payload allowance and yield both dyadic density bounds at D=1 from the original size allowance. Global scalar sizing and initial row padding remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
