@@ -1167,6 +1167,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50RecursiveInductionBase.lean`: The actual fixed graph executes canonical binary width-one input to the complete transpose and decoded caller address, preserving all stacks/spectators and meeting the same logical-volume budget used by the recursive induction.
 
+- `Machine/Shared50RecursiveNodeExecution.lean`: Actual graph guard, physical node split, literal binary schedule, permuted merge, ancestor-header restoration and decoded return compose with exact canonical transpose output and fully charged runtime. Only the actual recursive child traces remain premises for depth induction.
+
+- `Machine/Shared50RecursiveBudgetBound.lean`: The concrete natural-valued budget is bounded uniformly by logical volume times width to the certified exponent 1−296/10^11, including natural floor division and all fixed coefficients. This proves the analytic bound without assuming a runtime recurrence; actual recursive execution must still meet the budget.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
