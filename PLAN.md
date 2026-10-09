@@ -18,7 +18,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Faster interchange of address chunks | §4 | ✅ (129/129) | 🟡 (125/126) |
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (35/35) | 🟡 (30/32) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
-| Gaussian resampling | §7 | ✅ (17/17) | 🟡 (6/9) |
+| Gaussian resampling | §7 | ✅ (17/17) | 🟡 (7/9) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
 | Exact multiplication, parameters, time bound | §8 | 🟡 (4/6) | ⬜ (0/2) |
 | End-to-end theorem `EndToEnd` | — | 🟡 (5/8) | 🟡 (5/8) |
@@ -475,8 +475,8 @@ The main binary interchange theorem is proved in `BinaryInterchangeRun.runs` and
 | Gaussian window sums of `Ã` | `GaussianLine`, `GaussianLineValue`, `WindowSum` | ✅ | ✅ | Fixed twenty-two-tape machine; its accumulators are `2^(p+1)` times the parts of `resampANum` (`WindowSum.accumulators_eq`); rounded weights are supplied as a word tape |
 | Off-diagonal map `Ẽ` | `OffDiagSum` | ✅ | ✅ | The same machine with stride one and a zero centre weight; accumulators are `2^p` times the parts of `offDiagNum` |
 | Neumann iteration `J̃'` | `NeumannWords`, `SubPass`, `NeumannStepLemmas`, `NeumannLoop` | ✅ | ✅ | Word-level recursion gives `J̃'` exactly (`resampJNumH_eq_iter`); the twenty-seven-tape loop runs `p` steps around the Gaussian line machine (`loop_hoare`) |
-| Assembled `B̃₀ = D̃' J̃' C` on tapes | `B0Words`, `B0Tape`, `B0Value` | ✅ | ✅ | Forty-two-tape machine: join, select, split, halve (one window-radius-zero step with weights `-2^(p-1)`), copy to the start tape, `p` Neumann steps, then `D̃'` (weights `-ρ(2^p d')`); runtime `b0Bound`; `b0_value` identifies its output words with the numerators of `resampB₀NumH p (⌊√p⌋+1) s t α w`; weight tables are supplied |
-| Weight evaluation | — | ✅ | ⬜ | Rounded Gaussian and `D̃'` weights; the manuscript cites Lemma 2.12 for roots of unity |
+| Assembled `B̃₀ = D̃' J̃' C` on tapes | `B0Words`, `B0Tape`, `B0Value` | ✅ | ✅ | Forty-two-tape machine: join, select, split, halve (one window-radius-zero step with weights `-2^(p-1)`), copy to the start tape, `p` Neumann steps, then `D̃'` (weights `-ρ(2^p d')`); runtime `b0Bound`; `b0_value` identifies its output words with the numerators of `resampB₀NumH p (⌊√p⌋+1) s t α w`; weight tables come from the table machines (`TableValue.b0_tables`) |
+| Weight evaluation | `PiApprox`, `ExpApprox`, `WeightTable`, `WeightNat`, `PiNat`, `PiTape`, `ExpTape`, `TableIdx`, `TabATape`, `TabETape`, `TabDTape`, `TableValue` | ✅ | ✅ | Integer tables within 2 units of `2^p` times the weights (`tables_ok`), from Machin's `π` and a Taylor `exp` in fixed point; register machines compute `π`, `exp` and the A, E, D and halving tables as `w`-bit word tapes (D and halving negated); `TableValue.a_tables` and `b0_tables` feed these words to the `Ã` window sums and the `B̃₀` machine with the tables of `tables_ok` |
 | Tensor interface line counts (Lemma 7.2 costs) | `LineCost` | ✅ | ⬜ | Linewise sums give `d C T X`, the Gaussian row times `T p`; at most `2 d T / r` lines; polynomial setup per line is `o(T p)` |
 
 ## 8. `O(n log n)` subroutine (Harvey–van der Hoeven)

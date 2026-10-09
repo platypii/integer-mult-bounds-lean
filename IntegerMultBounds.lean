@@ -769,6 +769,7 @@ import IntegerMultBounds.Resampling.TableIdx
 import IntegerMultBounds.Resampling.TabATape
 import IntegerMultBounds.Resampling.TabETape
 import IntegerMultBounds.Resampling.TabDTape
+import IntegerMultBounds.Resampling.TableValue
 import IntegerMultBounds.Resampling.B0Tape
 import IntegerMultBounds.Resampling.B0Value
 import IntegerMultBounds.Machine.RecursiveRowsNodeLayout

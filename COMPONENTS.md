@@ -3204,6 +3204,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   negated word `negv w v = (2^w − v) mod 2^w`, whose signed value is `−v`
   (`signed_negv`); a second output receives `s` copies of `negv w 2^(p−1)`.
 
+- `Resampling/TableValue.lean`: the table machines' words read back. Every
+  word has width `w` and magnitude at most `2^p` (`expNeg_le`: the E
+  exponent is at least one once `s ≤ α²(t − s)`); A and E words have signed
+  value the table entry (`tabA_ok`, `tabE_ok`), D and halving words the
+  negated entry (`tabD_ok`). `a_tables` and `b0_tables` instantiate
+  `accumulators_eq_W` and `b0_value_W` with `tableA`, `tableE`, `tableD`.
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line
