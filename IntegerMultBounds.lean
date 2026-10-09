@@ -872,3 +872,5 @@ import IntegerMultBounds.Machine.RadixDigitMoveBlockCounts
 import IntegerMultBounds.Machine.RadixDigitMoveBlockPrepared
 import IntegerMultBounds.Machine.RadixDigitMoveBlockPlacement
 import IntegerMultBounds.Machine.RadixDigitMoveBlockExecution
+import IntegerMultBounds.Machine.ArbitraryWidthHighPrepare
+import IntegerMultBounds.Machine.FixedBaseDescriptorQuotient

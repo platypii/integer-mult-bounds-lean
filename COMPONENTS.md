@@ -1299,6 +1299,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixDigitMoveBlockExecution.lean`: One fixed machine and its inverse exchange a radix digit across arbitrary spectator and suffix blocks, from sole prefix/spectator/suffix controls. Every derived count, clock, tracker and role tape is erased; payload is rewound. Tape count is 2Q+18 and runtime is at most (1516Q+11403) times volume. The repeated high-field joining/separation loop remains separate.
 
+- `Machine/ArbitraryWidthHighPrepare.lean`: One fixed nineteen-tape program constructs k=clog_m(e), D=W^k, rho=clog_(q²)(D), R=q^(2rho) and the rounded multiple Rprime from the sole positive canonical runtime width. All intermediate workspace and the unused envelope are erased. Exact manuscript ceiling, divisibility and overshoot formulas are proved; construction costs constant(q) times rounded rows. Paid cleanup erases all five derived descriptors and retains only the original width.
+
+- `Machine/FixedBaseDescriptorQuotient.lean`: One fixed fourteen-tape program replaces its sole canonical runtime descriptor by the canonical quotient by a compiled fixed base and physically erases the remainder. All thirteen private tapes are blank again. Exact divisible suffix shrinking and a fixed-base linear-input-value bound support the repeated high-digit movement controller.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
