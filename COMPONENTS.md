@@ -2918,6 +2918,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveTargetHighestPairOriginalBudget.lean`: The complete original-input highest-bit machines have uniform linear full-volume runtime including every metadata producer, action, erasure and sequencing transition.
 
+- `Machine/ActiveRepairLayoutRecordsAssemblyOriginalEarly.lean`: Actual original-fourteen-input early repair constructs all metadata and record count, formats the literal early-permuted full array, repairs and decodes it, cleans record buffers and restores the producer; exact ideal raw output and full linear volume bound are proved. Fifteen copied consumer metadata words remain retained.
+
+- `Machine/ActiveRepairLayoutRecordsAssemblyOriginalLate.lean`: Actual original-fourteen-input later repair for the before-source layout constructs metadata/count, formats and repairs the literal full array, decodes ideal output and restores the producer with a full linear volume bound. Fifteen consumer metadata words remain retained; the actual after-source payload connection is separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
