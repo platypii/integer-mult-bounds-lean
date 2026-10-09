@@ -3470,6 +3470,40 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualNativeStage.lean`: Actual multiplier scalar choices select a triple-aligned payload of six times(b+one) times two to ell, prove the existing payload allowance and a fixed-factor volume increase when b is positive. One fixed native stage machine and one uniform constant handle all eventual nonfallback node widths, source orders and padded descendant row levels; readiness and packed-cost allowances are derived from original choices, without caller-supplied branches or stage oracles.
 
+- `Machine/UnitPhaseAddressHeaders.lean`: Physically derives the full binary address width from original stage geometry, preserving original headers and charging all additions and multiplication.
+
+- `Machine/UnitPhaseAddressInitAt.lean`: Places actual live-counter initialization on caller address/counter ports with paid generated-width cleanup and complete spectator preservation.
+
+- `Machine/UnitPhaseStreamInit.lean`: Original geometric headers initialize the live full-width address counter and readout with all descriptor construction and cleanup charged. Does not identify the original row header with the full coefficient count.
+
+- `Machine/UnitPhaseStreamInitBudget.lean`: Bounds original-width initialization by actual payload capacity with every arithmetic, initialization and cleanup transition paid.
+
+- `Machine/UnitPhaseCountPower.lean`: Physically computes two to the full binary address width from original geometry, preserving original descriptors and cleaning arithmetic scratch.
+
+- `Machine/UnitPhaseCountHeaders.lean`: Physically multiplies original rows by two to the address width to obtain the full coefficient count, preserving original rows and clearing generated arithmetic storage.
+
+- `Machine/UnitPhaseCountTransfer.lean`: Copies the actual full coefficient count into the traversal clock and erases generated power/product descriptors with exact framed endpoints.
+
+- `Machine/UnitPhaseFullStreamInit.lean`: Initializes both the actual full coefficient count and live address counter from original headers, clearing all generated geometric and arithmetic descriptors.
+
+- `Machine/UnitPhaseFullStreamInitBudget.lean`: Pays full-address count generation and live-counter initialization within a uniform serialized-volume allowance.
+
+- `Machine/UnitPhaseFullStreamLoop.lean`: Actual counted phase traversal uses the generated full coefficient count, handles genuine final EOF without fabricated separators, and erases count/loop controls. Final live address/counter and stream heads remain explicit.
+
+- `Machine/UnitPhaseFullStream.lean`: One fixed phase-stream machine derives rows times two to address width and processes every coefficient with paid initialization, record bodies and count cleanup. Original headers are retained; final live address/counter and stream normalization remain separate.
+
+- `Machine/UnitPhaseStreamData.lean`: Derives record contexts from one literal finite coefficient array, including exact successive starts, widths and a genuine terminal EOF context.
+
+- `Machine/UnitPhaseStreamEndpoint.lean`: Proves exact emitted pointwise phase serialization and output head position for every counted prefix of the literal coefficient array.
+
+- `Machine/UnitPhaseFullStreamArray.lean`: Connects the actual full-count physical phase machine to literal finite coefficient arrays with exact pointwise output words and paid serialized-volume runtime.
+
+- `Machine/CompactLiteralUnitPhase.lean`: The physically derived sparse offset and original-address readout equal the actual ordered target-minus-source complex25 phase; signed coefficient words realize multiplication by that phase.
+
+- `Machine/CompactZeroUnitPhase.lean`: Zero residual dimension has identically zero ordered phase and exact coefficient identity, implemented by a tape-preserving halted machine with zero transitions.
+
+- `Machine/UnitPhaseGuard.lean`: Derives the strict signed-negation guard from the existing bounded-grid invariant and fallback signed width, without a caller-supplied extra numeric guard.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
