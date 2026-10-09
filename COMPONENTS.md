@@ -1453,6 +1453,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthExecutionPrivateHeadersMovement.lean`: Identifies all five actual movement header slots and their literal private-bank equality. The clock contains a canonical zero marker and must be physically initialized.
 
+- `Machine/ArbitraryWidthElementaryInitialize.lean`: Physically copies six retained caller headers into the actual elementary private bank and erases them afterward, starting and ending with wholly blank storage. Setup and cleanup cost at most sixty and fifty-four times a dominating volume.
+
+- `Machine/ArbitraryWidthElementaryInitializedRun.lean`: Composes actual header initialization, the complete elementary transpose and private cleanup. All private storage starts and ends blank; no ready-bank or generated-header premise is supplied. Exact transpose and bounded-width linear and certified-exponent budgets include every sequential edge.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
