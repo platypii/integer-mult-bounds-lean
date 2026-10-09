@@ -2426,6 +2426,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairRankHeadersEndpoint.lean`: Generated physical parser and patch descriptors equal the actual before/after-source full-layout headers. Geometry derives original width bounds; arbitrary caller placement and complete key assembly remain separate.
 
+- `Machine/ActivePrefixSelectedLoadPlaced.lean`: Complete original-input selected load on arbitrary eleven caller ports, with exact source specification and payload update, retained spectators, restored sixty private tapes and unchanged exact/linear runtime bounds.
+
+- `Machine/ActivePrefixCorrectionLoadPlaced.lean`: Complete original-input correction load on arbitrary eleven caller ports, framing complementary tapes and heads and restoring seventy-six private tapes with exact and absorption-linear bounds.
+
+- `Machine/ActiveRepairRankHeadersPlaced.lean`: Actual original-width repair-header producer and post-use eraser on twenty-five arbitrary caller ports. Ten originals are retained, fifteen real generated descriptors feed callers, forty-three private tapes are restored and spectators retain tape and head.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
