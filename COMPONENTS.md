@@ -2238,6 +2238,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairRankFieldsEndpoint.lean`: Actual before/after-source repair parsing returns exact layout V/T/U, full source and selected controls from a genuine short original-rank counter. Supplied original canonical field offsets/widths are retained, private storage erased and the linear address-width bound is paid. Descriptor synthesis, inverse/guard calculation and full destination-key writing remain open.
 
+- `Machine/ActivePrefixSelectedOffsetPlaced.lean`: Actual clean first-offset producer on arbitrary nine caller ports reads only the eight original canonical descriptors and blank output. Exact varying offsets at origin, all retained original/spectator tapes and forty-one blank private tapes are proved with unchanged linear prefix-table cost. Original-row repetition and direct active rotation composition remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
