@@ -16,7 +16,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Composition, loops, frames, elementary streams | §2 | 🟡 (163/164) | 🟡 (145/156) |
 | Finite networks with a rank saving | §3 | ✅ (66/66) | 🟡 (1/42) |
 | Faster interchange of address chunks | §4 | ✅ (129/129) | 🟡 (125/126) |
-| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (164/164) | 🟡 (158/161) |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (165/165) | 🟡 (158/161) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (7/9) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
@@ -568,6 +568,7 @@ The main binary interchange theorem is proved in `BinaryInterchangeRun.runs` and
 | BinaryCorrectionOffsetRow | `BinaryCorrectionOffsetRow` | ✅ | ✅ | Copies exactly one runtime-width row from both operands, invokes the actual subtraction rule with fresh zero borrow, and erases both row scratch words. Exact modular difference and cost15W+14*headerLength+46 are proved; borrows never cross row boundaries. |
 | BinaryCorrectionOffsetLoop | `BinaryCorrectionOffsetLoop` | ✅ | ✅ | Fixed nested row traversal executes the physical subtraction independently for each address row, with exact output concatenation, restored row scratch and all counted-loop transitions charged. |
 | BinaryCorrectionOffsetSubtract | `BinaryCorrectionOffsetSubtract` | ✅ | ✅ | Complete nine-tape per-row subtraction from two literal packed operand tables and original canonical width/count. Physically initializes and clears clocks, erases both full operand tables, rewinds output and restores all private storage; cost at most160*N*(W+1) for positive N. Original-address operand construction remains separate. |
+| Repeated offset action semantics | `BinaryRepeatedOffsetAction` | ✅ | — | The generated repeated parity and selected words drive the exact front-field translations of BinaryPackedOffsetData.result, with packed integer offsets, dirty-back preservation and arbitrary suffix records. Physical producer/action sequencing remains open. |
 | Packed control gadgets | `PackedControl`, `CountedPackedGuarded`, `CountedPackedLateRun` | ✅ | 🟡 | Fixed early and complete later-source arithmetic now execute from original runtime headers with literal guarded target toggles, dirty temporary restoration and full physical cleanup. Actual field swaps, per-fiber rotations and canonical offset-stream synthesis are available; composing the implicit-address payload permutation and embedding its slots in the reserved row layout remain open. |
 | Ideal toggle permutation and invertibility | `Ideal`, `Permutations` | ✅ | — | Every address, including bad ones |
 | Exact destination repair | `Repair`, `CountedRepairKeyRun`, `CountedRepairKeyValue`, `CountedRepairKeyScan` | ✅ | ✅ | One fixed thirty-tape machine driven by original q/b/n and control computes the exceptional flag and exact toggled-inverse destination from the actual short scan counter, returns the conditional key, restores every original head and erases all private words. Its forty-two-tape placement proves the actual rankFlag/rankKey scan contract within5100*(n+1)*(q+b+1). Outer scan initialization and full repair pipeline assembly remain separate. |

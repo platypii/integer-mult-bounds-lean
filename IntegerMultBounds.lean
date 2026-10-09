@@ -1161,3 +1161,4 @@ import IntegerMultBounds.Machine.CountedTapeRepairRun
 import IntegerMultBounds.Machine.BinaryCorrectionOffsetRow
 import IntegerMultBounds.Machine.BinaryCorrectionOffsetLoop
 import IntegerMultBounds.Machine.BinaryCorrectionOffsetSubtract
+import IntegerMultBounds.Machine.BinaryRepeatedOffsetAction

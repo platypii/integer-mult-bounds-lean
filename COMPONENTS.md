@@ -1639,6 +1639,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PackedOffsetPayloadPlaced.lean`: Shares caller payload, packed source and B/n/w descriptors directly through static injective wiring. Twelve private tapes start and return wholly blank; all caller spectators and heads are retained, with an exact canonical-array endpoint and paid power-synthesis cost.
 
+- `Machine/BinaryRepeatedOffsetAction.lean`: identifies the physically generated repeated parity and selected offset words with the actual swap/rotate/swap permutation. Proves exact packed parity and selected two-times-control-times-digit offsets and destination entries, retaining the dirty back coordinate and every suffix bit. Physical producer/action sequencing remains separate.
 - `Machine/BinaryPackedOffsetData.lean`: Exact swap/packed-back-rotation/swap array semantics. The front field reaches its modular offset destination, indexed by the original dirty back coordinate; that back coordinate and every suffix bit are retained literally.
 
 - `Machine/BinaryPackedOffsetRun.lean`: One fixed shared-caller machine executes two actual binary field interchanges around the placed original-header packed-offset rotation. Both private banks are blank on return, caller headers and packed source are retained, and every call and sequencing transition is charged. Complete packed-arithmetic and reservation assembly remains separate.
