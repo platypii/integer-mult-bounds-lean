@@ -2760,6 +2760,38 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsDecodeBudgetLate.lean`: Complete later repair plus physical decoding has linear original payload-volume runtime; full-layout density and dyadic manuscript inequalities pay sparse holes without payload-one restriction.
 
+- `Machine/ActivePrefixDirtyControlUSwapData.lean`: Literal compact-U/back interchange preserves all original physical coordinates; full-array reshape and original geometry descriptors supply its exact input bank.
+
+- `Machine/ActivePrefixDirtyControlUSwapRun.lean`: Actual compact-U/back swap synthesizes consumer headers from original geometry, executes binary interchange and erases the generated headers with exact full-array output.
+
+- `Machine/ActivePrefixDirtyControlUSwapBudget.lean`: Both physical compact-U/back interchange and its header lifecycle retain the certified full-volume width-exponent runtime.
+
+- `Machine/ActivePrefixDirtyControlUSwapPlaced.lean`: Nine original caller ports suffice for compact-U/back interchange; all private storage and complementary caller tapes are restored.
+
+- `Machine/ActivePrefixDirtyControlNegativePureData.lean`: Independent modular negation of pure parity rows gives the actual dirty-U unloading offsets, including zero-width rows.
+
+- `Machine/ActivePrefixDirtyControlNegativePureLoadData.lean`: Exact source/header/full-array data for dirty-U negative-pure loading connects literal negated offsets to physical row rotations.
+
+- `Machine/ActivePrefixDirtyControlNegativePureLoadRun.lean`: Physical negative-pure load runs actual offset generation, modular negation, row repetition and full-array rotation on one shared bank.
+
+- `Machine/ActivePrefixDirtyControlNegativePureLoadCleanup.lean`: Actual negative-pure load erases generated offsets and restores the complete private header and producer workspace.
+
+- `Machine/ActivePrefixDirtyControlNegativePureLoad.lean`: Complete negative-pure load has exact original-input array semantics, retained headers and linear full-volume cost under explicit absorption.
+
+- `Machine/ActivePrefixDirtyControlNegativePureLoadPlaced.lean`: Nine-port negative-pure load placement preserves arbitrary caller spectators and restores its sixty-five-tape private bank.
+
+- `Machine/ActivePrefixDirtyControlConjugationData.lean`: Four compact T/U conjugation kinds have exact swap/load/swap data and a seventeen-port original/prepared descriptor bank.
+
+- `Machine/ActivePrefixDirtyControlConjugationSwap.lean`: Actual T/back and U/back interchanges preserve every prepared load header and load-workspace tape.
+
+- `Machine/ActivePrefixDirtyControlConjugationMiddle.lean`: Real pure, negative-XOR and negative-pure middle load branches preserve compact swap storage and caller descriptors.
+
+- `Machine/ActivePrefixDirtyControlConjugationRun.lean`: Four actual compact swap/load/swap programs have exact full-array endpoints and complete scratch restoration, including dirty-U source loading and unloading.
+
+- `Machine/ActivePrefixDirtyControlConjugationBudget.lean`: Every actual compact conjugation has a uniform full-volume runtime with the original certified sublinear width exponent, charging both swaps and its entire load.
+
+- `Machine/ActivePrefixDirtyControlConjugationPlaced.lean`: All four compact conjugations run on arbitrary seventeen-port caller banks, changing only the array and restoring all native scratch; geometry/header synthesis remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
