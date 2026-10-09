@@ -2416,6 +2416,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixCompactNegativeLoadLayoutAfter.lean`: Exact after-source destinations translate original T by the generated negative parity-XOR following semantic T/back exchange; surrounding physical swap composition remains open.
 
+- `Machine/ActiveRepairRankHeadersArithmetic.lean`: Real copy/add/subtract/zero/erase command semantics and linear bounds for original-layout repair descriptor generation.
+
+- `Machine/ActiveRepairRankHeadersCommands.lean`: Fixed twenty-nine-command schedule derives parser and patch starts/widths from ten original geometric width descriptors, supporting both source orders.
+
+- `Machine/ActiveRepairRankHeadersData.lean`: Exact native forty-three-tape input/output banks for original geometric descriptors and generated parser/patch headers, with separate temporary and workspace slots.
+
+- `Machine/ActiveRepairRankHeadersRun.lean`: Actual original-input parser/patch header synthesis retains originals, erases arithmetic workspace and has a uniform linear address-width bound; post-use cleanup erases all fifteen generated headers.
+
+- `Machine/ActiveRepairRankHeadersEndpoint.lean`: Generated physical parser and patch descriptors equal the actual before/after-source full-layout headers. Geometry derives original width bounds; arbitrary caller placement and complete key assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
