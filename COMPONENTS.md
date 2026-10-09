@@ -1373,6 +1373,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixHighBlockJoinRun.lean`: The complete actual forward high-block join starts from sole original shape/count descriptors and blank private storage. It constructs movement controls, executes the real counted loop and erases every private descriptor. Exact ordered payload output and fixed-coefficient volume-times-count bound are proved; the actual high-depth selector retains every positive target width exponent.
 
+- `Machine/RadixHighBlockSeparateSemantics.lean`: Repeated trailing-digit movement separates the joined high block in exact original digit order. Its recursive array is proved equal to the literal whole-block separation, preserving every spectator and arbitrary payload symbol.
+
+- `Machine/RadixHighBlockSeparateLoop.lean`: The actual retained-exponent counted loop executes every inverse high-digit movement, with a computed step trace and exact whole-block separated endpoint. All clocks and shared arithmetic work are paid and restored; no callback execution oracle is supplied.
+
+- `Machine/RadixHighBlockSeparateRun.lean`: The complete inverse high-block separator constructs its movement controls from sole original shape/count headers, executes the actual counted loop and erases every private descriptor. The exact whole-block move and fixed-coefficient volume-times-count bound are proved, preserving every positive target width exponent for the actual runtime high-depth selector.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
