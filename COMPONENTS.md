@@ -1413,6 +1413,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighFoldHeadersCleanup.lean`: The actual six-target root-header erasure restores the complete folded-header input bank while retaining every original descriptor and blank arithmetic tape. Exact lifecycle restoration and a54-times-dominating-volume cleanup bound are proved.
 
+- `Machine/ArbitraryWidthPaddedPiecePlacement.lean`: The complete actual runtime piece dispatcher shares its true recursive I/O source with an arbitrary caller payload tape. Every caller tape outside the source and the entire private recursive/dispatcher/frame bank are preserved exactly.
+
+- `Machine/ArbitraryWidthPaddedPieceArrays.lean`: Literal bit-array serialization identifies the recursive I/O source with grouped row padding and cropping at descriptor-level volumes. All finite-index casts, zero fills, row views and exact consumed-word erasure are proved.
+
+- `Machine/ArbitraryWidthPaddedPiecePadding.lean`: Actual larger-alphabet constructed padding and swapped cropping have literal original/padded descriptor endpoints and canonical header contracts. Both data tape heads and private counters are restored, with the complete413-times-padded-volume bound in each direction.
+
+- `Machine/ArbitraryWidthPaddedPieceRun.lean`: One actual fixed program physically pads the rows, runs the complete piece dispatcher on the shared padded data, and crops back onto the original source. Its exact unpadded full transpose, restored work/private banks and natural runtime826-times-padded-volume plus the actual dispatcher cost plus two transitions are proved.
+
+- `Machine/ArbitraryWidthPaddedPieceShared.lean`: The actual complete pad-dispatch-crop program operates through an arbitrary caller source. It returns the exact unpadded transpose, preserves every other caller tape/head and restores its entire private padding/root/dispatcher bank without an execution callback.
+
+- `Machine/ArbitraryWidthHighCost.lean`: The sum of fully paid exchange-join, padding, actual low dispatcher, cropping, separation, five sequential edges and any fixed linear metadata coefficient has a positive coefficient times original volume times original width to the unchanged certified exponent. Numerical assembly is separate from physical execution, which is supplied by HighRun for the body.
+
+- `Machine/ArbitraryWidthHighRun.lean`: One actual fixed high-width body composes high-prefix exchange, ordered joining, physical row padding, the complete low-width dispatcher, physical cropping and inverse separation on the same caller source. The result is exactly the original full transpose and every private execution bank is restored. Runtime-selected depth/divisibility premises are derived internally, all five sequential edges are charged, and the actual natural runtime retains the certified exponent. Canonical derived headers are still explicit inputs; their constructors and branch/outer-wrapper assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
