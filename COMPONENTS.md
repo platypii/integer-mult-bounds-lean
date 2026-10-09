@@ -1994,6 +1994,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryParityXorOffsetLoad.lean`: Complete fixed shared-bank fourth-offset generation, actual original-header swap/rotate/swap and physical offset erasure, with exact negative parity-XOR destination semantics and blank private return. Physical action shape inputs are explicit; final source-prefix placement into the common early reservation remains separate.
 
+- `Machine/PackedPrefixRepeatHeaders.lean`: Physically derives L=2^(d*globalGuard-n*q)*2^(n*b)*actualGap from canonical original d/globalGuard/n/q/b and paid upstream gap/role-row words, retaining K=roleRows. Fixed fifteen-command forty-tape schedule clears every intermediate and private tape; actual post-use L erasure restores the original bank. Full exact setup/cleanup costs are proved; placement and volume absorption into the final prefix repeat remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
