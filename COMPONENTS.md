@@ -2446,6 +2446,24 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixLayoutAbsorption.lean`: Derives all actual target and before/after compact prefix-table absorption inequalities from one original-record condition: payload length exceeds the complete address width. Handles zero target width; connecting that condition to the final algorithm parameter choice remains separate.
 
+- `Machine/ActiveRepairEarlyKeyPlacement.lean`: Exact generic placement of actual clean early-key stages into a shared caller bank, with selected installation and complementary frame preservation.
+
+- `Machine/ActiveRepairEarlyKeyPatch.lean`: Real full-original-rank destination writer shares current early repair outputs and supplied patch descriptors with the common fifty-two-tape private bank.
+
+- `Machine/ActiveRepairEarlyKeyAppend.lean`: Actual conditional complete-destination key output composes flag inspection and full-rank append, preserving the genuine counter and charging all written bits.
+
+- `Machine/ActiveRepairEarlyKeyCleanup.lean`: Physically erases all nine current-address parsed, repaired and destination words while retaining original descriptors/counter and the written key.
+
+- `Machine/ActiveRepairEarlyKeyData.lean`: Exact thirty-two-caller-tape states for genuine-rank parsing, varying-control inverse/guard, full-rank patch, conditional key and cleanup.
+
+- `Machine/ActiveRepairEarlyKeyRun.lean`: One fixed eighty-four-tape early-key machine computes from genuine short rank and physically extracted varying controls, writes the full conditional destination and erases all scratch within29000 times address width plus one. Parser/patch descriptors remain supplied.
+
+- `Machine/ActiveRepairEarlyKeyValue.lean`: Actual early flag and repaired local fields equal rankFlag/rankKey; the physically reconstructed destination is the exact original-layout ordinal with untouched U/source/back/spectator bits.
+
+- `Machine/ActiveRepairEarlyKeyPlaced.lean`: Complete early full-rank key computation on thirty-two arbitrary caller ports retains every spectator and restores eighty-four appended private tapes with unchanged linear bound.
+
+- `Machine/ActiveRepairEarlyKey.lean`: Complete genuine-current-rank early key endpoint through physical parsing, inverse/guard, full-rank reconstruction, conditional key output and cleanup. Original geometric header-producer wiring and scan/pipeline integration remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
