@@ -3506,6 +3506,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualNativeWidth.lean`: One fixed native stage machine uniformly handles every actual stored signed field width above the precision allowance. Literal complex serialization includes both fields and separators and equals the selected native symbol capacity exactly; an explicit finite native row reconstructs that word and derives its nonblank converter condition from actual digits and delimiters. Readiness and packed costs follow from original multiplier choices at every eventual nonfallback descendant; a linear stored-width bound gives fixed-factor Boolean payload overhead, including arithmetic guard bits.
 
+- `Machine/CompactComplexControllerTapeAssoc.lean`: Zero-cost tape reassociation frames numeric controls, source queue and an arbitrary appended native/controller bank. Persistent recursive storage can sit beyond the native private workspace with exact Hoare preservation.
+
+- `Machine/CompactComplexRootPieceDigit.lean`: A fixed physical digit body reads the actual generated queue digit, executes its paid piece-clock callback loop, clears the clock and updates exponent, left boundary and width. Recursive callback execution remains an explicit Hoare premise.
+
+- `Machine/CompactComplexRootPiecePrefixes.lean`: Actual base-digit prefix counts and boundaries identify each emitted piece with a literal root Visit and prove the final left boundary exhausts the original active count.
+
+- `Machine/CompactComplexRootPieceController.lean`: Fixed EOF-controlled outer traversal uses the actual generated digit queue and pays all read, clock, update and callback costs. It preserves the numeric/source-queue frame around each supplied callback and supports arbitrary appended stacks; concrete recursive callback dispatch remains open.
+
+- `Machine/CompactComplexRootPieceEntry.lean`: Original retained active header and fresh controller storage physically generate and rewind the actual root digit queue, seed exponent/left/width and execute outer root enumeration. Exact literal Visit boundaries and full paid control/callback sum are proved. Recursive callback execution is still a hypothesis; final queue/counters, native-header installation and recursive stop/role/return assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
