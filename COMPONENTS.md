@@ -1849,6 +1849,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedTapeRepairRun.lean`: One fixed forty-two-tape machine physically prepares scan metadata, invokes the fixed runtime-driven repair key and executes actual scan, radix sort, prefix stripping and reinsertion. The exact output is the ideal early permutation, with all preparation and execution charged. Uniform record-volume/density budgeting and reusable final stage cleanup remain separate.
 
+- `Machine/BinaryCorrectionOffsetRow.lean`: Copies exactly one runtime-width row from both operands, invokes the actual subtraction rule with fresh zero borrow, and erases both row scratch words. Exact modular difference and cost15W+14*headerLength+46 are proved; borrows never cross row boundaries.
+
+- `Machine/BinaryCorrectionOffsetLoop.lean`: Fixed nested row traversal executes the physical subtraction independently for each address row, with exact output concatenation, restored row scratch and all counted-loop transitions charged.
+
+- `Machine/BinaryCorrectionOffsetSubtract.lean`: Complete nine-tape per-row subtraction from two literal packed operand tables and original canonical width/count. Physically initializes and clears clocks, erases both full operand tables, rewinds output and restores all private storage; cost at most160*N*(W+1) for positive N. Original-address operand construction remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
