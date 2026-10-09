@@ -1473,6 +1473,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighBranchPrepare.lean`: Physically constructs high movement dimensions and row suffix, joined padded-root headers, and the canonical-zero clock in three wholly blank banks. The reverse lifecycle erases all storage; exact banks, all sequential edges, and dominating original-volume setup and cleanup bounds are proved.
 
+- `Machine/ArbitraryWidthHighRuntimeHeaderWiring.lean`: Defines the actual exchange, movement and padding copy-source slots across the constructed dimension, joined-root and zero-clock banks. Literal tape/head source contracts, canonical generated movement words, row-padding headers and the low-root Headers interface are proved from the real metadata constructors.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
