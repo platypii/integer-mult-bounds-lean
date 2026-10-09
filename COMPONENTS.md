@@ -3014,6 +3014,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsAllowance.lean`: Canonical original row headers bound full repair address width by original layout bits plus log2(rows)+2, pay payload allowance and yield both dyadic density bounds at D=1 from the original size allowance. Global scalar sizing and initial row padding remain separate.
 
+- `Machine/CompactGlobalRowPadding.lean`: Original row axes dominate the full runtime recursive divisor; one global pad costs at most twice the original volume and supplies inherited depth divisibility, no per-node re-padding and exact role volumes.
+
+- `Machine/CompactGlobalReservation.lean`: Original global axis counts determine the complete compact shape; row and within-row bits sum to D*K, original volume is retained, padded volume doubles at most and every node compact field fits.
+
+- `Machine/CompactGlobalReservationRoles.lean`: Actual fixed-role row reservation runs with original canonical headers at current-node linear cost; each complete role is exactly one role-count share and descriptor paths inherit row divisibility and bounds from the original pad.
+
+- `Machine/ActiveRepairLayoutGlobalAllowance.lean`: Original D-axis geometry and once-padded descendant rows bound complete repair width by D*K+3, including actual descriptor paths, and pay both dyadic densities at one from explicit original precision/record bounds. Physical initial padding and scalar sizing remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
