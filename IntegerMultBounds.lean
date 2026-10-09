@@ -1860,3 +1860,4 @@ import IntegerMultBounds.Machine.RawLinearCombination
 import IntegerMultBounds.Machine.SharedControlPair
 import IntegerMultBounds.Machine.ButterflyNumerator
 import IntegerMultBounds.Machine.ButterflySigned
+import IntegerMultBounds.Machine.CompactComplexRecursiveGeometry

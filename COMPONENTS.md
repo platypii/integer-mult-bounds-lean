@@ -3232,6 +3232,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflySigned.lean`: Centered signed decoding with explicit coefficient guard identifies the actual numerator outputs as literal integers. The physical 48-tape kernel computes the exact manuscript complex butterfly with denominator precision increased by one and linear word-width runtime; record split/merge and global guard propagation remain separate.
 
+- `Machine/CompactComplexRecursiveGeometry.lean`: The actual active-axis count has the manuscript consecutive base-15625 power partition; canonical root/child-slot paths derive all node intervals, width, spectators and selected-column fields. Actual scalar choices derive Stage geometry and the fixed complex role count without a supplied active decomposition. Physical controller path/descriptor production and row-role call/stop state remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
