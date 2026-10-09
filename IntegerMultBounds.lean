@@ -1018,3 +1018,6 @@ import IntegerMultBounds.Machine.CountedPackedRecycle
 import IntegerMultBounds.Machine.CountedPackedReusable
 import IntegerMultBounds.Machine.CountedPackedGuarded
 import IntegerMultBounds.Machine.BinaryPackedFieldSwap
+import IntegerMultBounds.Machine.BinaryOffsetStreamRead
+import IntegerMultBounds.Machine.StreamedFiberTranslation
+import IntegerMultBounds.Machine.StreamedFiberTranslationArray

@@ -1577,6 +1577,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryPackedFieldSwap.lean`: Actual runtime-header binary field interchange retains complete payload records, arbitrary prefix/intervening/suffix fields and dirty back coordinates. Two real calls restore the entire caller payload and every private tape, charging both executions and the join; the uniform certified width exponent is retained. A data conjugation lemma identifies front actions by swap/back-action/swap. The physical packed-controlled back action and row reservation wiring remain separate.
 
+- `Machine/BinaryOffsetStreamRead.lean`: Fixed ten-state reader physically clears the previous marked offset, copies the next literal blank-delimited bit word, restores the offset head and advances the control head across its delimiter. The complete control tape is retained; exact cost is two previous lengths plus two next lengths plus eleven, including empty words.
+
+- `Machine/StreamedFiberTranslation.lean`: Fixed fifteen-tape243-state machine consumes one actual canonical offset word per prefix fiber, synthesizes split descriptors and physically rotates that fiber, retaining the entire control tape. Runtime is at most481 times payload volume plus23. Recurring metadata markers remain explicit inputs, final offset and advanced heads explicit outputs; initialization and normalization are separate.
+
+- `Machine/StreamedFiberTranslationArray.lean`: Connects the actual streamed-offset machine to literal finite arrays: each prefix/back/suffix entry reaches back address plus its physically read offset modulo Q. Exact source/control preservation, destination tape and advanced heads are proved, including empty prefix families. No payload permutation or preparation callback is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
