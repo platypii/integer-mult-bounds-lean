@@ -3260,6 +3260,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyGuard.lean`: Normalized dyadic input and prefix-grid growth imply a strict signed butterfly guard at every depth. Width p plus twice D plus four suffices and is at most three p plus four when D is at most p; full physical stream propagation remains separate.
 
+- `Machine/CompactFallbackBudget.lean`: The literal sum of the actually selected individual-axis costs is bounded by processed-axis count times a fixed per-axis volume allowance. Actual cutoff savings absorb this sum into an arbitrarily small certified dimension-power allowance uniformly in selected dimension and volume; physical kernels must supply the linear per-axis estimate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

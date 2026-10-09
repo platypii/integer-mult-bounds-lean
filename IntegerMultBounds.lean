@@ -1875,3 +1875,4 @@ import IntegerMultBounds.Machine.TwoTapeAt
 import IntegerMultBounds.Machine.ButterflyRecordRead
 import IntegerMultBounds.Machine.ButterflyRecordOutputData
 import IntegerMultBounds.Machine.ButterflyGuard
+import IntegerMultBounds.Machine.CompactFallbackBudget
