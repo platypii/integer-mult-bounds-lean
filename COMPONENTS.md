@@ -2040,6 +2040,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PackedPrefixRepeatHeadersReserved.lean`: Discharges the repetition-factor volume inequalities from the actual unchanged reservation geometry and carved control gap. Arbitrary-caller construction and real cleanup have uniform full-role-volume costs without supplied cost bounds.
 
+- `Machine/PackedEarlyRepeatHeaders.lean`: One fixed forty-tape fourteen-command schedule constructs both gap-source preceding and prefix-source repetition factors from original d/globalGuard/n/q/b and paid control-gap/row words, then erases every other intermediate. The actual two-factor cleanup restores the original bank; exact gap factorization connects both source orders without moving cells.
+
+- `Machine/PackedEarlyRepeatHeadersPlaced.lean`: Both physically generated early repetition factors share nine arbitrary caller ports with the seven retained original descriptors. Real construction and post-use two-word erasure preserve all caller spectators and restore every native workspace tape; final reservation caller placement remains separate.
+
+- `Machine/PackedEarlyRepeatHeadersBudget.lean`: Shared two-factor construction and physical cleanup cost at most14 and2 header coefficients times the actual complete reserved role volume. All powers and products fit by the actual geometry and carved-width capacities; no setup-cost premise or supplied repetition factor is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
