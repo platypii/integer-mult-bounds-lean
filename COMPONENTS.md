@@ -1395,6 +1395,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighExchangeShared.lean`: The actual complete high-prefix exchange is placed on an arbitrary caller source through the true recursive I/O slot. It preserves every other caller tape and the private recursive root/header/stack/control bank, with the exact high-exchanged binary word and its fully paid original-volume runtime. No callback execution trace is supplied.
 
+- `Machine/ArbitraryWidthHighMovementPlacement.lean`: Actual complete high-block joining and separation run through one physically shared source tape in an arbitrary caller bank. All other caller tapes and heads are preserved, the exact ordered payload is returned and the private movement bank is fully restored; runtime uses the actual sole-header Run programs.
+
+- `Machine/ArbitraryWidthHighPaddedBudget.lean`: The exact runtime high-row rounding increases original payload volume by at most two. The selected depth automatically supplies the actual low dispatcher width/divisibility conditions, so its physical execution requires no supplied depth or row-divisor oracle. Its complete runtime, including initialization and cleanup, satisfies twice its certified coefficient times original volume times original width to the unchanged exponent.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
