@@ -3074,6 +3074,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualStageAllowance.lean`: Every original-slot stage of the actual multiplier on once-padded descendant rows has paid complete repair width and both density bounds at constant one for sufficiently large inputs. Cubic size, selected count, guard and payload allowances are derived from actual d,K,p and literal polynomial-record bits; reservation fit remains the explicit nonfallback condition.
 
+- `Machine/CompactGuardGrowth.lean`: The actual precision logarithm is little-o of the actual chunk width, with arbitrary positive eventual coefficients.
+
+- `Machine/CompactReservationGrowth.lean`: Actual original row-axis ceilings and front/back reservation rounding yield total reserved axes little-o of actual dimension; all choices are the multiplier scalar parameters.
+
+- `Machine/CompactReservationCutoff.lean`: Exact fallback/nonfallback axis split, a twice-reservation cutoff retaining half the selected axes, eventual fit for any positive dimension fraction and actual physical initial-padding cost/record-width bridges. Individual fallback kernels and complete recursive layers remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
