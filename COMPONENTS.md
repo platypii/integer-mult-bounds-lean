@@ -1825,6 +1825,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactGadgetReservationEndpoint.lean`: Exact selected-role physical load endpoint, with original shape/offset headers retained, all native workspace erased and complementary role words unchanged. A generic paid reserve/load sequencing helper is available; synthesizing shape/offset inputs and unconditional complete assembly remain separate.
 
+- `Machine/BinarySelectedOffsetRepeatData.lean`: Literal selected-mask-shift row expansion repeats original-control offsets over trailing spectators and preceding prefix/dirty-back coordinates, with exact row counts and widths.
+
+- `Machine/BinarySelectedOffsetRepeatConstruct.lean`: Fixed fifty-tape selected-offset constructor from six original b/q/n/P/H/L descriptors and one original control word. Physically synthesizes W=n*q,N=2^(n*b),K=P*H*2^(n*q), produces all base selected offsets, repeats/consumes them and erases every derived descriptor and private tape.
+
+- `Machine/BinarySelectedOffsetRepeatBudget.lean`: Complete selected repetition cost, including original-control retention and all metadata/table/copy/cleanup costs, is absorbed into full payload volume under the explicit record-width allowance.
+
+- `Machine/BinarySelectedOffsetRepeatCoordinates.lean`: Exact fiber lookup over prefix/dirty-back/source/trailing spectators returns the packed2*z*w offset from the original control and actual temporary source coordinate, independent of dirty back/slack.
+
+- `Machine/BinarySelectedOffsetRepeatAlphabet.lean`: Complete selected-offset repetition on any larger alphabet, with unchanged physical runtime, retained originals/control and literal expanded output.
+
+- `Machine/BinarySelectedOffsetRepeatPlaced.lean`: Eight caller ports carry original b/q/n/P/H/L, control and output; the complete selected repetition appends/restores42 private tapes while preserving every complementary caller tape/head. Output coordinate semantics and explicit volume bound are proved; upstream geometry and full packed-gadget assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
