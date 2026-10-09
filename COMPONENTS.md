@@ -3368,6 +3368,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SymbolTripleClean.lean`: Fixed destructive native-to-Boolean and Boolean-to-native converters physically restore both heads and erase the obsolete source. Exact whole-word endpoints have blank source and head zero; every join, rewind and erasure is paid in bounds thirteen times native length plus ten and nineteen times native length plus ten. Native coefficient words require nonblank interiors for sentinel rewind; stage placement remains open.
 
+- `Machine/ButterflyAxisPrepared.lean`: Places the complete native butterfly axis on physically installed control headers, framing original shape and arithmetic headers.
+
+- `Machine/ButterflyAxisOriginal.lean`: One fixed original-D/t/R/p axis body synthesizes and copies every descriptor, executes split/arithmetic/merge, physically clears all generated headers and increments actual t with uniform linear-volume cost.
+
+- `Machine/ButterflyAxisArray.lean`: Global coefficient arrays serialize to the same literal stream under each selected-axis view. Exact reshaping identities connect actual tape split/merge to transformed global coefficients without a free reorder.
+
+- `Machine/ButterflyAxisSchedule.lean`: Fixed counted traversal executes consecutive selected axes, deriving and cleaning their descriptors on each iteration. Original D drives the full schedule without an extra supplied count; runtime is linear serialized volume times processed axis count. Guard propagation and decoded whole-transform assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

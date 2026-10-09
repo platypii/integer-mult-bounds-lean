@@ -1905,3 +1905,7 @@ import IntegerMultBounds.Machine.ButterflyAxisPorts
 import IntegerMultBounds.Machine.SymbolTripleArray
 import IntegerMultBounds.Machine.ActivePrefixStageTripleTransport
 import IntegerMultBounds.Machine.SymbolTripleClean
+import IntegerMultBounds.Machine.ButterflyAxisPrepared
+import IntegerMultBounds.Machine.ButterflyAxisOriginal
+import IntegerMultBounds.Machine.ButterflyAxisArray
+import IntegerMultBounds.Machine.ButterflyAxisSchedule
