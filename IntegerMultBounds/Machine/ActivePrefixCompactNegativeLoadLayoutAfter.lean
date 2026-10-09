@@ -1,0 +1,142 @@
+import IntegerMultBounds.Machine.ActivePrefixCompactNegativeLoad
+import IntegerMultBounds.Machine.ActivePrefixLayoutSwap
+
+/-! The physical compact negative parity-XOR action is the literal back-fiber rotation in
+the unchanged full array. These views are ordinal casts only, and their offset
+lookup is the actual current target parity after the compact T/back exchange. -/
+namespace IntegerMultBounds.Machine.ActivePrefixCompactNegativeLoadLayoutAfter
+open CompactGadgetReservationShape (Shape)
+open CompactActiveTargetGeometry
+open ActivePrefixLayoutShapes
+open ActivePrefixLayoutGeometry
+open RecursiveInterchangeRows (pack)
+open BinaryAddressTableData (row)
+
+variable (s : Shape) (p : Parameters s) (offset : ℕ) (hfit : offset+p.f*p.q≤p.after)
+
+def shape := backAfterShape s p offset hfit
+def suffix := compactSuffix s (p.n*p.b)
+
+theorem prefix_eq (rows : ℕ) :
+    ActivePrefixCompactNegativeLoadData.prefixCount (shape s p offset hfit) rows=
+      backPrefix s (p.n*p.b) (p.n*p.q) p.before p.after rows :=
+  (back_count s (p.n*p.b) (p.n*p.q) p.before p.after rows p.compactFits).symm
+
+theorem volume_eq (rows : ℕ) :
+    ActivePrefixCompactNegativeLoadData.volume (shape s p offset hfit) rows (suffix s p)=rows*s.recordWidth := by
+  unfold ActivePrefixCompactNegativeLoadData.volume
+  rw [prefix_eq]
+  exact back_volume s (p.n*p.b) (p.n*p.q) p.before p.after rows p.compactFits p.activeSize
+
+def view {rows : ℕ} (x : Fin (rows*s.recordWidth) → Bool) :
+    ActivePrefixCompactNegativeLoadData.Array (shape s p offset hfit) rows (suffix s p) :=
+  fun i => x (Fin.cast (volume_eq s p offset hfit rows) i)
+
+def prefixIndex {rows : ℕ} (x : Address s p rows) :
+    Fin (ActivePrefixCompactNegativeLoadData.prefixCount (shape s p offset hfit) rows) :=
+  Fin.cast (prefix_eq s p offset hfit rows).symm
+    (backPrefixIndex s (p.n*p.b) (p.n*p.q) p.before p.after rows x)
+
+def negativeOffset {rows : ℕ} (x : Address s p rows) :=
+  Counter.value (TwosComplement.negWord (Gather.gather xor (PackedArith.parity p.q p.b p.hb p.hbq)
+    (row (p.n*p.q) x.target.val) (ActivePrefixLayoutBack.afterControls s p x offset) p.n))
+
+/-- The physically emitted offset is the negative parity-XOR residue at
+this current address, including zero compact width. -/
+theorem negativeOffset_value {rows : ℕ} (x : Address s p rows) :
+    (negativeOffset s p offset x : ℤ)=
+      (-(Counter.value (Gather.gather xor (PackedArith.parity p.q p.b p.hb p.hbq)
+        (row (p.n*p.q) x.target.val) (ActivePrefixLayoutBack.afterControls s p x offset) p.n) : ℤ)) % 2^(p.n*p.b) := by
+  unfold negativeOffset
+  rw [BinaryParityXorOffsetValue.negWord_value]
+  simp only [Gather.gather_length,PackedArith.parity]
+
+theorem actual_offset {rows : ℕ} (x : Address s p rows) :
+    PackedOffsetPayloadValue.offset
+      (ActivePrefixCompactNegativeLoadData.offsets (shape s p offset hfit) rows) (p.n*p.b)
+      (prefixIndex s p offset hfit x).val=negativeOffset s p offset x := by
+  exact congrArg Counter.value (ActivePrefixLayoutBack.negative_after s p offset hfit x)
+
+theorem source_index {rows : ℕ} (x : Address s p rows) :
+    Fin.cast (volume_eq s p offset hfit rows)
+      (FiberLayoutData.index (prefixIndex s p offset hfit x)
+        (splitBack s (p.n*p.b) p.compactFits x.back).1
+        (pack (splitBack s (p.n*p.b) p.compactFits x.back).2 x.payload))=
+      CompactActiveTargetLayout.index s (p.n*p.b) (p.n*p.q) p.before p.after rows p.compactFits p.activeSize x := by
+  apply Fin.ext
+  change (FiberLayoutData.index (prefixIndex s p offset hfit x)
+      (splitBack s (p.n*p.b) p.compactFits x.back).1
+      (pack (splitBack s (p.n*p.b) p.compactFits x.back).2 x.payload)).val=_
+  have h := congrArg Fin.val (back_index s (p.n*p.b) (p.n*p.q) p.before p.after rows p.compactFits p.activeSize x)
+  exact h
+
+/-- Forward destination semantics for every original array bit, including
+arbitrary dirty back bits, active spectators and all payload coordinates. -/
+theorem entry {rows : ℕ} (array : Fin (rows*s.recordWidth) → Bool) (x : Address s p rows) :
+    ActivePrefixCompactNegativeLoad.result (shape s p offset hfit) rows (suffix s p)
+      (view s p offset hfit array)
+      (FiberLayoutData.index (prefixIndex s p offset hfit x)
+        ⟨((splitBack s (p.n*p.b) p.compactFits x.back).1.val+negativeOffset s p offset x)%2^(p.n*p.b),
+          Nat.mod_lt _ (by positivity)⟩
+        (pack (splitBack s (p.n*p.b) p.compactFits x.back).2 x.payload))=
+      array (CompactActiveTargetLayout.index s (p.n*p.b) (p.n*p.q) p.before p.after rows
+        p.compactFits p.activeSize x) := by
+  have h := ActivePrefixCompactNegativeLoad.entry (shape s p offset hfit) rows (suffix s p)
+    (view s p offset hfit array) (prefixIndex s p offset hfit x)
+    (splitBack s (p.n*p.b) p.compactFits x.back).1
+    (pack (splitBack s (p.n*p.b) p.compactFits x.back).2 x.payload)
+  change _=array (Fin.cast (volume_eq s p offset hfit rows) _) at h
+  rw [source_index] at h
+  have hoff : PackedOffsetPayloadValue.offset
+      (ActivePrefixCompactNegativeLoadData.offsets (shape s p offset hfit) rows)
+      (ActivePrefixCompactNegativeLoadData.width (shape s p offset hfit))
+      (prefixIndex s p offset hfit x).val=negativeOffset s p offset x := actual_offset s p offset hfit x
+  rw [hoff] at h
+  exact h
+
+/-- After the existing T/back exchange the same paid action rotates original
+compact T by negative parity-XOR of the unchanged active target. -/
+theorem after_swap_entry {rows : ℕ} (array : Fin (rows*s.recordWidth) → Bool) (x : Address s p rows) :
+    ActivePrefixCompactNegativeLoad.result (shape s p offset hfit) rows (suffix s p)
+      (view s p offset hfit array)
+      (FiberLayoutData.index (prefixIndex s p offset hfit (ActivePrefixLayoutSwap.swapT s p x))
+        ⟨(x.t.val+negativeOffset s p offset x)%2^(p.n*p.b),Nat.mod_lt _ (by positivity)⟩
+        (pack (splitBack s (p.n*p.b) p.compactFits x.back).2 x.payload))=
+      array (CompactActiveTargetLayout.index s (p.n*p.b) (p.n*p.q) p.before p.after rows
+        p.compactFits p.activeSize (ActivePrefixLayoutSwap.swapT s p x)) := by
+  have h := entry s p offset hfit array (ActivePrefixLayoutSwap.swapT s p x)
+  rw [ActivePrefixLayoutSwap.split_swap] at h
+  exact h
+
+/-- The whole compact rotation fiber occupies the original full back range,
+regardless of the width carved out for T. -/
+theorem containing_fiber :
+    2^ActivePrefixCompactNegativeLoadData.width (shape s p offset hfit)*suffix s p=
+      2^(s.H+s.B)*s.payload := by
+  change 2^(p.n*p.b)*(2^(s.H-p.n*p.b+s.B)*s.payload)=_
+  rw [←Nat.mul_assoc,←back_size s (p.n*p.b) p.compactFits]
+
+/-- Paid execution on the actual layout. The remaining size absorption is
+stated on the original whole back fiber, with no wide-target capacity premise. -/
+theorem runs_layout {a rows : ℕ} (hrows : 0<rows) (hp : 0<s.payload)
+    (habs : backWidth s (p.n*p.q) p.before p.after+1≤2^(s.H+s.B)*s.payload)
+    (hs : Fin 8 → List Bool) (rs bs : List Bool) (array : Fin (rows*s.recordWidth) → Bool)
+    (hv : ∀ i, Counter.value (hs i)=ActivePrefixParityOffsetBank.values (shape s p offset hfit) i)
+    (hc : ∀ i, GrowingCounterData.Canonical (hs i))
+    (hr : Counter.value rs=rows) (cr : GrowingCounterData.Canonical rs)
+    (hb : Counter.value bs=suffix s p) (cb : GrowingCounterData.Canonical bs) :
+    HoareTime (ActivePrefixCompactNegativeLoad.program (a := a))
+      (fun v => v=ActivePrefixCompactNegativeLoadHeaders.bank
+        (ActivePrefixCompactNegativeLoadData.base (shape s p offset hfit) rows (suffix s p) hs rs bs
+          (view s p offset hfit array)))
+      (fun v => v=ActivePrefixCompactNegativeLoadHeaders.bank
+        (ActivePrefixCompactNegativeLoadData.base (shape s p offset hfit) rows (suffix s p) hs rs bs
+          (ActivePrefixCompactNegativeLoad.result (shape s p offset hfit) rows (suffix s p)
+            (view s p offset hfit array))))
+      (ActivePrefixCompactNegativeLoad.constant*(rows*s.recordWidth)) := by
+  have h := ActivePrefixCompactNegativeLoad.runs_linear (a := a) (shape s p offset hfit) rows (suffix s p)
+    hrows (by unfold suffix compactSuffix; positivity)
+    (by rw [containing_fiber]; exact habs) hs rs bs (view s p offset hfit array) hv hc hr cr hb cb
+  rwa [volume_eq] at h
+
+end IntegerMultBounds.Machine.ActivePrefixCompactNegativeLoadLayoutAfter

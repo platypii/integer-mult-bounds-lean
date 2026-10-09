@@ -2400,6 +2400,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixCorrectionLoad.lean`: Complete original-input correction load has exact physical destination, retained originals, full cleanup and linear-volume cost under explicit prefix-table absorption; zero target width is supported.
 
+- `Machine/ActivePrefixCompactNegativeLoadData.lean`: Exact compact dimensions and repeated signed negative parity-XOR rows generated from original prefix fields.
+
+- `Machine/ActivePrefixCompactNegativeLoadHeaders.lean`: Actual count and compact-width synthesis for the negative parity-XOR load from original shape descriptors and rows.
+
+- `Machine/ActivePrefixCompactNegativeLoadRun.lean`: Fixed seventy-five-tape negative parity-XOR producer, actual row repetition and compact payload rotation compose on a shared fifty-six-tape private bank.
+
+- `Machine/ActivePrefixCompactNegativeLoadCleanup.lean`: Physically erases both negative offset streams and every derived descriptor, retaining originals and payload while restoring private storage.
+
+- `Machine/ActivePrefixCompactNegativeLoad.lean`: Complete negative parity-XOR compact action has exact physical execution and full cleanup with a linear-volume bound under explicit prefix-table absorption, including zero target width.
+
+- `Machine/ActivePrefixCompactNegativeLoadPlaced.lean`: Arbitrary eleven-port caller placement preserves all spectator tapes and heads and restores seventy-five appended private tapes with unchanged runtime.
+
+- `Machine/ActivePrefixCompactNegativeLoadLayout.lean`: Exact before-source compact layout action and signed negative parity-XOR offset value with full-record cost under whole-back absorption; physical swaps remain separate.
+
+- `Machine/ActivePrefixCompactNegativeLoadLayoutAfter.lean`: Exact after-source destinations translate original T by the generated negative parity-XOR following semantic T/back exchange; surrounding physical swap composition remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
