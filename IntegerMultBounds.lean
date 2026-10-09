@@ -1461,3 +1461,4 @@ import IntegerMultBounds.Machine.ActivePrefixCompactSwapBudget
 import IntegerMultBounds.Machine.ActivePrefixCompactSwapGeometry
 import IntegerMultBounds.Machine.ActivePrefixCompactSwapPlaced
 import IntegerMultBounds.Machine.ActivePrefixCompactSwapRoundtrip
+import IntegerMultBounds.Machine.ActivePrefixLayoutAbsorption

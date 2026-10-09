@@ -2444,6 +2444,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixCompactSwapRoundtrip.lean`: Two actual compact swaps restore the full payload, and a physical sandwich charges both swaps and joins around an explicit middle-machine contract. Instantiating the actual parity/negative middle actions remains separate.
 
+- `Machine/ActivePrefixLayoutAbsorption.lean`: Derives all actual target and before/after compact prefix-table absorption inequalities from one original-record condition: payload length exceeds the complete address width. Handles zero target width; connecting that condition to the final algorithm parameter choice remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

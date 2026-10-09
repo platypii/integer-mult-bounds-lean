@@ -16,7 +16,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Composition, loops, frames, elementary streams | §2 | 🟡 (163/164) | 🟡 (145/156) |
 | Finite networks with a rank saving | §3 | ✅ (66/66) | 🟡 (1/42) |
 | Faster interchange of address chunks | §4 | ✅ (129/129) | 🟡 (125/126) |
-| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (464/464) | 🟡 (411/415) |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (465/465) | 🟡 (411/415) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (7/9) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
@@ -868,6 +868,7 @@ The main binary interchange theorem is proved in `BinaryInterchangeRun.runs` and
 | ActivePrefixCompactSwapGeometry | `ActivePrefixCompactSwapGeometry` | ✅ | ✅ | Literal transpose destination equals unchanged-layout swapT on every original address, including dirty tails, spectators and payload bits. |
 | ActivePrefixCompactSwapPlaced | `ActivePrefixCompactSwapPlaced` | ✅ | ✅ | Actual original-descriptor compact swap on nine arbitrary caller ports preserves all caller spectators and restores the complete private bank. |
 | ActivePrefixCompactSwapRoundtrip | `ActivePrefixCompactSwapRoundtrip` | ✅ | ✅ | Two actual compact swaps restore the full payload, and a physical sandwich charges both swaps and joins around an explicit middle-machine contract. Instantiating the actual parity/negative middle actions remains separate. |
+| ActivePrefixLayoutAbsorption | `ActivePrefixLayoutAbsorption` | ✅ | — | Derives all actual target and before/after compact prefix-table absorption inequalities from one original-record condition: payload length exceeds the complete address width. Handles zero target width; connecting that condition to the final algorithm parameter choice remains separate. |
 | Packed control gadgets | `PackedControl`, `CountedPackedGuarded`, `CountedPackedLateRun`, `BinaryPackedEarlyRun`, `ActiveTargetRotation` | ✅ | 🟡 | Fixed-control early/later packed arithmetic and the complete front-target early kernel are proved, with exact full-array output and paid costs. Source inspection shows that kernel capacity nq≤H does not follow for the selected algorithm: the wide target remains active and only nb compact controls may be swapped. Direct active-target rotation is now proved in linear volume for arbitrary width. Actual varying-prefix source/dirty-control offset construction and the complete active-target early/later sequence remain open. |
 | Ideal toggle permutation and invertibility | `Ideal`, `Permutations` | ✅ | — | Every address, including bad ones |
 | Exact destination repair | `Repair`, `CountedRepairKeyRun`, `CountedRepairKeyScan`, `CountedLateRepairKeyRun`, `CountedLateRepairScan` | ✅ | 🟡 | Both fixed-control early and later key machines are proved from genuine short counters, with exact flags/destination ranks, restored originals and blank scratch. Their actual scan contracts cost5100 and10300 times full stride. The selected algorithm source bits vary with the array address; its full keys must derive those bits from the current source coordinates and include the remaining active/source spectators. That bridge remains open. |
