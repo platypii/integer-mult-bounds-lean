@@ -2580,6 +2580,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixEarlySequenceOriginalPlaced.lean`: Only twenty-three original caller ports are required: seven swap geometry words, packing factor, fourteen original layout/stage controls and array. No offset table/computed starts/f/suffix is supplied, spectators/private tapes are restored. Upstream reservation-width synthesis and packed-permutation identification remain separate.
 
+- `Machine/ActiveRepairEarlyOriginalPipelinePrepareCount.lean`: Generic physical descriptor-counted zero-word fill and rewind prepares scan selector and counter from a genuine runtime width, preserving source descriptors and clearing its three private work slots.
+
+- `Machine/ActiveRepairEarlyOriginalPipelinePrepare.lean`: Actual blank scan workspace receives every sentinel, unary selector and A-bit zero counter by reading the original address-width header; no prepared counter/marker words are supplied and cost is at most200 times A plus one.
+
+- `Machine/ActiveRepairEarlyOriginalPipelineCleanup.lean`: Actual erasure of sorted/extracted/replacement/flagged/unary/sentinel/counter work and head returns retain original source and repaired output, with explicit charges for every written word.
+
+- `Machine/ActiveRepairEarlyOriginalPipelineEndpoint.lean`: Fixed183-tape original-input early repair starts with literal record stream, original geometric/source descriptors and otherwise blank scan work. Actual preparation, varying-key scan/sort/reinsert and cleanup finish with only output10 added at origin, source11 retained and all scan/key/private workspace restored. Global ideal-permutation and density/full-volume identification remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
