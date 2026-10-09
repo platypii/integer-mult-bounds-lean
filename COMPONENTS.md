@@ -1553,6 +1553,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedPackedOriginalLine.lean`: One fixed seventeen-tape modular line constructs and erases all gather suffixes and both clocks from blank workspace, performs exact gathered column arithmetic, erases offset scratch and restores every payload head. Only the six original canonical gather headers remain inputs; they are retained, all six private tapes return blank, and the total uniform full-stride bound includes zero cases. Runtime q/b/n shape construction and multi-line composition are separate.
 
+- `Machine/CountedPackedRuntimeLine.lean`: One fixed twenty-two-tape line constructs shape headers from only original q/b/n, executes the original-header gathered modular arithmetic and erases all fourteen private tapes. Exact result semantics retain source/control/accumulator and original q/b/n, restore every payload head and offset scratch, and have uniform530-times-full-stride plus three accumulator lengths, including zero digits. The static shape kind and Boolean/rule operations are compile-time choices; no runtime dimensions appear in the program.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
