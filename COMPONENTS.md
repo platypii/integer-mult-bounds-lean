@@ -3590,6 +3590,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhasePolynomialFrame.lean`: The actual polynomial traversal preserves every nonstream cell and head, including node metadata, live full-address counter and outer count. Full once-per-address and outer node traversal composition remains separate.
 
+- `Machine/CompactComplexControllerHeaderReturn.lean`: Physical erasure of child headers precedes exact restoration of the parent header bank and older persistent stack snapshot, while retaining the computed native payload and every other caller cell.
+
+- `Machine/CompactComplexControllerReturnStack.lean`: Actual literal site/coordinate return addresses are physically pushed onto appended storage and popped into finite-family dispatch. The older entire program-counter tape/head is restored; full recursive dispatch execution remains separate.
+
+- `Machine/CompactComplexControllerExponent.lean`: Physically descends the live controller exponent using clean numeric scratch and restores the parent exponent on return, preserving the complete native and persistent-storage frame.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
