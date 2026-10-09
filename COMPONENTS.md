@@ -1547,6 +1547,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/MultiplicationInputSplit.lean`: A fixed three-tape thirteen-state parser preserves the original MSB-first x/separator/y input and physically writes least-significant-first copies of both operands to blank tapes. Literal endpoint, genuine halting and cost at most three x lengths plus two y lengths plus twelve include empty operands. Connecting multiplication and exact-width output installation remains separate.
 
+- `Machine/CountedGatherOriginalRun.lean`: One actual fixed gather constructs four suffix headers and two independent clocks from blank storage, executes the complete runtime-driven gather through caller-owned payload and original six headers, then physically erases every private tape. Exact gathered output, retained source/control and originals, arbitrary target exterior and a uniform169-times-full-stride bound include zero dimensions/counts; no prepared metadata or branch callbacks are supplied.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
