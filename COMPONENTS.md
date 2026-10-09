@@ -1731,6 +1731,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryAddressOffsetValue.lean`: Connects each literal generated offset row to the packed parity of the source address digits, with exact integer value and target modular range. No prepared offset table is assumed.
 
+- `Machine/CountedRankSplitCopy.lean`: Fixed runtime-counted bit copier reads actual blank-tail cells as zero, writes literal field words and retains source/control storage. No padded source word is assumed.
+
+- `Machine/CountedRankSplitPosition.lean`: Placed physical counted left walks restore source and destination heads while retaining caller tapes and erasing countdown workspace.
+
+- `Machine/CountedRankSplitData.lean`: Exact zero-extended low/middle field words for arbitrarily short rank counters, value splitting and in-range rank reconstruction without a stored-width premise.
+
+- `Machine/CountedRankSplitBank.lean`: Twelve-tape rank-split wiring derives n*q and n*b from original headers, copies both fields, physically rewinds all heads and erases generated dimensions with complete frame lemmas.
+
+- `Machine/CountedRankSplitRun.lean`: One fixed runtime-driven machine produces both literal rank fields from original q/b/n while preserving the original counter and every head, erasing all six scratch tapes. Exact paid budget is bounded by400*(n+1)*(q+b+1).
+
+- `Machine/CountedRankSplitEndpoint.lean`: Direct contract for the actual RepairScan growing counter with no padded/canonical stored-length premise. Both copied fields reconstruct the in-range rank, original counter/headers are retained and all private tapes are physically erased; full repair-key assembly remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
