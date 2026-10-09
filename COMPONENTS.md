@@ -2388,6 +2388,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixCompactParityLoadLayoutAfter.lean`: Exact after-source layout destinations identify the compact pure-parity action on original T after semantic T/back exchange; physical surrounding swaps are separate.
 
+- `Machine/ActivePrefixCorrectionLoadData.lean`: Literal repeated control-minus-selected offset rows and wide active-target payload dimensions from original shape and row count.
+
+- `Machine/ActivePrefixCorrectionLoadHeaders.lean`: Physically synthesizes rotation count and dimensions from original descriptors for the correction load, retaining all original inputs.
+
+- `Machine/ActivePrefixCorrectionLoadRun.lean`: Actual seventy-six-tape original-input correction production, row repetition and wide active-target rotation share one blank private bank.
+
+- `Machine/ActivePrefixCorrectionLoadCleanup.lean`: Erases both correction offset streams and all six generated rotation descriptors after the actual payload action, restoring auxiliary storage.
+
+- `Machine/ActivePrefixCorrectionLoadValue.lean`: Every actual current-prefix correction row is exactly varying-control minus selected-mask shift modulo the full target radix, with source field reconstruction and destination identity.
+
+- `Machine/ActivePrefixCorrectionLoad.lean`: Complete original-input correction load has exact physical destination, retained originals, full cleanup and linear-volume cost under explicit prefix-table absorption; zero target width is supported.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -16,7 +16,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Composition, loops, frames, elementary streams | §2 | 🟡 (163/164) | 🟡 (145/156) |
 | Finite networks with a rank saving | §3 | ✅ (66/66) | 🟡 (1/42) |
 | Faster interchange of address chunks | §4 | ✅ (129/129) | 🟡 (125/126) |
-| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (436/436) | 🟡 (383/387) |
+| Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (442/442) | 🟡 (389/393) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (7/9) |
 | `O(n log n)` subroutine | Harvey–van der Hoeven | 🟡 (15/16) | ⬜ (0/9) |
@@ -840,6 +840,12 @@ The main binary interchange theorem is proved in `BinaryInterchangeRun.runs` and
 | ActivePrefixCompactParityLoadPlaced | `ActivePrefixCompactParityLoadPlaced` | ✅ | ✅ | Places the complete compact pure-parity load on arbitrary eleven caller ports, preserves the complementary frame and restores sixty appended private tapes. |
 | ActivePrefixCompactParityLoadLayout | `ActivePrefixCompactParityLoadLayout` | ✅ | ✅ | Exact unchanged-layout compact pure-parity destinations and full-record cost, with explicit whole-back absorption; surrounding swaps remain separate. |
 | ActivePrefixCompactParityLoadLayoutAfter | `ActivePrefixCompactParityLoadLayoutAfter` | ✅ | ✅ | Exact after-source layout destinations identify the compact pure-parity action on original T after semantic T/back exchange; physical surrounding swaps are separate. |
+| ActivePrefixCorrectionLoadData | `ActivePrefixCorrectionLoadData` | ✅ | ✅ | Literal repeated control-minus-selected offset rows and wide active-target payload dimensions from original shape and row count. |
+| ActivePrefixCorrectionLoadHeaders | `ActivePrefixCorrectionLoadHeaders` | ✅ | ✅ | Physically synthesizes rotation count and dimensions from original descriptors for the correction load, retaining all original inputs. |
+| ActivePrefixCorrectionLoadRun | `ActivePrefixCorrectionLoadRun` | ✅ | ✅ | Actual seventy-six-tape original-input correction production, row repetition and wide active-target rotation share one blank private bank. |
+| ActivePrefixCorrectionLoadCleanup | `ActivePrefixCorrectionLoadCleanup` | ✅ | ✅ | Erases both correction offset streams and all six generated rotation descriptors after the actual payload action, restoring auxiliary storage. |
+| ActivePrefixCorrectionLoadValue | `ActivePrefixCorrectionLoadValue` | ✅ | ✅ | Every actual current-prefix correction row is exactly varying-control minus selected-mask shift modulo the full target radix, with source field reconstruction and destination identity. |
+| ActivePrefixCorrectionLoad | `ActivePrefixCorrectionLoad` | ✅ | ✅ | Complete original-input correction load has exact physical destination, retained originals, full cleanup and linear-volume cost under explicit prefix-table absorption; zero target width is supported. |
 | Packed control gadgets | `PackedControl`, `CountedPackedGuarded`, `CountedPackedLateRun`, `BinaryPackedEarlyRun`, `ActiveTargetRotation` | ✅ | 🟡 | Fixed-control early/later packed arithmetic and the complete front-target early kernel are proved, with exact full-array output and paid costs. Source inspection shows that kernel capacity nq≤H does not follow for the selected algorithm: the wide target remains active and only nb compact controls may be swapped. Direct active-target rotation is now proved in linear volume for arbitrary width. Actual varying-prefix source/dirty-control offset construction and the complete active-target early/later sequence remain open. |
 | Ideal toggle permutation and invertibility | `Ideal`, `Permutations` | ✅ | — | Every address, including bad ones |
 | Exact destination repair | `Repair`, `CountedRepairKeyRun`, `CountedRepairKeyScan`, `CountedLateRepairKeyRun`, `CountedLateRepairScan` | ✅ | 🟡 | Both fixed-control early and later key machines are proved from genuine short counters, with exact flags/destination ranks, restored originals and blank scratch. Their actual scan contracts cost5100 and10300 times full stride. The selected algorithm source bits vary with the array address; its full keys must derive those bits from the current source coordinates and include the remaining active/source spectators. That bridge remains open. |
