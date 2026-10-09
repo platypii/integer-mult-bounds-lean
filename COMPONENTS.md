@@ -3652,7 +3652,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhasePolynomialStreamInit.lean`: Physically initializes the original full-address count and live counter from retained stage geometry, charging setup and retaining the immutable polynomial exponent.
 
-- `Machine/UnitPhasePolynomialStream.lean`: Executes initialization, once-per-address phase plus two-to-ell coefficient traversal, and final numeric cleanup on a fixed machine. Prepared stage headers, kernel parameters, literal source contexts and stream endpoint normalization remain separate caller obligations.
+- `Machine/UnitPhasePolynomialStream.lean`: For fixed supplied m and ws, executes initialization, once-per-address phase plus two-to-ell coefficient traversal, and final numeric cleanup. Runtime phase-weight generation for one uniform machine, prepared stage headers, literal source contexts and stream endpoint normalization remain open caller obligations.
 
 - `Machine/ButterflySpectatorGeometry.lean`: Literal row-major reshape and unshape retain arbitrary outer rows and polynomial coefficients while applying a selected binary axis. Exact source serialization and signed field widths are preserved; outer rows are never treated as binary axes.
 
