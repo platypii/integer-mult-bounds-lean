@@ -3392,6 +3392,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageTripleEndpoint.lean`: The complete physical all-width stage returns an explicit literal native-symbol encoding with arbitrary spectators transported by its actual address action. Address involution is derived from actual array endpoint involution; whole-array output validity and nonblank native interiors are proved without a supplied output codec. Fixed-stage Hoare execution retains its certified cost; paid whole encode-stage-decode assembly remains open.
 
+- `Machine/ButterflyAxisSemantics.lean`: Actual stored-width, Gaussian grid, precision and numerator guard propagate through every counted native-axis prefix from normalized input; one fixed signed word width suffices for the whole schedule.
+
+- `Machine/ButterflyAxisDecoded.lean`: Decoded global outputs of the actual native axis schedule equal successive true complex two-point butterfly axes. Normalized-input hypotheses derive every intermediate grid and guard, without a supplied codec or grid invariant.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -1917,3 +1917,5 @@ import IntegerMultBounds.Machine.UnitPhaseFlagsLifecycle
 import IntegerMultBounds.Machine.UnitPhaseLocalReset
 import IntegerMultBounds.Machine.SymbolTriplePlaced
 import IntegerMultBounds.Machine.ActivePrefixStageTripleEndpoint
+import IntegerMultBounds.Machine.ButterflyAxisSemantics
+import IntegerMultBounds.Machine.ButterflyAxisDecoded
