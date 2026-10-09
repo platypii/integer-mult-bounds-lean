@@ -1399,6 +1399,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighPaddedBudget.lean`: The exact runtime high-row rounding increases original payload volume by at most two. The selected depth automatically supplies the actual low dispatcher width/divisibility conditions, so its physical execution requires no supplied depth or row-divisor oracle. Its complete runtime, including initialization and cleanup, satisfies twice its certified coefficient times original volume times original width to the unchanged exponent.
 
+- `Machine/ArbitraryWidthHighFoldSemantics.lean`: Literal finite-index folding combines all original prefix and row factors without changing any serialized cell. The full transpose of any valid original row-divisor view equals the folded row-one transpose, with exact source-word and binary-encoding identities.
+
+- `Machine/ArbitraryWidthHighExchangeJoinEncoding.lean`: The recursive I/O source encoding is exactly the literal larger-alphabet word consumed by ordered movement. High exchange commutes with bit encoding, and the actual ordered join word is exactly the manuscript exchangeJoin view.
+
+- `Machine/ArbitraryWidthHighSeparateShared.lean`: The actual inverse separator operates on the joined binary I/O source through one physically shared caller tape. Its output is exactly the manuscript separateExchange word, all other caller and private-bank cells/heads are restored, and its complete runtime is paid against original volume and retained high-digit count.
+
+- `Machine/ArbitraryWidthHighExchangeJoin.lean`: One actual fixed stage physically exchanges the high prefixes and joins their ordered block on the same caller source tape. Both complete private banks are restored, every other caller tape/head is retained and the output is exactly the encoded manuscript joined view. The paid coefficient-times-volume-times-count bound includes the real sequential edge; no callback execution is supplied.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
