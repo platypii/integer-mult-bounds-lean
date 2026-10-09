@@ -1034,3 +1034,7 @@ import IntegerMultBounds.Machine.CountedPackedControlLoadHeaders
 import IntegerMultBounds.Machine.CountedPackedControlLoadLine
 import IntegerMultBounds.Machine.CountedPackedControlLoadRun
 import IntegerMultBounds.Machine.CountedPackedControlLoadValue
+import IntegerMultBounds.Machine.PackedOffsetStreamEmit
+import IntegerMultBounds.Machine.PackedOffsetStreamBlock
+import IntegerMultBounds.Machine.PackedOffsetStream
+import IntegerMultBounds.Machine.PackedOffsetStreamRaw

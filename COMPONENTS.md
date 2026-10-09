@@ -1603,6 +1603,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedPackedControlLoadValue.lean`: The actual load/unload output words have value U plus/minus the packed control-bit integers modulo the full power-of-two word radix. Their widths equal the original dirty word, with no stronger width restriction or supplied arithmetic offset oracle.
 
+- `Machine/PackedOffsetStreamEmit.lean`: Fixed six-state emission physically copies canonical bits into the control stream, writes and crosses a blank delimiter, and erases the marked source scratch. Literal output and full scratch cleanup include canonical zero.
+
+- `Machine/PackedOffsetStreamBlock.lean`: Fixed thirty-state runtime-width body copies one raw binary block, physically trims high zeros and emits its canonical little-endian representation plus a delimiter. Source is retained, scratch returns wholly blank and the width descriptor/clock are preserved.
+
+- `Machine/PackedOffsetStream.lean`: Fixed seven-tape51-state machine initializes both private clocks, processes all runtime-counted packed blocks and erases every clock/scratch tape. Literal emitted stream contains the canonical block values, source and original width/count headers survive, private three tapes return blank/head zero and total cost is at most66 times n times w-plus-one plus28, including zero width/count.
+
+- `Machine/PackedOffsetStreamRaw.lean`: Connects the actual stream builder to a raw n*w-bit input word: emitted canonical values are precisely its radix-two-power digits, each below2^w, in their literal order. Source and descriptors are retained, output length is at most n*(w+1), all private tapes blank and physical advanced heads explicit. No canonical offset stream is assumed as input.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
