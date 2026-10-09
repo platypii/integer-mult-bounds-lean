@@ -2566,6 +2566,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLateOriginalPipelineRun.lean`: Actual189-tape later scan/sort/strip/reinsert uses original-input per-record keys, returns the exact filled stream and retains all original key metadata/private storage, with the full closed cost formula. Shared scan initialization/final cleanup and global ideal-permutation/density identification remain separate.
 
+- `Machine/ActivePrefixEarlySequenceOriginalData.lean`: Original swap and fourteen layout/stage descriptors plus payload form one caller bank; twenty derived consumer slots begin blank. Exact two-header and cleanup states retain all originals.
+
+- `Machine/ActivePrefixEarlySequenceOriginalInputs.lean`: Original canonical geometry/stage words imply all prepared target/compact consumer contracts, with physical copied row words and no supplied starts/f/suffix.
+
+- `Machine/ActivePrefixEarlySequenceOriginalHeaders.lean`: Real target and compact-before header producers share original descriptors and clean scratch; both post-use erasers restore every generated slot while framing payload.
+
+- `Machine/ActivePrefixEarlySequenceOriginalPayload.lean`: Actual fixed four-load schedule consumes physically generated header banks and updates the same full array, retaining every original word and restoring complete sequence workspace.
+
+- `Machine/ActivePrefixEarlySequenceOriginalRun.lean`: One fixed original-input program constructs both header banks, runs all four real early loads and surrounding compact swaps, then physically erases both generated banks. Only the array changes; all private and twenty generated tapes are blank.
+
+- `Machine/ActivePrefixEarlySequenceOriginalBudget.lean`: Uniform certified full-record width-exponent bound includes both actual header producers/erasers, every four-load cost and all assembly joins.
+
+- `Machine/ActivePrefixEarlySequenceOriginalPlaced.lean`: Only twenty-three original caller ports are required: seven swap geometry words, packing factor, fourteen original layout/stage controls and array. No offset table/computed starts/f/suffix is supplied, spectators/private tapes are restored. Upstream reservation-width synthesis and packed-permutation identification remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
