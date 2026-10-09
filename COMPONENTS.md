@@ -2934,6 +2934,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsOriginalLateAlphabet.lean`: The complete original-input after-source later raw-array repair executes in the actual payload prime alphabet with literal original headers, raw source and ideal output, producer restoration and unchanged linear-volume runtime.
 
+- `Machine/ActiveRepairLayoutRecordsAssemblyCleanCommon.lean`: An actual fixed-many erasure program clears every copied consumer metadata word, preserves all complementary tapes and heads and has linear full-volume cleanup cost.
+
+- `Machine/ActiveRepairLayoutRecordsAssemblyCleanEarly.lean`: Original-input early raw repair now physically erases all copied consumer descriptors; its exact entire output bank is the literal original input plus ideal raw output, with every generated header/private tape blank and full linear runtime.
+
+- `Machine/ActiveRepairLayoutRecordsAssemblyCleanLateAfter.lean`: Original-input after-source later raw repair physically erases all copied consumer descriptors; its exact entire output bank retains only originals, raw input and ideal raw output, with all private metadata blank and full linear runtime.
+
+- `Machine/ActiveRepairLayoutRecordsCleanAlphabet.lean`: Both completely clean original-input repairs execute in the actual payload prime alphabet with exact literal whole-bank output contracts and unchanged linear full-volume bounds.
+
+- `Machine/ActiveRepairArrayRecycle.lean`: Actual fixed caller-tape copy-back replaces the original array with an equal-length repaired output, erases the separate raw output and preserves every head/spectator tape, charging five times array volume plus ten including empty arrays.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
