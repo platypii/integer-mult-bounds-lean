@@ -2224,6 +2224,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixSelectedOffset.lean`: Complete fixed first-offset producer reads only eight original canonical descriptors, generates the exact varying-source offsets and clears all derived tables, headers and workspace. A uniform constant times two-to-W times W-plus-one bound includes every stage and cleanup. Arbitrary caller placement, repetition over original rows and active rotation composition remain separate.
 
+- `Machine/ActiveRepairRankFieldsPosition.lean`: Fixed caller-placed runtime seek and restore operations traverse address fields from original canonical offsets, retaining all tape contents and erasing countdown scratch with exact charged costs.
+
+- `Machine/ActiveRepairRankFieldsField.lean`: Physical runtime field extraction reads a genuine short rank word with zero fill beyond its blank tail, produces exactly the requested fixed-width address field, restores the rank and descriptors and clears private storage.
+
+- `Machine/ActiveRepairRankFieldsPlaced.lean`: Places the actual short-rank field extractor on arbitrary caller ports, preserving the complementary frame and restoring all private tapes with the original exact cost.
+
+- `Machine/ActiveRepairRankFieldsBank.lean`: Shared twenty-seven-tape repair parser bank retains the genuine short record counter, eight field descriptors and q/n/rho/f, while separately storing V/T/U, full source and selected source bits.
+
+- `Machine/ActiveRepairRankFieldsRun.lean`: One fixed physical parser extracts V/T/U and the full source from the actual short rank, then runs actual source-bit selection. All originals and heads are retained, nine private tapes erased and cost bounded by1200 times address width plus one, plus four. Derived offset/width descriptor synthesis remains separate.
+
+- `Machine/ActiveRepairRankFieldsGeometry.lean`: Recovers exact active-layout V/T/U and before/after source words from the original record ordinal, with payload width one for address ranks. Field geometry includes source/back/spectator bits without introducing a free physical reorder.
+
+- `Machine/ActiveRepairRankFieldsEndpoint.lean`: Actual before/after-source repair parsing returns exact layout V/T/U, full source and selected controls from a genuine short original-rank counter. Supplied original canonical field offsets/widths are retained, private storage erased and the linear address-width bound is paid. Descriptor synthesis, inverse/guard calculation and full destination-key writing remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
