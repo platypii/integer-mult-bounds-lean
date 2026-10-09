@@ -1955,3 +1955,4 @@ import IntegerMultBounds.Machine.BinaryDescriptorQueueRewind
 import IntegerMultBounds.Machine.CompactComplexRootPieceQueue
 import IntegerMultBounds.Machine.CompactComplexRootPieceClock
 import IntegerMultBounds.Machine.CompactComplexRootPieceVisits
+import IntegerMultBounds.Machine.CompactActualNativeStage

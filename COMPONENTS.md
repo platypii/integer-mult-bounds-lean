@@ -3338,11 +3338,11 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SymbolTripleEncode.lean`: An injective three-bit code for the six native coefficient symbols has a fixed two-tape physical encoder body. Three output bits are actually written, the source symbol is retained and both heads reach exact endpoints in five transitions.
 
-- `Machine/SymbolTripleStream.lean`: One fixed stream loop converts nonblank-interior native coefficient words to Boolean-symbol triples, retaining the source and framing arbitrary output backgrounds. Output length is exactly three times source length and total runtime is seven times source length; the decoder is proved separately; whole-stage representation transport remains open.
+- `Machine/SymbolTripleStream.lean`: One fixed stream loop converts nonblank-interior native coefficient words to Boolean-symbol triples, retaining the source and framing arbitrary output backgrounds. Output length is exactly three times source length and total runtime is seven times source length; the decoder is proved separately; whole-stage native transport is proved separately in ActivePrefixStageNative.
 
 - `Machine/SymbolTripleDecode.lean`: Fixed two-tape decoder branches on the three actual Boolean tape cells and writes their recovered native coefficient symbol in seven transitions. All six valid symbol codes, including native blank, are recovered exactly; the source is retained with exact head endpoints.
 
-- `Machine/SymbolTripleDecodeStream.lean`: Fixed physical stream decoder reconstructs every native symbol from its actual three-bit code with exact whole-word output, retained source and arbitrary destination frame. Runtime is nine times native symbol count; whole-stage representation transport remains open.
+- `Machine/SymbolTripleDecodeStream.lean`: Fixed physical stream decoder reconstructs every native symbol from its actual three-bit code with exact whole-word output, retained source and arbitrary destination frame. Runtime is nine times native symbol count; whole-stage native transport is proved separately in ActivePrefixStageNative.
 
 - `Machine/CompactComplexExponentStep.lean`: Physical canonical exponent descent and ascent with exact parent restoration, clean private work and linear exponent bounds. Generic placement preserves the native bank on appended controller tapes; recursive controller assembly remains open.
 
@@ -3366,7 +3366,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageTripleTransport.lean`: The actual all-width runtime stage transports literal encoded native symbols to contiguous destination payload cells. Original symbols decode exactly and arbitrary payload spectators are retained; actual destination action commutes with payload changes. Conversion placement, cleanup and whole-stage tape assembly remain open.
 
-- `Machine/SymbolTripleClean.lean`: Fixed destructive native-to-Boolean and Boolean-to-native converters physically restore both heads and erase the obsolete source. Exact whole-word endpoints have blank source and head zero; every join, rewind and erasure is paid in bounds thirteen times native length plus ten and nineteen times native length plus ten. Native coefficient words require nonblank interiors for sentinel rewind; stage placement remains open.
+- `Machine/SymbolTripleClean.lean`: Fixed destructive native-to-Boolean and Boolean-to-native converters physically restore both heads and erase the obsolete source. Exact whole-word endpoints have blank source and head zero; every join, rewind and erasure is paid in bounds thirteen times native length plus ten and nineteen times native length plus ten. Native coefficient words require nonblank interiors for sentinel rewind; stage placement is proved separately in SymbolTriplePlaced.
 
 - `Machine/ButterflyAxisPrepared.lean`: Places the complete native butterfly axis on physically installed control headers, framing original shape and arithmetic headers.
 
@@ -3388,9 +3388,9 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhaseLocalReset.lean`: Paid cleanup of the sixty-tape phase caller erases numerator sources, extracted controls, flags and generated sparse descriptors while framing addresses, streams and controller state. Full per-record and coefficient-loop composition remain open.
 
-- `Machine/SymbolTriplePlaced.lean`: Clean destructive native/Boolean converters execute in any stage alphabet containing the six native symbols and at any distinct caller tape slots. Exact literal raw Boolean array output, restored heads and blank obsolete source retain the same linear transition bounds; arbitrary headers/controller tapes outside the two slots are framed. Complete encode-stage-decode assembly remains open.
+- `Machine/SymbolTriplePlaced.lean`: Clean destructive native/Boolean converters execute in any stage alphabet containing the six native symbols and at any distinct caller tape slots. Exact literal raw Boolean array output, restored heads and blank obsolete source retain the same linear transition bounds; arbitrary headers/controller tapes outside the two slots are framed. Complete encode-stage-decode assembly is proved separately in ActivePrefixStageNative.
 
-- `Machine/ActivePrefixStageTripleEndpoint.lean`: The complete physical all-width stage returns an explicit literal native-symbol encoding with arbitrary spectators transported by its actual address action. Address involution is derived from actual array endpoint involution; whole-array output validity and nonblank native interiors are proved without a supplied output codec. Fixed-stage Hoare execution retains its certified cost; paid whole encode-stage-decode assembly remains open.
+- `Machine/ActivePrefixStageTripleEndpoint.lean`: The complete physical all-width stage returns an explicit literal native-symbol encoding with arbitrary spectators transported by its actual address action. Address involution is derived from actual array endpoint involution; whole-array output validity and nonblank native interiors are proved without a supplied output codec. Fixed-stage Hoare execution retains its certified cost; paid whole encode-stage-decode assembly is proved separately in ActivePrefixStageNative.
 
 - `Machine/ButterflyAxisSemantics.lean`: Actual stored-width, Gaussian grid, precision and numerator guard propagate through every counted native-axis prefix from normalized input; one fixed signed word width suffices for the whole schedule.
 
@@ -3424,7 +3424,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhaseStreamBudget.lean`: Uniform full-record bound10600 times payload plus24 times coefficient width and complete original-header loop bound rows times(10620 times payload plus24 times width) plus46 pay all address, metadata, IO, phase and cleanup work. Original-width initialization and final whole-stream normalization remain separate.
 
-- `Machine/ActivePrefixStageTripleWords.lean`: For payload capacity a multiple of three, literal native records in original row-major full-address order encode to exactly the physical raw Boolean stage tape. Complete actual stage output is the exact code word of derived native output coefficients, with no supplied serialization or output-codec premise. Record count is rows times two to shape.bits; combined encode-stage-decode machine remains open.
+- `Machine/ActivePrefixStageTripleWords.lean`: For payload capacity a multiple of three, literal native records in original row-major full-address order encode to exactly the physical raw Boolean stage tape. Complete actual stage output is the exact code word of derived native output coefficients, with no supplied serialization or output-codec premise. Record count is rows times two to shape.bits; combined encode-stage-decode execution is proved separately in ActivePrefixStageNative.
 
 - `Machine/ActivePrefixStageNative.lean`: One fixed finite machine destructively encodes canonical native coefficient words, executes the actual all-width/source-order stage, and destructively decodes its explicitly derived native output. Original stage descriptors and clean private storage remain, both heads normalize and obsolete native/Boolean words are erased. A generic composition proof supplies an actual fixed-machine existential witness without expanding giant control types; no stage oracle or supplied Boolean/output codec is required. Payload capacity must be a multiple of three. Full conversion and joins add thirty-two times native-symbol count plus twenty-two to the actual stage cost, preserving its certified width exponent with one uniform constant.
 
@@ -3467,6 +3467,8 @@ Machine model, execution, composition, and tape routines.
 - `Machine/CompactComplexRootPieceClock.lean`: Fixed physical per-digit clock loop invokes a fixed callback, advances generated left boundaries and decrements actual digit clock, with exact control and callback costs. Callback execution remains an explicit interface premise; closed recursive dispatch remains open.
 
 - `Machine/CompactComplexRootPieceVisits.lean`: Generated preceding-digit and within-level boundaries equal literal Visit.root occurrences of the original active input. Actual outer enumeration and closed recursive callback execution remain separate.
+
+- `Machine/CompactActualNativeStage.lean`: Actual multiplier scalar choices select a triple-aligned payload of six times(b+one) times two to ell, prove the existing payload allowance and a fixed-factor volume increase when b is positive. One fixed native stage machine and one uniform constant handle all eventual nonfallback node widths, source orders and padded descendant row levels; readiness and packed-cost allowances are derived from original choices, without caller-supplied branches or stage oracles.
 
 ## Compact
 
