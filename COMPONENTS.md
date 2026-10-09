@@ -3664,6 +3664,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageNativeRows.lean`: Canonical serialized ordinal rows give literal native tape words independent of source/target decomposition. A fixed actual native stage transports these rows with exact clean banks and its full paid cost, without a caller-supplied reshape or codec equality. Repeated native pair/list execution remains separate.
 
+- `Machine/ActivePrefixStageNativePairData.lean`: Physically rewrites original source/target slot headers while retaining the exact canonical native row-major source. Actual runtime header replacement has clean complete-bank endpoints and paid costs.
+
+- `Machine/ActivePrefixStageNativePairRun.lean`: Saves the incoming pair on a private appended frame, physically rewrites headers, executes the proved native encode/stage/decode machine and restores the original pair. Exact native row output and all conversion, frame and sequencing costs are proved without a supplied stage callback.
+
+- `Machine/ActivePrefixStageNativePairSchedule.lean`: Compiles a chronological literal basis word to a finite native machine using one actual uniform stage. Every instruction restores common headers and private storage, preserves native nonblank symbols and transports exact canonical rows; the full sum of paid stage/frame/join costs is proved. Original-coordinate network/phase assembly remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
