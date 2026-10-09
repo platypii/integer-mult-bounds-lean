@@ -2882,6 +2882,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsLate.lean`: The actual later machine output is the full global lateActual array and exactly its wide repairRecords input; both prepared and original-input machines return that array with paid execution contracts.
 
+- `Machine/ActiveRepairLayoutRecordsAssemblyCommon.lean`: Literal raw/record alphabet and bank identities support actual formatting, repair placement and physical retained-record cleanup without a format oracle.
+
+- `Machine/ActiveRepairLayoutRecordsAssemblyEarly.lean`: One real early program formats the original raw bit stream into the empty repair source, executes repair and decoding, erases the retained formatted source and restores private storage.
+
+- `Machine/ActiveRepairLayoutRecordsAssemblyLate.lean`: One real later program formats the original raw bit stream into the empty repair source, executes repair and decoding, erases the retained formatted source and restores private storage.
+
+- `Machine/ActiveRepairLayoutRecordsAssemblyLayoutEarly.lean`: The complete early raw-array/format/repair/decode/cleanup machine returns literal ideal whole-width array bits, with all metadata/raw inputs retained and a combined linear volume and count-header bound.
+
+- `Machine/ActiveRepairLayoutRecordsAssemblyLayoutLate.lean`: The complete later raw-array/format/repair/decode/cleanup machine returns literal ideal whole-width array bits, with all metadata/raw inputs retained and a combined linear volume and count-header bound.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
