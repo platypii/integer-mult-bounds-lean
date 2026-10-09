@@ -2334,6 +2334,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixParityNegativePlaced.lean`: Actual negative parity-XOR production on arbitrary original-eight-plus-output caller ports retains all descriptors and spectators, erases fifty-six private tapes and returns output at origin. Compact payload rotation and full schedule composition remain separate.
 
+- `Machine/ActivePrefixLayoutFields.lean`: Fixed-width generated prefix words at rank modulo2^W recover every fitting original field. Literal repeated-table lookup handles arbitrary original rows, without a power-of-two row assumption or phantom ranks.
+
+- `Machine/ActivePrefixLayoutGeometry.lean`: Exact little-endian source/temporary/target offsets in the unchanged target and back prefixes recover their real address fields. Target/back counts equal original rows times the exact two-to-prefix-width factor.
+
+- `Machine/ActivePrefixLayoutShapes.lean`: Actual active reservation dimensions instantiate the selected and parity producer Shapes with proved prefix fits. Compact n*b fits H; wide n*q remains active. Before/after source slots and original-rank bounds are explicit.
+
+- `Machine/ActivePrefixLayoutTarget.lean`: Repeated selected/correction offset rows at the actual targetPrefix rank read exactly current T and the earlier source slot. Full target-fiber index matches the unchanged serialized original-array index.
+
+- `Machine/ActivePrefixLayoutBack.lean`: Repeated pure/negative parity rows at actual backPrefix ranks read the current active target and full before/after source slots, including all original row/source/spectator coordinates.
+
+- `Machine/ActivePrefixLayoutSwap.lean`: Literal compact T/back exchange equals the existing physical rectangular transpose and retains active target/source coordinates. Its back fiber contains original T; exact repeated pure/negative rows after that swap read the actual active target and source. Physical header synthesis and complete four-load sequencing remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
