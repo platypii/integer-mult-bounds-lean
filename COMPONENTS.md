@@ -1936,6 +1936,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryParityXorOffsetPlaced.lean`: Five arbitrary larger-alphabet caller ports q/b/n/control/output with twenty-six blank private tapes appended and restored. Exact output word and every caller spectator/head are preserved.
 
+- `Machine/BinaryParityXorOffsetRepeatData.lean`: Literal negative parity-XOR rows, spectator expansion and repetition preserve the actual source-address order.
+
+- `Machine/BinaryParityXorOffsetRepeatConstruct.lean`: Fixed fifty-tape constructor synthesizes nb,2^nq and P*H*2^nb from original inputs, builds actual negative parity-XOR offsets, repeats them and erases generated metadata while retaining control.
+
+- `Machine/BinaryParityXorOffsetRepeatBudget.lean`: Complete fourth-offset table construction, repetition and cleanup fit actual payload volume with an explicit suffix-width allowance; all physical setup and joins are charged.
+
+- `Machine/BinaryParityXorOffsetRepeatCoordinates.lean`: Exact negative packed parity-XOR at every selected source address, repeated independently of spectators and dirty-back coordinates. The physical row ordering and literal full word length are proved.
+
+- `Machine/BinaryParityXorOffsetRepeatAlphabet.lean`: Complete fourth-offset repetition on arbitrary larger alphabets, retaining literal outputs and original inputs with unchanged paid runtime.
+
+- `Machine/BinaryParityXorOffsetRepeatPlaced.lean`: Eight shared caller ports q/b/n/P/H/L/control/output and forty-two appended private tapes restored blank. Exact negative-offset field semantics and volume bound are proved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
