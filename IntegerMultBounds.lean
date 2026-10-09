@@ -923,3 +923,5 @@ import IntegerMultBounds.Machine.RowPaddingConstructedAlphabet
 import IntegerMultBounds.Machine.ArbitraryWidthJoinedHeaders
 import IntegerMultBounds.Machine.ArbitraryWidthJoinedHeadersCleanup
 import IntegerMultBounds.Machine.ArbitraryWidthHighPaddingSuffix
+import IntegerMultBounds.Machine.ArbitraryWidthHighPrefix
+import IntegerMultBounds.Machine.ArbitraryWidthHighExchangeShared

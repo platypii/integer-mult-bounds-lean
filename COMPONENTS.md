@@ -1391,6 +1391,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighPaddingSuffix.lean`: The actual product constructor operates directly on retained generated high-movement lengths and produces the exact joined row suffix, preserving originals and restoring arithmetic scratch. Literal rowLength equality and original/padded-volume bounds are proved; construction and subsequent erasure cost at most81 and8 times the suffix length.
 
+- `Machine/ArbitraryWidthHighPrefix.lean`: The three original prefix factors are physically folded into one canonical descriptor by two real products followed by intermediate erasure on eight tapes. All originals and scratch are retained/restored; construction costs at most174 times a dominating volume and final cleanup8 times it. Exact folded volume and address identities cover arbitrary original row/prefix factorizations.
+
+- `Machine/ArbitraryWidthHighExchangeShared.lean`: The actual complete high-prefix exchange is placed on an arbitrary caller source through the true recursive I/O slot. It preserves every other caller tape and the private recursive root/header/stack/control bank, with the exact high-exchanged binary word and its fully paid original-volume runtime. No callback execution trace is supplied.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
