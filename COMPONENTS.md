@@ -2464,6 +2464,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairEarlyKey.lean`: Complete genuine-current-rank early key endpoint through physical parsing, inverse/guard, full-rank reconstruction, conditional key output and cleanup. Original geometric header-producer wiring and scan/pipeline integration remain separate.
 
+- `Machine/ActiveRepairLateFieldsCopy.lean`: Paid physical copies of genuine extracted V/T/U into blank late-inverse work preserve every original and the full counter.
+
+- `Machine/ActiveRepairLateFieldsBank.lean`: Thirty-five-tape extracted-field late repair bank retains V/T/U/current controls, q/b/n and full rank, separating recovered outputs and blank private work.
+
+- `Machine/ActiveRepairLateFieldsRun.lean`: Actual retained-input copies, late guard, inverse and ideal toggle compose with exact current-address repaired fields and flag within9600 times packed stride.
+
+- `Machine/ActiveRepairLateFieldsCleanup.lean`: Physically erases the recovered pre-toggle target intermediate while retaining the exact final ideal target, recovered T/U and flag.
+
+- `Machine/ActiveRepairLateFields.lean`: Complete extracted-field late repair preserves all originals and returns exact recovered T/U, ideal target and guard with clean scratch within9700 times packed stride. Genuine-rank parser and complete full-rank key composition remain separate.
+
+- `Machine/ActiveRepairLateFieldsPlaced.lean`: Twelve-port arbitrary caller placement retains originals and spectators, returns repaired fields/flag and restores thirty-five appended private tapes with unchanged runtime.
+
+- `Machine/ActiveRepairLateFieldsValue.lean`: Actual late extracted-field guard and repaired target/T/U equal the existing late exceptional rank flag and repaired rank key. Local word concatenation is only a mathematical identification, never a supplied machine rank.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
