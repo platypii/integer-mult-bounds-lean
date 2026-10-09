@@ -827,3 +827,6 @@ import IntegerMultBounds.Machine.SliceExponentPowers
 import IntegerMultBounds.Machine.ArbitrarySliceDimensions
 import IntegerMultBounds.Machine.ArbitrarySliceHeaders
 import IntegerMultBounds.Machine.ArbitraryWidthSchedule
+import IntegerMultBounds.Machine.ArbitraryWidthHighRows
+import IntegerMultBounds.Machine.BinaryDescriptorCompare
+import IntegerMultBounds.Machine.BinaryDescriptorIncrement

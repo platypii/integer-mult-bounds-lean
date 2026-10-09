@@ -1225,6 +1225,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthSchedule.lean`: The literal power-piece schedule has computed offsets and depths and composes to the exact full chunk transpose. Each slice has an actual fixed recursive root execution contract with certified budget and exact serialized endpoints. Installed slice headers are an explicit premise; runtime schedule construction and whole driver remain open.
 
+- `Machine/ArbitraryWidthHighRows.lean`: Computable least high-digit count Nat.clog(q*q)D exactly equals the manuscript ceiling when D=W^k. Integer-power domination, first-stop uniqueness, previous-power minimality and less-than-q-squared overshoot are proved, including the zero-exponent edge case. The physical selection loop is separate.
+
+- `Machine/BinaryDescriptorCompare.lean`: One fixed three-tape twelve-state comparison program scans two immutable marked binary operands, writes their exact less-than flag and physically rewinds both heads. Complete cost is max width plus both operand widths plus eleven; a paid flag-clear primitive restores blank result workspace.
+
+- `Machine/BinaryDescriptorIncrement.lean`: A fixed widened-alphabet one-tape three-state incrementer retains the marked descriptor representation, grows its highest bit as needed and returns to head one. Exact value increment, canonicality preservation and cost twice carry length, bounded by twice input width plus two.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
