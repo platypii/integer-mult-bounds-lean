@@ -420,6 +420,7 @@ import IntegerMultBounds.NLogN.CostBound
 import IntegerMultBounds.NLogN.PrimeSelection
 import IntegerMultBounds.NLogN.OffDiagApproxSqrt
 import IntegerMultBounds.NLogN.NeumannHalved
+import IntegerMultBounds.NLogN.ResamplingManuscript
 import IntegerMultBounds.NLogN.ContractSqrt
 import IntegerMultBounds.NLogN.ResamplingOps
 import IntegerMultBounds.NLogN.ModuliConstruction

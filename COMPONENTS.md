@@ -2545,6 +2545,13 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   disk, and with the window `⌊√p⌋ + 1` has error below `p²` for `p ≥ 13`
   (`approxMap_resampB₀NumH_sqrt`, `errB₀H_sqrt_lt_sq`). This is the form the
   tape machines implement.
+- `NLogN/ResamplingManuscript.lean`: Lemma 7.1 with the manuscript's
+  numerical maps and no clamps. For `α ≥ 2`, `‖A‖ ≤ 3/4`
+  (`opNorm_resampA_le_three_quarters`), so any approximation with scaled
+  error at most `2^p/4` stays in the unit disk (`ball_of_approx`);
+  `permuted_numeric_manuscript` gives the permutation-left identity with the
+  unclamped window sums `Ã` and the clamp-free `B̃₀`, errors below `p²`, and
+  both maps sending the unit disk to itself.
 - `NLogN/ContractSqrt.lean`: the recursive-step contract with the paper's
   window sizes, `(⌊√p⌋ + 1) α` for the resampling sums and `⌊√p⌋ + 1` for
   the off-diagonal part, so that the numerical maps match the ones the cost
