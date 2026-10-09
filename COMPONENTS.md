@@ -3766,6 +3766,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativePolynomialPhaseCaller.lean`: Derives literal phase-source serialization and head zero directly from the actual native basis-word bank at original source65, including its full appended converter workspace and pair-save frame. No caller-supplied codec premise is needed. Physical native-source replacement now yields exactly the next basis-word input bank, retaining every original header and appended private tape.
 
+- `Machine/CompactPolynomialPhaseDispatchBudget.lean`: Actual fixed edge token emission and decode overhead are absorbed into the genuine polynomial phase serialized-volume bound. Applies to one per-axis pass; all-axis aggregation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
