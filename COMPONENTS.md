@@ -3526,6 +3526,26 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhaseFullStreamNormalized.lean`: One fixed phase machine processes a literal array with one coefficient per address, erases generated address/count/arithmetic storage and physically returns both source and result heads to zero. Exact pointwise native serialization and linear-volume runtime are proved. Polynomial multiplicity within each payload and final result overwrite/caller placement remain separate.
 
+- `Machine/CompactFallbackAxisPorts.lean`: Actual sparse-axis caller shares five original headers D/K/rho/ell/q and an ordinal with the real native-axis bank, retaining all original descriptors and coefficient data.
+
+- `Machine/CompactFallbackHeaders.lean`: Physically derives binary dimension D*K, selected bit rho+i*K, polynomial count two to ell and independent precision reservation q+2*D*K from original scalar words.
+
+- `Machine/CompactFallbackAxisRun.lean`: A fixed forward sparse-axis body executes the actual native butterfly at rho+i*K, erases every generated axis/reservation descriptor and increments the retained ordinal, with all setup and movement costs charged.
+
+- `Machine/CompactFallbackAxisBudget.lean`: The complete sparse-axis body, including original-header synthesis, arithmetic, native split/merge and descriptor cleanup, has uniform linear native-volume cost.
+
+- `Machine/CompactFallbackScalars.lean`: Actual scalar choices prove D*K is at most b and the stored signed width six times b plus four times D*K plus four lies between b and fourteen times b. Polynomial multiplicity is two to ell; native payload lies between six and thirty times b times that multiplicity.
+
+- `Machine/CompactFallbackSchedule.lean`: Fixed original-count sparse loop visits rho+i*K for every selected chunk axis, retaining coefficient widths and proving all counted loop transitions and native array endpoints.
+
+- `Machine/CompactFallbackOriginal.lean`: The actual original-header forward small-dimension fallback physically initializes its ordinal, executes every sparse axis and erases the ordinal. Runtime is linear native volume times D for positive D; D zero identity and original integer-to-native preparation remain caller responsibilities.
+
+- `Machine/CompactFallbackSemantics.lean`: Full forward small-dimension fallback has exact decoded Walsh semantics at sparse selected binary positions, including polynomial spectators and derived grid/guard propagation. Initial native signed words are already at the explicitly enlarged stored width; inverse sparse execution remains separate.
+
+- `Machine/CompactFallbackActualBudget.lean`: Actual multiplier scalars turn the proved sparse-axis execution costs and complete small-D wrapper costs into the certified fallback complexity allowance, using real polynomial coefficient counts and stored signed widths.
+
+- `Machine/CompactFallbackReservedBudget.lean`: Original nonfallback low-back and high-row/front reservation positions have genuine paid sparse-axis call costs and a certified aggregate complexity allowance. These positions are distinct and exhaust the reservation; their physical occurrence controller remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
