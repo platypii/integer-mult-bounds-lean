@@ -3616,6 +3616,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/UnitPhaseStageHeaders.lean`: Original thirteen stage headers physically synthesize phase metadata, then copy an immutable external current-axis ordinal after synthesis releases its scratch. Final paid erasure restores the exact original numeric bank. Both setup and cleanup have uniform linear full-volume bounds; coefficient streams and outer storage are framed by placement/extension, and complete polynomial-phase/native-caller assembly remains separate.
 
+- `Machine/CompactReservedHeaderBudget.lean`: Reservation fit bounds original and generated numeric descriptors by the full binary dimension; paid logarithm/product/division setup and interval switch/cleanup costs have explicit quadratic scalar bounds.
+
+- `Machine/CompactReservedVolumeBudget.lean`: The fully paid nonfallback setup, both counted intervals, switch and cleanup fit a uniform native-volume-times-reservation bound. The physical roundtrip includes both complete controller lifecycles and its sequencing transition.
+
+- `Machine/CompactReservedActualBudget.lean`: Actual scalar choices produce a fixed forward or inverse reservation executable with its real Original.cost witness and certified asymptotic allowance. The actual roundtrip similarly has decoded recovery and its real paid cost bound. These theorems use the original full-address native serialization; the arbitrary recursive caller row/spectator view bridge remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

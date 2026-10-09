@@ -2029,3 +2029,6 @@ import IntegerMultBounds.Machine.CompactReservedSemantics
 import IntegerMultBounds.Machine.CompactReservedCorrect
 import IntegerMultBounds.Machine.CompactReservedRoundtrip
 import IntegerMultBounds.Machine.UnitPhaseStageHeaders
+import IntegerMultBounds.Machine.CompactReservedHeaderBudget
+import IntegerMultBounds.Machine.CompactReservedVolumeBudget
+import IntegerMultBounds.Machine.CompactReservedActualBudget
