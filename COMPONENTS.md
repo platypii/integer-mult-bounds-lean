@@ -1407,6 +1407,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighExchangeJoin.lean`: One actual fixed stage physically exchanges the high prefixes and joins their ordered block on the same caller source tape. Both complete private banks are restored, every other caller tape/head is retained and the output is exactly the encoded manuscript joined view. The paid coefficient-times-volume-times-count bound includes the real sequential edge; no callback execution is supplied.
 
+- `Machine/ArbitraryWidthHighPrepareShared.lean`: Actual high-row preparation reads the original canonical caller width through one physically shared descriptor tape. It computes depth, divisor, high-digit count, rows and rounded rows into nineteen blank private tapes, retains every caller tape/head and subsequently erases the complete metadata bank. No derived metadata or execution trace is supplied.
+
+- `Machine/ArbitraryWidthHighFoldHeaders.lean`: An actual sixteen-tape program folds the three retained original prefix factors, writes the two unit headers and copies width/spectators into six blank target root headers. All original six headers and arithmetic scratch are retained/restored. Exact folded Headers correctness and a224-times-dominating-volume setup bound are proved.
+
+- `Machine/ArbitraryWidthHighFoldHeadersCleanup.lean`: The actual six-target root-header erasure restores the complete folded-header input bank while retaining every original descriptor and blank arithmetic tape. Exact lifecycle restoration and a54-times-dominating-volume cleanup bound are proved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
