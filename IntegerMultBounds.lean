@@ -1883,3 +1883,5 @@ import IntegerMultBounds.Machine.BinaryCurrentAddressInit
 import IntegerMultBounds.Machine.CompactComplexPhaseRecordAddress
 import IntegerMultBounds.Machine.ButterflyAxisSerialization
 import IntegerMultBounds.Machine.ButterflyStreamSemantics
+import IntegerMultBounds.Machine.SparsePhaseHeadersData
+import IntegerMultBounds.Machine.SparsePhaseHeadersBudget

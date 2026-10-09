@@ -3324,6 +3324,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyStreamSemantics.lean`: Decoded complete paired stream outputs equal the forward complex butterfly at every coefficient and propagate the actual bounded-grid prefix invariant to the next precision and numerator bound. Physical selected-axis split/merge routing remains separate.
 
+- `Machine/SparsePhaseHeadersData.lean`: A fixed physical seventeen-operation schedule derives phase stride, residual count and full record-address offset from paid stage-finished original headers and a retained current-axis word. All arithmetic temporaries are cleared, the current axis is retained and three exact sparse descriptors are produced.
+
+- `Machine/SparsePhaseHeadersBudget.lean`: The complete original-header sparse phase descriptor schedule costs at most 10000 times address bits plus one, hence at most 10000 times actual payload capacity. Every product, subtraction, initialization and erasure is charged; complete phase-stream assembly remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
