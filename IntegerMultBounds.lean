@@ -855,3 +855,4 @@ import IntegerMultBounds.Machine.ArbitraryWidthLevelAdvance
 import IntegerMultBounds.Machine.RangePaddingDimensions
 import IntegerMultBounds.Machine.RowCropAny
 import IntegerMultBounds.Machine.RadixRangePaddingExecution
+import IntegerMultBounds.Machine.ArbitrarySliceRepeat
