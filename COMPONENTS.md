@@ -1327,6 +1327,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthElementary.lean`: One actual fixed program takes sole original canonical parent headers and a completely blank sixteen-tape private bank. It copies the width header, executes all corresponding unit-digit swaps with the proved recursive base machine, and erases the copy. Exact full transpose, restored headers/stacks and complete private cleanup hold even at zero width. Every fixed bounded set of positive widths has linear-volume runtime and therefore satisfies the unchanged positive width exponent.
 
+- `Machine/ArbitraryWidthLevelLifecycle.lean`: Physical setup initializes base, unit power width and zero depth on the shared slice-control bank. Final cleanup clears all six level controls while preserving arbitrary parent payload, original shape descriptors and caller tapes.
+
+- `Machine/ArbitraryWidthPieceExecution.lean`: One concrete fixed outer program repeatedly extracts actual runtime base digits, consumes them with real repeated slices, advances depth and power width, and follows the proved prefix invariant. Its complete dispatcher endpoint is the full transpose, with physically advanced controls. No callback execution oracle is supplied; exact accumulated costs are paid.
+
+- `Machine/ArbitraryWidthPieceSetup.lean`: From sole original parent headers and blank private controls, physically copy the original width into the remaining counter, construct the zero offset, and initialize the fixed base/depth/power controls. Every copied or constructed descriptor is charged.
+
+- `Machine/ArbitraryWidthPieceCleanup.lean`: Complete physical final erasure of remaining width, final offset and all depth/power/base controls. Original parent headers, array, stacks and framed caller storage survive exactly.
+
+- `Machine/ArbitraryWidthPieceRun.lean`: The actual fixed dispatcher composes sole-header initialization, every real extracted-digit slice call, exact full transpose and final control cleanup. All fourteen dispatcher, eleven slice-work and six level private controls return blank, while original metadata and caller banks are restored. A complete paid natural cost expression is proved; converting its accumulated cost to the certified exponent remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
