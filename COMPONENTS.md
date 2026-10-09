@@ -3614,6 +3614,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactReservedRoundtrip.lean`: Actual forward and inverse reservation controllers compose with shared signed-width guard and recover exact decoded values at precision q plus twice the reserved count. Both physical passes and the sequencing transition are paid; full uniform cost absorption remains separate.
 
+- `Machine/UnitPhaseStageHeaders.lean`: Original thirteen stage headers physically synthesize phase metadata, then copy an immutable external current-axis ordinal after synthesis releases its scratch. Final paid erasure restores the exact original numeric bank. Both setup and cleanup have uniform linear full-volume bounds; coefficient streams and outer storage are framed by placement/extension, and complete polynomial-phase/native-caller assembly remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
