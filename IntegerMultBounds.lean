@@ -1042,3 +1042,4 @@ import IntegerMultBounds.Machine.PackedOffsetStream
 import IntegerMultBounds.Machine.PackedOffsetStreamRaw
 import IntegerMultBounds.Machine.CountedPackedLateData
 import IntegerMultBounds.Machine.CountedPackedLateRun
+import IntegerMultBounds.Machine.StreamedFiberTranslationReusable
