@@ -1699,6 +1699,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryPackedOffsetOriginalBudget.lean`: The complete original-header count/action/erasure path preserves the certified interchange exponent. Actual count preparation and cleanup are absorbed into nonempty payload volume; no derived count word or free preparation is assumed.
 
+- `Machine/CountedGuardConstantsData.lean`: Exact padded little-endian comparison patterns with certified widths and power-of-two values for b≥1 and b+3≤q.
+
+- `Machine/CountedGuardConstantsFill.lean`: Actual runtime-counted zero/one fills and paid rewinds from binary width descriptors, with exact words and framed caller storage.
+
+- `Machine/CountedGuardConstantsEdit.lean`: Physical runtime b-positioned bit overwrite and return, with exact padded-pattern semantics and charged linear-width execution.
+
+- `Machine/CountedGuardConstantsPlacement.lean`: Eight-tape shared placements for constant filling, rewinding and editing preserve the original q/b and all complementary tapes.
+
+- `Machine/CountedGuardConstants.lean`: One fixed eight-tape machine constructs all three literal guard constants from sole original canonical q/b headers, with exact widths/values, retained headers and blank private descriptor/one/clock. Cost40q+80b+300 charges fills, edits, returns and cleanup. Composition into the fifteen-tape guard remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
