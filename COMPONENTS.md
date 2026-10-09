@@ -2830,6 +2830,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsBankBudget.lean`: Actual consumer metadata installation and final generated-header erasure have linear original payload-volume execution bounds; every setup and cleanup transition is paid.
 
+- `Machine/ActivePrefixDirtyControlLayoutRows.lean`: Every actual selected/correction/pure/negative-XOR offset row equals the literal packed arithmetic on the current compact-U and target fields.
+
+- `Machine/ActivePrefixDirtyControlUSwapGeometry.lean`: Compact-U/back interchange is the literal original-address field swap with exact physical transpose semantics and retained spectators.
+
+- `Machine/ActivePrefixDirtyControlGlobalSwap.lean`: Both actual compact T/back and U/back programs have original full-array coordinate semantics and involutive coordinate maps.
+
+- `Machine/ActivePrefixDirtyControlGlobalTarget.lean`: Actual dirty-control target loads move exactly the selected and correction modular target offsets at every original address.
+
+- `Machine/ActivePrefixDirtyControlGlobalBack.lean`: The real back rotation has exact original-index semantics for literal offset streams, retaining every original spectator field.
+
+- `Machine/ActivePrefixDirtyControlGlobalConjugation.lean`: Both physical compact swap/rotation/swap schedules act at the current swapped address and return exact original-index T/U conjugation destinations.
+
+- `Machine/ActivePrefixDirtyControlGlobalSequence.lean`: The complete physical prepared later sequence returns the exact composed forward coordinate action on every full-array address, including exceptional addresses; identification with lateActual remains separate.
+
+- `Machine/BinaryPackedLatePermutation.lean`: The actual fixed-width late word algorithm equals the exact packed permutation used by global repair, including all dirty carries and borrows on exceptional addresses.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
