@@ -1645,6 +1645,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryPackedOffsetBudget.lean`: The actual complete swap/rotate/swap cost retains the certified interchange width exponent. Power-header generation, payload rotation, physical erasure and both sequencing transitions are absorbed into full nonempty payload volume; no call cost is omitted.
 
+- `Machine/CompactRowHeaders.lean`: Physically constructs the six row-split headers from original canonical total-row/role-count/record-width descriptors, retains originals, erases temporary zero/one writers and cleans every generated descriptor with charged bounds.
+
+- `Machine/CompactRowSplit.lean`: A fixed-role-count machine composes actual runtime-header construction, destructive complete-row splitting and generated-header cleanup. The source is erased, full role words installed, original descriptors retained and all private storage blank.
+
+- `Machine/CompactRowArray.lean`: Connects actual row splitting to Compact.Layout.splitRows on literal finite arrays. Every suffix cell, including dirty temporary fields, is preserved. Positive rows/width and static positive role count are explicit; runtime and full cleanup are linear in total payload volume.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -1056,3 +1056,6 @@ import IntegerMultBounds.Machine.PackedOffsetPayloadPlaced
 import IntegerMultBounds.Machine.BinaryPackedOffsetData
 import IntegerMultBounds.Machine.BinaryPackedOffsetRun
 import IntegerMultBounds.Machine.BinaryPackedOffsetBudget
+import IntegerMultBounds.Machine.CompactRowHeaders
+import IntegerMultBounds.Machine.CompactRowSplit
+import IntegerMultBounds.Machine.CompactRowArray
