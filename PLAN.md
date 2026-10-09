@@ -19,7 +19,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (1078/1078) | 🟡 (842/844) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (7/9) |
-| Fast multiplication subroutine | Schönhage–Strassen | 🟡 (11/12) | 🟡 (0/4) |
+| Fast multiplication subroutine | Schönhage–Strassen | 🟡 (11/12) | 🟡 (3/8) |
 | Exact multiplication, parameters, time bound | §8 | 🟡 (5/7) | ⬜ (0/2) |
 | End-to-end theorem `EndToEnd` | — | 🟡 (5/8) | 🟡 (5/8) |
 
@@ -1542,10 +1542,14 @@ replaces the Harvey–van der Hoeven recursion. The Harvey–van der Hoeven recu
 | Twisted transform convolution theorem | `Schoenhage/Transform` | ✅ | — | Contiguous-halves forward and unscaled inverse transforms modulo `X^(2^k) - ψ^e` over any commutative ring with `ψ^H = -1`; inverse of the pointwise product is `2^k` times the product (`inv_fwd_mul`), no division by two |
 | One level modulo `2^n + 1` | `Schoenhage/Level` | ✅ | — | Pieces, transform in `ℤ/(2^N + 1)` with `ψ = 2^(N/2^k)`, descale, signed lift and evaluation give `x y mod 2^(2^k M) + 1` whenever `2^k ∣ N` and `2M + k + 1 ≤ N` (`level_correct`) |
 | Recursion, size schedule and cost bound | — | ⬜ | — | Level-batched recursion with near-doubling sizes; `M(m) = O(m log m log log m)` |
-| Word tapes and finite-type machines | `Schoenhage/FMachine`, `Schoenhage/Words` | ✅ | 🟡 | Machines over any finite state type compile to programs with equal runs; tapes as zippers of separator-terminated binary words |
-| Streaming word primitive | `Schoenhage/Stream` | — | ⬜ | One generic lockstep transducer for copy, add, subtract, shifts |
-| Word-program compiler | — | — | ⬜ | Sequencing, loops and branches over word tapes with exact costs |
-| Schönhage–Strassen on tapes | — | — | ⬜ | Exact product and runtime within the packed-products row |
+| Word tapes and finite-type machines | `Schoenhage/FMachine`, `Schoenhage/Words` | ✅ | ✅ | Machines over any finite state type compile to programs with equal runs; tapes as zippers of separator-terminated binary words |
+| Streaming word primitive | `Schoenhage/Stream`, `Schoenhage/StreamPrim` | — | ✅ | One finite-state transducer machine: a driver word, further inputs advanced at the rule's choice, at most one output symbol per step and a final flush, optionally continuing the output's last word; exact run, heads, tapes and step count (`stream_run`, `streamPrim`) |
+| Word-program compiler | `Schoenhage/Cmd`, `Schoenhage/Moves` | — | ✅ | Primitives placed on any tapes, sequencing, loops while a tape has a word, branches on a leading one; `compile_correct` turns every big-step execution into a run of the compiled program within its cost; rewind, back, clear and emit primitives |
+| Residue arithmetic on word tapes | — | — | ⬜ | Addition, subtraction and multiplication by powers of two modulo `2^N + 1` on `(N+1)`-bit words |
+| Transform layers on tapes | — | — | ⬜ | Forward and inverse butterfly layers over contiguous blocks with shift twiddles |
+| Splitting and recombination on tapes | — | — | ⬜ | Pieces, padding, descaling, signed lift and carry evaluation modulo `2^n + 1` |
+| Batched recursion on tapes | — | — | ⬜ | Down-sweep, quadratic base, up-sweep; exact product of two input words |
+| Runtime within the packed-products row | — | — | ⬜ | `O(m log m log log m)` steps |
 
 ## 9. Exact multiplication, parameters, time bound (§8)
 

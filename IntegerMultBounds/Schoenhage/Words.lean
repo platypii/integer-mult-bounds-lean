@@ -38,6 +38,31 @@ def syms (ws : List (List Bool)) : List (Option Bool) := ws.flatMap fun w => w.m
 theorem syms_append (ws vs : List (List Bool)) : syms (ws ++ vs) = syms ws ++ syms vs := by
   simp [syms]
 
+/-- Split a symbol list into its separator-terminated words. -/
+def parseAux : List Bool → List (Option Bool) → List (List Bool)
+  | _, [] => []
+  | cur, none :: os => cur.reverse :: parseAux [] os
+  | cur, some b :: os => parseAux (b :: cur) os
+
+/-- The words of a symbol list. -/
+def parse (os : List (Option Bool)) : List (List Bool) := parseAux [] os
+
+theorem parseAux_syms (cur w : List Bool) (ws : List (List Bool)) :
+    parseAux cur (w.map some ++ [none] ++ syms ws) = (cur.reverse ++ w) :: parseAux [] (syms ws) := by
+  induction w generalizing cur with
+  | nil => simp [parseAux]
+  | cons b w ih =>
+    have := ih (b :: cur)
+    simp only [List.map_cons, List.cons_append, parseAux]
+    rw [this]; simp
+
+theorem parse_syms (ws : List (List Bool)) : parse (syms ws) = ws := by
+  induction ws with
+  | nil => rfl
+  | cons w ws ih =>
+    unfold parse at ih ⊢
+    rw [syms_cons, parseAux_syms, ih]; simp
+
 /-- Total cell length of a word list. -/
 def clen (ws : List (List Bool)) : ℕ := (ws.map fun w => w.length + 1).sum
 
@@ -139,6 +164,39 @@ theorem put_end (T : WTape) (h : T.right = []) (vs : List (List Bool)) :
   simp only [tape, words, h, List.append_nil, List.reverse_append, List.reverse_reverse]
   rw [hp, put_wordTape]
   simp [cells, syms_append]
+
+theorem update_wordTape_last (A : List (Fin (a + 4))) (x y : Fin (a + 4)) :
+    Function.update (wordTape (A ++ [x])) (A.length : ℤ) y = wordTape (A ++ [y]) := by
+  funext j
+  by_cases hj : j = A.length
+  · subst hj; simp [wordTape]
+  · rw [Function.update_of_ne hj]
+    unfold wordTape
+    split_ifs with h0
+    · rcases lt_or_gt_of_ne (show j.toNat ≠ A.length by omega) with hl | hl
+      · rw [List.getElem?_append_left hl, List.getElem?_append_left hl]
+      · rw [List.getElem?_eq_none (by simp; omega), List.getElem?_eq_none (by simp; omega)]
+    · rfl
+
+/-- Writing over the last separator continues the last word. -/
+theorem put_ext (T : WTape) {u : List Bool} {L : List (List Bool)} (hl : T.left = u :: L)
+    (h : T.right = []) (v : List Bool) (vs : List (List Bool)) :
+    putWord (T.tape (a := a)) (T.pos - 1) (cells (v :: vs)) =
+      (⟨vs.reverse ++ (u ++ v) :: L, []⟩ : WTape).tape := by
+  set A : List (Fin (a + 4)) := cells L.reverse ++ u.map bitSymbol
+  have hT : T.tape (a := a) = wordTape (A ++ [separator]) := by
+    simp [tape, words, h, hl, A, cells, syms_append, sym, List.append_assoc, Function.comp_def]
+  have hp : T.pos - 1 = (A.length : ℤ) := by
+    simp [pos, hl, A, length_cells, clen_reverse]; ring
+  rw [hT, hp]
+  obtain ⟨b, B, hbB⟩ : ∃ b B, cells (a := a) (v :: vs) = b :: B := by
+    rcases hcv : cells (a := a) (v :: vs) with _ | ⟨b, B⟩
+    · have := congrArg List.length hcv; simp [length_cells] at this
+    · exact ⟨b, B, rfl⟩
+  rw [hbB, putWord_cons, update_wordTape_last,
+    show (A.length : ℤ) + 1 = ((A ++ [b]).length : ℤ) by simp, put_wordTape, List.append_assoc,
+    List.singleton_append, ← hbB]
+  simp [tape, words, A, cells, syms_append, sym, List.append_assoc, Function.comp_def]
 
 end WTape
 

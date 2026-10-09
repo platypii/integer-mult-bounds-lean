@@ -54,6 +54,13 @@ theorem frun_add (k l : ℕ) (c : M.Cfg) :
 theorem frun_one (c : M.Cfg) : M.frun 1 c = M.fstep c := by
   simp only [frun]; cases M.fstep c <;> rfl
 
+theorem frun_trans {k l : ℕ} {c d e : M.Cfg}
+    (h1 : M.frun k c = some d) (h2 : M.frun l d = some e) : M.frun (k + l) c = some e := by
+  rw [frun_add, h1, Option.bind_some, h2]
+
+theorem frun_of_step {c d : M.Cfg} (h : M.fstep c = some d) : M.frun 1 c = some d := by
+  rw [frun_one, h]
+
 /-- Number the states. -/
 noncomputable def toProgram (ht : 0 < t) : Program t (Fintype.card M.S) a where
   tapes_pos := ht

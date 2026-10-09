@@ -2052,3 +2052,7 @@ import IntegerMultBounds.Machine.ButterflySpectatorGeometry
 import IntegerMultBounds.Machine.ButterflySpectatorHeaders
 import IntegerMultBounds.Machine.ButterflySpectatorOriginal
 import IntegerMultBounds.Machine.CompactSpectatorVisitGeometry
+import IntegerMultBounds.Schoenhage.Stream
+import IntegerMultBounds.Schoenhage.StreamPrim
+import IntegerMultBounds.Schoenhage.Cmd
+import IntegerMultBounds.Schoenhage.Moves

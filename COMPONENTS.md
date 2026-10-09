@@ -5312,6 +5312,24 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   by a separator, laid out from cell zero; the abstract tape is a zipper with
   the head at a word boundary. Reading lemmas and writing words at the end.
 
+- `Schoenhage/Stream.lean`: the generic streaming machine. Tape `0` drives:
+  for each bit of its current word a finite rule reads that bit and the
+  current bit of every other input (or that its word has ended), emits at
+  most one symbol and chooses which inputs advance; the other inputs then skip
+  to their separators, the rule's flush is emitted, and all inputs step past
+  their words. `stream_run`: exact final tapes and heads in exactly
+  `time R w ws` transitions; extend mode overwrites the output's last separator.
+- `Schoenhage/StreamPrim.lean`: the streaming machine as a word-program
+  primitive: inputs step past their current words and the emitted words are
+  appended to the output tape (continuing its last word in extend mode).
+- `Schoenhage/Cmd.lean`: word programs. Verified primitives placed on chosen
+  tapes, sequencing, loops while a tape has a current word, and branches on a
+  leading one bit; big-step executions with costs, and `compile_correct`: each
+  execution is a run of the compiled literal program within its cost.
+- `Schoenhage/Moves.lean`: one-tape primitives with exact runs: rewind to the
+  first word, step back over the previous word, erase the whole tape, and
+  append fixed words.
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
