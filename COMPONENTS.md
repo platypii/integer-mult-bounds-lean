@@ -1669,6 +1669,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedGuardGadgetRecord.lean`: Fixed eleven-tape per-record guard bodies execute all physical comparisons, descriptor-driven target replay and constant rewinds. Exact legacy V/W flags, clean private comparison/replay storage and44q+104/15b+35 costs are proved; runtime n-loop assembly remains separate.
 
+- `Machine/BinaryPackedRowCount.lean`: A fixed thirteen-tape machine physically derives the fiber count P*2^w*G from original P/G/B/w headers through one power and two products. Original headers are retained, intermediate Q/PQ and all scratch are erased, and only the canonical derived count survives, including width zero.
+
+- `Machine/BinaryPackedRowCountPlaced.lean`: Shares four static injective original-header slots with a caller bank and nine blank private tapes. The generated count occupies the first private slot, every other private tape returns blank, and the complete complementary frame is retained. Actual count erasure restores the original caller and all private tapes.
+
+- `Machine/BinaryPackedRowCountBudget.lean`: The actual original-header count preparation has bound(constant2+110)*fiberCount+75 for positive P/G. Retained count erasure costs at most2*fiberCount+6; every power/product/setup/join/cleanup is paid. Wiring this producer into the full payload permutation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

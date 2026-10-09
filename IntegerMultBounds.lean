@@ -1068,3 +1068,6 @@ import IntegerMultBounds.Machine.BinaryAddressTableStep
 import IntegerMultBounds.Machine.BinaryAddressTableFill
 import IntegerMultBounds.Machine.BinaryAddressTable
 import IntegerMultBounds.Machine.CountedGuardGadgetRecord
+import IntegerMultBounds.Machine.BinaryPackedRowCount
+import IntegerMultBounds.Machine.BinaryPackedRowCountPlaced
+import IntegerMultBounds.Machine.BinaryPackedRowCountBudget
