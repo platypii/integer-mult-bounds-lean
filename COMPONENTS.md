@@ -3234,6 +3234,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexRecursiveGeometry.lean`: The actual active-axis count has the manuscript consecutive base-15625 power partition; canonical root/child-slot paths derive all node intervals, width, spectators and selected-column fields. Actual scalar choices derive Stage geometry and the fixed complex role count without a supplied active decomposition. Physical controller path/descriptor production and row-role call/stop state remain open.
 
+- `Machine/CompactReservationRate.lean`: Actual reservation and cutoff are negligible relative to every dimension power above one minus spacing, including the certified layer exponent. Individually processed axes satisfy the same bound uniformly in the selected dimension; actual linear-volume per-axis kernel execution remains a separate requirement.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
