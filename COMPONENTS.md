@@ -3546,6 +3546,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactFallbackReservedBudget.lean`: Original nonfallback low-back and high-row/front reservation positions have genuine paid sparse-axis call costs and a certified aggregate complexity allowance. These positions are distinct and exhaust the reservation; their physical occurrence controller remains separate.
 
+- `Machine/CompactActualNativeBudget.lean`: One fixed native stage machine has a uniform actual original-polynomial-volume cost bound with the certified stage exponent. Multiplying descendant costs by their exact role divisor recovers the single global padding, whose overhead is at most two; stored signed guard widths and Boolean conversion contribute only a fixed factor. No recursive network or repeated-call execution is supplied by this cost-row bridge.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

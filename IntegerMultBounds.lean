@@ -1994,3 +1994,4 @@ import IntegerMultBounds.Machine.CompactFallbackOriginal
 import IntegerMultBounds.Machine.CompactFallbackSemantics
 import IntegerMultBounds.Machine.CompactFallbackActualBudget
 import IntegerMultBounds.Machine.CompactFallbackReservedBudget
+import IntegerMultBounds.Machine.CompactActualNativeBudget
