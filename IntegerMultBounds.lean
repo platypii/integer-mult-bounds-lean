@@ -806,3 +806,11 @@ import IntegerMultBounds.Machine.ArbitraryWidthSliceTranspose
 import IntegerMultBounds.Machine.RecursiveRowPadding
 import IntegerMultBounds.Machine.BoundedProductDescriptor
 import IntegerMultBounds.Machine.RowPaddingSpanCounts
+import IntegerMultBounds.Machine.CountedRawFill
+import IntegerMultBounds.Machine.CountedRawMove
+import IntegerMultBounds.Machine.CountedPairPosition
+import IntegerMultBounds.Machine.RowPaddingBlock
+import IntegerMultBounds.Machine.RowPaddingStream
+import IntegerMultBounds.Machine.RowPaddingReset
+import IntegerMultBounds.Machine.RowPaddingExecution
+import IntegerMultBounds.Machine.RowPaddingWord

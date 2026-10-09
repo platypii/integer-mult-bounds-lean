@@ -1191,6 +1191,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RowPaddingSpanCounts.lean`: One fixed nine-tape machine preserves canonical row, padded-row and suffix-length inputs and actually constructs canonical valid-span R*L and zero-padding-span (R′−R)*L, erasing subtraction and arithmetic scratch completely. Runtime is at most 112*(R′*L)+83; constructing the rounded row count R′ itself is separate.
 
+- `Machine/CountedRawFill.lean`: Actual delimiter-free filling of an exact finite interval from an immutable binary span descriptor. Every data write, countdown setup and clock reset is charged; surrounding cells and supplied descriptor remain exact.
+
+- `Machine/CountedRawMove.lean`: Actual delimiter-free destructive word transfer with source erasure from an immutable binary span descriptor. Exact arbitrary-symbol output, surrounding-cell preservation and all paid countdown/clock cleanup; data heads advance by precisely the span.
+
+- `Machine/CountedPairPosition.lean`: Fixed counted motion of two payload heads with exact whole-tape preservation, reusable supplied span descriptor and charged clock preparation/reset. Supports restoring both row-padding payload origins.
+
+- `Machine/RowPaddingBlock.lean`: Physical valid-span transfer followed by binary-zero padding, and inverse valid-span transfer plus physical padding erasure. Original span descriptors are retained and every primitive/join is paid.
+
+- `Machine/RowPaddingStream.lean`: Actual counted prefix loop streams every original row group to its zero-padded group, or physically crops and erases padded groups. Exact flattened words and supplied span/prefix controls, with all group-loop work charged.
+
+- `Machine/RowPaddingReset.lean`: Physical counted rewind restores both payload origins after grouped padding or cropping while preserving every tape cell and immutable span controls.
+
+- `Machine/RowPaddingExecution.lean`: One fixed seven-tape padding or cropping program includes marker setup, every grouped transfer/fill/erase, counted origin restoration and final clock erasure. Exact full-tape endpoints with both clocks blank/head zero and linear cost at most 148*P*(N+M)+53; canonical span/count descriptors are explicit inputs.
+
+- `Machine/RowPaddingWord.lean`: Flat descriptor arrays serialize to exactly the physical per-prefix row words and appended binary-zero spans. Padding/cropping word identities and the full transpose-after-padding output bridge connect the semantic row wrapper to the actual streamed data layout.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
