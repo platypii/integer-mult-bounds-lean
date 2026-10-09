@@ -2082,3 +2082,5 @@ import IntegerMultBounds.Schoenhage.Rules
 import IntegerMultBounds.Schoenhage.Ops
 import IntegerMultBounds.Schoenhage.Wp
 import IntegerMultBounds.Schoenhage.Alu
+import IntegerMultBounds.Machine.ActivePrefixStageNativePairCoordinates
+import IntegerMultBounds.Machine.ActivePrefixStageNativePairInverse

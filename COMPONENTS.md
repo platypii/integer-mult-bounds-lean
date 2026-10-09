@@ -3706,6 +3706,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageNativePairBudget.lean`: The actual complete native basis-word executable retains the certified stage exponent, with uniform constant times literal instruction count times original serialized-volume scale. Header frames, rewrites, conversions, restoration and joins are all charged. The cost theorem includes the genuine program witness and exact row output; recursive network/phase assembly remains separate.
 
+- `Machine/ActivePrefixStageNativePairCoordinates.lean`: Native row destinations are exactly the original serialized record-start destinations of each basis instruction, preserving spectators and every payload symbol. Complete chronological native words have the original Boolean basis-coordinate semantics and actual entrywise output; individual row destinations are involutions.
+
+- `Machine/ActivePrefixStageNativePairInverse.lean`: Reversing the actual literal native word physically restores exact original row data, caller headers and private storage. Both directions and every conversion/frame/join cost are paid, and the complete roundtrip retains the certified stage exponent with a genuine executable witness.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
