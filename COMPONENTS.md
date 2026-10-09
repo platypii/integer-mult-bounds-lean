@@ -3408,6 +3408,22 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyAxisWalsh.lean`: Actual native axis schedules equal the existing BinaryWalsh kernelRun through FlatCoordinateLayout, with explicit reversed selected-bit coordinates. Fixed-machine range_correct/all_correct combine clean output, derived grids/guards, exact existing-kernel semantics and paid linear-volume-times-axis-count runtime.
 
+- `Machine/UnitPhaseRecordAddress.lean`: Physically copies live counter57 into address43 and increments the actual counter on the sixty-tape phase bank. Exact consecutive binary rows, all other tape frames and five-width-plus-ten cost are proved.
+
+- `Machine/UnitPhaseRecordKernel.lean`: Derived sparse-header phase computation, consumed coefficient emission and complete local reset compose on sixty tapes, retaining the address and live counter. Exact emitted phase words, all private tapes44–55 blank/head zero and full paid cost are proved.
+
+- `Machine/UnitPhaseRecordRead.lean`: Physical two-field stream read and accumulator-flag preparation fill the exact marked sources of the phase kernel with paid IO and preserved caller frame.
+
+- `Machine/UnitPhaseRecord.lean`: Complete read/prepare/derived-phase/emit/reset body advances the actual coefficient streams and returns clean private work with exact signed complex phase semantics under a strict coefficient guard.
+
+- `Machine/UnitPhaseRecordFull.lean`: The complete record body prepends actual live address copy/increment, eliminating supplied per-record address readout. Exact address, source/output stream advancement and complete paid record cost are proved.
+
+- `Machine/UnitPhaseRecordRestore.lean`: The complete phase body endpoint equals the next clean record caller, with every private numerator/control/flag/header physically reset for reuse.
+
+- `Machine/UnitPhaseStreamLoop.lean`: Fixed sixty-two-tape loop obtains its count from original header4 and repeatedly executes the actual live-address/read/phase/emit/reset body. Exact concatenated stream contexts and consecutive endpoints are proved for a coefficient count equal to header4; generated loop controls are physically erased. Full-address coefficient count derivation remains separate.
+
+- `Machine/UnitPhaseStreamBudget.lean`: Uniform full-record bound10600 times payload plus24 times coefficient width and complete original-header loop bound rows times(10620 times payload plus24 times width) plus46 pay all address, metadata, IO, phase and cleanup work. Original-width initialization and final whole-stream normalization remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
