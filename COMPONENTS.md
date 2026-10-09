@@ -1781,6 +1781,36 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedRepairKeyScan.lean`: Places the fixed key machine into the actual forty-two-tape repair scan bank and proves RepairScan.KeyContract with exact rank flags/destination keys, retained non-key scan tapes and reusable28-tape scratch. Full outer scan/sort/reinsert initialization and assembly remain separate.
 
+- `Machine/BinaryAddressOffsetRepeatBlock.lean`: Fixed runtime-width source-block copying, scratch rewinding and repeated block output with exact complete-block preservation and charged controls.
+
+- `Machine/BinaryAddressOffsetRepeatPass.lean`: Actual counted traversal of all base offset rows repeats each row over the trailing spectator dimension, erases block scratch and restores counted workspace.
+
+- `Machine/BinaryAddressOffsetRepeatLoop.lean`: Physically repeats the expanded table over preceding coordinates, paying table rewinds and all outer countdown operations.
+
+- `Machine/BinaryAddressOffsetRepeat.lean`: Complete fixed eleven-tape offset repetition: actual nested loops, block/source erasure, output rewind and all four private marker cleanups. Original width/count descriptors retained; zero block width supported.
+
+- `Machine/BinaryAddressOffsetRepeatBudget.lean`: Full physical repetition budget at most250*K*N*L*(W+1) for positive row/repetition counts, charging every copy, rewind, clock and cleanup.
+
+- `Machine/BinaryAddressOffsetRepeatValue.lean`: Exact expanded row lookup and integer offset values through trailing and preceding repetitions, with no free duplicated table.
+
+- `Machine/BinaryAddressOffsetRepeatAlphabet.lean`: Lifts the initialized repetition machine to any larger alphabet with unchanged runtime and literal output words.
+
+- `Machine/BinaryAddressOffsetRepeatPlaced.lean`: Shares six caller ports and appends five blank private tapes for actual repetition, retaining every complementary caller tape and clearing all private storage.
+
+- `Machine/BinaryAddressOffsetPlaced.lean`: Complete original-header parity-offset producer shares caller q/b/n/output slots, preserves all complementary storage and restores26 appended private tapes.
+
+- `Machine/BinaryAddressOffsetRepeatHeaders.lean`: Physically synthesizes W=n*b,N=2^(n*q),K=P*H*2^(n*b) from original q/b/n/P/H/L, retaining originals and erasing all intermediate arithmetic/power scratch.
+
+- `Machine/BinaryAddressOffsetRepeatConstruct.lean`: Fixed forty-nine-tape repeated parity-offset constructor from only six original canonical headers. Builds/consumes the regular base table, runs all physical repetitions and erases every generated descriptor/work tape; only output and originals remain.
+
+- `Machine/BinaryAddressOffsetRepeatConstructBudget.lean`: All original-header setup, table generation, repetition and erasure costs are absorbed into the full payload volume under the explicit sufficient record-width allowance.
+
+- `Machine/BinaryAddressOffsetRepeatCoordinates.lean`: Exact actual fiber row equation includes prefix, dirty back, preceding/source/trailing spectator coordinates. The repeated offset equals precisely the packed parity of its source coordinate, independent of dirty back and other spectators.
+
+- `Machine/BinaryAddressOffsetRepeatConstructAlphabet.lean`: Lifts the complete original-input repeated parity constructor to the interchange alphabet with literal output and identical runtime.
+
+- `Machine/BinaryAddressOffsetRepeatConstructPlaced.lean`: Complete arbitrary seven-port caller placement of the repeated parity constructor, appending/restoring42 private tapes and preserving every spectator. Actual source/dirty-back alignment and explicit volume absorption are proved; deriving upstream gadget geometry remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
