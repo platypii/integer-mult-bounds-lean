@@ -1,6 +1,7 @@
 import IntegerMultBounds.Machine.BinaryAddressOffsetRepeatCoordinates
 import IntegerMultBounds.Machine.BinarySelectedOffsetRepeatCoordinates
 import IntegerMultBounds.Machine.BinaryCorrectionOffsetRepeatCoordinates
+import IntegerMultBounds.Machine.BinaryParityXorOffsetRepeatCoordinates
 import IntegerMultBounds.Machine.BinaryPackedOffsetData
 
 /-! The physically constructed repeated words drive the actual packed-field
@@ -146,6 +147,56 @@ theorem correction_entry (q b n P H L B : ℕ) (Z : List Bool) (hb : 1≤b) (hbq
   have ha := BinaryPackedOffsetData.result_entry _ P (n*q) (H*2^(n*b)*L) B
     hlen x p front back (pack (pack h y) l) j
   simpa only [correction_offset q b n P H L Z hb hbq hZ p back h y l] using ha
+
+theorem parity_xor_offset (q b n P H L : ℕ) (hb : 1≤b) (hbq : b+1≤q) (Z : List Bool)
+    (p : Fin P) (back : Fin (2^(n*b))) (h : Fin H) (y : Fin (2^(n*q))) (l : Fin L) :
+    PackedOffsetPayloadValue.offset
+      (BinaryParityXorOffsetRepeatData.destination q b n L ((P*H)*2^(n*b)) Z hb hbq)
+      (n*b) (BinaryPackedOffsetData.rowIndex p back (pack (pack h y) l)).val =
+      Counter.value (TwosComplement.negWord (BinaryParityXorOffsetData.rowWord q b n y.val Z hb hbq)) := by
+  unfold PackedOffsetPayloadValue.offset
+  have hi : (BinaryPackedOffsetData.rowIndex p back (pack (pack h y) l)).val =
+      BinaryParityXorOffsetRepeatCoordinates.row q b n H L p.val back.val h.val y.val l.val := by
+    simp only [BinaryPackedOffsetData.rowIndex,pack_val,
+      BinaryParityXorOffsetRepeatCoordinates.row]
+    ring
+  rw [hi,BinaryParityXorOffsetRepeatCoordinates.field_eq q b n P H L
+    p.val back.val h.val y.val l.val Z hb hbq p.isLt back.isLt h.isLt y.isLt l.isLt]
+
+theorem parity_xor_offset_value (q b n P H L : ℕ) (Z : List Bool) (hb : 1≤b) (hbq : b+1≤q)
+    (hZ : Z.length=n) (p : Fin P) (back : Fin (2^(n*b)))
+    (h : Fin H) (y : Fin (2^(n*q))) (l : Fin L) :
+    (PackedOffsetPayloadValue.offset
+      (BinaryParityXorOffsetRepeatData.destination q b n L ((P*H)*2^(n*b)) Z hb hbq)
+      (n*b) (BinaryPackedOffsetData.rowIndex p back (pack (pack h y) l)).val : ℤ) =
+      (-Compact.Radix.pack ((2 : ℤ)^b)
+        (List.zipWith (fun v z => (v%2+z)%2)
+          (Compact.Radix.digits ((2 : ℤ)^q) n y.val) (Z.map Compact.PowerTwo.ctrl))) % (2 : ℤ)^(n*b) := by
+  unfold PackedOffsetPayloadValue.offset
+  have hi : (BinaryPackedOffsetData.rowIndex p back (pack (pack h y) l)).val =
+      BinaryParityXorOffsetRepeatCoordinates.row q b n H L p.val back.val h.val y.val l.val := by
+    simp only [BinaryPackedOffsetData.rowIndex,pack_val,BinaryParityXorOffsetRepeatCoordinates.row]
+    ring
+  rw [hi]
+  exact BinaryParityXorOffsetRepeatCoordinates.field_value q b n P H L
+    p.val back.val h.val y.val l.val Z hb hbq p.isLt back.isLt h.isLt y.isLt l.isLt hZ
+
+theorem parity_xor_entry (q b n P H L B : ℕ) (hb : 1≤b) (hbq : b+1≤q) (Z : List Bool)
+    (x : Fin (volume P (2^(n*b)) (H*2^(n*q)*L) B) → Bool)
+    (p : Fin P) (front back : Fin (2^(n*b)))
+    (h : Fin H) (y : Fin (2^(n*q))) (l : Fin L) (j : Fin B) :
+    BinaryPackedOffsetData.result
+      (BinaryParityXorOffsetRepeatData.destination q b n L ((P*H)*2^(n*b)) Z hb hbq)
+      P (n*b) (H*2^(n*q)*L) B x
+      (index p ⟨(front.val+Counter.value
+        (TwosComplement.negWord (BinaryParityXorOffsetData.rowWord q b n y.val Z hb hbq)))%2^(n*b),
+        Nat.mod_lt _ (by positivity)⟩ (pack (pack h y) l) back j) =
+      x (index p front (pack (pack h y) l) back j) := by
+  have hlen := BinaryParityXorOffsetRepeatCoordinates.word_length q b n P H L Z hb hbq
+  have ha := BinaryPackedOffsetData.result_entry _ P (n*b) (H*2^(n*q)*L) B
+    hlen x p front back (pack (pack h y) l) j
+  simpa only [parity_xor_offset q b n P H L hb hbq Z p back h y l] using ha
+
 
 end
 end IntegerMultBounds.Machine.BinaryRepeatedOffsetAction

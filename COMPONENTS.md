@@ -1992,6 +1992,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactGadgetReservationHeadersCarvedBudget.lean`: Full actual carved-width row synthesis, header setup, load and cleanup preserve the certified width exponent with C(staticRoleCount)*roleVolume and no extra chunk factor. Source-prefix/gap offset-generator wiring remains separate.
 
+- `Machine/BinaryParityXorOffsetLoad.lean`: Complete fixed shared-bank fourth-offset generation, actual original-header swap/rotate/swap and physical offset erasure, with exact negative parity-XOR destination semantics and blank private return. Physical action shape inputs are explicit; final source-prefix placement into the common early reservation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
