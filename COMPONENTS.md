@@ -3390,6 +3390,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SymbolTriplePlaced.lean`: Clean destructive native/Boolean converters execute in any stage alphabet containing the six native symbols and at any distinct caller tape slots. Exact literal raw Boolean array output, restored heads and blank obsolete source retain the same linear transition bounds; arbitrary headers/controller tapes outside the two slots are framed. Complete encode-stage-decode assembly remains open.
 
+- `Machine/ActivePrefixStageTripleEndpoint.lean`: The complete physical all-width stage returns an explicit literal native-symbol encoding with arbitrary spectators transported by its actual address action. Address involution is derived from actual array endpoint involution; whole-array output validity and nonblank native interiors are proved without a supplied output codec. Fixed-stage Hoare execution retains its certified cost; paid whole encode-stage-decode assembly remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -1916,3 +1916,4 @@ import IntegerMultBounds.Machine.RawBitWordReset
 import IntegerMultBounds.Machine.UnitPhaseFlagsLifecycle
 import IntegerMultBounds.Machine.UnitPhaseLocalReset
 import IntegerMultBounds.Machine.SymbolTriplePlaced
+import IntegerMultBounds.Machine.ActivePrefixStageTripleEndpoint
