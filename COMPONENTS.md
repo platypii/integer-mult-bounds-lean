@@ -1914,6 +1914,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactGadgetReservationHeadersAssembled.lean`: Actual reservation followed by the real selected-role load, with load source/offset contracts proved internally from literal canonical supplied originals; no hload Hoare callback. Synthesized role-count/header placement into this reservation caller remains separate.
 
+- `Machine/BinaryParityXorOffsetRow.lean`: Physically copies one runtime-width source row into blank scratch, executes real two-complement negation from fresh state, erases row scratch and preserves the exact modular negative value. No state or carry crosses row boundaries.
+
+- `Machine/BinaryParityXorOffsetLoop.lean`: Fixed counted traversal independently negates every packed offset row, with exact concatenated outputs, consumed source advancement and reusable row scratch; all joins and countdown transitions are charged.
+
+- `Machine/BinaryParityXorOffsetNegate.lean`: Complete fixed seven-tape row-negation constructor from original canonical width/count and literal packed input. Physically initializes/clears clocks, erases consumed input, rewinds output and restores all private storage; bound120*N*(W+1) for positive count. Original-address parity-XOR operand construction and repetition remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
