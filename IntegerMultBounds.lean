@@ -1923,3 +1923,5 @@ import IntegerMultBounds.Machine.CompactComplexRootDigitRound
 import IntegerMultBounds.Machine.BinaryDescriptorQueueEmit
 import IntegerMultBounds.Machine.CompactComplexRootDigits
 import IntegerMultBounds.Machine.CompactComplexRootDigitsFromHeader
+import IntegerMultBounds.Machine.ButterflyAxisKernel
+import IntegerMultBounds.Machine.ButterflyAxisWalsh

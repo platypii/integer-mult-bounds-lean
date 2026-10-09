@@ -3404,6 +3404,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexRootDigitsFromHeader.lean`: Fixed original-header copy and root digit generator uses appended controller tapes and retains every native head/cell. Exact generated Nat.digits fields and all copy/quotient/emission costs are proved; root-piece reader and canonical Visit descriptor/controller expansion remain open.
 
+- `Machine/ButterflyAxisKernel.lean`: The decoded native axis is the exact selected-bit row-major two-term translation kernel; its actual coordinate translation is involutive and preserves trailing polynomial indices.
+
+- `Machine/ButterflyAxisWalsh.lean`: Actual native axis schedules equal the existing BinaryWalsh kernelRun through FlatCoordinateLayout, with explicit reversed selected-bit coordinates. Fixed-machine range_correct/all_correct combine clean output, derived grids/guards, exact existing-kernel semantics and paid linear-volume-times-axis-count runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
