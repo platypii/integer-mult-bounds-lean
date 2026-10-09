@@ -3446,6 +3446,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyInverseAxisContinuation.lean`: Inverse semantic continuation accepts an accrued Gaussian grid and precision stage, avoiding a fresh normalization premise within its explicit total-depth guard budget.
 
+- `Machine/ButterflyIndependentGuardHeaders.lean`: Physical additions derive reservation q+2D from original actual precision q and dimension D; paid subtraction restores q and paid axis-counter reset retains the complete complementary frame.
+
+- `Machine/ButterflyIndependentGuardBank.lean`: Places guard reservation/reset/restoration in the existing native axis bank with exact original-header and stream endpoints.
+
+- `Machine/ButterflyIndependentGuardSemantics.lean`: Separates actual dyadic precision q+j from the physical width reservation q+2D; explicitly enlarged initial width q+4D+4 covers every stage of both passes without reinterpretation or intermediate resizing.
+
+- `Machine/ButterflyIndependentGuardSchedule.lean`: Forward and inverse schedules consume their actual accrued grids at precision q+j throughout a two-dimension depth budget, with exact existing Walsh kernel semantics.
+
+- `Machine/ButterflyIndependentGuardRoundtrip.lean`: One fixed paid machine derives the two-pass guard, executes all forward axes, physically resets the axis counter, executes all inverse axes and restores original q. Exact original decoded values at final precision q+2D and linear reserved-volume-times-dimension runtime are proved; reservation increases volume by at most two.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
