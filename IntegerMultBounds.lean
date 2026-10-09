@@ -1067,3 +1067,4 @@ import IntegerMultBounds.Machine.BinaryAddressTableData
 import IntegerMultBounds.Machine.BinaryAddressTableStep
 import IntegerMultBounds.Machine.BinaryAddressTableFill
 import IntegerMultBounds.Machine.BinaryAddressTable
+import IntegerMultBounds.Machine.CountedGuardGadgetRecord
