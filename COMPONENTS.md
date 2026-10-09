@@ -2508,6 +2508,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairEarlyKeyOriginal.lean`: Complete original-width early key endpoint requires no supplied parser/patch starts, source control word, local rank or destination. Final packing parameter synthesis, scan initialization and repair assembly remain separate.
 
+- `Machine/ActiveRepairEarlyOriginalScan.lean`: Actual original-input early key satisfies the growing-counter RepairScan contract: each record physically derives all field headers, computes its varying-control full key and restores every header/work tape.
+
+- `Machine/ActiveRepairEarlyOriginalPipelineRun.lean`: Fixed180-tape original-descriptor scan/sort/strip/reinsert program returns exact filled stream with paid per-record synthesis, extraction and sorting costs. Scan initialization, final working-tape cleanup, global ideal-permutation and density bridges remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
