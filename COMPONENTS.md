@@ -1613,6 +1613,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedPackedLateData.lean`: Exact word specification for the two early gadgets and physical dirty load/unload: all six intermediate/final widths match their originals, and the unrestricted integer triple is precisely packedLate. On actual guarded input blocks, only selected low target bits toggle and both dirty temporary words are restored literally. Sequential machine execution is proved separately.
 
+- `Machine/CountedPackedLateRun.lean`: Complete fixed twenty-eight-tape later-source arithmetic physically extracts parity, runs an early gadget, erases parity, loads dirty control, extracts new parity, runs the second early gadget, erases parity and unloads. Only original V/W/U/X and q/b/n are supplied; all twenty-one private tapes return blank/head zero. Exact packedLate values and guarded literal target toggling with both dirty words restored have bound7000 times full stride, including b=1 and n=0. Physical implicit-address payload permutation and row placement remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
