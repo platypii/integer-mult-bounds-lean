@@ -3570,6 +3570,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactFallbackRoundtripBudget.lean`: The complete sparse roundtrip cost, including both passes and the sequencing transition, fits the actual certified cutoff allowance relative to original polynomial volume.
 
+- `Machine/ActivePrefixStageNativeCore.lean`: One fixed reindexed actual native-stage machine reads/writes the native coefficient word at original caller tape sixty-five. Its Boolean converter source and full runtime-stage workspace are appended and physically blank at both endpoints; exact native output, head restoration and full paid stage cost are unchanged. The sixty-six-tape original bank is distinct from the larger compiled stage machine; persistent controller storage must be framed beyond its workspace.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

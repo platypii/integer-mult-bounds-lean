@@ -2006,3 +2006,4 @@ import IntegerMultBounds.Machine.CompactFallbackInverseOriginal
 import IntegerMultBounds.Machine.CompactFallbackInverseSemantics
 import IntegerMultBounds.Machine.CompactFallbackRoundtrip
 import IntegerMultBounds.Machine.CompactFallbackRoundtripBudget
+import IntegerMultBounds.Machine.ActivePrefixStageNativeCore
