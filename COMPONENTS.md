@@ -3712,6 +3712,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageNativePolynomial.lean`: Explicit polynomial coefficient rows yield canonical native row symbols with proved literal full-stream serialization, real separators and nonblank converter input. Original caller source65 is exactly the alphabet-encoded phase source word; basis address actions retain polynomial indices and every stored digit. No codec or multiplicity-from-width premise is supplied.
 
+- `Machine/CompactSpectatorLeafHeaders.lean`: Physically computes each descending original global selected bit from immutable full geometry and the actual live Visit ordinal, synthesizes spectator-aware axis headers and cleans generated controls with paid costs.
+
+- `Machine/ButterflySpectatorPorts.lean`: Exposes exact retained scalar/source ports and blank private storage for the real row-aware axis machine, enabling framed composition without assuming payload execution.
+
+- `Machine/CompactSpectatorLeafAxis.lean`: A concrete forward leaf-axis body physically synthesizes the selected global bit, executes the entire spectator/polynomial native butterfly, erases generated headers and advances the actual ordinal.
+
+- `Machine/CompactSpectatorLeafLoop.lean`: One fixed counted leaf machine traverses the actual Visit interval on immutable full Shape.bits, arbitrary outer rows and all polynomial coefficients. Exact folded native output and full descriptor/loop cleanup are proved with every axis/control cost paid; uniform leaf bound and decoded guard propagation remain separate.
+
+- `Machine/CompactSpectatorLeafSetup.lean`: Physically derives H/B/F and immutable full address bits from copied original stage scalars, validates the arithmetic schedule and arranges the exact leaf caller with all synthesis scratch reclaimed.
+
+- `Machine/CompactSpectatorLeafOriginal.lean`: Copies thirteen original runtime descriptors and immutable polynomial exponent/precision, physically derives geometry, executes the full concrete forward leaf and erases all copied/generated controls. All fifteen original descriptor ports are retained, with exact paid copies/setup/loop/cleanup.
+
+- `Machine/CompactSpectatorLeafPlacement.lean`: Executes the actual forward leaf at original native source65 inside the controller bank, preserving every exterior caller tape and head. Immutable ell and baseline precision occupy explicit ports after existing native workspace and persistent storage; every private leaf tape is restored. Inverse leaf, decoded semantics, guard derivation, uniform cost and recursive dispatcher composition remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
