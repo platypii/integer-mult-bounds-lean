@@ -1215,6 +1215,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RoundedRowDescriptor.lean`: One fixed fifteen-tape program physically computes the least multiple of a positive canonical divisor that encloses a positive canonical row count. Original inputs are retained, the output is canonical and all temporary tapes are erased. Exact ceiling formula, divisibility, minimality and less-than-twice-row bound when D≤R; runtime is at most 4096 times the rounded row count.
 
+- `Machine/RowPaddingConstructed.lean`: One fixed twelve-tape padding or cropping program generates both span descriptors from retained canonical prefix, row, rounded-row and suffix dimensions, executes the physical grouped scan and erases every generated counter. Exact serialized array endpoints, restored payload origins and entirely blank workspace; complete runtime at most 413 times padded volume.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

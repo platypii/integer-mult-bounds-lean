@@ -821,3 +821,4 @@ import IntegerMultBounds.Machine.FixedBasePowerStep
 import IntegerMultBounds.Machine.FixedBasePowerDescriptor
 import IntegerMultBounds.Machine.RecursiveRowDivisor
 import IntegerMultBounds.Machine.RoundedRowDescriptor
+import IntegerMultBounds.Machine.RowPaddingConstructed
