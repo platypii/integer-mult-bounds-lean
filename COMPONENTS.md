@@ -2686,6 +2686,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixDirtyControlPureSemantics.lean`: Each physically generated pure-parity row reads current target low bits with compact padding and is independent of dirty U.
 
+- `Machine/ActiveRepairLayoutKeysPipelineBudgetCommon.lean`: Complete address-indexed record streams have positive count for positive rows and inherit payload bounds from their source data; actual scan rank flags and global density imply the sparse-hole premise.
+
+- `Machine/ActiveRepairLayoutKeysPipelineBudgetEarly.lean`: Actual clean early endpoint returns the ideal record stream within linear payload-volume time. Manuscript scalar dyadic inequalities discharge the sparse-hole bound with unit constant; wide array formatting and original parameter synthesis remain separate.
+
+- `Machine/ActiveRepairLayoutKeysPipelineBudgetLate.lean`: Actual clean later endpoint returns the ideal record stream within linear payload-volume time. Manuscript scalar dyadic inequalities discharge the sparse-hole bound with unit constant; wide array formatting and original parameter synthesis remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
