@@ -3302,6 +3302,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexChildHeadersUniform.lean`: Canonical internal-node and scalar child-header costs are bounded by one fixed constant times the original global dimension plus one squared, uniformly over all residual slots, rows and payloads. This pays actual descriptor execution rather than taking an independent per-node scalar budget.
 
+- `Machine/CountedLoopHeaderClean.lean`: A fixed body loop physically copies its original retained binary count, initializes the loop clock and erases both controls. Arbitrary actual body head endpoints are preserved and all setup and cleanup are paid.
+
+- `Machine/CountedBankHeaderClean.lean`: Original runtime length headers drive paid rewind, erase and reset routines through reusable blank binary loop controls, without supplied clocks or tracked-head restrictions.
+
+- `Machine/ButterflyStreamOriginal.lean`: A fixed fifty-five-tape coefficient scan starts from an original retained count header and blank private workspace, producing both complete exact butterfly streams at at most 200 times serialized logical volume. Original count and all inputs are retained, controls return blank and actual end positions are stated; paid normalization and selected-axis split/merge remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

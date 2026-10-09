@@ -1896,3 +1896,6 @@ import IntegerMultBounds.Machine.CompactChildHeadersStack
 import IntegerMultBounds.Machine.CompactComplexChildHeaderFrames
 import IntegerMultBounds.Machine.CompactComplexRecursiveChildHeaders
 import IntegerMultBounds.Machine.CompactComplexChildHeadersUniform
+import IntegerMultBounds.Machine.CountedLoopHeaderClean
+import IntegerMultBounds.Machine.CountedBankHeaderClean
+import IntegerMultBounds.Machine.ButterflyStreamOriginal
