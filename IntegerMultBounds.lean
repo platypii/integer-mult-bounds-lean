@@ -1884,3 +1884,5 @@ import IntegerMultBounds.Machine.ButterflyStreamEndpoint
 import IntegerMultBounds.Machine.SparseSourceBitsRun
 import IntegerMultBounds.Machine.CompactComplexPhaseSparseControls
 import IntegerMultBounds.Machine.CompactComplexStopThreshold
+import IntegerMultBounds.Machine.CompactComplexStopCompare
+import IntegerMultBounds.Machine.CompactComplexStopRun

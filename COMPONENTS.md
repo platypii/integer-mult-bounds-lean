@@ -3278,6 +3278,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStopThreshold.lean`: One fixed nine-tape threshold generator computes the least exponent for the actual fixed base 15625 to the thousandth power from the original global dimension, with linear dimension cost and all workspace cleared except the retained input and generated exponent. The manuscript stop predicate is equivalent to exponent-zero or exponent below this generated threshold; physical recursive comparison and controller wiring remain open.
 
+- `Machine/CompactComplexStopCompare.lean`: A fixed three-tape runtime comparator reads the remaining-exponent and generated threshold words, sets the exact manuscript stop flag including the canonical zero-exponent leaf case, retains both words and costs twice their combined length plus thirteen.
+
+- `Machine/CompactComplexStopRun.lean`: One fixed ten-tape original-input stop machine physically generates the actual threshold and compares the remaining exponent. It retains original global dimension, exponent and generated threshold, clears all other workspace, returns the literal stop flag and costs a fixed constant times dimension plus exponent plus one. Recursive controller wiring and per-node flag cleanup remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
