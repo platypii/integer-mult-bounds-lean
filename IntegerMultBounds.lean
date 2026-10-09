@@ -851,3 +851,6 @@ import IntegerMultBounds.Machine.SliceOffsetAdvance
 import IntegerMultBounds.Machine.ArbitrarySliceStepBudget
 import IntegerMultBounds.Machine.ArbitrarySliceStep
 import IntegerMultBounds.Machine.ArbitraryWidthLevelAdvance
+import IntegerMultBounds.Machine.RangePaddingDimensions
+import IntegerMultBounds.Machine.RowCropAny
+import IntegerMultBounds.Machine.RadixRangePaddingExecution

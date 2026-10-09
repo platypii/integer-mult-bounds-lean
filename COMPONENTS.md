@@ -1265,6 +1265,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthLevelAdvance.lean`: One fixed seven-tape program increments the canonical recursion-depth descriptor and multiplies the canonical selected width by the fixed base. Setup physically initializes the base, width one and depth zero; separate base or full cleanup is paid. Arbitrary framed data/offset controls are preserved; level advancement costs at most 120 times the new width.
 
+- `Machine/RangePaddingDimensions.lean`: One fixed seventeen-tape constructor retains canonical prefix/chunk/gap/suffix/enlarged-range inputs and generates PN, PNG, GM and GMB by four actual product calls. All arithmetic workspace is erased. Separate paid cleanup clears the four outputs while preserving arbitrary payloads; both costs are linear in a dominating padded volume.
+
+- `Machine/RowCropAny.lean`: The actual constructed row-cropping program works on arbitrary discarded rows, including nonzero tails. Exact arbitrary-array restriction, generated span-count cleanup, restored payload origins and linear padded-volume runtime extend the physical crop contract beyond zero-padded inputs.
+
+- `Machine/RadixRangePaddingExecution.lean`: Complete fixed seventeen-tape padding and cropping programs generate their own grouped dimensions, execute both coordinate scans and erase every derived descriptor. Exact two-chunk pad and arbitrary crop endpoints with clean payload/workspace; each costs at most 1200 times padded volume. After the padded transpose the actual crop returns the original transpose. Runtime binary/radix range synthesis and composition with the interchange remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
