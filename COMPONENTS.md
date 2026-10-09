@@ -2588,6 +2588,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairEarlyOriginalPipelineEndpoint.lean`: Fixed183-tape original-input early repair starts with literal record stream, original geometric/source descriptors and otherwise blank scan work. Actual preparation, varying-key scan/sort/reinsert and cleanup finish with only output10 added at origin, source11 retained and all scan/key/private workspace restored. Global ideal-permutation and density/full-volume identification remain separate.
 
+- `Machine/ActiveRepairLateOriginalPipelinePrepare.lean`: Actual later scan markers, unary selector and A-bit zero counter are synthesized from the original address-width header with three restored private tapes and at most200 times A plus one cost.
+
+- `Machine/ActiveRepairLateOriginalPipelineCleanup.lean`: Physical erasure of all later sorted/extracted/replacement/flagged/unary/sentinel/counter work and source/output rewinds returns clean scan storage with every written cell charged.
+
+- `Machine/ActiveRepairLateOriginalPipelineEndpoint.lean`: Fixed192-tape original-input later repair starts with literal source stream and retained original metadata, initializes its own scan, runs varying-control full-rank repair and erases final work. Exact output adds only repaired output10 at origin, retains source11 and restores all scan/key/private storage. Global ideal-permutation and sparse-density/full-volume identification remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
