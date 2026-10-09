@@ -842,3 +842,7 @@ import IntegerMultBounds.Machine.FixedBasePowerUntil
 import IntegerMultBounds.Machine.ArbitraryWidthHighLayout
 import IntegerMultBounds.Machine.BinaryDescriptorAdvance
 import IntegerMultBounds.Machine.RadixDigitMoveRows
+import IntegerMultBounds.Machine.BinaryCanonicalData
+import IntegerMultBounds.Machine.BinaryDescriptorDivMod
+import IntegerMultBounds.Machine.ArbitraryWidthPieceCounter
+import IntegerMultBounds.Machine.ArbitraryWidthPieceLoop

@@ -1249,6 +1249,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixDigitMoveRows.lean`: Moving one fixed-radix digit across an arbitrary spectator block is exactly a cyclic split into long rows followed by a cyclic merge of singleton rows. Literal source/output words and exact equal role words connect the two actual streaming primitives; head positioning and complete physical composition remain separate.
 
+- `Machine/BinaryCanonicalData.lean`: Canonical little-endian binary descriptors have injective numerical value; a canonical zero descriptor is empty. This identifies actual normalized machine outputs with exact deterministic digit words.
+
+- `Machine/BinaryDescriptorDivMod.lean`: One fixed fourteen-tape machine retains binary operands and returns both canonical quotient and remainder, restoring operand heads and clearing all arithmetic and tracking tapes. Exact division/modulus values and linear input-value cost for a fixed divisor.
+
+- `Machine/ArbitraryWidthPieceCounter.lean`: A fixed-base extraction stage physically initializes the divisor, obtains canonical quotient/remainder, clears the divisor and replaces the consumed remaining width with its quotient. The remainder is the actual next base digit; every transition and cleanup is charged linearly.
+
+- `Machine/ArbitraryWidthPieceLoop.lean`: One fixed finite outer loop repeatedly extracts actual runtime base digits until the canonical remaining width is zero, then clears all fourteen control tapes. Deterministic emitted digits match the manuscript partition. A fixed consume continuation must still implement repeated slice calls and depth/width/offset updates; no concrete whole piece driver is claimed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
