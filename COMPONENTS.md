@@ -1595,6 +1595,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedPackedParityValue.lean`: Proves physically extracted low block bits equal the parities of the power-of-two radix digits, then connects the actual clean parity-extraction run to the later-source packed integer specification with its exact uniform stride bound. No control word is supplied by an arithmetic oracle; full late-gadget composition remains separate.
 
+- `Machine/CountedPackedControlLoadHeaders.lean`: Physically constructs the six original gather headers [1,0,1,b,0,n] from retained canonical b/n, including paid zero/one setup and full private header cleanup. Width one and zero counts are supported.
+
+- `Machine/CountedPackedControlLoadLine.lean`: A fixed twenty-one-tape gathered modular line constructs and erases all shape headers, suffixes and clocks from only original b/n. It realizes a static add/subtract rule and leaves only exact result payload words; runtime dimensions do not occur in finite control.
+
+- `Machine/CountedPackedControlLoadRun.lean`: Complete reusable fixed dirty-control load/unload physically copies the one-bit control source, applies gathered modular arithmetic, copies the result over the original dirty word and erases every scratch payload and metadata tape. X and original b/n are retained with all heads restored and seventeen private tapes blank; bound380 times full stride includes b=1 and n=0.
+
+- `Machine/CountedPackedControlLoadValue.lean`: The actual load/unload output words have value U plus/minus the packed control-bit integers modulo the full power-of-two word radix. Their widths equal the original dirty word, with no stronger width restriction or supplied arithmetic offset oracle.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
