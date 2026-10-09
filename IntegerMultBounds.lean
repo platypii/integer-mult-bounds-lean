@@ -1105,3 +1105,7 @@ import IntegerMultBounds.Machine.CountedRankSplitData
 import IntegerMultBounds.Machine.CountedRankSplitBank
 import IntegerMultBounds.Machine.CountedRankSplitRun
 import IntegerMultBounds.Machine.CountedRankSplitEndpoint
+import IntegerMultBounds.Machine.BinaryAddressOffsetRepeatData
+import IntegerMultBounds.Machine.BinaryAddressOffsetRepeatCopy
+import IntegerMultBounds.Machine.CountedControlWordRepeat
+import IntegerMultBounds.Machine.BinarySelectedOffsetPrepare

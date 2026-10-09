@@ -1743,6 +1743,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedRankSplitEndpoint.lean`: Direct contract for the actual RepairScan growing counter with no padded/canonical stored-length premise. Both copied fields reconstruct the in-range rank, original counter/headers are retained and all private tapes are physically erased; full repair-key assembly remains separate.
 
+- `Machine/BinaryAddressOffsetRepeatData.lean`: Literal packed-offset expansion order: repeat each row over trailing spectators then repeat the complete expanded table over preceding coordinates, including dirty back fields. Exact lengths and row concatenation are proved; the complete physical expansion is separate.
+
+- `Machine/BinaryAddressOffsetRepeatCopy.lean`: Fixed two-tape actual word copy plus source rewind, preserving the source and advancing only the destination. Exact cumulative repeated words and cost2*length+3 include empty words.
+
+- `Machine/CountedControlWordRepeat.lean`: Fixed four-tape original control-word repetition driven by an immutable runtime count. Physically initializes/cleans its loop clock, copies and rewinds every source word, restores output head and retains source/count. CostN*(3*length+9)+7*descriptorLength+31 is absorbed by54*N*(length+1) for positive canonical counts.
+
+- `Machine/BinarySelectedOffsetPrepare.lean`: Fixed seventeen-tape preparation for the selected mask-shift offset load. From original b/q/n and one original control word, builds the complete regular temporary-address table and its physically repeated controls, retains originals and clears local clocks. Exact table/control words and all setup/copy/return costs are proved; selected gather, value linkage and final table/header erasure remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
