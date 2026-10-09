@@ -3104,6 +3104,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageFullSelected.lean`: Actual original-input stage endpoints have the exact complete selected XOR destination on every original address and preserve the whole original source slot.
 
+- `Machine/ActivePrefixStageSingletonData.lean`: Original thirteen node/slot words define the f=1 branch with zero packed low width and one actual highest-bit consumer on the shared raw caller.
+
+- `Machine/ActivePrefixStageSingletonRun.lean`: Both source orders execute actual original-header synthesis, highest action and full consumer erasure with all private storage blank, without invoking the positive-width packed routine.
+
+- `Machine/ActivePrefixStageSingletonBudget.lean`: Both entire singleton-stage machines have one uniform linear complete-volume runtime bound, including producer/action/cleanup and joins, without repair or density premises.
+
+- `Machine/ActivePrefixStageSingletonSelected.lean`: Actual singleton endpoints XOR exactly the sole selected original target bit by its original source bit, retain source and spectator fields and identify literal source/target slot bit positions.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
