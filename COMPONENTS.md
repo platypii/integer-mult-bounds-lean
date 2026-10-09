@@ -2899,6 +2899,15 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   branch, and the final `4p`-bit division; `expNeg_hoare` and `expPos_hoare`
   write the register of `expPiNat true/false p a b`.
 
+- `Machine/RegWord.lean`: registers as fixed-width words. A ruler copy of
+  `w` cells from a register yields its canonical word padded with zeros
+  (`cells_reg`, `padTo`), whose signed value is the register's value below
+  `2^(w-1)` (`signed_padTo`).
+- `Resampling/TableIdx.lean`: sign-free formulas for the table numerators:
+  `(sk − tj)²` with `j = ⌊sk/t⌋ − m + i` splits at `i = m` (`gauss_num`), and
+  `rr x = s β(x)` is the centered residue of `t x mod s` (`rr_eq`) with square
+  `min(u, s − u)²` (`rr_sq`).
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line
