@@ -2964,6 +2964,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveTargetHighestLayoutOriginalBudget.lean`: Both complete original-layout highest-bit machines have uniform linear actual full-array runtime including geometry synthesis, load/swap headers, payload actions, both cleanup layers and joins; original numeric-volume premises follow from the source-fit bounds.
 
+- `Machine/ActiveRepairLayoutRecordsPayloadEarlyData.lean`: One shared caller holds only original twenty-two geometry/control words and the original full array; actual low payload output is proved to be the exact raw repair input on the same physical tape.
+
+- `Machine/ActiveRepairLayoutRecordsPayloadEarlyRun.lean`: Actual original-input early low payload execution composes directly with physical formatting, repair and decoding, with literal ideal output and exact summed runtime; the initial composition retains consumer metadata explicitly.
+
+- `Machine/ActiveRepairLayoutRecordsPayloadEarlyClean.lean`: The full original-input early low-selected stage executes payload, complete clean repair, physical copy-back and output erasure on one caller bank. Exact global earlyIdeal array replaces the original raw array; every other original tape/head is retained and all private metadata blank. Its complete uniform runtime retains the certified compact-width exponent.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
