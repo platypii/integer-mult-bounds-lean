@@ -3188,6 +3188,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualStageRuntimeInverse.lean`: Actual scalar/cutoff/global-row choices instantiate complete all-positive-width physical reverse and round-trip execution at density one without caller-supplied readiness or branch decisions.
 
+- `Machine/BinaryPairFrame.lean`: A physical wrapper saves two original binary descriptors on one private stack, runs a native routine, erases its replacement descriptors and restores both originals and the blank stack with all joins charged.
+
+- `Machine/ActivePrefixStagePairData.lean`: Literal row-addition pairs physically replace only original source/target ports eleven and twelve on the all-width runtime stage bank, retaining every shape descriptor and the unchanged array.
+
+- `Machine/ActivePrefixStagePairRun.lean`: Each fixed literal row-addition instruction saves the original pair, physically writes its pair, runs the complete all-width stage and restores both original headers and the private stack.
+
+- `Machine/ActivePrefixStagePairSchedule.lean`: One finite machine executes a chronological literal pair list on the same original array, with exact composed array action and every descriptor/private bank restored after each instruction; no caller branch or stage program is supplied.
+
+- `Machine/ActivePrefixStagePairBudget.lean`: Complete pair wrappers and fixed literal lists retain the certified width exponent; physical saving, rewriting, restoring and every join are paid, with only the fixed word length multiplying the uniform full-volume bound.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
