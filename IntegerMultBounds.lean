@@ -2122,3 +2122,5 @@ import IntegerMultBounds.Machine.CompactPolynomialPhaseDispatchBudget
 import IntegerMultBounds.Machine.RepeatedWeightedPhaseAccumulator
 import IntegerMultBounds.Machine.SparseRepeatedPhaseFlags
 import IntegerMultBounds.Machine.CompactAllAxisPhaseControls
+import IntegerMultBounds.Machine.RepeatedWeightedPhaseTensor
+import IntegerMultBounds.Machine.CompactAllAxisPhaseReadout

@@ -3774,6 +3774,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactAllAxisPhaseControls.lean`: All residual-slot and coordinate-axis controls form one contiguous chunk-stride sparse stream. Proves exact reversed slot/axis order, full span fit and equality of every extracted bit with the original phase codec. Original-header descriptor synthesis and tensor phase readout remain separate.
 
+- `Machine/RepeatedWeightedPhaseTensor.lean`: One scan over fixed-weight runtime-width blocks has accumulated phase equal to the sum of all per-axis weighted sums by exact finite sum interchange.
+
+- `Machine/CompactAllAxisPhaseReadout.lean`: Actual all-axis retained flags equal the sum of original complex-edge coordinate phases. One signed coefficient phase application realizes the product of every coordinate-axis phase under explicit width and negation guards; physical polynomial caller integration remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
