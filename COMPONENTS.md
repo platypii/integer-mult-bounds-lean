@@ -1717,6 +1717,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CountedIdealToggle.lean`: Fixed twenty-two-tape ideal selected-parity toggle from original q/b/n descriptors: actual controls-at gather plus XOR returns exactly the target word exclusive-or the padded control mask, retains all original inputs/heads and erases every generated descriptor, clock and mask. Integer toggle semantics and bound533*(n+1)*(q+b+1) are proved; repair-key placement remains separate.
 
+- `Machine/BinaryAddressOffsetHeaders.lean`: Physically derives q*n,2^(q*n) and n*2^(q*n) descriptors from original canonical q/b/n, retaining originals and clearing arithmetic scratch with charged setup and erasure.
+
+- `Machine/BinaryAddressOffsetData.lean`: Literal regular-address parity offsets with exact n*b-bit row width, low-bit destinations and zero padding for every source address and packed digit.
+
+- `Machine/BinaryAddressOffsetPrepare.lean`: Physically constructs the regular address table and the counted dummy-zero control stream from original headers; every descriptor, initialization and output rewind is paid.
+
+- `Machine/BinaryAddressOffsetGather.lean`: Actual runtime parity gather traverses the generated address table and dummy controls, produces all offsets in rank order and restores original descriptors and private gather metadata.
+
+- `Machine/BinaryAddressOffsetCleanup.lean`: Physically erases the generated regular address table, dummy control and all derived dimension headers, rewinds the retained offset output and restores all private tapes.
+
+- `Machine/BinaryAddressOffset.lean`: Fixed thirty-tape parity-offset producer from sole original q/b/n, including zero digits. Original headers survive, only the literal offset word remains and all other private tapes are blank. BoundK*2^(n*q)*(n+1)*(q+b+1) is absorbed under an explicit record-width allowance; caller placement and repetition across dirty-back/spectator coordinates remain separate.
+
+- `Machine/BinaryAddressOffsetValue.lean`: Connects each literal generated offset row to the packed parity of the source address digits, with exact integer value and target modular range. No prepared offset table is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
