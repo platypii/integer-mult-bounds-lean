@@ -746,6 +746,7 @@ import IntegerMultBounds.Machine.GaussianLineValue
 import IntegerMultBounds.Resampling.WindowSum
 import IntegerMultBounds.Resampling.OffDiagSum
 import IntegerMultBounds.Resampling.NeumannWords
+import IntegerMultBounds.Machine.RecordRewind
 import IntegerMultBounds.Machine.RecursiveRowsNodeLayout
 import IntegerMultBounds.Machine.RecursiveRowsNodeHeaders
 import IntegerMultBounds.Machine.RecursiveRowsNodeRoleBank

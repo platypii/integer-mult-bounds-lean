@@ -2601,6 +2601,15 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `offDiagNum m (offDiagTermNum p s t α) u ℓ` has parts `signed accR / 2^p`
   and `signed accI / 2^p`. The line machine now only needs `s ≤ t`.
 
+- `Machine/RecordRewind.lean`: rewinding or erasing a tape of
+  blank-separated records. One tape, five states: step left, scan left until
+  two adjacent blanks (the blank run left of the first record), return to the
+  origin; with the erase flag every visited cell is blanked (`wipe`).
+  `rewind_hoare` is the contract on any tape with no adjacent blanks in the
+  scanned range; `flat_adj` shows flattened records have none, so
+  `rewind_records` returns any head on a record tape to the origin in
+  `x + 4` steps and `erase_records` blanks the whole tape from its end.
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line
