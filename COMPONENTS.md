@@ -1469,6 +1469,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighOriginalEncoding.lean`: Proves that folding the original prefix/row factors changes no literal serialized source cell, and that the high branch output is exactly the original full transpose for any valid positive row divisor.
 
+- `Machine/ArbitraryWidthHighCommonPrepare.lean`: Physically folds the six original caller headers and constructs runtime depth, divisor, high count, rows and rounded rows from the sole original width, starting in blank sixteen- and nineteen-tape banks. Reverse cleanup restores both blank banks, retains the original caller, and has paid linear-volume bounds.
+
+- `Machine/ArbitraryWidthHighBranchPrepare.lean`: Physically constructs high movement dimensions and row suffix, joined padded-root headers, and the canonical-zero clock in three wholly blank banks. The reverse lifecycle erases all storage; exact banks, all sequential edges, and dominating original-volume setup and cleanup bounds are proved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
