@@ -1383,6 +1383,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighDimensionsCleanup.lean`: One actual finite list-erasure program clears all six generated high-layout descriptors and restores their heads to zero while retaining the original five headers and all arithmetic storage. Exact constructor-output to sole-header-input cleanup is proved, with runtime at most54 times the original positive volume.
 
+- `Machine/RowPaddingConstructedAlphabet.lean`: The actual twelve-tape row padding/cropping machines are adapted by exact finite-alphabet simulation to the recursive interchange alphabet. Literal larger-alphabet bank endpoints preserve canonical dimensions, erase consumed source words and write exact zero-padded or cropped arrays. Both general encoded-symbol and literal bit-array contracts retain the complete413-times-padded-volume bound, including all descriptor construction and erasure.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
