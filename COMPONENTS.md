@@ -2788,6 +2788,15 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   one truncated division, within `N e^|x| + 2^q |x|^N/N! e^|x|` of
   `2^q e^x`, `x = X/2^q` (`expTerm_err`, `exp_tail`, `expApprox_err`).
 
+- `Resampling/WeightTable.lean`: the integer weight tables. `expPi` computes
+  `2^p exp (∓π a/b)` from `piQ ≈ 2^(5p) π`, `Y = ⌊P a / b⌋`, a `7p`-term
+  Taylor sum and a `4p`-bit shift, with a shortcut to zero when the negative
+  exponent is below `-p`; it is within `3/2` (`expPi_neg_err`,
+  `expPi_pos_err`, `p ≥ 13`). `tableA`, `tableE`, `tableD` (with `rr`, the
+  integer form of `s β`) are within two units of `2^p` times the Gaussian,
+  off-diagonal and `D'` weights, and `tableD ∈ [0, 2^p]` (`tables_ok`, for
+  natural `α ≥ 2`, `α² ≤ p`).
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line
