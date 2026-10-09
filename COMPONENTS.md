@@ -1811,6 +1811,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryAddressOffsetRepeatConstructPlaced.lean`: Complete arbitrary seven-port caller placement of the repeated parity constructor, appending/restoring42 private tapes and preserving every spectator. Actual source/dirty-back alignment and explicit volume absorption are proved; deriving upstream gadget geometry remains separate.
 
+- `Machine/CompactGadgetReservationCapacity.lean`: Exact existing front2H/backH ceiling-chunk capacities, bounded slack and complete dirty-field allocation; no compact field is inserted into the row index.
+
+- `Machine/CompactGadgetReservationShape.lean`: Concrete row/front-temporary/front-control/active/back/payload bit geometry, disjoint reserved slots, bit-count conservation and exact temp/control rectangular factorizations including slack.
+
+- `Machine/CompactGadgetReservationData.lean`: Identifies each actual padded role word with the complete binary rectangle used by compact loads, preserving every unused bit and suffix coordinate.
+
+- `Machine/CompactGadgetReservationRun.lean`: Actual original-header swap/rotation/swap on concrete temporary/back or control/back reserved slots. Exact per-coordinate load semantics preserve prefix, gap, dirty back, slack and payload.
+
+- `Machine/CompactGadgetReservationBudget.lean`: Actual reserved-slot load runtime is bounded by role volume times max(1,n*G)^tau; complete movement costs are charged with no K factor.
+
+- `Machine/CompactGadgetReservationPlacement.lean`: Shares the selected physical role tape with the native reserved-load machine, retains five supplied original shape/offset tapes and frames every other role and row header.
+
+- `Machine/CompactGadgetReservationEndpoint.lean`: Exact selected-role physical load endpoint, with original shape/offset headers retained, all native workspace erased and complementary role words unchanged. A generic paid reserve/load sequencing helper is available; synthesizing shape/offset inputs and unconditional complete assembly remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
