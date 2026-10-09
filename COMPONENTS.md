@@ -3229,6 +3229,15 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   negated entry (`tabD_ok`). `a_tables` and `b0_tables` instantiate
   `accumulators_eq_W` and `b0_value_W` with `tableA`, `tableE`, `tableD`.
 
+- `Resampling/LineApply.lean`: `Ã` applied line by line (29 tapes, generated
+  by `lalgen.py`). Each step copies line `ℓ` (`2s` words) off the array tape,
+  builds its cyclic extension, runs the line machine with `t` windows
+  (`gaussA_run`), appends the `2t` accumulator words to the output and cleans
+  up; `loop_hoare` runs `L` lines, leaving `outs wt arr s t m p w W L`.
+- `Resampling/LineValue.lean`: `outs_getD` locates line `ℓ`'s words, and
+  `line_value` identifies them with the `Ã` numerators of that line for the
+  A-table words.
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line
