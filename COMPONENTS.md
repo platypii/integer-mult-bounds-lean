@@ -3116,6 +3116,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualStageInputs.lean`: Actual scalar/row readiness fills original-input stage records, and both generated source-order descriptor banks have full repair width and density allowances at constant one from original multiplier choices.
 
+- `Machine/ActivePrefixStageDispatchCommon.lean`: Generic bank padding, clean branch placement and runtime-bit branch composition preserve exact endpoints and charge only the selected actual branch.
+
+- `Machine/ActivePrefixStageDispatchData.lean`: Original thirteen stage words, raw array and blank flag determine both source-order inputs and the runtime-selected full selected result.
+
+- `Machine/ActivePrefixStageDispatchPlaced.lean`: Complete original-only early/later stage machines place in one shared caller while preserving the runtime direction flag and all complementary storage.
+
+- `Machine/ActivePrefixStageDispatchRun.lean`: One fixed machine compares original source/target words, reads its real flag, executes the selected full stage and erases the flag, with exact selected-branch cost and clean caller output.
+
+- `Machine/ActivePrefixStageDispatchBudget.lean`: The complete runtime source-order dispatcher retains the certified compact-width exponent, paying original comparison, selected stage and flag erasure without charging both branches.
+
+- `Machine/ActivePrefixStageDispatchEndpoint.lean`: Literal raw-array output at origin, original headers retained and every generated/private tape including the runtime direction flag blank at the actual dispatcher boundary.
+
+- `Machine/ActivePrefixStageDispatchSelected.lean`: Runtime-derived selected destination matches every original array address; the whole actual dispatched array action squares to identity under original source disjointness.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
