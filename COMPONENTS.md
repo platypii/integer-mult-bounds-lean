@@ -1443,6 +1443,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighDimensionsAndSuffixShared.lean`: Constructs the high movement dimensions and joined-row suffix from original caller headers in a blank seventeen-tape bank, then erases every copied and generated descriptor. Literal header values, canonicality, source slots, and linear-volume lifecycle costs are proved.
 
+- `Machine/ArbitraryWidthExecutionPrivateHeadersCore.lean`: Defines literal blank control and stack banks and structural sparse-header identities without runtime initialization assumptions.
+
+- `Machine/ArbitraryWidthExecutionPrivateHeadersAppend.lean`: Proves exact sparse header banks across appended private storage, with named slots and preserved blank complements.
+
+- `Machine/ArbitraryWidthExecutionPrivateHeadersRoot.lean`: Identifies the exact seven exchange and six elementary private header slots and their sparse banks, including the retained high count.
+
+- `Machine/ArbitraryWidthExecutionPrivateHeadersPadding.lean`: Identifies all ten actual padding and low-dispatch root header slots and proves their sparse private-bank equality.
+
+- `Machine/ArbitraryWidthExecutionPrivateHeadersMovement.lean`: Identifies all five actual movement header slots and their literal private-bank equality. The clock contains a canonical zero marker and must be physically initialized.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
