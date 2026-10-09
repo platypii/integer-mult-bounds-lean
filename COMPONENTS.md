@@ -3286,6 +3286,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactActualSparseUnitPhase.lean`: Actual compact inputs produce the literal target-minus-source signed phase on coefficient words at unchanged precision. Existing payload capacity pays extraction; the full runtime is at most 400 times payload plus twice residual dimension plus twelve times coefficient width plus forty-seven. Complete coefficient-stream traversal remains open.
 
+- `Machine/CompactChildHeadersArithmetic.lean`: Fixed constant writing and exact binary quotient extend the clean forty-three-tape header arithmetic compiler, with literal schedule validity, exact execution and paid setup/erasure.
+
+- `Machine/CompactComplexChildHeadersData.lean`: Canonical internal child visits derive the actual residual-slot interval, quotient width and spectator headers. A fixed physical schedule replaces the original three node headers, retains role rows and cleans private arithmetic storage.
+
+- `Machine/CompactComplexChildHeadersBudget.lean`: Complete physical internal-child header costs have a quadratic bound in consumed dimension, arity, interval and slot values, independent of retained role rows and payload size.
+
+- `Machine/CompactComplexLeafHeadersData.lean`: Exponent-zero children use actual scalar coordinate headers instead of an invalid positive-width stage. Physical leaf preparation, selected-bit interval fit and linear header cost are proved.
+
+- `Machine/CompactChildHeadersStack.lean`: Generic physical three-header descriptor frames save retained original words and restore erased destinations with exact stack tape/head restoration and paid bit-length cost.
+
+- `Machine/CompactComplexChildHeaderFrames.lean`: The original sixty-six-tape header caller saves its three changed node headers, physically erases child replacements and restores the full original parent bank, including payload and stack. Persistent frames must be placed outside native stage scratch during stage execution.
+
+- `Machine/CompactComplexRecursiveChildHeaders.lean`: Literal occurrence-indexed schema calls supply their actual residual slot to paid internal or scalar child-header execution, retaining selected role rows. Physical controller path generation, exponent bookkeeping and role parking remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
