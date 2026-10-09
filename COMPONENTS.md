@@ -1475,6 +1475,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighRuntimeHeaderWiring.lean`: Defines the actual exchange, movement and padding copy-source slots across the constructed dimension, joined-root and zero-clock banks. Literal tape/head source contracts, canonical generated movement words, row-padding headers and the low-root Headers interface are proved from the real metadata constructors.
 
+- `Machine/ArbitraryWidthHighPreparedRun.lean`: One actual high program constructs all arithmetic/joined/zero metadata from retained sources, initializes the blank execution banks, runs the complete interchange and erases both execution and metadata banks. Literal transpose, entirely blank private endpoints, and the unchanged certified exponent are proved.
+
+- `Machine/ArbitraryWidthHighCommonHeaderWiring.lean`: Maps the actual common folded/root and row-preparation banks to exchange, movement-original and joined-original source families. All literal source tapes, canonicality, values and prefix positivity follow from the original six descriptor headers.
+
+- `Machine/ArbitraryWidthHighCommonHighBody.lean`: Instantiates the prepared high execution using only the actual common preparation output and original descriptor headers. It returns the exact original full transpose and restores every high-private bank to blank. No supplied derived headers or execution contracts enter its correctness or certified runtime bound.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
