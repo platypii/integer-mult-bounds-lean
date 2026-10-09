@@ -971,3 +971,4 @@ import IntegerMultBounds.Machine.ArbitraryWidthHighCommonHighBody
 import IntegerMultBounds.Machine.ArbitraryWidthHighCommonFallback
 import IntegerMultBounds.Machine.ArbitraryWidthHighCommonFallbackBody
 import IntegerMultBounds.Machine.ArbitraryWidthHighFramedFallback
+import IntegerMultBounds.Machine.ArbitraryWidthHighCommonSelector

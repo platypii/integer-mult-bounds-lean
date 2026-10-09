@@ -1487,6 +1487,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ArbitraryWidthHighFramedFallback.lean`: Places the actual original-header elementary fallback on the same complete private-bank layout as the high branch. Every unused high bank and common metadata field is preserved; the payload becomes the original full transpose and elementary storage is restored blank.
 
+- `Machine/ArbitraryWidthHighCommonSelector.lean`: Runs the actual high/fallback comparison on constructed high-count and original-width descriptors, using a proven blank common slot for its flag. The complete bank is restored, slot separation is proved, and comparison time has a uniform linear original-volume bound even on fallback widths.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
