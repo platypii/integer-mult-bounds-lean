@@ -2066,3 +2066,5 @@ import IntegerMultBounds.Machine.NativeZeroPadding
 import IntegerMultBounds.Machine.NativeZeroPaddingHeaders
 import IntegerMultBounds.Machine.NativeZeroPaddingPlaced
 import IntegerMultBounds.Machine.NativeZeroPaddingArray
+import IntegerMultBounds.Machine.NativeZeroPaddingBudget
+import IntegerMultBounds.Machine.CompactReservationNativeRows

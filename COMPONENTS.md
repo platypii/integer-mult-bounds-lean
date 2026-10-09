@@ -3682,6 +3682,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeZeroPaddingArray.lean`: One fixed actual padding machine returns the literal original row-major coefficient array extended by genuine signed-zero records, preserving stored widths and source head zero with all count generation, scanning, emission and cleanup paid. Uniform global-volume absorption and recursive reservation/role integration remain separate.
 
+- `Machine/NativeZeroPaddingBudget.lean`: All genuine native-zero padding transitions, header synthesis, source scan/rewind and cleanup fit a fixed constant times original serialized coefficient volume when padded rows are at most twice original rows. Specializes to the one global initial padding without descendant or depth factors.
+
+- `Machine/CompactReservationNativeRows.lean`: The actual original reservation output has exact unchanged global row-major native serialization with polynomial spectators. Genuine zero extension pads this row view once, and exact later descendant role volumes retain the role divisor. Physical reservation-to-padding caller header adaptation remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
