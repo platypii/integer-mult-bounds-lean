@@ -3376,6 +3376,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ButterflyAxisSchedule.lean`: Fixed counted traversal executes consecutive selected axes, deriving and cleaning their descriptors on each iteration. Original D drives the full schedule without an extra supplied count; runtime is linear serialized volume times processed axis count. Guard propagation and decoded whole-transform assembly remain separate.
 
+- `Machine/SparsePhaseUnitCaller.lean`: Fixed fifty-six-tape caller physically derives sparse stride/count/offset from original node headers and shares those actual words directly with the address-to-unit-phase kernel. Exact retained original bank and payload-paid cost require no supplied phase flag or derived descriptor.
+
+- `Machine/UnitPhaseRecordIO.lean`: Physical two-field coefficient reader and destructive result emitter on the sixty-tape phase bank preserve address, counters, flags and headers. Actual marked numerator inputs and delimited output records have exact endpoints.
+
+- `Machine/UnitPhaseCoreReset.lean`: After result emission, physical erasure clears both retained marked numerator sources and restores the entire arithmetic bank, with every digit and marker paid.
+
+- `Machine/RawBitWordReset.lean`: Fixed backward eraser clears an actual marker-free Boolean word from its endpoint and returns head zero, including empty words, in word length plus two transitions.
+
+- `Machine/UnitPhaseFlagsLifecycle.lean`: Physical initialization and erasure of both accumulator flags take one actual transition each and have exact runtime-read flag endpoints.
+
+- `Machine/UnitPhaseLocalReset.lean`: Paid cleanup of the sixty-tape phase caller erases numerator sources, extracted controls, flags and generated sparse descriptors while framing addresses, streams and controller state. Full per-record and coefficient-loop composition remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

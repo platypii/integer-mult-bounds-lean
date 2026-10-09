@@ -1909,3 +1909,9 @@ import IntegerMultBounds.Machine.ButterflyAxisPrepared
 import IntegerMultBounds.Machine.ButterflyAxisOriginal
 import IntegerMultBounds.Machine.ButterflyAxisArray
 import IntegerMultBounds.Machine.ButterflyAxisSchedule
+import IntegerMultBounds.Machine.SparsePhaseUnitCaller
+import IntegerMultBounds.Machine.UnitPhaseRecordIO
+import IntegerMultBounds.Machine.UnitPhaseCoreReset
+import IntegerMultBounds.Machine.RawBitWordReset
+import IntegerMultBounds.Machine.UnitPhaseFlagsLifecycle
+import IntegerMultBounds.Machine.UnitPhaseLocalReset
