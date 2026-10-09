@@ -3162,6 +3162,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageSlotRewrite.lean`: Physical fixed-control replacement of original source and target slot descriptors between row-addition instructions scans and erases both old words, writes and rewinds the literal next pair, frames every other tape and pays all joins with a linear index-bound cost.
 
+- `Machine/CompactActualStageRuntime.lean`: Actual multiplier scalar, cutoff and once-padded descendant-row choices instantiate the fixed all-positive-width stage at density one, synthesizing readiness and all packed allowances without an external branch, direction or width-case premise.
+
+- `Machine/CompactActualStageRuntimeBudget.lean`: One positive uniform constant bounds the actual all-width runtime stage on every admissible descendant row level by full physical volume times the certified compact-width exponent; both actual selectors and singleton execution are paid.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
