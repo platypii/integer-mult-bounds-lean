@@ -2588,6 +2588,17 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   `offDiagNum m (offDiagTermNum p s t α) u ℓ` has parts `signed accR / 2^p`
   and `signed accI / 2^p`. The line machine now only needs `s ≤ t`.
 
+- `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
+  An iterate is `2s` signed words; one step extends it cyclically by `m`
+  records (`ext`, `cycIdx`), takes the stride-one window sums of the line
+  machine (`outWords`), truncates each accumulator to the word width
+  (`signed_take`), negates it and adds the start words (`nextWords`,
+  `sub_entry`). Because the rounded Horner iterates stay in the unit disk and
+  on the grid (`rhoC_grid`), every word is exact: `iter_spec` identifies the
+  word iterates with the numerators of the Horner iterates, and
+  `resampJNumH_eq_iter` gives `J̃' v` from `p` iterates of the halved input
+  with the window `⌊√p⌋ + 1`.
+
 ## Swap
 
 Faster interchange of address chunks (§4).
