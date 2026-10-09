@@ -1623,6 +1623,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/PackedOffsetPayloadValue.lean`: Identifies each physical fiber rotation offset with the actual integer value of its corresponding fixed-width packed source field, connecting the tape endpoint to the original packed bits rather than a supplied offset stream.
 
+- `Machine/PackedOffsetPowerHeader.lean`: A fixed placed power-descriptor machine synthesizes the canonical Q=2^w header from the original width descriptor. All six other active scratch slots are restored, the complementary frame is retained and actual cleanup erases Q. Synthesis and cleanup have separate bounds proportional to Q, including empty payloads.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
