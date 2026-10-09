@@ -3764,6 +3764,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactReservationNativePaddingActualBudget.lean`: Actual multiplier scalar choices pay the complete fixed reservation-and-padding machine with the certified lam-prime saving. Eventual executable correctness retains exact original input descriptors and native padded output, including all metadata and cleanup.
 
+- `Machine/NativePolynomialPhaseCaller.lean`: Derives literal phase-source serialization and head zero directly from the actual native basis-word bank at original source65, including its full appended converter workspace and pair-save frame. No caller-supplied codec premise is needed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
