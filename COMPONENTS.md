@@ -1517,6 +1517,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BinaryRadixEqualShared.lean`: Physically copies the four original caller shape/width headers into blank private storage, shares the literal payload with the complete binary interchange, and erases the copied headers afterward. Exact transpose and preservation of all other caller fields and private blank storage are proved, with the unchanged certified exponent.
 
+- `Machine/BinaryAdjacentWidthPrefixShared.lean`: Physically writes the canonical one and constructs the doubled spectator prefix from original headers using the radix-two dimension engine. Literal doubled-prefix sources, canonical values, caller preservation, paid rectangular-volume budgets and complete eighteen-tape erasure are proved.
+
+- `Machine/BinaryAdjacentWidthRun.lean`: One actual long-H program performs prefix construction, the complete caller-shared equal-width binary transpose, constructed binary movement and all cleanup. The long-D program performs actual inverse movement before the equal-width call. Both return the exact original rectangular transpose from sole original headers with every private bank blank, including zero shorter width, and a positive uniform coefficient at the certified exponent.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
