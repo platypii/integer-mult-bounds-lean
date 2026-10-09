@@ -2110,3 +2110,4 @@ import IntegerMultBounds.Machine.CompactSpectatorLeafGuardHeaders
 import IntegerMultBounds.Machine.CompactSpectatorLeafSemantics
 import IntegerMultBounds.Machine.CompactSpectatorLeafGuardOriginal
 import IntegerMultBounds.Machine.CompactSpectatorLeafGuardPlacement
+import IntegerMultBounds.Machine.CompactPolynomialPhasePlacement

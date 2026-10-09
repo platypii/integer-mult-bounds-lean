@@ -3756,6 +3756,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactSpectatorLeafGuardPlacement.lean`: Places the actual two guarded leaf passes at original native source65/global109. Whole decoded arrays recover their original values at final precision q plus twice the Visit length; immutable original descriptors and every other caller tape are retained and all appended private storage is blank. Uniform budget and recursive integration remain separate.
 
+- `Machine/CompactPolynomialPhasePlacement.lean`: Physically places the actual fixed phase-family call on the caller native source in the stage alphabet. Every other caller tape, including the full native workspace and persistent storage, is framed; all appended phase workspace and ready metadata are restored literally with exact paid runtime. Metadata synthesis and all-axis aggregation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
