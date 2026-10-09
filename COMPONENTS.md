@@ -2822,6 +2822,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairLayoutRecordsHeadersBudget.lean`: Complete physical original-header preparation, record-count construction and fifteen metadata copies have proved linear original payload-volume costs; literal original-input Hoare execution is included.
 
+- `Machine/ActiveRepairLayoutRecordsBankInput.lean`: The fifteen actual producer metadata words equal the repair consumer ports, and every other consumer tape is exactly blank except the retained record source.
+
+- `Machine/ActiveRepairLayoutRecordsBankPlaced.lean`: Original fourteen descriptor words and blank producer scratch physically generate and copy metadata directly into the actual repair pipeline input bank, retaining source and the full caller frame.
+
+- `Machine/ActiveRepairLayoutRecordsHeadersErase.lean`: Five actual erase commands remove every generated row-width, source/address-width, successor and record-count header, restoring the literal original fourteen descriptors and blank auxiliary bank.
+
+- `Machine/ActiveRepairLayoutRecordsBankBudget.lean`: Actual consumer metadata installation and final generated-header erasure have linear original payload-volume execution bounds; every setup and cleanup transition is paid.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
