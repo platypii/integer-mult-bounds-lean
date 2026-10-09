@@ -2284,6 +2284,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixParityOffsetPlaced.lean`: Clean positive parity-XOR production on arbitrary nine caller ports preserves all original descriptors and spectators, restores forty-one private tapes and retains the complete linear prefix-table runtime.
 
+- `Machine/ActivePrefixCorrectionOffsetData.lean`: Exact current-prefix correction rows subtract the physically selected temporary/source offset A from that address’s source-control mask B modulo2^(n*q). Uniform row length, output length and independent row semantics include n=0.
+
+- `Machine/ActivePrefixCorrectionOffsetSubtract.lean`: Actual modular row-subtraction machine lifted to arbitrary alphabets and caller operand/output/width/count ports. It consumes and erases both complete operand tables, retains original descriptors and restores nine private tapes with a linear row-volume bound.
+
+- `Machine/ActivePrefixCorrectionOffsetBank.lean`: Shared original-eight-descriptor correction caller stores only generated selected/control operands, five derived headers and final output. Exact stage-bank identities connect the two real producers, header construction, subtraction and cleanup.
+
+- `Machine/ActivePrefixCorrectionOffsetRun.lean`: One fixed original-input sequence physically generates both varying operand tables, synthesizes count2^W and width n*q, subtracts each row and erases operands plus every derived header. Originals survive and forty-one shared private tapes return blank.
+
+- `Machine/ActivePrefixCorrectionOffset.lean`: Complete fixed original-descriptor B-minus-A correction producer has exact current-prefix output and a uniform constant times2^W*(W+1) bound including both operand producers, rowwise subtraction and cleanup. Actual active-target rotation composition remains separate.
+
+- `Machine/ActivePrefixCorrectionOffsetPlaced.lean`: Clean correction producer on arbitrary original-eight-plus-output caller ports returns exact correction offsets at origin, retains every original/spectator and erases all fifty-seven private tapes. Zero-width rows are included.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
