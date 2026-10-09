@@ -2432,6 +2432,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActiveRepairRankHeadersPlaced.lean`: Actual original-width repair-header producer and post-use eraser on twenty-five arbitrary caller ports. Ten originals are retained, fifteen real generated descriptors feed callers, forty-three private tapes are restored and spectators retain tape and head.
 
+- `Machine/ActivePrefixCompactSwapData.lean`: Actual compact T/back swap geometry and native bank from original reservation descriptors and packing factor; no wide-target compact capacity premise.
+
+- `Machine/ActivePrefixCompactSwapRun.lean`: Physically constructs all four interchange headers, executes the real compact T/back swap and erases generated descriptors, retaining originals and restoring both private banks.
+
+- `Machine/ActivePrefixCompactSwapBudget.lean`: Uniform certified full-record width-exponent bound includes all physical compact-swap descriptor setup, interchange, joins and cleanup.
+
+- `Machine/ActivePrefixCompactSwapGeometry.lean`: Literal transpose destination equals unchanged-layout swapT on every original address, including dirty tails, spectators and payload bits.
+
+- `Machine/ActivePrefixCompactSwapPlaced.lean`: Actual original-descriptor compact swap on nine arbitrary caller ports preserves all caller spectators and restores the complete private bank.
+
+- `Machine/ActivePrefixCompactSwapRoundtrip.lean`: Two actual compact swaps restore the full payload, and a physical sandwich charges both swaps and joins around an explicit middle-machine contract. Instantiating the actual parity/negative middle actions remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
