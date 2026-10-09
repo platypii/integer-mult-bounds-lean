@@ -761,6 +761,7 @@ import IntegerMultBounds.Resampling.PiApprox
 import IntegerMultBounds.Resampling.ExpApprox
 import IntegerMultBounds.Resampling.WeightTable
 import IntegerMultBounds.Resampling.WeightNat
+import IntegerMultBounds.Resampling.PiNat
 import IntegerMultBounds.Resampling.B0Tape
 import IntegerMultBounds.Resampling.B0Value
 import IntegerMultBounds.Machine.RecursiveRowsNodeLayout

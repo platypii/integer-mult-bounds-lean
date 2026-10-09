@@ -2860,6 +2860,11 @@ The `O(n log n)` FFT multiplier subroutine and the analytic tools for resampling
   machine whose state counts the bits, then returned to the origin
   (`const_hoare`).
 
+- `Resampling/PiNat.lean`: Machin's sums in natural numbers, as the tape
+  machine computes them: iterated quotients `dSeq` (`⌊2^q/m^(2k+1)⌋`),
+  nonincreasing terms, even and odd partial sums whose difference is
+  nonnegative (`od_le_ev`), and `piN p = 16 A₅ - 4 A₂₃₉` (`piN_eq`).
+
 - `Resampling/NeumannWords.lean`: the Neumann evaluation of `J̃'` on words.
   An iterate is `2s` signed words; one step extends it cyclically by `m`
   records (`ext`, `cycIdx`), takes the stride-one window sums of the line
