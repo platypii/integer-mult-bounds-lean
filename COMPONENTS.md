@@ -2606,6 +2606,38 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixEarlySequencePacked.lean`: Actual four-load destination equals the packedEarly arithmetic with the address-dependent selected source controls, on every address including the bad set. Only target and compact T change; all source, dirty-back and payload spectators remain unchanged.
 
+- `Machine/ActiveRepairLayoutPermutationFields.lean`: Binary target/T/U field equivalences identify raw original power-of-two coordinates with existing local packed permutation fields.
+
+- `Machine/ActiveRepairLayoutPermutationFiber.lean`: Complete original addresses split into retained source coordinates, local packed fields and every row/tail/slack/back/payload spectator; inverse equivalences and finiteness are proved.
+
+- `Machine/ActiveRepairLayoutPermutation.lean`: Global early/later actual and ideal permutations are lifted from local varying-control maps; bad-set preservation, agreement outside the bad set and exact repair are proved.
+
+- `Machine/ActiveRepairLayoutPermutationWords.lean`: Real computed inverse/ideal words and guard values identify local repaired destinations and bad membership.
+
+- `Machine/ActiveRepairLayoutPermutationDestination.lean`: Global inverse-then-ideal destinations replace exactly recovered target/T fields, plus U for later repair, retaining all other original coordinates.
+
+- `Machine/ActiveRepairLayoutKeysFields.lean`: Original physically generated parser headers decode literal rank fields and source words; canonical rank bits equal complete binary address rows.
+
+- `Machine/ActiveRepairLayoutKeysEarly.lean`: Actual original-width early key flag and full destination equal the global bad-set rank flag and inverse-then-ideal rank key.
+
+- `Machine/ActiveRepairLayoutKeysLate.lean`: Actual original-width later key flag and full V/T/U destination equal the global bad-set rank flag and inverse-then-ideal rank key.
+
+- `Machine/ActiveRepairLayoutKeysScan.lean`: Both genuine growing scans use exact global rank flags and keys at every visited original rank under the explicit counter-capacity bound.
+
+- `Machine/ActiveRepairLayoutKeysPipelineCommon.lean`: Bounded physical key identification suffices for flagged/extracted stream identities; address-only payload-one layout and original row bound imply counter capacity.
+
+- `Machine/ActiveRepairLayoutKeysPipelineEarly.lean`: Actual initialized and cleaned early endpoint returns the ideal permutation stream on output10 with exact full-bank retention and complete runtime. Address layout has payload one and each address carries an arbitrary data record; connection to the wide physical payload array remains separate.
+
+- `Machine/ActiveRepairLayoutKeysPipelineLate.lean`: Actual initialized and cleaned later endpoint returns the ideal permutation stream on output10 with exact full-bank retention and complete runtime. Address layout has payload one and each address carries an arbitrary data record; connection to the wide physical payload array remains separate.
+
+- `Machine/ActiveRepairLayoutDensity.lean`: Actual global early/later bad-set cardinality bounds transport across complete address fibers and imply sparse-hole bounds for full rank enumeration.
+
+- `Machine/ActiveRepairLayoutDensityScan.lean`: Literal flagged repair records have the global bad-set hole count; bounded actual rankFlag agreement transports density to physical scan holes.
+
+- `Machine/ActiveRepairLayoutDensityArithmetic.lean`: Manuscript dyadic choices pay early and later density times address width with unit sparse-hole constant under explicit scalar parameter inequalities; original parameter synthesis remains separate.
+
+- `Machine/ActivePrefixEarlySequenceGlobal.lean`: The actual early four-load destination equals the complete global varying-source permutation on every original address, including exceptional ones; literal array bits follow that exact permutation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
