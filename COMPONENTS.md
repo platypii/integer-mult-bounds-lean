@@ -4534,6 +4534,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyStoppedReturnPrefix.lean`: Original stopped leaf result equality derives completed scalar-prefix grid and ledger at its genuine leaf denominator. Actual installed-result equality remains to be derived from reached stopped execution and orientation.
 
+- `Machine/NativeUniformPolynomialRotationNamedBank.lean`: Uniform runtime Y-phase and fixed X-negation output reconstruct the literal canonical native bank, with every other role and permanent frame unchanged.
+
+- `Machine/NativeUniformPolynomialRotationSourceReady.lean`: Actual uniform Y-phase and X-negation boundaries execute on the recursive source-ready bank, preserving controller frame and scalar suffix and reclaiming first sixty-seven leaf tapes, with paid original parent-volume runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
