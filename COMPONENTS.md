@@ -4228,6 +4228,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FiniteFlowPath.lean`: Nonhalting block-to-block execution paths compose recursive child returns on one unchanged fixed cyclic controller. Exact path runs include every physical block join; nested paths append without rebuilding code or adding an unaccounted jump. A child-return path composes with the root halting trace to give literal HoareTime with summed runtime. Constructing the algorithm-specific paths remains a recursive execution obligation.
 
+- `Machine/GuardedFiniteReturnExtraFlow.lean`: A fixed cyclic controller reserves extra entry/branch blocks independently of its original decoded return-address space. Original saved PC words and pop width remain unchanged; actual guard/pop execution enters the cast original continuation, while direct finite-control edges may reach reserved extra blocks. Return and extra PCs are disjoint, real root halting and fixed control-size bounds are proved. Instantiation with complete algorithmic blocks remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
