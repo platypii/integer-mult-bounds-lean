@@ -2151,3 +2151,4 @@ import IntegerMultBounds.Machine.CompactNativeRoleAssembly
 import IntegerMultBounds.Machine.AllAxisPhaseFlagsEndpoint
 import IntegerMultBounds.Machine.AllAxisPolynomialRecord
 import IntegerMultBounds.Machine.AllAxisPhaseOriginalPorts
+import IntegerMultBounds.Machine.CompactSpectatorStoppedLeafCaller

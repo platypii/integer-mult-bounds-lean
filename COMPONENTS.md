@@ -3830,6 +3830,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPhaseOriginalPorts.lean`: Physically copies actual native original13 descriptors into a fresh67-tape phase bank while retaining the whole native caller and source. Setup costs at most130 and erasure117 times original record volume. Coefficient-source sharing and precision installation remain separate.
 
+- `Machine/CompactSpectatorStoppedLeafCaller.lean`: One fixed stopped-node caller physically expands the live count by retained arity, executes actual guarded forward or inverse spectator leaves and restores original descriptors. Scalar count-one leaves require no expansion; every private tape and exterior is restored. The complete paid bound is linear in full native volume times Visit length; cyclic placement and internal recursive execution remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
