@@ -2296,3 +2296,5 @@ import IntegerMultBounds.Machine.CompactComplexRolePhaseSite
 import IntegerMultBounds.Machine.CompactComplexRolePhaseContinuation
 import IntegerMultBounds.Machine.CompactComplexRolePhaseActual
 import IntegerMultBounds.Machine.CompactComplexStoppedCallSite
+import IntegerMultBounds.Machine.NativeSignedGapHeadersReturn
+import IntegerMultBounds.Machine.CompactNativeGapHeadersReturn

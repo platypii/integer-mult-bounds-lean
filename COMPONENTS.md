@@ -4070,6 +4070,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStoppedCallSite.lean`: The real recursive Call selects its exact named role, residual child slot and forward/inverse direction, then executes the genuine stopped-child program and reaches a fixed continuation with paid native-volume cost. Original once-padded row levels derive divisibility, positivity, retained precision and next-level rows. The endpoint remains the real split-bank external caller; its physical controller-bank bridge, inherited-grid connection and unstopped recursion remain open.
 
+- `Machine/NativeSignedGapHeadersReturn.lean`: Fixed ten-tape precision-return adapter physically subtracts true current and target denominator descriptors into blank gap storage, runs optimized signed return and erases the generated gap. Both denominator words and original length survive;129-volume-plus-eight-current-plus359 pays synthesis, execution, cleanup and joins.
+
+- `Machine/CompactNativeGapHeadersReturn.lean`: Places original-denominator return at the actual native source43 and frames every other native66 tape. Genuine Path/scalar budget and unchanged retained metadata derive capacity and137-volume-plus359 runtime on literal original Gaussian serialization. Fresh appended denominator ports remain explicit until recursive precision bookkeeping is connected.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
