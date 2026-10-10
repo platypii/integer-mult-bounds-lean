@@ -4212,6 +4212,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCompletedLiveLower.lean`: The original interleaved schedule has certified group alignment boundaries, untruncated call intervals, exact actual scalar rows and all literal child calls. Actual scalar and stopped/nonleaf denominator endpoints imply the completed lower ledger and cover the genuine nonleaf target. A generic finite event compiler pays every local runtime and join, and local endpoint exponent equalities determine the true event fold. Constructing correct local child execution and the fixed cyclic recursive dispatcher remains open.
 
+- `Machine/CompactComplexCompletedLiveUpper.lean`: Every actual scalar/child event prefix has an exact denominator formula and an upper ledger using its real completed row and child counters. Both stopped and normalized nonleaf policies pay at most twice child volume. Actual schedule prefixes are bounded by original row/call counts; local physical endpoint exponent equalities and literal Live words propagate upper-ledger Progress. Discharging these local contracts in the complete fixed recursive dispatcher remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
