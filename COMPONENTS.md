@@ -4210,6 +4210,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexRecursiveRuntimeSum.lean`: Natural runtime budgets charge every literal complex25 child call at the genuine role-volume quotient, with quotient rounding dominated by a normalized real recurrence. Actual rank-saving branching slack absorbs width-dependent local costs; original-width bounds separate stopped-leaf and internal costs. Actual child runtime sums follow from local induction bounds, not an assumed total-runtime oracle. Physical local-cost bounds, recursive child execution, stopping-depth synthesis and root callback aggregation remain open.
 
+- `Machine/CompactComplexCompletedLiveLower.lean`: The original interleaved schedule has certified group alignment boundaries, untruncated call intervals, exact actual scalar rows and all literal child calls. Actual scalar and stopped/nonleaf denominator endpoints imply the completed lower ledger and cover the genuine nonleaf target. A generic finite event compiler pays every local runtime and join, and local endpoint exponent equalities determine the true event fold. Constructing correct local child execution and the fixed cyclic recursive dispatcher remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
