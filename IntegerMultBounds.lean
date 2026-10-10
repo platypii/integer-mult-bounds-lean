@@ -2302,3 +2302,5 @@ import IntegerMultBounds.Machine.CompactComplexScalarPathGuard
 import IntegerMultBounds.Machine.RadixComplexReadBank
 import IntegerMultBounds.Machine.RadixControlCleanupBank
 import IntegerMultBounds.Machine.RawLinearCombinationComplexCoefficient
+import IntegerMultBounds.Machine.RawLinearCombinationComplexArray
+import IntegerMultBounds.Machine.BlankWordPairRecycle

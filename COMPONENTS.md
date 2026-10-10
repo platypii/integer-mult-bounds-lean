@@ -4082,6 +4082,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RawLinearCombinationComplexCoefficient.lean`: Full fixed Gaussian coefficient kernel physically reads actual real/imaginary source records, executes all literal wire expressions, emits output records and erases both copied control banks. Original source symbols survive, all private arithmetic and controls return blank, and exact source/output record advances and every reader/arithmetic/cleanup/join cost are proved. Full counted polynomial traversal and stream replacement remain open.
 
+- `Machine/RawLinearCombinationComplexArray.lean`: One fixed runtime-counted machine executes the genuine read/compute/emit/cleanup coefficient kernel on every literal polynomial entry. Actual contexts and output prefixes derive from serialized arrays, the retained count header survives and coefficient/loop work clears. Zero coefficient counts and exact full runtime are included; output copy-back and normalization remain separate.
+
+- `Machine/BlankWordPairRecycle.lean`: Physically rewinds two genuine EOF words, copies an equal-width computed output over its original source, erases private output and restores both heads. Exact clean endpoints and seven-times-length-plus16 cost include empty words.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
