@@ -3946,6 +3946,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageNativePolynomialWord.lean`: Actual native basis words return genuine serialized polynomial arrays with derived unchanged widths and row recovery. Forward/local/reverse coefficient semantics retain polynomial spectators, and a fixed native executable realizes the literal word with every conversion/header cost paid.
 
+- `Machine/CompactFramedScalarGrid.lean`: Actual framed grouped-prefix states and every partial listed alignment have exact retained labels, stored/decoded grid bounds and literal-prefix relationships to the full finite network. Recursive child-return dependency budgets and the original-root normalized decoding connection remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -4925,6 +4927,12 @@ Bit and complex networks.
 - `Networks/GaussianBoundedMotif.lean`: Derives bounded Gaussian coefficients for literal scalar motifs and every prefix, with exact numerator recurrence.
 
 - `Networks/CircuitCoefficients.lean`: Propagates concrete coefficient certificates through dirty cancellation, inverse and global embeddings without supplied arithmetic coefficients.
+
+- `Networks/GaussianFrameGrid.lean`: Actual complex25 label Walsh frames have bounded denominator and numerator growth from finite sums; Stage geometry pays retained frame places from active axes.
+
+- `Networks/GroupedCoefficients.lean`: Derives exact sparse grouped scalar coefficient certificates while retaining actual network roles and ordering.
+
+- `Networks/RationalScalarGrid.lean`: Transports actual rational scalar module rows pointwise into the Gaussian grid representation without changing retained wire roles.
 
 ### Networks/Certificates/Paired49
 
