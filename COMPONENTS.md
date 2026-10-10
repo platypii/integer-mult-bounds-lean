@@ -3970,6 +3970,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactRecursiveDependencyBudget.lean`: Actual call-site schema and Visit paths derive ancestor/sibling volumes, prefix row counts, dependency precision and strict guard-width bounds. Actual normalized-root frame decoding and finite-network endpoint return grids are proved. Identifying this Path with physical controller stacks and installing returned precision remain open.
 
+- `Machine/CompactSpectatorStoppedReturnFlow.lean`: Actual occupied return guard and paid address pop/erase select the literal continuation in the stopped-leaf cyclic table and restore the retained full-bank snapshot.
+
+- `Machine/CompactSpectatorInternalChildFlow.lean`: Actual internal entry saves parent headers, pushes the real table PC, descends exponent, installs child headers and jumps to child entry. Real return dispatch reaches the restore block, erases child headers, restores parent/exponent and jumps after the child while retaining computed payload. Intervening child execution and remaining table blocks are explicit integration obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
