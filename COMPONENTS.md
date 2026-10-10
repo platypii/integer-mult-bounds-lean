@@ -4484,6 +4484,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleRecombine.lean`: Every complete quotient-row role family recombines uniquely to an original whole array. Exact inverse cyclic grouping, literal rolePayload equality and transported widths/common decoded grids derive the common array required by actual completed-node contraction and current-row merge. This is a serialization proof; it does not assume or assert execution of the full recursive node.
 
+- `Machine/NativeEndpointCharacterRoles.lean`: Actual fixed finite traversal executes source or sink characters on a noduplicate endpoint role list, deriving every local run from original raw headers and quotient role arrays. Static terminal weights and an opaque complete endpoint list yield a canonical actual program; selected-role readout, full caller frame and summed parent-volume cost are proved.
+
+- `Machine/NativeEndpointCharacterLeafPlacement.lean`: Places actual sixty-seven-tape character work on the first sixty-seven blank existing leaf tapes. Every remaining leaf tape and arbitrary caller/scalar suffix remain literal, and private storage returns blank without enlarging the machine bank.
+
+- `Machine/NativeEndpointNamedPorts.lean`: Original fifteen raw-header ports and named source X/sink Y ports are derived from the actual permanent codec-frame bank and original roleEncoding. Injectivity, role/header disjointness and exact original-header readout hold with arbitrary caller suffix; these ports are shared by character and uniform sink corrections.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
