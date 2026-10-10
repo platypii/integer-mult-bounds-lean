@@ -4308,6 +4308,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafChildAddress.lean`: Concrete original-call child address maps now connect actual cyclic role words, selected global bit intervals and returned parent arrays. Each input map is anchored by its output row/polynomial/untouched-bit spectators, with extraction/insertion roundtrips and all spectator coordinates preserved. Actual scalar wire order, child call slot, selected-role decoding and returned-wire rejoin are proved. The normalized selected-grid theorem uses these derived maps; actual completed-child execution remains the recursive induction premise.
 
+- `Machine/CompactComplexNonleafSpectatorPlacement.lean`: The actual nonleaf spectator promotion/shared-live commit now runs on the source-ready fixed Entry-plus-seven bank with a dedicated ten-tape suffix. One fixed permutation shares the unchanged permanent caller and preserves all nine payload-stack/clock/private frame tapes, including arbitrary nonblank ancestors, while reclaiming the ten appended tapes. Literal full-bank Hoare endpoints and original runtime bounds are proved; the stronger prefix-grid/ledger theorem uses the same placement. Full payload-return sequencing, final target restoration and recursive closure remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
