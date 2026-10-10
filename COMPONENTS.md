@@ -4522,6 +4522,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeEndpointCharacterCanonicalSourceReady.lean`: Complete fixed source/sink character boundaries execute on the actual recursive source-ready bank without direction dispatch or order premise. Canonical changed payload, retained recursive frame and scalar suffix, reclaimed first sixty-seven leaf tapes and parent-volume cost are proved. Controller composition and full recursive induction remain open.
 
+- `Machine/NativeEndpointCharacterPath.lean`: Actual dependency Path derives signed character decoding and exact preserved grids and widths, using the genuine native rank. No numerical safety or compatible coordinate oracle is supplied.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
