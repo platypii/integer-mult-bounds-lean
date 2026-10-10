@@ -2146,3 +2146,5 @@ import IntegerMultBounds.Machine.AllAxisPhaseStageMetadata
 import IntegerMultBounds.Machine.CompactNativeRoleDestructive
 import IntegerMultBounds.Machine.CompactNativeRoleInstall
 import IntegerMultBounds.Machine.CompactNativeRoleOriginal
+import IntegerMultBounds.Machine.CompactNativeRoleReservedBridge
+import IntegerMultBounds.Machine.CompactNativeRoleAssembly

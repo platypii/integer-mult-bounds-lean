@@ -3820,6 +3820,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleOriginal.lean`: One fixed original13 plus ell/p caller physically synthesizes native row and group lengths, installs controls, destructively splits or merges genuine coefficient rows, erases all copied controls and numeric metadata and restores original13. Exact runtime and full endpoint have no execution callback; reservation-scalar/port adaptation remains separate.
 
+- `Machine/CompactNativeRoleReservedBridge.lean`: Actual globally reserved and genuinely zero-padded coefficients have exactly the descendant native role serialization. Corrected precision preserves original stored field width, and actual role split/merge on initialized original13 banks retain original headers and legal descendant row counts. Physical scalar-bank/header adaptation is separate.
+
+- `Machine/CompactNativeRoleAssembly.lean`: Arbitrary computed native role arrays reassemble with the exact inverse cyclic row index map. A real destructive merge executes on these arbitrary descendant outputs; role decomposition and reassembly are mutually inverse.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
