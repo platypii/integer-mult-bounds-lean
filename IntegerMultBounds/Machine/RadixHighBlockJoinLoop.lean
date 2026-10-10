@@ -63,7 +63,9 @@ private theorem first_step (r P S E : ℕ) (source : ℤ → Fin (a+4)) (ss op o
     (by rw [RecursiveChildQuotientsConstant.bits_value,pow_succ]; ring) (RecursiveChildQuotientsConstant.bits_value _)
     (RecursiveChildQuotientsConstant.bits_canonical _) cs (RecursiveChildQuotientsConstant.bits_canonical _)
     (RecursiveChildQuotientsConstant.bits_canonical _)
-  have hb : DimensionProductDescriptor.bits P q = bits (P*q) := rfl
+  have hb : DimensionProductDescriptor.bits P q = bits (P*q) := by
+    rw [RecursiveChildQuotientsConstant.bits_eq_advance]
+    rfl
   rw [hb] at h
   have hv : P*q*(S*(q^r*E)) = P*S*q^(r+1)*E := by rw [pow_succ]; ring
   have h' := h.consequence (b' := coefficient q*(P*S*q^(r+1)*E)) (fun _ hh => hh) (fun _ hh => hh) (by rw [hv])

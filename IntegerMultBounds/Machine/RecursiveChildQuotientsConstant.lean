@@ -1,6 +1,8 @@
 import IntegerMultBounds.Machine.BinaryDescriptorStackRoundtrip
 import IntegerMultBounds.Machine.FiniteReturnStackAt
 import IntegerMultBounds.Machine.ExactFrame
+import IntegerMultBounds.Machine.BinaryCanonicalData
+import Mathlib.Data.Nat.Bits
 
 /-! A literal finite-control writer for the fixed divisor constants used by
 child quotient production. All writes, rewinds and joins are charged. -/
@@ -39,12 +41,43 @@ private theorem writes_hoare (xs : List (Fin (a+4))) (f : ℤ → Fin (a+4)) (p 
     intro v hv
     convert hv using 1; simp [List.length_cons,add_assoc,add_comm]
 
-def bits (n : ℕ) : List Bool := GrowingCounterData.advance n []
+/-- Binary recursion avoids constructing a fixed descriptor by one increment
+per represented integer. The resulting word is exactly the original word. -/
+def bits (n : ℕ) : List Bool := n.bits
 
-theorem bits_value (n : ℕ) : Counter.value (bits n) = n := GrowingCounterData.empty_value n
+private theorem nat_bits_value (n : ℕ) : Counter.value n.bits = n := by
+  induction n using Nat.binaryRec' with
+  | zero => rfl
+  | bit b n h ih =>
+    rw [Nat.bits_append_bit n b h]
+    cases b <;> simp [Counter.value,Nat.bit,ih]; omega
+
+private theorem nat_bits_canonical (n : ℕ) : GrowingCounterData.Canonical n.bits := by
+  induction n using Nat.binaryRec' with
+  | zero => exact Or.inl rfl
+  | bit b n h ih =>
+    rw [Nat.bits_append_bit n b h]
+    cases he : n.bits with
+    | nil =>
+      have hn : n=0 := by simpa [he,Counter.value] using (nat_bits_value n).symm
+      subst n
+      have hb := h rfl
+      subst b
+      exact Or.inr rfl
+    | cons c cs =>
+      rcases ih with hn | hl
+      · rw [he] at hn; contradiction
+      · exact Or.inr (by simpa [he] using hl)
+
+theorem bits_value (n : ℕ) : Counter.value (bits n) = n := nat_bits_value n
 
 theorem bits_canonical (n : ℕ) : GrowingCounterData.Canonical (bits n) :=
-  GrowingCounterData.advance_canonical n [] (Or.inl rfl)
+  nat_bits_canonical n
+
+theorem bits_eq_advance (n : ℕ) : bits n = GrowingCounterData.advance n [] :=
+  BinaryCanonicalData.value_injective _ _ (bits_canonical n)
+    (GrowingCounterData.advance_canonical n [] (Or.inl rfl))
+    ((bits_value n).trans (GrowingCounterData.empty_value n).symm)
 
 def program (n : ℕ) := seq (seq (seq (writeSymbol (separator : Fin (a+4)))
   (writeProgram ((bits n).map bitSymbol))) (Rewind.program separator)) StepRight.program

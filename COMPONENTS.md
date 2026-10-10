@@ -953,7 +953,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RecursiveMixedSchedule.lean`: One runtime-independent fixed mixed shift/scaling/XOR program on a shared permanent bank. Exact whole-block semantics, literal blank private input/output and sum-of-stage-costs plus charged joins; explicit compile-time linear-volume coefficient. Uses one unchanged six-header view and a supplied short stream-length descriptor; paid coordinate regrouping and recursive calls remain separate.
 
-- `Machine/RecursiveChildQuotientsConstant.lean`: Fixed compile-time divisor word is physically initialized with marker and head restoration, charging three times bit length plus six transitions.
+- `Machine/RecursiveChildQuotientsConstant.lean`: Fixed compile-time divisor word is physically initialized with marker and head restoration, charging three times bit length plus six transitions. Its logarithmic binary construction is proved equal to the former increment-generated canonical word, avoiding unary expansion of large fixed constants.
 
 - `Machine/RecursiveChildQuotients.lean`: Two clean divisions plus actual fixed-divisor initialization/erasure generate width/m and rows/roles from six parent headers. Exact 38-tape output matches the child-dimension constructor input, with no supplied divisor or quotient words.
 

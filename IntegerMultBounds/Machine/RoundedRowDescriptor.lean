@@ -238,7 +238,7 @@ private theorem clean_hoare (rs ds zs : List Bool) (R D : ℕ) :
   · rintro v rfl
     apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i <;> rfl
   · simp [BinaryDescriptorCleanupList.cost,cleanSlots,words,oneBits,
-      RecursiveChildQuotientsConstant.bits,GrowingCounterData.advance,GrowingCounterData.increment]
+      RecursiveChildQuotientsConstant.bits]
     omega
 
 /-- Word-sensitive construction, before converting binary lengths to a uniform

@@ -25,10 +25,11 @@ def output (caller : Tapes 17 a) (w : ℕ) :=
 /-- Literal output word equality, including width zero. -/
 theorem power_bits (w : ℕ) :
     FixedBasePowerStep.bits 2 w = RecursiveChildQuotientsConstant.bits (2^w) := by
+  rw [RecursiveChildQuotientsConstant.bits_eq_advance]
   cases w with
   | zero => rfl
   | succ w => simp only [FixedBasePowerStep.bits,DimensionProductDescriptor.bits,
-      RecursiveChildQuotientsConstant.bits,pow_succ]
+      pow_succ]
 
 private theorem binary_eq (ws : List Bool) :
     CountedLoopReuseAlphabet.binary (a := a) ws=RadixZeroFill.encodedBinary ws := by

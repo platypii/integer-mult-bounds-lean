@@ -42,9 +42,9 @@ private theorem cost_first (D t R p : ℕ) : scheduleCost first (initial D t R p
   dsimp [first,scheduleCost,cost,eval,CompactChildHeadersArithmetic.cost,CompactChildHeadersArithmetic.eval,
     ActivePrefixStageHeadersOps.cost,ActivePrefixStageHeadersOps.eval,ActiveRepairRankHeadersCommands.cost,
     ActiveRepairRankHeadersCommands.eval,ActiveRepairRankHeadersCommands.put,initial,Function.update,
-    RecursiveChildQuotientsConstant.cost,RecursiveChildQuotientsConstant.bits]
+    RecursiveChildQuotientsConstant.cost]
   simp only [Option.getD_some,width]
-  norm_num [GrowingCounterData.advance,GrowingCounterData.increment]
+  norm_num [RecursiveChildQuotientsConstant.bits_eq_advance,GrowingCounterData.advance,GrowingCounterData.increment]
   ring
 
 private theorem cost_second (D t R p : ℕ) : scheduleCost second (middle D t R p)=

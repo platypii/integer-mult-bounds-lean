@@ -138,7 +138,7 @@ private theorem cost_bound_abstract (v : Descriptor) (hs : Fin 6 → List Bool) 
     (2*(125000+1)+20) (3*(125000+1)+6) 12 9
     (consume_sum v hp) (digit_sum v) (ArbitraryWidthPieceLoop.count_le _ _)
     (power_sum _) (last_power _) (header_length v hs hv) (bits_length _) (by
-      unfold RecursiveChildQuotientsConstant.bits; rfl)
+      rw [RecursiveChildQuotientsConstant.bits_eq_advance]; rfl)
     (Nat.add_le_add_right (Nat.mul_le_mul_left 2 (by simpa only [hL] using bits_length 125000)) 20)
     (by simpa only [hA] using writer_cost 125000) (writer_cost 1) (writer_cost 0)
 

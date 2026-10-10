@@ -54,9 +54,9 @@ private theorem first_cost (rows D t R p : ℕ) : scheduleCost first (ButterflyS
   dsimp [first,scheduleCost,cost,eval,CompactChildHeadersArithmetic.cost,CompactChildHeadersArithmetic.eval,
     ActivePrefixStageHeadersOps.cost,ActivePrefixStageHeadersOps.eval,ActiveRepairRankHeadersCommands.cost,
     ActiveRepairRankHeadersCommands.eval,ActiveRepairRankHeadersCommands.put,ButterflySpectatorHeaders.initial,Function.update,
-    RecursiveChildQuotientsConstant.cost,RecursiveChildQuotientsConstant.bits]
+    RecursiveChildQuotientsConstant.cost]
   simp only [Option.getD_some,width]
-  norm_num [GrowingCounterData.advance,GrowingCounterData.increment]
+  norm_num [RecursiveChildQuotientsConstant.bits_eq_advance,GrowingCounterData.advance,GrowingCounterData.increment]
   ring
 private theorem rows_cost (rows D t R p : ℕ) : scheduleCost powersRows (middle 0 rows D t R p)=
     FixedBasePowerDescriptor.constant 2*(2^t+higher D t)+53*(rows*higher D t)+

@@ -54,8 +54,7 @@ theorem constructs (qs : List Bool) (q : ℕ) (hq : Counter.value qs=q)
     apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i <;> rfl
   rw [he] at h3
   exact ((h1.seq h2).seq h3).consequence (fun _ h => h) (fun _ h => h) (by
-    norm_num [RecursiveChildQuotientsConstant.cost,RecursiveChildQuotientsConstant.bits,
-      GrowingCounterData.advance,GrowingCounterData.increment]
+    norm_num [RecursiveChildQuotientsConstant.cost,RecursiveChildQuotientsConstant.bits]
     omega)
 
 theorem cleans (qs : List Bool) (q : ℕ) :

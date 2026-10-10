@@ -31,7 +31,7 @@ theorem initialize_hoare (v : Tapes 2 a) (bs : List Bool) :
   apply congrArg₂ Tapes.mk <;> funext i <;> fin_cases i <;>
     simp [idle,CountedLoopReuseAlphabet.bank,
       CountedLoopReuseAlphabet.controls,Tapes.append,RecursiveChildQuotientsConstant.bits,
-      GrowingCounterData.advance,BinaryDescriptorStack.descriptor,putWord,
+      BinaryDescriptorStack.descriptor,putWord,
       ] <;> rfl
 
 def cleanupProgram (a : ℕ) := BinaryDescriptorCleanupList.oneProgram (a := a) (2 : Fin 4)
