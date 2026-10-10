@@ -4606,6 +4606,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCorrectedChildReturnPrefix.lean`: Genuine corrected child tensor semantics yields the shared spectator grid, exact returned prefix budget and live ledger. The existing physical target-restoration block runs on the literal canonical returned bank, deriving promotion, restored target and installed live header with a paid native-volume bound. Child tensor correctness remains the explicit recursive induction premise; full caller recovery is tracked separately.
 
+- `Machine/CompactComplexStoppedLeafTensorSemantics.lean`: The literal selected-axis stopped leaf computes the full named tensor frame, or its inverse after actual pre/post orientation, on every anchored child slice. Actual physical directions and kernels match tensor coordinates, and ChildAddress input/output maps give pointwise semantics for every data and dirty wire. Genuine dependency paths derive guards and output grids at the actual stopped denominator n plus child size; recursive return integration remains open.
+
+- `Machine/CompactComplexSourceReadyCorrectedStoppedRootRun.lean`: The actual corrected fixed machine composes root classification, positive or scalar stopped-leaf execution, installed output and the genuine empty-stack halt. Concrete initial tape readiness yields a complete Hoare time bound including classifier, leaf and final guard; no execution callback is assumed. Literal fixedProgram is proved equal to the corrected table package. Unstopped recursive root runs remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
