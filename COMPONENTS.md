@@ -4092,6 +4092,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerDenominatorEntry.lean`: Composes physical certified-target save with genuine child controller entry, and genuine geometry restoration with certified-target pop. Geometry and return-PC stacks start beyond denominator storage, with exact framed tape contracts and paid costs. Actual return-grid policy synthesis and full recursive execution remain open.
 
+- `Machine/CompactComplexNativeRoleBridge.lean`: Injective physical placement runs the genuine stopped caller through actual controller source65 and the appended role bank, retaining every other permanent tape and exact runtime. Numeric metadata and explicit raw ell/p state are preserved; no fictitious equality between initial13 and installed codec descriptors is assumed.
+
+- `Machine/CompactComplexStoppedCallFrame.lean`: Actual Call role/direction and Visit child slot specialize the placed stopped caller, deriving global row division, next-level rows, positivity and precision from original padding. Exact selected-role output, complementary frame, paid continuation arrival and native-volume bound are proved. Codec installation from controller entry and unstopped recursion remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
