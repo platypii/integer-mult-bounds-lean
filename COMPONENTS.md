@@ -3936,6 +3936,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexPhaseFixedWord.lean`: The actual finite complex25 forward and reverse basis machines are independent of runtime slot casts and geometry. One fixed native stage supplies both physical machines for every edge and original caller, with exact literal word results and certified uniform stage-exponent bounds.
 
+- `Machine/CompactNativeRoleScalarBudget.lean`: Actual Stage controller values and real scalar divisions, corrected precision, fifteen-word copying and all cleanup yield a fixed role-count constant times original native volume for the complete role scalar producer.
+
+- `Machine/CompactNativeRolePaddingBudget.lean`: Pays the full actual reservation, native zero padding, scalar role setup and destructive split by original native volume times reserved axes; arbitrary descendant-result merge and complete metadata cleanup are bounded by original native volume. Recursive assembly remains open.
+
+- `Machine/CompactNativeRolePaddingActualBudget.lean`: Actual multiplier scalars absorb complete native reservation, zero padding, real scalar role preparation and source43 split into the certified dimension saving; eventual positive depth and the fixed machine actual Hoare runtime are proved without a supplied execution or runtime witness.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
