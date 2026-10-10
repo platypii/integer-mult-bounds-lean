@@ -4172,6 +4172,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSpectatorVolumeBudget.lean`: Actual stream-volume descriptor setup and cleanup have uniform original-native-volume and single-role-stream bounds derived from their real schedules. Full-row and merged quotient-row modes are covered, with a fixed header-count factor and no divisibility requirement beyond positive quotient. No supplied metadata cost allowance remains; live denominator progression and complete recursive cost summation remain separate.
 
+- `Machine/CompactComplexStoppedLedgerRoundtrip.lean`: One actual stopped call physically selects its runtime target, saves it, enters the genuine child, executes the original-descriptor codec lifecycle and selected leaf, pops the real return PC, and restores geometric headers, exponent and target stacks. The exact parent caller bank retains old live7, generated target8 and computed selected-role words; all other roles, immutable scalar43 and appended workspace are restored. Costs include every dispatch, entry, codec, restoration and outer join. Spectator handoff and live installation, unstopped recursive execution and root closure remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
