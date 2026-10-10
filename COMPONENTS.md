@@ -4482,6 +4482,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyEndpointRoleExchange.lean`: Actual complete named X/Y exchange lifts onto the existing source-ready node and scalar-inclusive bank. The literal routed original payload retains controller/geometry/storage, every recursive frame, arbitrary leaf, blank work10 and the arbitrary scalar suffix. All swap prerequisites come from the actual caller, with a paid uniform original parent native-volume bound.
 
+- `Machine/CompactNativeRoleRecombine.lean`: Every complete quotient-row role family recombines uniquely to an original whole array. Exact inverse cyclic grouping, literal rolePayload equality and transported widths/common decoded grids derive the common array required by actual completed-node contraction and current-row merge. This is a serialization proof; it does not assume or assert execution of the full recursive node.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
