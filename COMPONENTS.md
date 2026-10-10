@@ -4248,6 +4248,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexFixedNodeTable.lean`: One fixed cyclic table contains the original decoded return slots, four distinguished control blocks and every event in the original finite schedule. Exact programme lookup and control destinations are proved: scalar events advance, child events enter the shared recursive entry, and decoded returns resume at the original call successor. Saved-address encoding remains unchanged and code is independent of runtime depth. Fixed local programmes and the entry classifier are explicit inputs; their physical reachable paths and full recursive correctness remain open.
 
+- `Machine/CompactComplexNonleafEventProgress.lean`: The actual completed child network, with its input reconstructed from the selected parent stream, derives the normalized child grid at twice child volume. Literal spectator numerator promotion preserves their decoded values. The exact original parent scalar prefix and dependency levels survive, with only the returned-child volume ledger advanced; no fresh whole-scalar growth factor or supplied child grid is used. Genuine dependency Paths and retained reserve derive signed promotion guard and capacity. Concrete address maps, completed recursive execution equality and physical return assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

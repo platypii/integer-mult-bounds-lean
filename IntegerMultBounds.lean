@@ -2398,3 +2398,4 @@ import IntegerMultBounds.Machine.CompactComplexStoppedPrefixBudget
 import IntegerMultBounds.Machine.CompactComplexNonleafRoleEntry
 import IntegerMultBounds.Machine.CompactComplexNonleafRoleEntryBudget
 import IntegerMultBounds.Machine.CompactComplexFixedNodeTable
+import IntegerMultBounds.Machine.CompactComplexNonleafEventProgress
