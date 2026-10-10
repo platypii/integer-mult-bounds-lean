@@ -4508,6 +4508,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedScalarReadiness.lean`: Arbitrary corrected role families directly supply canonical polynomial arrays, exact named-wire decoding, physical scalar source words, widths, support, grid and initial scalar Ready. Recombination identifies the original whole array where needed, while parent raw rows, live/target storage and controller stacks are retained; no source-word or matching-wire oracle is assumed.
 
+- `Machine/CompactComplexEndpointCoordinates.lean`: Actual native codec serialized bit coordinates equal the original recursive node tensor addresses, derived from row rank, binary coordinate reversal, rho and genuine Visit geometry. The actual aggregate terminal character phase is exactly signColumns at that original address; no separately supplied compatible coordinate map is required.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
