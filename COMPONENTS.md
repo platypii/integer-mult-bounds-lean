@@ -4450,11 +4450,21 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeEndpointCharacterAddress.lean`: Exact low-first serialized rank reads every original slot and runtime column with the required reversals. Address compatibility is proved from the actual traversal rather than assumed.
 
-- `Machine/NativeEndpointCharacterReadout.lean`: Actual aggregate scanner phase equals twice the binary dot products across all runtime columns. Its emitted unit phase is exactly the original product character and signColumns; terminal-vector and physical boundary composition remain separate.
+- `Machine/NativeEndpointCharacterReadout.lean`: Actual aggregate scanner phase equals twice the binary dot products across all runtime columns. Its emitted unit phase is exactly the original product character and signColumns; terminal-vector specialization is provided separately and full physical boundary composition remains open.
 
 - `Machine/CompactComplexSourceReadyScalarChildReadiness.lean`: Actual scalar-prefix output supplies next selected role word, source support, width, grid, exponent preparation and child-ready bank. Parent raw metadata and target, live and storage stacks are retained, with quotient role rows derived by canonicalInput.
 
 - `Machine/CompactComplexSourceReadyNonleafScalarInitialReadiness.lean`: Original nonleaf rolePayload yields canonical polynomial grouping, exact physical role words, widths, support and decoded original-node grids. Actual retained parent metadata and live storage derive initial scalar Ready without supplied role word premises. The source correction remains a separate required physical step.
+
+- `Machine/NativeEndpointCharacterPrepare.lean`: Actual private raw-header preparation synthesizes codec payload and physically divides copied parent rows by the fixed divisor, retaining original public geometry. Immutable ell and precision inputs and quotient scratch are erased after preparing phase metadata.
+
+- `Machine/NativeEndpointCharacterCopy.lean`: Physically copies original raw geometry and ell/precision into private character storage while retaining all original roles, controller frames and caller tapes literally.
+
+- `Machine/NativeEndpointCharacterOriginal.lean`: Complete original-input character adapter physically copies raw descriptors, synthesizes codec and role-row quotient, executes the selected role character and replaces its source stream. All sixty-seven private tapes return blank at head zero and original public headers remain untouched. Full named role loop and source-ready leaf placement remain open.
+
+- `Machine/NativeEndpointCharacterOriginalBudget.lean`: Complete original-input sign-character runtime, including private quotient preparation and cleanup, is bounded by a fixed divisor-dependent constant times original parent native volume.
+
+- `Machine/NativeEndpointCharacterTerminal.lean`: Actual compiled terminal-vector weights give the original signColumns correction at the proved physical coordinates. This identifies the genuine terminal tensor character; full caller address transport and named-role boundary assembly remain open.
 
 ## Compact
 
