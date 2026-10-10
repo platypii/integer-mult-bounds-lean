@@ -4420,6 +4420,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyNonleafInitialFrame.lean`: The real current-row splitter retains all ten denominator/storage tapes, including the incoming live header and the target physically generated from it. Literal head and whole-tape identities supply frame premises for later scalar and child events; no advanced-live target reconstruction is assumed.
 
+- `Machine/CompactComplexSourceReadyOrientedEntryTablePath.lean`: Actual canonical child and root entry paths derive stopping decisions from the genuine halted guard marker, execute pre-orientation and follow the paid table edge to stopped or nonleaf setup. No supplied outcome classifier or local execution oracle is used.
+
+- `Machine/CompactComplexSourceReadyOrientedStoppedTablePath.lean`: The actual canonical table executes stopped positive and scalar branches for both saved children and empty roots, retains original saved frames and scalar scratch, and follows the paid stopped edge to guard zero. Every local body and post-selector run is derived internally; recursive closure remains open.
+
+- `Machine/CompactComplexSourceReadyNonleafOrientedSemantics.lean`: Original dependency Paths and completed-network grids derive safe post-conjugation and literal retained widths. A genuine correction-inclusive completed equation implies the true forward or inverse full tensor with both original endpoint corrections retained. Actual execution of those correction boundaries and recursive completion remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
