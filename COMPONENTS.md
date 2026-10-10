@@ -4576,6 +4576,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedFinalReturnPath.lean`: Actual corrected nonleaf finalization now reaches its original saved call continuation through the real guard and saved-PC pop. The complete computed output remains installed, all other caller and workspace tapes are retained, and both table joins and pop have a fixed linear-volume bound. Full reached recursive premises remain open.
 
+- `Machine/CompactComplexSourceReadyCorrectedStoppedTablePath.lean`: Actual stopped tag1 executes the directional leaf and installs its oriented result inside the corrected table, reaching guard zero with all physical execution and the table join paid. Its literal saved-PC bank is retained for the following pop; reached recursive readiness remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
