@@ -1,6 +1,6 @@
 import IntegerMultBounds.Schoenhage.RingSpec
 
-/-! The packed ring product as a literal 84-tape program with a `HoareTime`
+/-! The packed ring product as a literal 87-tape program with a `HoareTime`
 contract stating the truncated negacyclic Gaussian product (`ringProgram_spec`),
 and its step bound `O(N log N log log N)` in the packed size
 `N = W r` (`ringCost_le`). -/

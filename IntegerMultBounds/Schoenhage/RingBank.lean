@@ -2,7 +2,7 @@ import IntegerMultBounds.Schoenhage.SSClean
 import IntegerMultBounds.Schoenhage.Relabel
 
 /-! The bank of the packed ring product: the multiplier's 64 tapes followed by
-twenty tapes of its own. Programs on the multiplier's bank run on the first
+twenty-three tapes of its own. Programs on the multiplier's bank run on the first
 64 tapes (`up`); an exact effect there is the same effect on the larger
 bank, the other tapes untouched (`runs_up`). -/
 
@@ -11,7 +11,7 @@ namespace IntegerMultBounds.Schoenhage
 open Machine Strm Tp
 
 /-- The number of tapes of the ring product machine. -/
-scoped notation "𝕌" => (84 : ℕ)
+scoped notation "𝕌" => (87 : ℕ)
 
 /-- The multiplier's tapes inside the larger bank. -/
 def ι : Fin 𝕋 → Fin 𝕌 := Fin.castLE (by norm_num)
@@ -100,6 +100,9 @@ abbrev xP : Fin 𝕌 := 80
 abbrev xQ : Fin 𝕌 := 81
 abbrev lR : Fin 𝕌 := 82
 abbrev lI : Fin 𝕌 := 83
+abbrev iP : Fin 𝕌 := 84
+abbrev iL : Fin 𝕌 := 85
+abbrev iW : Fin 𝕌 := 86
 end Tp
 
 end IntegerMultBounds.Schoenhage

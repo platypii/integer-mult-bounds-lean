@@ -2557,3 +2557,5 @@ import IntegerMultBounds.Machine.NativeEndpointCharacterSplitCaller
 import IntegerMultBounds.Machine.NativeEndpointCharacterEntryStorage
 import IntegerMultBounds.Machine.NativeEndpointCharacterEntryRoles
 import IntegerMultBounds.Machine.CompactComplexSourceReadyCorrectedEntry
+import IntegerMultBounds.Spec.SignedRingProduct
+import IntegerMultBounds.Spec.SignedRingProductFacts

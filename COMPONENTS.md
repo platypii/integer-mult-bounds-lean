@@ -6359,7 +6359,7 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
 - `Schoenhage/SSClean.lean`: the multiplier's final state tape by tape (a
   decidable check shows the tapes it never names are unchanged) and a wipe,
   so it ends with the product alone on its input tape (`runs_ssClean`).
-- `Schoenhage/RingBank.lean`, `RingMul.lean`, `RingAlu.lean`: the 84-tape
+- `Schoenhage/RingBank.lean`, `RingMul.lean`, `RingAlu.lean`: the 87-tape
   bank of the ring product; one product modulo `2^N + 1` between registers of
   its own (`runs_mulStep`); the residue unit switched on and off around
   modular subtraction and addition (`runs_aluOp`).
@@ -6372,8 +6372,18 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   (`runs_unpack`, `outWord_eq`).
 - `Schoenhage/RingProduct.lean`, `RingSpec.lean`, `RingProgram.lean`: the whole
   ring product (`runs_ringProd`), its output equal to the truncated
-  negacyclic Gaussian product (`outs_eq`), as a literal 84-tape program
+  negacyclic Gaussian product (`outs_eq`), as a literal 87-tape program
   (`ringProgram_spec`) within `O(N log N log log N)` steps (`ringCost_le`).
+
+- `Spec/SignedRingProduct.lean`: the exact statement of the paper's
+  `lem:signed-ring-product` on the literal machine model: the `Γ` header code,
+  the most-significant-first two's-complement component format, disk grid
+  numerators, `Q_p(fg/r)` as output, and the targets `paperTarget` and
+  `polylogTarget k`. Definitions only.
+- `Spec/SignedRingProductFacts.lean`: the formats mean what they say: `Γ` is
+  self-delimiting and the header reads back as `(p, r, w)` (`header_read`);
+  component words round-trip and disk grid numerators fit in `w ≥ p + 2`
+  bits (`DiskGrid.fits`); disk grid coefficients have modulus at most one.
 
 ## Top-level
 
