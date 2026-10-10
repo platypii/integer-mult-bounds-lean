@@ -2220,3 +2220,4 @@ import IntegerMultBounds.Networks.GaussianFrameGrid
 import IntegerMultBounds.Networks.GroupedCoefficients
 import IntegerMultBounds.Networks.RationalScalarGrid
 import IntegerMultBounds.Machine.CompactFramedScalarGrid
+import IntegerMultBounds.Schoenhage.LevelUp
