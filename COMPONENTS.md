@@ -4582,6 +4582,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedStoppedReturnPath.lean`: Actual corrected stopped execution installs its oriented result, reaches guard zero and physically restores the original saved call continuation. Only the saved stack is replaced by its older frame; the complete result and workspace remain installed. All transitions have a fixed volume-times-stopped-depth bound, under the explicit unused-stack-tail invariant; reached recursive integration remains open.
 
+- `Machine/CompactComplexSavedStackTailInvariant.lean`: Blank-tail support at the next free saved-stack head is initialized from finite support and preserved by arbitrary actual binary pushes. Physical placed push endpoints carry the invariant, and genuine stack history supplies the older blank-tail witness needed by actual placed pop. Pop restores the exact older history and every complementary tape; reached recursive controller preservation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
