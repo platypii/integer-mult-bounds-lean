@@ -2129,3 +2129,5 @@ import IntegerMultBounds.Machine.CompactNativeRoleGeometry
 import IntegerMultBounds.Machine.CompactNativeRoleTransfer
 import IntegerMultBounds.Machine.CompactNativeRoleHeaders
 import IntegerMultBounds.Schoenhage.Recursive
+import IntegerMultBounds.Machine.CompactNativeTensorPhaseCoordinates
+import IntegerMultBounds.Machine.ActivePrefixStageNativeConjugation

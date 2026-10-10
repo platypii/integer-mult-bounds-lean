@@ -3786,6 +3786,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleHeaders.lean`: Original13 plus immutable ell and precision physically generate full global bits, stored coefficient width, complete row length, role quotient and source erasure count. Every numeric operation and generated-header cleanup is paid, and all originals are retained.
 
+- `Machine/CompactNativeTensorPhaseCoordinates.lean`: The single all-axis accumulator at the native basis-word destination has exactly the sum of all original complex-edge coordinate phases. One guarded signed coefficient action therefore realizes their complete tensor product; actual whole-stream execution remains separate.
+
+- `Machine/ActivePrefixStageNativeConjugation.lean`: Forward native basis word, row-local action and reverse word have exact original-row semantics: each row receives the action indexed by its real forward destination, then returns to its original position. Row-action execution is a separate obligation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
