@@ -4144,6 +4144,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarSequenceSemantics.lean`: Literal complete named scalar-array sequences equal the original complex circuit at the input denominator plus row count and retain the exact final numerator bound and field widths. A single initial numerator reserve derives every intermediate guard, output width and signed bound; no intermediate guard callback is assumed. Physical role-port execution and actual Path reserve integration remain separate.
 
+- `Machine/CompactComplexScalarRoleSemantics.lean`: Actual permanent-role scalar stream execution and its original complex-circuit postcondition follow from the genuine dependency Path grid. Original retained width and one complete finite-row reserve derive all intermediate signed guards; every row physically advances the shared storage7 denominator. The original chunk choice eventually pays this reserve, without a per-gate numerical callback.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
