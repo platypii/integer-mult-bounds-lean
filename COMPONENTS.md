@@ -4584,6 +4584,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSavedStackTailInvariant.lean`: Blank-tail support at the next free saved-stack head is initialized from finite support and preserved by arbitrary actual binary pushes. Physical placed push endpoints carry the invariant, and genuine stack history supplies the older blank-tail witness needed by actual placed pop. Pop restores the exact older history and every complementary tape; reached recursive controller preservation remains separate.
 
+- `Machine/CompactComplexSourceReadyNonleafRootFinal.lean`: Actual all-role contraction and row rejoin compose with the real empty-stack identity orientation branch on the unchanged nonleaf final program. Whole arrays and arbitrary completed role families yield literal root endpoints, retaining caller and scalar workspace with every transition paid; full reached recursion remains open.
+
+- `Machine/CompactComplexSourceReadyCorrectedRootFinal.lean`: Actual root sink signs, phase, negation and exchange feed contraction, row rejoin and physical empty-stack post-orientation. The unchanged corrected final program yields the literal root output with an exact paid cost and fixed linear-volume bound; table and full recursive execution integration remain separate.
+
+- `Machine/CompactComplexFixedNodeRootExit.lean`: A reached empty-stack guard genuinely halts the original fixed node controller in exactly two physical steps while retaining the complete bank. A proved root-entry path composes with this terminal trace to obtain actual HoareTime; the preceding recursive path is still required.
+
+- `Machine/CompactComplexSourceReadyCorrectedRootTablePath.lean`: Actual corrected root tag3 executes sink correction, contraction, rejoin and empty-stack identity orientation, then reaches guard zero through the paid original table edge. Literal saved-stack retention proves the reached guard cell remains empty; preceding recursive schedule correctness is still required.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
