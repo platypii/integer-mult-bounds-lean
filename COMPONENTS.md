@@ -4314,6 +4314,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyGuard.lean`: The actual shared source-ready stopping guard copies the immutable original dimension and current exponent, executes the stopping test and physically clears all ten borrowed numeric/private tapes before either continuation. Exact branch contracts start the selected continuation on the literal unchanged bank, with readiness derived from actual child-entry output and full runtime bounded by native volume. Explicit reservation bridges prove the tested shape axis count is the original global dimension, including actual algorithm parameters. Fixed table assembly and recursive execution remain open.
 
+- `Machine/CompactComplexSourceReadyLeafPhase.lean`: The genuine directional leaf phase runs directly from source65 and current raw metadata on the shared source-ready public bank plus a fixed leaf workspace. Exact literal source output, all complementary payload/controller frames and complete workspace reclamation are proved with charged physical cost; no parent role reselection or row quotient occurs.
+
+- `Machine/CompactComplexSourceReadyLeafCodec.lean`: Actual native polynomial leaf codec setup and restore operate on the direct source-ready bank, preserving raw descriptors and all complementary tapes. Exact full-bank readiness and output endpoints connect the real leaf phase to retained polynomial field widths; private codec workspace is reclaimed.
+
+- `Machine/CompactComplexSourceReadyLeaf.lean`: One fixed direct source-ready directional leaf program composes native polynomial codec setup, baseline precision, real leaf phase, precision restoration and codec restoration. The literal result replaces only source65, raw row counts and complementary ancestor frames survive, and every leaf-private tape is blank afterward; all constituent runtimes and joins are paid.
+
+- `Machine/CompactComplexSourceReadyLeafSemantics.lean`: The direct leaf result has exact retained native field widths and normalized forward/inverse Walsh semantics from the actual dependency Path and inherited grid. Genuine retained precision derives signed arithmetic guards and the true leaf-target grid, with exact zero return contraction gap. Recursive branch assembly remains open.
+
+- `Machine/CompactComplexSourceReadyLeafDenominator.lean`: A fixed physical direct-leaf target lifecycle synthesizes the target from actual numeric volume and live7, using ten clean private tapes, then erases/copies/erases to install advanced live7 and clear target8. Exact full-bank endpoints and paid runtimes preserve all raw geometry, source and ancestor frames; no runtime target word is supplied.
+
+- `Machine/CompactComplexSourceReadyStoppedLeaf.lean`: The complete stopped source-ready block composes the actual directional source leaf with genuine target synthesis and live commit on one fixed leaf-plus-ten suffix. Its final endpoint is one literal public bank changing only the result source and live7 while clearing target8 and reclaiming the whole suffix. Exact directional normalized semantics and every physical runtime/join are proved; uniform runtime absorption and fixed recursive table assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
