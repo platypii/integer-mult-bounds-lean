@@ -4142,6 +4142,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerChildStopTarget.lean`: The actual runtime stopping test copies global dimension and parent exponent into ten fresh tapes, decrements only the copy, physically selects the stopped-leaf or completed-network return target, and erases every fresh tape. Only storage8 changes; live7, target stack9, native descriptors and source are preserved. Actual parent geometry derives both branch targets, with all setup, dispatch and cleanup costs paid.
 
+- `Machine/CompactComplexScalarSequenceSemantics.lean`: Literal complete named scalar-array sequences equal the original complex circuit at the input denominator plus row count and retain the exact final numerator bound and field widths. A single initial numerator reserve derives every intermediate guard, output width and signed bound; no intermediate guard callback is assumed. Physical role-port execution and actual Path reserve integration remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
