@@ -3904,6 +3904,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactSpectatorStoppedLeafFlow.lean`: The concrete cyclic finite table contains physical return guard/pop and actual directional stopped-leaf blocks. Both scalar and positive leaf executions physically jump to the return guard with their proved payload and paid runtime. Remaining internal blocks are explicit table inputs; full recursive execution remains open.
 
+- `Machine/AllAxisPhaseOriginalScalar.lean`: Physically copies native original13 plus retained immutable ell into the aggregate phase bank, preserving the full native caller and original scalar. Paid copying and erasure cost at most140 and126 times original record volume under the actual polynomial payload allowance.
+
+- `Machine/AllAxisPhaseOriginalMetadata.lean`: One fixed original-input setup composes original13/ell copying with computed stage metadata synthesis while framing the native coefficient source and workspace. Cleanup erases every computed and copied header and restores all appended phase tapes; both lifecycles fit804268 times original record volume.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

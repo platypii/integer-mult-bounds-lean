@@ -2189,3 +2189,5 @@ import IntegerMultBounds.Machine.AllAxisPolynomialPlacement
 import IntegerMultBounds.Schoenhage.InvLayers
 import IntegerMultBounds.Machine.CompactSpectatorStoppedLeafDispatch
 import IntegerMultBounds.Machine.CompactSpectatorStoppedLeafFlow
+import IntegerMultBounds.Machine.AllAxisPhaseOriginalScalar
+import IntegerMultBounds.Machine.AllAxisPhaseOriginalMetadata
