@@ -4120,6 +4120,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarDenominatorSequence.lean`: Actual named complex25 scalar rows now execute full polynomial replacement and cleanup, then physically advance a genuine common denominator once per completed row. Exact output streams, original count and live exponent d plus literal row count are proved with all arithmetic, scan and join costs. The actual live header has the same marked binary format as controller storage7; physical placement into that root port and interleaved phase/child execution remain open.
 
+- `Machine/RawLinearCombinationComplexDenominatorPlaced.lean`: Fixed injective caller placement shares genuine source streams, original coefficient-count and true live denominator directly with the complete reusable scalar sequence. Literal tape/head inputs derive all local private blankness; no execution callback is supplied. Exact computed source streams and incremented denominator are installed in permanent ports, all unselected caller cells/heads survive and the appended local workspace returns blank with unchanged paid runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
