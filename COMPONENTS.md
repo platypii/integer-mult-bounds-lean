@@ -4394,6 +4394,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyNonleafTargetSplit.lean`: Actual nonleaf setup first synthesizes the full-node target from the incoming live denominator, then physically splits the current already-quotiented rows without a second division. Literal role output, original dependency-path native-volume cost and arbitrary scalar suffix preservation are proved. Full recursive table execution remains open.
 
+- `Machine/CompactComplexSourceReadyNonleafFinalSemantics.lean`: The physically contracted global array decodes to the genuine completed corrected framed network. Exact coarser-grid contraction and signed divisibility follow from the original input grid and actual Path ledger, with original padded-volume finalization cost.
+
+- `Machine/CompactComplexSourceReadyNonleafFinalPorts.lean`: Actual merged source and full storage-frame projections preserve the original saved call code through contraction, live commit and current-row merge. Post-selection readiness is derived from the real input frame.
+
+- `Machine/CompactComplexSourceReadyNonleafOrientedFinal.lean`: The actual scalar-inclusive finalization program performs contraction and same-row merge followed by the saved-call post selector. Literal oriented source, retained original saved stack and arbitrary scalar suffix have a uniform native-volume bound.
+
+- `Machine/CompactComplexSourceReadyNonleafFinalTablePath.lean`: Actual finalization executes in the fixed table and follows the paid tag3 return edge to guard zero. The physical run is derived internally from tape premises; full reachable recursive closure remains open.
+
+- `Machine/CompactComplexSourceReadyNonleafOrientedEndpoint.lean`: After actual post-selection the source bytes are exactly the conditionally conjugated contracted global array. The original padded-volume bound is retained; complete recursive inverse correctness remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
