@@ -4500,6 +4500,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeEndpointCharacterSourceReady.lean`: Complete source/sink sign family executes on the actual recursive source-ready bank with original raw-header and role-word readiness derived internally. Literal changed named payload, blank borrowed leaf storage, exact retained frame/leaf/suffix and fixed parent-volume cost are proved. It still requires the matching early/late order; canonical private order normalization remains open.
 
+- `Machine/NativeUniformPolynomialRotationRoles.lean`: One fixed complete endpoint role-list machine visits every selected native role for runtime-column phase or internally initialized negation. Original count/header setup and all cleanup are derived per role, complementary caller storage is retained and every join is paid by parent native volume.
+
+- `Machine/NativeUniformPolynomialRotationPath.lean`: Original dependency Path and retained signed-field reserve derive exact runtime phase and negation decoding, preserved widths and unchanged actual grids; no separate output-negation safety predicate is assumed.
+
+- `Machine/NativeUniformPolynomialRotationNamedRoles.lean`: Actual Y-role runtime phase and X-role fixed negation use shared original named ports and opaque complete address enumeration. Original fifteen headers and native source words come directly from the actual caller; first sixty-seven blank leaf tapes are reclaimed while every remaining leaf/scalar/controller word is retained. Full original parent-volume runtime is proved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
