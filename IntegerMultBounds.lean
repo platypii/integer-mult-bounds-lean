@@ -2284,3 +2284,4 @@ import IntegerMultBounds.Schoenhage.SSMain
 import IntegerMultBounds.Machine.CompactNativePolynomialStagePacked
 import IntegerMultBounds.Machine.CompactNativeRoleConjugatedActual
 import IntegerMultBounds.Schoenhage.SSCost
+import IntegerMultBounds.Schoenhage.SSProgram

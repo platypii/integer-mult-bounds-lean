@@ -5832,6 +5832,9 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   recurrence (`ssCost_le`) and its `O(N log N log log N)` runtime
   (`runs_ssMain_bound`); exact products below `2^m` (`runs_ssExact`).
 
+- `Schoenhage/SSProgram.lean`: the multiplier compiled to a literal 64-tape
+  `Program` with a `HoareTime` contract on encoded tapes (`ssProgram_hoare`).
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
