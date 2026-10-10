@@ -4382,6 +4382,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyScalarEventPath.lean`: A genuine original GroupIndex scalar block now executes on the full bank and derives the literal next native caller, retained field widths, tighter original prefix grid, exact physical live header and upper ledger from the original dependency Path. The actual populated event table advances eventPC to nextPC with its genuine table jump, at a uniform block constant times original serialized native volume. No local execution oracle is supplied. Canonical table assembly now derives its saved-PC port from the actual child-entry stack wiring; recursive child and final-control induction remain open.
 
+- `Machine/CompactComplexSourceReadyOrientedControls.lean`: Actual oriented node controls execute saved-call conjugation before the stopping guard and after the forward stopped or completed nonleaf body. The literal shifted marker classifier and arbitrary scalar-workspace preservation are proved; recursive closure remains open.
+
+- `Machine/CompactComplexSourceReadyOrientedControlsFrame.lean`: Source-only orientation preserves immutable native descriptors, guard scratch and saved controller frames. Actual saved-PC readiness is retained for repeated post-selection.
+
+- `Machine/CompactComplexSourceReadyOrientedControlsEntry.lean`: The actual entry block derives saved-call orientation from original dependency Paths, widths and grids, then executes the real stopping guard on the full bank. Exact markers, preserved scalar suffix and native-volume runtime are proved, including empty-root forward selection. Full reachable recursive execution remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
