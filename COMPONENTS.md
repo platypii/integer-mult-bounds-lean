@@ -4180,6 +4180,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStoppedAlignedCall.lean`: One genuine stopped call now composes the complete ledger roundtrip, a second physically paid parent codec setup, generated stream-volume headers, all-spectator numerator alignment, live-denominator installation and codec cleanup. Its literal endpoint restores parent geometry, stacks, original scalar descriptor and all private workspace, retains the computed selected role and aligned spectator arrays, installs their common denominator and erases the target. Global actual-array widths and inherited grids supply role guards through the real child dependency Path; a uniform combined cost bound and interleaved unstopped recursive execution remain separate.
 
+- `Machine/CompactComplexScalarSequenceGrid.lean`: Literal emitted scalar arrays have the Gaussian grid at the denominator advanced by actual row count, with explicit sparse-network numerator growth. Dependency Paths and retained widths derive all intermediate signed guards. Contiguous prefixes share the full network growth allowance once, avoiding a new factor for every scalar segment between child calls.
+
+- `Machine/CompactComplexScalarLifecycleGrid.lean`: The full original-header count lifecycle now pairs literal physical scalar execution with its dependency-derived numerical Gaussian-grid postcondition. Input count is physically generated and erased, live denominator advances by actual row count, and private work is reclaimed; scalar growth stays explicit for recursive induction. Full interleaved recursion and its uniform cost sum remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
