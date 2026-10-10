@@ -4342,6 +4342,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyStoppedLeafDispatchBudget.lean`: The actual exponent-dispatched stopped block has complete uniform bounds for both zero and positive exponents from the real dependency Path/live ledger. Count expansion/restoration, all codec and precision traffic, directional arithmetic, target synthesis/live commit and dispatch joins are charged. Fixed cyclic recursive execution and whole recurrence instantiation remain open.
 
+- `Machine/CompactComplexSourceReadyNodeControls.lean`: Four actual direction-specific source-ready controls now share the fixed leaf-plus-ten bank: physical stop guard with cleaned halt markers, actual zero/positive stopped-leaf dispatcher, current-node splitter and current-node merger. Exact guard runs and genuine state-dependent table paths reach stopped/nonleaf PCs with unchanged banks and all joins paid; these paths lift to literal fixedProgramWith runs. Return/event family instantiation, mixed runtime forward/inverse selection and scalar scratch placement remain separate assembly obligations.
+
+- `Machine/CompactComplexSourceReadyChildEntryPath.lean`: Actual selected child entry derives the real role, call slot, saved return bits and unique fixed address from the original Call. The complete physical PreparationBudget execution preserves arbitrary leaf/work suffix and yields a paid event-PC-to-shared-entry-PC path directly from the genuine caller/Path/ledger, without a supplied local Hoare or runtime. Literal child raw headers and intact source payload, saved-PC wiring and exact public output are exposed. Completed recursive child execution and whole decoded continuation remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
