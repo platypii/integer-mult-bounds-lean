@@ -4568,6 +4568,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedActualTable.lean`: One fixed controller table uses actual corrected source entry and sink corrections before contraction, rejoin and saved-call orientation. Original child/scalar programs, stopping classifier and saved-PC port are retained. Literal control/table identities are proved; the reached recursive invariant and total runtime remain open.
 
+- `Machine/CompactComplexSourceReadyCorrectedSavedReturnPath.lean`: The actual corrected controller guards and pops the literal saved call PC from arbitrary full caller banks, preserving every leaf, work and scalar suffix. Public ready-bank and physically pushed-bank specializations restore the exact older stack, deriving erased-cell blanks from its unused tail; reached recursive stack premises remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
