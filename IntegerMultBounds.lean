@@ -2210,3 +2210,4 @@ import IntegerMultBounds.Machine.CompactNativeRoleControllerBudget
 import IntegerMultBounds.Machine.CompactNativeRoleHeaderBudget
 import IntegerMultBounds.Machine.CompactNativeRoleOriginalBudget
 import IntegerMultBounds.Machine.CompactNativeRoleMetadataBudget
+import IntegerMultBounds.Machine.CompactComplexPhaseFixedWord

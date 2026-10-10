@@ -3934,6 +3934,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleMetadataBudget.lean`: Actual Stage geometry pays final copied original13/ell/p erasure and the complete arbitrary descendant-result merge/metadata cleanup by native volume. Scalar generation absorption and full recursive summation remain separate.
 
+- `Machine/CompactComplexPhaseFixedWord.lean`: The actual finite complex25 forward and reverse basis machines are independent of runtime slot casts and geometry. One fixed native stage supplies both physical machines for every edge and original caller, with exact literal word results and certified uniform stage-exponent bounds.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
