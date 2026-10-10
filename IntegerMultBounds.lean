@@ -2267,3 +2267,5 @@ import IntegerMultBounds.Machine.CompactNativeConjugatedPhaseDispatch
 import IntegerMultBounds.Machine.CompactComplexScalarIntegerRows
 import IntegerMultBounds.Machine.CompactNativeRoleConjugatedCaller
 import IntegerMultBounds.Schoenhage.DriverUp
+import IntegerMultBounds.Machine.AlphabetTapeReplacement
+import IntegerMultBounds.Machine.CompactNativeRoleConjugatedOutput

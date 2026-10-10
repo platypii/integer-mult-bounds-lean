@@ -4020,6 +4020,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleConjugatedCaller.lean`: One actual native basis witness executes every edge on the selected genuine six-symbol role source, with generated polynomial geometry/code/count/width and automatically selected original Stage order. All physical header copying, source-sharing phase execution and cleanup are discharged with one uniform stage-scale runtime. Genuine Packed geometry remains explicit; full original controller assembly remains open.
 
+- `Machine/AlphabetTapeReplacement.lean`: Literal full tape replacement commutes with finite alphabet encoding, preserving heads and all stationary tapes.
+
+- `Machine/CompactNativeRoleConjugatedOutput.lean`: Actual selected-role phase output is again exactly the alphabet encoding of the original native role bank with one literal computed six-symbol word installed. Original master source and numeric descriptors remain stationary, so lifted binary controller subroutines can continue without a payload conversion or assumed alphabet correspondence.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
