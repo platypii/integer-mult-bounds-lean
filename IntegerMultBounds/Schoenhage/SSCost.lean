@@ -133,4 +133,21 @@ theorem runs_ssMain_bound {N x y : ℕ} (hN : 0 < N) (hk : 2 ^ kOf N ∣ N) (hx 
   (runs_ssMain hN hk hx hy σ hS).mono (fun _ h => h)
     ((ssCost_le N x y).trans (by have := cost_le cA cB cC0 N; omega))
 
+/-- Exact products: two operands below `2^m` multiplied at size `topN m`, in `O(m log m log log m)` steps. -/
+theorem runs_ssExact {m a b : ℕ} (hm : 1 ≤ m) (ha : a < 2 ^ m) (hb : b < 2 ^ m) (σ : Fin 𝕋 → WTape)
+    (hS : SSStart (topN m) a b σ) :
+    Runs ssMain σ (fun σ' => (σ' tIn).right = [rwd (topN m) (a * b)])
+      (costC cA cB cC0 * (4 * m + 1) * (bitlen (4 * m) + 1) * (3 * bitlen (bitlen (4 * m)) + 1) +
+        2400 * m + 50000) := by
+  obtain ⟨hlt, hle, hk⟩ := topN_facts hm
+  have hm2 : 2 ^ m ≤ 2 ^ topN m := Nat.pow_le_pow_right (by norm_num) (by omega)
+  have hab : a * b < Fm (topN m) := by
+    have : a * b < 2 ^ m * 2 ^ m := Nat.mul_lt_mul'' ha hb
+    have h2 : 2 ^ m * 2 ^ m ≤ 2 ^ topN m := by
+      rw [← pow_add]; exact Nat.pow_le_pow_right (by norm_num) (by omega)
+    unfold Fm; omega
+  have r := runs_ssMain (N := topN m) (by omega) hk (by unfold Fm; omega) (by unfold Fm; omega) σ hS
+  rw [Nat.mod_eq_of_lt hab] at r
+  exact r.mono (fun _ h => h) ((ssCost_le _ a b).trans (by have := cost_topN cA cB cC0 hm; omega))
+
 end IntegerMultBounds.Schoenhage

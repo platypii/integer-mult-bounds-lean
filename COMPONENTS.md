@@ -5830,7 +5830,7 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
 
 - `Schoenhage/SSCost.lean`: the multiplier's cost within the schedule's
   recurrence (`ssCost_le`) and its `O(N log N log log N)` runtime
-  (`runs_ssMain_bound`).
+  (`runs_ssMain_bound`); exact products below `2^m` (`runs_ssExact`).
 
 ## Top-level
 
