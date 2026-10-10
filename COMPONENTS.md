@@ -4370,6 +4370,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyActualTable.lean`: The original interleaved schedule is now populated by actual scalar lifecycle programs for each original grouped row block, actual selected child-entry programs and the complete actual decoded child-return programs on the same scalar-inclusive bank. Scalar count setup borrows reclaimed header0; exact branch identities feed local execution proofs. One fixed cyclic machine uses these concrete event/return families independently of recursion depth. Nonleaf target/contraction and runtime orientation control blocks remain fixed parameters pending actual finalization; full recursive correctness and cost instantiation remain open.
 
+- `Machine/CompactComplexSourceReadyOrientation.lean`: One fixed physical orientation wrapper now tests the actual return stack: an empty-root frame executes the forward identity, while a genuine saved original call code is peeked/restored and its Call.inverse selects source65 conjugation or identity. The occupied-stack guard derives from the actual positive saved code width; the literal entire stack and other bank ports are retained. Runtime is three at roots and twice fixed address width plus six plus five native volumes for saved calls. Pre/post grid invariants, full-volume header absorption and wrapping the complete recursive node remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
