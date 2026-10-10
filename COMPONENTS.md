@@ -4208,6 +4208,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarGroupProgress.lean`: One actual named scalar group runs from the literal native caller to its exact next caller bank with emitted polynomial role streams, unchanged widths, advanced physical live header and paid linear-volume runtime. It preserves the exact next original scalar-prefix numerical grid and upper ledger indexed by the real completed row prefix. Capacity follows from the dependency Path and retained reservation; interleaved child induction and full unstopped execution remain open.
 
+- `Machine/CompactComplexRecursiveRuntimeSum.lean`: Natural runtime budgets charge every literal complex25 child call at the genuine role-volume quotient, with quotient rounding dominated by a normalized real recurrence. Actual rank-saving branching slack absorbs width-dependent local costs; original-width bounds separate stopped-leaf and internal costs. Actual child runtime sums follow from local induction bounds, not an assumed total-runtime oracle. Physical local-cost bounds, recursive child execution, stopping-depth synthesis and root callback aggregation remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
