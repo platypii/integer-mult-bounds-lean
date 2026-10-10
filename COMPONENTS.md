@@ -6445,6 +6445,14 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   retained order, and `Q_p(fᵢ gᵢ / r)` for each pair (`MeetsPointwise`), with
   the paper's and the polylogarithmic time targets. Definitions only.
 
+- `Schoenhage/Reverse.lean`: a two-tape primitive that copies the current
+  word reversed as a new word on another tape (`runs_revw`), turning
+  most-significant-first words into the multiplier's convention.
+- `Schoenhage/RingConst.lean`: every constant register of the ring product
+  built on tapes from `p`, `ℓ` and `w` in unary: digit width
+  `W = 2^(size (2p + ℓ + 2w))`, size `W 2^ℓ`, ruler, offset words, half and
+  rounding words (`runs_constAll`), in `O(W 2^ℓ)` steps.
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
