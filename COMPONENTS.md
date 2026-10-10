@@ -4366,6 +4366,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyFullNodeControls.lean`: The actual stopping guard, stopped leaf, current-node split and current-node merge now widen to the scalar-inclusive fixed bank while retaining arbitrary scalar scratch. A genuine full Guarded cyclic table accepts actual full-bank return and scalar-event programs with independent state counts; exact sigma block identities avoid an old-family state-count assumption. Real stopping-test runs reach their state-selected stopped/nonleaf PCs, and paid paths realize literal fixedProgramWith executions. Actual scalar and child event/return instantiation, contraction and full recursive closure remain open.
 
+- `Machine/CompactComplexSourceReadyFullChildPaths.lean`: The genuine original child-entry lifecycle and complete payload/spectator/live/target return sequence now execute in a scalar-inclusive fixed cyclic table. Original selected call roles and saved addresses derive paid event-to-shared-entry and saved-PC-to-next-event paths from actual physical runs, without supplied local Hoare proofs. Every original endpoint and arbitrary scalar scratch are preserved literally. Fixed full-bank control parameters permit final target/contraction blocks; the actual entire event table and recursive child induction remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
