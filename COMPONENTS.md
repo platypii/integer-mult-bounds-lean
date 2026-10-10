@@ -4178,6 +4178,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarCountLifecycle.lean`: One actual caller lifecycle physically derives the coefficient count from original raw geometry, executes the complete named scalar row sequence on permanent role streams, and erases the count header after its final use. Literal output is the computed array with live denominator advanced by row count, blank count port, restored heads and all private banks blank. Runtime setup, every row, joins and cleanup have a uniform fixed-sequence linear stream-volume bound once the live denominator fits the field width; no prepared count input is assumed.
 
+- `Machine/CompactComplexStoppedAlignedCall.lean`: One genuine stopped call now composes the complete ledger roundtrip, a second physically paid parent codec setup, generated stream-volume headers, all-spectator numerator alignment, live-denominator installation and codec cleanup. Its literal endpoint restores parent geometry, stacks, original scalar descriptor and all private workspace, retains the computed selected role and aligned spectator arrays, installs their common denominator and erases the target. Global actual-array widths and inherited grids supply role guards through the real child dependency Path; a uniform combined cost bound and interleaved unstopped recursive execution remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
