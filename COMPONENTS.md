@@ -4372,6 +4372,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyOrientation.lean`: One fixed physical orientation wrapper now tests the actual return stack: an empty-root frame executes the forward identity, while a genuine saved original call code is peeked/restored and its Call.inverse selects source65 conjugation or identity. The occupied-stack guard derives from the actual positive saved code width; the literal entire stack and other bank ports are retained. Runtime is three at roots and twice fixed address width plus six plus five native volumes for saved calls. Pre/post grid invariants, full-volume header absorption and wrapping the complete recursive node remain open.
 
+- `Machine/CompactComplexSourceReadyOrientationInvariants.lean`: The actual original saved call frame now drives paid source orientation directly from the genuine dependency Path, inherited grid and retained native widths. The physical endpoint has exact conditional complex-conjugation semantics; source readiness, every other tape/head and the original saved frame remain literal. Oriented arrays preserve Width and Grid and are involutive, so the same selector can run pre-node and post-node before return-PC popping. All guard/peek/scan traffic fits one fixed constant times native volume. Complete oriented entry/final control assembly and full recursion remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
