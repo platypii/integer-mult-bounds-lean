@@ -4562,6 +4562,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSinkCorrectionBudget.lean`: All three actual sink-correction joins are paid by positive original native volume, yielding a fixed linear coefficient with no compiled-machine expansion in the numerical proof.
 
+- `Machine/CompactComplexSinkCorrectionGrid.lean`: Actual sink signs, runtime Y phase, X negation and full X/Y exchange preserve all stored widths and the original dependency Path grid. A supplied coarser target-grid certificate survives these physical corrections at the unchanged stored denominator; deriving that certificate from full recursive semantics remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
