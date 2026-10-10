@@ -138,4 +138,101 @@ theorem runs_upLevel {Ni : ℕ} (hN : N0 ≤ Ni) (hk : 2 ^ kOf Ni ∣ Ni) {Na : 
       (by omega) Nat.one_le_two_pow (by rw [mul_comm]; exact hKM) hNa hRl (by simp [clen])
       (Nat.div_le_self _ _) (Nat.sub_le _ _) (Nat.div_le_self _ _)
 
+theorem RestU.of_update {Na N Na' N' : ℕ} {Q Q' : List ℕ} {Pl R Pl' R' : List (List Bool)}
+    {σ : Fin 𝕋 → WTape} (h : RestU Na N Q Pl R σ) :
+    RestU Na' N' Q' Pl' R' (Function.update (Function.update (Function.update (Function.update
+      (Function.update (Function.update σ cN (reg (ones Na'))) cW (reg (ones (Na' + 1)))) cF (reg (fword Na')))
+      pN (reg (ones N'))) tIn ⟨[], rwds N' Q'⟩) tP ⟨Pl', R'⟩) := by
+  obtain ⟨⟨-, -, hc1, hX, hY, hO, hS1, hS2, hS3, hbX, hbY⟩, hi, -, -, -⟩ := h
+  refine ⟨⟨⟨by tsimp, by tsimp⟩, by tsimp, by tsimp [hc1], by tsimp [hX], by tsimp [hY], by tsimp [hO],
+    by tsimp [hS1], by tsimp [hS2], by tsimp [hS3], by tsimp [hbX], by tsimp [hbY]⟩, ?_, by tsimp, by tsimp,
+    by tsimp⟩
+  intro i hm
+  have hne : i ≠ cN ∧ i ≠ cW ∧ i ≠ cF ∧ i ≠ pN ∧ i ≠ tIn ∧ i ≠ tP := by revert hm; revert i; decide
+  obtain ⟨n1, n2, n3, n4, n5, n6⟩ := hne
+  rw [Function.update_of_ne n6, Function.update_of_ne n5, Function.update_of_ne n4, Function.update_of_ne n3,
+    Function.update_of_ne n2, Function.update_of_ne n1]
+  exact hi i hm
+
+theorem RestU.update_cnt {Na N : ℕ} {Q : List ℕ} {Pl R : List (List Bool)} {σ : Fin 𝕋 → WTape}
+    (h : RestU Na N Q Pl R σ) (T : WTape) : RestU Na N Q Pl R (Function.update σ tCnt T) := by
+  obtain ⟨⟨⟨hW, hF⟩, h2, hc1, hX, hY, hO, hS1, hS2, hS3, hbX, hbY⟩, hi, hp, hIn, hP⟩ := h
+  refine ⟨⟨⟨by tsimp [hW], by tsimp [hF]⟩, by tsimp [h2], by tsimp [hc1], by tsimp [hX], by tsimp [hY],
+    by tsimp [hO], by tsimp [hS1], by tsimp [hS2], by tsimp [hS3], by tsimp [hbX], by tsimp [hbY]⟩, ?_,
+    by tsimp [hp], by tsimp [hIn], by tsimp [hP]⟩
+  intro i hm
+  have : i ≠ tCnt := by revert hm; revert i; decide
+  rw [Function.update_of_ne this]; exact hi i hm
+
+/-! ### The up-sweep over all levels -/
+
+/-- The level outputs of the saved levels, deepest first. -/
+noncomputable def upFold : List (ℕ × List ℕ) → List ℕ → List ℕ
+  | [], Q => Q
+  | (N, L) :: rs, Q => upFold rs (upList N (2 ^ kOf N) (L.length / 2) Q)
+
+/-- The size after the saved levels. -/
+def lastN : List (ℕ × List ℕ) → ℕ → ℕ
+  | [], Nc => Nc
+  | (N, _) :: rs, _ => lastN rs N
+
+/-- The saved levels fit: each is a real level whose inner size is the current size and whose groups match. -/
+def UpOK : List (ℕ × List ℕ) → ℕ → ℕ → Prop
+  | [], _, _ => True
+  | (N, L) :: rs, Nc, ql => N0 ≤ N ∧ 2 ^ kOf N ∣ N ∧ nextN N = Nc ∧ ql = L.length / 2 * 2 ^ kOf N ∧
+      UpOK rs N (L.length / 2)
+
+/-- The cost of the up-sweep over the saved levels. -/
+def upFoldCost : List (ℕ × List ℕ) → ℕ
+  | [] => 0
+  | (N, L) :: rs => upCost N (L.length / 2) + 10 + upFoldCost rs
+
+/-- One up level per tick of `tCnt`. -/
+noncomputable def upLoop : Cmd 0 𝕋 := .loop tCnt (.seq upLevel (skp tCnt tJ (by decide)))
+
+theorem runs_upLoop :
+    ∀ (rs : List (ℕ × List ℕ)) (Na Nc : ℕ) (Q : List ℕ) (σ : Fin 𝕋 → WTape) (Pl R Cl : List (List Bool)),
+      UpOK rs Nc Q.length → (∀ q ∈ Q, q < Fm Nc) → Na ≤ Nc →
+      RestU Na Nc Q ((rs.map fun p => ones p.1) ++ Pl) R σ → σ tCnt = ⟨Cl, List.replicate rs.length []⟩ →
+      Runs upLoop σ (fun σ' => ∃ Na', RestU Na' (lastN rs Nc) (upFold rs Q) Pl
+          ((rs.map fun p => ones p.1).reverse ++ R) σ') (upFoldCost rs)
+  | [], Na, Nc, Q, σ, Pl, R, Cl, _, _, _, hR, hC => by
+    refine (Runs.loop_done (by simp [hC]) ⟨Na, by simpa [lastN, upFold] using hR⟩).mono (fun σ' h => h)
+      (by simp [upFoldCost])
+  | (N, L) :: rs, Na, Nc, Q, σ, Pl, R, Cl, hok, hQv, hNa, hR, hC => by
+    obtain ⟨hN, hk, hNc, hql, hok'⟩ := hok
+    subst hNc
+    have hJ : σ tJ = emp := hR.2.1 tJ (by decide)
+    have s1 := runs_upLevel hN hk hNa hql hQv σ (by simpa using hR)
+    set U := upList N (2 ^ kOf N) (L.length / 2) Q
+    set σ₁ := Function.update (Function.update (Function.update (Function.update
+      (Function.update (Function.update σ
+        cN (reg (ones (nextN N)))) cW (reg (ones (nextN N + 1)))) cF (reg (fword (nextN N))))
+        pN (reg (ones N))) tIn ⟨[], rwds N U⟩) tP ⟨(rs.map fun p => ones p.1) ++ Pl, ones N :: R⟩
+    have hR₁ : RestU (nextN N) N U ((rs.map fun p => ones p.1) ++ Pl) (ones N :: R) σ₁ := hR.of_update
+    have s2 := runs_skp (a := 0) (s := tCnt) (j := tJ) (by decide) σ₁ (by tsimp [σ₁, hC, List.replicate_succ])
+      (by tsimp [σ₁, hJ, emp])
+    have hUv : ∀ q ∈ U, q < Fm N := by
+      intro q hq
+      have : ∀ g Q, ∀ q ∈ upList N (2 ^ kOf N) g Q, q < Fm N := by
+        intro g; induction g with
+        | zero => simp [upList]
+        | succ g ih => intro Q q hq; simp only [upList, List.mem_cons] at hq; rcases hq with rfl | hq
+                       · exact recomb_lt _ _ _
+                       · exact ih _ q hq
+      exact this _ _ q hq
+    have ih := runs_upLoop rs (nextN N) N U _ Pl (ones N :: R) ([] :: Cl)
+      (by rw [length_upList]; exact hok') hUv (by have := (next_facts hN).2.2.2; omega)
+      (hR₁.update_cnt ⟨[] :: Cl, List.replicate rs.length []⟩) (by tsimp)
+    have e : Function.update σ₁ tCnt (σ₁ tCnt).next =
+        Function.update σ₁ tCnt ⟨[] :: Cl, List.replicate rs.length []⟩ := by
+      congr 1; tsimp [σ₁, hC, List.replicate_succ]
+    refine (Runs.loop_step (by simp [hC]) ((Runs.then s1 s2).mono (fun σ' h' => by rw [h', e]; exact ih)
+      le_rfl)).mono (fun σ' h => ?_) ?_
+    · obtain ⟨Na', h'⟩ := h
+      refine ⟨Na', ?_⟩
+      simpa [lastN, upFold, U, List.reverse_cons, List.append_assoc] using h'
+    · have hc : (σ₁ tCnt).cur.length = 0 := by tsimp [σ₁, hC, List.replicate_succ]
+      simp [upFoldCost]; omega
+
 end IntegerMultBounds.Schoenhage

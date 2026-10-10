@@ -5793,7 +5793,12 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   down-sweep over all levels along the size trajectory (`runs_downLoop`).
 
 - `Schoenhage/DriverUp.lean`: the driver's up-sweep: popping a saved size and
-  one full level up from rest to rest (`runs_upLevel`).
+  one full level up from rest to rest (`runs_upLevel`), and the up-sweep
+  over all saved levels (`runs_upLoop`).
+
+- `Schoenhage/SSMath.lean`: the driver's trajectory computes `ssMul`
+  (`upFold_traj`), ends below the threshold with enough fuel (`traj_lt`), and
+  satisfies the up-sweep's side conditions (`UpOK_traj`).
 
 ## Top-level
 
