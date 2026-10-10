@@ -2392,3 +2392,4 @@ import IntegerMultBounds.Machine.GuardedFiniteReturnExtraFlow
 import IntegerMultBounds.Machine.CompactComplexCallerWorkingExtraFlow
 import IntegerMultBounds.Machine.CompactComplexChildAlignmentBudget
 import IntegerMultBounds.Machine.CompactComplexScheduledPCLayout
+import IntegerMultBounds.Machine.CompactComplexScheduledPCDecode

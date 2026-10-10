@@ -4236,6 +4236,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScheduledPCLayout.lean`: Every original child site/coordinate call and scalar group occurs exactly once in the actual interleaved event schedule. Literal child call indices identify their unique saved-return successors; fixed extra event PCs are injective, proper successors reach the next event, and the final event reaches nonleaf return. These are exact original schedule/address facts, not an assumed whole-node execution. Constructing physical event blocks and recursive paths remains open.
 
+- `Machine/CompactComplexScheduledPCDecode.lean`: Original saved site/coordinate PCs are explicitly cast into the common controller address space without changing their values, widths or literal pushed bits. Address injection and the original finite decode identify every actual child call; saved-return PCs are disjoint from event entries. Unused padded addresses decode to no call. The actual fixed table and its local postprocessing paths remain assembly obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
