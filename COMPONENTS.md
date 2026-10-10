@@ -4246,6 +4246,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleEntryBudget.lean`: The actual fixed nonleaf entry machine has a uniform native-volume runtime bound: both independently generated full-master and role count lifecycles, all spectator/master moves and every assembly join are paid. The bound retains the physical entry endpoint and its genuine source/role readiness premises. Child splitting, denominator handoff and recursive execution costs remain separate obligations.
 
+- `Machine/CompactComplexFixedNodeTable.lean`: One fixed cyclic table contains the original decoded return slots, four distinguished control blocks and every event in the original finite schedule. Exact programme lookup and control destinations are proved: scalar events advance, child events enter the shared recursive entry, and decoded returns resume at the original call successor. Saved-address encoding remains unchanged and code is independent of runtime depth. Fixed local programmes and the entry classifier are explicit inputs; their physical reachable paths and full recursive correctness remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
