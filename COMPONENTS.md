@@ -4216,6 +4216,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStoppedEventProgress.lean`: Cyclic reserved-role arrays are reconstructed into the original global reserved stream, with exact role splitting, width/grid transfer and literal role payload equality. Actual stopped arithmetic and spectator promotions retain the original scalar-prefix numerical bound at the shared advanced denominator, fixed parent dependency level and completed-child ledger. Overflow follows from the actual Path and retained reserve, without a supplied guard. Pairing this stronger endpoint with the complete physical stopped adapter and full recursive induction remains open.
 
+- `Machine/CompactComplexCallerReturnFlow.lean`: The fixed guarded cyclic return controller now acts on the literal scalar/native codec caller bank, including every permanent role tape and the immutable original scalar43 suffix. Saved actual site/coordinate bits decode the continuation and erase the PC frame in exact width-plus-five time; empty root stack genuinely halts in two transitions. Terminal continuations may back-edge into the same fixed entry with one paid transition. Full construction of the continuation table and recursive coefficient execution remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
