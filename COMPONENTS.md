@@ -4114,6 +4114,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RawLinearCombinationComplexDenominatorSequence.lean`: Each full reusable Gaussian scalar row completes coefficient traversal, source replacement and all cleanup before exactly one physical increment of a retained true denominator word. A fixed literal row sequence returns the exact computed streams, original coefficient count and exponent d plus row count; descriptor heads normalize and all scan/join costs are paid. Empty coefficient arrays still execute exactly one increment per row.
 
+- `Machine/CompactNativeDenominatorTarget.lean`: Two fixed four-tape bodies physically copy retained input denominator and add original child volume once for a leaf or twice for a completed nonleaf network. Exact output words match the proved branch-specific semantic target policies, retain both originals and erase arithmetic work; no target word is supplied. Actual runtime branch selection and recursive placement remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
