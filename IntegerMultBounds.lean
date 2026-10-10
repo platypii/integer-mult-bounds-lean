@@ -2182,3 +2182,5 @@ import IntegerMultBounds.Machine.AllAxisPolynomialNativeBudget
 import IntegerMultBounds.Machine.CompactAllAxisPhaseDispatch
 import IntegerMultBounds.Machine.CompactAllAxisPhaseDispatchBudget
 import IntegerMultBounds.Machine.AllAxisPolynomialActual
+import IntegerMultBounds.Machine.CompactNativeRoleSourcePorts
+import IntegerMultBounds.Machine.CompactNativeRoleSourceRuns

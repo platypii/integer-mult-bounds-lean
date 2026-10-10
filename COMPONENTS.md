@@ -3892,6 +3892,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPolynomialActual.lean`: Actual original stage inputs derive selected span and edge dimensions for real all-axis phase execution and uniform volume cost. Physical coefficient phase equals the complete original tensor product under the existing grid, prefix-depth and stored-width invariant. Caller port/header composition and recursive guard propagation remain separate.
 
+- `Machine/CompactNativeRoleSourcePorts.lean`: Places actual native role transfers at original reservation source43 with separately generated numeric headers and full complementary caller retained. Genuine destructive split restores all appended private storage.
+
+- `Machine/CompactNativeRoleSourceRuns.lean`: Actual reserved and zero-padded output splits at source43 with derived divisibility and corrected stored width. Arbitrary computed descendant outputs merge through the inverse cyclic row map, restoring all private storage. Producer-to-port composition and complete recursive execution remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
