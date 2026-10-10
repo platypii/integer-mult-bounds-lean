@@ -4206,6 +4206,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerExactReturnBudget.lean`: Complete generated-metadata all-role exact contraction and live commit have uniform native-volume and role-stream runtime bounds. Current exponent capacity and gap reserves follow from the actual dependency Path and true live-prefix ledger; original padded role volume is at most twice original fallback volume. Completed-network semantics and the minimum-completed lower ledger remain explicit recursive obligations.
 
+- `Machine/CompactComplexScalarGroupProgress.lean`: One actual named scalar group runs from the literal native caller to its exact next caller bank with emitted polynomial role streams, unchanged widths, advanced physical live header and paid linear-volume runtime. It preserves the exact next original scalar-prefix numerical grid and upper ledger indexed by the real completed row prefix. Capacity follows from the dependency Path and retained reservation; interleaved child induction and full unstopped execution remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
