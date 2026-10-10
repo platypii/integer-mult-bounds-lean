@@ -4260,6 +4260,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleMerge.lean`: The actual arbitrary completed child arrays physically merge into source65 through the genuine Original cyclic merger. A paid multiplication then restores the literal original parent row descriptor, erasing all work; true parent and child divisibilities follow from a genuine next descendant. Source word/head, blank child roles and raw headers are exact, while all permanent scalar/storage words and parked ancestor stack cells/head survive. The returned array need not equal the entry array. Result recovery, spectator promotion/common denominator commit and recursive semantics remain assembly obligations.
 
+- `Machine/CompactComplexNonleafRoleTransferBudget.lean`: Both actual entered-source splitting and arbitrary returned-array merging now have uniform parent-native-volume HoareTime bounds. Exact six-operation quotient and multiplication costs, both Original role transfer lifecycles and all joins are included. The next legal child role grouping supplies real positive row quotients/divisors. No prepared child bank or aggregate runtime oracle is supplied; recursive execution, geometry handoff and spectator alignment remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
