@@ -26,7 +26,7 @@ end Tp
 
 /-- The scratch tapes that are empty between operations. -/
 def quiet : List (Fin 𝕋) :=
-  [cT, tU, tV, tO1, tO2, tJ, tD, tD2, tE, tE2, tH, cH, cH2, tL, tS, cS, tT, sX, tC, sA, sO, sT1, sT2, tC2,
+  [cT, tU, tV, tO1, tO2, tJ, tD2, tE, tE2, tH, cH, cH2, tL, tS, cS, tT, sX, tC, sA, sO, sT1, sT2, tC2,
     cU, sRA]
 
 /-- All scratch tapes are empty. -/

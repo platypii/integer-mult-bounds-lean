@@ -2225,3 +2225,4 @@ import IntegerMultBounds.Schoenhage.LevelDown
 import IntegerMultBounds.Machine.NativePolynomialStageShape
 import IntegerMultBounds.Machine.NativePolynomialStageHeaders
 import IntegerMultBounds.Machine.NativePolynomialStageHeaderBudget
+import IntegerMultBounds.Schoenhage.Batch

@@ -78,7 +78,7 @@ set_option maxHeartbeats 1000000 in
 theorem runs_downCore {N Np k M x : ℕ} (hNp : 0 < Np) (hs : N = M * 2 ^ k) (hMN : M ≤ Np)
     (hx : x < 2 ^ N + 1) (σ : Fin 𝕋 → WTape) (hL : LevelRegs N Np k M σ)
     (hR : σ cR = reg (Rules.ruler M (Np + 1) (2 ^ k))) (hKh : σ pKh = reg (ones (2 ^ k / 2)))
-    {Il Ir : List (List Bool)} (hIn : σ tIn = ⟨Il, rwd N x :: Ir⟩) :
+    (hD0 : σ tD = emp) {Il Ir : List (List Bool)} (hIn : σ tIn = ⟨Il, rwd N x :: Ir⟩) :
     Runs downCore σ (· = Function.update (Function.update σ tIn ⟨rwd N x :: Il, Ir⟩)
         tD ⟨[], rwds Np (tpieces Np k M x)⟩)
       ((k + 2) * (5000 * (2 ^ k + 1) * (Np + 2)) + 10 * N + 100) := by
@@ -88,7 +88,7 @@ theorem runs_downCore {N Np k M x : ℕ} (hNp : 0 < Np) (hs : N = M * 2 ^ k) (hM
   have qO1 := q tO1 (by decide); have qO2 := q tO2 (by decide); have qtJ := q tJ (by decide)
   have qD2 := q tD2 (by decide); have qtE := q tE (by decide); have qE2 := q tE2 (by decide)
   have qtH := q tH (by decide); have qcH := q cH (by decide); have qH2 := q cH2 (by decide)
-  have qtL := q tL (by decide); have qsX := q sX (by decide); have qtD := q tD (by decide)
+  have qtL := q tL (by decide); have qsX := q sX (by decide); have qtD := hD0
   unfold downCore
   have s1 := runs_regIn (a := 0) (s := tIn) (r := sX) (by decide) σ hIn qsX
   set σ₁ := Function.update (Function.update σ tIn ⟨rwd N x :: Il, Ir⟩) sX (reg (rwd N x))
@@ -281,7 +281,7 @@ set_option maxHeartbeats 1000000 in
 theorem runs_downPair {N Np k M x y : ℕ} (hNp : 0 < Np) (hs : N = M * 2 ^ k) (hMN : M ≤ Np)
     (hx : x < 2 ^ N + 1) (hy : y < 2 ^ N + 1) (σ : Fin 𝕋 → WTape) (hL : LevelRegs N Np k M σ)
     (hR : σ cR = reg (Rules.ruler M (Np + 1) (2 ^ k))) (hKh : σ pKh = reg (ones (2 ^ k / 2)))
-    (hX : σ tX = emp) (hY : σ tY = emp)
+    (hX : σ tX = emp) (hY : σ tY = emp) (hD0 : σ tD = emp)
     {Il Ir O : List (List Bool)} (hIn : σ tIn = ⟨Il, rwd N x :: rwd N y :: Ir⟩) (hO : σ tOut = ⟨O, []⟩) :
     Runs downPair σ (· = Function.update (Function.update σ tIn ⟨rwd N y :: rwd N x :: Il, Ir⟩)
         tOut ⟨(rwds Np (zipFlat (tpieces Np k M x) (tpieces Np k M y))).reverse ++ O, []⟩)
@@ -289,7 +289,7 @@ theorem runs_downPair {N Np k M x y : ℕ} (hNp : 0 < Np) (hs : N = M * 2 ^ k) (
   unfold downPair
   have hlen : ∀ z, (tpieces Np k M z).length = 2 ^ k := fun z => by
     rw [tpieces, fwdIter_length _ _ _ _ _ rfl (by simp [length_pieces]), length_pieces]
-  have s1 := runs_downCore hNp hs hMN hx σ hL hR hKh hIn
+  have s1 := runs_downCore hNp hs hMN hx σ hL hR hKh hD0 hIn
   set σ₁ := Function.update (Function.update σ tIn ⟨rwd N x :: Il, rwd N y :: Ir⟩)
     tD ⟨[], rwds Np (tpieces Np k M x)⟩
   have s2 := runs_moveX (Np := Np) σ₁ (tpieces Np k M x) (by tsimp [σ₁]) (by tsimp [σ₁, hX])
@@ -298,8 +298,9 @@ theorem runs_downPair {N Np k M x y : ℕ} (hNp : 0 < Np) (hs : N = M * 2 ^ k) (
     have e : σ₂ = Function.update (Function.update (Function.update σ tIn ⟨rwd N x :: Il, rwd N y :: Ir⟩)
         tD emp) tX ⟨[], rwds Np (tpieces Np k M x)⟩ := by simp [σ₂, σ₁, Function.update_idem]
     rw [e]
-    exact ((hL.update tIn _ (by decide)).update_emp tD (by decide)).update tX _ (by decide)
+    exact ((hL.update tIn _ (by decide)).update tD emp (by decide)).update tX _ (by decide)
   have s3 := runs_downCore hNp hs hMN hy σ₂ hL₂ (by tsimp [σ₂, σ₁, hR]) (by tsimp [σ₂, σ₁, hKh])
+    (by tsimp [σ₂, σ₁])
     (Il := rwd N x :: Il) (Ir := Ir) (by tsimp [σ₂, σ₁])
   set σ₃ := Function.update (Function.update σ₂ tIn ⟨rwd N y :: rwd N x :: Il, Ir⟩)
     tD ⟨[], rwds Np (tpieces Np k M y)⟩
@@ -310,7 +311,7 @@ theorem runs_downPair {N Np k M x y : ℕ} (hNp : 0 < Np) (hs : N = M * 2 ^ k) (
   refine (Runs.then s1 (Runs.then s2 (Runs.then s3 (Runs.then s4 (Runs.then s5
     (Runs.then (runs_clear tX _) (runs_clear tY _))))))).mono (fun σ' h => ?_) ?_
   · rw [h]
-    funext i; fin_cases i <;> tsimp [σ₄, σ₃, σ₂, σ₁, hX, hY, hL.2.1 tD (by decide), emp]
+    funext i; fin_cases i <;> tsimp [σ₄, σ₃, σ₂, σ₁, hX, hY, hD0, emp]
   · tsimp [WTape.words, clen_reverse, clen_rwds, length_rwds, hlen]
     exact pair_arith _ _ _ _
 
