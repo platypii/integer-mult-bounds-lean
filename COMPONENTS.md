@@ -4570,6 +4570,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedSavedReturnPath.lean`: The actual corrected controller guards and pops the literal saved call PC from arbitrary full caller banks, preserving every leaf, work and scalar suffix. Public ready-bank and physically pushed-bank specializations restore the exact older stack, deriving erased-cell blanks from its unused tail; reached recursive stack premises remain separate.
 
+- `Machine/CompactComplexSourceReadyCorrectedEntryTablePath.lean`: Actual corrected tag2 installs the target, splits current rows and executes canonical source X signs, then follows the paid table edge to the first original schedule event PC. Literal banks, exact summed execution cost and a fixed linear-volume bound are derived without an execution callback; full recursive reached invariants remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
