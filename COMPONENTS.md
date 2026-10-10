@@ -4160,6 +4160,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSpectatorTargetBank.lean`: Actual permanent role slots, old controller current/target storage and a retained native volume slot instantiate the complete physical spectator promotion family in the real codec caller bank. Slot injectivity follows from distinct denominator ports. Literal bank equality identifies every promoted spectator and unchanged selected child while preserving original source65, headers, immutable scalars and all controller stacks. Final shared-grid installation and recursive composition remain open.
 
+- `Machine/CompactComplexScalarCountRootBank.lean`: The genuine codec caller bank physically derives scalar count from its retained original13 geometry and ell/p, writes only a chosen blank old-storage port and restores all private work. Exact count-port identity and original native role words derive the actual scalar Ready condition, while live7 remains an independent denominator. Uniform native-volume cost and immutable scalar43, role, controller and storage7/8/9 frames are proved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

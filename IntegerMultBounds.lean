@@ -2341,3 +2341,4 @@ import IntegerMultBounds.Machine.CompactComplexScalarCountHeaders
 import IntegerMultBounds.Machine.CompactComplexScalarCountPlaced
 import IntegerMultBounds.Machine.CompactComplexScalarCountBudget
 import IntegerMultBounds.Machine.CompactComplexSpectatorTargetBank
+import IntegerMultBounds.Machine.CompactComplexScalarCountRootBank
