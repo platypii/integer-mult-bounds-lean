@@ -4268,6 +4268,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexParentLiveStack.lean`: The actual parent live7 descriptor is physically pushed to a distinct fixed unbounded old-storage stack before recursion, keeping the inherited input exponent unchanged. On return the normalized child live word is copied into blank target8, then the saved parent current is physically popped into live7. Exact ports, ancestor stack/head and all complementary payload/controller frames are proved with paid runtimes. This restores the old denominator needed for real spectator promotion before common-live commit; it supplies no child normalization, common-grid or recursive execution oracle.
 
+- `Machine/CompactComplexNonleafSpectatorHandoff.lean`: The actual arbitrary normalized child result remains untouched while raw parent geometry physically generates spectator volume, shifts every other role by twice child volume, erases generated headers, and only then commits target8 to live7 and clears8. Exact literal endpoints and a complete parent-native-volume runtime bound follow from genuine parent/child Paths and live ledgers, not a supplied length word or header allowance. Combining completed child network semantics with the actual shifts preserves the exact parent scalar prefix/dependency levels, spectator decoded values and advanced returned-volume upper ledger. Concrete address maps, recursive child execution equality and full fixed-machine assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
