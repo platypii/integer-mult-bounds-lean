@@ -4574,6 +4574,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedFinalTablePath.lean`: Actual corrected tag3 executes sink corrections, contraction, row rejoin and saved-call orientation, then follows the original table edge to guard0. Its literal endpoint and exact sum-cost plus table join are proved without an execution callback; the physical saved-PC bank survives for the following pop.
 
+- `Machine/CompactComplexSourceReadyCorrectedFinalReturnPath.lean`: Actual corrected nonleaf finalization now reaches its original saved call continuation through the real guard and saved-PC pop. The complete computed output remains installed, all other caller and workspace tapes are retained, and both table joins and pop have a fixed linear-volume bound. Full reached recursive premises remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
