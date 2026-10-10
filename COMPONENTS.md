@@ -4490,6 +4490,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeEndpointNamedPorts.lean`: Original fifteen raw-header ports and named source X/sink Y ports are derived from the actual permanent codec-frame bank and original roleEncoding. Injectivity, role/header disjointness and exact original-header readout hold with arbitrary caller suffix; these ports are shared by character and uniform sink corrections.
 
+- `Machine/CompactComplexSourceReadyCorrectedRoleRejoin.lean`: Arbitrary completed corrected role families directly feed actual all-role contraction, same-row merge and saved-call post-orientation. Their common whole array, widths, grids and literal codecs are derived internally by recombination. Exact contraction uses genuine coarser target-grid membership and original Path/live-derived capacity; literal recombined output, full controller/frame/leaf/scalar retention and paid parent native-volume bounds are proved.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

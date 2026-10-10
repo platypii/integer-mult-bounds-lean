@@ -2524,3 +2524,4 @@ import IntegerMultBounds.Machine.CompactNativeRoleRecombine
 import IntegerMultBounds.Machine.NativeEndpointCharacterRoles
 import IntegerMultBounds.Machine.NativeEndpointCharacterLeafPlacement
 import IntegerMultBounds.Machine.NativeEndpointNamedPorts
+import IntegerMultBounds.Machine.CompactComplexSourceReadyCorrectedRoleRejoin
