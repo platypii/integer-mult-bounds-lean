@@ -4548,6 +4548,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/GuardedFiniteReturnExtraPath.lean`: The genuine finite return guard and saved-PC pop have an exact nonhalting path with the only changed word on the saved stack and paid width-plus-five transitions. Fixed large-table specialization and recursion-derived saved-frame premises remain open.
 
+- `Machine/NativeEndpointCharacterSplitCaller.lean`: Actual target-restore entry bank supplies the split placement directly, and physical replacement reconstructs the complete canonical caller with retained auxiliary frame and erased private storage.
+
+- `Machine/NativeEndpointCharacterEntryStorage.lean`: Generated nonleaf target updates literal storage8 in the canonical caller while retaining original raw headers, live7 and every other controller word.
+
+- `Machine/NativeEndpointCharacterEntryRoles.lean`: Actual cyclic splitting supplies exactly the named role family consumed by canonical source signs, with opaque-divisor cardinality transport preserving serialized order, widths and positive quotient rows.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
