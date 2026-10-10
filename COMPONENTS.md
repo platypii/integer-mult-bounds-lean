@@ -4226,6 +4226,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCallerWorkingReturnFlow.lean`: The literal scalar/native/role caller is extended by one fixed blank workspace bank for actual arithmetic and stopped-child subroutines. The guarded cyclic controller acts on that full tape bank, decodes the original saved site/coordinate frame, restores the caller and every workspace tape at the continuation, and genuinely halts on the empty root stack. Fixed continuation back-edges cost one real transition. Constructing the concrete extra entry/branch table and full recursive coefficient execution remains open.
 
+- `Machine/FiniteFlowPath.lean`: Nonhalting block-to-block execution paths compose recursive child returns on one unchanged fixed cyclic controller. Exact path runs include every physical block join; nested paths append without rebuilding code or adding an unaccounted jump. A child-return path composes with the root halting trace to give literal HoareTime with summed runtime. Constructing the algorithm-specific paths remains a recursive execution obligation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
