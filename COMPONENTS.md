@@ -4102,6 +4102,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarPolynomialReusable.lean`: Actual complex25 scalar polynomial rows now execute through exact reusable whole-bank endpoints: computed target and spectator streams replace their original arrays, all heads return to zero and every private tape is blank. The fixed row machine retains its genuine coefficient-count header and has uniform linear augmented coefficient-volume runtime. One common n+1 denominator follows from actual row semantics; live physical denominator integration remains open.
 
+- `Machine/CompactComplexDenominatorPolicy.lean`: Actual rank balance proves the finite child-call count is at least twice the arity. Genuine leaf forward/inverse results use their physical axis exponent, while full nonleaf networks use the certified return-grid exponent. Both branches have correct target policies: the nonleaf target fits the actual completed scalar/child ledger, and a physical leaf endpoint has zero return gap. Explicit current-exponent adapters retain the obligation to prove the live physical ledger and runtime branch selection.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
