@@ -4162,6 +4162,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarCountRootBank.lean`: The genuine codec caller bank physically derives scalar count from its retained original13 geometry and ell/p, writes only a chosen blank old-storage port and restores all private work. Exact count-port identity and original native role words derive the actual scalar Ready condition, while live7 remains an independent denominator. Uniform native-volume cost and immutable scalar43, role, controller and storage7/8/9 frames are proved.
 
+- `Machine/CompactComplexStoppedGridHandoff.lean`: Actual native role serialization supplies every spectator stream premise from original retained widths, positive rows and dependency Path. The physical all-spectator promotion endpoint equals the literal aligned stopped-child arrays, and therefore has the shared-grid, advanced sibling-budget and unchanged spectator-value guarantees. Quotient role payloads and child results exactly match the genuine stopped codec caller. Physical generation of its retained stream-volume descriptor remains explicit.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
