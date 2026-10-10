@@ -4470,6 +4470,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexEndpointRoleExchange.lean`: One actual fixed complex25 role machine physically exchanges every original named X/Y array using roleEncoding and an opaque complete noduplicate address enumeration. Its literal endpoint is the original ComplexFramedExecution.route, retaining scratch, controller words, all heads and arbitrary suffix. Runtime uses quotient role rows and is bounded by a fixed constant times original parent native volume; original caller words are derived internally.
 
+- `Machine/NativeUniformPolynomialRotationNormalized.lean`: Actual uniform rotation or internally initialized negation rewinds both streams, overwrites the original equal-width source and erases the temporary output. Exact source replacement retains the count, original columns and every other tape, with a paid linear native-volume bound.
+
+- `Machine/NativeUniformPolynomialRotationHeaders.lean`: Actual private original-header setup computes the complete quotient-role coefficient count from copied parent raw geometry using the opaque exact role divisor. Count erasure retains every copied parent descriptor.
+
+- `Machine/NativeUniformPolynomialRotationPlacement.lean`: Fixed private sixty-seven-tape placement connects count27 and original columns7 to the actual normalized uniform correction, retaining copied raw geometry and reclaiming all core loop/flag/output storage.
+
+- `Machine/NativeUniformPolynomialRotationOriginal.lean`: Complete original-caller rotation and negation physically copy fifteen raw inputs, construct the true role count, execute the selected correction, overwrite the source, erase generated counts and headers and return all sixty-seven private tapes blank. Only the selected caller source changes; all other roles and controller/scalar frames remain literal.
+
+- `Machine/NativeUniformPolynomialRotationOriginalBudget.lean`: Complete original-caller uniform correction has a fixed constant times original parent native-volume runtime bound, paying header copies, quotient count setup, correction, overwrite, output erasure, count/header cleanup and every join. Original Path/Grid signed guard instantiation and full named-role table assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
