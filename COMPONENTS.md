@@ -5642,6 +5642,14 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   rounds, geometric cost) and the whole inverse transform `invIter` on the
   48-tape bank (`runs_invLoop`).
 
+- `Schoenhage/Split.lean`: a streaming rule that cuts a word into its
+  padded pieces as spelled by a ruler word (`output_split_ruler`).
+- `Schoenhage/Recomb.lean`: the up-sweep as the tapes compute it, two
+  nonnegative shifted sums reduced from their halves, equal to `levelOut`
+  (`levelTape_eq`).
+- `Schoenhage/LevelTape.lean`: cutting into pieces, the windowed shifted
+  sum and the reduction modulo `2^N + 1` on the 48-tape bank.
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.

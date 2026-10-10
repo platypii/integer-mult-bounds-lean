@@ -19,7 +19,7 @@ See [COMPONENTS.md](COMPONENTS.md) for what each file proves.
 | Simultaneous butterfly layers with compact control | §5, §11, CrocSwap | ✅ (1210/1210) | 🟡 (934/936) |
 | Synthetic transforms and their tape layout | §6 | ✅ (5/5) | ⬜ (0/3) |
 | Gaussian resampling | §7 | ✅ (17/17) | 🟡 (7/9) |
-| Fast multiplication subroutine | Schönhage–Strassen | ✅ (13/13) | 🟡 (5/8) |
+| Fast multiplication subroutine | Schönhage–Strassen | ✅ (14/14) | 🟡 (5/8) |
 | Exact multiplication, parameters, time bound | §8 | 🟡 (5/7) | ⬜ (0/2) |
 | End-to-end theorem `EndToEnd` | — | 🟡 (5/8) | 🟡 (5/8) |
 
@@ -1679,7 +1679,7 @@ replaces the Harvey–van der Hoeven recursion. The Harvey–van der Hoeven recu
 | Word-program compiler | `Schoenhage/Cmd`, `Schoenhage/Moves` | — | ✅ | Primitives placed on any tapes, sequencing, loops while a tape has a word, branches on a leading one; `compile_correct` turns every big-step execution into a run of the compiled program within its cost; rewind, back, clear and emit primitives |
 | Residue arithmetic on word tapes | `Schoenhage/Rules`, `Schoenhage/Ops`, `Schoenhage/Wp`, `Schoenhage/Alu` | — | ✅ | Streaming rules for copy, fill, fit, drop, add with carry, subtract with borrow; a weakest-precondition evaluator for word programs; modular subtraction, addition and multiplication by `2^t` (`t ≤ N`) modulo `2^N + 1` on `(N+1)`-bit registers with exact results and `O(N)` step bounds (`runs_subMod`, `runs_addMod`, `runs_mulPow2`) |
 | Transform layers on tapes | `Schoenhage/Iter`, `Schoenhage/IterCorrect`, `Schoenhage/Butterfly`, `Schoenhage/Layers`, `Schoenhage/InvLayers` | ✅ | ✅ | The layer-by-layer transform with unary block shifts equals the recursive transform forward and inverse (`fwdIter_eq_fwd`, `invIter_eq_inv`); on tapes the forward and inverse butterflies and a whole forward layer (block split, pair loop, collection, children's shifts) compute the layer functions exactly (`runs_bflyF`, `runs_bflyI`, `runs_blocksF`); the forward transform over all layers is proved on tapes (`runs_fwdLoop`); the inverse transform too, with each layer's shifts recomputed from the root in linear total time (`runs_invLoop`) |
-| Splitting and recombination on tapes | — | — | ⬜ | Pieces, padding, descaling, signed lift and carry evaluation modulo `2^n + 1` |
+| Splitting and recombination on tapes | `Schoenhage/Split`, `Schoenhage/Recomb`, `Schoenhage/LevelTape` | ✅ | 🟡 | Pieces with padding in one pass over a ruler word (`runs_splitOp`); the up-sweep as two nonnegative shifted sums of the positive and negated negative coefficients, each reduced from its `N`-bit halves, equals `levelOut` (`levelTape_eq`); on tapes the shifted sum through a window (`runs_winSum`) and the reduction (`runs_redOp`); descaling with the sign split, the ruler's construction and the per-level assembly remain |
 | Batched recursion on tapes | — | — | ⬜ | Down-sweep, quadratic base, up-sweep; exact product of two input words |
 | Runtime within the packed-products row | — | — | ⬜ | `O(m log m log log m)` steps |
 
