@@ -4598,6 +4598,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCorrectedEntryGridReadiness.lean`: The actual signed source family inherits widths and grids directly from the original parent array and genuine dependency Path. Literal source selection and the runtime character equal the true terminal-character product, giving the original corrected-network input under the parent decoder relation. Expanded codec coordinates are used only for readout, never to replace physical raw headers; recursive execution remains open.
 
+- `Machine/CompactComplexSourceReadyScalarGeometryEventPath.lean`: Actual scheduled scalar events execute directly on the original Stage and literal arrays, preserving the raw payload descriptor. The next physical caller, literal role sources, blank count, tighter prefix grid, live denominator and ledger derive from that execution. Generic corrected controls and classifiers give the paid real node path without full-repair Inputs or execution callbacks; recursive schedule integration remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
