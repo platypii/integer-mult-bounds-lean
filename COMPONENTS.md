@@ -3840,6 +3840,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleScalarProducer.lean`: Composes actual scalar generation, fifteen-word copying and complete scalar metadata cleanup. The generated bank literally equals reservation Shape original13 plus immutable ell and corrected precision. Six controller words are explicit live ports; physical role source placement and cost absorption remain separate.
 
+- `Machine/AllAxisPhaseFlagsNormalize.lean`: Restores the actual phase scanner clocks and immutable f descriptor, retaining only computed control and phase flags for coefficient execution.
+
+- `Machine/AllAxisPolynomialRestore.lean`: Restores the prepared original phase caller after one polynomial body; only genuine source/output stream advancement persists.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

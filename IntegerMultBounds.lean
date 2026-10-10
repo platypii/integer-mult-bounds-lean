@@ -2156,3 +2156,5 @@ import IntegerMultBounds.Machine.CompactNativeRolePrecisionHeaders
 import IntegerMultBounds.Machine.CompactNativeRoleScalarHeaders
 import IntegerMultBounds.Machine.CompactNativeRoleStageCopy
 import IntegerMultBounds.Machine.CompactNativeRoleScalarProducer
+import IntegerMultBounds.Machine.AllAxisPhaseFlagsNormalize
+import IntegerMultBounds.Machine.AllAxisPolynomialRestore
