@@ -4106,6 +4106,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RawLinearCombinationComplexRowSequence.lean`: Compiles any fixed literal sequence of named Gaussian sparse rows into genuine reusable full-polynomial machines with one shared scratch bank. Every row reads all coefficients, replaces all source streams, restores heads and clears all work; exact full-bank sequence execution, append continuation data, width preservation and summed runtime are proved. Row names need no costly cardinal enumeration or numerical callback.
 
+- `Machine/CompactComplexNativeCodec.lean`: Physically regenerates corrected precision from retained original q/D/K/d/G, copies original ell and generated p into native17/18, and erases all synthesis work. Genuine cleanup erases the installed codec headers back to initial13. Exact native states and complete synthesis/install/cleanup costs fit a fixed constant times original native volume.
+
+- `Machine/CompactComplexNativeCodecFrame.lean`: Places the actual codec lifecycle in the native66/controller/role bank, preserving source65, roles, controller, existing denominator ports and all stacks. Immutable original43 descriptors occupy fresh suffix storage, so no ledger collisions occur. The genuine child-prefix native endpoint becomes precisely the stopped child raw state; codec workspace returns blank. Full caller composition and recursive execution remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
