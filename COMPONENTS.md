@@ -4566,6 +4566,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedFinal.lean`: The actual sink correction sequence composes with contraction, cyclic row rejoining and saved-call post-orientation on the same canonical bank. The literal whole-array endpoint retains permanent storage and scalar scratch; every physical subroutine and join has a proved fixed linear-volume bound. Reached recursive premises remain separate.
 
+- `Machine/CompactComplexSourceReadyCorrectedActualTable.lean`: One fixed controller table uses actual corrected source entry and sink corrections before contraction, rejoin and saved-call orientation. Original child/scalar programs, stopping classifier and saved-PC port are retained. Literal control/table identities are proved; the reached recursive invariant and total runtime remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

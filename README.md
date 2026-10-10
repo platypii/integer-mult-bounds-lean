@@ -18,12 +18,11 @@ chosen before quantifying over inputs.
 
 ## Status
 
-Section 5 remains open. Fixed no-order character boundaries, uniform phase and
-negation, named role exchange, and genuine stopped-denominator return adapters
-are proved. Actual stopped result installation, returned grids and payload
-reconstruction are now derived from execution. Corrected controller composition,
-saved-return linkage, full recursive correctness and the total runtime recurrence
-still require integration.
+Section 5 remains open. Actual corrected source entry, sink corrections and
+contraction/rejoin now compose on canonical banks with paid linear-volume costs.
+The fixed corrected controller table and genuine saved-PC pop are checked.
+Reached recursive bank/grid/stack invariants, child-return semantics, full
+recursive correctness and the total runtime recurrence still require integration.
 
 The machine model, the target statement, and a growing set of algorithmic and
 analytic components are formalized and checked. See
