@@ -4554,6 +4554,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeEndpointCharacterEntryRoles.lean`: Actual cyclic splitting supplies exactly the named role family consumed by canonical source signs, with opaque-divisor cardinality transport preserving serialized order, widths and positive quotient rows.
 
+- `Machine/CompactComplexSourceReadyCorrectedEntry.lean`: The fixed tag2 physically synthesizes its target, splits the original source rows and applies canonical source X signs. The literal named-role endpoint and summed physical runtime are proved; recursive reachability remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
