@@ -4306,6 +4306,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleTargetRestore.lean`: A fixed final parent-target pop restores the genuine saved node target from targetStack9 only after shared-live commit has cleared target8. Actual child-entry output derives the complete saved target frame directly, and recovery restores the older stack and semantic parent target while preserving advanced live7, all payloads and every complementary tape/head. Complete physical runtime is uniformly bounded by11 times native volume from the real parent target ledger. Spectator/continuation sequencing and full recursive closure remain open.
 
+- `Machine/CompactComplexNonleafChildAddress.lean`: Concrete original-call child address maps now connect actual cyclic role words, selected global bit intervals and returned parent arrays. Each input map is anchored by its output row/polynomial/untouched-bit spectators, with extraction/insertion roundtrips and all spectator coordinates preserved. Actual scalar wire order, child call slot, selected-role decoding and returned-wire rejoin are proved. The normalized selected-grid theorem uses these derived maps; actual completed-child execution remains the recursive induction premise.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
