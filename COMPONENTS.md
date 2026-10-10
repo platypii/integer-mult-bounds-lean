@@ -4304,6 +4304,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleSourceReturnBudget.lean`: The complete actual source-ready payload recovery has a uniform native-volume runtime bound. Returned-word support derives from the literal returned native array record widths, and blank-clock compatibility derives from physical entry. The concrete physical Hoare wrapper preserves all changed controller words/heads and seven private tapes, without a supplied support or aggregate cost allowance. Full child semantics and shared-grid promotion/recursive closure remain open.
 
+- `Machine/CompactComplexNonleafRoleTargetRestore.lean`: A fixed final parent-target pop restores the genuine saved node target from targetStack9 only after shared-live commit has cleared target8. Actual child-entry output derives the complete saved target frame directly, and recovery restores the older stack and semantic parent target while preserving advanced live7, all payloads and every complementary tape/head. Complete physical runtime is uniformly bounded by11 times native volume from the real parent target ledger. Spectator/continuation sequencing and full recursive closure remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
