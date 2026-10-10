@@ -3814,6 +3814,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPhaseStageMetadata.lean`: One fixed metadata setup and cleanup derives computed stage headers from the original13 numeric bank and erases them afterward, framing an arbitrary complete phase tail including coefficient source, precision and token tapes. The combined paid cost fits804000 times original record volume. Original caller port copying remains separate.
 
+- `Machine/CompactNativeRoleDestructive.lean`: Real complete-native-row split erases the obsolete common source; reverse merge erases every obsolete role source. Exact literal coefficient output and full transfer/reset cleanup are proved with paid runtime.
+
+- `Machine/CompactNativeRoleInstall.lean`: Physically copies row/group/erasure descriptors, installs both required loop markers and erases all five installed words after the native role transfer, with exact retained originals and paid costs.
+
+- `Machine/CompactNativeRoleOriginal.lean`: One fixed original13 plus ell/p caller physically synthesizes native row and group lengths, installs controls, destructively splits or merges genuine coefficient rows, erases all copied controls and numeric metadata and restores original13. Exact runtime and full endpoint have no execution callback; reservation-scalar/port adaptation remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
