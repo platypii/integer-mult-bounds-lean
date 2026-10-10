@@ -4242,6 +4242,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStoppedPrefixBudget.lean`: The complete stronger stopped-prefix tape adapter now has the original uniform fallback-volume times genuine child-size runtime bound. Its exact scalar-prefix numerical endpoint stays at the same parent dependency level with the returned-child ledger advanced, and literal next caller/workspace are restored. Current live capacity and combined guard axes follow from the actual Path and true full-row prefix ledger; a certified symbolic row count avoids reducing the gigantic finite network without changing its exact value. No coarse input grid, supplied aggregate array, capacity or metadata allowance remains; full unstopped induction remains open.
 
+- `Machine/CompactComplexNonleafRoleEntry.lean`: Actual nonleaf payload entry first generates the full native-volume count and parks the retained nonblank master source on the fixed ancestor payload stack. It then independently generates the role-volume count, parks spectators, moves the selected role to source65 and erases both count lifecycles. Literal source, blank role tapes, restored raw headers, permanent frames and exact stack boundaries are proved. Child row quotient/split, denominator handoff, reverse restoration and recursive network semantics remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
