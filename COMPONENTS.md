@@ -3798,6 +3798,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPhaseFlagsCaller.lean`: One fixed56-tape caller derives sparse controls from retained stage metadata, extracts all residual-slot/axis bits once and scans their total using original f-header7. Physical clock setup and cleanup are paid; both reused extraction clocks are restored. Coefficient loop and final flags/control cleanup remain separate.
 
+- `Machine/ButterflySpectatorBudget.lean`: Actual forward and inverse spectator axis cost, including geometry synthesis, copies, split, arithmetic, merge and erasure, is bounded uniformly by complete serialized native volume.
+
+- `Machine/CompactSpectatorLeafAxisBudget.lean`: Each original global selected-bit leaf body, descriptor synthesis, actual spectator axis and generated-control cleanup fit a fixed constant times full native volume.
+
+- `Machine/CompactSpectatorLeafSetupBudget.lean`: Physical original leaf geometry setup and cleanup have explicit scalar bounds including all copied original descriptors, without treating unconstrained metadata as free.
+
+- `Machine/CompactSpectatorLeafLoopBudget.lean`: Actual counted forward and inverse Visit loops have a uniform full-native-volume-times-Visit-length bound, including ordinal/clock cleanup and every body join.
+
+- `Machine/CompactSpectatorLeafGuardBudget.lean`: The actual original65/global109 guarded forward/inverse machine has exact decoded whole-array roundtrip and a uniform full-native-volume-times-Visit-count runtime bound. Every original descriptor copy, private precision reservation and both cleanup lifecycles are paid; metadata bounds follow from actual native payload and fixed recursive pair bounds.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
