@@ -4126,6 +4126,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarRolePorts.lean`: The actual named scalar wire enumeration maps injectively to its existing permanent role tapes, with a separate original count port and genuine storage7 live denominator. Fixed compiled scalar sequences execute directly on those shared tapes, returning exact computed streams and live exponent d plus completed row count while every unselected permanent tape and all appended private work are restored. Original native polynomial serialization literally matches scalar input streams without copying or rearrangement; endpoint readiness, storage7 output format and full paid runtime are proved. Count-header production and interleaved child/shared-grid alignment remain open.
 
+- `Machine/NativeSignedGapPromoteWord.lean`: Literal unchanged-width signed promotion prepends low zero digits and truncates high digits. Exact modular multiplication and signed multiplication under the actual capacity guard are proved, preserving Gaussian decoded values when the true denominator rises by the gap. Physical scanner and lifecycle are separate.
+
+- `Machine/CompactComplexChildGridAlignment.lean`: A selected stopped child and genuine spectator numerator promotion establish one common finer denominator while preserving every spectator decoded value. The actual dependency Path derives promotion capacity and signed guards; an explicit half-grid obstruction rules out arbitrary return to the parent integer grid. Physical stream promotion remains separate.
+
+- `Machine/CompactComplexChildGridReturnBudget.lean`: Shared-grid child growth fits the existing sibling-return dependency ledger with returned counter advanced by the child gap. The denominator rises by the gap, while the independent numerator budget reserves two butterfly contributions per returned axis. Exact spectator value preservation and common-grid returned budget are proved.
+
+- `Machine/CompactComplexChildGridPromoted.lean`: Concrete literal spectator words, rather than a supplied promotion relation, establish the shared grid after actual directional stopped-child arithmetic. Original Path and retained field widths derive every signed shift equation and its capacity; selected output plus promoted spectators have a common denominator and fit the advanced sibling-return budget, preserving all spectator decoded values. Physical bank promotion and controller composition remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
