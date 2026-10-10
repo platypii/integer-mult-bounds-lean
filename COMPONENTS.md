@@ -4272,6 +4272,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexParentLiveStackBudget.lean`: Genuine parent/child dependency Paths and live ledgers derive both event-specific denominator header sizes, using the completed child target and actual native row volume. The real parent live push and child-target-copy/parent-live-pop machines have paid native-volume Hoare bounds, including their join; actual padded descendant rows give original fallback-volume bounds. No supplied aggregate runtime or header allowance is used. Child execution/normalization and complete promotion/return sequencing remain explicit.
 
+- `Machine/CompactComplexFixedNodePaths.lean`: Reachability-local physical block contracts yield actual paths in the unchanged fixed cyclic node table: scalar successors, child entry, decoded saved-PC continuation and terminal return to the guard. Exact costs include every block join. Whole-node recursive correctness and instantiation with the actual source-ready child lifecycle remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

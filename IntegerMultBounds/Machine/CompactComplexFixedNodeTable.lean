@@ -19,7 +19,7 @@ def tableProgramsWith (returns : Fin N → Σ q,Program t q 2)
     Fin (N+(4+length)) → Σ q,Program t q 2 :=
   Fin.addCases returns (Fin.addCases controls events)
 
-private def returnPrograms (ht : 0<t)
+def returnPrograms (ht : 0<t)
     (childReturn : ComplexRecursiveCallSchema.Call → Σ q,Program t q 2)
     (address : Fin originalCount) : Σ q,Program t q 2 :=
   match decodeCall address with
