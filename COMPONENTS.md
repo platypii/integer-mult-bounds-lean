@@ -4104,6 +4104,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexDenominatorPolicy.lean`: Actual rank balance proves the finite child-call count is at least twice the arity. Genuine leaf forward/inverse results use their physical axis exponent, while full nonleaf networks use the certified return-grid exponent. Both branches have correct target policies: the nonleaf target fits the actual completed scalar/child ledger, and a physical leaf endpoint has zero return gap. Explicit current-exponent adapters retain the obligation to prove the live physical ledger and runtime branch selection.
 
+- `Machine/RawLinearCombinationComplexRowSequence.lean`: Compiles any fixed literal sequence of named Gaussian sparse rows into genuine reusable full-polynomial machines with one shared scratch bank. Every row reads all coefficients, replaces all source streams, restores heads and clears all work; exact full-bank sequence execution, append continuation data, width preservation and summed runtime are proved. Row names need no costly cardinal enumeration or numerical callback.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
