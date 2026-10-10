@@ -4048,6 +4048,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleConjugatedActual.lean`: One actual native phase witness executes every finite edge on every admissible multiplier descendant and selected role from original raw metadata, with literal updated role output, restored headers/private storage and one uniform stage-scale cost. Actual cutoff, row-depth and polynomial codec capacity discharge all pair repair and readiness premises at density one; the genuine retained signed-width scalar allowance and complete recursive network assembly remain explicit.
 
+- `Machine/CompactNativeReturnGapBudget.lean`: Actual complex25 scalar growth pays every scalar denominator bit. Real dependency Paths and retained reservation metadata derive exponent-gap capacity for every unchanged signed field; the optimized fixed return runs on literal original Gaussian serialization in129-volume-plus324 time and has exact coarser-grid values. Physical propagation of the precision formula and original-header gap synthesis remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
