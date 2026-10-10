@@ -4176,6 +4176,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexDenominatorCapacity.lean`: Scalar completion, genuine call entry and certified child return preserve the explicit true-denominator ledger. The actual dependency Path and fixed scalar-prefix reserve bound true-denominator targets by the retained signed half-width and genuine serialized role-stream volume. A typed rule specializes to the actual scalar list without evaluating its enormous enumeration. The original chunk choice eventually pays the fixed reserve, and complete spectator promotion/live-commit costs are uniformly linear in native volume. Physical propagation of the explicitly stated live-progress invariant remains a recursive execution obligation.
 
+- `Machine/CompactComplexScalarCountLifecycle.lean`: One actual caller lifecycle physically derives the coefficient count from original raw geometry, executes the complete named scalar row sequence on permanent role streams, and erases the count header after its final use. Literal output is the computed array with live denominator advanced by row count, blank count port, restored heads and all private banks blank. Runtime setup, every row, joins and cleanup have a uniform fixed-sequence linear stream-volume bound once the live denominator fits the field width; no prepared count input is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
