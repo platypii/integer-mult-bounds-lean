@@ -4356,6 +4356,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyScalarWorkspace.lean`: The actual original-header scalar count setup, named role arithmetic and final count erasure now execute on a fixed scalar suffix after the shared source-ready leaf/spectator bank. Exact placement derives readiness from the genuine permanent bank, replaces it with the literal lifecycle output, retains every existing controller/frame/leaf/work tape and returns all new scratch blank. The exact suffix count is proved through singleton choice without kernel normalization of astronomical closed counts. Original scalar event/table placement and full recursive assembly remain open.
 
+- `Machine/NativePolynomialConjugationData.lean`: Native same-width imaginary two-complement negation preserves real fields and every field width. The existing centered signed codec agrees with the Boolean codec; under the strict signed guard excluding the most-negative word the exact decoded complex value is conjugated. Actual-grid guard derivation and caller placement remain separate.
+
+- `Machine/NativePolynomialConjugation.lean`: One fixed one-tape machine scans actual native serialized complex records, retains every real bit, modularly negates each imaginary field and physically restores the source head. Exact output uses the proved coefficient conjugation with no scratch tapes or generated metadata, charging twice serialized length plus three. Shared source65 placement, original-grid strict guard and full inverse recursive wrappers remain open.
+
+- `Machine/NativePolynomialConjugationRows.lean`: The fixed physical scan now replaces one actual native finite-array stream while retaining every other caller tape and head, with exact conjugated row serialization and a uniform five-times-native-volume bound. Literal double conjugation restores every input word. The genuine dependency Path and inherited numerical grid derive the strict signed guard needed for exact decoded complex conjugation. Recursive wrappers remain separate.
+
+- `Machine/NativePolynomialConjugationWorkspace.lean`: The actual native conjugation program now acts at source65 of the common source-ready bank with Entry7, leaf and work10 suffixes retained literally. Only the source stream is replaced by conjugated original rows, its head returns zero, and the complete physical cost is at most five times original native volume. Actual runtime direction wrappers and complete recursive assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
