@@ -4596,6 +4596,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCorrectedEntryGeometryReadiness.lean`: The actual corrected entry endpoint is exactly the canonical caller bank with original raw payload descriptor retained. Plain role arrays give literal widths, words and support, generated target and unchanged live, count blankness and ancestor retention. Child exponent, clock and free-stack prerequisites derive from explicit genuine incoming bank premises; no incompatible full-repair Inputs or readiness callback is assumed.
 
+- `Machine/CompactComplexCorrectedEntryGridReadiness.lean`: The actual signed source family inherits widths and grids directly from the original parent array and genuine dependency Path. Literal source selection and the runtime character equal the true terminal-character product, giving the original corrected-network input under the parent decoder relation. Expanded codec coordinates are used only for readout, never to replace physical raw headers; recursive execution remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
