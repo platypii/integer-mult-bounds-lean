@@ -4282,6 +4282,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleMergeCurrent.lean`: The actual current-node Original role merge now runs on the fixed permanent bank plus seven private tapes, producing the literal arbitrary completed native source and blank roles while retaining exactly the same row descriptor. All original merge costs are paid, all private tapes reclaimed, and complementary controller tapes/heads preserved. This provides a source-ready endpoint for root and recursive nodes without parent row multiplication; full recursive correctness and uniform runtime integration remain open.
 
+- `Machine/CompactComplexNonleafRoleMergeCurrentBudget.lean`: Complete current-node merge runtime is uniformly bounded by genuine current native volume, with all original metadata and role transfer costs included. The actual recursive dependency Path and original active-axis bound derive current-row positivity and arity divisibility. Actual Hoare wrappers return the source-ready permanent bank plus seven blank scratch tapes, and one original padding yields a twice-original-volume bound. Full recursive execution and recurrence instantiation remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
