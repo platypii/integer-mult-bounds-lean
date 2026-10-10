@@ -3984,6 +3984,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactSpectatorInheritedGrid.lean`: Actual dependency Path geometry supplies overflow guards at retained role widths, and actual eventual chunk size absorbs fixed dependency constants. Physical leaf execution combines with exact directional Walsh semantics at inherited precision. Controller Path propagation and returned precision policy remain open.
 
+- `Machine/CompactNativeRoleScalarCaller.lean`: Physically associates the actual scalar producer fresh28 numeric bank and fifteen blank work tapes with the native role numeric43 bank, preserving source and every retained controller tape.
+
+- `Machine/CompactNativeRoleReservedCaller.lean`: Composes actual scalar generation, corrected precision and original13 copying with the real destructive source43 role split. Every transition is paid and the original scalar/controller bank survives with exact padded role outputs.
+
+- `Machine/CompactNativeRolePaddingCaller.lean`: One fixed machine composes original native reservation, genuine zero padding, scalar-to-role metadata synthesis and destructive native role splitting at the same physical source43. Unchanged-index association copies no payload; every appended private tape is reclaimed. The complete actual cost is proved; uniform cost absorption and recursive role execution remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
