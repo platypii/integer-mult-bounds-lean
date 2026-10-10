@@ -4276,6 +4276,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleReturnFrames.lean`: The genuine arbitrary-result parent payload return now preserves an entire simultaneously changed complementary tape bank, including every inherited permanent storage tape and head. Actual raw-header readiness, parked-frame commutation and exact output are derived from the original caller; the unchanged physical program and cost restore master, spectators and payload stack. Full child execution and recursive assembly remain open.
 
+- `Machine/CompactComplexNonleafRoleParentRows.lean`: Separate parent-only row restoration physically multiplies the actual child row descriptor by fixed arity after decoded return. Exact raw endpoints preserve all other descriptors and the entire complementary payload/controller bank, including appended private workspace. Complete header arithmetic costs are bounded by1000*(arity+1) times parent rows. This operation is excluded from root node merging; recursive continuation assembly remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
