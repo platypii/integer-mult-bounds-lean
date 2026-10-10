@@ -4426,6 +4426,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyNonleafOrientedSemantics.lean`: Original dependency Paths and completed-network grids derive safe post-conjugation and literal retained widths. A genuine correction-inclusive completed equation implies the true forward or inverse full tensor with both original endpoint corrections retained. Actual execution of those correction boundaries and recursive completion remain open.
 
+- `Machine/EqualWordSwap.lean`: Actual two-tape equal-length nonblank word exchange retains arbitrary word exteriors and restores both physical heads, including empty words. The proved runtime three times word length plus six pays the scan and both returns.
+
+- `Machine/WordBankSwap.lean`: Places the actual equal-length word exchange on any two distinct fixed caller ports. Literal exchanged words, restored heads, every complementary tape and the complete exteriors are proved with the same paid runtime. Original role exchange composition remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
