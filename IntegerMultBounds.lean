@@ -2286,3 +2286,5 @@ import IntegerMultBounds.Machine.CompactNativeRoleConjugatedActual
 import IntegerMultBounds.Schoenhage.SSCost
 import IntegerMultBounds.Schoenhage.SSProgram
 import IntegerMultBounds.Machine.CompactNativeReturnGapBudget
+import IntegerMultBounds.Machine.CompactComplexControllerChildBudget
+import IntegerMultBounds.Machine.CompactComplexControllerDependency

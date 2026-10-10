@@ -4050,6 +4050,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeReturnGapBudget.lean`: Actual complex25 scalar growth pays every scalar denominator bit. Real dependency Paths and retained reservation metadata derive exponent-gap capacity for every unchanged signed field; the optimized fixed return runs on literal original Gaussian serialization in129-volume-plus324 time and has exact coarser-grid values. Physical propagation of the precision formula and original-header gap synthesis remain open.
 
+- `Machine/CompactComplexControllerChildBudget.lean`: Derives all actual descriptor-frame, exponent-update and child-header costs from original geometry. Entry, real return-PC decoding, parent restoration and both joins together have a uniform linear original native selected-role volume bound; execution of the recursive child is separate.
+
+- `Machine/CompactComplexControllerDependency.lean`: The actual paid child prefix chooses the real schema occurrence and residual slot, installs physical exponent/interval words matching Path.child and retains every computed dependency index. Paid parent restoration recovers the ancestor exponent/interval words and all storage while retaining arbitrary computed native tail payload; the intervening recursive execution and dyadic-precision propagation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
