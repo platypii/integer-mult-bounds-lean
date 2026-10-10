@@ -3990,6 +3990,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRolePaddingCaller.lean`: One fixed machine composes original native reservation, genuine zero padding, scalar-to-role metadata synthesis and destructive native role splitting at the same physical source43. Unchanged-index association copies no payload; every appended private tape is reclaimed. The complete actual cost is proved; uniform cost absorption and recursive role execution remain separate.
 
+- `Machine/CompactNativeConjugatedHeaderBank.lean`: The actual full native conjugated caller with source removed is exactly a sparse original13 plus ell header bank. Real descriptor copying and cleanup construct and erase this bank, with original source and metadata characterized.
+
+- `Machine/CompactNativeConjugatedSharedCaller.lean`: Actual sparse header setup, shared source placement of the native forward/phase/reverse program and complete header cleanup execute on one selected exterior tape. The full literal caller and all private tapes are restored around computed output; every join is paid.
+
+- `Machine/CompactNativeRoleConjugatedPorts.lean`: Physically generated role numeric43 headers supply original13 plus ell to the native phase caller, with explicit six-symbol to prime alphabet encoding and literal selected role serialization. The actual prime-side copy/share/phase/cleanup machine is proved; original binary-controller lifting and full recursion remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

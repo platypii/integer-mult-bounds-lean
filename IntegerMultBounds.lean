@@ -2249,3 +2249,6 @@ import IntegerMultBounds.Machine.CompactNativeRoleReservedCaller
 import IntegerMultBounds.Machine.CompactNativeRolePaddingCaller
 import IntegerMultBounds.Schoenhage.Params
 import IntegerMultBounds.Schoenhage.LevelParams
+import IntegerMultBounds.Machine.CompactNativeConjugatedHeaderBank
+import IntegerMultBounds.Machine.CompactNativeConjugatedSharedCaller
+import IntegerMultBounds.Machine.CompactNativeRoleConjugatedPorts
