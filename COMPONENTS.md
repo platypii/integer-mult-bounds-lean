@@ -4188,6 +4188,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexRootPieceBudget.lean`: The full fixed root lifecycle now separates its genuine recursive callback sum from an explicit polynomial overhead in original active axes. Every physical digit read, piece-clock update, level multiplication, loop test, original-header setup and final queue/numeric cleanup is charged. Generated field lengths, digit count and final power derive from the original base-arity digits, so no supplied controller cost allowance remains. Actual recursive callback discharge and summation of their runtimes remain open.
 
+- `Machine/CompactComplexRecursiveLiveProgress.lean`: Actual physical scalar lifecycles, genuine child entry and complete stopped aligned returns now propagate the true denominator stored on permanent storage7 through the explicit dependency ledger. Contiguous scalar segments retain the node Gaussian budget and derive stored-header capacity from the real Path and original chunk reserve. Child entry physically preserves the live word while saving genuine headers, target and PC; stopped return commits the exact advanced word and updates the sibling ledger. Full unstopped execution induction and completed nonleaf lower-progress remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
