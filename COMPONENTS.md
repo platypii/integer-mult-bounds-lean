@@ -4280,6 +4280,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleChildBank.lean`: A fixed child-header entry program physically saves the parent target once, saves the actual inherited live word on a distinct stack, pushes parent geometric headers and the original site/coordinate PC, decrements the control exponent and synthesizes the genuine child descriptors. Exact endpoints retain rows, ell, precision and arbitrary source/role payloads, enabling source-ready shared entry before the stopped/nonleaf guard. All local transitions are paid; uniform runtime absorption and full recursive execution remain open.
 
+- `Machine/CompactComplexNonleafRoleMergeCurrent.lean`: The actual current-node Original role merge now runs on the fixed permanent bank plus seven private tapes, producing the literal arbitrary completed native source and blank roles while retaining exactly the same row descriptor. All original merge costs are paid, all private tapes reclaimed, and complementary controller tapes/heads preserved. This provides a source-ready endpoint for root and recursive nodes without parent row multiplication; full recursive correctness and uniform runtime integration remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
