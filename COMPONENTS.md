@@ -4330,6 +4330,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyWorkspace.lean`: One depth-independent common bank places the public ChildBank bank, fixed leaf workspace and ten denominator/spectator work tapes in a single literal layout. Actual public and Entry programs lift with unchanged runtime and arbitrary suffix frames retained; real guard continuation traces lift too. A fixed spectator permutation borrows only the final ten tapes, retains every public slot and arbitrary leaf suffix, and reclaims work storage. Named payload-return, spectator and quotient programs now share that bank. Actual table instantiation and recursive closure remain open; the generic stopped-leaf block still needs child count expansion/restoration before consuming positive-exponent ChildBank header7.
 
+- `Machine/CompactComplexNonleafSpectatorTargetPrefix.lean`: The actual spectator promotion/shared-live commit and final target pop now retain the next literal parent scalar-prefix grid, unchanged spectator semantics and genuine returned-volume ledger. Concrete child maps are anchored by each output spectator slice and derive the selected interval from the original call slot; completed child execution remains the explicit recursive induction hypothesis. Actual local physical execution, target restoration and table join are paid, and a decoded saved-PC-to-unique-call-successor FixedNodePaths adapter uses the real block identity. Whole decoded continuation assembly and recursive closure remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
