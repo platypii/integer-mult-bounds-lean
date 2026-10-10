@@ -2199,3 +2199,4 @@ import IntegerMultBounds.Machine.CompactPhaseGridInvariant
 import IntegerMultBounds.Machine.CompactRecursiveGridBudget
 import IntegerMultBounds.Machine.CompactNativeRoleMetadataCleanup
 import IntegerMultBounds.Machine.CompactNativeRoleMergeCaller
+import IntegerMultBounds.Machine.CompactNativeRoleTransferBudget

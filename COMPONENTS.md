@@ -3918,6 +3918,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleMergeCaller.lean`: One fixed source43 caller destructively merges arbitrary computed descendant role results, erases all copied original13/ell/p metadata and restores original scalar caller and every unrelated tape. Roles and appended private storage finish blank.
 
+- `Machine/CompactNativeRoleTransferBudget.lean`: Actual normalized native split/merge and all destructive resets fit252 times padded native volume and504 times original native volume under derived reservation geometry. Header synthesis/copying and full recursive summation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
