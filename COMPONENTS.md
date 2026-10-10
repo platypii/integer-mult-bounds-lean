@@ -5744,7 +5744,8 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   tapes, for one pair and for a whole batch (`runs_baseBatch`).
 
 - `Schoenhage/Params.lean`: the schedule's parameters in unary on tapes:
-  bit length by halving (`runs_sizeLoop`), repeated halving and doubling.
+  bit length by halving (`runs_sizeLoop`), repeated halving and doubling,
+  and the ruler word (`runs_rulerBuild`).
 
 ## Top-level
 

@@ -221,4 +221,169 @@ theorem runs_doubleLoop :
       have : r ≤ r * 2 ^ j := Nat.le_mul_of_pos_right r (by positivity)
       omega
 
+/-! ### The ruler -/
+
+/-- Alternating bits from phase `q`. -/
+def altFrom : Bool → ℕ → List Bool
+  | _, 0 => []
+  | q, n + 1 => q :: altFrom (!q) n
+
+namespace Rules
+
+/-- Emit `false, true, false, …`, one bit per driver bit. -/
+abbrev alt : Rule 0 where
+  Q := Bool
+  q0 := false
+  step q _ _ := (!q, some (some q), fun _ => false)
+  flush _ := [none]
+  B := 1
+  hB _ := le_rfl
+
+theorem go_alt (q : Bool) (w : List Bool) (ws : Fin 0 → List Bool) :
+    (go alt q w ws).2.1 = (altFrom q w.length).map some := by
+  induction w generalizing q ws with
+  | nil => simp [go, altFrom]
+  | cons b w ih => simp [go, ih, altFrom]
+
+theorem output_alt (w : List Bool) (ws : Fin 0 → List Bool) :
+    output alt w ws = syms [altFrom false w.length] := by
+  simp [output, syms_cons, go_alt]
+
+end Rules
+
+theorem flatMap_copies (c : ℕ) :
+    (List.replicate c Rules.Act.copy).flatMap Rules.Act.enc = List.replicate (2 * c) false := by
+  induction c with
+  | zero => rfl
+  | succ c ih =>
+    rw [List.replicate_succ, List.flatMap_cons, ih, show 2 * (c + 1) = 2 * c + 1 + 1 by ring]
+    simp [Rules.Act.enc, List.replicate_succ]
+
+theorem flatMap_pads (p : ℕ) :
+    (List.replicate p Rules.Act.pad).flatMap Rules.Act.enc = altFrom false (2 * p) := by
+  induction p with
+  | zero => rfl
+  | succ p ih =>
+    rw [List.replicate_succ, List.flatMap_cons, ih, show 2 * (p + 1) = 2 * p + 1 + 1 by ring]
+    simp [Rules.Act.enc, altFrom]
+
+/-- One non-top piece of the ruler. -/
+def rpiece (M W : ℕ) : List Bool :=
+  List.replicate (2 * M) false ++ altFrom false (2 * (W - M)) ++ [true, true]
+
+/-- The top piece of the ruler. -/
+def rlast (M W : ℕ) : List Bool :=
+  List.replicate (2 * (M + 1)) false ++ altFrom false (2 * (W - (M + 1)))
+
+@[simp] theorem length_altFrom (q : Bool) (n : ℕ) : (altFrom q n).length = n := by
+  induction n generalizing q with
+  | zero => rfl
+  | succ n ih => simp [altFrom, ih]
+
+theorem length_rpiece (M W : ℕ) : (rpiece M W).length ≤ 2 * (M + W) + 2 := by
+  simp [rpiece]; omega
+
+theorem length_flatten_rpiece (M W K : ℕ) :
+    ((List.replicate K (rpiece M W)).flatten).length ≤ K * (2 * (M + W) + 2) := by
+  induction K with
+  | zero => simp
+  | succ K ih =>
+    rw [List.replicate_succ, List.flatten_cons, List.length_append]
+    have := length_rpiece M W
+    nlinarith
+
+theorem ruler_eq (M W : ℕ) : ∀ K, Rules.ruler M W (K + 1) =
+    (List.replicate K (rpiece M W)).flatten ++ rlast M W
+  | 0 => by
+    simp [Rules.ruler, Rules.rulerActs, rlast, flatMap_copies, flatMap_pads]
+  | K + 1 => by
+    have ih := ruler_eq M W K
+    rw [Rules.ruler] at ih ⊢
+    rw [Rules.rulerActs, List.flatMap_append, List.flatMap_append, List.flatMap_append, ih, flatMap_copies,
+      flatMap_pads, List.replicate_succ, List.flatten_cons]
+    simp [rpiece, Rules.Act.enc]
+
+/-- Append one non-top piece to the ruler `cR`, once per tick of `qT`. -/
+noncomputable def pieceLoop : Cmd 0 𝕋 :=
+  .loop qT (.seq (op0 (Rules.fill false) true tU cR (by decide)) <| .seq (rewind tU) <|
+    .seq (op0 Rules.alt true tV cR (by decide)) <| .seq (rewind tV) <|
+    .seq (op0 (Rules.fill true) true tO1 cR (by decide)) <| .seq (rewind tO1) (skp qT tJ (by decide)))
+
+theorem runs_pieceLoop {M W : ℕ} :
+    ∀ (j : ℕ) (u : List Bool) (σ : Fin 𝕋 → WTape) (Tl : List (List Bool)),
+      σ cR = ⟨[u], []⟩ → σ tU = reg (ones (2 * M)) → σ tV = reg (ones (2 * (W - M))) →
+      σ tO1 = reg (ones 2) → σ tJ = emp → σ qT = ⟨Tl, List.replicate j []⟩ →
+      Runs pieceLoop σ (· = Function.update (Function.update σ cR ⟨[u ++ (List.replicate j (rpiece M W)).flatten], []⟩)
+          qT ⟨List.replicate j [] ++ Tl, []⟩) (j * (8 * (M + W) + 80))
+  | 0, u, σ, Tl, hR, _, _, _, _, hT => by
+    refine (Runs.loop_done (by simp [hT]) rfl).mono (fun σ' h' => ?_) (by simp)
+    subst h'
+    funext i; fin_cases i <;> tsimp [hR, hT]
+  | j + 1, u, σ, Tl, hR, hU, hV, hO, hJ, hT => by
+    have s1 : Runs (a := 0) (.seq (op0 (Rules.fill false) true tU cR (by decide)) <| .seq (rewind tU) <|
+        .seq (op0 Rules.alt true tV cR (by decide)) <| .seq (rewind tV) <|
+        .seq (op0 (Rules.fill true) true tO1 cR (by decide)) <| .seq (rewind tO1) (skp qT tJ (by decide))) σ
+        (· = Function.update (Function.update σ cR ⟨[u ++ rpiece M W], []⟩) qT ⟨[] :: Tl, List.replicate j []⟩)
+        (8 * (M + W) + 78) := by
+      apply Runs.of_wp
+      simp only [skp, WP, wp_op0, wp_rewind]
+      tsimp [hR, hU, hV, hO, hJ, hT, emp, reg, List.replicate_succ, Rules.output_fill, Rules.output_alt,
+        Rules.output_skip]
+      have t1 := time_le (Rules.fill false) (ones (2 * M)) (fun j => j.elim0) 0 (fun j => j.elim0)
+      have t2 := time_le Rules.alt (ones (2 * (W - M))) (fun j => j.elim0) 0 (fun j => j.elim0)
+      have t3 := time_le (Rules.fill true) (ones 2) (fun j => j.elim0) 0 (fun j => j.elim0)
+      have t4 := time_le Rules.skip [] (fun j => j.elim0) 0 (fun j => j.elim0)
+      refine ⟨?_, ?_⟩
+      · funext i; fin_cases i <;> tsimp [hR, hU, hV, hO, hJ, hT, emp, reg, List.replicate_succ, rpiece]
+      · simp at t1 t2 t3 t4 ⊢; omega
+    set σ₁ := Function.update (Function.update σ cR ⟨[u ++ rpiece M W], []⟩) qT ⟨[] :: Tl, List.replicate j []⟩
+    have ih := runs_pieceLoop (M := M) (W := W) j (u ++ rpiece M W) σ₁ ([] :: Tl) (by tsimp [σ₁]) (by tsimp [σ₁, hU])
+      (by tsimp [σ₁, hV]) (by tsimp [σ₁, hO]) (by tsimp [σ₁, hJ]) (by tsimp [σ₁])
+    refine (Runs.loop_step (by simp [hT]) (s1.mono (fun σ' h' => by rw [h']; exact ih) le_rfl)).mono
+      (fun σ' h' => ?_) ?_
+    · rw [h']
+      funext i; fin_cases i <;> tsimp [σ₁, List.replicate_succ, replicate_append_cons]
+    · nlinarith
+
+/-- The top piece, then rewind the ruler. -/
+noncomputable def lastPiece : Cmd 0 𝕋 :=
+  .seq (op0 (Rules.fill false) true tO2 cR (by decide)) <| .seq (rewind tO2) <|
+  .seq (op0 Rules.alt true tC cR (by decide)) <| .seq (rewind tC) (rewind cR)
+
+/-- The ruler of `K + 1` pieces on `cR`. -/
+noncomputable def rulerBuild : Cmd 0 𝕋 := .seq (emit [[]] cR) <| .seq pieceLoop lastPiece
+
+theorem runs_rulerBuild {M W K : ℕ} (σ : Fin 𝕋 → WTape) (hR : σ cR = emp) (hU : σ tU = reg (ones (2 * M)))
+    (hV : σ tV = reg (ones (2 * (W - M)))) (hO : σ tO1 = reg (ones 2))
+    (hO2 : σ tO2 = reg (ones (2 * (M + 1)))) (hC : σ tC = reg (ones (2 * (W - (M + 1)))))
+    (hJ : σ tJ = emp) (hT : σ qT = ⟨[], List.replicate K []⟩) :
+    Runs rulerBuild σ (· = Function.update (Function.update σ cR (reg (Rules.ruler M W (K + 1))))
+        qT ⟨List.replicate K [], []⟩) ((K + 2) * (12 * (M + W) + 100)) := by
+  unfold rulerBuild
+  have s1 := runs_emit (a := 0) [[]] cR σ (by rw [hR]; rfl)
+  set σ₁ := Function.update σ cR ⟨[[]].reverse ++ (σ cR).left, []⟩
+  have s2 := runs_pieceLoop (M := M) (W := W) K [] σ₁ [] (by tsimp [σ₁, hR, emp]) (by tsimp [σ₁, hU])
+    (by tsimp [σ₁, hV]) (by tsimp [σ₁, hO]) (by tsimp [σ₁, hJ]) (by tsimp [σ₁, hT])
+  set σ₂ := Function.update (Function.update σ₁ cR ⟨[[] ++ (List.replicate K (rpiece M W)).flatten], []⟩)
+    qT ⟨List.replicate K [] ++ [], []⟩
+  have s3 : Runs lastPiece σ₂ (· = Function.update (Function.update σ cR (reg (Rules.ruler M W (K + 1))))
+      qT ⟨List.replicate K [], []⟩) (2 * K * (M + W + 2) + 12 * (M + W) + 100) := by
+    apply Runs.of_wp
+    simp only [lastPiece, WP, wp_op0, wp_rewind]
+    tsimp [σ₂, σ₁, hO2, hC, emp, reg, Rules.output_fill, Rules.output_alt]
+    have t1 := time_le (Rules.fill false) (ones (2 * (M + 1))) (fun j => j.elim0) 0 (fun j => j.elim0)
+    have t2 := time_le Rules.alt (ones (2 * (W - (M + 1)))) (fun j => j.elim0) 0 (fun j => j.elim0)
+    refine ⟨?_, ?_⟩
+    · funext i; fin_cases i <;> tsimp [σ₂, σ₁, hO2, hC, emp, reg, ruler_eq, rlast]
+    · have hp := Nat.mul_le_mul_left K (length_rpiece M W)
+      simp at t1 t2 ⊢
+      have e : 2 * K * (M + W + 2) = K * (2 * (M + W) + 2) + 2 * K := by ring
+      rw [e]
+      generalize K * (rpiece M W).length = X at hp ⊢
+      generalize K * (2 * (M + W) + 2) = Y at hp ⊢
+      omega
+  refine (Runs.then s1 (Runs.then s2 s3)).mono (fun σ' h => h) ?_
+  simp [clen]
+  nlinarith
+
 end IntegerMultBounds.Schoenhage
