@@ -4354,6 +4354,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/FiniteFlowFrames.lean`: Complete genuine cyclic-controller paths and halting traces now lift to an appended arbitrary tape bank or a fixed tape permutation, preserving every terminal-state-selected edge, exact tape contents and heads, transition count and call/return join. These structural execution proofs permit the existing source-ready paths to move onto the scalar-inclusive fixed bank without reproving local runs; actual table and recursive callback assembly remain open.
 
+- `Machine/CompactComplexSourceReadyScalarWorkspace.lean`: The actual original-header scalar count setup, named role arithmetic and final count erasure now execute on a fixed scalar suffix after the shared source-ready leaf/spectator bank. Exact placement derives readiness from the genuine permanent bank, replaces it with the literal lifecycle output, retains every existing controller/frame/leaf/work tape and returns all new scratch blank. The exact suffix count is proved through singleton choice without kernel normalization of astronomical closed counts. Original scalar event/table placement and full recursive assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

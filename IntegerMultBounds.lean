@@ -2452,3 +2452,4 @@ import IntegerMultBounds.Machine.CompactComplexSourceReadyChildReturnPath
 import IntegerMultBounds.Machine.CompactComplexSourceReadyDirection
 import IntegerMultBounds.Networks.BinaryWalshComplexConjugation
 import IntegerMultBounds.Machine.FiniteFlowFrames
+import IntegerMultBounds.Machine.CompactComplexSourceReadyScalarWorkspace
