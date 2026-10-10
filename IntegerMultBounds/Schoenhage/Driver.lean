@@ -1,4 +1,5 @@
 import IntegerMultBounds.Schoenhage.LevelMk
+import IntegerMultBounds.Schoenhage.BatchMath
 
 /-! The level driver on word tapes: bookkeeping fragments between levels. -/
 
@@ -293,5 +294,144 @@ theorem runs_downLevel {N : ℕ} (hN : N0 ≤ N) (hk : 2 ^ kOf N ∣ N) {L : Lis
     exact down_arith N (nextN N) (kOf N) (2 ^ kOf N) (pieceOf N) L.length NB.length _ _ _ _ _ _
       (by omega) (by omega) (by omega) Nat.one_le_two_pow hNB hRl hfG (by simp [clen])
       (Nat.div_le_self _ _) (Nat.sub_le _ _) (Nat.div_le_self _ _)
+
+/-! ### The down-sweep over all levels -/
+
+/-- The levels a down-sweep visits with fuel `j`: the sizes and batches of the levels done, and the final size and batch. -/
+def traj : ℕ → ℕ → List ℕ → List (ℕ × List ℕ) × ℕ × List ℕ
+  | 0, N, L => ([], N, L)
+  | j + 1, N, L =>
+    if N < N0 then ([], N, L)
+    else
+      let r := traj j (nextN N) (nextBatch (nextN N) (kOf N) (pieceOf N) L)
+      ((N, L) :: r.1, r.2.1, r.2.2)
+
+/-- The cost of a down-sweep with fuel `j`. -/
+def trajCost : ℕ → ℕ → List ℕ → ℕ
+  | 0, _, _ => 0
+  | j + 1, N, L =>
+    if N < N0 then 20 + trajCost j N L
+    else downCost N L.length + 20 + trajCost j (nextN N) (nextBatch (nextN N) (kOf N) (pieceOf N) L)
+
+/-- One down level when the test says so, once per tick of `tG`. -/
+noncomputable def downLoop : Cmd 0 𝕋 := .loop tG (.seq (.cond fG downLevel (rewind fG)) (skp tG tJ (by decide)))
+
+theorem nextBatch_even (Np k M : ℕ) (hl : ∀ x, (tpieces Np k M x).length = 2 ^ k) :
+    ∀ L : List ℕ, Even (nextBatch Np k M L).length
+  | [] => by simp [nextBatch]
+  | [_] => by simp [nextBatch]
+  | x :: y :: L => by
+    simp only [nextBatch, List.length_append]
+    rw [length_zipFlat _ _ (by rw [hl, hl])]
+    exact (even_two_mul _).add (nextBatch_even Np k M hl L)
+
+theorem nextBatch_lt {N : ℕ} (hN : N0 ≤ N) (hk : 2 ^ kOf N ∣ N) :
+    ∀ L : List ℕ, (∀ x ∈ L, x < 2 ^ N + 1) →
+      ∀ y ∈ nextBatch (nextN N) (kOf N) (pieceOf N) L, y < 2 ^ nextN N + 1
+  | [], _ => by simp [nextBatch]
+  | [_], _ => by simp [nextBatch]
+  | x :: y :: L, h => by
+    intro z hz
+    simp only [nextBatch, List.mem_append, tpieces_eq] at hz
+    rcases hz with hz | hz
+    · have : ∀ X Y : List ℕ, ∀ z ∈ zipFlat X Y, z ∈ X ∨ z ∈ Y := by
+        intro X Y; induction X generalizing Y with
+        | nil => simp [zipFlat]
+        | cons a X ih =>
+          cases Y with
+          | nil => simp [zipFlat]
+          | cons b Y =>
+            intro z hz; simp only [zipFlat, List.mem_cons] at hz
+            rcases hz with rfl | rfl | hz
+            · simp
+            · simp
+            · rcases ih Y z hz with h1 | h1 <;> simp [h1]
+      rcases this _ _ z hz with h1 | h1
+      · exact xs_lt hN hk (h x (by simp)) z h1
+      · exact xs_lt hN hk (h y (by simp)) z h1
+    · exact nextBatch_lt hN hk L (fun w hw => h w (by simp [hw])) z hz
+
+theorem Rest.update_tG {N : ℕ} {L : List ℕ} {P C : List (List Bool)} {σ : Fin 𝕋 → WTape}
+    (hR : Rest N L P C σ) (T : WTape) : Rest N L P C (Function.update σ tG T) := by
+  obtain ⟨⟨⟨hW, hF⟩, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩, hi, hp, hIn, hP, hC, hc, hf⟩ := hR
+  refine ⟨⟨⟨by tsimp [hW], by tsimp [hF]⟩, by tsimp [h2], by tsimp [h3], by tsimp [h4], by tsimp [h5],
+    by tsimp [h6], by tsimp [h7], by tsimp [h8], by tsimp [h9], by tsimp [h10], by tsimp [h11]⟩, ?_,
+    by tsimp [hp], by tsimp [hIn], by tsimp [hP], by tsimp [hC], by tsimp [hc], by tsimp [hf]⟩
+  intro i hm
+  have : i ≠ tG := by revert hm; revert i; decide
+  rw [Function.update_of_ne this]; exact hi i hm
+
+theorem traj_small {N : ℕ} (hN : N < N0) (L : List ℕ) : ∀ j, traj j N L = ([], N, L)
+  | 0 => rfl
+  | j + 1 => by simp [traj, hN]
+
+theorem runs_downLoop :
+    ∀ (j N : ℕ) (L : List ℕ) (P C : List (List Bool)) (σ : Fin 𝕋 → WTape) (Gl : List (List Bool)),
+      Rest N L P C σ → 2 ^ kOf N ∣ N → Even L.length → (∀ x ∈ L, x < 2 ^ N + 1) →
+      σ tG = ⟨Gl, List.replicate j []⟩ →
+      Runs downLoop σ (fun σ' => Rest (traj j N L).2.1 (traj j N L).2.2
+          (((traj j N L).1.map fun p => ones p.1).reverse ++ P) (List.replicate (traj j N L).1.length [] ++ C) σ' ∧
+          σ' tG = ⟨List.replicate j [] ++ Gl, []⟩) (trajCost j N L)
+  | 0, N, L, P, C, σ, Gl, hR, _, _, _, hG => by
+    refine (Runs.loop_done (by simp [hG]) ⟨by simpa [traj] using hR, by simpa using hG⟩).mono
+      (fun σ' h => h) (by simp [trajCost])
+  | j + 1, N, L, P, C, σ, Gl, hR, hk, he, hv, hG => by
+    have hfG := hR.2.2.2.2.2.2.2
+    have hJ : σ tJ = emp := hR.2.1 tJ (by decide)
+    by_cases hN : N < N0
+    · have s1 : Runs (a := 0) (.seq (.cond fG downLevel (rewind fG)) (skp tG tJ (by decide))) σ
+          (· = Function.update σ tG ⟨[] :: Gl, List.replicate j []⟩) 9 := by
+        have h0 : Nat.size N - 2047 = 0 := by
+          have := mt (startsOne_test (N := N)).mp (by omega)
+          by_contra hc; exact this (startsOne_reg_ones (by omega))
+        refine (Runs.then (Runs.cond_false (by rw [hfG, startsOne_test]; omega) (runs_rewind fG σ))
+          (runs_skp (a := 0) (s := tG) (j := tJ) (by decide) _ (by tsimp [hG, List.replicate_succ])
+            (by tsimp [hJ, emp]))).mono (fun σ' h => ?_) ?_
+        · rw [h]; funext i; fin_cases i <;> tsimp [hfG, hG, h0, reg, ones, List.replicate_succ]
+        · tsimp [hfG, h0, reg, ones, hG, List.replicate_succ]
+      have hR₁ := hR.update_tG ⟨[] :: Gl, List.replicate j []⟩
+      have ih := runs_downLoop j N L P C _ ([] :: Gl) hR₁ hk he hv (by tsimp)
+      rw [traj_small hN] at ih ⊢
+      refine (Runs.loop_step (by simp [hG]) (s1.mono (fun σ' h' => by rw [h']; exact ih) le_rfl)).mono
+        (fun σ' h => ?_) ?_
+      · refine ⟨h.1, ?_⟩; rw [h.2, replicate_append_cons, List.replicate_succ]; rfl
+      · simp [trajCost, hN]
+    · rw [not_lt] at hN
+      have hd := dvd_chain hN
+      set NB := nextBatch (nextN N) (kOf N) (pieceOf N) L
+      have hl : ∀ x, (tpieces (nextN N) (kOf N) (pieceOf N) x).length = 2 ^ kOf N := fun x => by
+        rw [tpieces, fwdIter_length _ _ _ _ _ rfl (by simp [length_pieces]), length_pieces]
+      have s0 := runs_downLevel hN hk σ hR he hv
+      set σ₁ := Function.update (Function.update (Function.update (Function.update
+        (Function.update (Function.update (Function.update (Function.update σ
+          cN (reg (ones (nextN N)))) cW (reg (ones (nextN N + 1)))) cF (reg (fword (nextN N))))
+          pN (reg (ones (nextN N)))) tIn ⟨[], rwds (nextN N) NB⟩)
+          tP ⟨ones N :: P, []⟩) tCnt ⟨[] :: C, []⟩) fG (reg (ones (Nat.size (nextN N) - 2047)))
+      have hR₁ : Rest (nextN N) NB (ones N :: P) ([] :: C) σ₁ := hR.of_update
+      have s1 : Runs (a := 0) (.seq (.cond fG downLevel (rewind fG)) (skp tG tJ (by decide))) σ
+          (· = Function.update σ₁ tG ⟨[] :: Gl, List.replicate j []⟩) (downCost N L.length + 7) := by
+        refine (Runs.then (Runs.cond_true (by rw [hfG, startsOne_test]; exact hN) s0)
+          (runs_skp (a := 0) (s := tG) (j := tJ) (by decide) _ (by tsimp [σ₁, hG, List.replicate_succ])
+            (by tsimp [σ₁, hJ, emp]))).mono (fun σ' h => ?_) ?_
+        · rw [h]; funext i; fin_cases i <;> tsimp [σ₁, hG, List.replicate_succ]
+        · tsimp [σ₁, hG, List.replicate_succ]
+      have ih := runs_downLoop j (nextN N) NB (ones N :: P) ([] :: C) _ ([] :: Gl)
+        (hR₁.update_tG ⟨[] :: Gl, List.replicate j []⟩) hd.2.2
+        (nextBatch_even _ _ _ hl L) (nextBatch_lt hN hk L hv) (by tsimp)
+      have ht : traj (j + 1) N L = ((N, L) :: (traj j (nextN N) NB).1, (traj j (nextN N) NB).2.1,
+          (traj j (nextN N) NB).2.2) := by
+        simp [traj, show ¬ N < N0 by omega, NB]
+      rw [ht]
+      refine (Runs.loop_step (by simp [hG]) (s1.mono (fun σ' h' => by rw [h']; exact ih) le_rfl)).mono
+        (fun σ' h => ?_) ?_
+      · refine ⟨?_, ?_⟩
+        · have e1 : ((traj j (nextN N) NB).1.map fun p => ones p.1).reverse ++ ones N :: P =
+              (((N, L) :: (traj j (nextN N) NB).1).map fun p => ones p.1).reverse ++ P := by simp
+          have e2 : List.replicate (traj j (nextN N) NB).1.length [] ++ [] :: C =
+              List.replicate ((N, L) :: (traj j (nextN N) NB).1).length [] ++ C := by
+            simp [List.replicate_succ', List.append_assoc]
+          rw [← e1, ← e2]; exact h.1
+        · rw [h.2, replicate_append_cons, List.replicate_succ]; rfl
+      · simp [trajCost, show ¬ N < N0 by omega, NB]
 
 end IntegerMultBounds.Schoenhage

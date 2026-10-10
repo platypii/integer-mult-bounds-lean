@@ -5783,7 +5783,8 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   unit for the inner modulus and the ruler.
 
 - `Schoenhage/Driver.lean`: the level driver's resting state and one full
-  level of the down-sweep from rest to rest (`runs_downLevel`).
+  level of the down-sweep from rest to rest (`runs_downLevel`), and the whole
+  down-sweep over all levels along the size trajectory (`runs_downLoop`).
 
 ## Top-level
 
