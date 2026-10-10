@@ -4096,6 +4096,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStoppedCallFrame.lean`: Actual Call role/direction and Visit child slot specialize the placed stopped caller, deriving global row division, next-level rows, positivity and precision from original padding. Exact selected-role output, complementary frame, paid continuation arrival and native-volume bound are proved. Codec installation from controller entry and unstopped recursion remain open.
 
+- `Machine/BlankWordPairRecycleBank.lean`: Executes a fixed finite bank of physical equal-width source/output recyclers, restoring every head, replacing every source word, erasing all output words and preserving arbitrary caller tail. Exact cost is wire count times seven serialized lengths plus17, including empty words.
+
+- `Machine/RawLinearCombinationComplexArrayReusable.lean`: Complete fixed runtime-counted Gaussian polynomial execution physically computes all entries, rewinds every source/output, copies computed equal-width streams over originals and erases every generated stream, control, arithmetic and loop tape. Exact normalized whole-bank input/output retain the original count, and every transition is charged, including zero entries.
+
+- `Machine/CompactComplexScalarPolynomialReusable.lean`: Actual complex25 scalar polynomial rows now execute through exact reusable whole-bank endpoints: computed target and spectator streams replace their original arrays, all heads return to zero and every private tape is blank. The fixed row machine retains its genuine coefficient-count header and has uniform linear augmented coefficient-volume runtime. One common n+1 denominator follows from actual row semantics; live physical denominator integration remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
