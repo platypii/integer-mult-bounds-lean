@@ -4116,6 +4116,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeDenominatorTarget.lean`: Two fixed four-tape bodies physically copy retained input denominator and add original child volume once for a leaf or twice for a completed nonleaf network. Exact output words match the proved branch-specific semantic target policies, retain both originals and erase arithmetic work; no target word is supplied. Actual runtime branch selection and recursive placement remain open.
 
+- `Machine/CompactComplexStoppedCodecCaller.lean`: One fixed caller physically regenerates codec headers from immutable original descriptors, executes the genuine stopped child Call on its actual selected role, and erases codec headers back to initial13 metadata. The exact computed role word survives; controller, source65, all other roles, prior ledger/stacks and original suffix descriptors are preserved. Both private workspaces return blank, and all setup/child/cleanup/joins fit original native volume times child axes. Unstopped recursion and live precision propagation remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
