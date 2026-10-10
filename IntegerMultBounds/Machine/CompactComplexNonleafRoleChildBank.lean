@@ -529,7 +529,7 @@ theorem runs_from_split (selected : Fin c) (rho : Fin sh.chunk) (visit : Visit s
     (parent rho visit hactive pair).slots (parent rho visit hactive pair).right
     (parent rho visit hactive pair).source.val (parent rho visit hactive pair).target.val hd f v
 
-private theorem replace_storage (v : Tapes (tapes s c) 2)
+theorem replace_storage (v : Tapes (tapes s c) 2)
     (small : Tapes (43+CompactNativeRoleInstall.rawCount c) 2) (j : Fin (10+s)) :
     (Placement.replace CompactComplexNonleafRoleSplit.placement v small).head (storage j)=v.head (storage j) ∧
     (Placement.replace CompactComplexNonleafRoleSplit.placement v small).tape (storage j)=v.tape (storage j) := by
