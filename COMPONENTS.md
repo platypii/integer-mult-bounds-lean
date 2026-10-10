@@ -4388,6 +4388,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyOrientedControlsEntry.lean`: The actual entry block derives saved-call orientation from original dependency Paths, widths and grids, then executes the real stopping guard on the full bank. Exact markers, preserved scalar suffix and native-volume runtime are proved, including empty-root forward selection. Full reachable recursive execution remains open.
 
+- `Machine/CompactComplexSourceReadyNonleafFinalBank.lean`: Literal source-ready full-bank projection identities identify native headers, source and role streams after exact contraction while retaining controller frames. These support actual current-node merge composition.
+
+- `Machine/CompactComplexSourceReadyNonleafFinalPath.lean`: The actual node finalization block composes all-role exact contraction, metadata cleanup and live commit with same-row current-node merge. Its literal full-bank endpoint retains frames and leaf storage, clears work and has an original-path native-volume bound. Post-orientation and recursive closure remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
