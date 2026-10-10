@@ -4600,6 +4600,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyScalarGeometryEventPath.lean`: Actual scheduled scalar events execute directly on the original Stage and literal arrays, preserving the raw payload descriptor. The next physical caller, literal role sources, blank count, tighter prefix grid, live denominator and ledger derive from that execution. Generic corrected controls and classifiers give the paid real node path without full-repair Inputs or execution callbacks; recursive schedule integration remains open.
 
+- `Machine/CompactComplexCorrectedChildGridSemantics.lean`: Corrected forward or inverse tensor action gives selected-child, shared-spectator and exact parent-prefix grids using actual original child addresses. Genuine dependency Paths derive promotion and retained-width guards. The tensor equality remains the explicit recursive induction obligation; no uncorrected network equality or execution callback is substituted.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
