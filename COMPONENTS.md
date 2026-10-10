@@ -5340,6 +5340,8 @@ Bit and complex networks.
 
 - `Networks/GaussianFrameInverseGrid.lean`: Derives bounded inverse Walsh label frames, inverse tensor-phase frames and rational label-frame decoding from actual finite sums.
 
+- `Networks/BinaryWalshComplexConjugation.lean`: Complex conjugation preserves the real binary characters, forward Walsh transform and explicit inverse Walsh transform, and negates actual phase diagonals and complete phase frames. It converts the literal translation-kernel list to the inverse-phase list in the same order, yielding an exact conjugate-forward-conjugate identity. This is a mathematical foundation for faithful inverse-oriented recursive execution; physical conjugation, original framed-network assembly and full recursion remain separate obligations.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
