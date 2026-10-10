@@ -4492,6 +4492,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedRoleRejoin.lean`: Arbitrary completed corrected role families directly feed actual all-role contraction, same-row merge and saved-call post-orientation. Their common whole array, widths, grids and literal codecs are derived internally by recombination. Exact contraction uses genuine coarser target-grid membership and original Path/live-derived capacity; literal recombined output, full controller/frame/leaf/scalar retention and paid parent native-volume bounds are proved.
 
+- `Machine/NativeEndpointCharacterNamedRoles.lean`: Actual complete source X and sink Y character families derive original raw headers and every role word from the canonical caller. Static original terminal weights determine literal selected-role output; all other words/heads and the complete original frame are retained, with summed parent-volume cost.
+
+- `Machine/NativeEndpointCharacterNamedBank.lean`: Actual character-family output is the literal canonical corrected named bank. Exact native coefficient arrays and full caller replacement are derived internally, retaining master, original headers, controller, storage and arbitrary suffix.
+
+- `Machine/NativeEndpointSourceReadyPlacement.lean`: Shared fixed executable placement borrows only first sixty-seven existing leaf tapes on the original source-ready bank. Recursive frame9, remaining leaf, work10 and arbitrary scalar suffix are retained without enlarging the machine.
+
+- `Machine/NativeEndpointCharacterSourceReady.lean`: Complete source/sink sign family executes on the actual recursive source-ready bank with original raw-header and role-word readiness derived internally. Literal changed named payload, blank borrowed leaf storage, exact retained frame/leaf/suffix and fixed parent-volume cost are proved. It still requires the matching early/late order; canonical private order normalization remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
