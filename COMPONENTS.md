@@ -4524,6 +4524,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeEndpointCharacterPath.lean`: Actual dependency Path derives signed character decoding and exact preserved grids and widths, using the genuine native rank. No numerical safety or compatible coordinate oracle is supplied.
 
+- `Machine/CompactComplexNormalizedSpectatorHandoff.lean`: Unchanged physical spectator handoff accepts the genuine returned gap, derives generated volume and shared-live commit, and excludes the selected completed child from promotion.
+
+- `Machine/CompactComplexNormalizedSpectatorTargetRestore.lean`: Actual saved-target restoration composes with genuine-gap spectator promotion while retaining parent geometry, selected result and all controller frames.
+
+- `Machine/CompactComplexSourceReadyNormalizedChildReturnPath.lean`: Decoded scalar-inclusive physical child return supports arbitrary genuine returned gap with exact parent bank and continuation PC, preserving the existing nonleaf API.
+
+- `Machine/CompactComplexSourceReadyFullNormalizedChildPaths.lean`: Actual stopped return uses the leaf increase arity^(k+1), retaining full scalar scratch and saved parent target. Exact physical Path and runtime are proved; reached-bank semantic reconstruction remains a recursive induction obligation.
+
+- `Machine/CompactComplexSourceReadyStoppedReturnPrefix.lean`: Original stopped leaf result equality derives completed scalar-prefix grid and ledger at its genuine leaf denominator. Actual installed-result equality remains to be derived from reached stopped execution and orientation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
