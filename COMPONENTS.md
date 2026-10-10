@@ -4192,6 +4192,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexRootPieceVolume.lean`: The complete root setup, queue processing, numeric enumeration and cleanup overhead is linear in original address/native/serialized volume. A fixed cubic envelope is absorbed by the original bit count from chunk at least three, eventually derived from Sizes.K. The actual fixed root program has exact clean controller/queue endpoints and linear overhead plus the true recursive callback sum; recursive callback execution and its cost sum remain separate.
 
+- `Machine/CompactComplexExactReturnFamily.lean`: A fixed role-list contraction physically synthesizes each true current-minus-target gap from retained denominator ports, rewrites only the listed signed streams and restores every private tape. Exact literal endpoints preserve all controller headers and complementary roles; complete runtime is list length times a uniform stream-volume/current-header allowance. Coarser Gaussian-grid membership proves the emitted field divisions preserve exact complex values and widths. Actual nonleaf completion, its certified coarser grid, original-bank placement and live commit remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
