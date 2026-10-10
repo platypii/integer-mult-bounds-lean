@@ -298,6 +298,37 @@ theorem realizes (header : Fin (10+s)) (hh : header.val≠7)
       CompactComplexScalarRowBlock.wireCount CompactComplexScalarPolynomialSequence.scratch))
     (lifecycle (s:=s) header hh ops) (lifecycle_size (s:=s)) v w h
 
+private def roleLifecycle (header : Fin (10+s)) (hh : header.val≠7)
+    (ops : List CompactComplexScalarIntegerRows.RowIndex) :
+    Σ q,Program ((publicTapes (10+s)+43)+RawLinearCombinationComplexDenominatorPlaced.localCount
+      CompactComplexScalarRowBlock.wireCount CompactComplexScalarPolynomialSequence.scratch) q 2 :=
+  CompactComplexScalarCountLifecycle.roleProgram (s:=10+s) (by omega) header hh ops
+
+/-- The actual original-header setup, named scalar block, and count erasure
+on the fixed source-ready bank, with one private suffix independent of depth. -/
+def roleProgram (header : Fin (10+s)) (hh : header.val≠7)
+    (ops : List CompactComplexScalarIntegerRows.RowIndex) :
+    Σ q,Program (tapes s roles) q 2 :=
+  relocate (s:=s) (c:=roles) (k:=((publicTapes (10+s)+43)+RawLinearCombinationComplexDenominatorPlaced.localCount
+      CompactComplexScalarRowBlock.wireCount CompactComplexScalarPolynomialSequence.scratch))
+    (roleLifecycle (s:=s) header hh ops) (lifecycle_size (s:=s))
+
+/-- Preserve the original group-step endpoint and its sharper proved budget
+when relocating the actual scalar lifecycle onto the shared bank. -/
+theorem role_realizes (header : Fin (10+s)) (hh : header.val≠7)
+    (ops : List CompactComplexScalarIntegerRows.RowIndex)
+    (v : Tapes (nodeTapes s roles) 2) (w : Tapes (permanentTapes s roles) 2)
+    (h : CompactComplexScalarCountLifecycle.Realizes
+      (CompactComplexScalarCountLifecycle.roleProgram (s:=10+s) (by omega) header hh ops)
+      (permanent v) w B) :
+    HoareTime (roleProgram (s:=s) header hh ops).2
+      (fun z => z=ready v) (fun z => z=ready (output v w)) B :=
+  relocate_runs (s:=s) (c:=roles)
+    (k:=((publicTapes (10+s)+43)+RawLinearCombinationComplexDenominatorPlaced.localCount
+      CompactComplexScalarRowBlock.wireCount CompactComplexScalarPolynomialSequence.scratch))
+    (roleLifecycle (s:=s) header hh ops) (lifecycle_size (s:=s)) v w h
+
+
 /-- The public next caller is literal scalar output; the complete middle bank
 is retained and every newly borrowed scalar tape returns blank. -/
 theorem runs {sh : CompactGadgetReservationShape.Shape}

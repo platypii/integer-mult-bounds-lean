@@ -13,6 +13,7 @@ open ButterflyStreamData (Coefficient)
 variable {s : ℕ}
 attribute [local irreducible] Networks.ComplexRank25.program CompactComplexScalarIntegerRows.gates
   CompactComplexScalarRolePorts.program CompactComplexScalarCountRootBank.program
+  CompactComplexScalarCountRootBank.roleProgram
 
 
 private def assemble {k x y q r t : ℕ} (setup : Program (k+x) q 2)
@@ -313,6 +314,157 @@ theorem runs_linear {sh : CompactGadgetReservationShape.Shape}
     rw [←CompactComplexScalarCountHeaders.native_count inp ell]
     exact (CompactComplexScalarCountBudget.count_bounds sh inp.rows ell inp.hr).1
   exact realizes_mono _ _ _ h (cost_linear ops _ w d hn hd)
+
+
+/-- Fixed exact divisor kept opaque to avoid evaluating the original linear
+binary-word constructor at the astronomical layout cardinality in the kernel. -/
+noncomputable def roleDivisor : ℕ := Classical.choose
+  (show ∃ n : ℕ,n=CompactComplexRolePhaseSite.roleCount from ⟨_,rfl⟩)
+
+theorem roleDivisor_eq : roleDivisor=CompactComplexRolePhaseSite.roleCount :=
+  Classical.choose_spec (show ∃ n : ℕ,n=CompactComplexRolePhaseSite.roleCount from ⟨_,rfl⟩)
+
+private def roleSetupProgram (header : Fin s) : Σ q,Program (publicTapes s+43) q 2 :=
+  ⟨_,CompactComplexScalarCountRootBank.roleProgram (c:=CompactComplexRolePhaseSite.roleCount) roleDivisor header⟩
+
+/-- Actual scalar lifecycle with parent raw rows retained and the role count
+computed privately from those rows by fixed finite-control quotient arithmetic. -/
+def roleProgram (hs : 7<s) (header : Fin s) (hh : header.val≠7) (ops : List RowIndex) :=
+  assembled (k:=publicTapes s) (x:=43)
+    (y:=RawLinearCombinationComplexDenominatorPlaced.localCount CompactComplexScalarRowBlock.wireCount
+      CompactComplexScalarPolynomialSequence.scratch) (roleSetupProgram header)
+    (scalarProgram hs header hh ops) (eraseProgram header)
+
+def roleCost (ops : List RowIndex) (parentCount n w d : ℕ) :=
+  CompactComplexScalarCountBudget.roleConstant roleDivisor*parentCount+
+    8*n+CompactComplexScalarDenominatorSequence.cost ops n w d+2
+
+def roleTimeConstant (ops : List RowIndex) :=
+  CompactComplexScalarCountBudget.roleConstant roleDivisor+10+
+    2*ops.length*(CompactComplexScalarPolynomialReusable.timeConstant+2*ops.length+6)
+
+theorem role_cost_linear (ops : List RowIndex) (parentCount n w d : ℕ)
+    (hn : 1≤parentCount) (hcount : n≤parentCount) (hd : d≤w) :
+    roleCost ops parentCount n w d≤roleTimeConstant ops*parentCount*(w+1) := by
+  have h := CompactComplexScalarDenominatorSequence.cost_linear ops n w d ops.length hd (le_refl _)
+  have hgrow := Nat.mul_le_mul_right (w+1)
+    (Nat.mul_le_mul_left (CompactComplexScalarPolynomialReusable.timeConstant+2*ops.length+6)
+      (Nat.add_le_add_right hcount 1))
+  have hseq := h.trans (Nat.mul_le_mul_left ops.length hgrow)
+  have ha := linear_allowance
+    (CompactComplexScalarCountBudget.roleConstant roleDivisor)
+    CompactComplexScalarPolynomialReusable.timeConstant ops.length parentCount w hn
+  have hsum : roleCost ops parentCount n w d ≤
+      (CompactComplexScalarCountBudget.roleConstant roleDivisor+8)*parentCount+
+        ops.length*((CompactComplexScalarPolynomialReusable.timeConstant+2*ops.length+6)*
+          (parentCount+1)*(w+1))+2 := by
+    unfold roleCost
+    nlinarith [Nat.mul_le_mul_left 8 hcount]
+  exact hsum.trans ha
+
+theorem role_runs {sh : CompactGadgetReservationShape.Shape}
+    (inp : ActivePrefixStageFullData.Inputs sh) (parentRows : ℕ)
+    (hrows : inp.rows=parentRows/CompactComplexRolePhaseSite.roleCount) (hs : 7<s) (header : Fin s) (hh : header.val≠7)
+    (ops : List RowIndex) (ell p w d : ℕ)
+    (control : Tapes 43 2) (queue : Tapes 1 2) (scalar : ActiveRepairRankHeadersCommands.State)
+    (tail : Tapes 22 2) (storage : Tapes s 2)
+    (payload : Tapes (1+CompactComplexRolePhaseSite.roleCount) 2)
+    (xs : Fin CompactComplexScalarRowBlock.wireCount →
+      Fin (ActivePrefixStageTripleWords.count inp) → Fin (2^ell) → Coefficient)
+    (hw : ∀ a i j,(xs a i j).1.length=w ∧ (xs a i j).2.length=w)
+    (hblank : storage.head header=0 ∧ storage.tape header=(fun _ => blank))
+    (hsource : ∀ a,
+      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell p) tail storage payload).head
+        (CompactComplexNativeRoleBridge.roleSlot (CompactComplexScalarRolePorts.roleIndex a))=0 ∧
+      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell p) tail storage payload).tape
+        (CompactComplexNativeRoleBridge.roleSlot (CompactComplexScalarRolePorts.roleIndex a))=
+          SymbolTripleClean.word (List.ofFn (ActivePrefixStageNativeRows.flat
+            (ActivePrefixStageNativePolynomial.rows inp (xs a) (hw a)))))
+    (hlive : storage.head ⟨7,hs⟩=1 ∧ storage.tape ⟨7,hs⟩=
+      RadixZeroFill.encodedBinary (RecursiveChildQuotientsConstant.bits d)) :
+    let v := bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell p) tail storage payload
+    let data := fun a => ActivePrefixStageNativePolynomial.flattenArray (xs a)
+    Realizes (roleProgram hs header hh ops) v (output hs header v
+        (CompactComplexScalarPolynomialSequence.execute ops data) (d+ops.length))
+      (roleCost ops (parentRows*2^sh.bits*2^ell) (ActivePrefixStageTripleWords.count inp*2^ell) w d) := by
+  dsimp only
+  let v := bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell p) tail storage payload
+  let data := fun a => ActivePrefixStageNativePolynomial.flattenArray (xs a)
+  let n := ActivePrefixStageTripleWords.count inp*2^ell
+  have hN : inp.rows*2^sh.bits*2^ell=n := CompactComplexScalarCountHeaders.native_count inp ell
+  have hK : 0<sh.chunk := by have := inp.hGK; omega
+  have hA : 0<sh.axes := ActivePrefixStageParameters.positive_axes inp.stage
+  have hparent : 0<parentRows := by
+    have hh := inp.hr
+    rw [hrows] at hh
+    exact lt_of_lt_of_le hh (Nat.div_le_self _ _)
+  have h0 := CompactComplexScalarCountRootBank.role_runs roleDivisor header control queue scalar inp.stage parentRows ell p
+    tail storage payload (by rw [roleDivisor_eq]; norm_num [CompactComplexRolePhaseSite.roleCount]) hparent
+    (by have := inp.hG; omega) hA hK hblank.1 hblank.2
+  have hquot : parentRows/roleDivisor=inp.rows := by rw [roleDivisor_eq,←hrows]
+  rw [hquot,hN] at h0
+  have hbanklive : v.head (countSlot (c:=CompactComplexRolePhaseSite.roleCount) ⟨7,hs⟩)=1 ∧
+      v.tape (countSlot (c:=CompactComplexRolePhaseSite.roleCount) ⟨7,hs⟩)=
+        RadixZeroFill.encodedBinary (RecursiveChildQuotientsConstant.bits d) := by
+    have he := CompactComplexScalarCountRootBank.count_bank ⟨7,hs⟩ control queue scalar
+      (CompactComplexNativeCodec.raw inp.stage parentRows ell p) tail storage payload
+    exact ⟨he.1.trans hlive.1,he.2.trans hlive.2⟩
+  have hr := CompactComplexScalarCountRootBank.scalar_ready inp hs header hh v xs hw d hsource hbanklive
+  rw [hN] at hr
+  have h1 := CompactComplexScalarRolePorts.runs (liveProof hs) (storedHeader header)
+    (header_ne_live header hh) ops (counted header v n) data w d (flat_width xs hw) hr
+  have he := endpoint_count hs header hh (counted header v n)
+    (CompactComplexScalarPolynomialSequence.execute ops data) (d+ops.length)
+  have hn : 1≤n := by
+    rw [←hN]
+    exact (CompactComplexScalarCountBudget.count_bounds sh inp.rows ell inp.hr).1
+  have h2 := CompactComplexScalarCountBudget.erase_runs_linear (countSlot header)
+    (scalarOutput hs header (counted header v n)
+      (CompactComplexScalarPolynomialSequence.execute ops data) (d+ops.length)) n hn he.2 he.1
+  have h := composed (k:=publicTapes s) (x:=43)
+    (y:=RawLinearCombinationComplexDenominatorPlaced.localCount CompactComplexScalarRowBlock.wireCount
+      CompactComplexScalarPolynomialSequence.scratch)
+    (roleSetupProgram header) (scalarProgram hs header hh ops) (eraseProgram header) v (counted header v n)
+    (scalarOutput hs header (counted header v n)
+      (CompactComplexScalarPolynomialSequence.execute ops data) (d+ops.length))
+    (output hs header v (CompactComplexScalarPolynomialSequence.execute ops data) (d+ops.length)) h0 h1 h2
+  exact h.consequence (fun _ h => h) (fun _ h => h) (by simp only [roleCost,n]; omega)
+
+theorem role_runs_linear {sh : CompactGadgetReservationShape.Shape}
+    (inp : ActivePrefixStageFullData.Inputs sh) (parentRows : ℕ)
+    (hrows : inp.rows=parentRows/CompactComplexRolePhaseSite.roleCount) (hs : 7<s) (header : Fin s) (hh : header.val≠7)
+    (ops : List RowIndex) (ell p w d : ℕ)
+    (control : Tapes 43 2) (queue : Tapes 1 2) (scalar : ActiveRepairRankHeadersCommands.State)
+    (tail : Tapes 22 2) (storage : Tapes s 2)
+    (payload : Tapes (1+CompactComplexRolePhaseSite.roleCount) 2)
+    (xs : Fin CompactComplexScalarRowBlock.wireCount →
+      Fin (ActivePrefixStageTripleWords.count inp) → Fin (2^ell) → Coefficient)
+    (hw : ∀ a i j,(xs a i j).1.length=w ∧ (xs a i j).2.length=w)
+    (hblank : storage.head header=0 ∧ storage.tape header=(fun _ => blank))
+    (hsource : ∀ a,
+      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell p) tail storage payload).head
+        (CompactComplexNativeRoleBridge.roleSlot (CompactComplexScalarRolePorts.roleIndex a))=0 ∧
+      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell p) tail storage payload).tape
+        (CompactComplexNativeRoleBridge.roleSlot (CompactComplexScalarRolePorts.roleIndex a))=
+          SymbolTripleClean.word (List.ofFn (ActivePrefixStageNativeRows.flat
+            (ActivePrefixStageNativePolynomial.rows inp (xs a) (hw a)))))
+    (hlive : storage.head ⟨7,hs⟩=1 ∧ storage.tape ⟨7,hs⟩=
+      RadixZeroFill.encodedBinary (RecursiveChildQuotientsConstant.bits d)) (hd : d≤w) :
+    let v := bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell p) tail storage payload
+    let data := fun a => ActivePrefixStageNativePolynomial.flattenArray (xs a)
+    Realizes (roleProgram hs header hh ops) v (output hs header v
+        (CompactComplexScalarPolynomialSequence.execute ops data) (d+ops.length))
+      (roleTimeConstant ops*(parentRows*2^sh.bits*2^ell)*(w+1)) := by
+  have h := role_runs inp parentRows hrows hs header hh ops ell p w d control queue scalar tail storage payload xs hw hblank hsource hlive
+  have hparent : 0<parentRows := by
+    have hh := inp.hr
+    rw [hrows] at hh
+    exact lt_of_lt_of_le hh (Nat.div_le_self _ _)
+  have hn := (CompactComplexScalarCountBudget.count_bounds sh parentRows ell hparent).1
+  have hcount : ActivePrefixStageTripleWords.count inp*2^ell≤parentRows*2^sh.bits*2^ell := by
+    rw [←CompactComplexScalarCountHeaders.native_count inp ell,hrows]
+    exact Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (Nat.div_le_self _ _))
+  exact realizes_mono _ _ _ h (role_cost_linear ops _ _ w d hn hcount hd)
 
 end
 end IntegerMultBounds.Machine.CompactComplexScalarCountLifecycle

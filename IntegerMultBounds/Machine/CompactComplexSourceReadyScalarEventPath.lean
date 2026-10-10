@@ -30,22 +30,23 @@ private theorem liveProof : 7<10+s := by omega
 theorem group_step {sh : CompactGadgetReservationShape.Shape}
     {left k levels frames returned : ℕ}
     (path : CompactRecursiveDependencyBudget.Path sh.active left k levels frames returned)
-    (inp : ActivePrefixStageFullData.Inputs sh) (g : GroupIndex) (ell p C axes metadataP n : ℕ)
+    (inp : ActivePrefixStageFullData.Inputs sh) (parentRows : ℕ)
+    (hrows : inp.rows=parentRows/roles) (g : GroupIndex) (ell p C axes metadataP n : ℕ)
     (control : Tapes 43 2) (queue : Tapes 1 2) (scalar : ActiveRepairRankHeadersCommands.State)
     (tail : Tapes 22 2) (storage : Tapes (10+s) 2)
     (payload : Tapes (1+CompactComplexRolePhaseSite.roleCount) 2)
     (v : Tapes (nodeTapes s roles) 2)
     (hv : permanent v=bank control queue scalar
-      (CompactComplexNativeCodec.raw inp.stage inp.rows ell metadataP) tail storage payload)
+      (CompactComplexNativeCodec.raw inp.stage parentRows ell metadataP) tail storage payload)
     (xs : Fin CompactComplexScalarRowBlock.wireCount →
       Fin (ActivePrefixStageTripleWords.count inp) → Fin (2^ell) → Coefficient)
     (hw : ∀ a i j,(xs a i j).1.length=ButterflyGuard.halfWidth metadataP sh.bits+1 ∧
       (xs a i j).2.length=ButterflyGuard.halfWidth metadataP sh.bits+1)
     (hblank : storage.head Actual.countHeader=0 ∧ storage.tape Actual.countHeader=(fun _ => blank))
     (hsource : ∀ a,
-      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage inp.rows ell metadataP) tail storage payload).head
+      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell metadataP) tail storage payload).head
         (CompactComplexNativeRoleBridge.roleSlot (CompactComplexScalarRolePorts.roleIndex a))=0 ∧
-      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage inp.rows ell metadataP) tail storage payload).tape
+      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell metadataP) tail storage payload).tape
         (CompactComplexNativeRoleBridge.roleSlot (CompactComplexScalarRolePorts.roleIndex a))=
           SymbolTripleClean.word (List.ofFn (ActivePrefixStageNativeRows.flat
             (ActivePrefixStageNativePolynomial.rows inp (xs a) (hw a)))))
@@ -63,15 +64,15 @@ theorem group_step {sh : CompactGadgetReservationShape.Shape}
         (CompactRecursiveGridBudget.bound p C levels (frames+2*returned+axes)))
       (values (ButterflyGuard.halfWidth metadataP sh.bits) n
         (fun a => ActivePrefixStageNativePolynomial.flattenArray (xs a)) i wire)) :
-    let stage := CompactComplexNativeCodec.raw inp.stage inp.rows ell metadataP
+    let stage := CompactComplexNativeCodec.raw inp.stage parentRows ell metadataP
     let next := executed (block g) xs
     let nextStorage := storageOutput (liveProof (s:=s)) storage (n+(gates g).length)
     let nextPayload := nativePayload inp (block g) xs hw payload
     let nextCaller := bank control queue scalar stage tail nextStorage nextPayload
     HoareTime (Actual.scalar (s:=s) g).2
       (fun z => z=ready v) (fun z => z=ready (output v nextCaller))
-      (CompactComplexScalarCountLifecycle.timeConstant (block g)*
-        (ActivePrefixStageTripleWords.count inp*2^ell)*(ButterflyGuard.halfWidth metadataP sh.bits+2)) ∧
+      (CompactComplexScalarCountLifecycle.roleTimeConstant (block g)*
+        (parentRows*2^sh.bits*2^ell)*(ButterflyGuard.halfWidth metadataP sh.bits+2)) ∧
     (∀ a i j,(next a i j).1.length=ButterflyGuard.halfWidth metadataP sh.bits+1 ∧
       (next a i j).2.length=ButterflyGuard.halfWidth metadataP sh.bits+1) ∧
     (∀ i wire,BoundedGrid (n+(gates g).length)
@@ -83,14 +84,14 @@ theorem group_step {sh : CompactGadgetReservationShape.Shape}
     n+(gates g).length≤ledger scalarRows baseline levels frames returned
       (CompactFramedScalarGrid.rows (g.val+1)).length := by
   dsimp only
-  have h := CompactComplexScalarGroupProgress.group_step (s:=10+s) path inp
+  have h := CompactComplexScalarGroupProgress.role_group_step (s:=10+s) path inp parentRows hrows
     (liveProof (s:=s)) Actual.countHeader Actual.countHeader_ne_live g ell p C axes metadataP n
     control queue scalar tail storage payload xs hw hblank hsource hlive ha hp haxes hroom hC
     baseline hbase hdenRoom hledger hgrid
   dsimp only at h
   obtain ⟨hr,hw',hg',hl',hb'⟩ := h
   rw [←hv] at hr
-  have hr' := CompactComplexSourceReadyScalarWorkspace.realizes (s:=s)
+  have hr' := CompactComplexSourceReadyScalarWorkspace.role_realizes (s:=s)
     Actual.countHeader Actual.countHeader_ne_live (block g) v _ hr
   exact ⟨hr',hw',hg',hl',hb'⟩
 
@@ -111,13 +112,11 @@ theorem output_live (v : Tapes (nodeTapes s roles) 2)
 
 /-- The complete original serialized native record pays both coefficient
 arithmetic and the real cyclic jump. -/
-theorem coefficient_volume {sh : CompactGadgetReservationShape.Shape}
-    (inp : ActivePrefixStageFullData.Inputs sh) (ell metadataP : ℕ) :
-    (ActivePrefixStageTripleWords.count inp*2^ell)*(ButterflyGuard.halfWidth metadataP sh.bits+2)≤
-      inp.rows*(NativePolynomialStageShape.shape sh ell metadataP).recordWidth := by
+theorem coefficient_volume (sh : CompactGadgetReservationShape.Shape)
+    (parentRows ell metadataP : ℕ) :
+    (parentRows*2^sh.bits*2^ell)*(ButterflyGuard.halfWidth metadataP sh.bits+2)≤
+      parentRows*(NativePolynomialStageShape.shape sh ell metadataP).recordWidth := by
   rw [NativePolynomialStageShape.volume]
-  have hn := CompactComplexScalarCountHeaders.native_count inp ell
-  rw [←hn]
   unfold ActivePrefixStageNativePolynomial.symbols NativePolynomialStageShape.width ButterflyGuard.width
   ring_nf
   omega
@@ -128,22 +127,23 @@ private theorem paid_join (C A V : ℕ) (hA : A≤V) (hV : 1≤V) :
 theorem scalar_path {sh : CompactGadgetReservationShape.Shape}
     {left k levels frames returned : ℕ}
     (path : CompactRecursiveDependencyBudget.Path sh.active left k levels frames returned)
-    (inp : ActivePrefixStageFullData.Inputs sh) (g : GroupIndex) (ell p C axes metadataP n : ℕ)
+    (inp : ActivePrefixStageFullData.Inputs sh) (parentRows : ℕ)
+    (hrows : inp.rows=parentRows/roles) (g : GroupIndex) (ell p C axes metadataP n : ℕ)
     (control : Tapes 43 2) (queue : Tapes 1 2) (scalar : ActiveRepairRankHeadersCommands.State)
     (tail : Tapes 22 2) (storage : Tapes (10+s) 2)
     (payload : Tapes (1+CompactComplexRolePhaseSite.roleCount) 2)
     (v : Tapes (nodeTapes s roles) 2)
     (hv : permanent v=bank control queue scalar
-      (CompactComplexNativeCodec.raw inp.stage inp.rows ell metadataP) tail storage payload)
+      (CompactComplexNativeCodec.raw inp.stage parentRows ell metadataP) tail storage payload)
     (xs : Fin CompactComplexScalarRowBlock.wireCount →
       Fin (ActivePrefixStageTripleWords.count inp) → Fin (2^ell) → Coefficient)
     (hw : ∀ a i j,(xs a i j).1.length=ButterflyGuard.halfWidth metadataP sh.bits+1 ∧
       (xs a i j).2.length=ButterflyGuard.halfWidth metadataP sh.bits+1)
     (hblank : storage.head Actual.countHeader=0 ∧ storage.tape Actual.countHeader=(fun _ => blank))
     (hsource : ∀ a,
-      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage inp.rows ell metadataP) tail storage payload).head
+      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell metadataP) tail storage payload).head
         (CompactComplexNativeRoleBridge.roleSlot (CompactComplexScalarRolePorts.roleIndex a))=0 ∧
-      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage inp.rows ell metadataP) tail storage payload).tape
+      (bank control queue scalar (CompactComplexNativeCodec.raw inp.stage parentRows ell metadataP) tail storage payload).tape
         (CompactComplexNativeRoleBridge.roleSlot (CompactComplexScalarRolePorts.roleIndex a))=
           SymbolTripleClean.word (List.ofFn (ActivePrefixStageNativeRows.flat
             (ActivePrefixStageNativePolynomial.rows inp (xs a) (hw a)))))
@@ -167,18 +167,18 @@ theorem scalar_path {sh : CompactGadgetReservationShape.Shape}
     (i : Fin CompactComplexCompletedLiveLower.schedule.length)
     (hi : CompactComplexCompletedLiveLower.schedule.get i=
       CompactComplexCompletedLiveLower.Event.scalar g) :
-    let stage := CompactComplexNativeCodec.raw inp.stage inp.rows ell metadataP
+    let stage := CompactComplexNativeCodec.raw inp.stage parentRows ell metadataP
     let nextStorage := storageOutput (liveProof (s:=s)) storage (n+(gates g).length)
     let nextPayload := nativePayload inp (block g) xs hw payload
     let nextCaller := bank control queue scalar stage tail nextStorage nextPayload
-    ∃ m≤(CompactComplexScalarCountLifecycle.timeConstant (block g)+1)*
-        (inp.rows*(NativePolynomialStageShape.shape sh ell metadataP).recordWidth),
+    ∃ m≤(CompactComplexScalarCountLifecycle.roleTimeConstant (block g)+1)*
+        (parentRows*(NativePolynomialStageShape.shape sh ell metadataP).recordWidth),
       CompactComplexFixedNodePaths.nodePath (Nat.zero_lt_of_lt stack.isLt) stack
         (Actual.childReturn headerStack liveStack) ctrl (Actual.event headerStack pcStack liveStack) classify
         (CompactComplexScheduledPCLayout.eventPC i) (ready v) m
         (CompactComplexScheduledPCLayout.nextPC i) (ready (output v nextCaller)) := by
   dsimp only
-  have h := group_step path inp g ell p C axes metadataP n control queue scalar tail storage payload
+  have h := group_step path inp parentRows hrows g ell p C axes metadataP n control queue scalar tail storage payload
     v hv xs hw hblank hsource hlive ha hp haxes hroom hC baseline hbase hdenRoom hledger hgrid
   dsimp only at h
   have hr := h.1
@@ -188,19 +188,20 @@ theorem scalar_path {sh : CompactGadgetReservationShape.Shape}
   obtain ⟨m,hm,hpath⟩ := CompactComplexFixedNodePaths.scalar_path
     (Nat.zero_lt_of_lt stack.isLt) stack (Actual.childReturn headerStack liveStack) ctrl
     (Actual.event headerStack pcStack liveStack) classify i g hi _ _ _ hr
-  have hV : 1 ≤ inp.rows*(NativePolynomialStageShape.shape sh ell metadataP).recordWidth := by
-    have hcount : 1≤(ActivePrefixStageTripleWords.count inp*2^ell)*
-        (ButterflyGuard.halfWidth metadataP sh.bits+2) := by
-      have hn := CompactComplexScalarCountHeaders.native_count inp ell
-      have hpos : 0 < inp.rows*2^sh.bits*2^ell :=
-        Nat.mul_pos (Nat.mul_pos inp.hr (pow_pos (by decide) _)) (pow_pos (by decide) _)
-      rw [hn] at hpos
-      have hR : 1≤ActivePrefixStageTripleWords.count inp*2^ell := by omega
-      have hW : 1≤ButterflyGuard.halfWidth metadataP sh.bits+2 := by omega
-      exact Nat.mul_le_mul hR hW
-    exact hcount.trans (coefficient_volume inp ell metadataP)
-  have hb := paid_join (CompactComplexScalarCountLifecycle.timeConstant (block g)) _ _
-    (coefficient_volume inp ell metadataP) hV
+  have hparent : 0<parentRows := by
+    have hh := inp.hr
+    rw [hrows] at hh
+    exact lt_of_lt_of_le hh (Nat.div_le_self _ _)
+  have hcount : 1≤(parentRows*2^sh.bits*2^ell)*(ButterflyGuard.halfWidth metadataP sh.bits+2) := by
+    have hpos : 0<parentRows*2^sh.bits*2^ell :=
+      Nat.mul_pos (Nat.mul_pos hparent (pow_pos (by decide) _)) (pow_pos (by decide) _)
+    have hW : 1≤ButterflyGuard.halfWidth metadataP sh.bits+2 := by omega
+    have hC : 1≤parentRows*2^sh.bits*2^ell := by omega
+    exact Nat.mul_le_mul hC hW
+  have hV : 1≤parentRows*(NativePolynomialStageShape.shape sh ell metadataP).recordWidth :=
+    hcount.trans (coefficient_volume sh parentRows ell metadataP)
+  have hb := paid_join (CompactComplexScalarCountLifecycle.roleTimeConstant (block g)) _ _
+    (coefficient_volume sh parentRows ell metadataP) hV
   rw [←Nat.mul_assoc] at hb
   exact ⟨m,hm.trans hb,hpath⟩
 

@@ -206,5 +206,24 @@ theorem scalar_ready {sh : Shape} (inp : ActivePrefixStageFullData.Inputs sh)
     have hf := old_storage_frame header ⟨7,hs⟩ v (inp.rows*2^sh.bits*2^ell) hj
     exact ⟨hf.1.trans hlive.1,hf.2.trans hlive.2⟩
 
+
+/-- Retained raw rows are parent rows; the physically synthesized count uses
+its privately computed role quotient and leaves every original descriptor intact. -/
+def roleProgram (divisor : ℕ) (header : Fin s) :=
+  CompactComplexScalarCountPlaced.roleProgram divisor (common (c:=c) header) (common_injective header)
+
+theorem role_runs (divisor : ℕ) (header : Fin s) (control : Tapes 43 2) (queue : Tapes 1 2) (scalar : State)
+    {sh : Shape} (v : Stage sh) (rows ell p : ℕ) (tail : Tapes 22 2)
+    (storage : Tapes s 2) (payload : Tapes (1+c) 2)
+    (hc : 0<divisor) (hr : 0<rows) (hG : 0<sh.guard) (hA : 0<sh.axes) (hK : 0<sh.chunk)
+    (hh : storage.head header=0) (ht : storage.tape header=(fun _ => blank)) :
+    let caller := bank control queue scalar (CompactComplexNativeCodec.raw v rows ell p) tail storage payload
+    HoareTime (roleProgram (c:=c) divisor header) (fun z => z=CleanSubbank.bank (s:=43) caller)
+      (fun z => z=CleanSubbank.bank (s:=43) (output header caller ((rows/divisor)*2^sh.bits*2^ell)))
+      (CompactComplexScalarCountBudget.roleConstant divisor*(rows*2^sh.bits*2^ell)) := by
+  exact CompactComplexScalarCountBudget.role_placed_runs_linear divisor (common header) (common_injective header) _
+    sh rows ell p v.rho v.left v.f v.slots v.right v.source.val v.target.val hc hr hG hA hK
+    (input_payload header control queue scalar v rows ell p tail storage payload hh ht)
+
 end
 end IntegerMultBounds.Machine.CompactComplexScalarCountRootBank

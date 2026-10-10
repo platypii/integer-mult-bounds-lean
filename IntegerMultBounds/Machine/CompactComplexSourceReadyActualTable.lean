@@ -22,7 +22,7 @@ theorem countHeader_ne_live : (countHeader (s:=s)).val≠7 := by simp [countHead
 
 def scalar (g : CompactComplexScalarIntegerRows.GroupIndex) :
     Σ q,Program (tapes s roles) q 2 :=
-  CompactComplexSourceReadyScalarWorkspace.program countHeader countHeader_ne_live
+  CompactComplexSourceReadyScalarWorkspace.roleProgram countHeader countHeader_ne_live
     (CompactComplexScalarSegmentRows.block g)
 
 def child (headerStack pcStack liveStack : Fin s) (call : Call) :

@@ -1,6 +1,7 @@
 import IntegerMultBounds.Machine.CompactComplexScalarCountPlaced
 import IntegerMultBounds.Machine.CompactSpectatorLeafSetupBudget
 import IntegerMultBounds.Machine.NativePolynomialStageShape
+import IntegerMultBounds.Machine.CompactNativeRoleHeaderBudget
 
 /-! A uniform physical count-setup budget is paid by the genuine coefficient
 count and therefore by the original native stream volume. Untouched original
@@ -134,6 +135,64 @@ theorem lifecycle_cost (s : Shape) (rows ell p rho left count slots right source
   have hv := count_le_native_volume s rows ell p
   have hc := Nat.mul_le_mul_left (constant+8) hv
   nlinarith
+
+def roleConstant (c : ℕ) := constant+12000*(c+1)
+
+theorem role_rest_cost_eq (c : ℕ) (s : Shape) (rows ell p rho left count slots right source target : ℕ) :
+    scheduleCost (CompactComplexScalarCountHeaders.roleRest c)
+      (state 0 s rows ell p rho left count slots right source target)=
+    scheduleCost rest (state 0 s (rows/c) ell p rho left count slots right source target)+
+      BinaryDescriptorDivision.cost (RecursiveChildQuotientsConstant.bits rows)
+        (RecursiveChildQuotientsConstant.bits c)+3*(RecursiveChildQuotientsConstant.bits c).length+
+        100*c+100*(rows/c)+210 := by
+  simp [CompactComplexScalarCountHeaders.roleRest,rest,scheduleCost,cost,eval,
+    CompactChildHeadersArithmetic.cost,CompactChildHeadersArithmetic.eval,
+    ActivePrefixStageHeadersOps.cost,ActivePrefixStageHeadersOps.eval,
+    ActiveRepairRankHeadersCommands.cost,ActiveRepairRankHeadersCommands.eval,
+    ActiveRepairRankHeadersCommands.put,state,Function.update,RecursiveChildQuotientsConstant.cost]
+  ring
+
+theorem role_setup_cost (c : ℕ) (s : Shape) (rows ell p rho left count slots right source target : ℕ)
+    (hr : 0<rows) (hH : 0<s.H) (hK : 0<s.chunk) :
+    scheduleCost (CompactComplexScalarCountHeaders.roleSchedule c)
+      (raw s rows ell p rho left count slots right source target) ≤
+      roleConstant c*(rows*2^s.bits*2^ell) := by
+  have hold := setup_cost s rows ell p rho left count slots right source target hr hH hK
+  have hrest : scheduleCost rest (state 0 s (rows/c) ell p rho left count slots right source target) ≤
+      scheduleCost rest (state 0 s rows ell p rho left count slots right source target) := by
+    rw [rest_cost_eq,rest_cost_eq]
+    have hmul := Nat.mul_le_mul_right (2^s.bits*2^ell) (Nat.div_le_self rows c)
+    simp only [←Nat.mul_assoc] at hmul
+    omega
+  have hdiv := CompactNativeRoleHeaderBudget.quotient_linear rows c hr
+  have hb := ActiveRepairRankHeadersCommands.bits_length c
+  have hq := Nat.div_le_self rows c
+  have hc := Nat.le_mul_of_pos_right c hr
+  have hN := (count_bounds s rows ell hr).1
+  have hrows : rows ≤ rows*2^s.bits*2^ell := by
+    exact (Nat.le_mul_of_pos_right rows (pow_pos (by decide) s.bits)).trans
+      (Nat.le_mul_of_pos_right _ (pow_pos (by decide) ell))
+  rw [schedule,cost_append,CompactSpectatorLeafSetup.geometry_eval _ _ _ _ _ _ _ _ _ _ _ hH hK] at hold
+  rw [CompactComplexScalarCountHeaders.roleSchedule,cost_append,
+    CompactSpectatorLeafSetup.geometry_eval _ _ _ _ _ _ _ _ _ _ _ hH hK,role_rest_cost_eq]
+  have hpay := Nat.mul_le_mul_left (12000*(c+1)) hrows
+  unfold roleConstant
+  nlinarith
+
+theorem role_placed_runs_linear (c : ℕ) (common : Fin 16 → Fin k) (hc : Function.Injective common)
+    (v : Tapes k 2) (s : Shape) (rows ell p rho left count slots right source target : ℕ)
+    (hroles : 0<c) (hr : 0<rows) (hG : 0<s.guard) (hA : 0<s.axes) (hK : 0<s.chunk)
+    (hi : SharedBank.payload (ActiveRepairRankHeadersCommands.bank (a:=2)
+      (raw s rows ell p rho left count slots right source target)) CompactComplexScalarCountPlaced.ports=
+        SharedBank.payload v common) :
+    HoareTime (CompactComplexScalarCountPlaced.roleProgram c common hc)
+      (fun z => z=CleanSubbank.bank (s:=43) v)
+      (fun z => z=CleanSubbank.bank (s:=43)
+        (CompactComplexScalarCountPlaced.output common v ((rows/c)*2^s.bits*2^ell)))
+      (roleConstant c*(rows*2^s.bits*2^ell)) :=
+  (CompactComplexScalarCountPlaced.role_runs c common hc v s rows ell p rho left count slots right source target
+    hroles hG hA hK hi).consequence (fun _ h => h) (fun _ h => h)
+      (role_setup_cost c s rows ell p rho left count slots right source target hr (Nat.mul_pos hA hG) hK)
 
 end
 end IntegerMultBounds.Machine.CompactComplexScalarCountBudget
