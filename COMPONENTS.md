@@ -4602,6 +4602,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCorrectedChildGridSemantics.lean`: Corrected forward or inverse tensor action gives selected-child, shared-spectator and exact parent-prefix grids using actual original child addresses. Genuine dependency Paths derive promotion and retained-width guards. The tensor equality remains the explicit recursive induction obligation; no uncorrected network equality or execution callback is substituted.
 
+- `Machine/CompactComplexSourceReadyCorrectedRootStoppedTablePath.lean`: Actual positive and scalar stopped roots execute the forward leaf and empty-stack identity orientation inside the unchanged corrected table, reaching guard zero with every table join paid. The installed result retains the literal empty guard cell; full root input/classifier composition and recursive execution remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
