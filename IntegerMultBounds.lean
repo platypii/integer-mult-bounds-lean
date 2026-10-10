@@ -2304,3 +2304,4 @@ import IntegerMultBounds.Machine.RadixControlCleanupBank
 import IntegerMultBounds.Machine.RawLinearCombinationComplexCoefficient
 import IntegerMultBounds.Machine.RawLinearCombinationComplexArray
 import IntegerMultBounds.Machine.BlankWordPairRecycle
+import IntegerMultBounds.Machine.CompactComplexScalarPolynomialRows

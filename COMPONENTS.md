@@ -4086,6 +4086,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/BlankWordPairRecycle.lean`: Physically rewinds two genuine EOF words, copies an equal-width computed output over its original source, erases private output and restores both heads. Exact clean endpoints and seven-times-length-plus16 cost include empty words.
 
+- `Machine/CompactComplexScalarPolynomialRows.lean`: Specializes the fixed runtime-counted Gaussian array machine to every actual complex25 scalar row and all literal polynomial coefficients. Exact target and spectator semantics share one output denominator n+1 across the entire array; genuine count-header traversal, finite-wire arithmetic and cleanup have a uniform linear coefficient-volume bound, including zero entries. Physical copy-back and controller denominator propagation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
