@@ -4262,6 +4262,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleTransferBudget.lean`: Both actual entered-source splitting and arbitrary returned-array merging now have uniform parent-native-volume HoareTime bounds. Exact six-operation quotient and multiplication costs, both Original role transfer lifecycles and all joins are included. The next legal child role grouping supplies real positive row quotients/divisors. No prepared child bank or aggregate runtime oracle is supplied; recursive execution, geometry handoff and spectator alignment remain separate.
 
+- `Machine/CompactComplexNonleafRoleMergeReturn.lean`: On one unchanged Entry-plus-seven-scratch bank, the actual arbitrary child role arrays physically merge to source65, restore the literal raw parent row descriptor and then recover the computed result into the selected parent role. Exact original master/spectators, ancestor stack/head and arbitrary updated controller word/head are preserved, with scratch blank. Actual word widths derive returned-source support; a genuine descendant derives both divisibilities. All exact merge/return costs and the join are paid. This physical boundary does not yet assert common-grid live progress: spectator promotion, final live commit and recursive child semantics remain explicit.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
