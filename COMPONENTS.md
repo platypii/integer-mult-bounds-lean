@@ -3824,6 +3824,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleAssembly.lean`: Arbitrary computed native role arrays reassemble with the exact inverse cyclic row index map. A real destructive merge executes on these arbitrary descendant outputs; role decomposition and reassembly are mutually inverse.
 
+- `Machine/AllAxisPhaseFlagsEndpoint.lean`: Derives the real all-axis caller phase flags, exact retained core bank, control word and sparse descriptor projections, allowing literal coefficient arithmetic to consume its actual computed result.
+
+- `Machine/AllAxisPolynomialRecord.lean`: One fixed63-tape machine derives all slot/axis controls once, retains one computed tensor phase for a physically counted polynomial coefficient stream and erases controls, flags, generated descriptors and loop work. Exact per-record result and full transition cost are proved. Whole-array traversal, stream normalization and original caller placement remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

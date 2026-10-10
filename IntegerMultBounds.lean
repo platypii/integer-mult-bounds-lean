@@ -2148,3 +2148,5 @@ import IntegerMultBounds.Machine.CompactNativeRoleInstall
 import IntegerMultBounds.Machine.CompactNativeRoleOriginal
 import IntegerMultBounds.Machine.CompactNativeRoleReservedBridge
 import IntegerMultBounds.Machine.CompactNativeRoleAssembly
+import IntegerMultBounds.Machine.AllAxisPhaseFlagsEndpoint
+import IntegerMultBounds.Machine.AllAxisPolynomialRecord
