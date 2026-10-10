@@ -5,7 +5,7 @@ existing row and group descriptors drive nested counted loops, so neither a
 product descriptor nor a payload sentinel is needed. Every symbol survives. -/
 namespace IntegerMultBounds.Machine.CyclicRowRewind
 open CyclicRowCopy (payload bank)
-open CyclicRowCycle (states)
+open CyclicRowCycle (states states_succ castStates castStates_hoare)
 variable {a c : ℕ}
 
 def cell (j : Fin c) : Program (1+c) 2 a where
@@ -66,7 +66,8 @@ private def haltProgram (c a : ℕ) : Program ((1+c)+2) 1 a :=
 
 def initialStages (c a : ℕ) : (n : ℕ) → n ≤ c → Program ((1+c)+2) (states n) a
   | 0,_ => haltProgram c a
-  | n+1,hn => seq (initialStages c a n (by omega)) (stage ⟨n,by omega⟩)
+  | n+1,hn => castStates (states_succ n).symm
+      (seq (initialStages c a n (by omega)) (stage ⟨n,by omega⟩))
 
 def cycle (c a : ℕ) := initialStages c a c le_rfl
 
@@ -107,7 +108,8 @@ theorem initialStages_hoare (source : ℤ → Fin (a+4)) (roles : Fin c → ℤ 
   | zero => rintro v rfl; exact ⟨0,_,by omega,rfl,rfl,rfl⟩
   | succ n ih =>
     have hh := (ih (by omega)).seq (result_step ⟨n,by omega⟩ source roles p origins B bs hb)
-    exact hh.consequence (fun _ h => h) (fun _ h => h) (le_of_eq (by ring))
+    have hh' := castStates_hoare (states_succ n).symm _ hh
+    exact hh'.consequence (fun _ h => h) (fun _ h => h) (le_of_eq (by ring))
 
 theorem cycle_hoare (source : ℤ → Fin (a+4)) (roles : Fin c → ℤ → Fin (a+4))
     (p : ℤ) (origins : Fin c → ℤ) (B : ℕ) (bs : List Bool) (hb : Counter.value bs = B) :

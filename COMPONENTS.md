@@ -761,13 +761,13 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CyclicRowCopy.lean`: Arbitrary-alphabet row copy into one fixed role tape, with literal source/destination symbols, exact entire bank and reusable binary clock. No payload terminator assumptions; row count descriptor preserved.
 
-- `Machine/CyclicRowCycle.lean`: One fixed finite cycle distributes successive equal-length rows over every fixed role tape using a shared reusable descriptor/clock. Exact role contents and all heads, with every copy and join charged.
+- `Machine/CyclicRowCycle.lean`: One fixed finite cycle distributes successive equal-length rows over every fixed role tape using a shared reusable descriptor/clock. Exact role contents and all heads, with every copy and join charged. Closed state counts and proved state-index transport avoid unary kernel expansion at the actual fixed role count, retaining the execution contracts.
 
 - `Machine/CyclicRowSplit.lean`: Runtime-counted grouping repeatedly executes a fixed role cycle. Role j receives precisely its row from every group, including arbitrary payload symbols; complete bank and restored controls, fixed tapes/states independent of runtime dimensions and explicit 74-times-volume bound. Descriptor construction and positioning are separate.
 
 - `Machine/CyclicRowMergeCopy.lean`: One actual arbitrary-symbol row transfer from a selected role back to a common output, preserving all other roles and restoring binary loop controls.
 
-- `Machine/CyclicRowMergeCycle.lean`: Fixed role-by-role physical merge cycle with exact output concatenation, preserved input streams and summed count/copy/join runtime.
+- `Machine/CyclicRowMergeCycle.lean`: Fixed role-by-role physical merge cycle with exact output concatenation, preserved input streams and summed count/copy/join runtime. Closed state counts and proved state-index transport avoid unary kernel expansion at the actual fixed role count, retaining the execution contracts.
 
 - `Machine/CyclicRowMerge.lean`: Runtime-counted physical merge restores cyclic row order from all role streams. Exact complete bank and advanced heads, restored controls and 74-times-volume bound; row permutation wiring, descriptor synthesis and rewinds remain caller work.
 
@@ -797,7 +797,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/Shared50CleanSegments.lean`: Actual nonrecursive Shared50 field segments execute from sole canonical b/W and array, return the exact transformed canonical array and retained headers, and erase all private metadata/trackers with heads zero. Exact field-program semantics and linear-volume time; recursive heterogeneous execution remains separate.
 
-- `Machine/CyclicRowRewind.lean`: Actual counted rewind of common and role heads preserves every arbitrary symbol. A fixed role cycle reuses the existing row/group descriptors without constructing a product count, and restores exact original heads in linear-volume time.
+- `Machine/CyclicRowRewind.lean`: Actual counted rewind of common and role heads preserves every arbitrary symbol. A fixed role cycle reuses the existing row/group descriptors without constructing a product count, and restores exact original heads in linear-volume time. Closed state counts and proved state-index transport avoid unary kernel expansion at the actual fixed role count, retaining the execution contracts.
 
 - `Machine/CyclicRowNormalized.lean`: Actual cyclic split/merge followed by counted rewinds return every payload head to its original position, retain exact source and role words, and restore both binary controllers. Canonical positive dimensions give a 149-times-volume bound.
 

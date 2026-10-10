@@ -5,7 +5,7 @@ import IntegerMultBounds.Machine.CyclicRowCycle
 and append the rows in role order to the common output. -/
 namespace IntegerMultBounds.Machine.CyclicRowMergeCycle
 open CyclicRowCopy (bank)
-open CyclicRowCycle (states rowPrefix prefix_succ prefix_all)
+open CyclicRowCycle (states states_succ castStates castStates_hoare rowPrefix prefix_succ prefix_all)
 variable {a c : ℕ}
 
 private def haltProgram (c a : ℕ) : Program ((1+c)+2) 1 a :=
@@ -13,7 +13,8 @@ private def haltProgram (c a : ℕ) : Program ((1+c)+2) 1 a :=
 
 def initialStages (c a : ℕ) : (n : ℕ) → n ≤ c → Program ((1+c)+2) (states n) a
   | 0,_ => haltProgram c a
-  | n+1,hn => seq (initialStages c a n (by omega)) (CyclicRowMergeCopy.program ⟨n,by omega⟩)
+  | n+1,hn => castStates (states_succ n).symm
+      (seq (initialStages c a n (by omega)) (CyclicRowMergeCopy.program ⟨n,by omega⟩))
 
 def program (c a : ℕ) := initialStages c a c le_rfl
 
@@ -71,7 +72,8 @@ theorem initialStages_hoare (dest : ℤ → Fin (a+4))
   | succ n ih =>
     have hh := (ih (by omega)).seq
       (result_step dest sources p origins words bs ⟨n,by omega⟩ (hb ⟨n,by omega⟩))
-    apply hh.consequence (fun _ h => h) (fun _ h => h) _
+    have hh' := castStates_hoare (states_succ n).symm _ hh
+    apply hh'.consequence (fun _ h => h) (fun _ h => h) _
     rw [prefix_succ words ⟨n,by omega⟩,List.length_append]
     exact le_of_eq (by ring)
 

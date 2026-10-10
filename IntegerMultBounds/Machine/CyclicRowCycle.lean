@@ -36,16 +36,31 @@ theorem source_row (source : ℤ → Fin (a+4)) (p : ℤ)
   rw [he] at hh
   exact hh
 
-def states : ℕ → ℕ
-  | 0 => 1
-  | n+1 => states n+18
+/-- Closed arithmetic keeps the fixed role count out of kernel recursion. -/
+def states (n : ℕ) : ℕ := 1+18*n
+
+theorem states_zero : states 0 = 1 := rfl
+
+theorem states_succ (n : ℕ) : states (n+1) = states n+18 := by
+  unfold states
+  omega
+
+/-- State-index transport changes neither transitions nor tape behaviour. -/
+def castStates {t q r a : ℕ} (h : q=r) (M : Program t q a) : Program t r a := h ▸ M
+
+theorem castStates_hoare {t q r a : ℕ} (h : q=r) (M : Program t q a)
+    {pre post : TapePred t a} {b : ℕ} (hh : HoareTime M pre post b) :
+    HoareTime (castStates h M) pre post b := by
+  cases h
+  exact hh
 
 private def haltProgram (c a : ℕ) : Program ((1+c)+2) 1 a :=
   ⟨by omega,0,fun _ _ => none⟩
 
 def initialStages (c a : ℕ) : (n : ℕ) → n ≤ c → Program ((1+c)+2) (states n) a
   | 0,_ => haltProgram c a
-  | n+1,hn => seq (initialStages c a n (by omega)) (CyclicRowCopy.program ⟨n,by omega⟩)
+  | n+1,hn => castStates (states_succ n).symm
+      (seq (initialStages c a n (by omega)) (CyclicRowCopy.program ⟨n,by omega⟩))
 
 def program (c a : ℕ) := initialStages c a c le_rfl
 
@@ -107,7 +122,8 @@ theorem initialStages_hoare (source : ℤ → Fin (a+4))
   | succ n ih =>
     have hh := (ih (by omega)).seq
       (result_step source outputs p origins words bs ⟨n,by omega⟩ (hb ⟨n,by omega⟩))
-    apply hh.consequence (fun _ h => h) (fun _ h => h) _
+    have hh' := castStates_hoare (states_succ n).symm _ hh
+    apply hh'.consequence (fun _ h => h) (fun _ h => h) _
     rw [prefix_succ words ⟨n,by omega⟩,List.length_append]
     exact le_of_eq (by ring)
 
@@ -128,9 +144,6 @@ theorem cycle_hoare (source : ℤ → Fin (a+4))
   simpa only [program,rowPrefix,List.take_zero,List.flatten_nil,
     List.length_nil,Nat.cast_zero,add_zero,Nat.not_lt_zero,ite_false,Fin.isLt,ite_true] using hh
 
-theorem states_eq (c : ℕ) : states c = 1+18*c := by
-  induction c with
-  | zero => rfl
-  | succ c ih => simp only [states,ih]; omega
+theorem states_eq (c : ℕ) : states c = 1+18*c := rfl
 
 end IntegerMultBounds.Machine.CyclicRowCycle
