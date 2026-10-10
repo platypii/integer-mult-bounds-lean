@@ -2203,3 +2203,6 @@ import IntegerMultBounds.Machine.CompactNativeRoleTransferBudget
 import IntegerMultBounds.Schoenhage.Split
 import IntegerMultBounds.Schoenhage.Recomb
 import IntegerMultBounds.Schoenhage.LevelTape
+import IntegerMultBounds.Machine.AllAxisPhasePreparedBridge
+import IntegerMultBounds.Machine.AllAxisNativePolynomialData
+import IntegerMultBounds.Machine.AllAxisNativePolynomialCaller

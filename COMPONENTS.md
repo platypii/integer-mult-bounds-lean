@@ -3920,6 +3920,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleTransferBudget.lean`: Actual normalized native split/merge and all destructive resets fit252 times padded native volume and504 times original native volume under derived reservation geometry. Header synthesis/copying and full recursive summation remain separate.
 
+- `Machine/AllAxisPhasePreparedBridge.lean`: Identifies the physically produced original13/ell/computed-header phase bank with the actual stage-alphabet source-sharing input, deriving literal descriptor alphabet compatibility.
+
+- `Machine/AllAxisNativePolynomialData.lean`: Identifies aggregate phase output with literal native polynomial row serialization, derives unchanged coefficient widths, and proves physical source replacement yields the exact next native caller bank.
+
+- `Machine/AllAxisNativePolynomialCaller.lean`: One fixed original-input caller physically copies native original13 and retained ell, synthesizes metadata, dispatches the actual edge on the original native source, and erases every appended phase header/work tape. Positive edges return literal phase result rows; zero-dimensional edges retain the exact original caller. Complete runtime bounds include both metadata lifecycles and all dispatch/overwrite/cleanup transitions.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
