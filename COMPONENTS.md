@@ -4234,6 +4234,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexChildAlignmentBudget.lean`: Literal child-return cost expressions include second parent codec setup/cleanup, generated-header arbitrary-target spectator promotion and live commit, all-role child exact contraction, target-stack/PC/geometric restoration and explicit composition joins. Separate genuine parent/child Paths and true live ledgers derive capacity and uniform volume bounds; actual padded descendants cost at most twice original fallback volume. Every literal child occurrence is summed with its recursive callback kept separate. These are listed schedule-cost arithmetic bounds; genuine nonleaf source/denominator readiness, selected-child semantics and actual complete return sequencing remain open. Entry/target-save traffic is separately paid by NodeLocalBudget.
 
+- `Machine/CompactComplexScheduledPCLayout.lean`: Every original child site/coordinate call and scalar group occurs exactly once in the actual interleaved event schedule. Literal child call indices identify their unique saved-return successors; fixed extra event PCs are injective, proper successors reach the next event, and the final event reaches nonleaf return. These are exact original schedule/address facts, not an assumed whole-node execution. Constructing physical event blocks and recursive paths remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
