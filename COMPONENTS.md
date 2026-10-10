@@ -4546,6 +4546,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ProgramPairSequence.lean`: Sigma-packaged finite programs compose with their exact dependent state indices and one physical join transition. Generic paid-bound weakening preserves the same machine and tape predicates, avoiding re-elaboration of finite compiler definitions.
 
+- `Machine/GuardedFiniteReturnExtraPath.lean`: The genuine finite return guard and saved-PC pop have an exact nonhalting path with the only changed word on the saved stack and paid width-plus-five transitions. Fixed large-table specialization and recursion-derived saved-frame premises remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
