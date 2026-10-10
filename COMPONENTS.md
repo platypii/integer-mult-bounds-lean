@@ -4326,6 +4326,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyStoppedLeaf.lean`: The complete stopped source-ready block composes the actual directional source leaf with genuine target synthesis and live commit on one fixed leaf-plus-ten suffix. Its final endpoint is one literal public bank changing only the result source and live7 while clearing target8 and reclaiming the whole suffix. Exact directional normalized semantics and every physical runtime/join are proved; uniform runtime absorption and fixed recursive table assembly remain open.
 
+- `Machine/CompactComplexNonleafRoleParentPayloadContinuation.lean`: The real complete parent geometry/row/live continuation now feeds physical source-ready payload recovery directly. Literal restored parent raw headers, result source and vacant roles derive from actual output_active; actual parked payload stack and blank clock survive all preceding steps and derive return readiness without a separately prepared intermediate bank. One fixed sequenced program restores the parent master, spectators and selected result while retaining changed complementary controller data. Both complete runtimes and the join are uniformly paid in native volume. Original caller readiness and genuine child-result/stack invariants remain recursive induction premises; spectator sequencing and full recursive closure remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
