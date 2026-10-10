@@ -4196,6 +4196,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarNativeEndpoint.lean`: Literal scalar lifecycle outputs are exactly the genuine native polynomial-row streams required by subsequent physical events. The actual executed coefficient arrays are unflattened without moving or converting data, keep original row/polynomial dimensions and field widths, and flatten back to the exact computed scalar output. Count erasure preserves every rewritten role source. No fresh prepared source equality or serialization conversion is supplied; whole recursive event composition remains separate.
 
+- `Machine/CompactComplexControllerExactReturn.lean`: The genuine controller bank now physically generates its role-stream volume header, contracts all permanent role fields from retained live7/target8, erases generated metadata and commits target to live7 while erasing8. Literal output restores controller geometry, immutable scalar descriptor, all stacks and private workspace. Actual completed-network semantics derive the coarser return grid and exact decoded-value preservation at the real nonleaf target; physical completion correctness and its live-denominator lower bound remain recursive induction obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
