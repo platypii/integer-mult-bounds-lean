@@ -4578,6 +4578,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedStoppedTablePath.lean`: Actual stopped tag1 executes the directional leaf and installs its oriented result inside the corrected table, reaching guard zero with all physical execution and the table join paid. Its literal saved-PC bank is retained for the following pop; reached recursive readiness remains open.
 
+- `Machine/CompactComplexSourceReadyCorrectedClassifierTablePath.lean`: Actual root and saved-call child tag0 paths execute pre-orientation and the genuine stopping classifier inside the corrected table. The real stopped marker selects tag1 or tag2, arbitrary workspace is preserved and the original execution cost plus table join is charged; recursive reached invariants remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

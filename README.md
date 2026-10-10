@@ -20,7 +20,9 @@ chosen before quantifying over inputs.
 
 Section 5 remains open. Actual corrected source entry, sink corrections and
 contraction/rejoin now compose on canonical banks with paid linear-volume costs.
-The fixed corrected controller table and genuine saved-PC pop are checked.
+The fixed corrected controller table, actual corrected entry to the first event,
+and nonleaf finalization through the genuine saved-PC pop are checked.
+The actual stopping classifier and stopped-result branch also have checked table paths.
 Reached recursive bank/grid/stack invariants, child-return semantics, full
 recursive correctness and the total runtime recurrence still require integration.
 
