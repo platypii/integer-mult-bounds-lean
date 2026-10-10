@@ -3908,6 +3908,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPhaseOriginalMetadata.lean`: One fixed original-input setup composes original13/ell copying with computed stage metadata synthesis while framing the native coefficient source and workspace. Cleanup erases every computed and copied header and restores all appended phase tapes; both lifecycles fit804268 times original record volume.
 
+- `Machine/CompactComplexScalarGrid.lean`: Actual complex25 scalar cancellation prefixes preserve exact Gaussian grids with a fixed derived numerator growth constant; normalized and inherited input bounds are separate explicit cases.
+
+- `Machine/CompactPhaseGridInvariant.lean`: Actual aggregate emitted phases, role reindexing and zero padding preserve exact Gaussian grids and derive signed guards from the tracked numerator invariant.
+
+- `Machine/CompactRecursiveGridBudget.lean`: Derives signed width for scalar-level and butterfly-depth numerator growth and derives Visit remaining exponent from original active axes. Actual dependency counters across assembled recursive returns and normalized root-data connection remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -4881,6 +4887,12 @@ Bit and complex networks.
 - `Networks/ComplexPhaseRowSchedule.lean`: Every actual fixed complex25 edge internally supplies orientation, transported nondegeneracy, comparable labels and its zero-or-unit residual witness, generating its own ambient row-addition word; the original phase difference retains descending-edge sign and original edge order.
 
 - `Networks/ComplexRecursiveCallSchema.lean`: The actual complex update trace determines occurrence-indexed child calls with original wire roles, ordered residual slots and inverse flags, preserving repeated equal edge sites. Its exact child count equals the proved rank sum and its integer stop predicate matches the manuscript; physical child-header updates, role/return stack and stop-test execution remain separate.
+
+- `Networks/GaussianBoundedArithmetic.lean`: Derives exact bounded Gaussian addition, multiplication, precision raising and finite-list sums, including inherited numerator growth.
+
+- `Networks/GaussianBoundedMotif.lean`: Derives bounded Gaussian coefficients for literal scalar motifs and every prefix, with exact numerator recurrence.
+
+- `Networks/CircuitCoefficients.lean`: Propagates concrete coefficient certificates through dirty cancellation, inverse and global embeddings without supplied arithmetic coefficients.
 
 ### Networks/Certificates/Paired49
 
