@@ -4270,6 +4270,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafSpectatorHandoff.lean`: The actual arbitrary normalized child result remains untouched while raw parent geometry physically generates spectator volume, shifts every other role by twice child volume, erases generated headers, and only then commits target8 to live7 and clears8. Exact literal endpoints and a complete parent-native-volume runtime bound follow from genuine parent/child Paths and live ledgers, not a supplied length word or header allowance. Combining completed child network semantics with the actual shifts preserves the exact parent scalar prefix/dependency levels, spectator decoded values and advanced returned-volume upper ledger. Concrete address maps, recursive child execution equality and full fixed-machine assembly remain open.
 
+- `Machine/CompactComplexParentLiveStackBudget.lean`: Genuine parent/child dependency Paths and live ledgers derive both event-specific denominator header sizes, using the completed child target and actual native row volume. The real parent live push and child-target-copy/parent-live-pop machines have paid native-volume Hoare bounds, including their join; actual padded descendant rows give original fallback-volume bounds. No supplied aggregate runtime or header allowance is used. Child execution/normalization and complete promotion/return sequencing remain explicit.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
