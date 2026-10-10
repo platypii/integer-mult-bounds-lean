@@ -4076,6 +4076,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarPathGuard.lean`: Actual dependency Path, current-node scalar-prefix growth and pending axes derive the signed overflow guard of the complete scalar row machine on unchanged retained-role widths. Corrected original reservation metadata supplies the baseline, original chunk choices eventually supply fixed scalar room, and the actual row executes with exact inherited-denominator Gaussian semantics and paid uniform width cost. Physical precision propagation and complete stream assembly remain open.
 
+- `Machine/RadixComplexReadBank.lean`: Executes the real/imaginary field readers across every original wire source, physically installs marked controls, retains the other component bank and arbitrary tail, preserves all source symbols and advances exact field/delimiter heads.
+
+- `Machine/RadixControlCleanupBank.lean`: Physically erases the whole copied marked field-control bank while retaining arbitrary source/output tails, with exact blank controls, restored heads and paid finite-bank cost.
+
+- `Machine/RawLinearCombinationComplexCoefficient.lean`: Full fixed Gaussian coefficient kernel physically reads actual real/imaginary source records, executes all literal wire expressions, emits output records and erases both copied control banks. Original source symbols survive, all private arithmetic and controls return blank, and exact source/output record advances and every reader/arithmetic/cleanup/join cost are proved. Full counted polynomial traversal and stream replacement remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
