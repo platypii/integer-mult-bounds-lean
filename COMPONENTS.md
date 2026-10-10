@@ -3926,6 +3926,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisNativePolynomialCaller.lean`: One fixed original-input caller physically copies native original13 and retained ell, synthesizes metadata, dispatches the actual edge on the original native source, and erases every appended phase header/work tape. Positive edges return literal phase result rows; zero-dimensional edges retain the exact original caller. Complete runtime bounds include both metadata lifecycles and all dispatch/overwrite/cleanup transitions.
 
+- `Machine/CompactNativeRoleControllerBudget.lean`: Actual Stage geometry bounds every retained runtime controller word and pays all fifteen scalar producer header copies by300 times original native volume, without supplied metadata or execution allowances.
+
+- `Machine/CompactNativeRoleHeaderBudget.lean`: Bounds complete physical role geometry and precision-dependent header synthesis by a fixed role-count constant times padded native volume, including genuine binary quotient complexity.
+
+- `Machine/CompactNativeRoleOriginalBudget.lean`: Bounds the full original13 native split or merge caller, including geometry generation, installed descriptors/markers, destructive transfer/reset and both numeric cleanup layers, by a fixed role-count constant times padded native volume.
+
+- `Machine/CompactNativeRoleMetadataBudget.lean`: Actual Stage geometry pays final copied original13/ell/p erasure and the complete arbitrary descendant-result merge/metadata cleanup by native volume. Scalar generation absorption and full recursive summation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
