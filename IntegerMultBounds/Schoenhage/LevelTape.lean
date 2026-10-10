@@ -21,6 +21,9 @@ abbrev sT1 : Fin 𝕋 := 36
 abbrev sT2 : Fin 𝕋 := 37
 abbrev cM : Fin 𝕋 := 38
 abbrev cWA : Fin 𝕋 := 39
+abbrev tC2 : Fin 𝕋 := 40
+abbrev cH1 : Fin 𝕋 := 41
+abbrev cU : Fin 𝕋 := 42
 end Tp
 
 /-! ### Cutting into pieces -/
@@ -281,5 +284,282 @@ theorem runs_redOp {N : ℕ} (hN : 0 < N) (σ : Fin 𝕋 → WTape) (hr : AluRea
     rw [subRes, hv1, hv2, rwd, red, Fm]
   rw [e3]
   funext i; fin_cases i <;> tsimp [σ₁, hO, hX, hY, emp]
+
+/-! ### Descaling and the sign split -/
+
+/-- Load the next word of `tD` and divide it by `2^k` (shift `cT = N - k`, then negate). -/
+noncomputable def descaleOp : Cmd 0 𝕋 :=
+  .seq (regIn tD aX (by decide)) <| .seq mulPow2 <| .seq (regMove aO aY (by decide)) negMod
+
+theorem runs_descaleOp {N k w : ℕ} (hN : 0 < N) (hw : w < 2 ^ N + 1) (σ : Fin 𝕋 → WTape)
+    (hr : AluReady N σ) (hcT : σ cT = reg (ones (N - k))) {Dl Dr : List (List Bool)}
+    (hD : σ tD = ⟨Dl, rwd N w :: Dr⟩) :
+    Runs descaleOp σ (· = Function.update (Function.update σ tD ⟨rwd N w :: Dl, Dr⟩)
+        aO (reg (rwd N (descale N k w)))) (300 * N + 700) := by
+  obtain ⟨⟨hW, hF⟩, hcN, hc1, hX, hY, hAO, hS1, hS2, hS3, hbX, hbY⟩ := hr
+  unfold descaleOp
+  have s1 := runs_regIn (a := 0) (s := tD) (r := aX) (by decide) σ hD hX
+  set σ₁ := Function.update (Function.update σ tD ⟨rwd N w :: Dl, Dr⟩) aX (reg (rwd N w))
+  have s2 := runs_mulPow2 (N := N) (t := N - k) hN (Nat.sub_le N k) σ₁ ⟨by tsimp [σ₁, hW], by tsimp [σ₁, hF]⟩
+    (by tsimp [σ₁, hcN]) (by tsimp [σ₁, hc1]) (by tsimp [σ₁, hcT]) (v := rwd N w) (by tsimp [σ₁])
+    (rwd_length N w) (by rw [bval_rwd hw]; exact hw) (by tsimp [σ₁, hY]) (by tsimp [σ₁, hAO])
+    (by tsimp [σ₁, hS1]) (by tsimp [σ₁, hS2]) (by tsimp [σ₁, hS3])
+  set σ₂ := Function.update (Function.update σ₁ aX emp) aO (reg (mulRes N (N - k) (rwd N w)))
+  have s3 := runs_regMove (a := 0) (r := aO) (r' := aY) (by decide) σ₂ (w := mulRes N (N - k) (rwd N w))
+    (by tsimp [σ₂]) (by tsimp [σ₂, σ₁, hY])
+  set σ₃ := Function.update (Function.update σ₂ aO emp) aY (reg (mulRes N (N - k) (rwd N w)))
+  have hm : bval (mulRes N (N - k) (rwd N w)) = 2 ^ (N - k) * w % (2 ^ N + 1) := by
+    rw [mulRes_rwd _ _ _ hw, bval_rwd (mod_lt' _ _)]
+  have s4 := runs_negMod hN σ₃ ⟨by tsimp [σ₃, σ₂, σ₁, hW], by tsimp [σ₃, σ₂, σ₁, hF]⟩
+    (v := mulRes N (N - k) (rwd N w)) (by tsimp [σ₃]) (by simp) (by rw [hm]; exact mod_lt' _ _)
+    (by tsimp [σ₃, σ₂]) (by tsimp [σ₃]) (by tsimp [σ₃, σ₂, σ₁, hS1]) (by tsimp [σ₃, σ₂, σ₁, hS2])
+  refine (Runs.then s1 (Runs.then s2 (Runs.then s3 s4))).mono (fun σ' h => ?_) ?_
+  · rw [h, hm]
+    have e : (2 ^ N + 1 - 2 ^ (N - k) * w % (2 ^ N + 1)) % (2 ^ N + 1) = descale N k w := rfl
+    rw [e]
+    funext i; fin_cases i <;> tsimp [σ₃, σ₂, σ₁, hX, hY, hAO, emp]
+  · simp [rwd_length]; omega
+
+theorem subW_borrow (x y : List Bool) (h : y.length = x.length) :
+    (Rules.subW false x y).2 = decide (bval x < bval y) := by
+  have e := Rules.bval_subW false x y
+  rw [← h, Rules.fit_of_length, h] at e
+  have h1 := bval_lt (Rules.subW false x y).1
+  rw [Rules.length_subW] at h1
+  have h2 := bval_lt x
+  have h3 := bval_lt y
+  rw [h] at h3
+  have hP : ((2 ^ x.length : ℕ) : ℤ) = 2 ^ x.length := by push_cast; ring
+  cases hb : (Rules.subW false x y).2 <;> simp only [hb, Bool.toNat_false, Bool.toNat_true] at e <;>
+    simp only [decide_eq_true_eq, decide_eq_false_iff_not, not_lt,
+      eq_comm (a := false), eq_comm (a := true)] <;> push_cast at e <;> omega
+
+/-- Compare the descaled coefficient in `aO` with `2^(N-1) + 1`: the borrow word becomes current in `sT1`. -/
+noncomputable def signTest : Cmd 0 𝕋 :=
+  .seq (op1 Rules.sub false aO cH1 sT1 (by decide) (by decide) (by decide)) <| .seq (rewind aO) <|
+  .seq (rewind cH1) (back sT1)
+
+/-- The half constant `2^(N-1) + 1`. -/
+def hword (N : ℕ) : List Bool := bits (N + 1) (2 ^ (N - 1) + 1)
+
+theorem runs_signTest {N d : ℕ} (hN : 0 < N) (hd : d < 2 ^ N + 1) (σ : Fin 𝕋 → WTape)
+    (hO : σ aO = reg (rwd N d)) (hH : σ cH1 = reg (hword N)) (hT : σ sT1 = emp) :
+    ∃ diff : List Bool, diff.length = N + 1 ∧ Runs signTest σ (· = Function.update σ sT1 ⟨[diff], [[decide (2 * d < 2 ^ N + 1)]]⟩)
+      (6 * N + 40) := by
+  have hh : bval (hword N) = 2 ^ (N - 1) + 1 := by
+    rw [hword, bval_bits, Nat.mod_eq_of_lt]
+    have : 2 ^ N = 2 * 2 ^ (N - 1) := by rw [← pow_succ']; congr 1; omega
+    rw [pow_succ]; have := Nat.two_pow_pos (N - 1); omega
+  have hb : (Rules.subW false (rwd N d) (hword N)).2 = decide (2 * d < 2 ^ N + 1) := by
+    rw [subW_borrow _ _ (by simp [hword, rwd]), bval_rwd hd, hh]
+    have : 2 ^ N = 2 * 2 ^ (N - 1) := by rw [← pow_succ']; congr 1; omega
+    by_cases h : d < 2 ^ (N - 1) + 1
+    · simp [h]; omega
+    · simp [h]; omega
+  refine ⟨(Rules.subW false (rwd N d) (hword N)).1, by rw [Rules.length_subW, rwd_length], ?_⟩
+  apply Runs.of_wp
+  simp only [signTest, WP, wp_op1, wp_rewind, wp_back]
+  tsimp [hO, hH, hT, emp, reg, Rules.output_sub]
+  have t1 := time_le Rules.sub (rwd N d) (fun _ => hword N) (N + 1) (fun _ => by simp [hword])
+  refine ⟨?_, ?_⟩
+  · funext i; fin_cases i <;> tsimp [hO, hH, hT, emp, reg, hb]
+  · simp [rwd_length, hword] at t1 ⊢; omega
+
+/-- Nonnegative coefficient: to `tC`, a zero to `tC2`. -/
+noncomputable def posBr : Cmd 0 𝕋 :=
+  .seq (regOut aO tC (by decide)) <| .seq (op0 (Rules.fill false) false cW tC2 (by decide)) (rewind cW)
+
+/-- Negative coefficient: its negation to `tC2`, a zero to `tC`. -/
+noncomputable def negBr : Cmd 0 𝕋 :=
+  .seq (regMove aO aY (by decide)) <| .seq negMod <| .seq (regOut aO tC2 (by decide)) <|
+  .seq (op0 (Rules.fill false) false cW tC (by decide)) (rewind cW)
+
+/-- Route by the borrow word. -/
+noncomputable def route : Cmd 0 𝕋 := .cond sT1 posBr negBr
+
+theorem rwd_zero (N : ℕ) : rwd N 0 = List.replicate (N + 1) false := by
+  rw [rwd, Rules.bits_zero]
+
+theorem runs_route {N d : ℕ} (hN : 0 < N) (hd : d < 2 ^ N + 1) (σ : Fin 𝕋 → WTape)
+    (hr : AluReady N (Function.update σ aO emp))
+    {diff : List Bool} {C1 C2 : List (List Bool)}
+    (hT : σ sT1 = ⟨[diff], [[decide (2 * d < 2 ^ N + 1)]]⟩) (hO : σ aO = reg (rwd N d))
+    (hC : σ tC = ⟨C1, []⟩) (hC2 : σ tC2 = ⟨C2, []⟩) :
+    Runs route σ (· = Function.update (Function.update (Function.update σ aO emp)
+        tC ⟨rwd N (posPart N d) :: C1, []⟩) tC2 ⟨rwd N (negPart N d) :: C2, []⟩) (110 * N + 300) := by
+  obtain ⟨⟨hW, hF⟩, hcN, hc1, hX, hY, -, hS1, hS2, hS3, -, -⟩ := hr
+  tsimp at hW hF hcN hc1 hX hY hS1 hS2 hS3
+  unfold route
+  by_cases hs : 2 * d < 2 ^ N + 1
+  · refine Runs.cond_true (by rw [hT]; simp [startsOne_mk, hs]) ?_
+    apply Runs.of_wp
+    simp only [posBr, regOut, cpy, WP, wp_op0, wp_clear, wp_rewind]
+    tsimp [hO, hC, hC2, hW, emp, reg, Rules.output_copy, Rules.output_fill]
+    have t1 := time_le Rules.copy (rwd N d) (fun j => j.elim0) 0 (fun j => j.elim0)
+    have t2 := time_le (Rules.fill false) (ones (N + 1)) (fun j => j.elim0) 0 (fun j => j.elim0)
+    refine ⟨?_, ?_⟩
+    · have e1 : posPart N d = d := by simp [posPart, Fm, hs]
+      have e2 : negPart N d = 0 := by simp [negPart, Fm, hs]
+      funext i; fin_cases i <;> tsimp [hO, hC, hC2, hW, emp, reg, e1, e2, rwd_zero]
+    · simp [clen, WTape.words, rwd_length] at t1 t2 ⊢; omega
+  · refine Runs.cond_false (by rw [hT]; simp [startsOne_mk, hs]) ?_
+    unfold negBr
+    have s1 := runs_regMove (a := 0) (r := aO) (r' := aY) (by decide) σ (w := rwd N d) hO hY
+    set σ₁ := Function.update (Function.update σ aO emp) aY (reg (rwd N d))
+    have s2 := runs_negMod hN σ₁ ⟨by tsimp [σ₁, hW], by tsimp [σ₁, hF]⟩ (v := rwd N d) (by tsimp [σ₁])
+      (rwd_length N d) (by rw [bval_rwd hd]; exact hd) (by tsimp [σ₁, hX]) (by tsimp [σ₁])
+      (by tsimp [σ₁, hS1]) (by tsimp [σ₁, hS2])
+    set σ₂ := Function.update (Function.update σ₁ aY emp) aO
+      (reg (rwd N ((2 ^ N + 1 - bval (rwd N d)) % (2 ^ N + 1))))
+    have s3 : Runs (a := 0) (.seq (regOut aO tC2 (by decide)) <|
+        .seq (op0 (Rules.fill false) false cW tC (by decide)) (rewind cW)) σ₂
+        (· = Function.update (Function.update (Function.update σ aO emp)
+          tC ⟨rwd N (posPart N d) :: C1, []⟩) tC2 ⟨rwd N (negPart N d) :: C2, []⟩) (8 * N + 50) := by
+      have e1 : posPart N d = 0 := by simp [posPart, Fm, hs]
+      have e2 : negPart N d = (2 ^ N + 1 - bval (rwd N d)) % (2 ^ N + 1) := by
+        rw [bval_rwd hd, Nat.mod_eq_of_lt (show 2 ^ N + 1 - d < 2 ^ N + 1 by omega)]; simp [negPart, Fm, hs]
+      apply Runs.of_wp
+      simp only [regOut, cpy, WP, wp_op0, wp_clear, wp_rewind]
+      tsimp [σ₂, σ₁, hO, hC, hC2, hW, emp, reg, Rules.output_copy, Rules.output_fill]
+      have t1 := time_le Rules.copy (rwd N ((2 ^ N + 1 - bval (rwd N d)) % (2 ^ N + 1))) (fun j => j.elim0) 0
+        (fun j => j.elim0)
+      have t2 := time_le (Rules.fill false) (ones (N + 1)) (fun j => j.elim0) 0 (fun j => j.elim0)
+      refine ⟨?_, ?_⟩
+      · funext i; fin_cases i <;> tsimp [σ₂, σ₁, hO, hC, hC2, hW, hY, emp, reg, e1, e2, rwd_zero]
+      · simp [clen, WTape.words, rwd_length] at t1 t2 ⊢; omega
+    exact (Runs.then s1 (Runs.then s2 s3)).mono (fun σ' h => h) (by rw [rwd_length]; omega)
+
+/-- One coefficient of the up-sweep: descale, then route by sign. -/
+noncomputable def coefStep : Cmd 0 𝕋 := .seq descaleOp <| .seq signTest <| .seq route (clear sT1)
+
+theorem runs_coefStep {N k w : ℕ} (hN : 0 < N) (hw : w < 2 ^ N + 1) (σ : Fin 𝕋 → WTape)
+    (hr : AluReady N σ) (hcT : σ cT = reg (ones (N - k))) (hH : σ cH1 = reg (hword N))
+    (hT : σ sT1 = emp) {Dl Dr C1 C2 : List (List Bool)}
+    (hD : σ tD = ⟨Dl, rwd N w :: Dr⟩) (hC : σ tC = ⟨C1, []⟩) (hC2 : σ tC2 = ⟨C2, []⟩) :
+    Runs coefStep σ (· = Function.update (Function.update (Function.update σ
+        tD ⟨rwd N w :: Dl, Dr⟩) tC ⟨rwd N (posPart N (descale N k w)) :: C1, []⟩)
+        tC2 ⟨rwd N (negPart N (descale N k w)) :: C2, []⟩) (500 * N + 1200) := by
+  unfold coefStep
+  have s1 := runs_descaleOp hN hw σ hr hcT hD
+  set σ₁ := Function.update (Function.update σ tD ⟨rwd N w :: Dl, Dr⟩) aO (reg (rwd N (descale N k w)))
+  have hd := descale_lt N k w
+  obtain ⟨diff, hdl, s2⟩ := runs_signTest hN hd σ₁ (by tsimp [σ₁]) (by tsimp [σ₁, hH]) (by tsimp [σ₁, hT])
+  set σ₂ := Function.update σ₁ sT1 ⟨[diff], [[decide (2 * descale N k w < 2 ^ N + 1)]]⟩
+  have hr₂ : AluReady N (Function.update σ₂ aO emp) := by
+    obtain ⟨⟨hW, hF⟩, hcN, hc1, hX, hY, hAO, hS1, hS2, hS3, hbX, hbY⟩ := hr
+    exact ⟨⟨by tsimp [σ₂, σ₁, hW], by tsimp [σ₂, σ₁, hF]⟩, by tsimp [σ₂, σ₁, hcN], by tsimp [σ₂, σ₁, hc1],
+      by tsimp [σ₂, σ₁, hX], by tsimp [σ₂, σ₁, hY], by tsimp [σ₂, σ₁], by tsimp [σ₂, σ₁, hS1],
+      by tsimp [σ₂, σ₁, hS2], by tsimp [σ₂, σ₁, hS3], by tsimp [σ₂, σ₁, hbX], by tsimp [σ₂, σ₁, hbY]⟩
+  have s3 := runs_route hN hd σ₂ hr₂ (diff := diff) (C1 := C1) (C2 := C2) (by tsimp [σ₂]) (by tsimp [σ₂, σ₁])
+    (by tsimp [σ₂, σ₁, hC]) (by tsimp [σ₂, σ₁, hC2])
+  refine (Runs.then s1 (Runs.then s2 (Runs.then s3 (runs_clear sT1 _)))).mono (fun σ' h => ?_) ?_
+  · rw [h]
+    funext i; fin_cases i <;> tsimp [σ₂, σ₁, hT, hr.2.2.2.2.2.1, emp]
+  · tsimp [σ₂, σ₁, WTape.words, clen, hdl]
+    omega
+
+/-- Every coefficient on `tD`. -/
+noncomputable def coefLoop : Cmd 0 𝕋 := .loop tD coefStep
+
+theorem runs_coefLoop {N k : ℕ} (hN : 0 < N) :
+    ∀ (ws : List ℕ) (σ : Fin 𝕋 → WTape) (Dl C1 C2 : List (List Bool)),
+      (∀ w ∈ ws, w < 2 ^ N + 1) → AluReady N σ → σ cT = reg (ones (N - k)) →
+      σ cH1 = reg (hword N) → σ sT1 = emp →
+      σ tD = ⟨Dl, rwds N ws⟩ → σ tC = ⟨C1, []⟩ → σ tC2 = ⟨C2, []⟩ →
+      Runs coefLoop σ (· = Function.update (Function.update (Function.update σ
+          tD ⟨(rwds N ws).reverse ++ Dl, []⟩)
+          tC ⟨(rwds N ((ws.map (descale N k)).map (posPart N))).reverse ++ C1, []⟩)
+          tC2 ⟨(rwds N ((ws.map (descale N k)).map (negPart N))).reverse ++ C2, []⟩)
+        (ws.length * (500 * N + 1202))
+  | [], σ, Dl, C1, C2, _, _, _, _, _, hD, hC, hC2 => by
+    refine (Runs.loop_done (by simp [hD, rwds]) rfl).mono (fun σ' h' => ?_) (by simp)
+    subst h'
+    funext i; fin_cases i <;> tsimp [hD, hC, hC2, rwds]
+  | w :: ws, σ, Dl, C1, C2, hws, hr, hcT, hH, hT, hD, hC, hC2 => by
+    have hw := hws w (by simp)
+    have s1 := runs_coefStep (k := k) hN hw σ hr hcT hH hT (Dr := rwds N ws) (C1 := C1) (C2 := C2)
+      (by simpa [rwds] using hD) hC hC2
+    set σ₁ := Function.update (Function.update (Function.update σ
+        tD ⟨rwd N w :: Dl, rwds N ws⟩) tC ⟨rwd N (posPart N (descale N k w)) :: C1, []⟩)
+        tC2 ⟨rwd N (negPart N (descale N k w)) :: C2, []⟩
+    have hr₁ : AluReady N σ₁ :=
+      ((hr.update tD _ (by decide)).update tC _ (by decide)).update tC2 _ (by decide)
+    have ih := runs_coefLoop (k := k) hN ws σ₁ (rwd N w :: Dl) (rwd N (posPart N (descale N k w)) :: C1)
+      (rwd N (negPart N (descale N k w)) :: C2) (fun x hx => hws x (by simp [hx])) hr₁
+      (by tsimp [σ₁, hcT]) (by tsimp [σ₁, hH]) (by tsimp [σ₁, hT]) (by tsimp [σ₁]) (by tsimp [σ₁])
+      (by tsimp [σ₁])
+    refine (Runs.loop_step (by simp [hD, rwds]) (s1.mono (fun σ' h' => by rw [h']; exact ih) le_rfl)).mono
+      (fun σ' h' => ?_) ?_
+    · rw [h']
+      funext i; fin_cases i <;> tsimp [σ₁, rwds]
+    · simp only [List.length_cons]; nlinarith
+
+/-! ### Switching the unit's modulus -/
+
+theorem bits_two_pow : ∀ n, bits (n + 1) (2 ^ n) = List.replicate n false ++ [true]
+  | 0 => rfl
+  | n + 1 => by
+    have h1 : 2 ^ (n + 1) % 2 = 0 := by rw [pow_succ]; simp
+    have h2 : 2 ^ (n + 1) / 2 = 2 ^ n := by rw [pow_succ]; simp
+    rw [bits, h1, h2, bits_two_pow n]
+    simp [List.replicate_succ]
+
+theorem fword_eq {N : ℕ} (hN : 0 < N) : fword N = true :: (List.replicate (N - 1) false ++ [true]) := by
+  obtain ⟨n, rfl⟩ : ∃ n, N = n + 1 := ⟨N - 1, by omega⟩
+  rw [fword, bits]
+  have h1 : (2 ^ (n + 1) + 1) % 2 = 1 := by rw [pow_succ]; omega
+  have h2 : (2 ^ (n + 1) + 1) / 2 = 2 ^ n := by rw [pow_succ]; omega
+  rw [h1, h2, bits_two_pow]; simp
+
+/-- The modulus words `cN = ones N` and `cW = ones (N + 1)` from `cU = ones N`. -/
+noncomputable def aluSetA : Cmd 0 𝕋 :=
+  .seq (clear cN) <| .seq (clear cW) <|
+  .seq (op0 Rules.copy false cU cN (by decide)) <| .seq (rewind cU) <| .seq (rewind cN) <|
+  .seq (op0 Rules.copy false cU cW (by decide)) <| .seq (rewind cU) <|
+  .seq (op0 Rules.copy true c1 cW (by decide)) <| .seq (rewind c1) (rewind cW)
+
+/-- The modulus word `cF = fword N` from `cU = ones N`. -/
+noncomputable def aluSetB : Cmd 0 𝕋 :=
+  .seq (clear cF) <| .seq (emit [[true]] cF) <|
+  .seq (op1 Rules.drop false cU c1 sT1 (by decide) (by decide) (by decide)) <| .seq (rewind cU) <|
+  .seq (rewind c1) <| .seq (rewind sT1) <|
+  .seq (op0 (Rules.fill false) true sT1 cF (by decide)) <| .seq (clear sT1) <|
+  .seq (op0 Rules.copy true c1 cF (by decide)) <| .seq (rewind c1) (rewind cF)
+
+/-- Rebuild the unit's constants for the modulus `2^N + 1` from `cU = ones N`. -/
+noncomputable def aluSet : Cmd 0 𝕋 := .seq aluSetA aluSetB
+
+theorem runs_aluSet {N : ℕ} (hN : 0 < N) (σ : Fin 𝕋 → WTape) (hU : σ cU = reg (ones N))
+    (h1 : σ c1 = reg [true]) (hT : σ sT1 = emp) :
+    Runs aluSet σ (· = Function.update (Function.update (Function.update σ
+        cN (reg (ones N))) cW (reg (ones (N + 1)))) cF (reg (fword N)))
+      (2 * clen (σ cN).words + 2 * clen (σ cW).words + 2 * clen (σ cF).words + 20 * N + 150) := by
+  have sA : Runs aluSetA σ (· = Function.update (Function.update σ cN (reg (ones N))) cW (reg (ones (N + 1))))
+      (2 * clen (σ cN).words + 2 * clen (σ cW).words + 8 * N + 80) := by
+    apply Runs.of_wp
+    simp only [aluSetA, WP, wp_op0, wp_rewind, wp_clear]
+    tsimp [hU, h1, emp, reg, Rules.output_copy]
+    have t1 := time_le Rules.copy (ones N) (fun j => j.elim0) 0 (fun j => j.elim0)
+    have t2 := time_le Rules.copy [true] (fun j => j.elim0) 0 (fun j => j.elim0)
+    refine ⟨?_, ?_⟩
+    · funext i; fin_cases i <;> tsimp [hU, h1, emp, reg, ones, List.replicate_succ']
+    · generalize clen (σ cN).words = a
+      generalize clen (σ cW).words = b
+      simp at t1 t2 ⊢; omega
+  set σ₁ := Function.update (Function.update σ cN (reg (ones N))) cW (reg (ones (N + 1)))
+  have htl : (ones N).tail = ones (N - 1) := by simp [ones, List.tail_replicate]
+  have sB : Runs aluSetB σ₁ (· = Function.update σ₁ cF (reg (fword N)))
+      (2 * clen (σ cF).words + 10 * N + 50) := by
+    apply Runs.of_wp
+    simp only [aluSetB, WP, wp_op0, wp_op1, wp_rewind, wp_clear, wp_emit]
+    tsimp [σ₁, hU, h1, hT, emp, reg, Rules.output_copy, Rules.output_drop, Rules.output_fill, htl]
+    have t3 := time_le Rules.drop (ones N) (fun _ => [true]) 1 (fun _ => by simp)
+    have t4 := time_le (Rules.fill false) (ones (N - 1)) (fun j => j.elim0) 0 (fun j => j.elim0)
+    have t5 := time_le Rules.copy [true] (fun j => j.elim0) 0 (fun j => j.elim0)
+    refine ⟨?_, ?_⟩
+    · funext i; fin_cases i <;> tsimp [σ₁, hU, h1, hT, emp, reg, fword_eq hN]
+    · generalize clen (σ cF).words = a
+      simp [clen, WTape.words] at t3 t4 t5 ⊢; omega
+  exact (Runs.then sA sB).mono (fun σ' h => h) (by omega)
 
 end IntegerMultBounds.Schoenhage
