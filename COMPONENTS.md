@@ -4170,6 +4170,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSpectatorVolumeHandoff.lean`: One fixed actual sequence prepares stream-volume metadata from genuine raw headers, physically promotes every spectator around the stopped selected child, and erases all generated headers. Exact raw metadata restoration and literal aligned role payload have the shared denominator, advanced sibling numerator budget and unchanged spectator decoded values, with every schedule, promotion and join cost charged. No prepared volume word or supplied promotion relation remains; uniform setup/cleanup budget absorption and whole-child composition remain separate.
 
+- `Machine/CompactComplexSpectatorVolumeBudget.lean`: Actual stream-volume descriptor setup and cleanup have uniform original-native-volume and single-role-stream bounds derived from their real schedules. Full-row and merged quotient-row modes are covered, with a fixed header-count factor and no divisibility requirement beyond positive quotient. No supplied metadata cost allowance remains; live denominator progression and complete recursive cost summation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
