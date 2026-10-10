@@ -4300,6 +4300,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRolePreparationBudget.lean`: The complete actual parent child-entry execution has a uniform native-volume bound including payload master/spectator parking, exactly one row division, target/live/header/PC/exponent synthesis and all joins. The original caller and genuine ledger derive every intermediate invariant; no aggregate cost allowance is supplied. A separate actual nonleaf current-row split has its original-volume bound, deriving child grouping from the real dependency Path and keeping already-quotiented rows unchanged. Fixed recursive closure and callback discharge remain open.
 
+- `Machine/CompactComplexNonleafRoleSourceReturn.lean`: The genuine payload-return program now runs directly from an arbitrary actual source-ready child-result bank on permanent Entry plus seven tapes. Concrete restored parent headers, literal result, blank roles and the true parked payload-stack/clock endpoints derive the protected-bank equality internally. Exact parent master/spectators/selected result and ancestor stack are restored while retaining all simultaneous complementary controller changes and arbitrary private tapes. No role merge or row restoration is repeated; recursive execution and spectator assembly remain open.
+
+- `Machine/CompactComplexNonleafRoleSourceReturnBudget.lean`: The complete actual source-ready payload recovery has a uniform native-volume runtime bound. Returned-word support derives from the literal returned native array record widths, and blank-clock compatibility derives from physical entry. The concrete physical Hoare wrapper preserves all changed controller words/heads and seven private tapes, without a supplied support or aggregate cost allowance. Full child semantics and shared-grid promotion/recursive closure remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
