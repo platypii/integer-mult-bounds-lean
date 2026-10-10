@@ -10,7 +10,7 @@ open ActivePrefixStageParameters
 open ActivePrefixStageHeadersData (Order)
 variable {s : Shape}
 
-theorem cost_bound (order : Order) (v : Stage s) (rows : ℕ) (hr : 0<rows) 
+theorem cost_bound (order : Order) (v : Stage s) (rows : ℕ) (hr : 0<rows)
     (m ell w : ℕ) (hm : 0<m) (hslots : m≤v.slots)
     (hspan : AllAxisPhaseHeadersData.offset v m+(m*v.f-1)*s.chunk<s.bits)
     (hrecord : s.bits+1≤s.payload) (hR : 2^ell≤s.payload) :

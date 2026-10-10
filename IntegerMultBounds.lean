@@ -2179,3 +2179,6 @@ import IntegerMultBounds.Machine.AllAxisAddressInitBudget
 import IntegerMultBounds.Machine.AllAxisFullStreamInitBudget
 import IntegerMultBounds.Machine.AllAxisPolynomialBudget
 import IntegerMultBounds.Machine.AllAxisPolynomialNativeBudget
+import IntegerMultBounds.Machine.CompactAllAxisPhaseDispatch
+import IntegerMultBounds.Machine.CompactAllAxisPhaseDispatchBudget
+import IntegerMultBounds.Machine.AllAxisPolynomialActual

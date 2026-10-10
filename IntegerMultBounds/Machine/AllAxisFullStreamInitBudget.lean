@@ -24,7 +24,7 @@ theorem count_bound (order : Order) (v : Stage s) (rows : ℕ) (hr : 0<rows) :
     ActivePrefixStageHeadersData.originalValues,ActiveRepairRankHeadersCommands.put,Function.update]
   nlinarith
 
-theorem cost_payload (order : Order) (v : Stage s) (rows : ℕ) 
+theorem cost_payload (order : Order) (v : Stage s) (rows : ℕ)
     (hr : 0<rows) (hrecord : s.bits+1≤s.payload) :
     AllAxisFullStreamInit.cost order v rows≤
       (FixedBasePowerDescriptor.constant 2+2000)*(rows*2^s.bits)*s.payload := by

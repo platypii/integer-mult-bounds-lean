@@ -3886,6 +3886,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPolynomialNativeBudget.lean`: Bounds complete literal whole-array phase traversal, stream rewinds, source overwrite and output erasure by full address count times fixed payload and polynomial coefficient volume.
 
+- `Machine/CompactAllAxisPhaseDispatch.lean`: One fixed finite all-axis edge family physically emits, decodes and erases the actual edge token, with zero-dimensional identity and actual whole-polynomial native execution for positive edges.
+
+- `Machine/CompactAllAxisPhaseDispatchBudget.lean`: Absorbs actual finite edge dispatch and every all-axis native traversal transition in a uniform original-volume bound.
+
+- `Machine/AllAxisPolynomialActual.lean`: Actual original stage inputs derive selected span and edge dimensions for real all-axis phase execution and uniform volume cost. Physical coefficient phase equals the complete original tensor product under the existing grid, prefix-depth and stored-width invariant. Caller port/header composition and recursive guard propagation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
