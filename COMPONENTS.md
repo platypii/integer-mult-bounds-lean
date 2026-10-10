@@ -4616,6 +4616,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyReachedSavedStackHistory.lean`: Genuine saved-PC stack history lifts to the corrected controller bank, survives its actual classifier, extends under the literal child-PC save and is restored by the checked corrected decoded return. Older History supplies blank tails without a callback. Complete child-entry stack framing and association of the top code with the semantic call remain integration obligations.
 
+- `Machine/CompactComplexCorrectedStoppedChildGridSemantics.lean`: The literal stopped child output has the genuine forward or inverse full tensor action from its actual pre-oriented source. Corrected selected and shared spectator grids, the parent scalar-prefix grid and returned ledger use the actual stopped denominator n plus child size. Physical saved-stack restoration retains the installed source and head. General guarded tensor lemmas permit genuine framed parent bounds; reached recursive composition remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

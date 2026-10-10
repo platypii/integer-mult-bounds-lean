@@ -174,6 +174,30 @@ def rowSlice (rows ell q n : ℕ) (rho : Fin sh.chunk)
 
 /-- The guarded actual forward leaf has the exact tensor action on every
 anchored child slice, with the original row and polynomial spectators. -/
+theorem forward_result_guarded (rows ell q n M : ℕ) (rho : Fin sh.chunk)
+    (visit : Visit sh.active left (k+1))
+    (f : CompactSpectatorVisitGeometry.Array sh rows ell)
+    (hw : CompactSpectatorInheritedGrid.Width sh rows ell q f)
+    (hg : CompactSpectatorInheritedGrid.Grid sh rows ell q n
+      M f)
+    (hguard : 4*(M*4^(arity^(k+1)))<2^(CompactSpectatorInheritedGrid.half sh q))
+    (row : Fin rows) (poly : Fin (2^ell)) (anchor : BinaryWalsh.Address sh.bits) :
+    let out := CompactSpectatorLeafGuardOriginal.result .forward sh rows ell q rho visit f
+    CompactSpectatorInheritedGrid.Grid sh rows ell q (n+arity^(k+1))
+      (M*4^(arity^(k+1))) out ∧
+    rowSlice rows ell q (n+arity^(k+1)) rho visit row poly anchor out=
+      ComplexEndpoints.fullFrame (arity^k) (rowSlice rows ell q n rho visit row poly anchor f) := by
+  have h := CompactSpectatorInheritedGrid.directional_semantics sh rows ell q rho visit .forward n _
+    f hw hg hguard row poly
+  refine ⟨h.1,?_⟩
+  have hs := congrArg (slice rho visit anchor) h.2
+  change rowSlice rows ell q (n+arity^(k+1)) rho visit row poly anchor _=
+    slice rho visit anchor (BinaryWalsh.kernelRun
+      (CompactSpectatorLeafSemantics.directions sh rho visit (arity^(k+1)) le_rfl) _) at hs
+  rw [forward_kernel_tensor] at hs
+  exact hs
+
+
 theorem forward_result_from_path (rows ell q n baseline C : ℕ) (rho : Fin sh.chunk)
     {levels frames returned : ℕ}
     (path : CompactRecursiveDependencyBudget.Path sh.active left (k+1) levels frames returned)
@@ -241,6 +265,49 @@ private theorem oriented_tensor_action (reverse : Bool)
 /-- The literal installed stopped result computes the forward or inverse
 named tensor selected by the real saved call. No completed-network equality
 or independent child execution certificate is assumed. -/
+theorem stopped_leaf_tensor_guarded (call : ComplexRecursiveCallSchema.Call)
+    (rows ell q n M : ℕ) (rho : Fin sh.chunk)
+    (visit : Visit sh.active left (k+1))
+    (f : CompactSpectatorVisitGeometry.Array sh rows ell)
+    (hw : CompactSpectatorInheritedGrid.Width sh rows ell q f)
+    (hg : CompactSpectatorInheritedGrid.Grid sh rows ell q n
+      M f)
+    (hguard : 4*(M*4^(arity^(k+1)))<2^(CompactSpectatorInheritedGrid.half sh q))
+    (row : Fin rows) (poly : Fin (2^ell)) (anchor : BinaryWalsh.Address sh.bits) :
+    let input := CompactComplexSourceReadyOrientationInvariants.oriented call f
+    let leaf := CompactSpectatorLeafGuardOriginal.result .forward sh rows ell q rho visit input
+    let out := CompactComplexSourceReadyOrientationInvariants.oriented call leaf
+    CompactSpectatorInheritedGrid.Grid sh rows ell q (n+arity^(k+1))
+      (M*4^(arity^(k+1))) out ∧
+    rowSlice rows ell q (n+arity^(k+1)) rho visit row poly anchor out=
+      if call.inverse then (ComplexEndpoints.fullFrame (arity^k)).symm
+        (rowSlice rows ell q n rho visit row poly anchor f)
+      else ComplexEndpoints.fullFrame (arity^k)
+        (rowSlice rows ell q n rho visit row poly anchor f) := by
+  let input := CompactComplexSourceReadyOrientationInvariants.oriented call f
+  let leaf := CompactSpectatorLeafGuardOriginal.result .forward sh rows ell q rho visit input
+  have hM : M≤M*4^(arity^(k+1)) := Nat.le_mul_of_pos_right M (pow_pos (by decide) _)
+  have hinput := CompactComplexSourceReadyOrientedStoppedReturnPrefix.orientation_grid
+    call sh rows ell q n M f hw hg (by omega)
+  have hinputWidth := CompactComplexSourceReadyOrientationInvariants.oriented_width call sh rows ell q f hw
+  have hforward := forward_result_guarded rows ell q n M rho visit input
+    hinputWidth hinput.1 hguard row poly anchor
+  have hleafWidth := CompactSpectatorLeafLoop.width_run sh rows ell
+    (ButterflyIndependentGuardHeaders.reservation sh.bits q) rho visit (arity^(k+1)) input hinputWidth
+  have houtput := CompactComplexSourceReadyOrientedStoppedReturnPrefix.orientation_grid
+    call sh rows ell q (n+arity^(k+1)) (M*4^(arity^(k+1))) leaf hleafWidth hforward.1 (by omega)
+  refine ⟨houtput.1,?_⟩
+  have hi := rowSlice_oriented call rows ell q n M rho visit f hw hg (by omega) row poly anchor
+  have ho := rowSlice_oriented call rows ell q (n+arity^(k+1)) (M*4^(arity^(k+1)))
+    rho visit leaf hleafWidth hforward.1 (by omega) row poly anchor
+  exact oriented_tensor_action call.inverse
+    (rowSlice rows ell q n rho visit row poly anchor f)
+    (rowSlice rows ell q n rho visit row poly anchor input)
+    (rowSlice rows ell q (n+arity^(k+1)) rho visit row poly anchor leaf)
+    (rowSlice rows ell q (n+arity^(k+1)) rho visit row poly anchor
+      (CompactComplexSourceReadyOrientationInvariants.oriented call leaf)) hi hforward.2 ho
+
+
 theorem stopped_leaf_tensor_from_path (call : ComplexRecursiveCallSchema.Call)
     (rows ell q n baseline C : ℕ) (rho : Fin sh.chunk)
     {levels frames returned : ℕ}
@@ -305,6 +372,43 @@ theorem rowSlice_inputIndex (rows ell q n : ℕ)
 
 /-- Every literal installed output coefficient has its genuine named tensor
 address and output role; no wire is omitted or fixed to a chosen data bank. -/
+theorem stopped_leaf_tensor_at_guarded (call : ComplexRecursiveCallSchema.Call)
+    (rows ell q n M : ℕ) (rho : Fin sh.chunk)
+    (visit : Visit sh.active left (k+1))
+    (f : CompactSpectatorVisitGeometry.Array sh rows ell)
+    (hw : CompactSpectatorInheritedGrid.Width sh rows ell q f)
+    (hg : CompactSpectatorInheritedGrid.Grid sh rows ell q n
+      M f)
+    (hguard : 4*(M*4^(arity^(k+1)))<2^(CompactSpectatorInheritedGrid.half sh q))
+    (hd : CompactComplexNonleafChildAddress.roles ∣ rows)
+    (i : CompactComplexNonleafChildAddress.Index sh rows ell) :
+    let input := CompactComplexSourceReadyOrientationInvariants.oriented call f
+    let leaf := CompactSpectatorLeafGuardOriginal.result .forward sh rows ell q rho visit input
+    let out := CompactComplexSourceReadyOrientationInvariants.oriented call leaf
+    let stored := fun wire a => CompactSpectatorInheritedGrid.decoded sh rows ell q n f
+      (CompactComplexNonleafChildAddress.inputIndex sh rows ell hd rho visit i wire a)
+    let wire := CompactComplexNonleafChildAddress.outputWire sh rows ell hd i
+    let address := CompactComplexNonleafChildAddress.outputAddress sh rows ell hd rho visit i
+    CompactSpectatorInheritedGrid.decoded sh rows ell q (n+arity^(k+1)) out i=
+      if call.inverse then (ComplexEndpoints.fullFrame (arity^k)).symm (stored wire) address
+      else ComplexEndpoints.fullFrame (arity^k) (stored wire) address := by
+  let v := (CompactComplexNonleafChildAddress.layout sh rows ell hd).symm i
+  have h := stopped_leaf_tensor_guarded call rows ell q n M rho visit f hw hg hguard
+    (CompactComplexNonleafChildAddress.rowLayout rows hd v.1) v.2.2 v.2.1
+  have he := congrFun h.2 (CompactComplexNonleafChildAddress.outputAddress sh rows ell hd rho visit i)
+  rw [rowSlice_inputIndex rows ell q n hd rho visit f i] at he
+  dsimp only at he ⊢
+  change CompactSpectatorInheritedGrid.decoded sh rows ell q (n+arity^(k+1))
+    (CompactComplexSourceReadyOrientationInvariants.oriented call
+      (CompactSpectatorLeafGuardOriginal.result .forward sh rows ell q rho visit
+        (CompactComplexSourceReadyOrientationInvariants.oriented call f)))
+    (CompactComplexNonleafChildAddress.inputIndex sh rows ell hd rho visit i
+      (CompactComplexNonleafChildAddress.outputWire sh rows ell hd i)
+      (CompactComplexNonleafChildAddress.outputAddress sh rows ell hd rho visit i))=_ at he
+  rw [CompactComplexNonleafChildAddress.input_output] at he
+  simpa only [ite_apply] using he
+
+
 theorem stopped_leaf_tensor_at (call : ComplexRecursiveCallSchema.Call)
     (rows ell q n baseline C : ℕ) (rho : Fin sh.chunk)
     {levels frames returned : ℕ}
