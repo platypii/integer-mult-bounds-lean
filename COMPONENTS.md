@@ -4350,6 +4350,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyChildReturnPath.lean`: The complete actual child-return sequence now composes parent payload recovery, spectator promotion, shared-live commit and the final saved-target pop on the common fixed source-ready bank. Intermediate readiness and restored raw headers, payloads, descriptors and stacks derive from actual preceding outputs. A paid decoded saved-PC-to-next-event path uses the original call role and slot; genuine completed child execution advances the original scalar prefix, numerical grid and live ledger. Full recursive child execution and inverse-oriented nonleaf assembly remain open.
 
+- `Machine/CompactComplexSourceReadyDirection.lean`: A fixed physical selector reads the actual top saved call PC, restores its literal stack and head, derives the original Call.inverse bit and enters the genuine forward or inverse stopped-leaf program on the unchanged entire source-ready bank. The exact peek and dispatch runtime is twice the original fixed address width plus three, with all joins paid; no supplied direction or execution is assumed. Faithful inverse-oriented nonleaf execution and full recursive assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
