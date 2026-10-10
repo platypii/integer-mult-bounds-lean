@@ -3968,6 +3968,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleStoppedChildCaller.lean`: One fixed selected-role stopped caller physically expands the actual node count by retained arity, executes the complete guarded child caller and restores original count afterward. Actual Visit node metadata derives the loop count, and output/parent headers/stack/siblings are retained with every lifecycle and join paid. Decoded inherited-grid semantics and uniform combined runtime absorption remain separate.
 
+- `Machine/CompactRecursiveDependencyBudget.lean`: Actual call-site schema and Visit paths derive ancestor/sibling volumes, prefix row counts, dependency precision and strict guard-width bounds. Actual normalized-root frame decoding and finite-network endpoint return grids are proved. Identifying this Path with physical controller stacks and installing returned precision remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
@@ -4953,6 +4955,8 @@ Bit and complex networks.
 - `Networks/GroupedCoefficients.lean`: Derives exact sparse grouped scalar coefficient certificates while retaining actual network roles and ordering.
 
 - `Networks/RationalScalarGrid.lean`: Transports actual rational scalar module rows pointwise into the Gaussian grid representation without changing retained wire roles.
+
+- `Networks/GaussianFrameInverseGrid.lean`: Derives bounded inverse Walsh label frames, inverse tensor-phase frames and rational label-frame decoding from actual finite sums.
 
 ### Networks/Certificates/Paired49
 
