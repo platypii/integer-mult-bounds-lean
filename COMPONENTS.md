@@ -4266,6 +4266,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleMergeReturnBudget.lean`: The actual composed arbitrary-child-array merge and parent-result recovery machine now has a uniform parent-native-volume HoareTime bound. Genuine quotient/divisor facts pay reverse row multiplication and all merge/return generated-header lifecycles, spectator/master stack pops, scratch cleanup and the composition join. The exact endpoint preserves computed result, updated controller word and ancestor frame. Recursive child computation and common-grid spectator alignment/commit remain separate costs and correctness obligations.
 
+- `Machine/CompactComplexParentLiveStack.lean`: The actual parent live7 descriptor is physically pushed to a distinct fixed unbounded old-storage stack before recursion, keeping the inherited input exponent unchanged. On return the normalized child live word is copied into blank target8, then the saved parent current is physically popped into live7. Exact ports, ancestor stack/head and all complementary payload/controller frames are proved with paid runtimes. This restores the old denominator needed for real spectator promotion before common-live commit; it supplies no child normalization, common-grid or recursive execution oracle.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
