@@ -4140,6 +4140,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeSignedGapPromoteHeadersReturn.lean`: An actual ten-tape adapter physically computes target minus current from retained true denominator headers, promotes the original signed stream and erases its synthesized gap and all private tapes. It retains both denominator headers and the volume descriptor, with exact output and a 130-volume-plus8-target-plus359 bound; target at most volume yields 138-volume-plus359.
 
+- `Machine/CompactComplexControllerChildStopTarget.lean`: The actual runtime stopping test copies global dimension and parent exponent into ten fresh tapes, decrements only the copy, physically selects the stopped-leaf or completed-network return target, and erases every fresh tape. Only storage8 changes; live7, target stack9, native descriptors and source are preserved. Actual parent geometry derives both branch targets, with all setup, dispatch and cleanup costs paid.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

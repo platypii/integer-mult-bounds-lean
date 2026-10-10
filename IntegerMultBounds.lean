@@ -2331,3 +2331,4 @@ import IntegerMultBounds.Machine.CompactComplexChildGridPromoted
 import IntegerMultBounds.Machine.NativeSignedGapPromoteScan
 import IntegerMultBounds.Machine.NativeSignedGapPromoteReturn
 import IntegerMultBounds.Machine.NativeSignedGapPromoteHeadersReturn
+import IntegerMultBounds.Machine.CompactComplexControllerChildStopTarget
