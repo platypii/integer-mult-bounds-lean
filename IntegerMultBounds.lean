@@ -2328,3 +2328,4 @@ import IntegerMultBounds.Machine.NativeSignedGapPromoteWord
 import IntegerMultBounds.Machine.CompactComplexChildGridAlignment
 import IntegerMultBounds.Machine.CompactComplexChildGridReturnBudget
 import IntegerMultBounds.Machine.CompactComplexChildGridPromoted
+import IntegerMultBounds.Machine.NativeSignedGapPromoteScan

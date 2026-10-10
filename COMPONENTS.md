@@ -4134,6 +4134,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexChildGridPromoted.lean`: Concrete literal spectator words, rather than a supplied promotion relation, establish the shared grid after actual directional stopped-child arithmetic. Original Path and retained field widths derive every signed shift equation and its capacity; selected output plus promoted spectators have a common denominator and fit the advanced sibling-return budget, preserving all spectator decoded values. Physical bank promotion and controller composition remain open.
 
+- `Machine/NativeSignedGapPromoteScan.lean`: One fixed three-tape scanner physically prepends runtime-gap low zeros, copies retained signed digits, erases truncated high digits and restores its reusable unary gap clock after each field. Exact whole-stream output, unchanged word volume, actual EOF halting and paid linear-volume cost hold under gap at most each field width. Clock synthesis, source replacement and cleanup lifecycle remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
