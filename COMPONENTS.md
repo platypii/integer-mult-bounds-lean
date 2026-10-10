@@ -3954,6 +3954,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativePolynomialStageHeaderBudget.lean`: Both actual codec-payload header lifecycles have a fixed bound times original native polynomial volume, with controller values derived from Stage. Copying these headers into shared-source phase caller placement remains separate.
 
+- `Machine/CompactNativeRoleChildBank.lean`: Physically derives child outer-row quotient and exact parent restoration, identifies a selected role source with literal leaf serialization and places the full-address native leaf while preserving other roles and persistent controller storage.
+
+- `Machine/CompactNativeRoleChildHeadersPorts.lean`: Places actual child row-quotient and product restoration on exterior numeric43, retaining every native role and the complete old controller/stack bank.
+
+- `Machine/CompactNativeRoleChildPrecision.lean`: Actual reservation geometry derives the guard baseline from corrected stored-width precision. Physical setup saves precision, computes global bits, changes only the copied precision descriptor and reclaims arithmetic; restoration recovers the exact old descriptor. Width compatibility does not imply normalization at that baseline.
+
+- `Machine/CompactNativeRoleChildPrecisionSaved.lean`: Precision setup/restoration also retain the saved original payload at26, with exact numeric execution and unchanged runtime under exterior placement.
+
+- `Machine/CompactNativeRoleChildGuardRuns.lean`: Executes actual guarded directional leaf at the selected role source with literal native output, preserving all exterior controller and sibling tapes. Decoded normalization and stopped-node count expansion remain separate.
+
+- `Machine/CompactNativeRoleGuardedChildCaller.lean`: One fixed child caller composes row quotient, native codec payload synthesis, baseline precision adaptation, actual guarded leaf, precision restoration, payload restoration and parent row restoration. Exact literal role output and all seven runtimes plus six joins are paid; numerical grid propagation and recursive dispatch remain open.
+
+- `Machine/CompactNativeRoleStoppedChildCaller.lean`: One fixed selected-role stopped caller physically expands the actual node count by retained arity, executes the complete guarded child caller and restores original count afterward. Actual Visit node metadata derives the loop count, and output/parent headers/stack/siblings are retained with every lifecycle and join paid. Decoded inherited-grid semantics and uniform combined runtime absorption remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
