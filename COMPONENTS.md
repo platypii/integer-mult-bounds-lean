@@ -4510,6 +4510,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexEndpointCoordinates.lean`: Actual native codec serialized bit coordinates equal the original recursive node tensor addresses, derived from row rank, binary coordinate reversal, rho and genuine Visit geometry. The actual aggregate terminal character phase is exactly signColumns at that original address; no separately supplied compatible coordinate map is required.
 
+- `Machine/NativeEndpointCharacterCanonical.lean`: Physical private source/target header normalization to zero/one permits fixed early character execution for arbitrary original basis pairs. Public descriptors remain intact; phase and literal result are unchanged.
+
+- `Machine/NativeEndpointCharacterCanonicalOriginal.lean`: Complete original-header character lifecycle privately normalizes order, runs the fixed early machine and restores all sixty-seven private tapes with the original literal result. No Ordered premise is required.
+
+- `Machine/NativeEndpointCharacterCanonicalOriginalBudget.lean`: Private header erasure and zero/one initialization add a paid uniform6701 native-volume constant to the original character lifecycle bound.
+
+- `Machine/NativeEndpointCharacterCanonicalRoles.lean`: Fixed no-order character traversal visits every original endpoint role and restores the full complementary frame, with summed parent native-volume cost.
+
+- `Machine/NativeEndpointCharacterCanonicalNamedRoles.lean`: No-order character family derives all original headers and named X/Y source words from the actual caller and returns its literal changed role streams.
+
+- `Machine/NativeEndpointCharacterCanonicalSourceReady.lean`: Complete fixed source/sink character boundaries execute on the actual recursive source-ready bank without direction dispatch or order premise. Canonical changed payload, retained recursive frame and scalar suffix, reclaimed first sixty-seven leaf tapes and parent-volume cost are proved. Controller composition and full recursive induction remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
