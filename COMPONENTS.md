@@ -5820,6 +5820,10 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   (`upFold_traj`), ends below the threshold with enough fuel (`traj_lt`), and
   satisfies the up-sweep's side conditions (`UpOK_traj`).
 
+- `Schoenhage/SSMain.lean`: the whole multiplier on the 64-tape bank, from
+  the operands modulo `2^N + 1` to their product (`runs_ssMain`), with its
+  cost along the size trajectory (`ssCost`).
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
