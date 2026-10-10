@@ -4352,6 +4352,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyDirection.lean`: A fixed physical selector reads the actual top saved call PC, restores its literal stack and head, derives the original Call.inverse bit and enters the genuine forward or inverse stopped-leaf program on the unchanged entire source-ready bank. The exact peek and dispatch runtime is twice the original fixed address width plus three, with all joins paid; no supplied direction or execution is assumed. Faithful inverse-oriented nonleaf execution and full recursive assembly remain open.
 
+- `Machine/FiniteFlowFrames.lean`: Complete genuine cyclic-controller paths and halting traces now lift to an appended arbitrary tape bank or a fixed tape permutation, preserving every terminal-state-selected edge, exact tape contents and heads, transition count and call/return join. These structural execution proofs permit the existing source-ready paths to move onto the scalar-inclusive fixed bank without reproving local runs; actual table and recursive callback assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
