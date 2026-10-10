@@ -3896,6 +3896,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleSourceRuns.lean`: Actual reserved and zero-padded output splits at source43 with derived divisibility and corrected stored width. Arbitrary computed descendant outputs merge through the inverse cyclic row map, restoring all private storage. Producer-to-port composition and complete recursive execution remain separate.
 
+- `Machine/AllAxisPolynomialTensorResult.lean`: Literal native polynomial flattening and address quotient identify each physical aggregate phase output with the complete original tensor product at its native basis-word row, retaining every polynomial spectator. Uniform stream widths follow directly from actual native row widths.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
