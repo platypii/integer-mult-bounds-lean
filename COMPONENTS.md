@@ -4346,6 +4346,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyChildEntryPath.lean`: Actual selected child entry derives the real role, call slot, saved return bits and unique fixed address from the original Call. The complete physical PreparationBudget execution preserves arbitrary leaf/work suffix and yields a paid event-PC-to-shared-entry-PC path directly from the genuine caller/Path/ledger, without a supplied local Hoare or runtime. Literal child raw headers and intact source payload, saved-PC wiring and exact public output are exposed. Completed recursive child execution and whole decoded continuation remain open.
 
+- `Machine/CompactComplexSourceReadyStoppedNodePath.lean`: The actual complete stopped route now executes the stopping guard, its genuine state-dependent table edge, real zero/positive count-dispatched leaf arithmetic and the final table jump to return-guard PC0 in the same fixed cyclic machine. Literal restored source-ready endpoints and every join are retained. Current Visit geometry pays guard cost even at roots and scalar leaves; full path runtime is uniformly bounded by one exact fixed constant times native volume times child volume, with leaf traffic derived from the actual Path/live ledger. The astronomical constant remains exact through a proved singleton-choice equality, avoiding kernel evaluation without extra axioms or limits. Mixed runtime orientation, full child-return sequencing and recursive closure remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
