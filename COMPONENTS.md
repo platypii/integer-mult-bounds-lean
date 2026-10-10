@@ -4204,6 +4204,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarCallerEndpoint.lean`: Complete actual scalar output reconstructs the literal original codec caller bank with emitted native polynomial role streams and advanced live7. Count storage is restored blank, retained source65 and controller, queue, scalar/native descriptors, tails and stacks are preserved. Named role/source premises for the next physical event follow directly; complete recursive event composition remains open.
 
+- `Machine/CompactComplexControllerExactReturnBudget.lean`: Complete generated-metadata all-role exact contraction and live commit have uniform native-volume and role-stream runtime bounds. Current exponent capacity and gap reserves follow from the actual dependency Path and true live-prefix ledger; original padded role volume is at most twice original fallback volume. Completed-network semantics and the minimum-completed lower ledger remain explicit recursive obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
