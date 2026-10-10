@@ -4044,6 +4044,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarWireEmit.lean`: Every actual complex25 scalar output wire executes its concrete sparse target expression or spectator doubling expression. Both fields emit physically with exact Gaussian semantics at the next common dyadic exponent and genuine native stored-width guards. Full shared-control all-wire traversal and complete scalar stream replacement remain open.
 
+- `Machine/CompactNativePolynomialStagePacked.lean`: Actual original multiplier geometry, once-padded descendant rows and literal polynomial codec capacity derive positive rows, guard room and density-one packed repair for every distinct pair in every native basis word. No per-pair readiness or repair premise is supplied; the genuine stored signed-width allowance remains an explicit scalar contract until controller propagation is assembled.
+
+- `Machine/CompactNativeRoleConjugatedActual.lean`: One actual native phase witness executes every finite edge on every admissible multiplier descendant and selected role from original raw metadata, with literal updated role output, restored headers/private storage and one uniform stage-scale cost. Actual cutoff, row-depth and polynomial codec capacity discharge all pair repair and readiness premises at density one; the genuine retained signed-width scalar allowance and complete recursive network assembly remain explicit.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

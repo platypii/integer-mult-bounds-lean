@@ -2281,3 +2281,5 @@ import IntegerMultBounds.Machine.RawLinearCombinationFieldEmit
 import IntegerMultBounds.Machine.RawLinearCombinationComplexEmit
 import IntegerMultBounds.Machine.CompactComplexScalarWireEmit
 import IntegerMultBounds.Schoenhage.SSMain
+import IntegerMultBounds.Machine.CompactNativePolynomialStagePacked
+import IntegerMultBounds.Machine.CompactNativeRoleConjugatedActual
