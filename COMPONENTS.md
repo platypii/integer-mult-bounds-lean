@@ -3868,6 +3868,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPolynomialStream.lean`: One fixed66-tape traversal initializes all controls, performs one tensor-phase setup per address and the full polynomial coefficient loop, then erases every generated control. Literal array contexts and final stream normalization are supplied separately.
 
+- `Machine/AllAxisPhaseGeometry.lean`: Proves the physical sparse offset equals the original complex-edge control start, derives the complete selected span and identifies flags with the actual tensor phase sum.
+
+- `Machine/AllAxisPolynomialLiteral.lean`: Discharges every coefficient context and row adjacency premise from one literal flattened polynomial array, avoiding any nonexistent terminal read.
+
+- `Machine/AllAxisPolynomialLiteralEndpoint.lean`: Identifies actual emitted coefficients with the literal result array, indexed by address quotient rather than flat coefficient index.
+
+- `Machine/AllAxisPolynomialSourceEndpoint.lean`: Proves actual literal source preservation and genuine final EOF after the full nested phase traversal.
+
+- `Machine/AllAxisPolynomialNative.lean`: One fixed whole-array phase machine physically traverses literal coefficients, rewinds source/output, overwrites the original source and erases temporary output. Exact restored caller and result array need no execution or context callback. Original caller placement, semantic guards, finite edge dispatch and uniform volume bound remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
