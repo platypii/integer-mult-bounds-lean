@@ -2187,3 +2187,5 @@ import IntegerMultBounds.Machine.CompactNativeRoleSourceRuns
 import IntegerMultBounds.Machine.AllAxisPolynomialTensorResult
 import IntegerMultBounds.Machine.AllAxisPolynomialPlacement
 import IntegerMultBounds.Schoenhage.InvLayers
+import IntegerMultBounds.Machine.CompactSpectatorStoppedLeafDispatch
+import IntegerMultBounds.Machine.CompactSpectatorStoppedLeafFlow

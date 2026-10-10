@@ -3900,6 +3900,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPolynomialPlacement.lean`: Places the actual whole-array aggregate phase machine in the native stage alphabet on an arbitrary original source port with unchanged paid runtime. Every complementary caller tape is retained; appended phase source remains blank and the entire ready phase metadata bank is restored. Original-header setup and immutable precision installation remain separate.
 
+- `Machine/CompactSpectatorStoppedLeafDispatch.lean`: One fixed runtime exponent test selects the actual scalar or positive stopped-node directional leaf. Exact caller endpoints and paid branch transition follow from live canonical exponent, without a leaf execution callback.
+
+- `Machine/CompactSpectatorStoppedLeafFlow.lean`: The concrete cyclic finite table contains physical return guard/pop and actual directional stopped-leaf blocks. Both scalar and positive leaf executions physically jump to the return guard with their proved payload and paid runtime. Remaining internal blocks are explicit table inputs; full recursive execution remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
