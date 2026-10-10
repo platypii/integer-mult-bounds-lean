@@ -4110,6 +4110,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNativeCodecFrame.lean`: Places the actual codec lifecycle in the native66/controller/role bank, preserving source65, roles, controller, existing denominator ports and all stacks. Immutable original43 descriptors occupy fresh suffix storage, so no ledger collisions occur. The genuine child-prefix native endpoint becomes precisely the stopped child raw state; codec workspace returns blank. Full caller composition and recursive execution remain open.
 
+- `Machine/CompactComplexScalarPolynomialSequence.lean`: Actual named complex25 scalar rows share one certified fixed scratch bank and execute literal polynomial arrays through normalized reusable endpoints. Genuine original count headers, exact prefix/suffix composition data and uniform summed linear row costs are proved; no numerical stream callback is assumed. A generic tape-count adapter avoids evaluating the huge closed wire cardinality during proof elaboration without changing any physical program or endpoint.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

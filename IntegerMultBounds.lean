@@ -2316,3 +2316,4 @@ import IntegerMultBounds.Machine.CompactComplexDenominatorPolicy
 import IntegerMultBounds.Machine.RawLinearCombinationComplexRowSequence
 import IntegerMultBounds.Machine.CompactComplexNativeCodec
 import IntegerMultBounds.Machine.CompactComplexNativeCodecFrame
+import IntegerMultBounds.Machine.CompactComplexScalarPolynomialSequence
