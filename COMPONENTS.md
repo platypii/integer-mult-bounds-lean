@@ -4558,6 +4558,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexFixedNodeSavedReturnPath.lean`: The actual original cyclic node table physically guards and pops its genuine saved call PC, reaches that call continuation in address-width plus five transitions and changes only the saved stack. The proof uses literal saved bits and no table execution oracle; deriving its reached stack premises inside full recursion remains open.
 
+- `Machine/CompactComplexSourceReadySinkCorrections.lean`: One fixed source-ready sink boundary composes actual Y signs, runtime column phase, X negation and complete named X/Y exchange, with literal canonical output, retained controller/leaf/scalar frames and full paid original parent-volume runtime. Contraction/rejoin and complete recursive controller induction remain open.
+
+- `Machine/CompactComplexSinkCorrectionBudget.lean`: All three actual sink-correction joins are paid by positive original native volume, yielding a fixed linear coefficient with no compiled-machine expansion in the numerical proof.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
