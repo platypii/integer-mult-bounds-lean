@@ -4250,6 +4250,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafEventProgress.lean`: The actual completed child network, with its input reconstructed from the selected parent stream, derives the normalized child grid at twice child volume. Literal spectator numerator promotion preserves their decoded values. The exact original parent scalar prefix and dependency levels survive, with only the returned-child volume ledger advanced; no fresh whole-scalar growth factor or supplied child grid is used. Genuine dependency Paths and retained reserve derive signed promotion guard and capacity. Concrete address maps, completed recursive execution equality and physical return assembly remain open.
 
+- `Machine/CompactComplexNonleafRoleReturn.lean`: One fixed physical return machine regenerates the role count to recover the selected child result and spectators, then independently regenerates the full count to restore the retained master source. Both numeric lifecycles are erased. Exact original roundtrip and arbitrary supported returned-result recovery restore the selected parent role, all other payloads, raw metadata and the entire ancestor stack/head. This requires the genuine free stack suffix; changed live-controller framing, child merge and recursive semantics remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
