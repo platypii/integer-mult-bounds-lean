@@ -5346,6 +5346,12 @@ Bit and complex networks.
 
 - `Networks/BinaryWalshComplexConjugation.lean`: Complex conjugation preserves the real binary characters, forward Walsh transform and explicit inverse Walsh transform, and negates actual phase diagonals and complete phase frames. It converts the literal translation-kernel list to the inverse-phase list in the same order, yielding an exact conjugate-forward-conjugate identity. This is a mathematical foundation for faithful inverse-oriented recursive execution; physical conjugation, original framed-network assembly and full recursion remain separate obligations.
 
+- `Networks/BinaryColumnConjugation.lean`: Complex conjugation lifts through actual column operators and tensor products, including zero columns. The genuine whole-array phase frame and rational label frame conjugate to their actual inverses. This identifies the inverse-oriented mathematical target; physical wrappers and recursive assembly remain separate.
+
+- `Networks/ComplexFramedConjugation.lean`: Every original rational scalar gate commutes with complex conjugation. The literal conjugated framed instruction list retains every gate and original order, with exact conjugated source/sink endpoints. Conjugating the original endpoint correction routines as well yields conjugate-full-frame-conjugate on every data and scratch wire. The physical correction/wrapper traffic and full recursive execution remain open.
+
+- `Networks/ComplexInverseExecution.lean`: The literal conjugated original complex network, together with conjugated original source and sink corrections, now computes the genuine inverse full tensor on every data and scratch wire. Actual conjugated frameOf values are identified with their true inverses. This closes the mathematical inverse-oriented network endpoint, while physical wrapper/correction execution and the complete recursive tape assembly remain open.
+
 ### Networks/Certificates/Paired49
 
 Generated data are untrusted; all acceptance proofs use Lean kernel reduction.
