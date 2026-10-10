@@ -4538,6 +4538,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeUniformPolynomialRotationSourceReady.lean`: Actual uniform Y-phase and X-negation boundaries execute on the recursive source-ready bank, preserving controller frame and scalar suffix and reclaiming first sixty-seven leaf tapes, with paid original parent-volume runtime.
 
+- `Machine/CompactComplexSourceReadyInstalledPayload.lean`: Original caller source and named role words derive the exact recovered payload after selected child installation. Caller-payload reconstruction is proved rather than assumed as a post-return equality.
+
+- `Machine/CompactComplexSourceReadyOrientedStoppedReturnPrefix.lean`: Actual pre/post-oriented forward leaf derives stopped common grid, exact original scalar-prefix budget and returned ledger at parent live plus arity^(k+1). Reached stopped result installation is connected by StoppedInstalledResult; saved-stack and recursive return linkage remain open.
+
+- `Machine/CompactComplexSourceReadyStoppedInstalledResult.lean`: Actual stopped control reaches guard0 with its literal original-caller oriented leaf result and genuine leaf target installed. Polynomial-shape leaf transport and complete retained-bank endpoint are derived internally with paid physical runtime; saved-PC pop and full recursive return composition remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
