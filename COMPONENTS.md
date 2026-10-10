@@ -4506,6 +4506,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeUniformPolynomialRotationNamedRoles.lean`: Actual Y-role runtime phase and X-role fixed negation use shared original named ports and opaque complete address enumeration. Original fifteen headers and native source words come directly from the actual caller; first sixty-seven blank leaf tapes are reclaimed while every remaining leaf/scalar/controller word is retained. Full original parent-volume runtime is proved.
 
+- `Machine/CompactComplexSourceReadyCorrectedScalarReadiness.lean`: Arbitrary corrected role families directly supply canonical polynomial arrays, exact named-wire decoding, physical scalar source words, widths, support, grid and initial scalar Ready. Recombination identifies the original whole array where needed, while parent raw rows, live/target storage and controller stacks are retained; no source-word or matching-wire oracle is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
