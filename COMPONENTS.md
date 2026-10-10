@@ -4392,6 +4392,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyNonleafFinalPath.lean`: The actual node finalization block composes all-role exact contraction, metadata cleanup and live commit with same-row current-node merge. Its literal full-bank endpoint retains frames and leaf storage, clears work and has an original-path native-volume bound. Post-orientation and recursive closure remain separate.
 
+- `Machine/CompactComplexSourceReadyNonleafTargetSplit.lean`: Actual nonleaf setup first synthesizes the full-node target from the incoming live denominator, then physically splits the current already-quotiented rows without a second division. Literal role output, original dependency-path native-volume cost and arbitrary scalar suffix preservation are proved. Full recursive table execution remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
