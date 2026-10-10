@@ -2401,3 +2401,4 @@ import IntegerMultBounds.Machine.CompactComplexFixedNodeTable
 import IntegerMultBounds.Machine.CompactComplexNonleafEventProgress
 import IntegerMultBounds.Machine.CompactComplexNonleafRoleReturn
 import IntegerMultBounds.Machine.CompactComplexNonleafRoleSplit
+import IntegerMultBounds.Machine.CompactComplexNonleafRoleReturnBudget
