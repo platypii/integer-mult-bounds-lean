@@ -3996,6 +3996,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleConjugatedPorts.lean`: Physically generated role numeric43 headers supply original13 plus ell to the native phase caller, with explicit six-symbol to prime alphabet encoding and literal selected role serialization. The actual prime-side copy/share/phase/cleanup machine is proved; original binary-controller lifting and full recursion remain open.
 
+- `Machine/RadixSignedShiftRight.lean`: A fixed native radix-two sign-extending arithmetic right-shift transducer retains source and field width, with exact word length plus one runtime and literal source/output/head endpoints.
+
+- `Machine/SignedRadixExactReturn.lean`: Actual coarser Gaussian grid supplies signed numerator divisibility and proves exact denominator lowering by one or repeated sign-extending shifts with unchanged width. Physical record scheduling, rewind and controller precision propagation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
