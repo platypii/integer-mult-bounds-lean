@@ -4594,6 +4594,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyScalarGeometryLifecycle.lean`: The unchanged actual scalar lifecycle physically derives a role count from original parent rows, executes literal polynomial arrays and erases its generated count. It retains the original Stage and raw payload descriptor, derives Ready internally and proves exact full-bank output plus a fixed linear-volume bound without the incompatible full-repair record-capacity premise; group grids and recursive wiring remain separate.
 
+- `Machine/CompactComplexCorrectedEntryGeometryReadiness.lean`: The actual corrected entry endpoint is exactly the canonical caller bank with original raw payload descriptor retained. Plain role arrays give literal widths, words and support, generated target and unchanged live, count blankness and ancestor retention. Child exponent, clock and free-stack prerequisites derive from explicit genuine incoming bank premises; no incompatible full-repair Inputs or readiness callback is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
