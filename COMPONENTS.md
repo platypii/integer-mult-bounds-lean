@@ -4604,6 +4604,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedRootStoppedTablePath.lean`: Actual positive and scalar stopped roots execute the forward leaf and empty-stack identity orientation inside the unchanged corrected table, reaching guard zero with every table join paid. The installed result retains the literal empty guard cell; full root input/classifier composition and recursive execution remain separate.
 
+- `Machine/CompactComplexCorrectedChildReturnPrefix.lean`: Genuine corrected child tensor semantics yields the shared spectator grid, exact returned prefix budget and live ledger. The existing physical target-restoration block runs on the literal canonical returned bank, deriving promotion, restored target and installed live header with a paid native-volume bound. Child tensor correctness remains the explicit recursive induction premise; full caller recovery is tracked separately.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
