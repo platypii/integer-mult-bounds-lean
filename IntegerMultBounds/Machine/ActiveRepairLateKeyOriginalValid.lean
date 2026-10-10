@@ -40,7 +40,10 @@ theorem key_valid (d : Data) (h : Valid d) : ActiveRepairLateKeyRun.Valid d.key 
   bv := h.bv
   bc := h.bc
   hfit := h.fit
-  pz := bits_value _
+  pz := by
+    change Counter.value (RecursiveChildQuotientsConstant.bits 0)=0
+    rw [RecursiveChildQuotientsConstant.bits_eq_advance]
+    exact GrowingCounterData.empty_value 0
   pA := bits_value _
   psv := bits_value _
   pv := bits_value _
