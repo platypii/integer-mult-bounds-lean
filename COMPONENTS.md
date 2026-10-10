@@ -4202,6 +4202,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarPrefixAdvance.lean`: Actual named scalar groups preserve the exact next original scalar-prefix grid at their advanced common denominator. Dependency Path reserves provide overflow guards without replacing the tighter prefix postcondition or charging the whole-node growth allowance repeatedly; propagation through interleaved recursive child calls remains open.
 
+- `Machine/CompactComplexScalarCallerEndpoint.lean`: Complete actual scalar output reconstructs the literal original codec caller bank with emitted native polynomial role streams and advanced live7. Count storage is restored blank, retained source65 and controller, queue, scalar/native descriptors, tails and stacks are preserved. Named role/source premises for the next physical event follow directly; complete recursive event composition remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
