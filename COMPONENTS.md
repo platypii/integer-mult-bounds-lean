@@ -4278,6 +4278,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleParentRows.lean`: Separate parent-only row restoration physically multiplies the actual child row descriptor by fixed arity after decoded return. Exact raw endpoints preserve all other descriptors and the entire complementary payload/controller bank, including appended private workspace. Complete header arithmetic costs are bounded by1000*(arity+1) times parent rows. This operation is excluded from root node merging; recursive continuation assembly remains open.
 
+- `Machine/CompactComplexNonleafRoleChildBank.lean`: A fixed child-header entry program physically saves the parent target once, saves the actual inherited live word on a distinct stack, pushes parent geometric headers and the original site/coordinate PC, decrements the control exponent and synthesizes the genuine child descriptors. Exact endpoints retain rows, ell, precision and arbitrary source/role payloads, enabling source-ready shared entry before the stopped/nonleaf guard. All local transitions are paid; uniform runtime absorption and full recursive execution remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
