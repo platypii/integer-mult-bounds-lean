@@ -121,7 +121,8 @@ theorem setup_linear (order : Order) (v : Stage s) (rows : ℕ) (axis : Fin v.f)
     unfold Shape.recordWidth
     positivity
   have hbits := FlatCoordinateDimensions.bits_length_le_twice ha hp
-  change (bits axis.val).length≤2*(rows*s.recordWidth) at hbits
+  have hbits' : (bits axis.val).length≤2*(rows*s.recordWidth) := by
+    simpa only [RecursiveChildQuotientsConstant.bits_eq_advance,FlatCoordinateSchedule.bits] using hbits
   omega
 
 /-- All computed geometry and the copied ordinal are physically erased at

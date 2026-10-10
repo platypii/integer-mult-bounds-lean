@@ -21,7 +21,7 @@ theorem cost_linear (R w : ℕ) (hR : 0<R) :
   have hb : (RecursiveChildQuotientsConstant.bits R).length≤R+1 := by
     have h := GrowingCounterData.empty_width R
     have hl := Nat.log2_le_self R
-    change (GrowingCounterData.advance R []).length≤R+1
+    rw [RecursiveChildQuotientsConstant.bits_eq_advance]
     omega
   nlinarith
 
