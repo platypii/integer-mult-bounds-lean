@@ -6003,6 +6003,28 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
 - `Schoenhage/SSProgram.lean`: the multiplier compiled to a literal 64-tape
   `Program` with a `HoareTime` contract on encoded tapes (`ssProgram_hoare`).
 
+- `Schoenhage/Relabel.lean`: word programs moved into a larger bank by an
+  injective map of tape names, with the same cost and every other tape
+  untouched (`Runs.map`).
+- `Schoenhage/SSClean.lean`: the multiplier's final state tape by tape (a
+  decidable check shows the tapes it never names are unchanged) and a wipe,
+  so it ends with the product alone on its input tape (`runs_ssClean`).
+- `Schoenhage/RingBank.lean`, `RingMul.lean`, `RingAlu.lean`: the 84-tape
+  bank of the ring product; one product modulo `2^N + 1` between registers of
+  its own (`runs_mulStep`); the residue unit switched on and off around
+  modular subtraction and addition (`runs_aluOp`).
+- `Schoenhage/RingMath.lean`, `RingWords.lean`, `RingDigit.lean`: evaluation
+  at `X = 2^W` turns negacyclic products into products modulo `2^(W r) + 1`
+  (`ev_ncMul`); offset digits pack signed coefficients and recover them
+  (`encode_res`, `decode_pieces`); signed words and truncation toward zero.
+- `Schoenhage/RingPack.lean`, `RingUnpack.lean`: one component of a
+  polynomial to its residue (`runs_pack`); a residue to truncated output words
+  (`runs_unpack`, `outWord_eq`).
+- `Schoenhage/RingProduct.lean`, `RingSpec.lean`, `RingProgram.lean`: the whole
+  ring product (`runs_ringProd`), its output equal to the truncated
+  negacyclic Gaussian product (`outs_eq`), as a literal 84-tape program
+  (`ringProgram_spec`) within `O(N log N log log N)` steps (`ringCost_le`).
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
