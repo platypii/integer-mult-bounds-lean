@@ -3948,6 +3948,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactFramedScalarGrid.lean`: Actual framed grouped-prefix states and every partial listed alignment have exact retained labels, stored/decoded grid bounds and literal-prefix relationships to the full finite network. Recursive child-return dependency budgets and the original-root normalized decoding connection remain open.
 
+- `Machine/NativePolynomialStageShape.lean`: Derives actual native stage payload from genuine polynomial serialization and the three-bit physical codec, preserving all address geometry and role counts. Stage inputs and required record capacity are derived; encoded volume equals three times actual native symbol volume.
+
+- `Machine/NativePolynomialStageHeaders.lean`: Physically synthesizes the encoded polynomial payload descriptor from original shape headers and immutable ell/corrected precision, saves original payload at26, clears all arithmetic work and restores the exact original numeric bank. Generated original13 literally match the typed native stage; coefficients are framed in either alphabet.
+
+- `Machine/NativePolynomialStageHeaderBudget.lean`: Both actual codec-payload header lifecycles have a fixed bound times original native polynomial volume, with controller values derived from Stage. Copying these headers into shared-source phase caller placement remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -2222,3 +2222,6 @@ import IntegerMultBounds.Networks.RationalScalarGrid
 import IntegerMultBounds.Machine.CompactFramedScalarGrid
 import IntegerMultBounds.Schoenhage.LevelUp
 import IntegerMultBounds.Schoenhage.LevelDown
+import IntegerMultBounds.Machine.NativePolynomialStageShape
+import IntegerMultBounds.Machine.NativePolynomialStageHeaders
+import IntegerMultBounds.Machine.NativePolynomialStageHeaderBudget
