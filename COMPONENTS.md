@@ -4264,6 +4264,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleMergeReturn.lean`: On one unchanged Entry-plus-seven-scratch bank, the actual arbitrary child role arrays physically merge to source65, restore the literal raw parent row descriptor and then recover the computed result into the selected parent role. Exact original master/spectators, ancestor stack/head and arbitrary updated controller word/head are preserved, with scratch blank. Actual word widths derive returned-source support; a genuine descendant derives both divisibilities. All exact merge/return costs and the join are paid. This physical boundary does not yet assert common-grid live progress: spectator promotion, final live commit and recursive child semantics remain explicit.
 
+- `Machine/CompactComplexNonleafRoleMergeReturnBudget.lean`: The actual composed arbitrary-child-array merge and parent-result recovery machine now has a uniform parent-native-volume HoareTime bound. Genuine quotient/divisor facts pay reverse row multiplication and all merge/return generated-header lifecycles, spectator/master stack pops, scratch cleanup and the composition join. The exact endpoint preserves computed result, updated controller word and ancestor frame. Recursive child computation and common-grid spectator alignment/commit remain separate costs and correctness obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
