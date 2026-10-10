@@ -2242,3 +2242,5 @@ import IntegerMultBounds.Schoenhage.BaseCase
 import IntegerMultBounds.Machine.CompactNativeConjugatedPhaseZero
 import IntegerMultBounds.Machine.CompactNativeRoleChildLifecycleBudget
 import IntegerMultBounds.Machine.CompactNativeRoleStoppedChildBudget
+import IntegerMultBounds.Machine.ButterflyInheritedStream
+import IntegerMultBounds.Machine.CompactSpectatorInheritedGrid

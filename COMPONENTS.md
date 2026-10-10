@@ -3980,6 +3980,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleStoppedChildBudget.lean`: The complete actual stopped child caller, including count expansion, codec payload generation, saved precision, leaf phase and every restoration, fits a fixed constant times original native volume times Visit count. Actual descendant geometry and codec capacity discharge the budget premises; inherited numerical semantics remain separate.
 
+- `Machine/ButterflyInheritedStream.lean`: Both signed butterfly directions propagate arbitrary actual dyadic denominator and numerator bounds through literal physical axis loops, with exact Walsh semantics and derived signed guards.
+
+- `Machine/CompactSpectatorInheritedGrid.lean`: Actual dependency Path geometry supplies overflow guards at retained role widths, and actual eventual chunk size absorbs fixed dependency constants. Physical leaf execution combines with exact directional Walsh semantics at inherited precision. Controller Path propagation and returned precision policy remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
