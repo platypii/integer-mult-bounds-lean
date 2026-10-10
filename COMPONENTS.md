@@ -4200,6 +4200,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStoppedAlignedBudget.lean`: The complete stopped-call roundtrip, second parent codec lifecycle, generated-volume spectator alignment, live install and cleanup have a uniform runtime bound in original fallback volume times the genuine child size. Real descriptor setup/cleanup schedules and all controller joins are paid; full-native volume derives from original padded rows and transfers into fallback volume. The actual dependency Path and explicit live-prefix ledger derive target capacity and header-cost absorption. No supplied metadata cost allowance remains; propagating this invariant through complete unstopped recursion and summing all calls remain open.
 
+- `Machine/CompactComplexScalarPrefixAdvance.lean`: Actual named scalar groups preserve the exact next original scalar-prefix grid at their advanced common denominator. Dependency Path reserves provide overflow guards without replacing the tighter prefix postcondition or charging the whole-node growth allowance repeatedly; propagation through interleaved recursive child calls remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
