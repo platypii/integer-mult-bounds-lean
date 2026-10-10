@@ -4174,6 +4174,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStoppedLedgerRoundtrip.lean`: One actual stopped call physically selects its runtime target, saves it, enters the genuine child, executes the original-descriptor codec lifecycle and selected leaf, pops the real return PC, and restores geometric headers, exponent and target stacks. The exact parent caller bank retains old live7, generated target8 and computed selected-role words; all other roles, immutable scalar43 and appended workspace are restored. Costs include every dispatch, entry, codec, restoration and outer join. Spectator handoff and live installation, unstopped recursive execution and root closure remain separate.
 
+- `Machine/CompactComplexDenominatorCapacity.lean`: Scalar completion, genuine call entry and certified child return preserve the explicit true-denominator ledger. The actual dependency Path and fixed scalar-prefix reserve bound true-denominator targets by the retained signed half-width and genuine serialized role-stream volume. A typed rule specializes to the actual scalar list without evaluating its enormous enumeration. The original chunk choice eventually pays the fixed reserve, and complete spectator promotion/live-commit costs are uniformly linear in native volume. Physical propagation of the explicitly stated live-progress invariant remains a recursive execution obligation.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
