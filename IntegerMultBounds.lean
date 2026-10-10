@@ -2261,3 +2261,6 @@ import IntegerMultBounds.Machine.NativeSignedReturnClean
 import IntegerMultBounds.Machine.NativeSignedReturnReuse
 import IntegerMultBounds.Machine.NativeSignedReturnPrecision
 import IntegerMultBounds.Schoenhage.Driver
+import IntegerMultBounds.Machine.CompactNativeConjugatedPhaseFamily
+import IntegerMultBounds.Machine.FiniteKernelDispatchAlphabet
+import IntegerMultBounds.Machine.CompactNativeConjugatedPhaseDispatch

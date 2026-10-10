@@ -4010,6 +4010,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeSignedReturnPrecision.lean`: A fixed runtime-counted native precision-return machine repeats the actual cleaned reusable shift on the original source. Coarser-grid divisibility proves exact decoded Gaussian return with unchanged widths and all scratch/controls blank. Runtime explicitly scales with actual exponent gap; gap-header synthesis and certified total absorption remain open.
 
+- `Machine/CompactNativeConjugatedPhaseFamily.lean`: A single actual native basis witness executes every positive or zero-dimensional complex25 phase edge. Finite actual basis word lengths and real phase lifecycle costs have one uniform certified stage-scale bound.
+
+- `Machine/FiniteKernelDispatchAlphabet.lean`: Actual finite kernel dispatch on arbitrary tape bank and alphabet physically reads and erases an appended edge token. Literal call sites install their own token; all write, decode, branch and execution transitions are paid.
+
+- `Machine/CompactNativeConjugatedPhaseDispatch.lean`: One fixed physical finite table executes all actual complex25 forward/phase/reverse edges on original native polynomial rows, including zero edges, with real token installation and complete token/phase cleanup under one uniform stage-scale bound.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

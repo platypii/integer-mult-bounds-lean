@@ -42,8 +42,9 @@ theorem reverse_forward (d : Inputs s) (hslots : d.stage.slots=25^3)
 
 /-- A fixed native stage executes zero-dimensional edges with literal input
 restoration and a paid forward/idle/reverse lifecycle. -/
-theorem exists_program (D : ℕ) :
-    ∃ q, ∃ P : Program ActivePrefixStageNative.tapes q prime, ∃ C : ℝ, 0<C ∧
+theorem runs_of_basis (D : ℕ) {q : ℕ}
+    (P : Program ActivePrefixStageNative.tapes q prime) (C : ℝ)
+    (hP : CompactComplexPhaseFixedWord.Spec D P C) :
     ∀ (s : Shape) (d : Inputs s) (hslots : d.stage.slots=25^3) (order : Order)
       (_ho : ActivePrefixStageHeadersSchedule.Ordered order d.stage)
       (pc : Fin count) (_hm : dimension (edge pc)=0) (ell w : ℕ)
@@ -59,8 +60,6 @@ theorem exists_program (D : ℕ) :
         2*((Networks.ComplexPhaseRowSchedule.word (edge pc)).length : ℝ)*C*
           ActivePrefixStageInverseBudget.scale d+
           (AllAxisNativePolynomialCaller.zeroCost order d ell : ℝ)+2 := by
-  obtain ⟨q,P,C,hC,hP⟩ := CompactComplexPhaseFixedWord.exists_fixed_program D
-  refine ⟨q,P,C,hC,?_⟩
   intro s d hslots order ho pc hm ell w hcode hp xs hw
   obtain ⟨hf,hfRun,_,_⟩ := hP s (symbols (2^ell) w) d hslots hcode hp (edge pc)
     (rows d xs hw) (ActivePrefixStageNativePolynomial.rows_nonblank d xs hw)
@@ -104,6 +103,26 @@ theorem exists_program (D : ℕ) :
     push_cast
     dsimp only [ops] at *
     linarith
+
+theorem exists_program (D : ℕ) :
+    ∃ q, ∃ P : Program ActivePrefixStageNative.tapes q prime, ∃ C : ℝ, 0<C ∧
+    ∀ (s : Shape) (d : Inputs s) (hslots : d.stage.slots=25^3) (order : Order)
+      (_ho : ActivePrefixStageHeadersSchedule.Ordered order d.stage)
+      (pc : Fin count) (_hm : dimension (edge pc)=0) (ell w : ℕ)
+      (_hcode : s.payload=symbols (2^ell) w*3+0)
+      (hp : ∀ op,1<d.stage.f → ActivePrefixStageRuntimeData.Packed
+        (ActivePrefixStagePairData.changePair d op) D)
+      (xs : Fin (ActivePrefixStageTripleWords.count d) → Fin (2^ell) → Coefficient)
+      (hw : ∀ i j,(xs i j).1.length=w ∧ (xs i j).2.length=w),
+      HoareTime (program P order pc) (fun z => z=bank d ell (rows d xs hw))
+        (fun z => z=bank d ell (rows d xs hw))
+        (cost D d hslots order pc ell w hp) ∧
+      (cost D d hslots order pc ell w hp : ℝ)≤
+        2*((Networks.ComplexPhaseRowSchedule.word (edge pc)).length : ℝ)*C*
+          ActivePrefixStageInverseBudget.scale d+
+          (AllAxisNativePolynomialCaller.zeroCost order d ell : ℝ)+2 := by
+  obtain ⟨q,P,C,hC,hP⟩ := CompactComplexPhaseFixedWord.exists_fixed_program D
+  exact ⟨q,P,C,hC,runs_of_basis D P C hP⟩
 
 end
 end IntegerMultBounds.Machine.CompactNativeConjugatedPhaseZero

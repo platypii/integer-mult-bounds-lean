@@ -47,8 +47,7 @@ theorem reverse_eq_fixed {q : ℕ} (P : Program ActivePrefixStageNative.tapes q 
 
 /-- A single native stage yields fixed forward and inverse machines for each
 finite actual edge, uniformly over all runtime widths and original callers. -/
-theorem exists_fixed_program (D : ℕ) :
-    ∃ q, ∃ P : Program ActivePrefixStageNative.tapes q prime, ∃ C : ℝ, 0<C ∧
+def Spec {q : ℕ} (D : ℕ) (P : Program ActivePrefixStageNative.tapes q prime) (C : ℝ) : Prop :=
     ∀ (s : CompactGadgetReservationShape.Shape) (B : ℕ)
       (d : ActivePrefixStageFullData.Inputs s) (hslots : d.stage.slots=25^3)
       (_hcode : s.payload=B*3+0)
@@ -72,7 +71,11 @@ theorem exists_fixed_program (D : ℕ) :
       HoareTime (compiled P (Networks.ComplexPhaseRowSchedule.word edge).reverse).2
         (fun z => z=ActivePrefixStageNativePairRun.bank d xs)
         (fun z => z=ActivePrefixStageNativePairRun.bank d
-          (ActivePrefixStageNativePairSchedule.result d ops.reverse xs)) reverseTime := by
+          (ActivePrefixStageNativePairSchedule.result d ops.reverse xs)) reverseTime
+
+theorem exists_fixed_program (D : ℕ) :
+    ∃ q, ∃ P : Program ActivePrefixStageNative.tapes q prime, ∃ C : ℝ, 0<C ∧
+    Spec D P C := by
   obtain ⟨q,P,C,hC,hP⟩ := ActivePrefixStageNativePairBudget.exists_bounded_stage_program D
   refine ⟨q,P,C,hC,?_⟩
   intro s B d hslots hcode hp edge xs hn
