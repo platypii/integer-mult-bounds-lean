@@ -4186,6 +4186,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarSegmentRows.lean`: Each actual grouped vertex produces its ordered named scalar row block and derives the genuine full-network prefix/suffix identity from the original vertex list. The physical original-header lifecycle now specializes to that actual group, with all guards from its dependency Path, exact row-count denominator advancement, reclaimed count/workspace and a linear runtime bound. Its prefix-aware numerical postcondition stays within the same reserved node budget; no caller-supplied segment decomposition or repeated per-segment growth factor remains.
 
+- `Machine/CompactComplexRootPieceBudget.lean`: The full fixed root lifecycle now separates its genuine recursive callback sum from an explicit polynomial overhead in original active axes. Every physical digit read, piece-clock update, level multiplication, loop test, original-header setup and final queue/numeric cleanup is charged. Generated field lengths, digit count and final power derive from the original base-arity digits, so no supplied controller cost allowance remains. Actual recursive callback discharge and summation of their runtimes remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

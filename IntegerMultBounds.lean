@@ -2354,3 +2354,4 @@ import IntegerMultBounds.Machine.CompactComplexStoppedAlignedCall
 import IntegerMultBounds.Machine.CompactComplexScalarSequenceGrid
 import IntegerMultBounds.Machine.CompactComplexScalarLifecycleGrid
 import IntegerMultBounds.Machine.CompactComplexScalarSegmentRows
+import IntegerMultBounds.Machine.CompactComplexRootPieceBudget
