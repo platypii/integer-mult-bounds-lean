@@ -4430,6 +4430,18 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/WordBankSwap.lean`: Places the actual equal-length word exchange on any two distinct fixed caller ports. Literal exchanged words, restored heads, every complementary tape and the complete exteriors are proved with the same paid runtime. Original role exchange composition remains open.
 
+- `Machine/NativeRoleWordSwap.lean`: Actual exchange of complete native role arrays derives equal serialized lengths and nonblank interiors from original retained record widths. Both heads, complete exteriors and every complementary caller tape are retained literally; runtime is at most nine native volumes for positive rows. Full sink boundary composition remains open.
+
+- `Machine/NativeColumnPhaseFlags.lean`: Actual two-transition read of the low two original column-header bits synthesizes the phase twenty-seven times columns modulo four and restores the header head.
+
+- `Machine/NativeColumnPhaseFlagsPlaced.lean`: Places the actual runtime column-phase initializer on fixed caller slots while retaining every complementary tape and head.
+
+- `Machine/NativeFixedPhaseFlags.lean`: Actual fixed phase-two initializer writes its own negation flags without assuming preinstalled phase bits.
+
+- `Machine/NativeUniformPolynomialRotation.lean`: Fixed native counted stream rotation derives its uniform phase from the original column header, executes all records and erases generated flags. The fixed negation variant initializes phase two internally. Exact endpoints and paid affine record-width/count runtime are proved; original role count setup and caller source replacement remain separate.
+
+- `Machine/NativeUniformPolynomialRotationSemantics.lean`: The actual emitted stream decodes to multiplication by I to twenty-seven times runtime columns, or to negation for the internally initialized phase-two variant, under strict signed guards. Retained widths, literal output heads, caller frame and linear native-volume costs are proved. Original boundary and dependency-grid integration remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
