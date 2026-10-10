@@ -3832,6 +3832,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactSpectatorStoppedLeafCaller.lean`: One fixed stopped-node caller physically expands the live count by retained arity, executes actual guarded forward or inverse spectator leaves and restores original descriptors. Scalar count-one leaves require no expansion; every private tape and exterior is restored. The complete paid bound is linear in full native volume times Visit length; cyclic placement and internal recursive execution remain separate.
 
+- `Machine/CompactNativeRolePrecisionHeaders.lean`: Physically generates corrected role precision so descendant native stored field width remains equal to original guard width, retaining original scalar headers and erasing arithmetic work.
+
+- `Machine/CompactNativeRoleScalarHeaders.lean`: Physically derives reservation role geometry from original scalar descriptors, including padded row count, active dimensions and corrected precision; original source and complementary bank are framed.
+
+- `Machine/CompactNativeRoleStageCopy.lean`: Physically copies fifteen canonical geometry and retained controller words into the fresh role header bank with paid exact execution and untouched complementary tapes.
+
+- `Machine/CompactNativeRoleScalarProducer.lean`: Composes actual scalar generation, fifteen-word copying and complete scalar metadata cleanup. The generated bank literally equals reservation Shape original13 plus immutable ell and corrected precision. Six controller words are explicit live ports; physical role source placement and cost absorption remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
