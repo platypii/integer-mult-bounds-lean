@@ -4288,6 +4288,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleParentContinuation.lean`: One fixed physical continuation composes actual parent geometry/exponent restoration with separate parent-only row multiplication. Exact output is the literal raw parent bank with restored rows and arbitrary actual child-result payload, preserving the complementary controller frame from geometry restoration. All descriptor operations, joins and row arithmetic are charged, with a derived1000*(arity+1)*parentRows row budget. Live-denominator recovery, payload return, spectator alignment and recursive semantics must still compose.
 
+- `Machine/CompactComplexNonleafRoleParentBankBudget.lean`: Actual parent geometry recovery has a uniform212-times-parent-native-volume runtime bound. Exact header lengths, real exponent traffic and every stack/join transition are paid; genuine dependency Paths derive the parent visit and actual child call. Physical raw Hoare wrappers retain child rows and all live/payload frames. One original padding transfers the bound to424 times fallback volume; recursive execution remains open.
+
+- `Machine/CompactComplexNonleafRoleParentLiveContinuation.lean`: Actual parent geometry and row restoration now compose with child-live-to-target copying and real parent-live stack recovery on the same fixed bank. Intermediate descriptor readiness is derived from the original returned child bank and disjoint geometric/live stacks. Exact old parent current, actual child pending target, older live stack and raw parent payload endpoints hold. Complete physical Hoare execution has a uniform native-volume bound derived from the genuine live-progress ledger, paying geometry, row arithmetic, live preparation and every join. Spectators remain mixed until their separate physical promotion; full payload recovery and recursive execution remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
