@@ -4374,6 +4374,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyOrientationInvariants.lean`: The actual original saved call frame now drives paid source orientation directly from the genuine dependency Path, inherited grid and retained native widths. The physical endpoint has exact conditional complex-conjugation semantics; source readiness, every other tape/head and the original saved frame remain literal. Oriented arrays preserve Width and Grid and are involutive, so the same selector can run pre-node and post-node before return-PC popping. All guard/peek/scan traffic fits one fixed constant times native volume. Complete oriented entry/final control assembly and full recursion remain open.
 
+- `Machine/CompactComplexSourceReadyNonleafTarget.lean`: The actual positive-node per-child count header now physically expands to full node volume, adds that volume twice to incoming live to install the genuine node target, and restores the original count and every source/frame. The real dependency Path and incoming live ledger absorb both count lifecycles and target traffic into original native volume. Target-plus-split control composition and retention across the full schedule remain separate.
+
+- `Machine/CompactComplexSourceReadyNonleafContraction.lean`: Actual all-role exact contraction and shared-live commit now execute on the existing node work10 while retaining frame9 and the full leaf bank. Generated length descriptors, shifts, cleanup and commit have a genuine Path/live-ledger-derived native-volume bound. The nonleaf semantic wrapper uses the original network target and retained grids to derive exact contracted decoded results. Same-current-row merging, post-orientation, final-table placement and recursive closure remain open.
+
+- `Machine/CompactComplexSourceReadyNonleafFinalGeometry.lean`: Literal contraction serialization now equals the native serializer required by the current-node merger. Exact contraction commutes with cyclic role addressing, preserves field widths and has the exact frame2/work7 association needed to reconstruct the physical caller. These are geometry and endpoint identities; the complete contraction/merge/orientation path remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
