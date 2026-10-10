@@ -4368,6 +4368,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyFullChildPaths.lean`: The genuine original child-entry lifecycle and complete payload/spectator/live/target return sequence now execute in a scalar-inclusive fixed cyclic table. Original selected call roles and saved addresses derive paid event-to-shared-entry and saved-PC-to-next-event paths from actual physical runs, without supplied local Hoare proofs. Every original endpoint and arbitrary scalar scratch are preserved literally. Fixed full-bank control parameters permit final target/contraction blocks; the actual entire event table and recursive child induction remain open.
 
+- `Machine/CompactComplexSourceReadyActualTable.lean`: The original interleaved schedule is now populated by actual scalar lifecycle programs for each original grouped row block, actual selected child-entry programs and the complete actual decoded child-return programs on the same scalar-inclusive bank. Scalar count setup borrows reclaimed header0; exact branch identities feed local execution proofs. One fixed cyclic machine uses these concrete event/return families independently of recursion depth. Nonleaf target/contraction and runtime orientation control blocks remain fixed parameters pending actual finalization; full recursive correctness and cost instantiation remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
