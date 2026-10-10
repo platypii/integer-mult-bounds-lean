@@ -4122,6 +4122,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RawLinearCombinationComplexDenominatorPlaced.lean`: Fixed injective caller placement shares genuine source streams, original coefficient-count and true live denominator directly with the complete reusable scalar sequence. Literal tape/head inputs derive all local private blankness; no execution callback is supplied. Exact computed source streams and incremented denominator are installed in permanent ports, all unselected caller cells/heads survive and the appended local workspace returns blank with unchanged paid runtime.
 
+- `Machine/CompactComplexControllerDenominatorTarget.lean`: Actual persistent root storage8 receives a physically constructed certified leaf/nonleaf return target from live input denominator7 and actual native7 child volume. Genuine parent Visit geometry identifies the volume; descriptor originals, target stack9 and every other tape survive. Exact target readiness for the existing save routine and linear construction costs are proved. Actual runtime stop-branch dispatch remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
