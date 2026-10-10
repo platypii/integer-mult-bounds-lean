@@ -4572,6 +4572,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedEntryTablePath.lean`: Actual corrected tag2 installs the target, splits current rows and executes canonical source X signs, then follows the paid table edge to the first original schedule event PC. Literal banks, exact summed execution cost and a fixed linear-volume bound are derived without an execution callback; full recursive reached invariants remain open.
 
+- `Machine/CompactComplexSourceReadyCorrectedFinalTablePath.lean`: Actual corrected tag3 executes sink corrections, contraction, row rejoin and saved-call orientation, then follows the original table edge to guard0. Its literal endpoint and exact sum-cost plus table join are proved without an execution callback; the physical saved-PC bank survives for the following pop.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
