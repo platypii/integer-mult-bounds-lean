@@ -2247,3 +2247,4 @@ import IntegerMultBounds.Machine.CompactSpectatorInheritedGrid
 import IntegerMultBounds.Machine.CompactNativeRoleScalarCaller
 import IntegerMultBounds.Machine.CompactNativeRoleReservedCaller
 import IntegerMultBounds.Machine.CompactNativeRolePaddingCaller
+import IntegerMultBounds.Schoenhage.Params
