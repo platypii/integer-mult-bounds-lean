@@ -5828,6 +5828,10 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   the operands modulo `2^N + 1` to their product (`runs_ssMain`), with its
   cost along the size trajectory (`ssCost`).
 
+- `Schoenhage/SSCost.lean`: the multiplier's cost within the schedule's
+  recurrence (`ssCost_le`) and its `O(N log N log log N)` runtime
+  (`runs_ssMain_bound`).
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
