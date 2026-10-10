@@ -4032,6 +4032,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeSignedGapReturn.lean`: Complete fixed eight-tape original-header precision return synthesizes the unary gap once, scans every signed field, installs the result on the original source and erases all scratch and generated controls. Exact Gaussian return follows from the coarser grid, with unchanged signed widths; runtime is at most129 times serialized volume plus324 for nonempty streams with gap at most each field width. Actual controller derivation of this width relation remains open.
 
+- `Machine/CompactNativeRoleConjugatedLifecycle.lean`: Complete original raw numeric43 role-bank lifecycle physically synthesizes codec metadata, executes every actual conjugated phase through one native stage witness, identifies the literal updated role bank and restores original metadata. Original source and all unselected role tapes survive, all private storage is restored, and every setup/execution/cleanup/join cost is bounded by one constant times stage scale. Genuine Packed geometry and full recursive network assembly remain explicit.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

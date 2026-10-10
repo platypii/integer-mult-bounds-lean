@@ -2274,3 +2274,4 @@ import IntegerMultBounds.Machine.NativeReturnOneTape
 import IntegerMultBounds.Machine.NativeSignedGapScan
 import IntegerMultBounds.Machine.NativeSignedGapClock
 import IntegerMultBounds.Machine.NativeSignedGapReturn
+import IntegerMultBounds.Machine.CompactNativeRoleConjugatedLifecycle
