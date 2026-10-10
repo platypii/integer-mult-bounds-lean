@@ -4136,6 +4136,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeSignedGapPromoteScan.lean`: One fixed three-tape scanner physically prepends runtime-gap low zeros, copies retained signed digits, erases truncated high digits and restores its reusable unary gap clock after each field. Exact whole-stream output, unchanged word volume, actual EOF halting and paid linear-volume cost hold under gap at most each field width. Clock synthesis, source replacement and cleanup lifecycle remain separate.
 
+- `Machine/NativeSignedGapPromoteReturn.lean`: An actual eight-tape lifecycle synthesizes the unary gap once, promotes every signed stream field at unchanged width, rewinds and replaces the source and clears all private tapes while retaining gap and volume descriptors. Exact literal output and a 130-volume-plus324 bound hold for nonempty streams with gap bounded by each field width.
+
+- `Machine/NativeSignedGapPromoteHeadersReturn.lean`: An actual ten-tape adapter physically computes target minus current from retained true denominator headers, promotes the original signed stream and erases its synthesized gap and all private tapes. It retains both denominator headers and the volume descriptor, with exact output and a 130-volume-plus8-target-plus359 bound; target at most volume yields 138-volume-plus359.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
