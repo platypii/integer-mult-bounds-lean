@@ -4364,6 +4364,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativePolynomialConjugationWorkspace.lean`: The actual native conjugation program now acts at source65 of the common source-ready bank with Entry7, leaf and work10 suffixes retained literally. Only the source stream is replaced by conjugated original rows, its head returns zero, and the complete physical cost is at most five times original native volume. Actual runtime direction wrappers and complete recursive assembly remain open.
 
+- `Machine/CompactComplexSourceReadyFullNodeControls.lean`: The actual stopping guard, stopped leaf, current-node split and current-node merge now widen to the scalar-inclusive fixed bank while retaining arbitrary scalar scratch. A genuine full Guarded cyclic table accepts actual full-bank return and scalar-event programs with independent state counts; exact sigma block identities avoid an old-family state-count assumption. Real stopping-test runs reach their state-selected stopped/nonleaf PCs, and paid paths realize literal fixedProgramWith executions. Actual scalar and child event/return instantiation, contraction and full recursive closure remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
