@@ -3790,6 +3790,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/ActivePrefixStageNativeConjugation.lean`: Forward native basis word, row-local action and reverse word have exact original-row semantics: each row receives the action indexed by its real forward destination, then returns to its original position. Row-action execution is a separate obligation.
 
+- `Machine/AllAxisPhaseHeadersData.lean`: Physically derives chunk stride, residual-dimension-times-runtime-axis count minus one and the lowest control offset from retained stage metadata, reclaiming numeric scratch with exact paid cost.
+
+- `Machine/AllAxisPhaseHeadersBudget.lean`: Actual all-axis sparse descriptor generation costs at most10000 times full address width plus one; no coefficient-pass factor is introduced.
+
+- `Machine/RepeatedWeightedPhaseHeader.lean`: A fixed six-tape scanner reads immutable runtime axis count, physically installs and erases its private countdown headers and sentinel, and sums each static weight over an adjacent axis block with every transition paid.
+
+- `Machine/AllAxisPhaseFlagsCaller.lean`: One fixed56-tape caller derives sparse controls from retained stage metadata, extracts all residual-slot/axis bits once and scans their total using original f-header7. Physical clock setup and cleanup are paid; both reused extraction clocks are restored. Coefficient loop and final flags/control cleanup remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

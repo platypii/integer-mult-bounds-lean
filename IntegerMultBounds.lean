@@ -2131,3 +2131,7 @@ import IntegerMultBounds.Machine.CompactNativeRoleHeaders
 import IntegerMultBounds.Schoenhage.Recursive
 import IntegerMultBounds.Machine.CompactNativeTensorPhaseCoordinates
 import IntegerMultBounds.Machine.ActivePrefixStageNativeConjugation
+import IntegerMultBounds.Machine.AllAxisPhaseHeadersData
+import IntegerMultBounds.Machine.AllAxisPhaseHeadersBudget
+import IntegerMultBounds.Machine.RepeatedWeightedPhaseHeader
+import IntegerMultBounds.Machine.AllAxisPhaseFlagsCaller
