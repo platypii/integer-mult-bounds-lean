@@ -5722,6 +5722,11 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
 - `Schoenhage/Batch.lean`: a whole level's batch on tapes, the down-sweep
   over all pairs and the up-sweep over all groups of `K` products.
 
+- `Schoenhage/BatchMath.lean`: the batched recursion computes `ssMul` pair by
+  pair (`upList_nextBatch`).
+- `Schoenhage/BaseCase.lean`: schoolbook multiplication modulo `2^N + 1` on
+  tapes, for one pair and for a whole batch (`runs_baseBatch`).
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
