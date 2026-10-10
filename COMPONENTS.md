@@ -6397,6 +6397,12 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   component words round-trip and disk grid numerators fit in `w ≥ p + 2`
   bits (`DiskGrid.fits`); disk grid coefficients have modulus at most one.
 
+- `Spec/PointwiseProducts.lean`: the statement of the pointwise-product step
+  of `prop:synthetic-convolution` in the paper's formats: the transform header
+  (read back by `transformHeader_read`), arrays of contiguous records in the
+  retained order, and `Q_p(fᵢ gᵢ / r)` for each pair (`MeetsPointwise`), with
+  the paper's and the polylogarithmic time targets. Definitions only.
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
