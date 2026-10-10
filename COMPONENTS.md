@@ -5788,6 +5788,9 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   level of the down-sweep from rest to rest (`runs_downLevel`), and the whole
   down-sweep over all levels along the size trajectory (`runs_downLoop`).
 
+- `Schoenhage/DriverUp.lean`: the driver's up-sweep: popping a saved size and
+  one full level up from rest to rest (`runs_upLevel`).
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
