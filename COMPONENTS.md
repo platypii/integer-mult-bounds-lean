@@ -4184,6 +4184,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarLifecycleGrid.lean`: The full original-header count lifecycle now pairs literal physical scalar execution with its dependency-derived numerical Gaussian-grid postcondition. Input count is physically generated and erased, live denominator advances by actual row count, and private work is reclaimed; scalar growth stays explicit for recursive induction. Full interleaved recursion and its uniform cost sum remain separate.
 
+- `Machine/CompactComplexScalarSegmentRows.lean`: Each actual grouped vertex produces its ordered named scalar row block and derives the genuine full-network prefix/suffix identity from the original vertex list. The physical original-header lifecycle now specializes to that actual group, with all guards from its dependency Path, exact row-count denominator advancement, reclaimed count/workspace and a linear runtime bound. Its prefix-aware numerical postcondition stays within the same reserved node budget; no caller-supplied segment decomposition or repeated per-segment growth factor remains.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
