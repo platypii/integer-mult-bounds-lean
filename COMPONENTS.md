@@ -5611,6 +5611,11 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   `x y mod 2^N + 1` whenever `2^(kOf N) ∣ N` and `x, y < 2^N + 1`; one level
   with correct pointwise products is `levelOut_correct`.
 
+- `Schoenhage/InvLayers.lean`: the inverse pair loop, complementary shift
+  `N - t`, inverse blocks, the shift recomputation from the root (`kids`
+  rounds, geometric cost) and the whole inverse transform `invIter` on the
+  48-tape bank (`runs_invLoop`).
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
