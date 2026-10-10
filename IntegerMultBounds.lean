@@ -2383,3 +2383,4 @@ import IntegerMultBounds.Schoenhage.RingProduct
 import IntegerMultBounds.Schoenhage.RingSpec
 import IntegerMultBounds.Schoenhage.RingProgram
 import IntegerMultBounds.Machine.CompactComplexCallerReturnFlow
+import IntegerMultBounds.Machine.CompactComplexStoppedPrefixAlignedCall

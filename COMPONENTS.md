@@ -4218,6 +4218,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCallerReturnFlow.lean`: The fixed guarded cyclic return controller now acts on the literal scalar/native codec caller bank, including every permanent role tape and the immutable original scalar43 suffix. Saved actual site/coordinate bits decode the continuation and erase the PC frame in exact width-plus-five time; empty root stack genuinely halts in two transitions. Terminal continuations may back-edge into the same fixed entry with one paid transition. Full construction of the continuation table and recursive coefficient execution remains open.
 
+- `Machine/CompactComplexStoppedPrefixAlignedCall.lean`: The unchanged complete stopped-call program now runs directly from current per-role arrays, reconstructing original reserved geometry internally. Real child roundtrip, second parent codec lifecycle, generated-volume spectator shifts, live commit and cleanup return the literal next caller with all original costs paid. Its stronger numerical endpoint retains the exact original scalar prefix at unchanged parent levels and advanced returned-child ledger; Path-derived overflow replaces the earlier coarse-grid precondition. Full fixed unstopped recursive induction remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
