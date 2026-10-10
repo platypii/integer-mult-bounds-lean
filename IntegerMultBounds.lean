@@ -2512,3 +2512,5 @@ import IntegerMultBounds.Machine.NativeEndpointCharacterOriginal
 import IntegerMultBounds.Machine.NativeEndpointCharacterOriginalBudget
 import IntegerMultBounds.Machine.NativeEndpointCharacterTerminal
 import IntegerMultBounds.Networks.ComplexEndpointGrid
+import IntegerMultBounds.Machine.NamedRoleWordExchange
+import IntegerMultBounds.Machine.CompactComplexEndpointRoleExchange

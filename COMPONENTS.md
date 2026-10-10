@@ -4466,6 +4466,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeEndpointCharacterTerminal.lean`: Actual compiled terminal-vector weights give the original signColumns correction at the proved physical coordinates. This identifies the genuine terminal tensor character; full caller address transport and named-role boundary assembly remain open.
 
+- `Machine/NamedRoleWordExchange.lean`: Actual fixed pair-family compiler swaps equal-width native arrays on injective named X/Y caller ports. Literal complete array routing, all restored heads, arbitrary scratch and non-role frames and paid sequence runtime are proved without evaluating the finite enumeration.
+
+- `Machine/CompactComplexEndpointRoleExchange.lean`: One actual fixed complex25 role machine physically exchanges every original named X/Y array using roleEncoding and an opaque complete noduplicate address enumeration. Its literal endpoint is the original ComplexFramedExecution.route, retaining scratch, controller words, all heads and arbitrary suffix. Runtime uses quotient role rows and is bounded by a fixed constant times original parent native volume; original caller words are derived internally.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
