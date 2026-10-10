@@ -2264,3 +2264,4 @@ import IntegerMultBounds.Schoenhage.Driver
 import IntegerMultBounds.Machine.CompactNativeConjugatedPhaseFamily
 import IntegerMultBounds.Machine.FiniteKernelDispatchAlphabet
 import IntegerMultBounds.Machine.CompactNativeConjugatedPhaseDispatch
+import IntegerMultBounds.Machine.CompactComplexScalarIntegerRows

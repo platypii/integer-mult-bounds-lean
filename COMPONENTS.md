@@ -4016,6 +4016,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeConjugatedPhaseDispatch.lean`: One fixed physical finite table executes all actual complex25 forward/phase/reverse edges on original native polynomial rows, including zero edges, with real token installation and complete token/phase cleanup under one uniform stage-scale bound.
 
+- `Machine/CompactComplexScalarIntegerRows.lean`: Actual grouped complex25 sparse row terms and named wire order supply concrete integer numerator coefficients with common denominator2 and magnitude bound52. The fixed binary expression compiler physically executes every integer row with exact signed and Gaussian semantics at precision n+1, clean private copies, and one derived uniform guard/runtime constant. Complete scalar streams and grouped network assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
