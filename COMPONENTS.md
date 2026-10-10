@@ -4018,6 +4018,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarIntegerRows.lean`: Actual grouped complex25 sparse row terms and named wire order supply concrete integer numerator coefficients with common denominator2 and magnitude bound52. The fixed binary expression compiler physically executes every integer row with exact signed and Gaussian semantics at precision n+1, clean private copies, and one derived uniform guard/runtime constant. Complete scalar streams and grouped network assembly remain open.
 
+- `Machine/CompactNativeRoleConjugatedCaller.lean`: One actual native basis witness executes every edge on the selected genuine six-symbol role source, with generated polynomial geometry/code/count/width and automatically selected original Stage order. All physical header copying, source-sharing phase execution and cleanup are discharged with one uniform stage-scale runtime. Genuine Packed geometry remains explicit; full original controller assembly remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
