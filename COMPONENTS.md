@@ -4198,6 +4198,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerExactReturn.lean`: The genuine controller bank now physically generates its role-stream volume header, contracts all permanent role fields from retained live7/target8, erases generated metadata and commits target to live7 while erasing8. Literal output restores controller geometry, immutable scalar descriptor, all stacks and private workspace. Actual completed-network semantics derive the coarser return grid and exact decoded-value preservation at the real nonleaf target; physical completion correctness and its live-denominator lower bound remain recursive induction obligations.
 
+- `Machine/CompactComplexStoppedAlignedBudget.lean`: The complete stopped-call roundtrip, second parent codec lifecycle, generated-volume spectator alignment, live install and cleanup have a uniform runtime bound in original fallback volume times the genuine child size. Real descriptor setup/cleanup schedules and all controller joins are paid; full-native volume derives from original padded rows and transfers into fallback volume. The actual dependency Path and explicit live-prefix ledger derive target capacity and header-cost absorption. No supplied metadata cost allowance remains; propagating this invariant through complete unstopped recursion and summing all calls remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
