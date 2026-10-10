@@ -4556,6 +4556,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedEntry.lean`: The fixed tag2 physically synthesizes its target, splits the original source rows and applies canonical source X signs. The literal named-role endpoint and summed physical runtime are proved; recursive reachability remains separate.
 
+- `Machine/CompactComplexFixedNodeSavedReturnPath.lean`: The actual original cyclic node table physically guards and pops its genuine saved call PC, reaches that call continuation in address-width plus five transitions and changes only the saved stack. The proof uses literal saved bits and no table execution oracle; deriving its reached stack premises inside full recursion remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
