@@ -4000,6 +4000,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/SignedRadixExactReturn.lean`: Actual coarser Gaussian grid supplies signed numerator divisibility and proves exact denominator lowering by one or repeated sign-extending shifts with unchanged width. Physical record scheduling, rewind and controller precision propagation remain separate.
 
+- `Machine/CompactNativeRoleConjugatedBudget.lean`: Derives encoded polynomial payload capacity and canonical original13/ell word bounds from actual ordered Stage geometry. Actual full native caller copying and erasure, for arbitrary exterior tape count, cost at most266 times genuine expanded stage record volume.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
