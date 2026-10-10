@@ -4222,6 +4222,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNodeLocalBudget.lean`: Actual scalar group lifecycle costs, geometric header/PC traffic and completed exact-return metadata have derived native-volume bounds. True child target selection, denominator save/restore, physical header entry/return and joins are separately bounded from each changing dependency Path and live ledger; no supplied target capacity remains. Genuine row divisibility proves the role-volume quotient and original padding gives the factor-two fallback-volume bound. The node aggregation is explicitly partial: full spectator/codec/live-install composition, all assembly joins, physical interchange bounds and recursive execution remain open.
 
+- `Machine/CompactComplexScheduledEventExecution.lean`: The actual named scalar lifecycle machines and local child machines compile into a finite interleaved node program on the literal common caller bank. Every local execution cost and join is paid; private banks are restored blank at boundaries, and local physical exponent equalities give the final live header covering the genuine nonleaf target. Generic and actual scalar specializations are checked. Local child correctness and construction of the single fixed cyclic recursive dispatcher remain open; rebuilding code by runtime depth would not satisfy that requirement.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
