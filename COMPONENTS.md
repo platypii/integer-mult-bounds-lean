@@ -4284,6 +4284,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleMergeCurrentBudget.lean`: Complete current-node merge runtime is uniformly bounded by genuine current native volume, with all original metadata and role transfer costs included. The actual recursive dependency Path and original active-axis bound derive current-row positivity and arity divisibility. Actual Hoare wrappers return the source-ready permanent bank plus seven blank scratch tapes, and one original padding yields a twice-original-volume bound. Full recursive execution and recurrence instantiation remain open.
 
+- `Machine/CompactComplexNonleafRoleParentBank.lean`: Physical parent geometry recovery erases the actual child geometric words, pops the real saved parent descriptors and increments the control exponent. Exact raw endpoints retain child rows, ell, precision and arbitrary payloads while preserving live and target words. The forward child-entry output derives genuine saved-header frames, and all transitions and joins are paid. Uniform runtime absorption and recursive execution remain open.
+
+- `Machine/CompactComplexNonleafRoleParentContinuation.lean`: One fixed physical continuation composes actual parent geometry/exponent restoration with separate parent-only row multiplication. Exact output is the literal raw parent bank with restored rows and arbitrary actual child-result payload, preserving the complementary controller frame from geometry restoration. All descriptor operations, joins and row arithmetic are charged, with a derived1000*(arity+1)*parentRows row budget. Live-denominator recovery, payload return, spectator alignment and recursive semantics must still compose.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
