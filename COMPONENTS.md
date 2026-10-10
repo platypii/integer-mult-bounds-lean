@@ -4404,6 +4404,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyNonleafOrientedEndpoint.lean`: After actual post-selection the source bytes are exactly the conditionally conjugated contracted global array. The original padded-volume bound is retained; complete recursive inverse correctness remains separate.
 
+- `Machine/CompactComplexSourceReadyOrientedControlsStopped.lean`: Actual stopped child execution derives the forward count-dispatched native result from original Path and live ledger, preserves the saved call code, then runs its real post-selector. Literal output, current denominator and arbitrary scalar suffix have paid native-volume bounds.
+
+- `Machine/CompactComplexSourceReadyOrientedControlsStoppedSemantics.lean`: The original dependency Path and input grid derive post-conjugation safety at the actual stopped-leaf denominator. The decoded endpoint is the exact conditional complex conjugate, with retained widths and saved frames.
+
+- `Machine/CompactComplexSourceReadyOrientedControlsStoppedRoot.lean`: Both actual stopped root branches execute the real forward dispatch and use their retained empty PC stack to select post identity. Literal native output, current denominator and scalar suffix are proved with a paid bound.
+
+- `Machine/CompactComplexSourceReadyOrientedActualTable.lean`: One canonical fixed transition table now instantiates all four actual oriented controls, genuine stopping-marker classifier, original scalar and child routines, and the original physical saved-PC port. No control family or execution oracle is an argument. Scalar count setup still needs the role-row quotient while retaining the parent row descriptor; reachable recursive correctness, termination and total runtime remain open.
+
+- `Machine/CompactComplexSourceReadyNonleafInitialTablePath.lean`: The real target-generation and current-row split body executes on the full scalar-inclusive bank and follows its paid nonleaf setup edge to the first event, or finalization for an empty event sequence. All local execution is derived internally from original tape and Path premises.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
