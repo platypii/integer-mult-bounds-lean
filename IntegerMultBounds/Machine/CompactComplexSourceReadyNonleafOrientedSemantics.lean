@@ -1,6 +1,7 @@
 import IntegerMultBounds.Machine.CompactComplexSourceReadyNonleafFinalSemantics
 import IntegerMultBounds.Machine.CompactComplexSourceReadyNonleafOrientedEndpoint
 import IntegerMultBounds.Networks.ComplexInverseExecution
+import IntegerMultBounds.Networks.ComplexEndpointGrid
 
 /-! Genuine nonleaf contraction and saved-call post-orientation have exact
 Gaussian semantics. Negation safety is derived from the completed network,
@@ -177,6 +178,20 @@ node. All scratch wires are part of the same actual bank. -/
 def oriented_bank (call : ComplexRecursiveCallSchema.Call)
     (stored : ComplexFramedExecution.Wire → BinaryColumns.Arrays (25^3) (arity^k)) :=
   if call.inverse then ComplexFramedConjugation.bankConjugate stored else stored
+
+/-- Actual pre-orientation and source signs preserve the original node grid.
+This supplies the raw scalar/child schedule with its unchanged input reserve. -/
+theorem corrected_source_grid (call : ComplexRecursiveCallSchema.Call) (n M k : ℕ)
+    (stored : ComplexFramedExecution.Wire → BinaryColumns.Arrays (25^3) (arity^k))
+    (hg : ∀ wire address,BoundedGrid n M (stored wire address)) :
+    ∀ wire address,BoundedGrid n M
+      (ComplexEndpoints.correctInput (arity^k) (oriented_bank call stored) wire address) := by
+  apply GaussianPrecision.bounded_correctInput
+  unfold oriented_bank
+  split_ifs
+  · intro wire address
+    exact bounded_star (hg wire address)
+  · exact hg
 
 theorem corrected_post_completed (sh : Shape) (rows ell p current n k : ℕ)
     (hP : 2*sh.bits≤p)

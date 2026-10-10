@@ -4424,7 +4424,7 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyOrientedStoppedTablePath.lean`: The actual canonical table executes stopped positive and scalar branches for both saved children and empty roots, retains original saved frames and scalar scratch, and follows the paid stopped edge to guard zero. Every local body and post-selector run is derived internally; recursive closure remains open.
 
-- `Machine/CompactComplexSourceReadyNonleafOrientedSemantics.lean`: Original dependency Paths and completed-network grids derive safe post-conjugation and literal retained widths. A genuine correction-inclusive completed equation implies the true forward or inverse full tensor with both original endpoint corrections retained. Actual execution of those correction boundaries and recursive completion remain open.
+- `Machine/CompactComplexSourceReadyNonleafOrientedSemantics.lean`: Original dependency Paths and completed-network grids derive safe post-conjugation and literal retained widths. Actual pre-orientation and source signs preserve the original input grid and numerical reserve. A genuine correction-inclusive completed equation implies the true forward or inverse full tensor with both original endpoint corrections retained. Actual execution of those correction boundaries and recursive completion remain open.
 
 - `Machine/EqualWordSwap.lean`: Actual two-tape equal-length nonblank word exchange retains arbitrary word exteriors and restores both physical heads, including empty words. The proved runtime three times word length plus six pays the scan and both returns.
 
@@ -5461,6 +5461,8 @@ Bit and complex networks.
 - `Networks/ComplexFramedConjugation.lean`: Every original rational scalar gate commutes with complex conjugation. The literal conjugated framed instruction list retains every gate and original order, with exact conjugated source/sink endpoints. Conjugating the original endpoint correction routines as well yields conjugate-full-frame-conjugate on every data and scratch wire. The physical correction/wrapper traffic and full recursive execution remain open.
 
 - `Networks/ComplexInverseExecution.lean`: The literal conjugated original complex network, together with conjugated original source and sink corrections, now computes the genuine inverse full tensor on every data and scratch wire. Actual conjugated frameOf values are identified with their true inverses. This closes the mathematical inverse-oriented network endpoint, while physical wrapper/correction execution and the complete recursive tape assembly remain open.
+
+- `Networks/ComplexEndpointGrid.lean`: Original source sign characters and sink signs, runtime I phase, negation and named bank exchange preserve the exact Gaussian dyadic denominator and both numerator bounds, including arbitrary scratch. Pre-correction and post-correction require no extra numerical reserve; actual tape boundary assembly remains separate.
 
 ### Networks/Certificates/Paired49
 
