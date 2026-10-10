@@ -4348,6 +4348,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyStoppedNodePath.lean`: The actual complete stopped route now executes the stopping guard, its genuine state-dependent table edge, real zero/positive count-dispatched leaf arithmetic and the final table jump to return-guard PC0 in the same fixed cyclic machine. Literal restored source-ready endpoints and every join are retained. Current Visit geometry pays guard cost even at roots and scalar leaves; full path runtime is uniformly bounded by one exact fixed constant times native volume times child volume, with leaf traffic derived from the actual Path/live ledger. The astronomical constant remains exact through a proved singleton-choice equality, avoiding kernel evaluation without extra axioms or limits. Mixed runtime orientation, full child-return sequencing and recursive closure remain open.
 
+- `Machine/CompactComplexSourceReadyChildReturnPath.lean`: The complete actual child-return sequence now composes parent payload recovery, spectator promotion, shared-live commit and the final saved-target pop on the common fixed source-ready bank. Intermediate readiness and restored raw headers, payloads, descriptors and stacks derive from actual preceding outputs. A paid decoded saved-PC-to-next-event path uses the original call role and slot; genuine completed child execution advances the original scalar prefix, numerical grid and live ledger. Full recursive child execution and inverse-oriented nonleaf assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
