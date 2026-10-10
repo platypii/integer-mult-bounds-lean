@@ -2260,3 +2260,4 @@ import IntegerMultBounds.Machine.NativeSignedReturnStream
 import IntegerMultBounds.Machine.NativeSignedReturnClean
 import IntegerMultBounds.Machine.NativeSignedReturnReuse
 import IntegerMultBounds.Machine.NativeSignedReturnPrecision
+import IntegerMultBounds.Schoenhage.Driver
