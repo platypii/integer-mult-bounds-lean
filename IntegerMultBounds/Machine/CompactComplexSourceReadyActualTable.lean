@@ -1,5 +1,6 @@
 import IntegerMultBounds.Machine.CompactComplexSourceReadyFullChildPaths
 import IntegerMultBounds.Machine.CompactComplexScalarSegmentRows
+import IntegerMultBounds.Machine.CompactComplexSourceReadyOrientationInvariants
 
 /-! The original event schedule populated by actual full-bank scalar and child
 programs. Return blocks execute the complete physical parent continuation.
@@ -58,11 +59,23 @@ private def assemble {t : ℕ} (ht : 0<t) (stack : Fin t)
 
 /-- One fixed cyclic machine uses the actual grouped scalar blocks, actual
 child entry and actual decoded return. None depend on recursion depth. -/
-def program (stack : Fin (tapes s roles)) (headerStack pcStack liveStack : Fin s)
+def programWithStack (stack : Fin (tapes s roles)) (headerStack pcStack liveStack : Fin s)
     (ctrl : Fin 4 → Σ q,Program (tapes s roles) q 2)
     (classify : Fin (ctrl 0).1 → Bool) : Σ q,Program (tapes s roles) q 2 :=
   assemble (Nat.zero_lt_of_lt stack.isLt) stack (childReturn headerStack liveStack)
     ctrl (event headerStack pcStack liveStack) classify
+
+/-- The controller reads the same physical saved-PC port written by actual
+child entry and retained by both orientation wrappers. -/
+def savedStackSlot (pcStack : Fin s) : Fin (tapes s roles) :=
+  Fin.castAdd scratch (CompactComplexSourceReadyOrientationInvariants.savedSlot (c:=roles) pcStack)
+
+/-- Canonical assembly derives the return-stack wiring from the child-entry
+PC slot, rather than accepting a second independently supplied stack port. -/
+def program (headerStack pcStack liveStack : Fin s)
+    (ctrl : Fin 4 → Σ q,Program (tapes s roles) q 2)
+    (classify : Fin (ctrl 0).1 → Bool) : Σ q,Program (tapes s roles) q 2 :=
+  programWithStack (savedStackSlot pcStack) headerStack pcStack liveStack ctrl classify
 
 end
 end IntegerMultBounds.Machine.CompactComplexSourceReadyActualTable
