@@ -2254,3 +2254,4 @@ import IntegerMultBounds.Machine.CompactNativeConjugatedSharedCaller
 import IntegerMultBounds.Machine.CompactNativeRoleConjugatedPorts
 import IntegerMultBounds.Machine.RadixSignedShiftRight
 import IntegerMultBounds.Machine.SignedRadixExactReturn
+import IntegerMultBounds.Schoenhage.LevelMk

@@ -290,4 +290,153 @@ theorem runs_mkMK {N : ℕ} (σ : Fin 𝕋 → WTape) (hp : σ pN = reg (ones N)
     have f2 : T / 2 ^ k * 2 ^ k - T / 2 ^ k ≤ T / 2 ^ k * 2 ^ k := Nat.sub_le _ _
     omega
 
+/-! ### Derived registers -/
+
+theorem bits_two_pow2 : ∀ n, bits (n + 2) (2 ^ n) = List.replicate n false ++ [true, false]
+  | 0 => rfl
+  | n + 1 => by
+    have h1 : 2 ^ (n + 1) % 2 = 0 := by rw [pow_succ]; simp
+    have h2 : 2 ^ (n + 1) / 2 = 2 ^ n := by rw [pow_succ]; simp
+    rw [show n + 1 + 2 = (n + 2) + 1 by ring, bits, h1, h2, bits_two_pow2 n]
+    simp [List.replicate_succ]
+
+theorem hword_eq {N : ℕ} (hN : 2 ≤ N) :
+    hword N = true :: (List.replicate (N - 2) false ++ [true, false]) := by
+  obtain ⟨n, rfl⟩ : ∃ n, N = n + 2 := ⟨N - 2, by omega⟩
+  have h1 : (2 ^ (n + 1) + 1) % 2 = 1 := by rw [pow_succ]; omega
+  have h2 : (2 ^ (n + 1) + 1) / 2 = 2 ^ n := by rw [pow_succ]; omega
+  rw [hword, show n + 2 + 1 = (n + 2) + 1 by ring, bits, show n + 2 - 1 = n + 1 by omega, h1, h2,
+    bits_two_pow2]
+  simp
+
+/-- `tK` with `K` ticks and `pKh = ones (K / 2)` from `tU = ones K`; `tO1 = ones 2`. -/
+noncomputable def mkTicks : Cmd 0 𝕋 :=
+  .seq (op0 Rules.ticks false tU tK (by decide)) <| .seq (rewind tU) <| .seq (rewind tK) <|
+  .seq (op0 Rules.half false tU pKh (by decide)) <| .seq (rewind tU) <| .seq (rewind pKh) <|
+  .seq (op0 Rules.copy false c1 tO1 (by decide)) <| .seq (rewind c1) <|
+  .seq (op0 Rules.copy true c1 tO1 (by decide)) <| .seq (rewind c1) (rewind tO1)
+
+theorem runs_mkTicks {K : ℕ} (σ : Fin 𝕋 → WTape) (hU : σ tU = reg (ones K)) (h1 : σ c1 = reg [true])
+    (hK : σ tK = emp) (hKh : σ pKh = emp) (hO : σ tO1 = emp) :
+    Runs mkTicks σ (· = Function.update (Function.update (Function.update σ
+        tK ⟨[], List.replicate K []⟩) pKh (reg (ones (K / 2)))) tO1 (reg (ones 2))) (8 * K + 80) := by
+  apply Runs.of_wp
+  simp only [mkTicks, WP, wp_op0, wp_rewind]
+  tsimp [hU, h1, hK, hKh, hO, emp, reg, Rules.output_ticks, Rules.output_half_ones, Rules.output_copy]
+  have t1 := time_le Rules.ticks (ones K) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t2 := time_le Rules.half (ones K) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t3 := time_le Rules.copy [true] (fun j => j.elim0) 0 (fun j => j.elim0)
+  refine ⟨?_, ?_⟩
+  · funext i; fin_cases i <;> tsimp [hU, h1, hK, hKh, hO, emp, reg, ones]
+  · simp [clen] at t1 t2 t3 ⊢; omega
+
+/-- `pNK = ones (N' - k)`, `cHN = ones (N' / 2)`, `cWA = ones (N' + 2)` from `pNp`, `pK`. -/
+noncomputable def mkSizes : Cmd 0 𝕋 :=
+  .seq (op1 Rules.drop false pNp pK pNK (by decide) (by decide) (by decide)) <| .seq (rewind pNp) <|
+  .seq (rewind pK) <| .seq (rewind pNK) <|
+  .seq (op0 Rules.half false pNp cHN (by decide)) <| .seq (rewind pNp) <| .seq (rewind cHN) <|
+  .seq (op0 Rules.copy false pNp cWA (by decide)) <| .seq (rewind pNp) <|
+  .seq (op0 Rules.copy true tO1 cWA (by decide)) <| .seq (rewind tO1) (rewind cWA)
+
+theorem runs_mkSizes {Np k : ℕ} (σ : Fin 𝕋 → WTape) (hNp : σ pNp = reg (ones Np)) (hK : σ pK = reg (ones k))
+    (hO : σ tO1 = reg (ones 2)) (hNK : σ pNK = emp) (hHN : σ cHN = emp) (hW : σ cWA = emp) :
+    Runs mkSizes σ (· = Function.update (Function.update (Function.update σ
+        pNK (reg (ones (Np - k)))) cHN (reg (ones (Np / 2)))) cWA (reg (ones (Np + 2))))
+      (12 * Np + 6 * k + 100) := by
+  apply Runs.of_wp
+  simp only [mkSizes, WP, wp_op0, wp_op1, wp_rewind]
+  tsimp [hNp, hK, hO, hNK, hHN, hW, emp, reg, Rules.output_drop, Rules.output_half_ones, Rules.output_copy,
+    ones_append]
+  have t1 := time_le Rules.drop (ones Np) (fun _ => ones k) k (fun _ => by simp)
+  have t2 := time_le Rules.half (ones Np) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t3 := time_le Rules.copy (ones Np) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t4 := time_le Rules.copy (ones 2) (fun j => j.elim0) 0 (fun j => j.elim0)
+  refine ⟨?_, ?_⟩
+  · funext i; fin_cases i <;> tsimp [hNp, hK, hO, hNK, hHN, hW, emp, reg]
+  · simp at t1 t2 t3 t4 ⊢; omega
+
+/-- `cH1 = hword N'` from `pNp` and `tO1 = ones 2`. -/
+noncomputable def mkHword : Cmd 0 𝕋 :=
+  .seq (op1 Rules.drop false pNp tO1 sT2 (by decide) (by decide) (by decide)) <| .seq (rewind pNp) <|
+  .seq (rewind tO1) <| .seq (rewind sT2) <| .seq (emit [[true]] cH1) <|
+  .seq (op0 (Rules.fill false) true sT2 cH1 (by decide)) <| .seq (clear sT2) <|
+  .seq (op0 Rules.copy true c1 cH1 (by decide)) <| .seq (rewind c1) <|
+  .seq (op0 (Rules.fill false) true c1 cH1 (by decide)) <| .seq (rewind c1) (rewind cH1)
+
+theorem runs_mkHword {Np : ℕ} (hNp2 : 2 ≤ Np) (σ : Fin 𝕋 → WTape) (hNp : σ pNp = reg (ones Np))
+    (hO : σ tO1 = reg (ones 2)) (h1 : σ c1 = reg [true]) (hT : σ sT2 = emp) (hH : σ cH1 = emp) :
+    Runs mkHword σ (· = Function.update σ cH1 (reg (hword Np))) (10 * Np + 80) := by
+  apply Runs.of_wp
+  simp only [mkHword, WP, wp_op0, wp_op1, wp_rewind, wp_clear, wp_emit]
+  tsimp [hNp, hO, h1, hT, hH, emp, reg, Rules.output_drop, Rules.output_fill, Rules.output_copy]
+  have t1 := time_le Rules.drop (ones Np) (fun _ => ones 2) 2 (fun _ => by simp)
+  have t2 := time_le (Rules.fill false) (ones (Np - 2)) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t3 := time_le Rules.copy [true] (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t4 := time_le (Rules.fill false) [true] (fun j => j.elim0) 0 (fun j => j.elim0)
+  refine ⟨?_, ?_⟩
+  · funext i; fin_cases i <;> tsimp [hNp, hO, h1, hT, hH, emp, reg, hword_eq hNp2]
+  · simp [clen, WTape.words] at t1 t2 t3 t4 ⊢; omega
+
+/-! ### The ruler's drivers -/
+
+/-- `K - 1` ticks on `qT`, `tU = ones (2M)`, `tO2 = ones (2(M+1))`; `tU = ones K` consumed. -/
+noncomputable def rulerPrepA : Cmd 0 𝕋 :=
+  .seq (op1 Rules.drop false tU c1 sT2 (by decide) (by decide) (by decide)) <| .seq (rewind tU) <|
+  .seq (rewind c1) <| .seq (rewind sT2) <| .seq (op0 Rules.ticks false sT2 qT (by decide)) <|
+  .seq (clear sT2) <| .seq (rewind qT) <| .seq (clear tU) <|
+  .seq (op0 Rules.copy false cM tU (by decide)) <| .seq (rewind cM) <|
+  .seq (op0 Rules.copy true cM tU (by decide)) <| .seq (rewind cM) <| .seq (rewind tU) <|
+  .seq (op0 Rules.copy false tU tO2 (by decide)) <| .seq (rewind tU) <|
+  .seq (op0 Rules.copy true tO1 tO2 (by decide)) <| .seq (rewind tO1) (rewind tO2)
+
+set_option maxHeartbeats 1000000 in
+theorem runs_rulerPrepA {K M : ℕ} (σ : Fin 𝕋 → WTape) (hU : σ tU = reg (ones K)) (h1 : σ c1 = reg [true])
+    (hM : σ cM = reg (ones M)) (hO : σ tO1 = reg (ones 2)) (hT2 : σ sT2 = emp) (hT : σ qT = emp)
+    (hO2 : σ tO2 = emp) :
+    Runs rulerPrepA σ (· = Function.update (Function.update (Function.update σ
+        qT ⟨[], List.replicate (K - 1) []⟩) tU (reg (ones (2 * M)))) tO2 (reg (ones (2 * (M + 1)))))
+      (20 * (K + M) + 150) := by
+  have htl : (ones K).tail = ones (K - 1) := by simp [ones, List.tail_replicate]
+  apply Runs.of_wp
+  simp only [rulerPrepA, WP, wp_op0, wp_op1, wp_rewind, wp_clear]
+  tsimp [hU, h1, hM, hO, hT2, hT, hO2, emp, reg, Rules.output_drop, Rules.output_ticks, Rules.output_copy,
+    ones_append, htl]
+  have t1 := time_le Rules.drop (ones K) (fun _ => [true]) 1 (fun _ => by simp)
+  have t2 := time_le Rules.ticks (ones (K - 1)) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t3 := time_le Rules.copy (ones M) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t4 := time_le Rules.copy (ones (M + M)) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t5 := time_le Rules.copy (ones 2) (fun j => j.elim0) 0 (fun j => j.elim0)
+  refine ⟨?_, ?_⟩
+  · have e2 : M + 1 + (M + 1) = M + M + 2 := by ring
+    funext i; fin_cases i <;> tsimp [hU, h1, hM, hO, hT2, hT, hO2, emp, reg, two_mul, e2]
+  · simp [clen, WTape.words] at t1 t2 t3 t4 t5 ⊢; omega
+
+/-- `tV = ones (2(N'+1-M))` and `tC = ones (2(N'-M))` from `cW = ones (N'+1)`, `pNp`, `cM`. -/
+noncomputable def rulerPrepB : Cmd 0 𝕋 :=
+  .seq (op1 Rules.drop false cW cM sA (by decide) (by decide) (by decide)) <| .seq (rewind cW) <|
+  .seq (rewind cM) <| .seq (rewind sA) <|
+  .seq (op0 Rules.copy false sA tV (by decide)) <| .seq (rewind sA) <|
+  .seq (op0 Rules.copy true sA tV (by decide)) <| .seq (clear sA) <| .seq (rewind tV) <|
+  .seq (op1 Rules.drop false pNp cM sO (by decide) (by decide) (by decide)) <| .seq (rewind pNp) <|
+  .seq (rewind cM) <| .seq (rewind sO) <|
+  .seq (op0 Rules.copy false sO tC (by decide)) <| .seq (rewind sO) <|
+  .seq (op0 Rules.copy true sO tC (by decide)) <| .seq (clear sO) (rewind tC)
+
+set_option maxHeartbeats 1000000 in
+theorem runs_rulerPrepB {Np M : ℕ} (σ : Fin 𝕋 → WTape) (hW : σ cW = reg (ones (Np + 1)))
+    (hNp : σ pNp = reg (ones Np)) (hM : σ cM = reg (ones M)) (hA : σ sA = emp) (hO : σ sO = emp)
+    (hV : σ tV = emp) (hC : σ tC = emp) :
+    Runs rulerPrepB σ (· = Function.update (Function.update σ
+        tV (reg (ones (2 * (Np + 1 - M))))) tC (reg (ones (2 * (Np - M))))) (30 * (Np + M) + 200) := by
+  apply Runs.of_wp
+  simp only [rulerPrepB, WP, wp_op0, wp_op1, wp_rewind, wp_clear]
+  tsimp [hW, hNp, hM, hA, hO, hV, hC, emp, reg, Rules.output_drop, Rules.output_copy, ones_append]
+  have t1 := time_le Rules.drop (ones (Np + 1)) (fun _ => ones M) M (fun _ => by simp)
+  have t2 := time_le Rules.copy (ones (Np + 1 - M)) (fun j => j.elim0) 0 (fun j => j.elim0)
+  have t3 := time_le Rules.drop (ones Np) (fun _ => ones M) M (fun _ => by simp)
+  have t4 := time_le Rules.copy (ones (Np - M)) (fun j => j.elim0) 0 (fun j => j.elim0)
+  refine ⟨?_, ?_⟩
+  · funext i; fin_cases i <;> tsimp [hW, hNp, hM, hA, hO, hV, hC, emp, reg, two_mul]
+  · simp [clen, WTape.words] at t1 t2 t3 t4 ⊢; omega
+
 end IntegerMultBounds.Schoenhage
