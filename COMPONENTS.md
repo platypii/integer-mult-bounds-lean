@@ -4190,6 +4190,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexRecursiveLiveProgress.lean`: Actual physical scalar lifecycles, genuine child entry and complete stopped aligned returns now propagate the true denominator stored on permanent storage7 through the explicit dependency ledger. Contiguous scalar segments retain the node Gaussian budget and derive stored-header capacity from the real Path and original chunk reserve. Child entry physically preserves the live word while saving genuine headers, target and PC; stopped return commits the exact advanced word and updates the sibling ledger. Full unstopped execution induction and completed nonleaf lower-progress remain open.
 
+- `Machine/CompactComplexRootPieceVolume.lean`: The complete root setup, queue processing, numeric enumeration and cleanup overhead is linear in original address/native/serialized volume. A fixed cubic envelope is absorbed by the original bit count from chunk at least three, eventually derived from Sizes.K. The actual fixed root program has exact clean controller/queue endpoints and linear overhead plus the true recursive callback sum; recursive callback execution and its cost sum remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
