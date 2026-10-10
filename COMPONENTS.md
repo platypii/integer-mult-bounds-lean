@@ -4312,6 +4312,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafSpectatorTargetRestore.lean`: One fixed physical continuation composes actual spectator promotion and shared-live commit with final saved-parent-target restoration on the permanent bank plus nine preserved frame tapes and ten clean work tapes. Pop readiness derives from the literal commit endpoint, including blank target8 and retained stack9; the final endpoint retains aligned payloads and advanced live7, restores the parent target and older stack, and reclaims all work tapes. Both real runs and the join have a uniform native-volume bound. Payload-return sequencing, fixed table instantiation and full recursive closure remain open.
 
+- `Machine/CompactComplexSourceReadyGuard.lean`: The actual shared source-ready stopping guard copies the immutable original dimension and current exponent, executes the stopping test and physically clears all ten borrowed numeric/private tapes before either continuation. Exact branch contracts start the selected continuation on the literal unchanged bank, with readiness derived from actual child-entry output and full runtime bounded by native volume. Explicit reservation bridges prove the tested shape axis count is the original global dimension, including actual algorithm parameters. Fixed table assembly and recursive execution remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
