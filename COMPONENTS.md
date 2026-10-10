@@ -4024,6 +4024,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleConjugatedOutput.lean`: Actual selected-role phase output is again exactly the alphabet encoding of the original native role bank with one literal computed six-symbol word installed. Original master source and numeric descriptors remain stationary, so lifted binary controller subroutines can continue without a payload conversion or assumed alphabet correspondence.
 
+- `Machine/NativeReturnOneTape.lean`: Places a real one-tape subroutine on any caller slot, preserving the whole complementary frame and exact runtime.
+
+- `Machine/NativeSignedGapScan.lean`: Fixed native signed-field scan skips the actual exponent gap with a reusable unary clock, copies the suffix and appends remembered signs. Literal output equals repeated sign extension and complete scan cost is at most three times serialized volume under the genuine gap-at-most-field-width condition.
+
+- `Machine/NativeSignedGapClock.lean`: Physically erases the actual reusable unary gap clock, including its marker, at paid linear gap cost.
+
+- `Machine/NativeSignedGapReturn.lean`: Complete fixed eight-tape original-header precision return synthesizes the unary gap once, scans every signed field, installs the result on the original source and erases all scratch and generated controls. Exact Gaussian return follows from the coarser grid, with unchanged signed widths; runtime is at most129 times serialized volume plus324 for nonempty streams with gap at most each field width. Actual controller derivation of this width relation remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

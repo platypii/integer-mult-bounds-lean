@@ -2270,3 +2270,7 @@ import IntegerMultBounds.Schoenhage.DriverUp
 import IntegerMultBounds.Machine.AlphabetTapeReplacement
 import IntegerMultBounds.Machine.CompactNativeRoleConjugatedOutput
 import IntegerMultBounds.Schoenhage.SSMath
+import IntegerMultBounds.Machine.NativeReturnOneTape
+import IntegerMultBounds.Machine.NativeSignedGapScan
+import IntegerMultBounds.Machine.NativeSignedGapClock
+import IntegerMultBounds.Machine.NativeSignedGapReturn
