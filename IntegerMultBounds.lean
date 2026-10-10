@@ -2150,3 +2150,4 @@ import IntegerMultBounds.Machine.CompactNativeRoleReservedBridge
 import IntegerMultBounds.Machine.CompactNativeRoleAssembly
 import IntegerMultBounds.Machine.AllAxisPhaseFlagsEndpoint
 import IntegerMultBounds.Machine.AllAxisPolynomialRecord
+import IntegerMultBounds.Machine.AllAxisPhaseOriginalPorts

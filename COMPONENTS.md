@@ -3828,6 +3828,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPolynomialRecord.lean`: One fixed63-tape machine derives all slot/axis controls once, retains one computed tensor phase for a physically counted polynomial coefficient stream and erases controls, flags, generated descriptors and loop work. Exact per-record result and full transition cost are proved. Whole-array traversal, stream normalization and original caller placement remain separate.
 
+- `Machine/AllAxisPhaseOriginalPorts.lean`: Physically copies actual native original13 descriptors into a fresh67-tape phase bank while retaining the whole native caller and source. Setup costs at most130 and erasure117 times original record volume. Coefficient-source sharing and precision installation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
