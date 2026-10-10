@@ -3898,6 +3898,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPolynomialTensorResult.lean`: Literal native polynomial flattening and address quotient identify each physical aggregate phase output with the complete original tensor product at its native basis-word row, retaining every polynomial spectator. Uniform stream widths follow directly from actual native row widths.
 
+- `Machine/AllAxisPolynomialPlacement.lean`: Places the actual whole-array aggregate phase machine in the native stage alphabet on an arbitrary original source port with unchanged paid runtime. Every complementary caller tape is retained; appended phase source remains blank and the entire ready phase metadata bank is restored. Original-header setup and immutable precision installation remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
