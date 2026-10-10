@@ -4442,6 +4442,20 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeUniformPolynomialRotationSemantics.lean`: The actual emitted stream decodes to multiplication by I to twenty-seven times runtime columns, or to negation for the internally initialized phase-two variant, under strict signed guards. Retained widths, literal output heads, caller frame and linear native-volume costs are proved. Original boundary and dependency-grid integration remain open.
 
+- `Machine/NativeEndpointCharacterHeaders.lean`: Actual preparation copies thirteen original geometry headers and ell into private storage, constructs binary aggregate-character metadata and later erases generated headers. The literal caller frame is retained throughout.
+
+- `Machine/NativeEndpointCharacterLifecycle.lean`: Actual aggregate native character scan composes header preparation, all-axis stream traversal and full metadata cleanup. All sixty-seven private tapes return blank at head zero; original caller descriptors are retained. Original raw-to-codec role header adaptation is separate.
+
+- `Machine/NativeEndpointCharacterBudget.lean`: The complete character lifecycle, including original-header copies, metadata construction, traversal and erasure, has a fixed linear native record-volume bound under explicit width reserve assumptions.
+
+- `Machine/NativeEndpointCharacterAddress.lean`: Exact low-first serialized rank reads every original slot and runtime column with the required reversals. Address compatibility is proved from the actual traversal rather than assumed.
+
+- `Machine/NativeEndpointCharacterReadout.lean`: Actual aggregate scanner phase equals twice the binary dot products across all runtime columns. Its emitted unit phase is exactly the original product character and signColumns; terminal-vector and physical boundary composition remain separate.
+
+- `Machine/CompactComplexSourceReadyScalarChildReadiness.lean`: Actual scalar-prefix output supplies next selected role word, source support, width, grid, exponent preparation and child-ready bank. Parent raw metadata and target, live and storage stacks are retained, with quotient role rows derived by canonicalInput.
+
+- `Machine/CompactComplexSourceReadyNonleafScalarInitialReadiness.lean`: Original nonleaf rolePayload yields canonical polynomial grouping, exact physical role words, widths, support and decoded original-node grids. Actual retained parent metadata and live storage derive initial scalar Ready without supplied role word premises. The source correction remains a separate required physical step.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
