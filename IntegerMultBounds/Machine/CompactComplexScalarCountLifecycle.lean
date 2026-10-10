@@ -62,10 +62,10 @@ private def assembled {k x y : ℕ}
 private def setupProgram (header : Fin s) : Σ q,Program (publicTapes s+43) q 2 :=
   ⟨_,CompactComplexScalarCountRootBank.program (c:=CompactComplexRolePhaseSite.roleCount) header⟩
 
-private def eraseProgram (header : Fin s) : Σ q,Program (publicTapes s) q 2 :=
+def eraseProgram (header : Fin s) : Σ q,Program (publicTapes s) q 2 :=
   ⟨_,CompactComplexScalarCountBudget.eraseProgram (countSlot header)⟩
 
-private def scalarProgram (hs : 7<s) (header : Fin s) (hh : header.val≠7) (ops : List RowIndex) :
+def scalarProgram (hs : 7<s) (header : Fin s) (hh : header.val≠7) (ops : List RowIndex) :
     Σ q, Program (CompactComplexControllerNativeFrame.tapes (s+43)+
       CompactComplexRolePhaseSite.roleCount+
       RawLinearCombinationComplexDenominatorPlaced.localCount CompactComplexScalarRowBlock.wireCount
@@ -123,7 +123,7 @@ def cost (ops : List RowIndex) (n w d : ℕ) :=
 def Realizes {k t : ℕ} (P : Σ q,Program t q 2) (v0 v1 : Tapes k 2) (A : ℕ) :=
   HoareTime P.2 (fun z => z=raw v0 t) (fun z => z=raw v1 t) A
 
-private theorem composed {k x y A B C : ℕ}
+theorem composed {k x y A B C : ℕ}
     (setup : Σ q,Program (k+x) q 2) (scalar : Σ q,Program (k+y) q 2)
     (erase : Σ q,Program k q 2) (v0 v1 v2 v3 : Tapes k 2)
     (h0 : HoareTime setup.2 (fun z => z=CleanSubbank.bank (s:=x) v0)
@@ -324,7 +324,7 @@ noncomputable def roleDivisor : ℕ := Classical.choose
 theorem roleDivisor_eq : roleDivisor=CompactComplexRolePhaseSite.roleCount :=
   Classical.choose_spec (show ∃ n : ℕ,n=CompactComplexRolePhaseSite.roleCount from ⟨_,rfl⟩)
 
-private def roleSetupProgram (header : Fin s) : Σ q,Program (publicTapes s+43) q 2 :=
+def roleSetupProgram (header : Fin s) : Σ q,Program (publicTapes s+43) q 2 :=
   ⟨_,CompactComplexScalarCountRootBank.roleProgram (c:=CompactComplexRolePhaseSite.roleCount) roleDivisor header⟩
 
 /-- Actual scalar lifecycle with parent raw rows retained and the role count
@@ -334,6 +334,8 @@ def roleProgram (hs : 7<s) (header : Fin s) (hh : header.val≠7) (ops : List Ro
     (y:=RawLinearCombinationComplexDenominatorPlaced.localCount CompactComplexScalarRowBlock.wireCount
       CompactComplexScalarPolynomialSequence.scratch) (roleSetupProgram header)
     (scalarProgram hs header hh ops) (eraseProgram header)
+
+
 
 def roleCost (ops : List RowIndex) (parentCount n w d : ℕ) :=
   CompactComplexScalarCountBudget.roleConstant roleDivisor*parentCount+

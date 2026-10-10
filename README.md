@@ -24,6 +24,7 @@ The fixed corrected controller table, actual corrected entry to the first event,
 and nonleaf finalization through the genuine saved-PC pop are checked.
 The stopping branches and corrected root finalization also have checked table paths.
 The empty root guard genuinely halts while retaining the computed bank.
+The scalar lifecycle now checks directly on the original payload bank.
 Reached recursive bank/grid/stack invariants, child-return semantics, full
 recursive correctness and the total runtime recurrence still require integration.
 

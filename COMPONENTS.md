@@ -4592,6 +4592,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyCorrectedRootTablePath.lean`: Actual corrected root tag3 executes sink correction, contraction, rejoin and empty-stack identity orientation, then reaches guard zero through the paid original table edge. Literal saved-stack retention proves the reached guard cell remains empty; preceding recursive schedule correctness is still required.
 
+- `Machine/CompactComplexSourceReadyScalarGeometryLifecycle.lean`: The unchanged actual scalar lifecycle physically derives a role count from original parent rows, executes literal polynomial arrays and erases its generated count. It retains the original Stage and raw payload descriptor, derives Ready internally and proves exact full-bank output plus a fixed linear-volume bound without the incompatible full-repair record-capacity premise; group grids and recursive wiring remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
