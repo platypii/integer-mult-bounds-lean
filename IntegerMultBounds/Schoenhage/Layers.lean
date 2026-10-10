@@ -45,6 +45,7 @@ theorem AluReady.update {N : ℕ} {σ : Fin 𝕋 → WTape} (h : AluReady N σ) 
 /-- Butterflies over the half-block tapes. -/
 noncomputable def pairF : Cmd 0 𝕋 := .loop tU bflyF
 
+set_option maxHeartbeats 1000000 in
 theorem runs_pairF {N t : ℕ} (hN : 0 < N) (htN : t ≤ N) :
     ∀ (U V : List ℕ) (σ : Fin 𝕋 → WTape) (LU LV RV M1 M2 : List (List Bool)),
       AluReady N σ → σ cT = reg (ones t) → U.length = V.length →

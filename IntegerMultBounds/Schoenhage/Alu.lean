@@ -12,7 +12,7 @@ namespace IntegerMultBounds.Schoenhage
 open Machine Strm
 
 /-- The number of tapes of the Schönhage–Strassen machine. -/
-scoped notation "𝕋" => (48 : ℕ)
+scoped notation "𝕋" => (64 : ℕ)
 
 namespace Tp
 abbrev aX : Fin 𝕋 := 0

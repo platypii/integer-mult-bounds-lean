@@ -5621,7 +5621,7 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
 - `Schoenhage/Wp.lean`: weakest preconditions for word programs; `wp_sound`
   and `wp_of_runs` let straight-line correctness proofs unfold symbolically.
 - `Schoenhage/Alu.lean`: residue arithmetic modulo `2^N + 1` on a fixed
-  48-tape bank: `runs_subMod`, `runs_addMod`, `runs_mulPow2` (`t ≤ N`), each
+  64-tape bank: `runs_subMod`, `runs_addMod`, `runs_mulPow2` (`t ≤ N`), each
   from registers into a register with all scratch returned empty and an
   `O(N)` step bound.
 
@@ -5634,7 +5634,7 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
 - `Schoenhage/Lists.lean`: word-list fragments on arbitrary tapes (copy,
   skip, append all, copy as many words as a tick tape holds) and register
   moves, with exact effects and linear step bounds.
-- `Schoenhage/Butterfly.lean`: the forward butterfly on the 48-tape bank:
+- `Schoenhage/Butterfly.lean`: the forward butterfly on the 64-tape bank:
   `u` and `v` from the half-block tapes give `u + 2^t v` and `u − 2^t v`
   modulo `2^N + 1` on the output tapes (`runs_bflyF`), within `O(N)` steps.
 
@@ -5645,7 +5645,7 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   transform over `ZMod (2^N + 1)` with `ψ = 2^(N/K)` (`fwdIter_eq_fwd`,
   `invIter_eq_inv`), with value bounds and lengths.
 - `Schoenhage/Layers.lean`: the forward pair loop, block split, collection,
-  children's shifts and block loop on the 48-tape bank; one whole forward
+  children's shifts and block loop on the 64-tape bank; one whole forward
   layer computes `layerF` and `kids` exactly (`runs_blocksF`).
 
 - `Schoenhage/Recursive.lean`: the whole recursion as a function, step for
@@ -5656,7 +5656,7 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
 - `Schoenhage/InvLayers.lean`: the inverse pair loop, complementary shift
   `N - t`, inverse blocks, the shift recomputation from the root (`kids`
   rounds, geometric cost) and the whole inverse transform `invIter` on the
-  48-tape bank (`runs_invLoop`).
+  64-tape bank (`runs_invLoop`).
 
 - `Schoenhage/Split.lean`: a streaming rule that cuts a word into its
   padded pieces as spelled by a ruler word (`output_split_ruler`).
@@ -5664,7 +5664,7 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
   nonnegative shifted sums reduced from their halves, equal to `levelOut`
   (`levelTape_eq`).
 - `Schoenhage/LevelTape.lean`: cutting into pieces, the windowed shifted
-  sum and the reduction modulo `2^N + 1` on the 48-tape bank.
+  sum and the reduction modulo `2^N + 1` on the 64-tape bank.
 
 ## Top-level
 
