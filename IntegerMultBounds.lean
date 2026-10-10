@@ -2221,3 +2221,4 @@ import IntegerMultBounds.Networks.GroupedCoefficients
 import IntegerMultBounds.Networks.RationalScalarGrid
 import IntegerMultBounds.Machine.CompactFramedScalarGrid
 import IntegerMultBounds.Schoenhage.LevelUp
+import IntegerMultBounds.Schoenhage.LevelDown

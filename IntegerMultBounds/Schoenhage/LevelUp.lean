@@ -17,6 +17,9 @@ abbrev pK : Fin 𝕋 := 45
 abbrev pNK : Fin 𝕋 := 46
 abbrev tOut : Fin 𝕋 := 47
 abbrev sRA : Fin 𝕋 := 48
+abbrev tIn : Fin 𝕋 := 50
+abbrev tX : Fin 𝕋 := 51
+abbrev tY : Fin 𝕋 := 52
 end Tp
 
 /-! ### Quiet scratch tapes -/

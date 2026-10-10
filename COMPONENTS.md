@@ -5687,6 +5687,10 @@ Schönhage–Strassen multiplication, the fast multiplier used for the packed pr
 - `Schoenhage/LevelUp.lean`: one group's up-sweep on tapes, from the `K`
   pointwise products to the level's output word (`runs_upGroup_level`).
 
+- `Schoenhage/LevelDown.lean`: one pair's down-sweep on tapes, both operands
+  cut and transformed and the results interleaved into the next batch
+  (`runs_downPair`).
+
 ## Top-level
 
 - `ExactRecoveryOutput.lean`: Turns the actual recovered coefficients into exactly twice the input length in bits by proving that excess leading padding is zero. Covers nondivisible chunk widths, directly instantiates `ExactRecovery.exact_product`, and identifies the literal machine output contract once the word is installed. Carry compilation, physical installation and runtime are separate obligations.
