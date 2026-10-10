@@ -4230,6 +4230,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/GuardedFiniteReturnExtraFlow.lean`: A fixed cyclic controller reserves extra entry/branch blocks independently of its original decoded return-address space. Original saved PC words and pop width remain unchanged; actual guard/pop execution enters the cast original continuation, while direct finite-control edges may reach reserved extra blocks. Return and extra PCs are disjoint, real root halting and fixed control-size bounds are proved. Instantiation with complete algorithmic blocks remains open.
 
+- `Machine/CompactComplexCallerWorkingExtraFlow.lean`: The actual scalar/native/role caller plus fixed blank workspace now has reserved entry, stopped, nonleaf and return control PCs in the extra cyclic table. The original saved site/coordinate PC format and decode width remain unchanged; real returns restore the literal caller/workspace and select the leading original continuation. Root halting and paid back-edges are proved, and reserved controls are injective and disjoint from saved return PCs. Constructing actual event successors, arithmetic blocks and the full recursive coefficient execution remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
