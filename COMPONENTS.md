@@ -3808,6 +3808,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactSpectatorLeafGuardBudget.lean`: The actual original65/global109 guarded forward/inverse machine has exact decoded whole-array roundtrip and a uniform full-native-volume-times-Visit-count runtime bound. Every original descriptor copy, private precision reservation and both cleanup lifecycles are paid; metadata bounds follow from actual native payload and fixed recursive pair bounds.
 
+- `Machine/CompactSpectatorLeafCutoffBudget.lean`: The actual stopped recursive exponent count is bounded by the certified beta cutoff, including the successor-node versus slot-width distinction.
+
+- `Machine/CompactSpectatorLeafCountBudget.lean`: Paid positive-node header7 expansion by retained arity yields the full stopped Visit length; paid quotient restoration reclaims scratch22 and exactly restores the original numeric bank. Scalar exponent0 retains count1 without expansion. Physical adapter/leaf composition remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
