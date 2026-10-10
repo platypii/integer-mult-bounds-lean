@@ -4256,6 +4256,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleReturnBudget.lean`: The actual arbitrary-child-result recovery machine has a uniform native-volume runtime bound, including generated role/master header lifecycles, selected-result transfer, all spectator and master pops, metadata erasure and every join. The physical recovered endpoint preserves the result in the selected parent role and the original ancestor frame; no unchanged-child result is assumed. Reverse child merge, changed-live framing and complete recursive execution remain separate.
 
+- `Machine/CompactComplexNonleafRoleReturnFrame.lean`: Physical arbitrary-result recovery now preserves an independently changed permanent controller word and its head instead of reverting the true live denominator to its input value. Entry payload parking commutes with controller updates outside raw numeric/source/role/stack ports; the real return additionally frames its reusable clock. Every original storage slot, including genuine live7, satisfies the exact disjointness conditions. The result, parent master/spectators and ancestor stack are restored at unchanged paid return cost. Restored raw parent descriptors, genuine child result and recursive semantics remain explicit obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
