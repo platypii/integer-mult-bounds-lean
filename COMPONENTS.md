@@ -4240,6 +4240,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScheduledPaths.lean`: Local nonhalting execution paths compose only at the caller banks of reachable actual event prefixes, avoiding an invalid requirement that every scalar group accept every possible state. The original fixed eventPC/nextPC schedule reaches nonleaf return on one unchanged cyclic machine; all local costs are summed and a real root halting trace yields literal HoareTime. Local physical event paths and recursive child correctness still must be constructed; no depth-dependent machine or whole-node run oracle is assumed.
 
+- `Machine/CompactComplexStoppedPrefixBudget.lean`: The complete stronger stopped-prefix tape adapter now has the original uniform fallback-volume times genuine child-size runtime bound. Its exact scalar-prefix numerical endpoint stays at the same parent dependency level with the returned-child ledger advanced, and literal next caller/workspace are restored. Current live capacity and combined guard axes follow from the actual Path and true full-row prefix ledger; a certified symbolic row count avoids reducing the gigantic finite network without changing its exact value. No coarse input grid, supplied aggregate array, capacity or metadata allowance remains; full unstopped induction remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

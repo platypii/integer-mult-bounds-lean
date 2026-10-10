@@ -2394,3 +2394,4 @@ import IntegerMultBounds.Machine.CompactComplexChildAlignmentBudget
 import IntegerMultBounds.Machine.CompactComplexScheduledPCLayout
 import IntegerMultBounds.Machine.CompactComplexScheduledPCDecode
 import IntegerMultBounds.Machine.CompactComplexScheduledPaths
+import IntegerMultBounds.Machine.CompactComplexStoppedPrefixBudget
