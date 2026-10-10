@@ -4158,6 +4158,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarCountBudget.lean`: The actual count-construction schedule has a uniform linear genuine-coefficient-count and native-codec-volume bound, derived from all physical geometry, power, multiplication and cleanup operations. Placed setup runs with this bound; physical erasure after the last use costs at most eight times count and preserves every other caller tape. No metadata-magnitude or supplied cost allowance is assumed.
 
+- `Machine/CompactComplexSpectatorTargetBank.lean`: Actual permanent role slots, old controller current/target storage and a retained native volume slot instantiate the complete physical spectator promotion family in the real codec caller bank. Slot injectivity follows from distinct denominator ports. Literal bank equality identifies every promoted spectator and unchanged selected child while preserving original source65, headers, immutable scalars and all controller stacks. Final shared-grid installation and recursive composition remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
