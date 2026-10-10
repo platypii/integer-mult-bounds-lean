@@ -4544,6 +4544,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyStoppedInstalledResult.lean`: Actual stopped control reaches guard0 with its literal original-caller oriented leaf result and genuine leaf target installed. Polynomial-shape leaf transport and complete retained-bank endpoint are derived internally with paid physical runtime; saved-PC pop and full recursive return composition remain open.
 
+- `Machine/ProgramPairSequence.lean`: Sigma-packaged finite programs compose with their exact dependent state indices and one physical join transition. Generic paid-bound weakening preserves the same machine and tape predicates, avoiding re-elaboration of finite compiler definitions.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
