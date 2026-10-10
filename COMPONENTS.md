@@ -4074,6 +4074,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeGapHeadersReturn.lean`: Places original-denominator return at the actual native source43 and frames every other native66 tape. Genuine Path/scalar budget and unchanged retained metadata derive capacity and137-volume-plus359 runtime on literal original Gaussian serialization. Fresh appended denominator ports remain explicit until recursive precision bookkeeping is connected.
 
+- `Machine/CompactComplexScalarPathGuard.lean`: Actual dependency Path, current-node scalar-prefix growth and pending axes derive the signed overflow guard of the complete scalar row machine on unchanged retained-role widths. Corrected original reservation metadata supplies the baseline, original chunk choices eventually supply fixed scalar room, and the actual row executes with exact inherited-denominator Gaussian semantics and paid uniform width cost. Physical precision propagation and complete stream assembly remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
