@@ -4112,6 +4112,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarPolynomialSequence.lean`: Actual named complex25 scalar rows share one certified fixed scratch bank and execute literal polynomial arrays through normalized reusable endpoints. Genuine original count headers, exact prefix/suffix composition data and uniform summed linear row costs are proved; no numerical stream callback is assumed. A generic tape-count adapter avoids evaluating the huge closed wire cardinality during proof elaboration without changing any physical program or endpoint.
 
+- `Machine/RawLinearCombinationComplexDenominatorSequence.lean`: Each full reusable Gaussian scalar row completes coefficient traversal, source replacement and all cleanup before exactly one physical increment of a retained true denominator word. A fixed literal row sequence returns the exact computed streams, original coefficient count and exponent d plus row count; descriptor heads normalize and all scan/join costs are paid. Empty coefficient arrays still execute exactly one increment per row.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
