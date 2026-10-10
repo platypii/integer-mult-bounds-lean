@@ -4410,9 +4410,13 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSourceReadyOrientedControlsStoppedRoot.lean`: Both actual stopped root branches execute the real forward dispatch and use their retained empty PC stack to select post identity. Literal native output, current denominator and scalar suffix are proved with a paid bound.
 
-- `Machine/CompactComplexSourceReadyOrientedActualTable.lean`: One canonical fixed transition table now instantiates all four actual oriented controls, genuine stopping-marker classifier, original scalar and child routines, and the original physical saved-PC port. No control family or execution oracle is an argument. Scalar count setup still needs the role-row quotient while retaining the parent row descriptor; reachable recursive correctness, termination and total runtime remain open.
+- `Machine/CompactComplexSourceReadyOrientedActualTable.lean`: One canonical fixed transition table now instantiates all four actual oriented controls, genuine stopping-marker classifier, original scalar and child routines, and the original physical saved-PC port. No control family or execution oracle is an argument. Scalar count setup still needs the role-row quotient while retaining the parent row descriptor. Actual source/sink correction boundaries must also be executed before the raw network gives the corrected tensor transform; reachable recursive correctness, termination and total runtime remain open.
 
 - `Machine/CompactComplexSourceReadyNonleafInitialTablePath.lean`: The real target-generation and current-row split body executes on the full scalar-inclusive bank and follows its paid nonleaf setup edge to the first event, or finalization for an empty event sequence. All local execution is derived internally from original tape and Path premises.
+
+- `Machine/CompactComplexSourceReadyPrefixReadiness.lean`: Literal scalar next callers retain immutable metadata, master source, target/count/stack frames and blank private suffixes. Named executed role streams have derived support and exact native array words; blank saved-stack suffixes imply physical return-frame freedom. Retained parent-row geometry must be supplied by the corrected role-count lifecycle.
+
+- `Machine/CompactComplexSourceReadyPrefixGeometry.lean`: Canonical cardinality casts preserve the exact executed polynomial row order and child-array tape encoding. Actual scalar outputs derive selected child-array words, retained widths and inherited prefix grids from genuine row quotient geometry, with no prepared endpoint or local execution assumption.
 
 ## Compact
 
