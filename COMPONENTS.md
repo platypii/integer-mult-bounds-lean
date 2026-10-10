@@ -4088,6 +4088,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarPolynomialRows.lean`: Specializes the fixed runtime-counted Gaussian array machine to every actual complex25 scalar row and all literal polynomial coefficients. Exact target and spectator semantics share one output denominator n+1 across the entire array; genuine count-header traversal, finite-wire arithmetic and cleanup have a uniform linear coefficient-volume bound, including zero entries. Physical copy-back and controller denominator propagation remain separate.
 
+- `Machine/CompactComplexControllerDenominator.lean`: Persistent true-denominator storage physically increments once at scalar-gate completion, saves and clears certified target words on a stack, restores them, and installs the certified target after actual source43 gap-return. The live denominator is distinct from geometric exponent and retained width metadata; all descriptor operations and sequencing costs are paid. Actual target synthesis and numerical-stream propagation remain open.
+
+- `Machine/CompactComplexControllerDenominatorEntry.lean`: Composes physical certified-target save with genuine child controller entry, and genuine geometry restoration with certified-target pop. Geometry and return-PC stacks start beyond denominator storage, with exact framed tape contracts and paid costs. Actual return-grid policy synthesis and full recursive execution remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
