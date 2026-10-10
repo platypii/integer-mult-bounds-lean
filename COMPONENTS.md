@@ -3878,6 +3878,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPolynomialNative.lean`: One fixed whole-array phase machine physically traverses literal coefficients, rewinds source/output, overwrites the original source and erases temporary output. Exact restored caller and result array need no execution or context callback. Original caller placement, semantic guards, finite edge dispatch and uniform volume bound remain separate.
 
+- `Machine/AllAxisAddressInitBudget.lean`: Bounds actual original-header address width generation, counter initialization and cleanup by original payload allowance.
+
+- `Machine/AllAxisFullStreamInitBudget.lean`: Bounds complete physical full-address count, power, transfer and live-counter initialization using original record volume.
+
+- `Machine/AllAxisPolynomialBudget.lean`: Bounds the actual shared tensor phase record body without an extra per-axis coefficient pass, including sparse descriptor and scanner cleanup.
+
+- `Machine/AllAxisPolynomialNativeBudget.lean`: Bounds complete literal whole-array phase traversal, stream rewinds, source overwrite and output erasure by full address count times fixed payload and polynomial coefficient volume.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
