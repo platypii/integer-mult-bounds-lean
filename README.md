@@ -27,6 +27,7 @@ The stopped leaf now has full tensor semantics on every data and dirty wire.
 The complete stopped-root run includes classification, installed output, a genuine
 halt and its paid runtime.
 The scalar lifecycle now checks directly on the original payload bank.
+Saved-PC history and its physical empty-stack guard now have checked invariants.
 Reached recursive bank/grid/stack invariants, child-return semantics, full
 recursive correctness and the total runtime recurrence still require integration.
 

@@ -4612,6 +4612,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCorrectedStoppedRootBudget.lean`: The exact complete stopped-root runtime, including classifier, leaf, joins and empty-root halt, has one uniform native-volume-times-Visit-count bound. Original dependency geometry derives exponent and axis bounds without an active-to-axes premise, including exponent zero. A Hoare weakening adapter applies this derived allowance to the checked stopped-root runs; recursive recurrence integration remains open.
 
+- `Machine/CompactComplexSavedStackGuard.lean`: For a genuine positive-width push history, the actual cell left of the stack head is blank exactly at the original head. The physical two-step guard therefore classifies reached empty and occupied stacks while retaining all tapes and heads. Root and child probes derive from history rather than separate blank-cell assumptions.
+
+- `Machine/CompactComplexSourceReadyReachedSavedStackHistory.lean`: Genuine saved-PC stack history lifts to the corrected controller bank, survives its actual classifier, extends under the literal child-PC save and is restored by the checked corrected decoded return. Older History supplies blank tails without a callback. Complete child-entry stack framing and association of the top code with the semantic call remain integration obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
