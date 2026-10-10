@@ -4054,6 +4054,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerDependency.lean`: The actual paid child prefix chooses the real schema occurrence and residual slot, installs physical exponent/interval words matching Path.child and retains every computed dependency index. Paid parent restoration recovers the ancestor exponent/interval words and all storage while retaining arbitrary computed native tail payload; the intervening recursive execution and dyadic-precision propagation remain separate.
 
+- `Machine/RawLinearCombinationFieldFamily.lean`: Actual finite field-expression family reuses one uniform blank arithmetic workspace across all named wires, retaining marked source controls and appending each literal emitted field to its selected output tape with exact full finite-list runtime.
+
+- `Machine/RawLinearCombinationComplexFamily.lean`: Complete physical real/imaginary expression families emit literal Gaussian records for every wire in original order, retain both component control banks and restore the shared arithmetic workspace.
+
+- `Machine/CompactComplexScalarRowBlock.lean`: One actual complex25 sparse-row machine emits every target and doubled spectator Gaussian output with exact common next-exponent semantics and unchanged signed widths. A certified actual finite wire budget proves uniform linear-in-word-width cost; reading/looping/replacing full role polynomial streams remains open.
+
+- `Machine/RadixComplexReadList.lean`: One fixed field reader table physically reads real or imaginary fields in actual delimited Gaussian stream contexts, preserving source symbols and restoring marked private controls with exact component-specific head endpoints and paid runtime.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
