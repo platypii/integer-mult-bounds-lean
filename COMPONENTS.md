@@ -4220,6 +4220,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStoppedPrefixAlignedCall.lean`: The unchanged complete stopped-call program now runs directly from current per-role arrays, reconstructing original reserved geometry internally. Real child roundtrip, second parent codec lifecycle, generated-volume spectator shifts, live commit and cleanup return the literal next caller with all original costs paid. Its stronger numerical endpoint retains the exact original scalar prefix at unchanged parent levels and advanced returned-child ledger; Path-derived overflow replaces the earlier coarse-grid precondition. Full fixed unstopped recursive induction remains open.
 
+- `Machine/CompactComplexNodeLocalBudget.lean`: Actual scalar group lifecycle costs, geometric header/PC traffic and completed exact-return metadata have derived native-volume bounds. True child target selection, denominator save/restore, physical header entry/return and joins are separately bounded from each changing dependency Path and live ledger; no supplied target capacity remains. Genuine row divisibility proves the role-volume quotient and original padding gives the factor-two fallback-volume bound. The node aggregation is explicitly partial: full spectator/codec/live-install composition, all assembly joins, physical interchange bounds and recursive execution remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
