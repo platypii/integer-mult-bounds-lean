@@ -4244,6 +4244,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleEntry.lean`: Actual nonleaf payload entry first generates the full native-volume count and parks the retained nonblank master source on the fixed ancestor payload stack. It then independently generates the role-volume count, parks spectators, moves the selected role to source65 and erases both count lifecycles. Literal source, blank role tapes, restored raw headers, permanent frames and exact stack boundaries are proved. Child row quotient/split, denominator handoff, reverse restoration and recursive network semantics remain open.
 
+- `Machine/CompactComplexNonleafRoleEntryBudget.lean`: The actual fixed nonleaf entry machine has a uniform native-volume runtime bound: both independently generated full-master and role count lifecycles, all spectator/master moves and every assembly join are paid. The bound retains the physical entry endpoint and its genuine source/role readiness premises. Child splitting, denominator handoff and recursive execution costs remain separate obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
