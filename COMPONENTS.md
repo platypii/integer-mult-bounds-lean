@@ -3974,6 +3974,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactSpectatorInternalChildFlow.lean`: Actual internal entry saves parent headers, pushes the real table PC, descends exponent, installs child headers and jumps to child entry. Real return dispatch reaches the restore block, erases child headers, restores parent/exponent and jumps after the child while retaining computed payload. Intervening child execution and remaining table blocks are explicit integration obligations.
 
+- `Machine/CompactNativeConjugatedPhaseZero.lean`: The actual forward basis, paid zero-dimensional phase dispatch and reverse basis restore every original polynomial digit, header and private tape on the same physical program. Both basis costs and all sequencing transitions are paid. Full recursive assembly remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
