@@ -3844,6 +3844,30 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/AllAxisPolynomialRestore.lean`: Restores the prepared original phase caller after one polynomial body; only genuine source/output stream advancement persists.
 
+- `Machine/AllAxisAddressHeaders.lean`: Physically derives full global address width from original stage geometry with exact header endpoint and paid runtime.
+
+- `Machine/AllAxisCountPower.lean`: Constructs full address power from derived width using actual tape arithmetic, erasing six temporary tapes.
+
+- `Machine/AllAxisCountHeaders.lean`: Physically derives rows times full address power and erases the intermediate power while retaining original rows.
+
+- `Machine/AllAxisPhaseStreamInit.lean`: Initializes the live full-width address counter and readout from original geometric headers and erases the derived width.
+
+- `Machine/AllAxisCountTransfer.lean`: Copies generated full-address count into persistent traversal storage and erases the producer count for phase metadata reuse.
+
+- `Machine/AllAxisFullStreamInit.lean`: Composes original-geometry width and count production with live counter initialization and numeric cleanup.
+
+- `Machine/AllAxisPolynomialFull.lean`: Reads and advances each genuine address once, then runs the actual retained tensor phase over its polynomial coefficient multiplicity.
+
+- `Machine/AllAxisPolynomialAdvance.lean`: Proves exact next coefficient-stream and live-counter boundary from the last real coefficient in each polynomial body.
+
+- `Machine/AllAxisPolynomialStreamLoop.lean`: Executes the physically counted outer full-address loop and complete polynomial inner loop, restoring all loop workspace.
+
+- `Machine/AllAxisPolynomialStreamClean.lean`: Erases raw address, live counter, generated count and polynomial multiplicity after the traversal with paid runtime.
+
+- `Machine/AllAxisPolynomialStreamInit.lean`: Physically generates polynomial multiplicity from immutable ell and full address controls from original stage headers.
+
+- `Machine/AllAxisPolynomialStream.lean`: One fixed66-tape traversal initializes all controls, performs one tensor-phase setup per address and the full polynomial coefficient loop, then erases every generated control. Literal array contexts and final stream normalization are supplied separately.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
