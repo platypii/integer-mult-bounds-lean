@@ -4062,6 +4062,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/RadixComplexReadList.lean`: One fixed field reader table physically reads real or imaginary fields in actual delimited Gaussian stream contexts, preserving source symbols and restoring marked private controls with exact component-specific head endpoints and paid runtime.
 
+- `Machine/CompactComplexRolePhaseSite.lean`: Each real complex25 occurrence maps injectively to its exact dispatched edge and original named role. The actual Visit/node/pair supplies stage slots automatically; one real lifecycle executes the selected role with exact literal output and uniform paid cost, without a phase callback.
+
+- `Machine/CompactComplexRolePhaseContinuation.lean`: The actual selected-role phase block physically reaches any fixed continuation start with every result tape retained and one additional paid transition. A generic two-block construction avoids normalization of the enormous closed actual occurrence table.
+
+- `Machine/CompactComplexRolePhaseActual.lean`: Original multiplier cutoff, descendant depth and polynomial codec capacity discharge readiness and repair for every real occurrence/role. The actual lifecycle has exact restored-bank output, stage-scale cost and internally proved continuation arrival; literal stored-width/word/head invariants and interleaved scalar/recursive execution remain open.
+
+- `Machine/CompactComplexStoppedCallSite.lean`: The real recursive Call selects its exact named role, residual child slot and forward/inverse direction, then executes the genuine stopped-child program and reaches a fixed continuation with paid native-volume cost. Original once-padded row levels derive divisibility, positivity, retained precision and next-level rows. The endpoint remains the real split-bank external caller; its physical controller-bank bridge, inherited-grid connection and unstopped recursion remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
