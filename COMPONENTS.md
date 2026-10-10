@@ -4146,6 +4146,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScalarRoleSemantics.lean`: Actual permanent-role scalar stream execution and its original complex-circuit postcondition follow from the genuine dependency Path grid. Original retained width and one complete finite-row reserve derive all intermediate signed guards; every row physically advances the shared storage7 denominator. The original chunk choice eventually pays this reserve, without a per-gate numerical callback.
 
+- `Machine/CompactComplexSpectatorPromoteFamily.lean`: Generic physical placement sequentially executes actual eight-tape stream promoters on a fixed role list with reused blank workspace. Exact literal promoted source words and paid list-length times volume/gap cost preserve every outside tape, selected role and retained descriptor. The input gap word remains explicit here.
+
+- `Machine/CompactComplexSpectatorRoleSchedule.lean`: A fixed all-role list excludes exactly the completed selected child and includes every other genuine role once. Generic slot injections keep literal source, controller and scalar suffix frames separate, without reducing the enormous concrete wire cardinal.
+
+- `Machine/CompactComplexSpectatorTargetFamily.lean`: Actual ten-tape current/target promotion runs sequentially on every fixed spectator role, synthesizing and erasing its denominator difference on each call. Literal promoted endpoints, unchanged selected-role stream, retained controller headers and blank private workspace have list-length times (130-volume plus8-target plus360) cost. Common-grid semantic and stopped-roundtrip composition remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
