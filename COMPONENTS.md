@@ -4152,6 +4152,12 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexSpectatorTargetFamily.lean`: Actual ten-tape current/target promotion runs sequentially on every fixed spectator role, synthesizing and erasing its denominator difference on each call. Literal promoted endpoints, unchanged selected-role stream, retained controller headers and blank private workspace have list-length times (130-volume plus8-target plus360) cost. Common-grid semantic and stopped-roundtrip composition remain separate.
 
+- `Machine/CompactComplexScalarCountHeaders.lean`: Original native13 geometry and retained ell/p physically generate bits, both powers of two and the row product, then erase every generated intermediate. Only canonical count27 is added, equal to the actual native address count times two to ell; original descriptors are restored. Uniform original-volume budget absorption remains separate.
+
+- `Machine/CompactComplexScalarCountPlaced.lean`: Clean arbitrary-port placement derives the genuine scalar coefficient count from original descriptor inputs and a blank output port. It preserves all role sources, live denominator and every outside caller tape, writes only its retained count port and clears all43 appended private tapes. The endpoint supplies the exact scalar Ready count condition without assuming a prepared count word.
+
+- `Machine/CompactComplexScalarCountBudget.lean`: The actual count-construction schedule has a uniform linear genuine-coefficient-count and native-codec-volume bound, derived from all physical geometry, power, multiplication and cleanup operations. Placed setup runs with this bound; physical erasure after the last use costs at most eight times count and preserves every other caller tape. No metadata-magnitude or supplied cost allowance is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
