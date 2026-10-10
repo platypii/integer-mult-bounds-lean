@@ -4124,6 +4124,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerDenominatorTarget.lean`: Actual persistent root storage8 receives a physically constructed certified leaf/nonleaf return target from live input denominator7 and actual native7 child volume. Genuine parent Visit geometry identifies the volume; descriptor originals, target stack9 and every other tape survive. Exact target readiness for the existing save routine and linear construction costs are proved. Actual runtime stop-branch dispatch remains separate.
 
+- `Machine/CompactComplexScalarRolePorts.lean`: The actual named scalar wire enumeration maps injectively to its existing permanent role tapes, with a separate original count port and genuine storage7 live denominator. Fixed compiled scalar sequences execute directly on those shared tapes, returning exact computed streams and live exponent d plus completed row count while every unselected permanent tape and all appended private work are restored. Original native polynomial serialization literally matches scalar input streams without copying or rearrangement; endpoint readiness, storage7 output format and full paid runtime are proved. Count-header production and interleaved child/shared-grid alignment remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
