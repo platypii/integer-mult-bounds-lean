@@ -4034,6 +4034,16 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleConjugatedLifecycle.lean`: Complete original raw numeric43 role-bank lifecycle physically synthesizes codec metadata, executes every actual conjugated phase through one native stage witness, identifies the literal updated role bank and restores original metadata. Original source and all unselected role tapes survive, all private storage is restored, and every setup/execution/cleanup/join cost is bounded by one constant times stage scale. Genuine Packed geometry and full recursive network assembly remain explicit.
 
+- `Machine/RadixControlCleanupList.lean`: Physically erases each actually read marked arithmetic control in a finite field list, preserving output and complementary tapes with exact paid runtime.
+
+- `Machine/RadixFieldReadList.lean`: Physically reads literal delimited role fields into their private marked arithmetic controls, retains source symbols, advances every real separator and proves the exact control bank and runtime.
+
+- `Machine/RawLinearCombinationFieldEmit.lean`: Computes a concrete fixed integer expression, emits its actual radix digits and separator to a native output stream, then erases the local result and restores arithmetic workspace while retaining input controls.
+
+- `Machine/RawLinearCombinationComplexEmit.lean`: Two actual expression executions emit one literal Gaussian record in real-then-imaginary order, retain both original control banks and clean both arithmetic workspaces with exact combined runtime.
+
+- `Machine/CompactComplexScalarWireEmit.lean`: Every actual complex25 scalar output wire executes its concrete sparse target expression or spectator doubling expression. Both fields emit physically with exact Gaussian semantics at the next common dyadic exponent and genuine native stored-width guards. Full shared-control all-wire traversal and complete scalar stream replacement remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
