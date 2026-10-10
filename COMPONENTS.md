@@ -3942,6 +3942,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRolePaddingActualBudget.lean`: Actual multiplier scalars absorb complete native reservation, zero padding, real scalar role preparation and source43 split into the certified dimension saving; eventual positive depth and the fixed machine actual Hoare runtime are proved without a supplied execution or runtime witness.
 
+- `Machine/CompactNativeConjugatedPhase.lean`: One fixed per-edge physical machine composes actual forward native basis, original-input aggregate tensor phase and reverse native basis on genuine polynomial rows, restoring original headers, immutable ell and all phase storage. Exact original-row signed tensor phase semantics follow from the derived grid guard. Runtime includes both basis bounds, phase lifecycles and sequencing. Full recursive assembly remains open.
+
+- `Machine/ActivePrefixStageNativePolynomialWord.lean`: Actual native basis words return genuine serialized polynomial arrays with derived unchanged widths and row recovery. Forward/local/reverse coefficient semantics retain polynomial spectators, and a fixed native executable realizes the literal word with every conversion/header cost paid.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

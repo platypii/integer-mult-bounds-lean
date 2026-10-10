@@ -165,4 +165,3 @@ theorem producer_linear (c m D K ell q d G u : ℕ)
 
 end
 end IntegerMultBounds.Machine.CompactNativeRoleScalarBudget
-
