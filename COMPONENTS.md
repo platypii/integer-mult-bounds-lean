@@ -4166,6 +4166,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexControllerAlignedCommit.lean`: The existing denominator commit routine executes in the fixed original controller prefix of the real caller bank, preserving every later stack, immutable scalar descriptor and role stream. One fixed sequential program first physically promotes every spectator from current/target headers and then installs the common live denominator and erases the target. Exact endpoints restore all private workspace and pay every promotion, descriptor operation and sequence join. Original stream-volume synthesis and complete child roundtrip composition remain separate.
 
+- `Machine/CompactComplexSpectatorVolumeHeaders.lean`: Original retained raw geometry and ell/precision physically generate the real single-role stream-volume descriptor at native27 in the actual caller bank. Exact role-row and native serialized-volume identities distinguish full rows from quotient role rows. All controller storage, immutable scalar suffix and role payloads are framed, and paid cleanup restores the exact raw numeric bank.
+
+- `Machine/CompactComplexSpectatorVolumeHandoff.lean`: One fixed actual sequence prepares stream-volume metadata from genuine raw headers, physically promotes every spectator around the stopped selected child, and erases all generated headers. Exact raw metadata restoration and literal aligned role payload have the shared denominator, advanced sibling numerator budget and unchanged spectator decoded values, with every schedule, promotion and join cost charged. No prepared volume word or supplied promotion relation remains; uniform setup/cleanup budget absorption and whole-child composition remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
