@@ -4252,6 +4252,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleReturn.lean`: One fixed physical return machine regenerates the role count to recover the selected child result and spectators, then independently regenerates the full count to restore the retained master source. Both numeric lifecycles are erased. Exact original roundtrip and arbitrary supported returned-result recovery restore the selected parent role, all other payloads, raw metadata and the entire ancestor stack/head. This requires the genuine free stack suffix; changed live-controller framing, child merge and recursive semantics remain separate.
 
+- `Machine/CompactComplexNonleafRoleSplit.lean`: The actual entered selected source and blank permanent roles feed a paid row quotient followed by the genuine cyclic Original role splitter on seven fixed scratch tapes. The exact output has raw child rows/c, literal child role payloads and blank scratch; the immutable scalar/storage bank and parked ancestor stack are preserved. A genuine next descendant derives positive child rows and divisibility, without a supplied quotient-adjusted or prepared child bank. Child geometry/denominator handoff, reverse merge and complete recursive execution remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
