@@ -4232,6 +4232,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCallerWorkingExtraFlow.lean`: The actual scalar/native/role caller plus fixed blank workspace now has reserved entry, stopped, nonleaf and return control PCs in the extra cyclic table. The original saved site/coordinate PC format and decode width remain unchanged; real returns restore the literal caller/workspace and select the leading original continuation. Root halting and paid back-edges are proved, and reserved controls are injective and disjoint from saved return PCs. Constructing actual event successors, arithmetic blocks and the full recursive coefficient execution remains open.
 
+- `Machine/CompactComplexChildAlignmentBudget.lean`: Literal child-return cost expressions include second parent codec setup/cleanup, generated-header arbitrary-target spectator promotion and live commit, all-role child exact contraction, target-stack/PC/geometric restoration and explicit composition joins. Separate genuine parent/child Paths and true live ledgers derive capacity and uniform volume bounds; actual padded descendants cost at most twice original fallback volume. Every literal child occurrence is summed with its recursive callback kept separate. These are listed schedule-cost arithmetic bounds; genuine nonleaf source/denominator readiness, selected-child semantics and actual complete return sequencing remain open. Entry/target-save traffic is separately paid by NodeLocalBudget.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
