@@ -4164,6 +4164,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexStoppedGridHandoff.lean`: Actual native role serialization supplies every spectator stream premise from original retained widths, positive rows and dependency Path. The physical all-spectator promotion endpoint equals the literal aligned stopped-child arrays, and therefore has the shared-grid, advanced sibling-budget and unchanged spectator-value guarantees. Quotient role payloads and child results exactly match the genuine stopped codec caller. Physical generation of its retained stream-volume descriptor remains explicit.
 
+- `Machine/CompactComplexControllerAlignedCommit.lean`: The existing denominator commit routine executes in the fixed original controller prefix of the real caller bank, preserving every later stack, immutable scalar descriptor and role stream. One fixed sequential program first physically promotes every spectator from current/target headers and then installs the common live denominator and erases the target. Exact endpoints restore all private workspace and pay every promotion, descriptor operation and sequence join. Original stream-volume synthesis and complete child roundtrip composition remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
