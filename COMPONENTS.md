@@ -4194,6 +4194,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexExactReturnFamily.lean`: A fixed role-list contraction physically synthesizes each true current-minus-target gap from retained denominator ports, rewrites only the listed signed streams and restores every private tape. Exact literal endpoints preserve all controller headers and complementary roles; complete runtime is list length times a uniform stream-volume/current-header allowance. Coarser Gaussian-grid membership proves the emitted field divisions preserve exact complex values and widths. Actual nonleaf completion, its certified coarser grid, original-bank placement and live commit remain separate.
 
+- `Machine/CompactComplexScalarNativeEndpoint.lean`: Literal scalar lifecycle outputs are exactly the genuine native polynomial-row streams required by subsequent physical events. The actual executed coefficient arrays are unflattened without moving or converting data, keep original row/polynomial dimensions and field widths, and flatten back to the exact computed scalar output. Count erasure preserves every rewritten role source. No fresh prepared source equality or serialization conversion is supplied; whole recursive event composition remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -2358,3 +2358,4 @@ import IntegerMultBounds.Machine.CompactComplexRootPieceBudget
 import IntegerMultBounds.Machine.CompactComplexRecursiveLiveProgress
 import IntegerMultBounds.Machine.CompactComplexRootPieceVolume
 import IntegerMultBounds.Machine.CompactComplexExactReturnFamily
+import IntegerMultBounds.Machine.CompactComplexScalarNativeEndpoint
