@@ -2142,3 +2142,4 @@ import IntegerMultBounds.Machine.CompactSpectatorLeafLoopBudget
 import IntegerMultBounds.Machine.CompactSpectatorLeafGuardBudget
 import IntegerMultBounds.Machine.CompactSpectatorLeafCutoffBudget
 import IntegerMultBounds.Machine.CompactSpectatorLeafCountBudget
+import IntegerMultBounds.Machine.AllAxisPhaseStageMetadata

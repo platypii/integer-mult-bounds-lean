@@ -3812,6 +3812,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactSpectatorLeafCountBudget.lean`: Paid positive-node header7 expansion by retained arity yields the full stopped Visit length; paid quotient restoration reclaims scratch22 and exactly restores the original numeric bank. Scalar exponent0 retains count1 without expansion. Physical adapter/leaf composition remains separate.
 
+- `Machine/AllAxisPhaseStageMetadata.lean`: One fixed metadata setup and cleanup derives computed stage headers from the original13 numeric bank and erases them afterward, framing an arbitrary complete phase tail including coefficient source, precision and token tapes. The combined paid cost fits804000 times original record volume. Original caller port copying remains separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
