@@ -4238,6 +4238,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexScheduledPCDecode.lean`: Original saved site/coordinate PCs are explicitly cast into the common controller address space without changing their values, widths or literal pushed bits. Address injection and the original finite decode identify every actual child call; saved-return PCs are disjoint from event entries. Unused padded addresses decode to no call. The actual fixed table and its local postprocessing paths remain assembly obligations.
 
+- `Machine/CompactComplexScheduledPaths.lean`: Local nonhalting execution paths compose only at the caller banks of reachable actual event prefixes, avoiding an invalid requirement that every scalar group accept every possible state. The original fixed eventPC/nextPC schedule reaches nonleaf return on one unchanged cyclic machine; all local costs are summed and a real root halting trace yields literal HoareTime. Local physical event paths and recursive child correctness still must be constructed; no depth-dependent machine or whole-node run oracle is assumed.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
