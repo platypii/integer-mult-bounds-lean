@@ -2240,3 +2240,5 @@ import IntegerMultBounds.Machine.CompactSpectatorInternalChildFlow
 import IntegerMultBounds.Schoenhage.BatchMath
 import IntegerMultBounds.Schoenhage.BaseCase
 import IntegerMultBounds.Machine.CompactNativeConjugatedPhaseZero
+import IntegerMultBounds.Machine.CompactNativeRoleChildLifecycleBudget
+import IntegerMultBounds.Machine.CompactNativeRoleStoppedChildBudget

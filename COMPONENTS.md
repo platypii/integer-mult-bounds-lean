@@ -3976,6 +3976,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeConjugatedPhaseZero.lean`: The actual forward basis, paid zero-dimensional phase dispatch and reverse basis restore every original polynomial digit, header and private tape on the same physical program. Both basis costs and all sequencing transitions are paid. Full recursive assembly remains open.
 
+- `Machine/CompactNativeRoleChildLifecycleBudget.lean`: Actual binary row quotient/product and saved precision/header restoration costs are bounded from original native symbol volume, without a supplied runtime allowance.
+
+- `Machine/CompactNativeRoleStoppedChildBudget.lean`: The complete actual stopped child caller, including count expansion, codec payload generation, saved precision, leaf phase and every restoration, fits a fixed constant times original native volume times Visit count. Actual descendant geometry and codec capacity discharge the budget premises; inherited numerical semantics remain separate.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
