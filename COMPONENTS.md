@@ -4480,6 +4480,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/NativeUniformPolynomialRotationOriginalBudget.lean`: Complete original-caller uniform correction has a fixed constant times original parent native-volume runtime bound, paying header copies, quotient count setup, correction, overwrite, output erasure, count/header cleanup and every join. Original Path/Grid signed guard instantiation and full named-role table assembly remain open.
 
+- `Machine/CompactComplexSourceReadyEndpointRoleExchange.lean`: Actual complete named X/Y exchange lifts onto the existing source-ready node and scalar-inclusive bank. The literal routed original payload retains controller/geometry/storage, every recursive frame, arbitrary leaf, blank work10 and the arbitrary scalar suffix. All swap prerequisites come from the actual caller, with a paid uniform original parent native-volume bound.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
