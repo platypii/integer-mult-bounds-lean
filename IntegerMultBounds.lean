@@ -2197,3 +2197,5 @@ import IntegerMultBounds.Networks.CircuitCoefficients
 import IntegerMultBounds.Machine.CompactComplexScalarGrid
 import IntegerMultBounds.Machine.CompactPhaseGridInvariant
 import IntegerMultBounds.Machine.CompactRecursiveGridBudget
+import IntegerMultBounds.Machine.CompactNativeRoleMetadataCleanup
+import IntegerMultBounds.Machine.CompactNativeRoleMergeCaller

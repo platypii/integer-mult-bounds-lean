@@ -3914,6 +3914,10 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactRecursiveGridBudget.lean`: Derives signed width for scalar-level and butterfly-depth numerator growth and derives Visit remaining exponent from original active axes. Actual dependency counters across assembled recursive returns and normalized root-data connection remain open.
 
+- `Machine/CompactNativeRoleMetadataCleanup.lean`: Physically erases every copied original13, polynomial multiplicity and corrected precision word after role transfer, restoring the entire numeric43 bank blank with paid runtime.
+
+- `Machine/CompactNativeRoleMergeCaller.lean`: One fixed source43 caller destructively merges arbitrary computed descendant role results, erases all copied original13/ell/p metadata and restores original scalar caller and every unrelated tape. Roles and appended private storage finish blank.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
