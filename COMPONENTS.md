@@ -4002,6 +4002,14 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactNativeRoleConjugatedBudget.lean`: Derives encoded polynomial payload capacity and canonical original13/ell word bounds from actual ordered Stage geometry. Actual full native caller copying and erasure, for arbitrary exterior tape count, cost at most266 times genuine expanded stage record volume.
 
+- `Machine/NativeSignedReturnStream.lean`: One fixed native transducer performs literal sign-extending shifts on every delimited signed field in the genuine Gaussian serialization, preserving source and field widths with paid serialized-volume plus field-count runtime.
+
+- `Machine/NativeSignedReturnClean.lean`: Actual retained stream length header drives both physical rewinds, obsolete-source erasure and generated control cleanup after the real signed lowering scan. Source is blank/head0 and shifted output head0, with runtime at most56 times volume plus141.
+
+- `Machine/NativeSignedReturnReuse.lean`: Physically copies lowered native serialization back to the original source, rewinds both streams and erases output scratch, preserving the original length header and restoring all generated controls. The reusable pass keeps every field width.
+
+- `Machine/NativeSignedReturnPrecision.lean`: A fixed runtime-counted native precision-return machine repeats the actual cleaned reusable shift on the original source. Coarser-grid divisibility proves exact decoded Gaussian return with unchanged widths and all scratch/controls blank. Runtime explicitly scales with actual exponent gap; gap-header synthesis and certified total absorption remain open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.

@@ -2256,3 +2256,7 @@ import IntegerMultBounds.Machine.RadixSignedShiftRight
 import IntegerMultBounds.Machine.SignedRadixExactReturn
 import IntegerMultBounds.Schoenhage.LevelMk
 import IntegerMultBounds.Machine.CompactNativeRoleConjugatedBudget
+import IntegerMultBounds.Machine.NativeSignedReturnStream
+import IntegerMultBounds.Machine.NativeSignedReturnClean
+import IntegerMultBounds.Machine.NativeSignedReturnReuse
+import IntegerMultBounds.Machine.NativeSignedReturnPrecision
