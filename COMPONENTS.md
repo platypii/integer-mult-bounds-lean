@@ -4214,6 +4214,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexCompletedLiveUpper.lean`: Every actual scalar/child event prefix has an exact denominator formula and an upper ledger using its real completed row and child counters. Both stopped and normalized nonleaf policies pay at most twice child volume. Actual schedule prefixes are bounded by original row/call counts; local physical endpoint exponent equalities and literal Live words propagate upper-ledger Progress. Discharging these local contracts in the complete fixed recursive dispatcher remains open.
 
+- `Machine/CompactComplexStoppedEventProgress.lean`: Cyclic reserved-role arrays are reconstructed into the original global reserved stream, with exact role splitting, width/grid transfer and literal role payload equality. Actual stopped arithmetic and spectator promotions retain the original scalar-prefix numerical bound at the shared advanced denominator, fixed parent dependency level and completed-child ledger. Overflow follows from the actual Path and retained reserve, without a supplied guard. Pairing this stronger endpoint with the complete physical stopped adapter and full recursive induction remains open.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
