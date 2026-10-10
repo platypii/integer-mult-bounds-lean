@@ -4258,6 +4258,8 @@ Machine model, execution, composition, and tape routines.
 
 - `Machine/CompactComplexNonleafRoleReturnFrame.lean`: Physical arbitrary-result recovery now preserves an independently changed permanent controller word and its head instead of reverting the true live denominator to its input value. Entry payload parking commutes with controller updates outside raw numeric/source/role/stack ports; the real return additionally frames its reusable clock. Every original storage slot, including genuine live7, satisfies the exact disjointness conditions. The result, parent master/spectators and ancestor stack are restored at unchanged paid return cost. Restored raw parent descriptors, genuine child result and recursive semantics remain explicit obligations.
 
+- `Machine/CompactComplexNonleafRoleMerge.lean`: The actual arbitrary completed child arrays physically merge into source65 through the genuine Original cyclic merger. A paid multiplication then restores the literal original parent row descriptor, erasing all work; true parent and child divisibilities follow from a genuine next descendant. Source word/head, blank child roles and raw headers are exact, while all permanent scalar/storage words and parked ancestor stack cells/head survive. The returned array need not equal the entry array. Result recovery, spectator promotion/common denominator commit and recursive semantics remain assembly obligations.
+
 ## Compact
 
 Compact packed controls, repair, and density bounds.
