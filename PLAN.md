@@ -1285,6 +1285,10 @@ The generated K stream is exactly the S1 kernel operand tape (`chirpOperandYStre
 `chirpOperandX_exec` now executes coefficient reversal within each weighted row while
 retaining batch order and restoring source, counters and scratch. Its exact output is
 the flattened raw X operand stream, with cost `M*(26*(3m+1)*w+19*(3m+1)+17)+8`.
+`chirpMakeX_exec` composes weighting, reversal and weighted-stream erasure with only
+the X operand destination changed. `chirpOperandCountSetup_exec` separately computes
+and emits the three unary geometry counters from the binary dimension bank and restores
+that bank; its composition and counter cleanup are still open.
 Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and

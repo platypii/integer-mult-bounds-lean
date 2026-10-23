@@ -450,6 +450,11 @@ kernel operand tape. `chirpOperandX_exec` now executes row reversal into the exa
 retaining batch order and all low-bit-first words, at cost
 `M*(26*(3m+1)*w+19*(3m+1)+17)+8`. The structural `reverseRows_exec` theorem
 restores the weighted source, batch/row/word counters, native stacks and all scratch,
-including arbitrary source and destination tails. Composing gathering, generation,
+including arbitrary source and destination tails. `chirpMakeX_exec` now composes
+weighting, row reversal and weighted-stream erasure, retaining only the final X operand
+destination change and charging all three stages. `chirpOperandCountSetup_exec`
+separately computes and emits the batch, row and symbol counters from `t,m,w`, restoring
+the entire binary bank. Composing this setup with operand production and erasing its
+counters remain open. Composing gathering, generation,
 multiplication and the shared batch call remain required, along with output arithmetic,
 cropping and the final cost contract.
