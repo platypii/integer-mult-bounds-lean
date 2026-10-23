@@ -26,6 +26,9 @@ def reservoirClassLocalTableProgram (k : Fin 3) : Pr P 57 Q A U :=
 
 variable (n H : ℕ) (hfit : 9 * H ≤ n) (w : ℕ) (hw : w ≤ H) (k : Fin 3) (L : ℕ)
 
+def reservoirClassLocalTableCost (n w L : ℕ) : ℕ :=
+  (n - 3 * w) * (n * (30 * L + 39) + 682 * L + 842) + n * (72 * L + 89) + 35 * L + 54
+
 def reservoirClassLocalMatching (mate : Fin n → Fin n) (hinv : Function.Involutive mate) :
     Fin (n - 3 * w) → Fin (n - 3 * w) :=
   reservoirMiddleMatching n H hfit w hw k
@@ -52,7 +55,7 @@ theorem reservoirClassLocalTable_exec (body : P → Pr P 57 Q A U)
     (v : HS 57 Q A U) (S : Stacks 57 A)
     (hbank : S.R = reservoirClassLocalBank n H hfit w hw k L mate) :
     ∃ (v' : HS 57 Q A U) (steps : ℕ), v'.user = v.user ∧
-      steps ≤ (n - 3 * w) * (n * (30 * L + 39) + 682 * L + 842) + n * (72 * L + 89) + 35 * L + 54 ∧
+      steps ≤ reservoirClassLocalTableCost n w L ∧
       Exec body (reservoirClassLocalTableProgram k) (mk v S) steps
         (mk v' { S with R := Function.update S.R 34 (matchingEntryWords L (matchingTableEntries (n - 3 * w) (matchingMateCoordinate (reservoirClassLocalMatching n H hfit w hw k mate hinv)))) }) := by
   let cls := matchingClass (routingReservoir n H hfit) mate k
@@ -109,7 +112,7 @@ theorem reservoirClassLocalTable_exec (body : P → Pr P 57 Q A U)
     · simp [J, G, h21, h34]
   rw [hlen, hfinal] at he₅
   exact ⟨v₅, m₁ + (m₃ + (2 * (n * (2 * L + 2)) + 2)),
-    hu₅.trans (hu₄.trans (hu₃.trans (hu₂.trans hu₁))), by nlinarith,
+    hu₅.trans (hu₄.trans (hu₃.trans (hu₂.trans hu₁))), by dsimp [reservoirClassLocalTableCost]; nlinarith,
     Exec.seq he₂ (Exec.seq he₄ he₅)⟩
 
 end IntegerMultBounds.MathlibTM2.Routing

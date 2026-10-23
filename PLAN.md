@@ -1761,8 +1761,27 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    output changes. Its full bound is
    `(n-3*w) * (n*(30*width+39) + 682*width+842) + n*(72*width+89) + 35*width+54`.
    The resulting `reservoirClassLocalMatching` is proved involutive.
-   Connection to the concrete repair schedule, initial permutation
-   decomposition/table generation and the remaining scalar metadata remain open.
+   `OriginalMatchingPlacedRepair` now connects the executed table producer
+   directly to one complete generated/placed repair. An explicit width equality
+   and coordinate cast identify its source with the generated local matching;
+   the source table starts blank and is erased again after repair. Only the
+   rank-permuted record stream changes, with producer, repair and table erasure
+   all charged. `OriginalMatchingRepairBank` gives a concrete layout sharing
+   only this table register, and `OriginalMatchingFixedRepair` derives both
+   readiness contracts from one bank on the placed core plus 93 tapes.
+   `OriginalMatchingRepairCurrent` proves record replacement preserves the
+   original-matching program, full stage price and every nonstream bank field.
+   `FramedOriginalMatchingSchedule` now repeats actual calls for a fixed
+   original matching, reservoir class and direction on one shared bank.
+   Each stage generates and erases its class/local tables; the existing
+   framed loop charges all loading, cleanup and complete metadata rewind.
+   Its result is the composed finite record action, and its hypotheses are
+   pure stage facts and code identities, with no execution callback. Tape
+   count and stream definitions keep expanded layout abbreviations out of
+   the scheduler interface; proof limits remain unchanged.
+   Concrete bulk/terminal/shear schedule instantiation, initial
+   permutation decomposition/table generation and remaining scalar metadata
+   remain open, together with uniform amortization and short-record fallback.
    Composed middle-table production and concrete schedule instantiation
    remain open. R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,

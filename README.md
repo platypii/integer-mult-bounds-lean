@@ -56,9 +56,12 @@ by executed placement, lookup, offset arithmetic and live counter enumeration;
 all temporary inputs are erased and every other tape is restored. Reservoir-class
 tables now also come from executed interval comparisons and a restoring scan of
 the original matching table. Both producers compose into one program that
-erases the intermediate class table. Remaining scalar metadata, initial
-permutation decomposition/table generation, connection of the local table
-to repair calls, complete router schedule instantiation and
+erases the intermediate class table. One complete generated/placed repair now
+executes from the original matching on a concrete shared-table bank, erasing
+the generated local table afterward. Such calls now repeat on one framed bank
+for a fixed matching, reservoir class and direction, with all setup, cleanup
+and final input rewind charged. Remaining scalar metadata, initial
+permutation decomposition/table generation, complete router schedule instantiation and
 uniform amortization/fallback remain open.
 The complete router and multiplication integration remain in R3–R4; this work
 does not yet change the multiplication saving. See [the active plan](PLAN.md) and

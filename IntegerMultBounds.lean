@@ -1796,3 +1796,8 @@ public import IntegerMultBounds.MathlibTM2.Routing.ReservoirClassDispatch
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirClassEntry
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirClassTableProduction
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirClassLocalTable
+public import IntegerMultBounds.MathlibTM2.Routing.OriginalMatchingPlacedRepair
+public import IntegerMultBounds.MathlibTM2.Routing.OriginalMatchingRepairBank
+public import IntegerMultBounds.MathlibTM2.Routing.OriginalMatchingFixedRepair
+public import IntegerMultBounds.MathlibTM2.Routing.OriginalMatchingRepairCurrent
+public import IntegerMultBounds.MathlibTM2.Routing.FramedOriginalMatchingSchedule
