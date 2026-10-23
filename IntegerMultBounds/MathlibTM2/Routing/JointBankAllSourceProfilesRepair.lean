@@ -34,23 +34,32 @@ local notation "TP₀" => inactiveClassifierPlacementT t₀
 local notation "ep₀" => inactiveClassifierPlacementEmbed (t₀ := t₀)
 local notation "slot₀" => inactiveClassifierPlacementSlot (t₀ := t₀)
 
-theorem jointBankAllSourceProfilesRepair_exec (body : P → Pr P repairT Q (prime + K) U)
+theorem jointBankAllSourceProfilesRepair_exec
+    (targets : Finset (Fin (p₀).wy)) (source : Fin (p₀).wy → Fin (p₀).wy)
+    (hactive : active = profileActive p₀ hK₀ targets)
+    (hsources : s = profileSources p₀ hK₀ targets source) (body : P → Pr P repairT Q (prime + K) U)
     (liveBody : P → Pr P repairLiveT Q (prime + K) U)
     (hlive : ∀ f, liveBody f = embProg liveDescriptorCore id (body f))
     (outerBody : P → Pr P T₀ Q (prime + K) U)
     (houter : ∀ f, outerBody f = embProg e₀ id (liveBody f))
-    (keySrc activity : Fin repairT) (hsa : keySrc ≠ activity)
+    (keySrc raw activity : Fin repairT) (hreg : [keySrc, raw, activity].Nodup)
     (hkeyHeader : ∀ c k, keySrc ≠ repairRoutingConfig (.header c k))
+    (hrawHeader : ∀ c k, raw ≠ repairRoutingConfig (.header c k))
     (hactivityHeader : ∀ c k, activity ≠ repairRoutingConfig (.header c k))
     (hkeyRow : keySrc ≠ repairSetupSource (.inr .row))
     (hkeyMask : keySrc ≠ repairSetupSource (.inr .keyMask))
+    (hrawRow : raw ≠ repairSetupSource (.inr .row))
+    (hrawMask : raw ≠ repairSetupSource (.inr .keyMask))
     (hactivityRow : activity ≠ repairSetupSource (.inr .row))
     (hactivityMask : activity ≠ repairSetupSource (.inr .keyMask))
     (hkeyBadMask : keySrc ≠ repairSetupSource (.inr .badMask))
     (hkeyBadPhase : keySrc ≠ repairSetupSource (.inr .badPhase))
+    (hrawBadMask : raw ≠ repairSetupSource (.inr .badMask))
+    (hrawBadPhase : raw ≠ repairSetupSource (.inr .badPhase))
     (hactivityBadMask : activity ≠ repairSetupSource (.inr .badMask))
     (hactivityBadPhase : activity ≠ repairSetupSource (.inr .badPhase))
     (hkeySrc : keySrc ≠ repairHost.src)
+    (hrawSrc : raw ≠ repairHost.src)
     (hactivitySrc : activity ≠ repairHost.src)
     (w : LiveDescriptorWidths) (hwidth : w.selectorBits = w.coordinateBits)
     (hselectorWidthFit : w.coordinateBits < 2 ^ w.widthBits)
@@ -71,8 +80,9 @@ theorem jointBankAllSourceProfilesRepair_exec (body : P → Pr P repairT Q (prim
       S.R (e₀ (liveDescriptorAux r)) = liveDescriptorData p₀ X hG₀ hK₀ active s repairLiveMode w r)
     (hdesc : ∀ d, S.R (e₀ (liveDescriptorCore (repairDescriptorSource d))) = [])
     (hinput : ∀ j, S.R (e₀ (liveDescriptorAux (.input j))) = [])
-    (hkey : S.R (liveZSourceActivity keySrc) = gatedSelectedSourceWords w.indexBits w.strideBits
-      (List.ofFn (fun c => (s c).gatedChoice (active c))))
+    (hkey : S.R (liveZSourceActivity keySrc) = sourceCoordinateInputWords w.indexBits w.strideBits
+      (profileCoordinateInputs p₀ hK₀ targets source))
+    (hrawBlank : S.R (liveZSourceActivity raw) = [])
     (hactivity : S.R (liveZSourceActivity activity) = [])
     (hcount : S.R (liveInactiveProfileAux 0) = binSyms w.indexBits n)
     (hscratch : ∀ i : Fin 7, i ≠ 0 → S.R (liveInactiveProfileAux i) = [])
@@ -147,7 +157,7 @@ theorem jointBankAllSourceProfilesRepair_exec (body : P → Pr P repairT Q (prim
         ((binaryTemporaryMaskCost p₀ LK Ln Lo Lt + binaryPhaseMaskCost p₀ LK Ln Lo Lt : ℕ) +
         (((Lr * (4 * rb + 11) + 8 * rb + 12) + (Lm * (4 * (p₀).wy + 11) + 2 * (p₀).wy + 6) + 1 : ℕ) +
         ((2 * (14 * ((p₀).wc + (p₀).wy + X) + 18 * Lrow + 24 * Lwidth + 52 * wb + 280) : ℕ) +
-        (((liveSelectedProfilesCost p₀ w + repairControlProfilesCost p₀ w w.indexBits + (n * (6 * w.indexBits + 6 * w.coordinateBits + 19) + 2 * (n * (w.indexBits + w.coordinateBits + 5)) + 4 * n + 8)) : ℕ) +
+        ((liveCoordinateProfilesCost p₀ w : ℕ) +
         liveRepairPrice p₀ X rb hG₀ hK₀ active s scale wb wm wp wk R B w C +
         (9 * (2 * (n * (w.selectorBits + 3)) + 2) + 2 * (2 * ((p₀).wc * (w.selectorBits + 3)) + 2) + 1 : ℕ)) + (repairHeaderErasePrice p₀ X rb R B : ℕ)) + (2 * rb + 2 * (p₀).wy + 5 : ℕ)) + (4 * ((p₀).wy + 1) + 5 : ℕ)) + binaryExchangeChainCost calls M (reservoirExchangeOrder true) ∧
       Exec placementBody (.seq (binaryExchangeChain calls (reservoirExchangeOrder false))
@@ -156,7 +166,7 @@ theorem jointBankAllSourceProfilesRepair_exec (body : P → Pr P repairT Q (prim
         (.seq (embProg classifierCore id (.seq (binaryFieldBatch (fieldPairJobs (inactiveProfileHeaderRaw (repairSetupSource (.inr .row)))
           (inactiveProfileHeaderRaw (repairSetupSource (.inr .keyMask))) Lr Lm rb (p₀).wy))
         (.seq (embProg (fieldCore (N := inactiveProfileHeaderT)) id (.seq (binaryRepairHeaderPairProgram sharedHeaderBinary inactiveProfileHeaderBank)
-        (.seq (embProg sharedHeaderCore id (.seq (repairSourceRecordProfilesProgram keySrc activity)
+        (.seq (embProg sharedHeaderCore id (.seq (liveCoordinateProfilesProgram keySrc raw activity)
         (.seq (embProg e₀ id (liveRepairProgram hQ hA))
           (metadataClean (liveInactiveProfileTargets repairAllSourceProfileJobs)))))
           (metadataClean (embeddedGeneratedHeaderTargets inactiveProfileRaw)))))
@@ -185,8 +195,8 @@ theorem jointBankAllSourceProfilesRepair_exec (body : P → Pr P repairT Q (prim
       spec bankWords Lcp Lp B rowBits l.flatten (classifierCore (inactiveConfigurationCore repairHost.src))
     rw [hplacementBank]
     exact hc.trans hstream
-  exact placedAllSourceProfilesRepair_exec ρ n m X rb scale active s body liveBody hlive outerBody houter
-    keySrc activity hsa hkeyHeader hactivityHeader hkeyRow hkeyMask hactivityRow hactivityMask hkeyBadMask hkeyBadPhase hactivityBadMask hactivityBadPhase hkeySrc hactivitySrc w hwidth hselectorWidthFit hkfit hnfit hwfit hQ hA hscale hn hR hB hrb hs v S data hempty hL hblank hfit hbank hdesc hinput hkey hactivity hcount hscratch
+  exact placedAllSourceProfilesRepair_exec ρ n m X rb scale active s targets source hactive hsources body liveBody hlive outerBody houter
+    keySrc raw activity hreg hkeyHeader hrawHeader hactivityHeader hkeyRow hkeyMask hrawRow hrawMask hactivityRow hactivityMask hkeyBadMask hkeyBadPhase hrawBadMask hrawBadPhase hactivityBadMask hactivityBadPhase hkeySrc hrawSrc hactivitySrc w hwidth hselectorWidthFit hkfit hnfit hwfit hQ hA hscale hn hR hB hrb hs v S data hempty hL hblank hfit hbank hdesc hinput hkey hrawBlank hactivity hcount hscratch
     l hl hlen hsrc D hproject headerBody hheader Lrow Lwidth hRfit hwidthFit hrowInput hwidthInput hwork E hE
     widthBody hwidthBody Lr Lm hr hm hrowWidth hmaskWidth hwidthScratch hrow hmask
     classifierBody hclassifier F hF LK Ln Lo Lt hsegment hcountFit hoffset htop

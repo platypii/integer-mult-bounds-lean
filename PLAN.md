@@ -1425,6 +1425,30 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    Full source-stream loading/compilation, caller-derived coordinates/activity,
    scalar/placement setup and the remaining schedule/amortization/fallback gates
    remain open. These single-record theorems do not complete R3 or change kappa.
+   `SourceCoordinateGenerate` now scans a framed coordinate/activity stream,
+   compiles every record with the fixed decoder, archives and restores the entire
+   original input, and returns canonical records in forward order. All setup and
+   scratch tapes restore; only the final output changes, with an explicit summed
+   cost. `ProfileCoordinateGenerate` specializes this execution to the logical
+   bulk profile and proves its output is exactly `profileSourceRecords`.
+   Concrete live-bank installation/composition, production of physical coordinates
+   and activity from the matching/reservoir schedule, scalar/placement setup and
+   uniform full-router cost/amortization/fallback gates remain open. R3 and kappa
+   are unchanged.
+   `LivePreparedCoordinateSourceGenerate` now installs physical-coordinate
+   stream compilation in the existing live bank, including boundary generation
+   and cleanup. `LiveCoordinateProfiles` composes it with all eleven profile
+   generators, activity extraction and erasure of the intermediate canonical
+   source stream. `CoordinateProfilesRepair` executes exact repair and profile
+   cleanup on this output: only the repaired stream changes, with every phase
+   charged. Its input is a framed physical-coordinate/activity stream, rather
+   than predecoded source records. `JointBankAllSourceProfilesRepair` now
+   threads this stronger input through executed headers, widths, classifiers,
+   forward placement, exact repair and inverse placement, deriving all intermediate
+   readiness and restoring every non-stream tape. Matching-derived input
+   production, remaining scalar
+   setup and full-router cost/amortization/fallback gates remain open. R3 and
+   kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
