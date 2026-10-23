@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 719 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 846 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -1231,6 +1231,45 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    operands and the remaining active/selected profiles still are supplied; their
    generation, full routing schedules and uniform total-cost/amortization bounds
    remain open. R3 and kappa are unchanged.
+   `BinaryActiveProfileFrame` emits an enabled frame from a live binary selector,
+   restoring its operand and copy scratch. `AffineSourceFrame` computes that
+   selector from live index/stride/offset operands, emits the frame and erases the
+   computed selector. `AffineSourceStep` adds the internal index advance; each
+   primitive has an explicit execution cost and spectator frame.
+   `RepairYSourceProfile` identifies the actual first-pass Y input with this
+   affine counter stream, independently of activity/source choices. The counted
+   generator still needs its loop, frame-order correction (stack prepending
+   reverses successive frames), index/count restoration and live-bank installation.
+   Activity-dependent and selected-source profiles and the remaining R3 gates
+   remain open; full R3 and kappa are unchanged.
+   `AffineSourceReverseStep` now emits each computed frame through a temporary
+   tape into a reversed accumulator while advancing the index and restoring the
+   frame tape. `AffineSourceLoop` executes a fixed loop over count symbols, archives
+   them for restoration and computes every selector from live operands. Its cost
+   is bounded per iteration. `AffineSourceLoopFrame` proves the exact accumulated
+   output is the reverse of the specified affine source-profile word and preserves
+   every spectator tape. Final reversal, count/index restoration, binary-count
+   setup, width adaptation and live-bank installation remain to close the generator.
+   Full R3 and kappa remain unchanged.
+   `AffineSourceTrace` now proves the complete closed bank after traversal:
+   empty count, reversed count archive, advanced index, reversed profile and
+   unchanged spectators. `AffineSourceCompile` restores the count and reverses
+   the accumulator into the correctly ordered output. `AffineSourceGenerate`
+   saves and restores the original index as well: only the profile output changes,
+   every temporary tape is restored, and all costs are charged. This generates
+   affine source frames from a count tape and scalar operands without a supplied
+   profile. Binary-count setup, selector-width adaptation and live-bank installation
+   remain open, as do activity-dependent/selected profiles and the other R3 gates.
+   Full R3 and kappa remain unchanged.
+   `BinaryAffineSourceGenerate` now generates and erases its unary count from a
+   binary operand, restoring the binary dimensions, index and complete workspace.
+   `RepairYSourceGenerate` instantiates this with the actual first-pass Y selectors
+   and discharges their arithmetic range using the proved target-wire bounds.
+   The exact Y profile is generated without supplied profile/unary-count words;
+   only its output changes and every phase is charged. Selector-width adaptation
+   and installation into the live bank remain open, along with activity-dependent
+   and selected-source profiles, remaining scalars and all other R3 cost gates.
+   Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
