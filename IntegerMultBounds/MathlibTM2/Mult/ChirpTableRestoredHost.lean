@@ -19,7 +19,8 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U} {rg : TblR 48 → Fin T}
 
-private theorem chirpTableRestored_host (hrg : Function.Injective rg) {out : Fin T}
+/-- Lower a restored table program to a destination-only host execution. -/
+theorem tblChirpRestored_host (hrg : Function.Injective rg) {out : Fin T}
     (hout : ∀ r, rg r ≠ out) {W w : ℕ} (wl nl : List (Fin (A + 4)))
     (hwl : wl.length = W) (hnl : nl.length = w) (hw : w ≤ W)
     (code : TblCode 48) (st : TblSt 48 A) (words : List (Fin (A + 4))) (K : ℕ)
@@ -71,7 +72,7 @@ theorem tblChirpNegativeTable_host (hrg : Function.Injective rg) {out : Fin T}
       Exec body (tblHost rg (tblChirpNegativeTable kernel) out) (mk v S) n
         (mk v' { S with R := (Function.update S.R out
           (chirpEntryStream A w N (fun j => chirpNegativeNumerator kernel s t α q offset k0 j) ++ S.R out)) }) := by
-  simpa only [length_chirpEntryStream] using chirpTableRestored_host (body := body) hrg hout wl nl hwl hnl hw
+  simpa only [length_chirpEntryStream] using tblChirpRestored_host (body := body) hrg hout wl nl hwl hnl hw
     (tblChirpNegativeTable kernel) st _ _
     (tblChirpNegativeTable_do st size kernel s t α offset k0 N hq hs ht hα ho hk hN
       hst hsB htB hαB hoB hkB hNB howned) hfit hacc v S hS
@@ -91,7 +92,7 @@ theorem tblChirpOutputTable_host (hrg : Function.Injective rg) {out : Fin T}
       Exec body (tblHost rg tblChirpOutputTable out) (mk v S) n
         (mk v' { S with R := (Function.update S.R out
           (chirpEntryStream A w N (fun b => chirpTableE s t α q b) ++ S.R out)) }) := by
-  simpa only [length_chirpEntryStream] using chirpTableRestored_host (body := body) hrg hout wl nl hwl hnl hw
+  simpa only [length_chirpEntryStream] using tblChirpRestored_host (body := body) hrg hout wl nl hwl hnl hw
     tblChirpOutputTable st _ _ (tblChirpOutputTable_do st size s t α N hq hs ht hα hN
       hst hsB htB hαB hNB ht0 hα0 hgate howned) hfit hacc v S hS
 

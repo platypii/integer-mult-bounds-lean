@@ -286,7 +286,13 @@ default build does not check them.
      `ChirpTableCleanup`, `ChirpTableRestored` and `ChirpTableRestoredHost` now clear
      the owned variables and restore the entire initial bank: only the destination stack
      changes. This adds 37 atoms per row, with the same compiler cost formula.
-     S2/S3 still need complete multi-block table schedules,
+     `ChirpTableBlocks`, `ChirpTableShape`, `ChirpTableSchedule` and `ChirpTableBlockHost`
+     now compute the row offset and length from `m`, generate every row at origin `j*m`
+     in one host invocation, and restore the full bank. For row length `N`, the schedule
+     costs `M (N (310q + 122) + 150q + 445) + 8 + S` atoms, where `S = 4` for
+     input rows (`N = 3m+1`) and `S = 7` for kernel rows (`N = 4m`); lowering adds
+     `2 MNw + 2` tape steps to the atom cost times `tblC W w`.
+     S2/S3 still need table reuse across lines,
      overlapping-window gathering, binary dimension conversion and output arithmetic,
      followed by the complete forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
