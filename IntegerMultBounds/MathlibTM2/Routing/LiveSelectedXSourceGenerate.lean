@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Routing.LiveSelectedSourceLayout
-public import IntegerMultBounds.MathlibTM2.Routing.RepairXSourceGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.RepairSharedXSourceGenerate
 
 /-! Generate the first X profile in the existing shared bank. The two remaining
 region bases are explicit setup operands; all borrowed tapes are restored. -/
@@ -17,7 +17,7 @@ local notation "T₀" => liveInactiveProfileT repairT 11
 local notation "e₀" => liveInactiveProfileCore (N := repairT) (J := 11)
 
 def liveSelectedXSourceProgram (src : Fin repairT) : Pr P T₀ Q A U :=
-  selectedSourceGenerateProgram liveSelectedSourceReg (liveZSourceActivity src)
+  sharedSelectedSourceGenerateProgram liveSelectedSourceReg (liveZSourceActivity src)
     (liveInactiveProfileAux 2) (liveSelectedSourceReg 0 0) (liveSelectedSourceReg 0 3)
     (liveInactiveProfileAux 3) (liveInactiveProfileAux 1) (liveInactiveProfileAux 4)
     (e₀ (liveDescriptorAux (.input 9)))
@@ -31,15 +31,15 @@ theorem liveSelectedXSourceGenerate_exec (body : P → Pr P T₀ Q A U)
     (v : HS T₀ Q A U) (S : Stacks T₀ A)
     (hbank : ∀ r, (∀ j : Fin 11, r ≠ .input j) →
       S.R (e₀ (liveDescriptorAux r)) = liveDescriptorData p X hG hK active s repairLiveMode w r)
-    (hraw : S.R (liveZSourceActivity src) = selectedSourceWords w.indexBits w.strideBits
-      (List.ofFn (fun c => (s c).choice)))
+    (hraw : S.R (liveZSourceActivity src) = gatedSelectedSourceWords w.indexBits w.strideBits
+      (List.ofFn (fun c => (s c).gatedChoice (active c))))
     (hinput : S.R (e₀ (liveDescriptorAux (.input 9))) = [])
     (hscratch : ∀ i : Fin 7, i ≠ 0 → i ≠ 5 → i ≠ 6 → S.R (liveInactiveProfileAux i) = [])
     (hhigh : S.R (liveInactiveProfileAux 5) = binSyms w.coordinateBits (p.ρ + p.n * p.K))
     (hspectator : S.R (liveInactiveProfileAux 6) = binSyms w.coordinateBits (p.wy + 2 * p.wc)) :
     ∃ (v' : HS T₀ Q A U) (steps : ℕ), v'.user = v.user ∧
-      steps ≤ p.n * selectedSourceIterationCost w.indexBits w.strideBits +
-        2 * (p.n * (w.indexBits + w.coordinateBits + 4)) + 2 * (p.n * (w.coordinateBits + 3)) + 6 ∧
+      steps ≤ p.n * sharedSelectedSourceIterationCost w.indexBits w.strideBits +
+        2 * (p.n * (w.indexBits + w.coordinateBits + 5)) + 2 * (p.n * (w.coordinateBits + 3)) + 6 ∧
       Exec body (liveSelectedXSourceProgram src) (mk v S) steps
         (mk v' { S with R := Function.update S.R (e₀ (liveDescriptorAux (.input 9))) ((repairLiveMode 9).profileFrames p X hG hK active s w.selectorBits) }) := by
   have hrdata (r : Fin 13) : S.R (e₀ (liveDescriptorAux (selectedScratchRole r))) =
@@ -49,7 +49,7 @@ theorem liveSelectedXSourceGenerate_exec (body : P → Pr P T₀ Q A U)
       S.R (liveSelectedSourceReg tag r) = [] := by
     simp only [liveSelectedSourceReg, ite_eq_right h2]
     rw [hrdata, selectedScratchRole_data p X hG hK active s w r h1 h2]
-  obtain ⟨v', steps, hu, ht, hx⟩ := repairXSourceGenerate_exec body p X hG hK active s
+  obtain ⟨v', steps, hu, ht, hx⟩ := repairSharedXSourceGenerate_exec body p X hG hK active s
     liveSelectedSourceReg liveSelectedSourceReg_injective (liveZSourceActivity src)
     (liveInactiveProfileAux 2) (liveSelectedSourceReg 0 0) (liveSelectedSourceReg 0 3)
     (liveInactiveProfileAux 3) (liveInactiveProfileAux 1) (liveInactiveProfileAux 4)

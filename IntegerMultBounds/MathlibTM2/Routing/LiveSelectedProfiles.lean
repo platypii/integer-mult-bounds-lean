@@ -23,8 +23,8 @@ def liveSelectedProfilesCost (p : Par) (w : LiveDescriptorWidths) :=
   (p.n * gatedSelectedSourceIterationCost w.widthBits w.indexBits w.strideBits +
     2 * (p.n * (w.indexBits + w.coordinateBits + 5)) + 2 * (p.n * (w.coordinateBits + 3)) + 6 +
     (w.indexBits * (12 * w.coordinateBits + 20) + 48 * w.coordinateBits + 56)) +
-  (p.n * selectedSourceIterationCost w.indexBits w.strideBits +
-    2 * (p.n * (w.indexBits + w.coordinateBits + 4)) + 2 * (p.n * (w.coordinateBits + 3)) + 6 +
+  (p.n * sharedSelectedSourceIterationCost w.indexBits w.strideBits +
+    2 * (p.n * (w.indexBits + w.coordinateBits + 5)) + 2 * (p.n * (w.coordinateBits + 3)) + 6 +
     (w.indexBits * (12 * w.coordinateBits + 20) + 48 * w.coordinateBits + 56))
 
 theorem liveSelectedProfiles_exec (body : P → Pr P T₀ Q A U)
@@ -39,8 +39,8 @@ theorem liveSelectedProfiles_exec (body : P → Pr P T₀ Q A U)
       S.R (e₀ (liveDescriptorAux r)) = liveDescriptorData p X hG hK active s repairLiveMode w r)
     (hkey : S.R (liveZSourceActivity keySrc) = gatedSelectedSourceWords w.indexBits w.strideBits
       (List.ofFn (fun c => (s c).gatedChoice (active c))))
-    (hxraw : S.R (liveZSourceActivity xSrc) = selectedSourceWords w.indexBits w.strideBits
-      (List.ofFn (fun c => (s c).choice)))
+    (hxraw : S.R (liveZSourceActivity xSrc) = gatedSelectedSourceWords w.indexBits w.strideBits
+      (List.ofFn (fun c => (s c).gatedChoice (active c))))
     (hkeyOutput : S.R (e₀ (liveDescriptorAux (.input 0))) = [])
     (hxOutput : S.R (e₀ (liveDescriptorAux (.input 9))) = [])
     (hcount : S.R (liveInactiveProfileAux 0) = binSyms w.indexBits p.n)
@@ -67,6 +67,30 @@ theorem liveSelectedProfiles_exec (body : P → Pr P T₀ Q A U)
   refine ⟨v₂, m₁ + m₂, hu₂.trans hu₁, Nat.add_le_add hm₁ hm₂, ?_⟩
   simp only [liveInactiveProfileBatchBank, liveInactiveProfileBank]
   exact Exec.seq hx₁ hx₂
+
+theorem liveSharedSourceProfiles_exec (body : P → Pr P T₀ Q A U)
+    (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
+    (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X) (w : LiveDescriptorWidths)
+    (source : Fin repairT) (hwidth : w.selectorBits = w.coordinateBits)
+    (hwidthFit : w.coordinateBits < 2 ^ w.widthBits)
+    (hk : p.K < 2 ^ w.strideBits) (hn : p.n < 2 ^ w.indexBits)
+    (hw : p.wy + 2 * p.wc + X < 2 ^ w.coordinateBits)
+    (v : HS T₀ Q A U) (S : Stacks T₀ A)
+    (hbank : ∀ r, (∀ j : Fin 11, r ≠ .input j) →
+      S.R (e₀ (liveDescriptorAux r)) = liveDescriptorData p X hG hK active s repairLiveMode w r)
+    (hkey : S.R (liveZSourceActivity source) = gatedSelectedSourceWords w.indexBits w.strideBits
+      (List.ofFn (fun c => (s c).gatedChoice (active c))))
+    (hkeyOutput : S.R (e₀ (liveDescriptorAux (.input 0))) = [])
+    (hxOutput : S.R (e₀ (liveDescriptorAux (.input 9))) = [])
+    (hcount : S.R (liveInactiveProfileAux 0) = binSyms w.indexBits p.n)
+    (hscratch : ∀ i : Fin 7, i ≠ 0 → S.R (liveInactiveProfileAux i) = []) :
+    ∃ (v' : HS T₀ Q A U) (steps : ℕ), v'.user = v.user ∧
+      steps ≤ liveSelectedProfilesCost p w ∧
+      Exec body (liveSelectedProfilesProgram source source) (mk v S) steps
+        (mk v' { S with R := liveInactiveProfileBatchBank p X hG hK active s repairLiveMode w S.R [0, 9] }) := by
+  exact liveSelectedProfiles_exec body p X hG hK active s w source source hwidth hwidthFit hk hn hw
+    v S hbank hkey hkey hkeyOutput hxOutput hcount hscratch
+
 
 theorem liveSelectedProfiles_ready
     (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)

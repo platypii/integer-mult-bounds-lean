@@ -29,14 +29,14 @@ theorem livePreparedXSourceGenerate_exec (body : P → Pr P T₀ Q A U)
     (v : HS T₀ Q A U) (S : Stacks T₀ A)
     (hbank : ∀ r, (∀ j : Fin 11, r ≠ .input j) →
       S.R (e₀ (liveDescriptorAux r)) = liveDescriptorData p X hG hK active s repairLiveMode w r)
-    (hraw : S.R (liveZSourceActivity src) = selectedSourceWords w.indexBits w.strideBits
-      (List.ofFn (fun c => (s c).choice)))
+    (hraw : S.R (liveZSourceActivity src) = gatedSelectedSourceWords w.indexBits w.strideBits
+      (List.ofFn (fun c => (s c).gatedChoice (active c))))
     (hinput : S.R (e₀ (liveDescriptorAux (.input 9))) = [])
     (hcount : S.R (liveInactiveProfileAux 0) = binSyms w.indexBits p.n)
     (hscratch : ∀ i : Fin 7, i ≠ 0 → S.R (liveInactiveProfileAux i) = []) :
     ∃ (v' : HS T₀ Q A U) (steps : ℕ), v'.user = v.user ∧
-      steps ≤ p.n * selectedSourceIterationCost w.indexBits w.strideBits +
-        2 * (p.n * (w.indexBits + w.coordinateBits + 4)) + 2 * (p.n * (w.coordinateBits + 3)) + 6 +
+      steps ≤ p.n * sharedSelectedSourceIterationCost w.indexBits w.strideBits +
+        2 * (p.n * (w.indexBits + w.coordinateBits + 5)) + 2 * (p.n * (w.coordinateBits + 3)) + 6 +
         (w.indexBits * (12 * w.coordinateBits + 20) + 48 * w.coordinateBits + 56) ∧
       Exec body (livePreparedXSourceProgram src) (mk v S) steps
         (mk v' { S with R := Function.update S.R (e₀ (liveDescriptorAux (.input 9))) ((repairLiveMode 9).profileFrames p X hG hK active s w.selectorBits) }) := by

@@ -54,8 +54,8 @@ theorem allSourceProfilesRepair_exec (body : P → Pr P repairT Q (prime + K) U)
     (hinput : ∀ j, S.R (e₀ (liveDescriptorAux (.input j))) = [])
     (hkey : S.R (liveZSourceActivity keySrc) = gatedSelectedSourceWords w.indexBits w.strideBits
       (List.ofFn (fun c => (s c).gatedChoice (active c))))
-    (hxraw : S.R (liveZSourceActivity xSrc) = selectedSourceWords w.indexBits w.strideBits
-      (List.ofFn (fun c => (s c).choice)))
+    (hxraw : S.R (liveZSourceActivity xSrc) = gatedSelectedSourceWords w.indexBits w.strideBits
+      (List.ofFn (fun c => (s c).gatedChoice (active c))))
     (hactivity : S.R (liveZSourceActivity activity) = (List.ofFn active).map bitSymbol)
     (hcount : S.R (liveInactiveProfileAux 0) = binSyms w.indexBits n)
     (hscratch : ∀ i : Fin 7, i ≠ 0 → S.R (liveInactiveProfileAux i) = [])

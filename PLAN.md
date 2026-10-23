@@ -1390,9 +1390,24 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    descriptor readiness without any supplied completed profile. Raw tagged source
    records, activity and scalars remain inputs. `AllSourceProfilesRepair` composes
    this eleven-profile generation with exact repair and complete profile cleanup:
-   only the repaired stream changes and every phase is charged. Placement/header/
-   classifier integration, raw-record production, and all remaining
-   routing/amortization/fallback gates remain open. Full R3 and kappa are unchanged.
+   only the repaired stream changes and every phase is charged.
+   `JointBankAllSourceProfilesRepair` now composes executed classifiers, widths,
+   headers, all eleven profile generators, exact repair, forward/inverse placement,
+   and complete cleanup. Placement readiness is derived from the concrete
+   shared-bank words; every phase is charged and every non-stream tape restored.
+   Raw tagged source records, raw activity/scalars and placement words remain
+   inputs. `RepairRawSourceLayout` identifies six unused physical key-field
+   aliases as concrete raw-input storage, proving separation from all setup
+   sources/targets, the main stream and required blank scratch. Their input
+   production, complete routing schedules, and all remaining
+   routing/amortization/fallback gates remain open. `SharedSelectedSourceGenerate`
+   now emits the X profile from the same activity-bearing raw format used for
+   keys, archiving the activity bit without gating the X frame. This shared format
+   is installed throughout the concrete placed-repair path; `liveSharedSourceProfiles_exec`
+   explicitly runs both profile generators sequentially on one restored raw tape.
+   The separate raw activity stream is still supplied. Schedule-to-record production,
+   activity extraction, scalar/placement setup, full schedules and uniform cost/
+   amortization/fallback gates remain open. Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
