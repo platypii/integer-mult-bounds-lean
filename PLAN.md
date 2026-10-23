@@ -1174,6 +1174,41 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    after any disjoint stream update, restores the original bank and gives the
    closed cleanup cost. Composition with executed descriptor/repair programs,
    active/selected profile generation and remaining scalar generation stay open.
+   `InactiveProfileRepairGenerated` now executes the actual live descriptor batch
+   and exact repair on the generated three-profile bank, deriving configuration,
+   scratch and descriptor readiness from the original bank.
+   `InactiveProfileRepair` composes executed three-profile generation, the embedded
+   full live repair program and profile erasure. All three profile inputs initially
+   are blank; generation, descriptor/repair execution and cleanup are charged,
+   and only the repaired stream changes. Canonical headers and row/classifier
+   fields are still supplied on this particular seam; combining its seven-tape
+   extension with the generated-header/classifier placement path remains open,
+   together with active/selected profile generation, scalar generation and the
+   uniform total-cost/amortization gates. Full R3 and kappa are unchanged.
+   `InactiveProfileHeaderFrame` now embeds the inactive-profile bank under the
+   executed header generator and proves preservation of all live auxiliary inputs
+   and the seven profile-generation tapes. `InactiveProfileHeaderGenerated`
+   derives the full inactive-profile/repair contract after header generation.
+   `InactiveProfileHeaderRepair` composes actual header generation, three-profile
+   generation, descriptor compilation, exact R2, profile cleanup and header cleanup.
+   Headers and all three inactive profile tapes initially are blank, every phase
+   is charged and only the record stream changes. Explicit header-map interfaces
+   and a structural intermediate-state rewrite keep default elaboration limits.
+   Classifier/width generation and placement integration around this enlarged
+   bank, active/selected profiles, remaining scalars and total-cost bounds remain
+   open; full R3 and kappa are unchanged.
+   `EmbeddedRepairWidths` now reuses row/key-mask generation over any injectively
+   embedded repair core and derives pending descriptor data from pending
+   configuration. `InactiveProfileWidths` specializes its frame to the enlarged
+   header/inactive-profile bank, preserving live inputs, profile count/workspace
+   and header operands. `InactiveWidthRepairGenerated` derives the complete
+   header/profile repair contract on that generated-width bank.
+   `InactiveWidthRepair` composes actual width, header and three-profile generation,
+   descriptor compilation, exact R2 and all corresponding cleanup. Raw row/key-mask
+   fields, headers and the three inactive profiles initially are blank; only the
+   repaired stream changes and every phase is charged. Classifier generation and
+   placement around this enlarged bank, active/selected profiles, remaining scalars
+   and uniform total-cost/amortization bounds remain open; R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
