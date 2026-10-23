@@ -1099,6 +1099,39 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    assumes ready exchange calls. Placement metadata words and live scalar/profile
    inputs remain supplied; their generation, routing schedules and uniform
    setup/amortization bounds remain open.
+   `LiveHeaderWidths` now executes row-zero and key-mask field generation from
+   binary width operands in an outer six-tape workspace. `LiveHeaderWidthFrame`
+   proves preservation of every live descriptor input, header work tape, repair
+   target, descriptor destination and blank register, and derives the pending
+   descriptor contract from pending configuration. `LiveWidthRepairGenerated`
+   connects that generated bank to the full header/live-descriptor repair proof.
+   `LiveWidthRepair` executes width generation, full live repair and width cleanup:
+   the two raw field tapes initially are blank, all phases are charged, and only
+   the record stream changes. Binary width operands and classifier/profile inputs
+   remain supplied. Composition of this outer width workspace with placement,
+   classifier generation, remaining input generation and uniform cost bounds
+   remain open; full R3 and kappa are unchanged.
+   `LiveHeaderConfigurationFrame`, `LiveClassifierFrame` and `LiveClassifierBank`
+   now supply a concrete classifier workspace around the live width/header bank.
+   Executed classifier writes preserve live-profile readiness, header workspace,
+   width operands, repair scratch and descriptor/installation destinations.
+   `LiveClassifierRepairGenerated` derives the complete width/header/live repair
+   contract from pending mask data. `LiveClassifierRepair` composes the existing
+   binary classifier generators, the full live repair path and classifier cleanup:
+   both classifier output tapes initially are blank, every phase is charged and
+   only the stream changes. Classifier masks and raw row/key-mask fields no longer
+   need to be supplied on this composed path. Binary scalar/profile inputs remain
+   supplied; placement integration of this enlarged bank and uniform total-cost
+   bounds remain open. R3 and kappa are unchanged.
+   `LiveClassifierRepairMoved` now transports the entire generated-input path
+   across record placement, preserving pending mask data, live-profile readiness,
+   width and classifier operands, header workspace and every blank destination.
+   `PlacedLiveClassifierRepair` composes actual forward reservoir placement,
+   classifier/width/header/descriptor generation, exact repair, cleanup and inverse
+   placement in an arbitrary larger bank. Both exchange chains and every inner
+   phase are charged; every non-stream tape is restored. A concrete joint-bank
+   readiness wrapper for this enlarged workspace remains to be supplied, along
+   with source/scalar generation, routing schedules and uniform total-cost bounds.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
