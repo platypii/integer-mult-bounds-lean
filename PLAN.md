@@ -1582,6 +1582,35 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    now states actual execution of that same program for every stage. This closes
    uniform single-call code and pricing; repeated generated-call readiness and
    composition, input production and global cost/fallback gates remain open.
+   `FramedCoreMetadata` proves the encoded full-core bank is unchanged by stream
+   updates and has a nonempty destination bank when the core has at least two
+   registers. `FramedCoreReady` provides the concrete between-call invariant:
+   all non-stream core tapes and shared scanner scratch are restored, left
+   stacks stay blank, and record permutations preserve count/width/symbol bounds.
+   `GeneratedPlacedInput` packages the actual placed-call data and readiness
+   equations without any execution fields; its execution theorem derives the
+   fixed-program run from the existing concrete proof. `GeneratedPlacedInputTransport`
+   now transports every readiness fact to arbitrary replacement records of the
+   same count, width and symbol bounds, while preserving geometry and code. Its
+   metadata theorem proves the encoded full-core jobs are identical after this
+   replacement; `sharedScheduleInputBank_updateStream` preserves placement inputs.
+   `GeneratedPlacedInputSemantics` identifies the actual call with its placed
+   finite rank permutation and proves its full price is unchanged by replacing
+   records or external input/output cursors. Its `exec_on` theorem runs the
+   packaged call on the scheduler's current bank. `GeneratedPlacedInputFramed`
+   supplies actual framed loading, generated/placed execution and erasure for
+   arbitrary current records of the same shape, charging the fixed stage price
+   plus framing overhead. `GeneratedRepairScheduleStage` now discharges the
+   concrete step and between-call invariant for a common record count/width.
+   `FramedGeneratedRepairSchedule` executes arbitrarily many generated/placed
+   calls with varying geometry on one fixed bank and program, sums their actual
+   fixed prices and framing overhead, and charges the final complete input rewind.
+   Only the composed finite-rank stream effect remains; all other tapes are
+   restored. Per-stage premises contain pure program identities and supplied
+   readiness data, never execution callbacks. Matching-derived coordinate/scalar/
+   placement input production, complete bulk/terminal/shear schedule instantiation
+   and uniform global amortization/fallback remain open. Full R3 and kappa are
+   unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and

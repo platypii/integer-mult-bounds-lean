@@ -42,9 +42,10 @@ A fixed-register schedule now executes repeated exact-repair calls from supplied
 raw configuration, including loading, cleanup and full input rewind. The full
 generated/placed price is proved independent of record order, and one complete
 generated/placed call now executes from a framed input bank with loading and
-erasure charged, using one fixed program across geometries. Repeated generated-call
-scheduling, matching-derived inputs, remaining setup production
-and uniform amortization remain open.
+erasure charged, using one fixed program across geometries. Repeated generated/placed
+calls now share one fixed bank and program, with composed rank semantics, summed
+prices and full input rewind. Matching-derived inputs, remaining setup production,
+complete router schedule instantiation and uniform amortization/fallback remain open.
 The complete router and multiplication integration remain in R3–R4; this work
 does not yet change the multiplication saving. See [the active plan](PLAN.md) and
 [the R2 audit](IntegerMultBounds/MathlibTM2/Routing/R2-AUDIT.md).

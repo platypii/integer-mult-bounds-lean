@@ -1735,3 +1735,12 @@ public import IntegerMultBounds.MathlibTM2.Routing.LiveProfileBankFrame
 public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedPriceFrame
 
 public import IntegerMultBounds.MathlibTM2.Routing.FramedGeneratedPlacedRepair
+
+public import IntegerMultBounds.MathlibTM2.Routing.FramedCoreMetadata
+public import IntegerMultBounds.MathlibTM2.Routing.FramedCoreReady
+public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedInput
+public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedInputTransport
+public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedInputSemantics
+public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedInputFramed
+public import IntegerMultBounds.MathlibTM2.Routing.GeneratedRepairScheduleStage
+public import IntegerMultBounds.MathlibTM2.Routing.FramedGeneratedRepairSchedule

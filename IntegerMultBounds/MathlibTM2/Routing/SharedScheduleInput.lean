@@ -43,4 +43,40 @@ theorem sharedScheduleInputBank_schedule {N t₀ n A : ℕ} (src : Fin N)
     exact binaryScheduleInputBank_at (sharedScheduleSlot src) (sharedScheduleSlot_injective src)
       spec bankWords Lc L B rowBits stream r
 
+/-- Replacing the record stream leaves every placement input unchanged. -/
+theorem sharedScheduleInputBank_updateStream {N t₀ n A : ℕ} (src : Fin N)
+    (coreWords : Fin N → List (Fin (A + 4))) (spec : Fin 3 → BlockExchangeSpec n)
+    (bankWords : Fin (swapT t₀) → List (Fin (A + 4))) (Lc L B : ℕ)
+    (rowBits : List Bool) (stream replacement : List (Fin (A + 4))) :
+    sharedScheduleInputBank src (Function.update coreWords src replacement)
+        spec bankWords Lc L B rowBits replacement =
+      Function.update (sharedScheduleInputBank src coreWords spec bankWords Lc L B rowBits stream)
+        (sharedCoreEmbed src) replacement := by
+  funext j
+  by_cases hcore : ∃ i, sharedCoreEmbed i = j
+  · obtain ⟨i, rfl⟩ := hcore
+    rw [sharedScheduleInputBank_core]
+    by_cases hi : i = src
+    · subst i
+      simp
+    · rw [Function.update_of_ne hi,
+        Function.update_of_ne (sharedCoreEmbed_injective.ne hi), sharedScheduleInputBank_core]
+  · have hj : j ≠ sharedCoreEmbed src := by
+      intro h
+      exact hcore ⟨src, h.symm⟩
+    rw [Function.update_of_ne hj]
+    unfold sharedScheduleInputBank
+    rw [Function.extend_apply' _ _ _ hcore, Function.extend_apply' _ _ _ hcore]
+    by_cases hslot : ∃ r, sharedScheduleSlot src r = j
+    · obtain ⟨r, rfl⟩ := hslot
+      rw [binaryScheduleInputBank_at _ (sharedScheduleSlot_injective src),
+        binaryScheduleInputBank_at _ (sharedScheduleSlot_injective src)]
+      have hr : r ≠ .str := by
+        intro h
+        subst r
+        exact hj (sharedScheduleSlot_str src)
+      cases r <;> first | rfl | contradiction
+    · unfold binaryScheduleInputBank
+      rw [Function.extend_apply' _ _ _ hslot, Function.extend_apply' _ _ _ hslot]
+
 end IntegerMultBounds.MathlibTM2.Routing
