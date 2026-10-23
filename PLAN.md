@@ -1132,6 +1132,48 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    phase are charged; every non-stream tape is restored. A concrete joint-bank
    readiness wrapper for this enlarged workspace remains to be supplied, along
    with source/scalar generation, routing schedules and uniform total-cost bounds.
+   `LiveClassifierPlacementLayout` now separates the full enlarged repair bank
+   from placement metadata, sharing only the stream. `JointBankLiveClassifierRepair`
+   derives actual exchange calls and readiness from concrete shared-bank words
+   and executes forward placement, the full generated-input live repair and inverse
+   placement. Ready exchange calls are no longer an input to this concrete path;
+   every phase is charged and all non-stream tapes are restored. Placement words,
+   binary scalar operands and source profiles remain supplied. Their executed
+   generation, complete routing schedules and uniform setup/amortization bounds
+   remain open; full R3 and kappa are unchanged.
+   `LiveDescriptorCanonicalWidths` chooses logarithmic common widths from a
+   finite maximum of the live descriptor scalars and proves all seven fit
+   conditions for every job, including empty families and zero dimensions.
+   Its canonical-bank readiness theorem has no separate numeric-fit assumptions.
+   This fixes mathematical width selection only; executing the scalar/profile
+   input generation and proving its uniform cost remain open.
+   `BinaryInactiveProfileFrame` generates an inactive frame from a binary
+   selector-width operand. `BinaryInactiveProfile` generates its temporary frame,
+   repeats it a binary-specified number of times and erases the template, restoring
+   every tape except the profile output and charging every phase.
+   `RepairInactiveProfileGenerate` identifies this output with the exact second-pass
+   Z, Y and X source-profile inputs. Those three profiles can therefore be produced
+   without supplied profile words. Installing this generator in the live batch,
+   generating active/selected profiles and the remaining scalar operands remain
+   open; full R3 and kappa are unchanged.
+   `LiveInactiveProfileLayout` gives a fixed seven-tape extension sharing the
+   live bank's selector-width operand and one profile destination. Its core,
+   count and scratch separation is proved structurally. `LiveInactiveProfile`
+   executes the inactive generator directly into a blank live input and proves
+   full `LiveDescriptorReady` from the other initial live inputs. The count and
+   six outer work tapes are preserved; no generated profile word is supplied.
+   This closes single-profile installation; batching the three inactive jobs,
+   composing generation/descriptor execution/cleanup, and generating the remaining
+   active/selected profiles and scalars remain open.
+   `LiveInactiveProfileBatch` executes any distinct inactive-job list with one
+   binary count and shared workspace, derives all later readiness from initial
+   inputs, and proves the final live-bank contract. `RepairLiveInactiveProfiles`
+   specializes this to actual jobs 4, 6 and 10 (second-pass Z, Y and X), with all
+   three profile tapes initially blank. It preserves raw repair configuration and
+   outer count/scratch. `LiveInactiveProfileClean` erases the generated profiles
+   after any disjoint stream update, restores the original bank and gives the
+   closed cleanup cost. Composition with executed descriptor/repair programs,
+   active/selected profile generation and remaining scalar generation stay open.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
