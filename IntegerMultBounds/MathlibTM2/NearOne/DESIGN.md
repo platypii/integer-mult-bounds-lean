@@ -569,3 +569,22 @@ E products; the E table, unary counts, multiplier bank and scratch are restored.
 Both multiplier input fits follow from decoded correlation norm ≤1, factor magnitude ≤2
 and `q+l+4 ≤ w`. Remaining output execution includes the Γ shift, normalization product,
 final signed precision reduction and crop, plus their setup/cleanup and intermediate fits.
+
+`chirpOutputNormalize_exec` now executes the Γ shift and normalization multiplication,
+reusing one real normalization word across the entire stream. It retains the scaled
+source and normalization word, emits exactly `chirpOutputNormalize` numerators and
+restores counters and private scratch. Its cost is
+`N*(6w+4Γ+14)+4 + N*(rmulCost w+6w+8)+6`. Shifted input fits follow from the uniform
+`8*2^l` E-product bound and `q+l+Γ+5 ≤ w`; normalization-word fits follow from magnitude
+≤1. `chirpOutputEBlocks_norm` proves that every emitted E product satisfies the required
+bound, structurally over arbitrary rows. The composition/routing of E and normalization
+stages, intermediate cleanup, final rounding/cropping and generated output setup remain open.
+
+`chirpOutputProducts_exec` now connects the executed E stage directly to the executed
+normalization stage through an identified intermediate tape. It produces exactly the
+modeled `chirpOutputNumerator` stream and charges both shifts and both products.
+The E and normalization tables, unary counts and private multiplier scratch are retained;
+the correlation source and intermediate product source contain their shifted versions
+as owned working data. The structural E-product norm lemma discharges the next stage's
+input-bound precondition. Cleanup of those working streams, final precision reduction,
+cropping, generated output setup and composition with the correlation caller remain open.

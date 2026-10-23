@@ -1328,6 +1328,11 @@ rounding/cropping execution and the remaining intermediate fit obligations are s
 `chirpOutputETable_exec` now composes correlation scaling with the real E-table product,
 reusing one E row across all blocks and deriving both signed input fits from norm bounds.
 It retains the scaled source and E table and emits the exact first output-product stream.
+`chirpOutputNormalize_exec` now executes Γ scaling and one-word normalization-table
+reuse, with derived signed fits and explicit cost. A structural row/batch theorem proves
+that every E product satisfies this stage’s norm precondition. `chirpOutputProducts_exec`
+now joins both shifts and products and emits exactly the modeled pre-rounding numerator
+stream. Intermediate cleanup, final rounding/cropping and output setup remain open.
 Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and

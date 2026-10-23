@@ -87,12 +87,10 @@ theorem norm_chirpOutputNumerator (q l Γ : ℕ) (c : GaussianInt) (e a : ℤ)
   calc _ ≤ 1 * ((2 : ℝ) ^ Γ * (2 * (4 * (2 : ℝ) ^ l))) := hout
     _ = 8 * (2 : ℝ) ^ (l + Γ) := by rw [pow_add]; ring
 
-/-- A simple guard-bit envelope prevents signed aliasing of the final q-grid numerator. -/
-theorem chirpOutputNumerator_fits (q l Γ w : ℕ) (c : GaussianInt) (e a : ℤ)
-    (hc : ‖value (q + 1) c‖ ≤ 1) (he : |(e : ℝ) / 2 ^ q| ≤ 2)
-    (ha : |(a : ℝ) / 2 ^ q| ≤ 1) (hw : q + l + Γ + 5 ≤ w) :
-    Fits w (chirpOutputNumerator q l Γ c e a) := by
-  apply fits_of_norm_value_bound _ _ (norm_chirpOutputNumerator q l Γ c e a hc he ha)
+/-- Uniform output norm envelope implies exact signed representability. -/
+theorem fits_chirpOutput_bound (q l Γ w : ℕ) (x : GaussianInt)
+    (hx : ‖value q x‖ ≤ 8 * (2 : ℝ) ^ (l + Γ)) (hw : q + l + Γ + 5 ≤ w) : Fits w x := by
+  apply fits_of_norm_value_bound _ _ hx
   have hpow : (2 : ℝ) ^ (q + l + Γ + 3) < 2 ^ (w - 1) :=
     pow_lt_pow_right₀ (by norm_num) (by omega)
   calc
@@ -100,5 +98,23 @@ theorem chirpOutputNumerator_fits (q l Γ w : ℕ) (c : GaussianInt) (e a : ℤ)
       simp only [pow_add]
       ring
     _ < _ := hpow
+
+/-- The Γ shift fits throughout the output normalization stage. -/
+theorem chirpGammaScaled_fits (q l Γ w : ℕ) (x : GaussianInt)
+    (hx : ‖value q x‖ ≤ 8 * (2 : ℝ) ^ l) (hw : q + l + Γ + 5 ≤ w) :
+    Fits w ((2 : GaussianInt) ^ Γ * x) := by
+  apply fits_chirpOutput_bound q l Γ w _ _ hw
+  rw [value_pow_two_mul, norm_mul, norm_pow, Complex.norm_ofNat]
+  calc
+    (2 : ℝ) ^ Γ * ‖value q x‖ ≤ 2 ^ Γ * (8 * 2 ^ l) :=
+      mul_le_mul_of_nonneg_left hx (by positivity)
+    _ = 8 * 2 ^ (l + Γ) := by rw [pow_add]; ring
+
+/-- A simple guard-bit envelope prevents signed aliasing of the final q-grid numerator. -/
+theorem chirpOutputNumerator_fits (q l Γ w : ℕ) (c : GaussianInt) (e a : ℤ)
+    (hc : ‖value (q + 1) c‖ ≤ 1) (he : |(e : ℝ) / 2 ^ q| ≤ 2)
+    (ha : |(a : ℝ) / 2 ^ q| ≤ 1) (hw : q + l + Γ + 5 ≤ w) :
+    Fits w (chirpOutputNumerator q l Γ c e a) :=
+  fits_chirpOutput_bound q l Γ w _ (norm_chirpOutputNumerator q l Γ c e a hc he ha) hw
 
 end IntegerMultBounds.MathlibTM2.Mult.ShortConv
