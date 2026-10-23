@@ -1248,99 +1248,42 @@ Estimated remaining resampling/outer-integration total (S2–S6): **24–48k add
 revised Lean lines**, excluding R1–R4, M9–M10 and generated data. This is a lower-confidence
 scope estimate, especially for fused execution and boundary work, not a delivery-time
 estimate. The rows partition the intended work; shared helpers should be proved once.
-S1 is complete independently of root imports and Routing. For `r = 2^l`, disk-grid
-inputs, `1 ≤ p`, `w ≥ p + 2`, block lengths `a,b ≤ r` and `a+b ≤ r+1`,
-`ShortConv.Fixed.closed_exec` generates reusable counters and the header from unary
-dimensions, packs the raw batch, invokes one ring-product program and clears all
-generated workspace. Only the output register changes; raw inputs, dimensions,
-all scratch, user state and spectator input/output stacks are restored. Empty batches
-and zero-length blocks are covered. With `M` records, `ShortConv.Fixed.cost` bounds
-execution by
-`M (rpRecBound + 44rw + 50) + rpFixCost + 46rw + 8w + 18l + ldrHeaderCost + 2|header| + 63`;
-setup and cleanup outside the per-record term are paid once for the batch.
+S1 is complete independently of root imports and Routing. `ShortConv.Fixed.closed_exec`
+packs raw batches, generates headers/counters, invokes one shared ring product and
+clears generated workspace. Only the output changes; inputs, dimensions, scratch and
+spectators are restored, including empty batches. `output_coeff` proves exact signed
+coefficient recovery and `output_err` bounds rescaled error by `2r/2^p`. The fixed cost
+is `ShortConv.Fixed.cost`; setup outside its per-record term is paid once per batch.
 
-`ShortConv.Fixed.output_coeff` reads the actual pair-symbol word at record/coefficient
-position `(n r + c) w` and recovers the Gaussian-integer convolution truncated by
-`2^(p+l)`, without modular aliasing. `output_err` bounds its decoded, rescaled error
-by `2r/2^p`. `ShortConv.copySlice_coeffs_exec` also executes interval extraction
-with restored source, counters and scratch, at cost `6 start·w + 10 len·w + 16`.
-`ShortConvCheck` audits the shared namespace: only `propext`, `Classical.choice` and
-`Quot.sound` occur. The final five changed modules passed guarded single-file checks
-below 1.85 GiB each; the standalone audit target also passed after rebasing onto master.
+S2 has two verified machine contracts, not yet one complete forward map:
 
-S2 now has verified machine components for shared chirp batch extraction, generated
-coefficient tables, overlapping-window gathering with generated controls, cyclic-source
-construction, and generation of its unary counters from a retained binary dimension bank.
-`chirpGatherFromDimensions_exec` now composes the complete raw-line gathering path,
-generating and erasing all geometry counters, the extension and control stream.
-Their actual tape costs, decoding and scratch frames are proved; see the
-[chirp implementation status](IntegerMultBounds/MathlibTM2/NearOne/DESIGN.md).
-`chirpOperandBatch_err` now specializes the shared tape error bound to the generated
-integer operands, discharging their representation, no-wrap and disk hypotheses. The
-weighted operand is proved equal to the aligned multiplier output on the gathered window;
-its interpretation at precision `q+1` supplies the required factor one half.
-`chirpWeighted_exec` executes one aligned real-multiplier traversal over all gathered
-windows and generated G rows, with input/table/scratch restoration and explicit cost.
-The generated K stream is exactly the S1 kernel operand tape (`chirpOperandYStream_eq`).
-`chirpOperandX_exec` now executes coefficient reversal within each weighted row while
-retaining batch order and restoring source, counters and scratch. Its exact output is
-the flattened raw X operand stream, with cost `M*(26*(3m+1)*w+19*(3m+1)+17)+8`.
-`chirpMakeX_exec` composes weighting, reversal and weighted-stream erasure with only
-the X operand destination changed. `chirpOperandCountSetup_exec` separately computes
-and emits the three unary geometry counters from the binary dimension bank and restores
-that bank. `chirpMakeXSetup_exec` now composes this setup, weighting, reversal and
-all temporary-stream/counter cleanup from empty geometry tapes, retaining only the
-final X destination change and charging every stage.
-`chirpGeneratedBatch_correct` now executes the shared S1 correlation program for these
-operands and the emitted K-table stream, discharging disk/length hypotheses and attaching
-the correlation error bound to its actual returned destination tape. It still starts from
-prepared operand tapes and unary S1 dimensions. `chirpInputBatch_exec` now composes
-X production (including generated geometry), the single shared S1 call, extraction and
-X-stream cleanup, with only the correlation destination changed and all costs charged.
-It starts from gathered windows, generated G/K streams and unary S1 dimensions; composing
-gathering/table generation remains open. `chirpS1DimensionSetup_exec` separately emits
-all seven S1 unary dimensions from a dedicated binary `q,t,m,w,l` bank, computes the
-precision/operand lengths/block count and restores all working words. Exact emitted
-values and conversion costs are proved; composing this installer and dimension cleanup
-around the shared caller is now proved by `chirpDimensionBatch_exec`: starting with
-blank unary dimension tapes and prepared operands, it installs all seven dimensions,
-executes one shared call, extracts correlations and erases the dimensions. Only the
-correlation destination changes. `chirpStreamCorrelation_exec` now joins this path with
-X production and temporary-X cleanup, so neither prepared X nor unary S1 dimensions
-are caller inputs. `chirpRawCorrelation_exec` now composes raw-line gathering,
-operand production, generated S1 dimensions, one shared product/extraction and all
-temporary cleanup, changing only the correlation destination. Generated G/K streams
-and binary/template banks are still retained inputs. `chirpTablePair_exec` now generates
-both G/K streams using one restored table bank, with exact two-destination semantics
-and both schedule costs. The multiplier-register frame and consumer stream identities
-are proved. `chirpTableCorrelation_exec` now composes paired table generation with
-the raw-line caller and erases both temporary tables. Only the correlation destination
-changes, with all stages charged. Its remaining prepared data are binary input banks
-and multiplier templates; original-input initialization and output processing remain open.
-`chirpOutputWord_chirpAR` now identifies exact integer output arithmetic on each decoded
-correlation word with the analytic chirp map: numerator shifts, two real products and
-final signed truncation. The computed normalization and normalized E-table errors are
-proved; `chirpComputed_approx` discharges factor-error hypotheses under explicit
-window/precision gates. `chirpScale_exec` now executes numerator shifts with exact
-stream semantics, restored counters/scratch and explicit linear tape cost. Computed
-factor bounds give a final numerator signed-fit envelope `w ≥ q+l+Γ+5`; output product/
-rounding/cropping execution and the remaining intermediate fit obligations are still open.
-`chirpOutputETable_exec` now composes correlation scaling with the real E-table product,
-reusing one E row across all blocks and deriving both signed input fits from norm bounds.
-It retains the scaled source and E table and emits the exact first output-product stream.
-`chirpOutputNormalize_exec` now executes Γ scaling and one-word normalization-table
-reuse, with derived signed fits and explicit cost. A structural row/batch theorem proves
-that every E product satisfies this stage’s norm precondition. `chirpOutputProducts_exec`
-now joins both shifts and products and emits exactly the modeled pre-rounding numerator
-stream. Intermediate cleanup, final rounding/cropping and output setup remain open.
-Remaining work includes initializing the dimension/width banks from the original inputs,
-reusing tables across lines and composing operand production
-with the shared batch call, output arithmetic and
-cropping, and the complete forward correctness/precision/cost contract.
-`ShortConv.chirpAR_approx` (in `Mult/ChirpRing`) supplies the analytic correlation/error
-bridge; the full caller execution and cost comparison are still required. S2–S6 remain
-open. Neither S1 nor R1 alone raises kappa; integrate a new public bound only when all
-affected costs close.
+- **Correlation:** `chirpTableCorrelation_exec` generates G/K tables, gathers windows
+  from the raw line, produces weighted/reversed operands, installs S1 dimensions,
+  executes one shared product/extraction and erases all temporary streams/counters.
+  Only the correlation destination changes. Its cost is `chirpTableCorrelationCost`;
+  retained binary banks and multiplier templates are still supplied.
+- **Output products:** `chirpOutputProducts_exec` executes both numerator shifts and
+  the E/normalization products, reusing one E row and one normalization word. It emits
+  exactly `chirpOutputNumerator`, with cost `chirpOutputProductsCost`. Signed fits follow
+  from unit-disk correlations, bounded factors and `w ≥ q+l+Γ+5`. Factor tables and
+  private scratch are restored; source/intermediate tapes remain owned working data.
+- **Mathematics:** `chirpOutputWord_chirpAR` identifies integer postprocessing of each
+  decoded correlation word with the analytic map, including the final partial block.
+  `chirpComputed_approx` discharges computed-factor errors under explicit window and
+  precision gates. Changed modules pass guarded checks and standard-axiom audits.
+
+S2 completion still requires:
+
+1. Generate initial binary banks and multiplier templates, output E/normalization
+   setup and shift controls from the original caller inputs.
+2. Join correlation and output execution; erase intermediates, execute final signed
+   precision reduction and crop the final partial block.
+3. Choose parameters to discharge precision/width gates, reuse setup across lines,
+   and prove the complete forward correctness, error and actual cost comparison.
+
+Detailed contracts are indexed in the
+[chirp design notes](IntegerMultBounds/MathlibTM2/NearOne/DESIGN.md).
+S2–S6 remain open; kappa is unchanged until the full affected machine costs close.
 
 ## Long-term source and proof obligations
 
