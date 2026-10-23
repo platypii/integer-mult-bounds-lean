@@ -982,6 +982,29 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    actual row count; compact/dense intermediates are erased and only descriptor
    output changes. Coordinate frames are still supplied: repeated profile
    generation and shared-bank composition remain required.
+   `AffineProfileCall`, `AffineProfileLoop`, `AffineProfileFrame`,
+   `AffineProfileCompile` and `AffineProfileGenerate` now execute a fixed loop
+   over live activity/source frames, generate each affine position from an
+   internal index, archive and restore the complete profile, restore the index
+   and erase all temporary operands. Only coordinate output changes, with every
+   phase charged. `AffineProfileCoordinates` and `AffineSourceProfileGenerate`
+   identify that output with the sparse-pattern coordinate specification and
+   derive recursive readiness from dimension/source bounds.
+   `AffineProfileComplete` and `RepairAffineProfileGenerate` specialize this
+   execution to the six Y/YZ/X descriptors for positive slot counts: their first
+   physical slot is zero, so the generated coordinates already contain the
+   required mirrored terminal entry. `SparseTerminalCoordinateEmit` separately
+   constructs and erases position zero to emit an absent terminal frame from
+   live widths. `AffineProfileTerminal` now executes terminal emission followed
+   by full live-profile generation for strictly positive physical positions,
+   including empty profiles with positive target width. It proves the complete
+   output word and restores all non-output tapes, charging both phases.
+   `RepairKeyProfileGenerate` and `RepairZProfileGenerate` instantiate this path
+   for the key and both Z descriptors when the reservoir offset is positive.
+   The zero-offset selected/key branch, zero-width cases, temporary-bit group
+   iteration, descriptor-compiler composition and shared-bank integration remain
+   open. Source-profile frames and scalar dimensions are still inputs; this
+   does not close full R3 or change kappa.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
