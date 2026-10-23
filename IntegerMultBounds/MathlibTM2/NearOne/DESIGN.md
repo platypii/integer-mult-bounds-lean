@@ -314,10 +314,18 @@ default build does not check them.
      symbol advance. `ChirpGatherSetup` composes generation, the sweep and control cleanup,
      changing only the window destination, at bound
      `M (6C+11W+14L+41) + (4W+18)D + 6C+16`, with `L = (3m+1)w`.
-     `ChirpControlCheck` audits the complete imported namespace. Generating the cyclic
-     extension from the raw source line remains open.
+     `ChirpControlCheck` audits the complete imported namespace. `ChirpRotate`,
+     `ChirpRepeat`, `ChirpRepeatPrefix`, `ChirpCyclicMath`, `ChirpCyclicCopy` and
+     `ChirpCyclicExec` now build the exact cyclic extension from the raw coefficient
+     line: rotate to offset `(s-m%s)%s`, repeat `C = (s+3m-1)/s+1` whole periods,
+     copy exactly `N = (s+3m)w` symbols, discard overshoot, and rotate the source back.
+     Only the extension destination changes. The bound is
+     `C (8sw+9) + 10N + 10sw + 38`; overshoot is less than one source period,
+     with no `m ≤ s` restriction. `ChirpCyclicCheck` audits this path. The forward and
+     inverse rotation counts, repetition count and selected-length count are still
+     supplied unary inputs; their generation and composition with gathering remain open.
      S2/S3 still need table reuse across lines,
-     cyclic-source setup, initial dimension-bank setup and operand/output arithmetic,
+     cyclic-source counter setup, initial dimension-bank setup and operand/output arithmetic,
      followed by the complete forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
