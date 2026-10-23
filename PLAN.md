@@ -1271,9 +1271,11 @@ below 1.85 GiB each; the standalone audit target also passed after rebasing onto
 S2 now has verified machine components for shared chirp batch extraction, generated
 coefficient tables, overlapping-window gathering with generated controls, cyclic-source
 construction, and generation of its unary counters from a retained binary dimension bank.
+`chirpGatherFromDimensions_exec` now composes the complete raw-line gathering path,
+generating and erasing all geometry counters, the extension and control stream.
 Their actual tape costs, decoding and scratch frames are proved; see the
 [chirp implementation status](IntegerMultBounds/MathlibTM2/NearOne/DESIGN.md).
-Remaining work includes composing these setup phases from the original dimension inputs,
+Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines, forming the weighted ring operands, output arithmetic and
 cropping, and the complete forward correctness/precision/cost contract.
 `ShortConv.chirpAR_approx` (in `Mult/ChirpRing`) supplies the analytic correlation/error

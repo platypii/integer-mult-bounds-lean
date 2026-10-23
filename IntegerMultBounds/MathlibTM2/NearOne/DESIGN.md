@@ -330,9 +330,18 @@ default build does not check them.
      Only the five counter destinations change, with exact count values and bound
      `25C + (4W+2)K + 55W+31`, where `C = tblC W e` and
      `K = sw + chirpPeriods s m + (s+3m)w + (3m+1)w`. `ChirpCyclicSetupCheck` audits it.
-     Composing this setup with cyclic construction and gathering remains open.
+     `ChirpRawGatherData` and `ChirpRawGather` now compose counter setup, cyclic
+     construction, gathering and erasure of the five counters and extension stream,
+     retaining only the ordered windows. The shared role layout permits scratch reuse
+     between phases. `ChirpBlockCount` and `ChirpBlockCountSetup` compute
+     `M = (t-1)/m+1` from binary dimensions and restore the bank; `ChirpGatherFromDimensions`
+     composes this with the raw-line gather and erases the generated block count.
+     Its public contract requires the retained binary dimension bank and width templates,
+     with no supplied geometry counters, extension or control schedule. All phase costs
+     and cleanup are included in `chirpGatherFromDimensionsCost`; only the destination
+     changes. `ChirpRawGatherCheck` audits the complete imported namespace.
      S2/S3 still need table reuse across lines,
-     setup/construction/gathering composition, initial dimension-bank setup and operand/output arithmetic,
+     initial dimension/width-bank setup and operand/output arithmetic,
      followed by the complete forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
