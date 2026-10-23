@@ -1801,3 +1801,7 @@ public import IntegerMultBounds.MathlibTM2.Routing.OriginalMatchingRepairBank
 public import IntegerMultBounds.MathlibTM2.Routing.OriginalMatchingFixedRepair
 public import IntegerMultBounds.MathlibTM2.Routing.OriginalMatchingRepairCurrent
 public import IntegerMultBounds.MathlibTM2.Routing.FramedOriginalMatchingSchedule
+public import IntegerMultBounds.MathlibTM2.Routing.ProfilePlacedMatching
+public import IntegerMultBounds.MathlibTM2.Routing.OriginalMatchingRepairBits
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRepairInput
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalLiveInput

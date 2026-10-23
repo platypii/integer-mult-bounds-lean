@@ -1779,6 +1779,27 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    pure stage facts and code identities, with no execution callback. Tape
    count and stream definitions keep expanded layout abbreviations out of
    the scheduler interface; proof limits remain unchanged.
+   `ProfilePlacedMatching` now identifies the selected physical coordinates
+   with the placed image of `profilePassTargets`; for actual router parameters
+   these are exactly one bulk residue, and the full record width is `n` when
+   `X = 0`. Its source intertwining theorem connects local table coordinates
+   to original physical class mates. `OriginalMatchingRepairBits` applies this
+   to the actual `GeneratedPlacedInput.perm`: the rank action is the intended
+   physical class shear, with all unselected bits fixed. This requires explicit
+   alignment of placement slot width with `p.wc`, the middle-field width with
+   `recordWidth - 3*p.wc`, and the source with the generated local class.
+   Source-table agreement alone does not discharge these geometry conditions.
+   Concrete input construction has now started: `CanonicalRepairInput` builds
+   the raw bank from scalar dimensions and records, derives
+   `RepairPendingMaskData`, and proves installed destinations, descriptors
+   and required scratch are empty. Concrete profile registers use the key
+   and bad-classifier state tapes plus the empty spectator-width input when
+   `X = 0`; installing the source-coordinate word preserves all setup and
+   scratch facts. `CanonicalLiveInput` extends that core through the actual
+   descriptor layout, supplies scalar operands and the count, and keeps all
+   eleven profile streams empty. No complete concrete `GeneratedPlacedInput`
+   constructor is proved yet: header, width, classifier and placement banks,
+   numerical bounds and final stage packaging still have to be constructed.
    Concrete bulk/terminal/shear schedule instantiation, initial
    permutation decomposition/table generation and remaining scalar metadata
    remain open, together with uniform amortization and short-record fallback.

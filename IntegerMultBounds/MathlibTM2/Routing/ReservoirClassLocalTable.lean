@@ -42,6 +42,16 @@ theorem reservoirClassLocalMatching_involutive (mate : Fin n → Fin n)
     Function.Involutive (reservoirClassLocalMatching n H hfit w hw k mate hinv) :=
   reservoirMiddleMatching_involutive n H hfit w hw k _ _ _
 
+theorem reservoirClassLocalMatching_coordinate (mate : Fin n → Fin n)
+    (hinv : Function.Involutive mate) (q : Fin (n - 3 * w)) :
+    reservoirPlacement n H hfit w hw k
+        (middleCoordinate w (n - 3 * w) (reservoirMiddle_fit n H hfit w hw)
+          (reservoirClassLocalMatching n H hfit w hw k mate hinv q)) =
+      matchingClass (routingReservoir n H hfit) mate k
+        (reservoirPlacement n H hfit w hw k
+          (middleCoordinate w (n - 3 * w) (reservoirMiddle_fit n H hfit w hw) q)) :=
+  reservoirMiddleMatching_coordinate n H hfit w hw k _ _ _ q
+
 def reservoirClassLocalBank (mate : Fin n → Fin n) (j : Fin 57) : List (Fin (A + 4)) :=
   if h : j.val < 44 then
     Function.update (reservoirMiddleProductionBank n H hfit w hw k L mate) 21 [] ⟨j.val, h⟩
