@@ -1788,3 +1788,7 @@ public import IntegerMultBounds.MathlibTM2.Routing.MatchingTableLookup
 public import IntegerMultBounds.MathlibTM2.Routing.BinaryCoordinateSchedule
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirCoordinateExec
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMatchingLookup
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMiddleLookup
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMiddleEntry
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMiddleTableScan
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMiddleTableProduction

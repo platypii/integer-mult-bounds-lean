@@ -104,4 +104,28 @@ theorem binaryCoordinateTranslate_exec (body : P → Pr P T Q A U)
   rw [hlen, hf] at he₃
   exact ⟨v₃, hu₃.trans (hu₂.trans hu₁), Exec.cast (Exec.seq he₁ (Exec.seq he₂ he₃)) (by omega) rfl⟩
 
+def binaryCoordinateTranslateInPlaceProgram (rg : Fin 9 → Fin T) : Pr P T Q A U :=
+  .seq (binaryCoordinateTranslateProgram rg)
+    (coordinateReplaceProgram (rg 4) (rg 0) (rg 5) (rg 6))
+
+theorem binaryCoordinateTranslateInPlace_exec (body : P → Pr P T Q A U)
+    (rg : Fin 9 → Fin T) (hrg : Function.Injective rg) (L q base target : ℕ)
+    (hq : q < 2 ^ L) (hbase : base ≤ q) (hresult : q - base + target < 2 ^ L)
+    (v : HS T Q A U) (S : Stacks T A)
+    (hqInput : S.R (rg 0) = binSyms L q) (hbaseInput : S.R (rg 1) = binSyms L base)
+    (htargetInput : S.R (rg 2) = binSyms L target)
+    (hblank : ∀ j : Fin 9, j = 3 ∨ j = 4 ∨ j = 5 ∨ j = 6 ∨ j = 7 → S.R (rg j) = []) :
+    ∃ v', v'.user = v.user ∧
+      Exec body (binaryCoordinateTranslateInPlaceProgram rg) (mk v S) (28 * L + 28)
+        (mk v' { S with R := Function.update S.R (rg 0) (binSyms L (q - base + target)) }) := by
+  obtain ⟨v₁, hu₁, he₁⟩ := binaryCoordinateTranslate_exec body rg hrg L q base target
+    hq hbase hresult v S hqInput hbaseInput htargetInput
+    (by intro j hj; rcases hj with rfl | rfl | rfl | rfl <;> exact hblank _ (by simp))
+  rw [hblank 4 (by simp), List.append_nil] at he₁
+  obtain ⟨v₂, hu₂, he₂⟩ := coordinateReplace_exec body (rg 4) (rg 0) (rg 5) (rg 6)
+    (by simp [List.nodup_cons, hrg.eq_iff]) L (binSyms L (q - base + target))
+    (length_binSyms L _) v₁ S (by rw [hqInput]; exact length_binSyms L _)
+    (hblank 4 (by simp)) (hblank 5 (by simp)) (hblank 6 (by simp))
+  exact ⟨v₂, hu₂.trans hu₁, Exec.cast (Exec.seq he₁ he₂) (by omega) rfl⟩
+
 end IntegerMultBounds.MathlibTM2.Routing

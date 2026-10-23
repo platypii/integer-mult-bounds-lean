@@ -1721,8 +1721,33 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    both schedule inputs, the entire physical table and all scratch restore.
    Its full bound is `n * (30 * width + 39) + 562 * width + 670`.
    The two placement schedules may use separate metadata tapes while sharing
-   the coordinate register. Middle-offset translation, table enumeration and
-   reservoir-class generation from the original matching still remain.
+   the coordinate register.
+   `ReservoirMiddleLookup` adds both executed middle-offset translations on a
+   fixed 33-tape bank, deriving every readiness fact from that bank. Its only
+   matching input is the physical table; the coordinate becomes exactly
+   `reservoirMiddleMatching q`, with every other tape restored, within
+   `n * (30 * width + 39) + 618 * width + 726` steps. The closed program also
+   embeds into a larger bank with arbitrary spectator tapes, without an
+   execution callback.
+   `ReservoirMiddleEntry` saves and restores the query, serializes its local
+   mate with the existing configuration writer, and emits a reversed row.
+   `ReservoirMiddleTableScan` instantiates the existing bank scheduler on
+   consecutive-selector frames, rewinds the complete selector input and
+   reverses the accumulator once. Its full-selector theorem emits exactly
+   the common local matching-table encoding, with bound
+   `(n - 3*w) * (n * (30*width + 39) + 662*width + 799) + 6`.
+   The selector format is proved equal to `counterSourceWord width 0 (n-3*w)`.
+   `ReservoirMiddleTableProduction` now generates that input from a live
+   binary middle width, using `toUnary` and the existing counter producer;
+   it executes the full scan and erases selectors and the unary count.
+   Its fixed 44-tape bank restores every tape except the local table output,
+   including the physical matching table, binary count and zero index.
+   Its complete bound is
+   `(n - 3*w) * (n * (30*width + 39) + 682*width + 842) + 35*width + 46`.
+   Placement metadata and the binary middle width are still supplied live
+   operands. Reservoir-class generation from the original matching and
+   composition of the produced local table into the repair schedule remain
+   open; the present input table is a reservoir-fixing matching.
    Composed middle-table production and concrete schedule instantiation
    remain open. R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
