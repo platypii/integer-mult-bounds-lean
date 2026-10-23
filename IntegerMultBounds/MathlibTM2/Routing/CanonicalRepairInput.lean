@@ -247,5 +247,11 @@ theorem canonicalProfileCoreBank_descriptors (p : Par) (X rb wb wm wp wk R B : â
   rw [canonicalProfileCoreBank, Function.update_of_ne hne]
   exact canonicalRepairInput_descriptors p X rb wb wm wp wk R B records key
 
+theorem canonicalProfileCoreBank_source (p : Par) (X rb wb wm wp wk R B : â„•)
+    (records coordinates : List (Fin (A + 4))) (key : RepairSetupKey) :
+    canonicalProfileCoreBank p X rb wb wm wp wk R B records coordinates (repairSetupSource key) =
+      canonicalRepairPayload p X rb wb wm wp wk R B key := by
+  rw [canonicalProfileCoreBank, Function.update_of_ne (canonicalProfileKey_source key), canonicalRepairInput_source]
+
 end
 end IntegerMultBounds.MathlibTM2.Routing

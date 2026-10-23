@@ -1805,3 +1805,6 @@ public import IntegerMultBounds.MathlibTM2.Routing.ProfilePlacedMatching
 public import IntegerMultBounds.MathlibTM2.Routing.OriginalMatchingRepairBits
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRepairInput
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalLiveInput
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalOuterInput
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPlacementInput
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalGeneratedInput

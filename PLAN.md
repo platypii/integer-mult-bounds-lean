@@ -1797,9 +1797,17 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    `X = 0`; installing the source-coordinate word preserves all setup and
    scratch facts. `CanonicalLiveInput` extends that core through the actual
    descriptor layout, supplies scalar operands and the count, and keeps all
-   eleven profile streams empty. No complete concrete `GeneratedPlacedInput`
-   constructor is proved yet: header, width, classifier and placement banks,
-   numerical bounds and final stage packaging still have to be constructed.
+   eleven profile streams empty. `CanonicalOuterInput` constructs the header,
+   width and classifier extensions with exact stack projections and blank
+   scratch. `CanonicalPlacementInput` constructs the final shared placement
+   bank with an empty legacy swap bank and preserves the complete core stack.
+   `CanonicalGeneratedInput` now constructs a complete `GeneratedPlacedInput`
+   from arithmetic bounds, allowed sources and records, with no caller-supplied
+   bank/readiness object. Every procedure type is `Empty`; code-table premises
+   are vacuous. `canonicalGeneratedInput_program` proves the generated core
+   program is identical across all these configurations. The remaining gate
+   is to construct its `CanonicalStageArithmetic` bounds uniformly for the
+   chosen router parameters and instantiate the actual bulk/terminal phases.
    Concrete bulk/terminal/shear schedule instantiation, initial
    permutation decomposition/table generation and remaining scalar metadata
    remain open, together with uniform amortization and short-record fallback.

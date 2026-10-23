@@ -61,7 +61,9 @@ executes from the original matching on a concrete shared-table bank, erasing
 the generated local table afterward. Such calls now repeat on one framed bank
 for a fixed matching, reservoir class and direction, with all setup, cleanup
 and final input rewind charged. Canonical raw and live input banks are constructed from dimensions and
-records; full concrete stage packaging is still in progress. Remaining scalar metadata, initial
+records. Complete generated/placed inputs now follow from arithmetic bounds
+and records, with one common generated program across configurations. Uniform
+router bounds and phase instantiation, remaining scalar metadata, initial
 permutation decomposition/table generation, complete router schedule instantiation and
 uniform amortization/fallback remain open.
 The complete router and multiplication integration remain in R3–R4; this work
