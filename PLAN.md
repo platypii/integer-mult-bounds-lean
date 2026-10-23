@@ -1295,9 +1295,16 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    frame. `GeneratedProfilesWidthGenerated` and `GeneratedProfilesWidthRepair`
    further generate and erase the raw row/key-mask fields. The full composed path
    starts with those fields, headers and all four profile inputs blank and restores
-   every tape except the repaired stream. Classifier generation and placement
-   around this path, the other active/selected profiles and remaining scalars,
-   and the uniform R3 cost/amortization gates remain open.
+   every tape except the repaired stream. `GeneratedProfilesClassifierGenerated`
+   and `GeneratedProfilesClassifierRepair` add executed classifier generation and
+   cleanup. `GeneratedProfilesClassifierMoved` transports all readiness across
+   stream placement; `PlacedGeneratedProfilesRepair` composes both exchange chains
+   with the full generated-input path. `JointBankGeneratedProfilesRepair` derives
+   exchange readiness from actual shared-bank words using the existing layout.
+   Classifiers, raw width fields, headers and four profiles now start blank in
+   this placed composition, with every phase charged and all non-stream tapes
+   restored. The other seven active/selected profiles, remaining scalar/placement
+   setup, complete routing schedules and uniform R3 cost/amortization gates remain open.
    Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
