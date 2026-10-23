@@ -56,6 +56,14 @@ theorem canonicalRouterDirectionalPerm_bits (i : Fin (R * 2 ^ n)) :
   rw [ht] at hb
   exact hb.trans (canonicalRouter_bulk_terminal_shear n hn mate hinv k reverse _)
 
+theorem canonicalRouterDirectionalPerm_row (stages : List (Fin (canonicalRouterStride n)))
+    (i : Fin (R * 2 ^ n)) :
+    (canonicalRouterDirectionalPerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages i).val / 2 ^ n = i.val / 2 ^ n := by
+  change (canonicalRouterSchedulePerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages
+    (canonicalRouterTerminalPerm n hn mate hinv k reverse R i)).val / 2 ^ n = _
+  rw [canonicalRouterSchedulePerm_row]
+  exact elementaryRankSchedule_row R _ _ i
+
 theorem commonBankDirectional_exec
     (L Lb : ℕ) (hn0 : 0 < n) (hnfit : n < 2 ^ L) (hBfit : B < 2 ^ Lb) (hnB : n ≤ B)
     (rowBits : List Bool) (hrow : GrowingCounterData.Canonical rowBits) (hrowNe : rowBits ≠ [])

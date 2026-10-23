@@ -38,6 +38,13 @@ def GeneratedPlacedInput.perm (input : GeneratedPlacedInput t₀ Q K P P' U) :=
     (reservoirExchangeRank (fieldsLen (selectiveLen input.p input.X)) input.Hslot
       input.hplacementFit input.slotWidth input.hslotWidth input.reservoir input.R)
 
+theorem GeneratedPlacedInput.perm_row (input : GeneratedPlacedInput t₀ Q K P P' U)
+    (i : Fin (input.R * 2 ^ fieldsLen (selectiveLen input.p input.X))) :
+    (input.perm i).val / 2 ^ fieldsLen (selectiveLen input.p input.X) =
+      i.val / 2 ^ fieldsLen (selectiveLen input.p input.X) :=
+  placedSelectivePerm_row input.hK input.active input.s input.hs _
+    (reservoirExchangeRank_row _ _ _ _ _ _ _) i
+
 /-- The complete actual placed pipeline realizes one finite rank permutation. -/
 theorem GeneratedPlacedInput.exec_perm (input : GeneratedPlacedInput t₀ Q K P P' U)
     (v : HS TP₀ Q (prime + K) U) :

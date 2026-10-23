@@ -96,4 +96,35 @@ theorem reservoirClassMiddleShears_eq (mate : Fin n → Fin n) (hinv : Function.
     (matchingClass_involutive (routingReservoir n H hfit) mate hinv k)
     (reservoirPlacement n H hfit w hw k) (reservoirClassPlaced_fixes n H hfit w hw k mate) x
 
+
+/-- The three directional shears in physical coordinates realize the original
+reservoir class, with the orientation inherited from the local middle field. -/
+theorem reservoirClassPhysicalShears_eq (mate : Fin n → Fin n) (hinv : Function.Involutive mate)
+    (x : Fin n → Bool) :
+    let e := reservoirPlacement n H hfit w hw k
+    let cls := matchingClass (routingReservoir n H hfit) mate k
+    let hcls := matchingClass_involutive (routingReservoir n H hfit) mate hinv k
+    let left := middleMatchingTargets w (n - 3 * w) (reservoirMiddle_fit n H hfit w hw)
+      (placedSource e cls) (placedMatching_involutive cls hcls e)
+      (reservoirClassPlaced_fixes n H hfit w hw k mate)
+    matchingShears cls (left.image e) x = fun q => x (cls q) := by
+  dsimp only
+  let e := reservoirPlacement n H hfit w hw k
+  let cls := matchingClass (routingReservoir n H hfit) mate k
+  let hcls := matchingClass_involutive (routingReservoir n H hfit) mate hinv k
+  let left := middleMatchingTargets w (n - 3 * w) (reservoirMiddle_fit n H hfit w hw)
+    (placedSource e cls) (placedMatching_involutive cls hcls e)
+    (reservoirClassPlaced_fixes n H hfit w hw k mate)
+  have ht : placedTargets e (left.image e) = left := by
+    simp [placedTargets, Finset.image_image, Function.comp_def]
+  have h := placedMatchingShears_eq e cls (left.image e) x
+  rw [ht] at h
+  calc
+    matchingShears cls (left.image e) x =
+        placeAddress e.symm (matchingShears (placedSource e cls) left (placeAddress e x)) := by
+      rw [h]
+      funext q
+      simp only [placeAddress, e.apply_symm_apply]
+    _ = _ := reservoirClassMiddleShears_eq n H hfit w hw k mate hinv x
+
 end IntegerMultBounds.MathlibTM2.Routing

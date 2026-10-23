@@ -31,6 +31,10 @@ def BlockExchangeSpec.rank {n : ℕ} (s : BlockExchangeSpec n) (R : ℕ) :=
 def BlockExchangeSpec.coordinate {n : ℕ} (s : BlockExchangeSpec n) :=
   blockExchangePerm n s.a s.b s.w s.separate s.fits
 
+theorem BlockExchangeSpec.rank_row {n : ℕ} (s : BlockExchangeSpec n) (R : ℕ)
+    (i : Fin (R * 2 ^ n)) : (s.rank R i).val / 2 ^ n = i.val / 2 ^ n :=
+  blockExchangeIdx_div n s.a s.b s.w s.separate s.fits i.val
+
 theorem BlockExchangeSpec.rank_bit {n : ℕ} (s : BlockExchangeSpec n) (R : ℕ)
     (i : Fin (R * 2 ^ n)) (q : Fin n) :
     (s.rank R i).val.testBit q.val = i.val.testBit (s.coordinate q).val :=

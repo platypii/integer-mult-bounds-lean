@@ -251,5 +251,29 @@ theorem canonicalRouterSchedulePerm_bulk_bits (i : Fin (R * 2 ^ n)) :
   simp only [canonicalRouterSchedulePerm_apply]
   exact canonicalRouterBulk_foldl_bits n hn R B hR hB mate hinv k reverse hQ hA l hl hlen i
 
+
+theorem canonicalRouterStagePerm_row (r : Fin (canonicalRouterStride n)) (i : Fin (R * 2 ^ n)) :
+    (canonicalRouterStagePerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r i).val / 2 ^ n =
+      i.val / 2 ^ n := by
+  have h := (input r).perm_row
+    (Fin.cast (canonicalRouterStage_data n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r).count.symm i)
+  have he := canonicalRouterStage_record n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r
+  have hd : 2 ^ fieldsLen (selectiveLen (input r).p (input r).X) = 2 ^ n := congrArg (fun d : ℕ => 2 ^ d) he
+  have h' := (congrArg (fun d : ℕ => ((input r).perm
+    (Fin.cast (canonicalRouterStage_data n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r).count.symm i)).val / d) hd).symm.trans h
+  have h'' := h'.trans (congrArg (fun d : ℕ => i.val / d) hd)
+  simpa only [canonicalRouterStagePerm, castRankPerm_apply_val, Fin.val_cast] using h''
+
+theorem canonicalRouterSchedulePerm_row (stages : List (Fin (canonicalRouterStride n)))
+    (i : Fin (R * 2 ^ n)) :
+    (canonicalRouterSchedulePerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages i).val / 2 ^ n =
+      i.val / 2 ^ n := by
+  induction stages generalizing i with
+  | nil => rfl
+  | cons r stages ih =>
+    change (canonicalRouterSchedulePerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages
+      (canonicalRouterStagePerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r i)).val / 2 ^ n = _
+    rw [ih, canonicalRouterStagePerm_row]
+
 end
 end IntegerMultBounds.MathlibTM2.Routing

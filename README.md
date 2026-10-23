@@ -72,7 +72,11 @@ proved in common coordinates. The physical terminal suffix now also executes
 on a fixed bank, including counter generation, compilation and cleanup, with
 exact shear semantics and a logarithmic instruction count; it currently requires
 records at least as wide as their addresses. Terminal and bulk execution now compose on one common framed bank, with a
-complete physical directional class shear and summed costs. Initial terminal
+complete physical directional class shear and summed costs. Three directional
+rank permutations now implement each physical matching class; all three classes
+compose to the original coordinate involution and preserve outer record rows.
+This is rank semantics; executing and charging metadata reloads between those
+calls remains open. Initial terminal
 metadata and framed bulk inputs are still supplied; executed metadata generation, initial
 permutation decomposition/table generation, the complete router schedule and
 uniform amortization/fallback remain open.

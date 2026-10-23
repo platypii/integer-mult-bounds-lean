@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Routing.Shear
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingShears
 public import Mathlib.Data.Finset.Image
 
 /-!
@@ -94,5 +94,20 @@ theorem placedSource_avoids (e : Equiv.Perm ι) (mate : ι → ι) (bank : Finse
   have he := hfix _ hm
   rw [hinv] at he
   exact hi (he ▸ hm)
+
+
+/-- The complete three-shear matching schedule transports through placement,
+including its orientation, without imposing physical endpoint order. -/
+theorem placedMatchingShears_eq (e : Equiv.Perm ι) (mate : ι → ι) (left : Finset ι)
+    (x : ι → Bool) :
+    matchingShears (placedSource e mate) (placedTargets e left) (placeAddress e x) =
+      placeAddress e (matchingShears mate left x) := by
+  have hright : (placedTargets e left).image (placedSource e mate) =
+      placedTargets e (left.image mate) := by
+    simp only [placedTargets, Finset.image_image]
+    congr 1
+    funext i
+    simp only [Function.comp_apply, placedSource, e.apply_symm_apply]
+  simp only [matchingShears, hright, placedShear_eq]
 
 end IntegerMultBounds.MathlibTM2.Routing

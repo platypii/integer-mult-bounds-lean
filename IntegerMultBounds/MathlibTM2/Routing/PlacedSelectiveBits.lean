@@ -27,6 +27,22 @@ def placedSelectivePerm (f : Equiv.Perm (Fin (R * 2 ^ fieldsLen (selectiveLen p 
     Equiv.Perm (Fin (R * 2 ^ fieldsLen (selectiveLen p X))) :=
   (f.trans (selectiveIdealPerm hK active s R hs)).trans f.symm
 
+/-- Placement, exact selective repair and inverse placement preserve the entire
+outer row index, not merely the address bits inside the record field. -/
+theorem placedSelectivePerm_row
+    (f : Equiv.Perm (Fin (R * 2 ^ fieldsLen (selectiveLen p X))))
+    (hf : ∀ i, (f i).val / 2 ^ fieldsLen (selectiveLen p X) = i.val / 2 ^ fieldsLen (selectiveLen p X))
+    (i : Fin (R * 2 ^ fieldsLen (selectiveLen p X))) :
+    (placedSelectivePerm hK active s hs f i).val / 2 ^ fieldsLen (selectiveLen p X) =
+      i.val / 2 ^ fieldsLen (selectiveLen p X) := by
+  have hinv (j) : (f.symm j).val / 2 ^ fieldsLen (selectiveLen p X) = j.val / 2 ^ fieldsLen (selectiveLen p X) := by
+    have h := hf (f.symm j)
+    simpa only [Equiv.apply_symm_apply] using h.symm
+  change (f.symm (selectiveIdealPerm hK active s R hs (f i))).val / 2 ^ fieldsLen (selectiveLen p X) = _
+  rw [hinv]
+  change selectiveIdealIdx p X active s (f i).val / 2 ^ fieldsLen (selectiveLen p X) = _
+  rw [selectiveIdealIdx_row, hf]
+
 theorem placedSelectivePerm_target_bit
     (f : Equiv.Perm (Fin (R * 2 ^ fieldsLen (selectiveLen p X))))
     (e : Equiv.Perm (Fin (fieldsLen (selectiveLen p X))))

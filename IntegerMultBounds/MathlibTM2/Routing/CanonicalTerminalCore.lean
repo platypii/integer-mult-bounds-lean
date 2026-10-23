@@ -23,6 +23,15 @@ def canonicalTerminalProgram {Q K : ℕ} {P U : Type}
         canonicalTerminalRouter canonicalTerminalRouter_injective selectiveSwapHd selectiveSwapPay
         selectiveSwapHd_inj hQ canonicalTerminalT_fit (canonicalTerminalAux 2)))
 
+/-- Dimension annotations affect the ledger and input words, but the executed
+terminal code is one fixed program for all geometries and coordinate tables. -/
+theorem canonicalTerminalProgram_independent {Q K : ℕ} {P U : Type}
+    (hQ : swapStates selectiveSwapHd selectiveSwapPay selectiveSwapHd_inj ≤ Q)
+    (n rows B Lb rowLength n' rows' B' Lb' rowLength' : ℕ) :
+    (canonicalTerminalProgram hQ n rows B Lb rowLength : Pr P canonicalTerminalT Q (prime + K) U) =
+      canonicalTerminalProgram hQ n' rows' B' Lb' rowLength' := by
+  rfl
+
 def canonicalTerminalPrice (n rows B L Lb rowLength count : ℕ) : ℝ :=
   (L * (4 * n + 11) + 22 * n + 6 * rowLength + 46 : ℕ) + ((Lb * (4 * B + 11) + (n + rowLength) * (4 * (rows * 2 ^ n) + 11) + 2 * B + 2 * (rows * 2 ^ n) + 10 * n + 24 : ℕ) +
         ((count : ℝ) *
@@ -60,6 +69,42 @@ theorem canonicalTerminalCore_exec {Q K : ℕ} {P U : Type}
     rowBits hrow hrowNe hrowValue hQ v l hl hlB h8
   rw [canonicalTerminalBaseCost_eq] at hm
   exact ⟨v', m, hu, hm, he⟩
+
+theorem canonicalTerminalCore_canonical_exec {Q K : ℕ} {P U : Type}
+    (body : P → Pr P canonicalTerminalT Q (prime + K) U)
+    (inp : List (Bool ⊕ Bool)) (out : List Bool)
+    (left : Fin canonicalTerminalT → List (Fin (prime + K + 4))) (hleft : ∀ j, left j = [])
+    (n rows B : ℕ) (hstride : canonicalRouterStride n ≤ n)
+    (mate : Fin n → Fin n) (hinv : Function.Involutive mate) (k : Fin 3) (reverse : Bool)
+    (hnB : n ≤ B)
+    (hrows : 0 < rows) (hB : 1 ≤ B)
+    (hQ : swapStates selectiveSwapHd selectiveSwapPay selectiveSwapHd_inj ≤ Q)
+    (v : HS canonicalTerminalT Q (prime + K) U)
+    (l : List (List (Fin (prime + K + 4)))) (hl : l.length = rows * 2 ^ n)
+    (hlB : ∀ r ∈ l, r.length = B) (h8 : ∀ r ∈ l, ∀ x ∈ r, x.val < 8) :
+    let cs := canonicalRouterTerminalCoordinates n hstride mate hinv k reverse
+    let S : Stacks canonicalTerminalT (prime + K) :=
+      ⟨inp, out, left, canonicalTerminalRoutingBank canonicalTerminalRouter canonicalTerminalCompiler canonicalTerminalInput
+        (canonicalTerminalAux 0) l.flatten (elementaryCoordinateFrames (canonicalScalarWidth n) cs) n (canonicalScalarWidth n) (canonicalScalarWidth B) B (GrowingCounterData.advance rows [])⟩
+    ∃ (v' : HS canonicalTerminalT Q (prime + K) U) (m : ℕ), v'.user = v.user ∧
+      (m : ℝ) ≤ canonicalTerminalPrice n rows B (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance rows []).length cs.length ∧
+      Exec body (canonicalTerminalProgram hQ n rows B (canonicalScalarWidth B) (GrowingCounterData.advance rows []).length) (mk v S) m
+        (mk v' { S with R := Function.update S.R (canonicalTerminalRouter .str) (moveRecs (canonicalRouterTerminalPerm n hstride mate hinv k reverse rows) l).flatten }) := by
+  have hn0 : 0 < n := by
+    have hgap := canonicalRouterGap_pos n
+    have hstride0 : 0 < canonicalRouterStride n := by unfold canonicalRouterStride; omega
+    omega
+  have hne : GrowingCounterData.advance rows [] ≠ [] := by
+    intro he
+    have hv := GrowingCounterData.empty_value rows
+    rw [he] at hv
+    change 0 = rows at hv
+    omega
+  exact canonicalTerminalCore_exec body inp out left hleft n rows B
+    (canonicalScalarWidth n) (canonicalScalarWidth B) hstride mate hinv k reverse hn0
+    (canonicalScalarWidth_fit n) (canonicalScalarWidth_fit B) hnB hrows hB
+    (GrowingCounterData.advance rows []) (GrowingCounterData.advance_canonical rows [] (Or.inl rfl))
+    hne (GrowingCounterData.empty_value rows) hQ v l hl hlB h8
 
 end
 end IntegerMultBounds.MathlibTM2.Routing

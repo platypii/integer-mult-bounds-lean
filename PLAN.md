@@ -1845,8 +1845,15 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    `canonicalRouterDirectionalPerm_bits` proves its full-residue output is the
    complete physical directional class shear. This still assumes installed
    terminal metadata and the framed bulk input; it does not generate them.
-   Uniform terminal parameter selection, complete shear/class/involution
-   composition, original
+   `CanonicalRouterClass` now composes three directional rank permutations into
+   each physical matching class, then all three classes into the original
+   coordinate involution, preserving outer record rows throughout. The generic
+   `matchingRankSchedule` proves the composition before instantiating the
+   canonical programs, avoiding expansion of their implementations. These are
+   rank semantics, not an executed nine-direction schedule: metadata reloads
+   between calls must still be executed and charged. Canonical terminal scalar
+   widths and row-counter words are now selected from dimensions; executing
+   their production remains open. Original
    permutation decomposition/table generation, remaining scalar metadata setup,
    uniform amortization and short-record fallback remain open. R3 and kappa
    are unchanged.

@@ -52,6 +52,18 @@ theorem reservoirClassLocalMatching_coordinate (mate : Fin n → Fin n)
           (middleCoordinate w (n - 3 * w) (reservoirMiddle_fit n H hfit w hw) q)) :=
   reservoirMiddleMatching_coordinate n H hfit w hw k _ _ _ q
 
+theorem reservoirClassLocalMatching_shears (mate : Fin n → Fin n) (hinv : Function.Involutive mate)
+    (x : Fin n → Bool) :
+    matchingShears (matchingClass (routingReservoir n H hfit) mate k)
+      ((matchingLeft (reservoirClassLocalMatching n H hfit w hw k mate hinv)).image
+        (fun q => reservoirPlacement n H hfit w hw k
+          (middleCoordinate w (n - 3 * w) (reservoirMiddle_fit n H hfit w hw) q))) x =
+      fun q => x (matchingClass (routingReservoir n H hfit) mate k q) := by
+  have h := reservoirClassPhysicalShears_eq n H hfit w hw k mate hinv x
+  dsimp only at h
+  rw [middleMatchingTargets, Finset.image_image] at h
+  exact h
+
 def reservoirClassLocalBank (mate : Fin n → Fin n) (j : Fin 57) : List (Fin (A + 4)) :=
   if h : j.val < 44 then
     Function.update (reservoirMiddleProductionBank n H hfit w hw k L mate) 21 [] ⟨j.val, h⟩

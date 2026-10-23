@@ -57,6 +57,13 @@ def reservoirExchangeRank (k : Fin 3) (R : ℕ) : Equiv.Perm (Fin (R * 2 ^ n)) :
     ((reservoirExchangeSpecs n H hfit w hw k 1).rank R)).trans
       ((reservoirExchangeSpecs n H hfit w hw k 2).rank R)
 
+theorem reservoirExchangeRank_row (k : Fin 3) (R : ℕ) (i : Fin (R * 2 ^ n)) :
+    (reservoirExchangeRank n H hfit w hw k R i).val / 2 ^ n = i.val / 2 ^ n := by
+  change (((reservoirExchangeSpecs n H hfit w hw k 2).rank R)
+    (((reservoirExchangeSpecs n H hfit w hw k 1).rank R)
+      (((reservoirExchangeSpecs n H hfit w hw k 0).rank R) i))).val / 2 ^ n = _
+  rw [BlockExchangeSpec.rank_row, BlockExchangeSpec.rank_row, BlockExchangeSpec.rank_row]
+
 theorem reservoirExchangeRank_bit (k : Fin 3) (R : ℕ)
     (i : Fin (R * 2 ^ n)) (q : Fin n) :
     (reservoirExchangeRank n H hfit w hw k R i).val.testBit q.val =
