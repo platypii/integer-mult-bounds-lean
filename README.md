@@ -75,9 +75,10 @@ records at least as wide as their addresses. Terminal and bulk execution now com
 complete physical directional class shear and summed costs. Three directional
 rank permutations now implement each physical matching class; all three classes
 compose to the original coordinate involution and preserve outer record rows.
-This is rank semantics; executing and charging metadata reloads between those
-calls remains open. Initial terminal
-metadata and framed bulk inputs are still supplied; executed metadata generation, initial
+This is rank semantics. A concrete directional call now installs terminal metadata
+and bulk input, executes both phases and erases its workspace with all costs
+charged; composing successive calls remains open. The concrete outer input frame
+is still supplied; executed metadata generation, initial
 permutation decomposition/table generation, the complete router schedule and
 uniform amortization/fallback remain open.
 The complete router and multiplication integration remain in R3–R4; this work

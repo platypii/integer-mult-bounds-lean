@@ -1851,7 +1851,17 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    `matchingRankSchedule` proves the composition before instantiating the
    canonical programs, avoiding expansion of their implementations. These are
    rank semantics, not an executed nine-direction schedule: metadata reloads
-   between calls must still be executed and charged. Canonical terminal scalar
+   between calls must still be composed. `CanonicalDirectionalBank` constructs
+   the inner bank from the original matching and records, proves its terminal
+   projection and bulk readiness, and executes terminal then bulk without
+   supplied readiness. Its words are below nine, including inner delimiter
+   eight. `CanonicalDirectionalExec` uses outer delimiter nine and the existing
+   framed core loader to install that concrete bank, run both phases and erase
+   all inner metadata, including the bulk schedule input. The three fixed outer
+   loader tapes retain the unused input suffix and rewind archive; all loading
+   and erasure costs are charged. The actual outer frame
+   is still supplied; executed input-word production, consecutive directional
+   composition and uniform total-cost bounds remain open. Canonical terminal scalar
    widths and row-counter words are now selected from dimensions; executing
    their production remains open. Original
    permutation decomposition/table generation, remaining scalar metadata setup,
