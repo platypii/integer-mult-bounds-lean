@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalInputStream
-public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDirectionalExec
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPermutationExec
 
 /-! Canonical router metadata transport between arbitrary live record streams. -/
 
@@ -73,6 +73,80 @@ theorem canonicalDirectionalBulkInput_records_independent (stages : List (Fin (c
     delimitedScheduleInput frame stages)
   funext r
   exact canonicalRouterResidueFrame_records_independent n hn R B hR hB mate hinv k reverse hQ hA l l' hl hl' hlen hlen' r
+
+variable (L Lb : ℕ) (rowBits : List Bool) (stages : List (Fin (canonicalRouterStride n)))
+local notation "bank" => canonicalDirectionalBank n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages
+local notation "bank'" => canonicalDirectionalBank n hn R B hR hB mate hinv k reverse hQ hA l' hl' hlen' L Lb rowBits stages
+local notation "bulk" => Function.update (fun _ : Fin canonicalRouterBulkT => ([] : List (Fin (prime + K + 4))))
+  (originalMatchingScheduleStream 6) l.flatten
+local notation "terminal" => canonicalTerminalRoutingBank canonicalTerminalRouter canonicalTerminalCompiler canonicalTerminalInput
+  (canonicalTerminalAux 0) l.flatten (elementaryCoordinateFrames L
+    (canonicalRouterTerminalCoordinates n hn mate hinv k reverse)) n L Lb B rowBits
+local notation "coreStream" => canonicalRouterBulkEmbed (originalMatchingScheduleStream 6)
+
+theorem canonicalDirectionalBank_records_update :
+    bank' = Function.update bank canonicalDirectionalStream l'.flatten := by
+  have hc := canonicalRouterCommonBank_updateStream bulk terminal l'.flatten
+  simp only [Function.update_idem, canonicalTerminalRoutingBank_updateStream] at hc
+  funext j
+  refine Fin.addCases (fun i => ?_) (fun i => ?_) j
+  · change bank' (framedCoreEmbed canonicalRouterCommonT i) =
+      Function.update bank (framedCoreEmbed canonicalRouterCommonT coreStream) l'.flatten (framedCoreEmbed canonicalRouterCommonT i)
+    rw [canonicalDirectionalBank_core, hc]
+    by_cases hi : i = coreStream
+    · subst i
+      rw [Function.update_self, Function.update_self]
+    · rw [Function.update_of_ne hi, Function.update_of_ne ((framedCoreEmbed_injective canonicalRouterCommonT).ne hi),
+        canonicalDirectionalBank_core]
+  · change bank' (framedCoreAux canonicalRouterCommonT i) =
+      Function.update bank (framedCoreEmbed canonicalRouterCommonT coreStream) l'.flatten (framedCoreAux canonicalRouterCommonT i)
+    rw [Function.update_of_ne (framedCoreEmbed_aux canonicalRouterCommonT coreStream i).symm,
+      canonicalDirectionalBank_aux, canonicalDirectionalBank_aux,
+      canonicalDirectionalBulkInput_records_independent n hn R B hR hB mate hinv k reverse hQ hA l l' hl hl' hlen hlen' stages]
+
+theorem canonicalDirectionalFrame_records_independent :
+    canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l' hl' hlen' L Lb rowBits stages =
+      canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages := by
+  unfold canonicalDirectionalFrame
+  rw [canonicalDirectionalBank_records_update n hn R B hR hB mate hinv k reverse hQ hA l l' hl hl' hlen hlen' L Lb rowBits stages]
+  exact framedCoreFrames_updateStream (N := canonicalRouterCommonT + 3)
+    (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream canonicalDirectionalOuterDelimiter _ l'.flatten
+
+theorem canonicalClassFrame_records_independent
+    (data data' : CanonicalClassInput n hn R B hR hB mate hinv k hQ hA) :
+    data.frame L Lb rowBits = data'.frame L Lb rowBits := by
+  have hf (d : Fin 3) : data.directionFrame L Lb rowBits d = data'.directionFrame L Lb rowBits d :=
+    canonicalDirectionalFrame_records_independent n hn R B hR hB mate hinv k (decide (d = 1)) hQ hA
+      (data'.records d) (data.records d) (data'.count d) (data.count d) (data'.shape d) (data.shape d)
+      L Lb rowBits (List.finRange (canonicalRouterStride n))
+  unfold CanonicalClassInput.frame
+  rw [hf 0, hf 1, hf 2]
+
+theorem canonicalMatchingFrame_records_independent :
+    canonicalMatchingFrame n hn R B hR hB mate hinv hQ hA l' hl' hlen' L Lb rowBits =
+      canonicalMatchingFrame n hn R B hR hB mate hinv hQ hA l hl hlen L Lb rowBits := by
+  unfold canonicalMatchingFrame
+  apply congrArg₂ List.append
+  · exact canonicalClassFrame_records_independent n hn R B hR hB mate hinv 2 hQ hA L Lb rowBits _ _
+  · apply congrArg₂ List.append
+    · exact canonicalClassFrame_records_independent n hn R B hR hB mate hinv 1 hQ hA L Lb rowBits _ _
+    · exact canonicalClassFrame_records_independent n hn R B hR hB mate hinv 0 hQ hA L Lb rowBits _ _
+
+theorem canonicalPermutationFrame_records_independent (f : Equiv.Perm (Fin n)) :
+    canonicalPermutationFrame n hn R B hR hB f hQ hA l' hl' hlen' L Lb rowBits =
+      canonicalPermutationFrame n hn R B hR hB f hQ hA l hl hlen L Lb rowBits := by
+  unfold canonicalPermutationFrame
+  apply congrArg₂ List.append
+  · exact canonicalMatchingFrame_records_independent n hn R B hR hB
+      (fun q => f (permutationReflection f q)) (permutation_two_matchings f).2.1 hQ hA l l' hl hl' hlen hlen' L Lb rowBits
+  · exact canonicalMatchingFrame_records_independent n hn R B hR hB
+      (permutationReflection f) (permutation_two_matchings f).1 hQ hA
+      (canonicalPermutationMiddle n hn R B hR hB f hQ hA l hl hlen)
+      (canonicalPermutationMiddle n hn R B hR hB f hQ hA l' hl' hlen')
+      (canonicalPermutationMiddle_count n hn R B hR hB f hQ hA l hl hlen)
+      (canonicalPermutationMiddle_count n hn R B hR hB f hQ hA l' hl' hlen')
+      (canonicalPermutationMiddle_shape n hn R B hR hB f hQ hA l hl hlen)
+      (canonicalPermutationMiddle_shape n hn R B hR hB f hQ hA l' hl' hlen') L Lb rowBits
 
 end
 end IntegerMultBounds.MathlibTM2.Routing

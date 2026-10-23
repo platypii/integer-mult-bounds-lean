@@ -1935,14 +1935,28 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    `canonicalGeneratedInput_bank_updateStream` theorem changes only the physical
    stream register when the record payload or order changes; scalar/profile
    metadata are unchanged. This provides the bank-level independence needed to
-   lift frame production and its price off the current payload; the complete
-   canonical directional/permutation frame lift and upstream generators remain
-   open. `CanonicalRouterMetadata` now transports this law through the actual
+   lift frame production and its price off the current payload. `CanonicalRouterMetadata` now transports this law through the actual
    matching-table producer/repair bank, proves every residue metadata frame
    independent of live records, and lifts it to the whole concatenated bulk
    input for any residue schedule. Scalar and matching-table words are therefore
-   not copied from the record payload; outer directional/permutation frame
-   independence and executed upstream generation remain open. Canonical terminal scalar
+   not copied from the record payload.
+   The same module now transports the complete common directional bank and
+   proves full directional, class, matching and arbitrary-permutation frames
+   independent of record payload and order. `CanonicalPermutationMetadata`
+   defines the complete frame from dimensions and the coordinate permutation,
+   using a structural zero-record witness, and proves equality with the actual
+   frame for every admissible live record stream. This removes payload data
+   from the metadata interface; executed generation and uniform setup/pricing
+   are still open. `CanonicalInputPrice` reuses the generic stream-update price
+   theorem after transporting both complete canonical stacks.
+   `CanonicalRouterPrice` lifts price independence through actual residue
+   production, framing, bulk schedules, directions, classes, matchings and all
+   eighteen directions. `canonicalPermutationBudget` now packages that price
+   plus the final input rewind without live records, and
+   `canonicalPermutationCost_eq_budget` identifies the actual restored-router
+   ledger with it. The budget still depends on dimensions and the coordinate
+   permutation; a worst-case asymptotic bound, executed metadata generation and
+   the remaining R3 acceptance gates are unproved. Canonical terminal scalar
    widths and row-counter words are now selected from dimensions; executing
    their production remains open. Original
    permutation decomposition/table generation, remaining scalar metadata setup,

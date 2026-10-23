@@ -108,5 +108,40 @@ theorem canonicalGeneratedInput_bank_updateStream {Q K : ℕ} (p : Par) (a : Can
   rw [sharedScheduleInputBank_updateStream]
   rfl
 
+theorem canonicalGeneratedInput_stack_updateStream {Q K : ℕ} (p : Par) (a : CanonicalStageArithmetic p)
+    (targets : Finset (Fin p.wy)) (source : Fin p.wy → Fin p.wy)
+    (hsource : ∀ q ∈ targets, source q ∉ targets)
+    (hQ : swapStates selectiveSwapHd selectiveSwapPay selectiveSwapHd_inj ≤ Q) (hA : 4 ≤ prime + K)
+    (H : ℕ) (hplacementFit : 9 * H ≤ fieldsLen (selectiveLen p 0)) (hw : p.wc ≤ H) (reservoir : Fin 3)
+    (l l' : List (List (Fin (prime + K + 4))))
+    (hl : l.length = a.R * 2 ^ fieldsLen (selectiveLen p 0))
+    (hl' : l'.length = a.R * 2 ^ fieldsLen (selectiveLen p 0))
+    (hlen : ∀ r ∈ l, r.length = a.B ∧ ∀ x ∈ r, x.val < 8)
+    (hlen' : ∀ r ∈ l', r.length = a.B ∧ ∀ x ∈ r, x.val < 8) :
+    (canonicalGeneratedInput p a targets source hsource hQ hA H hplacementFit hw reservoir l' hl' hlen').M =
+      { (canonicalGeneratedInput p a targets source hsource hQ hA H hplacementFit hw reservoir l hl hlen).M with R := Function.update (canonicalGeneratedInput p a targets source hsource hQ hA H hplacementFit hw reservoir l hl hlen).M.R (inactiveClassifierPlacementEmbed (t₀ := 6) (classifierCore (inactiveConfigurationCore repairHost.src))) l'.flatten } := by
+  apply Stacks.ext
+  · dsimp only [canonicalGeneratedInput, canonicalPlacementInputStack, canonicalClassifierInputStack, canonicalWidthInputStack, canonicalHeaderInputStack]
+  · dsimp only [canonicalGeneratedInput, canonicalPlacementInputStack, canonicalClassifierInputStack, canonicalWidthInputStack, canonicalHeaderInputStack]
+  · dsimp only [canonicalGeneratedInput, canonicalPlacementInputStack, canonicalClassifierInputStack, canonicalWidthInputStack, canonicalHeaderInputStack]
+  · exact canonicalGeneratedInput_bank_updateStream p a targets source hsource hQ hA H hplacementFit hw reservoir l l' hl hl' hlen hlen'
+
+theorem canonicalGeneratedInput_configuration_updateStream {Q K : ℕ} (p : Par) (a : CanonicalStageArithmetic p)
+    (targets : Finset (Fin p.wy)) (source : Fin p.wy → Fin p.wy)
+    (hsource : ∀ q ∈ targets, source q ∉ targets)
+    (hQ : swapStates selectiveSwapHd selectiveSwapPay selectiveSwapHd_inj ≤ Q) (hA : 4 ≤ prime + K)
+    (H : ℕ) (hplacementFit : 9 * H ≤ fieldsLen (selectiveLen p 0)) (hw : p.wc ≤ H) (reservoir : Fin 3)
+    (l l' : List (List (Fin (prime + K + 4))))
+    (hl : l.length = a.R * 2 ^ fieldsLen (selectiveLen p 0))
+    (hl' : l'.length = a.R * 2 ^ fieldsLen (selectiveLen p 0))
+    (hlen : ∀ r ∈ l, r.length = a.B ∧ ∀ x ∈ r, x.val < 8)
+    (hlen' : ∀ r ∈ l', r.length = a.B ∧ ∀ x ∈ r, x.val < 8) :
+    (canonicalGeneratedInput p a targets source hsource hQ hA H hplacementFit hw reservoir l' hl' hlen').E =
+      { (canonicalGeneratedInput p a targets source hsource hQ hA H hplacementFit hw reservoir l hl hlen).E with R := Function.update (canonicalGeneratedInput p a targets source hsource hQ hA H hplacementFit hw reservoir l hl hlen).E.R (inactiveConfigurationCore repairHost.src) l'.flatten } := by
+  dsimp only [canonicalGeneratedInput, canonicalWidthInputStack, canonicalHeaderInputStack]
+  rw [canonicalProfileCoreBank_updateStream p 0 a.rb a.wb a.wm a.wp a.wk a.R a.B l.flatten l'.flatten,
+    canonicalLiveInputBank_updateStream, canonicalHeaderInputBank_updateStream, canonicalWidthInputBank_updateStream]
+  rfl
+
 end
 end IntegerMultBounds.MathlibTM2.Routing
