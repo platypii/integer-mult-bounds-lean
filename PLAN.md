@@ -1317,9 +1317,16 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    word is still a caller input. `RepairLiveActivityProfiles` generates five
    initially blank profiles in one bank; `ActivityProfilesRepair` composes these
    with all descriptor compilers, exact repair and five-profile cleanup, charging
-   every phase and restoring all non-stream tapes. This five-profile path still
-   needs header/width/classifier/placement composition; the older four-profile
-   path already has those compositions. Six other source profiles, raw activity
+   every phase and restoring all non-stream tapes. `ActivityProfilesHeaderRepair`,
+   `ActivityProfilesWidthRepair` and `ActivityProfilesClassifierRepair` now add
+   executed header, row/key-mask and classifier generation with full cleanup.
+   `ActivityProfilesClassifierMoved` transports all readiness, including the
+   activity tape, across stream placement. `PlacedActivityProfilesRepair` and
+   `JointBankActivityProfilesRepair` compose both exchange chains and derive
+   readiness from actual shared-bank words. The activity tape must be disjoint
+   from the stream and generated raw fields. All five profile inputs, headers,
+   raw width fields and classifiers start blank in this path; every phase is
+   charged and every non-stream tape is restored. Six other source profiles, raw activity
    production, scalar/placement setup, complete routing schedules and uniform
    cost/amortization gates remain open. Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
