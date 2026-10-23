@@ -8,6 +8,27 @@ public import IntegerMultBounds.MathlibTM2.Routing.DelimitedCallLoop
 namespace IntegerMultBounds.MathlibTM2.Routing
 variable {T A : ℕ} {I : Type}
 
+/-- Consecutive restoring calls have one compact cursor/archive boundary.
+Intermediate cursor contents and stream outputs do not survive the second call. -/
+theorem delimitedCallAdvanced_comp (src saved str : Fin T)
+    (hsa : src ≠ saved) (hss : src ≠ str) (has : saved ≠ str)
+    (R : Fin T → List (Fin (A + 4)))
+    (frame₁ rest₁ output₁ frame₂ rest₂ output₂ : List (Fin (A + 4))) :
+    delimitedCallAdvanced (delimitedCallAdvanced R src saved str frame₁ rest₁ output₁)
+      src saved str frame₂ rest₂ output₂ =
+      delimitedCallAdvanced R src saved str (frame₁ ++ frame₂) rest₂ output₂ := by
+  funext j
+  by_cases hj : j = str
+  · subst j
+    simp only [delimitedCallAdvanced, Function.update_self]
+  · by_cases ha : j = saved
+    · subst j
+      simp [delimitedCallAdvanced, has, List.reverse_append, List.append_assoc]
+    · by_cases hs : j = src
+      · subst j
+        simp [delimitedCallAdvanced, hsa, hss]
+      · simp [delimitedCallAdvanced, hj, ha, hs]
+
 def delimitedScheduleEffect (effect : I → List (Fin (A + 4)) → List (Fin (A + 4))) :
     List I → List (Fin (A + 4)) → List (Fin (A + 4))
   | [], w => w

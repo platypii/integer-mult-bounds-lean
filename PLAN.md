@@ -1849,9 +1849,8 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    each physical matching class, then all three classes into the original
    coordinate involution, preserving outer record rows throughout. The generic
    `matchingRankSchedule` proves the composition before instantiating the
-   canonical programs, avoiding expansion of their implementations. These are
-   rank semantics, not an executed nine-direction schedule: metadata reloads
-   between calls must still be composed. `CanonicalDirectionalBank` constructs
+   canonical programs, avoiding expansion of their implementations. The tape
+   execution is established separately below. `CanonicalDirectionalBank` constructs
    the inner bank from the original matching and records, proves its terminal
    projection and bulk readiness, and executes terminal then bulk without
    supplied readiness. Its words are below nine, including inner delimiter
@@ -1871,8 +1870,21 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    three metadata reloads and cleanups, preserves readiness and identifies the
    final records with `canonicalRouterClassPerm`. Intermediate record lists
    carry exact equalities to the preceding call's output; no execution is
-   supplied as a premise. Nine-direction composition, executed input-word
-   production and uniform total-cost bounds remain open. Canonical terminal scalar
+   supplied as a premise. The generic `delimitedCallAdvanced_comp` now collapses
+   consecutive call boundaries into one cursor/archive update; class execution
+   exposes that compact final state, with the concatenated frame and arbitrary
+   unused suffix. Class rank permutations are also independent of live record
+   payload and order, so later classes can consume earlier classes' outputs.
+   `CanonicalClassInput` packages the three pure record lists, their shapes and
+   exact intermediate-output equalities, without execution fields.
+   `CanonicalMatchingExec` now executes all three classes in order two/one/zero,
+   hence all nine directions, with every metadata reload and cleanup charged.
+   Its final records are exactly `canonicalRouterMatchingPerm` of the original
+   records, and its compact bank retains the unused input suffix, accumulated
+   rewind archive and readiness. The class-link hypotheses are pure record
+   equalities; automatic construction of these input packages and executed
+   input-word production remain open, along with arbitrary permutation
+   decomposition, uniform total-cost bounds and the other R3 gates. Canonical terminal scalar
    widths and row-counter words are now selected from dimensions; executing
    their production remains open. Original
    permutation decomposition/table generation, remaining scalar metadata setup,

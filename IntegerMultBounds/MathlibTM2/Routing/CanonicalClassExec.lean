@@ -66,12 +66,8 @@ theorem canonicalClass_exec
     (ready : FramedCoreReady canonicalDirectionalStream (R * 2 ^ n) B S)
     (hstream : S.R str = l.flatten)
     (hinput : S.R src = frame₀ ++ (frame₁ ++ (frame₂ ++ rest))) :
-    let C : Stacks ((canonicalRouterCommonT + 3) + 3) (prime + K) :=
-      { S with R := delimitedCallAdvanced S.R src saved str frame₀ (frame₁ ++ (frame₂ ++ rest)) l₁.flatten }
-    let D : Stacks ((canonicalRouterCommonT + 3) + 3) (prime + K) :=
-      { C with R := delimitedCallAdvanced C.R src saved str frame₁ (frame₂ ++ rest) l₂.flatten }
     let E : Stacks ((canonicalRouterCommonT + 3) + 3) (prime + K) :=
-      { D with R := delimitedCallAdvanced D.R src saved str frame₂ rest (moveRecs classPerm l).flatten }
+      { S with R := delimitedCallAdvanced S.R src saved str (frame₀ ++ (frame₁ ++ frame₂)) rest (moveRecs classPerm l).flatten }
     ∃ (v' : HS ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit) (steps : ℕ), v'.user = v.user ∧
       (steps : ℝ) ≤ (price₀ + price₁) + price₂ ∧
       FramedCoreReady canonicalDirectionalStream (R * 2 ^ n) B E ∧
@@ -100,6 +96,10 @@ theorem canonicalClass_exec
   have hout := canonicalClassRecords n hn R B hR hB mate hinv k hQ hA l hl hlen l₁ l₂ hl₁ hl₂ hlen₁ hlen₂ hnext₁ hnext₂
   rw [hout] at he₂ hr₂
   dsimp only [D, C] at he₁ he₂ hr₂
+  have hsa : src ≠ saved := (framedCoreAux_injective (canonicalRouterCommonT + 3)).ne (by decide)
+  have hss : src ≠ str := (framedCoreEmbed_aux (canonicalRouterCommonT + 3) canonicalDirectionalStream 0).symm
+  have has : saved ≠ str := (framedCoreEmbed_aux (canonicalRouterCommonT + 3) canonicalDirectionalStream 2).symm
+  simp only [delimitedCallAdvanced_comp src saved str hsa hss has, List.append_assoc] at he₁ he₂ hr₂
   refine ⟨v₂, m₁ + m₂, hu₂.trans hu₁, ?_, ?_, ?_⟩
   · push_cast
     exact add_le_add hm₁ hm₂

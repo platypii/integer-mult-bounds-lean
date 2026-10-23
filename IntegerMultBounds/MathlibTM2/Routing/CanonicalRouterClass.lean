@@ -140,6 +140,20 @@ theorem canonicalRouterClassPerm_row (i : Fin (R * 2 ^ n)) :
   change ((direction false) ((direction true) ((direction false) i))).val / 2 ^ n = _
   rw [canonicalRouterDirectionalPerm_row, canonicalRouterDirectionalPerm_row, canonicalRouterDirectionalPerm_row]
 
+theorem canonicalRouterClassPerm_records_independent
+    (l' : List (List (Fin (prime + K + 4)))) (hl' : l'.length = R * 2 ^ n)
+    (hlen' : ∀ row ∈ l', row.length = B ∧ ∀ x ∈ row, x.val < 8) :
+    canonicalRouterClassPerm n hn mate hinv k R B hR hB hQ hA l hl hlen =
+      canonicalRouterClassPerm n hn mate hinv k R B hR hB hQ hA l' hl' hlen' := by
+  apply Equiv.ext
+  intro i
+  apply rank_eq_of_bits_row
+  · intro q
+    exact congrFun ((canonicalRouterClassPerm_bits n hn mate hinv k R B hR hB hQ hA l hl hlen i).trans
+      (canonicalRouterClassPerm_bits n hn mate hinv k R B hR hB hQ hA l' hl' hlen' i).symm) q
+  · exact (canonicalRouterClassPerm_row n hn mate hinv k R B hR hB hQ hA l hl hlen i).trans
+      (canonicalRouterClassPerm_row n hn mate hinv k R B hR hB hQ hA l' hl' hlen' i).symm
+
 def canonicalRouterMatchingPerm : Equiv.Perm (Fin (R * 2 ^ n)) :=
   matchingRankSchedule (fun k => canonicalRouterClassPerm n hn mate hinv k R B hR hB hQ hA l hl hlen)
 
