@@ -1359,6 +1359,21 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    first A and first X source profiles remain supplied. Raw activity/scalars,
    placement-input production, full routing schedules, uniform setup/amortization
    and the executed short-record fallback remain open. Full R3 and kappa are unchanged.
+   `RepairAControlSourceProfile` identifies the first A stream as one
+   activity-gated control selector repeated for each temporary wire in its group.
+   `OptionalAffineSourceGroupGenerate` computes each selector once, repeats its
+   frame using the live binary group count, archives/restores raw activity and
+   restores the original index and all scratch. `LiveAControlSourceGenerate`
+   installs this actual profile using the existing group-size operand and seven
+   outer tapes. `RepairLiveControlProfiles` now generates nine initially blank
+   source profiles in one bank. `RepairControlProfileClean` separately charges
+   both longer A profiles; `JointBankControlProfilesRepair` composes all nine with
+   executed classifier/width/header generation, exact repair, both shared-bank
+   placement exchanges and complete cleanup. Every phase is charged and every
+   non-stream tape restored. Only key and first X source profiles remain supplied;
+   raw activity/scalars, placement inputs, full routing schedules, uniform setup
+   and amortization and the executed short-record fallback remain open.
+   Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
