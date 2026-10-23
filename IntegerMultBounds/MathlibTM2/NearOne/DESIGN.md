@@ -482,3 +482,13 @@ the one shared batch call/extraction, and X erasure. The contract starts with ga
 windows, generated G/K table streams and unary S1 dimensions. Raw gathering and table
 generation still need composition into this caller, and those unary dimensions still
 need installation from the retained binary bank.
+
+`chirpS1DimensionSetup_exec` now provides the missing unary-dimension installer as a
+separate executable stage. A dedicated binary bank retains `q,t,m,w,l` in slots 0–4;
+thirteen checked arithmetic instructions compute `p=q+1`, `3m+1`, `4m` and `ceil(t/m)`.
+Seven conversions emit `p,l,w,3m+1,4m,M,m`, and five clearing instructions restore the
+working words. `chirpS1Dimensions_at` identifies each installed dimension, while
+`chirpS1Dimensions_cost` gives the exact conversion bound. Installation costs
+`18*tblC W e + (4W+2)*sum(dimensions) + 77W+43`. Composing this installer and
+its unary cleanup around `chirpInputBatch` remains open. The dedicated binary inputs
+and multiplier templates still need initialization from the original caller inputs.

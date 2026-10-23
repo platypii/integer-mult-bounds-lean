@@ -1298,7 +1298,11 @@ prepared operand tapes and unary S1 dimensions. `chirpInputBatch_exec` now compo
 X production (including generated geometry), the single shared S1 call, extraction and
 X-stream cleanup, with only the correlation destination changed and all costs charged.
 It starts from gathered windows, generated G/K streams and unary S1 dimensions; composing
-gathering/table generation and generating the remaining S1 dimensions remain open.
+gathering/table generation remains open. `chirpS1DimensionSetup_exec` separately emits
+all seven S1 unary dimensions from a dedicated binary `q,t,m,w,l` bank, computes the
+precision/operand lengths/block count and restores all working words. Exact emitted
+values and conversion costs are proved; composing this installer and dimension cleanup
+around the shared caller remains open.
 Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and
