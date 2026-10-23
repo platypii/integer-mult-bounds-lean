@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.ChirpGatherControl
+import IntegerMultBounds.MathlibTM2.Mult.ChirpGatherExec
 import IntegerMultBounds.MathlibTM2.Mult.ChirpWindows
 import Lean.Util.CollectAxioms
 
@@ -17,6 +17,14 @@ import Lean.Util.CollectAxioms
 /-- info: 'IntegerMultBounds.MathlibTM2.Mult.ShortConv.gatherPacket_exec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms IntegerMultBounds.MathlibTM2.Mult.ShortConv.gatherPacket_exec
+
+/-- info: 'IntegerMultBounds.MathlibTM2.Mult.ShortConv.gatherBatch_exec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms IntegerMultBounds.MathlibTM2.Mult.ShortConv.gatherBatch_exec
+
+/-- info: 'IntegerMultBounds.MathlibTM2.Mult.ShortConv.chirpGather_exec' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms IntegerMultBounds.MathlibTM2.Mult.ShortConv.chirpGather_exec
 
 open Lean in
 run_cmd do

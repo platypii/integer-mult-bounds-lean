@@ -298,10 +298,15 @@ default build does not check them.
      execute one fixed sweep step from a delimited unary advance packet, saving both
      consumed source and control prefixes for restoration. Its exact cost is
      `12L + 8D + 21` for window/advance symbol lengths `L,D`; its temporary counter,
-     copy workspace, native stacks and user state are restored. The complete loop,
-     generation of the cyclic extension/control stream, and final restoration remain open.
+     copy workspace, native stacks and user state are restored. `ChirpGatherLoop` and
+     `ChirpGatherBatch` now execute the entire fixed sweep and restore both source and
+     control streams: only the destination changes, at exact cost `M (14L+25) + 12D + 8`,
+     where `D` is total symbol advance. `ChirpGatherWindows` and `ChirpGatherExec`
+     specialize it to the actual cyclic chirp windows, in block order with coefficient
+     words intact. Total advance is `chirpCenter s t m M · w`, at most `(s+m)w` for
+     valid block starts. Generating the cyclic extension and control stream remains open.
      S2/S3 still need table reuse across lines,
-     full overlapping-window gathering, binary dimension conversion and output arithmetic,
+     cyclic/control-stream setup, binary dimension conversion and output arithmetic,
      followed by the complete forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
