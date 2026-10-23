@@ -40,4 +40,25 @@ theorem chirpOutputE_err (s t α q Γ b : ℕ) (hs : 0 < s) (hst : s < t)
       NLogN.chirpE s t (α : ℝ) b / 2 ^ Γ| ≤ 2 / (2 : ℝ) ^ (q - Γ) := by
   simpa only [Nat.sub_add_cancel hΓq] using chirpTableE_err s t α (q - Γ) Γ b hs hst hα hq hgate
 
+/-- The computed normalization factor has absolute value at most one. -/
+theorem chirpNormalization_abs_le_one (q α : ℕ) :
+    |(chirpNormalization q α : ℝ) / 2 ^ q| ≤ 1 := by
+  rw [abs_of_nonneg (by positivity)]
+  apply (div_le_one (by positivity : (0 : ℝ) < 2 ^ q)).mpr
+  exact_mod_cast chirpNormalization_le q α
+
+/-- The generated normalized E factor is small enough for the output word envelope. -/
+theorem chirpOutputE_abs_le_two (s t α q Γ b : ℕ) (hs : 0 < s) (hst : s < t)
+    (hα : 0 < α) (hΓq : Γ ≤ q) (hq : 13 ≤ q - Γ)
+    (hgate : Real.pi * (chirpEN s t b : ℝ) / (chirpED t α : ℝ) ≤ (q - Γ : ℕ) - 1)
+    (hΓ : NLogN.chirpE s t (α : ℝ) b ≤ 2 ^ Γ) :
+    |(chirpTableE s t α (q - Γ) b : ℝ) / 2 ^ q| ≤ 2 := by
+  have he := chirpOutputE_err s t α q Γ b hs hst hα hΓq hq hgate
+  have hη := chirpTable_eta_le (q - Γ) hq
+  have hb : NLogN.chirpE s t (α : ℝ) b / 2 ^ Γ ≤ 1 :=
+    (div_le_one (by positivity : (0 : ℝ) < 2 ^ Γ)).mpr hΓ
+  rw [abs_of_nonneg (by positivity)]
+  have hu := (abs_le.mp he).2
+  linarith
+
 end IntegerMultBounds.MathlibTM2.Mult.ShortConv

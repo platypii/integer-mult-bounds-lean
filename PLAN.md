@@ -1321,7 +1321,13 @@ and multiplier templates; original-input initialization and output processing re
 correlation word with the analytic chirp map: numerator shifts, two real products and
 final signed truncation. The computed normalization and normalized E-table errors are
 proved; `chirpComputed_approx` discharges factor-error hypotheses under explicit
-window/precision gates. Output tape execution and signed intermediate widths remain open.
+window/precision gates. `chirpScale_exec` now executes numerator shifts with exact
+stream semantics, restored counters/scratch and explicit linear tape cost. Computed
+factor bounds give a final numerator signed-fit envelope `w ≥ q+l+Γ+5`; output product/
+rounding/cropping execution and the remaining intermediate fit obligations are still open.
+`chirpOutputETable_exec` now composes correlation scaling with the real E-table product,
+reusing one E row across all blocks and deriving both signed input fits from norm bounds.
+It retains the scaled source and E table and emits the exact first output-product stream.
 Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and

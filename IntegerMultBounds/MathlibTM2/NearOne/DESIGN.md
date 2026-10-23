@@ -551,3 +551,21 @@ This is an arithmetic/analytic bridge, not output tape execution. Executing shif
 products, normalization/E setup, rounding and cropping, proving signed intermediate
 widths, choosing precision to close the gates and the final execution/cost comparison
 remain required.
+
+`chirpScale_exec` now specializes the existing actual shift program to Gaussian streams:
+the source is multiplied by `2^d`, all other tapes are restored, and the exact cost is
+`N*(6w+4d+14)+4`. Its representation statement remains valid modulo the word width;
+exact signed decoding additionally needs shifted numerators to fit. `ChirpOutputBounds`
+proves decoded-norm-to-signed-fit conversion and a uniform final numerator bound
+`8*2^(l+Γ)`, giving the envelope `q+l+Γ+5 ≤ w`. Computed normalization and normalized
+E have absolute values at most 1 and 2. Output product/shift composition, final rounding,
+cropping and remaining intermediate fit obligations still need execution proofs.
+
+`chirpOutputETable_exec` now executes the first output shift and the normalized E product.
+One E row is reused across every equal-length correlation block. The actual cost is
+`N*(6w+4(l+1)+14)+4 + N*(rmulCost w+6w+8)+6`, where N is the total coefficient count.
+The source becomes the scaled correlation stream; the destination gains exact truncated
+E products; the E table, unary counts, multiplier bank and scratch are restored.
+Both multiplier input fits follow from decoded correlation norm ≤1, factor magnitude ≤2
+and `q+l+4 ≤ w`. Remaining output execution includes the Γ shift, normalization product,
+final signed precision reduction and crop, plus their setup/cleanup and intermediate fits.
