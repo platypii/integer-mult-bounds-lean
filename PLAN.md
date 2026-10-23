@@ -1279,8 +1279,12 @@ Their actual tape costs, decoding and scratch frames are proved; see the
 integer operands, discharging their representation, no-wrap and disk hypotheses. The
 weighted operand is proved equal to the aligned multiplier output on the gathered window;
 its interpretation at precision `q+1` supplies the required factor one half.
+`chirpWeighted_exec` executes one aligned real-multiplier traversal over all gathered
+windows and generated G rows, with input/table/scratch restoration and explicit cost.
+The generated K stream is exactly the S1 kernel operand tape (`chirpOperandYStream_eq`).
 Remaining work includes initializing the dimension/width banks from the original inputs,
-reusing tables across lines, executing and composing weighted operand production, output arithmetic and
+reusing tables across lines, reversing weighted rows and composing operand production
+with the shared batch call, output arithmetic and
 cropping, and the complete forward correctness/precision/cost contract.
 `ShortConv.chirpAR_approx` (in `Mult/ChirpRing`) supplies the analytic correlation/error
 bridge; the full caller execution and cost comparison are still required. S2–S6 remain

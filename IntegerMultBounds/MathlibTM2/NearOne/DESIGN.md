@@ -439,6 +439,13 @@ aligned `zipWith` output, reverses coefficient order, and proves exact decoded
 agreement with `chirpRecIn` and `chirpRecK` at precision `q+1`.
 `ChirpOperandBounds` derives integer disk bounds from the generated table estimates.
 `chirpOperandBatch_err` discharges the representation, length and disk hypotheses of
-the shared batch tape error theorem. This closes operand semantics; executing the
-multiplication/reversal and composing operand production with the shared batch call
-are still required, along with output arithmetic, cropping and the final cost contract.
+the shared batch tape error theorem. This closes operand semantics. `chirpWeighted_exec` now executes multiplication
+of the complete gathered window stream against the generated G-table stream in one
+traversal, costing at most `M*(3m+1)*(rmulCost w+6w+2)+8` tape steps. Only the
+weighted-row destination changes; the window/table streams, counter templates,
+multiplier bank, native stacks and user state are restored. Its signed fit hypotheses
+follow from unit-disk inputs and generated-table bounds with `q+3 ≤ w`.
+`ChirpOperandStreams` also identifies the generated K-table with the complete S1
+kernel operand tape. Executing row reversal and composing gathering, generation,
+multiplication and the shared batch call remain required, along with output arithmetic,
+cropping and the final cost contract.
