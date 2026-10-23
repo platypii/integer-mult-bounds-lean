@@ -1288,7 +1288,9 @@ the flattened raw X operand stream, with cost `M*(26*(3m+1)*w+19*(3m+1)+17)+8`.
 `chirpMakeX_exec` composes weighting, reversal and weighted-stream erasure with only
 the X operand destination changed. `chirpOperandCountSetup_exec` separately computes
 and emits the three unary geometry counters from the binary dimension bank and restores
-that bank; its composition and counter cleanup are still open.
+that bank. `chirpMakeXSetup_exec` now composes this setup, weighting, reversal and
+all temporary-stream/counter cleanup from empty geometry tapes, retaining only the
+final X destination change and charging every stage.
 Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and

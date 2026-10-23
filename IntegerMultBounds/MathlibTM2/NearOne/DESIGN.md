@@ -454,7 +454,11 @@ including arbitrary source and destination tails. `chirpMakeX_exec` now composes
 weighting, row reversal and weighted-stream erasure, retaining only the final X operand
 destination change and charging all three stages. `chirpOperandCountSetup_exec`
 separately computes and emits the batch, row and symbol counters from `t,m,w`, restoring
-the entire binary bank. Composing this setup with operand production and erasing its
-counters remain open. Composing gathering, generation,
+the entire binary bank. `chirpMakeXSetup_exec` now composes this setup with operand
+production and counter erasure from initially blank geometry tapes. It proves the exact
+X operand output, changes only its destination, and charges setup, multiplication,
+reversal and all intermediate-stream/counter cleanup in `chirpMakeXSetupCost`.
+The retained inputs still include the binary dimension bank, unary multiplier templates,
+gathered window stream and generated G-table stream. Composing gathering, generation,
 multiplication and the shared batch call remain required, along with output arithmetic,
 cropping and the final cost contract.
