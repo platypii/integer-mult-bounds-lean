@@ -1282,8 +1282,11 @@ its interpretation at precision `q+1` supplies the required factor one half.
 `chirpWeighted_exec` executes one aligned real-multiplier traversal over all gathered
 windows and generated G rows, with input/table/scratch restoration and explicit cost.
 The generated K stream is exactly the S1 kernel operand tape (`chirpOperandYStream_eq`).
+`chirpOperandX_exec` now executes coefficient reversal within each weighted row while
+retaining batch order and restoring source, counters and scratch. Its exact output is
+the flattened raw X operand stream, with cost `M*(26*(3m+1)*w+19*(3m+1)+17)+8`.
 Remaining work includes initializing the dimension/width banks from the original inputs,
-reusing tables across lines, reversing weighted rows and composing operand production
+reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and
 cropping, and the complete forward correctness/precision/cost contract.
 `ShortConv.chirpAR_approx` (in `Mult/ChirpRing`) supplies the analytic correlation/error

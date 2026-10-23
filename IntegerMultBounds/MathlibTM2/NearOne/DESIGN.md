@@ -446,6 +446,10 @@ weighted-row destination changes; the window/table streams, counter templates,
 multiplier bank, native stacks and user state are restored. Its signed fit hypotheses
 follow from unit-disk inputs and generated-table bounds with `q+3 ≤ w`.
 `ChirpOperandStreams` also identifies the generated K-table with the complete S1
-kernel operand tape. Executing row reversal and composing gathering, generation,
+kernel operand tape. `chirpOperandX_exec` now executes row reversal into the exact raw X operand stream,
+retaining batch order and all low-bit-first words, at cost
+`M*(26*(3m+1)*w+19*(3m+1)+17)+8`. The structural `reverseRows_exec` theorem
+restores the weighted source, batch/row/word counters, native stacks and all scratch,
+including arbitrary source and destination tails. Composing gathering, generation,
 multiplication and the shared batch call remain required, along with output arithmetic,
 cropping and the final cost contract.
