@@ -1415,6 +1415,16 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    blank; every phase is charged and all non-stream tapes restore.
    Schedule-to-record production, scalar/placement setup, full schedules and
    uniform cost/amortization/fallback gates remain open. Full R3 and kappa are unchanged.
+   `SourceCoordinateRecord` now converts one live physical Y coordinate and
+   activity bit into exactly the canonical record of `sourceOfY`. A fixed program
+   executes low/high boundary comparisons, quotient/remainder decoding for digit
+   sources, numeric width conversion, tag and record writing, and full scratch
+   cleanup. Only the record destination changes; the total cost is explicit.
+   `ProfileSourceRecords` identifies the canonical record stream for a logical
+   bulk profile and proves exact source-coordinate reconstruction and length.
+   Full source-stream loading/compilation, caller-derived coordinates/activity,
+   scalar/placement setup and the remaining schedule/amortization/fallback gates
+   remain open. These single-record theorems do not complete R3 or change kappa.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and

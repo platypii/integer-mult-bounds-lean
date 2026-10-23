@@ -1706,3 +1706,4 @@ public import IntegerMultBounds.MathlibTM2.Routing.AllSourceProfilesRepair
 public import IntegerMultBounds.MathlibTM2.Routing.JointBankAllSourceProfilesRepair
 public import IntegerMultBounds.MathlibTM2.Routing.RepairRawSourceLayout
 public import IntegerMultBounds.MathlibTM2.Routing.SourceRecordProfilesRepair
+public import IntegerMultBounds.MathlibTM2.Routing.SourceCoordinateRecord
