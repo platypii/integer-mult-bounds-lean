@@ -55,6 +55,22 @@ def reservoirMiddleLookupBank (mate : Fin n → Fin n) (q : ℕ) (j : Fin 33) : 
   else if j = 26 then binSyms L w
   else []
 
+/-- Three coordinate exchanges, each carrying four padded operands. -/
+theorem middleLookupMetadata_length (inverse : Bool) :
+    (middleLookupMetadata (A := A) n H hfit w hw k L inverse).length = 12 * L + 12 := by
+  cases inverse <;>
+    simp [middleLookupMetadata, reservoirCoordinateOrder, delimitedScheduleInput,
+      coordinateExchangeJobs, delimitedBankFrames] <;> omega
+
+/-- Lookup setup consists of bounded scalar words, exchange frames and one table. -/
+theorem reservoirMiddleLookupBank_length_le (mate : Fin n → Fin n) (q : ℕ) (j : Fin 33) :
+    (reservoirMiddleLookupBank (A := A) n H hfit w hw k L mate q j).length ≤
+      n * (2 * L + 2) + 12 * L + 12 := by
+  unfold reservoirMiddleLookupBank
+  split_ifs <;>
+    simp only [length_binSyms, middleLookupMetadata_length, matchingEntryWords_length,
+      matchingTableEntries, List.length_map, List.length_range, List.length_nil] <;> omega
+
 /-- The fixed-bank local lookup has no execution premises and no supplied
 local matching table: its only matching input is the physical table. -/
 theorem reservoirMiddleLookup_exec (body : P → Pr P 33 Q A U)

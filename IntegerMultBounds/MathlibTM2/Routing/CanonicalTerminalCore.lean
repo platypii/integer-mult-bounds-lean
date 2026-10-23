@@ -41,6 +41,27 @@ def canonicalTerminalPrice (n rows B L Lb rowLength count : ℕ) : ℝ :=
         (2 * B + 2 * (rows * 2 ^ n) + 4 * n + 9 : ℕ)) +
         (6 * n + 2 * rowLength + 7 : ℕ)
 
+/-- The terminal ledger increases with the number of coordinate instructions. -/
+theorem canonicalTerminalPrice_mono_count (n rows B L Lb rowLength : ℕ)
+    {count count' : ℕ} (hcount : count ≤ count') :
+    canonicalTerminalPrice n rows B L Lb rowLength count ≤
+      canonicalTerminalPrice n rows B L Lb rowLength count' := by
+  unfold canonicalTerminalPrice
+  gcongr
+  unfold canonicalTerminalBaseCost
+  have := swapConst_pos
+  positivity
+
+/-- A uniform terminal budget removes dependence on the particular matching table. -/
+theorem canonicalTerminalPrice_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (mate : Fin n → Fin n) (hinv : Function.Involutive mate) (k : Fin 3) (reverse : Bool)
+    (rows B L Lb rowLength : ℕ) :
+    canonicalTerminalPrice n rows B L Lb rowLength
+      (canonicalRouterTerminalCoordinates n hn mate hinv k reverse).length ≤
+      canonicalTerminalPrice n rows B L Lb rowLength (131 * canonicalRouterGap n) :=
+  canonicalTerminalPrice_mono_count n rows B L Lb rowLength
+    (canonicalRouterTerminalCoordinates_count n hn mate hinv k reverse).le
+
 theorem canonicalTerminalCore_exec {Q K : ℕ} {P U : Type}
     (body : P → Pr P canonicalTerminalT Q (prime + K) U)
     (inp : List (Bool ⊕ Bool)) (out : List Bool)

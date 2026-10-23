@@ -72,6 +72,20 @@ def reservoirClassLocalBank (mate : Fin n → Fin n) (j : Fin 57) : List (Fin (A
   else if j = 52 then matchingEntryWords L (matchingTableEntries n (matchingMateCoordinate mate))
   else []
 
+/-- All producer inputs have a bound independent of the matching values. -/
+theorem reservoirClassLocalBank_length_le (mate : Fin n → Fin n) (j : Fin 57) :
+    (reservoirClassLocalBank (A := A) n H hfit w hw k L mate j).length ≤
+      n * (2 * L + 2) + 12 * L + 12 := by
+  unfold reservoirClassLocalBank
+  split
+  · rw [Function.update_apply]
+    split
+    · exact Nat.zero_le _
+    · exact reservoirMiddleProductionBank_length_le n H hfit w hw k L mate _
+  · split_ifs <;>
+      simp only [length_binSyms, matchingEntryWords_length, matchingTableEntries,
+        List.length_map, List.length_range, List.length_nil] <;> omega
+
 theorem reservoirClassLocalTable_exec (body : P → Pr P 57 Q A U)
     (hn : n < 2 ^ L) (mate : Fin n → Fin n) (hinv : Function.Involutive mate)
     (v : HS 57 Q A U) (S : Stacks 57 A)

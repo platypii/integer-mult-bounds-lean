@@ -305,5 +305,43 @@ theorem canonicalGeneratedInput_small {Q K : ℕ} (p : Par) (a : CanonicalStageA
     · exact sourceCoordinateInputWords_small _ _ _
   · exact hrecords
 
+/-- A dimension-only bound for every metadata word of the constructed repair input. -/
+theorem canonicalGeneratedInput_length_le {Q K : ℕ} (p : Par) (a : CanonicalStageArithmetic p)
+    (targets : Finset (Fin p.wy)) (source : Fin p.wy → Fin p.wy)
+    (hsource : ∀ q ∈ targets, source q ∉ targets)
+    (hQ : swapStates selectiveSwapHd selectiveSwapPay selectiveSwapHd_inj ≤ Q) (hA : 4 ≤ prime + K)
+    (H : ℕ) (hplacementFit : 9 * H ≤ fieldsLen (selectiveLen p 0)) (hw : p.wc ≤ H) (reservoir : Fin 3)
+    (l : List (List (Fin (prime + K + 4)))) (hl : l.length = a.R * 2 ^ fieldsLen (selectiveLen p 0))
+    (hlen : ∀ r ∈ l, r.length = a.B ∧ ∀ x ∈ r, x.val < 8)
+    (j : Fin (inactiveClassifierPlacementT 6))
+    (hj : j ≠ inactiveClassifierPlacementEmbed (t₀ := 6)
+      (classifierCore (inactiveConfigurationCore repairHost.src))) :
+    ((canonicalGeneratedInput p a targets source hsource hQ hA H hplacementFit hw reservoir l hl hlen).M.R j).length ≤
+      ((((fieldsLen (selectiveLen p 0) + a.wb + a.wm + a.wp + a.wk +
+        p.n * (a.w.indexBits + a.w.strideBits + 3) +
+        a.w.indexBits + a.w.strideBits + a.w.coordinateBits + a.w.selectorBits + a.w.widthBits + a.w.groupBits) +
+        (a.Lrow + a.Lwidth)) + (a.Lr + a.Lm)) + (a.LK + a.Ln + a.Lo + a.Lt)) +
+        a.Lcp + a.Lp + a.rowBits.length := by
+  dsimp only [inactiveClassifierPlacementEmbed, inactiveConfigurationCore, inactiveProfileHeaderRaw,
+    embeddedRepairHeaderRaw, inactiveProfileRaw] at hj
+  dsimp only [canonicalGeneratedInput]
+  apply canonicalPlacementInputStack_length_le <;> try exact hj
+  intro j hj
+  dsimp only [canonicalClassifierInputStack]
+  apply canonicalClassifierInputBank_length_le <;> try exact hj
+  intro j hj
+  dsimp only [canonicalWidthInputStack]
+  apply canonicalWidthInputBank_length_le <;> try exact hj
+  intro j hj
+  dsimp only [canonicalHeaderInputStack]
+  apply canonicalHeaderInputBank_length_le <;> try exact hj
+  intro j hj
+  apply canonicalLiveInputBank_length_le <;> try exact hj
+  intro j hj
+  simpa only [sourceCoordinateInputWords_length, profileCoordinateInputs, List.length_ofFn] using
+    canonicalProfileCoreBank_length_le p 0 a.rb a.wb a.wm a.wp a.wk a.R a.B l.flatten
+      (sourceCoordinateInputWords (A := prime + K) a.w.indexBits a.w.strideBits
+        (profileCoordinateInputs p a.hK targets source)) j hj
+
 end
 end IntegerMultBounds.MathlibTM2.Routing

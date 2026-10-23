@@ -1834,6 +1834,7 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalInputPrice
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterMetadata
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterPrice
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPermutationMetadata
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterCode
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDirectionalPair
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalClassExec
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalClassInput

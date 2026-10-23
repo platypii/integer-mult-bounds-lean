@@ -25,9 +25,49 @@ def canonicalDescriptorOperands (r : LiveDescriptorRole 11) : List (Fin (A + 4))
   | .input _ => []
   | _ => liveDescriptorData p X hG hK active source repairLiveMode w r
 
+/-- Canonical profile inputs are empty; the remaining descriptor words are scalars. -/
+theorem canonicalDescriptorOperands_length_le (r : LiveDescriptorRole 11) :
+    (canonicalDescriptorOperands (A := A) p X hG hK active source w r).length ≤
+      w.indexBits + w.strideBits + w.coordinateBits + w.selectorBits + w.widthBits + w.groupBits := by
+  cases r with
+  | profile r =>
+    cases r with
+    | coordinate r =>
+      cases r with
+      | arithmetic r => cases r <;> simp [canonicalDescriptorOperands, liveDescriptorData] <;> omega
+      | _ => simp [canonicalDescriptorOperands, liveDescriptorData] <;> omega
+    | _ => simp [canonicalDescriptorOperands, liveDescriptorData]
+  | coordinate r => cases r <;> simp [canonicalDescriptorOperands, liveDescriptorData] <;> omega
+  | _ => simp [canonicalDescriptorOperands, liveDescriptorData] <;> omega
+
 def canonicalLiveInputBank (core : Fin repairT → List (Fin (A + 4))) : Fin T₀ → List (Fin (A + 4)) :=
   Fin.addCases (liveDescriptorBank core (canonicalDescriptorOperands p X hG hK active source w))
     (fun i : Fin 7 => if i = 0 then binSyms w.indexBits p.n else [])
+
+theorem canonicalLiveInputBank_length_le (core : Fin repairT → List (Fin (A + 4)))
+    (C : ℕ) (hcore : ∀ j, j ≠ repairHost.src → (core j).length ≤ C)
+    (j : Fin T₀) (hj : j ≠ e₀ (liveDescriptorCore repairHost.src)) :
+    (canonicalLiveInputBank p X hG hK active source w core j).length ≤
+      C + w.indexBits + w.strideBits + w.coordinateBits + w.selectorBits + w.widthBits + w.groupBits := by
+  revert hj
+  refine Fin.addCases ?_ ?_ j
+  · intro i
+    refine Fin.addCases ?_ ?_ i
+    · intro q hq
+      have hne : q ≠ repairHost.src := by intro he; subst q; exact hq rfl
+      simp only [canonicalLiveInputBank, Fin.addCases_left, liveDescriptorBank]
+
+      have hc := hcore q hne
+      omega
+    · intro r _
+      simp only [canonicalLiveInputBank, Fin.addCases_left, liveDescriptorBank]
+      rw [Fin.addCases_right]
+      have hr := canonicalDescriptorOperands_length_le (A := A) p X hG hK active source w
+        ((Fintype.equivFin (LiveDescriptorRole 11)).symm r)
+      omega
+  · intro i _
+    simp only [canonicalLiveInputBank, Fin.addCases_right]
+    split <;> simp only [length_binSyms, List.length_nil] <;> omega
 
 theorem canonicalLiveInputBank_core (core : Fin repairT → List (Fin (A + 4))) (j : Fin repairT) :
     canonicalLiveInputBank p X hG hK active source w core (e₀ (liveDescriptorCore j)) = core j := by

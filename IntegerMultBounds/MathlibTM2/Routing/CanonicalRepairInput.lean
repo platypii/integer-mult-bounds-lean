@@ -27,10 +27,42 @@ def canonicalRepairPayload (p : Par) (X rb wb wm wp wk R B : ℕ) :
   | .inr .keyLength => binSyms wk (fieldsLen (selectiveKeyLen p X rb))
   | _ => []
 
+/-- Initial repair operands contain only padded scalar words. -/
+theorem canonicalRepairPayload_length_le (p : Par) (X rb wb wm wp wk R B : ℕ)
+    (key : RepairSetupKey) :
+    (canonicalRepairPayload (A := A) p X rb wb wm wp wk R B key).length ≤
+      fieldsLen (selectiveLen p X) + wb + wm + wp + wk := by
+  cases key with
+  | inl key =>
+    cases key with
+    | field f =>
+      simp only [canonicalRepairPayload, length_binSyms]
+      have hf := fieldOff_add_le_total (selectiveLen p X) f
+      omega
+    | block => simp only [canonicalRepairPayload, length_binSyms]; omega
+    | records => simp only [canonicalRepairPayload, length_binSyms]; omega
+    | desc i => simp [canonicalRepairPayload]
+    | header c k => simp [canonicalRepairPayload]
+  | inr key => cases key <;> simp only [canonicalRepairPayload, length_binSyms, List.length_nil] <;> omega
+
 def canonicalRepairInput (p : Par) (X rb wb wm wp wk R B : ℕ)
     (records : List (Fin (A + 4))) : Fin repairT → List (Fin (A + 4)) :=
   Function.extend repairSetupSource (canonicalRepairPayload p X rb wb wm wp wk R B)
     (fun j => if j = repairHost.src then records else [])
+
+/-- The record stream is excluded from the repair metadata bound. -/
+theorem canonicalRepairInput_length_le (p : Par) (X rb wb wm wp wk R B : ℕ)
+    (records : List (Fin (A + 4))) (j : Fin repairT) (hj : j ≠ repairHost.src) :
+    (canonicalRepairInput p X rb wb wm wp wk R B records j).length ≤
+      fieldsLen (selectiveLen p X) + wb + wm + wp + wk := by
+  by_cases hs : ∃ key, repairSetupSource key = j
+  · obtain ⟨key, rfl⟩ := hs
+    unfold canonicalRepairInput
+    rw [repairSetupSource_injective.extend_apply]
+    exact canonicalRepairPayload_length_le p X rb wb wm wp wk R B key
+  · unfold canonicalRepairInput
+    rw [Function.extend_apply' _ _ _ hs, ite_eq_right hj]
+    exact Nat.zero_le _
 
 theorem canonicalRepairInput_source (p : Par) (X rb wb wm wp wk R B : ℕ)
     (records : List (Fin (A + 4))) (key : RepairSetupKey) :
@@ -185,6 +217,16 @@ theorem canonicalProfileKey_not_blank : ¬RepairBlank canonicalProfileKey := by
 def canonicalProfileCoreBank (p : Par) (X rb wb wm wp wk R B : ℕ)
     (records coordinates : List (Fin (A + 4))) : Fin repairT → List (Fin (A + 4)) :=
   Function.update (canonicalRepairInput p X rb wb wm wp wk R B records) canonicalProfileKey coordinates
+
+theorem canonicalProfileCoreBank_length_le (p : Par) (X rb wb wm wp wk R B : ℕ)
+    (records coordinates : List (Fin (A + 4))) (j : Fin repairT) (hj : j ≠ repairHost.src) :
+    (canonicalProfileCoreBank p X rb wb wm wp wk R B records coordinates j).length ≤
+      fieldsLen (selectiveLen p X) + wb + wm + wp + wk + coordinates.length := by
+  unfold canonicalProfileCoreBank
+  rw [Function.update_apply]
+  split
+  · omega
+  · exact (canonicalRepairInput_length_le p X rb wb wm wp wk R B records j hj).trans (Nat.le_add_right _ _)
 
 theorem canonicalProfileCoreBank_data (p : Par) (X rb wb wm wp wk R B : ℕ)
     (records coordinates : List (Fin (A + 4)))

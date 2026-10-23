@@ -24,6 +24,22 @@ def originalMatchingPlacedInputBank (input : GeneratedPlacedInput t₀ Q K P P' 
   originalMatchingInputBank TP₀ (matchingPlacedInputBank input Lc)
     (reservoirClassLocalBank n H hfit w hw k (input.w.indexBits + input.w.strideBits) mate)
 
+theorem originalMatchingPlacedInputBank_length_le
+    (input : GeneratedPlacedInput t₀ Q K P P' U) (Lc n H : ℕ)
+    (hfit : 9 * H ≤ n) (w : ℕ) (hw : w ≤ H) (k : Fin 3) (mate : Fin n → Fin n)
+    (C : ℕ) (hcore : ∀ j, j ≠ str₀ → (input.M.R j).length ≤ C)
+    (j : Fin N₀) (hj : j ≠ str₁) :
+    (originalMatchingPlacedInputBank input Lc n H hfit w hw k mate j).length ≤
+      (C + Lc + input.p.wy * (2 * (input.w.indexBits + input.w.strideBits) + 2) +
+        input.w.strideBits + input.w.strideBits) +
+        (n * (2 * (input.w.indexBits + input.w.strideBits) + 2) +
+          12 * (input.w.indexBits + input.w.strideBits) + 12) := by
+  apply originalMatchingInputBank_length_le TP₀ _ _ _ _ _ ?_ ?_ j hj
+  · intro i hi
+    exact matchingPlacedInputBank_length_le input Lc C hcore i hi
+  · intro i
+    exact reservoirClassLocalBank_length_le n H hfit w hw k _ mate i
+
 def originalMatchingPlacedPrice (input : GeneratedPlacedInput t₀ Q K P P' U) (Lc n w : ℕ) : ℝ :=
   (reservoirClassLocalTableCost n w (input.w.indexBits + input.w.strideBits) : ℕ) +
     matchingPlacedRepairPrice input Lc + (2 * ((n - 3 * w) * (2 * (input.w.indexBits + input.w.strideBits) + 2)) + 2 : ℕ)

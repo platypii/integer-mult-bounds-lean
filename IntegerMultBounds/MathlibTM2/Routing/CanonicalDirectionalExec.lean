@@ -58,6 +58,17 @@ def canonicalDirectionalPrice : ℝ :=
     (6 * (canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages).length +
       2 * (framedCoreJobs (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream bank).length + 2 : ℕ)
 
+/-- Replace the matching-dependent terminal instruction count by its geometric bound. -/
+theorem canonicalDirectionalPrice_le :
+    canonicalDirectionalPrice n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages ≤
+      canonicalTerminalPrice n R B L Lb rowBits.length (131 * canonicalRouterGap n) +
+      commonBankBulkPrice n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages +
+      (6 * (canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages).length +
+        2 * (framedCoreJobs (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream bank).length + 2 : ℕ) := by
+  unfold canonicalDirectionalPrice
+  exact add_le_add (add_le_add (canonicalTerminalPrice_le n hn mate hinv k reverse R B L Lb rowBits.length)
+    (le_refl _)) (le_refl _)
+
 theorem canonicalDirectional_exec
     (hn0 : 0 < n) (hnfit : n < 2 ^ L) (hBfit : B < 2 ^ Lb) (hnB : n ≤ B)
     (hrow : GrowingCounterData.Canonical rowBits) (hrowNe : rowBits ≠ [])

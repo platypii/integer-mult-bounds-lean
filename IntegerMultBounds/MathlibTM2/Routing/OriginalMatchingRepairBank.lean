@@ -52,6 +52,26 @@ noncomputable def originalMatchingInputBank (N : ℕ)
   Function.extend (originalMatchingRepairEmbed N) (Function.update repairWords (matchingExtractSlot N 5) [])
     (fun j => producerWords ⟨j.val - (N + 36), by have := j.isLt; omega⟩)
 
+/-- Joining producer and repair banks preserves a nonstream metadata bound. -/
+theorem originalMatchingInputBank_length_le (N : ℕ)
+    (repairWords : Fin (N + 36) → List (Fin (A + 4)))
+    (producerWords : Fin 57 → List (Fin (A + 4))) (str : Fin (N + 36)) (C D : ℕ)
+    (hrepair : ∀ j, j ≠ str → (repairWords j).length ≤ C)
+    (hproducer : ∀ j, (producerWords j).length ≤ D)
+    (j : Fin (N + 36 + 57)) (hj : j ≠ originalMatchingRepairEmbed N str) :
+    (originalMatchingInputBank N repairWords producerWords j).length ≤ C + D := by
+  by_cases hc : ∃ i, originalMatchingRepairEmbed N i = j
+  · obtain ⟨i, rfl⟩ := hc
+    unfold originalMatchingInputBank
+    rw [(originalMatchingRepairEmbed_injective N).extend_apply, Function.update_apply]
+    split
+    · exact Nat.zero_le _
+    · have hi := hrepair i (fun he => hj (congrArg (originalMatchingRepairEmbed N) he))
+      omega
+  · unfold originalMatchingInputBank
+    rw [Function.extend_apply' _ _ _ hc]
+    exact (hproducer _).trans (Nat.le_add_left _ _)
+
 theorem originalMatchingInputBank_repair (N : ℕ)
     (repairWords : Fin (N + 36) → List (Fin (A + 4)))
     (producerWords : Fin 57 → List (Fin (A + 4))) (j : Fin (N + 36)) :

@@ -40,6 +40,31 @@ theorem canonicalPlacementInputStack_left (src : Fin N) (S : Stacks N A) (spec :
     exact hL i
   · exact Function.extend_apply' _ _ _ hcore
 
+/-- Placement adds scalar coordinates and the row counter, with blank swap workspace. -/
+theorem canonicalPlacementInputStack_length_le (src : Fin N) (S : Stacks N A)
+    (spec : Fin 3 → BlockExchangeSpec n) (Lc L B C : ℕ)
+    (rowBits : List Bool) (stream : List (Fin (A + 4)))
+    (hcore : ∀ j, j ≠ src → (S.R j).length ≤ C)
+    (j : Fin (sharedScheduleT N t₀)) (hj : j ≠ sharedCoreEmbed src) :
+    ((canonicalPlacementInputStack (t₀ := t₀) src S spec Lc L B rowBits stream).R j).length ≤
+      C + Lc + L + rowBits.length := by
+  by_cases hc : ∃ i, sharedCoreEmbed (N := N) (t₀ := t₀) i = j
+  · obtain ⟨i, rfl⟩ := hc
+    simp only [canonicalPlacementInputStack, sharedScheduleInputBank_core]
+    have hi := hcore i (fun he => hj (congrArg sharedCoreEmbed he))
+    omega
+  · change (Function.extend sharedCoreEmbed S.R _ j).length ≤ _
+    rw [Function.extend_apply' _ _ _ hc]
+    by_cases hs : ∃ r, sharedScheduleSlot (t₀ := t₀) src r = j
+    · obtain ⟨r, rfl⟩ := hs
+      rw [binaryScheduleInputBank_at _ (sharedScheduleSlot_injective src)]
+      have hr : r ≠ .str := by intro he; subst r; exact hj (sharedScheduleSlot_str src)
+      cases r <;> simp only [binaryScheduleInputWords, length_binSyms, List.length_map, List.length_nil]
+      all_goals first | omega | exact (hr rfl).elim
+    · unfold binaryScheduleInputBank
+      rw [Function.extend_apply' _ _ _ hs]
+      exact Nat.zero_le _
+
 
 /-- Placement adds only binary operands, so a framing delimiter above seven
 cannot occur in a canonical input bank. -/

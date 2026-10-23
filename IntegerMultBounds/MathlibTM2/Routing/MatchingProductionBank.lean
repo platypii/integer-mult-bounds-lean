@@ -18,6 +18,24 @@ noncomputable def matchingProductionBank (coreWords : Fin N → List (Fin (A + 4
   Function.extend (matchingCoreEmbed N) coreWords
     (fun j => matchingWorkspaceWords count table stride residue (j.val - N))
 
+/-- The four producer operands add no dependence on the live record stream. -/
+theorem matchingProductionBank_length_le (coreWords : Fin N → List (Fin (A + 4)))
+    (count table stride residue : List (Fin (A + 4))) (str : Fin N) (C : ℕ)
+    (hcore : ∀ j, j ≠ str → (coreWords j).length ≤ C)
+    (j : Fin (N + 36)) (hj : j ≠ matchingCoreEmbed N str) :
+    (matchingProductionBank coreWords count table stride residue j).length ≤
+      C + count.length + table.length + stride.length + residue.length := by
+  by_cases hc : ∃ i, matchingCoreEmbed N i = j
+  · obtain ⟨i, rfl⟩ := hc
+    unfold matchingProductionBank
+    rw [(matchingCoreEmbed_injective N).extend_apply]
+    have hi := hcore i (fun he => hj (congrArg (matchingCoreEmbed N) he))
+    omega
+  · unfold matchingProductionBank
+    rw [Function.extend_apply' _ _ _ hc]
+    unfold matchingWorkspaceWords
+    split_ifs <;> first | omega | exact Nat.zero_le _
+
 theorem matchingProductionBank_core (coreWords : Fin N → List (Fin (A + 4)))
     (count table stride residue : List (Fin (A + 4))) (j : Fin N) :
     matchingProductionBank coreWords count table stride residue (matchingCoreEmbed N j) = coreWords j :=

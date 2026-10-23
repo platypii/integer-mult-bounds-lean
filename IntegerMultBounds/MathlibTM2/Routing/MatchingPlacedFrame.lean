@@ -19,6 +19,20 @@ def matchingPlacedInputBank (input : GeneratedPlacedInput t₀ Q K P P' U) (Lc :
   matchingInitialBank (Function.update input.M.R input.coordinateRegister [])
     input.p input.source input.w.indexBits input.w.strideBits Lc
 
+theorem matchingPlacedInputBank_length_le (input : GeneratedPlacedInput t₀ Q K P P' U)
+    (Lc C : ℕ) (hcore : ∀ j, j ≠ str₀ → (input.M.R j).length ≤ C)
+    (j : Fin (TP₀ + 36)) (hj : j ≠ matchingCoreEmbed TP₀ str₀) :
+    (matchingPlacedInputBank input Lc j).length ≤
+      C + Lc + input.p.wy * (2 * (input.w.indexBits + input.w.strideBits) + 2) +
+        input.w.strideBits + input.w.strideBits := by
+  unfold matchingPlacedInputBank
+  apply matchingInitialBank_length_le _ _ _ _ _ _ str₀ C ?_ j hj
+  intro i hi
+  rw [Function.update_apply]
+  split
+  · exact Nat.zero_le _
+  · exact hcore i hi
+
 variable (input : GeneratedPlacedInput t₀ Q K P P' U)
     (l : List (List (Fin (prime + K + 4))))
     (hl : l.length = input.R * 2 ^ IntegerMultBounds.MathlibTM2.Layer.CompactDigits.fieldsLen (selectiveLen input.p input.X))

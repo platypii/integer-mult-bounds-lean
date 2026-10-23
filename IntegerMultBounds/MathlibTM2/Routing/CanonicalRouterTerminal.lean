@@ -49,6 +49,14 @@ theorem canonicalRouterTerminalCoordinates_count :
   rw [Finset.card_image_of_injective _ (canonicalRouterMiddleEmbedding_injective n hn k)]
   exact routerTerminalTargets_spacing n (canonicalRouterGap n) _ (canonicalRouterGap_pos n) hn
 
+/-- The terminal table occupies only a logarithmic number of padded coordinate pairs. -/
+theorem canonicalRouterTerminalFrames_length_le {A : ℕ} (L : ℕ) :
+    (elementaryCoordinateFrames (A := A) L
+      (canonicalRouterTerminalCoordinates n hn mate hinv k reverse)).length ≤
+      (131 * canonicalRouterGap n) * (2 * L + 2) := by
+  rw [elementaryCoordinateFrames_length]
+  exact Nat.mul_le_mul_right _ (canonicalRouterTerminalCoordinates_count n hn mate hinv k reverse).le
+
 
 theorem canonicalRouterTerminalCoordinates_source
     (c : ElementaryCoordinate n) (hc : c ∈ canonicalRouterTerminalCoordinates n hn mate hinv k reverse) :

@@ -17,6 +17,19 @@ def matchingInitialBank (coreWords : Fin N → List (Fin (A + 4))) (p : Par)
     (matchingEntryWords (Li + Lk) (matchingTableEntries p.wy (matchingMateCoordinate mate)))
     (binSyms Lk p.K) (binSyms Lk p.ρ)
 
+theorem matchingInitialBank_length_le (coreWords : Fin N → List (Fin (A + 4))) (p : Par)
+    (mate : Fin p.wy → Fin p.wy) (Li Lk Lc : ℕ) (str : Fin N) (C : ℕ)
+    (hcore : ∀ j, j ≠ str → (coreWords j).length ≤ C)
+    (j : Fin (N + 36)) (hj : j ≠ matchingCoreEmbed N str) :
+    (matchingInitialBank coreWords p mate Li Lk Lc j).length ≤
+      C + Lc + p.wy * (2 * (Li + Lk) + 2) + Lk + Lk := by
+  simpa only [matchingInitialBank, length_binSyms, matchingEntryWords_length,
+    matchingTableEntries, List.length_map, List.length_range] using
+    matchingProductionBank_length_le coreWords
+      (binSyms Lc ((p.n * p.K) * (2 * (Li + Lk) + 2)))
+      (matchingEntryWords (Li + Lk) (matchingTableEntries p.wy (matchingMateCoordinate mate)))
+      (binSyms Lk p.K) (binSyms Lk p.ρ) str C hcore j hj
+
 noncomputable def matchingFixedSetup (p : Par) (mate : Fin p.wy → Fin p.wy)
     (hK : 0 < p.K) (hρ : p.ρ < p.K) (hinv : Function.Involutive mate) (reverse : Bool)
     (Li Lk Lc : ℕ) (hwidth : p.wy < 2 ^ (Li + Lk)) (hk : p.K < 2 ^ Lk)

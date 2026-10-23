@@ -13,6 +13,22 @@ open IntegerMultBounds.MathlibTM2.Layer.CompactGadget
 noncomputable section
 variable {N A : ℕ}
 
+/-- Appending bounded metadata preserves a bound away from the live stream. -/
+theorem addCases_word_length_le {M : ℕ} (core : Fin N → List (Fin (A + 4)))
+    (aux : Fin M → List (Fin (A + 4))) (str : Fin N) (C D : ℕ)
+    (hcore : ∀ j, j ≠ str → (core j).length ≤ C)
+    (haux : ∀ j, (aux j).length ≤ D) (j : Fin (N + M)) (hj : j ≠ Fin.castAdd M str) :
+    (Fin.addCases (motive := fun _ => List (Fin (A + 4))) core aux j).length ≤ C + D := by
+  revert hj
+  refine Fin.addCases ?_ ?_ j
+  · intro i hi
+    rw [Fin.addCases_left]
+    have hc := hcore i (fun he => hi (congrArg (Fin.castAdd M) he))
+    omega
+  · intro i _
+    rw [Fin.addCases_right]
+    exact (haux i).trans (Nat.le_add_left _ _)
+
 def canonicalHeaderOperands (Lrow Lwidth R wc : ℕ) : HeaderWorkRole → List (Fin (A + 4))
   | .binary i => if i = 0 then binSyms Lrow R else binSyms Lwidth wc
   | _ => []
@@ -20,6 +36,17 @@ def canonicalHeaderOperands (Lrow Lwidth R wc : ℕ) : HeaderWorkRole → List (
 def canonicalHeaderInputBank (core : Fin N → List (Fin (A + 4))) (Lrow Lwidth R wc : ℕ) :
     Fin (sharedHeaderT N) → List (Fin (A + 4)) :=
   Fin.addCases core (fun i => canonicalHeaderOperands Lrow Lwidth R wc ((Fintype.equivFin HeaderWorkRole).symm i))
+
+theorem canonicalHeaderInputBank_length_le (core : Fin N → List (Fin (A + 4)))
+    (str : Fin N) (C Lrow Lwidth R wc : ℕ)
+    (hcore : ∀ j, j ≠ str → (core j).length ≤ C)
+    (j : Fin (sharedHeaderT N)) (hj : j ≠ sharedHeaderCore str) :
+    (canonicalHeaderInputBank core Lrow Lwidth R wc j).length ≤ C + (Lrow + Lwidth) := by
+  apply addCases_word_length_le core _ str C (Lrow + Lwidth) hcore ?_ j hj
+  intro i
+  generalize (Fintype.equivFin HeaderWorkRole).symm i = r
+  cases r <;> simp only [canonicalHeaderOperands, List.length_nil]
+  all_goals first | exact Nat.zero_le _ | (split <;> simp only [length_binSyms] <;> omega)
 
 theorem canonicalHeaderInputBank_core (core : Fin N → List (Fin (A + 4))) (Lrow Lwidth R wc : ℕ) (j : Fin N) :
     canonicalHeaderInputBank core Lrow Lwidth R wc (sharedHeaderCore j) = core j := by
@@ -45,6 +72,15 @@ def canonicalWidthInputBank (core : Fin N → List (Fin (A + 4))) (Lr Lm rb wy :
     Fin (N + 6) → List (Fin (A + 4)) :=
   Fin.addCases core (fun i => if i = 0 then binSyms Lr rb else if i = 1 then binSyms Lm wy else [])
 
+theorem canonicalWidthInputBank_length_le (core : Fin N → List (Fin (A + 4)))
+    (str : Fin N) (C Lr Lm rb wy : ℕ)
+    (hcore : ∀ j, j ≠ str → (core j).length ≤ C)
+    (j : Fin (N + 6)) (hj : j ≠ fieldCore str) :
+    (canonicalWidthInputBank core Lr Lm rb wy j).length ≤ C + (Lr + Lm) := by
+  apply addCases_word_length_le core _ str C (Lr + Lm) hcore ?_ j hj
+  intro i
+  split_ifs <;> simp only [length_binSyms, List.length_nil] <;> omega
+
 theorem canonicalWidthInputBank_core (core : Fin N → List (Fin (A + 4))) (Lr Lm rb wy : ℕ) (j : Fin N) :
     canonicalWidthInputBank core Lr Lm rb wy (fieldCore j) = core j := by
   change Fin.addCases (motive := fun _ => List (Fin (A + 4))) core (fun i : Fin 6 => if i = 0 then binSyms Lr rb else if i = 1 then binSyms Lm wy else [])
@@ -69,6 +105,16 @@ def canonicalClassifierOperands (p : Par) (LK Ln Lo Lt : ℕ) (j : Fin 16) : Lis
 
 def canonicalClassifierInputBank (core : Fin N → List (Fin (A + 4))) (p : Par) (LK Ln Lo Lt : ℕ) :
     Fin (N + 16) → List (Fin (A + 4)) := Fin.addCases core (canonicalClassifierOperands p LK Ln Lo Lt)
+
+theorem canonicalClassifierInputBank_length_le (core : Fin N → List (Fin (A + 4)))
+    (str : Fin N) (p : Par) (C LK Ln Lo Lt : ℕ)
+    (hcore : ∀ j, j ≠ str → (core j).length ≤ C)
+    (j : Fin (N + 16)) (hj : j ≠ classifierCore str) :
+    (canonicalClassifierInputBank core p LK Ln Lo Lt j).length ≤ C + (LK + Ln + Lo + Lt) := by
+  apply addCases_word_length_le core _ str C (LK + Ln + Lo + Lt) hcore ?_ j hj
+  intro i
+  unfold canonicalClassifierOperands
+  split_ifs <;> simp only [length_binSyms, List.length_nil] <;> omega
 
 theorem canonicalClassifierInputBank_core (core : Fin N → List (Fin (A + 4))) (p : Par) (LK Ln Lo Lt : ℕ) (j : Fin N) :
     canonicalClassifierInputBank core p LK Ln Lo Lt (classifierCore j) = core j := by

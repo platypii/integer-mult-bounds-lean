@@ -66,6 +66,39 @@ theorem canonicalTerminalRoutingBank_small {A : ℕ} (stream : List (Fin (A + 4)
     · exact elementaryCoordinateFrames_small L cs
     · simp
 
+/-- Every nonstream terminal word is a scalar operand or the coordinate table. -/
+theorem canonicalTerminalRoutingBank_length_le {A : ℕ}
+    (stream coordinates : List (Fin (A + 4))) (n L Lb B : ℕ) (rowBits : List Bool)
+    (j : Fin canonicalTerminalT) (hj : j ≠ canonicalTerminalRouter .str) :
+    (canonicalTerminalRoutingBank canonicalTerminalRouter canonicalTerminalCompiler canonicalTerminalInput
+      (canonicalTerminalAux 0) stream coordinates n L Lb B rowBits j).length ≤
+      L + Lb + rowBits.length + coordinates.length := by
+  obtain ⟨r, rfl⟩ := (Fintype.equivFin CanonicalTerminalReg).surjective j
+  cases r with
+  | router r =>
+    change (canonicalTerminalRoutingBank _ _ _ _ _ _ _ _ _ _ _ (canonicalTerminalRouter r)).length ≤ _
+    change canonicalTerminalRouter r ≠ canonicalTerminalRouter .str at hj
+    rw [canonicalTerminalBank_fixed_router, ite_eq_right hj]
+    exact Nat.zero_le _
+  | compiler c =>
+    change (canonicalTerminalRoutingBank _ _ _ _ _ _ _ _ _ _ _ (canonicalTerminalCompiler c)).length ≤ _
+    rw [canonicalTerminalBank_fixed_compiler]
+    cases c with
+    | coordinate r => cases r <;> simp only [elementaryCompilerInputWords, length_binSyms, List.length_nil] <;> omega
+    | rows => simp [elementaryCompilerInputWords]; omega
+    | block => simp [elementaryCompilerInputWords]; omega
+    | header i => simp [elementaryCompilerInputWords]
+    | mask => simp [elementaryCompilerInputWords]
+    | output => simp [elementaryCompilerInputWords]
+  | input r =>
+    change (canonicalTerminalRoutingBank _ _ _ _ _ _ _ _ _ _ _ (canonicalTerminalInput r)).length ≤ _
+    rw [canonicalTerminalBank_fixed_input]
+    cases r <;> simp [sharedInputInitialWords] <;> omega
+  | aux i =>
+    change (canonicalTerminalRoutingBank _ _ _ _ _ _ _ _ _ _ _ (canonicalTerminalAux i)).length ≤ _
+    rw [canonicalTerminalBank_fixed_aux]
+    split <;> simp_all
+
 
 /-- Framing supplies the current record stream without changing terminal metadata. -/
 theorem canonicalTerminalRoutingBank_updateStream {A : ℕ}

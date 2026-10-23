@@ -35,6 +35,22 @@ def originalMatchingFrame (input : GeneratedPlacedInput t₀ Q K P P' U) (Lc n H
   delimitedBankFrames delimiter (framedCoreJobs (framedCoreEmbed N₀) str₀
     (originalMatchingPlacedInputBank input Lc n H hfit w hw k mate))
 
+/-- Serialize the actual joined producer/repair bank with a dimension-only word bound. -/
+theorem originalMatchingFrame_length_le (input : GeneratedPlacedInput t₀ Q K P P' U)
+    (Lc n H : ℕ) (hfit : 9 * H ≤ n) (w : ℕ) (hw : w ≤ H) (k : Fin 3)
+    (mate : Fin n → Fin n) (delimiter : Fin (prime + K + 4)) (C : ℕ)
+    (hcore : ∀ j, j ≠ rawStr₀ → (input.M.R j).length ≤ C) :
+    let W := (C + Lc + input.p.wy * (2 * (input.w.indexBits + input.w.strideBits) + 2) +
+      input.w.strideBits + input.w.strideBits) +
+      (n * (2 * (input.w.indexBits + input.w.strideBits) + 2) +
+        12 * (input.w.indexBits + input.w.strideBits) + 12)
+    (originalMatchingFrame input Lc n H hfit w hw k mate delimiter).length ≤ N₀ * (W + 1) := by
+  dsimp only
+  unfold originalMatchingFrame
+  apply framedCoreFrames_length_le
+  intro j hj
+  exact originalMatchingPlacedInputBank_length_le input Lc n H hfit w hw k mate C hcore j hj
+
 def originalMatchingStepPrice (input : GeneratedPlacedInput t₀ Q K P P' U) (Lc n H : ℕ)
     (hfit : 9 * H ≤ n) (w : ℕ) (hw : w ≤ H) (k : Fin 3) (mate : Fin n → Fin n)
     (delimiter : Fin (prime + K + 4)) : ℝ :=

@@ -1954,13 +1954,69 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    eighteen directions. `canonicalPermutationBudget` now packages that price
    plus the final input rewind without live records, and
    `canonicalPermutationCost_eq_budget` identifies the actual restored-router
-   ledger with it. The budget still depends on dimensions and the coordinate
+   ledger with it. `CanonicalRouterCode` also proves record independence of the
+   actual bulk, directional, class, matching and eighteen-direction programs.
+   Its bulk and directional geometry-independence theorems also show that
+   dimensions, matching operands and scalar widths do not change directional
+   code (with the class and direction fixed). The complete
+   `canonicalPermutationCode_geometry_independent` theorem lifts this to all
+   eighteen directions: dimensions and the coordinate permutation change
+   operands and the ledger, but not the executed schedule code.
+   `canonicalPermutationCode` removes live records from the code interface,
+   with equality to the executed program for every admissible stream.
+   `canonicalPermutationCode_exec` combines these equalities into the actual
+   restored execution contract, using dimension-derived scalar operands and
+   the record-independent metadata and budget; metadata is still supplied.
+   The budget still depends on dimensions and the coordinate
    permutation; a worst-case asymptotic bound, executed metadata generation and
    the remaining R3 acceptance gates are unproved. Canonical terminal scalar
    widths and row-counter words are now selected from dimensions; executing
    their production remains open. Original
    permutation decomposition/table generation, remaining scalar metadata setup,
-   uniform amortization and short-record fallback remain open. R3 and kappa
+   `canonicalTerminalPrice_le` now replaces the matching-dependent terminal
+   instruction count by the geometric bound `131 * canonicalRouterGap n`;
+   `canonicalDirectionalPrice_le` applies it to the actual directional ledger.
+   Reusing the existing exact `elementaryCoordinateFrames_length` formula,
+   `canonicalRouterTerminalFrames_length_le` bounds the terminal table by
+   `131 * canonicalRouterGap n` padded coordinate pairs.
+   Generic `delimitedBankFrames_length_le` and `framedCoreFrames_length_le`
+   now bound serialization by word count times maximum word length plus one
+   delimiter. `canonicalTerminalRoutingBank_length_le` bounds every nonstream
+   terminal word by the scalar widths, row-counter length and coordinate-table
+   size, with structural register cases. Concrete nested bulk-word length
+   bounds are still required. `middleLookupMetadata_length` gives the exact
+   three-exchange frame size. `reservoirMiddleLookupBank_length_le`,
+   `reservoirMiddleProductionBank_length_le` and
+   `reservoirClassLocalBank_length_le` now bound every matching-table producer
+   input word by `n * (2 * L + 2) + 12 * L + 12`, independently of matching
+   values. Repair-bank word bounds and their complete frame composition remain
+   open. `canonicalRepairPayload_length_le`, `canonicalRepairInput_length_le`
+   and `canonicalProfileCoreBank_length_le` now bound the initial repair scalar
+   operands and source-coordinate core, excluding the live record stream.
+   `canonicalDescriptorOperands_length_le` now bounds all canonical profile
+   operands by their scalar widths, and `canonicalLiveInputBank_length_le`
+   transports a nonstream core bound through the complete live-profile bank.
+   One shared `addCases_word_length_le` lemma now transports nonstream bounds
+   through appended scalar banks. `canonicalHeaderInputBank_length_le`,
+   `canonicalWidthInputBank_length_le` and
+   `canonicalClassifierInputBank_length_le` instantiate it for all three outer
+   extensions. `canonicalPlacementInputStack_length_le` now handles the
+   placement overlay, including stream exclusion and blank swap workspace.
+   `canonicalGeneratedInput_length_le` composes all these bounds for every
+   nonstream word of the actual generated repair input, using dimensions and
+   scalar widths only. `matchingProductionBank_length_le` and
+   `matchingInitialBank_length_le` transport bounds through the matching
+   workspace with explicit padded table and scalar sizes.
+   `originalMatchingInputBank_length_le` joins producer and repair bounds,
+   excluding the physical stream and accounting for the cleared shared table.
+   `matchingPlacedInputBank_length_le` and
+   `originalMatchingPlacedInputBank_length_le` instantiate those overlays;
+   `originalMatchingFrame_length_le` bounds their actual serialized frame
+   from the core bound and dimension-derived scalar/table sizes. Canonical
+   instantiation and whole-schedule composition remain before closing the
+   complete bulk frame bound.
+   Bulk setup and complete frame-size bounds, uniform amortization and short-record
+   fallback remain open. R3 and kappa
    are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.

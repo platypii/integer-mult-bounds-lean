@@ -17,6 +17,19 @@ theorem delimitedBankFrames_length (delimiter : Fin (A + 4))
   | cons j jobs ih => simp only [delimitedBankFrames, List.length_append, List.length_cons,
       List.map_cons, List.sum_cons, ih]; omega
 
+/-- Framing adds one delimiter per word. -/
+theorem delimitedBankFrames_length_le (delimiter : Fin (A + 4))
+    (jobs : List (Fin T × List (Fin (A + 4)))) (W : ℕ)
+    (hwords : ∀ job ∈ jobs, job.2.length ≤ W) :
+    (delimitedBankFrames delimiter jobs).length ≤ jobs.length * (W + 1) := by
+  induction jobs with
+  | nil => simp [delimitedBankFrames]
+  | cons job jobs ih =>
+    have hj := hwords job (by simp)
+    have ht := ih (fun j hj => hwords j (by simp [hj]))
+    simp only [delimitedBankFrames, List.length_append, List.length_cons, Nat.add_mul, Nat.one_mul]
+    omega
+
 theorem delimitedBankLoadCost_frames (delimiter : Fin (A + 4))
     (jobs : List (Fin T × List (Fin (A + 4)))) :
     delimitedBankLoadCost jobs = 4 * (delimitedBankFrames delimiter jobs).length + 2 * jobs.length + 1 := by
