@@ -999,12 +999,38 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    by full live-profile generation for strictly positive physical positions,
    including empty profiles with positive target width. It proves the complete
    output word and restores all non-output tapes, charging both phases.
-   `RepairKeyProfileGenerate` and `RepairZProfileGenerate` instantiate this path
-   for the key and both Z descriptors when the reservoir offset is positive.
-   The zero-offset selected/key branch, zero-width cases, temporary-bit group
-   iteration, descriptor-compiler composition and shared-bank integration remain
-   open. Source-profile frames and scalar dimensions are still inputs; this
-   does not close full R3 or change kappa.
+   `BinaryZeroTest` and `AffineProfileClosedGenerate` now use live tests of the
+   offset and profile to choose terminal completion in one fixed program. This
+   covers zero offsets, positive offsets and empty profiles whenever target width
+   is positive, restores every non-output tape and charges all tests/branches.
+   `RepairKeyProfileGenerate` and `RepairZProfileGenerate` now cover any reservoir
+   offset; their earlier positive-offset restriction is removed.
+   `AffineProfileDescriptor` composes this generator with actual coordinate,
+   compact-selector and dense-descriptor compilation, then erases the generated
+   absolute-coordinate stream. Its exact output is the sparse pattern's table;
+   only descriptor output changes, with setup, tests, compilation and cleanup
+   charged. `RepairAffinePattern` and `RepairAffineDescriptor` instantiate this
+   path for all nine non-A repair descriptors, deriving slot bounds and exact
+   descriptor words from the actual repair formulas. No coordinate/descriptor
+   input is supplied to this path. Zero-width cases, both temporary-bit A
+   descriptors, shared-bank execution, and source-profile/scalar-dimension
+   generation remain open; full R3 and kappa are unchanged.
+   `BinaryGroupedPosition` now executes the temporary-slot arithmetic
+   `floor(index / group) * stride + index % group + base` from live binary
+   dimensions. It reuses the existing bounded `bdivmod`, widens the remainder,
+   composes affine arithmetic and erases quotient/remainder/offset scratch; only
+   the generated position changes. Its cost is quadratic in binary widths, as
+   is the existing affine multiplication path, so no new division algorithm or
+   nested group-counter implementation is required for this setup path.
+   `GroupedOptionalCoordinate` composes this arithmetic with live activity/source
+   selection and erases the generated position. `GroupedProfileCall` and
+   `GroupedProfileLoop` load activity/source frames, compute each grouped position
+   from the internal counter, emit coordinates, erase loaded operands and advance
+   the counter through one fixed loop. `GroupedProfileFrame` proves exact emitted
+   coordinates, complete archived input, final counter and unchanged spectators.
+   Full grouped input/counter restoration, terminal completion, instantiation
+   with both actual A profiles and descriptor-compiler composition remain open;
+   these components do not close R3.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and

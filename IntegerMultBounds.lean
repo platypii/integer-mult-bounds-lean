@@ -210,6 +210,16 @@ public import IntegerMultBounds.MathlibTM2.Routing.SparseTerminalCoordinateEmit
 public import IntegerMultBounds.MathlibTM2.Routing.AffineProfileTerminal
 public import IntegerMultBounds.MathlibTM2.Routing.RepairKeyProfileGenerate
 public import IntegerMultBounds.MathlibTM2.Routing.RepairZProfileGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryZeroTest
+public import IntegerMultBounds.MathlibTM2.Routing.AffineProfileClosedGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.AffineProfileDescriptor
+public import IntegerMultBounds.MathlibTM2.Routing.RepairAffinePattern
+public import IntegerMultBounds.MathlibTM2.Routing.RepairAffineDescriptor
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryGroupedPosition
+public import IntegerMultBounds.MathlibTM2.Routing.GroupedOptionalCoordinate
+public import IntegerMultBounds.MathlibTM2.Routing.GroupedProfileCall
+public import IntegerMultBounds.MathlibTM2.Routing.GroupedProfileLoop
+public import IntegerMultBounds.MathlibTM2.Routing.GroupedProfileFrame
 public import IntegerMultBounds.MathlibTM2.Routing.CoordinateSelectorGenerate
 public import IntegerMultBounds.MathlibTM2.Routing.CoordinateDescriptorCompile
 public import IntegerMultBounds.MathlibTM2.Routing.GeneratedSelectorList

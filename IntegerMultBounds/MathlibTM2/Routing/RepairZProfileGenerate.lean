@@ -1,10 +1,10 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Routing.AffineProfileTerminal
+public import IntegerMultBounds.MathlibTM2.Routing.AffineProfileClosedGenerate
 public import IntegerMultBounds.MathlibTM2.Routing.RepairRotationCoordinates
 
 /-! Generate the complete Z-descriptor coordinate input from its live source
-profile when selected slots start at a positive reservoir offset. -/
+profile at any reservoir offset, including empty source profiles. -/
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Routing
@@ -17,7 +17,7 @@ variable {T Q A : ℕ} {P U : Type}
 
 theorem repairZProfileGenerate_exec (body : P → Pr P T Q A U)
     (p : Par) (X : ℕ) (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X)
-    (hG : 0 < p.G) (hK : 0 < p.K) (hρ : 0 < p.ρ) (j : Fin 2)
+    (hG : 0 < p.G) (hK : 0 < p.K) (hwy : 0 < p.wy) (j : Fin 2)
     (rg : AffineProfileReg → Fin T) (hrg : Function.Injective rg)
     (saved : Fin T) (hsep : ∀ r, saved ≠ rg r)
     (Li Lk Ls : ℕ) (hk : p.K < 2 ^ Lk) (hN : p.wy < 2 ^ (Li + Lk))
@@ -31,26 +31,23 @@ theorem repairZProfileGenerate_exec (body : P → Pr P T Q A U)
     (hblank : ∀ r, r ≠ .src → r ≠ .archive → r ≠ .index → r ≠ .stride →
       r ≠ .offset → r ≠ .last → r ≠ .one → r ≠ .dst → S.R (rg r) = []) :
     ∃ (v' : HS T Q A U) (steps : ℕ), v'.user = v.user ∧
-      steps ≤ (22 * (Li + Lk) + 12 * Ls + 37) +
-        (p.n * (affineProfileCallCost Li Lk Ls + 2) + 2 * (p.n * (Ls + 3)) + 16 * Li + 20) ∧
-      Exec body (affineProfileTerminalProgram rg saved) (mk v S) steps
+      steps ≤ affineProfileClosedCost Li Lk Ls p.n ∧
+      Exec body (affineProfileClosedProgram rg saved) (mk v S) steps
         (mk v' { S with R := Function.update S.R (rg .dst) (sparseCoordinateFrames (Li + Lk) Ls (sparseCoordinateValues
             (repairRotationCoordinates p X hG hK active s .Z j)) ++ S.R (rg .dst)) }) := by
-  have hpositive : 0 < p.wy := by dsimp only [Par.wy]; omega
-  have hpos : ∀ j : Fin p.n, 0 < (0 + j.val) * p.K + p.ρ ∧
-      (0 + j.val) * p.K + p.ρ < p.wy := by
-    intro j
-    have hb := repairKeyCoordinates_bound p hK j.val j.isLt
+  have hρfit : p.ρ < 2 ^ (Li + Lk) := by
+    have hw : p.ρ ≤ p.wy := by dsimp only [Par.wy]; omega
+    omega
+  have hpos : ∀ c : Fin p.n, c.val * p.K + p.ρ < p.wy := by
+    intro c
+    have hb := repairKeyCoordinates_bound p hK c.val c.isLt
     dsimp only [posS] at hb
-    simp only [Nat.zero_add]
-    constructor <;> omega
-  obtain ⟨v', steps, hu, ht, he⟩ := affineProfileTerminal_exec body rg hrg saved hsep
-    Li Lk Ls 0 p.K p.ρ p.wy (repairRotationSources p X hG hK active s .Z j) hk hN hpositive
-    (by simpa only [Nat.zero_add, repairRotationSlots] using hi) hpos hW v S
-    hsrc harchive hindex hstride hoffset hlast hone hsaved hblank
-  have hposition : (fun j : ℕ => (0 + j) * p.K + p.ρ) = posS p := by
-    funext j
-    simp only [Nat.zero_add, posS]
+    omega
+  obtain ⟨v', steps, hu, ht, he⟩ := affineProfileClosed_exec body rg hrg saved hsep
+    Li Lk Ls p.K p.ρ p.wy (repairRotationSources p X hG hK active s .Z j) hk hN hρfit hwy
+    (by simpa only [repairRotationSlots] using hi) hpos hW v S hsrc harchive hindex hstride hoffset hlast hone hsaved hblank
+  have hposition : (fun c : ℕ => c * p.K + p.ρ) = posS p := by
+    funext c
     exact Nat.add_comm _ _
   rw [hposition] at he
   exact ⟨v', steps, hu, ht, he⟩
