@@ -246,9 +246,20 @@ default build does not check them.
      `M (38mw + 19m + 6rw + 23) + 18mw + 37m + 4w + 6rw + 9l + 35`.
      Empty batches and zero-length selected blocks are included. `ChirpBatchCheck`
      audits all shared declarations in its import closure.
+     `ShortConv.chirpBatchProduct_exec` (in `ChirpBatchProduct`) now composes raw-batch
+     S1 multiplication with generated-counter extraction and full-product cleanup.
+     It calls the shared ring product once, returns `M m` selected coefficients in
+     forward block/output order, and changes only the destination. Its public bound is
+     `M (rpRecBound + 52rw + 38mw + 19m + 73) + rpFixCost + 52rw + 18mw + 37m +
+     12w + 27l + ldrHeaderCost + 2|header| + 100` (`chirpBatchProductCost_le`).
+     `ShortConv.correlationBatchTape_chirpRingCorr` (in `ChirpBatchProductMath`) identifies every
+     decoded word with its record's analytic correlation, under the explicit operand
+     representation interface. `correlationBatchTape_chirpCorr_err` retains the
+     `8·2^l/2^p` bound independently of batch size. `ChirpBatchProductCheck` audits
+     the full imported shared namespace.
      S2/S3 still need table production/quantization, overlapping-window gathering,
-     binary dimension conversion, composition of shared batch multiplication/extraction,
-     and output arithmetic.
+     binary dimension conversion and output arithmetic, followed by the complete
+     forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
      (`norm_chirpRec_le`); coefficient `4m - 1 - b` of their convolution is the correlation
