@@ -1302,7 +1302,11 @@ gathering/table generation remains open. `chirpS1DimensionSetup_exec` separately
 all seven S1 unary dimensions from a dedicated binary `q,t,m,w,l` bank, computes the
 precision/operand lengths/block count and restores all working words. Exact emitted
 values and conversion costs are proved; composing this installer and dimension cleanup
-around the shared caller remains open.
+around the shared caller is now proved by `chirpDimensionBatch_exec`: starting with
+blank unary dimension tapes and prepared operands, it installs all seven dimensions,
+executes one shared call, extracts correlations and erases the dimensions. Only the
+correlation destination changes; composition with X production and raw gathering/table
+generation remains open.
 Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and

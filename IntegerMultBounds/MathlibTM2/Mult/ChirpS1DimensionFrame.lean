@@ -30,6 +30,22 @@ theorem chirpS1Dimensions_at {T A : ℕ} (dst : Fin 7 → Fin T) (hdst : Functio
   simpa only [hval] using unaryCopiesR_at (chirpS1DimensionValues q t m w l) R
     (chirpS1Assignments dst) hnd (chirpS1DimensionSlot i, dst i) hmem
 
+/-- Registers outside the seven installed dimensions are retained. -/
+theorem chirpS1Dimensions_off {T A : ℕ} (dst : Fin 7 → Fin T) (q t m w l : ℕ)
+    (R : Regs T A) (k : Fin T) (hk : ∀ i, k ≠ dst i) :
+    unaryCopiesR (chirpS1DimensionValues q t m w l) R (chirpS1Assignments dst) k = R k := by
+  apply unaryCopiesR_off
+  intro p hp
+  simp only [chirpS1Assignments, List.mem_cons, List.not_mem_nil, or_false] at hp
+  rcases hp with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · exact (hk 0).symm
+  · exact (hk 1).symm
+  · exact (hk 2).symm
+  · exact (hk 3).symm
+  · exact (hk 4).symm
+  · exact (hk 5).symm
+  · exact (hk 6).symm
+
 /-- Conversion pays once per emitted tick and once per each of the seven dimensions. -/
 theorem chirpS1Dimensions_cost {T : ℕ} (dst : Fin 7 → Fin T) (W q t m w l : ℕ) :
     unaryCopiesCost W (chirpS1DimensionValues q t m w l) (chirpS1Assignments dst) =

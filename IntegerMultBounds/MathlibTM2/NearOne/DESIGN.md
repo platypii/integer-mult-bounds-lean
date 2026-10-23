@@ -492,3 +492,12 @@ working words. `chirpS1Dimensions_at` identifies each installed dimension, while
 `18*tblC W e + (4W+2)*sum(dimensions) + 77W+43`. Composing this installer and
 its unary cleanup around `chirpInputBatch` remains open. The dedicated binary inputs
 and multiplier templates still need initialization from the original caller inputs.
+
+`chirpDimensionBatch_exec` now composes unary-dimension installation, shared S1 execution,
+extraction and dimension erasure. Its inputs contain prepared X/K operand streams, the
+retained binary `q,t,m,w,l` bank and blank dimension tapes. Only the correlation destination
+changes. `ChirpBatchWorkspace.install` derives the caller's readiness from scratch
+emptiness and exact installed counts, with no supplied unary-dimension assumptions.
+`chirpDimensionBatchCost` charges setup, one shared batch call and all seven erasures.
+Joining this path with X production and raw gathering/table generation remains open;
+original-input bank/template installation and output arithmetic/cropping also remain open.
