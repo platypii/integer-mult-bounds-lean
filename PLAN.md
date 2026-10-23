@@ -1291,6 +1291,14 @@ and emits the three unary geometry counters from the binary dimension bank and r
 that bank. `chirpMakeXSetup_exec` now composes this setup, weighting, reversal and
 all temporary-stream/counter cleanup from empty geometry tapes, retaining only the
 final X destination change and charging every stage.
+`chirpGeneratedBatch_correct` now executes the shared S1 correlation program for these
+operands and the emitted K-table stream, discharging disk/length hypotheses and attaching
+the correlation error bound to its actual returned destination tape. It still starts from
+prepared operand tapes and unary S1 dimensions. `chirpInputBatch_exec` now composes
+X production (including generated geometry), the single shared S1 call, extraction and
+X-stream cleanup, with only the correlation destination changed and all costs charged.
+It starts from gathered windows, generated G/K streams and unary S1 dimensions; composing
+gathering/table generation and generating the remaining S1 dimensions remain open.
 Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and

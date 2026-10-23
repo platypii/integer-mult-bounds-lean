@@ -462,3 +462,23 @@ The retained inputs still include the binary dimension bank, unary multiplier te
 gathered window stream and generated G-table stream. Composing gathering, generation,
 multiplication and the shared batch call remain required, along with output arithmetic,
 cropping and the final cost contract.
+
+`chirpGeneratedBatch_exec` specializes the actual shared S1 program to the produced
+chirp X operands and the emitted shifted K-table stream. Operand lengths and integer
+disk conditions are derived from the original input bound and generated table estimates.
+`chirpGeneratedBatch_correct` attaches the decoded correlation error
+`8*2^l/2^(q+1)` to the actual returned destination tape, with a full stack equation,
+user-state restoration and the shared program's cost. This is a prepared-operand
+execution contract: composing the operand/table producers and generating its unary
+S1 dimension tapes remain open, as do output arithmetic, cropping and the final
+forward precision/cost theorem.
+
+`chirpInputBatch_exec` now joins `chirpMakeXSetup` to the actual shared S1 program
+and erases the temporary X operand stream afterward. Only the correlation destination
+changes. `ChirpBatchState` contains tape-data preconditions, with a structural frame
+lemma under operand writes; `ChirpBatchLayout` contains only static register facts.
+Neither assumes an execution oracle. `chirpInputBatchCost` charges input production,
+the one shared batch call/extraction, and X erasure. The contract starts with gathered
+windows, generated G/K table streams and unary S1 dimensions. Raw gathering and table
+generation still need composition into this caller, and those unary dimensions still
+need installation from the retained binary bank.
