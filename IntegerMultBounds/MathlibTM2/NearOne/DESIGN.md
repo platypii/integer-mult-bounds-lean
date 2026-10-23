@@ -520,3 +520,21 @@ window erasure. Initial generated G/K table streams, binary banks and multiplier
 templates remain supplied data. Table generation must still be composed, followed by
 original-input bank/template initialization, output arithmetic/cropping and the full
 forward correctness, precision and cost comparison.
+
+`chirpTablePair_exec` now executes the G and K schedules consecutively on the same
+restored table bank, with exact two-destination output and the sum of both schedule
+costs. `ChirpTablePairFrame` proves the input/kernel outputs, spectator frame,
+multiplier register-file frame and exact consumer stream shapes. This is the table
+preparation stage for `chirpRawCorrelation`; composing it and erasing temporary table
+streams still remain open. It retains supplied binary dimension/precision inputs,
+not coefficient or pi oracles.
+
+`chirpTableCorrelation_exec` now joins the paired table generator to raw-line gathering,
+operand production, generated S1 dimensions, one shared correlation call/extraction,
+and table erasure. Only the correlation destination changes. Its complete cost is
+`chirpTableCorrelationCost`, including both table schedules and both table erasures.
+No coefficient, pi, window, X operand or S1 unary dimension tapes are supplied.
+The remaining prepared data are retained binary banks (including table block count)
+and multiplier templates. Initial installation of those banks/templates and subsequent
+output arithmetic/cropping still need execution, followed by the full forward
+correctness, precision and cost comparison and reusable setup across lines.

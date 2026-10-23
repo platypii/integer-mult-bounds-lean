@@ -1310,7 +1310,13 @@ X production and temporary-X cleanup, so neither prepared X nor unary S1 dimensi
 are caller inputs. `chirpRawCorrelation_exec` now composes raw-line gathering,
 operand production, generated S1 dimensions, one shared product/extraction and all
 temporary cleanup, changing only the correlation destination. Generated G/K streams
-and binary/template banks are still retained inputs; table-generation composition remains open.
+and binary/template banks are still retained inputs. `chirpTablePair_exec` now generates
+both G/K streams using one restored table bank, with exact two-destination semantics
+and both schedule costs. The multiplier-register frame and consumer stream identities
+are proved. `chirpTableCorrelation_exec` now composes paired table generation with
+the raw-line caller and erases both temporary tables. Only the correlation destination
+changes, with all stages charged. Its remaining prepared data are binary input banks
+and multiplier templates; original-input initialization and output processing remain open.
 Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and
