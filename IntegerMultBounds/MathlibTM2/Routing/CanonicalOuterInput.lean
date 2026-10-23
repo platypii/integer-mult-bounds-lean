@@ -168,5 +168,137 @@ theorem canonicalClassifierInputStack_left (S : Stacks N A) (p : Par) (LK Ln Lo 
   · change Fin.addCases S.L (fun _ : Fin 16 => []) (Fin.natAdd N i) = []
     rw [Fin.addCases_right]
 
+
+/-- Canonical scalar operands leave room for the framing delimiter. -/
+theorem canonicalScalarWord_small (L v : ℕ) :
+    ∀ x ∈ (binSyms L v : List (Fin (A + 4))), x.val < 8 := by
+  intro x hx
+  obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hx
+  simp only [bitSymbol]
+  split <;> omega
+
+theorem canonicalHeaderInputBank_small (core : Fin N → List (Fin (A + 4)))
+    (Lrow Lwidth R wc : ℕ) (hcore : ∀ j, ∀ x ∈ core j, x.val < 8) :
+    ∀ j, ∀ x ∈ canonicalHeaderInputBank core Lrow Lwidth R wc j, x.val < 8 := by
+  intro j
+  refine Fin.addCases ?_ ?_ j
+  · intro i
+    simpa only [canonicalHeaderInputBank, Fin.addCases_left] using hcore i
+  · intro i
+    simp only [canonicalHeaderInputBank, Fin.addCases_right]
+    generalize (Fintype.equivFin HeaderWorkRole).symm i = r
+    cases r <;> simp only [canonicalHeaderOperands]
+    all_goals first | (split <;> exact canonicalScalarWord_small _ _) | simp
+
+theorem canonicalWidthInputBank_small (core : Fin N → List (Fin (A + 4)))
+    (Lr Lm rb wy : ℕ) (hcore : ∀ j, ∀ x ∈ core j, x.val < 8) :
+    ∀ j, ∀ x ∈ canonicalWidthInputBank core Lr Lm rb wy j, x.val < 8 := by
+  intro j
+  refine Fin.addCases ?_ ?_ j
+  · intro i
+    simpa only [canonicalWidthInputBank, Fin.addCases_left] using hcore i
+  · intro i
+    simp only [canonicalWidthInputBank, Fin.addCases_right]
+    change ∀ x ∈ (if i = 0 then binSyms Lr rb else if i = 1 then binSyms Lm wy else []), x.val < 8
+    split
+    · exact canonicalScalarWord_small _ _
+    · split
+      · exact canonicalScalarWord_small _ _
+      · simp
+
+
+theorem canonicalClassifierInputBank_small (core : Fin N → List (Fin (A + 4)))
+    (p : Par) (LK Ln Lo Lt : ℕ) (hcore : ∀ j, ∀ x ∈ core j, x.val < 8) :
+    ∀ j, ∀ x ∈ canonicalClassifierInputBank core p LK Ln Lo Lt j, x.val < 8 := by
+  intro j
+  refine Fin.addCases ?_ ?_ j
+  · intro i
+    simpa only [canonicalClassifierInputBank, Fin.addCases_left] using hcore i
+  · intro i
+    simp only [canonicalClassifierInputBank, Fin.addCases_right, canonicalClassifierOperands]
+    repeat' first | (split) | exact canonicalScalarWord_small _ _ | simp
+
+
+theorem canonicalDescriptorOperands_small (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
+    (active : Fin p.n → Bool) (source : Fin p.n → SlotSource p X) (w : LiveDescriptorWidths)
+    (r : LiveDescriptorRole 11) :
+    ∀ x ∈ (canonicalDescriptorOperands p X hG hK active source w r : List (Fin (A + 4))), x.val < 8 := by
+  cases r <;> simp only [canonicalDescriptorOperands, liveDescriptorData]
+  all_goals first
+    | exact canonicalScalarWord_small _ _
+    | simp
+    | skip
+  case profile r =>
+    cases r
+    all_goals first | exact canonicalScalarWord_small _ _ | simp | skip
+    case coordinate r =>
+      cases r
+      all_goals first | exact canonicalScalarWord_small _ _ | simp | skip
+      case arithmetic r =>
+        cases r
+        all_goals first | exact canonicalScalarWord_small _ _ | simp
+  case coordinate r =>
+    cases r
+    all_goals first | exact canonicalScalarWord_small _ _ | simp
+
+theorem canonicalLiveInputBank_small (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
+    (active : Fin p.n → Bool) (source : Fin p.n → SlotSource p X) (w : LiveDescriptorWidths)
+    (core : Fin repairT → List (Fin (A + 4))) (hcore : ∀ j, ∀ x ∈ core j, x.val < 8) :
+    ∀ j, ∀ x ∈ canonicalLiveInputBank p X hG hK active source w core j, x.val < 8 := by
+  intro j
+  refine Fin.addCases ?_ ?_ j
+  · intro i
+    simp only [canonicalLiveInputBank, Fin.addCases_left]
+    refine Fin.addCases ?_ ?_ i
+    · intro q
+      simpa only [liveDescriptorBank, Fin.addCases_left] using hcore q
+    · intro q
+      simp only [liveDescriptorBank, Fin.addCases_right]
+      exact canonicalDescriptorOperands_small p X hG hK active source w _
+  · intro i
+    simp only [canonicalLiveInputBank, Fin.addCases_right]
+    split
+    · exact canonicalScalarWord_small _ _
+    · simp
+
+
+theorem canonicalRepairPayload_small (p : Par) (X rb wb wm wp wk R B : ℕ)
+    (key : RepairSetupKey) :
+    ∀ x ∈ (canonicalRepairPayload p X rb wb wm wp wk R B key : List (Fin (A + 4))), x.val < 8 := by
+  cases key with
+  | inl key =>
+    cases key <;> simp only [canonicalRepairPayload]
+    all_goals first | exact canonicalScalarWord_small _ _ | simp
+  | inr key =>
+    cases key <;> simp only [canonicalRepairPayload]
+    all_goals first | exact canonicalScalarWord_small _ _ | simp
+
+theorem canonicalRepairInput_small (p : Par) (X rb wb wm wp wk R B : ℕ)
+    (records : List (Fin (A + 4))) (hrecords : ∀ x ∈ records, x.val < 8) :
+    ∀ j, ∀ x ∈ canonicalRepairInput p X rb wb wm wp wk R B records j, x.val < 8 := by
+  intro j
+  by_cases hs : ∃ key, repairSetupSource key = j
+  · obtain ⟨key, rfl⟩ := hs
+    rw [canonicalRepairInput_source]
+    exact canonicalRepairPayload_small p X rb wb wm wp wk R B key
+  · unfold canonicalRepairInput
+    rw [Function.extend_apply' _ _ _ hs]
+    split
+    · exact hrecords
+    · simp
+
+theorem canonicalProfileCoreBank_small (p : Par) (X rb wb wm wp wk R B : ℕ)
+    (records coordinates : List (Fin (A + 4)))
+    (hrecords : ∀ x ∈ records, x.val < 8) (hcoordinates : ∀ x ∈ coordinates, x.val < 8) :
+    ∀ j, ∀ x ∈ canonicalProfileCoreBank p X rb wb wm wp wk R B records coordinates j, x.val < 8 := by
+  intro j
+  unfold canonicalProfileCoreBank
+  by_cases hj : j = canonicalProfileKey
+  · subst j
+    rw [Function.update_self]
+    exact hcoordinates
+  · rw [Function.update_of_ne hj]
+    exact canonicalRepairInput_small p X rb wb wm wp wk R B records hrecords j
+
 end
 end IntegerMultBounds.MathlibTM2.Routing

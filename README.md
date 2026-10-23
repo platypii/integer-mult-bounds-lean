@@ -62,9 +62,13 @@ the generated local table afterward. Such calls now repeat on one framed bank
 for a fixed matching, reservoir class and direction, with all setup, cleanup
 and final input rewind charged. Canonical raw and live input banks are constructed from dimensions and
 records. Complete generated/placed inputs now follow from arithmetic bounds
-and records, with one common generated program across configurations. Uniform
-router bounds and phase instantiation, remaining scalar metadata, initial
-permutation decomposition/table generation, complete router schedule instantiation and
+and records, with one common generated program across configurations. Explicit
+logarithmic router parameters now discharge all stage arithmetic and metadata
+symbol bounds. A concrete bulk scheduler executes any residue list for a fixed
+matching class and direction, restores its surrounding bank, and charges framing,
+repair, cleanup and input rewind. It assumes the initial framed metadata; executed
+metadata generation, physical bulk-effect composition, terminal routing, initial
+permutation decomposition/table generation, the complete router schedule and
 uniform amortization/fallback remain open.
 The complete router and multiplication integration remain in R3–R4; this work
 does not yet change the multiplication saving. See [the active plan](PLAN.md) and

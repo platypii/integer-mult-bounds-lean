@@ -40,5 +40,35 @@ theorem canonicalPlacementInputStack_left (src : Fin N) (S : Stacks N A) (spec :
     exact hL i
   · exact Function.extend_apply' _ _ _ hcore
 
+
+/-- Placement adds only binary operands, so a framing delimiter above seven
+cannot occur in a canonical input bank. -/
+theorem canonicalPlacementInputStack_small (src : Fin N) (S : Stacks N A)
+    (spec : Fin 3 → BlockExchangeSpec n) (Lc L B : ℕ)
+    (rowBits : List Bool) (stream : List (Fin (A + 4)))
+    (hcore : ∀ j, ∀ x ∈ S.R j, x.val < 8)
+    (hstream : ∀ x ∈ stream, x.val < 8) :
+    ∀ j, ∀ x ∈ (canonicalPlacementInputStack (t₀ := t₀) src S spec Lc L B rowBits stream).R j,
+      x.val < 8 := by
+  intro j
+  by_cases hc : ∃ i, sharedCoreEmbed (N := N) (t₀ := t₀) i = j
+  · obtain ⟨i, rfl⟩ := hc
+    simpa only [canonicalPlacementInputStack, sharedScheduleInputBank_core] using hcore i
+  · change ∀ x ∈ Function.extend sharedCoreEmbed S.R _ j, x.val < 8
+    rw [Function.extend_apply' _ _ _ hc]
+    by_cases hs : ∃ r, sharedScheduleSlot (t₀ := t₀) src r = j
+    · obtain ⟨r, rfl⟩ := hs
+      rw [binaryScheduleInputBank_at _ (sharedScheduleSlot_injective src)]
+      cases r <;> simp only [binaryScheduleInputWords]
+      all_goals first
+        | exact canonicalScalarWord_small _ _
+        | exact hstream
+        | (intro x hx; obtain ⟨b, _, rfl⟩ := List.mem_map.mp hx
+           simp only [bitSymbol]; split <;> omega)
+        | simp
+    · unfold binaryScheduleInputBank
+      rw [Function.extend_apply' _ _ _ hs]
+      simp
+
 end
 end IntegerMultBounds.MathlibTM2.Routing

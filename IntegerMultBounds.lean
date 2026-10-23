@@ -1808,3 +1808,9 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalLiveInput
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalOuterInput
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPlacementInput
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalGeneratedInput
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalStageWidths
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalStageArithmetic
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterArithmetic
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterInput
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterStage
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterBulk

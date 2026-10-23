@@ -1805,14 +1805,22 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    from arithmetic bounds, allowed sources and records, with no caller-supplied
    bank/readiness object. Every procedure type is `Empty`; code-table premises
    are vacuous. `canonicalGeneratedInput_program` proves the generated core
-   program is identical across all these configurations. The remaining gate
-   is to construct its `CanonicalStageArithmetic` bounds uniformly for the
-   chosen router parameters and instantiate the actual bulk/terminal phases.
-   Concrete bulk/terminal/shear schedule instantiation, initial
-   permutation decomposition/table generation and remaining scalar metadata
-   remain open, together with uniform amortization and short-record fallback.
-   Composed middle-table production and concrete schedule instantiation
-   remain open. R3 and kappa are unchanged.
+   program is identical across all these configurations. `CanonicalStageWidths`
+   and `CanonicalStageArithmetic` now derive all scalar and descriptor widths.
+   `CanonicalRouterArithmetic` supplies explicit gap `6 + 4*clog 2 (n+2)` and
+   stride `64*gap`, discharging the density bounds. `CanonicalRouterInput` and
+   `CanonicalRouterStage` construct actual residue inputs from the original
+   matching and prove stage data, common code and every metadata symbol bound.
+   `CanonicalRouterBulk.canonicalRouterBulk_exec` executes any residue list for
+   a fixed class and direction, prices framing, repairs and cleanup, and restores
+   every tape except the record stream. Its effect is the composition of actual
+   generated rank permutations. It assumes the initial framed metadata input;
+   it does not execute its generation or prove a uniform amortized bound.
+   Identification of the composed bulk effect with the physical shear, executed
+   terminal routing, complete shear/class/involution composition, original
+   permutation decomposition/table generation, remaining scalar metadata setup,
+   uniform amortization and short-record fallback remain open. R3 and kappa
+   are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and

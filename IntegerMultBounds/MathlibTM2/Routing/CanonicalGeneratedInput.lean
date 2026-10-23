@@ -260,5 +260,50 @@ theorem canonicalGeneratedInput_program {Q K : ℕ} (p : Par) (a : CanonicalStag
       input.hhd input.hQplacement input.hT input.ι = canonicalGeneratedProgram hQ hA := by
   rfl
 
+
+theorem sourceCoordinateInputWords_small {A : ℕ} (Li Lk : ℕ) (entries : List (ℕ × Bool)) :
+    ∀ x ∈ (sourceCoordinateInputWords Li Lk entries : List (Fin (A + 4))), x.val < 8 := by
+  induction entries with
+  | nil => simp [sourceCoordinateInputWords]
+  | cons entry entries ih =>
+    intro x hx
+    simp only [sourceCoordinateInputWords, sourceCoordinateInputRecord, List.mem_append, List.mem_cons,
+      List.not_mem_nil, or_false] at hx
+    rcases hx with (hx | (rfl | (hx | rfl))) | hx
+    · exact canonicalScalarWord_small _ _ x hx
+    · change 3 < 8
+      omega
+    · exact canonicalScalarWord_small _ _ x hx
+    · change 3 < 8
+      omega
+    · exact ih x hx
+
+theorem canonicalGeneratedInput_small {Q K : ℕ} (p : Par) (a : CanonicalStageArithmetic p)
+    (targets : Finset (Fin p.wy)) (source : Fin p.wy → Fin p.wy)
+    (hsource : ∀ q ∈ targets, source q ∉ targets)
+    (hQ : swapStates selectiveSwapHd selectiveSwapPay selectiveSwapHd_inj ≤ Q) (hA : 4 ≤ prime + K)
+    (H : ℕ) (hplacementFit : 9 * H ≤ fieldsLen (selectiveLen p 0)) (hw : p.wc ≤ H) (reservoir : Fin 3)
+    (l : List (List (Fin (prime + K + 4)))) (hl : l.length = a.R * 2 ^ fieldsLen (selectiveLen p 0))
+    (hlen : ∀ r ∈ l, r.length = a.B ∧ ∀ x ∈ r, x.val < 8) :
+    ∀ j, ∀ x ∈ (canonicalGeneratedInput p a targets source hsource hQ hA H hplacementFit hw reservoir l hl hlen).M.R j,
+      x.val < 8 := by
+  have hrecords : ∀ x ∈ l.flatten, x.val < 8 := by
+    intro x hx
+    obtain ⟨row, hr, hx⟩ := List.mem_flatten.mp hx
+    exact (hlen row hr).2 x hx
+  dsimp only [canonicalGeneratedInput]
+  apply canonicalPlacementInputStack_small (N := inactiveClassifierT)
+  · dsimp only [canonicalClassifierInputStack]
+    apply canonicalClassifierInputBank_small (N := inactiveProfileConfigurationT)
+    dsimp only [canonicalWidthInputStack]
+    apply canonicalWidthInputBank_small (N := inactiveProfileHeaderT)
+    dsimp only [canonicalHeaderInputStack]
+    apply canonicalHeaderInputBank_small (N := repairInactiveProfileT)
+    apply canonicalLiveInputBank_small
+    apply canonicalProfileCoreBank_small
+    · exact hrecords
+    · exact sourceCoordinateInputWords_small _ _ _
+  · exact hrecords
+
 end
 end IntegerMultBounds.MathlibTM2.Routing
