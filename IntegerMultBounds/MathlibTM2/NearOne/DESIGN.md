@@ -236,8 +236,19 @@ default build does not check them.
      the analytic `8·2^l/2^p` correlation error to the returned tape. Those representation
      hypotheses remain obligations of operand production. `ChirpProductCheck` audits
      the full shared namespace, including setup, execution and the analytic bridge.
+     `ShortConv.correlationBatch_rpStream_exec` (in `ChirpBatch`) now selects all blocks
+     from S1's shared `rpStream` result, preserving block order and word bit order. It
+     restores the full source (including spectator suffixes), counters and scratch,
+     changing only the destination, at cost `M (38mw + 19m + 6rw + 23) + 8`.
+     `correlationStream_get` identifies output position `n m + b` as coefficient
+     `4m - 1 - b` of record `n`. `correlationBatchFromUnary_exec` (in `ChirpBatchUnary`)
+     generates both shared counters and clears all three generated words, at total cost
+     `M (38mw + 19m + 6rw + 23) + 18mw + 37m + 4w + 6rw + 9l + 35`.
+     Empty batches and zero-length selected blocks are included. `ChirpBatchCheck`
+     audits all shared declarations in its import closure.
      S2/S3 still need table production/quantization, overlapping-window gathering,
-     binary dimension conversion, shared batch extraction, and output arithmetic.
+     binary dimension conversion, composition of shared batch multiplication/extraction,
+     and output arithmetic.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
      (`norm_chirpRec_le`); coefficient `4m - 1 - b` of their convolution is the correlation
