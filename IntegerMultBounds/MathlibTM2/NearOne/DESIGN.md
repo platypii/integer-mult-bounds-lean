@@ -213,8 +213,18 @@ default build does not check them.
      is still caller work.
      `ShortConvSlice.copySlice_coeffs_exec` copies a coefficient interval with the
      complete source and scratch restored; `slice_coeff_err` retains the rounding bound.
-     S2/S3 still need table production, window schedules, chirp-specific interval
-     selection/reversal and composition with output arithmetic.
+     `ShortConv.reverseWords_coeffs_exec` (in `ChirpReverse`) now copies a coefficient prefix in reverse
+     coefficient order while preserving the low-bit-first bits of each word. The source,
+     width/count words, spectator suffix and workspace are restored; its cost is
+     `len (16w + 19) + 6`. `ShortConv.correlationCoeffs_exec` (in `ChirpExtract`) skips the first `3m`
+     coefficients and returns the next `m` in reverse order, at cost `34mw + 19m + 12`,
+     restoring every register except the destination. Output offset `b` therefore reads
+     coefficient `4m - 1 - b`; `correlationTape_coeff` proves exact signed decoding and
+     `correlationTape_err` gives the rescaled `8r/2^p` error directly on returned symbols.
+     The counters are explicit inputs here; this extractor is not yet composed with the
+     shared batch program or its counter setup. `ChirpExtractCheck` audits the bridge.
+     S2/S3 still need table production/quantization, overlapping-window schedules,
+     dimension/counter setup and composition with the ring call and output arithmetic.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
      (`norm_chirpRec_le`); coefficient `4m - 1 - b` of their convolution is the correlation
