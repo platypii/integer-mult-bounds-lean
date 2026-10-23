@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Routing.ConfigurationWord
+public import IntegerMultBounds.MathlibTM2.Routing.DelimitedConfigurationLoad
 
 /-!
 # Load one framed metadata word into a reusable register
@@ -45,31 +45,7 @@ theorem configurationLoad_exec (body : P → Pr P T Q A U) (src dst tmp saved : 
     ∃ v', v'.user = v.user ∧
       Exec body (configurationLoad src dst tmp saved p header) (mk v S) (4 * word.length + 6)
         (mk v' { S with R := configurationLoaded S.R src dst tmp saved word rest header }) := by
-  let S₁ : Stacks T A := { S with R := configurationScanned S.R src tmp saved word (separator :: rest) }
-  obtain ⟨v₁, hu₁, he₁⟩ := configurationScan_exec body src tmp saved hst hss hts p word
-    (separator :: rest) hword (by simp [hsep]) v S hsrc
-  let S₂ : Stacks T A := { S₁ with R := Function.update (Function.update S₁.R src rest) saved (separator :: S₁.R saved) }
-  have hrun : (configurationSeparator src saved : Act T Q A U).run (mk v₁ S₁) = mk v₁ S₂ := by
-    simp [configurationSeparator, Action.run, update_rt, S₂, S₁, configurationScanned,
-      Function.update_of_ne hss, Function.update_of_ne hst, Function.update_of_ne hss.symm]
-  have ht : S₂.R tmp = word.reverse := by
-    simp [S₂, S₁, configurationScanned, htmp0, Function.update_of_ne hts,
-      Function.update_of_ne hst.symm]
-  obtain ⟨v₂, hu₂, he₂⟩ := moveR_exec body tmp dst htd id v₁ S₂
-  let S₃ : Stacks T A := { S₂ with R := movedR S₂.R tmp dst id (S₂.R tmp) }
-  have hfinish : (MetadataJob.copyFinish dst header : Act T Q A U).run (mk v₂ S₃) =
-      mk v₂ { S₃ with R := Function.update S₃.R dst ((if header then [separator] else []) ++ S₃.R dst) } := by
-    cases header <;> simp [MetadataJob.copyFinish, Action.run, update_rt]
-  have hfinal : Function.update S₃.R dst ((if header then [separator] else []) ++ S₃.R dst) =
-      configurationLoaded S.R src dst tmp saved word rest header := by
-    funext j
-    by_cases h₁ : j = src <;> by_cases h₂ : j = dst <;>
-      by_cases h₃ : j = tmp <;> by_cases h₄ : j = saved <;>
-      simp_all [S₃, S₂, S₁, movedR, configurationScanned, configurationLoaded]
-  refine ⟨v₂, hu₂.trans hu₁, ?_⟩
-  have he := Exec.seq he₁ (Exec.seq (hrun ▸ Exec.act (body := body) (configurationSeparator src saved) (mk v₁ S₁))
-    (Exec.seq he₂ (hfinish ▸ Exec.act (body := body) (MetadataJob.copyFinish dst header) (mk v₂ S₃))))
-  refine Exec.cast he (by rw [ht, List.length_reverse]; omega) ?_
-  congr 2
+  exact delimitedConfigurationLoad_exec body src dst tmp saved hst hss hts hsd htd had
+    separator p hsep header word rest hword v S hsrc htmp0 hdst0
 
 end IntegerMultBounds.MathlibTM2.Routing

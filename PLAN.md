@@ -1484,6 +1484,25 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    low/high borrowed fields and spectators, a finite bound and an involutive
    `routerDirectionalPerm`. This closes the directional destination-map
    composition, not the executed uniform tape schedule or its cost bound.
+   Uniform call loading has begun. `DelimitedConfigurationLoad` generalizes the
+   existing loader to a caller-chosen frame delimiter, allowing ordinary binary
+   separators inside metadata words; the old loader instantiates this theorem.
+   `DelimitedBankLoad` executes a fixed destination bank from successive frames,
+   sharing one scanner and archive with exact linear costs. Its code depends
+   only on the fixed destination list. `DelimitedBankTrace` proves exact frame
+   lengths, loading cost, complete rewind archive and spectator preservation.
+   `DelimitedBankReady` identifies every loaded word, the advanced input cursor
+   and restored scratch; clearing the metadata bank restores every other register.
+   `DelimitedBankCall` executes load/call/cleanup around a supplied stream-only
+   call theorem, with overhead at most six times the frame length plus twice
+   the destination count plus two.
+   `DelimitedCallLoop` and `DelimitedScheduleExec` execute a fixed call loop,
+   sum all stage costs and restore the complete metadata input from its archive.
+   `DelimitedBankSchedule` instantiates this with actual bank loading, stream-only
+   calls and cleanup on one fixed destination list. The final state changes only
+   the routed stream, independently of the number of calls. Concrete repair
+   readiness/invariant instantiation and matching-derived metadata production
+   remain open; the generic loop does not yet close R3 or its total-cost gates.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
