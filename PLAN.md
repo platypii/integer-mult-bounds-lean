@@ -1922,7 +1922,27 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    nine steps per framed symbol plus two. The concrete
    `canonicalDirectionalFrameWriteClean_exec` instantiates that pipeline for
    the actual directional bank. Assembling successive generated frames and
-   composing all upstream word producers remain open. Canonical terminal scalar
+   composing all upstream word producers remain open.
+   `framedCoreWriteClean_ready` now proves that the cleared bank, unchanged
+   records and blank loader scratch establish the actual router readiness
+   invariant. `CanonicalDirectionalAssemble` executes serialization, source-bank
+   cleanup, frame loading, terminal routing and bulk routing in one program,
+   charges the extra serialization/cleanup cost and retains readiness afterward.
+   It requires a live canonical metadata bank rather than an already serialized
+   frame; producing that bank from compact operands remains open.
+   `CanonicalInputStream` now proves stream-update transport through the repair,
+   live-profile, header, width, classifier and placement extensions. Its complete
+   `canonicalGeneratedInput_bank_updateStream` theorem changes only the physical
+   stream register when the record payload or order changes; scalar/profile
+   metadata are unchanged. This provides the bank-level independence needed to
+   lift frame production and its price off the current payload; the complete
+   canonical directional/permutation frame lift and upstream generators remain
+   open. `CanonicalRouterMetadata` now transports this law through the actual
+   matching-table producer/repair bank, proves every residue metadata frame
+   independent of live records, and lifts it to the whole concatenated bulk
+   input for any residue schedule. Scalar and matching-table words are therefore
+   not copied from the record payload; outer directional/permutation frame
+   independence and executed upstream generation remain open. Canonical terminal scalar
    widths and row-counter words are now selected from dimensions; executing
    their production remains open. Original
    permutation decomposition/table generation, remaining scalar metadata setup,

@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Routing.ConfigurationWrite
 public import IntegerMultBounds.MathlibTM2.Routing.FramedCoreBank
+public import IntegerMultBounds.MathlibTM2.Routing.FramedCoreReady
 
 /-! Serialize exactly the nonstream words consumed by the existing framed core
 loader. The source bank and scratch restore, and arbitrary output suffixes remain. -/
@@ -82,5 +83,34 @@ theorem framedCoreWriteClean_exec (body : P → Pr P T Q A U)
   refine ⟨v₂, configurationWriteCost S.R fields + (2 * frame.length + 1), hu₂.trans hu₁, ?_, Exec.seq he₁ he₂⟩
   dsimp only [fields, frame] at hc₁ ⊢
   omega
+
+/-- The serialized-and-cleared prefix bank satisfies the next router's actual
+readiness invariant, while its live record stream is untouched. -/
+theorem framedCoreWriteClean_ready {M B : ℕ} (str : Fin N) (S : Stacks (N + 3) A)
+    (frame : List (Fin (A + 4)))
+    (hleft : ∀ j, S.L (framedCoreEmbed N j) = []) (htmp : S.R (framedCoreAux N 1) = [])
+    (l : List (List (Fin (A + 4)))) (hl : l.length = M)
+    (hshape : ∀ row ∈ l, row.length = B ∧ ∀ x ∈ row, x.val < 8)
+    (hstream : S.R (framedCoreEmbed N str) = l.flatten) :
+    FramedCoreReady str M B
+      { S with R := Function.update (metadataCleared S.R (framedCoreDestinations (framedCoreEmbed N) str)) (framedCoreAux N 0) (frame ++ S.R (framedCoreAux N 0)) } := by
+  constructor
+  · exact hleft
+  · intro j hj
+    dsimp only
+    rw [Function.update_of_ne (framedCoreEmbed_aux N j 0)]
+    apply metadataCleared_at
+    exact List.mem_map.mpr ⟨j, (mem_framedCoreRegisters str j).mpr hj, rfl⟩
+  · dsimp only
+    rw [Function.update_of_ne ((framedCoreAux_injective N).ne (by decide : (1 : Fin 3) ≠ 0)), metadataCleared_keep]
+    · exact htmp
+    · intro hm
+      obtain ⟨j, _, heq⟩ := List.mem_map.mp hm
+      exact framedCoreEmbed_aux N j 1 heq
+  · refine ⟨l, hl, hshape, ?_⟩
+    dsimp only
+    rw [Function.update_of_ne (framedCoreEmbed_aux N str 0),
+      metadataCleared_keep _ _ _ (framedCoreDestinations_stream _ (framedCoreEmbed_injective N) str)]
+    exact hstream
 
 end IntegerMultBounds.MathlibTM2.Routing

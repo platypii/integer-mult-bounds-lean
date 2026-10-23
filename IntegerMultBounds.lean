@@ -1828,6 +1828,9 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterBank
 public import IntegerMultBounds.MathlibTM2.Routing.CommonBankTerminal
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDirectionalBank
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDirectionalExec
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDirectionalAssemble
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalInputStream
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterMetadata
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDirectionalPair
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalClassExec
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalClassInput
