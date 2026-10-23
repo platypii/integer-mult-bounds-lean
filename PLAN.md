@@ -1270,6 +1270,35 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    and installation into the live bank remain open, along with activity-dependent
    and selected-source profiles, remaining scalars and all other R3 cost gates.
    Full R3 and kappa are unchanged.
+   `LiveDescriptorArithmeticWidths` now chooses compatible logarithmic widths
+   with selector width equal to arithmetic width and proves every fit condition,
+   avoiding a separate profile-width conversion pass. `LiveYSourceLayout` borrows
+   existing live arithmetic scratch, the key job's K/rho operands and the same
+   seven outer profile tapes. `LiveYSourceGenerate` executes the actual first Y
+   generator directly into live input 5 from a blank tape, restoring every borrowed
+   tape and scalar operand, and supplies the resulting `LiveDescriptorReady`
+   contract. Joint sequencing with the three inactive profiles, full repair/cleanup
+   integration and the other active/selected profiles remain open, along with
+   scalar generation and the uniform R3 cost gates. Full R3 and kappa are unchanged.
+   `LiveProfileBatchFrame` composes partial profile-bank contracts independently
+   of profile contents. `RepairLiveGeneratedProfiles` sequences the three inactive
+   generators and actual Y generator using the same seven outer tapes, with all
+   four profile inputs initially blank and full live readiness derived afterward.
+   `RepairGeneratedProfileClean` proves exact restoration after disjoint stream
+   updates and the closed four-profile cleanup cost.
+   `GeneratedProfilesRepairGenerated` derives the existing exact-repair inputs
+   from that generated bank. `GeneratedProfilesRepair` executes four-profile
+   generation, all eleven descriptor compilers, exact R2 and complete cleanup:
+   no four-profile words are supplied, every phase is charged and only the stream
+   changes. `GeneratedProfilesHeaderGenerated` and `GeneratedProfilesHeaderRepair`
+   add actual header generation and erasure, using the existing embedded header
+   frame. `GeneratedProfilesWidthGenerated` and `GeneratedProfilesWidthRepair`
+   further generate and erase the raw row/key-mask fields. The full composed path
+   starts with those fields, headers and all four profile inputs blank and restores
+   every tape except the repaired stream. Classifier generation and placement
+   around this path, the other active/selected profiles and remaining scalars,
+   and the uniform R3 cost/amortization gates remain open.
+   Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
