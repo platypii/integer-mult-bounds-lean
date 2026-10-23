@@ -68,8 +68,11 @@ symbol bounds. A concrete bulk scheduler executes any residue list for a fixed
 matching class and direction, restores its surrounding bank, and charges framing,
 repair, cleanup and input rewind. Its output permutation now has the exact
 physical bulk-shear action, with source separation and all residue compositions
-proved in common coordinates. It assumes the initial framed metadata; executed
-metadata generation, terminal routing, initial
+proved in common coordinates. The physical terminal suffix now also executes
+on a fixed bank, including counter generation, compilation and cleanup, with
+exact shear semantics and a logarithmic instruction count; it currently requires
+records at least as wide as their addresses. Bulk routing assumes the initial framed metadata; executed
+metadata generation, full bulk/terminal composition, initial
 permutation decomposition/table generation, the complete router schedule and
 uniform amortization/fallback remain open.
 The complete router and multiplication integration remain in R3–R4; this work

@@ -82,4 +82,43 @@ theorem sharedInput_exec {T Q A : ℕ} {P U : Type} (body : P → Pr P T Q A U)
     hu₅.trans (hu₄.trans (hu₃.trans (hu₂.trans hu₁))), by omega, ?_⟩
   exact Exec.seq he₁ (Exec.seq he₂' (Exec.seq he₃' (Exec.seq he₄' he₅')))
 
+
+/-- Binary dimensions are the only nonempty initial shared-input operands. -/
+def sharedInputInitialWords {A : ℕ} (L n Lb B : ℕ) (rowBits : List Bool) :
+    SharedInputReg → List (Fin (A + 4))
+  | .width => binSyms L n
+  | .rows => rowBits.map bitSymbol
+  | .block => binSyms Lb B
+  | _ => []
+
+noncomputable def sharedInputInitialBank {T A : ℕ} (rg : SharedInputReg → Fin T)
+    (outside : Fin T → List (Fin (A + 4))) (L n Lb B : ℕ) (rowBits : List Bool) :
+    Fin T → List (Fin (A + 4)) :=
+  Function.extend rg (sharedInputInitialWords L n Lb B rowBits) outside
+
+/-- Generate all shared raw counters from the constructed operand bank. -/
+theorem sharedInputInitial_exec {T Q A : ℕ} {P U : Type} (body : P → Pr P T Q A U)
+    (rg : SharedInputReg → Fin T) (hrg : Function.Injective rg)
+    (outside : Fin T → List (Fin (A + 4))) (L n Lb B rows : ℕ)
+    (hn : n < 2 ^ L) (hn0 : 0 < n) (rowBits : List Bool)
+    (hrowValue : Counter.value rowBits = rows) (v : HS T Q A U) (S : Stacks T A)
+    (hbank : S.R = sharedInputInitialBank rg outside L n Lb B rowBits) :
+    ∃ (v' : HS T Q A U) (m : ℕ), v'.user = v.user ∧
+      m ≤ L * (4 * n + 11) + 22 * n + 6 * rowBits.length + 46 ∧
+      Exec body (sharedInputProgram rg) (mk v S) m
+        (mk v' { S with R := sharedInputBank S.R rg n rows rowBits.length }) := by
+  have hat (r : SharedInputReg) : S.R (rg r) = sharedInputInitialWords L n Lb B rowBits r := by
+    rw [hbank]
+    exact hrg.extend_apply _ _ r
+  exact sharedInput_exec body rg hrg L n rows hn hn0 rowBits hrowValue v S
+    (hat .width) (hat .rows) (hat .field) (hat .records) (hat .mask) (fun i => hat (.scratch i))
+
+theorem sharedInputInitialBank_off {T A : ℕ} (rg : SharedInputReg → Fin T)
+    (outside : Fin T → List (Fin (A + 4))) (L n Lb B : ℕ) (rowBits : List Bool)
+    (j : Fin T) (hj : ∀ r, rg r ≠ j) :
+    sharedInputInitialBank rg outside L n Lb B rowBits j = outside j := by
+  apply Function.extend_apply'
+  rintro ⟨r, hr⟩
+  exact hj r hr
+
 end IntegerMultBounds.MathlibTM2.Routing

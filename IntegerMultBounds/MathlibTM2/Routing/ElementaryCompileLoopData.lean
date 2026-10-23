@@ -34,6 +34,45 @@ structure ElementaryCompileReady {T A : ℕ} (rg : ElementaryCompilerReg → Fin
   target0 : R (rg (.coordinate .target)) = []
   source0 : R (rg (.coordinate .source)) = []
 
+/-- Canonical compiler operands; every generated header and scratch word starts empty. -/
+def elementaryCompilerInputWords {A : ℕ} (n L Lb B : ℕ) (rowBits : List Bool) :
+    ElementaryCompilerReg → List (Fin (A + 4))
+  | .coordinate .width => binSyms L n
+  | .rows => rowBits.map bitSymbol
+  | .block => binSyms Lb B
+  | _ => []
+
+noncomputable def elementaryCompilerInputBank {T A : ℕ} (rg : ElementaryCompilerReg → Fin T)
+    (outside : Fin T → List (Fin (A + 4))) (n L Lb B : ℕ) (rowBits : List Bool) :
+    Fin T → List (Fin (A + 4)) :=
+  Function.extend rg (elementaryCompilerInputWords n L Lb B rowBits) outside
+
+theorem elementaryCompilerInputBank_ready {T A : ℕ} (rg : ElementaryCompilerReg → Fin T)
+    (hrg : Function.Injective rg) (outside : Fin T → List (Fin (A + 4)))
+    (n L Lb B : ℕ) (rowBits : List Bool) :
+    ElementaryCompileReady rg (elementaryCompilerInputBank rg outside n L Lb B rowBits) n L Lb B rowBits := by
+  have hat (r : ElementaryCompilerReg) : elementaryCompilerInputBank rg outside n L Lb B rowBits (rg r) =
+      elementaryCompilerInputWords n L Lb B rowBits r := hrg.extend_apply _ _ r
+  refine ⟨hat _, hat _, hat _, ?_, hat _, hat _⟩
+  intro r hr
+  rw [hat]
+  cases r with
+  | coordinate r =>
+    cases r <;> first | rfl | (exfalso; exact hr (by simp [elementaryCompilerInputs]))
+  | rows => exact (hr (by simp [elementaryCompilerInputs])).elim
+  | block => exact (hr (by simp [elementaryCompilerInputs])).elim
+  | header i => rfl
+  | mask => rfl
+  | output => rfl
+
+theorem elementaryCompilerInputBank_off {T A : ℕ} (rg : ElementaryCompilerReg → Fin T)
+    (outside : Fin T → List (Fin (A + 4))) (n L Lb B : ℕ) (rowBits : List Bool)
+    (j : Fin T) (hj : ∀ r, rg r ≠ j) :
+    elementaryCompilerInputBank rg outside n L Lb B rowBits j = outside j := by
+  apply Function.extend_apply'
+  rintro ⟨r, hr⟩
+  exact hj r hr
+
 theorem ElementaryCompileReady.congr {T A : ℕ} {rg : ElementaryCompilerReg → Fin T}
     {R R' : Fin T → List (Fin (A + 4))} {n L Lb B : ℕ} {rowBits : List Bool}
     (h : ElementaryCompileReady rg R n L Lb B rowBits)

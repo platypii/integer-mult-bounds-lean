@@ -1820,8 +1820,20 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    class shear in one common embedding, proves source separation, and composes
    all residues in execution order into the exact bulk shear. The execution
    theorem now returns this composed rank permutation directly; the generic
-   stream-composition lemma connects it to actual output records. Executed
-   terminal routing, complete shear/class/involution composition, original
+   stream-composition lemma connects it to actual output records.
+   `CanonicalRouterTerminal` constructs the physical suffix coordinate table,
+   proves source separation and fewer than `131*gap` entries, and identifies
+   the existing compiler's output with the exact terminal shear.
+   `CanonicalTerminalBank`, `CanonicalTerminalReady` and `CanonicalTerminalLayout`
+   construct compatible binary operands and blank workspace on one fixed finite
+   layout. `CanonicalTerminalRouting.canonicalRouterTerminal_exec` now executes
+   shared-counter generation, coordinate compilation, routing and all cleanup,
+   with an explicit cost and only the record stream changed. It assumes the raw
+   coordinate table and binary dimensions, requires `n ≤ B`, and still takes
+   canonical row bits and numeric fit proofs. The compilation-only intermediate
+   wrapper was superseded before commit by this complete terminal execution.
+   Full bulk/terminal machine composition, uniform terminal parameter selection,
+   complete shear/class/involution composition, original
    permutation decomposition/table generation, remaining scalar metadata setup,
    uniform amortization and short-record fallback remain open. R3 and kappa
    are unchanged.

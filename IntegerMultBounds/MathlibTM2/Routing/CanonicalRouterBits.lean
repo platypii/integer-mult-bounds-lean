@@ -88,6 +88,23 @@ theorem canonicalRouterStage_bulk_bits (r : Fin (canonicalRouterStride n))
     (routerBorrowed_le_reservoir n (canonicalRouterGap n) (canonicalRouterGap_pos n)) k
 
 
+theorem canonicalRouterMiddleTargets_source
+    (targets : Finset (Fin (routerTargetWidth n (canonicalRouterStride n) (canonicalRouterGap n))))
+    (hsub : targets ⊆ matchingDirectionTargets (canonicalRouterLocalMatching n hn k mate hinv) reverse) :
+    ∀ i ∈ targets.image (canonicalRouterMiddleEmbedding n hn k),
+      matchingClass (routingReservoir n (routingReservoirWidth n (canonicalRouterGap n))
+        (routingReservoir_fit n (canonicalRouterGap n) hn)) mate k i ∉
+      targets.image (canonicalRouterMiddleEmbedding n hn k) := by
+  intro i hi hs
+  obtain ⟨q, hq, rfl⟩ := Finset.mem_image.mp hi
+  obtain ⟨q', hq', he⟩ := Finset.mem_image.mp hs
+  have heq : q' = canonicalRouterLocalMatching n hn k mate hinv q :=
+    canonicalRouterMiddleEmbedding_injective n hn k
+      (he.trans (canonicalRouterMiddleEmbedding_source n hn k mate hinv q).symm)
+  exact matchingDirectionTargets_source (canonicalRouterLocalMatching n hn k mate hinv)
+    (canonicalRouterLocalMatching_involutive n hn k mate hinv) reverse q
+    (hsub hq) (heq ▸ hsub hq')
+
 theorem canonicalRouterBulk_source :
     ∀ i ∈ (routerBulkTargets n (canonicalRouterStride n) (canonicalRouterGap n)
       (matchingDirectionTargets (canonicalRouterLocalMatching n hn k mate hinv) reverse)).image
@@ -97,15 +114,9 @@ theorem canonicalRouterBulk_source :
       (routerBulkTargets n (canonicalRouterStride n) (canonicalRouterGap n)
         (matchingDirectionTargets (canonicalRouterLocalMatching n hn k mate hinv) reverse)).image
           (canonicalRouterMiddleEmbedding n hn k) := by
-  intro i hi hs
-  obtain ⟨q, hq, rfl⟩ := Finset.mem_image.mp hi
-  obtain ⟨q', hq', he⟩ := Finset.mem_image.mp hs
-  have heq : q' = canonicalRouterLocalMatching n hn k mate hinv q :=
-    canonicalRouterMiddleEmbedding_injective n hn k
-      (he.trans (canonicalRouterMiddleEmbedding_source n hn k mate hinv q).symm)
-  exact matchingDirectionTargets_source (canonicalRouterLocalMatching n hn k mate hinv)
-    (canonicalRouterLocalMatching_involutive n hn k mate hinv) reverse q
-    (Finset.mem_filter.mp hq).1 (heq ▸ (Finset.mem_filter.mp hq').1)
+  apply canonicalRouterMiddleTargets_source n hn mate hinv k reverse
+  intro q hq
+  exact (Finset.mem_filter.mp hq).1
 
 
 /-- All normalized physical bulk residue shears compose to one bulk shear. -/
