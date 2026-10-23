@@ -292,8 +292,16 @@ default build does not check them.
      costs `M (N (310q + 122) + 150q + 445) + 8 + S` atoms, where `S = 4` for
      input rows (`N = 3m+1`) and `S = 7` for kernel rows (`N = 4m`); lowering adds
      `2 MNw + 2` tape steps to the atom cost times `tblC W w`.
+     `ChirpWindows` proves the cyclic extension and exact analytic input indices for
+     `3m+1` windows without requiring `m ≤ s`; centres advance at most `m`, and
+     advances telescope to the final centre. `ChirpGather` and `ChirpGatherControl`
+     execute one fixed sweep step from a delimited unary advance packet, saving both
+     consumed source and control prefixes for restoration. Its exact cost is
+     `12L + 8D + 21` for window/advance symbol lengths `L,D`; its temporary counter,
+     copy workspace, native stacks and user state are restored. The complete loop,
+     generation of the cyclic extension/control stream, and final restoration remain open.
      S2/S3 still need table reuse across lines,
-     overlapping-window gathering, binary dimension conversion and output arithmetic,
+     full overlapping-window gathering, binary dimension conversion and output arithmetic,
      followed by the complete forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
