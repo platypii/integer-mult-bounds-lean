@@ -257,7 +257,19 @@ default build does not check them.
      representation interface. `correlationBatchTape_chirpCorr_err` retains the
      `8·2^l/2^p` bound independently of batch size. `ChirpBatchProductCheck` audits
      the full imported shared namespace.
-     S2/S3 still need table production/quantization, overlapping-window gathering,
+     `ChirpTableArgs` gives computable integer numerators/denominators for all three
+     chirp exponentials, including the exact natural-division block start. `ChirpTables`
+     defines their natural Taylor/Machin numerators and proves the common `2/2^q` table
+     error for `q ≥ 13` (with the positive evaluator's explicit exponent-range condition).
+     Reading the output numerator at precision `q+Γ` normalizes its factor by `2^Γ`
+     without another rounding. `chirpTable_records_norm` proves that these computed
+     input/kernel factors and `rhoC q` yield unit-disk ring records.
+     `ShortConv.tblChirpDistance_do` (in `ChirpTableDistance`) executes the shared squared-distance
+     argument in nine table-machine atoms under explicit arithmetic overflow bounds,
+     preserving dimensions, the pi/precision variables and the emitted stream. The
+     same routine handles the shifted kernel with offset `2m-1`. `ChirpTablesCheck`
+     audits the table arguments, error bounds and distance routine.
+     S2/S3 still need table-machine argument completion/emission, overlapping-window gathering,
      binary dimension conversion and output arithmetic, followed by the complete
      forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
