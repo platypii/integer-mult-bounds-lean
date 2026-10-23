@@ -1074,6 +1074,31 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    contract. Executed input generation, integration with generated headers and
    placement, uniform setup/amortization bounds, and all remaining R3 gates remain
    open; full R3 and kappa are unchanged.
+   `EmbeddedRepairHeaders`, `EmbeddedRepairHeaderData` and
+   `EmbeddedRepairHeaderClean` now reuse the existing executed header generator
+   over any injectively embedded repair core, transport all non-header pending
+   descriptor data and erase the ten generated headers with their exact price.
+   `RepairLiveHeaderFrame` proves that these writes preserve the full live-bank
+   readiness, descriptors, repair targets, scratch and record stream.
+   `LiveHeaderRepairGenerated` executes exact live repair on that generated bank;
+   `LiveHeaderRepair` composes actual header generation, all eleven live descriptor
+   compilers, exact R2 and complete generated-table cleanup. Its initial ten header
+   tapes are blank, every phase is charged, and only the repaired stream changes.
+   The composed proof uses explicit header-map types and the proved embedded-user
+   projection, preserving default elaboration limits and a narrow import closure.
+   Canonical headers are no longer supplied on this path. Scalar/profile inputs,
+   classifier masks and width fields remain supplied; their executed generation,
+   uniform setup bounds and all remaining R3 gates are open.
+   `LiveHeaderInputFrame` and `LiveHeaderRepairMoved` transport the initial live
+   inputs across a record permutation. `PlacedLiveHeaderRepair` composes executed
+   forward reservoir placement, generated-header live repair and inverse placement
+   in a larger bank, charging both exchange chains and restoring every non-stream
+   tape. `LiveHeaderPlacementLayout` separates placement metadata from the whole
+   inner bank, including header workspace. `JointBankLiveHeaderRepair` derives
+   exchange readiness from concrete shared-bank words, so the composition no longer
+   assumes ready exchange calls. Placement metadata words and live scalar/profile
+   inputs remain supplied; their generation, routing schedules and uniform
+   setup/amortization bounds remain open.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
