@@ -1611,6 +1611,33 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    placement input production, complete bulk/terminal/shear schedule instantiation
    and uniform global amortization/fallback remain open. Full R3 and kappa are
    unchanged.
+   `MatchingProfileInputs` now identifies both matching directions' profile input
+   with a comparison of each target and its mate, selecting the mate when active
+   and the target itself otherwise. Fixed points are inactive and both directions
+   satisfy source preservation. `MatchingCoordinateDispatch` executes this
+   comparison; `MatchingCoordinateEmit.matchingCoordinateInput_exec` selects and
+   emits the exact physical-coordinate/activity frame from two live binary
+   endpoints in at most `14 * (Li + Lk) + 16` steps. Only output changes; all
+   endpoint and workspace tapes restore. `MatchingCoordinateStep`,
+   `MatchingCoordinateLoop` and `MatchingCoordinateTrace` now scan arbitrary
+   bounded endpoint-entry lists with fixed code, archive the full input, restore
+   endpoint and shared scratch tapes, and accumulate the exact reversed output.
+   `MatchingCoordinateGenerate` rewinds the complete entry table and emits
+   forward-order physical-coordinate/activity frames; its bound includes every
+   comparison, load, copy, cleanup and final move. `MatchingProfileGenerate`
+   specializes this to the exact profile input consumed by generated repair,
+   with sources and activity derived from matching endpoints. Endpoint entries
+   are still supplied in profile order for that specialization. `ResidueDispatch`
+   now executes division, residue comparison and full arithmetic cleanup.
+   `ResidueEntryEmit`, `ResidueEntryStep`, `ResidueEntryLoop` and
+   `ResidueEntryTrace` filter an arbitrary common endpoint table by its live
+   target-coordinate residue, with exact stable-filter output and full input
+   archive. `ResidueEntryGenerate` restores the common table and every workspace
+   tape and emits the selected entry stream, charging division, copying,
+   scanning and both final moves. The common-table-to-router-profile order
+   identity and any terminal-prefix selection remain open, as do joining
+   production to the reusable generated-call bank, scalar/placement setup
+   and full-router cost/fallback gates.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
