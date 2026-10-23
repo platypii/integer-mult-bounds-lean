@@ -26,6 +26,124 @@ local notation "hK₀" => And.left (And.right (routingParameters_guards ρ n m (
 local notation "T₀" => liveInactiveProfileT repairT 11
 local notation "e₀" => liveInactiveProfileCore (N := repairT) (J := 11)
 
+theorem allSourceProfilesWidthRepairOfGeometry_exec
+    (p : Par) (X rb : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
+    (hguard : p.G + 1 < p.K) (scale : ℕ)
+    (hscale : (0 : ℝ) < scale) (hn : (p.n : ℝ) ≤ scale)
+    (hradix : 64 * (scale : ℝ) ^ 4 ≤ (2 : ℝ) ^ p.G)
+    (hgap : 1024 * (scale : ℝ) ^ 4 ≤ (2 : ℝ) ^ (p.K - 1 - p.G))
+    (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X)
+    (targets : Finset (Fin (p).wy)) (source : Fin (p).wy → Fin (p).wy)
+    (hactive : active = profileActive p hK targets)
+    (hsources : s = profileSources p hK targets source) (body : P → Pr P repairT Q (prime + K) U)
+    (liveBody : P → Pr P repairLiveT Q (prime + K) U)
+    (hlive : ∀ f, liveBody f = embProg liveDescriptorCore id (body f))
+    (outerBody : P → Pr P T₀ Q (prime + K) U)
+    (houter : ∀ f, outerBody f = embProg e₀ id (liveBody f))
+    (keySrc raw activity : Fin repairT) (hreg : [keySrc, raw, activity].Nodup)
+    (hkeyHeader : ∀ c k, keySrc ≠ repairRoutingConfig (.header c k))
+    (hrawHeader : ∀ c k, raw ≠ repairRoutingConfig (.header c k))
+    (hactivityHeader : ∀ c k, activity ≠ repairRoutingConfig (.header c k))
+    (hkeyRow : keySrc ≠ repairSetupSource (.inr .row))
+    (hkeyMask : keySrc ≠ repairSetupSource (.inr .keyMask))
+    (hrawRow : raw ≠ repairSetupSource (.inr .row))
+    (hrawMask : raw ≠ repairSetupSource (.inr .keyMask))
+    (hactivityRow : activity ≠ repairSetupSource (.inr .row))
+    (hactivityMask : activity ≠ repairSetupSource (.inr .keyMask))
+    (w : LiveDescriptorWidths) (hwidth : w.selectorBits = w.coordinateBits)
+    (hselectorWidthFit : w.coordinateBits < 2 ^ w.widthBits)
+    (hkfit : (p).K < 2 ^ w.strideBits) (hnfit : p.n < 2 ^ w.indexBits)
+    (hwfit : (p).wy + 2 * (p).wc + X < 2 ^ w.coordinateBits)
+    (hQ : swapStates selectiveSwapHd selectiveSwapPay selectiveSwapHd_inj ≤ Q)
+    (hA : 4 ≤ prime + K)
+    {wb wm wp wk R B : ℕ} (hR : 0 < R) (hB : 1 ≤ B) (hrb : R ≤ 2 ^ rb)
+    (hs : ∀ c, (s c).Allowed active)
+    (v : HS inactiveProfileConfigurationT Q (prime + K) U) (S : Stacks T₀ (prime + K))
+    (data : RepairPendingConfigurationData p X rb wb wm wp wk R B
+      (fun _ _ => []) (fun i => S.R (e₀ (liveDescriptorCore i))))
+    (hempty : ∀ key, S.R (e₀ (liveDescriptorCore (repairSetupTarget key))) = [])
+    (hL : ∀ j, S.L (e₀ (liveDescriptorCore j)) = [])
+    (hblank : ∀ j, RepairBlank j → S.R (e₀ (liveDescriptorCore j)) = [])
+    (hfit : ∀ j, LiveDescriptorBounds p X w (repairLiveMode j))
+    (hbank : ∀ r, (∀ j : Fin 11, r ≠ .input j) →
+      S.R (e₀ (liveDescriptorAux r)) = liveDescriptorData p X hG hK active s repairLiveMode w r)
+    (hdesc : ∀ d, S.R (e₀ (liveDescriptorCore (repairDescriptorSource d))) = [])
+    (hinput : ∀ j, S.R (e₀ (liveDescriptorAux (.input j))) = [])
+    (hkey : S.R (liveZSourceActivity keySrc) = sourceCoordinateInputWords w.indexBits w.strideBits
+      (profileCoordinateInputs p hK targets source))
+    (hrawBlank : S.R (liveZSourceActivity raw) = [])
+    (hactivity : S.R (liveZSourceActivity activity) = [])
+    (hcount : S.R (liveInactiveProfileAux 0) = binSyms w.indexBits p.n)
+    (hscratch : ∀ i : Fin 7, i ≠ 0 → S.R (liveInactiveProfileAux i) = [])
+    (l : List (List (Fin (prime + K + 4)))) (hl : l.length = R * 2 ^ fieldsLen (selectiveLen p X))
+    (hlen : ∀ r ∈ l, r.length = B ∧ ∀ a ∈ r, a.val < 8)
+    (hsrc : S.R (e₀ (liveDescriptorCore repairHost.src)) = l.flatten)
+    (D : Stacks inactiveProfileHeaderT (prime + K)) (hproject : embStk sharedHeaderCore D = S)
+    (headerBody : P → Pr P inactiveProfileHeaderT Q (prime + K) U)
+    (hheader : ∀ f, headerBody f = embProg sharedHeaderCore id (outerBody f))
+    (Lrow Lwidth : ℕ) (hRfit : R < 2 ^ Lrow) (hwidthFit : (p).wc < 2 ^ Lwidth)
+    (hrowInput : D.R (sharedHeaderBinary 0) = binSyms Lrow R)
+    (hwidthInput : D.R (sharedHeaderBinary 1) = binSyms Lwidth (p).wc)
+    (hwork : ∀ r : HeaderWorkRole, (∀ i, r ≠ .binary i) → D.R (sharedHeaderWork r) = [])
+    (E : Stacks inactiveProfileConfigurationT (prime + K)) (hE : embStk (fieldCore (N := inactiveProfileHeaderT)) E = D)
+    (widthBody : P → Pr P inactiveProfileConfigurationT Q (prime + K) U)
+    (hwidthBody : ∀ f, widthBody f = embProg (fieldCore (N := inactiveProfileHeaderT)) id (headerBody f))
+    (Lr Lm : ℕ) (hr : rb < 2 ^ Lr) (hm : (p).wy < 2 ^ Lm)
+    (hrowWidth : E.R (fieldAux 0) = binSyms Lr rb)
+    (hmaskWidth : E.R (fieldAux 1) = binSyms Lm (p).wy)
+    (hwidthScratch : ∀ i : Fin 6, 2 ≤ i.val → E.R (fieldAux i) = [])
+    (hrow : E.R (fieldCore (inactiveProfileHeaderRaw (repairSetupSource (.inr .row)))) = [])
+    (hmask : E.R (fieldCore (inactiveProfileHeaderRaw (repairSetupSource (.inr .keyMask)))) = []) :
+    let W : Stacks inactiveProfileConfigurationT (prime + K) := { E with R := inactiveProfileWidthBank rb (p).wy E.R }
+    let D₁ := embStk (fieldCore (N := inactiveProfileHeaderT)) W
+    let H : Stacks inactiveProfileHeaderT (prime + K) := { D₁ with R := repairHeaderPairBank p X rb R B inactiveProfileHeaderBank D₁.R }
+    let C₀ := embStk sharedHeaderCore H
+    let G : Stacks T₀ (prime + K) := { C₀ with R := liveInactiveProfileBatchBank p X hG hK active s repairLiveMode w C₀.R repairAllSourceProfileJobs }
+    let C := embStk e₀ G
+    ∃ (v' : HS inactiveProfileConfigurationT Q (prime + K) U) (steps : ℕ), v'.user = v.user ∧
+      (steps : ℝ) ≤ ((Lr * (4 * rb + 11) + 8 * rb + 12) + (Lm * (4 * (p).wy + 11) + 2 * (p).wy + 6) + 1 : ℕ) +
+        ((2 * (14 * ((p).wc + (p).wy + X) + 18 * Lrow + 24 * Lwidth + 52 * wb + 280) : ℕ) +
+        ((liveCoordinateProfilesCost p w : ℕ) +
+        liveRepairPrice p X rb hG hK active s scale wb wm wp wk R B w C +
+        (9 * (2 * (p.n * (w.selectorBits + 3)) + 2) + 2 * (2 * ((p).wc * (w.selectorBits + 3)) + 2) + 1 : ℕ)) + (repairHeaderErasePrice p X rb R B : ℕ)) + (2 * rb + 2 * (p).wy + 5 : ℕ) ∧
+      Exec widthBody (.seq (binaryFieldBatch (fieldPairJobs (inactiveProfileHeaderRaw (repairSetupSource (.inr .row)))
+          (inactiveProfileHeaderRaw (repairSetupSource (.inr .keyMask))) Lr Lm rb (p).wy))
+        (.seq (embProg (fieldCore (N := inactiveProfileHeaderT)) id (.seq (binaryRepairHeaderPairProgram sharedHeaderBinary inactiveProfileHeaderBank)
+        (.seq (embProg sharedHeaderCore id (.seq (liveCoordinateProfilesProgram keySrc raw activity)
+        (.seq (embProg e₀ id (liveRepairProgram hQ hA))
+          (metadataClean (liveInactiveProfileTargets repairAllSourceProfileJobs)))))
+          (metadataClean (embeddedGeneratedHeaderTargets inactiveProfileRaw)))))
+          (metadataClean [fieldCore (inactiveProfileHeaderRaw (repairSetupSource (.inr .row))),
+            fieldCore (inactiveProfileHeaderRaw (repairSetupSource (.inr .keyMask)))])))
+        (mk v E) steps
+        (mk v' { E with R := Function.update E.R (fieldCore (inactiveProfileHeaderRaw repairHost.src)) (moveRecs (selectiveIdealPerm hK active s R hs) l).flatten }) := by
+  let W : Stacks inactiveProfileConfigurationT (prime + K) := { E with R := inactiveProfileWidthBank rb (p).wy E.R }
+  obtain ⟨v₁, m₁, hu₁, hm₁, hx₁⟩ := embeddedRepairWidths_exec inactiveProfileHeaderRaw inactiveProfileHeaderRaw_injective
+    widthBody Lr Lm rb (p).wy hr hm v E hrowWidth hmaskWidth hwidthScratch hrow hmask
+  obtain ⟨v₂, m₂, hu₂, hm₂, hx₂⟩ := allSourceProfilesWidthGeneratedOfGeometry_exec p X rb hG hK hguard scale hscale hn hradix hgap active s targets source hactive hsources
+    body liveBody hlive outerBody houter keySrc raw activity hreg hkeyHeader hrawHeader hactivityHeader hkeyRow hkeyMask hrawRow hrawMask hactivityRow hactivityMask w hwidth hselectorWidthFit hkfit hnfit hwfit hQ hA hR hB hrb hs
+    (embDn (fieldCore (N := inactiveProfileHeaderT)) v₁) S data hempty hL hblank hfit hbank hdesc hinput hkey hrawBlank hactivity hcount hscratch
+    l hl hlen hsrc D hproject headerBody hheader Lrow Lwidth hRfit hwidthFit hrowInput hwidthInput hwork E hE
+  obtain ⟨v₃, hu₃, hx₃⟩ := exec_emb_stream (fieldCore (N := inactiveProfileHeaderT)) fieldCore_injective id headerBody widthBody hwidthBody
+    _ v₁ W v₂ m₂ (inactiveProfileHeaderRaw repairHost.src)
+    (moveRecs (selectiveIdealPerm hK active s R hs) l).flatten hx₂
+  obtain ⟨v₄, hu₄, hx₄⟩ := fieldPairClean_exec widthBody
+    (inactiveProfileHeaderRaw (repairSetupSource (.inr .row))) (inactiveProfileHeaderRaw (repairSetupSource (.inr .keyMask)))
+    (inactiveProfileHeaderRaw repairHost.src)
+    (inactiveProfileHeaderRaw_injective.ne (by simp [repairSetupSource]))
+    (inactiveProfileHeaderRaw_injective.ne (repairSetup_source_src (.inr .row)))
+    (inactiveProfileHeaderRaw_injective.ne (repairSetup_source_src (.inr .keyMask)))
+    rb (p).wy v₃ E (moveRecs (selectiveIdealPerm hK active s R hs) l).flatten hrow hmask
+  rw [embDn_user] at hu₂
+  refine ⟨v₄, m₁ + (m₂ + (2 * rb + 2 * (p).wy + 5)), hu₄.trans (hu₃.trans (hu₂.trans hu₁)), ?_, ?_⟩
+  · have hc₁ : (m₁ : ℝ) ≤ ((Lr * (4 * rb + 11) + 8 * rb + 12) +
+        (Lm * (4 * (p).wy + 11) + 2 * (p).wy + 6) + 1 : ℕ) := Nat.cast_le.mpr hm₁
+    simpa only [Nat.cast_add, add_assoc] using add_le_add hc₁
+      (add_le_add hm₂ (le_refl ((2 * rb + 2 * (p).wy + 5 : ℕ) : ℝ)))
+  · dsimp only [W] at hx₃
+    exact Exec.seq hx₁ (Exec.seq hx₃ hx₄)
+
+
 theorem allSourceProfilesWidthRepair_exec
     (targets : Finset (Fin (p₀).wy)) (source : Fin (p₀).wy → Fin (p₀).wy)
     (hactive : active = profileActive p₀ hK₀ targets)
@@ -111,31 +229,21 @@ theorem allSourceProfilesWidthRepair_exec
             fieldCore (inactiveProfileHeaderRaw (repairSetupSource (.inr .keyMask)))])))
         (mk v E) steps
         (mk v' { E with R := Function.update E.R (fieldCore (inactiveProfileHeaderRaw repairHost.src)) (moveRecs (selectiveIdealPerm hK₀ active s R hs) l).flatten }) := by
-  let W : Stacks inactiveProfileConfigurationT (prime + K) := { E with R := inactiveProfileWidthBank rb (p₀).wy E.R }
-  obtain ⟨v₁, m₁, hu₁, hm₁, hx₁⟩ := embeddedRepairWidths_exec inactiveProfileHeaderRaw inactiveProfileHeaderRaw_injective
-    widthBody Lr Lm rb (p₀).wy hr hm v E hrowWidth hmaskWidth hwidthScratch hrow hmask
-  obtain ⟨v₂, m₂, hu₂, hm₂, hx₂⟩ := allSourceProfilesWidthGenerated_exec ρ n m X rb scale active s targets source hactive hsources
-    body liveBody hlive outerBody houter keySrc raw activity hreg hkeyHeader hrawHeader hactivityHeader hkeyRow hkeyMask hrawRow hrawMask hactivityRow hactivityMask w hwidth hselectorWidthFit hkfit hnfit hwfit hQ hA hscale hn hR hB hrb hs
-    (embDn (fieldCore (N := inactiveProfileHeaderT)) v₁) S data hempty hL hblank hfit hbank hdesc hinput hkey hrawBlank hactivity hcount hscratch
-    l hl hlen hsrc D hproject headerBody hheader Lrow Lwidth hRfit hwidthFit hrowInput hwidthInput hwork E hE
-  obtain ⟨v₃, hu₃, hx₃⟩ := exec_emb_stream (fieldCore (N := inactiveProfileHeaderT)) fieldCore_injective id headerBody widthBody hwidthBody
-    _ v₁ W v₂ m₂ (inactiveProfileHeaderRaw repairHost.src)
-    (moveRecs (selectiveIdealPerm hK₀ active s R hs) l).flatten hx₂
-  obtain ⟨v₄, hu₄, hx₄⟩ := fieldPairClean_exec widthBody
-    (inactiveProfileHeaderRaw (repairSetupSource (.inr .row))) (inactiveProfileHeaderRaw (repairSetupSource (.inr .keyMask)))
-    (inactiveProfileHeaderRaw repairHost.src)
-    (inactiveProfileHeaderRaw_injective.ne (by simp [repairSetupSource]))
-    (inactiveProfileHeaderRaw_injective.ne (repairSetup_source_src (.inr .row)))
-    (inactiveProfileHeaderRaw_injective.ne (repairSetup_source_src (.inr .keyMask)))
-    rb (p₀).wy v₃ E (moveRecs (selectiveIdealPerm hK₀ active s R hs) l).flatten hrow hmask
-  rw [embDn_user] at hu₂
-  refine ⟨v₄, m₁ + (m₂ + (2 * rb + 2 * (p₀).wy + 5)), hu₄.trans (hu₃.trans (hu₂.trans hu₁)), ?_, ?_⟩
-  · have hc₁ : (m₁ : ℝ) ≤ ((Lr * (4 * rb + 11) + 8 * rb + 12) +
-        (Lm * (4 * (p₀).wy + 11) + 2 * (p₀).wy + 6) + 1 : ℕ) := Nat.cast_le.mpr hm₁
-    simpa only [Nat.cast_add, add_assoc] using add_le_add hc₁
-      (add_le_add hm₂ (le_refl ((2 * rb + 2 * (p₀).wy + 5 : ℕ) : ℝ)))
-  · dsimp only [W] at hx₃
-    exact Exec.seq hx₁ (Exec.seq hx₃ hx₄)
+  have hg := routingParameters_guards ρ n m (Nat.clog 2 scale)
+  have hp : (0 : ℝ) < scale := by exact_mod_cast hscale
+  have hnp : (n : ℝ) ≤ scale := by exact_mod_cast hn
+  have hlog : (scale : ℝ) ≤ (2 : ℝ) ^ Nat.clog 2 scale := by
+    exact_mod_cast Nat.le_pow_clog (by decide : 1 < 2) scale
+  have hx := routingParameters_radices ρ n m (Nat.clog 2 scale) scale hp.le hlog
+  exact allSourceProfilesWidthRepairOfGeometry_exec p₀ X rb hg.1 hg.2.1 hg.2.2
+    scale hp hnp hx.1 hx.2 active s
+    targets source hactive hsources body liveBody hlive outerBody houter keySrc raw activity
+    hreg hkeyHeader hrawHeader hactivityHeader hkeyRow hkeyMask hrawRow hrawMask hactivityRow hactivityMask w hwidth
+    hselectorWidthFit hkfit hnfit hwfit hQ hA hR hB hrb hs v S
+    data hempty hL hblank hfit hbank hdesc hinput hkey hrawBlank hactivity hcount
+    hscratch l hl hlen hsrc D hproject headerBody hheader Lrow Lwidth hRfit
+    hwidthFit hrowInput hwidthInput hwork E hE widthBody hwidthBody Lr Lm hr hm
+    hrowWidth hmaskWidth hwidthScratch hrow hmask
 
 end
 end IntegerMultBounds.MathlibTM2.Routing

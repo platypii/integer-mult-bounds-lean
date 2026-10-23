@@ -1449,6 +1449,15 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    production, remaining scalar
    setup and full-router cost/amortization/fallback gates remain open. R3 and
    kappa are unchanged.
+   The full placed-repair composition now has a geometry-independent theorem,
+   `jointBankAllSourceProfilesRepairOfGeometry_exec`. Its chain generates source
+   profiles, headers, widths and classifiers, executes placement and exact repair,
+   and restores every non-stream tape, under explicit guards and density bounds.
+   Existing spacing-specific theorems instantiate the generic chain. Reservoir
+   spacing is instantiated by `reservoirAllSourceProfilesRepair_exec`, using
+   `routerParameters_guards` and `routerParameters_radices`; bridge lemmas also
+   establish these guards for `routerProfileParameters`. Complete scheduling,
+   input production, uniform amortization and short-record fallback remain open.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
