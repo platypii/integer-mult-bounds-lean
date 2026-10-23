@@ -1816,7 +1816,11 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    every tape except the record stream. Its effect is the composition of actual
    generated rank permutations. It assumes the initial framed metadata input;
    it does not execute its generation or prove a uniform amortized bound.
-   Identification of the composed bulk effect with the physical shear, executed
+   `CanonicalRouterBits` now identifies every actual residue with its physical
+   class shear in one common embedding, proves source separation, and composes
+   all residues in execution order into the exact bulk shear. The execution
+   theorem now returns this composed rank permutation directly; the generic
+   stream-composition lemma connects it to actual output records. Executed
    terminal routing, complete shear/class/involution composition, original
    permutation decomposition/table generation, remaining scalar metadata setup,
    uniform amortization and short-record fallback remain open. R3 and kappa

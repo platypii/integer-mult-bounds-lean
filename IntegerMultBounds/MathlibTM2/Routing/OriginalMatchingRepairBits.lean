@@ -58,5 +58,31 @@ theorem GeneratedPlacedInput.originalMatching_perm_shear
     cls hcoordinate i
   simpa only [GeneratedPlacedInput.perm, input.hactive, input.hsources, hslot] using he
 
+
+/-- State physical matching semantics at the external record width. This avoids
+forcing concrete router stages to rebuild their source table after a width cast. -/
+theorem GeneratedPlacedInput.originalMatching_perm_shear_cast
+    (input : GeneratedPlacedInput t₀ Q K P P' U) (n : ℕ)
+    (hrecord : fieldsLen (selectiveLen input.p input.X) = n)
+    (hslot : input.slotWidth = input.p.wc)
+    (hwidth : input.p.wy = n - 3 * input.p.wc)
+    (hfit : 9 * input.Hslot ≤ n) (hw : input.p.wc ≤ input.Hslot)
+    (mate : Fin n → Fin n) (hinv : Function.Involutive mate)
+    (hsource : input.source = fun q => Fin.cast hwidth.symm
+      (reservoirClassLocalMatching n input.Hslot hfit input.p.wc hw input.reservoir mate hinv (Fin.cast hwidth q)))
+    (reverse : Bool) (htargets : input.targets = matchingDirectionTargets input.source reverse)
+    (i : Fin (input.R * 2 ^ fieldsLen (selectiveLen input.p input.X))) :
+    (fun q : Fin n => (input.perm i).val.testBit q.val) =
+      shear ((placedSelectiveTargets input.p input.X input.hK
+        (profileActive input.p input.hK input.targets)
+        (reservoirPlacement (fieldsLen (selectiveLen input.p input.X)) input.Hslot input.hplacementFit
+          input.p.wc hw input.reservoir)).image (Fin.cast hrecord))
+        (matchingClass (routingReservoir n input.Hslot hfit) mate input.reservoir)
+        (fun q => i.val.testBit q.val) := by
+  subst n
+  simpa only [Fin.cast_refl, Finset.image_id] using
+    input.originalMatching_perm_shear hslot hwidth mate hinv hsource reverse htargets i
+
+
 end
 end IntegerMultBounds.MathlibTM2.Routing

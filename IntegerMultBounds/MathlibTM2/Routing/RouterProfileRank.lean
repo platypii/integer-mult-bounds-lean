@@ -24,6 +24,27 @@ def routerLocalTargets (targets : Finset (Fin (routerTargetWidth n K G))) :
     Finset (Fin (routerProfileParameters n K G r.val).wy) :=
   Finset.univ.filter fun q => Fin.cast (routerProfileParameters_width n K G hn r) q ∈ targets
 
+/-- Transporting a residue profile to the shared middle width gives exactly
+its bulk residue, independently of the profile's width equality proof. -/
+theorem routerLocalPassTargets_image
+    (targets : Finset (Fin (routerTargetWidth n K G))) :
+    (profilePassTargets (routerProfileParameters n K G r.val) hK
+      (routerLocalTargets n K G hn r targets)).image
+        (Fin.cast (routerProfileParameters_width n K G hn r)) =
+      (routerBulkTargets n K G targets).filter (fun q => q.val % K = r.val) := by
+  rw [routerProfilePassTargets n K G hK hn r]
+  ext q
+  simp only [Finset.mem_image, Finset.mem_filter, routerLocalTargets, routerBulkTargets,
+    Finset.mem_univ, true_and]
+  constructor
+  · rintro ⟨a, ⟨ha, hbulk, hresidue⟩, rfl⟩
+    exact ⟨⟨ha, hbulk⟩, hresidue⟩
+  · rintro ⟨⟨htarget, hbulk⟩, hresidue⟩
+    refine ⟨Fin.cast (routerProfileParameters_width n K G hn r).symm q, ?_, ?_⟩
+    · simpa only [Fin.cast_cast, Fin.cast_refl, id_eq, Fin.val_cast] using
+        And.intro htarget (And.intro hbulk hresidue)
+    · simp only [Fin.cast_cast, Fin.cast_refl, id_eq]
+
 def routerLocalSource (source : Fin (routerTargetWidth n K G) → Fin (routerTargetWidth n K G))
     (q : Fin (routerProfileParameters n K G r.val).wy) :
     Fin (routerProfileParameters n K G r.val).wy :=

@@ -87,4 +87,33 @@ theorem residueShears_eq (targets : Finset (Fin n)) (source : Fin n → Fin n)
   ext i
   simp
 
+
+/-- Partition shears after an injective physical embedding. The traversal is
+still the existing partition shear; only its coordinate representation changes. -/
+theorem partitionShears_image {δ : Type*} [DecidableEq δ]
+    (targets : Finset ι) (f : ι → δ) (hf : Function.Injective f)
+    (source : δ → δ) (color : ι → κ) (defaultColor : κ)
+    (hsource : ∀ i ∈ targets.image f, source i ∉ targets.image f)
+    (ks : List κ) (hn : ks.Nodup) (x : δ → Bool) :
+    ks.foldr (fun k y => shear ((targets.filter fun i => color i = k).image f) source y) x =
+      shear ((targets.filter fun i => color i ∈ ks).image f) source x := by
+  classical
+  let physicalColor := Function.extend f color (fun _ => defaultColor)
+  have hcolor (i : ι) : physicalColor (f i) = color i := hf.extend_apply _ _ i
+  have hfilter (k : κ) :
+      (targets.image f).filter (fun i => physicalColor i = k) =
+        (targets.filter fun i => color i = k).image f := by
+    rw [Finset.filter_image]
+    simp only [hcolor]
+  have hfold : ∀ stages : List κ,
+      stages.foldr (fun k y => shear ((targets.filter fun i => color i = k).image f) source y) x =
+        partitionShears (targets.image f) source physicalColor stages x := by
+    intro stages
+    induction stages with
+    | nil => rfl
+    | cons k stages ih =>
+      simp only [List.foldr_cons, partitionShears, hfilter, ih]
+  rw [hfold, partitionShears_eq _ _ _ hsource ks hn, Finset.filter_image]
+  simp only [hcolor]
+
 end IntegerMultBounds.MathlibTM2.Routing

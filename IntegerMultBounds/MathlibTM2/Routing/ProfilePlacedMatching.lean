@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Routing.PlacedSelectiveShear
 public import IntegerMultBounds.MathlibTM2.Routing.ProfileSourceRecords
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirClassLocalTable
-public import IntegerMultBounds.MathlibTM2.Routing.RouterProfileSchedule
+public import IntegerMultBounds.MathlibTM2.Routing.RouterProfileRank
 
 /-! Interpret compiled profile permutations as physical matching shears. The
 source intertwining equation is explicit, so placement geometry cannot silently
@@ -64,6 +64,21 @@ theorem routerPlacedProfileTargets (n K G : ℕ) (hK : 0 < K) (hn : K ≤ n) (r 
     (congrArg (fun ts => ts.image (fun q => e (profileMiddleCoordinate (routerProfileParameters n K G r.val) X q)))
       (routerProfilePassTargets n K G hK hn r targets))
 
+/-- A placed actual router profile selects the placed image of one bulk
+residue in the common middle-coordinate type. -/
+theorem routerPlacedLocalTargets (n K G : ℕ) (hK : 0 < K) (hn : K ≤ n) (r : Fin K)
+    (targets : Finset (Fin (routerTargetWidth n K G)))
+    (e : Equiv.Perm (Fin (fieldsLen (selectiveLen (routerProfileParameters n K G r.val) 0)))) :
+    placedSelectiveTargets (routerProfileParameters n K G r.val) 0 hK
+      (profileActive (routerProfileParameters n K G r.val) hK (routerLocalTargets n K G hn r targets)) e =
+      ((routerBulkTargets n K G targets).filter (fun q => q.val % K = r.val)).image
+        (fun q => e (profileMiddleCoordinate (routerProfileParameters n K G r.val) 0
+          (Fin.cast (routerProfileParameters_width n K G hn r).symm q))) := by
+  rw [placedProfileTargets_image (routerProfileParameters n K G r.val) 0 hK
+    (routerLocalTargets n K G hn r targets) e, ← routerLocalPassTargets_image n K G hK hn r targets,
+    Finset.image_image]
+  congr 1
+
 theorem routerProfileFieldsLen (n K G : ℕ) (hn : K ≤ n) (r : Fin K) :
     fieldsLen (selectiveLen (routerProfileParameters n K G r.val) 0) = n := by
   have ht := routerProfileParameters_total n K G hn r
@@ -104,6 +119,44 @@ theorem profilePlacedPerm_matching_shear {p : Par} {X R : ℕ} (hK : 0 < p.K)
     rw [shear, shear, toggle, toggle, ite_eq_left hq, ite_eq_left hq, placedSelectiveSource_at,
       profilePlacedSource_mate p X hK targets source e mate hsource c hc]
   · simp only [shear, toggle, ite_eq_right hq]
+
+
+/-- Physical middle placement is independent of the profile's width casts. -/
+theorem profileMiddlePlacement_cast (p : Par) (n H : ℕ)
+    (hrecord : fieldsLen (selectiveLen p 0) = n)
+    (hwidth : p.wy = n - 3 * p.wc)
+    (hfit : 9 * H ≤ fieldsLen (selectiveLen p 0)) (hw : p.wc ≤ H) (k : Fin 3)
+    (q : Fin (n - 3 * p.wc)) :
+    Fin.cast hrecord (reservoirPlacement (fieldsLen (selectiveLen p 0)) H hfit p.wc hw k
+      (profileMiddleCoordinate p 0 (Fin.cast hwidth.symm q))) =
+    reservoirPlacement n H (hrecord ▸ hfit) p.wc hw k
+      (middleCoordinate p.wc (n - 3 * p.wc)
+        (reservoirMiddle_fit n H (hrecord ▸ hfit) p.wc hw) q) := by
+  subst n
+  apply congrArg (reservoirPlacement (fieldsLen (selectiveLen p 0)) H hfit p.wc hw k)
+  apply Fin.ext
+  rfl
+
+/-- Placed residue targets share one physical embedding across all residues. -/
+theorem routerPlacedLocalTargets_cast (n K G : ℕ) (hK : 0 < K) (hn : K ≤ n) (r : Fin K)
+    (targets : Finset (Fin (routerTargetWidth n K G))) (H : ℕ)
+    (hfit : 9 * H ≤ fieldsLen (selectiveLen (routerProfileParameters n K G r.val) 0))
+    (hw : routerBorrowed n K G ≤ H) (k : Fin 3) :
+    (placedSelectiveTargets (routerProfileParameters n K G r.val) 0 hK
+      (profileActive (routerProfileParameters n K G r.val) hK (routerLocalTargets n K G hn r targets))
+      (reservoirPlacement (fieldsLen (selectiveLen (routerProfileParameters n K G r.val) 0)) H hfit
+        (routerBorrowed n K G) hw k)).image (Fin.cast (routerProfileFieldsLen n K G hn r)) =
+    ((routerBulkTargets n K G targets).filter (fun q => q.val % K = r.val)).image
+      (fun q => reservoirPlacement n H ((routerProfileFieldsLen n K G hn r) ▸ hfit)
+        (routerBorrowed n K G) hw k
+        (middleCoordinate (routerBorrowed n K G) (routerTargetWidth n K G)
+          (reservoirMiddle_fit n H ((routerProfileFieldsLen n K G hn r) ▸ hfit)
+            (routerBorrowed n K G) hw) q)) := by
+  rw [routerPlacedLocalTargets n K G hK hn r targets, Finset.image_image]
+  congr 1
+  funext q
+  exact profileMiddlePlacement_cast (routerProfileParameters n K G r.val) n H
+    (routerProfileFieldsLen n K G hn r) (routerProfileParameters_width n K G hn r) hfit hw k q
 
 /-- With no appended spectator field, the compiler's Y field is exactly the
 middle interval used by the executed original-matching table producer. -/

@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterStage
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterBits
 
 /-! The actual canonical residue inputs discharge the repeated scheduler's
 stage-data premises. All residues use the same original-matching program. -/
@@ -72,11 +72,16 @@ theorem canonicalRouterBulk_exec (stages : List (Fin (canonicalRouterStride n)))
           (framedCoreAux (originalMatchingScheduleT 6) 2)
           (framedCoreCallProgram (originalMatchingScheduleStream 6) canonicalRouterDelimiter
             (fun x => decide (x.val < 8)) Empty.elim program)) (mk v S) steps
-        (mk v' { S with R := Function.update S.R (framedCoreEmbed (originalMatchingScheduleT 6) (originalMatchingScheduleStream 6)) (delimitedScheduleEffect (fun r => repairStreamEffect
-            (castRankPerm ((canonicalRouterStage_data n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r).count)
-              (input r).perm) B) stages
-            (S.R (framedCoreEmbed (originalMatchingScheduleT 6) (originalMatchingScheduleStream 6)))) }) := by
+        (mk v' { S with R := Function.update S.R (framedCoreEmbed (originalMatchingScheduleT 6) (originalMatchingScheduleStream 6)) (repairStreamEffect (canonicalRouterSchedulePerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages) B (S.R (framedCoreEmbed (originalMatchingScheduleT 6) (originalMatchingScheduleStream 6)))) }) := by
   dsimp only
+  obtain ⟨rows, hrows, hshape, hstream⟩ := ready.stream
+  have heffect : delimitedScheduleEffect
+      (fun r => repairStreamEffect (canonicalRouterStagePerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r) B)
+      stages (S.R (framedCoreEmbed (originalMatchingScheduleT 6) (originalMatchingScheduleStream 6))) = repairStreamEffect (canonicalRouterSchedulePerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages) B (S.R (framedCoreEmbed (originalMatchingScheduleT 6) (originalMatchingScheduleStream 6))) := by
+    rw [hstream]
+    rw [repairStreamEffects_moveRecs _ stages rows hrows (fun row hr => (hshape row hr).1)]
+    exact flatten_moveRecs _ rows (fun row hr => (hshape row hr).1)
+  rw [← heffect]
   apply framedOriginalMatchingSchedule_exec (inputs := input) (Lc := canonicalRouterCountWidth n)
     (ι₀ := Empty.elim) (coreBody := Empty.elim) (ι := Empty.elim) (body := Empty.elim)
     (hbody := fun f => f.elim) (ιouter := Empty.elim) (outerBody := Empty.elim)

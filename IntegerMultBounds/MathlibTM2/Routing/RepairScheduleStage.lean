@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Routing.FramedExactSelective
 public import IntegerMultBounds.MathlibTM2.Routing.RepairPriceFrame
 public import IntegerMultBounds.MathlibTM2.Routing.RepairScheduleReady
+public import IntegerMultBounds.MathlibTM2.Routing.DelimitedScheduleTrace
 
 /-! Data for one real exact-repair call in a fixed-size stream schedule.
 Geometry may vary, but every stage acts on the same number and width of records. -/
@@ -17,10 +18,33 @@ noncomputable section
 
 def castRankPerm {M N : ℕ} (h : M = N) (π : Equiv.Perm (Fin M)) : Equiv.Perm (Fin N) := h ▸ π
 
+theorem castRankPerm_apply_val {M N : ℕ} (h : M = N) (π : Equiv.Perm (Fin M)) (i : Fin N) :
+    (castRankPerm h π i).val = (π (Fin.cast h.symm i)).val := by
+  cases h
+  rfl
+
 theorem moveRecs_castRankPerm {M N : ℕ} (h : M = N) (π : Equiv.Perm (Fin M))
     {α : Type*} (l : List (List α)) : moveRecs (castRankPerm h π) l = moveRecs π l := by
   cases h
   rfl
+
+/-- A framed list of rank moves has the same record effect as their composed
+permutation. This generic statement is independent of any stage packaging. -/
+theorem repairStreamEffects_moveRecs {I : Type} {M B A : ℕ}
+    (perm : I → Equiv.Perm (Fin M)) (stages : List I)
+    (l : List (List (Fin (A + 4)))) (hl : l.length = M)
+    (hlen : ∀ r ∈ l, r.length = B) :
+    delimitedScheduleEffect (fun i => repairStreamEffect (perm i) B) stages l.flatten =
+      (moveRecs (stages.foldr (fun i π => (perm i).trans π) (Equiv.refl _)) l).flatten := by
+  induction stages generalizing l with
+  | nil => simp only [delimitedScheduleEffect, List.foldr_nil, moveRecs_refl l hl]
+  | cons i stages ih =>
+    rw [delimitedScheduleEffect]
+    have hfirst : repairStreamEffect (perm i) B l.flatten = (moveRecs (perm i) l).flatten :=
+      (flatten_moveRecs (perm i) l hlen).symm
+    rw [hfirst, ih (moveRecs (perm i) l) (length_moveRecs _ _)
+      (fun r hr => hlen r (mem_moveRecs (perm i) hl hr)), List.foldr_cons]
+    exact congrArg List.flatten (moveRecs_trans (perm i) _ l hl).symm
 
 structure RepairScheduleStage (K M B : ℕ) where
   p : Par

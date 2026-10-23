@@ -1813,4 +1813,5 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalStageArithmetic
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterArithmetic
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterInput
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterStage
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterBits
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterBulk
