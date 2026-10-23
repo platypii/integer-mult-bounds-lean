@@ -1882,9 +1882,14 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    Its final records are exactly `canonicalRouterMatchingPerm` of the original
    records, and its compact bank retains the unused input suffix, accumulated
    rewind archive and readiness. The class-link hypotheses are pure record
-   equalities; automatic construction of these input packages and executed
-   input-word production remain open, along with arbitrary permutation
-   decomposition, uniform total-cost bounds and the other R3 gates. Canonical terminal scalar
+   equalities. `CanonicalMatchingInput` now constructs every intermediate
+   record list and both class links from the original matching and records;
+   its execution theorem requires no supplied intermediate witnesses.
+   `CanonicalMatchingRestore` executes the final outer-input rewind, charges
+   its linear cost and returns exactly the original bank with only the record
+   stream updated by the matching permutation. The complete explicit metadata
+   frame is still supplied. Executed frame production, arbitrary permutation
+   decomposition, uniform total-cost bounds and the other R3 gates remain open. Canonical terminal scalar
    widths and row-counter words are now selected from dimensions; executing
    their production remains open. Original
    permutation decomposition/table generation, remaining scalar metadata setup,

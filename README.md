@@ -80,7 +80,9 @@ and bulk input, executes both phases and erases its workspace with all costs
 charged. Three successive calls now execute a complete matching class with
 its exact class permutation and a reusable final bank. All three classes now
 execute as a nine-direction schedule with the original matching permutation,
-charged reloads and a reusable final bank. The concrete outer input frame
+charged reloads and a reusable final bank. Intermediate records are now constructed
+automatically, and a charged final rewind restores every tape except the record
+stream. The concrete outer input frame
 is still supplied; executed metadata generation, initial
 permutation decomposition/table generation, the complete router schedule and
 uniform amortization/fallback remain open.
