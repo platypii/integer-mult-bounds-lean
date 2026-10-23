@@ -432,3 +432,13 @@ rest of (b) is about 20–37k lines and 11–19 months of agent time; (c) with M
 and 4–6 months. b5 alone, with the banded `B̃₀` at `α² ≍ p^r`, `r < 1 - ε`, keeps the Gaussian
 margin `(1 + r)/2 - ε - δ` positive up to `ε < 2/3` (plan, the `2^-33` route); b3 is needed
 above that.
+
+The generated integer chirp operands now have a closed mathematical interface:
+`ChirpOperands` identifies the weighted window with the real stream multiplier's
+aligned `zipWith` output, reverses coefficient order, and proves exact decoded
+agreement with `chirpRecIn` and `chirpRecK` at precision `q+1`.
+`ChirpOperandBounds` derives integer disk bounds from the generated table estimates.
+`chirpOperandBatch_err` discharges the representation, length and disk hypotheses of
+the shared batch tape error theorem. This closes operand semantics; executing the
+multiplication/reversal and composing operand production with the shared batch call
+are still required, along with output arithmetic, cropping and the final cost contract.

@@ -1275,8 +1275,12 @@ construction, and generation of its unary counters from a retained binary dimens
 generating and erasing all geometry counters, the extension and control stream.
 Their actual tape costs, decoding and scratch frames are proved; see the
 [chirp implementation status](IntegerMultBounds/MathlibTM2/NearOne/DESIGN.md).
+`chirpOperandBatch_err` now specializes the shared tape error bound to the generated
+integer operands, discharging their representation, no-wrap and disk hypotheses. The
+weighted operand is proved equal to the aligned multiplier output on the gathered window;
+its interpretation at precision `q+1` supplies the required factor one half.
 Remaining work includes initializing the dimension/width banks from the original inputs,
-reusing tables across lines, forming the weighted ring operands, output arithmetic and
+reusing tables across lines, executing and composing weighted operand production, output arithmetic and
 cropping, and the complete forward correctness/precision/cost contract.
 `ShortConv.chirpAR_approx` (in `Mult/ChirpRing`) supplies the analytic correlation/error
 bridge; the full caller execution and cost comparison are still required. S2–S6 remain
