@@ -1792,3 +1792,7 @@ public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMiddleLookup
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMiddleEntry
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMiddleTableScan
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMiddleTableProduction
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirClassDispatch
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirClassEntry
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirClassTableProduction
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirClassLocalTable

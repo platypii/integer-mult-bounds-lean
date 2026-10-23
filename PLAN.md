@@ -1745,9 +1745,24 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    Its complete bound is
    `(n - 3*w) * (n * (30*width + 39) + 682*width + 842) + 35*width + 46`.
    Placement metadata and the binary middle width are still supplied live
-   operands. Reservoir-class generation from the original matching and
-   composition of the produced local table into the repair schedule remain
-   open; the present input table is a reservoir-fixing matching.
+   operands.
+   `ReservoirClassDispatch` now classifies both live endpoints against `3*H`
+   and `6*H`, proving its first-available choice equals `reservoirChoice`.
+   `ReservoirClassEntry` serializes the original mate or the fixed coordinate
+   accordingly. `ReservoirClassTableProduction` reuses the framed scheduler
+   to transform the original physical table into the exact common encoding
+   of any chosen `matchingClass`, restoring the original table and scratch,
+   within `n * (68*width + 85) + 6` steps. This transformation is pointwise
+   and needs no involutivity premise.
+   `ReservoirClassLocalTable` now composes both producers on one fixed
+   57-tape bank. Its only matching input is the original physical table;
+   it generates a chosen class, converts it into the exact local matching
+   encoding and erases the intermediate class table. Only the local table
+   output changes. Its full bound is
+   `(n-3*w) * (n*(30*width+39) + 682*width+842) + n*(72*width+89) + 35*width+54`.
+   The resulting `reservoirClassLocalMatching` is proved involutive.
+   Connection to the concrete repair schedule, initial permutation
+   decomposition/table generation and the remaining scalar metadata remain open.
    Composed middle-table production and concrete schedule instantiation
    remain open. R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,

@@ -53,8 +53,11 @@ calls now execute repeatedly on one fixed bank, with composed rank semantics,
 summed setup/repair/framing costs and full metadata rewind. A physical matching
 that fixes the chosen reservoir now yields its complete local middle-field table
 by executed placement, lookup, offset arithmetic and live counter enumeration;
-all temporary inputs are erased and every other tape is restored. Initial
-reservoir-class tables, remaining scalar metadata, connection of the local table
+all temporary inputs are erased and every other tape is restored. Reservoir-class
+tables now also come from executed interval comparisons and a restoring scan of
+the original matching table. Both producers compose into one program that
+erases the intermediate class table. Remaining scalar metadata, initial
+permutation decomposition/table generation, connection of the local table
 to repair calls, complete router schedule instantiation and
 uniform amortization/fallback remain open.
 The complete router and multiplication integration remain in R3–R4; this work

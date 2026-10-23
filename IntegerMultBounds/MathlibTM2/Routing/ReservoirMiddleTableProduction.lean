@@ -29,6 +29,20 @@ def reservoirMiddleProductionBank (mate : Fin n → Fin n) (j : Fin 44) : List (
   if h : j.val < 33 then reservoirMiddleLookupBank n H hfit w hw k L mate 0 ⟨j.val, h⟩
   else if j = 43 then binSyms L (n - 3 * w) else []
 
+/-- The physical table is the only bank field that depends on the matching. -/
+theorem reservoirMiddleProductionBank_mate_congr (mate mate' : Fin n → Fin n)
+    (j : Fin 44) (hj : j ≠ 21) :
+    reservoirMiddleProductionBank (A := A) n H hfit w hw k L mate j =
+      reservoirMiddleProductionBank n H hfit w hw k L mate' j := by
+  unfold reservoirMiddleProductionBank
+  split
+  · rename_i hlt
+    have h21 : (⟨j.val, hlt⟩ : Fin 33) ≠ 21 := by
+      intro he
+      exact hj (Fin.ext (congrArg (fun x : Fin 33 => x.val) he))
+    simp only [reservoirMiddleLookupBank, ite_eq_right h21]
+  · rfl
+
 theorem reservoirMiddleTableProduction_exec (body : P → Pr P 44 Q A U)
     (hn : n < 2 ^ L) (mate : Fin n → Fin n) (hinv : Function.Involutive mate)
     (hfix : ∀ q ∈ routingReservoir n H hfit k, mate q = q)
