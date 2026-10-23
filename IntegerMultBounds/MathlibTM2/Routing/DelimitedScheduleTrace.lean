@@ -62,4 +62,32 @@ theorem delimitedScheduleBank_stream (src saved str : Fin T)
     rw [delimitedScheduleBank, ih]
     simp [delimitedCallAdvanced, delimitedScheduleEffect]
 
+/-- A restoring scanner may accumulate a different output word per input frame.
+This closed bank is shared by coordinate generation and residue filtering. -/
+theorem delimitedScheduleBank_prepend (src saved dst : Fin T)
+    (hsa : src ≠ saved) (hsd : src ≠ dst) (had : saved ≠ dst)
+    (frame output : I → List (Fin (A + 4))) (stages : List I)
+    (R : Fin T → List (Fin (A + 4))) (hsrc : R src = delimitedScheduleInput frame stages) :
+    delimitedScheduleBank src saved dst frame (fun i w => (output i).reverse ++ w) stages R =
+      Function.update (Function.update (Function.update R src []) saved
+        ((delimitedScheduleInput frame stages).reverse ++ R saved)) dst
+        ((stages.flatMap output).reverse ++ R dst) := by
+  induction stages generalizing R with
+  | nil =>
+    simp only [delimitedScheduleBank, delimitedScheduleInput, List.flatMap_nil, List.reverse_nil, List.nil_append] at hsrc ⊢
+    rw [← hsrc, Function.update_eq_self, Function.update_eq_self, Function.update_eq_self]
+  | cons i stages ih =>
+    rw [delimitedScheduleBank, ih _ (by simp [delimitedCallAdvanced, hsa, hsd])]
+    funext j
+    by_cases hd : j = dst
+    · subst j
+      simp [delimitedCallAdvanced, delimitedScheduleInput, List.reverse_append, List.append_assoc]
+    by_cases ha : j = saved
+    · subst j
+      simp [delimitedCallAdvanced, delimitedScheduleInput, List.reverse_append, List.append_assoc, had]
+    by_cases hs : j = src
+    · subst j
+      simp [delimitedCallAdvanced, delimitedScheduleInput, hsa, hsd]
+    · simp [delimitedCallAdvanced, hd, ha, hs]
+
 end IntegerMultBounds.MathlibTM2.Routing

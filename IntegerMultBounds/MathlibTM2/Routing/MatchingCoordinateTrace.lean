@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingCoordinateLoop
+public import IntegerMultBounds.MathlibTM2.Routing.DelimitedScheduleTrace
 
 /-! The scanner's closed final bank records exactly the input archive and reversed output. -/
 
@@ -18,61 +19,35 @@ def matchingCoordinateClosedBank (R : Fin T → List (Fin (A + 4))) (rg : Fin 11
     ((matchingEntryWords (Li + Lk) xs).reverse ++ R (rg 8))) (rg 10)
     ((matchingCoordinateOutput reverse Li Lk xs).reverse ++ R (rg 10))
 
-theorem matchingCoordinateTrace_keep (R : Fin T → List (Fin (A + 4))) (rg : Fin 11 → Fin T)
-    (reverse : Bool) (Li Lk : ℕ) (xs : List (ℕ × ℕ)) (j : Fin T)
-    (hs : j ≠ rg 7) (ha : j ≠ rg 8) (hd : j ≠ rg 10) :
-    matchingCoordinateTraceBank R rg reverse Li Lk xs j = R j := by
-  induction xs generalizing R with
-  | nil => rfl
-  | cons x xs ih => rw [matchingCoordinateTraceBank, ih]; simp [matchingCoordinateStepBank, hs, ha, hd]
-
-theorem matchingCoordinateTrace_input (R : Fin T → List (Fin (A + 4))) (rg : Fin 11 → Fin T)
-    (hrg : Function.Injective rg) (reverse : Bool) (Li Lk : ℕ) (xs : List (ℕ × ℕ))
-    (hinput : R (rg 7) = matchingEntryWords (Li + Lk) xs) :
-    matchingCoordinateTraceBank R rg reverse Li Lk xs (rg 7) = [] := by
-  induction xs generalizing R with
-  | nil => exact hinput
-  | cons x xs ih => apply ih; simp [matchingCoordinateStepBank, hrg.eq_iff]
-
-theorem matchingCoordinateTrace_archive (R : Fin T → List (Fin (A + 4))) (rg : Fin 11 → Fin T)
-    (hrg : Function.Injective rg) (reverse : Bool) (Li Lk : ℕ) (xs : List (ℕ × ℕ)) :
-    matchingCoordinateTraceBank R rg reverse Li Lk xs (rg 8) =
-      (matchingEntryWords (Li + Lk) xs).reverse ++ R (rg 8) := by
-  induction xs generalizing R with
-  | nil => simp [matchingCoordinateTraceBank, matchingEntryWords]
-  | cons x xs ih =>
-    rw [matchingCoordinateTraceBank, ih]
-    simp [matchingCoordinateStepBank, matchingEntryWords, List.reverse_append, List.append_assoc, hrg.eq_iff]
-
-theorem matchingCoordinateTrace_output (R : Fin T → List (Fin (A + 4))) (rg : Fin 11 → Fin T)
-    (reverse : Bool) (Li Lk : ℕ) (xs : List (ℕ × ℕ)) :
-    matchingCoordinateTraceBank R rg reverse Li Lk xs (rg 10) =
-      (matchingCoordinateOutput reverse Li Lk xs).reverse ++ R (rg 10) := by
-  induction xs generalizing R with
-  | nil => simp [matchingCoordinateTraceBank, matchingCoordinateOutput, sourceCoordinateInputWords]
-  | cons x xs ih =>
-    rw [matchingCoordinateTraceBank, ih]
-    simp [matchingCoordinateStepBank, matchingCoordinateOutput, sourceCoordinateInputWords, List.append_assoc]
-
+-- Earlier separate trace helpers: restore from 531cf0a0.
 theorem matchingCoordinateTrace_closed (R : Fin T → List (Fin (A + 4))) (rg : Fin 11 → Fin T)
     (hrg : Function.Injective rg) (reverse : Bool) (Li Lk : ℕ) (xs : List (ℕ × ℕ))
     (hinput : R (rg 7) = matchingEntryWords (Li + Lk) xs) :
     matchingCoordinateTraceBank R rg reverse Li Lk xs = matchingCoordinateClosedBank R rg reverse Li Lk xs := by
-  funext j
-  by_cases hd : j = rg 10
-  · subst j
-    simp only [matchingCoordinateClosedBank, Function.update_self]
-    exact matchingCoordinateTrace_output R rg reverse Li Lk xs
-  by_cases ha : j = rg 8
-  · subst j
-    simp only [matchingCoordinateClosedBank, Function.update_of_ne (hrg.ne (by decide : (8 : Fin 11) ≠ 10)), Function.update_self]
-    exact matchingCoordinateTrace_archive R rg hrg reverse Li Lk xs
-  by_cases hs : j = rg 7
-  · subst j
-    simp only [matchingCoordinateClosedBank, Function.update_of_ne (hrg.ne (by decide : (7 : Fin 11) ≠ 10)),
-      Function.update_of_ne (hrg.ne (by decide : (7 : Fin 11) ≠ 8)), Function.update_self]
-    exact matchingCoordinateTrace_input R rg hrg reverse Li Lk xs hinput
-  · simp only [matchingCoordinateClosedBank, Function.update_of_ne hd, Function.update_of_ne ha, Function.update_of_ne hs]
-    exact matchingCoordinateTrace_keep R rg reverse Li Lk xs j hs ha hd
+  let frame := fun x : ℕ × ℕ => matchingEntryWord (A := A) (Li + Lk) x.1 x.2
+  let output := fun x : ℕ × ℕ => sourceCoordinateInputRecord (A := A) Li Lk
+    (matchingCoordinateInput reverse x.1 x.2).1 (matchingCoordinateInput reverse x.1 x.2).2
+  have hi (ys : List (ℕ × ℕ)) : delimitedScheduleInput frame ys = matchingEntryWords (Li + Lk) ys := by
+    induction ys with
+    | nil => rfl
+    | cons y ys ih => simp only [delimitedScheduleInput, matchingEntryWords, frame, ih]
+  have ho (ys : List (ℕ × ℕ)) : ys.flatMap output = matchingCoordinateOutput reverse Li Lk ys := by
+    induction ys with
+    | nil => rfl
+    | cons y ys ih => simpa only [List.flatMap_cons, matchingCoordinateOutput, List.map_cons,
+        sourceCoordinateInputWords, output] using congrArg (output y ++ ·) ih
+  have ht (ys : List (ℕ × ℕ)) (bank : Fin T → List (Fin (A + 4))) :
+      matchingCoordinateTraceBank bank rg reverse Li Lk ys =
+        delimitedScheduleBank (rg 7) (rg 8) (rg 10) frame (fun x w => (output x).reverse ++ w) ys bank := by
+    induction ys generalizing bank with
+    | nil => rfl
+    | cons y ys ih =>
+      simpa only [matchingCoordinateTraceBank, delimitedScheduleBank, matchingCoordinateStepBank,
+        delimitedCallAdvanced, hi, frame, output] using
+          ih (matchingCoordinateStepBank bank rg reverse Li Lk y.1 y.2 (matchingEntryWords (Li + Lk) ys))
+  rw [ht]
+  have h := delimitedScheduleBank_prepend (rg 7) (rg 8) (rg 10)
+    (hrg.ne (by decide)) (hrg.ne (by decide)) (hrg.ne (by decide)) frame output xs R (by rw [hi]; exact hinput)
+  simpa only [hi, ho, matchingCoordinateClosedBank] using h
 
 end IntegerMultBounds.MathlibTM2.Routing

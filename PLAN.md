@@ -202,7 +202,7 @@ obligation are in [Routing/DESIGN.md](IntegerMultBounds/MathlibTM2/Routing/DESIG
 | --- | --- | --- | --- |
 | R1 selective updates | ✅ | Complete selective primitive: arbitrary ordered allowed sources, physical good-set XOR, full source/spectator and borrowed-field restoration, global rank permutation, and executed setup/routing/cleanup with every phase priced. `SelectiveRouter.selectiveRouting_exec` instantiates concrete register placement, canonical header values, logarithmic guard widths and the physical exceptional bound `5 / (128 scale³)`. See [completion audit](IntegerMultBounds/MathlibTM2/Routing/R1-AUDIT.md). | ~6.5k |
 | R2 exact repair | ✅ | Complete all-address selective primitive. `exactSelective_exec` in `ExactSelective.lean` executes all 34 metadata installations, complete-rank keying, R1 routing, physical classification, exceptional extraction/radix sort/merge/key stripping, and final cleanup on one concrete bank. Every register except the output stream is restored; canonical headers, explicit logarithmic guards and the physical density price the total cost. See [completion audit](IntegerMultBounds/MathlibTM2/Routing/R2-AUDIT.md). | ~2.7k |
-| R3 complete router | 🟡 | Matching/reservoir partition, permutation decomposition, descriptor generation and short-record fallback. Compose R1–R2 into a full arbitrary-coordinate routing program, with all borrowed fields restored. | 3–5k |
+| R3 complete router | 🟡 | Matching/reservoir partition, permutation decomposition, descriptor generation and short-record fallback. Compose R1–R2 into a full arbitrary-coordinate routing program, with all borrowed fields restored. | Estimate retired; see sizing audit below |
 | R4 integration and support | ⬜ | Forward/inverse layout replacement and cost matching; preserve reserved coordinates and a complete untouched suffix for M11's grouped phases. Supplies S4's movement interface. | 3–6k |
 
 R1 checkpoint: `Routing/Shear` and `PackedShear` prove the logical and packed
@@ -310,7 +310,7 @@ R1's physical bad count. `exactSelective_exec` in `ExactSelective.lean` combines
 execution with canonical headers and explicit ceiling-logarithm guards; it has no
 prepared-state, classifier, key-emitter or placement oracle. The
 [R2 audit](IntegerMultBounds/MathlibTM2/Routing/R2-AUDIT.md) records the acceptance
-evidence. The routing directory now has approximately **9.2k** Lean lines, about
+evidence. At the R2 checkpoint, the routing directory had approximately **9.2k** Lean lines, about
 **2.7k** beyond the R1 checkpoint, reusing the existing scan and radix-sort programs.
 
 R3 has a checked logical matching schedule. `ReservoirPartition` splits an
@@ -1681,8 +1681,30 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    metadata rewind. Only the routed stream changes; no execution callback is
    assumed. Remaining scalar/placement production, initial matching-table
    production/accounting, full bulk/terminal/18-shear schedule instantiation
-   and uniform full-router amortization/fallback remain open. R3 and kappa
-   are unchanged.
+   and uniform full-router amortization/fallback remain open.
+   `MiddleMatching` now restricts a physical matching fixing the surrounding
+   fields to an explicit involution on the middle field, using coordinate
+   subtraction. `MiddleMatchingShears` proves its three lifted shears give
+   the complete physical matching after placement is undone.
+   `ReservoirMiddleMatching` discharges the outside-field fixing premise for
+   actual reservoir placement and every reservoir class, and identifies the
+   restricted source with its original physical mate. This bridges reservoir
+   class semantics to middle-field matching; executed table transformation and
+   concrete profile/terminal schedule instantiation remain open.
+   `BinaryCoordinateTranslate` executes interval-base translation with restored
+   arithmetic scratch. `BinaryBlockCoordinateLayout.binaryBlockCoordinate_exec`
+   reuses the region dispatcher and that translation to compute the literal
+   `blockExchange` on a live binary coordinate, preserving every tape except
+   its output, in at most `50 * width + 54` steps. This is scalar metadata
+   transformation, not record routing or complete matching-table conversion.
+   `MatchingLookupCall` executes query equality and conditional mate copying.
+   `MatchingTableLookup` now instantiates the existing framed bank scheduler
+   directly on the common matching-table encoding, derives unique-row output,
+   and restores the entire table, query and workspace. Its complete bound is
+   `coordinateCount * (30 * width + 39) + 4` steps, including loading, cleanup
+   and rewind. No new scanner-loop or archive engine is used. Composed
+   placement translation, complete middle-table production and concrete
+   schedule instantiation remain open. R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
@@ -1694,7 +1716,21 @@ Raw descriptor/header generation, sparse-profile compilation, physical placement
 and short-record fallback remain R3. Layout/support integration
 remains R4. Completing R2 does not change the current multiplication kappa.
 
-Estimated routing total: **15–24k additional or substantially revised Lean lines**; excludes generated data and Python. Existing layout,
+**R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
+the later **15–24k additional or substantially revised Lean lines** estimate are
+retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
+about **65k lines beyond the documented R2 checkpoint**, while R3 remains open.
+The current matching scheduler imports **586 routing modules / 48.4k lines**;
+another **248 modules / 25.9k lines** lie outside that import closure. This is an
+import inventory, not evidence that those outside modules can all be removed:
+they include terminal routing, reservoir semantics and alternative interfaces.
+Future implementation must reuse the generic loader/loop and frame interfaces,
+consolidate duplicated traversal proofs, and audit superseded wrappers against
+the actual router path. Shared scanner final-bank reasoning is now centralized
+in `delimitedScheduleBank_prepend`; coordinate generation and residue filtering
+instantiate it instead of maintaining separate input/archive/spectator lemmas.
+No new line-count ETA is supported until the remaining full-router construction
+and retirement opportunities are assessed. Existing layout,
 CRT-control, rotation and sorting primitives are reused. R1's logical identity is
 not a tape implementation: source gathering, packed loads, guards, repair and their
 costs must be proved before the router can improve a machine bound. Do not introduce

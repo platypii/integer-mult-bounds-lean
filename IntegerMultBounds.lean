@@ -1778,3 +1778,10 @@ public import IntegerMultBounds.MathlibTM2.Routing.MatchingPlacedCurrent
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingPlacedFramed
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingRepairScheduleStage
 public import IntegerMultBounds.MathlibTM2.Routing.FramedMatchingRepairSchedule
+public import IntegerMultBounds.MathlibTM2.Routing.MiddleMatching
+public import IntegerMultBounds.MathlibTM2.Routing.MiddleMatchingShears
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMiddleMatching
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryCoordinateTranslate
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryBlockCoordinateLayout
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingLookupCall
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingTableLookup
