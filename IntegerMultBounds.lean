@@ -1733,3 +1733,5 @@ public import IntegerMultBounds.MathlibTM2.Routing.LiveHeaderPriceFrame
 public import IntegerMultBounds.MathlibTM2.Routing.LiveProfileBankFrame
 
 public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedPriceFrame
+
+public import IntegerMultBounds.MathlibTM2.Routing.FramedGeneratedPlacedRepair

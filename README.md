@@ -40,8 +40,10 @@ spacing. Complete directional destination maps now compose bulk and terminal
 rank permutations, with exact shear semantics and restored surrounding bits.
 A fixed-register schedule now executes repeated exact-repair calls from supplied
 raw configuration, including loading, cleanup and full input rewind. The full
-generated/placed price is proved independent of record order. Scheduling
-the generated/placed calls, matching-derived inputs, remaining setup production
+generated/placed price is proved independent of record order, and one complete
+generated/placed call now executes from a framed input bank with loading and
+erasure charged, using one fixed program across geometries. Repeated generated-call
+scheduling, matching-derived inputs, remaining setup production
 and uniform amortization remain open.
 The complete router and multiplication integration remain in R3–R4; this work
 does not yet change the multiplication saving. See [the active plan](PLAN.md) and

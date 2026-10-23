@@ -1536,8 +1536,8 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    their number is independent of geometry and call count. Its exact embedded
    stack identity retains the live record stream and supplies every other raw
    core word, allowing generated-call readiness to be transported together.
-   Applying the generated/placed execution theorem and its price to this bank,
-   then composing its repeated schedule, remain open.
+   Its single-call execution and price instantiation follows below; composing
+   the repeated generated schedule remains open.
    `FramedCoreCall` now executes full-core loading, an embedded stream-only core
    execution and full raw-bank erasure with linear framing overhead. It uses
    the whole-stack identity to transport the existing core theorem and preserves
@@ -1560,8 +1560,28 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    cleanup term, and proves stream invariance. `GeneratedPlacedPriceFrame` joins
    it to both executed-placement budgets and proves the full price is unchanged
    by updates to either physical or projected stream. This supplies a fixed
-   per-stage price; applying the whole-bank loader to the actual generated/placed
-   execution theorem and its repeated schedule is still open.
+   per-stage price. Its actual framed execution is instantiated below; the
+   repeated generated schedule remains open.
+   `JointBankAllSourceProfilesPriced` now applies the actual generated/placed
+   execution theorem with its complete fixed price evaluated before forward
+   placement; the price comparison uses an isolated preparation-bank identity
+   to avoid deep expansion in the execution context. `FramedGeneratedPlacedRepair`
+   discharges the whole-core loader's execution premise with that theorem. It
+   executes metadata loading, coordinate-driven profiles, classifiers, widths,
+   headers, forward placement, exact repair, inverse placement and raw-bank
+   erasure on a fixed core plus three shared loader tapes. No execution callback
+   is assumed. The encoded coordinate/scalar/placement input bank remains supplied;
+   repeated generated-call scheduling, matching-derived input production and
+   full-router amortization remain open. The uniform code identity follows below.
+   `BinaryExchangeFixedProgram` and `BinaryScheduleFixedProgram` erase all
+   geometry, row-count and binary-width annotations from placement code;
+   `FieldPairFixedProgram` does the same for generated widths.
+   `GeneratedPlacedFixedProgram` proves the entire placed pipeline is one
+   `allSourcePlacedFixedProgram`, depending only on fixed registers, alphabet,
+   control-state bounds and procedure embedding. `FramedGeneratedPlacedRepair`
+   now states actual execution of that same program for every stage. This closes
+   uniform single-call code and pricing; repeated generated-call readiness and
+   composition, input production and global cost/fallback gates remain open.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
