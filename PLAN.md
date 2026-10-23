@@ -1209,6 +1209,28 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    repaired stream changes and every phase is charged. Classifier generation and
    placement around this enlarged bank, active/selected profiles, remaining scalars
    and uniform total-cost/amortization bounds remain open; R3 and kappa are unchanged.
+   `InactiveClassifierFrame` and `InactiveClassifierBank` now extend the enlarged
+   inactive-profile/header/width bank with executed classifier generation, proving
+   all live, profile, header and width inputs survive the mask writes.
+   `InactiveClassifierRepairGenerated` derives the complete repair contract on
+   that generated-mask bank from pending mask data. `InactiveClassifierRepair`
+   composes actual classifier, width, header and three-profile generation, full
+   descriptor/repair execution and every cleanup phase. All those generated inputs
+   initially are blank; every phase is charged and only the stream changes.
+   Placement integration around this enlarged bank, active/selected profile and
+   remaining scalar generation, routing schedules and uniform total-cost bounds
+   remain open; full R3 and kappa are unchanged.
+   `InactiveClassifierRepairMoved` transports every input and readiness condition
+   across record placement through all four bank layers. `PlacedInactiveClassifierRepair`
+   composes actual forward placement, classifier/width/header/inactive-profile
+   generation, exact descriptor/repair execution, all cleanup and inverse placement.
+   `InactiveClassifierPlacementLayout` separates the enlarged bank from placement
+   metadata. `JointBankInactiveClassifierRepair` derives exchange calls and readiness
+   from concrete shared-bank words, without supplied ready calls. Every phase is
+   charged and all non-stream tapes are restored. Placement words, binary scalar
+   operands and the remaining active/selected profiles still are supplied; their
+   generation, full routing schedules and uniform total-cost/amortization bounds
+   remain open. R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
