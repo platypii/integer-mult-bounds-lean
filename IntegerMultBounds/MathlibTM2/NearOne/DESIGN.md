@@ -269,9 +269,23 @@ default build does not check them.
      preserving dimensions, the pi/precision variables and the emitted stream. The
      same routine handles the shifted kernel with offset `2m-1`. `ChirpTablesCheck`
      audits the table arguments, error bounds and distance routine.
-     S2/S3 still need table-machine argument completion/emission, overlapping-window gathering,
-     binary dimension conversion and output arithmetic, followed by the complete
-     forward-resampling contract and cost comparison.
+     `ChirpTableMachineArgs` and `ChirpTableOutputArgs` now compute all exponential
+     arguments and sign bits in 17 and 8 atoms respectively. `ChirpTableEntry` composes
+     those programs with evaluation and word emission. `ChirpTableBounds` discharges
+     every argument/evaluator overflow check from a common envelope and proves the
+     explicit width `W = 13q + 8 + 8 size(B) + 4` sufficient. One natural positive-exponent
+     gate supplies both the machine branch guard and the analytic error condition.
+     `ChirpTablePi` computes pi once per stream; `ChirpTableRows` and `ChirpTableStreams`
+     execute rows with no supplied coefficient, exponent-argument or pi values.
+     Negative rows cost `N (310q + 122) + 150q + 404` atoms; output rows cost
+     `N (310q + 113) + 150q + 404`. `ChirpTableHost` lowers them to actual tape programs
+     at cost `atoms · tblC W w + 2 Nw + 2`, with forward output order, preserved native
+     and spectator stacks, and an exact resulting table-bank contract. `ChirpTableWordBounds`
+     proves numerator bounds and exact signed decoding of emitted words with the stated
+     guard bits. `ChirpTableMachineCheck` audits the entire imported shared namespace.
+     S2/S3 still need complete multi-block table schedules and owned table-bank cleanup,
+     overlapping-window gathering, binary dimension conversion and output arithmetic,
+     followed by the complete forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
      (`norm_chirpRec_le`); coefficient `4m - 1 - b` of their convolution is the correlation

@@ -16,6 +16,19 @@ namespace IntegerMultBounds.MathlibTM2.Mult.ShortConv
 
 open IntegerMultBounds IntegerMultBounds.MathlibTM2.Fast.TableVM
 
+/-- Stable pi/precision inputs and high control variables; 40 and 41 are local scratch. -/
+def ChirpTableFrame {A : ℕ} (st z : TblSt 48 A) : Prop :=
+  z.val 18 = st.val 18 ∧ z.val 19 = st.val 19 ∧
+    ∀ i : Fin 48, 34 ≤ i.val → i ≠ 40 → i ≠ 41 → z.val i = st.val i
+
+theorem chirpTableFrame_refl {A : ℕ} (st : TblSt 48 A) : ChirpTableFrame st st :=
+  ⟨rfl, rfl, fun _ _ _ _ => rfl⟩
+
+theorem chirpTableFrame_trans {A : ℕ} {x y z : TblSt 48 A}
+    (hxy : ChirpTableFrame x y) (hyz : ChirpTableFrame y z) : ChirpTableFrame x z :=
+  ⟨hyz.1.trans hxy.1, hyz.2.1.trans hxy.2.1,
+    fun i hi h40 h41 => (hyz.2.2 i hi h40 h41).trans (hxy.2.2 i hi h40 h41)⟩
+
 /-- Comparison selects a subtraction without underflow. -/
 def tblChirpAbsDiff : TblCode 48 :=
   .ite 25 26 (.ins (.sub 26 25 27)) (.ins (.sub 25 26 27))
@@ -83,8 +96,7 @@ theorem tblChirpDistance_do {A W w : ℕ} (st : TblSt 48 A) (s t offset k0 a : �
     (hN : s * k0 + t * offset < 2 ^ W) (hsq : chirpDistanceSquare s t offset k0 a < 2 ^ W) :
     TblDo A W w tblChirpDistance st
       (fun z => z.val 27 = chirpDistanceSquare s t offset k0 a ∧ z.acc = st.acc ∧
-        z.val 18 = st.val 18 ∧ z.val 19 = st.val 19 ∧ z.val 34 = s ∧ z.val 35 = t ∧ z.val 36 = st.val 36 ∧ z.val 37 = offset ∧
-        z.val 38 = k0 ∧ z.val 39 = a) 9 := by
+        ChirpTableFrame st z) 9 := by
   let P := t * (s * k0 / t + a)
   let N := s * k0 + t * offset
   let pre := tblChirpDistancePrefix ++ [.add 40 26 26]
@@ -99,8 +111,7 @@ theorem tblChirpDistance_do {A W w : ℕ} (st : TblSt 48 A) (s t offset k0 a : �
   let st₂ : TblSt 48 A := ⟨Function.update st₁.val 27 (if P < N then N - P else P - N), st₁.acc⟩
   have hlast : TblDo A W w (.ins (.mul 27 27 27)) st₂
       (fun z => z.val 27 = chirpDistanceSquare s t offset k0 a ∧ z.acc = st.acc ∧
-        z.val 18 = st.val 18 ∧ z.val 19 = st.val 19 ∧ z.val 34 = s ∧ z.val 35 = t ∧ z.val 36 = st.val 36 ∧ z.val 37 = offset ∧
-        z.val 38 = k0 ∧ z.val 39 = a) 1 := by
+        ChirpTableFrame st z) 1 := by
     refine TblDo.insX (.mul 27 27 27) ?_ ?_
     · change (if P < N then N - P else P - N) * (if P < N then N - P else P - N) < 2 ^ W
       rw [← pow_two]
@@ -111,7 +122,15 @@ theorem tblChirpDistance_do {A W w : ℕ} (st : TblSt 48 A) (s t offset k0 a : �
         rw [← pow_two]
         rfl
       · exact hacc
-      · simp [st₂, st₁, pre, tblChirpDistancePrefix, tblExactList, TblIns.exact, hs, ht, ho, hk, ha]
+      · refine ⟨?_, ?_, ?_⟩
+        · simp [st₂, st₁, pre, tblChirpDistancePrefix, tblExactList, TblIns.exact]
+        · simp [st₂, st₁, pre, tblChirpDistancePrefix, tblExactList, TblIns.exact]
+        · intro i hi h40 h41
+          have h25 : i ≠ 25 := by intro h; subst i; norm_num at hi
+          have h26 : i ≠ 26 := by intro h; subst i; norm_num at hi
+          have h27 : i ≠ 27 := by intro h; subst i; norm_num at hi
+          simp [st₂, st₁, pre, tblChirpDistancePrefix, tblExactList, TblIns.exact,
+            h25, h26, h27, h40, h41]
   have htail := (tblChirpAbsDiff_do (w := w) st₁ hp hn hP hN).seq (fun z hz => by cases hz; exact hlast)
   exact (hpre.seq (fun z hz => by cases hz; exact htail)).mono (fun z h => h)
     (by simp [tblChirpDistancePrefix])
