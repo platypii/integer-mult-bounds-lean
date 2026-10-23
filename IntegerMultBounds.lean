@@ -1833,6 +1833,8 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalClassInput
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalMatchingExec
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalMatchingInput
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalMatchingRestore
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPermutationRank
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPermutationExec
 public import IntegerMultBounds.MathlibTM2.Routing.CommonBankBulk
 public import IntegerMultBounds.MathlibTM2.Routing.CommonBankDirectional
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterClass

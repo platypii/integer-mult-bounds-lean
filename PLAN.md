@@ -1889,7 +1889,19 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    its linear cost and returns exactly the original bank with only the record
    stream updated by the matching permutation. The complete explicit metadata
    frame is still supplied. Executed frame production, arbitrary permutation
-   decomposition, uniform total-cost bounds and the other R3 gates remain open. Canonical terminal scalar
+   decomposition, uniform total-cost bounds and the other R3 gates remain open.
+   `CanonicalPermutationRank` now instantiates the existing two cycle reflections
+   with the actual matching rank permutations, constructs the intermediate
+   records, and proves the resulting rank action is the original arbitrary
+   coordinate permutation while preserving outer rows. This closes the rank
+   composition. `CanonicalPermutationExec` now joins the two matching tape
+   executions in the reflection order, using the actual intermediate records,
+   and executes all eighteen directions with summed setup/routing/cleanup costs.
+   Its final charged outer-input rewind restores the entire bank except the
+   stream, whose rank permutation has the requested coordinate-bit action and
+   preserves outer rows. The complete explicit frame is still supplied;
+   executed cycle-decomposition/table and frame production, uniform pricing,
+   long-record amortization and short-record fallback remain open. Canonical terminal scalar
    widths and row-counter words are now selected from dimensions; executing
    their production remains open. Original
    permutation decomposition/table generation, remaining scalar metadata setup,

@@ -82,10 +82,11 @@ its exact class permutation and a reusable final bank. All three classes now
 execute as a nine-direction schedule with the original matching permutation,
 charged reloads and a reusable final bank. Intermediate records are now constructed
 automatically, and a charged final rewind restores every tape except the record
-stream. The concrete outer input frame
-is still supplied; executed metadata generation, initial
-permutation decomposition/table generation, the complete router schedule and
-uniform amortization/fallback remain open.
+stream. Two matching executions now implement an arbitrary coordinate permutation
+in eighteen directions, with all routing and final rewind charged and every
+other tape restored. The concrete outer input frame is still supplied;
+executed decomposition/table and frame generation, uniform pricing and
+amortization/fallback remain open.
 The complete router and multiplication integration remain in R3–R4; this work
 does not yet change the multiplication saving. See [the active plan](PLAN.md) and
 [the R2 audit](IntegerMultBounds/MathlibTM2/Routing/R2-AUDIT.md).
