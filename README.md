@@ -32,6 +32,10 @@ lists its dependencies and legacy removal candidates; the retired native control
 The next routing construction has completed R1 and R2: a concrete selective-update
 program with exact repair on every address, fully priced metadata setup, keying,
 routing, classification, sorting and cleanup, and restored borrowed registers.
+R3 now generates all eleven repair source profiles and their activity from one
+canonical raw source stream, composing classifiers, widths, headers, exact repair,
+placement and cleanup with restored borrowed tapes. Raw-record and remaining setup
+production, complete routing schedules and uniform amortization remain open.
 The complete router and multiplication integration remain in R3–R4; this work
 does not yet change the multiplication saving. See [the active plan](PLAN.md) and
 [the R2 audit](IntegerMultBounds/MathlibTM2/Routing/R2-AUDIT.md).

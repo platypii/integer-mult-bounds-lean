@@ -1705,3 +1705,4 @@ public import IntegerMultBounds.MathlibTM2.Routing.RepairAllSourceProfiles
 public import IntegerMultBounds.MathlibTM2.Routing.AllSourceProfilesRepair
 public import IntegerMultBounds.MathlibTM2.Routing.JointBankAllSourceProfilesRepair
 public import IntegerMultBounds.MathlibTM2.Routing.RepairRawSourceLayout
+public import IntegerMultBounds.MathlibTM2.Routing.SourceRecordProfilesRepair

@@ -32,14 +32,11 @@ theorem allSourceProfilesWidthGenerated_exec (body : P → Pr P repairT Q (prime
     (hlive : ∀ f, liveBody f = embProg liveDescriptorCore id (body f))
     (outerBody : P → Pr P T₀ Q (prime + K) U)
     (houter : ∀ f, outerBody f = embProg e₀ id (liveBody f))
-    (keySrc xSrc activity : Fin repairT)
+    (keySrc activity : Fin repairT) (hsa : keySrc ≠ activity)
     (hkeyHeader : ∀ c k, keySrc ≠ repairRoutingConfig (.header c k))
-    (hxHeader : ∀ c k, xSrc ≠ repairRoutingConfig (.header c k))
     (hactivityHeader : ∀ c k, activity ≠ repairRoutingConfig (.header c k))
     (hkeyRow : keySrc ≠ repairSetupSource (.inr .row))
     (hkeyMask : keySrc ≠ repairSetupSource (.inr .keyMask))
-    (hxRow : xSrc ≠ repairSetupSource (.inr .row))
-    (hxMask : xSrc ≠ repairSetupSource (.inr .keyMask))
     (hactivityRow : activity ≠ repairSetupSource (.inr .row))
     (hactivityMask : activity ≠ repairSetupSource (.inr .keyMask))
     (w : LiveDescriptorWidths) (hwidth : w.selectorBits = w.coordinateBits)
@@ -63,9 +60,7 @@ theorem allSourceProfilesWidthGenerated_exec (body : P → Pr P repairT Q (prime
     (hinput : ∀ j, S.R (e₀ (liveDescriptorAux (.input j))) = [])
     (hkey : S.R (liveZSourceActivity keySrc) = gatedSelectedSourceWords w.indexBits w.strideBits
       (List.ofFn (fun c => (s c).gatedChoice (active c))))
-    (hxraw : S.R (liveZSourceActivity xSrc) = gatedSelectedSourceWords w.indexBits w.strideBits
-      (List.ofFn (fun c => (s c).gatedChoice (active c))))
-    (hactivity : S.R (liveZSourceActivity activity) = (List.ofFn active).map bitSymbol)
+    (hactivity : S.R (liveZSourceActivity activity) = [])
     (hcount : S.R (liveInactiveProfileAux 0) = binSyms w.indexBits n)
     (hscratch : ∀ i : Fin 7, i ≠ 0 → S.R (liveInactiveProfileAux i) = [])
     (l : List (List (Fin (prime + K + 4)))) (hl : l.length = R * 2 ^ fieldsLen (selectiveLen p₀ X))
@@ -87,11 +82,11 @@ theorem allSourceProfilesWidthGenerated_exec (body : P → Pr P repairT Q (prime
     let C := embStk e₀ G
     ∃ (v' : HS inactiveProfileHeaderT Q (prime + K) U) (steps : ℕ), v'.user = v.user ∧
       (steps : ℝ) ≤ (2 * (14 * ((p₀).wc + (p₀).wy + X) + 18 * Lrow + 24 * Lwidth + 52 * wb + 280) : ℕ) +
-        (((liveSelectedProfilesCost p₀ w + repairControlProfilesCost p₀ w w.indexBits) : ℕ) +
+        (((liveSelectedProfilesCost p₀ w + repairControlProfilesCost p₀ w w.indexBits + (n * (6 * w.indexBits + 6 * w.coordinateBits + 19) + 2 * (n * (w.indexBits + w.coordinateBits + 5)) + 4 * n + 8)) : ℕ) +
         liveRepairPrice p₀ X rb hG₀ hK₀ active s scale wb wm wp wk R B w C +
         (9 * (2 * (n * (w.selectorBits + 3)) + 2) + 2 * (2 * ((p₀).wc * (w.selectorBits + 3)) + 2) + 1 : ℕ)) + (repairHeaderErasePrice p₀ X rb R B : ℕ) ∧
       Exec headerBody (.seq (binaryRepairHeaderPairProgram sharedHeaderBinary inactiveProfileHeaderBank)
-        (.seq (embProg sharedHeaderCore id (.seq (repairAllSourceProfilesProgram keySrc xSrc activity)
+        (.seq (embProg sharedHeaderCore id (.seq (repairSourceRecordProfilesProgram keySrc activity)
         (.seq (embProg e₀ id (liveRepairProgram hQ hA))
           (metadataClean (liveInactiveProfileTargets repairAllSourceProfileJobs)))))
           (metadataClean (embeddedGeneratedHeaderTargets inactiveProfileRaw))))
@@ -122,7 +117,7 @@ theorem allSourceProfilesWidthGenerated_exec (body : P → Pr P repairT Q (prime
     rw [hp]
     exact data
   apply allSourceProfilesHeaderRepair_exec ρ n m X rb scale active s body liveBody hlive outerBody houter
-    keySrc xSrc activity hkeyHeader hxHeader hactivityHeader w hwidth hselectorWidthFit hkfit hnfit hwfit hQ hA hscale hn hR hB hrb hs v S₁
+    keySrc activity hsa hkeyHeader hactivityHeader w hwidth hselectorWidthFit hkfit hnfit hwfit hQ hA hscale hn hR hB hrb hs v S₁
   · exact hdata.inactiveProfileWidths p₀ X rb
   · intro key
     exact (hraw _ (repairSetup_sources _ _).symm (repairSetup_sources _ _).symm).trans (hempty key)
@@ -140,7 +135,6 @@ theorem allSourceProfilesWidthGenerated_exec (body : P → Pr P repairT Q (prime
   · intro j
     exact (haux (.input j)).trans (hinput j)
   · exact (hraw keySrc hkeyRow hkeyMask).trans hkey
-  · exact (hraw xSrc hxRow hxMask).trans hxraw
   · exact (hraw activity hactivityRow hactivityMask).trans hactivity
   · exact (hprofileAux 0).trans hcount
   · intro i hi

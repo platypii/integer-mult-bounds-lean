@@ -39,23 +39,18 @@ theorem jointBankAllSourceProfilesRepair_exec (body : P → Pr P repairT Q (prim
     (hlive : ∀ f, liveBody f = embProg liveDescriptorCore id (body f))
     (outerBody : P → Pr P T₀ Q (prime + K) U)
     (houter : ∀ f, outerBody f = embProg e₀ id (liveBody f))
-    (keySrc xSrc activity : Fin repairT)
+    (keySrc activity : Fin repairT) (hsa : keySrc ≠ activity)
     (hkeyHeader : ∀ c k, keySrc ≠ repairRoutingConfig (.header c k))
-    (hxHeader : ∀ c k, xSrc ≠ repairRoutingConfig (.header c k))
     (hactivityHeader : ∀ c k, activity ≠ repairRoutingConfig (.header c k))
     (hkeyRow : keySrc ≠ repairSetupSource (.inr .row))
     (hkeyMask : keySrc ≠ repairSetupSource (.inr .keyMask))
-    (hxRow : xSrc ≠ repairSetupSource (.inr .row))
-    (hxMask : xSrc ≠ repairSetupSource (.inr .keyMask))
     (hactivityRow : activity ≠ repairSetupSource (.inr .row))
     (hactivityMask : activity ≠ repairSetupSource (.inr .keyMask))
     (hkeyBadMask : keySrc ≠ repairSetupSource (.inr .badMask))
     (hkeyBadPhase : keySrc ≠ repairSetupSource (.inr .badPhase))
-    (hxBadMask : xSrc ≠ repairSetupSource (.inr .badMask))
-    (hxBadPhase : xSrc ≠ repairSetupSource (.inr .badPhase))
     (hactivityBadMask : activity ≠ repairSetupSource (.inr .badMask))
     (hactivityBadPhase : activity ≠ repairSetupSource (.inr .badPhase))
-    (hkeySrc : keySrc ≠ repairHost.src) (hxSrc : xSrc ≠ repairHost.src)
+    (hkeySrc : keySrc ≠ repairHost.src)
     (hactivitySrc : activity ≠ repairHost.src)
     (w : LiveDescriptorWidths) (hwidth : w.selectorBits = w.coordinateBits)
     (hselectorWidthFit : w.coordinateBits < 2 ^ w.widthBits)
@@ -78,9 +73,7 @@ theorem jointBankAllSourceProfilesRepair_exec (body : P → Pr P repairT Q (prim
     (hinput : ∀ j, S.R (e₀ (liveDescriptorAux (.input j))) = [])
     (hkey : S.R (liveZSourceActivity keySrc) = gatedSelectedSourceWords w.indexBits w.strideBits
       (List.ofFn (fun c => (s c).gatedChoice (active c))))
-    (hxraw : S.R (liveZSourceActivity xSrc) = gatedSelectedSourceWords w.indexBits w.strideBits
-      (List.ofFn (fun c => (s c).gatedChoice (active c))))
-    (hactivity : S.R (liveZSourceActivity activity) = (List.ofFn active).map bitSymbol)
+    (hactivity : S.R (liveZSourceActivity activity) = [])
     (hcount : S.R (liveInactiveProfileAux 0) = binSyms w.indexBits n)
     (hscratch : ∀ i : Fin 7, i ≠ 0 → S.R (liveInactiveProfileAux i) = [])
     (l : List (List (Fin (prime + K + 4)))) (hl : l.length = R * 2 ^ fieldsLen (selectiveLen p₀ X))
@@ -154,7 +147,7 @@ theorem jointBankAllSourceProfilesRepair_exec (body : P → Pr P repairT Q (prim
         ((binaryTemporaryMaskCost p₀ LK Ln Lo Lt + binaryPhaseMaskCost p₀ LK Ln Lo Lt : ℕ) +
         (((Lr * (4 * rb + 11) + 8 * rb + 12) + (Lm * (4 * (p₀).wy + 11) + 2 * (p₀).wy + 6) + 1 : ℕ) +
         ((2 * (14 * ((p₀).wc + (p₀).wy + X) + 18 * Lrow + 24 * Lwidth + 52 * wb + 280) : ℕ) +
-        (((liveSelectedProfilesCost p₀ w + repairControlProfilesCost p₀ w w.indexBits) : ℕ) +
+        (((liveSelectedProfilesCost p₀ w + repairControlProfilesCost p₀ w w.indexBits + (n * (6 * w.indexBits + 6 * w.coordinateBits + 19) + 2 * (n * (w.indexBits + w.coordinateBits + 5)) + 4 * n + 8)) : ℕ) +
         liveRepairPrice p₀ X rb hG₀ hK₀ active s scale wb wm wp wk R B w C +
         (9 * (2 * (n * (w.selectorBits + 3)) + 2) + 2 * (2 * ((p₀).wc * (w.selectorBits + 3)) + 2) + 1 : ℕ)) + (repairHeaderErasePrice p₀ X rb R B : ℕ)) + (2 * rb + 2 * (p₀).wy + 5 : ℕ)) + (4 * ((p₀).wy + 1) + 5 : ℕ)) + binaryExchangeChainCost calls M (reservoirExchangeOrder true) ∧
       Exec placementBody (.seq (binaryExchangeChain calls (reservoirExchangeOrder false))
@@ -163,7 +156,7 @@ theorem jointBankAllSourceProfilesRepair_exec (body : P → Pr P repairT Q (prim
         (.seq (embProg classifierCore id (.seq (binaryFieldBatch (fieldPairJobs (inactiveProfileHeaderRaw (repairSetupSource (.inr .row)))
           (inactiveProfileHeaderRaw (repairSetupSource (.inr .keyMask))) Lr Lm rb (p₀).wy))
         (.seq (embProg (fieldCore (N := inactiveProfileHeaderT)) id (.seq (binaryRepairHeaderPairProgram sharedHeaderBinary inactiveProfileHeaderBank)
-        (.seq (embProg sharedHeaderCore id (.seq (repairAllSourceProfilesProgram keySrc xSrc activity)
+        (.seq (embProg sharedHeaderCore id (.seq (repairSourceRecordProfilesProgram keySrc activity)
         (.seq (embProg e₀ id (liveRepairProgram hQ hA))
           (metadataClean (liveInactiveProfileTargets repairAllSourceProfileJobs)))))
           (metadataClean (embeddedGeneratedHeaderTargets inactiveProfileRaw)))))
@@ -193,7 +186,7 @@ theorem jointBankAllSourceProfilesRepair_exec (body : P → Pr P repairT Q (prim
     rw [hplacementBank]
     exact hc.trans hstream
   exact placedAllSourceProfilesRepair_exec ρ n m X rb scale active s body liveBody hlive outerBody houter
-    keySrc xSrc activity hkeyHeader hxHeader hactivityHeader hkeyRow hkeyMask hxRow hxMask hactivityRow hactivityMask hkeyBadMask hkeyBadPhase hxBadMask hxBadPhase hactivityBadMask hactivityBadPhase hkeySrc hxSrc hactivitySrc w hwidth hselectorWidthFit hkfit hnfit hwfit hQ hA hscale hn hR hB hrb hs v S data hempty hL hblank hfit hbank hdesc hinput hkey hxraw hactivity hcount hscratch
+    keySrc activity hsa hkeyHeader hactivityHeader hkeyRow hkeyMask hactivityRow hactivityMask hkeyBadMask hkeyBadPhase hactivityBadMask hactivityBadPhase hkeySrc hactivitySrc w hwidth hselectorWidthFit hkfit hnfit hwfit hQ hA hscale hn hR hB hrb hs v S data hempty hL hblank hfit hbank hdesc hinput hkey hactivity hcount hscratch
     l hl hlen hsrc D hproject headerBody hheader Lrow Lwidth hRfit hwidthFit hrowInput hwidthInput hwork E hE
     widthBody hwidthBody Lr Lm hr hm hrowWidth hmaskWidth hwidthScratch hrow hmask
     classifierBody hclassifier F hF LK Ln Lo Lt hsegment hcountFit hoffset htop

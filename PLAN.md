@@ -1387,15 +1387,14 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    charging all phases. `RepairAllSourceProfiles` now executes all eleven
    profile generators in one shared bank, including region-base setup and cleanup,
    with a summed step bound and every non-profile tape restored. It establishes
-   descriptor readiness without any supplied completed profile. Raw tagged source
-   records, activity and scalars remain inputs. `AllSourceProfilesRepair` composes
+   descriptor readiness without any supplied completed profile. `AllSourceProfilesRepair` composes
    this eleven-profile generation with exact repair and complete profile cleanup:
    only the repaired stream changes and every phase is charged.
    `JointBankAllSourceProfilesRepair` now composes executed classifiers, widths,
    headers, all eleven profile generators, exact repair, forward/inverse placement,
    and complete cleanup. Placement readiness is derived from the concrete
    shared-bank words; every phase is charged and every non-stream tape restored.
-   Raw tagged source records, raw activity/scalars and placement words remain
+   Canonical raw source records, scalars and placement words remain
    inputs. `RepairRawSourceLayout` identifies six unused physical key-field
    aliases as concrete raw-input storage, proving separation from all setup
    sources/targets, the main stream and required blank scratch. Their input
@@ -1405,9 +1404,17 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    keys, archiving the activity bit without gating the X frame. This shared format
    is installed throughout the concrete placed-repair path; `liveSharedSourceProfiles_exec`
    explicitly runs both profile generators sequentially on one restored raw tape.
-   The separate raw activity stream is still supplied. Schedule-to-record production,
-   activity extraction, scalar/placement setup, full schedules and uniform cost/
-   amortization/fallback gates remain open. Full R3 and kappa are unchanged.
+   `SourceActivityGenerate` now extracts the activity word from canonical records
+   and restores the entire input. `RepairSourceRecordProfiles` installs it in the
+   live bank, runs all eleven profiles from that same raw stream, and clears the
+   temporary activity tape with every phase charged. `SourceRecordProfilesRepair`
+   composes this with exact repair and profile cleanup, requiring one canonical
+   source stream and no supplied activity. The concrete placed path now uses
+   this stronger contract throughout classifiers, widths, headers, all profiles,
+   exact repair and both placement exchanges. Its activity tape starts and ends
+   blank; every phase is charged and all non-stream tapes restore.
+   Schedule-to-record production, scalar/placement setup, full schedules and
+   uniform cost/amortization/fallback gates remain open. Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
