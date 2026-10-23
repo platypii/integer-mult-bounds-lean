@@ -1238,7 +1238,7 @@ remain available for the S2–S3 callers.
 | Package | Status | Deliverable and acceptance gate | Additional Lean, estimate |
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
-| S2 fast forward map | 🟡 math / ⬜ machine | Implement the chirped-correlation formula using S1, with executable coefficient tables, overlapping input windows and a proved forward-resampling contract. | 3–5k |
+| S2 fast forward map | 🟡 partial machine | Implement the chirped-correlation formula using S1, with executable coefficient tables, overlapping input windows and a proved forward-resampling contract. | 3–5k |
 | S3 fast inverse map | 🟡 math / ⬜ machine | Cell-interior products, boundary preparation/solve, coupling and recovery, with precision and actual line costs. Reuse the phase-cell mathematics and band primitives; fix the interface to S4–S5 before implementing a legacy whole-axis schedule. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Specify this interface with S3–S4; the old band solve alone does not establish it. | 4–10k |
@@ -1268,12 +1268,18 @@ with restored source, counters and scratch, at cost `6 start·w + 10 len·w + 16
 `Quot.sound` occur. The final five changed modules passed guarded single-file checks
 below 1.85 GiB each; the standalone audit target also passed after rebasing onto master.
 
-Remaining caller work includes binary-to-unary dimension conversion, chirp-specific
-selection/reversal, overlapping-window gathering, coefficient-table production and
-quantization, and composition with subsequent output arithmetic. `ShortConv.chirpAR_approx` (in `Mult/ChirpRing`)
-supplies the analytic correlation/error bridge; it does not execute those caller
-operations. S2–S6 remain open. Neither S1 nor R1 alone raises kappa; integrate a new
-public bound only when all affected costs close.
+S2 now has verified machine components for shared chirp batch extraction, generated
+coefficient tables, overlapping-window gathering with generated controls, cyclic-source
+construction, and generation of its unary counters from a retained binary dimension bank.
+Their actual tape costs, decoding and scratch frames are proved; see the
+[chirp implementation status](IntegerMultBounds/MathlibTM2/NearOne/DESIGN.md).
+Remaining work includes composing these setup phases from the original dimension inputs,
+reusing tables across lines, forming the weighted ring operands, output arithmetic and
+cropping, and the complete forward correctness/precision/cost contract.
+`ShortConv.chirpAR_approx` (in `Mult/ChirpRing`) supplies the analytic correlation/error
+bridge; the full caller execution and cost comparison are still required. S2–S6 remain
+open. Neither S1 nor R1 alone raises kappa; integrate a new public bound only when all
+affected costs close.
 
 ## Long-term source and proof obligations
 

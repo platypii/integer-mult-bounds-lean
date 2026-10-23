@@ -321,11 +321,18 @@ default build does not check them.
      copy exactly `N = (s+3m)w` symbols, discard overshoot, and rotate the source back.
      Only the extension destination changes. The bound is
      `C (8sw+9) + 10N + 10sw + 38`; overshoot is less than one source period,
-     with no `m ≤ s` restriction. `ChirpCyclicCheck` audits this path. The forward and
-     inverse rotation counts, repetition count and selected-length count are still
-     supplied unary inputs; their generation and composition with gathering remain open.
+     with no `m ≤ s` restriction. `ChirpCyclicCheck` audits this path.
+     `ChirpCyclicArgs`, `ChirpUnaryCopies`, `ChirpCyclicCounters` and `ChirpCyclicSetup`
+     now generate the forward/inverse rotation counts, repetition count, selected length
+     and gathering-window length from the retained binary `s,m,w` words. Nineteen
+     checked arithmetic atoms compute the counts; a structural conversion-list theorem
+     executes binary-to-unary conversion, and six clearing atoms restore the full bank.
+     Only the five counter destinations change, with exact count values and bound
+     `25C + (4W+2)K + 55W+31`, where `C = tblC W e` and
+     `K = sw + chirpPeriods s m + (s+3m)w + (3m+1)w`. `ChirpCyclicSetupCheck` audits it.
+     Composing this setup with cyclic construction and gathering remains open.
      S2/S3 still need table reuse across lines,
-     cyclic-source counter setup, initial dimension-bank setup and operand/output arithmetic,
+     setup/construction/gathering composition, initial dimension-bank setup and operand/output arithmetic,
      followed by the complete forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
