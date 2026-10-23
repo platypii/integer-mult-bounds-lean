@@ -29,6 +29,18 @@ theorem matchingRankSchedule_row {m n : ℕ} (π : Fin 3 → Equiv.Perm (Fin m))
   change (π 0 (π 1 (π 2 i))).val / 2 ^ n = _
   rw [hr, hr, hr]
 
+/-- Low address bits and the outer row determine a complete record rank. -/
+theorem rank_eq_of_bits_row {m n : ℕ} (i j : Fin m)
+    (hb : ∀ q : Fin n, i.val.testBit q.val = j.val.testBit q.val)
+    (hr : i.val / 2 ^ n = j.val / 2 ^ n) : i = j := by
+  apply Fin.ext
+  apply Nat.eq_of_testBit_eq
+  intro q
+  by_cases hq : q < n
+  · exact hb ⟨q, hq⟩
+  · have h := congrArg (fun r : ℕ => r.testBit (q - n)) hr
+    simpa only [Nat.testBit_div_two_pow, Nat.sub_add_cancel (Nat.le_of_not_gt hq)] using h
+
 variable (n : ℕ) (hn : canonicalRouterStride n ≤ n) (mate : Fin n → Fin n)
     (hinv : Function.Involutive mate) (k : Fin 3)
 
@@ -86,6 +98,24 @@ variable {Q K : ℕ} (R B : ℕ) (hR : 0 < R) (hB : 1 ≤ B)
 
 local notation "direction" reverse => canonicalRouterDirectionalPerm n hn R B hR hB mate hinv k reverse
   hQ hA l hl hlen (List.finRange (canonicalRouterStride n))
+
+/-- The actual full-residue permutation depends on geometry and matching,
+not the current record payload or its order. -/
+theorem canonicalRouterDirectionalPerm_records_independent
+    (l' : List (List (Fin (prime + K + 4)))) (hl' : l'.length = R * 2 ^ n)
+    (hlen' : ∀ row ∈ l', row.length = B ∧ ∀ x ∈ row, x.val < 8) (reverse : Bool) :
+    canonicalRouterDirectionalPerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen
+      (List.finRange (canonicalRouterStride n)) =
+    canonicalRouterDirectionalPerm n hn R B hR hB mate hinv k reverse hQ hA l' hl' hlen'
+      (List.finRange (canonicalRouterStride n)) := by
+  apply Equiv.ext
+  intro i
+  apply rank_eq_of_bits_row
+  · intro q
+    exact congrFun ((canonicalRouterDirectionalPerm_bits n hn R B hR hB mate hinv k reverse hQ hA l hl hlen i).trans
+      (canonicalRouterDirectionalPerm_bits n hn R B hR hB mate hinv k reverse hQ hA l' hl' hlen' i).symm) q
+  · exact (canonicalRouterDirectionalPerm_row n hn R B hR hB mate hinv k reverse hQ hA l hl hlen _ i).trans
+      (canonicalRouterDirectionalPerm_row n hn R B hR hB mate hinv k reverse hQ hA l' hl' hlen' _ i).symm
 
 def canonicalRouterClassPerm : Equiv.Perm (Fin (R * 2 ^ n)) :=
   ((direction false).trans (direction true)).trans (direction false)

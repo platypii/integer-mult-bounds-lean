@@ -77,7 +77,9 @@ rank permutations now implement each physical matching class; all three classes
 compose to the original coordinate involution and preserve outer record rows.
 This is rank semantics. A concrete directional call now installs terminal metadata
 and bulk input, executes both phases and erases its workspace with all costs
-charged; composing successive calls remains open. The concrete outer input frame
+charged. Three successive calls now execute a complete matching class with
+its exact class permutation and a reusable final bank; the full nine-direction
+schedule remains open. The concrete outer input frame
 is still supplied; executed metadata generation, initial
 permutation decomposition/table generation, the complete router schedule and
 uniform amortization/fallback remain open.

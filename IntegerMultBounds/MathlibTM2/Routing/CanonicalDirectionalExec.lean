@@ -90,5 +90,24 @@ theorem canonicalDirectional_exec
   exact canonicalDirectionalBank_exec n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages
     hn0 hnfit hBfit hnB hrow hrowNe hrowValue S.inp S.out u
 
+/-- The exact post-call state is ready for another direction, with the remaining
+input suffix and accumulated archive retained. -/
+theorem canonicalDirectional_ready
+    (rest : List (Fin (prime + K + 4)))
+    (S : Stacks ((canonicalRouterCommonT + 3) + 3) (prime + K))
+    (ready : FramedCoreReady canonicalDirectionalStream (R * 2 ^ n) B S)
+    (hstream : S.R (framedCoreEmbed (canonicalRouterCommonT + 3) canonicalDirectionalStream) = l.flatten) :
+    FramedCoreReady canonicalDirectionalStream (R * 2 ^ n) B
+      { S with R := delimitedCallAdvanced S.R (framedCoreAux (canonicalRouterCommonT + 3) 0) (framedCoreAux (canonicalRouterCommonT + 3) 2) (framedCoreEmbed (canonicalRouterCommonT + 3) canonicalDirectionalStream) (canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages) rest (moveRecs (canonicalRouterDirectionalPerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages) l).flatten } := by
+  have hr := FramedCoreReady.advance canonicalDirectionalStream S ready
+    (canonicalRouterDirectionalPerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages)
+    (canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages) rest
+  have hout : repairStreamEffect
+      (canonicalRouterDirectionalPerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages) B l.flatten =
+      (moveRecs (canonicalRouterDirectionalPerm n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages) l).flatten :=
+    (flatten_moveRecs _ l (fun row hr => (hlen row hr).1)).symm
+  rw [hstream, hout] at hr
+  exact hr
+
 end
 end IntegerMultBounds.MathlibTM2.Routing

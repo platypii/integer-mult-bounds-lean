@@ -1860,8 +1860,19 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    all inner metadata, including the bulk schedule input. The three fixed outer
    loader tapes retain the unused input suffix and rewind archive; all loading
    and erasure costs are charged. The actual outer frame
-   is still supplied; executed input-word production, consecutive directional
-   composition and uniform total-cost bounds remain open. Canonical terminal scalar
+   is still supplied. `canonicalDirectional_ready` preserves the complete
+   reusable-bank invariant after each call, and full-residue directional rank
+   permutations are now proved independent of record payload and order.
+   `CanonicalDirectionalPair` executes two consecutive calls with both metadata
+   reloads and erasures charged, an arbitrary unused input suffix and readiness
+   after the second call. The intermediate records are identified with the
+   first call's actual permutation output. `CanonicalClassExec` now executes
+   the complete false/true/false class schedule on the same bank, charges all
+   three metadata reloads and cleanups, preserves readiness and identifies the
+   final records with `canonicalRouterClassPerm`. Intermediate record lists
+   carry exact equalities to the preceding call's output; no execution is
+   supplied as a premise. Nine-direction composition, executed input-word
+   production and uniform total-cost bounds remain open. Canonical terminal scalar
    widths and row-counter words are now selected from dimensions; executing
    their production remains open. Original
    permutation decomposition/table generation, remaining scalar metadata setup,
