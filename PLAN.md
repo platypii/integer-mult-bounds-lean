@@ -1529,6 +1529,39 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    permutation. Raw configuration words remain supplied. This completes repeated
    raw-R2 scheduling, while generated/placed-call scheduling, matching-derived
    metadata production and full-router amortization/fallback remain open.
+   Generated/placed-call loading now has a whole-bank boundary.
+   `FramedCoreBank` serializes every non-stream core register, including empty
+   scratch, with a destination list independent of word values. `FramedCoreLayout`
+   executes that loader using three fixed auxiliary tapes outside the core;
+   their number is independent of geometry and call count. Its exact embedded
+   stack identity retains the live record stream and supplies every other raw
+   core word, allowing generated-call readiness to be transported together.
+   Applying the generated/placed execution theorem and its price to this bank,
+   then composing its repeated schedule, remain open.
+   `FramedCoreCall` now executes full-core loading, an embedded stream-only core
+   execution and full raw-bank erasure with linear framing overhead. It uses
+   the whole-stack identity to transport the existing core theorem and preserves
+   all outer tapes except the input cursor/archive and routed stream. The core
+   execution theorem is still a premise of this adapter; instantiation with
+   generated/placed repair and stream-independent generated prices remain open.
+   `repairRawPrice_updateStream` supplies the exact-R2 price frame needed by that
+   next price proof.
+   `LiveDescriptorBankFrame` and `LiveProfileBankFrame` prove descriptor/profile
+   generation commutes with record-stream updates. `LiveRepairPriceFrame` factors
+   live-profile repair through the raw-R2 price and proves its stream invariance;
+   `LiveHeaderPriceFrame` extends this through executed header-bank generation.
+   These price results retain the actual blank-scratch premises. Their outer
+   classifier/width/placement extension follows below; concrete generated-call
+   loading instantiation remains open.
+   `GeneratedRepairBankFrame` names the actual classifier/width/header/profile
+   preparation stages, proves their stream-update commutation and transports
+   blank-scratch readiness from the original bank. `GeneratedRepairPriceFrame`
+   gives the complete generated-core budget, including every generation and
+   cleanup term, and proves stream invariance. `GeneratedPlacedPriceFrame` joins
+   it to both executed-placement budgets and proves the full price is unchanged
+   by updates to either physical or projected stream. This supplies a fixed
+   per-stage price; applying the whole-bank loader to the actual generated/placed
+   execution theorem and its repeated schedule is still open.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and

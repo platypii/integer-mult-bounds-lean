@@ -1726,3 +1726,10 @@ public import IntegerMultBounds.MathlibTM2.Routing.RepairPriceFrame
 public import IntegerMultBounds.MathlibTM2.Routing.RepairScheduleReady
 
 public import IntegerMultBounds.MathlibTM2.Routing.FramedRepairSchedule
+
+public import IntegerMultBounds.MathlibTM2.Routing.FramedCoreCall
+
+public import IntegerMultBounds.MathlibTM2.Routing.LiveHeaderPriceFrame
+public import IntegerMultBounds.MathlibTM2.Routing.LiveProfileBankFrame
+
+public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedPriceFrame

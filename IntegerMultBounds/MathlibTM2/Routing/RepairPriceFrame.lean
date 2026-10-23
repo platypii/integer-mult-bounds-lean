@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Routing.ExactSelective
 public import IntegerMultBounds.MathlibTM2.Routing.RepairInputFrame
+public import IntegerMultBounds.MathlibTM2.Routing.RepairStreamFrame
 
 /-! Exact-repair prices depend only on raw configuration sources, not the routed
 stream, its current permutation, or unrelated reusable-loader registers. -/
@@ -94,5 +95,17 @@ theorem repairRawPrice_congr (p : Par) (X rb wb wm wp wk R B : ℕ) (scale : ℝ
   change (metadataInstallCost S.R jobs : ℝ) + _ + _ = (metadataInstallCost S'.R jobs : ℝ) + _ + _
   rw [metadataInstallCost_congr jobs hsource, hcore,
     metadataCleanCost_congr repairTargets htarget]
+
+/-- Permuting the record stream does not change the price of exact repair. -/
+theorem repairRawPrice_updateStream (p : Par) (X rb wb wm wp wk R B : ℕ) (scale : ℝ)
+    (S : Stacks repairT (prime + K)) (out : List (Fin (prime + K + 4)))
+    (hblank : ∀ j, RepairBlank j → S.R j = []) :
+    repairRawPrice p X rb wb wm wp wk R B scale { S with R := Function.update S.R repairHost.src out } =
+      repairRawPrice p X rb wb wm wp wk R B scale S := by
+  apply repairRawPrice_congr
+  · intro key
+    exact Function.update_of_ne (repairSetup_source_src key) _ _
+  · exact repairBlank_updateStream S.R out hblank
+  · exact hblank
 
 end IntegerMultBounds.MathlibTM2.Routing

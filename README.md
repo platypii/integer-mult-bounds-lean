@@ -39,7 +39,8 @@ any geometry satisfying explicit guards and density bounds, allowing reservoir
 spacing. Complete directional destination maps now compose bulk and terminal
 rank permutations, with exact shear semantics and restored surrounding bits.
 A fixed-register schedule now executes repeated exact-repair calls from supplied
-raw configuration, including loading, cleanup and full input rewind. Scheduling
+raw configuration, including loading, cleanup and full input rewind. The full
+generated/placed price is proved independent of record order. Scheduling
 the generated/placed calls, matching-derived inputs, remaining setup production
 and uniform amortization remain open.
 The complete router and multiplication integration remain in R3–R4; this work
