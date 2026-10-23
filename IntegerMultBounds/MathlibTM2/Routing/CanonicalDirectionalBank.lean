@@ -57,6 +57,18 @@ def canonicalDirectionalBulkInput : List (Fin (prime + K + 4)) :=
     (routerBorrowed_le_reservoir n (canonicalRouterGap n) (canonicalRouterGap_pos n))
     k mate canonicalRouterDelimiter) stages
 
+/-- The complete nested bulk input is bounded by the sum of residue budgets. -/
+theorem canonicalDirectionalBulkInput_length_le :
+    (canonicalDirectionalBulkInput n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages).length ≤
+      (stages.map (canonicalRouterFrameWidth n R B hR hB)).sum := by
+  unfold canonicalDirectionalBulkInput
+  induction stages with
+  | nil => simp [delimitedScheduleInput]
+  | cons r stages ih =>
+    simp only [delimitedScheduleInput, List.length_append, List.map_cons, List.sum_cons]
+    exact Nat.add_le_add
+      (canonicalRouterFrame_length_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r) ih
+
 theorem canonicalDirectionalBulkInput_small : ∀ x ∈ canonicalDirectionalBulkInput n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages, x.val < 9 := by
   unfold canonicalDirectionalBulkInput
   induction stages with
@@ -112,6 +124,40 @@ theorem canonicalDirectionalBank_stream :
     bank (framedCoreEmbed canonicalRouterCommonT
       (canonicalRouterBulkEmbed (originalMatchingScheduleStream 6))) = l.flatten := by
   rw [canonicalDirectionalBank_core, canonicalRouterCommonBank_bulk, Function.update_self]
+
+/-- Every outer-loader word is bounded without reference to matching or payload values. -/
+theorem canonicalDirectionalBank_length_le (j : Fin (canonicalRouterCommonT + 3))
+    (hj : j ≠ framedCoreEmbed canonicalRouterCommonT
+      (canonicalRouterBulkEmbed (originalMatchingScheduleStream 6))) :
+    (bank j).length ≤ L + Lb + rowBits.length +
+      (131 * canonicalRouterGap n) * (2 * L + 2) +
+      (stages.map (canonicalRouterFrameWidth n R B hR hB)).sum := by
+  have ht : ∀ i, i ≠ canonicalTerminalRouter .str →
+      (terminal i).length ≤ L + Lb + rowBits.length + (131 * canonicalRouterGap n) * (2 * L + 2) := by
+    intro i hi
+    have hword := canonicalTerminalRoutingBank_length_le l.flatten
+      (elementaryCoordinateFrames L (canonicalRouterTerminalCoordinates n hn mate hinv k reverse))
+      n L Lb B rowBits i hi
+    have hframe := canonicalRouterTerminalFrames_length_le (A := prime + K) n hn mate hinv k reverse L
+    omega
+  by_cases hc : ∃ i, framedCoreEmbed canonicalRouterCommonT i = j
+  · obtain ⟨i, rfl⟩ := hc
+    rw [canonicalDirectionalBank_core]
+    have hi : i ≠ canonicalRouterBulkEmbed (originalMatchingScheduleStream 6) := by
+      intro he
+      exact hj (congrArg (framedCoreEmbed canonicalRouterCommonT) he)
+    have hb : ∀ q, q ≠ originalMatchingScheduleStream 6 → (bulk q).length ≤ 0 := by
+      intro q hq
+      rw [Function.update_of_ne hq]
+      exact Nat.le_refl _
+    have hword := canonicalRouterCommonBank_length_le bulk terminal 0 _ hb ht i hi
+    omega
+  · unfold canonicalDirectionalBank
+    rw [Function.extend_apply' _ _ _ hc]
+    split
+    · have hs := canonicalDirectionalBulkInput_length_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages
+      omega
+    · exact Nat.zero_le _
 
 theorem canonicalDirectionalBank_ready (inp : List (Bool ⊕ Bool)) (out : List Bool) :
     FramedCoreReady (originalMatchingScheduleStream 6) (R * 2 ^ n) B

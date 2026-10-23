@@ -61,5 +61,26 @@ def canonicalRouterInput {Q K : ℕ} (n : ℕ) (hn : canonicalRouterStride n ≤
     exact hl
   · exact hlen
 
+/-- Canonical bulk metadata widths have no matching or record arguments. -/
+def canonicalRouterMetadataWidth (n : ℕ) (r : Fin (canonicalRouterStride n))
+    (R B : ℕ) (hR : 0 < R) (hB : 1 ≤ B) : ℕ :=
+  canonicalGeneratedMetadataWidth
+    (routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val)
+    (canonicalRouterArithmetic n r R B hR hB)
+
+theorem canonicalRouterInput_length_le {Q K : ℕ} (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (R B : ℕ) (hR : 0 < R) (hB : 1 ≤ B) (mate : Fin n → Fin n) (hinv : Function.Involutive mate)
+    (k : Fin 3) (reverse : Bool)
+    (hQ : swapStates selectiveSwapHd selectiveSwapPay selectiveSwapHd_inj ≤ Q) (hA : 4 ≤ prime + K)
+    (l : List (List (Fin (prime + K + 4)))) (hl : l.length = R * 2 ^ n)
+    (hlen : ∀ row ∈ l, row.length = B ∧ ∀ x ∈ row, x.val < 8) (r : Fin (canonicalRouterStride n))
+    (j : Fin (inactiveClassifierPlacementT 6))
+    (hj : j ≠ inactiveClassifierPlacementEmbed (t₀ := 6)
+      (classifierCore (inactiveConfigurationCore repairHost.src))) :
+    ((canonicalRouterInput n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r).M.R j).length ≤
+      canonicalRouterMetadataWidth n r R B hR hB := by
+  dsimp only [canonicalRouterInput, canonicalRouterMetadataWidth]
+  exact canonicalGeneratedInput_length_le _ _ _ _ _ _ _ _ _ _ _ _ _ _ j hj
+
 end
 end IntegerMultBounds.MathlibTM2.Routing

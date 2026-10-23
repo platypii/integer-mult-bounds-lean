@@ -29,6 +29,14 @@ variable (n H : ℕ) (hfit : 9 * H ≤ n) (w : ℕ) (hw : w ≤ H) (k : Fin 3) (
 def reservoirClassLocalTableCost (n w L : ℕ) : ℕ :=
   (n - 3 * w) * (n * (30 * L + 39) + 682 * L + 842) + n * (72 * L + 89) + 35 * L + 54
 
+/-- Ignore the borrowed interval to obtain a uniform polynomial conversion budget. -/
+theorem reservoirClassLocalTableCost_le (n w L W : ℕ) (hL : L ≤ W) :
+    reservoirClassLocalTableCost n w L ≤ reservoirClassLocalTableCost n 0 W := by
+  unfold reservoirClassLocalTableCost
+  simp only [Nat.mul_zero, Nat.sub_zero]
+  gcongr
+  exact Nat.sub_le _ _
+
 def reservoirClassLocalMatching (mate : Fin n → Fin n) (hinv : Function.Involutive mate) :
     Fin (n - 3 * w) → Fin (n - 3 * w) :=
   reservoirMiddleMatching n H hfit w hw k

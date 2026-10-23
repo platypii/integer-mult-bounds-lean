@@ -59,6 +59,22 @@ def originalMatchingStepPrice (input : GeneratedPlacedInput t₀ Q K P P' U) (Lc
       2 * (framedCoreJobs (framedCoreEmbed N₀) str₀
         (originalMatchingPlacedInputBank input Lc n H hfit w hw k mate)).length + 2 : ℕ)
 
+/-- Loader overhead follows directly from a serialized frame-size bound. -/
+theorem originalMatchingStepPrice_le (input : GeneratedPlacedInput t₀ Q K P P' U)
+    (Lc n H : ℕ) (hfit : 9 * H ≤ n) (w : ℕ) (hw : w ≤ H) (k : Fin 3)
+    (mate : Fin n → Fin n) (delimiter : Fin (prime + K + 4)) (F : ℕ)
+    (hframe : (originalMatchingFrame input Lc n H hfit w hw k mate delimiter).length ≤ F) :
+    originalMatchingStepPrice input Lc n H hfit w hw k mate delimiter ≤
+      originalMatchingPlacedPrice input Lc n w + (6 * F + 2 * N₀ + 2 : ℕ) := by
+  unfold originalMatchingStepPrice
+  refine add_le_add (le_refl _) ?_
+  have hj := framedCoreJobs_length_le (framedCoreEmbed N₀) str₀
+    (originalMatchingPlacedInputBank input Lc n H hfit w hw k mate)
+  exact_mod_cast (show 6 * (originalMatchingFrame input Lc n H hfit w hw k mate delimiter).length +
+    2 * (framedCoreJobs (framedCoreEmbed N₀) str₀
+      (originalMatchingPlacedInputBank input Lc n H hfit w hw k mate)).length + 2 ≤
+    6 * F + 2 * N₀ + 2 by omega)
+
 structure OriginalMatchingStageData (input : GeneratedPlacedInput t₀ Q K P P' U)
     (Lc M B n H : ℕ) (hfit : 9 * H ≤ n) (w : ℕ) (hw : w ≤ H) (k : Fin 3)
     (mate : Fin n → Fin n) (hinv : Function.Involutive mate) (reverse : Bool) : Prop where

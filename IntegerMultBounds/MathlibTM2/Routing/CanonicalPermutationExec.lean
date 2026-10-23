@@ -45,6 +45,16 @@ local notation "str" => framedCoreEmbed (canonicalRouterCommonT + 3) canonicalDi
 
 def canonicalPermutationFrame : List (Fin (prime + K + 4)) := frame₀ ++ frame₁
 
+/-- The complete eighteen-direction frame has a dimension-only size budget. -/
+theorem canonicalPermutationFrame_length_le :
+    (canonicalPermutationFrame n hn R B hR hB f hQ hA l hl hlen L Lb rowBits).length ≤
+      18 * canonicalDirectionalFrameBudget n R B hR hB L Lb rowBits
+        (List.finRange (canonicalRouterStride n)) := by
+  have h₀ := canonicalMatchingFrame_length_le n hn R B hR hB b hb hQ hA l hl hlen L Lb rowBits
+  have h₁ := canonicalMatchingFrame_length_le n hn R B hR hB a ha hQ hA middle middleCount middleShape L Lb rowBits
+  simp only [canonicalPermutationFrame, List.length_append]
+  omega
+
 def canonicalPermutationProgram : Pr Empty ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit :=
   .seq program₀ program₁
 

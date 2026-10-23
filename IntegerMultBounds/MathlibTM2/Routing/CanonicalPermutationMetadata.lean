@@ -39,6 +39,37 @@ def canonicalPermutationMetadata : List (Fin (prime + K + 4)) :=
     (canonicalRouterZeroRecords n R B) (canonicalRouterZeroRecords_count n R B)
     (canonicalRouterZeroRecords_shape n R B) L Lb rowBits
 
+theorem canonicalPermutationMetadata_length_le :
+    (canonicalPermutationMetadata n hn R B hR hB f hQ hA L Lb rowBits).length ≤
+      18 * canonicalDirectionalFrameBudget n R B hR hB L Lb rowBits
+        (List.finRange (canonicalRouterStride n)) :=
+  canonicalPermutationFrame_length_le n hn R B hR hB f hQ hA
+    (canonicalRouterZeroRecords n R B) (canonicalRouterZeroRecords_count n R B)
+    (canonicalRouterZeroRecords_shape n R B) L Lb rowBits
+
+/-- The complete metadata frame has an explicit uniform size bound. -/
+theorem canonicalPermutationMetadata_length_uniform :
+    (canonicalPermutationMetadata n hn R B hR hB f hQ hA L Lb rowBits).length ≤
+      18 * canonicalDirectionalUniformFrameBudget n R B L Lb rowBits.length (canonicalRouterStride n) := by
+  refine (canonicalPermutationMetadata_length_le n hn R B hR hB f hQ hA L Lb rowBits).trans ?_
+  apply Nat.mul_le_mul_left
+  simpa only [List.length_finRange] using
+    canonicalDirectionalFrameBudget_uniform n hn R B hR hB L Lb rowBits (List.finRange (canonicalRouterStride n))
+
+/-- Dimension-derived operands give a complete metadata bound from n, R and B alone. -/
+theorem canonicalPermutationMetadata_canonical_length_le :
+    (canonicalPermutationMetadata n hn R B hR hB f hQ hA
+      (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R [])).length ≤
+      18 * canonicalDirectionalUniformFrameBudget n R B (canonicalScalarWidth n)
+        (canonicalScalarWidth B) (R.log2 + 1) (canonicalRouterStride n) := by
+  refine (canonicalPermutationMetadata_length_uniform n hn R B hR hB f hQ hA
+    (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R [])).trans ?_
+  apply Nat.mul_le_mul_left
+  unfold canonicalDirectionalUniformFrameBudget
+  apply Nat.mul_le_mul_left
+  have hr := GrowingCounterData.empty_width R
+  omega
+
 theorem canonicalPermutationFrame_eq_metadata
     (l : List (List (Fin (prime + K + 4)))) (hl : l.length = R * 2 ^ n)
     (hlen : ∀ row ∈ l, row.length = B ∧ ∀ x ∈ row, x.val < 8) :
@@ -55,6 +86,19 @@ def canonicalPermutationBudget : ℝ :=
     (canonicalRouterZeroRecords n R B) (canonicalRouterZeroRecords_count n R B)
     (canonicalRouterZeroRecords_shape n R B) L Lb rowBits +
     (2 * (canonicalPermutationMetadata n hn R B hR hB f hQ hA L Lb rowBits).length + 2 : ℕ)
+
+/-- The final restored-router rewind is charged by the uniform metadata bound. -/
+theorem canonicalPermutationBudget_le :
+    canonicalPermutationBudget n hn R B hR hB f hQ hA L Lb rowBits ≤
+      canonicalPermutationPrice n hn R B hR hB f hQ hA
+        (canonicalRouterZeroRecords n R B) (canonicalRouterZeroRecords_count n R B)
+        (canonicalRouterZeroRecords_shape n R B) L Lb rowBits +
+      (36 * canonicalDirectionalUniformFrameBudget n R B L Lb rowBits.length (canonicalRouterStride n) + 2 : ℕ) := by
+  unfold canonicalPermutationBudget
+  refine add_le_add (le_refl _) ?_
+  have hf := canonicalPermutationMetadata_length_uniform n hn R B hR hB f hQ hA L Lb rowBits
+  exact_mod_cast (show 2 * (canonicalPermutationMetadata n hn R B hR hB f hQ hA L Lb rowBits).length + 2 ≤
+    36 * canonicalDirectionalUniformFrameBudget n R B L Lb rowBits.length (canonicalRouterStride n) + 2 by omega)
 
 theorem canonicalPermutationCost_eq_budget
     (l : List (List (Fin (prime + K + 4)))) (hl : l.length = R * 2 ^ n)

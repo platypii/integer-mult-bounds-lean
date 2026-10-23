@@ -33,6 +33,31 @@ def delimitedSchedulePrice (price : I → ℝ) : List I → ℝ
   | [] => 1
   | i :: is => price i + 2 + delimitedSchedulePrice price is
 
+/-- Sum call costs and charge one common overhead per actual loop iteration. -/
+theorem delimitedSchedulePrice_le (price base : I → ℝ) (C : ℕ) (stages : List I)
+    (hprice : ∀ i ∈ stages, price i ≤ base i + C) :
+    delimitedSchedulePrice price stages ≤ (stages.map base).sum + (stages.length * (C + 2) + 1 : ℕ) := by
+  induction stages with
+  | nil => simp [delimitedSchedulePrice]
+  | cons i stages ih =>
+    have hi := hprice i (by simp)
+    have ht := ih (fun j hj => hprice j (by simp [hj]))
+    simp only [delimitedSchedulePrice, List.map_cons, List.sum_cons, List.length_cons, Nat.add_mul, Nat.one_mul]
+    push_cast at hi ht ⊢
+    linarith
+
+/-- The schedule input is the concatenation of its bounded frames. -/
+theorem delimitedScheduleInput_length_le (frame : I → List (Fin (A + 4))) (F : ℕ) (stages : List I)
+    (hframe : ∀ i ∈ stages, (frame i).length ≤ F) :
+    (delimitedScheduleInput frame stages).length ≤ stages.length * F := by
+  induction stages with
+  | nil => simp [delimitedScheduleInput]
+  | cons i stages ih =>
+    have hi := hframe i (by simp)
+    have ht := ih (fun j hj => hframe j (by simp [hj]))
+    simp only [delimitedScheduleInput, List.length_append, List.length_cons, Nat.add_mul, Nat.one_mul]
+    omega
+
 /-- Lift a priced, invariant-preserving one-call execution theorem to a uniform
 loop. Neither the code nor its register bank depends on the number of calls. -/
 theorem delimitedCallLoop_exec (body : P → Pr P T Q A U)

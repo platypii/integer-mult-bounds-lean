@@ -305,6 +305,14 @@ theorem canonicalGeneratedInput_small {Q K : ℕ} (p : Par) (a : CanonicalStageA
     · exact sourceCoordinateInputWords_small _ _ _
   · exact hrecords
 
+/-- Maximum metadata word length, depending only on stage arithmetic. -/
+def canonicalGeneratedMetadataWidth (p : Par) (a : CanonicalStageArithmetic p) : ℕ :=
+  ((((fieldsLen (selectiveLen p 0) + a.wb + a.wm + a.wp + a.wk +
+        p.n * (a.w.indexBits + a.w.strideBits + 3) +
+        a.w.indexBits + a.w.strideBits + a.w.coordinateBits + a.w.selectorBits + a.w.widthBits + a.w.groupBits) +
+        (a.Lrow + a.Lwidth)) + (a.Lr + a.Lm)) + (a.LK + a.Ln + a.Lo + a.Lt)) +
+        a.Lcp + a.Lp + a.rowBits.length
+
 /-- A dimension-only bound for every metadata word of the constructed repair input. -/
 theorem canonicalGeneratedInput_length_le {Q K : ℕ} (p : Par) (a : CanonicalStageArithmetic p)
     (targets : Finset (Fin p.wy)) (source : Fin p.wy → Fin p.wy)
@@ -317,11 +325,8 @@ theorem canonicalGeneratedInput_length_le {Q K : ℕ} (p : Par) (a : CanonicalSt
     (hj : j ≠ inactiveClassifierPlacementEmbed (t₀ := 6)
       (classifierCore (inactiveConfigurationCore repairHost.src))) :
     ((canonicalGeneratedInput p a targets source hsource hQ hA H hplacementFit hw reservoir l hl hlen).M.R j).length ≤
-      ((((fieldsLen (selectiveLen p 0) + a.wb + a.wm + a.wp + a.wk +
-        p.n * (a.w.indexBits + a.w.strideBits + 3) +
-        a.w.indexBits + a.w.strideBits + a.w.coordinateBits + a.w.selectorBits + a.w.widthBits + a.w.groupBits) +
-        (a.Lrow + a.Lwidth)) + (a.Lr + a.Lm)) + (a.LK + a.Ln + a.Lo + a.Lt)) +
-        a.Lcp + a.Lp + a.rowBits.length := by
+      canonicalGeneratedMetadataWidth p a := by
+  unfold canonicalGeneratedMetadataWidth
   dsimp only [inactiveClassifierPlacementEmbed, inactiveConfigurationCore, inactiveProfileHeaderRaw,
     embeddedRepairHeaderRaw, inactiveProfileRaw] at hj
   dsimp only [canonicalGeneratedInput]

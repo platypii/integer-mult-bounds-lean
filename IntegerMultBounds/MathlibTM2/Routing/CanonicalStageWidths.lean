@@ -17,6 +17,20 @@ def canonicalScalarWidth (n : ℕ) : ℕ := Nat.clog 2 (n + 1)
 theorem canonicalScalarWidth_fit (n : ℕ) : n < 2 ^ canonicalScalarWidth n :=
   (Nat.lt_succ_self n).trans_le (Nat.le_pow_clog (by decide) (n + 1))
 
+theorem canonicalScalarWidth_mono {x y : ℕ} (h : x ≤ y) :
+    canonicalScalarWidth x ≤ canonicalScalarWidth y :=
+  Nat.clog_mono_right 2 (Nat.add_le_add_right h 1)
+
+/-- Sums of scalar operands fit within the sum of their logarithmic widths. -/
+theorem canonicalScalarWidth_add_le (x y : ℕ) :
+    canonicalScalarWidth (x + y) ≤ canonicalScalarWidth x + canonicalScalarWidth y := by
+  unfold canonicalScalarWidth at *
+  apply Nat.clog_le_of_le_pow
+  have hx : x + 1 ≤ 2 ^ Nat.clog 2 (x + 1) := Nat.le_pow_clog (by decide) _
+  have hy : y + 1 ≤ 2 ^ Nat.clog 2 (y + 1) := Nat.le_pow_clog (by decide) _
+  have hsum : x + y + 1 ≤ (x + 1) * (y + 1) := by nlinarith
+  exact hsum.trans (by simpa only [pow_add] using Nat.mul_le_mul hx hy)
+
 def canonicalStageWidths (p : Par) : LiveDescriptorWidths :=
   let w := liveDescriptorArithmeticWidths p 0 repairLiveMode
   { indexBits := w.indexBits + 1, groupBits := w.groupBits, strideBits := w.strideBits,

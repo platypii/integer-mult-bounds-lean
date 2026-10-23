@@ -135,6 +135,24 @@ def canonicalRouterCountWidth (n : ℕ) (r : Fin (canonicalRouterStride n)) : �
   let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
   canonicalScalarWidth ((p.n * p.K) * (2 * (canonicalStageWidths p).coordinateBits + 2))
 
+/-- The byte-count header has one logarithmic width for every residue. -/
+theorem canonicalRouterCountWidth_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) :
+    canonicalRouterCountWidth n r ≤
+      canonicalScalarWidth (n * (4 * (Nat.clog 2 (4 * n + 2) + 1) + 2)) := by
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+  have ht : 3 * p.wc + p.wy = n := routerProfileParameters_total n _ _ hn r
+  have hp : p.n * p.K ≤ n := by
+    have hw : p.n * p.K ≤ p.wy := by unfold Par.wy; omega
+    omega
+  have hc := canonicalRouterCoordinateBits_le n hn r
+  change (canonicalStageWidths p).coordinateBits ≤ _ at hc
+  have hm : (p.n * p.K) * (2 * (canonicalStageWidths p).coordinateBits + 2) ≤
+      n * (4 * (Nat.clog 2 (4 * n + 2) + 1) + 2) :=
+    Nat.mul_le_mul hp (by omega)
+  unfold canonicalRouterCountWidth canonicalScalarWidth
+  exact Nat.clog_mono_right 2 (Nat.add_le_add_right hm 1)
+
 variable {Q K : ℕ} (n : ℕ) (hn : canonicalRouterStride n ≤ n)
     (R B : ℕ) (hR : 0 < R) (hB : 1 ≤ B) (mate : Fin n → Fin n) (hinv : Function.Involutive mate)
     (k : Fin 3) (reverse : Bool)

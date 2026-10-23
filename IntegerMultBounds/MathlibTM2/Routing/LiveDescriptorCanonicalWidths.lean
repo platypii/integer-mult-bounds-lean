@@ -18,10 +18,45 @@ def liveDescriptorMagnitude {J : ℕ} (p : Par) (X : ℕ) (mode : Fin J → Live
     max ((mode j).stride p) (max (repairCompactRows p (mode j).key)
       (max ((mode j).slots p) (repairCompactSourceWidth p X (mode j).key + 1))))
 
+/-- A polynomial bound on descriptor magnitudes, uniform over the mode family. -/
+theorem liveDescriptorMagnitude_le {J : ℕ} (p : Par) (X : ℕ) (mode : Fin J → LiveDescriptorMode) :
+    liveDescriptorMagnitude p X mode ≤ p.G + p.K + p.n + p.n * p.G + p.wy + 2 * p.wc + X + 1 := by
+  unfold liveDescriptorMagnitude
+  apply max_le
+  · omega
+  · apply Finset.sup_le
+    intro j _
+    cases hm : mode j with
+    | grouped k =>
+      simp only [LiveDescriptorMode.stride, LiveDescriptorMode.key, LiveDescriptorMode.slots,
+        repairCompactRows, repairCompactSourceWidth, selectiveTargetWidth, selectiveSourceWidth, max_le_iff]
+      omega
+    | affine key hkey =>
+      cases key with
+      | none =>
+        simp only [LiveDescriptorMode.stride, LiveDescriptorMode.key, LiveDescriptorMode.slots,
+          repairAffineStride, repairCompactRows, repairCompactSourceWidth, max_le_iff]
+        omega
+      | some pair =>
+        obtain ⟨off, k⟩ := pair
+        cases off <;>
+          simp only [LiveDescriptorMode.stride, LiveDescriptorMode.key, LiveDescriptorMode.slots,
+            repairAffineStride, repairCompactRows, repairCompactSourceWidth,
+            selectiveTargetWidth, selectiveSourceWidth, max_le_iff] <;> omega
+
 def liveDescriptorCanonicalWidths {J : ℕ} (p : Par) (X : ℕ) (mode : Fin J → LiveDescriptorMode) : LiveDescriptorWidths :=
   let L := Nat.clog 2 (liveDescriptorMagnitude p X mode + 1)
   { indexBits := L, groupBits := L, strideBits := L, selectorBits := L,
     widthBits := Nat.clog 2 (L + 1) }
+
+theorem liveDescriptorCanonicalWidths_indexBits_le {J : ℕ} (p : Par) (X : ℕ)
+    (mode : Fin J → LiveDescriptorMode) :
+    (liveDescriptorCanonicalWidths p X mode).indexBits ≤
+      Nat.clog 2 (p.G + p.K + p.n + p.n * p.G + p.wy + 2 * p.wc + X + 2) := by
+  change Nat.clog 2 (liveDescriptorMagnitude p X mode + 1) ≤ _
+  apply Nat.clog_mono_right
+  have h := liveDescriptorMagnitude_le p X mode
+  omega
 
 theorem liveDescriptorCanonicalWidths_bounds {J : ℕ} (p : Par) (X : ℕ)
     (mode : Fin J → LiveDescriptorMode) (j : Fin J) :

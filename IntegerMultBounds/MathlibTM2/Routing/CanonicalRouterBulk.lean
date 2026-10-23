@@ -34,6 +34,194 @@ variable {Q K : ℕ} (n : ℕ) (hn : canonicalRouterStride n ≤ n)
 
 local notation "input" => canonicalRouterInput n hn R B hR hB mate hinv k reverse hQ hA l hl hlen
 
+/-- Full residue frame budget from dimensions and scalar widths. -/
+def canonicalRouterFrameWidth (r : Fin (canonicalRouterStride n)) : ℕ :=
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+  let a := canonicalRouterArithmetic n r R B hR hB
+  let L := a.w.indexBits + a.w.strideBits
+  originalMatchingScheduleT 6 *
+    ((canonicalRouterMetadataWidth n r R B hR hB + canonicalRouterCountWidth n r +
+      p.wy * (2 * L + 2) + a.w.strideBits + a.w.strideBits) +
+      (n * (2 * L + 2) + 12 * L + 12) + 1)
+
+/-- One polynomial frame budget for every residue. -/
+def canonicalRouterUniformFrameWidth (n R B : ℕ) : ℕ :=
+  let D := Nat.clog 2 (4 * n + 2) + 1
+  originalMatchingScheduleT 6 *
+    (canonicalRouterUniformMetadataWidth n R B + canonicalScalarWidth (n * (4 * D + 2)) +
+      2 * n * (4 * D + 2) + 26 * D + 13)
+
+include hn in
+theorem canonicalRouterFrameWidth_uniform (r : Fin (canonicalRouterStride n)) :
+    canonicalRouterFrameWidth n R B hR hB r ≤ canonicalRouterUniformFrameWidth n R B := by
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+  let a := canonicalRouterArithmetic n r R B hR hB
+  let D := Nat.clog 2 (4 * n + 2) + 1
+  have hm := canonicalRouterMetadataWidth_uniform n hn r R B hR hB
+  change canonicalRouterMetadataWidth n r R B hR hB ≤ _ at hm
+  have hcount := canonicalRouterCountWidth_le n hn r
+  obtain ⟨hi, hs, _, _, _, _⟩ := canonicalRouterDescriptorWidths_le n hn r
+  have haw : a.w = canonicalStageWidths p := rfl
+  have hL : a.w.indexBits + a.w.strideBits ≤ 2 * D := by
+    rw [haw]
+    dsimp only [p, D]
+    omega
+  have hstride : a.w.strideBits ≤ D := by simpa only [haw, p, D] using hs
+  have ht : 3 * p.wc + p.wy = n := routerProfileParameters_total n _ _ hn r
+  have hwy : p.wy ≤ n := by omega
+  have hc : 2 * (a.w.indexBits + a.w.strideBits) + 2 ≤ 4 * D + 2 := by omega
+  have hp := Nat.mul_le_mul hwy hc
+  have hnp := Nat.mul_le_mul_left n hc
+  unfold canonicalRouterFrameWidth canonicalRouterUniformFrameWidth
+  apply Nat.mul_le_mul_left
+  have he : 2 * n * (4 * D + 2) = n * (4 * D + 2) + n * (4 * D + 2) := by ring
+  dsimp only [D] at he
+  rw [he]
+  dsimp only [p, a, D] at *
+  omega
+
+include hn in
+theorem canonicalRouterFrameWidths_sum_le (stages : List (Fin (canonicalRouterStride n))) :
+    (stages.map (canonicalRouterFrameWidth n R B hR hB)).sum ≤
+      stages.length * canonicalRouterUniformFrameWidth n R B := by
+  induction stages with
+  | nil => simp
+  | cons r stages ih =>
+    have hr := canonicalRouterFrameWidth_uniform n hn R B hR hB r
+    simp only [List.map_cons, List.sum_cons, List.length_cons, Nat.add_mul, Nat.one_mul]
+    omega
+
+/-- Actual canonical profile production has one polynomial budget for every residue. -/
+theorem canonicalRouterProfileProductionCost_le (r : Fin (canonicalRouterStride n)) :
+    matchingFullProfileProductionCost (input r).p
+      ((input r).w.indexBits + (input r).w.strideBits) (input r).w.strideBits
+      (canonicalRouterCountWidth n r) ≤
+      matchingFullProfileProductionBound n (2 * (Nat.clog 2 (4 * n + 2) + 1))
+        (Nat.clog 2 (4 * n + 2) + 1)
+        (canonicalScalarWidth (n * (4 * (Nat.clog 2 (4 * n + 2) + 1) + 2))) := by
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+  have ht : 3 * p.wc + p.wy = n := routerProfileParameters_total n _ _ hn r
+  have hd : p.n ≤ n := routerDigits_le_width n _ _
+  have hp : p.n * p.K ≤ n := by unfold Par.wy at ht; omega
+  obtain ⟨hi, hs, _, _, _, _⟩ := canonicalRouterDescriptorWidths_le n hn r
+  have hc := canonicalRouterCountWidth_le n hn r
+  dsimp only [canonicalRouterInput, canonicalGeneratedInput]
+  apply matchingFullProfileProductionCost_le_bound _ _ _ _ _ _ _ _ hd hp ?_ hs hc
+  dsimp only [canonicalRouterArithmetic, canonicalStageArithmetic]
+  omega
+
+/-- Original-to-local matching-table conversion has a residue-independent runtime bound. -/
+theorem canonicalRouterTableConversionCost_le (r : Fin (canonicalRouterStride n)) :
+    reservoirClassLocalTableCost n (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n))
+      ((input r).w.indexBits + (input r).w.strideBits) ≤
+      reservoirClassLocalTableCost n 0 (2 * (Nat.clog 2 (4 * n + 2) + 1)) := by
+  apply reservoirClassLocalTableCost_le
+  dsimp only [canonicalRouterInput, canonicalGeneratedInput, canonicalRouterArithmetic, canonicalStageArithmetic]
+  obtain ⟨hi, hs, _, _, _, _⟩ := canonicalRouterDescriptorWidths_le n hn r
+  omega
+
+/-- Matching setup and its coordinate cleanup are polynomial overhead around repair. -/
+theorem canonicalRouterMatchingPrice_le (r : Fin (canonicalRouterStride n)) :
+    matchingPlacedRepairPrice (input r) (canonicalRouterCountWidth n r) ≤
+      (input r).price +
+      (matchingFullProfileProductionBound n (2 * (Nat.clog 2 (4 * n + 2) + 1))
+        (Nat.clog 2 (4 * n + 2) + 1)
+        (canonicalScalarWidth (n * (4 * (Nat.clog 2 (4 * n + 2) + 1) + 2))) +
+        2 * canonicalRouterUniformMetadataWidth n R B + 2 : ℕ) := by
+  have hp := canonicalRouterProfileProductionCost_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r
+  have hc := canonicalRouterInput_length_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r
+    (input r).coordinateRegister (input r).coordinateRegister_ne_stream
+  rw [(input r).coordinateWord] at hc
+  have hm := canonicalRouterMetadataWidth_uniform n hn r R B hR hB
+  change canonicalRouterMetadataWidth n r R B hR hB ≤ _ at hm
+  have hcleanup : (2 * (input r).coordinateWords.length + 2 : ℕ) ≤
+      2 * canonicalRouterUniformMetadataWidth n R B + 2 := by omega
+  have hp' : (matchingFullProfileProductionCost (input r).p
+      ((input r).w.indexBits + (input r).w.strideBits) (input r).w.strideBits
+      (canonicalRouterCountWidth n r) : ℝ) ≤
+      (matchingFullProfileProductionBound n (2 * (Nat.clog 2 (4 * n + 2) + 1))
+        (Nat.clog 2 (4 * n + 2) + 1)
+        (canonicalScalarWidth (n * (4 * (Nat.clog 2 (4 * n + 2) + 1) + 2))) : ℕ) := by exact_mod_cast hp
+  have hc' : ((2 * (input r).coordinateWords.length + 2 : ℕ) : ℝ) ≤
+      (2 * canonicalRouterUniformMetadataWidth n R B + 2 : ℕ) := by exact_mod_cast hcleanup
+  unfold matchingPlacedRepairPrice
+  push_cast at hc' ⊢
+  linarith
+
+/-- All original-matching setup and erasure, excluding the repair execution itself. -/
+def canonicalRouterOriginalSetupBudget (n R B : ℕ) : ℕ :=
+  let D := Nat.clog 2 (4 * n + 2) + 1
+  reservoirClassLocalTableCost n 0 (2 * D) +
+    (matchingFullProfileProductionBound n (2 * D) D (canonicalScalarWidth (n * (4 * D + 2))) +
+      2 * canonicalRouterUniformMetadataWidth n R B + 2) +
+    (2 * (n * (4 * D + 2)) + 2)
+
+theorem canonicalRouterOriginalPrice_le (r : Fin (canonicalRouterStride n)) :
+    originalMatchingPlacedPrice (input r) (canonicalRouterCountWidth n r) n
+      (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n)) ≤
+      (input r).price + (canonicalRouterOriginalSetupBudget n R B : ℕ) := by
+  let D := Nat.clog 2 (4 * n + 2) + 1
+  let borrowed := routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n)
+  have hm := canonicalRouterMatchingPrice_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r
+  have ht := canonicalRouterTableConversionCost_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r
+  have hL : (input r).w.indexBits + (input r).w.strideBits ≤ 2 * D := by
+    dsimp only [canonicalRouterInput, canonicalGeneratedInput, canonicalRouterArithmetic, canonicalStageArithmetic]
+    obtain ⟨hi, hs, _, _, _, _⟩ := canonicalRouterDescriptorWidths_le n hn r
+    dsimp only [D]
+    omega
+  have hc := Nat.mul_le_mul (Nat.sub_le n (3 * borrowed))
+    (show 2 * ((input r).w.indexBits + (input r).w.strideBits) + 2 ≤ 4 * D + 2 by omega)
+  have hcleanup : (2 * ((n - 3 * borrowed) *
+      (2 * ((input r).w.indexBits + (input r).w.strideBits) + 2)) + 2 : ℕ) ≤
+      2 * (n * (4 * D + 2)) + 2 := by omega
+  have htR : (reservoirClassLocalTableCost n borrowed ((input r).w.indexBits + (input r).w.strideBits) : ℝ) ≤
+      (reservoirClassLocalTableCost n 0 (2 * D) : ℕ) := by exact_mod_cast ht
+  have hcR : ((2 * ((n - 3 * borrowed) *
+      (2 * ((input r).w.indexBits + (input r).w.strideBits) + 2)) + 2 : ℕ) : ℝ) ≤
+      (2 * (n * (4 * D + 2)) + 2 : ℕ) := by exact_mod_cast hcleanup
+  unfold originalMatchingPlacedPrice canonicalRouterOriginalSetupBudget
+  dsimp only [D, borrowed] at htR hcR
+  push_cast at hm htR hcR ⊢
+  linarith
+
+theorem canonicalRouterFrame_length_le (r : Fin (canonicalRouterStride n)) :
+    (originalMatchingFrame (input r) (canonicalRouterCountWidth n r) n
+      (routingReservoirWidth n (canonicalRouterGap n)) (routingReservoir_fit n (canonicalRouterGap n) hn)
+      (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n))
+      (routerBorrowed_le_reservoir n (canonicalRouterGap n) (canonicalRouterGap_pos n))
+      k mate canonicalRouterDelimiter).length ≤ canonicalRouterFrameWidth n R B hR hB r := by
+  have hf := originalMatchingFrame_length_le (input r) (canonicalRouterCountWidth n r) n
+    (routingReservoirWidth n (canonicalRouterGap n)) (routingReservoir_fit n (canonicalRouterGap n) hn)
+    (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n))
+    (routerBorrowed_le_reservoir n (canonicalRouterGap n) (canonicalRouterGap_pos n))
+    k mate canonicalRouterDelimiter (canonicalRouterMetadataWidth n r R B hR hB)
+    (fun j hj => canonicalRouterInput_length_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r j hj)
+  simpa only [canonicalRouterFrameWidth, canonicalRouterInput, canonicalGeneratedInput] using hf
+
+/-- Complete setup overhead for one framed canonical residue. -/
+def canonicalRouterStageSetupBudget (n R B : ℕ) : ℕ :=
+  canonicalRouterOriginalSetupBudget n R B +
+    (6 * canonicalRouterUniformFrameWidth n R B + 2 * originalMatchingScheduleT 6 + 2)
+
+theorem canonicalRouterStepPrice_le (r : Fin (canonicalRouterStride n)) :
+    originalMatchingStepPrice (input r) (canonicalRouterCountWidth n r) n
+      (routingReservoirWidth n (canonicalRouterGap n)) (routingReservoir_fit n (canonicalRouterGap n) hn)
+      (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n))
+      (routerBorrowed_le_reservoir n (canonicalRouterGap n) (canonicalRouterGap_pos n))
+      k mate canonicalRouterDelimiter ≤
+      (input r).price + (canonicalRouterStageSetupBudget n R B : ℕ) := by
+  have hf := (canonicalRouterFrame_length_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r).trans
+    (canonicalRouterFrameWidth_uniform n hn R B hR hB r)
+  have hs := originalMatchingStepPrice_le (input r) (canonicalRouterCountWidth n r) n
+    (routingReservoirWidth n (canonicalRouterGap n)) (routingReservoir_fit n (canonicalRouterGap n) hn)
+    (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n))
+    (routerBorrowed_le_reservoir n (canonicalRouterGap n) (canonicalRouterGap_pos n))
+    k mate canonicalRouterDelimiter (canonicalRouterUniformFrameWidth n R B) hf
+  have hp := canonicalRouterOriginalPrice_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r
+  unfold canonicalRouterStageSetupBudget
+  push_cast at hs hp ⊢
+  linarith
+
 
 /-- Execute a concrete list of bulk residues. All stage data, program identities
 and metadata admissibility are discharged by the canonical input construction. -/

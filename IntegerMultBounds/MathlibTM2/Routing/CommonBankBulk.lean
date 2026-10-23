@@ -48,6 +48,39 @@ def commonBankBulkPrice (stages : List (Fin (canonicalRouterStride n))) : ℝ :=
           (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n))
           (routerBorrowed_le_reservoir n (canonicalRouterGap n) (canonicalRouterGap_pos n)) k mate canonicalRouterDelimiter) stages).length + 3 : ℕ)
 
+/-- Complete loop, table setup, framing and rewind overhead around the repair-price sum. -/
+theorem commonBankBulkPrice_le (stages : List (Fin (canonicalRouterStride n))) :
+    commonBankBulkPrice n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages ≤
+      (stages.map (fun r => (input r).price)).sum +
+      (stages.length * (canonicalRouterStageSetupBudget n R B + 2 +
+        2 * canonicalRouterUniformFrameWidth n R B) + 4 : ℕ) := by
+  let frame := fun r => originalMatchingFrame (input r) (canonicalRouterCountWidth n r) n
+    (routingReservoirWidth n (canonicalRouterGap n)) (routingReservoir_fit n (canonicalRouterGap n) hn)
+    (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n))
+    (routerBorrowed_le_reservoir n (canonicalRouterGap n) (canonicalRouterGap_pos n)) k mate canonicalRouterDelimiter
+  let price := fun r => originalMatchingStepPrice (input r) (canonicalRouterCountWidth n r) n
+    (routingReservoirWidth n (canonicalRouterGap n)) (routingReservoir_fit n (canonicalRouterGap n) hn)
+    (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n))
+    (routerBorrowed_le_reservoir n (canonicalRouterGap n) (canonicalRouterGap_pos n)) k mate canonicalRouterDelimiter
+  have hp := delimitedSchedulePrice_le price (fun r => (input r).price)
+    (canonicalRouterStageSetupBudget n R B) stages
+    (fun r _ => canonicalRouterStepPrice_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r)
+  have hf := delimitedScheduleInput_length_le frame (canonicalRouterUniformFrameWidth n R B) stages
+    (fun r _ => (canonicalRouterFrame_length_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen r).trans
+      (canonicalRouterFrameWidth_uniform n hn R B hR hB r))
+  have hr : ((2 * (delimitedScheduleInput frame stages).length + 3 : ℕ) : ℝ) ≤
+      (2 * (stages.length * canonicalRouterUniformFrameWidth n R B) + 3 : ℕ) := by
+    exact_mod_cast (show 2 * (delimitedScheduleInput frame stages).length + 3 ≤
+      2 * (stages.length * canonicalRouterUniformFrameWidth n R B) + 3 by omega)
+  change delimitedSchedulePrice price stages + (2 * (delimitedScheduleInput frame stages).length + 3 : ℕ) ≤ _
+  generalize (stages.map (fun r => (input r).price)).sum = repairPrice at hp ⊢
+  generalize delimitedSchedulePrice price stages = callPrice at hp ⊢
+  generalize (delimitedScheduleInput frame stages).length = frameLength at hr ⊢
+  generalize canonicalRouterStageSetupBudget n R B = C at hp ⊢
+  generalize canonicalRouterUniformFrameWidth n R B = F at hr ⊢
+  push_cast at hp hr ⊢
+  nlinarith only [hp, hr]
+
 theorem commonBankBulk_exec (stages : List (Fin (canonicalRouterStride n)))
     (v : HS (canonicalRouterCommonT + 3) Q (prime + K) Unit)
     (S : Stacks (canonicalRouterCommonT + 3) (prime + K))

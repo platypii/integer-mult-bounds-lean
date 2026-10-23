@@ -46,6 +46,36 @@ def canonicalDirectionalFrame : List (Fin (prime + K + 4)) :=
   delimitedBankFrames canonicalDirectionalOuterDelimiter
     (framedCoreJobs (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream bank)
 
+/-- Dimension-only budget for a serialized directional call. -/
+def canonicalDirectionalFrameBudget : ℕ :=
+  (canonicalRouterCommonT + 3) *
+    (L + Lb + rowBits.length + (131 * canonicalRouterGap n) * (2 * L + 2) +
+      (stages.map (canonicalRouterFrameWidth n R B hR hB)).sum + 1)
+
+/-- Uniform outer-frame budget with no residue list or admissibility proofs. -/
+def canonicalDirectionalUniformFrameBudget (n R B L Lb rowLength count : ℕ) : ℕ :=
+  (canonicalRouterCommonT + 3) *
+    (L + Lb + rowLength + (131 * canonicalRouterGap n) * (2 * L + 2) +
+      count * canonicalRouterUniformFrameWidth n R B + 1)
+
+include hn in
+theorem canonicalDirectionalFrameBudget_uniform :
+    canonicalDirectionalFrameBudget n R B hR hB L Lb rowBits stages ≤
+      canonicalDirectionalUniformFrameBudget n R B L Lb rowBits.length stages.length := by
+  unfold canonicalDirectionalFrameBudget canonicalDirectionalUniformFrameBudget
+  apply Nat.mul_le_mul_left
+  have hs := canonicalRouterFrameWidths_sum_le n hn R B hR hB stages
+  omega
+
+/-- Outer framing costs at most one bounded metadata word per core tape. -/
+theorem canonicalDirectionalFrame_length_le :
+    (canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages).length ≤
+      canonicalDirectionalFrameBudget n R B hR hB L Lb rowBits stages := by
+  unfold canonicalDirectionalFrame canonicalDirectionalFrameBudget
+  apply framedCoreFrames_length_le
+  intro j hj
+  exact canonicalDirectionalBank_length_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages j hj
+
 def canonicalDirectionalProgram : Pr Empty ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit :=
   framedCoreCallProgram canonicalDirectionalStream canonicalDirectionalOuterDelimiter
     (fun x => decide (x.val < 9)) Empty.elim
@@ -68,6 +98,23 @@ theorem canonicalDirectionalPrice_le :
   unfold canonicalDirectionalPrice
   exact add_le_add (add_le_add (canonicalTerminalPrice_le n hn mate hinv k reverse R B L Lb rowBits.length)
     (le_refl _)) (le_refl _)
+
+/-- Uniform metadata loading and terminal costs leave only bulk execution to bound. -/
+theorem canonicalDirectionalPrice_uniform_overhead :
+    canonicalDirectionalPrice n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages ≤
+      canonicalTerminalPrice n R B L Lb rowBits.length (131 * canonicalRouterGap n) +
+      commonBankBulkPrice n hn R B hR hB mate hinv k reverse hQ hA l hl hlen stages +
+      (6 * canonicalDirectionalUniformFrameBudget n R B L Lb rowBits.length stages.length +
+        2 * (canonicalRouterCommonT + 3) + 2 : ℕ) := by
+  have hf := (canonicalDirectionalFrame_length_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen
+    L Lb rowBits stages).trans (canonicalDirectionalFrameBudget_uniform n hn R B hR hB L Lb rowBits stages)
+  have hj := framedCoreJobs_length_le (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream bank
+  refine (canonicalDirectionalPrice_le n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages).trans ?_
+  refine add_le_add (le_refl _) ?_
+  exact_mod_cast (show 6 * (canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages).length +
+    2 * (framedCoreJobs (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream bank).length + 2 ≤
+    6 * canonicalDirectionalUniformFrameBudget n R B L Lb rowBits.length stages.length +
+      2 * (canonicalRouterCommonT + 3) + 2 by omega)
 
 theorem canonicalDirectional_exec
     (hn0 : 0 < n) (hnfit : n < 2 ^ L) (hBfit : B < 2 ^ Lb) (hnB : n ≤ B)

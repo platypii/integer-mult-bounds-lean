@@ -97,6 +97,33 @@ theorem canonicalRouterCommonBank_terminal {A : ℕ}
     · rintro ⟨i, hi⟩
       exact canonicalRouterTerminalEmbed_separate j hj i hi.symm
 
+/-- Sharing the stream does not add its payload to either metadata budget. -/
+theorem canonicalRouterCommonBank_length_le {A : ℕ}
+    (bulk : Fin canonicalRouterBulkT → List (Fin (A + 4)))
+    (terminal : Fin canonicalTerminalT → List (Fin (A + 4))) (C D : ℕ)
+    (hbulk : ∀ j, j ≠ originalMatchingScheduleStream 6 → (bulk j).length ≤ C)
+    (hterminal : ∀ j, j ≠ canonicalTerminalRouter .str → (terminal j).length ≤ D)
+    (j : Fin canonicalRouterCommonT)
+    (hj : j ≠ canonicalRouterBulkEmbed (originalMatchingScheduleStream 6)) :
+    (canonicalRouterCommonBank bulk terminal j).length ≤ C + D := by
+  by_cases hb : ∃ i, canonicalRouterBulkEmbed i = j
+  · obtain ⟨i, rfl⟩ := hb
+    rw [canonicalRouterCommonBank_bulk]
+    have hi := hbulk i (fun he => hj (congrArg canonicalRouterBulkEmbed he))
+    omega
+  · unfold canonicalRouterCommonBank
+    rw [Function.extend_apply' _ _ _ hb]
+    by_cases ht : ∃ i, canonicalRouterTerminalEmbed i = j
+    · obtain ⟨i, rfl⟩ := ht
+      rw [canonicalRouterTerminalEmbed_injective.extend_apply]
+      have hi : i ≠ canonicalTerminalRouter .str := by
+        intro he
+        subst i
+        exact hj canonicalRouterTerminalEmbed_stream
+      exact (hterminal i hi).trans (Nat.le_add_left _ _)
+    · rw [Function.extend_apply' _ _ _ ht]
+      exact Nat.zero_le _
+
 
 /-- A completed phase changes only the shared stream seen by either projection. -/
 theorem canonicalRouterCommonBank_updateStream {A : ℕ}

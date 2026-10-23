@@ -85,6 +85,16 @@ variable (L Lb : ℕ) (rowBits : List Bool)
 def canonicalMatchingFrame : List (Fin (prime + K + 4)) :=
   (inputs 2).frame L Lb rowBits ++ ((inputs 1).frame L Lb rowBits ++ (inputs 0).frame L Lb rowBits)
 
+theorem canonicalMatchingFrame_length_le :
+    (canonicalMatchingFrame n hn R B hR hB mate hinv hQ hA l hl hlen L Lb rowBits).length ≤
+      9 * canonicalDirectionalFrameBudget n R B hR hB L Lb rowBits
+        (List.finRange (canonicalRouterStride n)) := by
+  have h₂ := (inputs 2).frame_length_le L Lb rowBits
+  have h₁ := (inputs 1).frame_length_le L Lb rowBits
+  have h₀ := (inputs 0).frame_length_le L Lb rowBits
+  simp only [canonicalMatchingFrame, List.length_append]
+  omega
+
 def canonicalMatchingProgram : Pr Empty ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit :=
   .seq (.seq ((inputs 2).program Lb rowBits) ((inputs 1).program Lb rowBits)) ((inputs 0).program Lb rowBits)
 

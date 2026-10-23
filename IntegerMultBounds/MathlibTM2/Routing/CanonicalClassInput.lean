@@ -44,6 +44,21 @@ def directionFrame (d : Fin 3) : List (Fin (prime + K + 4)) :=
 def frame : List (Fin (prime + K + 4)) :=
   input.directionFrame L Lb rowBits 0 ++ (input.directionFrame L Lb rowBits 1 ++ input.directionFrame L Lb rowBits 2)
 
+theorem frame_length_le :
+    (input.frame L Lb rowBits).length ≤ 3 * canonicalDirectionalFrameBudget n R B hR hB L Lb rowBits
+      (List.finRange (canonicalRouterStride n)) := by
+  have hd (d : Fin 3) := canonicalDirectionalFrame_length_le n hn R B hR hB mate hinv k
+    (decide (d = 1)) hQ hA (input.records d) (input.count d) (input.shape d)
+    L Lb rowBits (List.finRange (canonicalRouterStride n))
+  have h₀ := hd 0
+  have h₁ := hd 1
+  have h₂ := hd 2
+  change (input.directionFrame L Lb rowBits 0).length ≤ _ at h₀
+  change (input.directionFrame L Lb rowBits 1).length ≤ _ at h₁
+  change (input.directionFrame L Lb rowBits 2).length ≤ _ at h₂
+  simp only [frame, List.length_append]
+  omega
+
 def directionProgram (d : Fin 3) : Pr Empty ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit :=
   canonicalDirectionalProgram n hn R B hR hB mate hinv k (decide (d = 1)) hQ hA
     (input.records d) (input.count d) (input.shape d) Lb rowBits

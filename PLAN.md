@@ -1902,6 +1902,36 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    preserves outer rows. The complete explicit frame is still supplied;
    executed cycle-decomposition/table and frame production, uniform pricing,
    long-record amortization and short-record fallback remain open.
+   `canonicalDirectionalPrice_uniform_overhead` now applies the uniform
+   metadata/frame bounds to the actual directional ledger, bounding loader
+   overhead and terminal routing while retaining bulk execution explicitly.
+   `canonicalPermutationBudget_le` bounds the final restoration rewind by the
+   complete uniform metadata budget. The bulk repair/table-production runtime
+   still needs a uniform bound.
+   `matchingFullProfileProductionCost_le_bound` now bounds extraction, residue
+   dispatch, coordinate production and temporary erasure by a common
+   polynomial ledger. `canonicalRouterProfileProductionCost_le` instantiates
+   it for actual canonical calls with uniform logarithmic word widths.
+   `reservoirClassLocalTableCost_le` and
+   `canonicalRouterTableConversionCost_le` now bound original-to-local table
+   conversion uniformly. `canonicalRouterMatchingPrice_le` bounds the actual
+   matching call by its repair price plus polynomial production and coordinate
+   cleanup overhead, reusing the concrete input-word bound. Repair execution
+   and full bulk-ledger composition remain in the runtime gate.
+   `canonicalRouterOriginalPrice_le` now combines conversion, profile
+   production and both temporary erasures around the actual original-matching
+   call. Its bound is the repair execution price plus one explicit
+   `canonicalRouterOriginalSetupBudget`, uniform across residues and matchings.
+   `originalMatchingStepPrice_le` charges the actual loader from frame size;
+   `canonicalRouterStepPrice_le` now bounds each complete framed residue stage
+   by its repair price plus `canonicalRouterStageSetupBudget`. Structural
+   `delimitedSchedulePrice_le` and `delimitedScheduleInput_length_le` support
+   summing actual call ledgers and frame lengths with loop overhead included.
+   `commonBankBulkPrice_le` now composes those bounds for the actual complete
+   bulk schedule, including loop overhead and final metadata rewind. Its
+   result is the sum of actual repair execution prices plus one uniform
+   polynomial setup budget times the number of stages. A uniform bound on
+   that repair-price sum and long/short-record amortization remain open.
    `canonicalPermutation_canonical_exec` now chooses both scalar widths and the
    canonical binary row counter from the dimensions for the entire restored
    eighteen-direction program. Coordinate positivity, binary fit, canonicality
@@ -2012,9 +2042,59 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    `matchingPlacedInputBank_length_le` and
    `originalMatchingPlacedInputBank_length_le` instantiate those overlays;
    `originalMatchingFrame_length_le` bounds their actual serialized frame
-   from the core bound and dimension-derived scalar/table sizes. Canonical
-   instantiation and whole-schedule composition remain before closing the
-   complete bulk frame bound.
+   from the core bound and dimension-derived scalar/table sizes.
+   `canonicalGeneratedMetadataWidth` now names the
+   shared dimension-only expression; `canonicalRouterInput_length_le`
+   instantiates it for actual canonical residues. `canonicalRouterFrame_length_le`
+   bounds each serialized residue frame by `canonicalRouterFrameWidth`, with
+   no matching or record arguments in that budget.
+   `canonicalDirectionalBulkInput_length_le` sums those budgets over the actual
+   residue schedule. `canonicalRouterCommonBank_length_le` excludes the shared
+   stream while joining metadata bounds. `canonicalDirectionalBank_length_le`
+   then combines terminal word sizes and the complete bulk-input budget;
+   `canonicalDirectionalFrame_length_le` bounds the actual outer frame using
+   those dimensions alone. `CanonicalClassInput.frame_length_le`,
+   `canonicalMatchingFrame_length_le` and `canonicalPermutationFrame_length_le`
+   lift the bound through all eighteen directions.
+   `canonicalPermutationMetadata_length_le` exposes the resulting bound on the
+   record-independent metadata interface. Simplification of the residue sum
+   to a uniform polynomial bound remains open.
+   `liveDescriptorMagnitude_le` now bounds every descriptor mode family by a
+   polynomial in profile dimensions, and
+   `liveDescriptorCanonicalWidths_indexBits_le` derives a uniform logarithmic
+   index-width bound. `canonicalRouterDescriptorMagnitude_le` specializes the
+   magnitude to `4 * n + 1` for every canonical residue.
+   `canonicalRouterIndexBits_le` and `canonicalRouterCoordinateBits_le` then
+   give common logarithmic index and affine-coordinate widths independent of
+   the residue. `canonicalRouterCountWidth_le` now bounds the actual matching
+   byte-count header uniformly, using the coordinate bound and the fact that
+   all profile slots fit inside the address width. Remaining scalar widths
+   still need to be substituted into the full residue/frame budgets.
+   `canonicalScalarWidth_mono` and `canonicalScalarWidth_add_le` now support
+   shared scalar estimates. `canonicalRouterBlockWidth_le` and
+   `canonicalRouterKeyWidth_le` bound the actual keyed-payload and complete
+   address-key headers by logarithmic address, row-count and payload widths,
+   uniformly across residues. `canonicalRouterDimensionWidths_le` bounds all
+   seven geometry/classifier/placement dimension headers by the common address
+   scalar width. `canonicalRouterRecordWidths` identifies the remaining
+   record-count and payload widths and bounds the row-counter word
+   logarithmically, independently of the residue.
+   `canonicalRouterDescriptorWidths_le` collects all six descriptor-width
+   bounds without expanding the full arithmetic record.
+   `canonicalRouterMetadataWidth_uniform` now combines all scalar, descriptor
+   and row-counter estimates into `canonicalRouterUniformMetadataWidth`, one
+   explicit polynomial in address size and logarithmic scalar widths valid for
+   every residue. `canonicalRouterFrameWidth_uniform` now bounds every
+   serialized residue frame by `canonicalRouterUniformFrameWidth`.
+   `canonicalRouterFrameWidths_sum_le` replaces the residue sum by stage count
+   times that common polynomial budget.
+   `canonicalDirectionalFrameBudget_uniform` now substitutes it into the
+   outer loader budget. `canonicalPermutationMetadata_length_uniform` bounds
+   the complete eighteen-direction frame without a residue sum, and
+   `canonicalPermutationMetadata_canonical_length_le` selects scalar widths
+   and bounds the row counter from dimensions alone. This closes the explicit
+   uniform metadata-size bound; executed production, the full runtime ledger,
+   long-record amortization and short-record fallback remain open.
    Bulk setup and complete frame-size bounds, uniform amortization and short-record
    fallback remain open. R3 and kappa
    are unchanged.

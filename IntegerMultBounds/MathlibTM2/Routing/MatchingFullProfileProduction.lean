@@ -22,6 +22,20 @@ def matchingFullProfileProductionCost (p : Par) (L Lk Lc : ℕ) : ℕ :=
   binaryPrefixExtractCost Lc ((p.n * p.K) * (2 * L + 2)) + matchingProfileProductionCost p L Lk +
     (2 * ((p.n * p.K) * (2 * L + 2)) + 2)
 
+/-- Uniform polynomial ledger when both slots and profile count are bounded by N. -/
+def matchingFullProfileProductionBound (N L Lk Lc : ℕ) : ℕ :=
+  binaryPrefixExtractCost Lc (N * (2 * L + 2)) +
+    (((N * (residueDispatchCost L Lk + 28 * L + 47) + 4 * (N * (2 * L + 2)) + 6) +
+      (N * (28 * L + 44) + 2 * (N * (2 * L + 2)) + 2 * (N * (L + 3)) + 6)) +
+      (2 * (N * (2 * L + 2)) + 2)) + (2 * (N * (2 * L + 2)) + 2)
+
+theorem matchingFullProfileProductionCost_le_bound (p : Par) (N L Lk Lc W Wk Wc : ℕ)
+    (hn : p.n ≤ N) (hslots : p.n * p.K ≤ N) (hL : L ≤ W) (hk : Lk ≤ Wk) (hc : Lc ≤ Wc) :
+    matchingFullProfileProductionCost p L Lk Lc ≤ matchingFullProfileProductionBound N W Wk Wc := by
+  unfold matchingFullProfileProductionCost matchingFullProfileProductionBound matchingProfileProductionCost
+    binaryPrefixExtractCost residueDispatchCost
+  gcongr
+
 theorem matchingFullProfileProduction_exec (body : P → Pr P T Q A U)
     (extract : Fin 8 → Fin T) (hprefix : Function.Injective extract)
     (gather : Fin 18 → Fin T) (hgather : Function.Injective gather)

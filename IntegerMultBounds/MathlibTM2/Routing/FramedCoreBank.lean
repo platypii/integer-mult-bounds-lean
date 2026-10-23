@@ -29,6 +29,11 @@ def framedCoreJobs (e : Fin N → Fin T) (str : Fin N) (words : Fin N → List (
     List (Fin T × List (Fin (A + 4))) :=
   (framedCoreRegisters str).map fun j => (e j, words j)
 
+theorem framedCoreJobs_length_le (e : Fin N → Fin T) (str : Fin N)
+    (words : Fin N → List (Fin (A + 4))) : (framedCoreJobs e str words).length ≤ N := by
+  simp only [framedCoreJobs, List.length_map, framedCoreRegisters]
+  exact (List.length_filter_le _ _).trans_eq List.length_finRange
+
 /-- A fixed core serializes at most one bounded word per physical register. -/
 theorem framedCoreFrames_length_le (delimiter : Fin (A + 4))
     (e : Fin N → Fin T) (str : Fin N) (words : Fin N → List (Fin (A + 4)))
@@ -40,9 +45,7 @@ theorem framedCoreFrames_length_le (delimiter : Fin (A + 4))
     obtain ⟨j, hmem, rfl⟩ := List.mem_map.mp hj
     exact hwords j ((mem_framedCoreRegisters str j).mp hmem)
   refine (delimitedBankFrames_length_le delimiter _ W hjobs).trans ?_
-  apply Nat.mul_le_mul_right
-  simp only [framedCoreJobs, List.length_map, framedCoreRegisters]
-  exact (List.length_filter_le _ _).trans_eq (List.length_finRange)
+  exact Nat.mul_le_mul_right _ (framedCoreJobs_length_le e str words)
 
 theorem framedCoreJobs_destinations (e : Fin N → Fin T) (str : Fin N)
     (words : Fin N → List (Fin (A + 4))) :
