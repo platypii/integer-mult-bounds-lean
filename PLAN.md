@@ -1374,6 +1374,25 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    raw activity/scalars, placement inputs, full routing schedules, uniform setup
    and amortization and the executed short-record fallback remain open.
    Full R3 and kappa are unchanged.
+   `LiveSelectedXSourceGenerate` and `LiveSelectedKeySourceGenerate` now execute
+   the two remaining individual profiles on the concrete shared bank. Their fixed
+   interpreters read raw region tags and local coordinates, compute physical wire
+   addresses, and gate key frames by activity; they restore the complete raw input
+   and every non-output tape with explicit total step bounds. The layout reuses
+   existing zero/rho/stride operands and blank arithmetic scratch. `LiveSourceBases`
+   now computes the other two region bases from the existing
+   live count, stride, rho and Y/control row counts. `LivePreparedXSourceGenerate`
+   and `LivePreparedKeySourceGenerate` compose this setup, actual profile generation
+   and complete base cleanup, restoring every tape except the profile output and
+   charging all phases. `RepairAllSourceProfiles` now executes all eleven
+   profile generators in one shared bank, including region-base setup and cleanup,
+   with a summed step bound and every non-profile tape restored. It establishes
+   descriptor readiness without any supplied completed profile. Raw tagged source
+   records, activity and scalars remain inputs. `AllSourceProfilesRepair` composes
+   this eleven-profile generation with exact repair and complete profile cleanup:
+   only the repaired stream changes and every phase is charged. Placement/header/
+   classifier integration, raw-record production, and all remaining
+   routing/amortization/fallback gates remain open. Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and

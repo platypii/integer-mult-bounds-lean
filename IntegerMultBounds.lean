@@ -1697,3 +1697,9 @@ public import IntegerMultBounds.MathlibTM2.DFT.PipeSetup
 public import IntegerMultBounds.MathlibTM2.DFT.Regs
 public import IntegerMultBounds.MathlibTM2.DFT.Top
 public import IntegerMultBounds.MathlibTM2.DFT.Unpack
+public import IntegerMultBounds.MathlibTM2.Routing.LiveSelectedXSourceGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.LiveSelectedKeySourceGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.LivePreparedXSourceGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.LivePreparedKeySourceGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.RepairAllSourceProfiles
+public import IntegerMultBounds.MathlibTM2.Routing.AllSourceProfilesRepair
