@@ -1702,9 +1702,29 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    directly on the common matching-table encoding, derives unique-row output,
    and restores the entire table, query and workspace. Its complete bound is
    `coordinateCount * (30 * width + 39) + 4` steps, including loading, cleanup
-   and rewind. No new scanner-loop or archive engine is used. Composed
-   placement translation, complete middle-table production and concrete
-   schedule instantiation remain open. R3 and kappa are unchanged.
+   and rewind. No new scanner-loop or archive engine is used.
+   `matchingTableLookupInPlace_exec` installs the looked-up mate into the
+   query register and erases its temporary output, at an additional
+   `10 * width + 10` steps. It shares `coordinateReplace_exec` with the
+   in-place block exchange, avoiding duplicate bit-order and cleanup proofs.
+   `BinaryCoordinateSchedule` reuses that same scheduler to compose live
+   scalar block exchanges, restoring its complete metadata input and scratch.
+   `ReservoirCoordinateExec` specializes it to forward and inverse reservoir
+   placement in at most `276 * width + 328` steps. The forward scalar order
+   is the reverse of the record-routing order. In-place binary updates use
+   preserving copy and erasure, since a direct stack move reverses the bits.
+   The restriction lemmas also expose the scalar lookup/subtraction formula
+   and prove that inverse placement keeps each mate inside the middle field.
+   `ReservoirMatchingLookup` now executes forward coordinate placement,
+   in-place lookup in the physical table and inverse coordinate placement.
+   Only its coordinate register changes, to the conjugated physical mate;
+   both schedule inputs, the entire physical table and all scratch restore.
+   Its full bound is `n * (30 * width + 39) + 562 * width + 670`.
+   The two placement schedules may use separate metadata tapes while sharing
+   the coordinate register. Middle-offset translation, table enumeration and
+   reservoir-class generation from the original matching still remain.
+   Composed middle-table production and concrete schedule instantiation
+   remain open. R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and

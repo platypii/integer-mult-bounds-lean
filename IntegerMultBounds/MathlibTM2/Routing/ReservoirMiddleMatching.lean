@@ -44,6 +44,30 @@ theorem reservoirMiddleMatching_coordinate (mate : Fin n → Fin n) (hinv : Func
   rw [reservoirMiddleMatching, middleMatching_coordinate]
   simp only [placedSource, Equiv.apply_symm_apply]
 
+/-- The scalar table-conversion pipeline: embed the local query, place it,
+look up its physical mate, undo placement, then subtract the middle offset. -/
+theorem reservoirMiddleMatching_value (mate : Fin n → Fin n) (hinv : Function.Involutive mate)
+    (hfix : ∀ q ∈ routingReservoir n H hfit k, mate q = q) (q : Fin (n - 3 * w)) :
+    (reservoirMiddleMatching n H hfit w hw k mate hinv hfix q).val =
+      ((reservoirPlacement n H hfit w hw k).symm
+        (mate (reservoirPlacement n H hfit w hw k
+          (middleCoordinate w (n - 3 * w) (reservoirMiddle_fit n H hfit w hw) q)))).val - w := by
+  rfl
+
+/-- Inverse placement of a looked-up mate remains inside the middle field,
+so the final scalar subtraction is ordinary subtraction without underflow. -/
+theorem reservoirMiddleMatching_lookup_bounds (mate : Fin n → Fin n)
+    (hinv : Function.Involutive mate)
+    (hfix : ∀ q ∈ routingReservoir n H hfit k, mate q = q) (q : Fin (n - 3 * w)) :
+    let r := (reservoirPlacement n H hfit w hw k).symm
+      (mate (reservoirPlacement n H hfit w hw k
+        (middleCoordinate w (n - 3 * w) (reservoirMiddle_fit n H hfit w hw) q)))
+    w ≤ r.val ∧ r.val < w + (n - 3 * w) := by
+  exact middleMatching_interval w (n - 3 * w) (reservoirMiddle_fit n H hfit w hw)
+    (placedSource (reservoirPlacement n H hfit w hw k) mate)
+    (placedMatching_involutive mate hinv (reservoirPlacement n H hfit w hw k))
+    (reservoirPlacedMatching_fixes n H hfit w hw k mate hfix) q
+
 /-- Each actual reservoir class meets the concrete restriction preconditions. -/
 theorem reservoirClassPlaced_fixes (mate : Fin n → Fin n) (q : Fin n)
     (hq : q.val < w ∨ w + (n - 3 * w) ≤ q.val) :

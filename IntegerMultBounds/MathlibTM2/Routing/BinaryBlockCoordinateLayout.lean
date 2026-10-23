@@ -118,4 +118,33 @@ theorem binaryBlockCoordinate_exec (body : P → Pr P T Q A U)
     · have hv : blockExchange a b w q = q := blockExchange_outside a b w q (by omega) (by omega)
       simpa [sourceRegionIndex, hgap, hright, binaryBlockCoordinateBranch] using hcopy hv u'
 
+def binaryBlockCoordinateInPlaceProgram (rg : Fin 11 → Fin T) : Pr P T Q A U :=
+  .seq (binaryBlockCoordinateProgram rg) (.seq (bclear (rg 0)) (.seq (bcopy (rg 5) (rg 0) (rg 7) (rg 8)) (bclear (rg 5))))
+
+/-- Replace the coordinate in place, so the generic framed scheduler can chain
+exchanges without a new loop or accumulating intermediate coordinates. -/
+theorem binaryBlockCoordinateInPlace_exec (body : P → Pr P T Q A U)
+    (rg : Fin 11 → Fin T) (hrg : Function.Injective rg) (L n a b w q : ℕ)
+    (hab : a + w ≤ b) (hb : b + w ≤ n) (hn : n < 2 ^ L) (hq : q < n)
+    (v : HS T Q A U) (S : Stacks T A)
+    (hcoordinate : S.R (rg 0) = binSyms L q)
+    (haInput : S.R (rg 1) = binSyms L a) (haEnd : S.R (rg 2) = binSyms L (a + w))
+    (hbInput : S.R (rg 3) = binSyms L b) (hbEnd : S.R (rg 4) = binSyms L (b + w))
+    (hblank : ∀ j : Fin 11, j = 5 ∨ j = 6 ∨ j = 7 ∨ j = 8 ∨ j = 9 → S.R (rg j) = []) :
+    ∃ (v' : HS T Q A U) (steps : ℕ), v'.user = v.user ∧ steps ≤ 60 * L + 64 ∧
+      Exec body (binaryBlockCoordinateInPlaceProgram rg) (mk v S) steps
+        (mk v' { S with R := Function.update S.R (rg 0) (binSyms L (blockExchange a b w q)) }) := by
+  obtain ⟨v₁, m₁, hu₁, hm₁, he₁⟩ := binaryBlockCoordinate_exec body rg hrg L n a b w q hab hb hn hq v S
+    hcoordinate haInput haEnd hbInput hbEnd
+    (by intro j hj; exact hblank j (Or.inr hj))
+  rw [hblank 5 (by simp), List.append_nil] at he₁
+  obtain ⟨v₂, hu₂, he₂⟩ := coordinateReplace_exec body
+    (rg 5) (rg 0) (rg 7) (rg 8)
+    (by simp [List.nodup_cons, hrg.eq_iff]) L
+    (binSyms L (blockExchange a b w q)) (length_binSyms L _) v₁ S
+    (by rw [hcoordinate]; exact length_binSyms L q)
+    (hblank 5 (by simp)) (hblank 7 (by simp)) (hblank 8 (by simp))
+  exact ⟨v₂, m₁ + (10 * L + 10), hu₂.trans hu₁, by omega,
+    Exec.seq he₁ he₂⟩
+
 end IntegerMultBounds.MathlibTM2.Routing

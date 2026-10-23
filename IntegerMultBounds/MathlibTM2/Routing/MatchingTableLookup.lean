@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Routing.MatchingLookupCall
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProfileGather
 public import IntegerMultBounds.MathlibTM2.Routing.DelimitedBankSchedule
 public import IntegerMultBounds.MathlibTM2.Routing.ElementarySetupBank
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryCoordinateTranslate
 public import Mathlib.Data.List.FinRange
 
 /-! Matching-table lookup uses the existing framed bank scheduler. No separate
@@ -209,5 +210,31 @@ theorem matchingTableLookup_exec (body : P → Pr P T Q A U)
     push_cast at hm ⊢
     nlinarith
   exact_mod_cast hb
+
+/-- A lookup followed by bit-preserving installation can be chained directly
+between forward and inverse coordinate placement. -/
+def matchingTableLookupInPlaceProgram (rg : Fin 10 → Fin T) (out : Fin T) : Pr P T Q A U :=
+  .seq (matchingTableLookupProgram rg out)
+    (coordinateReplaceProgram out (rg 2) (rg 3) (rg 4))
+
+theorem matchingTableLookupInPlace_exec (body : P → Pr P T Q A U)
+    (rg : Fin 10 → Fin T) (hrg : Function.Injective rg) (out : Fin T) (hout : ∀ j, out ≠ rg j)
+    (L : ℕ) (hN : N ≤ 2 ^ L) (mate : Fin N → Fin N) (query : Fin N)
+    (v : HS T Q A U) (S : Stacks T A) (ready : MatchingLookupReady rg L query S)
+    (hinput : S.R (rg 7) = matchingEntryWords L (matchingTableEntries N (matchingMateCoordinate mate)))
+    (hsaved : S.R (rg 8) = []) (hblank : S.R out = []) :
+    ∃ (v' : HS T Q A U) (steps : ℕ), v'.user = v.user ∧
+      steps ≤ N * (30 * L + 39) + 10 * L + 14 ∧
+      Exec body (matchingTableLookupInPlaceProgram rg out) (mk v S) steps
+        (mk v' { S with R := Function.update S.R (rg 2) (binSyms L (mate query).val) }) := by
+  obtain ⟨v₁, steps, hu₁, hm, he₁⟩ := matchingTableLookup_exec body rg hrg out hout
+    L hN mate query v S ready hinput hsaved
+  rw [hblank, List.append_nil] at he₁
+  obtain ⟨v₂, hu₂, he₂⟩ := coordinateReplace_exec body out (rg 2) (rg 3) (rg 4)
+    (by simp [List.nodup_cons, hrg.eq_iff, hout]) L
+    (binSyms L (mate query).val) (length_binSyms L _) v₁ S
+    (by rw [ready.request]; exact length_binSyms L _) hblank
+    (ready.blank 3 (by simp)) (ready.blank 4 (by simp))
+  exact ⟨v₂, steps + (10 * L + 10), hu₂.trans hu₁, by omega, Exec.seq he₁ he₂⟩
 
 end IntegerMultBounds.MathlibTM2.Routing

@@ -11,6 +11,50 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack
 open IntegerMultBounds.MathlibTM2.Host
 variable {T Q A : ℕ} {P U : Type}
 
+/-- Install a computed word without reversing its bit order, then erase the
+temporary output. Shared by scalar arithmetic and table lookup. -/
+def coordinateReplaceProgram (src dst t₁ t₂ : Fin T) : Pr P T Q A U :=
+  .seq (bclear dst) (.seq (bcopy src dst t₁ t₂) (bclear src))
+
+theorem coordinateReplace_exec (body : P → Pr P T Q A U)
+    (src dst t₁ t₂ : Fin T) (hdist : [src, dst, t₁, t₂].Nodup)
+    (L : ℕ) (word : List (Fin (A + 4))) (hword : word.length = L)
+    (v : HS T Q A U) (S : Stacks T A)
+    (hdst : (S.R dst).length = L) (hsrc : S.R src = [])
+    (ht₁ : S.R t₁ = []) (ht₂ : S.R t₂ = []) :
+    ∃ v', v'.user = v.user ∧
+      Exec body (coordinateReplaceProgram src dst t₁ t₂)
+        (mk v { S with R := Function.update S.R src word }) (10 * L + 10)
+        (mk v' { S with R := Function.update S.R dst word }) := by
+  have hne : src ≠ dst ∧ src ≠ t₁ ∧ src ≠ t₂ ∧ dst ≠ t₁ ∧ dst ≠ t₂ := by
+    simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false,
+      not_or, not_false_eq_true] at hdist
+    exact ⟨hdist.1.1, hdist.1.2.1, hdist.1.2.2, hdist.2.1.1, hdist.2.1.2⟩
+  let G : Stacks T A := { S with R := Function.update S.R src word }
+  obtain ⟨v₁, hu₁, _, he₁⟩ := bclear_exec body dst v G
+  let H : Stacks T A := { G with R := Function.update G.R dst [] }
+  obtain ⟨v₂, hu₂, he₂⟩ := bcopy_exec body
+    (a := src) (c := dst) (t₁ := t₁) (t₂ := t₂) hdist v₁ H
+    (by simp [H, G, Ne.symm hne.2.1, Ne.symm hne.2.2.2.1, ht₁])
+    (by simp [H, G, Ne.symm hne.2.2.1, Ne.symm hne.2.2.2.2, ht₂])
+  have hs : H.R src = word := by simp [H, G, hne.1]
+  rw [hs, show H.R dst = [] by simp [H], List.append_nil, hword] at he₂
+  let J : Stacks T A := { H with R := Function.update H.R dst word }
+  obtain ⟨v₃, hu₃, _, he₃⟩ := bclear_exec body src v₂ J
+  have hl : (G.R dst).length = L := by simp [G, Ne.symm hne.1, hdst]
+  have hj : (J.R src).length = L := by simp [J, H, G, hne.1, hword]
+  have hf : Function.update J.R src [] = Function.update S.R dst word := by
+    funext j
+    by_cases hs : j = src
+    · subst j; simp [hne.1, hsrc]
+    by_cases hd : j = dst
+    · subst j; simp [J, hs]
+    · simp [J, H, G, hs, hd]
+  rw [hl] at he₁
+  rw [hj, hf] at he₃
+  exact ⟨v₃, hu₃.trans (hu₂.trans hu₁),
+    Exec.cast (Exec.seq he₁ (Exec.seq he₂ he₃)) (by omega) rfl⟩
+
 def binaryCoordinateTranslateProgram (rg : Fin 9 → Fin T) : Pr P T Q A U :=
   .seq (bsub (rg 0) (rg 1) (rg 3) (rg 5) (rg 6) (rg 7) (rg 8))
     (.seq (badd (rg 3) (rg 2) (rg 4) (rg 5) (rg 6) (rg 7) (rg 8)) (bclear (rg 3)))
