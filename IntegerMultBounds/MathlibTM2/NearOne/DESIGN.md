@@ -304,9 +304,20 @@ default build does not check them.
      where `D` is total symbol advance. `ChirpGatherWindows` and `ChirpGatherExec`
      specialize it to the actual cyclic chirp windows, in block order with coefficient
      words intact. Total advance is `chirpCenter s t m M · w`, at most `(s+m)w` for
-     valid block starts. Generating the cyclic extension and control stream remains open.
+     valid block starts. `ChirpControlArgs`, `ChirpControlEmit`, `ChirpControlHost`,
+     `ChirpControlLoop`, `ChirpControlCleanup` and `ChirpControlBatch` now generate
+     the control stream from binary dimension words `s,t,m,w` and a preserved unary
+     block count. Six checked arithmetic atoms per block compute its next advance;
+     actual binary-to-unary conversion emits a delimited packet. The generator restores
+     its complete bank, counter and scratch, with bound
+     `M (6C+11W+14) + (4W+4)D + 6C+6`, where `C = tblC W e` and `D` is total
+     symbol advance. `ChirpGatherSetup` composes generation, the sweep and control cleanup,
+     changing only the window destination, at bound
+     `M (6C+11W+14L+41) + (4W+18)D + 6C+16`, with `L = (3m+1)w`.
+     `ChirpControlCheck` audits the complete imported namespace. Generating the cyclic
+     extension from the raw source line remains open.
      S2/S3 still need table reuse across lines,
-     cyclic/control-stream setup, binary dimension conversion and output arithmetic,
+     cyclic-source setup, initial dimension-bank setup and operand/output arithmetic,
      followed by the complete forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
