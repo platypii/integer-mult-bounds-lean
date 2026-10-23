@@ -1317,6 +1317,11 @@ are proved. `chirpTableCorrelation_exec` now composes paired table generation wi
 the raw-line caller and erases both temporary tables. Only the correlation destination
 changes, with all stages charged. Its remaining prepared data are binary input banks
 and multiplier templates; original-input initialization and output processing remain open.
+`chirpOutputWord_chirpAR` now identifies exact integer output arithmetic on each decoded
+correlation word with the analytic chirp map: numerator shifts, two real products and
+final signed truncation. The computed normalization and normalized E-table errors are
+proved; `chirpComputed_approx` discharges factor-error hypotheses under explicit
+window/precision gates. Output tape execution and signed intermediate widths remain open.
 Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and

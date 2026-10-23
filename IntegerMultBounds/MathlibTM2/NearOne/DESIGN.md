@@ -538,3 +538,16 @@ The remaining prepared data are retained binary banks (including table block cou
 and multiplier templates. Initial installation of those banks/templates and subsequent
 output arithmetic/cropping still need execution, followed by the full forward
 correctness, precision and cost comparison and reusable setup across lines.
+
+The output arithmetic now has an exact integer model. `chirpOutputWord_chirpAR`
+identifies postprocessing of each actual shared correlation tape word with `chirpAR`,
+including every original output index in the final partial block. The q+1 ring numerator
+is shifted by l+1 to recover the correlation at precision q; two real products and the
+Γ shift follow, then signed truncation lowers precision to p. E is generated at q-Γ
+and interpreted at q; normalization is `2^q/(2α)` in natural arithmetic, with error at
+most one q-grid unit. `chirpComputed_approx` discharges all factor-error hypotheses of
+the analytic forward theorem under its explicit window and precision gates.
+This is an arithmetic/analytic bridge, not output tape execution. Executing shifts,
+products, normalization/E setup, rounding and cropping, proving signed intermediate
+widths, choosing precision to close the gates and the final execution/cost comparison
+remain required.
