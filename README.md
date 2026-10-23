@@ -36,7 +36,9 @@ R3 now compiles framed physical source coordinates and activity into all eleven
 repair source profiles, composing classifiers, widths, headers, exact repair,
 placement and cleanup with restored borrowed tapes. This composition now accepts
 any geometry satisfying explicit guards and density bounds, allowing reservoir
-spacing. Matching-derived coordinate input and remaining setup
+spacing. Complete directional destination maps now compose bulk and terminal
+rank permutations, with exact shear semantics and restored surrounding bits.
+Matching-derived coordinate input and remaining setup
 production, complete routing schedules and uniform amortization remain open.
 The complete router and multiplication integration remain in R3–R4; this work
 does not yet change the multiplication saving. See [the active plan](PLAN.md) and

@@ -1711,3 +1711,9 @@ public import IntegerMultBounds.MathlibTM2.Routing.ProfileCoordinateGenerate
 public import IntegerMultBounds.MathlibTM2.Routing.CoordinateProfilesRepair
 
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirAllSourceProfilesRepair
+
+public import IntegerMultBounds.MathlibTM2.Routing.RouterProfileSchedule
+
+public import IntegerMultBounds.MathlibTM2.Routing.RouterProfileRank
+
+public import IntegerMultBounds.MathlibTM2.Routing.RouterDirectionalRank

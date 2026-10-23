@@ -1458,6 +1458,32 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    `routerParameters_guards` and `routerParameters_radices`; bridge lemmas also
    establish these guards for `routerProfileParameters`. Complete scheduling,
    input production, uniform amortization and short-record fallback remain open.
+   `RouterProfileSchedule` connects the common-width geometry to the logical
+   schedule: residue-profile targets are exactly their bulk congruence classes,
+   and all residue shears followed by the elementary suffix equal the requested
+   shear. It reuses `RouterTerminal`’s suffix bound (fewer than `131 * G` calls
+   under reservoir spacing). These are logical coverage and call-count results;
+   executed composition and matching-derived input production remain open.
+   `ProfileIdealShear` identifies the all-address exact-repair destination map
+   with the logical shear on selected profile targets, including exceptional
+   addresses and arbitrary initial borrowed fields. `profileIdealPerm_shear`
+   states this directly for the finite rank permutation used by execution;
+   `routerProfilePassTargets` identifies its selected targets with one bulk
+   residue class. Matching-derived input production and executed schedule
+   composition still remain open.
+   `RouterProfileRank` transports targets and source coordinates into each residue
+   geometry and proves source allowance from the global target-set condition.
+   Every residue's exact rank map acts on the same physical target-field bits;
+   their structural composition performs the complete bulk shear and preserves
+   every borrowed/spectator bit outside that field. These are destination-map
+   composition results, not yet a uniform tape loop or a total-cost bound.
+   `ShiftedElementarySchedule` places the existing elementary rank permutations
+   directly above the common low borrowed field; it proves the exact local
+   shear, low-bit restoration and unchanged upper rows. `RouterDirectionalRank`
+   composes terminal and bulk maps into the full requested shear, with restored
+   low/high borrowed fields and spectators, a finite bound and an involutive
+   `routerDirectionalPerm`. This closes the directional destination-map
+   composition, not the executed uniform tape schedule or its cost bound.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
