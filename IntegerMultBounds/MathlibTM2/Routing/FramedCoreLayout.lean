@@ -15,6 +15,37 @@ def framedCoreEmbed (N : ℕ) (j : Fin N) : Fin (N + 3) := Fin.castAdd 3 j
 
 def framedCoreAux (N : ℕ) (i : Fin 3) : Fin (N + 3) := ⟨N + i.val, by omega⟩
 
+/-- Extend a framed core while keeping the same three outer loader roles. -/
+def framedCoreExtend (N extra : ℕ) (j : Fin (N + 3)) : Fin (N + extra + 3) :=
+  if h : j.val < N then ⟨j.val, by omega⟩ else ⟨extra + j.val, by have := j.isLt; omega⟩
+
+theorem framedCoreExtend_injective (N extra : ℕ) : Function.Injective (framedCoreExtend N extra) := by
+  intro i j he
+  have hv := congrArg (fun x : Fin (N + extra + 3) => x.val) he
+  by_cases hi : i.val < N <;> by_cases hj : j.val < N
+  all_goals simp only [framedCoreExtend, hi, hj, dite_true, dite_false] at hv
+  all_goals apply Fin.ext; omega
+
+@[simp] theorem framedCoreExtend_core (N extra : ℕ) (j : Fin N) :
+    framedCoreExtend N extra (framedCoreEmbed N j) =
+      framedCoreEmbed (N + extra) (Fin.castAdd extra j) := by
+  unfold framedCoreExtend
+  split
+  · rfl
+  · rename_i h
+    exact (h j.isLt).elim
+
+@[simp] theorem framedCoreExtend_aux (N extra : ℕ) (j : Fin 3) :
+    framedCoreExtend N extra (framedCoreAux N j) = framedCoreAux (N + extra) j := by
+  unfold framedCoreExtend
+  split
+  · rename_i h
+    change N + j.val < N at h
+    omega
+  · apply Fin.ext
+    change extra + (N + j.val) = N + extra + j.val
+    omega
+
 theorem framedCoreEmbed_injective (N : ℕ) : Function.Injective (framedCoreEmbed N) := by
   intro i j he
   have hv := congrArg (fun x : Fin (N + 3) => x.val) he

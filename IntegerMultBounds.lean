@@ -1820,3 +1820,10 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalTerminalBank
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalTerminalReady
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalTerminalLayout
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalTerminalRouting
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalTerminalWords
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalTerminalCore
+public import IntegerMultBounds.MathlibTM2.Routing.FramedCanonicalTerminal
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterBank
+public import IntegerMultBounds.MathlibTM2.Routing.CommonBankTerminal
+public import IntegerMultBounds.MathlibTM2.Routing.CommonBankBulk
+public import IntegerMultBounds.MathlibTM2.Routing.CommonBankDirectional

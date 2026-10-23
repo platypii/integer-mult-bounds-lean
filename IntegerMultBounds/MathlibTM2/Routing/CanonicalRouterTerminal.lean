@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterBits
 public import IntegerMultBounds.MathlibTM2.Routing.ElementaryCompileLoopData
-public import IntegerMultBounds.MathlibTM2.Routing.ElementaryInstructionSemantics
+public import IntegerMultBounds.MathlibTM2.Routing.CompiledElementarySemantics
 
 /-! Physical terminal coordinates for the canonical router, consumed by the
 existing elementary table compiler and routing program. -/
@@ -68,19 +68,109 @@ theorem canonicalRouterTerminalInstructions_bits (R : ℕ) (ds : List (Elementar
         (matchingClass (routingReservoir n (routingReservoirWidth n (canonicalRouterGap n))
           (routingReservoir_fit n (canonicalRouterGap n) hn)) mate k)
         (fun q => i.val.testBit q.val) := by
-  apply elementaryInstructionsRank_shear R _ _ (canonicalRouterTerminal_source n hn mate hinv k reverse) ds
-  · intro d hd
-    have hmem : (d.target, d.source) ∈ ds.map (fun d => (d.target, d.source)) := List.mem_map.mpr ⟨d, hd, rfl⟩
-    rw [hkeys] at hmem
-    obtain ⟨c, hc, he⟩ := List.mem_map.mp hmem
-    have htarget := congrArg Prod.fst he
-    have hsource := congrArg Prod.snd he
-    change c.target = d.target at htarget
-    change c.source = d.source at hsource
-    rw [← hsource, canonicalRouterTerminalCoordinates_source n hn mate hinv k reverse c (List.mem_reverse.mp hc), htarget]
-  · have h := congrArg (fun xs => (xs.map Prod.fst).reverse) hkeys
-    simpa only [List.map_map, List.map_reverse, List.reverse_reverse, Function.comp_def,
-      ElementaryCoordinate.key, canonicalRouterTerminalCoordinates_targets] using h
+  exact compiledElementary_shear R _ _ (canonicalRouterTerminal_source n hn mate hinv k reverse)
+    _ (canonicalRouterTerminalCoordinates_source n hn mate hinv k reverse)
+    (canonicalRouterTerminalCoordinates_targets n hn mate hinv k reverse) ds hkeys i
+
+
+/-- The executed bulk and terminal target sets cover the full directional class
+without overlap, so their physical shear actions compose without lost bits. -/
+theorem canonicalRouter_bulk_terminal_shear (x : Fin n → Bool) :
+    shear ((routerBulkTargets n (canonicalRouterStride n) (canonicalRouterGap n)
+      (matchingDirectionTargets (canonicalRouterLocalMatching n hn k mate hinv) reverse)).image
+        (canonicalRouterMiddleEmbedding n hn k))
+      (matchingClass (routingReservoir n (routingReservoirWidth n (canonicalRouterGap n))
+        (routingReservoir_fit n (canonicalRouterGap n) hn)) mate k)
+      (shear (canonicalRouterTerminalTargets n hn mate hinv k reverse)
+        (matchingClass (routingReservoir n (routingReservoirWidth n (canonicalRouterGap n))
+          (routingReservoir_fit n (canonicalRouterGap n) hn)) mate k) x) =
+    shear ((matchingDirectionTargets (canonicalRouterLocalMatching n hn k mate hinv) reverse).image
+      (canonicalRouterMiddleEmbedding n hn k))
+      (matchingClass (routingReservoir n (routingReservoirWidth n (canonicalRouterGap n))
+        (routingReservoir_fit n (canonicalRouterGap n) hn)) mate k) x := by
+  let targets := matchingDirectionTargets (canonicalRouterLocalMatching n hn k mate hinv) reverse
+  let f := canonicalRouterMiddleEmbedding n hn k
+  let bulk := routerBulkTargets n (canonicalRouterStride n) (canonicalRouterGap n) targets
+  let terminal := routerTerminalTargets n (canonicalRouterStride n) (canonicalRouterGap n) targets
+  have hunion : bulk.image f ∪ terminal.image f = targets.image f := by
+    rw [← Finset.image_union]
+    congr 1
+    ext q
+    simp only [bulk, terminal, routerBulkTargets, routerTerminalTargets, Finset.mem_union, Finset.mem_filter]
+    constructor
+    · rintro (⟨hq, _⟩ | ⟨hq, _⟩) <;> exact hq
+    · intro hq
+      by_cases hb : q.val < routerDigits n (canonicalRouterStride n) (canonicalRouterGap n) * canonicalRouterStride n
+      · exact Or.inl ⟨hq, hb⟩
+      · exact Or.inr ⟨hq, Nat.le_of_not_gt hb⟩
+  have hdisjoint : Disjoint (bulk.image f) (terminal.image f) := by
+    apply Finset.disjoint_left.mpr
+    intro q hb ht
+    obtain ⟨a, ha, he⟩ := Finset.mem_image.mp hb
+    obtain ⟨b, hb, he'⟩ := Finset.mem_image.mp ht
+    have hab : a = b := canonicalRouterMiddleEmbedding_injective n hn k (he.trans he'.symm)
+    subst b
+    have ha' := (Finset.mem_filter.mp ha).2
+    have hb' := (Finset.mem_filter.mp hb).2
+    omega
+  have hsource := canonicalRouterMiddleTargets_source n hn mate hinv k reverse targets (fun _ h => h)
+  have hs : ∀ i ∈ bulk.image f ∪ terminal.image f,
+      matchingClass (routingReservoir n (routingReservoirWidth n (canonicalRouterGap n))
+        (routingReservoir_fit n (canonicalRouterGap n) hn)) mate k i ∉ bulk.image f ∪ terminal.image f := by
+    rw [hunion]
+    exact hsource
+  exact (shear_union (bulk.image f) (terminal.image f) _ hdisjoint hs x).trans
+    (congrArg (fun ts => shear ts _ x) hunion)
+
+
+/-- Terminal coordinate-table frames leave room for the common delimiter. -/
+theorem elementaryCoordinateFrames_small {A N : ℕ} (L : ℕ) (cs : List (ElementaryCoordinate N)) :
+    ∀ x ∈ (elementaryCoordinateFrames L cs : List (Fin (A + 4))), x.val < 8 := by
+  induction cs with
+  | nil => simp [elementaryCoordinateFrames]
+  | cons c cs ih =>
+    intro x hx
+    simp only [elementaryCoordinateFrames, elementaryPairWords, configurationWords, List.mem_append,
+      List.mem_cons, List.not_mem_nil, or_false] at hx
+    rcases hx with (hx | rfl | hx | rfl) | hx
+    · exact canonicalScalarWord_small _ _ x hx
+    · change 3 < 8
+      omega
+    · exact canonicalScalarWord_small _ _ x hx
+    · change 3 < 8
+      omega
+    · exact ih x hx
+
+
+def canonicalRouterTerminalPerm (rows : ℕ) : Equiv.Perm (Fin (rows * 2 ^ n)) :=
+  elementaryRankSchedule rows
+    (matchingClass (routingReservoir n (routingReservoirWidth n (canonicalRouterGap n))
+      (routingReservoir_fit n (canonicalRouterGap n) hn)) mate k)
+    (canonicalRouterTerminalTargets n hn mate hinv k reverse).toList
+
+/-- Compiler headers do not affect the terminal output permutation. -/
+theorem canonicalRouterTerminalInstructions_perm (rows : ℕ) (ds : List (ElementaryInstruction n))
+    (hkeys : ds.map (fun d => (d.target, d.source)) =
+      (canonicalRouterTerminalCoordinates n hn mate hinv k reverse).reverse.map ElementaryCoordinate.key) :
+    elementaryInstructionsRank rows ds = canonicalRouterTerminalPerm n hn mate hinv k reverse rows := by
+  apply Equiv.ext
+  intro i
+  apply Fin.ext
+  have hbits := canonicalRouterTerminalInstructions_bits n hn mate hinv k reverse rows ds hkeys i
+  have hideal := elementaryRankSchedule_shear rows _ _
+    (canonicalRouterTerminal_source n hn mate hinv k reverse) i
+  have hlow := hbits.trans hideal.symm
+  have hrow := (compiledElementary_row rows ds i).trans
+    (elementaryRankSchedule_row rows
+      (matchingClass (routingReservoir n (routingReservoirWidth n (canonicalRouterGap n))
+        (routingReservoir_fit n (canonicalRouterGap n) hn)) mate k)
+      (canonicalRouterTerminalTargets n hn mate hinv k reverse).toList i).symm
+  apply Nat.eq_of_testBit_eq
+  intro q
+  by_cases hq : q < n
+  · exact congrFun hlow ⟨q, hq⟩
+  · have h := congrArg (fun j : ℕ => j.testBit (q - n)) hrow
+    simpa only [canonicalRouterTerminalPerm, Nat.testBit_div_two_pow, Nat.sub_add_cancel (Nat.le_of_not_gt hq)] using h
 
 end
 end IntegerMultBounds.MathlibTM2.Routing

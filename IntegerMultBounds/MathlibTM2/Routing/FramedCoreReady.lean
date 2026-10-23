@@ -44,4 +44,14 @@ theorem FramedCoreReady.advance (str : Fin N) (S : Stacks (N + 3) A)
     · simp only [delimitedCallAdvanced, Function.update_self]
       rw [repairStreamEffect, hstream, ← flatten_moveRecs π l (fun r hr => (hrecords r hr).1)]
 
+
+/-- A stream-only permutation preserves the framed invariant without requiring
+any change to the loader input or archive. -/
+theorem FramedCoreReady.updateStream (str : Fin N) (S : Stacks (N + 3) A)
+    (ready : FramedCoreReady str M B S) (π : Equiv.Perm (Fin M)) :
+    FramedCoreReady str M B
+      { S with R := Function.update S.R (framedCoreEmbed N str) (repairStreamEffect π B (S.R (framedCoreEmbed N str))) } := by
+  simpa only [delimitedCallAdvanced, List.reverse_nil, List.nil_append, Function.update_eq_self] using
+    FramedCoreReady.advance str S ready π [] (S.R (framedCoreAux N 0))
+
 end IntegerMultBounds.MathlibTM2.Routing

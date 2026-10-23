@@ -11,8 +11,29 @@ open IntegerMultBounds.MathlibTM2.Host IntegerMultBounds.MathlibTM2.Node Integer
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 noncomputable section
 
+def canonicalTerminalBaseCost (n rows B : ℕ) : ℝ :=
+  (6 * swapConst * (canonicalTerminalT + 12 * swapT 6 + 5 : ℕ) + 176) * (rows * 2 ^ n * B : ℕ) +
+    (4 * canonicalTerminalT + 12 * swapT 6 + 60 : ℕ)
+
+theorem canonicalTerminalBaseCost_eq {K : ℕ} (inp : List (Bool ⊕ Bool)) (out : List Bool)
+    (left : Fin canonicalTerminalT → List (Fin (prime + K + 4)))
+    (stream coordinates : List (Fin (prime + K + 4))) (n rows B L Lb : ℕ) (rowBits : List Bool) :
+    elementaryBaseCost canonicalTerminalRouter n rows B
+      (⟨inp, out, left, canonicalTerminalRoutingBank canonicalTerminalRouter canonicalTerminalCompiler
+        canonicalTerminalInput (canonicalTerminalAux 0) stream coordinates n L Lb B rowBits⟩ :
+        Stacks canonicalTerminalT (prime + K)) = canonicalTerminalBaseCost n rows B := by
+  have hempty (j : Fin (swapT 6)) :
+      canonicalTerminalRoutingBank canonicalTerminalRouter canonicalTerminalCompiler canonicalTerminalInput
+        (canonicalTerminalAux 0) stream coordinates n L Lb B rowBits (canonicalTerminalRouter (.sw j)) = [] := by
+    rw [canonicalTerminalBank_fixed_router]
+    simp [canonicalTerminalRouter]
+  simp only [elementaryBaseCost, canonicalTerminalBaseCost, hempty, List.length_nil,
+    Finset.sum_const_zero, Nat.mul_zero, Nat.zero_add]
+
 theorem canonicalTerminalRouting_exec {Q K : ℕ} {P U : Type}
     (body : P → Pr P canonicalTerminalT Q (prime + K) U)
+    (inp : List (Bool ⊕ Bool)) (out : List Bool)
+    (left : Fin canonicalTerminalT → List (Fin (prime + K + 4))) (hleft : ∀ j, left j = [])
     (n rows B L Lb : ℕ) (hn0 : 0 < n) (hn : n < 2 ^ L) (hBin : B < 2 ^ Lb)
     (hnB : n ≤ B) (hrows : 0 < rows) (hB : 1 ≤ B)
     (rowBits : List Bool) (hrow : GrowingCounterData.Canonical rowBits) (hrowNe : rowBits ≠ [])
@@ -37,7 +58,7 @@ theorem canonicalTerminalRouting_exec {Q K : ℕ} {P U : Type}
     let hhd := selectiveSwapHd_inj
     let hT := canonicalTerminalT_fit
     let S : Stacks canonicalTerminalT (prime + K) :=
-      ⟨[], [], fun _ => [], canonicalTerminalRoutingBank rg compiler input src l.flatten
+      ⟨inp, out, left, canonicalTerminalRoutingBank rg compiler input src l.flatten
         (elementaryCoordinateFrames L cs) n L Lb B rowBits⟩
     ∃ (ds : List (ElementaryInstruction n)) (v' : HS canonicalTerminalT Q (prime + K) U) (m : ℕ),
       ds.map (fun d => (d.target, d.source)) = cs.reverse.map ElementaryCoordinate.key ∧ v'.user = v.user ∧
@@ -67,7 +88,7 @@ theorem canonicalTerminalRouting_exec {Q K : ℕ} {P U : Type}
     (L := L) (Lb := Lb) (hwb := rfl) (hn0 := hn0) (hn := hn) (hBin := hBin)
     (hnB := hnB) (hrows := hrows) (hB := hB) (rowBits := rowBits) (hrow := hrow)
     (hrowNe := hrowNe) (hrowValue := hrowValue) (cs := cs) (v := v)
-    (hwm := rfl) (l := l) (hl := hl) (hlB := hlB) (h8 := h8)
+    (hwm := rfl) (hL := hleft) (l := l) (hl := hl) (hlB := hlB) (h8 := h8)
   case hcompileReady =>
     apply canonicalTerminalBank_ready _ _ canonicalTerminalCompiler_injective
     intro c r
@@ -96,6 +117,8 @@ theorem canonicalTerminalRouting_exec {Q K : ℕ} {P U : Type}
 
 theorem canonicalRouterTerminal_exec {Q K : ℕ} {P U : Type}
     (body : P → Pr P canonicalTerminalT Q (prime + K) U)
+    (inp : List (Bool ⊕ Bool)) (out : List Bool)
+    (left : Fin canonicalTerminalT → List (Fin (prime + K + 4))) (hleft : ∀ j, left j = [])
     (n rows B L Lb : ℕ) (hstride : canonicalRouterStride n ≤ n)
     (mate : Fin n → Fin n) (hinv : Function.Involutive mate) (k : Fin 3) (reverse : Bool) (hn0 : 0 < n) (hn : n < 2 ^ L) (hBin : B < 2 ^ Lb)
     (hnB : n ≤ B) (hrows : 0 < rows) (hB : 1 ≤ B)
@@ -122,7 +145,7 @@ theorem canonicalRouterTerminal_exec {Q K : ℕ} {P U : Type}
     let hhd := selectiveSwapHd_inj
     let hT := canonicalTerminalT_fit
     let S : Stacks canonicalTerminalT (prime + K) :=
-      ⟨[], [], fun _ => [], canonicalTerminalRoutingBank rg compiler input src l.flatten
+      ⟨inp, out, left, canonicalTerminalRoutingBank rg compiler input src l.flatten
         (elementaryCoordinateFrames L cs) n L Lb B rowBits⟩
     ∃ (ds : List (ElementaryInstruction n)) (v' : HS canonicalTerminalT Q (prime + K) U) (m : ℕ),
       ds.map (fun d => (d.target, d.source)) = cs.reverse.map ElementaryCoordinate.key ∧ v'.user = v.user ∧
@@ -135,7 +158,7 @@ theorem canonicalRouterTerminal_exec {Q K : ℕ} {P U : Type}
         (6 * n + 2 * rowBits.length + 7 : ℕ) ∧
       Exec body (sharedInputRoutingProgram input (elementarySharedProgram rg cfg work tmp ctmp Lb (n + rowBits.length) B (rows * 2 ^ n)
         (compiledElementaryProgram compiler src archive rg hrg hd pay hhd hQ hT saved))) (mk v S) m
-        (mk v' { S with R := Function.update S.R (rg .str) (moveRecs (elementaryInstructionsRank rows ds) l).flatten }) ∧
+        (mk v' { S with R := Function.update S.R (rg .str) (moveRecs (canonicalRouterTerminalPerm n hstride mate hinv k reverse rows) l).flatten }) ∧
       ds.length < 131 * canonicalRouterGap n ∧
       ∀ i : Fin (rows * 2 ^ n),
         (fun q : Fin n => (elementaryInstructionsRank rows ds i).val.testBit q.val) =
@@ -144,9 +167,10 @@ theorem canonicalRouterTerminal_exec {Q K : ℕ} {P U : Type}
               (routingReservoir_fit n (canonicalRouterGap n) hstride)) mate k)
             (fun q => i.val.testBit q.val) := by
   dsimp only
-  obtain ⟨ds, v', m, hk, hu, hm, he⟩ := canonicalTerminalRouting_exec body n rows B L Lb hn0 hn hBin
+  obtain ⟨ds, v', m, hk, hu, hm, he⟩ := canonicalTerminalRouting_exec body inp out left hleft n rows B L Lb hn0 hn hBin
     hnB hrows hB rowBits hrow hrowNe hrowValue
     (canonicalRouterTerminalCoordinates n hstride mate hinv k reverse) hQ v l hl hlB h8
+  rw [canonicalRouterTerminalInstructions_perm n hstride mate hinv k reverse rows ds hk] at he
   refine ⟨ds, v', m, hk, hu, hm, he, ?_, ?_⟩
   · have hc := congrArg List.length hk
     simp only [List.length_map, List.length_reverse] at hc

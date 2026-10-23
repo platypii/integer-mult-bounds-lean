@@ -1832,8 +1832,21 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    coordinate table and binary dimensions, requires `n ≤ B`, and still takes
    canonical row bits and numeric fit proofs. The compilation-only intermediate
    wrapper was superseded before commit by this complete terminal execution.
-   Full bulk/terminal machine composition, uniform terminal parameter selection,
-   complete shear/class/involution composition, original
+   `CanonicalTerminalCore` and `CanonicalTerminalWords` now give a fixed terminal
+   output permutation, a record-independent price, admissible metadata and live
+   stream replacement. `FramedCanonicalTerminal` executes the existing loader,
+   core and bank erasure with every step charged. `CanonicalRouterBank` shares
+   exactly the record stream between disjoint bulk and terminal workspaces;
+   its stream-update law preserves both projections. `CommonBankTerminal` and
+   `CommonBankBulk` transfer the actual executions onto that common framed bank,
+   preserving the other phase's workspace and sharing the three loader tapes.
+   `CommonBankDirectional.commonBankDirectional_exec` now executes terminal then
+   bulk on one bank with summed prices and only the record stream changed.
+   `canonicalRouterDirectionalPerm_bits` proves its full-residue output is the
+   complete physical directional class shear. This still assumes installed
+   terminal metadata and the framed bulk input; it does not generate them.
+   Uniform terminal parameter selection, complete shear/class/involution
+   composition, original
    permutation decomposition/table generation, remaining scalar metadata setup,
    uniform amortization and short-record fallback remain open. R3 and kappa
    are unchanged.
