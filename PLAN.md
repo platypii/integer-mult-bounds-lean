@@ -1046,8 +1046,8 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    and executes a live binary row-count test. Empty tables take a no-output branch;
    the positive branch invokes a proved backend contract from the unchanged tape
    bank. The test/branch cost is charged and backend scratch readiness survives.
-   Instantiating this guard with the concrete per-job layouts and all eleven live
-   backends is part of shared-bank integration, not a completed bank theorem.
+   This guard is now instantiated with the concrete shared layout and all eleven
+   live backends by `LiveDescriptorExec`; empty and positive tables share one path.
    `ProfileSharedRegisters` now embeds all affine-profile register roles into
    the grouped engine's roles, proving injectivity and their common output tape.
    `LiveDescriptorLayout` provides per-job source/dimension/row-count tapes and
@@ -1055,10 +1055,25 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    independent of dimension values. Core outputs are disjoint from every auxiliary
    tape. `LiveDescriptorSeparation` proves the concrete compiler alias/separation
    conditions and that arbitrary core-output writes preserve every auxiliary value.
-   Next bank gates: specify the common auxiliary bank using uniform binary widths,
-   derive per-job readiness from that bank, instantiate guarded affine/A execution,
-   iterate all eleven jobs, then connect their output bank to generated-header repair.
-   Source-profile and scalar setup still require executed generation before R3 closes.
+   `LiveDescriptorMode`, `LiveDescriptorData` and `LiveDescriptorWorkspace` now
+   specify one concrete auxiliary bank with uniform binary widths, prove it is
+   inhabited over any core bank, and derive all per-job compiler/scratch readiness.
+   Core-output writes preserve the full readiness contract. `LiveAffineDescriptor`
+   and `LiveGroupedDescriptor` instantiate the actual backends from that bank;
+   `LiveDescriptorExec` adds the live empty-row guard without execution premises.
+   `LiveDescriptorBatch` proves sequential job execution and exact outputs while
+   carrying readiness across every write. `RepairLiveDescriptorBank` instantiates
+   all eleven actual jobs, and `RepairLiveDescriptorData` establishes the existing
+   full R2 setup-data contract from their generated tables. `LiveDescriptorClean`
+   and `RepairLiveDescriptorScratch` charge erasure and restore blank descriptor
+   destinations while retaining an arbitrary disjoint stream change.
+   `ExactSelectiveLive` now composes the full live-profile batch, embedded exact
+   R2 and descriptor cleanup: only the repaired record stream changes, and every
+   compilation/installation/repair/cleanup phase is charged. It still starts from
+   supplied scalar/profile inputs and the pending-descriptor canonical-header
+   contract. Executed input generation, integration with generated headers and
+   placement, uniform setup/amortization bounds, and all remaining R3 gates remain
+   open; full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
