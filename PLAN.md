@@ -1329,6 +1329,21 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    charged and every non-stream tape is restored. Six other source profiles, raw activity
    production, scalar/placement setup, complete routing schedules and uniform
    cost/amortization gates remain open. Full R3 and kappa are unchanged.
+   `RepairYZSourceProfile` identifies both YZ source streams: the target stream
+   reuses the first-Y selector sequence, while the control stream is affine and
+   activity-gated. `LiveYZControlOffset` computes its base from the existing
+   target/control row counts; `LiveYZControlSourceCompile` generates the profile
+   and erases that temporary base. Both YZ generators restore every borrowed tape.
+   `LiveYZSourceBatch` and `RepairLiveYZProfiles` generate seven initially blank
+   profile inputs in the same workspace, deriving full descriptor readiness.
+   `YZProfilesRepair` executes exact repair and seven-profile cleanup with a
+   combined cost bound. The header/width/classifier wrappers and
+   `JointBankYZProfilesRepair` carry all seven through actual shared-bank forward
+   placement, repair, cleanup and inverse placement, restoring all non-stream
+   tapes and charging every phase. The key, both A and first X source profiles
+   remain supplied, as do raw activity, scalar and placement inputs. Complete
+   routing schedules, uniform setup/amortization and the executed short-record
+   fallback remain open. Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
