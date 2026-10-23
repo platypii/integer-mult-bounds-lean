@@ -1344,6 +1344,21 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    remain supplied, as do raw activity, scalar and placement inputs. Complete
    routing schedules, uniform setup/amortization and the executed short-record
    fallback remain open. Full R3 and kappa are unchanged.
+   `CounterSourceStep` through `BinaryCounterSourceGenerate` directly enumerate
+   consecutive selectors by copying and incrementing a binary counter, avoiding
+   affine multiplication and constant-operand setup. Count, index and scratch
+   are fully restored; per-selector work is linear in the selector width.
+   `RepairATemporarySourceGenerate` identifies this stream with the second A
+   profile. `LiveATemporarySourceGenerate` uses the existing full-width zero
+   cursor and control-row count, with no added scalar input.
+   `RepairLiveTemporaryProfiles` generates eight initially blank profiles.
+   `RepairTemporaryProfileClean` charges the longer A profile separately;
+   `JointBankTemporaryProfilesRepair` carries all eight through generated
+   classifiers/widths/headers, both placement exchanges, exact repair and cleanup.
+   Every phase is charged and all non-stream tapes are restored. The key,
+   first A and first X source profiles remain supplied. Raw activity/scalars,
+   placement-input production, full routing schedules, uniform setup/amortization
+   and the executed short-record fallback remain open. Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
