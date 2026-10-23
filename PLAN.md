@@ -1500,9 +1500,35 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    sum all stage costs and restore the complete metadata input from its archive.
    `DelimitedBankSchedule` instantiates this with actual bank loading, stream-only
    calls and cleanup on one fixed destination list. The final state changes only
-   the routed stream, independently of the number of calls. Concrete repair
+   the routed stream, independently of the number of calls. Generated/placed
    readiness/invariant instantiation and matching-derived metadata production
    remain open; the generic loop does not yet close R3 or its total-cost gates.
+   `RepairFramedConfig` identifies the fixed 34-source raw R2 bank and derives
+   `RepairSetupData` from actual loaded words. `RepairConfigLoaderLayout` places
+   input, scanner scratch and archive in three unused key-field aliases, with
+   no new tapes, preserving every repair target, required blank and stream.
+   `FramedExactSelective` executes actual density-priced exact repair between
+   loading and raw-bank erasure, deriving its readiness rather than assuming
+   an execution callback. The raw configuration words remain supplied; lifting
+   the complete generated/placed pipeline remains open, along with metadata
+   production and full-router amortization. Repeated raw-R2 calls are composed
+   below.
+   `RepairPriceFrame` proves the exact-repair price is determined by raw source
+   words under the required blank-scratch invariant, independently of current
+   record order and unrelated loader tapes. `RepairScheduleReady` supplies the
+   concrete between-call invariant: raw inputs, installed targets, scratch and
+   left stacks are restored, and arbitrary rank permutations preserve the fixed
+   record count, width and symbol bounds. These feed the concrete repeated
+   schedule below.
+   `RepairScheduleStage` packages actual R2 data with variable geometry and a
+   common record count/width. `RepairScheduleStep` discharges the fixed loop's
+   execution, price and invariant premises using real framed exact repair.
+   `FramedRepairSchedule` now executes arbitrarily many such concrete calls on
+   one fixed bank, sums every stage price and rewinds the complete input; only
+   the routed stream changes. Its stream effect is the composed finite rank
+   permutation. Raw configuration words remain supplied. This completes repeated
+   raw-R2 scheduling, while generated/placed-call scheduling, matching-derived
+   metadata production and full-router amortization/fallback remain open.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and

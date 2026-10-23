@@ -1719,3 +1719,10 @@ public import IntegerMultBounds.MathlibTM2.Routing.RouterProfileRank
 public import IntegerMultBounds.MathlibTM2.Routing.RouterDirectionalRank
 
 public import IntegerMultBounds.MathlibTM2.Routing.DelimitedBankSchedule
+
+public import IntegerMultBounds.MathlibTM2.Routing.FramedExactSelective
+
+public import IntegerMultBounds.MathlibTM2.Routing.RepairPriceFrame
+public import IntegerMultBounds.MathlibTM2.Routing.RepairScheduleReady
+
+public import IntegerMultBounds.MathlibTM2.Routing.FramedRepairSchedule
