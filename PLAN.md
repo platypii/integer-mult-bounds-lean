@@ -1028,9 +1028,37 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    from the internal counter, emit coordinates, erase loaded operands and advance
    the counter through one fixed loop. `GroupedProfileFrame` proves exact emitted
    coordinates, complete archived input, final counter and unchanged spectators.
-   Full grouped input/counter restoration, terminal completion, instantiation
-   with both actual A profiles and descriptor-compiler composition remain open;
-   these components do not close R3.
+   `GroupedProfileCompile` and `GroupedProfileGenerate` now rewind the entire
+   grouped profile archive, restore the initial index and erase its saved copy;
+   only generated coordinate output changes. `GroupedProfileCoordinates` and
+   `GroupedSourceProfileGenerate` identify that output with the mirrored sparse
+   coordinates and derive traversal readiness from source/dimension bounds.
+   `GroupedProfileTerminal` composes this execution with generated terminal-zero
+   emission, restoring all non-output tapes. `RepairAProfileGenerate` instantiates
+   both actual A profiles and proves the exact completed coordinate streams.
+   `RepairADescriptor` composes their generation with actual descriptor compilation
+   and erases all coordinate, compact and dense intermediates, charging each phase.
+   All eleven individual descriptor pipelines now have executed live-profile
+   contracts for positive target widths. Zero-width branching, source-profile and
+   scalar generation, shared-bank composition and the remaining R3 gates stay open;
+   full R3 and kappa are unchanged.
+   `RepairDescriptorGuard` proves that a zero-row actual descriptor word is empty
+   and executes a live binary row-count test. Empty tables take a no-output branch;
+   the positive branch invokes a proved backend contract from the unchanged tape
+   bank. The test/branch cost is charged and backend scratch readiness survives.
+   Instantiating this guard with the concrete per-job layouts and all eleven live
+   backends is part of shared-bank integration, not a completed bank theorem.
+   `ProfileSharedRegisters` now embeds all affine-profile register roles into
+   the grouped engine's roles, proving injectivity and their common output tape.
+   `LiveDescriptorLayout` provides per-job source/dimension/row-count tapes and
+   shared profile, coordinate and compiler workspaces, with fixed symbolic aliases
+   independent of dimension values. Core outputs are disjoint from every auxiliary
+   tape. `LiveDescriptorSeparation` proves the concrete compiler alias/separation
+   conditions and that arbitrary core-output writes preserve every auxiliary value.
+   Next bank gates: specify the common auxiliary bank using uniform binary widths,
+   derive per-job readiness from that bank, instantiate guarded affine/A execution,
+   iterate all eleven jobs, then connect their output bank to generated-header repair.
+   Source-profile and scalar setup still require executed generation before R3 closes.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
