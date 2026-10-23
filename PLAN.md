@@ -1305,8 +1305,12 @@ values and conversion costs are proved; composing this installer and dimension c
 around the shared caller is now proved by `chirpDimensionBatch_exec`: starting with
 blank unary dimension tapes and prepared operands, it installs all seven dimensions,
 executes one shared call, extracts correlations and erases the dimensions. Only the
-correlation destination changes; composition with X production and raw gathering/table
-generation remains open.
+correlation destination changes. `chirpStreamCorrelation_exec` now joins this path with
+X production and temporary-X cleanup, so neither prepared X nor unary S1 dimensions
+are caller inputs. `chirpRawCorrelation_exec` now composes raw-line gathering,
+operand production, generated S1 dimensions, one shared product/extraction and all
+temporary cleanup, changing only the correlation destination. Generated G/K streams
+and binary/template banks are still retained inputs; table-generation composition remains open.
 Remaining work includes initializing the dimension/width banks from the original inputs,
 reusing tables across lines and composing operand production
 with the shared batch call, output arithmetic and

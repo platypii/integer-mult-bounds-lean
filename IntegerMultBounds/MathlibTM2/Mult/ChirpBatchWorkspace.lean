@@ -58,6 +58,21 @@ theorem ChirpBatchWorkspace.toState {T A : ℕ}
     simp only [chirpBatchEmpty, List.mem_append]
     exact Or.inr (List.mem_map.mpr ⟨r, List.mem_append_right [CorrelationReg.triples, .skip, .recordSymbols] hr, rfl⟩)
 
+/-- An operand write outside scratch and the private bank preserves workspace emptiness. -/
+theorem ChirpBatchWorkspace.update_operand {T A : ℕ}
+    {j : SetupReg → Fin T} {rg : RpReg → Fin T} {ι : Fin 91 → Fin T} {e : CorrelationReg → Fin T}
+    {recordSaved saved acc buf savedBlock tmp : Fin T} {S : Stacks T A}
+    (h : ChirpBatchWorkspace j rg ι e recordSaved saved acc buf savedBlock tmp S)
+    (src : Fin T) (words : List (Fin (A + 4)))
+    (hempty : ∀ k ∈ chirpBatchEmpty j rg e recordSaved saved acc buf savedBlock tmp, k ≠ src)
+    (hprivate : ∀ r : Fin 91, 4 ≤ r.val → ι r ≠ src) :
+    ChirpBatchWorkspace j rg ι e recordSaved saved acc buf savedBlock tmp
+      { S with R := Function.update S.R src words } := by
+  constructor
+  · exact ⟨h.clean.1, fun r hr => (Function.update_of_ne (hprivate r hr) _ _).trans (h.clean.2 r hr)⟩
+  · intro k hk
+    exact (Function.update_of_ne (hempty k hk) _ _).trans (h.empty k hk)
+
 /-- Installing the seven dimensions preserves all scratch preconditions and closes readiness. -/
 theorem ChirpBatchWorkspace.install {T A : ℕ}
     {j : SetupReg → Fin T} {rg : RpReg → Fin T} {ι : Fin 91 → Fin T} {e : CorrelationReg → Fin T}

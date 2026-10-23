@@ -501,3 +501,22 @@ emptiness and exact installed counts, with no supplied unary-dimension assumptio
 `chirpDimensionBatchCost` charges setup, one shared batch call and all seven erasures.
 Joining this path with X production and raw gathering/table generation remains open;
 original-input bank/template installation and output arithmetic/cropping also remain open.
+
+`chirpStreamCorrelation_exec` now joins X production (including generated geometry) with
+S1-dimension installation, the one shared batch call/extraction, dimension cleanup and
+X erasure. Only the correlation destination changes; all stages are charged by
+`chirpStreamCorrelationCost`. The prepared inputs are gathered windows, generated G/K
+streams, retained binary banks and multiplier templates. `ChirpBatchWorkspace.update_operand`
+proves that producing X preserves the scratch preconditions of the installed-dimension
+caller. Joining raw gathering/table generation, initializing banks/templates, and output
+arithmetic/cropping remain open, along with the full forward precision/cost contract.
+
+`chirpRawCorrelation_exec` now composes raw-line gathering with the stream correlation
+caller and erases the gathered windows afterward. The raw line is retained; only the
+correlation destination changes. All geometry counters, weighted/X/window streams,
+S1 dimensions, private banks and scratch are restored. `chirpRawCorrelationCost`
+charges gathering, operand production, installed-dimension shared S1 execution and
+window erasure. Initial generated G/K table streams, binary banks and multiplier
+templates remain supplied data. Table generation must still be composed, followed by
+original-input bank/template initialization, output arithmetic/cropping and the full
+forward correctness, precision and cost comparison.
