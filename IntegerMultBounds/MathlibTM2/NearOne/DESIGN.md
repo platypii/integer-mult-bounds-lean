@@ -221,10 +221,23 @@ default build does not check them.
      restoring every register except the destination. Output offset `b` therefore reads
      coefficient `4m - 1 - b`; `correlationTape_coeff` proves exact signed decoding and
      `correlationTape_err` gives the rescaled `8r/2^p` error directly on returned symbols.
-     The counters are explicit inputs here; this extractor is not yet composed with the
-     shared batch program or its counter setup. `ChirpExtractCheck` audits the bridge.
-     S2/S3 still need table production/quantization, overlapping-window schedules,
-     dimension/counter setup and composition with the ring call and output arithmetic.
+     `ChirpExtractCheck` audits the bridge.
+     `ShortConv.correlationFromUnary_exec` (in `ChirpSetup`) now generates the `3mw`
+     skip count from unary `m,w`, extracts, and clears both generated words at cost
+     at most `52mw + 56m + 24`. `ShortConv.chirpProduct_exec` (in `ChirpProduct`)
+     composes the raw-block S1 call with that extractor, clears the temporary full
+     product, and changes only the destination register. For raw operand lengths
+     `3m+1,4m`, `m ≥ 1` and `7m ≤ r`, it costs at most
+     `unaryCost p l w (3m+1) (4m) + 52mw + 56m + 2rw + 26`.
+     `chirpProductCost_le` replaces `unaryCost` with its proved packed-product bound.
+     `ShortConv.correlationTape_chirpRingCorr` (in `ChirpProductMath`) identifies the decoded output
+     with the analytic ring correlation when the input numerator records represent
+     the halved chirp input and kernel; `correlationTape_chirpCorr_err` then transfers
+     the analytic `8·2^l/2^p` correlation error to the returned tape. Those representation
+     hypotheses remain obligations of operand production. `ChirpProductCheck` audits
+     the full shared namespace, including setup, execution and the analytic bridge.
+     S2/S3 still need table production/quantization, overlapping-window gathering,
+     binary dimension conversion, shared batch extraction, and output arithmetic.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved
      computed inputs and the shifted halved kernel are one disk record pair of size `2^l ≥ 7m`
      (`norm_chirpRec_le`); coefficient `4m - 1 - b` of their convolution is the correlation
