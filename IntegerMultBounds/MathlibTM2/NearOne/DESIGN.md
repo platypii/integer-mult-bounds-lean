@@ -283,7 +283,10 @@ default build does not check them.
      and spectator stacks, and an exact resulting table-bank contract. `ChirpTableWordBounds`
      proves numerator bounds and exact signed decoding of emitted words with the stated
      guard bits. `ChirpTableMachineCheck` audits the entire imported shared namespace.
-     S2/S3 still need complete multi-block table schedules and owned table-bank cleanup,
+     `ChirpTableCleanup`, `ChirpTableRestored` and `ChirpTableRestoredHost` now clear
+     the owned variables and restore the entire initial bank: only the destination stack
+     changes. This adds 37 atoms per row, with the same compiler cost formula.
+     S2/S3 still need complete multi-block table schedules,
      overlapping-window gathering, binary dimension conversion and output arithmetic,
      followed by the complete forward-resampling contract and cost comparison.
    * **The ring arithmetic of b5** (`Mult/ChirpRing.lean`). Per block, the reversed halved

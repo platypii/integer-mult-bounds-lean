@@ -1,6 +1,7 @@
 module
 
 import IntegerMultBounds.MathlibTM2.Mult.ChirpTableWordBounds
+import IntegerMultBounds.MathlibTM2.Mult.ChirpTableRestoredHost
 import Lean.Util.CollectAxioms
 
 /-! Standalone integrity audit of executable chirp row-table generation and host lowering. -/
@@ -20,6 +21,14 @@ import Lean.Util.CollectAxioms
 /-- info: 'IntegerMultBounds.MathlibTM2.Mult.ShortConv.chirpEntryStream_decode' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms IntegerMultBounds.MathlibTM2.Mult.ShortConv.chirpEntryStream_decode
+
+/-- info: 'IntegerMultBounds.MathlibTM2.Mult.ShortConv.tblChirpNegativeTable_host' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms IntegerMultBounds.MathlibTM2.Mult.ShortConv.tblChirpNegativeTable_host
+
+/-- info: 'IntegerMultBounds.MathlibTM2.Mult.ShortConv.tblChirpOutputTable_host' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms IntegerMultBounds.MathlibTM2.Mult.ShortConv.tblChirpOutputTable_host
 
 open Lean in
 run_cmd do
