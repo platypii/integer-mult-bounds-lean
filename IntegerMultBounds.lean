@@ -1737,6 +1737,7 @@ public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedPriceFrame
 public import IntegerMultBounds.MathlibTM2.Routing.FramedGeneratedPlacedRepair
 
 public import IntegerMultBounds.MathlibTM2.Routing.FramedCoreMetadata
+public import IntegerMultBounds.MathlibTM2.Routing.FramedCoreWrite
 public import IntegerMultBounds.MathlibTM2.Routing.FramedCoreReady
 public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedInput
 public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedInputTransport

@@ -127,5 +127,40 @@ theorem canonicalPermutation_restored_exec
   push_cast
   exact add_le_add hm₁ (le_refl _)
 
+/-- Dimension-derived operands for the full restored router. The frame words
+are explicit constructors; producing them on tape is a separate setup obligation. -/
+theorem canonicalPermutation_canonical_exec
+    (hnB : n ≤ B)
+    (v : HS ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit)
+    (S : Stacks ((canonicalRouterCommonT + 3) + 3) (prime + K))
+    (ready : FramedCoreReady canonicalDirectionalStream (R * 2 ^ n) B S)
+    (hstream : S.R str = l.flatten)
+    (hinput : S.R src = canonicalPermutationFrame n hn R B hR hB f hQ hA l hl hlen
+      (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R []))
+    (hsaved : S.R saved = []) :
+    ∃ (v' : HS ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit) (steps : ℕ), v'.user = v.user ∧
+      (steps : ℝ) ≤ canonicalPermutationPrice n hn R B hR hB f hQ hA l hl hlen
+        (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R []) +
+        (2 * (canonicalPermutationFrame n hn R B hR hB f hQ hA l hl hlen
+          (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R [])).length + 2 : ℕ) ∧
+      Exec Empty.elim (.seq
+        (canonicalPermutationProgram n hn R B hR hB f hQ hA l hl hlen (canonicalScalarWidth B) (GrowingCounterData.advance R []))
+        (moveR saved src id)) (mk v S) steps (mk v' { S with R := Function.update S.R str output }) := by
+  have hn0 : 0 < n := by
+    have hgap := canonicalRouterGap_pos n
+    have hstride0 : 0 < canonicalRouterStride n := by unfold canonicalRouterStride; omega
+    omega
+  have hne : GrowingCounterData.advance R [] ≠ [] := by
+    intro he
+    have hv := GrowingCounterData.empty_value R
+    rw [he] at hv
+    change 0 = R at hv
+    omega
+  exact canonicalPermutation_restored_exec n hn R B hR hB f hQ hA l hl hlen
+    (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R [])
+    hn0 (canonicalScalarWidth_fit n) (canonicalScalarWidth_fit B) hnB
+    (GrowingCounterData.advance_canonical R [] (Or.inl rfl)) hne (GrowingCounterData.empty_value R)
+    v S ready hstream hinput hsaved
+
 end
 end IntegerMultBounds.MathlibTM2.Routing

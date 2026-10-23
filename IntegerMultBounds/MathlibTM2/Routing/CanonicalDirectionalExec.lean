@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDirectionalBank
+public import IntegerMultBounds.MathlibTM2.Routing.FramedCoreWrite
 
 /-! Concrete directional execution from blank workspace, including nested
 metadata installation and erasure. The input frame is explicit, not generated. -/
@@ -108,6 +109,58 @@ theorem canonicalDirectional_ready
     (flatten_moveRecs _ l (fun row hr => (hlen row hr).1)).symm
   rw [hstream, hout] at hr
   exact hr
+
+/-- Produce the exact outer directional frame from its live constructed bank.
+Generating the bank's scalar and nested input words remains a separate phase. -/
+theorem canonicalDirectionalFrameWrite_exec
+    (v : HS ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit)
+    (S : Stacks ((canonicalRouterCommonT + 3) + 3) (prime + K))
+    (hbank : ∀ j, j ≠ canonicalDirectionalStream →
+      S.R (framedCoreEmbed (canonicalRouterCommonT + 3) j) = bank j)
+    (htmp : S.R (framedCoreAux (canonicalRouterCommonT + 3) 1) = [])
+    (hwork : S.R (framedCoreAux (canonicalRouterCommonT + 3) 2) = []) :
+    ∃ v', v'.user = v.user ∧
+      configurationWriteCost S.R
+        (framedCoreDestinations (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream) ≤
+        7 * (canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages).length + 1 ∧
+      Exec Empty.elim (delimitedConfigurationWrite canonicalDirectionalOuterDelimiter
+        (framedCoreAux (canonicalRouterCommonT + 3) 0) (framedCoreAux (canonicalRouterCommonT + 3) 1)
+        (framedCoreAux (canonicalRouterCommonT + 3) 2)
+        (framedCoreDestinations (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream))
+        (mk v S) (configurationWriteCost S.R
+          (framedCoreDestinations (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream))
+        (mk v' { S with R := Function.update S.R (framedCoreAux (canonicalRouterCommonT + 3) 0) (canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages ++ S.R (framedCoreAux (canonicalRouterCommonT + 3) 0)) }) := by
+  exact framedCoreWrite_exec (N := canonicalRouterCommonT + 3) Empty.elim
+    (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream canonicalDirectionalOuterDelimiter
+    (framedCoreAux (canonicalRouterCommonT + 3) 0) (framedCoreAux (canonicalRouterCommonT + 3) 1)
+    (framedCoreAux (canonicalRouterCommonT + 3) 2) (framedCoreAux_nodup (canonicalRouterCommonT + 3))
+    (fun j _ => ⟨framedCoreEmbed_aux (canonicalRouterCommonT + 3) j 0,
+      framedCoreEmbed_aux (canonicalRouterCommonT + 3) j 1, framedCoreEmbed_aux (canonicalRouterCommonT + 3) j 2⟩)
+    bank v S hbank htmp hwork
+
+theorem canonicalDirectionalFrameWriteClean_exec
+    (v : HS ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit)
+    (S : Stacks ((canonicalRouterCommonT + 3) + 3) (prime + K))
+    (hbank : ∀ j, j ≠ canonicalDirectionalStream →
+      S.R (framedCoreEmbed (canonicalRouterCommonT + 3) j) = bank j)
+    (htmp : S.R (framedCoreAux (canonicalRouterCommonT + 3) 1) = [])
+    (hwork : S.R (framedCoreAux (canonicalRouterCommonT + 3) 2) = []) :
+    ∃ v' steps, v'.user = v.user ∧
+      steps ≤ 9 * (canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages).length + 2 ∧
+      Exec Empty.elim (.seq (delimitedConfigurationWrite canonicalDirectionalOuterDelimiter
+        (framedCoreAux (canonicalRouterCommonT + 3) 0) (framedCoreAux (canonicalRouterCommonT + 3) 1)
+        (framedCoreAux (canonicalRouterCommonT + 3) 2)
+        (framedCoreDestinations (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream))
+        (metadataClean (framedCoreDestinations (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream)))
+        (mk v S) steps
+        (mk v' { S with R := Function.update (metadataCleared S.R (framedCoreDestinations (framedCoreEmbed (canonicalRouterCommonT + 3)) canonicalDirectionalStream)) (framedCoreAux (canonicalRouterCommonT + 3) 0) (canonicalDirectionalFrame n hn R B hR hB mate hinv k reverse hQ hA l hl hlen L Lb rowBits stages ++ S.R (framedCoreAux (canonicalRouterCommonT + 3) 0)) }) := by
+  exact framedCoreWriteClean_exec (N := canonicalRouterCommonT + 3) Empty.elim
+    (framedCoreEmbed (canonicalRouterCommonT + 3)) (framedCoreEmbed_injective (canonicalRouterCommonT + 3)) canonicalDirectionalStream canonicalDirectionalOuterDelimiter
+    (framedCoreAux (canonicalRouterCommonT + 3) 0) (framedCoreAux (canonicalRouterCommonT + 3) 1)
+    (framedCoreAux (canonicalRouterCommonT + 3) 2) (framedCoreAux_nodup (canonicalRouterCommonT + 3))
+    (fun j _ => ⟨framedCoreEmbed_aux (canonicalRouterCommonT + 3) j 0,
+      framedCoreEmbed_aux (canonicalRouterCommonT + 3) j 1, framedCoreEmbed_aux (canonicalRouterCommonT + 3) j 2⟩)
+    bank v S hbank htmp hwork
 
 end
 end IntegerMultBounds.MathlibTM2.Routing

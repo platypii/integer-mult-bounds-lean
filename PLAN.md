@@ -1901,7 +1901,28 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    stream, whose rank permutation has the requested coordinate-bit action and
    preserves outer rows. The complete explicit frame is still supplied;
    executed cycle-decomposition/table and frame production, uniform pricing,
-   long-record amortization and short-record fallback remain open. Canonical terminal scalar
+   long-record amortization and short-record fallback remain open.
+   `canonicalPermutation_canonical_exec` now chooses both scalar widths and the
+   canonical binary row counter from the dimensions for the entire restored
+   eighteen-direction program. Coordinate positivity, binary fit, canonicality
+   and the row-counter value are discharged internally, retaining the existing
+   positive row count, record shape, geometric stride and address-width gates. This selects explicit input words
+   and does not execute their production or close the uniform-cost gates.
+   `ConfigurationWrite` now has one caller-delimited serializer; its original
+   separator interface and cost theorem specialize that implementation.
+   `FramedCoreWrite` serializes exactly the nonstream bank words consumed by the
+   framed loader, restores all sources and scratch, preserves any output suffix
+   and charges at most seven steps per framed symbol plus one.
+   `canonicalDirectionalFrameWrite_exec` instantiates it for the actual
+   delimiter-nine directional frame. It assumes the live metadata bank;
+   generating its scalar/table/nested-input words still needs executed
+   composition. `framedCoreWriteClean_exec` now follows serialization with the
+   existing metadata cleaner, clears exactly the nonstream source registers,
+   retains the stream, unrelated tapes and output suffix, and charges at most
+   nine steps per framed symbol plus two. The concrete
+   `canonicalDirectionalFrameWriteClean_exec` instantiates that pipeline for
+   the actual directional bank. Assembling successive generated frames and
+   composing all upstream word producers remain open. Canonical terminal scalar
    widths and row-counter words are now selected from dimensions; executing
    their production remains open. Original
    permutation decomposition/table generation, remaining scalar metadata setup,
