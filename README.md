@@ -48,8 +48,11 @@ prices and full input rewind. Matching-entry scanning now derives physical sourc
 and activity with complete input restoration; a live residue filter gathers
 entries from a common table. Exact profile ordering and gathered-table cleanup
 now compose with full-table prefix extraction into one restoring input producer,
-with a uniform polynomial setup bound shared by every residue. Setup-bank integration, remaining scalar production,
-complete router schedule instantiation and uniform amortization/fallback remain open.
+with a uniform polynomial setup bound shared by every residue. These matching-produced
+calls now execute repeatedly on one fixed bank, with composed rank semantics,
+summed setup/repair/framing costs and full metadata rewind. Remaining scalar and
+initial matching-table production, complete router schedule instantiation and
+uniform amortization/fallback remain open.
 The complete router and multiplication integration remain in R3–R4; this work
 does not yet change the multiplication saving. See [the active plan](PLAN.md) and
 [the R2 audit](IntegerMultBounds/MathlibTM2/Routing/R2-AUDIT.md).

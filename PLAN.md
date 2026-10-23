@@ -1655,9 +1655,33 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    `MatchingProductionCost` gives the exact polynomial and the uniform bound
    `160 * (digits * stride + digits + 1) * (s + 1)^2` when all binary widths
    are at most `s`. This includes executed count construction and all cleanup.
-   Installing production into the reusable generated-call bank, producing the
-   remaining scalar/placement inputs, complete router schedule execution and
-   uniform full-router amortization/fallback gates remain open. R3 and kappa
+   `GeneratedPlacedCoordinateInput` identifies the exact coordinate tape through
+   every core embedding and proves installing it completes the declared bank.
+   `MatchingProductionSetup` packages only pure layout/readiness facts; its
+   execution theorem invokes actual full-table production.
+   `MatchingGeneratedPlacedRepair` now produces that initially blank coordinate
+   tape, runs the complete generated/placed core, and erases the coordinate
+   input afterward. Only the rank-permuted record stream changes; production,
+   core and final erasure are all charged. `MatchingProductionLayout` provides
+   36 fixed external production tapes with the required sharing and separation,
+   independent of geometry and call count. `MatchingProductionBank` declares
+   this workspace with just four external inputs: byte count, full matching
+   table, stride and residue. `MatchingFixedSetup` derives every producer
+   readiness fact from those contents. `MatchingFixedPlacedRepair` now executes
+   the actual matching-produced generated/placed call on that concrete bank.
+   `MatchingPlacedFrame` proves record replacement preserves the fixed code,
+   total price and encoded non-stream metadata; only the physical stream word
+   changes. `MatchingPlacedCurrent` runs the concrete call on arbitrary current
+   records at its original price. `MatchingPlacedFramed` loads matching-table/
+   scalar metadata, executes actual input production and the generated/placed
+   core, and erases the loaded bank. `MatchingRepairScheduleStage` derives the
+   between-call invariant. `FramedMatchingRepairSchedule` now executes any
+   finite sequence on one fixed extended core plus three loader tapes, composes
+   its rank permutations, sums all stage/framing costs and charges complete
+   metadata rewind. Only the routed stream changes; no execution callback is
+   assumed. Remaining scalar/placement production, initial matching-table
+   production/accounting, full bulk/terminal/18-shear schedule instantiation
+   and uniform full-router amortization/fallback remain open. R3 and kappa
    are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
