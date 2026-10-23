@@ -1635,9 +1635,30 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    archive. `ResidueEntryGenerate` restores the common table and every workspace
    tape and emits the selected entry stream, charging division, copying,
    scanning and both final moves. The common-table-to-router-profile order
-   identity and any terminal-prefix selection remain open, as do joining
-   production to the reusable generated-call bank, scalar/placement setup
-   and full-router cost/fallback gates.
+   identity is now proved by `ResidueEntryOrder`: stable filtering enumerates
+   `rho + c*K` in increasing profile order. `MatchingProfileGather` identifies
+   the actual gathered stream with `matchingProfileEntries` for every profile
+   with `rho < K`. `MatchingProfileProduction` composes gathering, physical-source/
+   activity generation and gathered-table erasure from the common bulk endpoint
+   table, restoring every tape except the exact profile input and charging all
+   three phases. `BinaryPrefixExtract` now builds a unary traversal count
+   from a live binary length, copies an arbitrary prefix and erases that count,
+   preserving source and scratch. `MatchingTablePrefix` proves the full table
+   splits at the exact bulk-entry boundary and executes extraction with its
+   complete binary-count/copy/cleanup price. The binary byte-count scalar is
+   still supplied. `MatchingFullProfileProduction` now composes extraction,
+   residue gathering, coordinate/activity generation and both temporary-table
+   erasures directly from the full matching table. Only the exact profile-input
+   output changes. `RouterMatchingTable` proves that every router residue uses
+   identical full-table values and an identical setup budget; local matching
+   orientation agrees with the global direction after coordinate casts.
+   `MatchingProductionCost` gives the exact polynomial and the uniform bound
+   `160 * (digits * stride + digits + 1) * (s + 1)^2` when all binary widths
+   are at most `s`. This includes executed count construction and all cleanup.
+   Installing production into the reusable generated-call bank, producing the
+   remaining scalar/placement inputs, complete router schedule execution and
+   uniform full-router amortization/fallback gates remain open. R3 and kappa
+   are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and

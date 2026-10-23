@@ -1758,3 +1758,11 @@ public import IntegerMultBounds.MathlibTM2.Routing.ResidueEntryStep
 public import IntegerMultBounds.MathlibTM2.Routing.ResidueEntryLoop
 public import IntegerMultBounds.MathlibTM2.Routing.ResidueEntryTrace
 public import IntegerMultBounds.MathlibTM2.Routing.ResidueEntryGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.ResidueEntryOrder
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingProfileGather
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingProfileProduction
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryPrefixExtract
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingTablePrefix
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingFullProfileProduction
+public import IntegerMultBounds.MathlibTM2.Routing.RouterMatchingTable
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionCost
