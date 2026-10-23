@@ -1306,6 +1306,22 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    restored. The other seven active/selected profiles, remaining scalar/placement
    setup, complete routing schedules and uniform R3 cost/amortization gates remain open.
    Full R3 and kappa are unchanged.
+   `OptionalAffineSourceGenerate` now executes activity-gated affine source
+   generation directly from raw activity bits and binary operands. Its loop
+   archives and restores the activity tape, advances inactive slots, reverses
+   the profile accumulator and restores the original index; only the profile
+   output changes, with explicit execution costs. `RepairZSourceProfile` and
+   `RepairZSourceGenerate` identify and execute the actual first Z profile.
+   `LiveZSourceLayout` and `LiveZSourceGenerate` reuse existing bank operands and
+   outer scratch, reading activity from a restored core tape. The raw activity
+   word is still a caller input. `RepairLiveActivityProfiles` generates five
+   initially blank profiles in one bank; `ActivityProfilesRepair` composes these
+   with all descriptor compilers, exact repair and five-profile cleanup, charging
+   every phase and restoring all non-stream tapes. This five-profile path still
+   needs header/width/classifier/placement composition; the older four-profile
+   path already has those compositions. Six other source profiles, raw activity
+   production, scalar/placement setup, complete routing schedules and uniform
+   cost/amortization gates remain open. Full R3 and kappa are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
