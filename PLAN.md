@@ -3388,6 +3388,54 @@ root build (15,416 jobs, combined peak 4.5 GiB) and axiom audit
 Permutation/reservoir-producer composition and all remaining R3 gates stay open;
 R3 and kappa are unchanged.
 
+**Concrete permutation producer (in progress):** `permutationReservoirFixed_exec`
+now instantiates permutation decomposition and reservoir class/local conversion on
+one fixed 98-register bank. Register separation and every scratch-readiness fact
+are derived from binary dimension/reservoir/span, the original scalar-width
+permutation table, arbitrary carry tapes and blank remaining workspace. Execution
+restores every register except local matching-table slot 34, with the producer's
+full explicit cost bound. The guarded check passed at about 2.55 GiB. `CanonicalPermutationLayout` now embeds the producer and geometry into one
+126-register core, sharing dimension/carry and placing generated reservoir/span
+directly in the producer input slots. Both embeddings are injective;
+`canonicalPermutationProducer_scalars` identifies the exact generated inputs and
+`canonicalPermutationProducer_blank` derives all remaining producer scratch
+readiness from the initial blank bank. No intermediate scalar copies are needed.
+Its guarded check passed at about 2.51 GiB. `canonicalPermutationProduce_exec` now executes the embedded producer directly
+on the generated canonical setup bank. It derives canonical reservoir fit/span
+bounds, all three live scalar inputs and the entire producer readiness contract;
+only original dimension/permutation input and initial blank-bank facts are supplied.
+Its guarded check passed at about 2.48 GiB. `canonicalProfileSetupBank_update` now proves installing a table outside metadata
+commutes with setup, providing the bank identity for the compiler handoff.
+`permutationReservoirSource_involutive` preserves the generated matching's
+involution through the exact profile-domain cast. Both guarded checks passed at
+about 2.50 GiB. `permutationReservoirLocalWord_eq` now identifies the exact generated serialization
+with the profile-domain matching table. `canonicalPreparedProfileCost` factors the
+existing compiler ledger for composition without changing its bound.
+`canonicalPermutationScope_exec` now lifts the actual producer onto the full
+162-register compiler bank, executes a framed call, and erases the generated local
+table. It restores every register except the call output and sums producer, call
+and table-cleanup costs; its guarded check passed at about 2.50 GiB. The producer's initial blankness contract is now restricted to its actual
+workspace below register 98, allowing accumulated output and other untouched tapes
+outside it. `canonicalPermutationCompile_exec` instantiates the framed call with
+the actual canonical compiler: original permutation table to local matching table,
+executed width conversion, profile compilation and erasure of both temporary table
+encodings. All scalar/frame readiness derives from prepared geometry; only the
+profile output changes. The guarded module check passed at about 2.50 GiB.
+`canonicalPermutationProfile_exec` now joins initial geometry/width generation,
+actual permutation decomposition and reservoir localization, table-width conversion,
+profile compilation, both table cleanups and final geometry cleanup. It starts from
+binary dimension/residue, the original scalar-width permutation table and blank
+workspace, allows accumulated output outside producer workspace, and restores every
+register except the appended profile output. The program depends only on the fixed
+direction/class and destination; dimensions/widths remain tape inputs. Its guarded
+check passed at about 2.50 GiB. Root imports are added. The unused supplied-frame profile compiler was removed
+(restore commit `89abda33`); its pure source/serialization helpers now support the
+canonical path. The accumulated integration passed the full guarded root build
+(15,422 jobs, combined peak 4.5 GiB) and axiom audit (352,685 declarations, peak
+4444.3 MiB), superseding pending verification notes above. Residue iteration,
+full canonical frame assembly and every remaining R3 acceptance gate remain open;
+R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,

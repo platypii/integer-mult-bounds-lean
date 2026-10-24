@@ -1813,6 +1813,12 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalProfileScope
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalProfileProductionBank
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalProfileFits
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPreparedProfile
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationReservoirFixed
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPermutationLayout
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPermutationProduce
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPermutationScope
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPermutationCompile
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPermutationProfile
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingEntryResize
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingResizeStep
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingResizeLoop

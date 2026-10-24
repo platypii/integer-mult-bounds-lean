@@ -24,6 +24,25 @@ theorem canonicalProfileSetupBank_keep
     canonicalProfileWidthSlot, canonicalProfileGeometrySlot, canonicalResidueCommonSlot,
     routerReservoirCommonSlot]
 
+/-- A caller output outside generated metadata commutes with setup. -/
+theorem canonicalProfileSetupBank_update
+    (R : Fin T → List (Fin (A + 4))) (rg : Fin 28 → Fin T) (L n r : ℕ)
+    (x : Fin T) (word : List (Fin (A + 4))) (hx : x ∉ canonicalProfileTargets rg) :
+    canonicalProfileSetupBank (Function.update R x word) rg L n r =
+      Function.update (canonicalProfileSetupBank R rg L n r) x word := by
+  simp only [canonicalProfileTargets, List.mem_cons, List.not_mem_nil, or_false, not_or] at hx
+  funext y
+  by_cases hy : y = x
+  · subst y
+    simp_all [canonicalProfileSetupBank, canonicalDescriptorWidthsBank, canonicalResidueGeometryBank,
+      canonicalGeometryBank, routerReservoirGeometryBank, routerGeometryBank,
+      canonicalProfileWidthSlot, canonicalProfileGeometrySlot, canonicalResidueCommonSlot,
+      routerReservoirCommonSlot]
+  · simp [canonicalProfileSetupBank, canonicalDescriptorWidthsBank, canonicalResidueGeometryBank,
+      canonicalGeometryBank, routerReservoirGeometryBank, routerGeometryBank,
+      canonicalProfileWidthSlot, canonicalProfileGeometrySlot, canonicalResidueCommonSlot,
+      routerReservoirCommonSlot, Function.update_apply, hy]
+
 theorem canonicalProfileSetupBank_clean
     (R : Fin T → List (Fin (A + 4))) (rg : Fin 28 → Fin T) (L n r : ℕ)
     (hblank : ∀ x ∈ canonicalProfileTargets rg, R x = []) :

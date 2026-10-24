@@ -27,6 +27,14 @@ theorem canonicalProfileResizeInput_injective (rg : Fin 28 → Fin N) (src : Fin
   intro i j h
   fin_cases i <;> fin_cases j <;> simp_all [canonicalProfileResizeInput]
 
+def canonicalPreparedProfileCost (L : ℕ) (p : Par) : ℕ :=
+  let w := canonicalStageWidths p
+  matchingPrefixCountCost L L L + 24 * L + 29 +
+    matchingFullProfileProductionCost p (w.indexBits + w.strideBits) w.strideBits (L + L + L) +
+    2 * (L + L + L) + 2 + 4 * L * (4 * w.strideBits + 11) + 24 * L + 56 * w.strideBits + 90 +
+    p.wy * (4 * L * (4 * (w.indexBits + w.strideBits) + 11) + 40 * L +
+      64 * (w.indexBits + w.strideBits) + 122) + 8
+
 theorem canonicalPreparedProfile_exec (body : P → Pr P (N + 36) Q A U)
     (L n : ℕ) (hn : n < 2 ^ L) (hlarge : canonicalRouterStride n ≤ n)
     (r : Fin (canonicalRouterStride n)) (p : Par)
@@ -41,11 +49,7 @@ theorem canonicalPreparedProfile_exec (body : P → Pr P (N + 36) Q A U)
     (hR : S.R = matchingProductionBank (canonicalProfileSetupBank coreWords rg L n r.val) [] [] [] []) :
     let w := canonicalStageWidths p
     ∃ (v' : HS (N + 36) Q A U) (m : ℕ), v'.user = v.user ∧
-      m ≤ matchingPrefixCountCost L L L + 24 * L + 29 +
-        matchingFullProfileProductionCost p (w.indexBits + w.strideBits) w.strideBits (L + L + L) +
-        2 * (L + L + L) + 2 + 4 * L * (4 * w.strideBits + 11) + 24 * L + 56 * w.strideBits + 90 +
-        p.wy * (4 * L * (4 * (w.indexBits + w.strideBits) + 11) + 40 * L +
-          64 * (w.indexBits + w.strideBits) + 122) + 8 ∧
+      m ≤ canonicalPreparedProfileCost L p ∧
       Exec body (matchingResizedProfileProgram (canonicalProfileResizeInput rg src) (rg ∘ canonicalProfileControlInput)
         (rg ∘ canonicalProfileCountInput) reverse dst) (mk v S) m
         (mk v' { S with R := (Function.update S.R (matchingCoreEmbed N dst)
@@ -95,11 +99,7 @@ theorem canonicalProfile_exec (body : P → Pr P (N + 36) Q A U)
     (hR : S.R = matchingProductionBank coreWords [] [] [] []) :
     let w := canonicalStageWidths p
     ∃ (v' : HS (N + 36) Q A U) (m : ℕ), v'.user = v.user ∧
-      m ≤ matchingPrefixCountCost L L L + 24 * L + 29 +
-        matchingFullProfileProductionCost p (w.indexBits + w.strideBits) w.strideBits (L + L + L) +
-        2 * (L + L + L) + 2 + 4 * L * (4 * w.strideBits + 11) + 24 * L + 56 * w.strideBits + 90 +
-        p.wy * (4 * L * (4 * (w.indexBits + w.strideBits) + 11) + 40 * L +
-          64 * (w.indexBits + w.strideBits) + 122) + 8 +
+      m ≤ canonicalPreparedProfileCost L p +
         96 * L * L + 584 * L + 549 ∧
       Exec body (canonicalProfileProgram rg src reverse dst) (mk v S) m
         (mk v' { S with R := (Function.update S.R (matchingCoreEmbed N dst)
