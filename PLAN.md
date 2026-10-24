@@ -3801,6 +3801,47 @@ placement chunk supersedes the uncommitted notes above. Profile/frame connection
 actual router integration, small dimensions, executed short-record fallback and
 uniform global amortization remain open. R3 and kappa are unchanged.
 
+**Remaining auxiliary-bank connection (in progress):** Full frame assembly also
+needs the seven live-profile auxiliary words and six width-conversion words.
+`routerAuxiliaryGenerate_exec` now generates their shared three nonempty operands
+from binary count, live index-width and target-width words: resized profile count,
+shortest target width and constant one-row control. It restores every source and
+scratch tape. `routerAuxiliaryBank_profile` and `_width` identify all thirteen
+roles, including their empty controls. `routerAuxiliaryClean_exec` restores the
+three generated words after a disjoint caller output, with exact cleanup cost
+`2*W+2*canonicalScalarWidth wy+9`. The dependency build passed (8,559 jobs, peak
+2.9 GiB). `canonicalAuxiliarySources` identifies all three source words in the
+existing canonical setup, so no extra caller numeric operands are needed.
+Canonical execution composition, separate bank serialization in full-frame order
+and final integration remain open. These additions are uncommitted; all broader
+R3 gates and kappa are unchanged.
+
+`canonicalAuxiliaryGenerate_exec` now composes original dimension/residue setup
+with the auxiliary generator, deriving the exact count, index-width, target-width
+and every numeric fit from canonical geometry. `CanonicalScalarInputGenerate`
+factors the common setup prefix out of descriptor generation; the descriptor
+generator now reuses it. Both dependency builds passed, and the composed auxiliary
+generator passed its guarded check at 2592.5 MiB. `routerAuxiliaryCopy_exec` now
+provides separate seven-word and six-word serializers, so full-frame assembly can
+place the header bank between them. It preserves sources, copy scratch and arbitrary
+output suffix and passed at 2535.6 MiB. Canonical serialization/cleanup composition,
+full profile/frame connection, router integration and the other R3 gates remain
+open. This auxiliary/frame chunk remains uncommitted pending that integration.
+
+`canonicalAuxiliaryFrameScope_exec` now produces either remaining auxiliary
+frame directly from original dimension/residue, preserves arbitrary output suffix
+and restores every setup tape. The two variants remain separate so the full
+frame can put the header between the seven live-profile and six width words.
+`canonicalAuxiliaryClean_exec` restores all fifteen generated geometry/width/
+auxiliary words, with exact cost `24*L+2*indexBits+2*canonicalScalarWidth wy+33`.
+The final module passed its guarded check at 2572.1 MiB. The full guarded root
+build passed (15,514 jobs, peak 10.5 GiB), and the axiom audit passed for 353,531
+declarations (peak 4451.6 MiB). This verified chunk supersedes the pending and
+uncommitted auxiliary notes above. This closes auxiliary frame production and
+cleanup, superseding the corresponding open notes above. Full frame assembly,
+profile connection, actual router execution, small dimensions, executed
+short-record fallback and uniform global amortization remain R3 gates.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
