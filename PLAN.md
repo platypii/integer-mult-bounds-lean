@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 846 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 847 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3676,6 +3676,84 @@ This closes inner header **operand** production, not
 remaining repair/placement metadata, profile/frame composition, full router
 integration, small dimensions, short records or global amortization. R3 and kappa
 remain unchanged.
+
+**Repair scalar production (in progress):** `RepairZeroGenerate` executes two
+shared zero-field constructions from binary target/borrowed widths and identifies
+all five field-buffer operands, reusing one word for the three borrowed fields.
+Its bound is `4*W*(wc+wy)+22*W+8*(wc+wy)+24`; scratch and both width sources restore.
+`CanonicalRepairDimensions` proves that canonical fields total the original
+dimension `n`, the one-row key length is `n+1`, and the required count word is
+`binSyms (n+1) (2^n)`. `RepairRecordCountGenerate` constructs that exact word
+from binary dimension with restored source/scratch and cost at most
+`L*(4*n+11)+8*n+13`. Guarded checks passed (about 2.43/2.47/1.17 GiB respectively).
+Canonical composition, remaining key/block/payload operands, repair-frame
+serialization/cleanup and all other R3 acceptance gates remain open. These
+additions are uncommitted pending the larger repair-frame integration.
+
+`canonicalHeaderScalarGeneratedBank_palette` now proves the full shared palette
+survives header/classifier setup; blank-source readiness covers all shared scratch.
+`canonicalRepairZeroGenerate_exec` uses those facts to compose prior setup and
+both repair zero words from original binary dimension/residue on a 124-register
+scope. Every input fit is derived; the caller's reserved payload-width register
+is retained without a blank assumption. Its dependency build passed (8,827 jobs,
+peak 3.1 GiB). Record-count composition and key/block/payload production, repair
+frame serialization/restoration and every remaining R3 gate stay open. This work
+remains uncommitted with the larger repair chunk.
+
+`canonicalRepairCountGenerate_exec` now composes all prior setup, both shared
+zero fields and exact `2^n` record-count generation from original binary dimension/
+residue. Scratch is reused and restored; the reserved payload-width tape remains
+outside the blank assumptions. Its dependency build passed (8,829 jobs, peak
+3.1 GiB). `BinaryCanonicalWord` now factors exact canonical-word identification
+for both in-place normalization and copying. `BinaryCanonicalSuccessor` uses one
+high padding bit, increment and normalization to produce the exact shortest
+`n+1` word in `18*L+39` steps, including overflow of the original width, while
+restoring its source and scratch. Its dependency build passed (2,089 jobs, peak
+1.8 GiB). Canonical key-length composition and block/payload production remain
+open, together with repair-frame serialization/cleanup and all other R3 gates.
+This work remains uncommitted pending the larger repair-frame integration.
+
+`CanonicalRepairCountReady` now identifies preserved dimension/payload sources,
+the generated one-bit padding operand, shared scratch and spectators after repair
+count setup. `canonicalRepairKeyGenerate_exec` composes that setup, overflow-safe
+key-length successor generation and payload normalization from the original
+dimension/residue/payload words. The extra price is `18*L+39 + 10*Lb+12`.
+Its final key-length and record-count words are identified exactly with
+`canonicalRepairPayload`; the payload word is exact as well. Guarded checks passed
+at about 2.73 GiB. Block-width arithmetic, complete repair-bank serialization/
+restoration and the remaining R3 gates stay open. This work remains uncommitted
+pending the larger repair-frame integration.
+
+`BinaryCanonicalSum` now executes overflow-safe shortest-word generation for
+`x+y+1` from independently padded inputs, restoring sources and scratch in
+`44*(L+M)+99` steps; no caller sum-fit premise is needed. Its guarded check
+passed at about 1.17 GiB. `canonicalRepairBlockGenerate_exec` composes this
+with all preceding metadata generation from original dimension/residue/payload
+words, preserving the earlier outputs; its dependency build passed at 3.1 GiB.
+`canonicalRepairBlockGeneratedBank_operands` identifies every repair setup word,
+including all empty controls, with the exact canonical payload (guarded check
+about 2.50 GiB). These results supersede the block-arithmetic and operand-generation
+open items above. Repair serialization/restoration, placement metadata,
+profile/frame integration, full router execution, small dimensions, short-record
+fallback and uniform global amortization remain open. This repair chunk is
+uncommitted pending frame integration; R3 and kappa are unchanged.
+
+`canonicalRepairSerialize_exec` now generates all numeric repair operands and
+serializes the entire setup-key bank, preserving arbitrary output suffix and all
+sources. `canonicalRepairScalarRestore_exec` erases just the six new operands
+and restores the preceding header bank while retaining the output.
+`canonicalRepairFrameScope_exec` composes serialization with numeric, header,
+classifier, descriptor and geometry cleanup: only the serialized output changes,
+including restoration of original dimension, residue, payload and arbitrary
+spectators. Its cost uses explicit dimension-only generation, copying and cleanup
+bounds; numeric cleanup costs exactly twice the six word lengths plus 13.
+The full guarded root build passed (15,496 jobs, peak 5.1 GiB), and the axiom
+audit passed for 353,351 declarations (peak 4448.4 MiB). This verified chunk
+supersedes the uncommitted/pending-integration notes in this repair subsection.
+This closes repair operand-frame generation/serialization/restoration,
+superseding those open items above. Placement metadata, profile/frame integration,
+actual full router execution, small dimensions, executed short-record fallback
+and uniform global amortization remain R3 gates; kappa is unchanged.
 
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are

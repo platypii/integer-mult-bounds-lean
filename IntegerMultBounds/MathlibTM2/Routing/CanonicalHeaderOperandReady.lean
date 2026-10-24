@@ -13,7 +13,7 @@ variable {T A : ℕ}
 theorem canonicalHeaderBase_blank (R : Fin T → List (Fin (A + 4)))
     (rg : Fin 120 → Fin T) (hrg : Function.Injective rg) (L n r : ℕ)
     (hblank : ∀ i : Fin 120, i ≠ 0 → i ≠ 9 → i ≠ 18 → R (rg i) = [])
-    (i : Fin 118) (hi : i ∈ ([39,40,41] : List (Fin 118))) :
+    (i : Fin 118) (hi : i ∈ ([39,40,41,42,43,45] : List (Fin 118))) :
     canonicalClassifierGeneratedBank R (rg ∘ canonicalHeaderScalarCore) L n r
       (rg (canonicalHeaderScalarCore i)) = [] := by
   let core := rg ∘ canonicalHeaderScalarCore
@@ -21,7 +21,7 @@ theorem canonicalHeaderBase_blank (R : Fin T → List (Fin (A + 4)))
   let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r
   have hlo : i.val < 108 := by
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
-    rcases hi with rfl | rfl | rfl <;> decide
+    rcases hi with rfl | rfl | rfl | rfl | rfl | rfl <;> decide
   change canonicalClassifierGeneratedBank R core L n r (core i) = []
   rw [show canonicalClassifierGeneratedBank R core L n r (core i) =
       canonicalDescriptorGeneratedBank R (core ∘ canonicalClassifierCore) L n r (core i) from
@@ -32,7 +32,7 @@ theorem canonicalHeaderBase_blank (R : Fin T → List (Fin (A + 4)))
       (fun he => h9 (Fin.ext (congrArg (fun x : Fin 120 => x.val) he)))
       (fun he => h18 (Fin.ext (congrArg (fun x : Fin 120 => x.val) he)))
   · simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
-    rcases hi with rfl | rfl | rfl <;> simp
+    rcases hi with rfl | rfl | rfl | rfl | rfl | rfl <;> simp
 
 theorem canonicalHeaderScalarGeneratedBank_low (R : Fin T → List (Fin (A + 4)))
     (rg : Fin 120 → Fin T) (hrg : Function.Injective rg) (L n r : ℕ)
@@ -43,6 +43,48 @@ theorem canonicalHeaderScalarGeneratedBank_low (R : Fin T → List (Fin (A + 4))
   have h119 : i ≠ 119 := by intro h; subst i; norm_num at hi
   simp [canonicalHeaderScalarGeneratedBank,headerScalarBank,canonicalHeaderScalarSlot,
     hrg.eq_iff,h118,h119]
+
+theorem canonicalHeaderScalarGeneratedBank_palette (R : Fin T → List (Fin (A + 4)))
+    (rg : Fin 120 → Fin T) (hrg : Function.Injective rg) (L n r : ℕ) (j : Fin 11) :
+    let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r
+    canonicalHeaderScalarGeneratedBank R rg L n r
+      (rg ⟨28+j.val,by have := j.isLt; omega⟩) =
+        binSyms (canonicalStageWidths p).coordinateBits (repairDescriptorScalarPalette p j) := by
+  dsimp only
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r
+  let W := (canonicalStageWidths p).coordinateBits
+  let core := rg ∘ canonicalHeaderScalarCore
+  have hc : Function.Injective core := hrg.comp canonicalHeaderScalarCore_injective
+  have h₁ := canonicalHeaderScalarGeneratedBank_low R rg hrg L n r
+    ⟨28+j.val,by have := j.isLt; omega⟩ (by change 28+j.val < 118; have := j.isLt; omega)
+  have h₂ := classifierGeneratedBank_low
+    (canonicalDescriptorGeneratedBank R (core ∘ canonicalClassifierCore) L n r) core hc L W p
+    ⟨28+j.val,by have := j.isLt; omega⟩ (by change 28+j.val < 108; have := j.isLt; omega)
+  have h₃ := canonicalDescriptorGeneratedBank_low R (core ∘ canonicalClassifierCore)
+    (hc.comp canonicalClassifierCore_injective) L n r
+    ⟨28+j.val,by have := j.isLt; omega⟩ (by change 28+j.val < 46; have := j.isLt; omega)
+  have h₄ := canonicalDescriptorInstall_palette R
+    (rg ∘ (Fin.castLE (by decide) : Fin 101 → Fin 120))
+    (hrg.comp (by decide +kernel)) L n r j
+  exact h₁.trans (h₂.trans (h₃.trans h₄))
+
+theorem canonicalHeaderScalarGeneratedBank_dimension (R : Fin T → List (Fin (A + 4)))
+    (rg : Fin 120 → Fin T) (hrg : Function.Injective rg) (L n r : ℕ) :
+    canonicalHeaderScalarGeneratedBank R rg L n r (rg 0) = R (rg 0) := by
+  let core := rg ∘ canonicalHeaderScalarCore
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r
+  have hc : Function.Injective core := hrg.comp canonicalHeaderScalarCore_injective
+  have hd := hc.comp canonicalClassifierCore_injective
+  let scalar := (core ∘ canonicalClassifierCore) ∘ canonicalDescriptorSharedCore
+  have hs : Function.Injective scalar := hd.comp canonicalDescriptorSharedCore_injective
+  have h₁ := canonicalHeaderScalarGeneratedBank_low R rg hrg L n r 0 (by decide)
+  have h₂ := classifierGeneratedBank_low
+    (canonicalDescriptorGeneratedBank R (core ∘ canonicalClassifierCore) L n r) core hc
+    L (canonicalStageWidths p).coordinateBits p 0 (by decide)
+  have h₃ := canonicalDescriptorGeneratedBank_low R (core ∘ canonicalClassifierCore) hd L n r 0 (by decide)
+  have h₄ := canonicalDescriptorScalarBank_keep R scalar L n r (scalar 0)
+    (by simp [canonicalDescriptorScalarTargets,hs.eq_iff])
+  exact h₁.trans (h₂.trans (h₃.trans h₄))
 
 theorem canonicalHeaderScalarGeneratedBank_operands (R : Fin T → List (Fin (A + 4)))
     (rg : Fin 120 → Fin T) (hrg : Function.Injective rg) (L n r : ℕ)
