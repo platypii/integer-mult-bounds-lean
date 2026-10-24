@@ -1831,6 +1831,13 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueProgram
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueCount
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueGenerated
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueCost
+public import IntegerMultBounds.MathlibTM2.Routing.BinarySaturatingSub
+public import IntegerMultBounds.MathlibTM2.Routing.RepairDescriptorScalarPalette
+public import IntegerMultBounds.MathlibTM2.Routing.DescriptorLastRows
+public import IntegerMultBounds.MathlibTM2.Routing.DescriptorSourceWidths
+public import IntegerMultBounds.MathlibTM2.Routing.DescriptorScalarGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.RouterTargetWidthGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.DescriptorScalarResize
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingEntryResize
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingResizeStep
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingResizeLoop

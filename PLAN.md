@@ -3498,6 +3498,48 @@ Complete canonical-frame assembly, uniform setup absorption into the full-router
 small-dimension/short-record fallback and all remaining R3 gates stay open;
 R3 and kappa are unchanged.
 
+**Canonical frame scalar assembly (in progress):** Auditing the canonical live
+bank shows repeated descriptor operands can share stride/gap, residue/successor,
+zero, target/borrowed widths, their last-row values and two source-width values.
+The last-row operand is natural subtraction and must remain zero for empty rows.
+`binarySaturatingSub_exec` now implements actual saturated subtraction of padded
+binary inputs, preserving sources and all scratch, with bound `14*L+15`; it handles
+zero-width/empty-row cases without new size assumptions. Its guarded check passed
+at about 1.16 GiB. `RepairDescriptorScalarPalette` now identifies all 55 numeric descriptor fields
+(stride, base, last row, rows and source width across eleven modes) with exactly
+eleven shared scalar values. The static selection map and encoded-width identities
+are proved; the guarded check passed at about 2.44 GiB. `descriptorLastRows_exec` now generates both shared last-row values from live
+target/borrowed row counts, sharing one internally generated binary one and erasing
+it afterward. Empty row counts produce zero, both inputs and all arithmetic scratch
+restore, and only the two last-row outputs change. Its bound is `38*L+41`; the
+guarded check passed at about 1.18 GiB. `descriptorSourceWidths_exec` now generates `2*borrowed+1` and
+`rows+2*borrowed+1`, computing the shared double/sum once and erasing both
+intermediates. Both input operands and scratch restore, and its exact cost is
+`42*L+48`; its guarded check passed at about 1.17 GiB.
+`repairDescriptorScalarPalette_fit` proves all eleven shared values fit the canonical
+coordinate width from existing descriptor bounds and `rho < K`, with no new size
+gate. Its guarded check passed at about 2.45 GiB. `descriptorScalarGenerate_exec` now combines last-row generation, both source-width
+sums, residue successor and zero generation on one 17-register layout. It preserves
+the five live geometric inputs and scratch, generates the six derived values with
+bound `94*L+104`, and `descriptorScalarBank_palette` identifies the entire resulting
+bank with the exact eleven-value palette. Its guarded check passed at about
+2.45 GiB. `routerTargetWidthGenerate_exec` now derives the missing common target-width
+operand `n-3*borrowed` from live dimension/span, erasing its doubled/tripled
+intermediates in exactly `30*L+34` steps. The canonical specialization identifies
+it with every residue's `p.wy`, deriving the subtraction bound from existing
+geometry. Its guarded check passed at about 1.18 GiB. `descriptorScalarResize_exec` now executes a fixed five-job resize schedule into
+the palette bank and all six derived-scalar generators. The target width and compact
+input values are read from tapes; its bound is
+`10*M*(4*W+11)+60*L+224*W+315`. `descriptorScalarResizedBank_palette` identifies every
+output exactly with the shared palette. Its guarded check passed at about 2.49 GiB.
+The accumulated scalar-generation/target-width/resizing chunk passed the full
+guarded root build (15,441 jobs, combined peak 4.5 GiB) and axiom audit
+(352,822 declarations, peak 4441.4 MiB), superseding pending verification notes.
+Concrete placement
+against the generated canonical geometry, descriptor-role installation and complete
+frame serialization remain open, along with every remaining R3 gate; R3 and kappa
+are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
