@@ -1873,3 +1873,10 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverBinaryCount
 public import IntegerMultBounds.MathlibTM2.Routing.BinaryScaleScope
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverScaledWidth
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverCompactCounters
+public import IntegerMultBounds.MathlibTM2.Routing.DelimitedBankCopy
+public import IntegerMultBounds.MathlibTM2.Routing.FramedCoreCopy
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationTableIterate
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryMinimum
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationOrbitMinimum
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationOrbitStep
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationOrbitScan

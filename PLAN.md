@@ -2692,6 +2692,58 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    short records remain open. The complete counter pipeline passed the full
    guarded root build (15,329 jobs, peak 4.5 GiB) and axiom audit (351,977
    declarations, peak 4430.0 MiB). R3 and kappa remain unchanged.
+   `DelimitedBankCopy.delimitedBankCopy_exec` now executes the inverse-format
+   serialization needed by metadata-bank loaders: a fixed register list is copied
+   into consecutive delimited words, with arbitrary destination suffix preserved,
+   every source restored and both scratch tapes blank again. Repeated sources are
+   allowed; code depends only on register locations, never word data. Its exact
+   price is six times encoded frame length plus register count plus one.
+   `FramedCoreCopy.framedCoreCopy_exec` instantiates this encoder at the fixed
+   nonstream core register list. `framedCoreCopyCost_le` bounds serialization
+   linearly in the uniform bank size; live payload is excluded. Guarded checks
+   passed at about 1.17 GiB and 1.15 GiB respectively. These encode an already
+   generated bank; calculating canonical permutation/matching fields from compact
+   inputs remains open. The encoder additions have not yet had a full root build
+   and axiom audit, and are being held for a larger metadata-generation chunk.
+   `PermutationTableIterate.permutationTableIterate_exec` now executes any
+   counted iterate of an arbitrary coordinate map from its compact key/value table,
+   reusing `matchingTableLookupInPlace_exec` and the existing priced symbol loop.
+   Only the query changes to the requested function iterate: the table, unary
+   iteration counter, table archive, loop archive and lookup scratch restore.
+   The proved bound is `iterations * (N * (30 * L + 39) + 10 * L + 19) + 4`;
+   the program contains no coordinate-map data or unrolled iteration count.
+   Its guarded check passed at about 2.46 GiB. This supplies executed bounded
+   orbit traversal for cycle-reflection generation, but orbit minima, return
+   exponents, reflection table production and complete canonical frame generation
+   remain open. No full root build or axiom audit yet for this metadata chunk.
+   `BinaryMinimum.binaryMinimum_exec` now executes a running binary minimum
+   update in at most `16 * L + 17` steps, preserving its input coordinate and
+   all comparison/copy scratch. `PermutationOrbitMinimum.permutationOrbitMinimum_eq_base`
+   proves that scanning one full coordinate count gives exactly the existing
+   `permutationBase`, including fixed points and shorter cycles; the invariant
+   records both a visited iterate and a lower bound on all visited coordinates.
+   `PermutationOrbitStep.permutationOrbitStep_exec` composes actual table lookup
+   and minimum update in at most `N * (30 * L + 39) + 26 * L + 31` steps,
+   changing only query and minimum. The minimum primitive and invariant checked
+   at about 1.15 GiB and 0.84 GiB; the executed step checked at about 2.46 GiB.
+   Counted scan composition, reflection exponents/table generation and complete
+   canonical metadata calculation remain open. These additions remain in the
+   pending metadata chunk, without a full root build or axiom audit yet.
+   `PermutationOrbitScan.permutationOrbitScan_exec` now composes the lookup/minimum
+   step with the existing priced symbol loop, restoring its complete arbitrary
+   counter word and archive. Only query and running minimum change, at price
+   `iterations * (N * (30 * L + 39) + 26 * L + 36) + 4`.
+   `permutationBaseScan_exec` initializes a blank minimum register from the live
+   query and executes exactly one full coordinate-count scan to compute the
+   existing `permutationBase`. No orbit data or semantic execution premise is
+   supplied; the exact final query is also tracked, and the table and all scratch
+   restore. Its guarded check passed at about 2.48 GiB. Reflection exponents,
+   reflection table production and full canonical metadata generation remain open.
+   The accumulated metadata serialization and orbit/base-scan chunk passed the
+   full guarded root build (15,336 jobs, peak 4.5 GiB) and axiom audit (352,035
+   declarations, peak 4430.4 MiB). The constant-price loop identity is shared by
+   traversal and minimum scanning. This supersedes the pending verification notes
+   above; R3 and kappa remain unchanged.
 
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.
