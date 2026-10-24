@@ -36,4 +36,18 @@ theorem reservoirBankPrepared_classLocal
       reservoirBankScalarSlot, reservoirConverterSlot, reservoirClassLocalBank,
       reservoirMiddleProductionBank, reservoirMiddleLookupBank, hblank]
 
+/-- When the original matching table is present, every converter input is ready. -/
+theorem reservoirBankPrepared_classLocal_table
+    (R : Fin 78 → List (Fin (A + 4))) (n H : ℕ) (hfit : 9 * H ≤ n)
+    (w : ℕ) (hw : w ≤ H) (k : Fin 3) (L : ℕ) (mate : Fin n → Fin n)
+    (hblank : ∀ j : Fin 78, j.val < 57 → j ≠ 52 → R j = [])
+    (htable : R 52 = matchingEntryWords L (matchingTableEntries n (matchingMateCoordinate mate))) :
+    (fun j => reservoirBankPrepared R reservoirBankPhysicalSlot n H hfit w hw k L
+      (reservoirConverterSlot j)) = reservoirClassLocalBank n H hfit w hw k L mate := by
+  funext j
+  fin_cases j <;>
+    simp [reservoirBankPrepared, reservoirScalarOutputs, reservoirBankPhysicalSlot,
+      reservoirBankScalarSlot, reservoirConverterSlot, reservoirClassLocalBank,
+      reservoirMiddleProductionBank, reservoirMiddleLookupBank, hblank, htable]
+
 end IntegerMultBounds.MathlibTM2.Routing

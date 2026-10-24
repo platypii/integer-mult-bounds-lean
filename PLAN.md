@@ -2994,6 +2994,38 @@ root build (15,367 jobs, 4.5 GiB combined peak) and root axiom audit
 (352,253 declarations, 4433.9 MiB peak), superseding the pending verification
 and uncommitted-status notes above.
 
+`ReservoirBankClean` now executes complete eight-field converter-input cleanup
+in exactly `60 * L + 65` steps, proving restoration of the original bank.
+Its guarded check passed at 2537.9 MiB. `ReservoirPreparedClassTable` composes
+actual setup, embedded class/local conversion and cleanup, preserving the original
+matching table and changing only local-table output. Its cost is bounded by the
+existing conversion cost plus `682 * L + 765`; the guarded check passed at
+2531.2 MiB. `PermutationReservoirTable` now connects actual canonical
+matching-table generation from the compact original permutation to this generated
+setup/conversion, then erases the original generated matching table. Every
+register except local-table output restores. No scalar bank or exchange metadata
+is supplied; the binary dimension/reservoir/span inputs and original permutation
+table remain explicit. Its guarded check passed at 2522.1 MiB. Connecting this
+version to profile compilation, generating the remaining profile controls and
+assembling the canonical frame remain open, along with all other R3 gates.
+These changes remain uncommitted pending that larger compiler chunk and full
+root verification; R3 and kappa are unchanged.
+
+`PermutationReservoirProfile.permutationReservoirProfile_exec` now uses the
+generated-bank table producer: canonical matching generation, compact-input
+reservoir setup/conversion, full profile compilation, and both intermediate-table
+erasures execute in one proof. Only profile output changes. The setup/conversion
+cost adds `682 * (Li + Lk) + 765` to the previous explicit compiler ledger.
+The supplied-bank wrappers were replaced in place after confirming they had no
+other callers, rather than retaining duplicate execution paths. The updated table
+and profile modules passed their guarded build (2.8 GiB combined peak).
+`MatchingProductionSetup` still supplies the binary prefix byte count, stride,
+residue and pure scratch/register readiness; generating those controls and the
+full canonical frame remains open. The accumulated compiler/cleanup chunk passed the full guarded root build
+(15,369 jobs, 4.4 GiB combined peak) and root axiom audit (352,265 declarations,
+4434.6 MiB peak), superseding the pending verification notes above.
+R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,

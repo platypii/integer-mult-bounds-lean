@@ -5,7 +5,8 @@ public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionSetup
 public import IntegerMultBounds.MathlibTM2.Routing.RouterMatchingTable
 
 /-! Execute original matching generation, reservoir localization and profile
-production, erasing both intermediate tables. Scalar/control readiness remains explicit. -/
+production from compact reservoir inputs, erasing both intermediate tables and
+generated converter inputs. Profile-control readiness remains explicit. -/
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Routing
@@ -28,7 +29,7 @@ def permutationReservoirSource (n H : ℕ) (hfit : 9 * H ≤ n) (w : ℕ) (hw : 
 
 def permutationReservoirProfileProgram (second : Bool) (rg : Fin 10 → Fin T) (src : Fin T)
     (out base steps count saved savedQuery savedIndex frame accum fuel archive : Fin T)
-    (producer : Fin 57 → Fin T) (k : Fin 3)
+    (producer : Fin 78 → Fin T) (k : Fin 3)
     (extract : Fin 8 → Fin T) (gather : Fin 18 → Fin T) (generate : Fin 11 → Fin T)
     (reverse : Bool) (dst : Fin T) : Pr P T Q A U :=
   .seq (permutationReservoirTableProgram second rg src out base steps count saved savedQuery savedIndex frame accum fuel archive producer k)
@@ -56,10 +57,12 @@ theorem permutationReservoirProfile_exec (body : P → Pr P T Q A U) (n : ℕ)
     (htableSaved : S.R (rg 8) = []) (houtput : S.R out = []) (hsaved : S.R saved = [])
     (hsavedQuery : S.R savedQuery = []) (hindex : S.R savedIndex = []) (hframe : S.R frame = [])
     (haccum : S.R accum = []) (harchive : S.R archive = [])
-    (producer : Fin 57 → Fin T) (hp : Function.Injective producer) (hjoin : frame = producer 52)
+    (producer : Fin 78 → Fin T) (hp : Function.Injective producer) (hjoin : frame = producer 52)
     (H : ℕ) (hfit : 9 * H ≤ n) (w : ℕ) (hw : w ≤ H) (k : Fin 3)
-    (hbank : (embStk producer S).R = Function.update
-      (reservoirClassLocalBank n H hfit w hw k (Li + Lk) (permutationMatchingCoordinate second f)) 52 [])
+    (hdimension : S.R (producer 57) = binSyms (Li + Lk) n)
+    (hreservoir : S.R (producer 58) = binSyms (Li + Lk) H)
+    (hspan : S.R (producer 59) = binSyms (Li + Lk) w)
+    (hproduction : ∀ j : Fin 78, j ≠ 57 → j ≠ 58 → j ≠ 59 → j ≠ 70 → j ≠ 52 → S.R (producer j) = [])
     (p : Par) (hsize : p.wy = n - 3 * w) (dst : Fin T) (hdst : dst ≠ producer 34)
     (setup : MatchingProductionSetup p (permutationReservoirSource n H hfit w hw k second f p hsize) Li Lk Lc dst
       { S with R := Function.update S.R (producer 34) (permutationReservoirLocalWord n H hfit w hw k second f (Li + Lk)) })
@@ -68,7 +71,7 @@ theorem permutationReservoirProfile_exec (body : P → Pr P T Q A U) (n : ℕ)
     let output := sourceCoordinateInputWords Li Lk
       (profileCoordinateInputs p setup.hK (matchingDirectionTargets mate setup.reverse) mate) ++ S.R dst
     ∃ (v' : HS T Q A U) (m : ℕ), v'.user = v.user ∧
-      m ≤ (permutationMatchingTableBinaryCost n (Li + Lk) + reservoirClassLocalTableCost n w (Li + Lk) +
+      m ≤ (permutationMatchingTableBinaryCost n (Li + Lk) + reservoirClassLocalTableCost n w (Li + Lk) + 682 * (Li + Lk) + 765 +
         2 * (n * (2 * (Li + Lk) + 2)) + 2) + matchingFullProfileProductionCost p (Li + Lk) Lk Lc +
         2 * ((n - 3 * w) * (2 * (Li + Lk) + 2)) + 2 ∧
       Exec body (permutationReservoirProfileProgram second rg src out base steps count saved savedQuery savedIndex frame accum fuel archive
@@ -79,7 +82,7 @@ theorem permutationReservoirProfile_exec (body : P → Pr P T Q A U) (n : ℕ)
     out base steps count saved savedQuery savedIndex frame accum fuel archive hscope hpair hreg
     hbase hsteps hout hcountOff hsavedOff hsavedQueryOff hindexOff hframeOff haccumOff hfuelOff harchiveOff
     (Li + Lk) hN f v S hsource hquery hblank htable hcount hfuel hbaseBlank hstepCount htableSaved houtput hsaved
-    hsavedQuery hindex hframe haccum harchive producer hp hjoin H hfit w hw k hbank
+    hsavedQuery hindex hframe haccum harchive producer hp hjoin H hfit w hw k hdimension hreservoir hspan hproduction
   let mate := permutationReservoirSource n H hfit w hw k second f p hsize
   let C : Stacks T A := { S with R := (Function.update S.R (producer 34)
     (permutationReservoirLocalWord n H hfit w hw k second f (Li + Lk))) }
@@ -99,9 +102,8 @@ theorem permutationReservoirProfile_exec (body : P → Pr P T Q A U) (n : ℕ)
     (profileCoordinateInputs p setup.hK (matchingDirectionTargets mate setup.reverse) mate) ++ S.R dst
   let D : Stacks T A := { C with R := Function.update C.R dst output }
   obtain ⟨v₃, hu₃, _, he₃⟩ := bclear_exec (body := body) (producer 34) v₂ D
-  have hlocalBlank : S.R (producer 34) = [] := by
-    have h := congrFun hbank 34
-    simpa [embStk, reservoirClassLocalBank, reservoirMiddleProductionBank] using h
+  have hlocalBlank : S.R (producer 34) = [] :=
+    hproduction 34 (by decide) (by decide) (by decide) (by decide) (by decide)
   have hlen : (D.R (producer 34)).length = (n - 3 * w) * (2 * (Li + Lk) + 2) := by
     simp [D, C, hdst.symm, permutationReservoirLocalWord, matchingEntryWords_length, matchingTableEntries]
   have hfinal : ({ D with R := Function.update D.R (producer 34) [] } : Stacks T A) =

@@ -1911,3 +1911,5 @@ public import IntegerMultBounds.MathlibTM2.Routing.ReservoirScalarExport
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirScalarPrepare
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirBankPrepare
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirBankPlacement
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirBankClean
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirPreparedClassTable

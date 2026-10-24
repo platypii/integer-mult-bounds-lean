@@ -1,10 +1,10 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingTableBinary
-public import IntegerMultBounds.MathlibTM2.Routing.ReservoirClassLocalTable
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirPreparedClassTable
 
 /-! Generate an original canonical matching table, execute reservoir-class/local
-conversion, and erase the generated original table. Scalar bank setup remains explicit. -/
+conversion, and erase the generated original table. Scalar and exchange metadata setup are generated from compact binary inputs. -/
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Routing
@@ -20,9 +20,9 @@ theorem permutationMatchingCoordinate_involutive {n : ℕ} (second : Bool) (f : 
 
 def permutationReservoirTableProgram (second : Bool) (rg : Fin 10 → Fin T) (src : Fin T)
     (out base steps count saved savedQuery savedIndex frame accum fuel archive : Fin T)
-    (producer : Fin 57 → Fin T) (k : Fin 3) : Pr P T Q A U :=
+    (producer : Fin 78 → Fin T) (k : Fin 3) : Pr P T Q A U :=
   .seq (permutationMatchingTableBinaryProgram second rg src out base steps count saved savedQuery savedIndex frame accum fuel archive)
-    (.seq (embProg producer Empty.elim (reservoirClassLocalTableProgram (P := Empty) k)) (bclear frame))
+    (.seq (embProg producer Empty.elim (reservoirPreparedClassTableProgram (P := Empty) k)) (bclear frame))
 
 theorem permutationReservoirTable_exec (body : P → Pr P T Q A U) (n : ℕ)
     (second : Bool) (rg : Fin 10 → Fin T) (hrg : Function.Injective rg)
@@ -46,14 +46,16 @@ theorem permutationReservoirTable_exec (body : P → Pr P T Q A U) (n : ℕ)
     (htableSaved : S.R (rg 8) = []) (houtput : S.R out = []) (hsaved : S.R saved = [])
     (hsavedQuery : S.R savedQuery = []) (hindex : S.R savedIndex = []) (hframe : S.R frame = [])
     (haccum : S.R accum = []) (harchive : S.R archive = [])
-    (producer : Fin 57 → Fin T) (hp : Function.Injective producer) (hjoin : frame = producer 52)
+    (producer : Fin 78 → Fin T) (hp : Function.Injective producer) (hjoin : frame = producer 52)
     (H : ℕ) (hfit : 9 * H ≤ n) (w : ℕ) (hw : w ≤ H) (k : Fin 3)
-    (hbank : (embStk producer S).R = Function.update
-      (reservoirClassLocalBank n H hfit w hw k L (permutationMatchingCoordinate second f)) 52 []) :
+    (hdimension : S.R (producer 57) = binSyms L n)
+    (hreservoir : S.R (producer 58) = binSyms L H)
+    (hspan : S.R (producer 59) = binSyms L w)
+    (hproduction : ∀ j : Fin 78, j ≠ 57 → j ≠ 58 → j ≠ 59 → j ≠ 70 → j ≠ 52 → S.R (producer j) = []) :
     let localMate := reservoirClassLocalMatching n H hfit w hw k (permutationMatchingCoordinate second f)
       (permutationMatchingCoordinate_involutive second f)
     ∃ (v' : HS T Q A U) (m : ℕ), v'.user = v.user ∧
-      m ≤ permutationMatchingTableBinaryCost n L + reservoirClassLocalTableCost n w L + 2 * (n * (2 * L + 2)) + 2 ∧
+      m ≤ permutationMatchingTableBinaryCost n L + reservoirClassLocalTableCost n w L + 682 * L + 765 + 2 * (n * (2 * L + 2)) + 2 ∧
       Exec body (permutationReservoirTableProgram second rg src out base steps count saved savedQuery savedIndex frame accum fuel archive producer k)
         (mk v S) m (mk v' { S with R := (Function.update S.R (producer 34)
           (matchingEntryWords L (matchingTableEntries (n - 3 * w) (matchingMateCoordinate localMate)))) }) := by
@@ -64,23 +66,26 @@ theorem permutationReservoirTable_exec (body : P → Pr P T Q A U) (n : ℕ)
     L hN f v S hsource hquery hblank htable hcount hfuel hbaseBlank hstepCount htableSaved houtput hsaved
     hsavedQuery hindex hframe haccum harchive
   let C : Stacks T A := { S with R := Function.update S.R frame (permutationMatchingTablePrefix second L f n) }
-  have hready : (embStk producer C).R = reservoirClassLocalBank n H hfit w hw k L (permutationMatchingCoordinate second f) := by
-    rw [show C = { S with R := Function.update S.R (producer 52) (permutationMatchingTablePrefix second L f n) } by dsimp only [C]; rw [hjoin]]
-    rw [embStk_update_stream producer hp, hbank, Function.update_idem]
-    have htableAt : reservoirClassLocalBank (A := A) n H hfit w hw k L (permutationMatchingCoordinate second f) 52 =
-        permutationMatchingTablePrefix second L f n := by
-      simp [reservoirClassLocalBank, permutationMatchingTablePrefix]
-    rw [← htableAt]
-    exact Function.update_eq_self _ _
-  let smallBody : Empty → Pr Empty 57 Q A U := Empty.elim
-  obtain ⟨u, m₂, hu, hm₂, hex⟩ := reservoirClassLocalTable_exec n H hfit w hw k L smallBody hN
+  have keep (j : Fin 78) (hj : j ≠ 52) : C.R (producer j) = S.R (producer j) := by
+    apply Function.update_of_ne
+    rw [hjoin]
+    exact hp.ne hj
+  have htableReady : C.R (producer 52) = matchingEntryWords L
+      (matchingTableEntries n (matchingMateCoordinate (permutationMatchingCoordinate second f))) := by
+    rw [← hjoin]
+    simp [C, permutationMatchingTablePrefix]
+  let smallBody : Empty → Pr Empty 78 Q A U := Empty.elim
+  obtain ⟨u, m₂, hu, hm₂, hex⟩ := reservoirPreparedClassTable_exec smallBody n H hfit w hw k L hN
     (permutationMatchingCoordinate second f) (permutationMatchingCoordinate_involutive second f)
-    (embDn producer v₁) (embStk producer C) hready
+    (embDn producer v₁) (embStk producer C)
+    ((keep 57 (by decide)).trans hdimension) ((keep 58 (by decide)).trans hreservoir)
+    ((keep 59 (by decide)).trans hspan) htableReady
+    (fun j h57 h58 h59 h70 h52 => (keep j h52).trans (hproduction j h57 h58 h59 h70 h52))
   let localWord := matchingEntryWords (A := A) L (matchingTableEntries (n - 3 * w)
     (matchingMateCoordinate (reservoirClassLocalMatching n H hfit w hw k (permutationMatchingCoordinate second f)
       (permutationMatchingCoordinate_involutive second f))))
   obtain ⟨v₂, hu₂, he₂⟩ := exec_emb_stream producer hp Empty.elim smallBody body
-    (by intro q; exact q.elim) (reservoirClassLocalTableProgram k) v₁ C u m₂ 34 localWord hex
+    (by intro q; exact q.elim) (reservoirPreparedClassTableProgram k) v₁ C u m₂ 34 localWord hex
   let D : Stacks T A := { C with R := Function.update C.R (producer 34) localWord }
   have hne : producer 34 ≠ frame := by rw [hjoin]; exact hp.ne (by decide)
   obtain ⟨v₃, hu₃, _, he₃⟩ := bclear_exec (body := body) frame v₂ D
