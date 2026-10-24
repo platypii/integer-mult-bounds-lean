@@ -3469,6 +3469,35 @@ loop chunk passed the full guarded root build (15,429 jobs, combined peak 4.5 Gi
 and axiom audit (352,738 declarations, peak 4441.0 MiB), superseding pending
 verification notes above. Full R3 and kappa are unchanged.
 
+**Residue initialization/cleanup (in progress):** `IndexedCountClean` proves the
+initial zero-index bank identity and exact restoration after count-archive rewind
+and index erasure. `canonicalResidueProgram_exec` now executes binary residue-zero
+initialization from the dimension tape, every actual residue round, count rewind
+and final index erasure. It restores every register except accumulated output,
+with bound `K*(price+4)+6*L+10`. The guarded check passed at about 2.51 GiB. `canonicalResidueCount_exec` now generates the unary count from binary dimension,
+executes stride/gap arithmetic and conversion, then erases both temporary binary
+words before the loop. Its bound is `4*L*L+123*L+180+6*K`.
+`canonicalResidueCountScope_exec` executes a framed call and erases the generated
+count afterward, restoring its original bank except call output, with overhead
+`4*L*L+123*L+182+8*K`. Its guarded check passed at about 2.50 GiB. `canonicalResidueGenerated_exec` now places count generation on the actual
+163-register bank, reusing blank compiler workspace and restoring it before the
+loop. It composes dimension-to-count generation, all actual profile rounds, count
+rewind, index erasure and count cleanup. No count/index tapes are supplied; both
+start and end blank, and only compiled output changes. Its bound is
+`K*(price+12)+4*L*L+129*L+192`, with the uniform round bound still explicit.
+The guarded check passed at about 2.52 GiB. `canonicalPreparedProfileCost_le` and `canonicalResidueRoundCost_le` now derive a
+uniform residue-independent arithmetic ledger from dimension and canonical gap,
+using the actual full-profile production bound. `canonicalResidueUniform_exec`
+applies it to generated-count execution: no supplied count/index words or round
+price remain, and every register except compiled output restores. Its total cost
+is the explicit `canonicalResidueTotalBound L n`. The guarded check passed at about
+2.51 GiB. The accumulated generated-counter/restoration/uniform-cost chunk passed the full
+guarded root build (15,434 jobs, combined peak 4.5 GiB) and axiom audit
+(352,759 declarations, peak 4442.6 MiB), superseding pending verification notes.
+Complete canonical-frame assembly, uniform setup absorption into the full-router price,
+small-dimension/short-record fallback and all remaining R3 gates stay open;
+R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,

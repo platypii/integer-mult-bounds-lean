@@ -1826,6 +1826,11 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueStep
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueBank
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueWords
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueLoop
+public import IntegerMultBounds.MathlibTM2.Routing.IndexedCountClean
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueProgram
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueCount
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueGenerated
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalResidueCost
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingEntryResize
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingResizeStep
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingResizeLoop
