@@ -3842,6 +3842,20 @@ cleanup, superseding the corresponding open notes above. Full frame assembly,
 profile connection, actual router execution, small dimensions, executed
 short-record fallback and uniform global amortization remain R3 gates.
 
+**Physical repair frame connection (in progress):**
+`canonicalRepairBlockGeneratedBank_physical` identifies the generated numeric
+bank with every physical register of the initial canonical repair bank, including
+all empty scratch words. `repairPhysicalOperandCopy_exec` serializes every
+nonstream physical register in the loader's order, with restored scratch and an
+explicit cost bound. `CanonicalRepairClean` factors the full setup restoration
+proof out of the existing setup-key frame scope so both serialization orders can
+reuse it. The refactored scope passed its dependency build (8,849 jobs, peak
+2.9 GiB). The full guarded root build passed (15,516 jobs, peak 4.5 GiB), and
+the axiom audit passed for 353,542 declarations (peak 4452.3 MiB).
+Physical-order generation/copy/cleanup composition and the generated
+coordinate-profile overlay remain next, followed by full frame assembly and the
+other R3 gates. R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,

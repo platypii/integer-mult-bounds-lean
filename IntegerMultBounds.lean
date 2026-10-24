@@ -1878,6 +1878,7 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalHeaderSerialize
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalClassifierClean
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalHeaderFrameScope
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRepairFrameScope
+public import IntegerMultBounds.MathlibTM2.Routing.RepairPhysicalOperandFrame
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPlacementFrameScope
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalAuxiliaryFrameScope
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingEntryResize
