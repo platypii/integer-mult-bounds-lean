@@ -1805,6 +1805,9 @@ public import IntegerMultBounds.MathlibTM2.Routing.MatchingGeneratedPlacedRepair
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionLayout
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionBank
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingFixedSetup
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingFixedControls
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingFixedCount
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingFixedProfile
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingFixedPlacedRepair
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingPlacedFrame
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingPlacedCurrent

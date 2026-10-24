@@ -44,11 +44,11 @@ theorem matchingFixedPlacedRepair_exec (input : GeneratedPlacedInput t₀ Q K P 
     rw [hR]
     exact matchingProductionBank_core _ _ _ _ _ j
   have ht : input.targets = matchingDirectionTargets input.source setup.reverse := by
-    dsimp only [setup, matchingFixedSetup]
+    dsimp only [setup, matchingFixedSetup, matchingFixedFrame]
     exact htargets
   have h := matchingGeneratedPlacedRepair_exec input (matchingCoreEmbed TP₀) (matchingCoreEmbed_injective TP₀)
     ι body hbody Lc v S setup ht hbank hleft
-  simpa only [setup, matchingFixedSetup, matchingPlacedRepairPrice] using h
+  simpa only [setup, matchingFixedSetup, matchingFixedFrame, matchingPlacedRepairPrice] using h
 
 end
 end IntegerMultBounds.MathlibTM2.Routing

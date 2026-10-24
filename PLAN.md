@@ -3294,6 +3294,28 @@ The accumulated resizing/compiler chunk passed the full guarded root build
 4439.9 MiB peak), superseding the pending verification and uncommitted-status
 notes above. R3 and kappa remain unchanged.
 
+**Fixed production-frame bridge (in progress):** `matchingFixedFrame` now derives
+the fixed compiler frame from the matching table and resized controls without
+requiring an already generated prefix count. `matchingFixedSetup` adds that count
+as a short wrapper. `matchingProductionBank_update_controls` proves that installing
+stride and residue in the two fixed gather slots gives exactly the declared
+production bank; its guarded file check passed at about 2.47 GiB. `MatchingFixedControls` places three compact core inputs, the two gather outputs
+and six reused generator scratch tapes on one concrete bank. Its injectivity,
+blankness and bank identity are checked; `matchingFixedControlFrame` derives the
+producer frame directly from that installed bank without a supplied count. The
+guarded module check passed at about 2.53 GiB. `MatchingFixedCount` now supplies the concrete thirteen-register count map,
+proves its injectivity and scratch readiness, and separates its output from all
+gather/generator registers and both resized controls. Its guarded check passed
+at about 2.56 GiB. `matchingFixedProfile_exec` now composes actual resizing, prefix-count
+generation, full profile production and cleanup on this concrete bank. It derives
+the frame from the bank instead of accepting one, gives an explicit total step
+bound, and restores every register except the profile output. Its guarded check
+passed at about 2.45 GiB. These modules are imported by the root. The accumulated chunk passed the full
+guarded root build (15,404 jobs, combined peak 7.4 GiB) and axiom audit
+(352,560 declarations, peak 4440.9 MiB). Connection to generated canonical geometry, the
+permutation-to-matching producer and full residue iteration remain open.
+Full R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,

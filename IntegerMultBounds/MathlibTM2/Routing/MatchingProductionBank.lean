@@ -103,4 +103,48 @@ theorem matchingProductionBank_updateCore (coreWords : Fin N → List (Fin (A + 
     unfold matchingProductionBank
     rw [Function.extend_apply' _ _ _ hcore, Function.extend_apply' _ _ _ hcore]
 
+/-- Installing resized controls fills exactly the fixed producer's two control slots. -/
+theorem matchingProductionBank_update_controls
+    (coreWords : Fin N → List (Fin (A + 4)))
+    (count table stride residue : List (Fin (A + 4))) :
+    Function.update (Function.update (matchingProductionBank coreWords count table [] [])
+      (matchingGatherSlot N 11) residue) (matchingGatherSlot N 1) stride =
+      matchingProductionBank coreWords count table stride residue := by
+  funext j
+  by_cases hc : j.val < N
+  · let i : Fin N := ⟨j.val, hc⟩
+    have hj : j = matchingCoreEmbed N i := by apply Fin.ext; rfl
+    rw [hj, Function.update_of_ne (matchingCoreEmbed_gather N i 1),
+      Function.update_of_ne (matchingCoreEmbed_gather N i 11),
+      matchingProductionBank_core, matchingProductionBank_core]
+  · have hj : j = (⟨N + (j.val - N), by have := j.isLt; omega⟩ : Fin (N + 36)) := by
+      apply Fin.ext
+      dsimp
+      omega
+    have hb : j.val - N < 36 := by have := j.isLt; omega
+    by_cases hs : j = matchingGatherSlot N 1
+    · subst j
+      simp [matchingProductionBank_gather, matchingWorkspaceWords]
+    · by_cases hr : j = matchingGatherSlot N 11
+      · subst j
+        rw [Function.update_of_ne hs, Function.update_self,
+          matchingProductionBank_gather]
+        simp [matchingWorkspaceWords]
+      · rw [Function.update_of_ne hs, Function.update_of_ne hr, hj,
+          matchingProductionBank_work _ _ _ _ _ _ hb,
+          matchingProductionBank_work _ _ _ _ _ _ hb]
+        have h8 : j.val - N ≠ 8 := by
+          intro h
+          apply hs
+          apply Fin.ext
+          dsimp [matchingGatherSlot]
+          omega
+        have h18 : j.val - N ≠ 18 := by
+          intro h
+          apply hr
+          apply Fin.ext
+          dsimp [matchingGatherSlot]
+          omega
+        simp [matchingWorkspaceWords, h8, h18]
+
 end IntegerMultBounds.MathlibTM2.Routing
