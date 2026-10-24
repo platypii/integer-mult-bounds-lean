@@ -60,7 +60,9 @@ noncomputable def matchingFixedSetup (p : Par) (mate : Fin p.wy → Fin p.wy)
     hk := hk
     hcountFit := hcountFit
     hinput := ?_
-    hcount := ?_
+    hcount := by
+      rw [hR]
+      simp [matchingInitialBank, matchingProductionBank_extract, matchingWorkspaceWords]
     hblankPrefix := ?_
     hbulkBlank := ?_
     hblankGather := ?_
@@ -74,8 +76,6 @@ noncomputable def matchingFixedSetup (p : Par) (mate : Fin p.wy → Fin p.wy)
     hsavedGenerate := hg 8
     haccumGenerate := hg 10
     hsourceBlank := hg 7 }
-  · rw [hR]
-    simp [matchingInitialBank, matchingProductionBank_extract, matchingWorkspaceWords]
   · rw [hR]
     simp [matchingInitialBank, matchingProductionBank_extract, matchingWorkspaceWords]
   · intro j hj

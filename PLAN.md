@@ -3026,6 +3026,50 @@ full canonical frame remains open. The accumulated compiler/cleanup chunk passed
 4434.6 MiB peak), superseding the pending verification notes above.
 R3 and kappa are unchanged.
 
+`MatchingEntryWidth.matchingEntryWidth_exec` derives the matching-entry byte
+width `2*L+2` from binary `L`, erasing its successor temporary in exactly
+`22 * Le + 27` steps (guarded check 1181.2 MiB). `MatchingPrefixCount` executes
+two binary multiplications to form row count times stride times entry width,
+erasing the intermediate slot count (guarded check 1194.0 MiB).
+`MatchingPrefixCountFromWidth.matchingPrefixCountFromWidth_exec` composes these
+operations from binary rows, stride and coordinate width; only the prefix-count
+output changes. Its cost is at most `matchingPrefixCountCost Ln Lk Le + 24*Le+29`.
+`matchingPrefixCountScope_exec` additionally proves a framed compiler call can
+borrow the generated count and then erase it, restoring every tape except the
+call output. The combined guarded check passed at 1202.3 MiB. Instantiating this
+scope with the actual profile compiler and generating its stride/residue controls
+remain open. These additions are uncommitted pending that integration; R3 and
+kappa remain unchanged.
+
+`MatchingProfileGeneratedCount.matchingProfileGeneratedCount_exec` now instantiates
+the generated-count scope with actual full-table profile compilation. A common
+`MatchingProductionFrame` carries layout, matching input, stride/residue and
+scratch readiness without a supplied prefix count or count-fit hypothesis.
+`MatchingProductionFrame.with_count` derives the ready producer after the actual
+count is installed; the count-fit inequality follows from the compact operand
+bounds. Only profile output changes after count cleanup, with the explicit
+arithmetic/compiler/cleanup ledger. The guarded check passed at 2511.9 MiB.
+`MatchingProductionSetup` now extends this shared frame, preserving existing
+ready-count callers; its fixed-layout constructor was adjusted for inherited-field
+proof ordering. Connecting the generated-count version into the permutation/
+reservoir profile wrapper and producing stride/residue controls remain next.
+This count/compiler chunk is uncommitted and awaits full-root verification;
+R3 and kappa remain unchanged.
+
+`PermutationReservoirProfile.permutationReservoirProfile_exec` now calls the
+generated-count profile compiler in place. Its readiness input is the count-free
+`MatchingProductionFrame`; binary rows, stride and coordinate width generate
+the prefix byte count, and all count arithmetic scratch and the count itself
+restore. The local matching table is still generated, consumed and erased by
+the full pipeline; only profile output changes. The explicit ledger now includes
+count generation and cleanup. The guarded check passed at 2535.2 MiB.
+This closes the count-wrapper integration items above. Compact stride/residue
+production, canonical-frame assembly and the remaining R3 gates stay open.
+The accumulated count/compiler chunk passed the full guarded root build
+(15,373 jobs, 7.4 GiB combined peak) and root axiom audit (352,324 declarations,
+4434.5 MiB peak), superseding the pending verification and uncommitted-status
+notes above. R3 and kappa remain unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,

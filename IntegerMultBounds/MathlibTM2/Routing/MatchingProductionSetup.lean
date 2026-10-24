@@ -12,7 +12,7 @@ open IntegerMultBounds.MathlibTM2.Host IntegerMultBounds.MathlibTM2.Layer.Compac
 noncomputable section
 variable {T Q A : ℕ} {P U : Type}
 
-structure MatchingProductionSetup (p : Par) (mate : Fin p.wy → Fin p.wy)
+structure MatchingProductionFrame (p : Par) (mate : Fin p.wy → Fin p.wy)
     (Li Lk Lc : ℕ) (dst : Fin T) (S : Stacks T A) where
   extract : Fin 8 → Fin T
   hprefix : Function.Injective extract
@@ -31,9 +31,7 @@ structure MatchingProductionSetup (p : Par) (mate : Fin p.wy → Fin p.wy)
   reverse : Bool
   hwidth : p.wy < 2 ^ (Li + Lk)
   hk : p.K < 2 ^ Lk
-  hcountFit : (p.n * p.K) * (2 * (Li + Lk) + 2) < 2 ^ Lc
   hinput : S.R (extract 5) = matchingEntryWords (Li + Lk) (matchingTableEntries p.wy (matchingMateCoordinate mate))
-  hcount : S.R (extract 0) = binSyms Lc ((p.n * p.K) * (2 * (Li + Lk) + 2))
   hblankPrefix : ∀ j : Fin 8, j = 1 ∨ j = 2 ∨ j = 3 ∨ j = 4 ∨ j = 7 → S.R (extract j) = []
   hbulkBlank : S.R (gather 14) = []
   hblankGather : ∀ j : Fin 18, j = 0 ∨ j = 12 ∨ j = 13 ∨ (2 ≤ j.val ∧ j.val < 10) → S.R (gather j) = []
@@ -47,6 +45,13 @@ structure MatchingProductionSetup (p : Par) (mate : Fin p.wy → Fin p.wy)
   hsavedGenerate : S.R (generate 8) = []
   haccumGenerate : S.R (generate 10) = []
   hsourceBlank : S.R (generate 7) = []
+
+/-- A ready producer adds its prefix-count word to the common frame. -/
+structure MatchingProductionSetup (p : Par) (mate : Fin p.wy → Fin p.wy)
+    (Li Lk Lc : ℕ) (dst : Fin T) (S : Stacks T A)
+    extends MatchingProductionFrame p mate Li Lk Lc dst S where
+  hcountFit : (p.n * p.K) * (2 * (Li + Lk) + 2) < 2 ^ Lc
+  hcount : S.R (extract 0) = binSyms Lc ((p.n * p.K) * (2 * (Li + Lk) + 2))
 
 theorem MatchingProductionSetup.exec {p : Par} {mate : Fin p.wy → Fin p.wy}
     {Li Lk Lc : ℕ} {dst : Fin T} {S : Stacks T A}

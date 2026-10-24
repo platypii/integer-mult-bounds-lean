@@ -1769,6 +1769,10 @@ public import IntegerMultBounds.MathlibTM2.Routing.RouterMatchingTable
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionCost
 public import IntegerMultBounds.MathlibTM2.Routing.GeneratedPlacedCoordinateInput
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionSetup
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingEntryWidth
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingPrefixCount
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingPrefixCountFromWidth
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingProfileGeneratedCount
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingGeneratedPlacedRepair
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionLayout
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionBank
