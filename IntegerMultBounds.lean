@@ -1846,3 +1846,13 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPermutationExec
 public import IntegerMultBounds.MathlibTM2.Routing.CommonBankBulk
 public import IntegerMultBounds.MathlibTM2.Routing.CommonBankDirectional
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterClass
+public import IntegerMultBounds.MathlibTM2.Routing.SelectiveRows
+public import IntegerMultBounds.MathlibTM2.Routing.SelectiveRowRecords
+public import IntegerMultBounds.MathlibTM2.Routing.RowTransfer
+public import IntegerMultBounds.MathlibTM2.Routing.RowRoutingLoop
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowCall
+public import IntegerMultBounds.MathlibTM2.Routing.RowDriverLayout
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalCountedRow
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriver
+public import IntegerMultBounds.MathlibTM2.Routing.CoordinateRowRank
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowEndpoint

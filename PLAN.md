@@ -2374,14 +2374,119 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    `selectiveIdealIdx_lt` already uses preservation of the quotient by the
    address-block size. A row-at-a-time implementation is a candidate for removing
    this identifier from repair keys without changing the density geometry.
-   It still needs an executed block driver, endpoint composition, restored
-   shared metadata and a bound for per-row setup; the current whole-stream
-   execution does not prove that alternative. Do not impose a permanent bound
-   on row count to bypass this obligation.
+   `SelectiveRows` now proves exact row preservation, injectivity of the
+   address-only destination key within each row, and the restricted row
+   permutation. It also proves equality of source observations modulo a row
+   and the exact row-offset endpoint: the global destination is the original
+   row offset plus the one-row destination. Its guarded check passed at about
+   1.19 GiB. This justifies the shorter key logically; it still needs an executed block driver, endpoint
+   composition on record lists, restored shared metadata and a bound for
+   per-row setup. `SelectiveRowRecords.moveRecs_selective_rows` now identifies
+   the complete global record endpoint with the concatenation of row-local
+   endpoints, preserving row order; its guarded check passed at about 1.17 GiB.
+   No shape assumption or concrete enumeration is needed for this identity.
+   `RowTransfer.rowTransfer_exec` now extracts one counted row in forward
+   order, preserving the unread suffix and restoring counter/buffer scratch,
+   in exactly `6 * rowLength + 6` steps. `rowRoutingCall_exec` composes extraction,
+   a priced stream-only row call and reversed output archiving, restoring the
+   work tape with additional cost `8 * rowLength + 8`. Its guarded check passed
+   at about 1.71 GiB. The call hypothesis still needs instantiation with actual
+   one-row routing. `RowRoutingLoop.rowRoutingLoop_exec` now proves the fixed
+   counted outer loop under a priced invariant-preserving step contract: it
+   consumes exactly the row count, preserves the unread suffix, archives routed
+   output in reverse stream order and costs at most the row count times
+   `(stepPrice + 2)`, plus one. Its guarded check passed at about 1.76 GiB.
+   `RowTransfer.countedRowRoutingCall_exec` now supplies the concrete counter
+   advance plus row-call execution, with additional cost `8 * rowLength + 9`.
+   `rowRoutingRewind_exec` restores the original count word, empties both
+   archives and prepends routed output before the untouched input suffix in
+   exactly `2 * countLength + 2 * outputLength + 4` steps. Their guarded check
+   passed at about 1.73 GiB. `RowRoutingLoop.rowRoutingProgram_exec` now
+   composes initial count testing, the full loop and both rewinds: only the
+   routed input prefix changes, the suffix and every other register are
+   restored, and the cost is bounded by `rowCount * (stepPrice + 4)` plus
+   twice the routed output length plus six. Its guarded check passed at about
+   1.77 GiB. Instantiating the loop's invariant-preserving step contract with
+   the counted wrapper, actual one-row routing and metadata invariants remains
+   open; the counted step still has an explicit inner-call premise.
+   `CanonicalRowCall.canonicalRowRoutingCall_exec` now embeds the actual
+   one-row canonical coordinate router in any injective larger tape bank,
+   preserving every external driver register and restoring its supplied
+   metadata frame. Its dimension-only cost bound uses row count one and its
+   guarded check passed at about 2.56 GiB. This is the concrete inner execution
+   available for the driver, not yet a discharge of the driver's readiness
+   invariant or compact-input metadata-production gate.
+   `CanonicalRowBankReady` now states the reusable scratch/metadata invariant
+   without constraining the work stream. Its preservation is proved for every
+   external driver-tape update and every work-stream update. `with_records`
+   derives the actual router's `FramedCoreReady` from a loaded row's shape;
+   the concrete row-call theorem now uses this bank invariant directly.
+   The guarded check passed at about 2.57 GiB. `RowDriverLayout` now supplies
+   seven concrete external driver tapes and proves their joint disjointness
+   from the embedded work stream and the complete router bank; its guarded
+   check passed at about 1.19 GiB. Applying the bank invariant across the
+   concrete counted loop and aligning its row effects with the global
+   coordinate-permutation endpoint remain open.
+   `canonicalPermutationRank_records_independent` now proves the actual rank
+   permutation is independent of live records for arbitrary outer row count,
+   using its coordinate-bit action and preserved row. `canonicalRowEffect`
+   therefore names one fixed stream effect; `canonicalRowEffect_records`
+   connects it to actual moved records, and the embedded row-call theorem now
+   returns that fixed effect directly. The guarded check passed at about
+   2.57 GiB. This removes the payload-dependent endpoint from the inner-call
+   boundary; it does not yet discharge the complete outer-loop contract.
+   `CanonicalCountedRow.canonicalCountedRow_exec` now discharges the counted
+   wrapper's inner-call premise with the actual canonical one-row router.
+   It transports reusable bank readiness through count/archive/input updates,
+   loads the live row, proves output length preservation and charges the
+   one-row dimension-only router cost plus `8 * rowLength + 9`. Its guarded
+   check passed at about 2.56 GiB. No abstract router-execution assumption
+   remains in this step theorem; assembling its preserved driver invariant
+   across the complete outer loop remains open.
+   `CanonicalRowDriver.canonicalRowDriver_exec` now completes that loop
+   composition with actual canonical routing: it derives each inner readiness
+   condition, preserves the scratch/metadata invariant, routes every supplied
+   row, restores all driver registers and metadata, and preserves an arbitrary
+   unread suffix. Its bound is row count times the one-row router price plus
+   linear extraction/archive/rewind overhead; its guarded check passed at
+   about 2.57 GiB. It still assumes the reusable metadata and unary count/width
+   words are supplied. Identifying the concatenated row effect with the global
+   coordinate rank, amortizing the one-row price, and producing compact-input
+   metadata/counters remain open. `canonicalRowEffect_records_length` now
+   proves that every valid routed row has exactly `2^n * B` output symbols.
+   The driver bound consequently charges the final rewind by total record
+   volume, with no payload-dependent output-length term. The updated driver
+   passed its guarded check at about 2.57 GiB.
+   `CoordinateRowRank` now proves forward and inverse row-offset identities
+   for arbitrary permutations with the same coordinate-bit action and preserved
+   outer row. `moveRecs_coordinate_rows` lifts these to the complete global
+   record-list decomposition. Its guarded check passed at about 2.44 GiB.
+   `CanonicalRowEndpoint.moveRecs_canonical_rows` now instantiates this
+   identity with the actual global canonical rank and a payload-independent
+   one-row canonical rank. Its guarded check passed at about 2.55 GiB;
+   a structural cast lemma avoids reducing the concrete rank construction.
+   `canonicalRowRecords_shape` now proves the exact record count and payload
+   shape of every structural row slice. `canonicalRowEffect_localRank` connects
+   its stream effect to local record movement, and `canonicalRowEffects_global`
+   identifies the concatenated row effects with the actual global canonical
+   endpoint. The guarded check passed at about 2.57 GiB.
+   `canonicalRowRecords_reassemble` and `canonicalRowRecords_stream` now
+   reconstruct the original records and flat input from those slices.
+   `CanonicalRowDriver.canonicalRowDriver_global_exec` applies both endpoint
+   bridges to actual execution: its input is the original record stream and
+   its output is the canonical global permutation, with full driver/bank
+   restoration and an arbitrary suffix preserved. Its guarded check passed
+   at about 2.58 GiB. Supplied metadata/counter production, one-row price
+   amortization and the short-record regime remain open. Do not impose a
+   permanent bound on row count to bypass these obligations.
    The accumulated dimension-only execution and local long-record cost chunk
    passed the full guarded root build (15,302 jobs, peak 29.6 GiB) and axiom
    audit (351,747 declarations, peak 4429.5 MiB) on 2026-10-24. These checks
    validate the stated conditional bounds, not the remaining R3 acceptance gates.
+   The accumulated row-driver execution and global endpoint chunk passed the
+   full guarded root build (15,312 jobs, peak 4.8 GiB) and axiom audit
+   (351,823 declarations, peak 4428.5 MiB) on 2026-10-24. These checks cover
+   supplied-metadata row execution, not the remaining R3 acceptance gates.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.
 
