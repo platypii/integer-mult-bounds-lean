@@ -1781,6 +1781,11 @@ public import IntegerMultBounds.MathlibTM2.Routing.RouterGeometryDigitTail
 public import IntegerMultBounds.MathlibTM2.Routing.BinaryLowCopy
 public import IntegerMultBounds.MathlibTM2.Routing.RouterBorrowedWidth
 public import IntegerMultBounds.MathlibTM2.Routing.RouterGeometryGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryWordWidth
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryProductLowCopy
+public import IntegerMultBounds.MathlibTM2.Routing.RouterGeometryCompact
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirWidthGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.RouterReservoirGeometry
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingGeneratedPlacedRepair
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionLayout
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionBank

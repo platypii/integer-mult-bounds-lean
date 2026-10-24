@@ -3127,6 +3127,44 @@ root build (15,381 jobs, 4.5 GiB combined peak) and root axiom audit
 (352,362 declarations, 4435.2 MiB peak), superseding the pending verification
 and uncommitted-status notes above. Kappa remains unchanged.
 
+`BinaryWordWidth.binaryWordWidth_exec` now counts a preserved tape's length
+into a binary word, generating and erasing its own width reference. Only the
+width output changes, at cost at most `4*L*L + 22*L + 16` (1192.3 MiB).
+`RouterGeometryCompact.routerGeometryCompact_exec` uses this to remove the
+supplied width operand from common geometry production, then erases that word.
+Only digit count, tail and borrowed span change; total cost is at most
+`44*L*L + 212*L + 154` (guarded check 1709.3 MiB).
+The fixed-width multiplication proof was factored into `BinaryProductLowCopy`
+and reused by the unchanged borrowed-width contract. `ReservoirWidthGenerate`
+now executes division, quotient increment, fixed-width multiplication and cleanup
+to produce `(n/K+1)*G`. `routingReservoirWidth_generate_exec` specializes
+`K=64*G` and identifies the exact existing `routingReservoirWidth n G` word.
+All inputs and scratch restore; only reservoir-width output changes. Its bound
+is `36*L*L + 133*L + 89 + M*(4*L+11)` (generic guarded check 1717.8 MiB).
+Joining reservoir width to the generated common geometry bank, canonical gap/
+stride derivation, residue-dependent geometry and full frame assembly remain
+open. These changes are uncommitted pending the larger geometry assembly and
+full-root verification; R3 and kappa remain unchanged.
+
+`RouterReservoirGeometry.routerReservoirGeometry_exec` now shares one generated
+word-width operand and scratch bank across common geometry and canonical
+reservoir-width production. From binary dimension, chosen stride `64*G` and
+gap it changes exactly digit count, terminal tail, borrowed span and reservoir
+width, with bound `84*L*L + 356*L + 243`. Exact bank reads, preservation outside
+those four outputs and cleanup are proved; cleanup costs exactly `8*L+9`.
+`routerReservoirGeometryScope_exec` additionally composes setup, a framed call
+and complete geometry erasure, restoring every tape except call output, with
+setup/cleanup overhead bounded by `84*L*L + 364*L + 252`.
+The standalone bank/read/cleanup check passed at 1734.8 MiB. The compact binary
+gap and its chosen stride remain inputs. Canonical gap/stride generation,
+residue-dependent geometry, connection around full profile compilation and
+canonical-frame assembly remain open; full R3 and kappa remain unchanged.
+The accumulated width/reservoir geometry chunk passed the full guarded root
+build (15,386 jobs, 4.5 GiB combined peak) and root axiom audit
+(352,401 declarations, 4438.2 MiB peak), superseding the pending verification
+and uncommitted-status notes above. The complete setup/call/cleanup check
+passed at 1736.6 MiB.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
