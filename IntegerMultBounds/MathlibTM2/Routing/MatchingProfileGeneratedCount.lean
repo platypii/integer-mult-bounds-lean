@@ -53,32 +53,32 @@ def MatchingProductionFrame.with_count {p : Par} {mate : Fin p.wy → Fin p.wy}
     (frame.hblankPrefix j hj)
 
 theorem matchingProfileGeneratedCount_exec (body : P → Pr P T Q A U)
-    (p : Par) (mate : Fin p.wy → Fin p.wy) (Li Lk Ln Le : ℕ)
+    (p : Par) (mate : Fin p.wy → Fin p.wy) (Li Lk Ln Le Ls : ℕ)
     (v : HS T Q A U) (S : Stacks T A) (dst : Fin T)
-    (frame : MatchingProductionFrame p mate Li Lk (Ln + Lk + Le) dst S)
+    (frame : MatchingProductionFrame p mate Li Lk (Ln + Ls + Le) dst S)
     (rg : Fin 13 → Fin T) (hrg : Function.Injective rg)
     (hjoin : frame.extract 0 = rg 4) (hdst : dst ≠ rg 4)
     (hg : ∀ j, frame.extract 0 ≠ frame.gather j) (hp : ∀ j, frame.extract 0 ≠ frame.generate j)
-    (hn : p.n < 2 ^ Ln) (he : 2 * (Li + Lk) + 2 < 2 ^ Le)
-    (hrows : S.R (rg 0) = binSyms Ln p.n) (hstride : S.R (rg 1) = binSyms Lk p.K)
+    (hn : p.n < 2 ^ Ln) (hstrideFit : p.K < 2 ^ Ls) (he : 2 * (Li + Lk) + 2 < 2 ^ Le)
+    (hrows : S.R (rg 0) = binSyms Ln p.n) (hstride : S.R (rg 1) = binSyms Ls p.K)
     (hwidth : S.R (rg 11) = binSyms Le (Li + Lk))
     (hblank : ∀ j : Fin 13, j ≠ 0 → j ≠ 1 → j ≠ 10 → j ≠ 11 → S.R (rg j) = []) :
     let output := sourceCoordinateInputWords Li Lk
       (profileCoordinateInputs p frame.hK (matchingDirectionTargets mate frame.reverse) mate) ++ S.R dst
     ∃ (v' : HS T Q A U) (m : ℕ), v'.user = v.user ∧
-      m ≤ matchingPrefixCountCost Ln Lk Le + 24 * Le + 29 +
-        matchingFullProfileProductionCost p (Li + Lk) Lk (Ln + Lk + Le) + 2 * (Ln + Lk + Le) + 2 ∧
+      m ≤ matchingPrefixCountCost Ln Ls Le + 24 * Le + 29 +
+        matchingFullProfileProductionCost p (Li + Lk) Lk (Ln + Ls + Le) + 2 * (Ln + Ls + Le) + 2 ∧
       Exec body (matchingPrefixCountScope rg
         (matchingFullProfileProductionProgram frame.extract frame.gather frame.generate frame.reverse dst))
         (mk v S) m (mk v' { S with R := Function.update S.R dst output }) := by
   dsimp only
-  apply matchingPrefixCountScope_exec body rg hrg Ln Lk Le p.n p.K (Li + Lk)
-    hn frame.hk he v S hrows hstride hwidth hblank dst hdst _ _ _
+  apply matchingPrefixCountScope_exec body rg hrg Ln Ls Le p.n p.K (Li + Lk)
+    hn hstrideFit he v S hrows hstride hwidth hblank dst hdst _ _ _
   intro u
-  have hslots : p.n * p.K < 2 ^ (Ln + Lk) := by
+  have hslots : p.n * p.K < 2 ^ (Ln + Ls) := by
     rw [pow_add]
-    exact Nat.mul_lt_mul_of_lt_of_lt hn frame.hk
-  have hfit : (p.n * p.K) * (2 * (Li + Lk) + 2) < 2 ^ (Ln + Lk + Le) := by
+    exact Nat.mul_lt_mul_of_lt_of_lt hn hstrideFit
+  have hfit : (p.n * p.K) * (2 * (Li + Lk) + 2) < 2 ^ (Ln + Ls + Le) := by
     rw [pow_add]
     exact Nat.mul_lt_mul_of_lt_of_lt hslots he
   let ready := frame.with_count hg hp hfit
@@ -86,7 +86,7 @@ theorem matchingProfileGeneratedCount_exec (body : P → Pr P T Q A U)
   dsimp only [ready, MatchingProductionFrame.with_count] at hex
   simp only [hjoin] at hex
   have hkeep : Function.update S.R (rg 4)
-      (binSyms (Ln + Lk + Le) ((p.n * p.K) * (2 * (Li + Lk) + 2))) dst = S.R dst :=
+      (binSyms (Ln + Ls + Le) ((p.n * p.K) * (2 * (Li + Lk) + 2))) dst = S.R dst :=
     Function.update_of_ne hdst _ _
   rw [hkeep] at hex
   exact ⟨u', m, hu, hm, hex⟩

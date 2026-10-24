@@ -1798,6 +1798,9 @@ public import IntegerMultBounds.MathlibTM2.Routing.BinaryScalarWidth
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorMagnitude
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorBase
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorWidthsGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryResizeCopy
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryResizeBatch
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryResizeBatchScope
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingGeneratedPlacedRepair
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionLayout
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionBank

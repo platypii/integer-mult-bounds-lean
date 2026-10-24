@@ -3254,6 +3254,46 @@ residue-geometry/descriptor-width chunk passed the full guarded root build
 4437.8 MiB peak), superseding pending verification and uncommitted-status notes
 above. Kappa is unchanged.
 
+`BinaryResizeCopy.binaryResizeCopy_exec` now copies an operand into any live
+target width, including narrowing and zero extension. It copies the source,
+appends target-width zeros with the existing executed padder, extracts the exact
+low-width word and erases the wide temporary. Source, width input and all scratch
+restore; arbitrary output suffix is preserved. Its bound is
+`2*M*(4*W+11) + 12*L + 26*W + 42` (guarded check 1706.6 MiB).
+`BinaryResizeBatch.binaryResizeBatch_exec` installs a fixed bank of resized
+operands with one structural list proof. Register separation, initial output
+emptiness and compact source/width bounds establish exact installed words and
+restored sources/scratch; every resize is priced. Numeric dimensions occur only
+in the proof ledger, while the executed program depends on register maps and
+fixed job order. The guarded check passed at 1693.4 MiB.
+Instantiating the batch for generated canonical parameters, adding framed cleanup
+and connecting resized inputs to actual profile/frame compilation remain next.
+Residue iteration and all other R3 acceptance gates remain open. These changes
+are uncommitted pending the larger compiler integration; kappa is unchanged.
+
+`BinaryResizeBatchScope` now proves exact installed-word reads, restoration
+of the original bank after erasure, and bounded cleanup for an arbitrary fixed
+resize list. Setup, a framed compiler call and full cleanup compose with only
+call output changed; the guarded check passed at 1683.2 MiB.
+`MatchingControlScope` now uses two actual resize jobs in place of copy-only
+installation. It accepts compact stride/residue words in their original scalar
+width plus the generated target-width word, installs exact compiler-width
+controls, and erases both after use. Its complete overhead is bounded by
+`4*M*(4*Lk+11) + 24*Ls + 56*Lk + 90` (1702.3 MiB).
+`MatchingProfileGeneratedCount` now separates the prefix multiplier's compact
+stride-input width from the descriptor stride width. Thus prefix counting and
+control resizing can share the original compact stride word without requiring
+an additional pre-resized count input. `MatchingProfileCompactControls` and
+`PermutationReservoirProfile` use the resized-control scope in place; the actual
+full pipeline still restores all tables, controls and scratch except profile
+output. The updated pipeline passed its guarded build (2.9 GiB combined peak).
+Concrete canonical geometry/width-bank placement into that compiler, residue
+iteration, complete frame generation and every remaining R3 gate stay open.
+The accumulated resizing/compiler chunk passed the full guarded root build
+(15,401 jobs, 4.5 GiB combined peak) and root axiom audit (352,534 declarations,
+4439.9 MiB peak), superseding the pending verification and uncommitted-status
+notes above. R3 and kappa remain unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
