@@ -2792,6 +2792,50 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    the full guarded root build (15,342 jobs, peak 4.5 GiB) and axiom audit
    (352,067 declarations, peak 4432.8 MiB), superseding the pending verification
    notes above.
+   `MatchingEntryEmit.matchingEntryEmit_exec` now wraps a framed coordinate
+   generator with actual key/value emission in the existing matching-table format.
+   It saves the original query, copies both delimited fields through the checked
+   bank encoder, reverse-accumulates the complete entry, restores the query and
+   erases temporary frame/index words. The additional price is `32 * L + 37`.
+   `matchingEntryEmit_fold_reverse` proves that final accumulator rewind gives
+   exactly `matchingEntryWords` in chronological coordinate order, preserving
+   both delimiters. The guarded check passed at about 2.47 GiB without raised
+   proof limits. This wrapper still takes the coordinate-call contract; its
+   instantiation with the checked matching generators and complete counted table
+   enumeration remain open. This new emission work is uncommitted and has not
+   yet had the full root build or axiom audit.
+   `PermutationMatchingEntry.permutationMatchingEntry_exec` now discharges the
+   emitter's coordinate-call contract with actual canonical reflection/second-map
+   generation, for either matching choice. Only the reverse entry accumulator
+   changes: the original query and every generated base/count/index/frame restore.
+   No orbit, matching value or coordinate execution oracle is supplied.
+   `permutationMatchingEntryAdvance_exec` adds the actual fixed-width cursor
+   increment needed by table enumeration. Its bound is
+   `N * (3 * N * (30 * L + 39) + 84 * L + 125) + 70 * L + 94` per emitted entry.
+   Both passed the guarded file check at about 2.47 GiB. The remaining table gate
+   is composing this step over all coordinates with the counted loop and final
+   accumulator rewind. Entry emission/advance remains uncommitted pending that
+   larger chunk and its full root build/axiom audit.
+   `PermutationMatchingTable.permutationMatchingTable_exec` now executes the
+   entry/advance step uniformly across every coordinate using the existing
+   priced symbol loop. It restores both independent unary count/fuel words and
+   their archives, tracks an exact ascending-key prefix, and rewinds the complete
+   reverse accumulator into the matching-table format consumed by lookup.
+   `BinaryReset.binaryReset_exec` resets a binary word at its existing width in
+   exactly `14 * L + 14` steps with all scratch restored.
+   `permutationMatchingTableClosed_exec` uses this reset to restore the cursor:
+   only the output table changes, for either canonical matching map. The compact
+   permutation input, original zero cursor, both counters, base, return count,
+   saved indices, frame accumulator and lookup scratch all restore exactly.
+   Its bound is `N * (N * (3 * N * (30 * L + 39) + 84 * L + 125) + 74 * L + 103)
+   + 14 * L + 20`. The guarded file check passed at about 2.49 GiB; reset checked
+   at about 1.15 GiB. Initial binary-zero cursor and the two unary coordinate-count
+   tapes are still supplied at this interface. Generating those inputs, arranging
+   both completed tables for the canonical metadata compiler, and full metadata
+   assembly remain open. R3 and kappa are unchanged. The complete entry/table
+   chunk passed the full guarded root build (15,346 jobs, peak 4.5 GiB) and
+   axiom audit (352,086 declarations, peak 4433.5 MiB), superseding the pending
+   verification notes above.
 
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.

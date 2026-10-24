@@ -1886,3 +1886,7 @@ public import IntegerMultBounds.MathlibTM2.Routing.PermutationReturnScan
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationReflectionExec
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationReflectionGenerate
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingEntryEmit
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingEntry
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryReset
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingTable
