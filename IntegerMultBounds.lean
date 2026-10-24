@@ -1899,3 +1899,9 @@ public import IntegerMultBounds.MathlibTM2.Routing.PermutationReservoirTable
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationReservoirProfile
 public import IntegerMultBounds.MathlibTM2.Routing.CoordinateExchangeFrame
 public import IntegerMultBounds.MathlibTM2.Routing.CoordinateExchangeFrameSchedule
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryFixedScale
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirScalarMultiples
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirIntervalScalars
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirExchangeOperands
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirExchangeOperandFrames
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMetadataGenerate

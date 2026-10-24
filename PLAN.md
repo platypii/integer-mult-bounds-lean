@@ -2897,6 +2897,25 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    build (15,355 jobs, peak 5.0 GiB) and axiom audit (352,131 declarations,
    peak 4432.7 MiB), superseding the pending verification notes above.
    R3 and kappa remain unchanged.
+   `BinaryFixedScale.binaryDoubleCopy_exec` now copies and doubles a padded
+   binary operand in exactly `10 * L + 14` steps, preserving its source and
+   both scratch tapes. The guarded file check passed at about 1.16 GiB.
+   `ReservoirScalarMultiples.reservoirScalarMultiples_exec` now generates twice,
+   three times and six times the reservoir width from one live padded binary
+   input in exactly `28 * L + 36` steps. Only the three declared scalar outputs
+   change; the input and every scratch register restore. The guarded check passed
+   at about 1.16 GiB. Remaining starts/spans require compact-dimension subtraction
+   and the final exchange-operand/frame assembly. These scalar additions are
+   uncommitted and have not yet had the full root build or axiom audit.
+   `ReservoirIntervalScalars.reservoirIntervalScalars_exec` now derives doubled
+   span, dimension minus doubled span, dimension minus span and a padded zero
+   from the two live binary inputs. Its exact cost is `30 * L + 34`; only the
+   four scalar destinations change, and all arithmetic scratch restores. Its
+   guarded check passed at about 1.16 GiB. Reservoir multiples were simplified
+   to reuse the doubled value in the triple addition, removing duplicate
+   arithmetic and the unused standalone fixed-triple helper. Exchange-operand
+   placement, metadata-frame assembly and generated-scalar cleanup remain next;
+   these scalar changes are being held for that larger standalone chunk.
 
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.
@@ -2906,6 +2925,24 @@ historical; use the proved R1 schedule and the reservoir-compatible spacing abov
 Raw descriptor/header generation, sparse-profile compilation, physical placement
 and short-record fallback remain R3. Layout/support integration
 remains R4. Completing R2 does not change the current multiplication kappa.
+
+Generated exchange operands checkpoint: `ReservoirExchangeOperands` now executes
+all starts/spans needed by the three reservoir exchanges from binary `n`, `H`
+and `w`, including distinct copies required by frame-register separation, in
+exactly `82 * L + 94` steps. `ReservoirExchangeOperandFrames` proves the fixed
+placements injective, identifies every generated start/span with the existing
+exchange specification, and proves frame scratch remains blank. The operand
+build passed (2.9 GiB combined peak); the final frame-readiness check passed
+(2547.4 MiB). `ReservoirMetadataGenerate.reservoirMetadata_generate_exec` composes operand
+generation, the three frame encoders and cleanup into the exact forward or
+backward metadata from binary `n`, `H`, `w`. Only the metadata destination
+changes, preserving its arbitrary suffix; all generated operands and scratch
+restore. The exact total cost is `236 * L + 265`. Its guarded check passed
+(2539.7 MiB). Remaining scalar/control bank production, canonical assembly
+and the other R3 gates remain open. No kappa change.
+The full guarded root build passed (15,361 jobs, 4.5 GiB combined peak);
+The root axiom audit passed for 352,194 declarations (4437.3 MiB peak).
+These checks supersede the pending verification notes for the scalar additions above.
 
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
