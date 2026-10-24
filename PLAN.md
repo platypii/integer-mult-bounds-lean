@@ -3200,6 +3200,60 @@ root build (15,392 jobs, 4.5 GiB combined peak) and root axiom audit
 (352,447 declarations, 4436.9 MiB peak), superseding the pending verification
 and uncommitted-status notes above. R3 and kappa remain unchanged.
 
+`RouterResidueTail.routerResidueTail_exec` now subtracts the live binary residue
+from the common terminal tail, producing exactly the `.m` field of
+`routerProfileParameters`; the natural subtraction is justified by the residue
+bound and common geometry. Only terminal output changes, in `8*L+8` steps
+(guarded check 1188.6 MiB). `CanonicalResidueGeometry` composes this with the
+actual dimension-only canonical geometry producer. From binary dimension and
+current residue it produces all common geometry plus the residue-specific
+terminal length, preserving both inputs and every other scratch register; its
+bound is `88*L*L + 472*L + 421` (2556.0 MiB).
+`canonicalResidueGeometry_parameters` identifies actual binary words for all
+five profile parameters `K`, residue, digit count, gap and terminal length.
+Residue iteration, canonical descriptor-width generation/operand resizing,
+actual profile/frame integration, complete frame generation and the other R3
+gates remain open. This residue-geometry chunk is uncommitted pending larger
+assembly and full-root verification; R3 and kappa remain unchanged.
+
+`BinaryScalarWidth.binaryScalarWidth_exec` now generates exact `clog 2 (x+1)`
+from any preserved padded operand, including zero, with bound
+`4*L*L + 26*L + 22` and complete temporary cleanup (1197.5 MiB).
+`CanonicalDescriptorMagnitude` collapses the eleven-mode magnitude to scalar
+maxima and proves that canonical routing geometry reduces it exactly to
+`n - borrowedSpan + 1`. Consequently every residue shares the same descriptor
+base width `W = clog 2 (n - borrowedSpan + 2)`: index width `W+1`, group/stride
+width `W`, selector width `2*W+1`, and width-counter bits equal the canonical
+scalar width of `2*W+1`. The numeric coordinate-width operand is bounded by the
+canonical gap, providing a uniform fit bound without a new asymptotic gate.
+`CanonicalDescriptorBase.canonicalDescriptorStrideWidth_exec` executes that
+shared base-width calculation and identifies the result with the existing
+canonical stage interface. It subtracts the borrowed span, executes the ceiling
+logarithm and erases the subtraction word, changing only base-width output,
+in at most `4*L*L + 44*L + 58` steps. Base and magnitude modules passed their
+guarded build (2.9 GiB combined peak); the standalone base check before the
+interface specialization passed at 2557.5 MiB.
+Executing the remaining width formulas and operand resizing, residue iteration,
+full profile/frame integration and the remaining R3 gates are open. This work
+is grouped with the uncommitted residue-geometry chunk; kappa is unchanged.
+
+`CanonicalDescriptorWidthsGenerate.canonicalDescriptorWidths_exec` now composes
+shared base-width generation, successor, shifted coordinate width and canonical
+width-counter bit generation on one scratch bank. Only four output operands
+change: shared group/stride width, index width, selector/coordinate width and
+width-counter bits. The bound is `8*L*L + 90*L + 105`.
+`canonicalDescriptorWidths_canonical_exec` derives all additional fit conditions
+from the existing canonical routing assumptions, and
+`canonicalDescriptorWidthsBank_router` identifies every output with the exact
+`canonicalStageWidths` fields for every residue. The guarded check passed at
+2571.8 MiB. This closes remaining width-formula execution above; operand resizing
+(to both narrower and wider descriptor fields), residue iteration, profile/frame
+integration and all remaining R3 acceptance gates are open. The accumulated
+residue-geometry/descriptor-width chunk passed the full guarded root build
+(15,398 jobs, 4.5 GiB combined peak) and root axiom audit (352,493 declarations,
+4437.8 MiB peak), superseding pending verification and uncommitted-status notes
+above. Kappa is unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
