@@ -2744,6 +2744,54 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    declarations, peak 4430.4 MiB). The constant-price loop identity is shared by
    traversal and minimum scanning. This supersedes the pending verification notes
    above; R3 and kappa remain unchanged.
+   `PermutationReturn.boundedReturnSteps` now specifies a bounded search that
+   freezes on reaching its target. Its checked recurrence supports one machine
+   step per outer iteration, and `boundedReturnSteps_reaches` proves success
+   whenever a target occurs within the fuel bound. `permutationReturn_reaches_base`
+   supplies that witness within one full coordinate count.
+   `permutationReflection_of_return` proves that reusing any forward return count
+   from a query to its cycle base, starting at the base, computes exactly the
+   existing canonical reflection. This avoids executing an unbounded exponent search.
+   The guarded file check passed at about 0.84 GiB.
+   `PermutationReturnStep.permutationReturnStep_exec` now executes equality testing,
+   conditionally advances through the preserved table and appends exactly one unary
+   marker per real advance. Once at the target it changes no registers. The bound
+   is `N * (30 * L + 39) + 18 * L + 24`; its check passed at about 2.45 GiB.
+   Counted bounded-search composition, reflected-coordinate execution, table production
+   and full canonical metadata generation remain open. These return-search additions
+   are uncommitted and have not yet had a full root build or axiom audit.
+   `PermutationReturnScan.permutationReturnScan_exec` now composes the bounded
+   search using the existing priced symbol loop. It generates exactly the unary
+   `boundedReturnSteps` word, tracks the final query, and restores its arbitrary
+   fuel tape, table and scratch. The guarded check passed at about 2.47 GiB.
+   `PermutationReflectionExec.permutationReflection_exec` now executes canonical
+   reflection from a live permutation table and supplied cycle base: bounded
+   return search generates the unary count, a second actual table traversal reuses
+   that count, and final erasure restores the counter. Only the query changes;
+   the table, target base, fuel, archives and scratch restore exactly. Its bound
+   is `N * (2 * N * (30 * L + 39) + 28 * L + 50) + 10`; the guarded check passed
+   at about 2.47 GiB. Composing this with base generation to remove the supplied
+   base, generating the complete reflection tables, and canonical metadata assembly
+   remain open. The return/reflection chunk has not yet had a full root build or
+   axiom audit and is being held for a larger standalone commit.
+   `PermutationReflectionGenerate.permutationReflectionGenerate_exec` now removes
+   the supplied-base premise entirely. It saves the original query, computes the
+   canonical base with the actual orbit scan, restores the query, executes bounded
+   return/reflection generation and erases the base. Only the query changes; base,
+   saved query, return count, archives and all scratch start/end blank, and the
+   compact permutation table and arbitrary coordinate-count fuel word restore.
+   The price is `N * (3 * N * (30 * L + 39) + 54 * L + 86) + 24 * L + 38`.
+   `PermutationMatchingGenerate.permutationSecondMatchingGenerate_exec` composes
+   one further table lookup to compute `f (permutationReflection f query)`, with
+   the same exact frame and explicit polynomial price. Thus both coordinate maps
+   from `permutation_two_matchings` now have executed generators from the compact
+   permutation table, with no supplied orbit/base/return information. Guarded checks
+   passed at about 2.47 GiB and 2.46 GiB respectively. Enumerating all coordinates
+   into complete matching tables and assembling canonical metadata remain open;
+   R3 and kappa are unchanged. The accumulated return/reflection chunk passed
+   the full guarded root build (15,342 jobs, peak 4.5 GiB) and axiom audit
+   (352,067 declarations, peak 4432.8 MiB), superseding the pending verification
+   notes above.
 
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.

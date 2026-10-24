@@ -1880,3 +1880,9 @@ public import IntegerMultBounds.MathlibTM2.Routing.BinaryMinimum
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationOrbitMinimum
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationOrbitStep
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationOrbitScan
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationReturn
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationReturnStep
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationReturnScan
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationReflectionExec
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationReflectionGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingGenerate
