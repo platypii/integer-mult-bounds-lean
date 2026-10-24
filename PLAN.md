@@ -2572,6 +2572,100 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    passed the guarded root build (15,316 jobs, peak 32.4 GiB) and axiom audit
    (351,887 declarations, peak 4429.5 MiB) on 2026-10-24. These verify the
    explicit conditional execution/cost bounds; R3 and kappa remain unchanged.
+   `CanonicalRouterSupplier` now bounds both physical reservoir and compact
+   supplier widths by the routed address width under canonical geometry.
+   `canonicalRouterStageAmortizedBound_supplier_le` consequently bounds all
+   supplier contributions in a residue stage by one fixed coefficient times
+   row volume times `n^tau`. The guarded check passed at about 2.59 GiB.
+   `canonicalRouterDirectionalAmortizedBound_supplier_le` now lifts that
+   simplification through the complete directional ledger, explicitly separating
+   dimension-only setup from volume times the address-width supplier power
+   and the remaining tape/count coefficient. Its guarded check passed at about
+   2.60 GiB. `canonicalPermutationAmortizedBound_width_le` now lifts the
+   comparison through all eighteen passes and metadata rewind, leaving one
+   coefficient times row volume times `n^tau`, plus dimension-only setup.
+   Its guarded check passed at about 2.60 GiB.
+   `canonicalPermutationSupplierCoefficient_log_le` now bounds the complete
+   supplier/volume coefficient by one fixed constant times
+   `Nat.clog 2 (n + 2) + 1`. A structural affine identity over arbitrary tape
+   counts avoids kernel expansion of concrete router constants, reducing the
+   check from about 5.6 GiB to 2.61 GiB. The final guarded check passed.
+   `canonicalPermutationAmortizedBound_log_le` now combines logarithmic
+   geometry and supplier width into one bound: dimension-only setup plus a
+   fixed constant times row volume times `n^tau` times
+   `Nat.clog 2 (n + 2) + 1`. Its guarded check passed at about 2.61 GiB.
+   `CanonicalRouterSetup.canonicalRouter_one_row_setup_le` also derives the
+   fixed-bank inequality for long records beyond an explicit fixed
+   supplier-dependent dimension threshold. Its guarded check passed at about
+   2.59 GiB. It does not assume the supplier's noncomputable tape count fits a
+   small numeric threshold. Dimensions below that threshold, dimension-only
+   setup absorption, metadata/counter generation and short-record execution
+   remain open; the full R3 scope is unchanged.
+   `CanonicalRowDriverLogBound.canonicalRowDriver_global_log_exec` now applies
+   the logarithmic/address-power comparison to actual global execution and
+   derives bank setup from the fixed supplier-dependent dimension threshold.
+   Its guarded check passed at about 2.57 GiB. The output/restoration contract
+   is unchanged; its cost still contains repeated dimension-only setup, and
+   the metadata and unary driver inputs remain supplied rather than generated.
+   `SetupAbsorption.repeatedPolynomialSetup_eventually_le_volume` reuses the
+   existing exponential-growth theorem to absorb any polynomial dimension
+   setup repeated per row, uniformly in row count and positive payload width.
+   Its guarded check passed at about 1.62 GiB. The concrete routing dimension
+   budget still needs an explicit polynomial majorant before this theorem
+   can remove its repeated setup term; that obligation is not assumed solved.
+   `CanonicalRouterDimension` now identifies the actual terminal dimension
+   setup with a natural-number ledger and proves a fixed-coefficient cubic
+   bound in `n + 1`. The cubic proof is structural over arbitrary tape counts,
+   instantiated only afterward; its guarded check passed at about 2.63 GiB.
+   `canonicalRouterUniformMetadataWidth_polynomial` now bounds canonical
+   one-row metadata by `64 * (n + 1)^2`.
+   `canonicalRouterUniformFrameWidth_polynomial` bounds each residue frame
+   quadratically with a fixed tape-count coefficient. Both passed the guarded
+   check at about 2.65 GiB.
+   `canonicalDirectionalUniformFrameBudget_polynomial` now bounds the full
+   outer directional frame cubically. `canonicalMatchingProfileProduction_polynomial`
+   bounds matching-profile production by a fixed degree-six majorant, using
+   a structural cubic bound before substituting actual scalar widths.
+   The guarded check passed at about 2.66 GiB.
+   `canonicalReservoirTableCost_polynomial` now bounds reservoir class-table
+   conversion cubically. `canonicalRouterOriginalSetupBudget_polynomial`
+   combines conversion, matching profiles, metadata copying and cleanup into
+   one fixed degree-six majorant; its guarded check passed at about 2.67 GiB.
+   `canonicalRouterStageSetupBudget_polynomial` now gives a degree-six
+   bound, and `canonicalRouterDirectionalSetupBudget_polynomial` gives a
+   degree-seven bound for actual directional setup. Generic coefficient
+   definitions keep concrete tape-count arithmetic out of kernel comparisons;
+   the complete file passed at about 2.62 GiB.
+   `canonicalRouterPlacementDimensionOverhead_eq` identifies actual placement
+   setup with an abstract-bank scalar ledger, and
+   `canonicalRouterPlacementDimensionOverhead_polynomial` bounds it quadratically.
+   The guarded file check passed at about 2.62 GiB.
+   `liveCoordinateProfilesCost_uniform_cube` now proves a structural cubic
+   bound for arbitrary uniform coordinate/profile widths, instantiated by
+   `canonicalCoordinateProfilesCost_polynomial` at canonical routing geometry.
+   `uniformBackendBudget_le_cube` bounds both descriptor backends;
+   `canonicalLiveRepairOverhead_polynomial` includes complete canonical repair
+   setup. `canonicalRouterGeneratedScalarOverhead_polynomial` combines masks,
+   profiles, scalar conversion, repair and cleanup into one cubic bound for
+   the actual generated residue scalar ledger. The guarded file check passed
+   at about 2.69 GiB.
+   `canonicalRouterStageDimensionOverhead_polynomial` combines generated work
+   and both placements cubically. `canonicalPermutationDimensionCost_eq`
+   identifies the complete eighteen-pass real setup price with an integer
+   ledger; `canonicalPermutationDimensionBudget_polynomial` bounds that ledger
+   by a fixed degree-seven polynomial. The guarded check passed at about 2.69 GiB.
+   `CanonicalRouterDimensionAbsorption` now absorbs repeated complete setup
+   into total routed volume, uniformly in row count and positive payload width,
+   beyond one fixed dimension threshold. Its guarded check passed at about 2.50 GiB.
+   `CanonicalRowDriverAbsorbed.canonicalRowDriver_global_absorbed_exec` now
+   applies this bound to actual restored-bank global row execution; no separate
+   repeated dimension-cost term remains. The guarded check passed at about 2.51 GiB.
+   This remains the large-dimension, long-record, supplied-metadata case. Small
+   dimensions, executed short-record fallback and compact-input metadata/count
+   production remain open; R3 and kappa are unchanged. The complete chunk
+   passed the full guarded root build (15,323 jobs, peak 4.5 GiB) and the
+   axiom audit (351,964 declarations, peak 4429.6 MiB).
+
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.
 

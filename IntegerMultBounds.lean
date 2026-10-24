@@ -1860,3 +1860,10 @@ public import IntegerMultBounds.MathlibTM2.Host.EachSymPrice
 public import IntegerMultBounds.MathlibTM2.Routing.LiveRepairAmortized
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterAmortized
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverAmortized
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterSupplier
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterSetup
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverLogBound
+public import IntegerMultBounds.MathlibTM2.Routing.SetupAbsorption
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterDimension
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterDimensionAbsorption
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverAbsorbed
