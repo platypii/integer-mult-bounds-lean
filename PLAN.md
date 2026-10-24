@@ -3631,6 +3631,28 @@ frame: repair/header/classifier/placement operand generation, activity/selected
 profile composition, full router integration, small dimensions, executed short
 records and uniform global amortization remain R3 gates. R3 and kappa are unchanged.
 
+**Complete classifier operand frame (verified checkpoint):**
+`BinaryScalarWidthBatch` shares the existing exact-width routine and traversal
+scratch; its structural restoration/cost lemmas support reusable control banks.
+`canonicalClassifierGenerate_exec` generates all six classifier operands and
+four exact scalar widths from only binary dimension and residue. Raw fits,
+source readiness and width fits are derived internally. The original 108-register
+descriptor bank is preserved. `ClassifierOperandBank` identifies all sixteen
+classifier roles, including the ten empty roles using one restored blank source.
+
+`canonicalClassifierFrameScope_exec` composes compact-input setup, complete
+classifier serialization, operand/width cleanup and the existing full descriptor
+cleanup. Only the output frame changes; its arbitrary existing suffix is retained.
+The price is `canonicalClassifierGeneratePrice L W p + 16*(6*(L+W)+7)+1`
+plus `20*(L+W)+22` for classifier cleanup and `24*L+146*W+173` for descriptor
+cleanup. The dependency build passed (8,827 jobs); guarded checks stayed below
+2.7 GiB. Root imports are added; the full guarded build passed (15,470 jobs,
+peak 4.5 GiB). The axiom audit passed (353,124 declarations, peak 4445.7 MiB);
+the final guarded scope check used 2557.1 MiB.
+Repair/header/placement operands, profile/frame composition,
+full-router integration, small dimensions, executed short records and global
+amortization remain open. Full R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
