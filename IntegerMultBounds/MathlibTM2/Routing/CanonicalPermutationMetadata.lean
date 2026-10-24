@@ -100,6 +100,39 @@ theorem canonicalPermutationBudget_le :
   exact_mod_cast (show 2 * (canonicalPermutationMetadata n hn R B hR hB f hQ hA L Lb rowBits).length + 2 ≤
     36 * canonicalDirectionalUniformFrameBudget n R B L Lb rowBits.length (canonicalRouterStride n) + 2 by omega)
 
+theorem canonicalPermutationBudget_uniform :
+    canonicalPermutationBudget n hn R B hR hB f hQ hA L Lb rowBits ≤
+      18 * canonicalRouterDirectionalCostBound n R B L Lb rowBits.length (canonicalRouterStride n) +
+        (36 * canonicalDirectionalUniformFrameBudget n R B L Lb rowBits.length (canonicalRouterStride n) + 2 : ℕ) := by
+  have hp := canonicalRouterPermutationPrice_uniform n hn R B hR hB hQ hA
+    (canonicalRouterZeroRecords n R B) (canonicalRouterZeroRecords_count n R B)
+    (canonicalRouterZeroRecords_shape n R B) f L Lb rowBits
+  exact (canonicalPermutationBudget_le n hn R B hR hB f hQ hA L Lb rowBits).trans
+    (add_le_add hp (le_refl _))
+
+def canonicalPermutationCostBound (n R B L Lb rowLength : ℕ) : ℝ :=
+  18 * canonicalRouterDirectionalCostBound n R B L Lb rowLength (canonicalRouterStride n) +
+    (36 * canonicalDirectionalUniformFrameBudget n R B L Lb rowLength (canonicalRouterStride n) + 2 : ℕ)
+
+theorem canonicalPermutationCostBound_mono_rowLength (n R B L Lb : ℕ)
+    {rowLength rowLength' : ℕ} (hrow : rowLength ≤ rowLength') :
+    canonicalPermutationCostBound n R B L Lb rowLength ≤
+      canonicalPermutationCostBound n R B L Lb rowLength' := by
+  have hd := canonicalRouterDirectionalCostBound_mono_rowLength n R B L Lb (canonicalRouterStride n) hrow
+  unfold canonicalPermutationCostBound
+  gcongr
+  unfold canonicalDirectionalUniformFrameBudget
+  gcongr
+
+theorem canonicalPermutationBudget_canonical_le :
+    canonicalPermutationBudget n hn R B hR hB f hQ hA
+      (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R []) ≤
+      canonicalPermutationCostBound n R B (canonicalScalarWidth n) (canonicalScalarWidth B) (R.log2 + 1) := by
+  have hp := canonicalPermutationBudget_uniform n hn R B hR hB f hQ hA
+    (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R [])
+  exact hp.trans (canonicalPermutationCostBound_mono_rowLength n R B
+    (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.empty_width R))
+
 theorem canonicalPermutationCost_eq_budget
     (l : List (List (Fin (prime + K + 4)))) (hl : l.length = R * 2 ^ n)
     (hlen : ∀ row ∈ l, row.length = B ∧ ∀ x ∈ row, x.val < 8) :

@@ -28,10 +28,105 @@ def GeneratedPlacedInput.calls (input : GeneratedPlacedInput t₀ Q K P P' U) :=
       (reservoirExchangeSpecs (fieldsLen (selectiveLen input.p input.X)) input.Hslot input.hplacementFit input.slotWidth input.hslotWidth input.reservoir) input.hR input.hB input.rowBits input.Lcp input.Lp
       input.hwidthPlacement input.hBin input.hrowCanonical input.hrowNe input.hrowValue
 
+theorem GeneratedPlacedInput.configurationRaw (input : GeneratedPlacedInput t₀ Q K P P' U)
+    (j : Fin repairT) :
+    input.E.R (inactiveConfigurationCore j) = input.S.R (inactiveProfileRaw j) := by
+  have hw := congrArg (fun C => C.R (inactiveProfileHeaderRaw j)) input.hE
+  have hh := congrArg (fun C => C.R (inactiveProfileRaw j)) input.hproject
+  exact hw.trans hh
+
+theorem GeneratedPlacedInput.configurationData (input : GeneratedPlacedInput t₀ Q K P P' U) :
+    RepairPendingMaskData input.p input.X input.rb input.wb input.wm input.wp input.wk input.R input.B
+      (fun _ _ => []) (fun j => input.E.R (inactiveConfigurationCore j)) :=
+  input.data.congr input.p input.X input.rb (fun key => input.configurationRaw (repairSetupSource key))
+
+theorem GeneratedPlacedInput.configurationBlank (input : GeneratedPlacedInput t₀ Q K P P' U)
+    (j : Fin repairT) (hj : RepairBlank j) : input.E.R (inactiveConfigurationCore j) = [] :=
+  (input.configurationRaw j).trans (input.hblank j hj)
+
 def GeneratedPlacedInput.price (input : GeneratedPlacedInput t₀ Q K P P' U) : ℝ :=
   allSourcePlacedRepairPrice input.p input.X input.rb input.hG input.hK input.active input.s
         input.scale input.wb input.wm input.wp input.wk input.R input.B input.Lrow input.Lwidth input.Lr input.Lm input.LK input.Ln input.Lo input.Lt input.w input.calls
         (reservoirExchangeOrder false) (reservoirExchangeOrder true) input.M input.E
+
+def GeneratedPlacedInput.generatedCostBound (input : GeneratedPlacedInput t₀ Q K P P' U)
+    (n width : ℕ) : ℝ :=
+  (allSourceGeneratedUniformOverhead input.p input.X input.rb n input.wb input.wm input.wp input.wk
+    input.R input.B width input.Lrow input.Lwidth input.Lr input.Lm input.LK input.Ln input.Lo input.Lt input.w : ℕ) +
+  (selectiveUniformKeyPassCost n input.rb (input.R * 2 ^ n) input.B : ℕ) +
+  (12 * (selectiveUniformRotationCost n (input.R * 2 ^ n) (n + input.rb + input.B) : ℕ) +
+    12 * selectiveUniformSwapCost repairT (input.R * 2 ^ n) (n + input.rb + input.B) input.p.wc
+      (swapT 6 * (width + 1)) + 1) +
+  repairUniformDensityScanCost n input.rb input.R input.B input.scale
+
+theorem GeneratedPlacedInput.generatedPrice_le (input : GeneratedPlacedInput t₀ Q K P P' U)
+    (n width : ℕ) (hfields : fieldsLen (selectiveLen input.p input.X) = n)
+    (hn : input.p.n ≤ n) (hgroup : input.p.n * input.p.G ≤ n)
+    (hheaders : ∀ c k, (repairCanonicalHeaders input.p input.X input.rb input.R input.B c k).length ≤ width) :
+    allSourceGeneratedRepairPrice input.p input.X input.rb input.hG input.hK input.active input.s
+      input.scale input.wb input.wm input.wp input.wk input.R input.B input.Lrow input.Lwidth
+      input.Lr input.Lm input.LK input.Ln input.Lo input.Lt input.w input.E ≤
+      input.generatedCostBound n width := by
+  apply allSourceGeneratedRepairPrice_le input.p input.X input.rb input.hG input.hK input.active input.s
+    input.scale input.wb input.wm input.wp input.wk input.R input.B width input.Lrow input.Lwidth
+    input.Lr input.Lm input.LK input.Ln input.Lo input.Lt n input.w input.E
+    (by have h := input.hguard; omega) hfields hn hgroup input.hfit (fun _ _ => []) input.configurationData
+  · intro d
+    exact (input.configurationRaw (repairDescriptorSource d)).trans (input.hdesc d)
+  · intro j
+    have hw := congrArg (fun C => C.L (inactiveProfileHeaderRaw j)) input.hE
+    have hh := congrArg (fun C => C.L (inactiveProfileRaw j)) input.hproject
+    exact (hw.trans hh).trans (input.hL j)
+  · exact input.configurationBlank
+  · exact hheaders
+
+def GeneratedPlacedInput.placementCostBound (input : GeneratedPlacedInput t₀ Q K P P' U) : ℝ :=
+  let n := fieldsLen (selectiveLen input.p input.X)
+  (3 * swapConst * (TP₀ + 12 * swapT t₀ + 5 : ℕ) * (input.R * 2 ^ n * input.B : ℕ)) *
+    (((max 1 (3 * input.Hslot) : ℕ) : ℝ) ^ Parameters.tau +
+      2 * ((max 1 input.slotWidth : ℕ) : ℝ) ^ Parameters.tau) +
+  3 * (generatedExchangeUniformOverhead t₀ TP₀ n input.R input.B input.Lp input.rowBits.length input.Lcp 0 +
+    (3 * (input.Lcp * (4 * n + 31) + 2 * n + 26) + 10 * input.Lcp + 12) +
+    (2 * n + 2 * input.Lcp + 9) : ℕ) + 1
+
+theorem GeneratedPlacedInput.placementPrice_le (input : GeneratedPlacedInput t₀ Q K P P' U)
+    (hbankWords : ∀ i, input.bankWords i = []) (reverse : Bool) :
+    binaryExchangeChainCost input.calls input.M (reservoirExchangeOrder reverse) ≤ input.placementCostBound := by
+  let n := fieldsLen (selectiveLen input.p input.X)
+  let spec := reservoirExchangeSpecs n input.Hslot input.hplacementFit input.slotWidth input.hslotWidth input.reservoir
+  have hstream : input.F.R (classifierCore (inactiveConfigurationCore repairHost.src)) = input.l.flatten :=
+    (congrArg (fun C => C.R (inactiveConfigurationCore repairHost.src)) input.hF).trans
+      ((input.configurationRaw repairHost.src).trans input.hsrc)
+  have hbank (i : Fin (swapT t₀)) : input.M.R (slot₀ (.bank i)) = [] := by
+    rw [input.hplacementBank]
+    have hs := sharedScheduleInputBank_schedule (classifierCore (inactiveConfigurationCore repairHost.src))
+      input.F.R spec input.bankWords input.Lcp input.Lp input.B input.rowBits input.l.flatten hstream (.bank i)
+    exact hs.trans (hbankWords i)
+  have hc := binaryScheduleChainCost_le slot₀ inactiveClassifierPlacementSlot_injective
+    input.hd input.pay input.hhd input.hpay input.hQplacement input.hT spec input.hR input.hB
+    input.rowBits input.Lcp input.Lp input.hwidthPlacement input.hBin input.hrowCanonical
+    input.hrowNe input.hrowValue input.M hbank (reservoirExchangeOrder reverse)
+  have hl : (reservoirExchangeOrder reverse).length = 3 := by cases reverse <;> rfl
+  rw [hl] at hc
+  have hs := reservoirExchangeWidthPower_sum_le n input.Hslot input.hplacementFit input.slotWidth
+    input.hslotWidth input.reservoir reverse
+  have hconst := swapConst_pos
+  have hm := mul_le_mul_of_nonneg_left hs (show 0 ≤
+      3 * swapConst * (TP₀ + 12 * swapT t₀ + 5 : ℕ) * (input.R * 2 ^ n * input.B : ℕ) by positivity)
+  exact hc.trans (add_le_add (add_le_add hm (le_refl _)) (le_refl _))
+
+theorem GeneratedPlacedInput.price_le (input : GeneratedPlacedInput t₀ Q K P P' U)
+    (n width : ℕ) (hfields : fieldsLen (selectiveLen input.p input.X) = n)
+    (hn : input.p.n ≤ n) (hgroup : input.p.n * input.p.G ≤ n)
+    (hbankWords : ∀ i, input.bankWords i = [])
+    (hheaders : ∀ c k, (repairCanonicalHeaders input.p input.X input.rb input.R input.B c k).length ≤ width) :
+    input.price ≤ 2 * input.placementCostBound + input.generatedCostBound n width := by
+  have hf := input.placementPrice_le hbankWords false
+  have hb := input.placementPrice_le hbankWords true
+  have hg := input.generatedPrice_le n width hfields hn hgroup hheaders
+  change _ + _ + _ ≤ _
+  have h := add_le_add (add_le_add hf hg) hb
+  exact h.trans_eq (by ring)
 
 def GeneratedPlacedInput.perm (input : GeneratedPlacedInput t₀ Q K P P' U) :=
   placedSelectivePerm input.hK input.active input.s input.hs

@@ -100,6 +100,28 @@ noncomputable def selectiveUniformSwapCost (T M B compactWidth bankLen : ℕ) : 
     ((max 1 compactWidth : ℕ) : ℝ) ^ Parameters.tau +
     (6 * bankLen + 34 * (M * B) + 2 * T + 6 * swapT 6 + 23 : ℕ)
 
+/-- Key fields and fixed bank overhead are absorbed without changing the swap exponent. -/
+theorem selectiveUniformSwapCost_amortized (T n rb M B compactWidth bankLen : ℕ)
+    (hlong : n + rb ≤ B)
+    (hsetup : 6 * bankLen + 2 * T + 6 * swapT 6 + 23 ≤ M * B) :
+    selectiveUniformSwapCost T M (n + rb + B) compactWidth bankLen ≤
+      6 * swapConst * (T + 12 * swapT 6 + 5 : ℕ) * (M * B : ℕ) *
+        ((max 1 compactWidth : ℕ) : ℝ) ^ Parameters.tau + (69 * (M * B) : ℕ) := by
+  have hm := Nat.mul_le_mul_left M hlong
+  have hkey : M * (n + rb + B) ≤ 2 * (M * B) := by nlinarith only [hm]
+  have hrest : 6 * bankLen + 34 * (M * (n + rb + B)) + 2 * T + 6 * swapT 6 + 23 ≤
+      69 * (M * B) := by
+    generalize swapT 6 = tapeCount at hsetup ⊢
+    omega
+  have hconst := swapConst_pos
+  have hcoef : 0 ≤ 3 * swapConst * (T + 12 * swapT 6 + 5 : ℕ) *
+      ((max 1 compactWidth : ℕ) : ℝ) ^ Parameters.tau := by positivity
+  have hmain := mul_le_mul_of_nonneg_left (Nat.cast_le (α := ℝ).mpr hkey) hcoef
+  have hr := Nat.cast_le (α := ℝ).mpr hrest
+  unfold selectiveUniformSwapCost
+  simp only [Nat.cast_mul, Nat.cast_ofNat] at hmain hr ⊢
+  nlinarith only [hmain, hr]
+
 theorem selectiveSwapCost_le (T R B bankLen bankBound n : ℕ)
     (hfields : fieldsLen (selectiveLen p X) = n) (hbank : bankLen ≤ bankBound) :
     selectiveSwapCost p X T R B bankLen ≤ selectiveUniformSwapCost T (R * 2 ^ n) B p.wc bankBound := by

@@ -43,6 +43,33 @@ def reservoirExchangeSpecs (k : Fin 3) : Fin 3 → BlockExchangeSpec n :=
     ⟨w, n - 2 * w, w, by omega, by omega⟩,
     ⟨2 * w, n - w, w, by omega, by omega⟩]
 
+theorem reservoirExchangeWidthPrice_sum (k : Fin 3) (reverse : Bool) (price : ℕ → ℝ) :
+    ((if reverse then ([2, 1, 0] : List (Fin 3)) else [0, 1, 2]).map
+      (fun j => price (reservoirExchangeSpecs n H hfit w hw k j).w)).sum =
+      price (if k.val = 0 then 0 else 3 * H) + 2 * price w := by
+  cases reverse <;> simp [reservoirExchangeSpecs, reservoirFrontSpec] <;> ring
+
+theorem reservoirExchangeWidthPrice_sum_le (k : Fin 3) (reverse : Bool)
+    (price : ℕ → ℝ) (hprice : Monotone price) :
+    ((if reverse then ([2, 1, 0] : List (Fin 3)) else [0, 1, 2]).map
+      (fun j => price (reservoirExchangeSpecs n H hfit w hw k j).w)).sum ≤
+      price (3 * H) + 2 * price w := by
+  rw [reservoirExchangeWidthPrice_sum]
+  have hfront : (if k.val = 0 then 0 else 3 * H) ≤ 3 * H := by split_ifs <;> omega
+  exact add_le_add (hprice hfront) (le_refl _)
+
+theorem reservoirExchangeWidthPower_sum_le (k : Fin 3) (reverse : Bool) :
+    ((if reverse then ([2, 1, 0] : List (Fin 3)) else [0, 1, 2]).map
+      (fun j => ((max 1 (reservoirExchangeSpecs n H hfit w hw k j).w : ℕ) : ℝ) ^ Parameters.tau)).sum ≤
+      ((max 1 (3 * H) : ℕ) : ℝ) ^ Parameters.tau +
+        2 * ((max 1 w : ℕ) : ℝ) ^ Parameters.tau := by
+  apply reservoirExchangeWidthPrice_sum_le n H hfit w hw k reverse
+    (fun width => ((max 1 width : ℕ) : ℝ) ^ Parameters.tau)
+  intro x y hxy
+  apply Real.rpow_le_rpow (by positivity)
+  · exact_mod_cast max_le_max_left 1 hxy
+  · norm_num [Parameters.tau]
+
 omit w hw in
 theorem reservoirFrontSpec_coordinate (k : Fin 3) :
     (reservoirFrontSpec n H hfit k).coordinate = reservoirFrontPerm n H hfit k := by

@@ -29,6 +29,33 @@ noncomputable def repairUniformDensityScanCost (n rb R B : ℕ) (scale : ℝ) : 
     ((n + rb : ℕ) : ℝ) * (5 / (128 * scale ^ 3) * (R * 2 ^ n : ℕ) *
       (12 * (n + rb) + 6 * B + 13 : ℕ)) + (10 * (n + rb) + 8 * n + 58 : ℕ)
 
+theorem repairUniformDensityScanCost_amortized (n rb R B : ℕ) (scale : ℝ)
+    (hscale : 0 < scale) (hR : 1 ≤ R) (hB : (n + rb + 1) ^ 2 ≤ B) :
+    repairUniformDensityScanCost n rb R B scale ≤
+      (389 * (R * 2 ^ n * B) : ℕ) +
+        ((n + rb : ℕ) : ℝ) * (155 / (128 * scale ^ 3)) * (R * 2 ^ n * B : ℕ) := by
+  let M := R * 2 ^ n
+  have hM : 1 ≤ M := by
+    have hp := Nat.two_pow_pos n
+    dsimp only [M]
+    nlinarith
+  have hlinear : n + rb + 1 ≤ B := by nlinarith
+  have hi : 76 * n + 14 * (n + rb + B) + 195 ≤ 313 * B := by omega
+  have hm := Nat.mul_le_mul_left M hi
+  have hc : 10 * (n + rb) + 8 * n + 58 ≤ 76 * B := by omega
+  have hv : B ≤ M * B := by simpa using Nat.mul_le_mul_right B hM
+  have hd : M * (76 * n + 14 * (n + rb + B) + 195) +
+      (10 * (n + rb) + 8 * n + 58) ≤ 389 * (M * B) := by nlinarith only [hm, hc, hv]
+  have hl : 12 * (n + rb) + 6 * B + 13 ≤ 31 * B := by omega
+  have hs := mul_le_mul_of_nonneg_left (Nat.cast_le (α := ℝ).mpr hl)
+    (show 0 ≤ ((n + rb : ℕ) : ℝ) * (5 / (128 * scale ^ 3)) * (M : ℝ) by positivity)
+  have hd' := Nat.cast_le (α := ℝ).mpr hd
+  unfold repairUniformDensityScanCost
+  dsimp only [M] at hd' hs
+  simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat] at hd' hs ⊢
+  simp only [div_eq_mul_inv] at hs ⊢
+  nlinarith only [hd', hs]
+
 theorem repairDensityScanCost_le (p : Par) (X rb R B n : ℕ) (scale : ℝ)
     (hfields : fieldsLen (selectiveLen p X) = n) (hwy : p.wy ≤ n) :
     repairDensityScanCost p X rb R B scale ≤ repairUniformDensityScanCost n rb R B scale := by
@@ -85,6 +112,100 @@ theorem repairDensityCoreCost_le (p : Par) (X rb R B n bankBound : ℕ) (scale :
   refine add_le_add hk ?_
   rw [selectiveKeyWidth, hfields]
   exact add_le_add hs (le_refl (1 : ℝ))
+
+theorem repairDensityCoreCost_amortized (p : Par) (X rb R B n bankBound : ℕ) (scale : ℝ)
+    (S : Stacks repairT (prime + K)) (hfields : fieldsLen (selectiveLen p X) = n)
+    (hwy : p.wy ≤ n) (hbank : ∀ c, (∑ j, (S.R (repairHost.swaps c j)).length) ≤ bankBound)
+    (hR : 1 ≤ R) (hB : (n + rb + 1) ^ 2 ≤ B) :
+    repairDensityCoreCost p X rb R B scale S ≤
+      (4988 * (R * 2 ^ n * B) : ℕ) +
+        12 * selectiveUniformSwapCost repairT (R * 2 ^ n) (n + rb + B) p.wc bankBound + 1 +
+        repairUniformDensityScanCost n rb R B scale := by
+  have hM : 1 ≤ R * 2 ^ n := by
+    have hp := Nat.two_pow_pos n
+    nlinarith
+  have hc := repairDensityCoreCost_le p X rb R B n bankBound scale S hfields hwy hbank
+  have hk : (selectiveUniformKeyPassCost n rb (R * 2 ^ n) B : ℝ) ≤
+      (188 * (R * 2 ^ n * B) : ℕ) :=
+    Nat.cast_le.mpr (selectiveUniformKeyPassCost_amortized n rb (R * 2 ^ n) B hM hB)
+  have hr : (selectiveUniformRotationCost n (R * 2 ^ n) (n + rb + B) : ℝ) ≤
+      (400 * (R * 2 ^ n * B) : ℕ) :=
+    Nat.cast_le.mpr (selectiveUniformRotationCost_amortized n rb (R * 2 ^ n) B hM hB)
+  simp only [Nat.cast_mul, Nat.cast_ofNat] at hk hr ⊢
+  linarith only [hc, hk, hr]
+
+theorem repairDensityCoreCost_amortized_swaps (p : Par) (X rb R B n bankBound : ℕ) (scale : ℝ)
+    (S : Stacks repairT (prime + K)) (hfields : fieldsLen (selectiveLen p X) = n)
+    (hwy : p.wy ≤ n) (hbank : ∀ c, (∑ j, (S.R (repairHost.swaps c j)).length) ≤ bankBound)
+    (hR : 1 ≤ R) (hB : (n + rb + 1) ^ 2 ≤ B)
+    (hsetup : 6 * bankBound + 2 * repairT + 6 * swapT 6 + 23 ≤ R * 2 ^ n * B) :
+    repairDensityCoreCost p X rb R B scale S ≤
+      (5816 * (R * 2 ^ n * B) : ℕ) +
+        72 * swapConst * (repairT + 12 * swapT 6 + 5 : ℕ) * (R * 2 ^ n * B : ℕ) *
+          ((max 1 p.wc : ℕ) : ℝ) ^ Parameters.tau + 1 +
+        repairUniformDensityScanCost n rb R B scale := by
+  have hc := repairDensityCoreCost_amortized p X rb R B n bankBound scale S hfields hwy hbank hR hB
+  have hlong : n + rb ≤ B := by nlinarith only [hB]
+  have hs := selectiveUniformSwapCost_amortized repairT n rb (R * 2 ^ n) B p.wc bankBound hlong hsetup
+  simp only [Nat.cast_mul, Nat.cast_ofNat] at hc hs ⊢
+  linarith only [hc, hs]
+
+theorem repairDensityCoreCost_long_records (p : Par) (X rb R B n bankBound : ℕ) (scale : ℝ)
+    (S : Stacks repairT (prime + K)) (hfields : fieldsLen (selectiveLen p X) = n)
+    (hwy : p.wy ≤ n) (hbank : ∀ c, (∑ j, (S.R (repairHost.swaps c j)).length) ≤ bankBound)
+    (hscale : 0 < scale) (hR : 1 ≤ R) (hB : (n + rb + 1) ^ 2 ≤ B)
+    (hsetup : 6 * bankBound + 2 * repairT + 6 * swapT 6 + 23 ≤ R * 2 ^ n * B) :
+    repairDensityCoreCost p X rb R B scale S ≤
+      (6205 * (R * 2 ^ n * B) : ℕ) +
+        72 * swapConst * (repairT + 12 * swapT 6 + 5 : ℕ) * (R * 2 ^ n * B : ℕ) *
+          ((max 1 p.wc : ℕ) : ℝ) ^ Parameters.tau + 1 +
+        ((n + rb : ℕ) : ℝ) * (155 / (128 * scale ^ 3)) * (R * 2 ^ n * B : ℕ) := by
+  have hc := repairDensityCoreCost_amortized_swaps p X rb R B n bankBound scale S
+    hfields hwy hbank hR hB hsetup
+  have hs := repairUniformDensityScanCost_amortized n rb R B scale hscale hR hB
+  simp only [Nat.cast_mul, Nat.cast_ofNat] at hc hs ⊢
+  linarith only [hc, hs]
+
+theorem repairDensityCoreCost_long_records_density (p : Par) (X rb R B n bankBound : ℕ) (scale : ℝ)
+    (S : Stacks repairT (prime + K)) (hfields : fieldsLen (selectiveLen p X) = n)
+    (hwy : p.wy ≤ n) (hbank : ∀ c, (∑ j, (S.R (repairHost.swaps c j)).length) ≤ bankBound)
+    (hscale : 0 < scale) (hkey : ((n + rb : ℕ) : ℝ) ≤ scale ^ 3)
+    (hR : 1 ≤ R) (hB : (n + rb + 1) ^ 2 ≤ B)
+    (hsetup : 6 * bankBound + 2 * repairT + 6 * swapT 6 + 23 ≤ R * 2 ^ n * B) :
+    repairDensityCoreCost p X rb R B scale S ≤
+      (6207 * (R * 2 ^ n * B) : ℕ) +
+        72 * swapConst * (repairT + 12 * swapT 6 + 5 : ℕ) * (R * 2 ^ n * B : ℕ) *
+          ((max 1 p.wc : ℕ) : ℝ) ^ Parameters.tau + 1 := by
+  have hc := repairDensityCoreCost_long_records p X rb R B n bankBound scale S
+    hfields hwy hbank hscale hR hB hsetup
+  have hden : 0 < 128 * scale ^ 3 := by positivity
+  have hd : ((n + rb : ℕ) : ℝ) * (155 / (128 * scale ^ 3)) ≤ 2 := by
+    rw [← mul_div_assoc]
+    apply (div_le_iff₀ hden).2
+    nlinarith only [hkey, pow_pos hscale 3]
+  have hm := mul_le_mul_of_nonneg_right hd (Nat.cast_nonneg (R * 2 ^ n * B))
+  simp only [Nat.cast_mul, Nat.cast_ofNat] at hc hm ⊢
+  linarith only [hc, hm]
+
+/-- The canonical density scale absorbs the sparse correction when the row key
+is no wider than the coordinate key. Other row regimes remain separate. -/
+theorem repairUniformDensityScanCost_canonical_amortized (n rb R B : ℕ)
+    (hrow : rb ≤ n) (hR : 1 ≤ R) (hB : (n + rb + 1) ^ 2 ≤ B) :
+    repairUniformDensityScanCost n rb R B (n + 1 : ℕ) ≤
+      (391 * (R * 2 ^ n * B) : ℕ) := by
+  have hscale : (0 : ℝ) < (n + 1 : ℕ) := by positivity
+  have hkeyNat : n + rb ≤ (n + 1) ^ 3 := by
+    nlinarith only [hrow, Nat.zero_le n, Nat.zero_le (n * n)]
+  have hkey : ((n + rb : ℕ) : ℝ) ≤ ((n + 1 : ℕ) : ℝ) ^ 3 := by
+    exact_mod_cast hkeyNat
+  have hd : ((n + rb : ℕ) : ℝ) * (155 / (128 * ((n + 1 : ℕ) : ℝ) ^ 3)) ≤ 2 := by
+    rw [← mul_div_assoc]
+    apply (div_le_iff₀ (by positivity)).2
+    nlinarith only [hkey, pow_pos hscale 3]
+  have hc := repairUniformDensityScanCost_amortized n rb R B (n + 1 : ℕ) hscale hR hB
+  have hm := mul_le_mul_of_nonneg_right hd (Nat.cast_nonneg (R * 2 ^ n * B))
+  simp only [Nat.cast_mul, Nat.cast_ofNat] at hc hm ⊢
+  linarith only [hc, hm]
 
 theorem repairCoreCost_density (p : Par) (X rb R B : ℕ) (hguard : p.G + 1 < p.K)
     (scale : ℝ) (hscale : 0 < scale) (hn : (p.n : ℝ) ≤ scale)

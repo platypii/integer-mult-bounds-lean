@@ -65,6 +65,20 @@ theorem selectiveRotationCost_le (n : ℕ) (hfields : fieldsLen (selectiveLen p 
 def selectiveUniformRotationCost (n M B : ℕ) : ℕ :=
   M * (2 * headerCodeCost n n 5 + 12 * B + 8 * n + 60) + 8 * n + 55
 
+/-- Long records absorb descriptor computation and both complete rotation scans. -/
+theorem selectiveUniformRotationCost_amortized (n rb M B : ℕ)
+    (hM : 1 ≤ M) (hB : (n + rb + 1) ^ 2 ≤ B) :
+    selectiveUniformRotationCost n M (n + rb + B) ≤ 400 * (M * B) := by
+  have hlinear : n + rb + 1 ≤ B := by nlinarith
+  have hi : 2 * headerCodeCost n n 5 + 12 * (n + rb + B) + 8 * n + 60 ≤ 334 * B := by
+    unfold headerCodeCost patternCodeCost
+    nlinarith
+  have hm := Nat.mul_le_mul_left M hi
+  have hc : 8 * n + 55 ≤ 63 * B := by omega
+  have hv : B ≤ M * B := by simpa using Nat.mul_le_mul_right B hM
+  unfold selectiveUniformRotationCost
+  nlinarith only [hm, hc, hv]
+
 /-- Both class scans, forward-order restoration and counter cleanup are included. -/
 theorem selectiveRotationPassCost_le (n R B : ℕ) (hfields : fieldsLen (selectiveLen p X) = n) (off : Off) :
     classMoveCost (nd := 2) (selectiveRotationCost p X off) (selectiveRotationCost p X off)

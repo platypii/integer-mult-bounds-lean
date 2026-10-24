@@ -126,7 +126,7 @@ theorem canonicalPermutationProgram_eq_code (f : Equiv.Perm (Fin n)) :
     (canonicalRouterZeroRecords n R B) l (canonicalRouterZeroRecords_count n R B) hl
     (canonicalRouterZeroRecords_shape n R B) hlen Lb rowBits f
 
-/-- Restored execution with code, metadata and budget independent of live records.
+/-- Restored execution with record-independent code/metadata and a dimension-only cost bound.
 The metadata still has to be supplied; its production is a separate obligation. -/
 theorem canonicalPermutationCode_exec (f : Equiv.Perm (Fin n)) (hnB : n ≤ B)
     (v : HS ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit)
@@ -138,8 +138,8 @@ theorem canonicalPermutationCode_exec (f : Equiv.Perm (Fin n)) (hnB : n ≤ B)
         (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R []))
     (hsaved : S.R (framedCoreAux (canonicalRouterCommonT + 3) 2) = []) :
     ∃ (v' : HS ((canonicalRouterCommonT + 3) + 3) Q (prime + K) Unit) (steps : ℕ), v'.user = v.user ∧
-      (steps : ℝ) ≤ canonicalPermutationBudget n hn R B hR hB f hQ hA
-        (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R []) ∧
+      (steps : ℝ) ≤ canonicalPermutationCostBound n R B
+        (canonicalScalarWidth n) (canonicalScalarWidth B) (R.log2 + 1) ∧
       Exec Empty.elim (.seq
         (canonicalPermutationCode n hn R B hR hB hQ hA
           (canonicalScalarWidth B) (GrowingCounterData.advance R []) f)
@@ -155,7 +155,8 @@ theorem canonicalPermutationCode_exec (f : Equiv.Perm (Fin n)) (hnB : n ≤ B)
     (canonicalScalarWidth n) (canonicalScalarWidth B) (GrowingCounterData.advance R []) l hl hlen,
     canonicalPermutationProgram_eq_code n hn R B hR hB hQ hA l hl hlen
       (canonicalScalarWidth B) (GrowingCounterData.advance R []) f] at he
-  exact he
+  obtain ⟨v', steps, hu, hcost, hexec⟩ := he
+  exact ⟨v', steps, hu, hcost.trans (canonicalPermutationBudget_canonical_le n hn R B hR hB f hQ hA), hexec⟩
 
 end
 end IntegerMultBounds.MathlibTM2.Routing

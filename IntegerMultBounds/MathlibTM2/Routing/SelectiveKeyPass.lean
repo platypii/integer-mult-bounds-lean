@@ -39,6 +39,19 @@ theorem selectiveKeyPassCost_eq (p : Par) (X rb M B : ℕ) :
 def selectiveUniformKeyPassCost (n rb M B : ℕ) : ℕ :=
   M * (n * (6 * n + 25) + 19 * n + 11 * rb + 6 * B + 99) + 4 * (n + rb) + 29
 
+/-- Long payloads absorb complete-rank key generation and all counter cleanup. -/
+theorem selectiveUniformKeyPassCost_amortized (n rb M B : ℕ)
+    (hM : 1 ≤ M) (hB : (n + rb + 1) ^ 2 ≤ B) :
+    selectiveUniformKeyPassCost n rb M B ≤ 188 * (M * B) := by
+  have hlinear : n + rb + 1 ≤ B := by nlinarith
+  have he : n * (6 * n + 25) + 19 * n + 11 * rb + 99 ≤ 149 * B := by nlinarith
+  have hi : n * (6 * n + 25) + 19 * n + 11 * rb + 6 * B + 99 ≤ 155 * B := by omega
+  have hm := Nat.mul_le_mul_left M hi
+  have hc : 4 * (n + rb) + 29 ≤ 33 * B := by omega
+  have hv : B ≤ M * B := by simpa using Nat.mul_le_mul_right B hM
+  unfold selectiveUniformKeyPassCost
+  nlinarith only [hm, hc, hv]
+
 theorem selectiveKeyPassCost_le (p : Par) (X rb M B n : ℕ)
     (hfields : fieldsLen (selectiveLen p X) = n) :
     selectiveKeyPassCost p X rb M B ≤ selectiveUniformKeyPassCost n rb M B := by

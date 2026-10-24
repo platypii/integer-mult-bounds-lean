@@ -323,6 +323,64 @@ theorem canonicalRouterClassifierCost_le (n : ℕ) (hn : canonicalRouterStride n
     (htemp.trans (binaryTemporaryMaskUniformCost_widths_mono n hLK hLn hLo hLt))
     (hphase.trans (binaryPhaseMaskUniformCost_widths_mono n hLK hLn hLo hLt))
 
+def canonicalRouterGeneratedOverhead (n R B width : ℕ) : ℕ :=
+  let rb := canonicalScalarWidth R
+  let L := canonicalScalarWidth n
+  let D := Nat.clog 2 (4 * n + 2) + 1
+  let wb := L + canonicalScalarWidth rb + canonicalScalarWidth B
+  let w : LiveDescriptorWidths :=
+    ⟨D, D, D, 2 * D, canonicalScalarWidth (2 * D)⟩
+  let q : Par := ⟨canonicalRouterStride n, 0, n, canonicalRouterGap n, 0⟩
+  binaryTemporaryMaskUniformCost n L L L L + binaryPhaseMaskUniformCost n L L L L +
+    ((canonicalScalarWidth rb * (4 * rb + 11) + 8 * rb + 12) + (L * (4 * n + 11) + 2 * n + 6) + 1) +
+    2 * (14 * n + 18 * rb + 24 * L + 52 * wb + 280) +
+    liveCoordinateProfilesCost q w +
+    liveRepairUniformOverhead n rb R B width wb (n + rb) (canonicalScalarWidth B)
+      (L + canonicalScalarWidth rb) w +
+    (11 * (2 * (n * (2 * D + 3)) + 2) + 1) +
+    (10 * (2 * width + 2) + 1) + (2 * rb + 2 * n + 5) + (4 * (n + 1) + 5)
+
+theorem canonicalRouterGeneratedOverhead_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) (R B : ℕ) (hR : 0 < R) (hB : 1 ≤ B) (width : ℕ) :
+    let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+    let a := canonicalRouterArithmetic n r R B hR hB
+    allSourceGeneratedUniformOverhead p 0 a.rb n a.wb a.wm a.wp a.wk R B width
+      a.Lrow a.Lwidth a.Lr a.Lm a.LK a.Ln a.Lo a.Lt a.w ≤
+      canonicalRouterGeneratedOverhead n R B width := by
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+  let a := canonicalRouterArithmetic n r R B hR hB
+  let rb := canonicalScalarWidth R
+  let D := Nat.clog 2 (4 * n + 2) + 1
+  have ht := routerProfileParameters_total n (canonicalRouterStride n) (canonicalRouterGap n) hn r
+  change 3 * p.wc + p.wy = n at ht
+  have hsize : p.wc + p.wy + 0 ≤ n := by omega
+  have hslots : p.n ≤ n := routerDigits_le_width n _ _
+  obtain ⟨_, _, _, hselector, _, _⟩ := canonicalRouterDescriptorWidths_le n hn r
+  have hc := canonicalRouterClassifierCost_le n hn r R B hR hB
+  have hp := canonicalRouterProfileCost_le n hn r
+  change binaryTemporaryMaskCost p a.LK a.Ln a.Lo a.Lt +
+    binaryPhaseMaskCost p a.LK a.Ln a.Lo a.Lt ≤ _ at hc
+  change liveCoordinateProfilesCost p a.w ≤ _ at hp
+  change a.w.selectorBits ≤ 2 * D at hselector
+  have hb := allSourceGeneratedUniformOverhead_le p 0 rb n a.wb a.wm a.wp a.wk R B width
+    a.Lrow a.Lwidth a.Lr a.Lm a.LK a.Ln a.Lo a.Lt _ _ (2 * D) a.w hsize hslots hselector hc hp
+  have hrepair := canonicalRouterRepairOverhead_le n hn r R B hR hB width
+  obtain ⟨hwidth, hmask, _, _, _, _, _⟩ := canonicalRouterDimensionWidths_le n hn r R B hR hB
+  obtain ⟨_, hrow, hrowWidth, _, _, _⟩ := canonicalRouterRecordWidths n hn r R B hR hB
+  have hblock := canonicalRouterBlockWidth_le n hn r R B hR hB
+  change liveRepairUniformOverhead n rb R B width a.wb a.wm a.wp a.wk a.w ≤ _ at hrepair
+  change a.Lwidth ≤ _ at hwidth
+  change a.Lm ≤ _ at hmask
+  change a.Lrow = rb at hrow
+  change a.Lr = canonicalScalarWidth rb at hrowWidth
+  have hrowLe := hrow.le
+  have hrowWidthLe := hrowWidth.le
+  change allSourceGeneratedUniformOverhead p 0 rb n a.wb a.wm a.wp a.wk R B width
+    a.Lrow a.Lwidth a.Lr a.Lm a.LK a.Ln a.Lo a.Lt a.w ≤ _
+  refine hb.trans ?_
+  dsimp only [canonicalRouterGeneratedOverhead]
+  gcongr
+
 /-- A common metadata word budget, polynomial in address size and scalar widths. -/
 def canonicalRouterUniformMetadataWidth (n R B : ℕ) : ℕ :=
   let D := Nat.clog 2 (4 * n + 2) + 1

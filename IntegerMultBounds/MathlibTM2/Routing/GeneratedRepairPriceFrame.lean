@@ -36,6 +36,30 @@ def allSourceGeneratedUniformOverhead (n wb wm wp wk R B width Lrow Lwidth Lr Lm
     (9 * (2 * (p.n * (w.selectorBits + 3)) + 2) + 2 * (2 * (p.wc * (w.selectorBits + 3)) + 2) + 1) +
     (10 * (2 * width + 2) + 1) + (2 * rb + 2 * p.wy + 5) + (4 * (p.wy + 1) + 5)
 
+theorem allSourceGeneratedUniformOverhead_le
+    (n wb wm wp wk R B width Lrow Lwidth Lr Lm LK Ln Lo Lt classifierBound profileBound Ls : ℕ)
+    (w : LiveDescriptorWidths) (hsize : p.wc + p.wy + X ≤ n)
+    (hslots : p.n ≤ n) (hselector : w.selectorBits ≤ Ls)
+    (hclassifier : binaryTemporaryMaskCost p LK Ln Lo Lt + binaryPhaseMaskCost p LK Ln Lo Lt ≤ classifierBound)
+    (hprofile : liveCoordinateProfilesCost p w ≤ profileBound) :
+    allSourceGeneratedUniformOverhead p X rb n wb wm wp wk R B width
+      Lrow Lwidth Lr Lm LK Ln Lo Lt w ≤
+      classifierBound +
+      ((Lr * (4 * rb + 11) + 8 * rb + 12) + (Lm * (4 * n + 11) + 2 * n + 6) + 1) +
+      2 * (14 * n + 18 * Lrow + 24 * Lwidth + 52 * wb + 280) +
+      profileBound + liveRepairUniformOverhead n rb R B width wb wm wp wk w +
+      (11 * (2 * (n * (Ls + 3)) + 2) + 1) +
+      (10 * (2 * width + 2) + 1) + (2 * rb + 2 * n + 5) + (4 * (n + 1) + 5) := by
+  have hwy : p.wy ≤ n := by omega
+  have hwc : p.wc ≤ n := by omega
+  have hwidth : Lm * (4 * p.wy + 11) ≤ Lm * (4 * n + 11) :=
+    Nat.mul_le_mul_left Lm (by omega)
+  have hs : w.selectorBits + 3 ≤ Ls + 3 := by omega
+  have hn := Nat.mul_le_mul hslots hs
+  have hc := Nat.mul_le_mul hwc hs
+  unfold allSourceGeneratedUniformOverhead
+  omega
+
 theorem allSourceGeneratedRepairPrice_le
     (scale wb wm wp wk R B width Lrow Lwidth Lr Lm LK Ln Lo Lt n : ℕ)
     (w : LiveDescriptorWidths) (E : Stacks inactiveProfileConfigurationT (prime + K))

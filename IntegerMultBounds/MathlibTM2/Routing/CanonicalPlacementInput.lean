@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalOuterInput
 public import IntegerMultBounds.MathlibTM2.Routing.SharedScheduleInput
 public import IntegerMultBounds.MathlibTM2.Routing.BinaryScheduleCalls
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirExchangeSchedule
 
 /-! The placement extension preserves the complete constructed repair stack.
 Its legacy swap bank starts empty; only binary schedule operands are installed. -/
@@ -83,6 +84,39 @@ theorem canonicalPlacementInputStack_scheduleCost_le {Q K R : ℕ}
     hd pay hhd hpay hQ hT spec hR hB rowBits Lc L hn hBin hrow hrowNe hrowValue
     (canonicalPlacementInputStack src S spec Lc L B rowBits stream)
     (canonicalPlacementInputStack_swapBank src S spec Lc L B rowBits stream hstream) js
+
+theorem canonicalPlacementInputStack_reservoirCost_le {Q K R : ℕ}
+    (src : Fin N) (S : Stacks N (prime + K)) (H : ℕ) (hfit : 9 * H ≤ n)
+    (w : ℕ) (hw : w ≤ H) (reservoir : Fin 3)
+    (hd : Fin 5 → Fin t₀) (pay : Fin t₀) (hhd : Function.Injective hd) (hpay : ∀ k, hd k ≠ pay)
+    (hQ : swapStates hd pay hhd ≤ Q) (hT : swapT t₀ ≤ sharedScheduleT N t₀)
+    (hR : 0 < R) (B : ℕ) (hB : 0 < B) (rowBits : List Bool) (Lc L : ℕ)
+    (hn : n < 2 ^ Lc) (hBin : B < 2 ^ L)
+    (hrow : GrowingCounterData.Canonical rowBits) (hrowNe : rowBits ≠ [])
+    (hrowValue : Counter.value rowBits = R)
+    (stream : List (Fin (prime + K + 4))) (hstream : S.R src = stream) (reverse : Bool) :
+    let spec := reservoirExchangeSpecs n H hfit w hw reservoir
+    let js : List (Fin 3) := if reverse then [2, 1, 0] else [0, 1, 2]
+    binaryExchangeChainCost
+      (binaryScheduleCalls (sharedScheduleSlot src) (sharedScheduleSlot_injective src)
+        hd pay hhd hpay hQ hT spec hR hB rowBits Lc L hn hBin hrow hrowNe hrowValue)
+      (canonicalPlacementInputStack src S spec Lc L B rowBits stream) js ≤
+      (3 * swapConst * (sharedScheduleT N t₀ + 12 * swapT t₀ + 5 : ℕ) * (R * 2 ^ n * B : ℕ)) *
+        (((max 1 (3 * H) : ℕ) : ℝ) ^ Parameters.tau +
+          2 * ((max 1 w : ℕ) : ℝ) ^ Parameters.tau) +
+      3 * (generatedExchangeUniformOverhead t₀ (sharedScheduleT N t₀) n R B L rowBits.length Lc 0 +
+        (3 * (Lc * (4 * n + 31) + 2 * n + 26) + 10 * Lc + 12) + (2 * n + 2 * Lc + 9) : ℕ) + 1 := by
+  let spec := reservoirExchangeSpecs n H hfit w hw reservoir
+  let js : List (Fin 3) := if reverse then [2, 1, 0] else [0, 1, 2]
+  have hc := canonicalPlacementInputStack_scheduleCost_le src S spec hd pay hhd hpay hQ hT
+    hR B hB rowBits Lc L hn hBin hrow hrowNe hrowValue stream hstream js
+  have hl : js.length = 3 := by cases reverse <;> rfl
+  rw [hl] at hc
+  have hs := reservoirExchangeWidthPower_sum_le n H hfit w hw reservoir reverse
+  have hconst := swapConst_pos
+  have hm := mul_le_mul_of_nonneg_left hs (show 0 ≤
+      3 * swapConst * (sharedScheduleT N t₀ + 12 * swapT t₀ + 5 : ℕ) * (R * 2 ^ n * B : ℕ) by positivity)
+  exact hc.trans (add_le_add (add_le_add hm (le_refl _)) (le_refl _))
 
 /-- Placement adds scalar coordinates and the row counter, with blank swap workspace. -/
 theorem canonicalPlacementInputStack_length_le (src : Fin N) (S : Stacks N A)

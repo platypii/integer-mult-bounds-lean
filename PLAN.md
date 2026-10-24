@@ -2082,8 +2082,19 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    `allSourceGeneratedRepairPrice_le` now combines classifier, width, header
    and source-profile generation, prepared repair and every cleanup into a
    bank-independent overhead plus the density-priced key/rotation/swap core.
-   `allSourceGeneratedUniformOverhead` names that actual numerical ledger;
-   canonical substitution of its components remains.
+   `allSourceGeneratedUniformOverhead` names that actual numerical ledger.
+   `allSourceGeneratedUniformOverhead_le` now majorizes all physical field
+   sizes, slot counts, selector widths and profile-cleanup terms together,
+   accepting the already proved common classifier/profile budgets.
+   `canonicalRouterGeneratedOverhead_le` now performs the remaining scalar
+   and repair-overhead substitutions into `canonicalRouterGeneratedOverhead`,
+   one numerical formula in the original dimensions, row count, payload size
+   and a common header bound, independent of residue and live matching/source
+   choices. `canonicalRouterInput_generatedCost_le` now substitutes this
+   into every actual stage input, giving `canonicalRouterGeneratedCostBound`
+   with the compact borrowed-width swap power and sparse physical density
+   preserved. Uniform placement row-length substitution, the final combined
+   stage budget and full-router summation remain.
    `binaryExchangeChainCost_le` now bounds any executed forward/reverse
    placement schedule from its call count and per-call price; bounding those
    actual call prices and composing placement remain open.
@@ -2110,8 +2121,53 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    width-power sum and call count.
    `canonicalPlacementInputStack_scheduleCost_le` instantiates that theorem on
    the actual canonical placement stack, discharging the blank swap-bank
-   premise. Evaluating the forward/reverse width sums, canonical scalar
-   substitution and composition with generated repair remain open. The accumulated
+   premise. `reservoirExchangeWidthPrice_sum` now evaluates both actual
+   three-call directions for any numerical width price: one front exchange
+   plus two compact-width exchanges. `reservoirExchangeWidthPrice_sum_le`
+   removes the reservoir choice for any monotone price.
+   `reservoirExchangeWidthPower_sum_le` specializes this to the actual swap
+   exponent, including zero-width exchanges.
+   `canonicalPlacementInputStack_reservoirCost_le` now prices either complete
+   canonical placement direction with one common front-reservoir power, two
+   actual compact-width powers, and three fully charged scalar/setup/cleanup
+   calls. Canonical scalar substitution and composition with generated repair
+   remain open. `GeneratedPlacedInput.configurationRaw`, `.configurationData`
+   and `.configurationBlank` now recover the initial configuration readiness
+   directly from the actual stage input. The existing canonical price
+   independence proof reuses this transport instead of duplicating projections.
+   `GeneratedPlacedInput.generatedPrice_le` now instantiates the complete
+   generated-core ledger from stored input readiness.
+   `.placementPrice_le` derives the actual shared-bank input and prices either
+   direction when its supplied swap bank is blank. `.price_le` combines both
+   placements and generated repair into one bound on the actual stage price;
+   no bank-readiness or execution-oracle hypotheses remain beyond the input
+   contract. The remaining premises are total address/slot bounds, a common
+   header width and the blank placement bank, all available for canonical inputs.
+   `canonicalGeneratedInput_price_le` now discharges the placement-bank
+   premise for constructed inputs. `canonicalRouterInput_price_le` applies the
+   combined stage bound to every actual router residue, discharging address
+   width, both slot bounds and the common header width internally.
+   `canonicalRouterInput_placementCost_le` now substitutes the common
+   logarithmic row-counter length. `canonicalRouterInput_price_uniform`
+   combines placement and generated repair into `canonicalRouterStageCostBound`,
+   independent of residue, matching and live records.
+   `canonicalRouterInput_prices_sum_le` sums any actual residue list, and
+   `canonicalRouterBulkPrice_uniform` bounds the complete executed bulk ledger
+   by stage count times that common budget plus the existing loader/frame
+   budget. `canonicalRouterDirectionalPrice_uniform` adds terminal routing
+   and directional setup. `canonicalRouterClassPrice_uniform`,
+   `canonicalRouterMatchingPrice_uniform` and
+   `canonicalRouterPermutationPrice_uniform` compose all eighteen directions.
+   `canonicalPermutationBudget_uniform` includes the final metadata rewind,
+   bounding the actual restored-permutation execution budget by one numerical
+   expression independent of the permutation and live records, with no residue
+   price sum. `canonicalPermutationBudget_canonical_le` now chooses canonical
+   top-level scalar widths and bounds the row counter by `R.log2 + 1`.
+   `canonicalPermutationCode_exec` uses this dimension-only
+   `canonicalPermutationCostBound` for actual restored execution, replacing
+   its earlier permutation-dependent budget statement without adding a parallel
+   execution theorem. Long-record amortization, executed short-record fallback
+   and compact-input metadata production remain open; R3 and kappa are unchanged. The accumulated
    cost-proof checkpoint passed the full guarded root build (15,302 jobs) and
    the axiom audit (351,694 declarations); R3 remains open. `liveDescriptorEraseCost_le`
    uses those bounds to price erasure of any actual descriptor job list by
@@ -2285,6 +2341,47 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    are unchanged.
 5. Amortize setup for long records and supply the executed short-record fallback,
    preserving spectators in both regimes.
+   `selectiveUniformKeyPassCost_amortized` now absorbs complete-rank key
+   generation, record traversal and counter cleanup into `188 * M * B` when
+   there is at least one record and payload width is at least the square of
+   address-plus-row-key width plus one. This is the first local long-record
+   amortization bound. `selectiveUniformRotationCost_amortized` uses the same
+   payload threshold to absorb both scans and descriptor computation into
+   `400 * M * B` per rotation. `repairDensityCoreCost_amortized` now combines
+   keying and all twelve rotations inside the actual core into
+   `4988 * R * 2^n * B`, retaining the exact compact-width swap and physical
+   exceptional-repair terms. `selectiveUniformSwapCost_amortized` absorbs key
+   fields and fixed bank overhead into record volume while retaining the actual
+   compact-width supplier power. `repairDensityCoreCost_amortized_swaps` applies
+   this to all twelve swaps: the core is bounded by a linear-volume term plus
+   the compact-width supplier term and the physical exceptional-repair ledger.
+   It requires the shared long-payload threshold and fixed bank/setup cost at
+   most total record volume.
+   `repairUniformDensityScanCost_amortized` now bounds all exceptional scans
+   and sorting by a linear-volume term plus the explicit physical correction
+   `(n + rb) * 155 / (128 * scale^3)` times volume.
+   `repairDensityCoreCost_long_records` combines the complete actual core into
+   linear volume, the compact-width supplier power and that sparse correction.
+   `repairDensityCoreCost_long_records_density` absorbs the sparse correction
+   when the cube of the density scale dominates address-plus-row-key width.
+   `repairUniformDensityScanCost_canonical_amortized` discharges this for the
+   existing canonical scale `n + 1` when row-key width is at most `n`, giving
+   a complete scan bound of `391 * R * 2^n * B`. Both are checked; the latter
+   does not cover arbitrarily wide row keys. Controlling the remaining row-key
+   regimes, outer metadata amortization and the executed short-record fallback
+   remain open. The wide-row obstruction is specifically the complete-rank
+   exceptional sort: its key includes the row identifier, although
+   `selectiveIdealIdx_lt` already uses preservation of the quotient by the
+   address-block size. A row-at-a-time implementation is a candidate for removing
+   this identifier from repair keys without changing the density geometry.
+   It still needs an executed block driver, endpoint composition, restored
+   shared metadata and a bound for per-row setup; the current whole-stream
+   execution does not prove that alternative. Do not impose a permanent bound
+   on row count to bypass this obligation.
+   The accumulated dimension-only execution and local long-record cost chunk
+   passed the full guarded root build (15,302 jobs, peak 29.6 GiB) and axiom
+   audit (351,747 declarations, peak 4429.5 MiB) on 2026-10-24. These checks
+   validate the stated conditional bounds, not the remaining R3 acceptance gates.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.
 
