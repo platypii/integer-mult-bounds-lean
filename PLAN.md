@@ -3755,6 +3755,52 @@ superseding those open items above. Placement metadata, profile/frame integratio
 actual full router execution, small dimensions, executed short-record fallback
 and uniform global amortization remain R3 gates; kappa is unchanged.
 
+**Placement operand generation (in progress):** `canonicalPlacementOperands_exec`
+now composes canonical geometry with the existing reservoir operand generator,
+starting from the original binary dimension and blank workspace. It generates
+all nine exact placement coordinates for every reservoir class, including the
+zero-width front exchange, in at most `88*L²+546*L+507` steps.
+`canonicalPlacementWidth_exec` adds the exact live target encoding width
+`canonicalScalarWidth n`, preserving all coordinates and the dimension.
+`canonicalPlacementResize_exec` uses the existing generic batch copier to
+produce all nine coordinates at that exact canonical width, with restored
+scratch and an explicit summed cost. Guarded checks passed at about 2.53 GiB.
+The raw operand/width dependency builds passed; these additions remain
+uncommitted pending placement-bank serialization and complete cleanup. Payload,
+one-row control and normalized dimension projection, complete placement-frame
+assembly, profile/frame integration and every remaining R3 gate remain open.
+
+`canonicalPlacementScalar_exec` now completes the generated placement input
+words with normalized dimension, normalized payload width and the one-row
+control, preserving both original padded inputs and every previous coordinate.
+`canonicalPlacementScalarBank_operands` identifies the complete role bank with
+the actual `binaryScheduleInputWords`, including all empty controls and a separate
+empty record-stream placeholder. `canonicalPlacementScalarBank_physical` lifts
+this to every physical schedule register, including unassigned slots.
+`placementOperandCopy_exec` serializes that bank in physical register order,
+using shared empty sources and preserved copy scratch, with an explicit bound.
+The dependency build passed (8,839 jobs, peak 2.9 GiB); the final projection/copy
+module passed its guarded check at 2563.5 MiB. This supersedes the missing
+payload/row/dimension-projection items above. Composition of generation with
+serialization, complete placement cleanup and all broader R3 integration,
+fallback and amortization gates remain open. This placement chunk is uncommitted.
+
+`canonicalPlacementSerialize_exec` now joins original-input generation with
+physical-order bank copying, preserving an arbitrary output suffix.
+`canonicalPlacementScalarBank_restore` proves that clearing the thirty generated
+words restores the entire original bank, including dimension, payload, arbitrary
+carry-stack contents and spectators. `canonicalPlacementCleanCost_le` bounds
+cleanup by `60*L+60*Lb+121`, independently of bank contents.
+`canonicalPlacementFrameScope_exec` composes generation, complete placement-bank
+serialization and full cleanup: only the serialized output changes. The dependency
+build passed (8,842 jobs, peak 2.9 GiB). This supersedes the placement-generation,
+serialization and cleanup open items above. The full guarded root build passed
+(15,506 jobs, peak 4.5 GiB); the axiom audit passed for 353,475 declarations
+(peak 4450.8 MiB), and the final module checked at 2565.6 MiB. This verified
+placement chunk supersedes the uncommitted notes above. Profile/frame connection, assembly of the complete router frame,
+actual router integration, small dimensions, executed short-record fallback and
+uniform global amortization remain open. R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
