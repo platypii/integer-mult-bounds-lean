@@ -131,7 +131,7 @@ theorem elementarySharedSetup_cost {t₀ T A : ℕ} (rg : LayReg t₀ → Fin T)
     (cfg : Fin 4 → Fin T) (wb wm n B M : ℕ)
     (R : Fin T → List (Fin (A + 4))) (data : ElementarySharedData cfg wb wm n B M R) :
     metadataInstallCost R (elementarySharedJobs rg cfg wb wm B M) =
-      wb * (4 * B + 11) + wm * (4 * M + 11) + 2 * B + 2 * M + 10 * n + 24 := by
+      6 * B + 6 * M + 11 * wb + 11 * wm + 10 * n + 24 := by
   simp [elementarySharedJobs, List.finRange_succ, elementarySharedJob,
     metadataInstallCost, MetadataJob.cost, data.width, data.mask]
   omega

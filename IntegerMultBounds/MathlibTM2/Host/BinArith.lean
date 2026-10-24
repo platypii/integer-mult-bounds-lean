@@ -1,5 +1,6 @@
 module
 public import IntegerMultBounds.MathlibTM2.Host.BinArithZip
+public import IntegerMultBounds.MathlibTM2.Host.EachSymPrice
 
 
 /-!
@@ -25,7 +26,7 @@ bound.
     `W = |wR|` (`toBinary_exec`).
   * `toUnary a z w t t₂`: `z` gains `x` ticks on top for `a` holding `binSyms L x`, by Horner's
     rule from the most significant bit on the work register `w` (doubling with `udbl`), in at
-    most `L (4 x + 11) + 2 x + 6` steps (`toUnary_exec`).
+    most `6 x + 11 L + 6` steps (`toUnary_exec_linear`).
 -/
 
 @[expose] public section
@@ -158,11 +159,11 @@ def toUnary (a z w t t₂ : Fin T) : Pr P T Q A U :=
   .seq (moveR a t id) (.seq (eachSym t a (hornerIter w t₂)) (moveR w z id))
 
 /-- `toUnary`: `a` holding `binSyms L x` with `x < 2 ^ L`; `z` gains `x` ticks on top and every
-other register ends as it started, in at most `L (4 x + 11) + 2 x + 6` steps. -/
-theorem toUnary_exec {a z w t t₂ : Fin T} (hreg : [a, z, w, t, t₂].Nodup) {L x : ℕ}
+other register ends as it started, in at most `6 x + 11 L + 6` steps. -/
+theorem toUnary_exec_linear {a z w t t₂ : Fin T} (hreg : [a, z, w, t, t₂].Nodup) {L x : ℕ}
     (hx : x < 2 ^ L) (v : HS T Q A U) (S : Stacks T A) (ha : S.R a = binSyms L x)
     (hw : S.R w = []) (ht : S.R t = []) (ht₂ : S.R t₂ = []) :
-    ∃ (v' : HS T Q A U) (m : ℕ), v'.user = v.user ∧ m ≤ L * (4 * x + 11) + 2 * x + 6 ∧
+    ∃ (v' : HS T Q A U) (m : ℕ), v'.user = v.user ∧ m ≤ 6 * x + 11 * L + 6 ∧
       Exec body (toUnary a z w t t₂) (mk v S) m
         (mk v' { S with R := Function.update S.R z (List.replicate x tick ++ S.R z) }) := by
   have hreg' := hreg
@@ -177,7 +178,7 @@ theorem toUnary_exec {a z w t t₂ : Fin T} (hreg : [a, z, w, t, t₂].Nodup) {L
     intro k h1 h2; simp [hR₁, movedR, Function.update_of_ne h1, Function.update_of_ne h2]
   let hi : ℕ → ℕ := fun j => x / 2 ^ (L - j)
   let Ψ : ℕ → Regs T A := fun j => Function.update R₁ w (List.replicate (hi j) tick)
-  have hp : SymSpec body (hornerIter w t₂) t a (R₁ t) Ψ (4 * x + 6) := by
+  have hp : PricedSymSpec body (hornerIter w t₂) t a (R₁ t) Ψ (fun j => 4 * hi j + 6) := by
     intro j hj u S' hsym hS'
     rw [h1t, List.length_reverse, length_binSyms] at hj
     have hbit : (R₁ t)[j] = bitSymbol (x.testBit (L - 1 - j)) := by
@@ -192,15 +193,14 @@ theorem toUnary_exec {a z w t t₂ : Fin T} (hreg : [a, z, w, t, t₂].Nodup) {L
       (by rw [hS' t₂ ‹t ≠ t₂›.symm ‹a ≠ t₂›.symm]
           simp [Ψ, Function.update_of_ne ‹w ≠ t₂›.symm, h1 t₂ ‹a ≠ t₂›.symm ‹t ≠ t₂›.symm, ht₂])
     refine ⟨u', _, m, hu', ?_, he, ?_, ?_, fun k hkt hka => ?_⟩
-    · have : hi j ≤ x := Nat.div_le_self _ _
-      omega
+    · exact hm
     · simp [Function.update_of_ne ‹w ≠ t›.symm]
     · simp [Function.update_of_ne ‹a ≠ w›]
     · by_cases hkw : k = w
       · subst hkw; simp [Ψ, hhi]
       rw [Function.update_of_ne hkw, hS' k hkt hka]
       simp [Ψ, Function.update_of_ne hkw]
-  obtain ⟨v₂, R₂, m₂, hu₂, hm₂, he₂, ht₂', ha₂, hΨ₂⟩ := eachSym_exec body ‹a ≠ t›.symm v₁
+  obtain ⟨v₂, R₂, m₂, hu₂, hm₂, he₂, ht₂', ha₂, hΨ₂⟩ := eachSym_priced_exec body ‹a ≠ t›.symm v₁
     { S with R := R₁ } hp (fun k hkt hka => by
       dsimp only
       by_cases hkw : k = w
@@ -212,12 +212,23 @@ theorem toUnary_exec {a z w t t₂ : Fin T} (hreg : [a, z, w, t, t₂].Nodup) {L
   rw [h1t, h1a, List.reverse_reverse, List.append_nil] at ha₂
   have h2w : R₂ w = List.replicate x tick := by
     rw [hΨ₂ w ‹w ≠ t› ‹a ≠ w›.symm]; simp [Ψ, hi]
+  have hgrowth : ∀ j, 0 ≤ j → j < 0 + L → 2 * hi j ≤ hi (j + 1) := by
+    intro j _ hj
+    have hd := div_two_pow_eq x (L - 1 - j)
+    have he : L - 1 - j + 1 = L - j := by omega
+    rw [he] at hd
+    dsimp only [hi]
+    rw [show L - (j + 1) = L - 1 - j by omega]
+    omega
+  have hprice := symLoopPrice_le_doubling hi L 0 hgrowth
+  have hend : hi (0 + L) = x := by simp [hi]
+  rw [hend] at hprice
   obtain ⟨v₃, hu₃, he₃⟩ := moveR_exec body w z ‹z ≠ w›.symm id v₂ { S with R := R₂ }
   refine ⟨v₃, _, by rw [hu₃, hu₂, hu₁], ?_,
     Exec.cast (Exec.seq he₁ (Exec.seq he₂ he₃)) rfl ?_⟩
   · dsimp only
     rw [h2w, List.length_replicate]
-    nlinarith [hm₂]
+    omega
   · congr 2
     funext k
     dsimp only
@@ -236,5 +247,23 @@ theorem toUnary_exec {a z w t t₂ : Fin T} (hreg : [a, z, w, t, t₂].Nodup) {L
     · subst hkt; rw [ht₂', ht]
     rw [hΨ₂ k hkt hka]
     simp [Ψ, Function.update_of_ne hkw, h1 k hka hkt]
+
+
+/-- Compatibility with the former coarse conversion budget. -/
+theorem toUnary_exec {a z w t t₂ : Fin T} (hreg : [a, z, w, t, t₂].Nodup) {L x : ℕ}
+    (hx : x < 2 ^ L) (v : HS T Q A U) (S : Stacks T A) (ha : S.R a = binSyms L x)
+    (hw : S.R w = []) (ht : S.R t = []) (ht₂ : S.R t₂ = []) :
+    ∃ (v' : HS T Q A U) (m : ℕ), v'.user = v.user ∧ m ≤ L * (4 * x + 11) + 2 * x + 6 ∧
+      Exec body (toUnary a z w t t₂) (mk v S) m
+        (mk v' { S with R := Function.update S.R z (List.replicate x tick ++ S.R z) }) := by
+  obtain ⟨v', m, hu, hm, he⟩ := toUnary_exec_linear body hreg hx v S ha hw ht ht₂
+  have hbound : 6 * x + 11 * L + 6 ≤ L * (4 * x + 11) + 2 * x + 6 := by
+    cases L with
+    | zero =>
+      simp only [pow_zero] at hx
+      have hx0 : x = 0 := by omega
+      simp [hx0]
+    | succ L => nlinarith
+  exact ⟨v', m, hu, hm.trans hbound, he⟩
 
 end IntegerMultBounds.MathlibTM2.Host

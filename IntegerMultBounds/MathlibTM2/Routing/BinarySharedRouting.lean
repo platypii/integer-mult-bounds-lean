@@ -65,7 +65,7 @@ theorem binarySharedRouting_exec {n rows B : ℕ}
     (hstream : S.R (rg .str) = l.flatten) :
     ∃ (ds : List (ElementaryInstruction n)) (v' : HS T Q (prime + K) U) (m : ℕ),
       ds.map (fun d => (d.target, d.source)) = cs.reverse.map ElementaryCoordinate.key ∧ v'.user = v.user ∧
-      (m : ℝ) ≤ (L * (4 * n + 11) + 22 * n + 6 * rowBits.length + 46 : ℕ) + ((wb * (4 * B + 11) + wm * (4 * (rows * 2 ^ n) + 11) + 2 * B + 2 * (rows * 2 ^ n) + 10 * n + 24 : ℕ) +
+      (m : ℝ) ≤ (L * (4 * n + 11) + 22 * n + 6 * rowBits.length + 46 : ℕ) + ((6 * B + 6 * (rows * 2 ^ n) + 11 * wb + 11 * wm + 10 * n + 24 : ℕ) +
         ((cs.length : ℝ) *
           ((elementaryCompileBase n L Lb rowBits.length + 7 * (rowBits.length + 3 * n + Lb + 11) + 4 * L + 6 : ℕ) +
             elementaryBaseCost rg n rows B S + 2 +

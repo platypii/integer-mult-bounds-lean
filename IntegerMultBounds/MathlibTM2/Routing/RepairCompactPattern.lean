@@ -150,7 +150,7 @@ theorem repairSetupInstallCost_le {A : ℕ} (rb wb wm wp wk R B n width : ℕ)
     metadataInstallCost bank (repairSetupJobs wb wm wp wk
       (fieldsLen (selectiveKeyLen p X rb) + B) (R * 2 ^ fieldsLen (selectiveLen p X))
       B (fieldsLen (selectiveKeyLen p X rb))) ≤
-      34 * (6 * wordBound + 7 + widthBound * (4 * valueBound + 11) + 2 * valueBound + 6) + 1 := by
+      34 * (6 * wordBound + 7 + 6 * valueBound + 11 * widthBound + 6) + 1 := by
   have hk : fieldsLen (selectiveKeyLen p X rb) = n + rb := by
     rw [selectiveKeyWidth, hfields]
   dsimp only

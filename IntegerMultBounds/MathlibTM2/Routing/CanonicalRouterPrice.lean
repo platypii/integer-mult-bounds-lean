@@ -34,6 +34,52 @@ def canonicalRouterGeneratedCostBound (n R B width : ℕ) : ℝ :=
         (swapT 6 * (width + 1)) + 1) +
     repairUniformDensityScanCost n rb R B (n + 1 : ℕ)
 
+/-- Absorb the executed keying, rotations and sparse repair into volume,
+retaining the compact supplier power and the separately generated outer metadata. -/
+theorem canonicalRouterGeneratedCostBound_amortized (n R B width : ℕ)
+    (hrow : canonicalScalarWidth R ≤ n) (hR : 1 ≤ R)
+    (hB : (n + canonicalScalarWidth R + 1) ^ 2 ≤ B)
+    (hsetup : 6 * (swapT 6 * (width + 1)) + 2 * repairT + 6 * swapT 6 + 23 ≤ R * 2 ^ n * B) :
+    canonicalRouterGeneratedCostBound n R B width ≤
+      (canonicalRouterGeneratedOverhead n R B width : ℕ) +
+      (6207 * (R * 2 ^ n * B) : ℕ) +
+      72 * swapConst * (repairT + 12 * swapT 6 + 5 : ℕ) * (R * 2 ^ n * B : ℕ) *
+        ((max 1 (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n)) : ℕ) : ℝ) ^
+          Parameters.tau + 1 := by
+  have hM : 1 ≤ R * 2 ^ n := by
+    have hp := Nat.two_pow_pos n
+    nlinarith
+  have hlong : n + canonicalScalarWidth R ≤ B := by nlinarith only [hB]
+  have hk := selectiveUniformKeyPassCost_amortized n (canonicalScalarWidth R) (R * 2 ^ n) B hM hB
+  have hr := selectiveUniformRotationCost_amortized n (canonicalScalarWidth R) (R * 2 ^ n) B hM hB
+  have hs := selectiveUniformSwapCost_amortized repairT n (canonicalScalarWidth R) (R * 2 ^ n) B
+    (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n))
+    (swapT 6 * (width + 1)) hlong hsetup
+  have hd := repairUniformDensityScanCost_canonical_amortized n (canonicalScalarWidth R) R B hrow hR hB
+  have hk' := Nat.cast_le (α := ℝ).mpr hk
+  have hr' := Nat.cast_le (α := ℝ).mpr hr
+  unfold canonicalRouterGeneratedCostBound
+  simp only [Nat.cast_mul, Nat.cast_ofNat] at hk' hr' hs hd ⊢
+  linarith only [hk', hr', hs, hd]
+
+/-- The row driver fixes the row-key width at one, so the sparse coefficient
+is absorbed without any restriction on the total number of outer rows. -/
+theorem canonicalRouterGeneratedCostBound_one_row (n B width : ℕ)
+    (hn : 1 ≤ n) (hB : (n + 2) ^ 2 ≤ B)
+    (hsetup : 6 * (swapT 6 * (width + 1)) + 2 * repairT + 6 * swapT 6 + 23 ≤ 2 ^ n * B) :
+    canonicalRouterGeneratedCostBound n 1 B width ≤
+      (canonicalRouterGeneratedOverhead n 1 B width : ℕ) +
+      (6207 * (2 ^ n * B) : ℕ) +
+      72 * swapConst * (repairT + 12 * swapT 6 + 5 : ℕ) * (2 ^ n * B : ℕ) *
+        ((max 1 (routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n)) : ℕ) : ℝ) ^
+          Parameters.tau + 1 := by
+  have hw : canonicalScalarWidth 1 = 1 := by decide
+  have hb : (n + canonicalScalarWidth 1 + 1) ^ 2 ≤ B := by simpa only [hw, Nat.add_assoc] using hB
+  have hs : 6 * (swapT 6 * (width + 1)) + 2 * repairT + 6 * swapT 6 + 23 ≤ 1 * 2 ^ n * B := by
+    simpa only [Nat.one_mul] using hsetup
+  simpa only [Nat.one_mul] using canonicalRouterGeneratedCostBound_amortized n 1 B width
+    (by simpa only [hw] using hn) (by decide) hb hs
+
 theorem canonicalRouterInput_generatedCost_le (r : Fin (canonicalRouterStride n)) (width : ℕ) :
     (input r).generatedCostBound n width ≤ canonicalRouterGeneratedCostBound n R B width := by
   have ho := canonicalRouterGeneratedOverhead_le n hn r R B hR hB width

@@ -1856,3 +1856,7 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalCountedRow
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriver
 public import IntegerMultBounds.MathlibTM2.Routing.CoordinateRowRank
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowEndpoint
+public import IntegerMultBounds.MathlibTM2.Host.EachSymPrice
+public import IntegerMultBounds.MathlibTM2.Routing.LiveRepairAmortized
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterAmortized
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverAmortized

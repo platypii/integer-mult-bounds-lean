@@ -41,7 +41,7 @@ def contents (R : Fin T → List (Fin (A + 4))) : MetadataJob T → List (Fin (A
 def cost (R : Fin T → List (Fin (A + 4))) : MetadataJob T → ℕ
   | .copy s _ _ => 6 * (R s).length + 7
   | .zero s _ => 4 * (R s).length + 4
-  | .unary _ _ w n => w * (4 * n + 11) + 2 * n + 6
+  | .unary _ _ w n => 6 * n + 11 * w + 6
 
 theorem cost_le (R : Fin T → List (Fin (A + 4))) (job : MetadataJob T)
     (wordBound widthBound valueBound : ℕ) (hword : (R job.src).length ≤ wordBound)
@@ -49,7 +49,7 @@ theorem cost_le (R : Fin T → List (Fin (A + 4))) (job : MetadataJob T)
       | .unary _ _ w n => w ≤ widthBound ∧ n ≤ valueBound
       | _ => True) :
     job.cost R ≤ 6 * wordBound + 7 +
-      widthBound * (4 * valueBound + 11) + 2 * valueBound + 6 := by
+      6 * valueBound + 11 * widthBound + 6 := by
   cases job with
   | copy s d header =>
     change (R s).length ≤ wordBound at hword
@@ -61,7 +61,6 @@ theorem cost_le (R : Fin T → List (Fin (A + 4))) (job : MetadataJob T)
     omega
   | unary s d w n =>
     obtain ⟨hw, hn⟩ := hunary
-    have hm := Nat.mul_le_mul hw (show 4 * n + 11 ≤ 4 * valueBound + 11 by omega)
     simp only [cost]
     omega
 
@@ -116,7 +115,7 @@ theorem exec (body : P → Pr P T Q A U) (job : MetadataJob T) (work tmp ctmp : 
     exact ⟨v', _, hu, le_rfl, he⟩
   | unary s d w n =>
     simp only [src, dst] at hreg
-    obtain ⟨v', m, hu, hm, he⟩ := toUnary_exec body hreg hdata.1 v S hdata.2 hw ht hct
+    obtain ⟨v', m, hu, hm, he⟩ := toUnary_exec_linear body hreg hdata.1 v S hdata.2 hw ht hct
     change S.R d = [] at hd
     rw [hd, List.append_nil] at he
     exact ⟨v', m, hu, hm, he⟩

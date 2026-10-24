@@ -33,7 +33,7 @@ theorem canonicalTerminalProgram_independent {Q K : ℕ} {P U : Type}
   rfl
 
 def canonicalTerminalPrice (n rows B L Lb rowLength count : ℕ) : ℝ :=
-  (L * (4 * n + 11) + 22 * n + 6 * rowLength + 46 : ℕ) + ((Lb * (4 * B + 11) + (n + rowLength) * (4 * (rows * 2 ^ n) + 11) + 2 * B + 2 * (rows * 2 ^ n) + 10 * n + 24 : ℕ) +
+  (L * (4 * n + 11) + 22 * n + 6 * rowLength + 46 : ℕ) + ((6 * B + 6 * (rows * 2 ^ n) + 11 * Lb + 11 * (n + rowLength) + 10 * n + 24 : ℕ) +
         ((count : ℝ) *
           ((elementaryCompileBase n L Lb rowLength + 7 * (rowLength + 3 * n + Lb + 11) + 4 * L + 6 : ℕ) +
             canonicalTerminalBaseCost n rows B + 2 +

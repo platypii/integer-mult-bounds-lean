@@ -86,7 +86,7 @@ theorem liveRepairMetadataInstallCost_le {K : ℕ} (wb wm wp wk R B n width : �
     let widthBound := wb + wm + wp + wk
     let valueBound := n + rb + B + R * 2 ^ n
     metadataInstallCost C.R (repairJobs p X rb wb wm wp wk R B) ≤
-      34 * (6 * wordBound + 7 + widthBound * (4 * valueBound + 11) + 2 * valueBound + 6) + 1 := by
+      34 * (6 * wordBound + 7 + 6 * valueBound + 11 * widthBound + 6) + 1 := by
   let D : Stacks repairLiveT (prime + K) :=
     { S with R := liveDescriptorBankGenerated p X hG hK active s repairLiveMode S.R repairLiveJobs }
   let C := embStk liveDescriptorCore D
@@ -101,7 +101,7 @@ def liveRepairUniformOverhead (n rb R B width wb wm wp wk : ℕ) (w : LiveDescri
   let valueBound := n + rb + B + R * 2 ^ n
   (11 * (14 * w.coordinateBits + 16 + LiveDescriptorMode.uniformBackendBudget n n
     w.indexBits w.groupBits w.strideBits w.selectorBits w.widthBits) + 1) +
-    (34 * (6 * wordBound + 7 + widthBound * (4 * valueBound + 11) + 2 * valueBound + 6) + 1) +
+    (34 * (6 * wordBound + 7 + 6 * valueBound + 11 * widthBound + 6) + 1) +
     (34 * (2 * (n * (n + 1) + (n + rb + B) + R * 2 ^ n + width + 2) + 2) + 1) +
     (11 * (2 * (n * (n + 1)) + 2) + 1)
 

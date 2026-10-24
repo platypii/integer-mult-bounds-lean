@@ -2487,6 +2487,91 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    full guarded root build (15,312 jobs, peak 4.8 GiB) and axiom audit
    (351,823 declarations, peak 4428.5 MiB) on 2026-10-24. These checks cover
    supplied-metadata row execution, not the remaining R3 acceptance gates.
+   `CanonicalRouterPrice.canonicalRouterGeneratedCostBound_amortized` now
+   applies the key/rotation/swap/density estimates to the actual canonical
+   generated-stage budget, retaining its outer metadata overhead and compact
+   supplier power. `canonicalRouterGeneratedCostBound_one_row` specializes it
+   to the row driver: payload at least `(n + 2)^2` and setup at most row volume
+   absorb the sparse repair term without restricting the total row count.
+   Both passed a guarded check at about 2.65 GiB. Outer metadata, placement
+   and terminal amortization, input generation and the short-record regime
+   remain open; this does not yet bound the entire router asymptotically.
+   The outer metadata bottleneck includes `MetadataJob.cost` charging binary
+   to unary conversion by width times final value, although `toUnary` already
+   uses Horner doubling. `Host/EachSymPrice` now executes the existing symbol
+   loop with individual iteration prices and a telescoping doubling bound;
+   its guarded check passed at about 1.20 GiB.
+   `Host/BinArith.toUnary_exec_linear` applies this to actual Horner prefix
+   sizes and proves execution in at most `6 * value + 11 * width + 6` steps,
+   with identical output and restored scratch. The old bound is a short
+   compatibility corollary; duplicate conversion proofs and unused preliminary
+   sum lemmas were removed. The consolidated module passed its guarded check
+   at about 1.23 GiB. `MetadataJob.cost` now uses the linear-value unary price,
+   and its actual installation theorem calls `toUnary_exec_linear`. The
+   metadata job module passed its guarded build. Repair setup, compact repair,
+   live generated overhead and shared elementary/terminal setup budgets have
+   been updated to sums of value and width, removing the former product.
+   The affected routing dependency build is in progress; full caller validation
+   and final outer-overhead amortization remain open. The rebuild identified
+   two shared-routing callers carrying the old numeric setup formula; both
+   have been updated and the caller rebuild is continuing.
+   `LiveRepairAmortized` proves exact separation of live setup into scalar
+   metadata work plus `272 * (B + R * 2^n)`, bounded by `544` times record
+   volume. `CanonicalRouterAmortized` lifts this to canonical generated setup
+   and proves its scalar part is affine in header width and binary payload
+   width, with coefficients `292` and `1260`. Both guarded checks passed,
+   peaking at about 2.56 GiB. The corrected caller build through
+   `CanonicalRouterPrice` passed (8,924 jobs, peak 5.1 GiB).
+   `canonicalRouterGeneratedOverhead_one_row` now absorbs all payload-width
+   and actual header-width dependence into linear row volume, leaving an
+   additive setup budget depending only on address dimension.
+   `canonicalRouterGeneratedCost_one_row_amortized` combines this with the
+   actual core ledger: dimension setup plus `8887` times row volume, the
+   compact-width supplier term and one step. Long-payload and fixed-bank
+   setup hypotheses remain explicit. The guarded check passed at about
+   2.59 GiB. Placement/terminal amortization, global asymptotic comparison,
+   compact-input generation and short-record execution remain open.
+   `canonicalRouterPlacementCostBound_split` now separates the actual
+   placement ledger into its two physical supplier-width powers, dimension
+   setup and scalar/volume terms. `canonicalRouterPlacementCostBound_amortized`
+   absorbs the binary payload width into `306` times record volume, leaving
+   the supplier powers and additive dimension setup explicit. Its guarded
+   check passed at about 2.61 GiB.
+   `canonicalRouterStageCost_one_row_amortized` now combines both placement
+   directions with generated execution: a complete residue stage is bounded
+   by dimension-only setup, `9499` times row volume and the actual reservoir/
+   compact supplier terms. Its guarded check passed at about 2.62 GiB.
+   `canonicalTerminalPrice_split` now separates the complete terminal ledger
+   into dimension setup, physical stream work and binary payload width.
+   `canonicalTerminalPrice_one_row_amortized` absorbs its payload terms into
+   linear row volume per coordinate instruction, using only positivity of
+   payload size. The exact ledger needs no extra address-times-payload-width
+   estimate; unused preliminary quadratic-width lemmas were removed.
+   The guarded check passed at about 2.63 GiB. Combining the terminal and bulk
+   bounds with schedule/frame amortization remains open.
+   Exact split lemmas now isolate binary payload width in uniform metadata,
+   residue frames, residue setup and outer directional frames.
+   `canonicalRouterDirectionalSetupBudget_amortized` combines their full
+   schedule/frame ledger into dimension-only setup plus a tape/count-dependent
+   coefficient times record volume. Its guarded check passed at about 2.65 GiB.
+   `canonicalRouterDirectionalCost_one_row_amortized` now combines that
+   ledger with actual terminal and residue-stage bounds into one complete
+   directional-pass bound. Its guarded check passed at about 2.65 GiB.
+   `canonicalPermutationCost_one_row_amortized` now lifts the result through
+   all eighteen directions and charges the final metadata rewind, yielding
+   `canonicalPermutationAmortizedBound`. Its guarded check passed at about
+   2.65 GiB. `CanonicalRowDriverAmortized` now applies the complete budget
+   to actual global row-driver execution, retaining its exact canonical
+   permutation endpoint, restored bank/counters and arbitrary suffix.
+   Its guarded check passed at about 2.57 GiB. Dimension/supplier-width
+   asymptotic comparisons, supplied metadata/counter generation and the
+   short-record regime remain open; the long-payload and fixed-bank setup
+   hypotheses are still explicit.
+
+   The accumulated sharp unary pricing and full amortized row-driver chunk
+   passed the guarded root build (15,316 jobs, peak 32.4 GiB) and axiom audit
+   (351,887 declarations, peak 4429.5 MiB) on 2026-10-24. These verify the
+   explicit conditional execution/cost bounds; R3 and kappa remain unchanged.
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.
 

@@ -59,7 +59,7 @@ theorem compiledSharedRouting_exec {n rows B : ℕ}
     (hstream : S.R (rg .str) = l.flatten) :
     ∃ (ds : List (ElementaryInstruction n)) (v' : HS T Q (prime + K) U) (m : ℕ),
       ds.map (fun d => (d.target, d.source)) = cs.reverse.map ElementaryCoordinate.key ∧ v'.user = v.user ∧
-      (m : ℝ) ≤ (wb * (4 * B + 11) + wm * (4 * (rows * 2 ^ n) + 11) + 2 * B + 2 * (rows * 2 ^ n) + 10 * n + 24 : ℕ) +
+      (m : ℝ) ≤ (6 * B + 6 * (rows * 2 ^ n) + 11 * wb + 11 * wm + 10 * n + 24 : ℕ) +
         ((cs.length : ℝ) *
           ((elementaryCompileBase n L Lb rowBits.length + 7 * (rowBits.length + 3 * n + Lb + 11) + 4 * L + 6 : ℕ) +
             elementaryBaseCost rg n rows B S + 2 +
@@ -126,7 +126,7 @@ theorem compiledSharedRouting_exec {n rows B : ℕ}
     simp only [elementaryBaseCost, hsw]
   rw [hbase] at hm₂
   rw [elementarySharedSetup_cost rg cfg wb wm n B (rows * 2 ^ n) S.R data] at hm₁
-  have hm₁' : (m₁ : ℝ) ≤ (wb * (4 * B + 11) + wm * (4 * (rows * 2 ^ n) + 11) + 2 * B + 2 * (rows * 2 ^ n) + 10 * n + 24 : ℕ) := by
+  have hm₁' : (m₁ : ℝ) ≤ (6 * B + 6 * (rows * 2 ^ n) + 11 * wb + 11 * wm + 10 * n + 24 : ℕ) := by
     exact_mod_cast hm₁
   have hclean : metadataCleanCost bank keys = 2 * B + 2 * (rows * 2 ^ n) + 4 * n + 9 :=
     elementarySharedSetup_cleanCost rg hrg cfg wb wm n B (rows * 2 ^ n) S.R data

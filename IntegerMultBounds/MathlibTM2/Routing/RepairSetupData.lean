@@ -43,10 +43,10 @@ theorem repairSetupJobsCost_le (R : Fin repairT → List (Fin (A + 4)))
     (hsize : keyedSize ≤ valueBound) (hcount : count ≤ valueBound)
     (hpayload : payload ≤ valueBound) (hkey : keyWidth ≤ valueBound) :
     metadataInstallCost R (repairSetupJobs wb wm wp wk keyedSize count payload keyWidth) ≤
-      34 * (6 * wordBound + 7 + widthBound * (4 * valueBound + 11) + 2 * valueBound + 6) + 1 := by
+      34 * (6 * wordBound + 7 + 6 * valueBound + 11 * widthBound + 6) + 1 := by
   have hc (key : RepairSetupKey) :
       (repairSetupJob wb wm wp wk keyedSize count payload keyWidth key).cost R ≤
-        6 * wordBound + 7 + widthBound * (4 * valueBound + 11) + 2 * valueBound + 6 := by
+        6 * wordBound + 7 + 6 * valueBound + 11 * widthBound + 6 := by
     have hw : (R (repairSetupJob wb wm wp wk keyedSize count payload keyWidth key).src).length ≤
         wordBound := by
       rw [repairSetupJob_src]
