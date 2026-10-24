@@ -1,8 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalClassifierSerialize
-public import IntegerMultBounds.MathlibTM2.Routing.ClassifierOperandClean
-public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorClean
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalClassifierClean
 
 /-! Generate and serialize the complete classifier frame, then restore all
 classifier, width, descriptor and geometry setup tapes. -/
@@ -17,7 +16,7 @@ noncomputable section
 def canonicalClassifierFrameScopeProgram (rg : Fin 118 → Fin T) (dst : Fin T)
     (delimiter : Fin (A + 4)) : Pr P T Q A U :=
   .seq (canonicalClassifierSerializeProgram rg dst delimiter)
-    (.seq (classifierOperandCleanProgram rg) (canonicalDescriptorCleanProgram (rg ∘ canonicalClassifierCore)))
+    (canonicalClassifierCleanProgram rg)
 
 theorem canonicalClassifierFrameScope_exec (body : P → Pr P T Q A U)
     (rg : Fin 118 → Fin T) (hrg : Function.Injective rg) (dst : Fin T)
@@ -39,33 +38,13 @@ theorem canonicalClassifierFrameScope_exec (body : P → Pr P T Q A U)
           (classifierOperandFrame delimiter rg words ++ S.R dst)) }) := by
   dsimp only
   let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
-  let W := (canonicalStageWidths p).coordinateBits
-  let core := rg ∘ canonicalClassifierCore
-  have hc : Function.Injective core := hrg.comp canonicalClassifierCore_injective
-  let B : Stacks T A := { S with R := canonicalDescriptorGeneratedBank S.R core L n r.val }
-  let words := canonicalClassifierOperands (A := A) p (canonicalScalarWidth p.K) (canonicalScalarWidth p.n)
-    (canonicalScalarWidth (p.ρ+1)) (canonicalScalarWidth p.m)
-  let output := classifierOperandFrame delimiter rg words ++ S.R dst
   obtain ⟨v₁,m₁,hu₁,hm₁,he₁⟩ := canonicalClassifierSerialize_exec body rg hrg dst hoff delimiter
     L n hn hlarge hdivisor r v S hdimension hresidue hblank
-  have baseBlank (i : Fin 118) (hi : 108 ≤ i.val) : B.R (rg i) = [] := by
-    rw [show B.R (rg i) = S.R (rg i) from canonicalDescriptorGeneratedBank_outside S.R core L n r.val _ (by
-      intro j he
-      have hv := congrArg (fun x : Fin 118 => x.val) (hrg he)
-      change j.val = i.val at hv
-      have := j.isLt
-      omega)]
-    apply hblank <;> intro he <;> subst i <;> norm_num at hi
-  obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := classifierOperandClean_exec body rg hrg L W p
-    (canonicalClassifier_raw_fit L n hn r) v₁ B baseBlank dst hoff output
-  obtain ⟨v₃,m₃,hu₃,hm₃,he₃⟩ := canonicalDescriptorClean_exec body core hc L n r.val v₂ S (by
-      intro i h0 h9 h18
-      exact hblank _ (fun he => h0 (Fin.ext (congrArg (fun x : Fin 118 => x.val) he)))
-        (fun he => h9 (Fin.ext (congrArg (fun x : Fin 118 => x.val) he)))
-        (fun he => h18 (Fin.ext (congrArg (fun x : Fin 118 => x.val) he))))
-    dst (fun i => hoff _) output
-  refine ⟨v₃,m₁+(m₂+m₃),hu₃.trans (hu₂.trans hu₁),?_,Exec.seq he₁ (Exec.seq he₂ he₃)⟩
-  nlinarith only [hm₁,hm₂,hm₃]
+  obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := canonicalClassifierClean_exec body rg hrg L n hn r v₁ S hblank dst hoff
+    (classifierOperandFrame delimiter rg (canonicalClassifierOperands p (canonicalScalarWidth p.K)
+      (canonicalScalarWidth p.n) (canonicalScalarWidth (p.ρ+1)) (canonicalScalarWidth p.m)) ++ S.R dst)
+  refine ⟨v₂,m₁+m₂,hu₂.trans hu₁,?_,Exec.seq he₁ he₂⟩
+  nlinarith only [hm₁,hm₂]
 
 end
 end IntegerMultBounds.MathlibTM2.Routing

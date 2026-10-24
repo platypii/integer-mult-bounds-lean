@@ -3653,6 +3653,30 @@ Repair/header/placement operands, profile/frame composition,
 full-router integration, small dimensions, executed short records and global
 amortization remain open. Full R3 and kappa are unchanged.
 
+**Complete inner header operand frame (verified checkpoint):**
+The row driver invokes the inner router with `R=1`; its outer row counter remains
+handled by the existing driver. `BinaryCanonicalWord` identifies the existing
+canonical-copy routine with the exact shortest binary operand, including zero.
+`canonicalHeaderScalarGenerate_exec` reuses the generated borrowed-width palette
+word and one push to create both header operands in an additional `10*W+13` steps.
+All source readiness and fits follow from the original dimension/residue inputs.
+
+`canonicalHeaderFrameScope_exec` composes all setup, complete header-work-bank
+serialization and final restoration. Every setup tape is restored and arbitrary
+existing frame suffix is preserved; only the output changes. The total price is
+`canonicalClassifierGeneratePrice L W p + 10*W+13`
+plus `card(HeaderWorkRole)*(6*W+7)+1` for copy, `2*W+7` for header cleanup,
+and `44*L+166*W+195` for preceding classifier/descriptor cleanup.
+`CanonicalClassifierClean` factors that preceding restoration for reuse, and the
+previous classifier scope now uses it. Both scopes passed their dependency build
+(8,836 jobs, peak 4.9 GiB). Root imports are added; the full guarded build passed
+(15,479 jobs, peak 4.5 GiB), and the axiom audit passed (353,178 declarations,
+peak 4445.8 MiB). The final scope check used 2560.5 MiB.
+This closes inner header **operand** production, not
+remaining repair/placement metadata, profile/frame composition, full router
+integration, small dimensions, short records or global amortization. R3 and kappa
+remain unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
