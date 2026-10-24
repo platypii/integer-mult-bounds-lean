@@ -18,6 +18,12 @@ def canonicalPermutationProfileProgram (second : Bool) (k : Fin 3) (reverse : Bo
   canonicalProfileScope (matchingCoreEmbed 126 ∘ canonicalPermutationGeometrySlot)
     (canonicalPermutationCompileProgram second k reverse dst)
 
+def canonicalPermutationProfileCost (L n : ℕ) (p : Par) : ℕ :=
+  let w := routerBorrowed n (canonicalRouterStride n) (canonicalRouterGap n)
+  permutationMatchingTableBinaryCost n L + reservoirClassLocalTableCost n w L +
+    682 * L + 765 + 2 * (n * (2 * L + 2)) + 2 + canonicalPreparedProfileCost L p +
+    2 * ((n - 3 * w) * (2 * L + 2)) + 2 + 96 * L * L + 584 * L + 549
+
 theorem canonicalPermutationProfile_exec (body : P → Pr P 162 Q A U)
     (L n : ℕ) (hn : n < 2 ^ L) (hlarge : canonicalRouterStride n ≤ n)
     (r : Fin (canonicalRouterStride n)) (p : Par)
@@ -39,9 +45,7 @@ theorem canonicalPermutationProfile_exec (body : P → Pr P 162 Q A U)
     let mate := permutationReservoirSource n H hfit w hw k second f p hsize
     let widths := canonicalStageWidths p
     ∃ (v' : HS 162 Q A U) (m : ℕ), v'.user = v.user ∧
-      m ≤ permutationMatchingTableBinaryCost n L + reservoirClassLocalTableCost n w L +
-        682 * L + 765 + 2 * (n * (2 * L + 2)) + 2 + canonicalPreparedProfileCost L p +
-        2 * ((n - 3 * w) * (2 * L + 2)) + 2 + 96 * L * L + 584 * L + 549 ∧
+      m ≤ canonicalPermutationProfileCost L n p ∧
       Exec body (canonicalPermutationProfileProgram second k reverse dst) (mk v S) m
         (mk v' { S with R := (Function.update S.R (matchingCoreEmbed 126 dst)
           (sourceCoordinateInputWords widths.indexBits widths.strideBits

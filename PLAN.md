@@ -3436,6 +3436,39 @@ canonical path. The accumulated integration passed the full guarded root build
 full canonical frame assembly and every remaining R3 acceptance gate remain open;
 R3 and kappa are unchanged.
 
+**Residue iteration (in progress):** `indexedCountLoop_exec` proves a fixed host
+count-tape loop for an indexed bank family. Given executed transitions between
+successive banks and a live count-tape termination invariant, it executes exactly
+the required rounds with bound `N*(price+2)+2`. The numerical index/bank family
+remain proof annotations; the program depends only on the count register and fixed
+body. Its guarded check passed at about 1.16 GiB. `indexedCountStep_exec` now composes a framed call with an in-place binary index
+increment and one archived count symbol, with overhead `4*L+6` and restored
+arithmetic scratch. `canonicalResidueStep_exec` instantiates this with actual
+original-permutation-to-profile compilation on a concrete 163-register bank:
+count 107, archive 162, residue 116, output 98, temporary 126 and carry 70. The
+count/output use unused core slots; archive is outside the compiler bank. Its
+guarded check passed at about 2.87 GiB. `canonicalPermutationProfileCost` factors
+the existing total ledger without changing its bound. `IndexedCountBank` now supplies the closed invariant: remaining count is
+`drop i`, archive is reversed `take i`, residue is binary `i`, and output prepends
+the first `i` generated profiles. Its step identity matches the executed round,
+its count test is exactly `i < count.length`, and its output is proved to be the
+flattened profiles in reverse iteration order. The guarded check passed at about
+1.17 GiB. `canonicalResidueBank_projection` now proves the indexed loop bank projects
+exactly to the fixed compiler bank each round, with only count 107, residue 116
+and output 98 changed inside the core. `canonicalResidueCoreBank_blank` and
+`canonicalResidueCoreBank_geometry` preserve all producer and geometry scratch
+readiness under those updates. Its guarded check passed at about 2.50 GiB.
+`CanonicalResidueWords` now defines the exact profile family and its existing
+per-round cost ledger. `canonicalResidueLoop_exec` executes every actual residue
+round with one fixed counted program, using the closed bank invariant and ready
+compiler-bank projection. The guarded check passed at about 2.50 GiB. Its count
+tape is still supplied and its cost is conditional on an explicit uniform round
+bound; generating/restoring the outer count/index and discharging that bound, output
+transfer/frame assembly and the remaining R3 cost/fallback gates stay open. Root imports are added. The accumulated indexed-bank/actual-round/all-residue
+loop chunk passed the full guarded root build (15,429 jobs, combined peak 4.5 GiB)
+and axiom audit (352,738 declarations, peak 4441.0 MiB), superseding pending
+verification notes above. Full R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
