@@ -3316,6 +3316,34 @@ guarded root build (15,404 jobs, combined peak 7.4 GiB) and axiom audit
 permutation-to-matching producer and full residue iteration remain open.
 Full R3 and kappa are unchanged.
 
+**Canonical profile setup (in progress):** `canonicalProfileSetup_exec` composes
+actual residue geometry and exact descriptor-width generation on a shared
+28-register layout, starting only from binary dimension/residue and blank scratch
+with arbitrary carry. Its cost is at most `96*L*L + 562*L + 526`.
+`canonicalProfileSetup_parameters` identifies the exact stride, residue, row-count,
+stride-width and coordinate-width words needed by the fixed profile compiler.
+The guarded module check passed at about 2.53 GiB. `canonicalProfileScope_exec` now prices erasure of all eleven generated words
+at exactly `22*L+23` steps and restores the entire original bank except the framed
+call output, with total setup/cleanup overhead `96*L*L+584*L+549`. Its guarded
+check and dependency build passed (module check about 2.50 GiB).
+`canonicalProfileSetupBank_production` proves setup commutes with the fixed
+production-bank embedding, preserving its matching table and compiler workspace;
+its guarded check passed at about 2.48 GiB. `canonicalProfileFits` derives every compiler fit (including entry-byte count)
+from the existing canonical large-dimension gate, with no additional threshold.
+`canonicalPreparedProfile_exec` now instantiates the executed fixed compiler using
+the generated bank and the concrete control/count inputs; no supplied production
+frame or numeric-fit premises remain at this boundary. Both guarded checks passed
+at about 2.49 GiB. `canonicalProfile_exec` now joins initial setup, actual fixed compilation and
+final cleanup in one program, with an explicit summed cost and exact restoration
+of every register except the appended profile output. The program depends only on
+register placement, direction and output slot; dimension and widths remain tape
+data. Its guarded check passed at about 2.50 GiB. The matching table remains an
+input: permutation-table production and reuse across the residue loop remain open,
+as do all other R3 acceptance gates. Root imports are added. The accumulated canonical setup/compiler/cleanup chunk
+passed the full guarded root build (15,409 jobs, combined peak 4.5 GiB) and axiom
+audit (352,593 declarations, peak 4440.1 MiB), superseding the pending verification
+notes above. R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,

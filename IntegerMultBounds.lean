@@ -1808,6 +1808,11 @@ public import IntegerMultBounds.MathlibTM2.Routing.MatchingFixedSetup
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingFixedControls
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingFixedCount
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingFixedProfile
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalProfileSetup
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalProfileScope
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalProfileProductionBank
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalProfileFits
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalPreparedProfile
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingFixedPlacedRepair
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingPlacedFrame
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingPlacedCurrent
