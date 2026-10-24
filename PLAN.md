@@ -2859,6 +2859,44 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    dimensions and short records; R3 and kappa are unchanged. This binary-input
    compiler chunk passed the full guarded root build (15,351 jobs, peak 4.4 GiB)
    and axiom audit (352,100 declarations, peak 4432.5 MiB).
+   `PermutationReservoirTable.permutationReservoirTable_exec` now feeds the actual
+   generated original matching into the existing fixed-bank reservoir-class/local
+   converter. It proves the generated input establishes that converter's bank,
+   executes the embedded conversion and erases the original matching table.
+   Only the local matching-table output changes. The two generated matching maps'
+   involution proofs come from `permutation_two_matchings`; scalar reservoir inputs
+   remain explicit in the initial bank. The guarded check passed at about 2.46 GiB.
+   Connecting local tables to the canonical profile/metadata bank, generating
+   remaining scalar fields and assembling the complete metadata frame remain open.
+   `PermutationReservoirProfile.permutationReservoirProfile_exec` now composes
+   the generated original matching, actual reservoir-class/local conversion and
+   actual full profile compiler, erasing both generated tables. The local coordinate
+   cast is transported through `matchingMateCoordinate_cast`; profile input readiness
+   is proved from the generated table and the explicit register join. Only the
+   profile output changes, and every phase has its actual cost. Scalar reservoir
+   bank and profile controls remain explicit pure readiness inputs. The guarded
+   check passed at about 2.46 GiB. The unused direct-original-profile wrapper was
+   removed before committing; the canonical router needs this localized path.
+   These compiler-connection additions are uncommitted and have not yet had the
+   full root build or axiom audit; R3 and kappa remain unchanged.
+   `CoordinateExchangeFrame.coordinateExchangeFrame_exec` now computes both
+   interval endpoints from live binary starts/span, emits the exact four-field
+   delimited exchange frame and erases the endpoints in exactly `44 * L + 49`
+   steps. Input operands and arithmetic/copy scratch restore; only the frame
+   destination changes, preserving any suffix. The guarded check passed at
+   about 2.40 GiB.
+   `CoordinateExchangeFrameSchedule.middleLookupMetadata_generate_exec` now
+   composes three such encoders into the exact forward/backward
+   `middleLookupMetadata` words already consumed by reservoir conversion.
+   The fixed three-stage programs are independent of dimension and payload;
+   their exact cost is `132 * L + 148`, and all operands/scratch restore.
+   The guarded check passed at about 2.46 GiB. Per-exchange binary starts/spans
+   are still supplied; deriving those from compact dimension/reservoir inputs,
+   completing scalar bank setup and full canonical frame assembly remain open.
+   The accumulated compiler/metadata-frame chunk passed the full guarded root
+   build (15,355 jobs, peak 5.0 GiB) and axiom audit (352,131 declarations,
+   peak 4432.7 MiB), superseding the pending verification notes above.
+   R3 and kappa remain unchanged.
 
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.

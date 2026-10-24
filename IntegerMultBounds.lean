@@ -1895,3 +1895,7 @@ public import IntegerMultBounds.MathlibTM2.Routing.BinaryCounterPairScope
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingTableInput
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingTableBinary
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingTableCost
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationReservoirTable
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationReservoirProfile
+public import IntegerMultBounds.MathlibTM2.Routing.CoordinateExchangeFrame
+public import IntegerMultBounds.MathlibTM2.Routing.CoordinateExchangeFrameSchedule
