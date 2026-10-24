@@ -3344,6 +3344,50 @@ passed the full guarded root build (15,409 jobs, combined peak 4.5 GiB) and axio
 audit (352,593 declarations, peak 4440.1 MiB), superseding the pending verification
 notes above. R3 and kappa are unchanged.
 
+**Matching-table width bridge (in progress):** The permutation/reservoir table
+producer emits the original scalar-width encoding, while canonical profile
+compilation consumes the exact descriptor coordinate width. This requires executed
+re-encoding, not a pure identification of the two words. `matchingEntryResize_exec`
+now resizes both loaded endpoints into one delimited matching entry, preserving
+both source operands and every arithmetic scratch tape. Its cost is at most
+`4*M*(4*W+11)+24*L+52*W+86`; the program takes the target width from a live tape.
+The guarded module check passed at about 2.48 GiB. `matchingResizeStep_exec` now loads one original entry into the resizer, archives
+its complete original encoding, accumulates the resized encoding in reverse and
+erases both loaded endpoints and the temporary output. Its bound is
+`4*M*(4*W+11)+36*L+56*W+108`; the guarded check passed at about 2.47 GiB.
+`matchingResizeLoop_exec` now scans an arbitrary endpoint list with one fixed
+program, bounded by the entry count times the step bound plus loop overhead.
+`matchingResizeTraceBank_eq` identifies its final bank exactly: empty source,
+complete reversed original table in the archive, and complete reversed resized
+table in the output accumulator. The guarded check passed at about 2.45 GiB.
+`matchingTableResize_exec` now rewinds the complete original table and transfers
+the resized output, restoring every register except the separate output. Its cost
+is at most `entries*(4*M*(4*W+11)+40*L+60*W+118)+6`.
+`matchingTableResizeScope_exec` additionally installs that table for a framed call
+and erases it afterward, again leaving only the call output changed. Its overhead
+is at most `entries*(4*M*(4*W+11)+40*L+64*W+122)+8`.
+Both guarded checks passed (about 2.46 GiB); the converter dependency build also
+passed. `MatchingFixedTableResize` now places the converter on two core inputs and the
+existing fixed producer scratch, with output exactly at extractor slot 5. Its
+injectivity, output separation and blank-workspace readiness are proved.
+`matchingProductionBank_update_table` identifies the installed table with the
+compiler's declared bank. The guarded check passed at about 2.57 GiB.
+`matchingResizedProfile_exec` now composes actual table conversion, fixed profile
+compilation and temporary-table erasure on that bank. The original scalar-width
+table lives in the core; the compiler workspace starts entirely blank. It derives
+entry bounds from the table domain and preserves every register except the appended
+profile output, with an explicit total bound. Its guarded check passed at about
+2.46 GiB. `canonicalPreparedProfile_exec` and `canonicalProfile_exec` now use this restored
+conversion path in place of the supplied compiler-width table. They accept the
+original scalar-width table in a core input and entirely blank compiler workspace;
+target width, control operands and all fits are generated/derived internally.
+No alternate canonical supplied-table implementation is retained. The guarded
+canonical module check passed at about 2.50 GiB. The accumulated conversion/canonical integration chunk passed the full guarded
+root build (15,416 jobs, combined peak 4.5 GiB) and axiom audit
+(352,649 declarations, peak 4439.7 MiB), superseding pending verification notes.
+Permutation/reservoir-producer composition and all remaining R3 gates stay open;
+R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
