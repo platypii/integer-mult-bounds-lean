@@ -1,12 +1,13 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationReservoirTable
-public import IntegerMultBounds.MathlibTM2.Routing.MatchingProfileGeneratedCount
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingProfileCompactControls
 public import IntegerMultBounds.MathlibTM2.Routing.RouterMatchingTable
 
 /-! Execute original matching generation, reservoir localization and profile
 production from compact reservoir inputs, erasing both intermediate tables and
-generated converter inputs. The prefix count is generated from compact inputs; stride/residue and frame readiness remain explicit. -/
+generated converter inputs. The prefix count is generated, compact stride/residue inputs are installed and
+erased, and only pure frame readiness remains explicit. -/
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Routing
@@ -31,9 +32,10 @@ def permutationReservoirProfileProgram (second : Bool) (rg : Fin 10 → Fin T) (
     (out base steps count saved savedQuery savedIndex frame accum fuel archive : Fin T)
     (producer : Fin 78 → Fin T) (k : Fin 3)
     (extract : Fin 8 → Fin T) (gather : Fin 18 → Fin T) (generate : Fin 11 → Fin T)
-    (reverse : Bool) (dst : Fin T) (countRg : Fin 13 → Fin T) : Pr P T Q A U :=
+    (reverse : Bool) (dst : Fin T) (countRg : Fin 13 → Fin T) (control : Fin 7 → Fin T) : Pr P T Q A U :=
   .seq (permutationReservoirTableProgram second rg src out base steps count saved savedQuery savedIndex frame accum fuel archive producer k)
-    (.seq (matchingPrefixCountScope countRg (matchingFullProfileProductionProgram extract gather generate reverse dst)) (bclear (producer 34)))
+    (.seq (matchingControlScope control (matchingPrefixCountScope countRg
+      (matchingFullProfileProductionProgram extract gather generate reverse dst))) (bclear (producer 34)))
 
 theorem permutationReservoirProfile_exec (body : P → Pr P T Q A U) (n : ℕ)
     (second : Bool) (rg : Fin 10 → Fin T) (hrg : Function.Injective rg)
@@ -64,11 +66,20 @@ theorem permutationReservoirProfile_exec (body : P → Pr P T Q A U) (n : ℕ)
     (hspan : S.R (producer 59) = binSyms (Li + Lk) w)
     (hproduction : ∀ j : Fin 78, j ≠ 57 → j ≠ 58 → j ≠ 59 → j ≠ 70 → j ≠ 52 → S.R (producer j) = [])
     (p : Par) (hsize : p.wy = n - 3 * w) (dst : Fin T) (hdst : dst ≠ producer 34)
+    (control : Fin 7 → Fin T) (hcontrol : Function.Injective control)
+    (hcontrolOff : ∀ j, control j ≠ producer 34)
+    (hcontrolStride : S.R (control 0) = binSyms Lk p.K)
+    (hcontrolResidue : S.R (control 1) = binSyms Lk p.ρ)
+    (hcontrolBlank : ∀ j : Fin 7, j ≠ 0 → j ≠ 1 → S.R (control j) = [])
+    (hcontrolDst : dst ≠ control 2 ∧ dst ≠ control 3)
     (setup : MatchingProductionFrame p (permutationReservoirSource n H hfit w hw k second f p hsize) Li Lk (Ln + Lk + Le) dst
-      { S with R := Function.update S.R (producer 34) (permutationReservoirLocalWord n H hfit w hw k second f (Li + Lk)) })
+      { S with R := matchingControlBank (Function.update S.R (producer 34)
+        (permutationReservoirLocalWord n H hfit w hw k second f (Li + Lk))) control Lk p.K p.ρ })
     (hprofileJoin : setup.extract 5 = producer 34)
+    (hstrideJoin : setup.gather 1 = control 2) (hresidueJoin : setup.gather 11 = control 3)
     (countRg : Fin 13 → Fin T) (hcountRg : Function.Injective countRg)
     (hcountTable : ∀ j, countRg j ≠ producer 34)
+    (hcountControl : ∀ j, countRg j ≠ control 2 ∧ countRg j ≠ control 3)
     (hcountJoin : setup.extract 0 = countRg 4) (hcountDst : dst ≠ countRg 4)
     (hcountGather : ∀ j, setup.extract 0 ≠ setup.gather j)
     (hcountGenerate : ∀ j, setup.extract 0 ≠ setup.generate j)
@@ -84,9 +95,9 @@ theorem permutationReservoirProfile_exec (body : P → Pr P T Q A U) (n : ℕ)
       m ≤ (permutationMatchingTableBinaryCost n (Li + Lk) + reservoirClassLocalTableCost n w (Li + Lk) + 682 * (Li + Lk) + 765 +
         2 * (n * (2 * (Li + Lk) + 2)) + 2) + matchingFullProfileProductionCost p (Li + Lk) Lk (Ln + Lk + Le) +
         2 * ((n - 3 * w) * (2 * (Li + Lk) + 2)) + 2 +
-        matchingPrefixCountCost Ln Lk Le + 24 * Le + 29 + 2 * (Ln + Lk + Le) + 2 ∧
+        matchingPrefixCountCost Ln Lk Le + 24 * Le + 29 + 2 * (Ln + Lk + Le) + 2 + 16 * Lk + 20 ∧
       Exec body (permutationReservoirProfileProgram second rg src out base steps count saved savedQuery savedIndex frame accum fuel archive
-        producer k setup.extract setup.gather setup.generate setup.reverse dst countRg) (mk v S) m
+        producer k setup.extract setup.gather setup.generate setup.reverse dst countRg control) (mk v S) m
         (mk v' { S with R := Function.update S.R dst output }) := by
   dsimp only
   obtain ⟨v₁, m₁, hu₁, hm₁, he₁⟩ := permutationReservoirTable_exec body n second rg hrg src
@@ -97,18 +108,24 @@ theorem permutationReservoirProfile_exec (body : P → Pr P T Q A U) (n : ℕ)
   let mate := permutationReservoirSource n H hfit w hw k second f p hsize
   let C : Stacks T A := { S with R := (Function.update S.R (producer 34)
     (permutationReservoirLocalWord n H hfit w hw k second f (Li + Lk))) }
-  have hgenerated : C.R (setup.extract 5) = matchingEntryWords (Li + Lk)
+  let E : Stacks T A := { C with R := matchingControlBank C.R control Lk p.K p.ρ }
+  have hgenerated : E.R (setup.extract 5) = matchingEntryWords (Li + Lk)
       (matchingTableEntries p.wy (matchingMateCoordinate mate)) := by
     rw [hprofileJoin]
-    simp only [C, Function.update_self, permutationReservoirLocalWord, mate]
+    simp only [E, matchingControlBank, Function.update_of_ne (hcontrolOff 2).symm,
+      Function.update_of_ne (hcontrolOff 3).symm, C, Function.update_self, permutationReservoirLocalWord, mate]
     unfold permutationReservoirSource
     rw [matchingMateCoordinate_cast hsize, hsize]
-  let ready : MatchingProductionFrame p mate Li Lk (Ln + Lk + Le) dst C := { setup with hinput := hgenerated }
+  let ready : MatchingProductionFrame p mate Li Lk (Ln + Lk + Le) dst E := { setup with hinput := hgenerated }
   have countKeep (j : Fin 13) : C.R (countRg j) = S.R (countRg j) :=
     Function.update_of_ne (hcountTable j) _ _
-  obtain ⟨v₂, m₂, hu₂, hm₂, he₂⟩ := matchingProfileGeneratedCount_exec body p mate Li Lk Ln Le
-    v₁ C dst ready countRg hcountRg hcountJoin hcountDst hcountGather hcountGenerate hrowsFit hentryFit
-    ((countKeep 0).trans hrowsBinary) ((countKeep 1).trans hstrideBinary)
+  have controlKeep (j : Fin 7) : C.R (control j) = S.R (control j) :=
+    Function.update_of_ne (hcontrolOff j) _ _
+  obtain ⟨v₂, m₂, hu₂, hm₂, he₂⟩ := matchingProfileCompactControls_exec body p mate Li Lk Ln Le
+    v₁ C dst control hcontrol ((controlKeep 0).trans hcontrolStride) ((controlKeep 1).trans hcontrolResidue)
+    (fun j hj0 hj1 => (controlKeep j).trans (hcontrolBlank j hj0 hj1)) hcontrolDst ready
+    hstrideJoin hresidueJoin countRg hcountRg hcountControl hcountJoin hcountDst hcountGather hcountGenerate
+    hrowsFit hentryFit ((countKeep 0).trans hrowsBinary) ((countKeep 1).trans hstrideBinary)
     ((countKeep 11).trans hwidthBinary)
     (fun j hj0 hj1 hj10 hj11 => (countKeep j).trans (hcountBlank j hj0 hj1 hj10 hj11))
   have hdstC : C.R dst = S.R dst := Function.update_of_ne hdst _ _

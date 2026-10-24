@@ -3070,6 +3070,63 @@ The accumulated count/compiler chunk passed the full guarded root build
 4434.5 MiB peak), superseding the pending verification and uncommitted-status
 notes above. R3 and kappa remain unchanged.
 
+`MatchingControlScope` now installs compact binary stride/residue words into
+the compiler bank and erases them after a framed call. Inputs and scratch
+restore; the full install/cleanup overhead is at most `16 * Lk + 20` (guarded
+check 1190.8 MiB). `MatchingProfileCompactControls` instantiates this scope with
+the actual generated-count profile compiler and derives both installed-word
+readiness facts from the execution output (guarded check 2498.2 MiB).
+`PermutationReservoirProfile.permutationReservoirProfile_exec` now uses this
+version in place: generated matching/local tables, reservoir metadata/scalars,
+prefix count and installed stride/residue controls all restore; only profile
+output changes. Its guarded check passed at 2538.3 MiB. The compact binary
+values themselves remain inputs. Deriving canonical geometry from dimension
+and gap/stride, iterating residues and assembling the complete canonical frame
+remain open; this does not close R3. These changes are uncommitted pending a
+larger assembly chunk and full-root verification; kappa is unchanged.
+
+`RouterGeometryDivisor.routerGeometryDivisor_exec` now generates `K + 3*G`
+from binary stride and gap, erasing doubled/tripled gap temporaries in exactly
+`30 * L + 34` steps (guarded check 1200.2 MiB).
+`RouterGeometryDigits.routerGeometryDigits_exec` composes this with actual
+`n-K` subtraction and division, producing exactly `routerDigits n K G` and
+`(n-K) % (K+3*G)`. Only those two outputs change; numerator, divisor and
+all arithmetic scratch restore. Its total bound is `12*L*L + 97*L + 82`, and
+the guarded check passed at 1228.8 MiB. Binary dimension/stride/gap remain
+compact inputs with explicit fit and positivity bounds. Borrowed-width and
+tail generation, canonical gap/stride derivation, residue iteration and complete
+frame assembly remain open. This geometry work is being grouped with the
+uncommitted compact-control chunk; no R3 completion or kappa change is claimed.
+
+`RouterGeometryDigitTail.routerGeometryDigitTail_exec` now composes digit/remainder
+generation with the exact tail addition and erases the division remainder.
+Only digit count and `routerTail n K G` change; its total bound is
+`12*L*L + 107*L + 92` (guarded check 1198.2 MiB).
+`BinaryLowCopy` specializes the existing executed binary prefix extractor to
+fixed-width low-bit copying, preserving its wide source and scratch (1667.8 MiB).
+`RouterBorrowedWidth.routerBorrowedWidth_exec` multiplies a generated digit count
+by the gap, exports the required padded `routerBorrowed n K G` word using a
+compact binary width operand, and erases the wide multiplication result. Only
+borrowed-span output changes, with an explicit quadratic arithmetic/prefix-copy
+bound (guarded check 1712.0 MiB). Composing digit/tail and borrowed-span producers
+into one geometry bank, deriving the canonical gap/stride and residue-dependent
+parameters, and full frame assembly remain open. This work remains uncommitted
+with the compact-control chunk; R3 and kappa are unchanged.
+
+`RouterGeometryGenerate.routerGeometryGenerate_exec` now composes actual digit/tail
+production and fixed-width borrowed-span multiplication on one shared bank.
+From compact binary dimension, stride, gap and word width, only the three
+geometry outputs change; all input words and arithmetic/prefix-copy scratch
+restore. Its total bound is `36*L*L + 177*L + 136 + M*(4*L+11)`; the guarded
+check passed at 1707.9 MiB. This closes the common geometry-bank composition
+item above. Canonical reservoir-width derivation (a second division using
+`(n/(64*G)+1)*G`), gap/stride generation, residue-dependent tail subtraction,
+residue iteration and complete canonical-frame assembly remain open, as do
+all other R3 gates. The accumulated compact-control/common-geometry chunk passed the full guarded
+root build (15,381 jobs, 4.5 GiB combined peak) and root axiom audit
+(352,362 declarations, 4435.2 MiB peak), superseding the pending verification
+and uncommitted-status notes above. Kappa remains unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,

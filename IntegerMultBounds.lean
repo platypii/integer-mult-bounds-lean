@@ -1773,6 +1773,14 @@ public import IntegerMultBounds.MathlibTM2.Routing.MatchingEntryWidth
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingPrefixCount
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingPrefixCountFromWidth
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProfileGeneratedCount
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingControlScope
+public import IntegerMultBounds.MathlibTM2.Routing.MatchingProfileCompactControls
+public import IntegerMultBounds.MathlibTM2.Routing.RouterGeometryDivisor
+public import IntegerMultBounds.MathlibTM2.Routing.RouterGeometryDigits
+public import IntegerMultBounds.MathlibTM2.Routing.RouterGeometryDigitTail
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryLowCopy
+public import IntegerMultBounds.MathlibTM2.Routing.RouterBorrowedWidth
+public import IntegerMultBounds.MathlibTM2.Routing.RouterGeometryGenerate
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingGeneratedPlacedRepair
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionLayout
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionBank
