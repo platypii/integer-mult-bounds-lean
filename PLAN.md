@@ -3165,6 +3165,41 @@ build (15,386 jobs, 4.5 GiB combined peak) and root axiom audit
 and uncommitted-status notes above. The complete setup/call/cleanup check
 passed at 1736.6 MiB.
 
+`BinaryCeilLogData.canonicalBinary_length_clog` identifies canonical bit length
+with the ceiling logarithm of one more than the represented value, including
+zero (guarded check 1162.8 MiB). `BinaryCeilLog.binaryCeilLog_exec` now executes
+`clog 2 (n+2)` from the preserved binary dimension: copy with one extra high bit,
+increment, canonicalize, count the remaining bits, and erase that temporary.
+Only the logarithm output changes; total cost is at most `4*L*L + 34*L + 48`
+(guarded check 1201.7 MiB). `BinaryShiftBits` supplies a structural executed
+fixed-bit shift circuit and width-derived literal construction, for the gap's
+constant six and the fixed power-of-two stride scaling (1190.6 MiB).
+Composing these into actual canonical gap/stride production remains next;
+residue-dependent geometry, profile/frame connection and all other R3 gates
+remain open. This logarithm/control chunk is uncommitted pending that composition
+and full-root verification; R3 and kappa remain unchanged.
+
+`CanonicalGapGenerate.canonicalGapGenerate_exec` now generates the exact
+`canonicalRouterGap n` word from dimension, using the executed logarithm,
+two shifts, a width-derived constant six and addition; logarithm, scaled value
+and constant are erased. Its bound is `4*L*L + 78*L + 115` (2568.8 MiB).
+`CanonicalStrideGenerate` preserves that gap and produces `canonicalRouterStride n`
+by six fixed shifts, with total bound `4*L*L + 108*L + 170` (2549.1 MiB).
+`CanonicalGeometryGenerate.canonicalGeometryGenerate_exec` composes these with
+shared geometry/reservoir production. From only binary dimension it produces
+the six exact canonical controls: gap, stride, digits, tail, borrowed span and
+reservoir width. Input and all other scratch restore, with total bound
+`88*L*L + 464*L + 413`. The framed `canonicalGeometryScope_exec` additionally
+erases all six outputs after use; cleanup costs exactly `12*L+13`, so the
+setup/cleanup overhead is at most `88*L*L + 476*L + 426`. The combined guarded
+check passed at 2571.6 MiB. Explicit large-dimension and scalar-fit hypotheses
+remain; residue-dependent geometry, actual profile/frame integration, complete
+frame generation, small dimensions and short-record fallback are still R3 gates.
+The accumulated logarithm/gap/stride/geometry chunk passed the full guarded
+root build (15,392 jobs, 4.5 GiB combined peak) and root axiom audit
+(352,447 declarations, 4436.9 MiB peak), superseding the pending verification
+and uncommitted-status notes above. R3 and kappa remain unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,

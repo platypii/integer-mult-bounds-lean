@@ -1786,6 +1786,12 @@ public import IntegerMultBounds.MathlibTM2.Routing.BinaryProductLowCopy
 public import IntegerMultBounds.MathlibTM2.Routing.RouterGeometryCompact
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirWidthGenerate
 public import IntegerMultBounds.MathlibTM2.Routing.RouterReservoirGeometry
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryCeilLogData
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryCeilLog
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryShiftBits
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalGapGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalStrideGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalGeometryGenerate
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingGeneratedPlacedRepair
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionLayout
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingProductionBank
