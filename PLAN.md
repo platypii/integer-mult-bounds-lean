@@ -3540,6 +3540,66 @@ against the generated canonical geometry, descriptor-role installation and compl
 frame serialization remain open, along with every remaining R3 gate; R3 and kappa
 are unchanged.
 
+**Canonical scalar placement (in progress):** `CanonicalDescriptorScalarLayout`
+places geometry, target-width arithmetic and scalar resizing/generation on one
+46-register scope. The five compact inputs alias generated stride, gap, residue,
+target width and borrowed span directly; the target encoding width aliases the
+exact generated coordinate-width word. All three maps are injective, remaining
+palette scratch is proved blank, and the five original-width fits follow from
+existing dimension/geometry gates. `canonicalDescriptorScalarInputBank_ready`
+identifies every required input word exactly. The guarded check passed at about
+2.53 GiB. `canonicalDescriptorScalarGenerate_exec` now executes geometry/width generation,
+common target-width arithmetic, five-input resizing and all derived-scalar
+arithmetic as one program from binary dimension/residue and blank workspace.
+Every fit is derived from the existing canonical assumptions. Its bound is
+`96*L*L+652*L+875+10*L*(4*W+11)+224*W`, where `W` is the generated canonical
+coordinate width. The guarded check passed at about 2.52 GiB. `canonicalDescriptorScalarBank_keep/clean/cleanCost` now prove exact spectator
+preservation, restoration after erasing all 23 generated words, and cleanup cost
+`24*L+22*W+47`. `canonicalDescriptorScalarScope_exec` executes generation, a framed
+call and cleanup with full restoration except call output; its overhead is
+`96*L*L+676*L+922+10*L*(4*W+11)+246*W`. The guarded check passed at about 2.52 GiB.
+Instantiating the call with actual descriptor-role installation, complete frame
+assembly and the remaining R3 gates stay open. This work is uncommitted pending
+that larger integration; R3 and kappa are unchanged.
+
+`DescriptorScalarFields` now identifies all 55 selected palette words with the
+actual canonical descriptor-role operands and proves the role placement injective.
+The existing `binaryResizeBatchBank_at` supplies the installation lookup theorem;
+the redundant new lookup was removed. `DescriptorScalarInstall` now executes the
+55 resize jobs on a 101-register scope, sharing the canonical palette at 28–38,
+width words at 21/26 and scratch at 39–43/45, with distinct destinations at 46–100.
+It identifies every final field with `canonicalDescriptorOperands`, restores
+scratch and proves the structural cost bound
+`55*(2*M*(4*B+11)+12*W+26*B+42)+1` when destination widths are at most `B`.
+The guarded check passed at about 2.57 GiB. Connecting this installation to the
+executed canonical generator, complete frame assembly and remaining R3 gates
+stay open; these additions are uncommitted with the scalar-placement chunk.
+
+`CanonicalDescriptorInstallReady` now connects the generated palette and both
+width words directly to that installation, and proves scratch/destinations blank.
+`canonicalDescriptorInstall_exec` composes actual scalar generation and all 55
+field installations from only binary dimension/residue and blank workspace.
+It derives all fit conditions and bounds the combined cost by the scalar
+generation price plus `55*(2*L*(4*W+11)+38*W+42)+1`, with canonical coordinate
+width `W`. The guarded file check passed at about 2.51 GiB; the readiness
+dependency build passed. Complete frame assembly, framed-call/cleanup composition,
+router integration and all remaining R3 acceptance gates stay open. These changes
+are uncommitted pending the larger frame integration and root validation.
+
+`canonicalDescriptorScope_exec` now composes generation, all 55 installations,
+an actual framed call, field cleanup and scalar/geometry cleanup. Its final
+bank changes only the call output; every setup input, scratch tape and spectator
+is restored. The explicit overhead is the scalar-scope price plus
+`55*(2*L*(4*W+11)+38*W+42)+55*(2*W+2)+2`.
+Common destination-width bounds and canonical width fits are factored into
+`CanonicalDescriptorInstallReady` and reused by generation/installation and the
+scope. The guarded scope check passed at about 2.52 GiB. Root imports are added;
+the full guarded root build passed (15,449 jobs, peak 4.5 GiB), and the axiom
+audit passed (352,898 declarations, peak 4443.7 MiB). This completed 768-line
+generation/installation/restoration chunk supersedes the pending-validation
+notes above. Frame serialization and
+full-router integration remain open, along with every other R3 acceptance gate.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
