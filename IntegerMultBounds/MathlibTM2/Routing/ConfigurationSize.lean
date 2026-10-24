@@ -53,16 +53,5 @@ theorem configurationBatchLoaded_length_le (R : Fin T → List (Fin (A + 4))) (s
       simp only [configurationWords, List.length_append, List.length_cons]
       omega
 
-/-- Exact cleanup cost is bounded by destination count and a common word width. -/
-theorem metadataCleanCost_le (R : Fin T → List (Fin (A + 4))) (keys : List (Fin T)) (L : ℕ)
-    (hL : ∀ j ∈ keys, (R j).length ≤ L) :
-    metadataCleanCost R keys ≤ keys.length * (2 * L + 2) + 1 := by
-  induction keys with
-  | nil => simp [metadataCleanCost]
-  | cons j keys ih =>
-    have hj := hL j (by simp)
-    have ht := ih (fun k hk => hL k (by simp [hk]))
-    simp only [metadataCleanCost, List.length_cons]
-    nlinarith
 
 end IntegerMultBounds.MathlibTM2.Routing

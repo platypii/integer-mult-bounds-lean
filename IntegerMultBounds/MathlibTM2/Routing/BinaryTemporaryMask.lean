@@ -27,6 +27,28 @@ def binaryTemporaryMaskCost (p : Par) (L Ln Lo Lm : ℕ) :=
     (Lo * (4 * (p.ρ + 1) + 11) + 8 * (p.ρ + 1) + 12) +
     (Lm * (4 * p.m + 11) + 10 * p.m + 4 * (p.ρ + 1 + p.n * p.K) + 16)
 
+def binaryTemporaryMaskUniformCost (n L Ln Lo Lm : ℕ) :=
+  ((L * (4 * n + 21) + 2 * n + 16) +
+    (L * (4 * n + 11) + 6 * n + 6 * n + 14) + (2 * n + 2)) +
+    binaryWordRepeatCost Ln n n + (2 * n + 2) +
+    (Lo * (4 * n + 11) + 8 * n + 12) +
+    (Lm * (4 * n + 11) + 10 * n + 4 * (n + n * n) + 16)
+
+theorem binaryTemporaryMaskUniformCost_widths_mono (n : ℕ)
+    {L L' Ln Ln' Lo Lo' Lm Lm' : ℕ}
+    (hL : L ≤ L') (hn : Ln ≤ Ln') (ho : Lo ≤ Lo') (hm : Lm ≤ Lm') :
+    binaryTemporaryMaskUniformCost n L Ln Lo Lm ≤ binaryTemporaryMaskUniformCost n L' Ln' Lo' Lm' := by
+  unfold binaryTemporaryMaskUniformCost binaryWordRepeatCost
+  gcongr
+
+theorem binaryTemporaryMaskCost_le (p : Par) (n L Ln Lo Lm : ℕ)
+    (hK : p.K ≤ n) (hG : p.G ≤ n) (hn : p.n ≤ n)
+    (ho : p.ρ + 1 ≤ n) (hm : p.m ≤ n) :
+    binaryTemporaryMaskCost p L Ln Lo Lm ≤ binaryTemporaryMaskUniformCost n L Ln Lo Lm := by
+  have hd : p.K - p.G ≤ n := (Nat.sub_le _ _).trans hK
+  unfold binaryTemporaryMaskCost binaryTemporaryMaskUniformCost binaryTemporaryBlockCost binaryWordRepeatCost
+  gcongr
+
 theorem binaryTemporaryMask_exec {T Q A : ℕ} {P U : Type}
     (body : P → Pr P T Q A U) (p : Par) (hG : 0 < p.G) (hGK : p.G ≤ p.K)
     (rg : TemporaryBlockReg → Fin T) (hrg : Function.Injective rg)

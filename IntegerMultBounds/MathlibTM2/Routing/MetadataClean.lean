@@ -31,6 +31,18 @@ def metadataCleanCost (R : Fin T → List (Fin (A + 4))) : List (Fin T) → ℕ
   | [] => 1
   | k :: ks => metadataCleanCost R ks + (2 * (R k).length + 2)
 
+/-- Exact cleanup cost is bounded by destination count and a common word width. -/
+theorem metadataCleanCost_le (R : Fin T → List (Fin (A + 4))) (keys : List (Fin T)) (L : ℕ)
+    (hL : ∀ j ∈ keys, (R j).length ≤ L) :
+    metadataCleanCost R keys ≤ keys.length * (2 * L + 2) + 1 := by
+  induction keys with
+  | nil => simp [metadataCleanCost]
+  | cons j keys ih =>
+    have hj := hL j (by simp)
+    have ht := ih (fun k hk => hL k (by simp [hk]))
+    simp only [metadataCleanCost, List.length_cons, Nat.add_mul, Nat.one_mul]
+    omega
+
 /-- Every installed destination contains exactly its specified metadata word. -/
 theorem metadataInstalled_at (R : Fin T → List (Fin (A + 4))) (jobs : List (MetadataJob T))
     (hdst : (jobs.map MetadataJob.dst).Nodup) (job : MetadataJob T) (hj : job ∈ jobs) :
@@ -46,6 +58,19 @@ theorem metadataInstalled_at (R : Fin T → List (Fin (A + 4))) (jobs : List (Me
         exact hn.1 (List.mem_map.mpr ⟨job, hj, he⟩)
       rw [metadataInstalled, Function.update_of_ne hne]
       exact ih hn.2 hj
+
+/-- Installed metadata is priced from its contents, independently of the old bank. -/
+theorem metadataInstalled_cleanCost_le (R : Fin T → List (Fin (A + 4)))
+    (jobs : List (MetadataJob T)) (hdst : (jobs.map MetadataJob.dst).Nodup) (L : ℕ)
+    (hcontents : ∀ job ∈ jobs, (job.contents R).length ≤ L) :
+    metadataCleanCost (metadataInstalled R jobs) (jobs.map MetadataJob.dst) ≤
+      jobs.length * (2 * L + 2) + 1 := by
+  have hc := metadataCleanCost_le (metadataInstalled R jobs) (jobs.map MetadataJob.dst) L (by
+    intro j hj
+    obtain ⟨job, hjob, rfl⟩ := List.mem_map.mp hj
+    rw [metadataInstalled_at R jobs hdst job hjob]
+    exact hcontents job hjob)
+  simpa only [List.length_map] using hc
 
 theorem metadataCleared_keep (R : Fin T → List (Fin (A + 4))) (ks : List (Fin T))
     (k : Fin T) (hk : k ∉ ks) : metadataCleared R ks k = R k := by

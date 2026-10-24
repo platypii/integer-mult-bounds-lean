@@ -30,6 +30,84 @@ def affineProfileDescriptorCost (Li Lk Ls Lw k o N : ℕ) (src : Fin m → Optio
       (2 * (N * (Ls + 1)) + 2)) +
     (2 * (entries.length * (Li + Lk + Ls + 2)) + 2)
 
+/-- A payload-independent bound for the complete affine descriptor pipeline. -/
+def affineProfileDescriptorBound (Li Lk Ls Lw m N W : ℕ) : ℕ :=
+  affineProfileClosedCost Li Lk Ls m +
+    ((m + 1) * (55 * (Li + Lk) + 30 * Ls + 105) + N * (4 * (Li + Lk) + 6 * Ls + 21) +
+      Lw * (4 * Ls + 11) + 16 * (Li + Lk) + 10 * Ls + 43 +
+      (N * (descriptorCompileCallCost Ls (W + 1) + 2) + 2 * (N * (Ls + 1)) + 4) +
+      (2 * (N * (Ls + 1)) + 2)) +
+    (2 * ((m + 1) * (Li + Lk + Ls + 2)) + 2)
+
+theorem affineProfileDescriptorBound_mono (Li Lk Ls Lw : ℕ)
+    {m m' N N' W W' : ℕ} (hm : m ≤ m') (hN : N ≤ N') (hW : W ≤ W') :
+    affineProfileDescriptorBound Li Lk Ls Lw m N W ≤
+      affineProfileDescriptorBound Li Lk Ls Lw m' N' W' := by
+  unfold affineProfileDescriptorBound affineProfileClosedCost descriptorCompileCallCost
+  gcongr
+
+theorem affineProfileDescriptorBound_widths_mono
+    {Li Li' Lk Lk' Ls Ls' Lw Lw' : ℕ} (hi : Li ≤ Li') (hk : Lk ≤ Lk')
+    (hs : Ls ≤ Ls') (hw : Lw ≤ Lw') (m N W : ℕ) :
+    affineProfileDescriptorBound Li Lk Ls Lw m N W ≤
+      affineProfileDescriptorBound Li' Lk' Ls' Lw' m N W := by
+  unfold affineProfileDescriptorBound affineProfileClosedCost affineProfileCallCost
+    descriptorCompileCallCost
+  gcongr
+
+theorem affineProfileDescriptorCost_le (Li Lk Ls Lw k o N : ℕ)
+    (src : Fin m → Option (Fin W)) (hk : 0 < k) (hN : 0 < N)
+    (hfit : N < 2 ^ (Li + Lk)) (hpos : ∀ j : Fin m, j.val * k + o < N) :
+    affineProfileDescriptorCost Li Lk Ls Lw k o N src ≤
+      affineProfileDescriptorBound Li Lk Ls Lw m N W := by
+  let coords := sparsePatternCoordinates (N := N) (fun j => j * k + o) src
+  let entries := sparseCoordinateClose N coords
+  have hmono : StrictMono (fun j : ℕ => j * k + o) := by
+    intro a b hab
+    exact Nat.add_lt_add_right (Nat.mul_lt_mul_of_pos_right hab hk) o
+  have hb : ∀ j < m, j * k + o < N := fun j hj => hpos ⟨j, hj⟩
+  have ho := sparsePatternCoordinates_ordered _ hmono src hb
+  have hbound := sparsePatternCoordinates_bound _ src hb
+  have hr := sparseCoordinateClose_ready (Li + Lk) N hN hfit coords ho hbound
+  have he := sparseCoordinateClose_end (Li + Lk) N hN hfit coords ho hbound
+  have hl : entries.length ≤ m + 1 := by
+    simpa only [entries, coords, sparsePatternCoordinates, List.length_reverse,
+      List.length_ofFn] using sparseCoordinateClose_length N coords
+  have hs := coordinateSelectorCost_le Lw (Li + Lk) Ls 0 N entries hr (by
+    change sparseCoordinateEnd 0 (sparseCoordinateValues (sparseCoordinateClose N coords)) - 0 ≤ N
+    rw [he]
+    omega)
+  have hc := Nat.mul_le_mul_right (55 * (Li + Lk) + 30 * Ls + 105) hl
+  have hd := Nat.mul_le_mul_right (Li + Lk + Ls + 2) hl
+  change affineProfileClosedCost Li Lk Ls m +
+    (coordinateSelectorCost Lw (Li + Lk) Ls 0 entries + _ + _) +
+    (2 * (entries.length * (Li + Lk + Ls + 2)) + 2) ≤ _
+  unfold affineProfileDescriptorBound
+  omega
+
+theorem affineProfileDescriptorCost_zero (Li Lk Ls Lw k o : ℕ)
+    (src : Fin 0 → Option (Fin W)) :
+    affineProfileDescriptorCost Li Lk Ls Lw k o 0 src =
+      affineProfileDescriptorBound Li Lk Ls Lw 0 0 W := by
+  simp [affineProfileDescriptorCost, affineProfileDescriptorBound, sparsePatternCoordinates,
+    sparseCoordinateClose, coordinateSelectorCost_eq, sparseCoordinateRuns]
+
+theorem affineProfileDescriptorCost_le_of_positions (Li Lk Ls Lw k o N : ℕ)
+    (src : Fin m → Option (Fin W)) (hk : 0 < k)
+    (hfit : N < 2 ^ (Li + Lk)) (hpos : ∀ j : Fin m, j.val * k + o < N) :
+    affineProfileDescriptorCost Li Lk Ls Lw k o N src ≤
+      affineProfileDescriptorBound Li Lk Ls Lw m N W := by
+  by_cases hN : 0 < N
+  · exact affineProfileDescriptorCost_le Li Lk Ls Lw k o N src hk hN hfit hpos
+  · have hzero : N = 0 := by omega
+    have hm : m = 0 := by
+      by_contra hm
+      have hp := hpos ⟨0, by omega⟩
+      omega
+    subst N
+    subst m
+    exact le_of_eq (affineProfileDescriptorCost_zero Li Lk Ls Lw k o src)
+
 theorem affineProfileDescriptor_exec (body : P → Pr P T Q A U)
     (profile : AffineProfileReg → Fin T) (hprofile : Function.Injective profile)
     (profileSaved : Fin T) (hprofileSaved : ∀ r, profileSaved ≠ profile r)

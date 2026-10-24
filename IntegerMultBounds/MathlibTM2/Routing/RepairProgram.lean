@@ -41,6 +41,22 @@ def repairProgram (hQ : swapStates selectiveSwapHd selectiveSwapPay selectiveSwa
 variable (p : Par) (X rb : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
   (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X)
 
+theorem repairMetadataCleanCost_le (wb wm wp wk R B L : ℕ)
+    (headers : Fin 2 → Fin 5 → List Bool)
+    (bank : Fin repairT → List (Fin (prime + K + 4)))
+    (data : RepairSetupData p X rb hG hK active s wb wm wp wk R B headers bank)
+    (hpayload : ∀ key, (repairSetupPayload (A := prime + K) p X rb hG hK active s R B headers key).length ≤ L) :
+    metadataCleanCost (metadataInstalled bank (repairJobs p X rb wb wm wp wk R B)) repairTargets ≤
+      34 * (2 * L + 2) + 1 := by
+  have hc := metadataCleanCost_le (metadataInstalled bank (repairJobs p X rb wb wm wp wk R B))
+    repairTargets L (by
+      intro j hj
+      obtain ⟨key, _, rfl⟩ := List.mem_map.mp hj
+      rw [repairSetup_at p X rb hG hK active s data key]
+      exact hpayload key)
+  have hlen : repairTargets.length = 34 := by decide +kernel
+  simpa only [hlen] using hc
+
 /-- Exact all-address execution from raw input configuration, with no prepared
 key, classifier, counter, placement or per-phase execution assumptions. -/
 theorem repairProgram_exec (hGK : p.G + 1 < p.K)

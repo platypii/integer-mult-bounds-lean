@@ -116,6 +116,39 @@ noncomputable def cost (c : BinaryExchangeCall t₀ T Q n R B str tmp) (S : Stac
   (3 * (c.Lc * (4 * n + 31) + 2 * n + 26) + 10 * c.Lc + 12 : ℕ) +
     generatedExchangeBound c.bank R B n c.a c.b c.w c.L c.rowBits.length c.Lc S + (2 * n + 2 * c.Lc + 9 : ℕ)
 
+theorem cost_le (c : BinaryExchangeCall t₀ T Q n R B str tmp) (S : Stacks T (prime + K))
+    (bankBound : ℕ) (hbank : (∑ j, (S.R (c.bank j)).length) ≤ bankBound) :
+    c.cost S ≤
+      3 * swapConst * (T + 12 * swapT t₀ + 5 : ℕ) * (R * 2 ^ n * B : ℕ) *
+        ((max 1 c.w : ℕ) : ℝ) ^ Parameters.tau +
+      (generatedExchangeUniformOverhead t₀ T n R B c.L c.rowBits.length c.Lc bankBound +
+        (3 * (c.Lc * (4 * n + 31) + 2 * n + 26) + 10 * c.Lc + 12) +
+        (2 * n + 2 * c.Lc + 9) : ℕ) := by
+  have h := generatedExchangeBound_le c.bank R B n c.a c.b c.w c.L c.rowBits.length c.Lc
+    bankBound S c.hab c.hb hbank
+  unfold cost
+  simp only [Nat.cast_add] at h ⊢
+  linarith only [h]
+
+theorem cost_uniform_overhead (c : BinaryExchangeCall t₀ T Q n R B str tmp)
+    (S : Stacks T (prime + K)) (L rowLength widthLength bankBound : ℕ)
+    (hL : c.L ≤ L) (hr : c.rowBits.length ≤ rowLength) (hw : c.Lc ≤ widthLength)
+    (hbank : (∑ j, (S.R (c.bank j)).length) ≤ bankBound) :
+    c.cost S ≤
+      3 * swapConst * (T + 12 * swapT t₀ + 5 : ℕ) * (R * 2 ^ n * B : ℕ) *
+        ((max 1 c.w : ℕ) : ℝ) ^ Parameters.tau +
+      (generatedExchangeUniformOverhead t₀ T n R B L rowLength widthLength bankBound +
+        (3 * (widthLength * (4 * n + 31) + 2 * n + 26) + 10 * widthLength + 12) +
+        (2 * n + 2 * widthLength + 9) : ℕ) := by
+  have ho := generatedExchangeUniformOverhead_mono t₀ T n R B hL hr hw (le_refl bankBound)
+  have hconvert := Nat.mul_le_mul_right (4 * n + 31) hw
+  have hn : generatedExchangeUniformOverhead t₀ T n R B c.L c.rowBits.length c.Lc bankBound +
+      (3 * (c.Lc * (4 * n + 31) + 2 * n + 26) + 10 * c.Lc + 12) + (2 * n + 2 * c.Lc + 9) ≤
+      generatedExchangeUniformOverhead t₀ T n R B L rowLength widthLength bankBound +
+      (3 * (widthLength * (4 * n + 31) + 2 * n + 26) + 10 * widthLength + 12) +
+      (2 * n + 2 * widthLength + 9) := by omega
+  exact (c.cost_le S bankBound hbank).trans (add_le_add (le_refl _) (Nat.cast_le.mpr hn))
+
 def spec (c : BinaryExchangeCall t₀ T Q n R B str tmp) : BlockExchangeSpec n :=
   ⟨c.a, c.b, c.w, c.hab, c.hb⟩
 

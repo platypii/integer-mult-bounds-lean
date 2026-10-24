@@ -17,6 +17,27 @@ variable {T Q A : ℕ} {P U : Type}
 
 noncomputable section
 
+theorem repairCoordinateSelectorCost_le
+    (p : IntegerMultBounds.MathlibTM2.Layer.CompactGadget.Par) (X : ℕ)
+    (hG : 0 < p.G) (hK : 0 < p.K) (hGK : p.G < p.K)
+    (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X)
+    (key : RepairDescriptorKey) (Lw L Ls : ℕ)
+    (hrows : 0 < repairCompactRows p key) (hfit : repairCompactRows p key < 2 ^ L) :
+    coordinateSelectorCost Lw L Ls 0 (repairDescriptorCoordinates p X hG hK active s key) ≤
+      (repairDescriptorCoordinateSlots p key + 1) * (55 * L + 30 * Ls + 105) +
+        repairCompactRows p key * (4 * L + 6 * Ls + 21) +
+        Lw * (4 * Ls + 11) + 16 * L + 10 * Ls + 43 := by
+  have hr := repairDescriptorCoordinates_ready p X hG hK active s hGK key L hrows hfit
+  have hd := repairDescriptorCoordinates_dense_length p X hG hK active s hGK key L hrows hfit
+  have he := sparseCoordinateRuns_coverage L 0
+    (repairDescriptorCoordinates p X hG hK active s key) hr
+  rw [hd] at he
+  have hs := coordinateSelectorCost_le Lw L Ls 0 (repairCompactRows p key)
+    (repairDescriptorCoordinates p X hG hK active s key) hr (by omega)
+  have hl := Nat.mul_le_mul_right (55 * L + 30 * Ls + 105)
+    (repairDescriptorCoordinates_length p X hG hK active s key)
+  omega
+
 theorem repairCoordinateDescriptor_exec (body : P → Pr P T Q A U)
     (p : IntegerMultBounds.MathlibTM2.Layer.CompactGadget.Par) (X : ℕ)
     (hG : 0 < p.G) (hK : 0 < p.K) (hGK : p.G < p.K)

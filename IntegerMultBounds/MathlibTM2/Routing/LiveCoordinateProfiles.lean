@@ -28,6 +28,31 @@ def liveCoordinateProfilesCost (p : Par) (w : LiveDescriptorWidths) :=
       2 * (p.n * (w.indexBits + w.coordinateBits + 5)) + 4 * p.n + 8)) +
   (2 * (p.n * (w.indexBits + w.coordinateBits + 5)) + 2)
 
+theorem liveCoordinateProfilesCost_mono (p q : Par) (w : LiveDescriptorWidths)
+    (hn : p.n ≤ q.n) (hg : p.G ≤ q.G) (hc : p.wc ≤ q.wc) :
+    liveCoordinateProfilesCost p w ≤ liveCoordinateProfilesCost q w := by
+  unfold liveCoordinateProfilesCost livePreparedCoordinateSourceCost liveSelectedProfilesCost
+    repairControlProfilesCost repairTemporaryProfilesCost repairYZProfilesCost liveYZSourceBatchCost
+    binaryCounterSourceGenerateCost binaryAffineSourceGenerateCost binaryInactiveProfileCost
+    optionalAffineSourceGroupIterationCost binaryWordRepeatCost
+  gcongr
+
+theorem liveCoordinateProfilesCost_widths_mono (p : Par) (w w' : LiveDescriptorWidths)
+    (hi : w.indexBits ≤ w'.indexBits) (hg : w.groupBits ≤ w'.groupBits)
+    (hk : w.strideBits ≤ w'.strideBits) (hs : w.selectorBits ≤ w'.selectorBits)
+    (hw : w.widthBits ≤ w'.widthBits) :
+    liveCoordinateProfilesCost p w ≤ liveCoordinateProfilesCost p w' := by
+  have hc : w.coordinateBits ≤ w'.coordinateBits := Nat.add_le_add hi hk
+  unfold liveCoordinateProfilesCost livePreparedCoordinateSourceCost liveSelectedProfilesCost
+    repairControlProfilesCost repairTemporaryProfilesCost repairYZProfilesCost liveYZSourceBatchCost
+    binaryCounterSourceGenerateCost binaryAffineSourceGenerateCost binaryInactiveProfileCost
+    optionalAffineSourceGroupIterationCost binaryWordRepeatCost
+    sourceCoordinateIterationCost sourceCoordinateRecordCost gatedSelectedSourceIterationCost
+    sharedSelectedSourceIterationCost gatedSelectedSourceFrameCost selectedSourceFrameCost
+    optionalAffineSourceIterationCost optionalAffineSourceFrameCost optionalBinaryProfileFrameCost
+    affineSourceIterationCost affineSourceFrameCost counterSourceIterationCost
+  gcongr
+
 theorem liveCoordinateProfiles_exec (body : P → Pr P T₀ Q A U)
     (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
     (targets : Finset (Fin p.wy)) (source : Fin p.wy → Fin p.wy) (w : LiveDescriptorWidths)

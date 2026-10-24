@@ -37,6 +37,70 @@ def repairADescriptorCost (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
         2 * (repairCompactRows p key * (Ls + 1)) + 4) + (2 * (repairCompactRows p key * (Ls + 1)) + 2)) +
     (2 * (entries.length * (Li + Lk + Ls + 2)) + 2)
 
+def groupedProfileDescriptorBound (Li Lg Lk Ls Lw m N W : ℕ) :=
+  ((22 * (Li + Lk) + 12 * Ls + 37) +
+    (m * (groupedProfileCallCost Li Lg Lk Ls + 2) +
+      2 * (m * (Ls + 3)) + 16 * Li + 20)) +
+    ((m + 1) * (55 * (Li + Lk) + 30 * Ls + 105) +
+      N * (4 * (Li + Lk) + 6 * Ls + 21) +
+      Lw * (4 * Ls + 11) + 16 * (Li + Lk) + 10 * Ls + 43 +
+      (N * (descriptorCompileCallCost Ls (W + 1) + 2) +
+        2 * (N * (Ls + 1)) + 4) + (2 * (N * (Ls + 1)) + 2)) +
+    (2 * ((m + 1) * (Li + Lk + Ls + 2)) + 2)
+
+def repairADescriptorBound (p : Par) (X Li Lg Lk Ls Lw : ℕ) :=
+  groupedProfileDescriptorBound Li Lg Lk Ls Lw (p.n * p.G) p.wy (selectiveSourceWidth p X .A)
+
+theorem groupedProfileDescriptorBound_mono (Li Lg Lk Ls Lw : ℕ)
+    {m m' N N' W W' : ℕ} (hm : m ≤ m') (hN : N ≤ N') (hW : W ≤ W') :
+    groupedProfileDescriptorBound Li Lg Lk Ls Lw m N W ≤
+      groupedProfileDescriptorBound Li Lg Lk Ls Lw m' N' W' := by
+  unfold groupedProfileDescriptorBound descriptorCompileCallCost
+  gcongr
+
+theorem groupedProfileDescriptorBound_widths_mono
+    {Li Li' Lg Lg' Lk Lk' Ls Ls' Lw Lw' : ℕ}
+    (hi : Li ≤ Li') (hg : Lg ≤ Lg') (hk : Lk ≤ Lk') (hs : Ls ≤ Ls') (hw : Lw ≤ Lw')
+    (m N W : ℕ) :
+    groupedProfileDescriptorBound Li Lg Lk Ls Lw m N W ≤
+      groupedProfileDescriptorBound Li' Lg' Lk' Ls' Lw' m N W := by
+  unfold groupedProfileDescriptorBound groupedProfileCallCost binaryGroupedPositionCost
+    descriptorCompileCallCost
+  gcongr
+
+theorem repairADescriptorCost_le (p : Par) (X : ℕ)
+    (hG : 0 < p.G) (hK : 0 < p.K) (hGK : p.G < p.K)
+    (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X) (j : Fin 2)
+    (Li Lg Lk Ls Lw : ℕ) (hrows : 0 < p.wy) (hfit : p.wy < 2 ^ (Li + Lk)) :
+    repairADescriptorCost p X hG hK active s j Li Lg Lk Ls Lw ≤
+      repairADescriptorBound p X Li Lg Lk Ls Lw := by
+  have hs := repairCoordinateSelectorCost_le p X hG hK hGK active s
+    (some (.A, j)) Lw (Li + Lk) Ls hrows hfit
+  have hl := repairDescriptorCoordinates_length p X hG hK active s (some (.A, j))
+  dsimp only [repairDescriptorCoordinateSlots, repairRotationSlots, repairCompactRows,
+    selectiveTargetWidth] at hs hl
+  have hd := Nat.mul_le_mul_right (Li + Lk + Ls + 2) hl
+  unfold repairADescriptorCost repairADescriptorBound groupedProfileDescriptorBound
+  dsimp only [repairCompactRows, repairCompactSourceWidth, selectiveTargetWidth] at hs hd ⊢
+  omega
+
+theorem repairADescriptorCost_le_all (p : Par) (X : ℕ)
+    (hG : 0 < p.G) (hK : 0 < p.K) (hGK : p.G < p.K)
+    (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X) (j : Fin 2)
+    (Li Lg Lk Ls Lw : ℕ) (hfit : p.wy < 2 ^ (Li + Lk)) :
+    repairADescriptorCost p X hG hK active s j Li Lg Lk Ls Lw ≤
+      repairADescriptorBound p X Li Lg Lk Ls Lw := by
+  by_cases hrows : 0 < p.wy
+  · exact repairADescriptorCost_le p X hG hK hGK active s j Li Lg Lk Ls Lw hrows hfit
+  · have hzero : p.wy = 0 := by omega
+    have hn : p.n = 0 := by
+      have hz : p.n * p.K = 0 := by unfold Par.wy at hzero; omega
+      exact (Nat.mul_eq_zero.mp hz).resolve_right (by omega)
+    simp [repairADescriptorCost, repairADescriptorBound, groupedProfileDescriptorBound,
+      repairDescriptorCoordinates, repairRotationCoordinates, sparsePatternCoordinates,
+      repairRotationSlots, repairCompactRows, repairCompactSourceWidth, selectiveTargetWidth,
+      hn, hzero, sparseCoordinateClose, coordinateSelectorCost_eq, sparseCoordinateRuns]
+
 theorem repairADescriptor_exec (body : P → Pr P T Q A U)
     (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K) (hGK : p.G < p.K)
     (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X) (j : Fin 2)

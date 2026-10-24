@@ -27,6 +27,18 @@ def repairLiveJobs : List (LiveDescriptorJob repairT 11) :=
 variable (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
   (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X)
 
+theorem repairLiveBankCost_le (hGK : p.G < p.K) (w : LiveDescriptorWidths)
+    (n slots : ℕ)
+    (hfields : IntegerMultBounds.MathlibTM2.Layer.CompactDigits.fieldsLen (selectiveLen p X) = n)
+    (hn : p.n ≤ slots) (hgroup : p.n * p.G ≤ slots)
+    (hfit : ∀ j, LiveDescriptorBounds p X w (repairLiveMode j)) :
+    liveDescriptorBatchCost p X hG hK active s repairLiveMode w repairLiveJobs ≤
+      11 * (14 * w.coordinateBits + 16 + LiveDescriptorMode.uniformBackendBudget n slots
+        w.indexBits w.groupBits w.strideBits w.selectorBits w.widthBits) + 1 := by
+  simpa only [repairLiveJobs, List.length_ofFn] using
+    liveDescriptorBatchCost_uniform p X hG hK active s repairLiveMode w hGK n slots
+      hfields hn hgroup (fun j => (hfit j).coordinate_fits) repairLiveJobs
+
 theorem repairLiveBank_exec {Q A : ℕ} {P U : Type}
     (body : P → Pr P repairLiveT Q A U) (hGK : p.G < p.K) (w : LiveDescriptorWidths)
     (v : HS repairLiveT Q A U) (S : Stacks repairLiveT A)

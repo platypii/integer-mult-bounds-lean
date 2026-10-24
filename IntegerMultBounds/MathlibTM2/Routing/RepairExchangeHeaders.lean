@@ -39,6 +39,42 @@ theorem repairExchangeHeaders_eq (p : Par) (X rb R B : ℕ) (c : Fin 2) :
   rw [blockExchangeDimensions_eq _ _ _ _ _ _ hab]
   simp [swapDimsIdx, repairHeaderUpper, selectiveFieldOff]
 
+/-- Canonical swap headers have linear address length plus logarithmic scalar widths. -/
+theorem repairCanonicalHeaders_length_le (p : Par) (X rb R B Lrow Lblock Lwidth : ℕ)
+    (hR : 0 < R) (hrowFit : R < 2 ^ Lrow)
+    (hblockFit : 3 * (fieldsLen (selectiveKeyLen p X rb) + B) < 2 ^ Lblock)
+    (hwidthFit : p.wc < 2 ^ Lwidth) (c : Fin 2) (k : Fin 5) :
+    (repairCanonicalHeaders p X rb R B c k).length ≤
+      fieldsLen (selectiveLen p X) + Lrow + Lblock + Lwidth + 1 := by
+  let rowBits := GrowingCounterData.advance R []
+  let payload := GrowingCounterData.advance (3 * (fieldsLen (selectiveKeyLen p X rb) + B)) []
+  let widthBits := GrowingCounterData.advance p.wc []
+  have hrow := GrowingCounterData.advance_canonical R [] (Or.inl rfl)
+  have hrowNe : rowBits ≠ [] := by
+    intro he
+    have hv := GrowingCounterData.empty_value R
+    change Counter.value rowBits = R at hv
+    rw [he] at hv
+    change 0 = R at hv
+    omega
+  have hwords := exchangeHeaderWords_eq_canonical (fieldsLen (selectiveLen p X)) 0
+    (repairHeaderUpper p X c) p.wc R (fieldsLen (selectiveKeyLen p X rb) + B)
+    (by simpa using repairHeaderUpper_ge p X c) rowBits payload widthBits hrow hrowNe
+    (GrowingCounterData.empty_value R)
+    (GrowingCounterData.advance_canonical _ [] (Or.inl rfl))
+    (by simpa only [pow_zero, one_mul] using GrowingCounterData.empty_value (3 * (fieldsLen (selectiveKeyLen p X rb) + B)))
+    (GrowingCounterData.advance_canonical _ [] (Or.inl rfl)) (GrowingCounterData.empty_value p.wc)
+  rw [repairExchangeHeaders_eq] at hwords
+  have hr : rowBits.length ≤ Lrow := canonicalHeader_length_le _ _ hrowFit
+  have hp : payload.length ≤ Lblock := canonicalHeader_length_le _ _ hblockFit
+  have hw : widthBits.length ≤ Lwidth := canonicalHeader_length_le _ _ hwidthFit
+  have hu : repairHeaderUpper p X c ≤ fieldsLen (selectiveLen p X) := by
+    have h := fieldOff_add_le_total (selectiveLen p X) (selectiveSwapFld c)
+    unfold repairHeaderUpper
+    omega
+  rw [← congrFun hwords k]
+  fin_cases k <;> simp [exchangeHeaderWords, binaryPowerBits] <;> omega
+
 theorem repairExchangeHeaders_exec {T Q A : ℕ} {P U : Type}
     (body : P → Pr P T Q A U) (bank : ExchangeHeaderReg → Fin T) (hbank : Function.Injective bank)
     (p : Par) (X rb R B L : ℕ) (c : Fin 2)

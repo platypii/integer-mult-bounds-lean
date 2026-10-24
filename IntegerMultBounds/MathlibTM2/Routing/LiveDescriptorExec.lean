@@ -45,6 +45,15 @@ def liveDescriptorCost (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
   14 * w.coordinateBits + 16 + mode.backendCost p X hG hK active s
     w.indexBits w.groupBits w.strideBits w.selectorBits w.widthBits
 
+theorem liveDescriptorCost_le (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
+    (hGK : p.G < p.K) (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X)
+    (w : LiveDescriptorWidths) (mode : LiveDescriptorMode)
+    (hfit : repairCompactRows p mode.key < 2 ^ w.coordinateBits) :
+    liveDescriptorCost p X hG hK active s w mode ≤ 14 * w.coordinateBits + 16 +
+      mode.backendBound p X w.indexBits w.groupBits w.strideBits w.selectorBits w.widthBits :=
+  Nat.add_le_add_left (mode.backendCost_le p X hG hK hGK active s
+    w.indexBits w.groupBits w.strideBits w.selectorBits w.widthBits hfit) _
+
 theorem liveDescriptor_exec (body : P → Pr P (liveDescriptorT N J) Q A U)
     (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K) (hGK : p.G < p.K)
     (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X)

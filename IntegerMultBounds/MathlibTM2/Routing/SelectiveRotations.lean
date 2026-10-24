@@ -49,6 +49,39 @@ def selectiveRotationCost (off : Off) : ℕ :=
   headerCodeCost (selectiveTargetWidth p off) (selectiveSourceWidth p X off)
     (higherFields (selectiveTgt off)).length
 
+/-- Every selective rotation has a common quadratic header-generation budget. -/
+theorem selectiveRotationCost_le (n : ℕ) (hfields : fieldsLen (selectiveLen p X) = n) (off : Off) :
+    selectiveRotationCost p X off ≤ headerCodeCost n n 5 := by
+  have htotal : p.wc + (p.wy + 2 * p.wc + X) = n := by
+    simp only [fieldsLen, selectiveLen, Fin.sum_univ_succ] at hfields
+    simp at hfields
+    omega
+  have ht : selectiveTargetWidth p off ≤ n := by cases off <;> simp only [selectiveTargetWidth] <;> omega
+  have hs : selectiveSourceWidth p X off ≤ n := by cases off <;> simp only [selectiveSourceWidth] <;> omega
+  have hf : (higherFields (selectiveTgt off)).length ≤ 5 := by rw [higherFields_length]; omega
+  unfold selectiveRotationCost headerCodeCost patternCodeCost
+  gcongr
+
+def selectiveUniformRotationCost (n M B : ℕ) : ℕ :=
+  M * (2 * headerCodeCost n n 5 + 12 * B + 8 * n + 60) + 8 * n + 55
+
+/-- Both class scans, forward-order restoration and counter cleanup are included. -/
+theorem selectiveRotationPassCost_le (n R B : ℕ) (hfields : fieldsLen (selectiveLen p X) = n) (off : Off) :
+    classMoveCost (nd := 2) (selectiveRotationCost p X off) (selectiveRotationCost p X off)
+      (R * 2 ^ fieldsLen (selectiveLen p X)) B (selectiveLen p X) ≤
+      selectiveUniformRotationCost n (R * 2 ^ n) B := by
+  have hr := selectiveRotationCost_le p X n hfields off
+  have hsum : (∑ f, selectiveLen p X f) = n := hfields
+  calc
+    _ ≤ classMoveCost (nd := 2) (headerCodeCost n n 5) (headerCodeCost n n 5)
+        (R * 2 ^ fieldsLen (selectiveLen p X)) B (selectiveLen p X) := by
+      unfold classMoveCost idxStepCost
+      gcongr
+    _ = _ := by
+      unfold classMoveCost idxStepCost selectiveUniformRotationCost
+      rw [hfields, hsum]
+      ring
+
 variable {T Q A : ℕ} {P U : Type}
 
 /-- Actual execution of one complete selective rotation, including both header

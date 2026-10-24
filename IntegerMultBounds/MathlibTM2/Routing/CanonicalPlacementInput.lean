@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalOuterInput
 public import IntegerMultBounds.MathlibTM2.Routing.SharedScheduleInput
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryScheduleCalls
 
 /-! The placement extension preserves the complete constructed repair stack.
 Its legacy swap bank starts empty; only binary schedule operands are installed. -/
@@ -9,6 +10,8 @@ Its legacy swap bank starts empty; only binary schedule operands are installed. 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Routing
 open IntegerMultBounds.MathlibTM2.Host
+open IntegerMultBounds.MathlibTM2.Node
+open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 noncomputable section
 variable {N t₀ n A : ℕ}
 
@@ -39,6 +42,47 @@ theorem canonicalPlacementInputStack_left (src : Fin N) (S : Stacks N A) (spec :
     rw [sharedCoreEmbed_injective.extend_apply]
     exact hL i
   · exact Function.extend_apply' _ _ _ hcore
+
+theorem canonicalPlacementInputStack_swapBank (src : Fin N) (S : Stacks N A)
+    (spec : Fin 3 → BlockExchangeSpec n) (Lc L B : ℕ)
+    (rowBits : List Bool) (stream : List (Fin (A + 4))) (hstream : S.R src = stream)
+    (j : Fin (swapT t₀)) :
+    (canonicalPlacementInputStack (t₀ := t₀) src S spec Lc L B rowBits stream).R
+      (sharedScheduleSlot src (.bank j)) = [] := by
+  have h := sharedScheduleInputBank_schedule src S.R spec (fun _ => []) Lc L B rowBits stream
+    hstream (.bank j)
+  simpa only [canonicalPlacementInputStack, binaryScheduleInputWords] using h
+
+theorem canonicalPlacementInputStack_swapBank_length (src : Fin N) (S : Stacks N A)
+    (spec : Fin 3 → BlockExchangeSpec n) (Lc L B : ℕ)
+    (rowBits : List Bool) (stream : List (Fin (A + 4))) (hstream : S.R src = stream) :
+    (∑ j : Fin (swapT t₀),
+      ((canonicalPlacementInputStack (t₀ := t₀) src S spec Lc L B rowBits stream).R
+        (sharedScheduleSlot src (.bank j))).length) = 0 := by
+  simp only [canonicalPlacementInputStack_swapBank src S spec Lc L B rowBits stream hstream,
+    List.length_nil, Finset.sum_const_zero]
+
+theorem canonicalPlacementInputStack_scheduleCost_le {Q K R : ℕ}
+    (src : Fin N) (S : Stacks N (prime + K)) (spec : Fin 3 → BlockExchangeSpec n)
+    (hd : Fin 5 → Fin t₀) (pay : Fin t₀) (hhd : Function.Injective hd) (hpay : ∀ k, hd k ≠ pay)
+    (hQ : swapStates hd pay hhd ≤ Q) (hT : swapT t₀ ≤ sharedScheduleT N t₀)
+    (hR : 0 < R) (B : ℕ) (hB : 0 < B) (rowBits : List Bool) (Lc L : ℕ)
+    (hn : n < 2 ^ Lc) (hBin : B < 2 ^ L)
+    (hrow : GrowingCounterData.Canonical rowBits) (hrowNe : rowBits ≠ [])
+    (hrowValue : Counter.value rowBits = R)
+    (stream : List (Fin (prime + K + 4))) (hstream : S.R src = stream) (js : List (Fin 3)) :
+    binaryExchangeChainCost
+      (binaryScheduleCalls (sharedScheduleSlot src) (sharedScheduleSlot_injective src)
+        hd pay hhd hpay hQ hT spec hR hB rowBits Lc L hn hBin hrow hrowNe hrowValue)
+      (canonicalPlacementInputStack src S spec Lc L B rowBits stream) js ≤
+      (3 * swapConst * (sharedScheduleT N t₀ + 12 * swapT t₀ + 5 : ℕ) * (R * 2 ^ n * B : ℕ)) *
+        (js.map (fun j => ((max 1 (spec j).w : ℕ) : ℝ) ^ Parameters.tau)).sum +
+      js.length * (generatedExchangeUniformOverhead t₀ (sharedScheduleT N t₀) n R B L rowBits.length Lc 0 +
+        (3 * (Lc * (4 * n + 31) + 2 * n + 26) + 10 * Lc + 12) + (2 * n + 2 * Lc + 9) : ℕ) + 1 := by
+  exact binaryScheduleChainCost_le (sharedScheduleSlot src) (sharedScheduleSlot_injective src)
+    hd pay hhd hpay hQ hT spec hR hB rowBits Lc L hn hBin hrow hrowNe hrowValue
+    (canonicalPlacementInputStack src S spec Lc L B rowBits stream)
+    (canonicalPlacementInputStack_swapBank src S spec Lc L B rowBits stream hstream) js
 
 /-- Placement adds scalar coordinates and the row counter, with blank swap workspace. -/
 theorem canonicalPlacementInputStack_length_le (src : Fin N) (S : Stacks N A)

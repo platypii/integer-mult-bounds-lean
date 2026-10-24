@@ -39,6 +39,34 @@ def liveDescriptorBatchCost : List (LiveDescriptorJob N J) → ℕ
   | [] => 1
   | job :: jobs => liveDescriptorCost p X hG hK active s w (mode job.index) + liveDescriptorBatchCost jobs
 
+theorem liveDescriptorBatchCost_le (hGK : p.G < p.K)
+    (hfit : ∀ j, repairCompactRows p (mode j).key < 2 ^ w.coordinateBits)
+    (budget : ℕ)
+    (hbudget : ∀ j, (mode j).backendBound p X w.indexBits w.groupBits w.strideBits
+      w.selectorBits w.widthBits ≤ budget) (jobs : List (LiveDescriptorJob N J)) :
+    liveDescriptorBatchCost p X hG hK active s mode w jobs ≤
+      jobs.length * (14 * w.coordinateBits + 16 + budget) + 1 := by
+  induction jobs with
+  | nil => simp [liveDescriptorBatchCost]
+  | cons job jobs ih =>
+    have hc := liveDescriptorCost_le p X hG hK hGK active s w (mode job.index)
+      (hfit job.index)
+    have hb := hbudget job.index
+    simp only [liveDescriptorBatchCost, List.length_cons, Nat.add_mul, Nat.one_mul]
+    omega
+
+theorem liveDescriptorBatchCost_uniform (hGK : p.G < p.K) (n slots : ℕ)
+    (hfields : IntegerMultBounds.MathlibTM2.Layer.CompactDigits.fieldsLen (selectiveLen p X) = n)
+    (hn : p.n ≤ slots) (hgroup : p.n * p.G ≤ slots)
+    (hfit : ∀ j, repairCompactRows p (mode j).key < 2 ^ w.coordinateBits)
+    (jobs : List (LiveDescriptorJob N J)) :
+    liveDescriptorBatchCost p X hG hK active s mode w jobs ≤ jobs.length *
+      (14 * w.coordinateBits + 16 + LiveDescriptorMode.uniformBackendBudget n slots
+        w.indexBits w.groupBits w.strideBits w.selectorBits w.widthBits) + 1 :=
+  liveDescriptorBatchCost_le p X hG hK active s mode w hGK hfit _
+    (fun j => LiveDescriptorMode.backendBound_uniform p X n slots w.indexBits w.groupBits
+      w.strideBits w.selectorBits w.widthBits hfields hn hgroup (mode j)) jobs
+
 theorem liveDescriptorBatch_exec (body : P → Pr P (liveDescriptorT N J) Q A U)
     (hGK : p.G < p.K) (jobs : List (LiveDescriptorJob N J))
     (v : HS (liveDescriptorT N J) Q A U) (S : Stacks (liveDescriptorT N J) A)

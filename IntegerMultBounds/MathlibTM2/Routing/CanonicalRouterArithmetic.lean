@@ -45,6 +45,18 @@ theorem canonicalRouter_gap (n : ℕ) :
 theorem routerDigits_le_width (n K G : ℕ) : routerDigits n K G ≤ n :=
   (Nat.div_le_self (n - K) (K + 3 * G)).trans (Nat.sub_le n K)
 
+theorem canonicalRouterSlots_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) :
+    let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+    p.n ≤ n ∧ p.n * p.G ≤ n := by
+  dsimp only
+  refine ⟨routerDigits_le_width n _ _, ?_⟩
+  have ht := routerProfileParameters_total n (canonicalRouterStride n) (canonicalRouterGap n) hn r
+  change 3 * ((routerProfileParameters n (canonicalRouterStride n)
+    (canonicalRouterGap n) r.val).n * (routerProfileParameters n (canonicalRouterStride n)
+    (canonicalRouterGap n) r.val).G) + _ = n at ht
+  omega
+
 /-- Canonical geometry bounds every descriptor family by one linear magnitude. -/
 theorem canonicalRouterDescriptorMagnitude_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
     (r : Fin (canonicalRouterStride n)) :
@@ -201,6 +213,116 @@ theorem canonicalRouterDescriptorWidths_le (n : ℕ) (hn : canonicalRouterStride
     canonicalScalarWidth ((L + 1) + L) ≤ _
   exact ⟨hi, by omega, hc, hc, by omega, canonicalScalarWidth_mono hc⟩
 
+theorem canonicalRouterDescriptorBudget_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) :
+    let w := canonicalStageWidths
+      (routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val)
+    let D := Nat.clog 2 (4 * n + 2) + 1
+    LiveDescriptorMode.uniformBackendBudget n n w.indexBits w.groupBits w.strideBits
+      w.selectorBits w.widthBits ≤
+      LiveDescriptorMode.uniformBackendBudget n n D D D (2 * D) (canonicalScalarWidth (2 * D)) := by
+  obtain ⟨hi, hk, _, hs, hg, hw⟩ := canonicalRouterDescriptorWidths_le n hn r
+  exact LiveDescriptorMode.uniformBackendBudget_widths_mono n n hi hg hk hs hw
+
+theorem canonicalRouterDescriptorCost_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) :
+    let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+    let w := canonicalStageWidths p
+    let D := Nat.clog 2 (4 * n + 2) + 1
+    ∀ (hG : 0 < p.G) (hK : 0 < p.K) (_hGK : p.G < p.K)
+      (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p 0),
+    liveDescriptorBatchCost p 0 hG hK active s repairLiveMode w repairLiveJobs ≤
+      11 * (28 * D + 16 + LiveDescriptorMode.uniformBackendBudget n n
+        D D D (2 * D) (canonicalScalarWidth (2 * D))) + 1 := by
+  dsimp only
+  intro hG hK hGK active s
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+  let w := canonicalStageWidths p
+  have hf : fieldsLen (selectiveLen p 0) = n := by
+    rw [selectiveFieldsLen]
+    have ht := routerProfileParameters_total n (canonicalRouterStride n) (canonicalRouterGap n) hn r
+    change 3 * p.wc + p.wy = n at ht
+    omega
+  obtain ⟨hi, hg⟩ := canonicalRouterSlots_le n hn r
+  have hc := repairLiveBankCost_le p 0 hG hK active s hGK w n n hf hi hg
+    (canonicalStageWidths_bounds p)
+  have hb := canonicalRouterDescriptorBudget_le n hn r
+  change LiveDescriptorMode.uniformBackendBudget n n w.indexBits w.groupBits w.strideBits
+    w.selectorBits w.widthBits ≤ _ at hb
+  have hw := (canonicalRouterDescriptorWidths_le n hn r).2.2.1
+  change w.coordinateBits ≤ _ at hw
+  change liveDescriptorBatchCost p 0 hG hK active s repairLiveMode w repairLiveJobs ≤ _
+  have hm := Nat.mul_le_mul_left 14 hw
+  have hsum := Nat.add_le_add hm hb
+  have ht := Nat.mul_le_mul_left 11 (Nat.add_le_add_right hsum 16)
+  omega
+
+theorem canonicalRouterRepairOverhead_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) (R B : ℕ) (hR : 0 < R) (hB : 1 ≤ B) (width : ℕ) :
+    let a := canonicalRouterArithmetic n r R B hR hB
+    let rb := canonicalScalarWidth R
+    let D := Nat.clog 2 (4 * n + 2) + 1
+    liveRepairUniformOverhead n a.rb R B width a.wb a.wm a.wp a.wk a.w ≤
+      liveRepairUniformOverhead n rb R B width
+        (canonicalScalarWidth n + canonicalScalarWidth rb + canonicalScalarWidth B)
+        (n + rb) (canonicalScalarWidth B) (canonicalScalarWidth n + canonicalScalarWidth rb)
+        { indexBits := D, groupBits := D, strideBits := D, selectorBits := 2 * D,
+          widthBits := canonicalScalarWidth (2 * D) } := by
+  obtain ⟨hi, hs, _, hsel, hg, hw⟩ := canonicalRouterDescriptorWidths_le n hn r
+  obtain ⟨hm, _, _, hp, _, _⟩ := canonicalRouterRecordWidths n hn r R B hR hB
+  have hb := canonicalRouterBlockWidth_le n hn r R B hR hB
+  have hk := canonicalRouterKeyWidth_le n hn r R B hR hB
+  exact liveRepairUniformOverhead_mono n (canonicalScalarWidth R) R B
+    (le_refl width) hb hm.le hp.le hk hi hg hs hsel hw
+
+/-- Majorizing profile dimensions prices every residue with the same numerical formula. -/
+theorem canonicalRouterProfileCost_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) :
+    let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+    let D := Nat.clog 2 (4 * n + 2) + 1
+    let q : Par := ⟨canonicalRouterStride n, 0, n, canonicalRouterGap n, 0⟩
+    liveCoordinateProfilesCost p (canonicalStageWidths p) ≤
+      liveCoordinateProfilesCost q
+        { indexBits := D, groupBits := D, strideBits := D, selectorBits := 2 * D,
+          widthBits := canonicalScalarWidth (2 * D) } := by
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+  let q : Par := ⟨canonicalRouterStride n, 0, n, canonicalRouterGap n, 0⟩
+  have hslots : p.n ≤ q.n := routerDigits_le_width n _ _
+  have hgroup : p.G ≤ q.G := le_refl _
+  have hborrowed : p.wc ≤ q.wc := Nat.mul_le_mul hslots hgroup
+  have hc := liveCoordinateProfilesCost_mono p q (canonicalStageWidths p) hslots hgroup hborrowed
+  obtain ⟨hi, hk, _, hs, hg, hw⟩ := canonicalRouterDescriptorWidths_le n hn r
+  exact hc.trans (liveCoordinateProfilesCost_widths_mono q _ _ hi hg hk hs hw)
+
+theorem canonicalRouterClassifierCost_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) (R B : ℕ) (hR : 0 < R) (hB : 1 ≤ B) :
+    let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+    let a := canonicalRouterArithmetic n r R B hR hB
+    let L := canonicalScalarWidth n
+    binaryTemporaryMaskCost p a.LK a.Ln a.Lo a.Lt + binaryPhaseMaskCost p a.LK a.Ln a.Lo a.Lt ≤
+      binaryTemporaryMaskUniformCost n L L L L + binaryPhaseMaskUniformCost n L L L L := by
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+  let a := canonicalRouterArithmetic n r R B hR hB
+  have hK : p.K ≤ n := hn
+  have hG : p.G ≤ n := by
+    change canonicalRouterGap n ≤ n
+    unfold canonicalRouterStride at hn
+    omega
+  have hslots : p.n ≤ n := routerDigits_le_width n _ _
+  have ho : p.ρ + 1 ≤ n := by
+    have hr := r.isLt
+    change r.val + 1 ≤ n
+    omega
+  have ht := routerProfileParameters_total n (canonicalRouterStride n) (canonicalRouterGap n) hn r
+  change 3 * p.wc + p.wy = n at ht
+  have hm : p.m ≤ n := by unfold Par.wy at ht; omega
+  obtain ⟨_, _, hLK, hLn, hLo, hLt, _⟩ := canonicalRouterDimensionWidths_le n hn r R B hR hB
+  have htemp := binaryTemporaryMaskCost_le p n a.LK a.Ln a.Lo a.Lt hK hG hslots ho hm
+  have hphase := binaryPhaseMaskCost_le p n a.LK a.Ln a.Lo a.Lt hK hG hslots (by omega) hm
+  exact Nat.add_le_add
+    (htemp.trans (binaryTemporaryMaskUniformCost_widths_mono n hLK hLn hLo hLt))
+    (hphase.trans (binaryPhaseMaskUniformCost_widths_mono n hLK hLn hLo hLt))
+
 /-- A common metadata word budget, polynomial in address size and scalar widths. -/
 def canonicalRouterUniformMetadataWidth (n R B : ℕ) : ℕ :=
   let D := Nat.clog 2 (4 * n + 2) + 1
@@ -235,6 +357,53 @@ theorem canonicalRouterMetadataWidth_uniform (n : ℕ) (hn : canonicalRouterStri
   rw [haw] at hcoordinates ⊢
   dsimp only [p, a, D] at *
   omega
+
+/-- Every canonical residue has the same density-priced scan and sort budget. -/
+theorem canonicalRouterDensityScanCost_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) (R B : ℕ) :
+    repairDensityScanCost
+      (routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val)
+      0 (canonicalScalarWidth R) R B (n + 1 : ℕ) ≤
+      repairUniformDensityScanCost n (canonicalScalarWidth R) R B (n + 1 : ℕ) := by
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+  have ht : 3 * p.wc + p.wy = n := routerProfileParameters_total n _ _ hn r
+  apply repairDensityScanCost_le
+  · rw [selectiveFieldsLen]
+    change p.wc + (p.wy + 2 * p.wc + 0) = n
+    omega
+  · change p.wy ≤ n
+    omega
+
+/-- Canonical dimensions discharge every swap-header fit uniformly across residues. -/
+theorem canonicalRouterHeaders_length_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) (R B : ℕ) (hR : 0 < R) (c : Fin 2) (k : Fin 5) :
+    (repairCanonicalHeaders
+      (routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val)
+      0 (canonicalScalarWidth R) R B c k).length ≤
+      n + canonicalScalarWidth R + canonicalScalarWidth (3 * (n + canonicalScalarWidth R + B)) +
+        canonicalScalarWidth n + 1 := by
+  let p := routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val
+  have ht : 3 * p.wc + p.wy = n := routerProfileParameters_total n _ _ hn r
+  have hf : fieldsLen (selectiveLen p 0) = n := by rw [selectiveFieldsLen]; omega
+  have hb : 3 * (fieldsLen (selectiveKeyLen p 0 (canonicalScalarWidth R)) + B) <
+      2 ^ canonicalScalarWidth (3 * (n + canonicalScalarWidth R + B)) := by
+    rw [selectiveKeyWidth, hf]
+    exact canonicalScalarWidth_fit _
+  have hw : p.wc < 2 ^ canonicalScalarWidth n :=
+    (show p.wc ≤ n by omega).trans_lt (canonicalScalarWidth_fit n)
+  have hh := repairCanonicalHeaders_length_le p 0 (canonicalScalarWidth R) R B
+    (canonicalScalarWidth R) (canonicalScalarWidth (3 * (n + canonicalScalarWidth R + B)))
+    (canonicalScalarWidth n) hR (canonicalScalarWidth_fit R) hb hw c k
+  simpa only [hf] using hh
+
+theorem canonicalRouterHeaderEraseCost_le (n : ℕ) (hn : canonicalRouterStride n ≤ n)
+    (r : Fin (canonicalRouterStride n)) (R B : ℕ) (hR : 0 < R) :
+    repairHeaderErasePrice
+      (routerProfileParameters n (canonicalRouterStride n) (canonicalRouterGap n) r.val)
+      0 (canonicalScalarWidth R) R B ≤
+      10 * (2 * (n + canonicalScalarWidth R +
+        canonicalScalarWidth (3 * (n + canonicalScalarWidth R + B)) + canonicalScalarWidth n + 1) + 2) + 1 :=
+  repairHeaderErasePrice_le _ _ _ _ _ _ (canonicalRouterHeaders_length_le n hn r R B hR)
 
 end
 end IntegerMultBounds.MathlibTM2.Routing

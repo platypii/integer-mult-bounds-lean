@@ -23,6 +23,22 @@ def selectorRunLoopCost (Lg L : ℕ) : List (SparseSelectorRun W) → ℕ
       binaryWordRepeatCost Lg run.gap (L + 1) + (2 * Lg + 2 * L + 5)) +
       selectorRunLoopCost Lg L runs + 2
 
+/-- The sparse loop pays once per entry and once per skipped coordinate. -/
+theorem selectorRunLoopCost_eq (Lg L : ℕ) (runs : List (SparseSelectorRun W)) :
+    selectorRunLoopCost Lg L runs =
+      runs.length * (17 * Lg + 12 * L + 39) +
+        (runs.map (fun run => run.gap)).sum * (4 * Lg + 6 * L + 21) + 1 := by
+  induction runs with
+  | nil => simp [selectorRunLoopCost]
+  | cons run runs ih =>
+      simp only [selectorRunLoopCost, ih, List.length_cons, List.map_cons, List.sum_cons,
+        binaryWordRepeatCost]
+      ring
+
+theorem selectorRunLoopCost_reverse (Lg L : ℕ) (runs : List (SparseSelectorRun W)) :
+    selectorRunLoopCost Lg L runs.reverse = selectorRunLoopCost Lg L runs := by
+  simp [selectorRunLoopCost_eq, List.map_reverse]
+
 def selectorRunLoopBank (R : Fin T → List (Fin (A + 4))) (rg : SelectorRunReg → Fin T)
     (Lg L : ℕ) (runs : List (SparseSelectorRun W)) :=
   Function.update (Function.update (Function.update R (rg .src) [])

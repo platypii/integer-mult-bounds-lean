@@ -28,6 +28,27 @@ def selectiveKeyPassCost (p : Par) (X rb M B : ℕ) : ℕ :=
     (2 * (M * (fieldsLen (selectiveKeyLen p X rb) + B)) + 2) +
     (4 * fieldsLen (selectiveKeyLen p X rb) + 4 * 6 + 1)
 
+/-- Closed complete-keying ledger, including stream restoration and counter reset. -/
+theorem selectiveKeyPassCost_eq (p : Par) (X rb M B : ℕ) :
+    selectiveKeyPassCost p X rb M B =
+      M * (selectiveKeyEmitterCost p X rb + 6 * B + 6 * fieldsLen (selectiveKeyLen p X rb) + 33) +
+        4 * fieldsLen (selectiveKeyLen p X rb) + 29 := by
+  unfold selectiveKeyPassCost keyRecordCost fieldsLen
+  ring
+
+def selectiveUniformKeyPassCost (n rb M B : ℕ) : ℕ :=
+  M * (n * (6 * n + 25) + 19 * n + 11 * rb + 6 * B + 99) + 4 * (n + rb) + 29
+
+theorem selectiveKeyPassCost_le (p : Par) (X rb M B n : ℕ)
+    (hfields : fieldsLen (selectiveLen p X) = n) :
+    selectiveKeyPassCost p X rb M B ≤ selectiveUniformKeyPassCost n rb M B := by
+  have he := selectiveKeyEmitterCost_le p X rb n hfields
+  rw [selectiveKeyPassCost_eq, selectiveKeyWidth, hfields]
+  unfold selectiveUniformKeyPassCost
+  have hc : selectiveKeyEmitterCost p X rb + 6 * B + 6 * (n + rb) + 33 ≤
+      n * (6 * n + 25) + 19 * n + 11 * rb + 6 * B + 99 := by omega
+  exact Nat.add_le_add_right (Nat.add_le_add_right (Nat.mul_le_mul_left M hc) (4 * (n + rb))) 29
+
 /-- The full fixed keying program supplies the exact ideal-rank keys needed by
 repair; no supplied emitter or precomputed source-word contract remains. -/
 theorem selectiveKeyPass_exec (p : Par) (X rb : ℕ) (hK : 0 < p.K)

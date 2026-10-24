@@ -60,6 +60,62 @@ def backendCost (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
       (repairCompactRows p key) (repairAffineSources p X hG hK active s key)
   | .grouped j => repairADescriptorCost p X hG hK active s j Li Lg Lk Ls Lw
 
+def backendBound (p : Par) (X Li Lg Lk Ls Lw : ℕ) : LiveDescriptorMode → ℕ
+  | .affine key _ => affineProfileDescriptorBound Li Lk Ls Lw p.n
+      (repairCompactRows p key) (repairCompactSourceWidth p X key)
+  | .grouped _ => repairADescriptorBound p X Li Lg Lk Ls Lw
+
+def uniformBackendBudget (n slots Li Lg Lk Ls Lw : ℕ) : ℕ :=
+  affineProfileDescriptorBound Li Lk Ls Lw slots n n +
+    groupedProfileDescriptorBound Li Lg Lk Ls Lw slots n n
+
+theorem uniformBackendBudget_widths_mono (n slots : ℕ)
+    {Li Li' Lg Lg' Lk Lk' Ls Ls' Lw Lw' : ℕ}
+    (hi : Li ≤ Li') (hg : Lg ≤ Lg') (hk : Lk ≤ Lk') (hs : Ls ≤ Ls') (hw : Lw ≤ Lw') :
+    uniformBackendBudget n slots Li Lg Lk Ls Lw ≤
+      uniformBackendBudget n slots Li' Lg' Lk' Ls' Lw' :=
+  Nat.add_le_add (affineProfileDescriptorBound_widths_mono hi hk hs hw slots n n)
+    (groupedProfileDescriptorBound_widths_mono hi hg hk hs hw slots n n)
+
+theorem backendBound_uniform (p : Par) (X n slots Li Lg Lk Ls Lw : ℕ)
+    (hfields : IntegerMultBounds.MathlibTM2.Layer.CompactDigits.fieldsLen (selectiveLen p X) = n)
+    (hn : p.n ≤ slots) (hgroup : p.n * p.G ≤ slots) (mode : LiveDescriptorMode) :
+    backendBound p X Li Lg Lk Ls Lw mode ≤
+      uniformBackendBudget n slots Li Lg Lk Ls Lw := by
+  cases mode with
+  | affine key hkey =>
+    have hr := repairCompactRows_le_fields p X key
+    have hw := repairCompactSourceWidth_le_fields p X key
+    rw [hfields] at hr hw
+    have hc := affineProfileDescriptorBound_mono Li Lk Ls Lw hn hr hw
+    change affineProfileDescriptorBound Li Lk Ls Lw p.n _ _ ≤ _
+    unfold uniformBackendBudget
+    omega
+  | grouped j =>
+    have hr := repairCompactRows_le_fields p X (some (.A, j))
+    have hw := repairCompactSourceWidth_le_fields p X (some (.A, j))
+    rw [hfields] at hr hw
+    have hc := groupedProfileDescriptorBound_mono Li Lg Lk Ls Lw hgroup hr hw
+    change groupedProfileDescriptorBound Li Lg Lk Ls Lw (p.n * p.G) p.wy
+      (selectiveSourceWidth p X .A) ≤ _
+    dsimp only [repairCompactRows, repairCompactSourceWidth, selectiveTargetWidth] at hc
+    unfold uniformBackendBudget
+    omega
+
+theorem backendCost_le (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
+    (hGK : p.G < p.K) (active : Fin p.n → Bool) (s : Fin p.n → SlotSource p X)
+    (Li Lg Lk Ls Lw : ℕ) (mode : LiveDescriptorMode)
+    (hfit : repairCompactRows p mode.key < 2 ^ (Li + Lk)) :
+    backendCost p X hG hK active s Li Lg Lk Ls Lw mode ≤
+      backendBound p X Li Lg Lk Ls Lw mode := by
+  cases mode with
+  | affine key hkey =>
+    exact affineProfileDescriptorCost_le_of_positions Li Lk Ls Lw _ _ _ _
+      (repairAffineStride_positive p hG hK key) hfit
+      (repairAffinePosition_bound p hG hK key hkey)
+  | grouped j =>
+    exact repairADescriptorCost_le_all p X hG hK hGK active s j Li Lg Lk Ls Lw hfit
+
 end
 end LiveDescriptorMode
 

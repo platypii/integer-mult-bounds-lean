@@ -35,6 +35,38 @@ theorem repairSetupJob_src (wb wm wp wk keyedSize count payload keyWidth : ℕ) 
   | inl key => exact setupJob_src _ _ _ _ _ _ key
   | inr key => cases key <;> rfl
 
+theorem repairSetupJobsCost_le (R : Fin repairT → List (Fin (A + 4)))
+    (wb wm wp wk keyedSize count payload keyWidth wordBound widthBound valueBound : ℕ)
+    (hword : ∀ key, (R (repairSetupSource key)).length ≤ wordBound)
+    (hwb : wb ≤ widthBound) (hwm : wm ≤ widthBound)
+    (hwp : wp ≤ widthBound) (hwk : wk ≤ widthBound)
+    (hsize : keyedSize ≤ valueBound) (hcount : count ≤ valueBound)
+    (hpayload : payload ≤ valueBound) (hkey : keyWidth ≤ valueBound) :
+    metadataInstallCost R (repairSetupJobs wb wm wp wk keyedSize count payload keyWidth) ≤
+      34 * (6 * wordBound + 7 + widthBound * (4 * valueBound + 11) + 2 * valueBound + 6) + 1 := by
+  have hc (key : RepairSetupKey) :
+      (repairSetupJob wb wm wp wk keyedSize count payload keyWidth key).cost R ≤
+        6 * wordBound + 7 + widthBound * (4 * valueBound + 11) + 2 * valueBound + 6 := by
+    have hw : (R (repairSetupJob wb wm wp wk keyedSize count payload keyWidth key).src).length ≤
+        wordBound := by
+      rw [repairSetupJob_src]
+      exact hword key
+    refine MetadataJob.cost_le R _ wordBound widthBound valueBound hw ?_
+    cases key with
+    | inl key =>
+      cases key <;> simp only [repairSetupJob, setupJob]
+      all_goals trivial
+    | inr key =>
+      cases key <;> simp only [repairSetupJob]
+      all_goals trivial
+  have hlen : repairSetupKeys.length = 34 := by decide +kernel
+  have hb := metadataInstallCost_le R
+    (repairSetupJobs wb wm wp wk keyedSize count payload keyWidth) _ (by
+      intro job hj
+      obtain ⟨key, _, rfl⟩ := List.mem_map.mp hj
+      exact hc key)
+  simpa only [repairSetupJobs, List.length_map, hlen] using hb
+
 theorem repairSetupJob_dst (wb wm wp wk keyedSize count payload keyWidth : ℕ) (key : RepairSetupKey) :
     (repairSetupJob wb wm wp wk keyedSize count payload keyWidth key).dst = repairSetupTarget key := by
   cases key with

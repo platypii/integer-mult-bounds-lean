@@ -32,6 +32,18 @@ def metadataInstallCost (R : Fin T → List (Fin (A + 4))) : List (MetadataJob T
   | [] => 1
   | job :: jobs => metadataInstallCost R jobs + job.cost R
 
+theorem metadataInstallCost_le (R : Fin T → List (Fin (A + 4)))
+    (jobs : List (MetadataJob T)) (budget : ℕ)
+    (hcost : ∀ job ∈ jobs, job.cost R ≤ budget) :
+    metadataInstallCost R jobs ≤ jobs.length * budget + 1 := by
+  induction jobs with
+  | nil => simp [metadataInstallCost]
+  | cons job jobs ih =>
+    have hc := hcost job (by simp)
+    have ht := ih (fun other hm => hcost other (List.mem_cons_of_mem _ hm))
+    simp only [metadataInstallCost, List.length_cons, Nat.add_mul, Nat.one_mul]
+    omega
+
 theorem metadataInstalled_keep (R : Fin T → List (Fin (A + 4))) (jobs : List (MetadataJob T))
     (k : Fin T) (hk : k ∉ jobs.map MetadataJob.dst) : metadataInstalled R jobs k = R k := by
   induction jobs with

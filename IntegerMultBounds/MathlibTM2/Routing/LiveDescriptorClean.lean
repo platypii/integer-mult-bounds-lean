@@ -10,7 +10,7 @@ namespace IntegerMultBounds.MathlibTM2.Routing
 
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack
 open IntegerMultBounds.MathlibTM2.Host
-open IntegerMultBounds.MathlibTM2.Layer.CompactGadget
+open IntegerMultBounds.MathlibTM2.Layer.CompactGadget IntegerMultBounds.MathlibTM2.Layer.CompactDigits
 
 noncomputable section
 
@@ -22,16 +22,25 @@ variable (p : Par) (X : ℕ) (hG : 0 < p.G) (hK : 0 < p.K)
 
 def LiveDescriptorJob.target (job : LiveDescriptorJob N J) : Fin (liveDescriptorT N J) := liveDescriptorCore job.dst
 
-theorem repairLiveDescriptorWord_length (key : RepairDescriptorKey) :
-    (repairDescriptorWord (A := A) p X hG hK active s key).length =
-      repairCompactRows p key * (repairCompactSourceWidth p X key + 1) := by
-  rw [← repairCompactPattern_word p X hG hK active s key]
-  simp only [List.length_map, patternTable, sourceTable_size, List.length_ofFn]
 
 def liveDescriptorEraseCost : List (LiveDescriptorJob N J) → ℕ
   | [] => 1
   | job :: jobs => liveDescriptorEraseCost jobs +
       (2 * (repairCompactRows p (mode job.index).key * (repairCompactSourceWidth p X (mode job.index).key + 1)) + 2)
+
+/-- Erasing a finite descriptor family has a uniform quadratic address-size bound. -/
+theorem liveDescriptorEraseCost_le (n : ℕ) (hfields : fieldsLen (selectiveLen p X) = n)
+    (jobs : List (LiveDescriptorJob N J)) :
+    liveDescriptorEraseCost p X mode jobs ≤ jobs.length * (2 * (n * (n + 1)) + 2) + 1 := by
+  induction jobs with
+  | nil => simp [liveDescriptorEraseCost]
+  | cons job jobs ih =>
+    have hr := repairCompactRows_le_fields p X (mode job.index).key
+    have hs := repairCompactSourceWidth_le_fields p X (mode job.index).key
+    rw [hfields] at hr hs
+    have hm := Nat.mul_le_mul hr (Nat.add_le_add_right hs 1)
+    simp only [liveDescriptorEraseCost, List.length_cons, Nat.add_mul, Nat.one_mul]
+    omega
 
 theorem liveDescriptorEraseCost_eq (R : Fin (liveDescriptorT N J) → List (Fin (A + 4)))
     (jobs : List (LiveDescriptorJob N J))

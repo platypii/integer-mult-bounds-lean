@@ -12,6 +12,7 @@ updates through classifiers, widths, headers and all eleven source profiles. -/
 namespace IntegerMultBounds.MathlibTM2.Routing
 open IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
 open IntegerMultBounds.MathlibTM2.Layer.CompactGadget
+open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 variable {T N A : ℕ}
 
 theorem repairClassifierGenerated_update (p : Par) (core : Fin repairT → Fin T)
@@ -135,15 +136,76 @@ theorem generatedRepairProfileInput_blank (D : Stacks inactiveProfileHeaderT A)
   rw [inactiveProfileHeaderPair_raw_keep p X rb R B D.R j (repairBlank_headerSource j hj)]
   exact hblank j hj
 
+theorem generatedRepairCoreInput_raw (C₀ : Stacks (liveInactiveProfileT repairT 11) A)
+    (j : Fin repairT) :
+    (generatedRepairCoreInput p X hG hK active s w C₀).R (liveDescriptorCore j) =
+      C₀.R (inactiveProfileRaw j) := by
+  change liveInactiveProfileBatchBank p X hG hK active s repairLiveMode w C₀.R
+    repairAllSourceProfileJobs (inactiveProfileRaw j) = _
+  exact liveInactiveProfileBatch_keep p X hG hK active s repairLiveMode w C₀.R repairAllSourceProfileJobs
+    (inactiveProfileRaw j) (fun k _ => liveInactiveProfileCore_injective.ne (liveDescriptorCore_aux j (.input k)))
+
+theorem generatedRepairCoreInput_data (C₀ : Stacks (liveInactiveProfileT repairT 11) A)
+    (wb wm wp wk : ℕ) (headers : Fin 2 → Fin 5 → List Bool)
+    (data : RepairPendingDescriptorData p X rb wb wm wp wk R B headers
+      (fun j => C₀.R (inactiveProfileRaw j))) :
+    RepairPendingDescriptorData p X rb wb wm wp wk R B headers
+      (fun j => (generatedRepairCoreInput p X hG hK active s w C₀).R (liveDescriptorCore j)) := by
+  exact data.congr p X rb (fun key =>
+    generatedRepairCoreInput_raw p X hG hK active s w C₀ (repairSetupSource key))
+
+theorem generatedRepairHeaderInput_data (E : Stacks inactiveProfileConfigurationT A)
+    (wb wm wp wk : ℕ) (headers : Fin 2 → Fin 5 → List Bool)
+    (data : RepairPendingMaskData p X rb wb wm wp wk R B headers
+      (fun j => E.R (inactiveConfigurationCore j))) :
+    RepairPendingDescriptorData p X rb wb wm wp wk R B headers
+      (fun j => (generatedRepairHeaderInput p rb E).R (inactiveProfileHeaderRaw j)) := by
+  exact (data.inactiveConfigurationGenerated p X rb).inactiveProfileWidths p X rb
+
+theorem generatedRepairProfileInput_data (D : Stacks inactiveProfileHeaderT A)
+    (wb wm wp wk : ℕ) (headers : Fin 2 → Fin 5 → List Bool)
+    (data : RepairPendingDescriptorData p X rb wb wm wp wk R B headers
+      (fun j => D.R (inactiveProfileHeaderRaw j))) :
+    RepairPendingDescriptorData p X rb wb wm wp wk R B (repairCanonicalHeaders p X rb R B)
+      (fun j => (generatedRepairProfileInput p X rb R B D).R (inactiveProfileRaw j)) := by
+  exact data.embeddedHeaders inactiveProfileRaw inactiveProfileRaw_injective p X rb R B
+
+theorem allSourceRepairPrepared_data (E : Stacks inactiveProfileConfigurationT A)
+    (wb wm wp wk : ℕ) (headers : Fin 2 → Fin 5 → List Bool)
+    (data : RepairPendingMaskData p X rb wb wm wp wk R B headers
+      (fun j => E.R (inactiveConfigurationCore j))) :
+    RepairPendingDescriptorData p X rb wb wm wp wk R B (repairCanonicalHeaders p X rb R B)
+      (fun j => (allSourceRepairPrepared p X rb R B hG hK active s w E).R (liveDescriptorCore j)) := by
+  apply generatedRepairCoreInput_data
+  apply generatedRepairProfileInput_data
+  exact generatedRepairHeaderInput_data p X rb R B E wb wm wp wk headers data
+
+theorem allSourceRepairPrepared_left (E : Stacks inactiveProfileConfigurationT A) (j : Fin repairT) :
+    (allSourceRepairPrepared p X rb R B hG hK active s w E).L (liveDescriptorCore j) =
+      E.L (inactiveConfigurationCore j) := rfl
+
+theorem allSourceRepairPrepared_descriptor_raw (E : Stacks inactiveProfileConfigurationT A)
+    (d : RepairDescriptorKey) :
+    (allSourceRepairPrepared p X rb R B hG hK active s w E).R
+      (liveDescriptorCore (repairDescriptorSource d)) =
+      E.R (inactiveConfigurationCore (repairDescriptorSource d)) := by
+  rw [allSourceRepairPrepared, generatedRepairCoreInput_raw]
+  change repairHeaderPairBank p X rb R B inactiveProfileHeaderBank
+    (generatedRepairHeaderInput p rb E).R (inactiveProfileHeaderRaw (repairDescriptorSource d)) = _
+  rw [inactiveProfileHeaderPair_raw_keep p X rb R B _ _
+    (fun c k => (repairNonDescriptor_source (.inl (.header c k)) trivial d).symm)]
+  change inactiveProfileWidthBank rb p.wy (inactiveConfigurationClassifierBank p E.R)
+    (fieldCore (inactiveProfileHeaderRaw (repairDescriptorSource d))) = _
+  rw [inactiveProfileWidthBank_raw rb p.wy _ _
+    (repairNonDescriptor_source (.inr .row) trivial d).symm
+    (repairNonDescriptor_source (.inr .keyMask) trivial d).symm]
+  exact inactiveConfigurationClassifierBank_descriptors p E.R d
+
 theorem generatedRepairCoreInput_blank (C₀ : Stacks (liveInactiveProfileT repairT 11) A)
     (hblank : ∀ j, RepairBlank j → C₀.R (inactiveProfileRaw j) = []) :
     ∀ j, RepairBlank j → (generatedRepairCoreInput p X hG hK active s w C₀).R (liveDescriptorCore j) = [] := by
   intro j hj
-  change liveInactiveProfileBatchBank p X hG hK active s repairLiveMode w C₀.R
-    repairAllSourceProfileJobs (inactiveProfileRaw j) = []
-  rw [liveInactiveProfileBatch_keep p X hG hK active s repairLiveMode w C₀.R repairAllSourceProfileJobs
-    (inactiveProfileRaw j) (fun k _ => liveInactiveProfileCore_injective.ne (liveDescriptorCore_aux j (.input k)))]
-  exact hblank j hj
+  exact (generatedRepairCoreInput_raw p X hG hK active s w C₀ j).trans (hblank j hj)
 
 theorem allSourceRepairPrepared_blank (E : Stacks inactiveProfileConfigurationT A)
     (hblank : ∀ j, RepairBlank j → E.R (inactiveConfigurationCore j) = []) :
@@ -151,6 +213,37 @@ theorem allSourceRepairPrepared_blank (E : Stacks inactiveProfileConfigurationT 
   apply generatedRepairCoreInput_blank
   apply generatedRepairProfileInput_blank
   exact generatedRepairHeaderInput_blank p rb E hblank
+
+theorem allSourceRepairPrepared_price_le {K : ℕ}
+    (E : Stacks inactiveProfileConfigurationT (prime + K))
+    (scale wb wm wp wk n width : ℕ) (hGK : p.G < p.K)
+    (hfields : IntegerMultBounds.MathlibTM2.Layer.CompactDigits.fieldsLen (selectiveLen p X) = n)
+    (hn : p.n ≤ n) (hgroup : p.n * p.G ≤ n)
+    (hfit : ∀ j, LiveDescriptorBounds p X w (repairLiveMode j))
+    (headers : Fin 2 → Fin 5 → List Bool)
+    (data : RepairPendingMaskData p X rb wb wm wp wk R B headers
+      (fun j => E.R (inactiveConfigurationCore j)))
+    (hdesc : ∀ d, E.R (inactiveConfigurationCore (repairDescriptorSource d)) = [])
+    (hleft : ∀ j, E.L (inactiveConfigurationCore j) = [])
+    (hblank : ∀ j, RepairBlank j → E.R (inactiveConfigurationCore j) = [])
+    (hheaders : ∀ c k, (repairCanonicalHeaders p X rb R B c k).length ≤ width) :
+    liveRepairPrice p X rb hG hK active s scale wb wm wp wk R B w
+      (allSourceRepairPrepared p X rb R B hG hK active s w E) ≤
+      (liveRepairUniformOverhead n rb R B width wb wm wp wk w : ℕ) +
+      (selectiveUniformKeyPassCost n rb (R * 2 ^ n) B : ℕ) +
+      (12 * (selectiveUniformRotationCost n (R * 2 ^ n) (n + rb + B) : ℕ) +
+        12 * selectiveUniformSwapCost repairT (R * 2 ^ n) (n + rb + B) p.wc
+          (swapT 6 * (width + 1)) + 1) +
+      repairUniformDensityScanCost n rb R B scale := by
+  apply liveRepairPrice_le p X rb hG hK active s scale wb wm wp wk R B n width w _
+    hGK hfields hn hgroup hfit
+  · exact allSourceRepairPrepared_data p X rb R B hG hK active s w E wb wm wp wk headers data
+  · intro d
+    exact (allSourceRepairPrepared_descriptor_raw p X rb R B hG hK active s w E d).trans (hdesc d)
+  · intro j
+    exact (allSourceRepairPrepared_left p X rb R B hG hK active s w E j).trans (hleft j)
+  · exact allSourceRepairPrepared_blank p X rb R B hG hK active s w E hblank
+  · exact hheaders
 
 end
 end IntegerMultBounds.MathlibTM2.Routing

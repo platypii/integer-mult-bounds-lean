@@ -22,6 +22,50 @@ noncomputable def generatedExchangeBound {t₀ T K : ℕ} (bank : Fin (swapT t�
       34 * (R * 2 ^ n * B) + 2 * T + 6 * swapT t₀ + 110 : ℕ)) +
   (2 * ((n - (b + w)) + rowLength + (b - a - w) + 1 + (a + L + 2) + 2 * widthLength) + 11 : ℕ)
 
+noncomputable def generatedExchangeUniformOverhead (t₀ T n R B L rowLength widthLength bankBound : ℕ) : ℕ :=
+  18 * n + 6 * rowLength + 52 * L + 12 * widthLength + 226 + 6 * bankBound +
+    16 * (3 * n + rowLength + L + 2 * widthLength + 3) +
+    34 * (R * 2 ^ n * B) + 2 * T + 6 * swapT t₀ + 121
+
+theorem generatedExchangeUniformOverhead_mono (t₀ T n R B : ℕ)
+    {L L' rowLength rowLength' widthLength widthLength' bankBound bankBound' : ℕ}
+    (hL : L ≤ L') (hr : rowLength ≤ rowLength') (hw : widthLength ≤ widthLength')
+    (hb : bankBound ≤ bankBound') :
+    generatedExchangeUniformOverhead t₀ T n R B L rowLength widthLength bankBound ≤
+      generatedExchangeUniformOverhead t₀ T n R B L' rowLength' widthLength' bankBound' := by
+  unfold generatedExchangeUniformOverhead
+  gcongr
+
+theorem generatedExchangeBound_le {t₀ T K : ℕ} (bank : Fin (swapT t₀) → Fin T)
+    (R B n a b w L rowLength widthLength bankBound : ℕ) (S : Stacks T (prime + K))
+    (hab : a + w ≤ b) (hb : b + w ≤ n)
+    (hbank : (∑ j, (S.R (bank j)).length) ≤ bankBound) :
+    generatedExchangeBound bank R B n a b w L rowLength widthLength S ≤
+      3 * swapConst * (T + 12 * swapT t₀ + 5 : ℕ) * (R * 2 ^ n * B : ℕ) *
+        ((max 1 w : ℕ) : ℝ) ^ Parameters.tau +
+      (generatedExchangeUniformOverhead t₀ T n R B L rowLength widthLength bankBound : ℕ) := by
+  have ha : a ≤ n := by omega
+  have hr : n - (b + w) ≤ n := Nat.sub_le _ _
+  have hg : b - a - w ≤ n := by omega
+  have hf : (n - (b + w)) + rowLength + (b - a - w) + 1 + (a + L + 2) +
+      2 * widthLength ≤ 3 * n + rowLength + L + 2 * widthLength + 3 := by omega
+  have hfirst : 6 * (rowLength + (n - (b + w))) + 6 * (b - a - w) + 52 * L +
+      6 * a + 12 * widthLength + 226 ≤ 18 * n + 6 * rowLength + 52 * L + 12 * widthLength + 226 := by omega
+  have hmiddle : 6 * (∑ j, (S.R (bank j)).length) +
+      14 * ((n - (b + w)) + rowLength + (b - a - w) + 1 + (a + L + 2) + 2 * widthLength) +
+      34 * (R * 2 ^ n * B) + 2 * T + 6 * swapT t₀ + 110 ≤
+      6 * bankBound + 14 * (3 * n + rowLength + L + 2 * widthLength + 3) +
+        34 * (R * 2 ^ n * B) + 2 * T + 6 * swapT t₀ + 110 := by omega
+  have hlast : 2 * ((n - (b + w)) + rowLength + (b - a - w) + 1 +
+      (a + L + 2) + 2 * widthLength) + 11 ≤
+      2 * (3 * n + rowLength + L + 2 * widthLength + 3) + 11 := by omega
+  have hp := Nat.cast_le (α := ℝ).mpr hfirst
+  have hm := Nat.cast_le (α := ℝ).mpr hmiddle
+  have hl := Nat.cast_le (α := ℝ).mpr hlast
+  unfold generatedExchangeBound generatedExchangeUniformOverhead
+  simp only [Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat] at hp hm hl ⊢
+  linarith only [hp, hm, hl]
+
 theorem generatedBlockExchange_exec_cost {t₀ T Q K : ℕ} {U F : Type}
     (body : F → Pr F T Q (prime + K) U)
     (hd : Fin 5 → Fin t₀) (pay : Fin t₀) (hhd : Function.Injective hd) (hpay : ∀ k, hd k ≠ pay)

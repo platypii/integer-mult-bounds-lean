@@ -94,6 +94,21 @@ noncomputable def selectiveSwapCost (T R B bankLen : ℕ) : ℝ :=
     (6 * bankLen + 34 * (R * 2 ^ fieldsLen (selectiveLen p X) * B) +
       2 * T + 6 * swapT 6 + 23 : ℕ)
 
+/-- Dimension-only swap ledger retaining the compact field's exponent. -/
+noncomputable def selectiveUniformSwapCost (T M B compactWidth bankLen : ℕ) : ℝ :=
+  3 * swapConst * (T + 12 * swapT 6 + 5 : ℕ) * (M * B : ℕ) *
+    ((max 1 compactWidth : ℕ) : ℝ) ^ Parameters.tau +
+    (6 * bankLen + 34 * (M * B) + 2 * T + 6 * swapT 6 + 23 : ℕ)
+
+theorem selectiveSwapCost_le (T R B bankLen bankBound n : ℕ)
+    (hfields : fieldsLen (selectiveLen p X) = n) (hbank : bankLen ≤ bankBound) :
+    selectiveSwapCost p X T R B bankLen ≤ selectiveUniformSwapCost T (R * 2 ^ n) B p.wc bankBound := by
+  unfold selectiveSwapCost selectiveUniformSwapCost
+  rw [hfields]
+  refine add_le_add (le_refl _) ?_
+  exact_mod_cast (show 6 * bankLen + 34 * (R * 2 ^ n * B) + 2 * T + 6 * swapT 6 + 23 ≤
+    6 * bankBound + 34 * (R * 2 ^ n * B) + 2 * T + 6 * swapT 6 + 23 by omega)
+
 noncomputable def selectiveOpCost (T R B : ℕ) (bankLen : Fin 2 → ℕ) : Op → ℝ
   | .rotY _ off | .rotB _ off =>
     classMoveCost (nd := 2) (selectiveRotationCost p X off) (selectiveRotationCost p X off)
@@ -114,6 +129,27 @@ theorem selectiveCost_sum (T R B : ℕ) (bankLen : Fin 2 → ℕ) :
       4 * selectiveOpCost p X T R B bankLen .swapU := by
   simp [progW, prog, E, selectiveOpCost]
   ring
+
+/-- The actual schedule has twelve bounded rotations and twelve compact swaps. -/
+theorem selectiveCost_sum_le (T R B n bankBound : ℕ) (bankLen : Fin 2 → ℕ)
+    (hfields : fieldsLen (selectiveLen p X) = n) (hbank : ∀ c, bankLen c ≤ bankBound) :
+    (progW.map (fun o => selectiveOpCost p X T R B bankLen o.1)).sum ≤
+      12 * (selectiveUniformRotationCost n (R * 2 ^ n) B : ℕ) +
+      12 * selectiveUniformSwapCost T (R * 2 ^ n) B p.wc bankBound := by
+  have hr (off : Off) : (classMoveCost (nd := 2) (selectiveRotationCost p X off) (selectiveRotationCost p X off)
+      (R * 2 ^ fieldsLen (selectiveLen p X)) B (selectiveLen p X) : ℝ) ≤
+      (selectiveUniformRotationCost n (R * 2 ^ n) B : ℕ) := by
+    exact_mod_cast selectiveRotationPassCost_le p X n R B hfields off
+  have hA := hr .A
+  have hZ := hr .Z
+  have hY := hr .Y
+  have hYZ := hr .YZ
+  have hX := hr .X
+  have h₀ := selectiveSwapCost_le p X T R B (bankLen 0) bankBound n hfields (hbank 0)
+  have h₁ := selectiveSwapCost_le p X T R B (bankLen 1) bankBound n hfields (hbank 1)
+  rw [selectiveCost_sum]
+  simp only [selectiveOpCost]
+  linarith only [hA, hZ, hY, hYZ, hX, h₀, h₁]
 
 def selectiveSwapValues (R B : ℕ) (c : Fin 2) (k : Fin 5) : ℕ :=
   swapValues

@@ -39,6 +39,24 @@ theorem sparseCoordinateRuns_coverage (L cursor : ℕ) (entries : List (ℕ × F
       sparseCoordinateEnd (x + 1) (sparseCoordinateValues rest) - cursor
     omega
 
+/-- Gaps and live entries partition the traversed coordinate interval. -/
+theorem sparseCoordinateRuns_gap_sum (L cursor : ℕ)
+    (entries : List (ℕ × Fin (W + 1)))
+    (hr : SparseCoordinatesReady L cursor (sparseCoordinateValues entries)) :
+    ((sparseCoordinateRuns cursor entries).map (fun run => run.gap)).sum +
+      entries.length = sparseCoordinateEnd cursor (sparseCoordinateValues entries) - cursor := by
+  induction entries generalizing cursor with
+  | nil => simp [sparseCoordinateRuns, sparseCoordinateValues, sparseCoordinateEnd]
+  | cons pair rest ih =>
+    obtain ⟨x, q⟩ := pair
+    obtain ⟨_, hyx, ht⟩ := hr
+    have hh := ih (x + 1) ht
+    have he := sparseCoordinateEnd_ge L (x + 1) (sparseCoordinateValues rest) ht
+    simp only [sparseCoordinateRuns, List.map_cons, List.sum_cons, List.length_cons]
+    change x - cursor + _ + (rest.length + 1) =
+      sparseCoordinateEnd (x + 1) (sparseCoordinateValues rest) - cursor
+    omega
+
 /-- Emitting a zero selector at the final physical position closes the suffix. -/
 theorem sparseCoordinateEnd_append (cursor : ℕ) (entries rest : List (ℕ × ℕ)) :
     sparseCoordinateEnd cursor (entries ++ rest) =

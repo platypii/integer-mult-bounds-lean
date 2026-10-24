@@ -1932,6 +1932,191 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    result is the sum of actual repair execution prices plus one uniform
    polynomial setup budget times the number of stages. A uniform bound on
    that repair-price sum and long/short-record amortization remain open.
+   `repairDensityScanCost_le` now bounds exceptional classification, scanning
+   and sorting by `repairUniformDensityScanCost` using total address width.
+   It retains the physical `5 / (128 * scale³)` exceptional-density factor
+   exactly; no worst-case replacement of the sparse sort term is used.
+   `canonicalRouterDensityScanCost_le` now specializes it to every actual
+   canonical residue with scale `n + 1`, the common address width and the
+   dimension-derived complete-rank key width. Selective passes, key emission
+   and descriptor/setup costs still need bounds for the repair-price sum.
+   `selectiveKeyEmitterCost_eq` and `selectiveKeyEmitterCost_le` now give an
+   exact emitter ledger and a quadratic address-width bound.
+   `selectiveKeyPassCost_eq` and `selectiveKeyPassCost_le` lift this to the
+   complete executed keying pass, including record copies, stream restoration
+   and counter reset, using `selectiveUniformKeyPassCost`. Canonical keying
+   instantiation and the selective/descriptor costs remain open.
+   Structural `fieldRun_length` and `higherFields_length` now bound header
+   field counts. `selectiveRotationCost_le` gives a common quadratic header
+   budget, and `selectiveRotationPassCost_le` includes both actual class scans,
+   forward-order restoration and counter cleanup in
+   `selectiveUniformRotationCost`. Swap-bank costs and composition of the
+   full selective instruction schedule remain open.
+   `selectiveSwapCost_le` now retains the compact-width exponent while
+   bounding borrowed swap-bank lengths. `selectiveCost_sum_le` composes the
+   actual twelve rotations and twelve swaps. `repairDensityCoreCost_le`
+   combines complete keying, that selective schedule and the density-priced
+   scan/sort into one executed-core bound. The swap-bank bound is still an
+   explicit premise; it must be discharged for the installed canonical bank,
+   then combined with descriptor and metadata setup/cleanup prices.
+   `SelectivePrepared.swapBank_length_le` now derives the bank-length bound
+   structurally from the five header lengths, empty payload and blank private
+   workspace. `repairSetup_swapBank_length_le` applies it to the bank produced
+   by actual metadata installation. Bounding the canonical header lengths and
+   supplying the generated setup data remain before discharging the canonical
+   repair-core bank premise.
+   `repairCanonicalHeaders_length_le` now bounds all ten canonical swap
+   headers by total address length plus scalar widths for rows, triple keyed
+   payload and compact width. It reuses the existing arithmetic-header identity
+   and canonical binary-copy length theorem. Supplying the canonical numeric
+   fits and generated setup data remains before the final bank instantiation.
+   `canonicalRouterHeaders_length_le` now supplies every numeric header fit
+   internally from canonical scalar widths and the common address/key length,
+   uniformly across residues. Connecting the generated setup data to the
+   installed-bank and repair-core cost bounds remains open.
+   `liveRepairInstalledBank_length_le` now connects the actual pending
+   descriptor data, generated descriptor bank and metadata installation to the
+   swap-bank length bound, transporting blank-workspace and left-stack facts.
+   Instantiating it for `allSourceRepairPrepared` and combining the descriptor,
+   install/erase and core ledgers remain open.
+   `repairCompactRows_le_fields` and
+   `repairCompactSourceWidth_le_fields` now bound every descriptor dimension
+   structurally by the complete address width. Descriptor generation now has
+   structural runtime bounds: `selectorRunLoopCost_eq` separates per-entry and
+   per-gap costs; `sparseCoordinateRuns_gap_sum` identifies their total coordinate
+   extent; `coordinateSelectorCost_le` bounds generation and cleanup from that
+   extent. `affineProfileDescriptorCost_le` bounds the complete affine pipeline
+   independently of source values, stride and offset, including the terminal
+   coordinate, dense compilation and cleanup. `repairCoordinateSelectorCost_le`
+   specializes the bound to every actual repair descriptor;
+   `repairADescriptorCost_le` now bounds the complete grouped pipeline independently
+   of the live activity and source profile. `LiveDescriptorMode.backendCost_le`
+   joins both cases; `liveDescriptorCost_le` includes live setup, and
+   `liveDescriptorBatchCost_le` bounds any executed job list from a common
+   backend budget, including its terminal step. Both backend bounds are now
+   monotone in slot count, row count and source width.
+   `LiveDescriptorMode.backendBound_uniform` gives a common polynomial budget
+   from address width, a slot-count bound and the scalar widths;
+   `liveDescriptorBatchCost_uniform` lifts it to the complete job list.
+   `repairLiveBankCost_le` now prices the actual eleven jobs under their
+   existing live fit conditions, including zero-width fields.
+   `affineProfileDescriptorCost_le_of_positions` and
+   `repairADescriptorCost_le_all` discharge empty cases by proving the relevant
+   source-slot count is zero; no extra positive-target-width premise remains.
+   `canonicalRouterSlots_le` proves both ordinary and grouped slot counts are
+   at most the address width, using the actual borrowed-field identity.
+   `canonicalRouterDescriptorBudget_le` now substitutes common logarithmic
+   scalar widths into that budget, uniformly across residues.
+   `canonicalRouterDescriptorCost_le` now bounds all eleven actual descriptor
+   jobs by the resulting common polynomial, discharging slot counts and live
+   fit conditions internally and covering zero-width fields. Combination
+   with the full repair ledger remains open. `MetadataJob.cost_le` now bounds
+   copy, zero and unary installation jobs from source-word, scalar-width and
+   counter-value bounds; `metadataInstallCost_le` lifts a per-job bound to the
+   complete structural installation loop. `repairSetupJobsCost_le` now
+   instantiates the actual fixed 34-job list, with explicit source-word,
+   scalar-width and unary-value bounds. Deriving those bounds from generated
+   canonical inputs remains open. The existing `metadataCleanCost_le` now
+   lives in `MetadataClean` rather than `ConfigurationSize`, avoiding duplicate
+   proofs or a wider import closure. `metadataInstalled_cleanCost_le` bounds
+   cleanup directly from installed contents; `repairMetadataCleanCost_le`
+   specializes cleanup of all 34 repair destinations to their actual setup
+   payloads. `repairDescriptorWord_length_le` now gives the shared quadratic
+   descriptor bound; the exact descriptor-length lemma was moved into
+   `RepairCompactPattern` so generation, payload and erasure proofs share it.
+   `repairSetupPayload_length_le` bounds every installed payload from total
+   address width, row-key width, payload size, record count and a common header
+   bound, including all unary counters. `liveRepairMetadataCleanCost_le` now
+   transports pending data through actual live descriptor generation and
+   installation, deriving the cleanup bound on that actual bank.
+   `repairSetupSource_length_le` derives all 34 source-word lengths from setup
+   data and the common descriptor/header bounds; `repairSetupInstallCost_le`
+   uses these to bound installation without a separate source-length premise.
+   `liveRepairMetadataInstallCost_le` transports installation through actual
+   live generation. `liveRepairPrice_le` now combines all five phases on that
+   bank: eleven descriptor generators, all 34 installations, the density-priced
+   core with its actual installed swap-bank bound, metadata cleanup and
+   descriptor erasure. `liveRepairUniformOverhead` is independent of live
+   source choices and record contents; the compact-width swap power and sparse
+   physical density factor are preserved. Instantiation for
+   `allSourceRepairPrepared`, canonical scalar substitution and the outer
+   header/profile/placement ledgers remain open.
+   `generatedRepairCoreInput_raw` centralizes preservation of every raw repair
+   register through the complete source-profile batch.
+   `generatedRepairCoreInput_data` transports pending setup readiness through
+   that actual batch; the existing blank-workspace theorem now reuses the same
+   preservation lemma. `allSourceRepairPrepared_data` now composes classifier,
+   width, header and source-profile readiness from the initial bank.
+   `allSourceRepairPrepared_left` and `allSourceRepairPrepared_descriptor_raw`
+   transport left stacks and raw descriptor blanks.
+   `allSourceRepairPrepared_price_le` applies the complete five-phase repair
+   bound to that actual prepared bank using only initial pending-mask data and
+   initial blank-workspace facts. Canonical numerical substitution and the
+   outer header/profile/placement costs remain open.
+   `liveRepairUniformOverhead_mono` now proves monotonicity in header, counter
+   and descriptor scalar widths; `canonicalRouterRepairOverhead_le` replaces
+   every residue-dependent scalar by the common logarithmic budgets, leaving
+   only a supplied common canonical-header length bound. The outer execution
+   ledgers and long/short-record amortization remain open.
+   `repairHeaderErasePrice_le` bounds all ten generated-header erasures from
+   the common header width. `repairAllSourceProfileClean_cost_le` bounds actual
+   cleanup of all eleven source profiles after a disjoint stream update by
+   common slot-count and selector-width limits.
+   `binaryTemporaryMaskCost_le` and `binaryPhaseMaskCost_le` now bound both
+   executed classifier generators by explicit polynomials in a common dimension
+   limit and scalar widths; both uniform budgets are monotone in their scalar
+   widths. Canonical classifier substitution, uniform source-profile generation
+   and placement costs still need to be composed with these bounds.
+   `liveCoordinateProfilesCost_mono` now compares the entire source-profile
+   pipeline by slot count, group size and borrowed width;
+   `liveCoordinateProfilesCost_widths_mono` compares all scalar widths, including
+   gated/optional frames, grouped repetition and the counter/affine generators.
+   These structural proofs reuse the actual cost definitions.
+   `canonicalRouterProfileCost_le` now supplies one residue-independent profile
+   generation budget by majorizing slots by address width, retaining the common
+   gap and substituting logarithmic scalar widths.
+   `canonicalRouterClassifierCost_le` bounds both classifier generators from
+   address width alone; `canonicalRouterHeaderEraseCost_le` discharges the
+   common header erasure width. Combining the full outer ledger and placement
+   costs, followed by long/short-record amortization, remains open.
+   `allSourceGeneratedRepairPrice_le` now combines classifier, width, header
+   and source-profile generation, prepared repair and every cleanup into a
+   bank-independent overhead plus the density-priced key/rotation/swap core.
+   `allSourceGeneratedUniformOverhead` names that actual numerical ledger;
+   canonical substitution of its components remains.
+   `binaryExchangeChainCost_le` now bounds any executed forward/reverse
+   placement schedule from its call count and per-call price; bounding those
+   actual call prices and composing placement remain open.
+   `generatedExchangeBound_le` now bounds interval-dependent setup and cleanup
+   from address width, scalar lengths and a supplied swap-bank size bound.
+   `BinaryExchangeCall.cost_le` includes actual binary conversion and final
+   cleanup for each placement call. Both retain the actual exchanged-width
+   power rather than replacing it by the full address width. Canonical
+   placement-bank/width substitution and schedule composition remain open.
+   `canonicalPlacementInputStack_swapBank` and its length corollary now prove
+   the actual shared placement swap bank is empty, independently of the repair
+   core contents, so its initial size term is zero.
+   `generatedExchangeUniformOverhead_mono` supports common scalar/row-length
+   substitution. Connecting these facts to the actual schedule calls and
+   composing forward/reverse placement still remain open.
+   `BinaryExchangeCall.cost_uniform_overhead` now substitutes shared scalar
+   budgets while preserving each actual exchanged-width power.
+   `binaryExchangeChainCost_le_sum` retains the sum of those width powers over
+   an arbitrary schedule. `binaryScheduleCalls_cost_le` applies the bound to
+   actual shared-bank calls with a blank swap bank; scalar conversion, header
+   generation and cleanup are included. Canonical schedule instantiation and
+   composition with generated repair remain open.
+   `binaryScheduleChainCost_le` now prices complete actual schedules by their
+   width-power sum and call count.
+   `canonicalPlacementInputStack_scheduleCost_le` instantiates that theorem on
+   the actual canonical placement stack, discharging the blank swap-bank
+   premise. Evaluating the forward/reverse width sums, canonical scalar
+   substitution and composition with generated repair remain open. The accumulated
+   cost-proof checkpoint passed the full guarded root build (15,302 jobs) and
+   the axiom audit (351,694 declarations); R3 remains open. `liveDescriptorEraseCost_le`
+   uses those bounds to price erasure of any actual descriptor job list by
+   its length times a quadratic address-size cost, including loop overhead.
+   Descriptor generation and metadata install/erase bounds still remain.
    `canonicalPermutation_canonical_exec` now chooses both scalar widths and the
    canonical binary row counter from the dimensions for the entire restored
    eighteen-direction program. Coordinate positivity, binary fit, canonicality

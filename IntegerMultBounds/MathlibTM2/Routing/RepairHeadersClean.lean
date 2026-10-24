@@ -37,6 +37,20 @@ theorem repairGeneratedHeaderTargets_src : repairHeaderRawCore repairHost.src �
 def repairHeaderErasePrice (p : Par) (X rb R B : ℕ) : ℕ :=
   (List.ofFn (fun j : Fin 10 => 2 * (repairCanonicalHeaders p X rb R B (repairHeaderIndex j).1 (repairHeaderIndex j).2).length + 2)).sum + 1
 
+theorem repairHeaderErasePrice_le (p : Par) (X rb R B width : ℕ)
+    (hheaders : ∀ c k, (repairCanonicalHeaders p X rb R B c k).length ≤ width) :
+    repairHeaderErasePrice p X rb R B ≤ 10 * (2 * width + 2) + 1 := by
+  unfold repairHeaderErasePrice
+  rw [List.sum_ofFn]
+  have hs : (∑ j : Fin 10,
+      (2 * (repairCanonicalHeaders p X rb R B (repairHeaderIndex j).1 (repairHeaderIndex j).2).length + 2)) ≤
+      ∑ _j : Fin 10, (2 * width + 2) := by
+    apply Finset.sum_le_sum
+    intro j _
+    have hh := hheaders (repairHeaderIndex j).1 (repairHeaderIndex j).2
+    omega
+  simpa using Nat.add_le_add_right hs 1
+
 theorem metadataCleanCost_eq_sum {T A : ℕ} (tapes : Fin T → List (Fin (A + 4))) (ks : List (Fin T)) :
     metadataCleanCost tapes ks = (ks.map (fun k => 2 * (tapes k).length + 2)).sum + 1 := by
   induction ks with

@@ -24,6 +24,31 @@ noncomputable def binaryExchangeChainCost (calls : J → BinaryExchangeCall t₀
   | [] => 1
   | j :: js => (calls j).cost S + binaryExchangeChainCost calls S js
 
+theorem binaryExchangeChainCost_le (calls : J → BinaryExchangeCall t₀ T Q n R B str tmp)
+    (S : Stacks T (prime + K)) (js : List J) (budget : ℝ)
+    (hcost : ∀ j ∈ js, (calls j).cost S ≤ budget) :
+    binaryExchangeChainCost calls S js ≤ js.length * budget + 1 := by
+  induction js with
+  | nil => simp [binaryExchangeChainCost]
+  | cons j js ih =>
+    have hc := hcost j (by simp)
+    have ht := ih (fun k hk => hcost k (List.mem_cons_of_mem _ hk))
+    simp only [binaryExchangeChainCost, List.length_cons, Nat.cast_add, Nat.cast_one]
+    linarith only [hc, ht]
+
+theorem binaryExchangeChainCost_le_sum (calls : J → BinaryExchangeCall t₀ T Q n R B str tmp)
+    (S : Stacks T (prime + K)) (js : List J) (price : J → ℝ) (a b : ℝ)
+    (hcost : ∀ j ∈ js, (calls j).cost S ≤ a * price j + b) :
+    binaryExchangeChainCost calls S js ≤ a * (js.map price).sum + js.length * b + 1 := by
+  induction js with
+  | nil => simp [binaryExchangeChainCost]
+  | cons j js ih =>
+    have hc := hcost j (by simp)
+    have ht := ih (fun k hk => hcost k (List.mem_cons_of_mem _ hk))
+    simp only [binaryExchangeChainCost, List.map_cons, List.sum_cons, List.length_cons,
+      Nat.cast_add, Nat.cast_one]
+    linarith only [hc, ht]
+
 theorem binaryExchangeChainCost_updateStream (calls : J → BinaryExchangeCall t₀ T Q n R B str tmp)
     (S : Stacks T (prime + K)) (out : List (Fin (prime + K + 4))) (js : List J) :
     binaryExchangeChainCost calls { S with R := Function.update S.R str out } js =

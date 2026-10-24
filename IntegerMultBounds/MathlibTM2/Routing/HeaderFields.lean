@@ -20,6 +20,12 @@ def fieldRun {nf : ℕ} (start : ℕ) : (count : ℕ) → start + count ≤ nf �
   | 0, _ => []
   | count + 1, h => ⟨start, by omega⟩ :: fieldRun (start + 1) count (by omega)
 
+theorem fieldRun_length {nf : ℕ} (start count : ℕ) (h : start + count ≤ nf) :
+    (fieldRun start count h).length = count := by
+  induction count generalizing start with
+  | zero => rfl
+  | succ count ih => simp only [fieldRun, List.length_cons, ih]
+
 theorem fieldRun_chain {nf : ℕ} (len : Fin nf → ℕ) (count start o : ℕ)
     (h : start + count ≤ nf)
     (hstart : ∀ hs : start < nf, fieldOff len ⟨start, hs⟩ = o) :
@@ -36,6 +42,9 @@ theorem fieldRun_chain {nf : ℕ} (len : Fin nf → ℕ) (count start o : ℕ)
 /-- All actual fields above the rotated field, in increasing significance. -/
 def higherFields {nf : ℕ} (ft : Fin nf) : List (Fin nf) :=
   fieldRun (ft.val + 1) (nf - (ft.val + 1)) (by omega)
+
+theorem higherFields_length {nf : ℕ} (ft : Fin nf) :
+    (higherFields ft).length = nf - (ft.val + 1) := fieldRun_length _ _ _
 
 theorem higherFields_chain {nf : ℕ} (len : Fin nf → ℕ) (ft : Fin nf) :
     HeaderChain len (fieldOff len ft + len ft) (higherFields ft) := by

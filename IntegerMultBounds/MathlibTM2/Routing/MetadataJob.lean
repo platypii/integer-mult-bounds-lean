@@ -43,6 +43,28 @@ def cost (R : Fin T → List (Fin (A + 4))) : MetadataJob T → ℕ
   | .zero s _ => 4 * (R s).length + 4
   | .unary _ _ w n => w * (4 * n + 11) + 2 * n + 6
 
+theorem cost_le (R : Fin T → List (Fin (A + 4))) (job : MetadataJob T)
+    (wordBound widthBound valueBound : ℕ) (hword : (R job.src).length ≤ wordBound)
+    (hunary : match job with
+      | .unary _ _ w n => w ≤ widthBound ∧ n ≤ valueBound
+      | _ => True) :
+    job.cost R ≤ 6 * wordBound + 7 +
+      widthBound * (4 * valueBound + 11) + 2 * valueBound + 6 := by
+  cases job with
+  | copy s d header =>
+    change (R s).length ≤ wordBound at hword
+    simp only [cost]
+    omega
+  | zero s d =>
+    change (R s).length ≤ wordBound at hword
+    simp only [cost]
+    omega
+  | unary s d w n =>
+    obtain ⟨hw, hn⟩ := hunary
+    have hm := Nat.mul_le_mul hw (show 4 * n + 11 ≤ 4 * valueBound + 11 by omega)
+    simp only [cost]
+    omega
+
 def Data (R : Fin T → List (Fin (A + 4))) : MetadataJob T → Prop
   | .unary s _ w n => n < 2 ^ w ∧ R s = binSyms w n
   | _ => True

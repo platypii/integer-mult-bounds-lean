@@ -82,6 +82,29 @@ structure SelectivePrepared (B M : ℕ) (hs : Fin 2 → Fin 5 → List Bool)
   priv : ∀ c (j : Fin (swapT 6)), 6 ≤ j.val → S.R (H.swaps c j) = []
   hdr : ∀ c k, S.R (H.swaps c (reg (selectiveSwapHd k))) = separator :: (hs c k).map bitSymbol
 
+/-- A prepared swap bank contains only its five bounded headers; all other words are blank. -/
+theorem SelectivePrepared.swapBank_length_le {B M : ℕ} {headers : Fin 2 → Fin 5 → List Bool}
+    {S : Stacks T (prime + K)} (h : SelectivePrepared p X H hG hK active s B M headers S)
+    (width : ℕ) (hheaders : ∀ c k, (headers c k).length ≤ width) (c : Fin 2) :
+    (∑ j, (S.R (H.swaps c j)).length) ≤ swapT 6 * (width + 1) := by
+  calc
+    _ ≤ ∑ _j : Fin (swapT 6), (width + 1) := by
+      apply Finset.sum_le_sum
+      intro j _
+      by_cases hj : j.val < 5
+      · let k : Fin 5 := ⟨j.val, hj⟩
+        have he : j = reg (selectiveSwapHd k) := Fin.ext rfl
+        rw [he, h.hdr]
+        simp only [List.length_cons, List.length_map]
+        exact Nat.add_le_add_right (hheaders c k) 1
+      · by_cases h6 : j.val < 6
+        · have he : j = reg selectiveSwapPay := by apply Fin.ext; change j.val = 5; omega
+          rw [he, h.pay]
+          exact Nat.zero_le _
+        · rw [h.priv c j (by omega)]
+          exact Nat.zero_le _
+    _ = _ := by simp
+
 /-- Changing only the stream preserves every prepared host obligation. -/
 theorem SelectivePrepared.update {B M : ℕ} {hs : Fin 2 → Fin 5 → List Bool}
     {S : Stacks T (prime + K)} (V : H.Valid)

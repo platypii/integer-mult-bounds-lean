@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Routing.SparseCoordinateRuns
+public import IntegerMultBounds.MathlibTM2.Routing.SparseCoordinateCoverage
 public import IntegerMultBounds.MathlibTM2.Routing.GeneratedSelectorRuns
 public import IntegerMultBounds.MathlibTM2.Routing.CompactDescriptorJob
 
@@ -37,6 +37,33 @@ def coordinateSelectorCost (Lw L Ls cursor : ℕ) (entries : List (ℕ × Fin (W
     ((Lw * (4 * Ls + 11) + 8 * Ls + 13) + selectorRunLoopCost L Ls rs +
       2 * (selectorRunFrames (A := 0) L Ls rs).length + 3 + (2 * (Ls + 1) + 2)) +
     (2 * (selectorRunFrames (A := 0) L Ls rs).length + 2)
+
+/-- Generation and cleanup are linear in entries and total skipped coordinates. -/
+theorem coordinateSelectorCost_eq (Lw L Ls cursor : ℕ)
+    (entries : List (ℕ × Fin (W + 1))) :
+    coordinateSelectorCost Lw L Ls cursor entries =
+      entries.length * (55 * L + 30 * Ls + 105) +
+        ((sparseCoordinateRuns cursor entries).map (fun run => run.gap)).sum *
+          (4 * L + 6 * Ls + 21) +
+        Lw * (4 * Ls + 11) + 16 * L + 10 * Ls + 43 := by
+  simp only [coordinateSelectorCost, selectorRunLoopCost_eq,
+    CompactDescriptorJob.selectorRunFrames_length, List.length_reverse,
+    sparseCoordinateRuns_length, List.map_reverse, List.sum_reverse]
+  ring
+
+theorem coordinateSelectorCost_le (Lw L Ls cursor extent : ℕ)
+    (entries : List (ℕ × Fin (W + 1)))
+    (hr : SparseCoordinatesReady L cursor (sparseCoordinateValues entries))
+    (hend : sparseCoordinateEnd cursor (sparseCoordinateValues entries) - cursor ≤ extent) :
+    coordinateSelectorCost Lw L Ls cursor entries ≤
+      entries.length * (55 * L + 30 * Ls + 105) + extent * (4 * L + 6 * Ls + 21) +
+        Lw * (4 * Ls + 11) + 16 * L + 10 * Ls + 43 := by
+  have hsum := sparseCoordinateRuns_gap_sum L cursor entries hr
+  have hgap : ((sparseCoordinateRuns cursor entries).map (fun run => run.gap)).sum ≤
+      extent := by omega
+  have hprice := Nat.mul_le_mul_right (4 * L + 6 * Ls + 21) hgap
+  rw [coordinateSelectorCost_eq]
+  omega
 
 theorem coordinateSelector_exec (body : P → Pr P T Q A U)
     (coord : SparseCoordinateReg → Fin T) (hcoord : Function.Injective coord)

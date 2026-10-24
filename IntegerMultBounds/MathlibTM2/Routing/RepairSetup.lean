@@ -113,6 +113,17 @@ theorem repairSetup_prepared {wb wm wp wk R B : ℕ} {headers : Fin 2 → Fin 5 
       congrArg List.length (hat (.inr .keyLength))
   · exact hb _ (Or.inr (Or.inl rfl))
 
+/-- Actual metadata installation discharges the swap-bank bound from header widths. -/
+theorem repairSetup_swapBank_length_le {wb wm wp wk R B : ℕ} {headers : Fin 2 → Fin 5 → List Bool}
+    (S : Stacks repairT (prime + K))
+    (data : RepairSetupData p X rb hG hK active s wb wm wp wk R B headers S.R)
+    (hL : ∀ j, S.L j = []) (hblank : ∀ j, RepairBlank j → S.R j = [])
+    (width : ℕ) (hheaders : ∀ c k, (headers c k).length ≤ width) (c : Fin 2) :
+    (∑ j, (metadataInstalled S.R (repairJobs p X rb wb wm wp wk R B) (repairHost.swaps c j)).length) ≤
+      swapT 6 * (width + 1) := by
+  have h := (repairSetup_prepared p X rb hG hK active s S data hL hblank).routing
+  exact h.swapBank_length_le p X repairHost hG hK active s width hheaders c
+
 /-- Actual installation of every shared word, with raw inputs and scratch restored. -/
 theorem repairSetup_exec (body : P → Pr P repairT Q (prime + K) U)
     {wb wm wp wk R B : ℕ} {headers : Fin 2 → Fin 5 → List Bool}

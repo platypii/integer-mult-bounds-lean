@@ -65,6 +65,19 @@ theorem repairAllSourceProfileClean_cost (R : Fin T₀ → List (Fin (A + 4)))
     repairGeneratedProfileJobs, repairInactiveProfileJobs]
   omega
 
+theorem repairAllSourceProfileClean_cost_le (R : Fin T₀ → List (Fin (A + 4)))
+    (str : Fin T₀) (hstr : str ∉ liveInactiveProfileTargets repairAllSourceProfileJobs)
+    (out : List (Fin (A + 4))) (n Ls : ℕ)
+    (hn : p.n ≤ n) (hwc : p.wc ≤ n) (hselector : w.selectorBits ≤ Ls) :
+    metadataCleanCost
+      (Function.update (liveInactiveProfileBatchBank p X hG hK active s repairLiveMode w R repairAllSourceProfileJobs) str out)
+      (liveInactiveProfileTargets repairAllSourceProfileJobs) ≤ 11 * (2 * (n * (Ls + 3)) + 2) + 1 := by
+  rw [repairAllSourceProfileClean_cost p X hG hK active s w R str hstr out]
+  have hs : w.selectorBits + 3 ≤ Ls + 3 := by omega
+  have hi := Nat.mul_le_mul hn hs
+  have hc := Nat.mul_le_mul hwc hs
+  omega
+
 theorem repairAllSourceProfileClean_exec (body : P → Pr P T₀ Q A U)
     (v : HS T₀ Q A U) (S : Stacks T₀ A)
     (hblank : ∀ j ∈ repairAllSourceProfileJobs, S.R (e₀ (liveDescriptorAux (.input j))) = [])

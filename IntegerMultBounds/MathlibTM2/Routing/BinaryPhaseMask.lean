@@ -27,6 +27,30 @@ def binaryPhaseMaskCost (p : Par) (L Ln Lo Lm : ℕ) :=
     (Lo * (4 * p.ρ + 11) + 8 * p.ρ + 12) +
     (Lm * (4 * p.m + 11) + 10 * p.m + 4 * (p.ρ + (p.n * p.K + 1)) + 16)
 
+def binaryPhaseMaskUniformCost (n L Ln Lo Lm : ℕ) :=
+  1 + ((L * (4 * n + 21) + 2 * n + 16) +
+    (L * (4 * n + 11) + 2 * n + 6) + (10 * n + 6 * n + 22) +
+    (2 * n + 2) + (2 * n + 2)) + binaryWordRepeatCost Ln n n + (2 * n + 2) +
+    (Lo * (4 * n + 11) + 8 * n + 12) +
+    (Lm * (4 * n + 11) + 10 * n + 4 * (n + (n * n + 1)) + 16)
+
+theorem binaryPhaseMaskUniformCost_widths_mono (n : ℕ)
+    {L L' Ln Ln' Lo Lo' Lm Lm' : ℕ}
+    (hL : L ≤ L') (hn : Ln ≤ Ln') (ho : Lo ≤ Lo') (hm : Lm ≤ Lm') :
+    binaryPhaseMaskUniformCost n L Ln Lo Lm ≤ binaryPhaseMaskUniformCost n L' Ln' Lo' Lm' := by
+  unfold binaryPhaseMaskUniformCost binaryWordRepeatCost
+  gcongr
+
+theorem binaryPhaseMaskCost_le (p : Par) (n L Ln Lo Lm : ℕ)
+    (hK : p.K ≤ n) (hG : p.G ≤ n) (hn : p.n ≤ n)
+    (ho : p.ρ ≤ n) (hm : p.m ≤ n) :
+    binaryPhaseMaskCost p L Ln Lo Lm ≤ binaryPhaseMaskUniformCost n L Ln Lo Lm := by
+  have hd : p.K - p.G ≤ n := (Nat.sub_le _ _).trans hK
+  have hg : p.G - 1 ≤ n := (Nat.sub_le _ _).trans hG
+  have ht : p.K - p.G - 2 ≤ n := (Nat.sub_le _ _).trans hd
+  unfold binaryPhaseMaskCost binaryPhaseMaskUniformCost binaryPhaseBlockCost binaryWordRepeatCost
+  gcongr
+
 theorem binaryPhaseMask_exec {T Q A : ℕ} {P U : Type}
     (body : P → Pr P T Q A U) (p : Par) (hG : 0 < p.G) (hGK : p.G + 1 < p.K)
     (rg : PhaseBlockReg → Fin T) (hrg : Function.Injective rg)

@@ -114,6 +114,26 @@ def selectiveKeyEmitter (ι : PatternReg 6 → Fin T) (acc : Fin T) : Pr P T Q A
 
 def selectiveKeyEmitterCost : ℕ := ((List.finRange 6).map (selectiveKeyFieldCost p X rb)).sum + 1
 
+theorem selectiveKeyEmitterCost_eq :
+    selectiveKeyEmitterCost p X rb = selectiveKeyTargetCost p X + 5 * (3 * p.wc + X + rb) + 21 := by
+  simp [selectiveKeyEmitterCost, List.finRange_succ, selectiveKeyFieldCost, selectiveKeyLen]
+  omega
+
+/-- Complete-rank key emission is quadratic in address width and linear in row-key width. -/
+theorem selectiveKeyEmitterCost_le (n : ℕ) (hfields : fieldsLen (selectiveLen p X) = n) :
+    selectiveKeyEmitterCost p X rb ≤ n * (6 * n + 25) + 13 * n + 5 * rb + 66 := by
+  have htotal : p.wc + (p.wy + 2 * p.wc + X) = n := by
+    simp only [fieldsLen, selectiveLen, Fin.sum_univ_succ] at hfields
+    simp at hfields
+    omega
+  have hy : p.wy ≤ n := by omega
+  have hs : p.wy + 2 * p.wc + X ≤ n := by omega
+  have ht : selectiveKeyTargetCost p X ≤ n * (6 * n + 25) + 8 * n + 45 := by
+    unfold selectiveKeyTargetCost
+    gcongr
+  rw [selectiveKeyEmitterCost_eq]
+  omega
+
 /-- The concrete emitter meets the executed full-stream driver's interface. -/
 theorem selectiveKeyEmitter_spec (hK : 0 < p.K) (body : P → Pr P T Q A U)
     (ι : PatternReg 6 → Fin T) (hι : Function.Injective ι) (src acc : Fin T)
