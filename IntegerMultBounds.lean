@@ -1844,8 +1844,18 @@ public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorScalarClea
 public import IntegerMultBounds.MathlibTM2.Routing.DescriptorScalarFields
 public import IntegerMultBounds.MathlibTM2.Routing.DescriptorScalarInstall
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorInstallReady
-public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorInstall
-public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorScope
+-- Superseded 55-field generation/scope wrappers: restore from f2386c68.
+public import IntegerMultBounds.MathlibTM2.Routing.DescriptorSharedFields
+public import IntegerMultBounds.MathlibTM2.Routing.DescriptorSharedInstall
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorSharedReady
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorSharedGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorOperandBank
+public import IntegerMultBounds.MathlibTM2.Routing.DescriptorOperandFrame
+public import IntegerMultBounds.MathlibTM2.Routing.DescriptorOperandLoad
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorSerialize
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorClean
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalDescriptorFrameScope
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingEntryResize
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingResizeStep
 public import IntegerMultBounds.MathlibTM2.Routing.MatchingResizeLoop

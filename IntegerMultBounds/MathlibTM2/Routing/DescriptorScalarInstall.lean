@@ -89,6 +89,19 @@ theorem descriptorScalarInstallCost_le (M W B : ℕ) (w : LiveDescriptorWidths)
   have hl : descriptorScalarJobs.length = 55 := by decide +kernel
   simpa only [hl] using bound descriptorScalarJobs
 
+theorem descriptorScalarInstalledBank_at (R : Fin T → List (Fin (A + 4)))
+    (rg : Fin 101 → Fin T) (hrg : Function.Injective rg)
+    (p : Par) (w : LiveDescriptorWidths) (q : Fin 11 × Fin 5) :
+    descriptorScalarInstalledBank R rg p w (rg (descriptorScalarDestination q)) =
+      binSyms (repairDescriptorScalarWidth w q.2) (repairDescriptorScalarValues p q.1 q.2) := by
+  have hd : (descriptorScalarJobs.map
+      (fun q => (rg ∘ descriptorScalarInstallSlot q) 3)).Nodup :=
+    descriptorScalarJobs_nodup.map (hrg.comp descriptorScalarDestination_injective)
+  rw [descriptorScalarInstalledBank,
+    show rg (descriptorScalarDestination q) = (rg ∘ descriptorScalarInstallSlot q) 3 from rfl,
+    binaryResizeBatchBank_at _ _ _ _ _ hd q (descriptorScalarJobs_mem q),
+    repairDescriptorScalarPalette_words]
+
 theorem descriptorScalarInstalledBank_operands (R : Fin T → List (Fin (A + 4)))
     (rg : Fin 101 → Fin T) (hrg : Function.Injective rg)
     (p : Par) (hG : 0 < p.G) (hK : 0 < p.K)
@@ -96,12 +109,8 @@ theorem descriptorScalarInstalledBank_operands (R : Fin T → List (Fin (A + 4))
     (w : LiveDescriptorWidths) (q : Fin 11 × Fin 5) :
     descriptorScalarInstalledBank R rg p w (rg (descriptorScalarDestination q)) =
       canonicalDescriptorOperands p 0 hG hK active source w (descriptorScalarRole q.1 q.2) := by
-  have hd : (descriptorScalarJobs.map
-      (fun q => (rg ∘ descriptorScalarInstallSlot q) 3)).Nodup := by
-    exact descriptorScalarJobs_nodup.map (hrg.comp descriptorScalarDestination_injective)
-  rw [descriptorScalarInstalledBank,
-    show rg (descriptorScalarDestination q) = (rg ∘ descriptorScalarInstallSlot q) 3 from rfl,
-    binaryResizeBatchBank_at _ _ _ _ _ hd q (descriptorScalarJobs_mem q)]
+  rw [descriptorScalarInstalledBank_at R rg hrg]
+  rw [← repairDescriptorScalarPalette_words]
   exact descriptorScalarRole_operands p hG hK active source w q.1 q.2
 
 theorem descriptorScalarInstall_exec (body : P → Pr P T Q A U)

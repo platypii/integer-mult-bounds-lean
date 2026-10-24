@@ -3600,6 +3600,37 @@ generation/installation/restoration chunk supersedes the pending-validation
 notes above. Frame serialization and
 full-router integration remain open, along with every other R3 acceptance gate.
 
+**Complete descriptor operand frame (verified checkpoint):**
+`canonicalDescriptorGenerate_exec` generates all 61 nonempty descriptor scalars
+from binary dimension/residue on a 108-register scope. Geometry, width words,
+zero/one constants and every numeric fit are generated or derived internally.
+`canonicalDescriptorGeneratedBank_operands` identifies the complete source
+projection with `canonicalDescriptorOperands`; all other roles share one proved
+blank source, including initially empty profiles and scratch.
+
+`DescriptorOperandFrame` serializes every role in physical auxiliary-bank order.
+`canonicalDescriptorFrameScope_exec` composes generation, full serialization and
+three cleanup stages, restoring every register except the output frame and
+preserving its arbitrary existing suffix. Its price is
+`canonicalDescriptorSerializePrice L W + 24*L + 146*W + 173`.
+The serialization price includes all generation/install work and the structural
+copy bound `card(LiveDescriptorRole 11)*(36*W+7)+1`.
+`DescriptorOperandLoad` executes loading into an arbitrary injective caller role
+placement, proves every loaded word exact, and bounds loading by
+`card(LiveDescriptorRole 11)*(4*B+6)+1` for maximum word width `B`.
+`canonicalDescriptorOperands_scan` supplies binary-word scanner readiness.
+
+The scope and loader dependency build passed. Superseded 55-field-only wrappers
+are removed (restore committed generation/scope wrappers from `f2386c68`);
+uncommitted partial serializers/loaders were replaced by this complete path.
+Root imports are added; the full guarded build passed (15,458 jobs, combined peak
+31.6 GiB). The axiom audit passed (353,004 declarations, peak 4443.2 MiB);
+final guarded scope/loader checks used 2549.3/2562.3 MiB respectively.
+This closes descriptor **operand** production, not the complete router
+frame: repair/header/classifier/placement operand generation, activity/selected
+profile composition, full router integration, small dimensions, executed short
+records and uniform global amortization remain R3 gates. R3 and kappa are unchanged.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,

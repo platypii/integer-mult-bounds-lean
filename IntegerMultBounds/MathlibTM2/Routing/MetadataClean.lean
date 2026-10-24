@@ -142,4 +142,23 @@ theorem metadataCleanCost_congr {R R' : Fin T → List (Fin (A + 4))}
   | cons k ks ih =>
     rw [metadataCleanCost, metadataCleanCost, h k (by simp), ih (fun j hj => h j (by simp [hj]))]
 
+/-- Clear a borrowed bank after its caller has changed a disjoint output. -/
+theorem metadataClean_framed_exec (body : P → Pr P T Q A U)
+    (ks : List (Fin T)) (hks : ks.Nodup)
+    (B R : Fin T → List (Fin (A + 4))) (hrestore : metadataCleared B ks = R)
+    (dst : Fin T) (hdst : dst ∉ ks) (output : List (Fin (A + 4)))
+    (v : HS T Q A U) (S : Stacks T A) :
+    ∃ v', v'.user = v.user ∧
+      Exec body (metadataClean ks) (mk v { S with R := Function.update B dst output })
+        (metadataCleanCost B ks) (mk v' { S with R := Function.update R dst output }) := by
+  obtain ⟨v',hu,he⟩ := metadataClean_exec body ks hks v { S with R := Function.update B dst output }
+  have hc : metadataCleanCost (Function.update B dst output) ks = metadataCleanCost B ks := by
+    apply metadataCleanCost_congr
+    intro k hk
+    apply Function.update_of_ne
+    intro he
+    exact hdst (he ▸ hk)
+  rw [hc,metadataCleared_update B ks dst output hdst,hrestore] at he
+  exact ⟨v',hu,he⟩
+
 end IntegerMultBounds.MathlibTM2.Routing
