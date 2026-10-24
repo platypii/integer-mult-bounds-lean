@@ -1890,3 +1890,8 @@ public import IntegerMultBounds.MathlibTM2.Routing.MatchingEntryEmit
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingEntry
 public import IntegerMultBounds.MathlibTM2.Routing.BinaryReset
 public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingTable
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryZeroScope
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryCounterPairScope
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingTableInput
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingTableBinary
+public import IntegerMultBounds.MathlibTM2.Routing.PermutationMatchingTableCost

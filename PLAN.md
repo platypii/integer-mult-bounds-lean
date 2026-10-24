@@ -2836,6 +2836,29 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    chunk passed the full guarded root build (15,346 jobs, peak 4.5 GiB) and
    axiom audit (352,086 declarations, peak 4433.5 MiB), superseding the pending
    verification notes above.
+   `BinaryZeroScope.binaryZeroScope_exec` now generates and erases a zero word
+   at the width of a preserved source, with additive cost `6 * L + 6` and no
+   unary width input. `PermutationMatchingTableInput.permutationMatchingTableInput_exec`
+   applies this to actual table generation; the cursor now starts/ends blank.
+   `BinaryCounterPairScope.binaryCounterPairScope_exec` generates and erases two
+   independent unary counters from one preserved binary operand.
+   `PermutationMatchingTableBinary.permutationMatchingTableBinary_exec` composes
+   both scopes: complete canonical matching tables now generate from a binary
+   dimension and the compact permutation table alone. Only the output table changes;
+   cursor, both coordinate-count tapes, bases, return counts, archives and every
+   scratch register start/end blank. The guarded check passed at about 2.47 GiB.
+   Its reusable cost is `N * (N * (3 * N * (30 * L + 39) + 84 * L + 125)
+   + 74 * L + 119) + 42 * L + 42`.
+   `PermutationMatchingTableCost.permutationMatchingTableBinaryCost_le_fourth`
+   proves the actual cost is at most `693 * (n + 1)^4` for compact dimension
+   widths bounded by `n + 1`. The eventual volume-absorption theorem pays this
+   even when repeated per row, uniformly in row count and positive payload width.
+   Its guarded check passed at about 2.45 GiB. This supersedes the supplied
+   cursor/count gate above. Feeding generated matching tables into the canonical
+   metadata compiler and complete metadata assembly remain open, as do small
+   dimensions and short records; R3 and kappa are unchanged. This binary-input
+   compiler chunk passed the full guarded root build (15,351 jobs, peak 4.4 GiB)
+   and axiom audit (352,100 declarations, peak 4432.5 MiB).
 
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.
