@@ -2665,6 +2665,33 @@ R3's work is ordered by dependency (the first two logical items are now proved):
    production remain open; R3 and kappa are unchanged. The complete chunk
    passed the full guarded root build (15,323 jobs, peak 4.5 GiB) and the
    axiom audit (351,964 declarations, peak 4429.6 MiB).
+   `BinaryCounterScope.binaryCounterScope_exec` now executes binary-to-unary
+   conversion, an exactly framed call and unary-counter erasure, restoring the
+   binary source and all scratch with additive price `8 * value + 11 * width + 8`.
+   Its guarded check passed at about 1.17 GiB.
+   `CanonicalRowDriverBinaryCount.canonicalRowDriver_binary_count_exec` now
+   applies that scope to actual global routing: the outer row count starts in
+   binary and its unary tape starts and ends blank. The exact global permutation,
+   unread suffix and all nonstream registers are preserved by the existing
+   endpoint contract; the conversion/erasure price is added once to total cost.
+   Its guarded check passed at about 2.51 GiB.
+   `CanonicalRowDriverBinaryCounters.canonicalRowDriver_binary_counters_exec`
+   now generates and erases both unary driver tapes from binary row count and
+   binary row length, with the exact same global endpoint contract.
+   `BinaryScaleScope.binaryScaleScope_exec` prices shifted binary copying,
+   a framed call and erasure by `8 * (dimension + payloadBits) + 14`.
+   `CanonicalRowDriverScaledWidth.canonicalRowDriver_scaled_width_exec` uses
+   actual scaling to calculate the row length from payload width and unary dimension.
+   `CanonicalRowDriverCompactCounters.canonicalRowDriver_compact_counters_exec`
+   now starts with only binary dimension, binary payload width and binary row count
+   for the outer counters. The dimension counter, scaled binary row-length word,
+   unary row count and unary row width all start and end blank; the three binary
+   inputs and all scratch restore, and every generation/cleanup phase is charged.
+   The final caller passed its guarded check at about 2.52 GiB; the generic scaling
+   scope passed at about 1.16 GiB. Metadata generation, small dimensions and
+   short records remain open. The complete counter pipeline passed the full
+   guarded root build (15,329 jobs, peak 4.5 GiB) and axiom audit (351,977
+   declarations, peak 4430.0 MiB). R3 and kappa remain unchanged.
 
 6. Compose the full arbitrary-coordinate router and audit its total cost and
    exact restored-bank contract. R3 remains open until all these gates pass.

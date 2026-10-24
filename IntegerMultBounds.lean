@@ -1867,3 +1867,9 @@ public import IntegerMultBounds.MathlibTM2.Routing.SetupAbsorption
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterDimension
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRouterDimensionAbsorption
 public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverAbsorbed
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryCounterScope
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverBinaryCount
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverBinaryCounters
+public import IntegerMultBounds.MathlibTM2.Routing.BinaryScaleScope
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverScaledWidth
+public import IntegerMultBounds.MathlibTM2.Routing.CanonicalRowDriverCompactCounters
