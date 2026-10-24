@@ -1905,3 +1905,9 @@ public import IntegerMultBounds.MathlibTM2.Routing.ReservoirIntervalScalars
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirExchangeOperands
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirExchangeOperandFrames
 public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMetadataGenerate
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirMetadataPair
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirProductionScalars
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirScalarExport
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirScalarPrepare
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirBankPrepare
+public import IntegerMultBounds.MathlibTM2.Routing.ReservoirBankPlacement

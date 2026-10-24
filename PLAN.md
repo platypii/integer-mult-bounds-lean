@@ -2944,6 +2944,56 @@ The full guarded root build passed (15,361 jobs, 4.5 GiB combined peak);
 The root axiom audit passed for 352,194 declarations (4437.3 MiB peak).
 These checks supersede the pending verification notes for the scalar additions above.
 
+`ReservoirProductionScalars.reservoirProductionScalars_exec` extends the generated
+operand bank with `n - 3*w`, reusing `n - 2*w` and the original span. Its exact
+cost is `90 * L + 102`; source inputs and scratch restore. The guarded check
+passed at 2526.0 MiB. `ReservoirMetadataPair.reservoirMetadataPair_exec` generates
+both forward and backward exchange words on one reusable scratch bank in exactly
+`472 * L + 530` steps. Only the two output words change, preserving arbitrary
+suffixes; the guarded check passed at 2522.3 MiB. These additions await the
+larger scalar-bank assembly chunk before commit and full root verification.
+Complete reservoir-class bank preparation and canonical assembly remain open;
+R3 and kappa are unchanged.
+
+`ReservoirScalarExport.reservoirScalarExport_exec` now copies the six generated
+scalar inputs (two zeros, span, surviving dimension, triple and sextuple reservoir
+width) into separate converter destinations using the structural metadata installer.
+Only those six outputs change; source and scratch tapes restore, with total cost
+at most `36 * L + 43`. The guarded check passed at 1189.3 MiB.
+`reservoirProductionScalars_clean` proves that erasing the surviving dimension
+and all exchange operands restores the original bank (guarded check 2518.8 MiB).
+Execution composition of scalar generation/export/cleanup and the final physical
+placement with both metadata outputs remain next. This is uncommitted work;
+full R3 acceptance and kappa remain unchanged.
+
+`ReservoirScalarPrepare.reservoirScalarPrepare_exec` now composes actual scalar
+generation, six-output export and complete generated-operand cleanup. From
+binary dimension, reservoir width and span it produces exactly the six converter
+scalar inputs, changing only their destinations and restoring all production
+scratch and input tapes. The total step bound is `150 * L + 170`, including
+cleanup bounded structurally by `24 * L + 25`. The guarded check passed at
+2545.2 MiB. This closes the scalar execution-composition item above; joining
+both metadata words to the converter's physical bank and then connecting the
+matching-table producer remain open. The chunk remains uncommitted pending
+that assembly; R3 and kappa are unchanged.
+
+`ReservoirBankPrepare.reservoirBankPrepare_exec` now joins both metadata directions
+and complete scalar setup on a shared production bank. Only the eight converter
+input fields change, with total cost at most `622 * L + 700`; all production
+scratch and compact input tapes restore. The guarded check passed at 2518.6 MiB.
+`ReservoirBankPlacement.reservoirBankPrepared_classLocal` proves the fixed
+78-register placement supplies exactly the existing 57-register class/local
+converter bank, with only its original matching-table field left blank for the
+separate executed table producer. Placement injectivity and the exact bank
+identity passed at 2597.6 MiB. This closes the scalar/metadata assembly items
+above. Connecting this executed setup to matching-table production/conversion,
+erasing the eight generated converter inputs after use, and generating the
+remaining profile controls/canonical frame are still open; full R3 and kappa
+remain unchanged. The accumulated bank-setup chunk passed the full guarded
+root build (15,367 jobs, 4.5 GiB combined peak) and root axiom audit
+(352,253 declarations, 4433.9 MiB peak), superseding the pending verification
+and uncommitted-status notes above.
+
 **R3 sizing audit (2026-10-23):** The original R3 estimate of **3–5k** lines and
 the later **15–24k additional or substantially revised Lean lines** estimate are
 retired. At this audit snapshot the routing directory had approximately **74.3k lines in 834 modules**,
