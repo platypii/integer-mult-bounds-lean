@@ -46,8 +46,9 @@ theorem closedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 �
       (∀ k : Fin 117, k ≠ 93 → k ≠ 110 → S'.R k = []) ∧
       (∀ n : Fin B, ∀ i : Fin L, |(value q (decodeWord (((S'.R 93).drop ((n.val*L+i.val)*w)).take w))).re -
         x n (lo n+(i.val : ZMod s))| ≤ 1/(2 : ℝ)^target) ∧
-      ∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)
-        (publishedBatchRead q w n.val L (lo n) (S'.R 93)) (x n) (1/(2 : ℝ)^target) := by
+      (∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)
+        (publishedBatchRead q w n.val L (lo n) (S'.R 93)) (x n) (1/(2 : ℝ)^target)) ∧
+      ∃ ys : List (Fin (A+4)), ys.length = B*L*w ∧ S'.R 93 = ys ++ tail := by
   dsimp only
   let q := executionPrecision p l target rhsExp
   let w := executionWidth p l target rhsExp
@@ -66,7 +67,7 @@ theorem closedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 �
       hL hpad lo C hC n I (x n) (hx n n.isLt) (hfit n n.isLt) (hint n n.isLt)
       (hcell n n.isLt) (hmax n n.isLt) i tail
     simpa [S', releasedCellBank, result, q, w, j, cExp] using hacc
-  refine ⟨v', S', m, huser, hm, he, rfl, rfl, fun _ => rfl, ?_, ?_, hpoint, ?_⟩
+  refine ⟨v', S', m, huser, hm, he, rfl, rfl, fun _ => rfl, ?_, ?_, hpoint, ?_, ?_⟩
   · simp [S', releasedCellBank, rhs, w]
   · intro k hk93 hk110
     have h93 : k.val ≠ 93 := fun h => hk93 (Fin.ext h)
@@ -74,5 +75,7 @@ theorem closedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 �
     simp [S', releasedCellBank, h93, h110]
   · intro n
     exact publishedBatchRead_errorOn q w n.val (lo n) (S'.R 93) (x n) _ (hfit n n.isLt) (hpoint n)
+  · refine ⟨cstream A w (publishedWords B L (executedOutputWords s t p u q l B L j cExp lo C)), ?_, rfl⟩
+    simp [w]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

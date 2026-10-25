@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1258 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1266 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and ambient input, generating origins, count and sweep controls, gathering their own RHS and retaining the original line, with shared inverse/weight initialization, requested ambient-core accuracy and full cleanup. Positive distinct length keys and their count are generated from ordinary parameters; per-key length installation and empty-group probes are executed. The schedule covers the interior with exact volume/error. Global solver iteration/publication, storage bounds, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and ambient input, generating origins, count and sweep controls, gathering their own RHS and retaining the original line, with shared inverse/weight initialization, requested ambient-core accuracy and full cleanup. Positive distinct length keys and their count are generated from ordinary parameters; per-key length installation and empty-group probes are executed. A protected 144-register caller preserves scheduler metadata, saves the actual row count and exposes output framing; executed RHS retirement restores the ambient source. The schedule covers the interior with exact volume/error. Global solver iteration/publication, storage bounds, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6430,3 +6430,39 @@ audit jobs at 6.9 GiB combined peak. All eight new or revised non-audit modules
 pass individual guarded checks; maximum measured peak is 1863.9 MiB. Source
 integrity, generated-summary and whitespace checks pass with default proof
 limits unchanged.
+
+
+### S3 protected group caller and ambient-source retirement
+
+`protectedRawGroup_spec` executes the real generated natural-group preparation
+and closed numerical solver inside a 144-register caller. Ten header copies
+install the private 117-register bank from retained master parameters, costing
+`4*(P+N+q+l+s+t+u+band+2*L)+41`. The caller saves the actual generated row count
+before numerical cleanup, preserves all other outer metadata and restores the
+private workspace except for the output and retained RHS/source stacks.
+
+The closed batch and its four group wrappers now expose an exact output-prefix
+contract: the published prefix has `B*L*w` symbols and retains the caller's
+original output suffix. The protected caller carries this contract together
+with the existing coordinate accuracy and ambient-core `ErrorOn` guarantees.
+`takeOuterLengthKey_exec` consumes one binary selected key directly in the
+protected bank and restores all decoding scratch, charging `6*L+19*V+14`.
+The original private-bank key installer now reuses this structural decoder.
+
+`retireGroupRHS_exec` computes the gathered RHS length from the retained row
+count, row length and word width, discards precisely that prefix, and restores
+the original ambient source and all scratch. Its bound is
+`12*B*L*w+6*L*w+9*L+9*B+19`; `retireNaturalGroupCost_le` bounds this by
+`36*s*w+19` for a nonempty natural group. Both are executed tape programs;
+there is no supplied solver callback or uncharged source reset.
+
+Ambient output scattering, empty-class branching and the complete class loop
+remain to be composed. Uniform fast solver/time and execution-wide storage
+bounds, artificial halo cuts and complex/boundary/coupling/recovery/full-line
+composition remain open. S3 is incomplete and the proved saving is unchanged.
+
+The protected-caller/source-retirement checkpoint passes all 9884 guarded S3
+axiom-audit jobs at 4.0 GiB combined peak. All 14 new or revised non-audit
+modules pass individual guarded checks; maximum measured peak is 1975.7 MiB.
+Default proof limits are unchanged. Source integrity, generated-summary and
+whitespace checks pass.

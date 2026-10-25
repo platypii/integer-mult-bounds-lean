@@ -45,8 +45,9 @@ theorem closedNaturalGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
       (∀ k : Fin 117, k ≠ 93 → k ≠ 110 → S'.R k = []) ∧
       (∀ n : Fin B, ∀ i : Fin L, |(value q (decodeWord (((S'.R 93).drop ((n.val*L+i.val)*w)).take w))).re -
         x (lo n+(i.val : ZMod s))| ≤ 1/(2 : ℝ)^target) ∧
-      ∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)
-        (publishedBatchRead q w n.val L (lo n) (S'.R 93)) x (1/(2 : ℝ)^target) := by
+      (∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)
+        (publishedBatchRead q w n.val L (lo n) (S'.R 93)) x (1/(2 : ℝ)^target)) ∧
+      ∃ ys : List (Fin (A+4)), ys.length = B*L*w ∧ S'.R 93 = ys ++ tail := by
   dsimp only
   let band := PhaseCellBand.width p u
   let B := (naturalLengthGroup s t band L).length

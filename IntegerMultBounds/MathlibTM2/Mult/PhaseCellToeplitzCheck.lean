@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedRawGroup
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireGroupCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratePositiveLengthKeys
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallLengthKey
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProbeLengthKey
@@ -902,6 +904,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperRows_disk,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperRows_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upper_crop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.copyUnaryHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.takeUnaryKey_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.groupReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.groupReg_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.groupProject_updateR,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.takeOuterLengthKey_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copiedGroupR_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copiedGroup_project,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installGroupHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.discardPrefix_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireGroupRHS_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireNaturalGroupCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawGroup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
