@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1095 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1096 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -5571,3 +5571,19 @@ factor-page generation and the combined S3 cost/storage envelope remain open.
 Final checkpoint: the guarded S3 audit build passes all 4473 jobs, including
 the emitted-column decoding/error theorems, at 5.8 GiB combined process RSS.
 The source integrity scan passes for all 165 changed Lean files.
+
+
+The integer-column generator and runtime encoder are now composed in
+`ScalarPlacement.generateEncodedColumn_exec`: one executed 117-tape program
+starts from the retained factor page and ordinary headers, initializes and
+iterates the integer column, generates/releases encoding counters, and emits
+runtime column words on tape 111. It retains the signed raw column, factor page
+and arbitrary borrowed suffixes. The combined bound is
+`prepareCost 0 W + M*(integerIterationCost L W+5) + L*(30*W+6*(2*q+8)+32) +31*W+6*P+79`.
+At M=j+1 the emitted words have inverse-column error at most 2^-j when j+2≤q.
+Factor-page generation, reciprocal/reversed-branch encoding, final sizing
+headers and combined setup storage/uniform costs remain open; S3 is incomplete.
+
+Verification: the guarded S3 audit passes all 4474 jobs at 2.6 GiB combined
+peak; the new module passes its single-file check at 1934.0 MiB. Axiom, source
+integrity, plan-summary and whitespace checks pass.

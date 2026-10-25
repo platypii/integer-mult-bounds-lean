@@ -2146,3 +2146,15 @@ existing inverse-column error bound hold for the emitted words. The encoder
 cost is L*(20*W+6*(2*q+8)+23)+31*W+57. This is a separate verified entry point;
 composition with raw column generation, reciprocal and reversed-branch encoding,
 factor-page generation and the combined S3 cost/storage envelope remain open.
+
+
+The integer-column generator and runtime encoder are now composed in
+`ScalarPlacement.generateEncodedColumn_exec`: one executed 117-tape program
+starts from the retained factor page and ordinary headers, initializes and
+iterates the integer column, generates/releases encoding counters, and emits
+runtime column words on tape 111. It retains the signed raw column, factor page
+and arbitrary borrowed suffixes. The combined bound is
+`prepareCost 0 W + M*(integerIterationCost L W+5) + L*(30*W+6*(2*q+8)+32) +31*W+6*P+79`.
+At M=j+1 the emitted words have inverse-column error at most 2^-j when j+2≤q.
+Factor-page generation, reciprocal/reversed-branch encoding, final sizing
+headers and combined setup storage/uniform costs remain open; S3 is incomplete.
