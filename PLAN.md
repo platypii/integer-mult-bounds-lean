@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1162 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1171 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Constructed-data cell arithmetic executes on 117 tapes with CellRun.Valid. Unary headers execute combined numerical setup: factor page, generators, reciprocal and ordered weights, with paid construction and teardown. Full cell ABI, batching, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | A single cell executes on 117 tapes from unary controls and raw RHS through generated numerical setup, runtime ABI transition and publication with CellRun.Valid. Runtime cleanup, batching/reuse, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -5857,3 +5857,51 @@ jobs at 2.6 GiB combined peak. All eleven new modules pass individual guarded
 checks; maximum measured peak is 1939.6 MiB, below the per-module CI budget.
 Source integrity, generated-summary and whitespace checks pass. The runtime
 ABI and outer uniform cost/storage obligations above remain unproved.
+
+A single cell now executes from raw gathered RHS words and unary controls through
+numerical setup, the runtime ABI transition, arithmetic and valid publication.
+`swapAfterPrefix_exec` swaps equal-sized borrowed blocks while retaining their
+prefix, suffix, symbol order and every work stack. `swapCellPayload_exec` derives
+both offsets from L/w and swaps the RHS with the reciprocal input weights within
+`L*(46*w+9)+12*w+35` steps. The same swap restores the construction order.
+`releaseConstruction_exec` releases the dense factor page and all construction
+readiness/iteration/width counters while preserving the complete runtime page.
+Its bound is `releaseFactorPageCost(L,W)+2*(2*W+topN(W)+n)+11`; the original
+factor-page suffix survives, so it can hold the ordinary l header.
+`installCellHeaders_exec` consumes the old iteration counter and owned P/q/l
+sources, generates the runtime width and single-cell batch count, and installs
+the exact arithmetic q/l headers within `2*M+2*P+10*q+6*l+22` steps.
+`prepareCellRuntime_exec` composes construction storage release, header installation
+and RHS placement. `cellRuntimeBank_eq_inputSourceBank` proves that the result is
+the existing canonical single-cell input bank, including every empty work buffer,
+native stack and input/output spectator field. `prepareCanonicalCellRuntime_exec`
+executes that transition; no canonical-bank equality or execution is supplied.
+`constructionCell_sized_exec` then runs the existing staged arithmetic and
+publication and proves `CellRun.Valid` at the sized execution precision.
+`unaryCellBank` contains only ordinary unary controls, raw RHS words, the borrowed
+payload and original output tail. `unaryCellBank_base_eq` and
+`unaryCellBank_setup_exec` identify the numerical setup's generated bank with the
+construction bank consumed by runtime execution. `generatedCell_sized_exec`
+composes that executed setup and runtime path into one fixed 117-tape program.
+It generates its own widths, pi, factors, inverse columns, reciprocal and weight
+words, arranges the RHS, executes the arithmetic and publishes a valid result.
+The initial RHS is the gathered ambient-coordinate row; no normalized input,
+weight table, inverse column, initialized binary table or setup execution oracle
+is an input. Each cost is charged: `weightedGeneratorSetupCost` plus construction
+release, runtime header installation, payload routing, staging, arithmetic and
+publication. The factor page is released before arithmetic, preserving its suffix.
+This closes the single-cell construction-to-runtime ABI/publication gap.
+Post-publication runtime cleanup still needs to release the retained numerical
+page and runtime headers and restore the original borrowed RHS layout. Batched
+and shared-setup execution, efficient generation of control parameters,
+execution-wide peak and uniform cost matching, gathering/scheduling, halo cuts,
+and complex/boundary/coupling/recovery/full-line composition remain open.
+The dense setup peak and unary geometry-reading costs remain explicit obligations.
+S3 remains incomplete and the proved multiplication saving is unchanged.
+The raw-input single-cell checkpoint passes all 9770 guarded S3 axiom-audit jobs
+at 2.6 GiB combined peak. All nine new modules pass individual guarded checks;
+maximum peak in the final pass is 1949.6 MiB, below the per-module CI budget.
+The audit includes unary setup identification, the canonical ABI identity and
+the complete sized raw-input execution/CellRun.Valid theorem. Source integrity,
+generated-summary and whitespace checks pass. Runtime cleanup and the outer
+S3 obligations above remain unproved.
