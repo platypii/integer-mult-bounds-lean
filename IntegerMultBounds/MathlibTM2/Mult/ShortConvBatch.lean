@@ -86,14 +86,14 @@ theorem batch_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates ≤ Q) (h
 
 /-- Coefficient-level version of the raw batch packer. Its output is the exact input format
 of `batch_exec`; zero padding is executed, rather than assumed on the raw input. -/
-theorem packBatch_coeffs_exec
+theorem packBatch_coeffs_prefix_exec
     {records recordSaved count pad src saved acc buf savedBlock tmp dst : Fin T}
     (hreg : [records, recordSaved, count, pad, src, saved, acc, buf, savedBlock, tmp, dst].Nodup)
     (M a r w : ℕ) (X : ℕ → List GaussianInt) (ha : a ≤ r)
     (hlen : ∀ n < M, (X n).length = a)
-    (v : HS T Q A U) (S : Stacks T A)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A + 4)))
     (hrecords : (S.R records).length = M)
-    (hsrc : S.R src = cstream A w ((List.range M).flatMap X))
+    (hsrc : S.R src = cstream A w ((List.range M).flatMap X) ++ tail)
     (hcount : (S.R count).length = a * w) (hpad : (S.R pad).length = (r - a) * w)
     (hrecordSaved : S.R recordSaved = []) (hsaved : S.R saved = []) (hacc : S.R acc = [])
     (hbuf : S.R buf = []) (hsavedBlock : S.R savedBlock = []) (htmp : S.R tmp = []) :
@@ -108,7 +108,7 @@ theorem packBatch_coeffs_exec
     intro xs hx
     obtain ⟨n, hn, rfl⟩ := List.mem_map.mp hx
     simp [hlen n (List.mem_range.mp hn)]
-  obtain ⟨v', hu, he⟩ := packBatch_exec (body := body) hreg (a * w) blocks hb v S
+  obtain ⟨v', hu, he⟩ := packBatch_prefix_exec (body := body) hreg (a * w) blocks hb v S tail
     (by simpa [hblocks] using hrecords)
     (by simpa [blocks, cstream, List.flatMap_assoc, ← List.flatMap_def] using hsrc)
     hcount hrecordSaved hsaved hacc hbuf hsavedBlock htmp
@@ -125,5 +125,26 @@ theorem packBatch_coeffs_exec
   refine ⟨v', hu, he.cast ?_ ?_⟩
   · simp only [hblocks, hpad, hsize]
   · rw [hpacked]
+
+
+theorem packBatch_coeffs_exec
+    {records recordSaved count pad src saved acc buf savedBlock tmp dst : Fin T}
+    (hreg : [records, recordSaved, count, pad, src, saved, acc, buf, savedBlock, tmp, dst].Nodup)
+    (M a r w : ℕ) (X : ℕ → List GaussianInt) (ha : a ≤ r)
+    (hlen : ∀ n < M, (X n).length = a)
+    (v : HS T Q A U) (S : Stacks T A)
+    (hrecords : (S.R records).length = M)
+    (hsrc : S.R src = cstream A w ((List.range M).flatMap X))
+    (hcount : (S.R count).length = a * w) (hpad : (S.R pad).length = (r - a) * w)
+    (hrecordSaved : S.R recordSaved = []) (hsaved : S.R saved = []) (hacc : S.R acc = [])
+    (hbuf : S.R buf = []) (hsavedBlock : S.R savedBlock = []) (htmp : S.R tmp = []) :
+    ∃ v', v'.user = v.user ∧
+      Exec body (packBatch records recordSaved count pad src saved acc buf savedBlock tmp dst)
+        (mk v S) (M * (18 * (a * w) + 4 * ((r - a) * w) + 2 * (r * w) + 25) + 8)
+        (mk v' { S with R := (Function.update S.R dst
+          (cstream A w (rpStream M (fun n => recOf r (block (X n)))) ++ S.R dst)) }) := by
+  simpa only [List.append_nil] using
+    packBatch_coeffs_prefix_exec hreg M a r w X ha hlen v S []
+      hrecords (by simpa using hsrc) hcount hpad hrecordSaved hsaved hacc hbuf hsavedBlock htmp
 
 end IntegerMultBounds.MathlibTM2.Mult.ShortConv

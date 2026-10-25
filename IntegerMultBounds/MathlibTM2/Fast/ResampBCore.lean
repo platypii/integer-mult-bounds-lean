@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Fast.CMulStream
+public import IntegerMultBounds.MathlibTM2.Fast.SubWord
 public import IntegerMultBounds.MathlibTM2.Fast.Input
 public import IntegerMultBounds.MathlibTM2.Layer.GaussStream
 import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
@@ -507,34 +507,6 @@ section Sub
 
 variable {T Q A : ℕ} {U : Type} {P : Type}
 
-/-- The Gaussian linear map `(x, y) ↦ x - y`. -/
-def rsbSubG : Fin 1 → Fin 2 → ℤ × ℤ := ![![(1, 0), (-1, 0)]]
-
-/-- `glin rsbSubG` subtracts. -/
-lemma glin_rsbSubG {W : ℕ} (x y : GaussianInt) :
-    glin rsbSubG ![red W x, red W y] 0 = red W (x - y) := by
-  rw [glin_eq_sum_mulG, Fin.sum_univ_two, sub_eq_add_neg, red_add, red_neg]
-  simp [rsbSubG, GR.mulG, Prod.ext_iff]
-
-/-- One word of the subtraction automaton on the tops of `a` and `b`, the result reversed onto
-`o`; the state lives in scan slot `o`, the word length is `|ctr|`, `tmp` is a spare. -/
-def rsbSubWord (a b o ctr tmp : Fin T) : Pr P T Q A U :=
-  .seq (.act (.load (fun v => { v with
-      scan := Function.update v.scan o (gaussAuto A rsbSubG 2 false).init }) .done))
-    (autoWord 0 ![a, b] ![o] o ctr tmp (gaussAuto A rsbSubG 2 false))
-
-/-- The first `w` columns of two registers topped by coefficient symbols. -/
-lemma cols_csyms {A w : ℕ} (x y : GaussianInt) (rx ry : List (Fin (A + 4))) :
-    Auto.cols (fun i : Fin 2 => (![csyms A w x ++ rx, csyms A w y ++ ry] : Fin 2 → _) i) w 0 =
-      symCols A ![red w x, red w y] := by
-  simp only [Auto.cols, symCols, ← List.map_coe_finRange_eq_range, List.map_map, List.ofFn_eq_map]
-  apply List.map_congr_left
-  intro t _
-  funext i
-  fin_cases i
-  · simp [List.getD_eq_getElem?_getD, csyms, List.getElem?_append, t.isLt]
-  · simp [List.getD_eq_getElem?_getD, csyms, List.getElem?_append, t.isLt]
-
 variable {R : Type} [DecidableEq R] {body : P → Pr P T Q A U} {rg : R → Fin T} {ι : Fin 64 → Fin T}
 
 /-- **Subtraction of one coefficient.** `a` and `b` hold `x` and `y` on top, `ctr` holds `w`
@@ -547,79 +519,19 @@ theorem rsb_subWord_runs (hrg : Function.Injective rg) (hA : 96 ≤ A) {a b o ct
     RsbRuns body rg ι (rsbSubWord (rg a) (rg b) (rg o) (rg ctr) (rg tmp)) ρ
       (Function.update (Function.update (Function.update ρ a rx) b ry) o
         ((csyms A w (x - y)).reverse ++ ρ o)) (5 * w + 6) := by
-  simp only [List.nodup_cons, List.mem_cons, List.not_mem_nil, or_false, not_or] at hd
-  obtain ⟨⟨hab, hao, hac, hat⟩, ⟨hbo, hbc, hbt⟩, ⟨hoc, hot⟩, hct, -⟩ := hd
-  have hlay : AutoLayout ![rg a, rg b] ![rg o] (rg o) (rg ctr) (rg tmp) :=
-    { ins_inj := by
-        intro i j h
-        fin_cases i <;> fin_cases j <;> simp_all [hrg.ne hab, (hrg.ne hab).symm]
-      outs_inj := by intro i j _; exact Subsingleton.elim i j
-      ins_outs := by
-        intro i j
-        fin_cases i <;> fin_cases j <;> simp [hrg.ne hao, hrg.ne hbo]
-      ins_ctr := by intro i; fin_cases i <;> simp [hrg.ne hac, hrg.ne hbc]
-      ins_tmp := by intro i; fin_cases i <;> simp [hrg.ne hat, hrg.ne hbt]
-      outs_ctr := by intro j; fin_cases j; simp [hrg.ne hoc]
-      outs_tmp := by intro j; fin_cases j; simp [hrg.ne hot]
-      ctr_tmp := hrg.ne hct
-      ins_st := by intro i; fin_cases i <;> simp [hrg.ne hao, hrg.ne hbo] }
   intro v S _ hS
-  set v₁ : HS T Q A U := { v with
-    scan := Function.update v.scan (rg o) (gaussAuto A rsbSubG 2 false).init } with hv₁
-  have he₁ : Exec body (.act (.load (fun v => { v with
-      scan := Function.update v.scan (rg o) (gaussAuto A rsbSubG 2 false).init }) .done))
-      (mk v S) 1 (mk v₁ S) := Exec.act _ _
-  obtain ⟨v₂, S₂, hu₂, he₂, -, -, hfr, hctr₂, htmp₂, hins, houts⟩ :=
-    autoWord_exec body hlay (gaussAuto A rsbSubG 2 false) 0 (cs := ρ ctr) v₁ S (by rw [hS])
-      (by rw [hS, ht]) (by simp [v₁])
-  have hcols : Auto.cols (fun i => S.R ((![rg a, rg b] : Fin 2 → Fin T) i)) (ρ ctr).length 0 =
-      symCols A ![red w x, red w y] := by
-    rw [hc, ← cols_csyms x y rx ry]
-    congr 1
-    funext i
-    fin_cases i <;> simp [hS a, hS b, hx, hy]
-  have hrun := gaussAuto_runWord_gen (A := A) (B := 2) (g := rsbSubG) (by omega)
-    (by intro j; fin_cases j; simp [rsbSubG, Fin.sum_univ_two])
-    (by norm_num; omega) false ![red w x, red w y]
-  simp only [swapGR_false] at hrun
-  have hout : S₂.R (rg o) = (csyms A w (x - y)).reverse ++ ρ o := by
-    have := houts 0
-    simp only [Matrix.cons_val_fin_one] at this
-    rw [this, hcols, hrun, symCols_map, glin_rsbSubG, hS o]
-  refine ⟨v₂, S₂, 1 + (5 * (ρ ctr).length + 5), by rw [hu₂], by rw [hc]; omega,
-    Exec.seq he₁ he₂, ?_, ⟨hfr.1, hfr.2.1, hfr.2.2.1, fun k hk => ?_⟩⟩
+  have hregs : [rg a, rg b, rg o, rg ctr, rg tmp].Nodup := by
+    simpa only [List.map_cons, List.map_nil] using (List.Nodup.map hrg hd)
+  obtain ⟨v', hu, he⟩ := subWord_exec (body := body) hregs hA w v S x y rx ry
+    (by rw [hS a]; exact hx) (by rw [hS b]; exact hy)
+    (by rw [hS ctr]; exact hc) (by rw [hS tmp]; exact ht)
+  refine ⟨v', _, 5 * w + 6, hu, le_rfl, he, ?_, ⟨rfl, rfl, rfl, ?_⟩⟩
   · intro r
-    by_cases hro : r = o
-    · subst hro; simp [hout]
-    by_cases hrb : r = b
-    · subst hrb
-      have := hins 1
-      simp only [Matrix.cons_val_one, Matrix.cons_val_zero] at this
-      rw [this, hS, hy, hc]
-      simp [Function.update_of_ne hro, csyms]
-    by_cases hra : r = a
-    · subst hra
-      have := hins 0
-      simp only [Matrix.cons_val_zero] at this
-      rw [this, hS, hx, hc]
-      simp [Function.update_of_ne hro, Function.update_of_ne hrb, csyms]
-    rw [Function.update_of_ne hro, Function.update_of_ne hrb, Function.update_of_ne hra]
-    by_cases hrc : r = ctr
-    · subst hrc; rw [hctr₂]
-    by_cases hrt : r = tmp
-    · subst hrt; rw [htmp₂, ht]
-    rw [hfr.2.2.2 _ ?_ ?_ (hrg.ne hrc) (hrg.ne hrt), hS]
-    · rintro ⟨i, hi⟩; fin_cases i
-      · exact hra (hrg (by simpa using hi.symm))
-      · exact hrb (hrg (by simpa using hi.symm))
-    · rintro ⟨j, hj⟩; fin_cases j; exact hro (hrg (by simpa using hj.symm))
-  · have hkc : k ≠ rg ctr := fun h => hk ctr h.symm
-    have hkt : k ≠ rg tmp := fun h => hk tmp h.symm
-    refine hfr.2.2.2 k ?_ ?_ hkc hkt
-    · rintro ⟨i, hi⟩; fin_cases i
-      · exact hk a (by simpa using hi)
-      · exact hk b (by simpa using hi)
-    · rintro ⟨j, hj⟩; fin_cases j; exact hk o (by simpa using hj)
+    simp only [Function.update_apply, hrg.eq_iff]
+    rw [hS o, hS r]
+  · intro k hk
+    simp [Function.update_of_ne (hk a).symm, Function.update_of_ne (hk b).symm,
+      Function.update_of_ne (hk o).symm]
 
 end Sub
 

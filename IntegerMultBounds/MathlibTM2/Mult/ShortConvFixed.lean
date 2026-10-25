@@ -129,6 +129,32 @@ def start (p l w M a b : ℕ) (X Y : ℕ → List GaussianInt)
   L := fun _ => []
   R := inputBank p l w M a b X Y tail
 
+/-- Counted raw operands may have borrowed suffixes; work and output ports are unchanged. -/
+def inputBankWithTails (p l w M a b : ℕ) (X Y : ℕ → List GaussianInt)
+    (tail tailX tailY : List (Fin (A + 4))) (k : Fin 117) : List (Fin (A + 4)) :=
+  if k.val = 110 then inputBank p l w M a b X Y tail k ++ tailX else
+  if k.val = 111 then inputBank p l w M a b X Y tail k ++ tailY else
+  inputBank p l w M a b X Y tail k
+
+/-- Fixed bank with suffixes beneath both counted operand streams. -/
+def startWithTails (p l w M a b : ℕ) (X Y : ℕ → List GaussianInt)
+    (tail tailX tailY : List (Fin (A + 4))) (inp : List (Bool ⊕ Bool))
+    (out : List Bool) : Stacks 117 A :=
+  { start p l w M a b X Y tail inp out with
+    R := inputBankWithTails p l w M a b X Y tail tailX tailY }
+
+@[simp] theorem inputBankWithTails_nil (p l w M a b : ℕ) (X Y : ℕ → List GaussianInt)
+    (tail : List (Fin (A + 4))) :
+    inputBankWithTails p l w M a b X Y tail [] [] = inputBank p l w M a b X Y tail := by
+  funext k
+  simp [inputBankWithTails]
+
+@[simp] theorem startWithTails_nil (p l w M a b : ℕ) (X Y : ℕ → List GaussianInt)
+    (tail : List (Fin (A + 4))) (inp : List (Bool ⊕ Bool)) (out : List Bool) :
+    startWithTails p l w M a b X Y tail [] [] inp out =
+      start p l w M a b X Y tail inp out := by
+  simp [startWithTails, start]
+
 /-- The emitted coefficient order, including all padded coefficients of each record. -/
 def result (p l M : ℕ) (X Y : ℕ → List GaussianInt) : List GaussianInt :=
   rpStream M (fun n => coeff p l (X n) (Y n))
@@ -143,6 +169,61 @@ variable {body : P → Pr P 117 Q A U}
 
 /-- The complete primitive on a concrete fixed bank. Every setup/layout obligation is
 resolved internally. Exactly the result stream is pushed onto the output register. -/
+theorem exec_with_tails (hQ : rpStates ≤ Q) (hA : 4 ≤ A)
+    {p l w M a b : ℕ} (hp : 1 ≤ p) (hw : p + 2 ≤ w)
+    (ha : a ≤ 2 ^ l) (hb : b ≤ 2 ^ l) (hab : a + b ≤ 2 ^ l + 1)
+    (X Y : ℕ → List GaussianInt)
+    (hlenX : ∀ n < M, (X n).length = a) (hlenY : ∀ n < M, (Y n).length = b)
+    (hX : ∀ n < M, ∀ z ∈ X n, z.re ^ 2 + z.im ^ 2 ≤ (2 : ℤ) ^ (2 * p))
+    (hY : ∀ n < M, ∀ z ∈ Y n, z.re ^ 2 + z.im ^ 2 ≤ (2 : ℤ) ^ (2 * p))
+    (v : HS 117 Q A U) (tail tailX tailY : List (Fin (A + 4))) (inp : List (Bool ⊕ Bool)) (out : List Bool) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ cost p l w M ∧
+      Exec body (program hQ) (mk v (startWithTails p l w M a b X Y tail tailX tailY inp out)) n
+        (mk v' { startWithTails p l w M a b X Y tail tailX tailY inp out with R :=
+          (Function.update (inputBankWithTails p l w M a b X Y tail tailX tailY) (ringReg .out)
+            (cstream A w (result p l M X Y) ++ tail)) }) := by
+  let S := startWithTails p l w M a b X Y tail tailX tailY inp out
+  have clean : RpClean hostReg S := by
+    refine ⟨fun _ => rfl, fun k _ => ?_⟩
+    have hk := k.isLt
+    simp [S, startWithTails, start, inputBankWithTails, inputBank, hostReg,
+      show k.val ≠ 94 by omega, show k.val ≠ 100 by omega,
+      show k.val ≠ 101 by omega, show k.val ≠ 102 by omega,
+      show k.val ≠ 103 by omega, show k.val ≠ 108 by omega,
+      show k.val ≠ 110 by omega, show k.val ≠ 111 by omega, show k.val ≠ 93 by omega]
+  have setupEmpty : ∀ s ∈ setupWritten ++ setupScratch, S.R (setupReg s) = [] := by
+    intro s hs
+    simp only [setupWritten, setupScratch, List.mem_append, List.mem_cons,
+      List.not_mem_nil, or_false] at hs
+    rcases hs with (rfl | rfl | rfl | rfl | rfl) | (rfl | rfl | rfl | rfl | rfl) <;>
+      simp [S, startWithTails, start, inputBankWithTails, inputBank, setupReg]
+  have scratchEmpty : ∀ k ∈ [batchReg .recordSaved, batchReg .saved, batchReg .acc,
+      batchReg .buf, batchReg .savedBlock, batchReg .tmp], S.R k = [] := by
+    intro k hk
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> simp [S, startWithTails, start, inputBankWithTails, inputBank, batchReg]
+  have ringEmpty : ∀ r ∈ [RpReg.xs, .ys, .sv, .ta, .tb, .acc, .tmp, .d1, .d2, .d3],
+      S.R (ringReg r) = [] := by
+    intro r hr
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hr
+    rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+      simp [S, startWithTails, start, inputBankWithTails, inputBank, ringReg]
+  obtain ⟨v', n, hu, hn, he⟩ := batchFromUnary_prefix_exec (body := body) layout (by decide) hQ hA
+    setupReg setupReg_injective rfl rfl counts_off counts_private hp hw ha hb hab X Y
+    hlenX hlenY hX hY (batchReg .records) (batchReg .recordSaved) (batchReg .srcX) (batchReg .srcY)
+    (batchReg .saved) (batchReg .acc) (batchReg .buf) (batchReg .savedBlock) (batchReg .tmp)
+    packX_distinct packY_distinct packY_off data_off v S tailX tailY clean
+    (by simp [S, startWithTails, start, inputBankWithTails, inputBank, setupReg]) (by simp [S, startWithTails, start, inputBankWithTails, inputBank, setupReg])
+    (by simp [S, startWithTails, start, inputBankWithTails, inputBank, setupReg]) (by simp [S, startWithTails, start, inputBankWithTails, inputBank, setupReg])
+    (by simp [S, startWithTails, start, inputBankWithTails, inputBank, setupReg]) setupEmpty
+    (by simp [S, startWithTails, start, inputBankWithTails, inputBank, batchReg])
+    (by simp [S, startWithTails, start, inputBankWithTails, inputBank, batchReg]) (by simp [S, startWithTails, start, inputBankWithTails, inputBank, batchReg])
+    scratchEmpty ringEmpty
+  refine ⟨v', n, hu, hn.trans (batchUnaryCost_le_linear p l w M a b (by omega) ha hb), ?_⟩
+  have hout : inputBankWithTails p l w M a b X Y tail tailX tailY (ringReg .out) = tail := by
+    simp [inputBankWithTails, inputBank, ringReg]
+  simpa only [program, S, startWithTails, start, hout, result] using he
+
 theorem exec (hQ : rpStates ≤ Q) (hA : 4 ≤ A)
     {p l w M a b : ℕ} (hp : 1 ≤ p) (hw : p + 2 ≤ w)
     (ha : a ≤ 2 ^ l) (hb : b ≤ 2 ^ l) (hab : a + b ≤ 2 ^ l + 1)
@@ -156,47 +237,8 @@ theorem exec (hQ : rpStates ≤ Q) (hA : 4 ≤ A)
         (mk v' { start p l w M a b X Y tail inp out with R :=
           (Function.update (inputBank p l w M a b X Y tail) (ringReg .out)
             (cstream A w (result p l M X Y) ++ tail)) }) := by
-  let S := start p l w M a b X Y tail inp out
-  have clean : RpClean hostReg S := by
-    refine ⟨fun _ => rfl, fun k _ => ?_⟩
-    have hk := k.isLt
-    simp [S, start, inputBank, hostReg,
-      show k.val ≠ 94 by omega, show k.val ≠ 100 by omega,
-      show k.val ≠ 101 by omega, show k.val ≠ 102 by omega,
-      show k.val ≠ 103 by omega, show k.val ≠ 108 by omega,
-      show k.val ≠ 110 by omega, show k.val ≠ 111 by omega, show k.val ≠ 93 by omega]
-  have setupEmpty : ∀ s ∈ setupWritten ++ setupScratch, S.R (setupReg s) = [] := by
-    intro s hs
-    simp only [setupWritten, setupScratch, List.mem_append, List.mem_cons,
-      List.not_mem_nil, or_false] at hs
-    rcases hs with (rfl | rfl | rfl | rfl | rfl) | (rfl | rfl | rfl | rfl | rfl) <;>
-      simp [S, start, inputBank, setupReg]
-  have scratchEmpty : ∀ k ∈ [batchReg .recordSaved, batchReg .saved, batchReg .acc,
-      batchReg .buf, batchReg .savedBlock, batchReg .tmp], S.R k = [] := by
-    intro k hk
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hk
-    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> simp [S, start, inputBank, batchReg]
-  have ringEmpty : ∀ r ∈ [RpReg.xs, .ys, .sv, .ta, .tb, .acc, .tmp, .d1, .d2, .d3],
-      S.R (ringReg r) = [] := by
-    intro r hr
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at hr
-    rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
-      simp [S, start, inputBank, ringReg]
-  obtain ⟨v', n, hu, hn, he⟩ := batchFromUnary_exec (body := body) layout (by decide) hQ hA
-    setupReg setupReg_injective rfl rfl counts_off counts_private hp hw ha hb hab X Y
-    hlenX hlenY hX hY (batchReg .records) (batchReg .recordSaved) (batchReg .srcX) (batchReg .srcY)
-    (batchReg .saved) (batchReg .acc) (batchReg .buf) (batchReg .savedBlock) (batchReg .tmp)
-    packX_distinct packY_distinct packY_off data_off v S clean
-    (by simp [S, start, inputBank, setupReg]) (by simp [S, start, inputBank, setupReg])
-    (by simp [S, start, inputBank, setupReg]) (by simp [S, start, inputBank, setupReg])
-    (by simp [S, start, inputBank, setupReg]) setupEmpty
-    (by simp [S, start, inputBank, batchReg])
-    (by simp [S, start, inputBank, batchReg]) (by simp [S, start, inputBank, batchReg])
-    scratchEmpty ringEmpty
-  refine ⟨v', n, hu, hn.trans (batchUnaryCost_le_linear p l w M a b (by omega) ha hb), ?_⟩
-  have hout : inputBank p l w M a b X Y tail (ringReg .out) = tail := by
-    simp [inputBank, ringReg]
-  simpa only [program, S, start, hout, result] using he
+  simpa only [startWithTails_nil, inputBankWithTails_nil] using
+    exec_with_tails hQ hA hp hw ha hb hab X Y hlenX hlenY hX hY v tail [] [] inp out
 
 /-- The concrete finite program has no procedure names or external procedure body. -/
 noncomputable def closedProgram : Pr Empty 117 rpStates 4 Unit := program le_rfl

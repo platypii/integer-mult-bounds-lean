@@ -40,7 +40,7 @@ noncomputable def batchProgram (rg : RpReg → Fin T) (ι : Fin 91 → Fin T)
 
 /-- Execute a batch from raw streams with one shared ring-product call. Setup counters and
 header are unchanged; all packed copies and scratch are restored. -/
-theorem batchProgram_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates ≤ Q) (hA : 4 ≤ A)
+theorem batchProgram_prefix_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates ≤ Q) (hA : 4 ≤ A)
     {p l w M a b : ℕ} (hp : 1 ≤ p) (hw : p + 2 ≤ w)
     (ha : a ≤ 2 ^ l) (hb : b ≤ 2 ^ l) (hab : a + b ≤ 2 ^ l + 1)
     (X Y : ℕ → List GaussianInt)
@@ -51,10 +51,11 @@ theorem batchProgram_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates �
     (hpackX : [records, recordSaved, countX, padX, srcX, saved, acc, buf, savedBlock, tmp, rg .xs].Nodup)
     (hpackY : [records, recordSaved, countY, padY, srcY, saved, acc, buf, savedBlock, tmp, rg .ys].Nodup)
     (hoffY : ∀ k ∈ [records, recordSaved, countY, padY, srcY, saved, acc, buf, savedBlock, tmp], k ≠ rg .xs)
-    (v : HS T Q A U) (S : Stacks T A) (hc : RpClean ι S)
+    (v : HS T Q A U) (S : Stacks T A) (tailX tailY : List (Fin (A + 4)))
+    (hc : RpClean ι S)
     (hrecords : (S.R records).length = M)
-    (hsrcX : S.R srcX = cstream A w ((List.range M).flatMap X))
-    (hsrcY : S.R srcY = cstream A w ((List.range M).flatMap Y))
+    (hsrcX : S.R srcX = cstream A w ((List.range M).flatMap X) ++ tailX)
+    (hsrcY : S.R srcY = cstream A w ((List.range M).flatMap Y) ++ tailY)
     (hcountX : (S.R countX).length = a * w) (hcountY : (S.R countY).length = b * w)
     (hpadX : (S.R padX).length = (2 ^ l - a) * w)
     (hpadY : (S.R padY).length = (2 ^ l - b) * w)
@@ -70,14 +71,14 @@ theorem batchProgram_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates �
   have ne (r s : RpReg) (hrs : r ≠ s) : rg r ≠ rg s := h.rg_inj.ne hrs
   set PX := cstream A w (rpStream M (fun n => recOf (2 ^ l) (block (X n))))
   set PY := cstream A w (rpStream M (fun n => recOf (2 ^ l) (block (Y n))))
-  obtain ⟨v₁, hu₁, he₁⟩ := packBatch_coeffs_exec (body := body) hpackX M a (2 ^ l) w X ha hlenX
-    v S hrecords hsrcX hcountX hpadX (hscratch _ (by simp)) (hscratch _ (by simp))
+  obtain ⟨v₁, hu₁, he₁⟩ := packBatch_coeffs_prefix_exec (body := body) hpackX M a (2 ^ l) w X ha hlenX
+    v S tailX hrecords hsrcX hcountX hpadX (hscratch _ (by simp)) (hscratch _ (by simp))
     (hscratch _ (by simp)) (hscratch _ (by simp)) (hscratch _ (by simp)) (hscratch _ (by simp))
   rw [hempty .xs (by simp), List.append_nil] at he₁
   set S₁ : Stacks T A := { S with R := Function.update S.R (rg .xs) PX }
   have e₁ (k : Fin T) (hk : k ≠ rg .xs) : S₁.R k = S.R k := by simp [S₁, hk]
-  obtain ⟨v₂, hu₂, he₂⟩ := packBatch_coeffs_exec (body := body) hpackY M b (2 ^ l) w Y hb hlenY
-    v₁ S₁
+  obtain ⟨v₂, hu₂, he₂⟩ := packBatch_coeffs_prefix_exec (body := body) hpackY M b (2 ^ l) w Y hb hlenY
+    v₁ S₁ tailY
     (by rw [e₁ _ (hoffY _ (by simp))]; exact hrecords)
     (by rw [e₁ _ (hoffY _ (by simp))]; exact hsrcY)
     (by rw [e₁ _ (hoffY _ (by simp))]; exact hcountY)
@@ -136,6 +137,40 @@ theorem batchProgram_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates �
       simp [S₄, S₃, S₂, S₁, ne .ys .out (by decide), hempty .ys (by simp)]
     simp [S₄, S₃, S₂, S₁, Function.update_apply, hkX, hkY,
       ne .out .xs (by decide), ne .out .ys (by decide)]
+
+theorem batchProgram_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates ≤ Q) (hA : 4 ≤ A)
+    {p l w M a b : ℕ} (hp : 1 ≤ p) (hw : p + 2 ≤ w)
+    (ha : a ≤ 2 ^ l) (hb : b ≤ 2 ^ l) (hab : a + b ≤ 2 ^ l + 1)
+    (X Y : ℕ → List GaussianInt)
+    (hlenX : ∀ n < M, (X n).length = a) (hlenY : ∀ n < M, (Y n).length = b)
+    (hX : ∀ n < M, ∀ z ∈ X n, z.re ^ 2 + z.im ^ 2 ≤ (2 : ℤ) ^ (2 * p))
+    (hY : ∀ n < M, ∀ z ∈ Y n, z.re ^ 2 + z.im ^ 2 ≤ (2 : ℤ) ^ (2 * p))
+    (records recordSaved countX padX srcX countY padY srcY saved acc buf savedBlock tmp : Fin T)
+    (hpackX : [records, recordSaved, countX, padX, srcX, saved, acc, buf, savedBlock, tmp, rg .xs].Nodup)
+    (hpackY : [records, recordSaved, countY, padY, srcY, saved, acc, buf, savedBlock, tmp, rg .ys].Nodup)
+    (hoffY : ∀ k ∈ [records, recordSaved, countY, padY, srcY, saved, acc, buf, savedBlock, tmp], k ≠ rg .xs)
+    (v : HS T Q A U) (S : Stacks T A) (hc : RpClean ι S)
+    (hrecords : (S.R records).length = M)
+    (hsrcX : S.R srcX = cstream A w ((List.range M).flatMap X))
+    (hsrcY : S.R srcY = cstream A w ((List.range M).flatMap Y))
+    (hcountX : (S.R countX).length = a * w) (hcountY : (S.R countY).length = b * w)
+    (hpadX : (S.R padX).length = (2 ^ l - a) * w)
+    (hpadY : (S.R padY).length = (2 ^ l - b) * w)
+    (hscratch : ∀ k ∈ [recordSaved, saved, acc, buf, savedBlock, tmp], S.R k = [])
+    (hwn : (S.R (rg .wn)).length = w)
+    (hempty : ∀ r ∈ [RpReg.xs, .ys, .sv, .ta, .tb, .acc, .tmp, .d1, .d2, .d3], S.R (rg r) = [])
+    (hd0 : S.R (rg .d0) = (header p (2 ^ l) w).map bitSymbol) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ batchCost p l w M a b ∧
+      Exec body (batchProgram rg ι h hT hQ records recordSaved countX padX srcX countY padY srcY
+        saved acc buf savedBlock tmp) (mk v S) n
+        (mk v' { S with R := (Function.update S.R (rg .out)
+          (cstream A w (rpStream M (fun n => coeff p l (X n) (Y n))) ++ S.R (rg .out))) }) := by
+  simpa only [List.append_nil] using
+    batchProgram_prefix_exec h hT hQ hA hp hw ha hb hab X Y hlenX hlenY hX hY
+      records recordSaved countX padX srcX countY padY srcY saved acc buf savedBlock tmp
+      hpackX hpackY hoffY v S [] [] hc hrecords
+      (by simpa using hsrcX) (by simpa using hsrcY)
+      hcountX hcountY hpadX hpadY hscratch hwn hempty hd0
 
 /-- A batch pays the ring product's fixed charge once, plus linear packing and cleanup. -/
 theorem batchCost_le (p l w M a b : ℕ) (ha : a ≤ 2 ^ l) (hb : b ≤ 2 ^ l) :

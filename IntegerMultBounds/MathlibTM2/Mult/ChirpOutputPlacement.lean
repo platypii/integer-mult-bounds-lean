@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.ChirpOutputFactorFrame
+public import IntegerMultBounds.MathlibTM2.Mult.ChirpOutputRoleCode
 
 /-! # A concrete finite register allocation for the complete output arithmetic
 
@@ -14,19 +15,6 @@ input dimensions and coefficient values.
 namespace IntegerMultBounds.MathlibTM2.Mult.ShortConv.OutputPlacement
 
 open IntegerMultBounds.MathlibTM2.Fast
-
-def code : CR → Fin 30
-  | .xs => 0 | .ys => 1 | .xsv => 2 | .ysv => 3 | .acc => 4 | .out => 5
-  | .wn => 6 | .pn => 7 | .nn => 8 | .tmp => 9
-  | .u0 => 10 | .u1 => 11 | .u2 => 12 | .u3 => 13
-  | .ma => 14 | .mb => 15 | .mc => 16 | .md => 17
-  | .sa => 18 | .sb => 19 | .sc => 20 | .sd => 21
-  | .p1 => 22 | .p2 => 23 | .p3 => 24 | .p4 => 25
-  | .qr => 26 | .qi => 27 | .sr => 28 | .si => 29
-
-theorem code_injective : Function.Injective code := by
-  intro r s h
-  cases r <;> cases s <;> simp_all [code]
 
 def cr (r : CR) : Fin 146 := ⟨64 + (code r).val, by have := (code r).isLt; omega⟩
 def nr (r : CR) : Fin 146 := if r = .xs then cr .out else ⟨94 + (code r).val, by have := (code r).isLt; omega⟩

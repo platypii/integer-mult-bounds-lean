@@ -3,10 +3,11 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.ChirpReverse
 public import IntegerMultBounds.MathlibTM2.Mult.ShortConvDecode
 
-/-! # Extract chirp correlations in output order
+/-! # Extract coefficient slices in output order
 
-The `m` coefficients starting at `3m` are needed in reverse order: output offset `b`
-reads coefficient `4m-1-b`. Skip the prefix, reverse whole words, then restore the prefix.
+An arbitrary slice of m coefficients starting at a is emitted in reverse order.
+The chirp specialization a=3m reads coefficient 4m-1-b. Skip the prefix, reverse
+whole words, then restore the prefix; the source and its suffix are preserved.
 -/
 
 @[expose] public section
@@ -77,26 +78,70 @@ theorem reverseSlice_exec {skip savedSkip records recordSaved width src dst save
     simp only [Function.update_apply]
     split_ifs <;> subst_vars <;> simp_all [cstream_append, List.append_assoc]
 
+/-- A general coefficient interval, emitted in descending index order. -/
+def sliceCoeffs (a m : ℕ) (xs : List GaussianInt) : List GaussianInt :=
+  ((xs.drop a).take m).reverse
+
+theorem sliceCoeffs_length (a m : ℕ) (xs : List GaussianInt) (hsize : a + m ≤ xs.length) :
+    (sliceCoeffs a m xs).length = m := by
+  simp only [sliceCoeffs, List.length_reverse, List.length_take, List.length_drop]
+  omega
+
+theorem sliceCoeffs_get (a m : ℕ) (xs : List GaussianInt) (hxs : a + m ≤ xs.length)
+    (b : ℕ) (hb : b < m) :
+    (sliceCoeffs a m xs)[b]? = xs[a + m - 1 - b]? := by
+  have hlen : ((xs.drop a).take m).length = m := by
+    simp only [List.length_take, List.length_drop]
+    omega
+  have hi : b < (sliceCoeffs a m xs).length := by
+    simpa [sliceCoeffs, hlen] using hb
+  rw [List.getElem?_eq_getElem hi]
+  simp only [sliceCoeffs, List.getElem_reverse, hlen]
+  rw [List.getElem_take, List.getElem_drop]
+  have he : a + (m - 1 - b) = a + m - 1 - b := by omega
+  simp only [he]
+  rw [List.getElem?_eq_getElem (by omega)]
+
+theorem sliceCoeffs_exec {skip savedSkip records recordSaved width src dst saved buf tmp : Fin T}
+    (hreg : [skip, savedSkip, records, recordSaved, width, src, dst, saved, buf, tmp].Nodup)
+    (w a m : ℕ) (xs : List GaussianInt) (hsize : a + m ≤ xs.length)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A + 4)))
+    (hsrc : S.R src = cstream A w xs ++ tail)
+    (hskip : (S.R skip).length = a * w)
+    (hrecords : (S.R records).length = m) (hwidth : (S.R width).length = w)
+    (hsavedSkip : S.R savedSkip = []) (hrecordSaved : S.R recordSaved = [])
+    (hsaved : S.R saved = []) (hbuf : S.R buf = []) (htmp : S.R tmp = []) :
+    ∃ v', v'.user = v.user ∧
+      Exec body (reverseSlice skip savedSkip records recordSaved width src dst saved buf tmp)
+        (mk v S) (6 * a * w + 16 * m * w + 19 * m + 12)
+        (mk v' { S with R := (Function.update S.R dst
+          (cstream A w (sliceCoeffs a m xs) ++ S.R dst)) }) := by
+  have hpre : (xs.take a).length = a := by simp; omega
+  have hlen : ((xs.drop a).take m).length = m := by
+    simp only [List.length_take, List.length_drop]
+    omega
+  obtain ⟨v', hu, he⟩ := reverseSlice_exec (body := body) hreg w (xs.take a)
+    ((xs.drop a).take m) ((xs.drop a).drop m) v S tail
+    (by rw [slice_split]; exact hsrc) (by simpa only [hpre] using hskip)
+    (by simpa only [hlen] using hrecords) hwidth hsavedSkip hrecordSaved hsaved hbuf htmp
+  refine ⟨v', hu, he.cast ?_ rfl⟩
+  rw [hpre, hlen]
+  ring
+
 /-- The correlation interval, in increasing output offset `b`, contains exactly `m` values. -/
 def correlationCoeffs (m : ℕ) (xs : List GaussianInt) : List GaussianInt :=
   ((xs.drop (3 * m)).take m).reverse
 
+/-- The existing chirp selector is exactly the general slice at offset 3m. -/
+theorem sliceCoeffs_chirp (m : ℕ) : sliceCoeffs (3 * m) m = correlationCoeffs m := rfl
+
 theorem correlationCoeffs_get (m : ℕ) (xs : List GaussianInt) (hxs : 4 * m ≤ xs.length)
     (b : ℕ) (hb : b < m) :
     (correlationCoeffs m xs)[b]? = xs[4 * m - 1 - b]? := by
-  have hlen : ((xs.drop (3 * m)).take m).length = m := by
-    simp only [List.length_take, List.length_drop]
-    omega
-  have hi : b < (correlationCoeffs m xs).length := by
-    simpa [correlationCoeffs, hlen] using hb
-  rw [List.getElem?_eq_getElem hi]
-  simp only [correlationCoeffs, List.getElem_reverse, hlen]
-  rw [List.getElem_take, List.getElem_drop]
-  have he : 3 * m + (m - 1 - b) = 4 * m - 1 - b := by omega
-  simp only [he]
-  rw [List.getElem?_eq_getElem (by omega)]
+  have h := sliceCoeffs_get (3 * m) m xs (by omega) b hb
+  simpa only [sliceCoeffs_chirp, show 3 * m + m = 4 * m by omega] using h
 
-/-- Extract the `m` correlations in output order from a ring record, with a complete frame. -/
+/-- The chirp interval specializes the general slice without changing its program or budget. -/
 theorem correlationCoeffs_exec {skip savedSkip records recordSaved width src dst saved buf tmp : Fin T}
     (hreg : [skip, savedSkip, records, recordSaved, width, src, dst, saved, buf, tmp].Nodup)
     (w m : ℕ) (xs : List GaussianInt) (hsize : 4 * m ≤ xs.length)
@@ -111,17 +156,10 @@ theorem correlationCoeffs_exec {skip savedSkip records recordSaved width src dst
         (mk v S) (34 * m * w + 19 * m + 12)
         (mk v' { S with R := (Function.update S.R dst
           (cstream A w (correlationCoeffs m xs) ++ S.R dst)) }) := by
-  have hpre : (xs.take (3 * m)).length = 3 * m := by simp; omega
-  have hlen : ((xs.drop (3 * m)).take m).length = m := by
-    simp only [List.length_take, List.length_drop]
-    omega
-  obtain ⟨v', hu, he⟩ := reverseSlice_exec (body := body) hreg w (xs.take (3 * m))
-    ((xs.drop (3 * m)).take m) ((xs.drop (3 * m)).drop m) v S tail
-    (by rw [slice_split]; exact hsrc) (by simpa only [hpre] using hskip)
-    (by simpa only [hlen] using hrecords) hwidth hsavedSkip hrecordSaved hsaved hbuf htmp
-  refine ⟨v', hu, he.cast ?_ rfl⟩
-  rw [hpre, hlen]
-  ring
+  have h := sliceCoeffs_exec (body := body) hreg w (3 * m) m xs (by omega)
+    v S tail hsrc hskip hrecords hwidth hsavedSkip hrecordSaved hsaved hbuf htmp
+  simpa only [sliceCoeffs_chirp,
+    show 6 * (3 * m) * w + 16 * m * w = 34 * m * w by ring] using h
 
 /-- The extracted ring numerator has precisely the correlation coefficient index. -/
 theorem correlationCoeffs_coeff (p l m : ℕ) (hl : 4 * m ≤ 2 ^ l)

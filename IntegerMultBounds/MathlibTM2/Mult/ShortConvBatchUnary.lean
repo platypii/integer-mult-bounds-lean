@@ -39,7 +39,7 @@ noncomputable def batchFromUnary (j : SetupReg → Fin T) (rg : RpReg → Fin T)
     (clearWords (setupWritten.map j))
 
 /-- Complete shared-setup batch execution, including empty batches and zero-length raw blocks. -/
-theorem batchFromUnary_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates ≤ Q) (hA : 4 ≤ A)
+theorem batchFromUnary_prefix_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates ≤ Q) (hA : 4 ≤ A)
     (j : SetupReg → Fin T) (hj : Function.Injective j)
     (hwidth : j .w = rg .wn) (hheader : j .header = rg .d0)
     (hoff : ∀ s ∈ setupCounters, ∀ r, j s ≠ rg r)
@@ -56,13 +56,14 @@ theorem batchFromUnary_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates 
     (hoffY : ∀ k ∈ [records, recordSaved, j .countY, j .padY, srcY, saved, acc, buf, savedBlock, tmp], k ≠ rg .xs)
     (hdata : ∀ k ∈ [records, recordSaved, srcX, srcY, saved, acc, buf, savedBlock, tmp],
       ∀ s ∈ setupWritten, k ≠ j s)
-    (v : HS T Q A U) (S : Stacks T A) (hc : RpClean ι S)
+    (v : HS T Q A U) (S : Stacks T A) (tailX tailY : List (Fin (A + 4)))
+    (hc : RpClean ι S)
     (hpR : (S.R (j .p)).length = p) (hlR : (S.R (j .l)).length = l)
     (hwR : (S.R (j .w)).length = w) (haR : (S.R (j .a)).length = a) (hbR : (S.R (j .b)).length = b)
     (hemptySetup : ∀ s ∈ setupWritten ++ setupScratch, S.R (j s) = [])
     (hrecords : (S.R records).length = M)
-    (hsrcX : S.R srcX = cstream A w ((List.range M).flatMap X))
-    (hsrcY : S.R srcY = cstream A w ((List.range M).flatMap Y))
+    (hsrcX : S.R srcX = cstream A w ((List.range M).flatMap X) ++ tailX)
+    (hsrcY : S.R srcY = cstream A w ((List.range M).flatMap Y) ++ tailY)
     (hscratch : ∀ k ∈ [recordSaved, saved, acc, buf, savedBlock, tmp], S.R k = [])
     (hempty : ∀ r ∈ [RpReg.xs, .ys, .sv, .ta, .tb, .acc, .tmp, .d1, .d2, .d3], S.R (rg r) = []) :
     ∃ v' n, v'.user = v.user ∧ n ≤ batchUnaryCost p l w M a b ∧
@@ -105,9 +106,9 @@ theorem batchFromUnary_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates 
         have := congrArg Fin.val (h.ι_inj he)
         simp at this
         omega
-  obtain ⟨v₂, n₂, hu₂, hn₂, he₂⟩ := batchProgram_exec (body := body) h hT hQ hA hp hw ha hb hab
+  obtain ⟨v₂, n₂, hu₂, hn₂, he₂⟩ := batchProgram_prefix_exec (body := body) h hT hQ hA hp hw ha hb hab
     X Y hlenX hlenY hX hY records recordSaved (j .countX) (j .padX) srcX
-    (j .countY) (j .padY) srcY saved acc buf savedBlock tmp hpackX hpackY hoffY v₁ S₁ hc₁
+    (j .countY) (j .padY) srcY saved acc buf savedBlock tmp hpackX hpackY hoffY v₁ S₁ tailX tailY hc₁
     (by rw [edata _ (by simp)]; exact hrecords)
     (by rw [edata _ (by simp)]; exact hsrcX) (by rw [edata _ (by simp)]; exact hsrcY)
     (by simp [ecount .countX (by simp [setupWritten]), setupValue])
@@ -173,6 +174,44 @@ theorem batchFromUnary_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates 
         intro s hs hks
         exact hk (List.mem_map.mpr ⟨s, hs, hks.symm⟩)
       simp [S₂, Function.update_apply, hframe, ering .out (by decide)]
+
+theorem batchFromUnary_exec (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates ≤ Q) (hA : 4 ≤ A)
+    (j : SetupReg → Fin T) (hj : Function.Injective j)
+    (hwidth : j .w = rg .wn) (hheader : j .header = rg .d0)
+    (hoff : ∀ s ∈ setupCounters, ∀ r, j s ≠ rg r)
+    (hpriv : ∀ s ∈ setupCounters, ∀ k, j s ≠ ι k)
+    {p l w M a b : ℕ} (hp : 1 ≤ p) (hw : p + 2 ≤ w)
+    (ha : a ≤ 2 ^ l) (hb : b ≤ 2 ^ l) (hab : a + b ≤ 2 ^ l + 1)
+    (X Y : ℕ → List GaussianInt)
+    (hlenX : ∀ n < M, (X n).length = a) (hlenY : ∀ n < M, (Y n).length = b)
+    (hX : ∀ n < M, ∀ z ∈ X n, z.re ^ 2 + z.im ^ 2 ≤ (2 : ℤ) ^ (2 * p))
+    (hY : ∀ n < M, ∀ z ∈ Y n, z.re ^ 2 + z.im ^ 2 ≤ (2 : ℤ) ^ (2 * p))
+    (records recordSaved srcX srcY saved acc buf savedBlock tmp : Fin T)
+    (hpackX : [records, recordSaved, j .countX, j .padX, srcX, saved, acc, buf, savedBlock, tmp, rg .xs].Nodup)
+    (hpackY : [records, recordSaved, j .countY, j .padY, srcY, saved, acc, buf, savedBlock, tmp, rg .ys].Nodup)
+    (hoffY : ∀ k ∈ [records, recordSaved, j .countY, j .padY, srcY, saved, acc, buf, savedBlock, tmp], k ≠ rg .xs)
+    (hdata : ∀ k ∈ [records, recordSaved, srcX, srcY, saved, acc, buf, savedBlock, tmp],
+      ∀ s ∈ setupWritten, k ≠ j s)
+    (v : HS T Q A U) (S : Stacks T A) (hc : RpClean ι S)
+    (hpR : (S.R (j .p)).length = p) (hlR : (S.R (j .l)).length = l)
+    (hwR : (S.R (j .w)).length = w) (haR : (S.R (j .a)).length = a) (hbR : (S.R (j .b)).length = b)
+    (hemptySetup : ∀ s ∈ setupWritten ++ setupScratch, S.R (j s) = [])
+    (hrecords : (S.R records).length = M)
+    (hsrcX : S.R srcX = cstream A w ((List.range M).flatMap X))
+    (hsrcY : S.R srcY = cstream A w ((List.range M).flatMap Y))
+    (hscratch : ∀ k ∈ [recordSaved, saved, acc, buf, savedBlock, tmp], S.R k = [])
+    (hempty : ∀ r ∈ [RpReg.xs, .ys, .sv, .ta, .tb, .acc, .tmp, .d1, .d2, .d3], S.R (rg r) = []) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ batchUnaryCost p l w M a b ∧
+      Exec body (batchFromUnary j rg ι h hT hQ records recordSaved srcX srcY saved acc buf savedBlock tmp)
+        (mk v S) n
+        (mk v' { S with R := (Function.update S.R (rg .out)
+          (cstream A w (rpStream M (fun n => coeff p l (X n) (Y n))) ++ S.R (rg .out))) }) := by
+  simpa only [List.append_nil] using
+    batchFromUnary_prefix_exec h hT hQ hA j hj hwidth hheader hoff hpriv
+      hp hw ha hb hab X Y hlenX hlenY hX hY
+      records recordSaved srcX srcY saved acc buf savedBlock tmp hpackX hpackY hoffY hdata
+      v S [] [] hc hpR hlR hwR haR hbR hemptySetup hrecords
+      (by simpa using hsrcX) (by simpa using hsrcY) hscratch hempty
 
 /-- All setup and cleanup charges are independent of the number of records. -/
 theorem batchUnaryCost_le (p l w M a b : ℕ) (ha : a ≤ 2 ^ l) (hb : b ≤ 2 ^ l) :

@@ -81,12 +81,12 @@ def packLoopBody (records recordSaved count pad src saved acc buf savedBlock tmp
 
 /-- Packing loop before final restoration. Its proof follows the block list structurally;
 there is no generated execution certificate or per-record setup oracle. -/
-theorem packLoop_exec {records recordSaved count pad src saved acc buf savedBlock tmp : Fin T}
+theorem packLoop_prefix_exec {records recordSaved count pad src saved acc buf savedBlock tmp : Fin T}
     (hreg : [records, recordSaved, count, pad, src, saved, acc, buf, savedBlock, tmp].Nodup)
     (a : ℕ) (blocks : List (List (Fin (A + 4)))) (hlen : ∀ xs ∈ blocks, xs.length = a)
     (cs : List (Fin (A + 4))) (hcs : cs.length = blocks.length)
-    (v : HS T Q A U) (S : Stacks T A)
-    (hrecords : S.R records = cs) (hsrc : S.R src = blocks.flatten)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A + 4)))
+    (hrecords : S.R records = cs) (hsrc : S.R src = blocks.flatten ++ tail)
     (hcount : (S.R count).length = a)
     (hbuf : S.R buf = []) (hsavedBlock : S.R savedBlock = []) (htmp : S.R tmp = [])
     (hflag : v.flag = cs.head?.isSome) :
@@ -95,7 +95,7 @@ theorem packLoop_exec {records recordSaved count pad src saved acc buf savedBloc
         (mk v S) (blocks.length * (16 * a + 4 * (S.R pad).length + 23) + 1)
         (mk v' { S with R := (Function.update (Function.update
           (Function.update (Function.update (Function.update S.R records []) recordSaved
-            (cs.reverse ++ S.R recordSaved)) src []) saved
+            (cs.reverse ++ S.R recordSaved)) src tail) saved
             (blocks.flatten.reverse ++ S.R saved)) acc
             ((blocks.flatMap fun xs => xs ++ List.replicate (S.R pad).length
               (pairSym A false false)).reverse ++ S.R acc)) }) := by
@@ -133,14 +133,14 @@ theorem packLoop_exec {records recordSaved count pad src saved acc buf savedBloc
             simp [popPush, Action.run, hrecords, update_rt, S₀, ‹records ≠ recordSaved›.symm]
           obtain ⟨v₁, hu₁, he₁⟩ := packNext_exec (body := body)
             (show [count, pad, src, saved, acc, buf, savedBlock, tmp].Nodup by simp_all)
-            { v with sym := some c } S₀ xs blocks.flatten
-            (by simpa [S₀, ‹records ≠ src›.symm, ‹recordSaved ≠ src›.symm] using hsrc)
+            { v with sym := some c } S₀ xs (blocks.flatten ++ tail)
+            (by simpa [S₀, ‹records ≠ src›.symm, ‹recordSaved ≠ src›.symm, List.append_assoc] using hsrc)
             (by simpa [S₀, ‹records ≠ count›.symm, ‹recordSaved ≠ count›.symm, hxs] using hcount)
             (by simpa [S₀, ‹records ≠ buf›.symm, ‹recordSaved ≠ buf›.symm] using hbuf)
             (by simpa [S₀, ‹records ≠ savedBlock›.symm, ‹recordSaved ≠ savedBlock›.symm] using hsavedBlock)
             (by simpa [S₀, ‹records ≠ tmp›.symm, ‹recordSaved ≠ tmp›.symm] using htmp)
           set S₁ : Stacks T A := { S₀ with R := (Function.update
-            (Function.update (Function.update S₀.R src blocks.flatten) saved (xs.reverse ++ S₀.R saved))
+            (Function.update (Function.update S₀.R src (blocks.flatten ++ tail)) saved (xs.reverse ++ S₀.R saved))
             acc (List.replicate (S₀.R pad).length (pairSym A false false) ++ xs.reverse ++ S₀.R acc)) }
           have e (r : Fin T) (h₁ : r ≠ src) (h₂ : r ≠ saved) (h₃ : r ≠ acc) :
               S₁.R r = S₀.R r := by simp [S₁, h₁, h₂, h₃]
@@ -179,6 +179,28 @@ theorem packLoop_exec {records recordSaved count pad src saved acc buf savedBloc
             simp only [Function.update_apply]
             split_ifs <;> subst_vars <;> simp_all [List.append_assoc]
 
+theorem packLoop_exec {records recordSaved count pad src saved acc buf savedBlock tmp : Fin T}
+    (hreg : [records, recordSaved, count, pad, src, saved, acc, buf, savedBlock, tmp].Nodup)
+    (a : ℕ) (blocks : List (List (Fin (A + 4)))) (hlen : ∀ xs ∈ blocks, xs.length = a)
+    (cs : List (Fin (A + 4))) (hcs : cs.length = blocks.length)
+    (v : HS T Q A U) (S : Stacks T A)
+    (hrecords : S.R records = cs) (hsrc : S.R src = blocks.flatten)
+    (hcount : (S.R count).length = a)
+    (hbuf : S.R buf = []) (hsavedBlock : S.R savedBlock = []) (htmp : S.R tmp = [])
+    (hflag : v.flag = cs.head?.isSome) :
+    ∃ v', v'.user = v.user ∧
+      Exec body (.loop (·.flag) (packLoopBody records recordSaved count pad src saved acc buf savedBlock tmp))
+        (mk v S) (blocks.length * (16 * a + 4 * (S.R pad).length + 23) + 1)
+        (mk v' { S with R := (Function.update (Function.update
+          (Function.update (Function.update (Function.update S.R records []) recordSaved
+            (cs.reverse ++ S.R recordSaved)) src []) saved
+            (blocks.flatten.reverse ++ S.R saved)) acc
+            ((blocks.flatMap fun xs => xs ++ List.replicate (S.R pad).length
+              (pairSym A false false)).reverse ++ S.R acc)) }) := by
+  simpa only [List.append_nil] using
+    packLoop_prefix_exec hreg a blocks hlen cs hcs v S []
+      hrecords (by simpa using hsrc) hcount hbuf hsavedBlock htmp hflag
+
 /-- Equal-size blocks occupy their count times their common symbol length. -/
 theorem length_flatten_blocks (a : ℕ) (blocks : List (List (Fin (A + 4))))
     (hlen : ∀ xs ∈ blocks, xs.length = a) : blocks.flatten.length = blocks.length * a := by
@@ -199,11 +221,11 @@ def packBatch (records recordSaved count pad src saved acc buf savedBlock tmp ds
 
 /-- Complete batch packing: only the destination changes, including when the batch or the
 raw blocks are empty. All setup counters are shared across the batch. -/
-theorem packBatch_exec {records recordSaved count pad src saved acc buf savedBlock tmp dst : Fin T}
+theorem packBatch_prefix_exec {records recordSaved count pad src saved acc buf savedBlock tmp dst : Fin T}
     (hreg : [records, recordSaved, count, pad, src, saved, acc, buf, savedBlock, tmp, dst].Nodup)
     (a : ℕ) (blocks : List (List (Fin (A + 4)))) (hlen : ∀ xs ∈ blocks, xs.length = a)
-    (v : HS T Q A U) (S : Stacks T A)
-    (hrecords : (S.R records).length = blocks.length) (hsrc : S.R src = blocks.flatten)
+    (v : HS T Q A U) (S : Stacks T A) (tail : List (Fin (A + 4)))
+    (hrecords : (S.R records).length = blocks.length) (hsrc : S.R src = blocks.flatten ++ tail)
     (hcount : (S.R count).length = a)
     (hrecordSaved : S.R recordSaved = []) (hsaved : S.R saved = []) (hacc : S.R acc = [])
     (hbuf : S.R buf = []) (hsavedBlock : S.R savedBlock = []) (htmp : S.R tmp = []) :
@@ -229,13 +251,13 @@ theorem packBatch_exec {records recordSaved count pad src saved acc buf savedBlo
     simp [hlen xs hx]
   have hpeek := Exec.act (body := body) (peekR records) (mk v S)
   rw [peekR_run] at hpeek
-  obtain ⟨v₁, hu₁, he₁⟩ := packLoop_exec (body := body)
+  obtain ⟨v₁, hu₁, he₁⟩ := packLoop_prefix_exec (body := body)
     (show [records, recordSaved, count, pad, src, saved, acc, buf, savedBlock, tmp].Nodup by simp_all)
-    a blocks hlen (S.R records) hrecords { v with flag := (S.R records).head?.isSome } S
+    a blocks hlen (S.R records) hrecords { v with flag := (S.R records).head?.isSome } S tail
     rfl hsrc hcount hbuf hsavedBlock htmp rfl
   set S₁ : Stacks T A := { S with R := (Function.update (Function.update
     (Function.update (Function.update (Function.update S.R records []) recordSaved
-      ((S.R records).reverse ++ S.R recordSaved)) src []) saved
+      ((S.R records).reverse ++ S.R recordSaved)) src tail) saved
       (blocks.flatten.reverse ++ S.R saved)) acc (packed.reverse ++ S.R acc)) }
   obtain ⟨v₂, hu₂, he₂⟩ := moveR_exec body recordSaved records ‹records ≠ recordSaved›.symm id v₁ S₁
   set S₂ : Stacks T A := { S₁ with R := movedR S₁.R recordSaved records id (S₁.R recordSaved) }
@@ -267,5 +289,25 @@ theorem packBatch_exec {records recordSaved count pad src saved acc buf savedBlo
         hrecordSaved, hsaved, hacc, List.append_nil, List.reverse_reverse]
     simp only [Function.update_apply]
     split_ifs <;> subst_vars <;> simp_all [packed]
+
+
+theorem packBatch_exec {records recordSaved count pad src saved acc buf savedBlock tmp dst : Fin T}
+    (hreg : [records, recordSaved, count, pad, src, saved, acc, buf, savedBlock, tmp, dst].Nodup)
+    (a : ℕ) (blocks : List (List (Fin (A + 4)))) (hlen : ∀ xs ∈ blocks, xs.length = a)
+    (v : HS T Q A U) (S : Stacks T A)
+    (hrecords : (S.R records).length = blocks.length) (hsrc : S.R src = blocks.flatten)
+    (hcount : (S.R count).length = a)
+    (hrecordSaved : S.R recordSaved = []) (hsaved : S.R saved = []) (hacc : S.R acc = [])
+    (hbuf : S.R buf = []) (hsavedBlock : S.R savedBlock = []) (htmp : S.R tmp = []) :
+    ∃ v', v'.user = v.user ∧
+      Exec body (packBatch records recordSaved count pad src saved acc buf savedBlock tmp dst)
+        (mk v S)
+        (blocks.length * (18 * a + 4 * (S.R pad).length + 2 * (a + (S.R pad).length) + 25) + 8)
+        (mk v' { S with R := (Function.update S.R dst
+          ((blocks.flatMap fun xs => xs ++ List.replicate (S.R pad).length
+            (pairSym A false false)) ++ S.R dst)) }) := by
+  simpa only [List.append_nil] using
+    packBatch_prefix_exec hreg a blocks hlen v S []
+      hrecords (by simpa using hsrc) hcount hrecordSaved hsaved hacc hbuf hsavedBlock htmp
 
 end IntegerMultBounds.MathlibTM2.Mult.ShortConv
