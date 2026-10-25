@@ -1,0 +1,78 @@
+module
+
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedNaturalGroup
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawNaturalGroupInput
+
+/-! Closed real natural-group execution from ordinary parameters and one
+ambient line. The machine generates origins, count and sweep controls, gathers
+its own RHS, solves and releases all workspace, retaining the original line. -/
+
+@[expose] public section
+namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
+
+open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
+  IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
+
+variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
+
+noncomputable def rawNaturalGroup (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 117 Q A U :=
+  .seq rawNaturalGroupPrepare (closedBatch hR hQ)
+
+theorem rawNaturalGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    {l L s t p u target rhsExp : ℕ} [NeZero s] {α d : ℝ}
+    (hp : 0 < p) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
+    (hθ : 0 < (t : ℝ)/s-1) (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
+    (hgroup : 0 < (naturalLengthGroup s t (PhaseCellBand.width p u) L).length) (hpad : L+L ≤ 2^l+1)
+    (C : ZMod s → GaussianInt)
+    (hC : ∀ k, ‖value (executionPrecision p l target rhsExp) (C k)‖ ≤ (2 : ℝ)^rhsExp)
+    (x : ZMod s → ℝ)
+    (hx : SchurDominance.Solves (realMatrix s t p u) (interiorSet s t (PhaseCellBand.width p u)) x
+      (fun k => (value (executionPrecision p l target rhsExp) (C k)).re))
+    (v : HS 117 Q A U) (tail borrowed : List (Fin (A+4))) (inp : List (Bool ⊕ Bool)) (out : List Bool) :
+    let B := (naturalLengthGroup s t (PhaseCellBand.width p u) L).length
+    let lo := naturalGroupOrigin s t (PhaseCellBand.width p u) L
+    let q := executionPrecision p l target rhsExp
+    let w := executionWidth p l target rhsExp
+    let j := executionStagePrecision p l target rhsExp
+    let rhs := cstream A w ((List.range B).flatMap (cellSourceRows L lo (fun _ => C)))
+    ∃ v' S' m, v'.user = v.user ∧ m ≤ generateOriginAndGatherControlsCost (2^15*p) q s t u (PhaseCellBand.width p u) L +
+      rawNaturalGatherCost q s +
+      sizedClosedBatchBound p l B L s t u target rhsExp ∧
+      Exec body (rawNaturalGroup hR hQ)
+        (mk v (naturalGroupInputBank (2^15*p) (j+1) q l s t u (PhaseCellBand.width p u) L
+          (cstream A w (chirpLine s C)) borrowed tail inp out)) m (mk v' S') ∧
+      S'.inp = inp ∧ S'.out = out ∧ (∀ k, S'.L k = []) ∧ S'.R 110 = rhs ++ (cstream A w (chirpLine s C) ++ borrowed) ∧
+      (∀ k : Fin 117, k ≠ 93 → k ≠ 110 → S'.R k = []) ∧
+      (∀ n : Fin B, ∀ i : Fin L, |(value q (decodeWord (((S'.R 93).drop ((n.val*L+i.val)*w)).take w))).re -
+        x (lo n+(i.val : ZMod s))| ≤ 1/(2 : ℝ)^target) ∧
+      ∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)
+        (publishedBatchRead q w n.val L (lo n) (S'.R 93)) x (1/(2 : ℝ)^target) := by
+  dsimp only
+  let band := PhaseCellBand.width p u
+  let B := (naturalLengthGroup s t band L).length
+  let lo := naturalGroupOrigin s t band L
+  let q := executionPrecision p l target rhsExp
+  let w := executionWidth p l target rhsExp
+  let j := executionStagePrecision p l target rhsExp
+  let rhs := cstream A w ((List.range B).flatMap (cellSourceRows L lo (fun _ => C)))
+  have hs : 0 < s := Nat.pos_of_ne_zero (NeZero.ne s)
+  have hg := naturalGroup_solver_geometry hst band L (⟨0, hgroup⟩ : Fin B)
+  have hLs : L ≤ s := by have hh := hg.2.1; omega
+  have hband : band ≤ s := by
+    have hh := hg.2.1
+    rw [naturalGroupOrigin_val] at hh
+    unfold naturalStart at hh
+    omega
+  have hP : 13 ≤ 2^15*p := by norm_num; omega
+  obtain ⟨v₁, m₁, hu₁, hm₁, he₁⟩ := rawNaturalGroupInputBank_exec (body := body)
+    (2^15*p) (j+1) q l s t u band L hP hs hst hu hgroup hband hg.1 hLs (by omega) C v borrowed tail inp out
+  have hw : w = 2*q+8 := by dsimp [q, w, executionWidth, executionPrecision]; omega
+  rw [← hw] at he₁
+  obtain ⟨v₂, S₂, m₂, hu₂, hm₂, he₂, hrest⟩ := closedNaturalGroup_spec (body := body)
+    hR hQ hA hp hst hu hαu hθ hgap hbudget hgroup hpad C hC x hx v₁ tail (cstream A w (chirpLine s C) ++ borrowed) inp out
+  exact ⟨v₂, S₂, m₁+m₂, hu₂.trans hu₁, by dsimp only [q, band] at hm₁; omega, Exec.seq he₁ he₂, hrest⟩
+
+end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

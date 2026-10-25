@@ -1,6 +1,7 @@
 module
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalGatherCost
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawNaturalGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedNaturalGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedNaturalGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedLengthGroup
@@ -708,6 +709,28 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.naturalGroupInputBank_controls,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.naturalGroupInputBank_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedNaturalGroup_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvanceCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advanceReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advanceReg_range,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvanceNext_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvances_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvances_symbols,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvances_window,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvances_natControls,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvances_sum_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalOriginAdvances_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvanceLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvanceControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializeAdvanceBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.mem_advancePorts,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advanceReg_covers,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseAdvanceBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightWorkspaceWidth_symbolVolume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedNaturalAdvanceControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateOriginAndGatherControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawNaturalGather_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawNaturalGroupInputBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawNaturalGroup_spec,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalGroup_volume_le,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalStart_mono,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalOrigins_ordered,
