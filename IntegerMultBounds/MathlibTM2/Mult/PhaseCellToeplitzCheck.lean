@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWeightedGeneratorRelease
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWeightPageModel
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWeightSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWeightHost
 
@@ -593,6 +596,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperRows_flatMap,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperOperand_length,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperOperand_disk,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.splitPair_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.splitPairs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packPairBanks_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairLayout_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ambientWeightSample_eq_weightData,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.executedOutputTable_single,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightPage_eq_execution_tables,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedWeightSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runtimeWeightSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseWeightPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightedGeneratorSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightedGeneratorBank_page,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightedGeneratorRelease_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightGeometry_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightScales_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightInitCode_do,

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1151 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1162 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Constructed-data cell arithmetic executes on 117 tapes with CellRun.Valid. Ordinary unary headers generate widths, factor and packed generator pages, and exact interleaved weight pairs, with paid setup and cleanup. Runtime weight layout, full cell ABI, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Constructed-data cell arithmetic executes on 117 tapes with CellRun.Valid. Unary headers execute combined numerical setup: factor page, generators, reciprocal and ordered weights, with paid construction and teardown. Full cell ABI, batching, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -5813,3 +5813,47 @@ S3 is incomplete and the proved multiplication saving is unchanged.
 All ten new setup modules pass individual guarded checks; maximum measured peak
 is 1919.3 MiB, below the per-module CI budget. Source integrity, generated-summary
 and whitespace checks pass. This is one integrated unary weight-setup checkpoint.
+
+The single-cell numerical setup now includes ordered weights and inverse
+generators in one executed 117-tape program, with complete paid teardown.
+`splitPair_exec` and `splitPairs_exec` separate the generated interleaved stream
+structurally, preserving each word's bit order, the original count symbols and
+both temporary bank suffixes. `packPairBanks_exec` reverses only the reciprocal
+input row, releases its temporary copy, and consumes the output row in descending
+coordinate order. `pairLayout_exec` combines these passes within
+`L*(46*w+45)+28` steps, restoring every scratch stack and temporary count.
+`ambientWeightSample_eq_weightData` preserves the original ambient ZMod coordinate
+including wraparound and ties. `weightPage_eq_execution_tables` identifies the
+actual packed page, at P=2^15*p, with the existing single-cell executed output
+weight table and reciprocal input row; no alternate weight model is substituted.
+`packedWeightSetup_exec` composes the unary setup and ordering passes.
+`runtimeWeightSetup_exec` additionally generates w=2*q+8, restores its width
+source and consumes the owned lower-endpoint header on 111, leaving all borrowed
+headers and suffixes unchanged.
+`ScalarPlacement.weightedGeneratorSetup_exec` composes this with the unary inverse
+setup. All geometry and precision inputs are ordinary unary headers; no word
+widths, table state, pi, factors, weight samples or inverse columns are supplied.
+The retained page is exactly `[first generator; shifted reverse; reciprocal;
+descending output weights; ascending reciprocal input weights; borrowed suffix]`.
+`weightedGeneratorBank_page` proves that layout. The per-call RHS is not in this
+setup page; gathering/insertion and the full runtime cell ABI remain to be proved.
+`releaseWeightPage_exec` generates its counts from L/q, erases exactly the
+2*L*(2*q+8) weight symbols, and releases its work within
+`24*L*(2*q+8)+26*L+2*(2*q+8)+4*q+25` steps.
+`weightedGeneratorRelease_exec` releases both setup families and all generated
+widths/counters/pages. Only the owned geometry and lower endpoint are consumed;
+all original borrowed state is restored exactly.
+The setup bound is the sum of the executed weight and inverse setup bounds; the
+release bound adds the executed generator/factor and weight release bounds.
+This is a single-cell numerical setup integration. Repeated/batched pages,
+per-call RHS placement and remaining runtime parameters, the complete cell ABI,
+execution-wide peak and uniform cost matching, gathering/scheduling, halo cuts,
+and complex/boundary/coupling/recovery/full-line composition remain open.
+The dense L^2*W factor page and unary geometry-reading costs still require the
+outer cost/storage match. S3 remains incomplete and the multiplication saving
+is unchanged.
+The combined numerical-setup checkpoint passes all 9761 guarded S3 axiom-audit
+jobs at 2.6 GiB combined peak. All eleven new modules pass individual guarded
+checks; maximum measured peak is 1939.6 MiB, below the per-module CI budget.
+Source integrity, generated-summary and whitespace checks pass. The runtime
+ABI and outer uniform cost/storage obligations above remain unproved.
