@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1221 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1228 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Sized real batches and computed equal-length groups have requested ambient-core accuracy and full cleanup, with shared inverse/weight initialization. A division-based natural phase controller emits exact binary origin packets from binary dimensions and preserves interior volume. Outer header/count/controller-release integration, storage bounds, gathering, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and gathered RHS, generating their binary origins and batch count, with shared inverse/weight initialization, requested ambient-core accuracy and full controller/solver cleanup. Natural scheduling preserves interior volume. Storage bounds, gathering, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6196,3 +6196,41 @@ guarded checks, with maximum peak 1942.5 MiB, below the per-module CI budget.
 Source integrity, generated-summary and whitespace checks pass. The outer
 controller/solver composition and uniform fast-cost/storage obligations remain
 open.
+
+
+### S3 ordinary-parameter controller and closed solver bridge
+
+The origin controller now constructs its binary table from four retained unary
+headers (`s`, `t`, band width and target length). `countWords_exec` structurally
+counts the emitted fixed-width words without receiving their number, restores
+the complete packet source and its scratch stacks, and charges exactly
+`B*(6*V+6)+4` steps. `naturalGroupCountedHost_exec` counts before attaching the
+borrowed suffix, so arbitrary suffix contents do not affect the count. It emits
+exactly the natural origin packets and installs the generated unary count on 116.
+The counted controller costs at most
+`(27*(t-s+1)+9)*tblC(V,V)+B*(8*V+6)+6`.
+
+`generateOriginControls_exec` constructs both temporary widths from ordinary
+parameters, initializes and loads the origin table, executes the counted
+controller, releases all 31 table ports and clears both width sources. Its exact
+output differs from the original bank only on 109 (origin packet prefix) and
+116 (generated count); native stacks, input/output spectators, raw RHS and
+borrowed suffixes are preserved. `naturalGroupInputBank_exec` identifies this
+output with the existing closed solver's complete input bank. The ordinary
+input has no supplied origins, batch count, binary controller state or workspace
+width headers.
+
+`generatedNaturalGroup_spec` composes that controller directly with the closed
+real solver. From ordinary unary parameters and already gathered RHS it executes
+all control generation, numerical setup, batch solving, publication and cleanup,
+with pointwise requested accuracy and `ErrorOn` on each original ambient core.
+The ledger explicitly adds `generateOriginControlsCost` to the existing sized
+closed-batch bound; no uniform fast-time or execution-wide storage estimate is
+claimed. RHS gathering, efficient global grouping, artificial halo cuts,
+complex/boundary/coupling/recovery/full-line composition and uniform cost/storage
+bounds remain open. S3 remains incomplete and the proved saving is unchanged.
+
+The ordinary-parameter bridge passes all 9834 guarded S3 audit jobs at 2.6 GiB
+combined peak. All nine new or revised non-audit modules pass individual guarded
+checks; their maximum measured peak is 1953.8 MiB. Source integrity, generated
+summary and whitespace checks pass.

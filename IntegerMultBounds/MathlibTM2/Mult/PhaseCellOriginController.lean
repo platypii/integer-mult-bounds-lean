@@ -99,4 +99,51 @@ theorem originController_exec (P q w s t u band L : ℕ)
   · intro k hk109 hk
     exact (hframe k hk109 hk).trans (hf₁.2.2.2 k hk)
 
+
+/-- Generate both the exact origin packets and their batch count from four headers. -/
+def originCountedController : Pr P₀ 117 Q A U :=
+  .seq (tblCompile originReg originInitCode) naturalGroupCountedHost
+
+theorem originCountedController_exec (P q w s t u band L : ℕ)
+    (hP : 13 ≤ P) (hs : 0 < s) (hst : s < t) (hu : 1 ≤ u) (hband : band ≤ s) (hL : 0 < L) (hLs : L ≤ s)
+    (hA : 4 ≤ A) (v : HS 117 Q A U) (S : Stacks 117 A)
+    (hS : tblHolds originReg S (tblRho (weightWorkspaceWidth P q w t u)
+      (List.replicate (weightWorkspaceWidth P q w t u) tick)
+      (List.replicate (weightWorkspaceWidth P q w t u) tick) (originRawState A s t band L)))
+    (h104 : S.R 104 = []) (h106 : S.R 106 = []) (h116 : S.R 116 = []) :
+    let V := weightWorkspaceWidth P q w t u
+    ∃ v' S' m, ∃ st' : TblSt 16 A, v'.user = v.user ∧
+      m ≤ (27*(t-s+1)+9)*tblC V V + (naturalLengthGroup s t band L).length*(8*V+6)+6 ∧
+      Exec body originCountedController (mk v S) m (mk v' S') ∧
+      S'.R 109 = naturalOriginPackets A V s t band L ++ S.R 109 ∧
+      S'.R 116 = List.replicate (naturalLengthGroup s t band L).length tick ∧
+      tblHolds originReg S' (tblRho V (List.replicate V tick) (List.replicate V tick) ⟨st'.val, []⟩) ∧
+      (∀ j, st'.val j < 2^V) ∧ S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
+      ∀ k, k ≠ 109 → k ≠ 116 → (∀ r, originReg r ≠ k) → S'.R k = S.R k := by
+  let V := weightWorkspaceWidth P q w t u
+  obtain ⟨hwide, hpkt⟩ := weightWorkspaceWidth_control (q := q) (w := w) hP hs hst hu hband
+  have hbound := originRawState_bounded (A := A) hLs hst hband hwide
+  have hc := originInitCode_do (A := A) (W := V) (w := V) (L := L) hs hst hwide
+  obtain ⟨st₁, ⟨heq, hb₁⟩, hr⟩ := TblDo.host (body := body) originReg_injective
+    (List.replicate V tick) (List.replicate V tick) (by simp) (by simp) le_rfl (hc.bounded hbound) hbound
+  subst heq
+  obtain ⟨v₁, S₁, m₁, hu₁, hm₁, he₁, hh₁, hf₁⟩ := hr v S hS
+  obtain ⟨v₂, S₂, m₂, st₂, hu₂, hm₂, he₂, hout, hcount, hh₂, hb₂, hi₂, ho₂, hl₂, hframe⟩ :=
+    naturalGroupCountedHost_exec (body := body) (originReadyState A s t band L)
+      (by simp [originReadyState, originRawState]) (by simp [originReadyState, originRawState])
+      (by simp [originReadyState, originRawState]) (by simp [originReadyState, originRawState]) (by simp [originReadyState, originRawState])
+      (by simp [originReadyState, originRawState]) (by simp [originReadyState, originRawState]) hs hst hL hwide hpkt le_rfl hA (by
+        have hv : V ≠ 0 := by intro he; change 8*(t+1)^2+2*band+8 < 2^V at hwide; rw [he] at hwide; simp at hwide
+        omega) hb₁ rfl v₁ S₁ hh₁
+      (by rw [hf₁.2.2.2 104 (fun r he => by have hh := originReg_range r; rw [he] at hh; omega), h104])
+      (by rw [hf₁.2.2.2 106 (fun r he => by have hh := originReg_range r; rw [he] at hh; omega), h106])
+      (by rw [hf₁.2.2.2 116 (fun r he => by have hh := originReg_range r; rw [he] at hh; omega), h116])
+  refine ⟨v₂, S₂, m₁+m₂, st₂, hu₂.trans hu₁, ?_, Exec.seq he₁ he₂, ?_, hcount, hh₂, hb₂,
+    hi₂.trans hf₁.1, ho₂.trans hf₁.2.1, hl₂.trans hf₁.2.2.1, ?_⟩
+  · nlinarith only [hm₁, hm₂]
+  · rw [hout, hf₁.2.2.2 109 (fun r he => by have hh := originReg_range r; rw [he] at hh; omega)]
+  · intro k hk109 hk116 hk
+    exact (hframe k hk109 hk116 hk).trans (hf₁.2.2.2 k hk)
+
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

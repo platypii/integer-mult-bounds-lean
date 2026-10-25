@@ -1,7 +1,7 @@
 module
 
 import IntegerMultBounds.NLogN.PhaseCellNaturalVolume
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginController
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedNaturalGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedNaturalGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedLengthGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBatchExec
@@ -693,6 +693,21 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originInitCode_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originRawState_bounded,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originController_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countWords_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalGroupCountedHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originCountedController_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializeOriginBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadOriginList_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadOriginHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unaryOriginController_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.mem_originPorts,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originReg_covers,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseOriginBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cleanOriginController_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateOriginControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.naturalGroupInputBank_controls,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.naturalGroupInputBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedNaturalGroup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedNaturalGroup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedLoop_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.WeightReady.frame,
