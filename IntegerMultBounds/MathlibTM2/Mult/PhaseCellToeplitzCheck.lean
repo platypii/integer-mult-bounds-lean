@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratePositiveLengthKeys
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallLengthKey
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProbeLengthKey
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateLengthCandidates
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalKeysCore
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalGatherCost
@@ -763,6 +766,25 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadCandidateHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedLengthCandidates_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateLengthCandidates_exec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.mem_naturalPositiveLengthKeys,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalPositiveLengthKey_le_ambient,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalPositiveLengthKeys_nodup,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalPositiveLengthKeys_length_le,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKeys_eq_positive_filter,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKeys_mem_positive,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalPositiveLengthKeys_volume,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalPositiveLengthKeys_pad,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitDistinctLength_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.distinctLengthsCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadBinaryHeader_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadBinaryHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selectPositiveLengths_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalPositiveLengthPackets_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatePositiveLengthKeys_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.installLengthKey_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.probeLengthKey_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originControlsR_empty,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalPositiveLengthKeys_errorOn,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLengthKeys_core_cover,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalKeyCores_eq_interior,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLengthKeys_errorOn,

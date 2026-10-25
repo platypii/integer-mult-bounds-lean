@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1252 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1258 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and ambient input, generating origins, count and sweep controls, gathering their own RHS and retaining the original line, with shared inverse/weight initialization, requested ambient-core accuracy and full cleanup. At most four candidate lengths are generated from ordinary parameters; the mathematical key schedule covers exactly the interior and preserves volume/error. Global key execution/publication, storage bounds, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and ambient input, generating origins, count and sweep controls, gathering their own RHS and retaining the original line, with shared inverse/weight initialization, requested ambient-core accuracy and full cleanup. Positive distinct length keys and their count are generated from ordinary parameters; per-key length installation and empty-group probes are executed. The schedule covers the interior with exact volume/error. Global solver iteration/publication, storage bounds, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6378,3 +6378,55 @@ The bounded length-discovery checkpoint passes all 9868 guarded S3 audit jobs
 at 4.1 GiB combined peak. All nine new modules pass individual guarded checks;
 maximum measured peak is 1842.8 MiB. Source-integrity, generated-summary and
 whitespace checks pass with default proof limits unchanged.
+
+
+### S3 executed positive-key selection, count and per-key setup
+
+`distinctLengthsCode_do` structurally proves a table program that emits positive
+last occurrences from an arbitrary register list. Its bound is `n*(n+1)+1`
+table atoms, so four candidates need at most 21. `loadBinaryHeaders_exec`
+consumes numeric packet words into the table in order, preserving an arbitrary
+packet suffix and every register outside the source/table bank.
+`selectPositiveLengths_exec` initializes that table, loads four candidates,
+removes zeros and duplicates, counts the selected words before attaching the
+borrowed suffix, emits the selected binary queue and releases the entire table.
+Its bound is `21*tblC(V,V)+230*V+263`, including conversion scratch restoration.
+
+`generatePositiveLengthKeys_exec` shares generated width sources with candidate
+discovery and constructs the positive distinct key queue on 87 and its unary
+count on 86 from ordinary parameters. It restores every other register and
+preserves an arbitrary suffix below the key queue. No candidate list, key count,
+row length or binary table is supplied. The count is at most four, and the owned
+binary queue has exactly `keyCount*V` symbols; iteration need not inspect the
+borrowed suffix to decide when it ends.
+
+`installLengthKey_exec` consumes one selected binary word and constructs both
+ordinary row-length headers, 102 and 103, charging at most `10*L+19*V+18`.
+It preserves the remaining key queue and all other metadata and releases every
+parsing/conversion scratch register. `probeLengthKey_exec` then executes the
+existing generated-origin controller and tests its actual unary batch count.
+Its branch flag is exactly `0 < naturalLengthGroup.length`; the additional test
+costs one step. `originControlsR_empty` proves that an empty class leaves the
+original bank unchanged, enabling the outer loop to skip its numerical solve.
+
+`naturalPositiveLengthKeys` is exactly the generated positive distinct schedule.
+It may still contain a positive candidate whose group is empty; filtering by the
+computed nonempty-group test gives the previously proved actual key schedule.
+Empty candidates contribute zero row volume, so the positive schedule still has
+exact total interior volume. It retains common FFT padding and the same
+whole-interior `ErrorOn` through `naturalPositiveLengthKeys_errorOn`, without a
+key-count factor. For positive band width all selected lengths fit the ambient
+line, supplying the origin-controller probe's ordinary length precondition.
+
+Generation, installation and probing are individually executed and verified;
+the complete loop with the raw group solver, protected outer metadata and
+ambient publication is not yet composed. Uniform fast solver/time and
+execution-wide storage bounds, artificial halo cuts and complex/boundary/
+coupling/recovery/full-line composition remain open. S3 remains incomplete and
+the proved multiplication saving is unchanged.
+
+The counted positive-key/per-key-setup checkpoint passes all 9875 guarded S3
+audit jobs at 6.9 GiB combined peak. All eight new or revised non-audit modules
+pass individual guarded checks; maximum measured peak is 1863.9 MiB. Source
+integrity, generated-summary and whitespace checks pass with default proof
+limits unchanged.

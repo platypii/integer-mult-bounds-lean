@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.NLogN.PhaseCellNaturalLengthKeys
+public import IntegerMultBounds.NLogN.PhaseCellPositiveLengthKeys
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCoreRead
 
 /-! The bounded length-key schedule covers exactly the original ambient
@@ -61,5 +61,15 @@ theorem naturalLengthKeys_errorOn {s t : ℕ} [NeZero s] (hst : s < t) (band : �
   intro j hj
   obtain ⟨L, hL, n, hcore⟩ := naturalLengthKeys_core_cover hst band j hj
   exact hlocal L hL n j hcore
+
+/-- The runtime-selected schedule may include empty groups; their local
+obligations are vacuous and publication retains the same interior error. -/
+theorem naturalPositiveLengthKeys_errorOn {s t : ℕ} [NeZero s] (hst : s < t) (band : ℕ)
+    (out target : ZMod s → ℝ) (error : ℝ)
+    (hlocal : ∀ L ∈ naturalPositiveLengthKeys s t band, ∀ n : Fin (naturalLengthGroup s t band L).length,
+      PhaseCellInterface.ErrorOn (publishedCellCore (naturalGroupOrigin s t band L n) L) out target error) :
+    PhaseCellInterface.ErrorOn (interiorSet s t band) out target error :=
+  naturalLengthKeys_errorOn hst band out target error
+    (fun L hL => hlocal L (naturalLengthKeys_mem_positive s t band L hL))
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
