@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1206 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1213 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | A sized real batch now executes from raw RHS words and unary controls through generated setup, grouped arithmetic, publication and complete cleanup, with requested ambient-core accuracy. Computed equal-length groups have this closed endpoint and a dimension-only time ledger. Efficient control/weight setup, combined storage bounds, gathering, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Sized real batches and computed equal-length groups execute from raw RHS words, unary dimensions and binary origins, with requested ambient-core accuracy and full cleanup. Inverse and weight initialization are shared across the batch. Binary control generation, combined storage bounds, gathering, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6098,3 +6098,51 @@ checks, with maximum peak 1952.9 MiB, below the per-module CI budget. Source
 integrity, generated-summary and whitespace checks pass. The efficient setup,
 full-line geometry/execution and uniform fast-cost/storage obligations remain
 open.
+
+
+Batch weight construction now shares its initialization, not only its inverse.
+`sharedWeightInit_exec` generates the workspace width and binary table bank,
+loads the ordinary geometry/precision headers once, and computes pi, similarity
+geometry and powers of two once. `retainedWeightRows_exec` emits each cell's
+weights while retaining these initialized headers and the empty accumulator.
+`TblIns.run_bounded`, `TblBig.bounded` and `TblDo.bounded` preserve bounded table
+values across successive host calls. `countedLoop_exec` supplies a structural
+relational loop invariant, allowing table scratch values to vary between rows
+without choosing a concrete register history.
+`loadWeightOrigin_exec` consumes exactly one workspace-width binary origin word
+and replaces only the table origin. It costs `8*V+8`, independent of the
+origin's value; no absolute-coordinate unary header is constructed or read.
+`retainedWeightPage_exec`, `retainedWeightStep_exec` and
+`retainedWeightLoop_exec` generate and separate all origin-dependent rows while
+retaining the same initialized table and preserving the original payload.
+`sharedBatchWeightSetup_exec` composes this with one initialization, counted
+loop, table release and the existing whole-row batch packer. Its final page is
+exactly `batchWeightPage`; borrowed suffixes and all workspace are restored.
+For `V=weightWorkspaceWidth(P,q,w,t,u)` its cost is
+`sharedWeightInitCost + L*(6*w+9)+128*V+172 +
+B*(retainedWeightStepCost(V,w,P,L)+50*L*w+54)`.
+The closed batch path now uses this program. `batchInputBank` carries unary
+dimensions, fixed-width binary origins and the raw gathered RHS. The closed
+execution, cleanup, ambient-core error and computed length-group endpoint all
+remain checked. Numerical pages are still generated by one fixed 117-tape
+program. Setup and complete-execution cost functions no longer take the origin
+sequence. `generatedBatchSetupCost_eq` expands setup as one fixed cost plus
+`B*(retainedWeightStepCost(V,w,P,L)+134*L*w+15*L+118)`; the fixed part includes
+one weight initialization and one zero-replica inverse setup. The computed-group
+ledger uses this origin-independent bound without an origin-size hypothesis.
+The superseded per-cell initialization/unary-origin batch constructors were
+removed; restore from `a12d23a3` (row definitions now live in `PhaseCellWeightPage`).
+This removes repeated pi/scale construction and repeated unary geometry/origin
+loading from the batch loop. It does not yet establish the required amortized
+fast-line estimate: numerical weight evaluation, dense inverse setup, outer
+binary control generation, execution-wide peak storage, gathering/scheduling,
+artificial halo cuts and complex/boundary/coupling/recovery/full-line composition
+remain open. S3 remains incomplete and the proved multiplication saving is
+unchanged.
+The shared-initialization checkpoint passes all 9815 guarded S3 axiom-audit
+jobs at 6.0 GiB combined peak, including the closed computed-group accuracy
+endpoint. All 20 new or revised non-audit modules pass final individual guarded
+checks; maximum peak is 1974.6 MiB, below the per-module CI budget. Source
+integrity, generated-summary and whitespace checks pass. Binary control
+construction, the uniform fast-cost/storage estimates and full-line composition
+remain open.

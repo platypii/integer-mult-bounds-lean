@@ -1,6 +1,5 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWeightBatchStep
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWeightPageModel
 import Mathlib.Data.List.OfFn
 

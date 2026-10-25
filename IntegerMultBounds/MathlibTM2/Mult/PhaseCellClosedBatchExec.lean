@@ -19,12 +19,12 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 noncomputable def closedBatch (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 117 Q A U :=
   .seq (generatedBatch hR hQ) releaseBatchRuntime
 
-def sizedClosedBatchCost (p l B L s t u target rhsExp : ℕ) (lo : ℕ → ℕ) : ℕ :=
+def sizedClosedBatchCost (p l B L s t u target rhsExp : ℕ) : ℕ :=
   let q := executionPrecision p l target rhsExp
   let w := executionWidth p l target rhsExp
   let j := executionStagePrecision p l target rhsExp
   let cExp := sourceExponent l target rhsExp
-  generatedBatchSetupCost (2^15*p) (j+1) q s t u (PhaseCellBand.width p u) l L B lo +
+  generatedBatchSetupCost (2^15*p) (j+1) q s t u (PhaseCellBand.width p u) l L B +
     stagePayloadCost B L w + cellArithmeticCost q (inputExponent p cExp) cExp (8*p+1) l w B L +
     publishFromDimensionsCost B L w + releaseBatchRuntimeCost B L q l
 
@@ -41,9 +41,9 @@ theorem closedBatch_sized_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     let j := executionStagePrecision p l target rhsExp
     let cExp := sourceExponent l target rhsExp
     let rhs := cstream A w ((List.range B).flatMap (cellSourceRows L lo C))
-    ∃ v' m, v'.user = v.user ∧ m ≤ sizedClosedBatchCost p l B L s t u target rhsExp (fun n => (lo n).val) ∧
+    ∃ v' m, v'.user = v.user ∧ m ≤ sizedClosedBatchCost p l B L s t u target rhsExp ∧
       Exec body (closedBatch hR hQ)
-        (mk v (unaryBatchBank (2^15*p) (j+1) q l s t u (PhaseCellBand.width p u) L B (fun n => (lo n).val)
+        (mk v (batchInputBank (2^15*p) (j+1) q l s t u (PhaseCellBand.width p u) L B (fun n => (lo n).val)
           rhs borrowed tail inp out)) m
         (mk v' (releasedCellBank rhs borrowed
           (cstream A w (publishedWords B L (executedOutputWords s t p u q l B L j cExp lo C)) ++ tail) inp out)) ∧

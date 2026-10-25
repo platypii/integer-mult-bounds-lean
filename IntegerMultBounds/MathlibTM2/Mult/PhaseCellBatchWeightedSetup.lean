@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchSetupHeaders
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchWeightSetup
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedBatchWeightSetup
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchInverseSetup
 
 /-! One executed batch setup generates all origin-dependent weights, consumes
@@ -18,11 +18,11 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 noncomputable def batchWeightedSetup (hQ : SS.states ≤ Q) : Pr P₀ 117 Q A U :=
-  .seq generateRuntimeWidth (.seq batchWeightSetup
+  .seq generateRuntimeWidth (.seq sharedBatchWeightSetup
     (.seq saveBatchInverseHeader (batchInverseSetup hQ)))
 
-def batchWeightedSetupCost (P N q s t u band L B : ℕ) (lo : ℕ → ℕ) : ℕ :=
-  (4*q+5) + batchWeightSetupCost P s t u q L (2*q+8) B lo +
+def batchWeightedSetupCost (P N q s t u band L B : ℕ) : ℕ :=
+  (4*q+5) + sharedBatchWeightSetupCost P s t u q L (2*q+8) B +
     (6*B+2*(2*q+8)+10) + batchInverseSetupCost P N q s t u band L B
 
 def batchWeightedBase {A : ℕ} (S : Stacks 117 A) (P s t u L q B : ℕ) (lo : ℕ → ℕ) : Stacks 117 A :=
@@ -43,10 +43,10 @@ theorem batchWeightedSetup_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (hrows : (S.R 102).length = L) (hcount : (S.R 103).length = L)
     (hq : (S.R 112).length = q) (hN : (S.R 101).length = N)
     (hB : S.R 116 = List.replicate B tick)
-    (hpacket : S.R 109 = (List.range B).flatMap (fun i => originPacket A (lo i)) ++ tail)
+    (hpacket : S.R 109 = (List.range B).flatMap (fun i => binSyms (weightWorkspaceWidth P q (2*q+8) t u) (lo i)) ++ tail)
     (hclean : CClean mul S) (hblank : ∀ r, S.R (cr r) = [])
     (hfresh : ∀ k ∈ [(64 : Fin 117), 65, 94, 96, 104, 105, 106, 107, 108, 111, 113, 115], S.R k = []) :
-    ∃ v' m, v'.user = v.user ∧ m ≤ batchWeightedSetupCost P N q s t u band L B lo ∧
+    ∃ v' m, v'.user = v.user ∧ m ≤ batchWeightedSetupCost P N q s t u band L B ∧
       Exec body (batchWeightedSetup hQ) (mk v S) m
         (mk v' (batchWeightedBank S P s t u band L q N B lo tail)) := by
   obtain ⟨v₁, hu₁, he₁⟩ := generateRuntimeWidth_exec (body := body) q v S hq
@@ -58,7 +58,7 @@ theorem batchWeightedSetup_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     have hn : coefficientReg r ≠ (94 : Fin 117) := by intro he; rw [he] at hr; omega
     have hh := (hclean ⟨(coefficientReg r).val, by omega⟩).2
     simpa [Sw, hn, mul] using hh
-  obtain ⟨v₂, m₂, hu₂, hm₂, he₂⟩ := batchWeightSetup_exec (body := body)
+  obtain ⟨v₂, m₂, hu₂, hm₂, he₂⟩ := sharedBatchWeightSetup_exec (body := body)
     P s t u q L (2*q+8) B lo v₁ Sw tail
     (by simpa [Sw] using hprecision) (by simpa [Sw] using hsR) (by simpa [Sw] using htR)
     (by simpa [Sw] using huR) (by simpa [Sw] using hq) (by simpa [Sw] using hrows)

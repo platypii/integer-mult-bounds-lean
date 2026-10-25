@@ -38,9 +38,9 @@ theorem closedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 �
     let w := executionWidth p l target rhsExp
     let j := executionStagePrecision p l target rhsExp
     let rhs := cstream A w ((List.range B).flatMap (cellSourceRows L lo C))
-    ∃ v' S' m, v'.user = v.user ∧ m ≤ sizedClosedBatchCost p l B L s t u target rhsExp (fun n => (lo n).val) ∧
+    ∃ v' S' m, v'.user = v.user ∧ m ≤ sizedClosedBatchCost p l B L s t u target rhsExp ∧
       Exec body (closedBatch hR hQ)
-        (mk v (unaryBatchBank (2^15*p) (j+1) q l s t u (PhaseCellBand.width p u) L B (fun n => (lo n).val)
+        (mk v (batchInputBank (2^15*p) (j+1) q l s t u (PhaseCellBand.width p u) L B (fun n => (lo n).val)
           rhs borrowed tail inp out)) m (mk v' S') ∧
       S'.inp = inp ∧ S'.out = out ∧ (∀ k, S'.L k = []) ∧ S'.R 110 = rhs ++ borrowed ∧
       (∀ k : Fin 117, k ≠ 93 → k ≠ 110 → S'.R k = []) ∧

@@ -22,6 +22,18 @@ def weightPage (A w q P s t u lo L : ℕ) : List (Fin (A + 4)) :=
   simp [weightPage]
   ring
 
+def outputWeightRow (A w q P s t u L lo : ℕ) : List (Fin (A + 4)) :=
+  cstream A w ((List.range L).reverse.map (fun i => rationalWord q (ambientWeightSample P s t u lo i)))
+
+def inputWeightRow (A w q P s t u L lo : ℕ) : List (Fin (A + 4)) :=
+  cstream A w ((List.range L).map (fun i => reciprocalWeightWord q (ambientWeightSample P s t u lo i)))
+
+@[simp] theorem outputWeightRow_length (A w q P s t u L lo : ℕ) :
+    (outputWeightRow A w q P s t u L lo).length = L * w := by simp [outputWeightRow]
+
+@[simp] theorem inputWeightRow_length (A w q P s t u L lo : ℕ) :
+    (inputWeightRow A w q P s t u L lo).length = L * w := by simp [inputWeightRow]
+
 /-- The tape evaluator uses exactly the original ambient phase coordinate. -/
 theorem ambientWeightSample_eq_weightData (s t p u : ℕ) [NeZero s] (lo : ZMod s) (i : ℕ) :
     ambientWeightSample (2 ^ 15 * p) s t u lo.val i = weightData s t p u lo i := by

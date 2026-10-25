@@ -1,10 +1,10 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellUnaryBatchBank
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchInputBank
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchWeightRows
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellStagedExecution
 
-/-! A sized batch executes from raw RHS words and unary controls through
+/-! A sized batch executes from raw RHS words, unary dimensions and binary origins through
 numerical setup, grouped arithmetic and valid publication. Shared inverse
 construction runs once; origin-dependent weights are generated for every row. -/
 
@@ -44,11 +44,11 @@ theorem generatedBatch_sized_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
       (fun _ => columnWords precision s t u band L q (j+2))
       (fun _ => reversedColumnWords precision s t u band L q (j+2)) [] [] tail tailX inp out
     ∃ v' m, v'.user = v.user ∧
-      m ≤ generatedBatchSetupCost precision (j+1) q s t u band l L B (fun n => (lo n).val) +
+      m ≤ generatedBatchSetupCost precision (j+1) q s t u band l L B +
         stagePayloadCost B L w + cellArithmeticCost q (inputExponent p cExp) cExp (8*p+1) l w B L +
         publishFromDimensionsCost B L w ∧
       Exec body (generatedBatch hR hQ)
-        (mk v (unaryBatchBank precision (j+1) q l s t u band L B (fun n => (lo n).val)
+        (mk v (batchInputBank precision (j+1) q l s t u band L B (fun n => (lo n).val)
           (cstream A w source) borrowed tail inp out)) m
         (mk v' { S with R := (Function.update S.R 93
           (cstream A w (publishedWords B L (executedOutputWords s t p u q l B L j cExp lo C)) ++ tail)) }) ∧
@@ -67,7 +67,7 @@ theorem generatedBatch_sized_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
   have hqMax : q ≤ 2*((j+1)+1) := by
     dsimp [q, j, executionPrecision, executionStagePrecision]
     omega
-  obtain ⟨v₁, m₁, hu₁, hm₁, he₁⟩ := unaryBatchBank_setup_exec (body := body) hQ hA
+  obtain ⟨v₁, m₁, hu₁, hm₁, he₁⟩ := batchInputBank_setup_exec (body := body) hQ hA
     precision (j+1) q l s t u band L B (fun n => (lo n).val) hprecision hqMax
     (Nat.pos_of_ne_zero (NeZero.ne s)) hst hu hL hLs (fun i _ => ZMod.val_lt (lo i))
     (cstream A w source) borrowed tail inp out v (by

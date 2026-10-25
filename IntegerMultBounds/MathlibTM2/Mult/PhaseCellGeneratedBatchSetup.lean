@@ -19,8 +19,8 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 noncomputable def generatedBatchSetup (hQ : SS.states ≤ Q) : Pr P₀ 117 Q A U :=
   .seq (batchWeightedSetup hQ) prepareBatchRuntime
 
-def generatedBatchSetupCost (P N q s t u band l L B : ℕ) (lo : ℕ → ℕ) : ℕ :=
-  batchWeightedSetupCost P N q s t u band L B lo + prepareBatchRuntimeCost P N q l B L (2*q+8)
+def generatedBatchSetupCost (P N q s t u band l L B : ℕ) : ℕ :=
+  batchWeightedSetupCost P N q s t u band L B + prepareBatchRuntimeCost P N q l B L (2*q+8)
 
 def generatedBatchBank {A : ℕ} (S : Stacks 117 A) (P s t u band L q N l B : ℕ)
     (lo : ℕ → ℕ) (rhs borrowed control : List (Fin (A+4))) : Stacks 117 A :=
@@ -40,11 +40,11 @@ theorem generatedBatchSetup_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (hrows : (S.R 102).length = L) (hcount : (S.R 103).length = L)
     (hq : (S.R 112).length = q) (hN : (S.R 101).length = N)
     (hB : S.R 116 = List.replicate B tick) (hl : control.length = l)
-    (hpacket : S.R 109 = (List.range B).flatMap (fun i => originPacket A (lo i)) ++ control)
+    (hpacket : S.R 109 = (List.range B).flatMap (fun i => binSyms (weightWorkspaceWidth P q (2*q+8) t u) (lo i)) ++ control)
     (hsrc : S.R 110 = rhs ++ borrowed) (hrhs : rhs.length = B*L*(2*q+8))
     (hclean : CClean mul S) (hblank : ∀ r, S.R (cr r) = [])
     (hfresh : ∀ k ∈ [(64 : Fin 117), 65, 94, 96, 104, 105, 106, 107, 108, 111, 113, 115], S.R k = []) :
-    ∃ v' m, v'.user = v.user ∧ m ≤ generatedBatchSetupCost P N q s t u band l L B lo ∧
+    ∃ v' m, v'.user = v.user ∧ m ≤ generatedBatchSetupCost P N q s t u band l L B ∧
       Exec body (generatedBatchSetup hQ) (mk v S) m
         (mk v' (generatedBatchBank S P s t u band L q N l B lo rhs borrowed control)) := by
   obtain ⟨v₁, m₁, hu₁, hm₁, he₁⟩ := batchWeightedSetup_exec (body := body) (band := band)

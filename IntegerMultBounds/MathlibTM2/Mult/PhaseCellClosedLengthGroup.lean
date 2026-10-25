@@ -5,8 +5,8 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedBatchCost
 public import IntegerMultBounds.NLogN.PhaseCellLengthGroups
 
 /-! Fully cleaned execution and ambient-core accuracy for a computed equal-length
-cell group. Count and origins come from the schedule; generating their unary
-packets and gathering the raw RHS remain outer execution obligations. -/
+cell group. Count and origins come from the schedule; generating their
+binary origin packets and gathering the raw RHS remain outer execution obligations. -/
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
@@ -38,7 +38,7 @@ theorem closedLengthGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     let rhs := cstream A w ((List.range B).flatMap (cellSourceRows L lo (fun _ => C)))
     ∃ v' S' m, v'.user = v.user ∧ m ≤ sizedClosedBatchBound p l B L s t u target rhsExp ∧
       Exec body (closedBatch hR hQ)
-        (mk v (unaryBatchBank (2^15*p) (j+1) q l s t u (PhaseCellBand.width p u) L B (fun n => (lo n).val)
+        (mk v (batchInputBank (2^15*p) (j+1) q l s t u (PhaseCellBand.width p u) L B (fun n => (lo n).val)
           rhs borrowed tail inp out)) m (mk v' S') ∧
       S'.inp = inp ∧ S'.out = out ∧ (∀ k, S'.L k = []) ∧ S'.R 110 = rhs ++ borrowed ∧
       (∀ k : Fin 117, k ≠ 93 → k ≠ 110 → S'.R k = []) ∧
@@ -61,7 +61,6 @@ theorem closedLengthGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     (fun n hn => (hgeometry ⟨n, hn⟩).2.2.1)
     (fun n hn => (hgeometry ⟨n, hn⟩).2.2.2.1)
     (fun n hn => (hgeometry ⟨n, hn⟩).2.2.2.2) v tail borrowed inp out
-  exact ⟨v', S', m, huser, hm.trans (sizedClosedBatchCost_le_bound p l B L s t u target rhsExp
-    (fun n => (groupOrigin s t band L n).val) (fun n _ => (ZMod.val_lt _).le)), he, hrest⟩
+  exact ⟨v', S', m, huser, hm.trans (sizedClosedBatchCost_le_bound p l B L s t u target rhsExp), he, hrest⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
