@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1199 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1206 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | A sized real batch now executes from raw RHS words and unary controls through generated weights, one shared inverse, payload routing, grouped arithmetic and valid publication. The single-cell endpoint includes cleanup and requested ambient-core accuracy. Batch teardown, control generation, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | A sized real batch now executes from raw RHS words and unary controls through generated setup, grouped arithmetic, publication and complete cleanup, with requested ambient-core accuracy. Computed equal-length groups have this closed endpoint and a dimension-only time ledger. Efficient control/weight setup, combined storage bounds, gathering, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6054,3 +6054,47 @@ The raw-input batch checkpoint passes all 9801 guarded S3 axiom-audit jobs at
 checks, with maximum peak 1968.8 MiB, below the per-module CI budget. Source
 integrity, generated-summary and whitespace checks pass. The batch teardown
 and outer S3 obligations above remain open.
+
+
+Post-publication batch cleanup and the requested ambient-core output endpoint
+are now closed. `releaseBatchRuntime_exec` consumes the owned cell-length header,
+uses the retained doubled batch count and the second length header to generate
+the total batch length, then reuses `releaseRuntimePages_exec` on the flattened
+page. It restores the original raw RHS/payload order, erases both numerical
+pages and consumes every remaining runtime header. The final bank contains only
+the published result on 93 and the exact original RHS followed by its borrowed
+suffix on 110. All native left stacks and all other right stacks are empty;
+input/output spectators are exact. No additional page parser is needed.
+The release ledger is `2*L+2 + (4*(B*L)+17*B+10) +
+releaseRuntimePagesCost(B*L,q) + 2*(q+l+B*L+L+2*B)+11`.
+`closedBatch_sized_exec` composes generated setup, grouped arithmetic, publication
+and this complete release, retaining every cell's `CellRun.Valid` certificate.
+`sizedClosedBatchCost` charges the full path.
+`closedBatch_spec` compares actual final-tape words with solutions of the
+original ambient principal real system, under the explicit full-cell geometry
+hypotheses. It supplies requested pointwise accuracy and the shared
+`PhaseCellInterface.ErrorOn` bound for every published core.
+`publishedBatchRead_errorOn` crops the preceding rows and transfers the existing
+ambient-coordinate read lemma with no batch-size or window-count factor.
+`closedLengthGroup_spec` specializes this executed, cleaned and accurate endpoint
+to the computed `lengthGroup` and `groupOrigin`, deriving all fit, interior,
+full-cell and maximality hypotheses from `lengthGroup_solver_geometry`.
+`generatedBatchSetupCost_le` and `sizedClosedBatchCost_le_bound` remove dependence
+on the particular origin sequence. The computed group endpoint uses
+`sizedClosedBatchBound`, a complete dimension-only ledger. Its setup part is
+one zero-replica inverse setup plus
+`L*(6*w+9)+14*w+10*q+2*N+2*P+6*l+119 +
+B*(weightBatchStepCost(P,s,t,u,q,L,s,w)+134*L*w+15*L+116)`, for `w=2*q+8`.
+This still explicitly pays for numerical weight initialization and unary
+geometry/origin loading at every cell; it does not prove the required amortized
+fast-line estimate. Generating efficient controls and weight setup, execution-wide
+peak storage and uniform cost matching, gathering/scheduling, artificial halo
+cuts and complex/boundary/coupling/recovery/full-line composition remain open.
+The raw RHS and computed schedule's unary packets are still inputs to the local
+endpoint. S3 remains incomplete and the proved multiplication saving is unchanged.
+The closed-batch/group checkpoint passes all 9808 guarded S3 axiom-audit jobs
+at 2.6 GiB combined peak. All seven new modules pass final individual guarded
+checks, with maximum peak 1952.9 MiB, below the per-module CI budget. Source
+integrity, generated-summary and whitespace checks pass. The efficient setup,
+full-line geometry/execution and uniform fast-cost/storage obligations remain
+open.

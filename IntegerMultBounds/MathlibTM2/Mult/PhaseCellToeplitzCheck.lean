@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedLengthGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBatchExec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchWeightSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchInverseSetup
@@ -641,6 +642,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ambientWeightSample_eq_weightData,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.executedOutputTable_single,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightPage_eq_execution_tables,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.batchRuntimeRegisters_update_result,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inputSourceBank_R,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseBatchRuntime_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedBatch_sized_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedBatchRead_errorOn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedBatchSetupCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sizedClosedBatchCost_le_bound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedLengthGroup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateRuntimeWidth_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.saveBatchInverseHeader_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.batchWeightedSetup_exec,
