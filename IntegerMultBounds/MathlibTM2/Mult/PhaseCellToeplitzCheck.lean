@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchInverseSetup
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedCellSpec
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedCellExec
@@ -600,6 +602,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperRows_flatMap,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperOperand_length,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperOperand_disk,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.repeatPrefix_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicateGeneratorBanks_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packRepeatedGenerators_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicateGenerators_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadBatchHeader_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.replicate_cstream,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rowBank_const_flatMap,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.batchGeneratorPage_eq_rowBank,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.replicateGeneratorPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepareBatchGeneratorPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.batchInverseSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.batchInverseSetupCost_affine,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedCell_offset,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedCellRead_errorOn,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseRuntimePages_exec,

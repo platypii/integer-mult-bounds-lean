@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1177 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1185 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | A sized real cell executes on 117 tapes from unary controls and raw RHS, with generated setup, requested ambient-core accuracy, publication and complete cleanup. Batching/reuse, control generation, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | A sized real cell is closed with requested ambient-core accuracy. Shared batch inverse setup generates one inverse and replicates its exact grouped page at affine replica cost. Batched weights/payload/execution, control generation, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -5947,3 +5947,29 @@ combined peak, including the shared core-error interface. All six new modules
 pass individual guarded checks; maximum final peak is 1940.9 MiB, below the
 per-module CI budget. Source integrity, generated-summary and whitespace checks
 pass. The batched/full-line and uniform cost/storage obligations remain open.
+
+
+Shared inverse construction is now executed once for an entire equal-length
+batch. `repeatPrefix_exec` structurally repeats a counted word while restoring
+its source, both count headers, archives and borrowed suffixes. The generator
+bank replication and packing programs retain one scalar and put all first
+columns before all reversed columns, exactly matching the existing grouped
+runtime row bank. No numerical inverse is recomputed in the replica loop.
+`loadBatchHeader_exec` consumes an owned unary batch packet beneath the factor
+page on 109 and preserves its arbitrary control suffix. Delaying this read
+keeps the construction scratch ports available. `batchInverseSetup_exec`
+composes unary numerical construction, release of dense factors and construction
+workspace, packet loading and grouped page preparation. The original payload
+beneath the page and all borrowed bank suffixes are preserved.
+`batchInverseSetupCost_affine` proves the exact cost identity: setup at batch
+size zero plus `B * (38 * (L * (2*q+8)) + 43)`. Dense numerical construction is
+outside the batch loop and its storage is released before copying.
+This closes shared inverse setup, not the batch runtime. Batched weights,
+payload gathering/layout, runtime headers, grouped execution and cleanup,
+efficient control generation, execution-wide storage and uniform cost matching,
+halo cuts and complex/boundary/coupling/recovery/full-line composition remain
+open. S3 remains incomplete and the proved multiplication saving is unchanged.
+The shared inverse checkpoint passes all 9787 guarded S3 axiom-audit jobs at
+2.7 GiB combined peak. All eight new modules pass final individual guarded
+checks; maximum peak is 1949.0 MiB, below the per-module CI budget. Source
+integrity, generated-summary and whitespace checks pass.
