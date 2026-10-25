@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1171 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1177 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | A single cell executes on 117 tapes from unary controls and raw RHS through generated numerical setup, runtime ABI transition and publication with CellRun.Valid. Runtime cleanup, batching/reuse, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | A sized real cell executes on 117 tapes from unary controls and raw RHS, with generated setup, requested ambient-core accuracy, publication and complete cleanup. Batching/reuse, control generation, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -5905,3 +5905,45 @@ The audit includes unary setup identification, the canonical ABI identity and
 the complete sized raw-input execution/CellRun.Valid theorem. Source integrity,
 generated-summary and whitespace checks pass. Runtime cleanup and the outer
 S3 obligations above remain unproved.
+
+The sized real single-cell path is now fully closed after publication.
+`releaseRuntimePages_exec` first swaps the RHS back behind the reciprocal weights,
+borrows a generated copy of the runtime precision for teardown, erases the
+retained generator and weight pages using generated counts, and restores the
+original RHS/payload sequence exactly. It retains the precision source and
+preserves every other stack except the consumed runtime word-width source.
+`releaseCellRuntime_exec` then clears all remaining owned runtime headers.
+Its final `releasedCellBank` contains only the published output on 93 and the
+original RHS followed by its borrowed suffix on 110; every native left stack and
+every other right stack is empty, and input/output spectator fields are exact.
+The page-release bound is `swapCellPayloadCost(L,2*q+8)+releaseGeneratorPageCost(L,q)
++releaseWeightPageCost(L,q)+6*q+2*(2*q+8)+8`; remaining header release adds
+`2*(q+l+2*L+2)+11`. `cellRuntimeBank_R` supplies a small structural register-layout
+lemma, avoiding repeated expansion of the entire numerical construction in
+cleanup proofs. No proof limits were raised.
+`closedCell_sized_exec` composes generated setup, the runtime ABI transition,
+arithmetic, valid publication and full cleanup from raw RHS words and ordinary
+unary controls. `sizedClosedCellCost` names the complete executed time ledger,
+including setup/loading, factor storage release, routing, arithmetic, publication,
+retained-page release and all header cleanup.
+`closedCell_spec` strengthens the machine endpoint to requested accuracy for its
+actual output tape, compared with a solution of the original ambient principal
+system. It proves exact RHS/payload restoration, empty work/native stacks,
+preserved spectator fields and the shared `PhaseCellInterface.ErrorOn` bound
+on `publishedCellCore lo L`. `publishedCell_offset` and
+`publishedCellRead_errorOn` identify the published word index with the original
+nonwrapping ambient coordinate and introduce no core-size or window-count factor.
+Geometry, interior/maximality, the original matrix and locality duties remain
+explicit; no claim about a different halo system is substituted.
+This closes single-cell post-publication cleanup and its real core-accuracy
+endpoint. Batched/shared-setup execution, efficient control generation,
+execution-wide peak and uniform cost matching, gathering/scheduling, artificial
+halo cuts, and complex/boundary/coupling/recovery/full-line composition remain
+open. In particular the dense construction peak and unary geometry-reading
+costs still need the outer amortized bounds. S3 remains incomplete and the
+proved multiplication saving is unchanged.
+The closed-cell endpoint passes all 9777 guarded S3 axiom-audit jobs at 2.6 GiB
+combined peak, including the shared core-error interface. All six new modules
+pass individual guarded checks; maximum final peak is 1940.9 MiB, below the
+per-module CI budget. Source integrity, generated-summary and whitespace checks
+pass. The batched/full-line and uniform cost/storage obligations remain open.

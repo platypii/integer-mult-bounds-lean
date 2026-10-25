@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedCellSpec
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedCellExec
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWeightedGeneratorRelease
@@ -598,6 +600,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperRows_flatMap,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperOperand_length,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperOperand_disk,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedCell_offset,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedCellRead_errorOn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseRuntimePages_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cellRuntimeBank_R,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseCellRuntime_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedCell_sized_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedCell_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.swapAfterPrefix_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.swapCellPayload_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.installCellHeaders_exec,
