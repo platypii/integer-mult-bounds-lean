@@ -2218,3 +2218,36 @@ headers, repeated/batched page assembly, full input/output ABI composition,
 combined peak/uniform costs, gathering/scheduling, halo cuts and complex/boundary/
 coupling/recovery/full-line composition remain open. S3 remains incomplete;
 the proved multiplication saving is unchanged.
+
+
+The factor page is now constructed internally by the numerical setup entry:
+`ScalarPlacement.numericalGeneratorSetup_exec` composes `factorFactory_exec`
+with the checked inverse-generator and packed-page constructors. Numerical
+binary table headers P/s/t/u/band/L and ordinary unary iteration/precision/row
+headers are input encodings; no pi table, exponential samples, distance vector,
+matrix rows, factor page, inverse column or reciprocal is provided.
+The proof first shows that unreduced Gaussian arguments `u*t*k²/s` give exactly
+the existing corrected exponential samples. The table machine generates pi once,
+branches around diagonal/out-of-band entries, evaluates the corrected routine
+once per retained distance, and explicitly clamps the subtraction-by-two at zero.
+A structural word proof constructs each Toeplitz row from a reversed prefix and
+a forward prefix of that distance vector; a paid scanner emits descending rows,
+restores the original unary count symbols and releases all per-row work.
+The coefficient table's 63-register workspace and temporary distance vector are
+released before the factor page feeds the existing generator program.
+`factorFactoryCost` charges the table instructions (`tblC V W` per atom),
+row/page assembly and cleanup. The distance stream uses at most
+`L*(310*P+114)+160*P+450` atoms, with explicit non-overflow condition
+`u*t*(L+1)^2*2^(13*P+8)<2^V`, W≤V. There is no execution oracle or setup cost
+assumption. `numericalGeneratorRelease_exec` releases runtime/factor pages and
+generated iteration/readiness state, restoring every original bank field outside
+the consumed, owned binary table-header workspace. Factor-page release costs at
+most `12*L²*W+15*L²+9*L+18`.
+The guarded S3 axiom audit passes all 9724 dependency jobs at 2.6 GiB combined peak.
+This does not establish S3 completion: numerical table headers and their two
+word-width counters still need the outer loader/generation bridge; weight-table
+generation, remaining runtime headers, repeated/batched pages, full input/output
+ABI composition, execution-wide peak/uniform cost matching, gathering/scheduling,
+halo cuts and complex/boundary/coupling/recovery/full-line composition remain open.
+The dense page's L²*W storage remains an explicit cost/space obligation. The proved
+multiplication saving is unchanged.

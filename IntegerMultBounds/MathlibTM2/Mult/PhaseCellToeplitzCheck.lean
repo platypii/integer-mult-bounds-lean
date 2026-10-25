@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNumericalGeneratorRelease
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSizedGeneratorSetup
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratorSetupAccuracy
@@ -108,6 +110,21 @@ import Lean.Util.CollectAxioms
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.NLogN.PhaseCellIntegerGenerators.expPiNat_ratio,
+      `IntegerMultBounds.NLogN.PhaseCellIntegerGenerators.coefficientNumerator_gaussian,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.correctExpEmit_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientExpCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientBody_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientStreamCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rowFactorWords_from_distances,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.constructFactorRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRowStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.constructFactorPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorFactory_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseFactorPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.numericalGeneratorSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.numericalGeneratorRelease_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packGenerators_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseGeneratorPage_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateSetupWidth_exec,
