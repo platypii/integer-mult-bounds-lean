@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1266 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1275 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and ambient input, generating origins, count and sweep controls, gathering their own RHS and retaining the original line, with shared inverse/weight initialization, requested ambient-core accuracy and full cleanup. Positive distinct length keys and their count are generated from ordinary parameters; per-key length installation and empty-group probes are executed. A protected 144-register caller preserves scheduler metadata, saves the actual row count and exposes output framing; executed RHS retirement restores the ambient source. The schedule covers the interior with exact volume/error. Global solver iteration/publication, storage bounds, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and ambient input, generating origins, count and sweep controls, gathering their own RHS and retaining the original line, with shared inverse/weight initialization, requested ambient-core accuracy and full cleanup. Positive distinct length keys and their count are generated from ordinary parameters; per-key length installation and empty-group probes are executed. A protected 144-register caller preserves scheduler metadata, saves the actual row count and exposes output framing; executed RHS retirement restores the ambient source. A linear forward publication kernel scatters packed rows into their original ambient windows, preserving other symbols and the same error. The schedule covers the interior with exact volume/error. Generated publication controls and global solver iteration, storage bounds, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6466,3 +6466,46 @@ axiom-audit jobs at 4.0 GiB combined peak. All 14 new or revised non-audit
 modules pass individual guarded checks; maximum measured peak is 1975.7 MiB.
 Default proof limits are unchanged. Source integrity, generated-summary and
 whitespace checks pass.
+
+
+### S3 linear ambient output scattering and accuracy handoff
+
+`scatterPacket_exec`, `scatterLoop_exec` and `scatterBatch_exec` execute one
+fixed structural publication program over arbitrary registers and lists.
+A delimited control packet gives the gap before each disjoint window. The
+program preserves that gap in a reversed accumulator, discards the old window,
+consumes the corresponding solved row and appends it to the accumulator. One
+final reversal restores the ambient output prefix; another restores all
+controls. Every scratch register is restored and all native and left stacks
+are unchanged. Only the consumed solver-output stream and ambient output
+change. No per-row seek back to the beginning is charged or assumed.
+
+The exact cost is `rowCount*(12*windowLength+23)+12*gapSum+6`, equivalently
+`12*visitedVolume+23*rowCount+6`. `naturalOrigins_disjoint` proves that natural
+cells of a fixed length have disjoint original-coordinate windows.
+`windowGaps` converts their absolute origins into relative gaps;
+`naturalScatterGaps_fits` and `naturalScatterGaps_volume` prove that their
+visited volume fits one encoded ambient line. `naturalScatterCost_le` gives
+`35*s*w+6` for publication of a natural group, including final reversals.
+`naturalScatter_exec` consumes precisely the owned `B*L*w` solver-output prefix,
+restores its borrowed source suffix and preserves the borrowed ambient-output
+suffix.
+
+`scatterRows_absolute` identifies every published row at its original absolute
+origin. `scatterRows_absolute_off` preserves every symbol outside the selected
+windows. `naturalScatterRows_word` proves exact word alignment, and
+`naturalScatterRows_errorOn` transfers the packed solver's coordinate accuracy
+to the physically scattered ambient line with the same error, without a batch
+or class factor. The structural sweep also covers an empty control list.
+
+This endpoint still takes the delimited publication controls as input. Their
+executed generation from the computed origin packets, connection to the
+protected group solver, empty-class branching and the complete class loop
+remain open. Uniform fast solver/time and execution-wide storage bounds,
+artificial halo cuts and complex/boundary/coupling/recovery/full-line composition
+also remain open. S3 is incomplete and the proved saving is unchanged.
+
+The linear-publication checkpoint passes all 9893 guarded S3 axiom-audit jobs
+at 2.6 GiB combined peak. All nine new modules pass individual guarded checks;
+maximum measured peak is 1841.4 MiB. Default proof limits are unchanged.
+Source integrity, generated-summary and whitespace checks pass.

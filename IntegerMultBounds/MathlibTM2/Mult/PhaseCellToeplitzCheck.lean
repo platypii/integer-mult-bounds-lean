@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellScatterCoreRead
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedRawGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireGroupCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratePositiveLengthKeys
@@ -917,6 +918,40 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireGroupRHS_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireNaturalGroupCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawGroup_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalScatterCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalScatter_exec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalOrigins_disjoint,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalSymbolOrigins_disjoint,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalScatterGaps_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalScatterGaps_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalScatterGaps_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalScatterRows_window,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalScatterRows_word,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterBatch_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalScatterRows_errorOn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterVolume_nil,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterVolume_cons,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterVolume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.length_scatterPrefix,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.length_scatterRows,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterUpdate_comp,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterPacket_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_nil,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_cons,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_gap,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_head,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_tail,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterWindowOffset_zero,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterWindowOffset_succ,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_window,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_append,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowGaps_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowGaps_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowGaps_offset,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_absolute,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_absolute_off,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
