@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSizedGeneratorSetup
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratorSetupAccuracy
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReversedColumnAccuracy
@@ -106,6 +108,17 @@ import Lean.Util.CollectAxioms
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packGenerators_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseGeneratorPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateSetupWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.integerSetupWidth_generator,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatePackedGenerators_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatorPage_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatorPage_reads,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releasePackedSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedGeneratorBank_accuracy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sizedGeneratorSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sizedGeneratorRelease_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realWord_bits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bits_realWord,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.copyRealBits_exec,

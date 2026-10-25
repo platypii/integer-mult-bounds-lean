@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1108 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1115 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Constructed-data cell arithmetic executes on 117 tapes with CellRun.Valid. Both runtime generator columns and the reciprocal execute from a retained factor page with paid counters, decoding accuracy and a combined setup cost. Coefficient/factor generation, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Constructed-data cell arithmetic executes on 117 tapes with CellRun.Valid. Both runtime generator columns and the reciprocal execute from a retained factor page, with a generated setup width, packed-page accuracy, paid assembly and exact teardown. Coefficient/factor generation, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -5625,3 +5625,31 @@ coupling/recovery/full-line composition also remain open. S3 is incomplete;
 this checkpoint does not change the proved multiplication saving.
 All nine new/affected modules pass individual guarded checks; the maximum
 peak is 1929.3 MiB. Source integrity, generated-summary and whitespace checks pass.
+
+
+The generator setup now publishes its retained runtime page rather than three
+separate temporary banks. `sizedGeneratorSetup_exec` generates
+`W=integerSetupWidth P q (M+1) 0=P*(M+2)+q+5` from ordinary P/M/q headers,
+derives all iteration/encoding/division width inequalities when q≤2*(M+1),
+constructs both generators and the reciprocal, releases the raw integer column,
+and packs `[column; shifted reverse; reciprocal]` above the original tape-110
+payload. The page has exactly `(2*L+1)*(2*q+8)` symbols; physical offsets i,
+L+i and 2L retain the proved signed-decoding errors ≤2^-j.
+`packGeneratorsCost` pays raw-column release and assembly:
+`12*L*W+18*L*(2*q+8)+18*L+8*(2*q+8)+4*q+44`.
+`releaseGeneratorPage_exec` generates/releases its own page count, with bound
+`26*L*(2*q+8)+14*(2*q+8)+9*L+4*q+30`.
+`sizedGeneratorRelease_exec` releases the page, readiness counters, generated
+iteration and width headers, restoring the complete original bank, factor page,
+unary header symbols and arbitrary borrowed suffixes. Its bound is
+`releaseGeneratorPageCost L q+2*(W+topN W+(M+1))+9+2*W+2`.
+The guarded S3 axiom audit passes all 4493 jobs at 2.6 GiB combined peak.
+This is single-cell generator-page assembly and teardown, not a complete input
+ABI transition or an execution-wide peak-space theorem. The dense factor page is
+still supplied. Coefficient/factor and weight-table generation, remaining runtime
+headers, repeated/batched page assembly, full input/output ABI composition,
+combined peak/uniform costs, gathering/scheduling, halo cuts and complex/boundary/
+coupling/recovery/full-line composition remain open. S3 remains incomplete;
+the proved multiplication saving is unchanged.
+All seven new modules pass individual guarded checks; the maximum measured
+peak is 1937.8 MiB. Source integrity, generated-summary and whitespace checks pass.

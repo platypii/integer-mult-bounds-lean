@@ -2192,3 +2192,29 @@ generation, packed payload assembly/release and combined peak/uniform cost
 matching remain open. Gathering/scheduling, halo cuts and complex/boundary/
 coupling/recovery/full-line composition also remain open. S3 is incomplete;
 this checkpoint does not change the proved multiplication saving.
+
+
+The generator setup now publishes its retained runtime page rather than three
+separate temporary banks. `sizedGeneratorSetup_exec` generates
+`W=integerSetupWidth P q (M+1) 0=P*(M+2)+q+5` from ordinary P/M/q headers,
+derives all iteration/encoding/division width inequalities when q≤2*(M+1),
+constructs both generators and the reciprocal, releases the raw integer column,
+and packs `[column; shifted reverse; reciprocal]` above the original tape-110
+payload. The page has exactly `(2*L+1)*(2*q+8)` symbols; physical offsets i,
+L+i and 2L retain the proved signed-decoding errors ≤2^-j.
+`packGeneratorsCost` pays raw-column release and assembly:
+`12*L*W+18*L*(2*q+8)+18*L+8*(2*q+8)+4*q+44`.
+`releaseGeneratorPage_exec` generates/releases its own page count, with bound
+`26*L*(2*q+8)+14*(2*q+8)+9*L+4*q+30`.
+`sizedGeneratorRelease_exec` releases the page, readiness counters, generated
+iteration and width headers, restoring the complete original bank, factor page,
+unary header symbols and arbitrary borrowed suffixes. Its bound is
+`releaseGeneratorPageCost L q+2*(W+topN W+(M+1))+9+2*W+2`.
+The guarded S3 axiom audit passes all 4493 jobs at 2.6 GiB combined peak.
+This is single-cell generator-page assembly and teardown, not a complete input
+ABI transition or an execution-wide peak-space theorem. The dense factor page is
+still supplied. Coefficient/factor and weight-table generation, remaining runtime
+headers, repeated/batched page assembly, full input/output ABI composition,
+combined peak/uniform costs, gathering/scheduling, halo cuts and complex/boundary/
+coupling/recovery/full-line composition remain open. S3 remains incomplete;
+the proved multiplication saving is unchanged.
