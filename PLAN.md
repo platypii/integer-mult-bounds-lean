@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1133 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1141 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -5719,3 +5719,61 @@ and complex/boundary/coupling/recovery/full-line composition remain open.
 S3 is incomplete and the proved multiplication saving is unchanged.
 All six new modules pass individual guarded checks; maximum measured peak is
 1952.8 MiB. Source integrity, generated-summary and whitespace checks pass.
+
+Weight-table generation now has an exact natural arithmetic specification.
+`PhaseCellRationalArgs.similarity_ratio` expresses the existing upward-tie
+potential using `r=(2*t*j+s) mod (2*s)`: numerator `u*r*(2*s-r)` and positive
+denominator `4*s*(t-s)`. Its numerator is at most `u*s^2`, independently of j.
+`similarity_sample` proves that unreduced arguments produce the same corrected
+exponential sample, retaining the subtraction-by-two correction.
+`weightData_output_word` and `weightData_reciprocal_word` identify the actual
+runtime words with natural divisions of that numerator, at the original ambient
+coordinate `(lo+k).val`. They introduce no ideal-exponential substitution or
+rounding oracle. These are arithmetic specifications; executing the argument
+builder, weight stream, and ABI placement with paid setup/storage bounds remains
+open. S3 is incomplete. These helpers await the larger weight integration before
+commit.
+
+The per-coordinate weight kernel now executes on the table machine.
+`weightArgument_do` computes both unreduced arguments in eight atoms, retaining
+geometry headers and the accumulator. `correctedExpCode_do` evaluates the raw
+negative exponential and clamps its correction without emission, retaining the
+sample numerator. The coefficient emitter now reuses this same correction proof.
+`weightEmit_do` uses five atoms to produce both exact grid words from one sample;
+`weightBody_do` composes these stages in at most `310*P+119` atoms and proves
+preservation of pi, precision, sign and geometry/scale headers. Two guard bits
+bound the scaled sample; no separate sample-fit assumption is required.
+This is a per-coordinate execution theorem with explicit arithmetic-width
+conditions. Whole-table iteration, generation of scale/geometry headers, the
+117-tape host, runtime weight-page placement and paid cleanup remain open, along
+with the other S3 obligations listed above. The weight integration remains
+uncommitted pending a larger coherent checkpoint.
+The composed kernel and coefficient refactor pass the guarded S3 axiom audit
+(all 9737 jobs, 4.3 GiB combined peak). All six affected arithmetic/kernel
+modules pass individual guarded checks; maximum peak is 1833.2 MiB. Source
+integrity, generated-summary and whitespace checks pass. This verifies the
+per-coordinate kernel, not completion of whole-table setup or S3.
+
+The full weight stream now executes on the fixed 117-tape bank.
+`weightStreamCode_do` loops over the original ambient coordinates `(lo+i) mod s`,
+emits each exact output/reciprocal pair, and preserves the shared headers within
+`L*(310*P+124)+3` table atoms. The loop works for empty lists and wrapped cells.
+`coefficientTableHost_exec` factors the shared 63-register host/cleanup argument;
+the existing distance-coefficient host now specializes this structural theorem.
+`weightHost_exec` specializes it to the generated weight stream, prefixes the
+interleaved page to tape 110, consumes the owned table workspace and preserves
+all other bank fields and arbitrary borrowed suffixes. Its charged bound is
+`(L*(310*P+124)+3)*tblC(V,w)+4*L*w+126*V+129`.
+The entry currently requires prepared pi/geometry/scale table values and explicit
+arithmetic-width conditions. Generating those values from the unary headers,
+deriving their widths, separating the interleaved page into the final runtime
+weight banks, and composing with generator setup and the cell ABI remain open.
+S3 is incomplete. The preceding argument/kernel/stream/host work forms one
+logical checkpoint; the earlier notes about waiting to commit refer to the
+individual helper stages before this integration.
+The integrated weight-stream checkpoint passes all 9740 guarded S3 audit jobs
+at 5.9 GiB combined peak. All newly added and refactored modules pass individual
+guarded checks; maximum measured peak is 2009.0 MiB, below the CI module budget.
+The audit includes both old coefficient entry points and the new generic host,
+weight-loop and weight-host execution theorems. Source integrity, generated
+summary and whitespace checks pass. No claim of complete S3 setup is made.

@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWeightHost
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHeaderGeneratorRelease
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNumericalGeneratorRelease
@@ -590,6 +592,20 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperRows_flatMap,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperOperand_length,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperOperand_disk,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientTableHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightStreamCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.correctExpValue_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.correctedExpCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightArgument_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightEmit_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightBody_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.similarityGridNumerator_fits,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.similarity_ratio,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.similarityNumerator_le,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.similarity_sample,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightData_output_word,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightData_reciprocal_word,
       `IntegerMultBounds.MathlibTM2.Mult.ShortConv.Fixed.exec_with_tails,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.lower_batch_with_tails_exec,
       `IntegerMultBounds.MathlibTM2.Mult.ShortConv.packLoop_prefix_exec,
