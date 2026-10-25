@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHeaderGeneratorRelease
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNumericalGeneratorRelease
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSizedGeneratorSetup
@@ -110,6 +112,16 @@ import Lean.Util.CollectAxioms
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unarySize_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientWorkspaceWidth_bound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateCoefficientWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializeCoefficientBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadCoefficientList_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadCoefficientHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCoefficientHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientHeaderState_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.headerGeneratorSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.headerGeneratorRelease_exec,
       `IntegerMultBounds.NLogN.PhaseCellIntegerGenerators.expPiNat_ratio,
       `IntegerMultBounds.NLogN.PhaseCellIntegerGenerators.coefficientNumerator_gaussian,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.correctExpEmit_do,

@@ -2251,3 +2251,31 @@ ABI composition, execution-wide peak/uniform cost matching, gathering/scheduling
 halo cuts and complex/boundary/coupling/recovery/full-line composition remain open.
 The dense page's L²*W storage remains an explicit cost/space obligation. The proved
 multiplication saving is unchanged.
+
+
+The numerical table loader is now part of the executed setup:
+`ScalarPlacement.headerGeneratorSetup_exec` starts with ordinary unary P/M/q/L
+headers, owned unary s/t/u/band headers on 97--100, and clean native/table work.
+It generates the setup width W, computes a logarithmic arithmetic workspace
+`V=W+13*P+size(t)+size(u)+2*size(L)+size(band)+16`, initializes all 48 binary
+table variables and both table counters, and loads the six actual header values.
+`unarySize_exec` reuses the gamma writer's structural halving loop, retaining
+original input symbols and appending `Nat.size n` ticks within `19*n+8` steps.
+The generated V proves every header fits and
+`u*t*(L+1)^2*2^(13*P+8)<2^V`; no initialized binary state, boundedness hypothesis,
+width counter, sample, factor page, inverse column or reciprocal is supplied.
+The same entry then runs the coefficient/factor factory and packed inverse setup.
+`headerGeneratorRelease_exec` releases runtime/factor pages, table words,
+readiness/iteration counters and the generated setup-width slot. All borrowed
+stacks, original header symbols and arbitrary payload suffixes return; the
+explicitly owned geometry inputs are consumed.
+`headerGeneratorSetupCost` includes both width generators, table initialization,
+all six retained-source binary loads, geometry cleanup and numerical setup.
+The loader charges `(P+s+t+u+band+L)*(4*V+10)+36*V+61` steps, so unary geometry
+reading is explicitly paid and still needs the outer amortized cost match.
+The guarded S3 axiom audit passes 9731 dependency jobs at 2.6 GiB combined peak.
+This closes the supplied table-state/width-counter gap. Weight-table generation,
+remaining runtime-cell ABI/parameter composition, repeated/batched page assembly,
+execution-wide peak and uniform cost matching, gathering/scheduling, halo cuts
+and complex/boundary/coupling/recovery/full-line composition remain open.
+S3 is incomplete and the proved multiplication saving is unchanged.

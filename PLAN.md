@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1127 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1133 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Constructed-data cell arithmetic executes on 117 tapes with CellRun.Valid. Numerical table headers generate the factor page, both generator columns, reciprocal and packed page, with paid construction and teardown. Weight generation, table-header loading/full cell ABI, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Constructed-data cell arithmetic executes on 117 tapes with CellRun.Valid. Ordinary unary headers generate both widths, binary table state, factor page, both generator columns, reciprocal and packed page, with paid construction and teardown. Weight generation, full cell ABI, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -5689,3 +5689,33 @@ multiplication saving is unchanged.
 All thirteen new modules pass individual guarded checks; maximum measured
 peak is 2118.0 MiB, below the per-module CI budget. Source integrity, generated
 summary and whitespace checks pass.
+
+
+The numerical table loader is now part of the executed setup:
+`ScalarPlacement.headerGeneratorSetup_exec` starts with ordinary unary P/M/q/L
+headers, owned unary s/t/u/band headers on 97--100, and clean native/table work.
+It generates the setup width W, computes a logarithmic arithmetic workspace
+`V=W+13*P+size(t)+size(u)+2*size(L)+size(band)+16`, initializes all 48 binary
+table variables and both table counters, and loads the six actual header values.
+`unarySize_exec` reuses the gamma writer's structural halving loop, retaining
+original input symbols and appending `Nat.size n` ticks within `19*n+8` steps.
+The generated V proves every header fits and
+`u*t*(L+1)^2*2^(13*P+8)<2^V`; no initialized binary state, boundedness hypothesis,
+width counter, sample, factor page, inverse column or reciprocal is supplied.
+The same entry then runs the coefficient/factor factory and packed inverse setup.
+`headerGeneratorRelease_exec` releases runtime/factor pages, table words,
+readiness/iteration counters and the generated setup-width slot. All borrowed
+stacks, original header symbols and arbitrary payload suffixes return; the
+explicitly owned geometry inputs are consumed.
+`headerGeneratorSetupCost` includes both width generators, table initialization,
+all six retained-source binary loads, geometry cleanup and numerical setup.
+The loader charges `(P+s+t+u+band+L)*(4*V+10)+36*V+61` steps, so unary geometry
+reading is explicitly paid and still needs the outer amortized cost match.
+The guarded S3 axiom audit passes 9731 dependency jobs at 2.6 GiB combined peak.
+This closes the supplied table-state/width-counter gap. Weight-table generation,
+remaining runtime-cell ABI/parameter composition, repeated/batched page assembly,
+execution-wide peak and uniform cost matching, gathering/scheduling, halo cuts
+and complex/boundary/coupling/recovery/full-line composition remain open.
+S3 is incomplete and the proved multiplication saving is unchanged.
+All six new modules pass individual guarded checks; maximum measured peak is
+1952.8 MiB. Source integrity, generated-summary and whitespace checks pass.
