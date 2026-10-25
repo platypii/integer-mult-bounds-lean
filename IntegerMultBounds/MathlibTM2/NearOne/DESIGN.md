@@ -2158,3 +2158,16 @@ and arbitrary borrowed suffixes. The combined bound is
 At M=j+1 the emitted words have inverse-column error at most 2^-j when j+2≤q.
 Factor-page generation, reciprocal/reversed-branch encoding, final sizing
 headers and combined setup storage/uniform costs remain open; S3 is incomplete.
+
+
+The second generator no longer needs a supplied reversed word bank:
+`generateReversedColumn_exec` constructs `reversedColumnWords` on tape 113
+from the encoded first column on tape 111. It saves/restores the head word,
+reuses the structural coefficient-word reversal, and prepends zero. Both
+borrowed suffixes and all other tapes are restored. Length/word counters are
+generated from retained L/q headers and released; the exact cost is
+`(L-1)*(16*(2*q+8)+21)+4*L+12*(2*q+8)+4*q+31` for L>0.
+Signed decoding and error ≤2^-j are proved at iteration j+2, q≥j+2.
+The guarded S3 audit passes 4478 jobs at 2.6 GiB combined peak.
+Reciprocal encoding, factor-page generation, final sizing and combined
+setup/cost/storage remain open, as do the outer full-line S3 obligations.

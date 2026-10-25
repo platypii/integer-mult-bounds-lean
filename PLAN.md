@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1096 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1100 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -5587,3 +5587,18 @@ headers and combined setup storage/uniform costs remain open; S3 is incomplete.
 Verification: the guarded S3 audit passes all 4474 jobs at 2.6 GiB combined
 peak; the new module passes its single-file check at 1934.0 MiB. Axiom, source
 integrity, plan-summary and whitespace checks pass.
+
+
+The second generator no longer needs a supplied reversed word bank:
+`generateReversedColumn_exec` constructs `reversedColumnWords` on tape 113
+from the encoded first column on tape 111. It saves/restores the head word,
+reuses the structural coefficient-word reversal, and prepends zero. Both
+borrowed suffixes and all other tapes are restored. Length/word counters are
+generated from retained L/q headers and released; the exact cost is
+`(L-1)*(16*(2*q+8)+21)+4*L+12*(2*q+8)+4*q+31` for L>0.
+Signed decoding and error ≤2^-j are proved at iteration j+2, q≥j+2.
+The guarded S3 audit passes 4478 jobs at 2.6 GiB combined peak.
+Reciprocal encoding, factor-page generation, final sizing and combined
+setup/cost/storage remain open, as do the outer full-line S3 obligations.
+All four new modules pass individual guarded checks; the maximum measured
+peak is 1892.6 MiB. Source integrity, summary and whitespace checks pass.

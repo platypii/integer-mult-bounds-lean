@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReversedColumnAccuracy
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedColumn
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellColumnEncoding
@@ -102,6 +104,11 @@ import Lean.Util.CollectAxioms
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.shiftReverse_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.reversedColumnWords_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateReversedColumn_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.reversedColumn_decode,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.reversedColumn_error_precision,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generateEncodedColumn_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.encodedColumnBank_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateColumnEncoding_exec,
