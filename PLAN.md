@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1213 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1221 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Sized real batches and computed equal-length groups execute from raw RHS words, unary dimensions and binary origins, with requested ambient-core accuracy and full cleanup. Inverse and weight initialization are shared across the batch. Binary control generation, combined storage bounds, gathering, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Sized real batches and computed equal-length groups have requested ambient-core accuracy and full cleanup, with shared inverse/weight initialization. A division-based natural phase controller emits exact binary origin packets from binary dimensions and preserves interior volume. Outer header/count/controller-release integration, storage bounds, gathering, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6146,3 +6146,53 @@ checks; maximum peak is 1974.6 MiB, below the per-module CI budget. Source
 integrity, generated-summary and whitespace checks pass. Binary control
 construction, the uniform fast-cost/storage estimates and full-line composition
 remain open.
+
+
+The origin-control schedule now has executable natural arithmetic, without
+coordinate-set searches or supplied endpoints. `phaseLower` is the clipped
+ceiling quotient `(2*s*phase+2*(t-s)-1-s)/(2*(t-s))`.
+`interior_phase_iff_range` and `coordinateSet_eq_Ico` prove that the original
+ambient interior of a phase is exactly the half-open interval from
+`phaseLower(phase)+band` to `min(s,phaseLower(phase+1))-band`.
+`intervalStart_eq_naturalStart` and `intervalLength_eq_naturalLength` identify
+these division formulas with the existing full-cell endpoints, including empty
+phases and clipped end cells. The nearest-rounding tie convention is unchanged.
+`naturalLengthGroup` filters the bounded phase range `0 .. t-s` by the computed
+positive interval length. Its origins satisfy the original full-cell solver
+geometry. `naturalGroups_cover` covers every original interior vertex, and
+`naturalIntervals_volume` proves that summed natural cell lengths equal the
+original interior cardinality, hence at most `s`; no artificial halo partition
+or duplicate volume is introduced.
+`naturalIntervalCode_do` computes one exact interval in 21 table atoms.
+`tblNatSub_do` handles underflow by a comparison and truncated subtraction,
+rather than allowing machine subtraction to wrap. `tblNatMin_do` supplies the
+clipped endpoint. `naturalGroupCode_do` scans each possible phase once and emits
+exactly the selected group's origins in physical phase order.
+`naturalOriginPackets_eq_rows` identifies those emitted origins with the closed
+batch solver's row ABI. `naturalOriginPairs_real_bits` converts the emitted
+pair symbols to the exact fixed-width binary words consumed by the weight loop.
+`originController_exec` now generates its doubled gap, one and phase-count
+constants and executes the origin emitter from four binary numeric headers:
+`s`, `t`, band width and target length. For the existing generated workspace
+width `V`, `weightWorkspaceWidth_control` proves all interval arithmetic fits.
+The charged controller time is
+`(27*(t-s+1)+9)*tblC(V,V)+2*(naturalLengthGroup.length*V)+2`.
+It prefixes the binary packets on 109, preserves the borrowed suffix, native
+left stacks and input/output spectators, and retains a bounded table bank for
+the outer controller to consume/release. No origin list or prepared interval
+is an input to this controller stage.
+`closedNaturalGroup_spec` supplies the existing fully cleaned execution and
+requested ambient-core accuracy for this natural schedule, with the same
+origin order and original principal interior system. Loading the four binary
+headers from the outer ordinary parameter bank, installing the generated batch
+count, releasing the controller bank and composing the controller directly with
+the closed solver remain open. RHS gathering, the uniform fast-cost/storage
+estimates, artificial halo cuts and complex/boundary/coupling/recovery/full-line
+composition also remain open. S3 remains incomplete and the proved
+multiplication saving is unchanged.
+The natural-origin controller checkpoint passes all 9827 guarded S3 axiom-audit
+jobs at 2.6 GiB combined peak. All twelve new modules pass final individual
+guarded checks, with maximum peak 1942.5 MiB, below the per-module CI budget.
+Source integrity, generated-summary and whitespace checks pass. The outer
+controller/solver composition and uniform fast-cost/storage obligations remain
+open.
