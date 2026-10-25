@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1228 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1234 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and gathered RHS, generating their binary origins and batch count, with shared inverse/weight initialization, requested ambient-core accuracy and full controller/solver cleanup. Natural scheduling preserves interior volume. Storage bounds, gathering, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and gathered RHS, generating their binary origins and batch count, with shared inverse/weight initialization, requested ambient-core accuracy and full controller/solver cleanup. Natural scheduling preserves interior volume; an exact restoring ambient-line RHS sweep has linear cost for supplied advance controls. Control generation/caller integration, storage bounds, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6234,3 +6234,44 @@ The ordinary-parameter bridge passes all 9834 guarded S3 audit jobs at 2.6 GiB
 combined peak. All nine new or revised non-audit modules pass individual guarded
 checks; their maximum measured peak is 1953.8 MiB. Source integrity, generated
 summary and whitespace checks pass.
+
+
+### S3 linear ambient-line RHS gathering kernel
+
+`gatherOffset_exec` extends the existing restoring window sweep with an initial
+forward seek. It restores the entire source, delimited control stream and all
+scratch, prefixes only the destination, and charges exactly
+`B*(14*rowSymbols+25)+12*(firstSeek+laterSeeks.sum)+23`.
+Its structural proof has no supplied execution hypothesis or finite certificate.
+`windowAdvances_fits`, `gatherRows_windowAdvances` and
+`windowAdvances_volume` prove that forward differences of ordered absolute
+origins fit the original source, copy exactly those windows and move through
+at most one source length in total.
+
+`naturalOrigins_ordered` and `naturalOrigins_fit` instantiate this sweep at the
+natural equal-length group in physical phase order. `ambientStream_window`
+proves each actual encoded ambient-line slice is the exact original-coordinate
+`cellSourceRows` RHS row. `naturalGatherRows_eq_rhs` identifies the whole output
+with the closed solver's Gaussian-integer RHS ABI, preserving coefficient word
+and bit order. `naturalGather_exec` generates the row-symbol counter from
+retained row and word dimensions, executes that sweep, clears the generated
+counter, and restores every stack except the prefixed destination.
+
+`naturalGroup_volume_le` proves `B*L ≤ s` for each selected length class from the
+existing total interior-volume theorem. Together with the single-sweep movement
+bound, `naturalGatherCost_le` bounds this gather, including generated-counter
+setup and release, by `66*s*w+29` when `w ≥ 1`. It does not traverse the whole
+source separately for each selected cell.
+
+The delimited forward-advance control stream is still an explicit input to this
+kernel. Its generation from ordinary parameters and the ambient-source gather /
+closed-solver bank composition remain open. This checkpoint therefore does not
+close outer RHS gathering or the uniform cost for all groups. Execution-wide
+storage, artificial halo cuts, complex/boundary/coupling/recovery/full-line
+composition and the final S3 uniform bound remain open. S3 is incomplete and the
+proved multiplication saving is unchanged.
+
+The linear natural-group gathering checkpoint passes all 9847 guarded S3 audit
+jobs at 2.6 GiB combined peak. All seven new modules pass individual guarded
+checks; maximum measured peak is 1947.4 MiB. Source-integrity, generated-summary
+and whitespace checks pass, with default proof limits unchanged.

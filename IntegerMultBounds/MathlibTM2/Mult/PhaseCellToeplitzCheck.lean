@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.NLogN.PhaseCellNaturalVolume
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalGatherCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedNaturalGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedNaturalGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedLengthGroup
@@ -708,6 +708,23 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.naturalGroupInputBank_controls,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.naturalGroupInputBank_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedNaturalGroup_spec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalGroup_volume_le,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalStart_mono,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalOrigins_ordered,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalOrigins_fit,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.gatherOffset_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowAdvances_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowAdvances_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.gatherRows_windowAdvances,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowAdvances_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalSymbolOrigins_ordered,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalSymbolOrigins_fit,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalGather_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ambientLine_window,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ambientStream_window,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalGatherRows_eq_rhs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalGather_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalGatherCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedNaturalGroup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedLoop_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.WeightReady.frame,
