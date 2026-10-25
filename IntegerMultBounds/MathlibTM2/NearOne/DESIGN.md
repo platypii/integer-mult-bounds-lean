@@ -15,6 +15,738 @@ Notation: `b = ⌈log₂ n⌉`, `p = 6b`, `d = ⌊b^ε⌋` (`d^64 ≤ b^31` at `
 (`b ≤ 2dℓ`, `3dℓ ≤ p`), `K` the compact chunk, `a_b = 1 - τ = 296/10^11`,
 `a_c = 1 - σ = 418/10^12`, `1 - λ' = 21/2^33`, `δ = 2^-7`.
 
+## Shared S3–S5 interface (pinned 2026-10-24)
+
+This is the implementation contract for the inverse work packages. S3/S4/S5
+remain open. It supersedes the older whole-axis loader/resume instructions below;
+`rsbAllG` and `pcSolve` are reference implementations, not required execution
+schedules. S2 remains the completed forward primitive.
+
+### Ownership and endpoints
+
+| Owner | Produces | Consumer and required proof |
+| --- | --- | --- |
+| S4 with R4 | Ordered core/halo descriptors, private gathered line batches, replica counts and a publication schedule avoiding reserved coordinates | S3 receives local buffers with global coordinate metadata; S4 proves exposure/publication execution, support and exact restoration |
+| S3 | Interior cell setup and two interior passes, residual/recovery coupling, complex assembly, scaling and final rounding | S4 receives core results with a uniform error bound, an execution theorem, restoration and a paid scalar cost |
+| S5 | Boundary setup, prepared factor/solver pages and repeated boundary solves | S3 receives an error bound for the stated computed Schur system, RHS/magnitude bounds, executed setup/solve/release and storage/cost bounds |
+| S4 | Locality comparison and tensor composition | Converts local core accuracy to the global inverse endpoint without a factor for the number of windows or tensor entries |
+
+The numerical vocabulary is checked in
+[`Mult/PhaseCellInterface.lean`](../Mult/PhaseCellInterface.lean).
+`Window.core` and `Window.halo` retain the ambient coordinate type, with
+`core_subset_halo`. `SolveSpec A active core rhsBound solve error` means that,
+for every solution of the principal system on `active` and every admitted RHS,
+the returned values approximate that solution on `core`. For the inverse,
+`A = PhaseCellMatrix.realMatrix s t p u` in the original `ZMod s` coordinates.
+The top-level real RHS bound is 1/2. Recovery and boundary calls carry their
+proved, generally larger bounds explicitly.
+
+`SolveSpec.with_locality` composes a halo solver with an explicit comparison
+between a halo solution and a global solution of the same ambient matrix.
+The resulting core error is arithmetic error plus locality error;
+`SolveSpec.of_windows` then assembles global core contracts over a cover.
+
+S3's full endpoint is `SolveSpec A univ univ (1/2) X e`.
+`SolveSpec.full_error` supplies precisely the `hX` consumed by
+`FastB0.concrete_resampB₀_specX`; that existing theorem owns complex pairing,
+`2^-j` scaling, final p-grid rounding, the diagonal approximation and the
+normalized `B₀ J / 2^j` error/unit-ball guarantees. Its numerical hypotheses,
+including `hsmall`, must be proved by the caller. They are not discarded by this
+interface. `PhaseCellReferenceSpec.pcSolve_spec` anchors the full endpoint to the
+existing checked reference solve.
+
+### Geometry, cuts and boundary order
+
+A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
+owned core coordinates and the original phase/period cuts intersecting the halo.
+An artificial halo endpoint is also a cut. A halo is a principal subsystem of the
+same global matrix: do not replace s by the halo length, restart the phase at
+zero, or introduce periodic wrap at the halo edge. Payload order and global
+coordinate maps must be inverse on their advertised ranges. Publication writes
+owned cores only; gathered halos and the reserved/untouched suffix are borrowed.
+
+For each descriptor, S3 generates the actual interior set I from cells and cuts;
+S5's boundary set is B = halo \ I. Cell intervals are nonwrapping, lie within the
+halo, stay in one original phase cell, and cover the selected interior exactly.
+Clipped cells and empty interiors/boundaries are admitted and handled explicitly.
+S3 must prove these facts for generated descriptors, not request arbitrary masks,
+selectors or interval covers as free inputs to its closed caller.
+
+The boundary page records an explicit elimination order with no duplicates and
+exact underlying set B, plus the coordinate/rank maps. The canonical full-line
+reference is `bFoldOrder s B`; its proved half-bandwidth is `8*w+1` for the
+reference phase-cell boundary. Local cuts change the interior/boundary problem:
+S5 must prove its local support/fill and derived bandwidth or block sparsity.
+Neither the full-line band theorem nor `boundary_card ≤ 2*w*(t-s+1)` is a local
+window theorem. Any local bound must also account for artificial cuts.
+
+Keep d (tensor dimension), g = t-s (axis gap), w (matrix half-bandwidth),
+b = |B| (boundary rows), q (arithmetic precision), W (address/counter width) and
+N (replica count) distinct. In particular the factor `w²/d` requires a proved
+gap/density estimate; it is not obtained by treating boundary rank as d.
+
+### Numerical handoff and precision
+
+S3 proves stage errors for the operations on their computed inputs. In particular
+its four triangular Toeplitz products per interior pass must establish the
+corresponding clauses of `PhaseCellMatrix.CellRun.Valid`. The S1 short-convolution
+error must be rescaled back to the actual generator/input magnitudes before it
+can be charged as the stage tolerance. S1 does not assert exact equality with a
+uniform scalar rounding function, so exact equality with `pcSolve rd` is not a
+backend acceptance requirement. The other interior, coupling and boundary error
+clauses are combined through the existing generic `SchurBlockError` lemmas.
+
+S5 approximates the Schur operator computed from these interior responses; it
+accounts for coefficient generation, interior-response error, rounded products,
+pivots/reciprocals and solve error. It cannot assume an exact Schur matrix or
+factor table supplied from outside the machine. Setup proves coefficient/word
+fits and RHS/pivot bounds; each repeated solve preserves that prepared page.
+The second S3 interior pass uses its proved recovery magnitude bound, not the
+initial RHS bound 1/2.
+
+The semantic rounded matrix (including its selected coefficient precision),
+arithmetic precision q, storage widths, reciprocal iteration count and output
+shift j are separate parameters. S5 owns a proved precision/iteration selection
+from the error allocation, active sizes and magnitude bounds; S3 generates the
+associated counters/headers and proves fits. Global address bits are priced
+separately through W. The existing full-line estimate
+`2^(8p+46)*p^7*s^2*η` is a reference bound; substituting halo cardinality for s
+requires a new localized proof. No such substitution is assumed here.
+
+S4 owns the separate locality bound between the exact halo solve and the exact
+global target on the core. `ErrorOn.trans` adds arithmetic and locality errors;
+`ErrorOn.crop` restricts to the core. `norm_error_of_publish` proves that selecting
+one owned output per coordinate preserves the uniform error bound independently
+of the number of windows. `SolveSpec.of_windows` requires comparison to the same
+global system; a halo-only solve contract cannot silently satisfy that premise.
+The previously listed core/halo/Neumann constants are candidate sizing choices,
+not locality certificates. S4 must prove the chosen sizes, coverage and error
+allocation before S6 uses them.
+
+### Machine ABI, reuse and cost ledger
+
+The logical ports are immutable descriptor/scalar inputs, borrowed raw line batch
+and count/width headers, retained interior setup, retained S5 boundary page,
+private scratch, and an output stream with an arbitrary existing suffix. Each
+kernel has a dimension-independent finite register placement; concrete offsets
+are fixed when its machine is built. Only the advertised output prefix changes.
+All input buffers, descriptors, setup pages, headers, left/native stacks and
+spectators restore after a repeated line/group call. Setup and release have their
+own executed contracts and explicit footprints. There is no supplied arithmetic
+execution oracle, free coefficient page or unpriced zeroing of borrowed fields.
+
+A reuse key includes ambient s,t,p,u, global halo/cut metadata, arithmetic and word
+widths, rounding/reciprocal parameters and the boundary order/backend format.
+Only replicas with the same key share a page. Equal halo lengths alone do not
+justify coefficient/factor reuse. Transport between keys needs a proved semantic
+identity and an executed, priced conversion.
+
+The ledger is
+
+`sum_keys (setupCost + releaseCost) +
+ sum_groups (externalTransferCost + N*kernelLineCost + publicationCost)`.
+
+`kernelLineCost` includes both real solves, all S1 batches and their headers,
+interior weighting, two couplings, S5 repeated solves, local transfers, scaling,
+rounding and crop. S5 work is charged inside that term once. S4/R4 owns external
+exposure/publication and global layout restoration. Shared setup includes all
+coefficient, mask, descriptor, reciprocal and boundary/factor generation and final
+erasure for each distinct key. Actual setup multiplicity and batch counts must be
+proved; S2's whole-axis amortization does not automatically pay halo-specific keys.
+
+Before using `O(t*M(p)*(1+w²/d))`, expose the actual interior volume, coupling
+nonzero count, boundary row count and boundary bandwidth/block-work count.
+Repeated boundary work must be priced in those quantities. A band factorization's
+setup cost and storage must be charged separately; reusing `Fast/BandLine` alone
+does not establish S5's new-regime cost. Match q,W and all supplier primitives to
+the final envelope only after precision and fits are proved. Record simultaneous
+retained pages plus live input/output and scratch storage; separate per-routine
+peaks do not establish the combined stock bound needed by M4/S6.
+
+The module dependency order is shared interface/S1 → S3 interior kernel → S5
+prepared boundary → S3 composed line → S4 schedule. S5 setup may call the
+interior kernel to compute boundary-column responses and must charge those calls;
+it must not depend on the composed S3 line. This keeps the construction acyclic
+while allowing the same interior code to serve setup and both line passes.
+
+S3 implementation checkpoint (2026-10-25): `Mult/ToeplitzShortConv` supplies
+both convolution/index identities and decoded lower/upper stage errors on the
+actual S1 result tape. The scaling factor 2^l remains explicit. The upper theorem
+assumes reversed rows in S1's input bank; it does not pretend reversal is free.
+`PhaseCellToeplitz.lower_batch_exec` in `PhaseCellLowerBatch` ties the lower error
+to an actual fixed S1 run and its exact bank restoration/time budget. Normalized
+raw operands and unary dimensions are still supplied. Checks peak at 1807.7 and
+1796.8 MiB. Generated normalization, executed upper reversal/crop, weights and
+generators, the four-product cell composition and `CellRun.Valid` remain next.
+The guarded interface/Toeplitz axiom audit build completes 4065 jobs at 2.4 GiB
+combined peak. S1's existing `coeff_diskGrid` already proves normalized returned
+coefficients remain admissible operands for the next product; reuse that fact
+when composing stages instead of duplicating coefficient range proofs.
+
+Upper-stage execution checkpoint (2026-10-25): `PhaseCellReverseRows` replaces
+an exact private row stream in place and restores scratch and counters, preserving
+word bits and row order. `PhaseCellReverseSetup` generates and erases L*w; its
+cost is C = M*(32Lw+19L+17)+6Lw+9L+20. `PhaseCellUpperInput` places this operation
+in S1's ten empty private host slots, all blank again before convolution.
+`PhaseCellToeplitz.upper_batch_exec` in `PhaseCellUpperBatch` executes both
+reversals around S1 from ordinary raw rows; its exact frame restores the original
+input and dimensions, changes only the output prefix, and bounds time by
+`Fixed.cost + 2*C`. The returned tape has the proved upper-stage error. Its padded
+ring rows still need executed selection/compaction before the next lower product.
+The expanded axiom audit build passes (3999 jobs, combined peak 2.5 GiB); setup,
+fixed-input and upper-batch checks peak at 1827.3/1806.7/1803.0 MiB. Full cell,
+boundary and line composition and their generated setup/cost gates stay open.
+
+Compaction checkpoint (2026-10-25): the same extraction loop/program now has
+arbitrary offset/count proofs, with chirp retained as the a=3m specialization and
+all prior costs unchanged. `ShortConvSliceDecode` decodes selected rows at their
+compact stride and carries the disk bound to the next product. The upper-stage
+coefficient error is shared by the padded and compacted stream proofs.
+`PhaseCellToeplitz.upper_crop_exec` in `PhaseCellUpperCrop` produces upper-output-ordered rows, preserving
+the padded source and all borrowed suffixes. `PhaseCellUpperCropSetup` generates
+2^l*w, runs the crop and clears that counter; its complete bound is
+`M*(20Lw+19L+6*2^l*w+23)+4w+6*2^l*w+9l+22`. Its check peaks at 1842.0 MiB.
+Compaction now executes; staging between successive S1 calls must still retain
+original inputs under a proved storage/frame contract. The structural S1 packer, coefficient packer, shared-product caller and unary
+setup caller now preserve arbitrary raw operand suffixes with unchanged costs.
+Their original exact-stream theorems specialize the same proofs at empty suffixes.
+The fixed-bank `exec_with_tails` and S3 `lower_batch_with_tails_exec` now
+expose this contract with unchanged costs and exact suffix restoration. Generated coefficients/normalization,
+cell, boundary and line composition and final precision/cost gates remain open.
+The expanded S3 and both S2 regression axiom audits pass in a guarded build
+(13936 jobs, combined peak 10.6 GiB, 2.5 minutes). Eight changed/new source and
+audit files pass guarded checks; the largest single-file peak is 1935.0 MiB,
+with default proof limits and only the three approved axioms.
+
+Suffix-preservation verification (2026-10-25): the expanded S3 audit and both
+S2 regression audits pass in a guarded build (13936 jobs, combined peak
+10.6 GiB, 2.7 minutes). Guarded single-file checks pass for the structural
+packer (1889.5 MiB), product caller (1851.5 MiB) and unary caller
+(1835.4 MiB). No program definitions, old theorem contracts or costs changed.
+
+Fixed-bank staging checkpoint (2026-10-25): `inputBankWithTails` and
+`startWithTails` retain arbitrary suffixes beneath both counted raw operands.
+`Fixed.exec_with_tails` proves the same finite program and cost, and the old
+`Fixed.exec` is its empty-suffix specialization. The lower-stage wrapper shares
+this proof. `PhaseCellUpperOperand` identifies each compacted upper row and
+proves its length and normalized disk bound for the next S1 call. Guarded
+checks peak at 1857.3 MiB (fixed bank), 1797.8 MiB (lower wrapper) and
+1792.5 MiB (upper operands). The expanded S3 and both S2 regression audits
+pass in a guarded build (13937 jobs, combined peak 10.6 GiB, 2.2 minutes).
+The actual staging, generator switching and temporary-stream release between
+products still require executed composition; S3 remains incomplete.
+
+Executed triangular-pair checkpoint (2026-10-25): `PhaseCellStageFrame`
+identifies compaction's exact bank as the next lower call's input.
+`PhaseCellStageInput.upperToLowerInput_exec` executes generated-count compaction
+onto the right-operand tape, preserving its original rows below the new prefix.
+`PhaseCellTriangularPair.triangularPair_exec` composes the upper product, staging
+and lower product on 117 tapes, with the sum of their actual costs and decoded
+lower error against the computed normalized upper rows. Its guarded check peaks
+at 1806.3 MiB. The expanded axiom audit passes (4009 guarded build jobs,
+combined peak 2.4 GiB). Temporary compact/padded upper rows remain explicit in
+the postcondition: crop/publication of the lower result and paid prefix release
+are still required before the second branch and four-product cell composition.
+Generated weights/generators, precision, boundary/coupling/recovery, full line
+composition and final S3 costs remain open; kappa is unchanged.
+
+Paid intermediate release checkpoint (2026-10-25): `PhaseCellPrefixRelease`
+proves prefix removal with an exact arbitrary suffix and original-symbol
+counts. `releaseRows_exec` generates and releases both product counters from
+retained batch/row/width dimensions; its bound is
+`12*symbols + 9*M + 6*L*w + 9*L + 18`.
+`PhaseCellInputRelease.releaseUpperInput_exec` removes only the compacted
+upper-row prefix, restores the original right operand and leaves the output
+untouched. `PhaseCellTriangularPairRestore.triangularPairRestored_exec` now
+executes both triangular products, generated staging and this release, returning
+the canonical bank with both original raw operands and decoded lower-product
+error. The two padded product streams remain explicitly on the output tape.
+Lower-result crop/publication and paid release of those output prefixes are
+still required before repeated branches. The expanded axiom audit passes
+(4012 guarded build jobs, combined peak 2.5 GiB); the row-release and fixed-input
+release checks peak at 1827.1 and 1800.2 MiB. This does not complete S3: generated
+cell arithmetic, both branches, boundary/coupling/recovery, precision and uniform
+line costs remain open.
+
+Lower-output components checkpoint (2026-10-25): `PhaseCellLowerCrop`
+reuses the shared generated-count selector on lower-product streams. Its
+`lowerRows_error` reads compact row position `L-1-i` and proves the lower error
+with stride L; no free row reversal is assumed. The execution theorem preserves
+source/destination suffixes and restores generated counts and work ports.
+`PhaseCellRingRelease.releaseRingBatch_exec` generates both ring-symbol and
+batch-total counts from exponent/width/batch headers, erases one padded batch,
+releases both counts and preserves the exact borrowed suffix. Its bound is
+`12*symbols + 9*M + 4*w + 6*2^l*w + 9*l + 26`. Guarded checks peak at
+1807.6 MiB (lower crop) and 1821.5 MiB (ring release). The expanded S3
+axiom audit passes in 4014 guarded build jobs (combined peak 4.0 GiB).
+These components still
+need composition with the triangular pair: crop into private workspace, remove
+both padded result batches, then move the compact stream back to the persistent
+output tail while clearing workspace. Both branches and the full cell/line
+precision, setup and cost obligations remain open.
+
+Compact triangular-pair endpoint (2026-10-25):
+`PhaseCellResultPublish.publishPairResult_exec` releases both padded batches,
+then transfers compact symbols in order through fresh workspace.
+`PhaseCellPairFinish.finishTriangularPair_exec` composes lower extraction and
+publication on the fixed bank. `compactTriangularPair_exec` now executes the
+whole upper/staging/lower/release/extraction/publication chain from ordinary raw
+operands on 117 tapes. Exactly one compact result prefixes the original output;
+original operands, dimensions, native stacks and every work port are restored.
+`compactPairCost` charges every constituent operation. Decoded lower error is
+proved against the actual normalized upper numerators at reversed compact row
+position `L-1-i`; there is no free rescaling or orientation change. The publication
+and complete-pair checks peak at 1838.0 and 1829.6 MiB. The expanded S3
+axiom audit passes (4016 guarded build jobs, combined peak 2.5 GiB).
+Next: connect the two stages' explicit scales and errors to `CellRun.Valid`,
+batch both generator branches, execute their merge/scalar arithmetic and generate
+weights/generators. Boundary/coupling/recovery, full-line precision and uniform
+S3 cost gates remain open. This endpoint does not mark S3 complete.
+
+Triangular-stage scale checkpoint (2026-10-25): `PhaseCellPairScale`
+connects compact upper operands and the actual published lower words to explicit
+scaled stage errors. Bilinearity gives upper factor `a*b` and lower factor
+`a*(a*b*2^l)`. Real projection loses no precision when raw generator words are
+real; computed FFT intermediate rows may retain arbitrary imaginary rounding
+noise. The real-stage error lemmas match the upper/lower arithmetic obligations
+of `CellRun.Valid` on computed inputs. At generator scale 2 and input scale V≥0,
+the proved tolerances are `4*V*2^l/2^q` and `8*V*(2^l)^2/2^q`. These are explicit
+interpretations of stored numerators, not free tape rescaling or scalar arithmetic.
+The guarded module check peaks at 1819.6 MiB. The expanded axiom audit
+passes (4017 guarded build jobs, combined peak 2.5 GiB). Both generator branches, executed
+merge/weight/reciprocal arithmetic and generated setup still need composition;
+boundary/coupling/recovery, full-line precision and uniform costs remain open.
+
+Both generator branches checkpoint (2026-10-25): `PhaseCellTwoBranches`
+proves that concatenated generator/input banks produce the two compact branch
+streams in order. `twoBranches_exec` runs all four triangular products through
+the shared compact-pair program at batch size `M+M`, with one fixed-cost charge
+per S1 call and exact raw-bank restoration. `PhaseCellDuplicateStream` and
+`PhaseCellBranchInput.twoBranchesFromSingleInput_exec` execute the repeated
+right-hand-side producer from one raw V stream, charging `6*M*L*w+6`; copy
+workspace returns empty. The resulting repeated input remains installed in the
+prepared bank, so its eventual release is still a caller obligation. Combined
+generator construction and the doubled batch header remain explicit setup
+inputs. Guarded checks peak at 1809.1 MiB (branch execution), 1799.2 MiB
+(duplication) and 1809.8 MiB (single-input composition). Next: execute branch
+merge and scalar arithmetic, generate coefficients/weights/headers, release
+prepared input, and establish the full `CellRun.Valid` and line/cost endpoints.
+The expanded S3 axiom audit passes (4020 guarded build jobs, combined peak
+2.5 GiB). S3 remains active; boundary/coupling/recovery and uniform precision
+are open.
+
+Merge-word checkpoint (2026-10-25): the existing line-solver subtraction
+automaton now lives in the small shared `Fast/SubWord` module. Its generic
+`subWord_exec` proves exact full-stack framing and time `5*w+6` without a
+multiplier-cleanliness hypothesis. `ResampBCore.rsb_subWord_runs` specializes
+that proof, preserving its old contract and program; the duplicate automaton
+execution proof was removed. `PhaseCellMergeWord.mergeWord_exec` proves that
+one guard bit makes the actual reversed result word decode to the exact signed
+difference. `value_sub` proves exact fixed-point subtraction. Guarded checks
+peak at 1794.7 MiB (shared word) and 1885.2 MiB (merge word). This is the
+arithmetic primitive for branch merge, not yet the stream loop or scalar
+product. Those executions, generated cell setup and the full cell/line/cost
+contracts remain open.
+
+Merge-stream checkpoint (2026-10-25): `PhaseCellMergeStream.mergeStream_exec`
+uses the existing Gaussian word-stream executor with the shared subtraction map.
+No second per-word loop or subtraction implementation was introduced. Two
+equal-length coefficient streams are consumed; the reversed exact-difference
+stream prefixes the accumulator, and all other stacks (including width/tmp)
+are restored. The bound is `n*(5*w+6)+2`, including empty streams, with w≥1.
+The word guard-bit theorem supplies exact signed decoding; range hypotheses
+remain separate from modular execution. Its guarded check peaks at 1895.4 MiB.
+The expanded S3 audit passes (4288 jobs, combined peak 2.6 GiB), and the
+refactored resampling core passes its guarded check at 1984.1 MiB.
+The shared-word refactor passes regression builds for the old resampling line,
+band factorization, S2 forward/supplier and S3 audits (13960 jobs, combined peak
+4.4 GiB). Next: split the two published branch blocks into merge inputs with
+generated counts, execute merge/publication and scalar multiplication, then
+compose generated cell setup and the full numerical/line/cost endpoint.
+
+Routed branch-merge checkpoint (2026-10-25): `PhaseCellTakePrefix`
+consumes a counted prefix in original symbol order, preserving the suffix and
+restoring workspace. `PhaseCellMergePublish.mergePair_exec` routes adjacent
+branch blocks to the existing subtraction stream executor, then publishes the
+difference in original word order above the exact output suffix. All temporary
+stacks are cleared. `PhaseCellMergeSetup.mergeFromWords_exec` generates and
+clears the total-symbol counter from word-count/width headers and charges the
+whole chain by `n*(25*w+15)+22`. The word-count header remains explicit;
+generating the per-branch count from cell descriptors is still setup work.
+Guarded checks peak at 1805.5 MiB (prefix routing), 1922.7 MiB (routed merge)
+and 1903.8 MiB (generated-count wrapper). The expanded S3 axiom audit
+passes (4291 guarded build jobs, combined peak 2.6 GiB). Next: instantiate these stream contracts
+on the two published branch lists, execute the reciprocal/scalar product, and
+compose generated cell setup, `CellRun.Valid`, full-line correctness and costs.
+S3 remains active; the entire inverse is not yet executed.
+
+Executed four-product merge endpoint (2026-10-25): `PhaseCellHalfCount`
+recovers M from the retained 2M header, preserving its actual symbols in
+`6*M+4` steps. `PhaseCellBranchWords` generates ML and releases the half header.
+`PhaseCellFixedMerge.fixedBranchMerge_exec` now generates every merge header
+from 2M, L and w on the 117-tape bank, merges both adjacent result blocks, and
+clears every header and work port; its bound is `ML*(25*w+21)+17*M+34`.
+`PhaseCellMergedBranches.mergedBranches_exec` composes the one-input producer,
+all four triangular products and the fixed-bank merge. Exactly one compact
+branch-difference stream prefixes the original output, with the repeated-input
+bank explicitly retained. `PhaseCellMergeRange.branchDifference_word` proves
+that w≥q+3 recovers the exact signed difference from the actual output words;
+there is no modular aliasing or extra rounding at merge. The two branch
+numerators inherit the normalized disk bound from S1. Guarded checks peak at
+1809.5/1813.5/1914.4/1894.2/1897.5 MiB for half-count, branch-count, fixed
+merge, composed execution and range/decode modules. Next: execute reciprocal/
+scalar arithmetic, generate coefficients, weights and headers, release the
+prepared input and establish the complete `CellRun.Valid`, boundary/recovery,
+line and uniform cost contracts. The expanded S3 axiom audit passes
+(4296 guarded build jobs, combined peak 2.6 GiB). S3 is still active.
+
+Shared scalar-kernel checkpoint (2026-10-25):
+`PhaseCellScalarStream.realScalarStream_exec` reuses the real fixed-point table
+multiplier with a one-word table for all merged coefficients. It restores the
+operand/scalar streams and all other stacks, prefixes the actual product words
+to the output, and charges `n*(rmulCost(w)+6*w+8)+6`. Its multiplier counters
+and stored real scalar remain explicit inputs; setup and fixed-bank routing
+have not yet been composed. `PhaseCellScalarRange` proves that actual compact
+branch numerators have norm ≤1 and their merged difference norm ≤2. For a
+stored scalar of norm ≤2, w≥q+4 proves product-word fit and signed decoding
+with truncation error ≤`2/2^q` on the actual branch stream, without an output-fit
+oracle. Guarded checks peak at 1889.6 MiB (kernel/bounds) and 1898.8 MiB
+(branch range/error). Next: generate scalar readiness and the reciprocal word,
+route and release the merged input around this call, execute output scaling/
+weights and establish the full `CellRun.Valid`, boundary/recovery, line and
+uniform cost contracts. The expanded S3 axiom audit passes (4298 guarded
+build jobs, combined peak 2.6 GiB). S3 remains active.
+
+Scalar-bank preparation checkpoint (2026-10-25):
+`PhaseCellScalarPlacement` allocates the thirty scalar roles and 64 multiplier
+tapes on the existing 117-tape bank. It proves injectivity, disjointness,
+freshness after merged-branch execution and preservation of all retained
+operands/dimensions/output ports. The exact three-counter readiness bank is
+specified and proved sufficient. `PhaseCellScalarUnary.unarySetup_exec`
+executes the binary q/w producer from unary ports 100/94, preserving both
+source headers and all spectators; its cost is
+`(q+w)*(4*w+10)+12*w+20`. No binary dimension words are supplied. The selected
+w≥q+4, q≥1 guarantees q,w and the doubling program's temporary values fit
+in binary width w. The unchanged thirty-role encoding was separated into
+`ChirpOutputRoleCode` so scalar proofs do not import S2's entire output backend.
+Next: compose binary-bank loading, the existing topN counter generator and
+setup cleanup, then install the generated reciprocal word and route/release
+scalar data around the actual multiply. Full cell/line correctness and uniform
+costs remain open; S3 is active. Guarded checks for the final allocation and
+unary producer peak at 1890.1 and 1899.8 MiB. The expanded S3 and both S2
+regression audits pass (13967 jobs, combined peak 7.7 GiB, 1.2 minutes).
+
+Generated scalar readiness checkpoint (2026-10-25):
+`PhaseCellScalarBank.loadBank_exec` composes unary dimension conversion and
+complete five-variable binary-bank loading. `PhaseCellScalarCounters` runs
+the existing multiplier-dimension program and installs w, q and topN(w).
+`PhaseCellScalarPrepare.prepare_exec` clears all 26 temporary setup ports,
+with an explicit cleanup charge bounded by `52*w+53`; only the three actual
+readiness counters remain changed. `prepareCanonical_exec` applies this to
+the real 117-tape S3 bank and derives `Ready` plus clean multiplier tapes from
+execution, without a prepared-state oracle. It preserves merged output, raw
+operands, retained dimensions and native stacks. The unchanged table-role
+encoding was separated into `ChirpBankRoleCode` to keep setup imports narrow.
+Guarded checks peak at 1909.2 MiB (bank), 1897.3 MiB (counter generator) and
+1934.5 MiB (complete setup). Next: route the merged words and stored scalar
+into the generated-ready multiplier, publish and release its result/inputs,
+generate the reciprocal/coefficient/weight data and establish the complete
+cell/line numerical and uniform cost contracts. The expanded S3 and both S2
+regression audits pass (13971 guarded build jobs, combined peak 7.7 GiB,
+1.2 minutes). S3 remains active.
+
+Executed scalar-application checkpoint (2026-10-25):
+`PhaseCellTakeSetup` generates and releases a transfer count.
+`PhaseCellScalarRoute.route_exec` generates ML from the retained doubled
+header, routes the merged prefix into scalar operand port 84 and copies the
+stored real factor from port 96 to 85. Every routing counter/scratch port is
+cleared before multiplication; the factor source and original output suffix
+are preserved. Readiness and multiplier cleanliness are proved to survive.
+`PhaseCellScalarFinish` releases restored operand copies and publishes the
+ordered product, clearing arithmetic data ports. `PhaseCellScalarRun` composes
+the entire prepared pass. `PhaseCellScalarApply` adds generated readiness, and
+`PhaseCellScalarCanonical.applyCanonical_exec` derives freshness/cleanliness
+from the actual canonical bank, supplying the complete executed scalar pass
+with decoded error ≤`2/2^q` and explicit setup/routing/product/release costs.
+Readiness counters remain installed for reuse. Guarded checks peak at
+1826.0/1921.6/1902.8/1916.3/1896.2/1892.4 MiB for generated transfer, routing,
+finish, prepared run, setup/application and canonical entry.
+The expanded S3 axiom audit passes (4323 guarded build jobs, combined peak
+2.5 GiB). The stored factor is ordinary input data, not yet a generated reciprocal.
+Next: retain/generate the reciprocal through the four-product stage (the raw
+X suffix is a candidate storage location with proved S1 suffix support),
+compose the entire cell arithmetic, generate weights/generators, release
+prepared data/counters, and finish the cell/line error and uniform cost proofs.
+S3 remains active.
+
+Generator-suffix retention checkpoint (2026-10-25): the existing S3
+programs now have proved generator-side suffix contracts through reversal,
+upper multiplication, staging, lower multiplication, input release, compaction,
+both branches, repeated-input production and final branch merge.
+`mergedBranches_with_x_tail_exec` starts from one raw input stream and a suffix
+beneath the combined generator bank, executes all four products and merge, and
+restores that suffix exactly. A stored reciprocal word can therefore survive
+under raw source port 110 while S1 uses its entire working bank. Runtime programs,
+costs and numerical error bounds are unchanged; every original exact-stream
+theorem is retained as the empty-suffix specialization of the same proof.
+The counted access and scalar composition are now proved by the following checkpoint. Generating the
+actual reciprocal, weights and generator data, prepared-data/counter release
+and the complete cell/line numerical and cost contracts remain open. The expanded
+axiom audit passes (4323 guarded build jobs, combined peak 2.6 GiB). All twelve
+changed pipeline modules pass guarded single-file checks; the largest peak is
+1914.7 MiB. S3 is active.
+
+
+Retained-scalar composition checkpoint (2026-10-25):
+`PhaseCellInteriorProducts.lean` proves `interiorProducts_exec` composes all four triangular products, exact branch subtraction,
+counted reciprocal access, scalar counter setup, multiplication and staging-word
+cleanup on the same 117 tapes. `copyAfterPrefix_exec` restores the full generator
+prefix after copying its retained scalar, and `fetchCanonical_exec` derives all
+access counts from the ordinary batch dimensions. The decoded result has error
+at most `2/2^q` against the computed branch difference times the stored scalar.
+`scaled_scalar_real_error` turns this into the real merge-stage bound after
+rescaling, allowing imaginary FFT noise in intermediate rows. The reciprocal
+word is still supplied numerical data; its generation is not proved. Repeated
+inputs and multiplier counters remain explicit retained setup. Generated
+coefficients/weights/reciprocal, complete `CellRun.Valid`, boundary/coupling/recovery
+and full-line cost/error gates remain open. The expanded axiom audit passes
+4327 guarded build jobs at 2.6 GiB combined peak; the composed theorem passes
+its guarded single-file check at 1908.8 MiB. S3 remains active.
+
+
+Real-stage handoff checkpoint (2026-10-25): `PhaseCellStageValues` identifies
+cell coordinate `i` with stored reversed-row position `n*L+(L-1-i)` and proves
+exact signed decoding of every compact branch numerator. Its
+`upperNumerator_real_error` and `pairNumerator_real_error` give the real upper
+and lower stage bounds on computed inputs: `4*B*2^l/2^q` and
+`8*B*(2^l)^2/2^q`. Both generator branches use the same proofs, with real raw
+generators and unrestricted imaginary FFT noise in intermediate rows.
+`branchScalar_real_error` proves the actual output word satisfies the real merge
+bound `8*B*(2^l)^2/2^q`. `cell_stage_precision` proves this latter budget is at
+most `2^(-j)` when `B ≤ 2^b` and `b+2*l+j+3 ≤ q`; coefficient precision and address
+width remain separate. No inverse-generator or reciprocal generation is assumed
+proved: the reference generator still uses noncomputable `natInv`, and the
+existing executable rational coefficient samples do not close that setup gate.
+Full `CellRun.Valid`, weights, final rescaling, boundary/coupling/recovery and
+line costs remain open. The new module checks at 1910.8 MiB, and the expanded
+axiom audit passes 4328 guarded build jobs at 2.6 GiB combined peak. S3 is active.
+
+
+Rational generator construction checkpoint (2026-10-25):
+`NLogN.ToeplitzGeneratorIteration` defines a finite list recurrence with zero
+initial vector, off-diagonal evaluation and an optional rounding map. Its
+one-step and accumulated bounds are structural: error is at most
+`rho^n*U+delta/(1-rho)`. Field embeddings commute with the unrounded recurrence,
+so rational data give inverse-column approximations without evaluating `natInv`
+or using a real rounding oracle. `NLogN.PhaseCellGeneratorData` instantiates this
+constructor with the corrected executable rational coefficients of the actual
+rounded cell matrix. It proves first-column and shifted-reverse accuracy,
+computed corner at least `5/7` after one or more iterations, positive computed
+reciprocal at most two, and reciprocal error at most twice the column error.
+Choosing `j+1` iterations gives both column and reciprocal error at most `2^(-j)`.
+This closes a numerical construction gap only: fixed-width encoding, tape
+execution, setup costs and storage bounds are not yet proved. Weight setup,
+full `CellRun.Valid`, final rescaling, boundary/coupling/recovery and full-line
+contracts remain open. The data module checks at 1764.0 MiB; the expanded axiom
+audit passes 4344 guarded build jobs at 2.5 GiB combined peak. S3 is active.
+
+
+Encoded-generator checkpoint (2026-10-25): `PhaseCellGeneratorWords` constructs
+real Gaussian numerators by computable rational floor arithmetic and proves the
+grid error and exact zero imaginary component. Scale-two generator encoding
+preserves the S1 numerator disk: the rational iterates have absolute value at
+most `3/2`, so half-sized inputs and at least two grid bits absorb rounding.
+`PhaseCellEncodedGenerators` constructs both generator banks and the reciprocal
+word from the actual rational coefficient recurrence. It proves their lengths,
+disk bounds, scalar norm at most two and accuracy against the actual rounded
+matrix inverse. With `q ≥ j+2` and `j+2` iterations, each interpreted generator
+and reciprocal is within `2^(-j)` of its target. Coefficient precision, arithmetic
+precision, iteration count and storage width remain distinct. These constructors
+close the numerical word/range obligations; tape generation, intermediate width
+and bit-growth bounds, setup cost/storage, weights, full `CellRun.Valid`, final
+rescaling and boundary/line contracts remain open. The expanded axiom audit
+passes 4346 guarded build jobs at 2.5 GiB combined peak. S3 is active.
+
+
+Constructed-data execution and cell-run checkpoint (2026-10-25):
+`PhaseCellPreparedInterior.lean` proves `preparedInterior_exec` instantiates the 117-tape execution with the
+constructed encoded generators and reciprocal, discharging their range and
+reality conditions and returning their inverse-target accuracy. The setup bank
+is still an input; this is not a setup-generation execution theorem.
+`PhaseCellInteriorRun` interprets the computed upper/lower arrays and the actual
+scalar output tape as `CellRun` fields, retaining reversed-row coordinates,
+ring factors and input magnitude scale. `interiorRun_valid` derives the
+triangular, merge and input-magnitude clauses structurally.
+`preparedRun_valid` additionally derives generator/scalar accuracy from the
+constructors and uses `q ≥ b+2*l+j+3` for `B ≤ 2^b`. It establishes
+`CellRun.Valid` at tolerance `2^(-j)` conditional on exactly the three remaining
+weight-stage errors: reciprocal weights, scaled input production and final
+weight multiplication. Those hypotheses are pending work, not executed stages.
+Setup tape generation/cost/storage, these weight stages, final word conversion,
+boundary/coupling/recovery and the line endpoint remain open. The conditional
+cell-run module checks at 1918.4 MiB; the expanded axiom audit passes 4367
+guarded build jobs at 2.6 GiB combined peak. S3 remains active.
+
+
+Complete numerical cell-run checkpoint (2026-10-25): `PhaseCellWeightData`
+constructs reciprocal-weight, normalized-input and final-output Gaussian words
+by rational floor arithmetic on the actual selected similarity samples and
+computed inputs. It proves each rounding error and the reciprocal-weight range.
+For RHS magnitude at most `2^cExp` and weight lower bound `2^(-e)`, normalization
+by `2^(cExp+e+1)` places the rational encoder argument within `1/2`; at least two
+grid bits therefore give the S1 input disk. `PhaseCellNumericalRun` uses
+`inputExponent p cExp = cExp+(8*p+1)+1` and constructs all `CellRun` fields from
+rational data and the actual interior scalar-output tape. `numericalRun_valid`
+proves the complete `CellRun.Valid` contract with no assumed stage-error facts,
+at tolerance `2^(-j)` when `q ≥ inputExponent p cExp+2*l+j+3`. It preserves
+ambient coordinates and the selected coefficient precision `2^15*p`.
+This is a complete numerical-data/validity theorem, not a composed tape solver:
+setup and weight-stage execution, intermediate word/bit-growth fits, final
+conversion/publication, setup and line costs, boundary/coupling/recovery remain
+open. In particular the computed numerical `y` fields have not yet been produced
+on the output tape. The numerical-run module checks at 1906.3 MiB; the expanded
+axiom audit passes 4369 guarded build jobs at 2.6 GiB combined peak. S3 is active.
+
+
+Executed weight-input checkpoint (2026-10-25): `PhaseCellWeightStream`
+uses the existing `rmulOne`/`cmulStream` engine for aligned varying real weights.
+It keeps arithmetic grid precision `q`, normalization `b`, multiplier counter
+`q+b`, magnitude exponents and word width separate. Its output is the actual
+`tdivN (q+b) (x*a)`, with error at most `2/2^q` against the normalized product,
+proved signed-word fits and exact input/table/private-stack restoration.
+`PhaseCellWeightedInput` constructs reciprocal table words from the rational
+weights. Their lower bound `2^(-e)` and RHS norm bound `2^cExp` discharge operand
+fits; normalization `b=cExp+e+1` makes every actual output satisfy the S1 disk.
+The interpreted real input-stage error is at most `2^b*2/2^q`, hence at most
+`2^(-j)` when `q ≥ b+j+1`. No output-fit oracle is required. The stream's cost is
+`N*(rmulCost w+6*w+2)+8`. `ScalarFinish.finish_stream_exec` generalizes the existing
+cleanup proof to an entire factor stream, with unchanged runtime code; the old
+single-scalar theorem is its singleton specialization.
+This addresses machine truncation toward zero directly. The earlier rational
+floor-based numerical run is not asserted equal to the machine data. Fixed-bank
+routing, generation of the `q+b` readiness counters, setup generation, final
+weight multiplication/publication and boundary/line composition/costs remain
+open. Guarded checks peak at 1897.5 MiB (generic stream), 1902.9 MiB (input stage)
+and 1903.0 MiB (shared cleanup). S3 remains active.
+
+
+Closed 117-tape input-weight checkpoint (2026-10-25):
+`PhaseCellWeightRoute` generates one `M*L*w` symbol counter for both source
+transfer and table copying, then releases it and the row count. Its cost is
+`22*M*L*w+15*M*L+17*M+34`; the complete table suffix is preserved.
+`PhaseCellWeightRun` composes routing, the existing varying-weight multiplier
+and shared stream cleanup. `PhaseCellWeightPrepare` temporarily extends the
+actual unary precision header by the normalization descriptor on port 116,
+executes readiness generation at `q+b`, then restores the original precision
+and descriptor symbols. Only the three counters remain; their paid release is
+proved too. `PhaseCellWeightClose.lean` proves `ScalarPlacement.closedWeights_exec`
+executes setup, routing, multiplication, publication and counter release,
+changing only the persistent output prefix. `closedWeightedInput_exec` supplies
+the constructed reciprocal words, derives operand fits and the S1 output disk,
+and gives real-stage error at most `2^(-j)` for `q ≥ b+j+1`, with
+`b=cExp+e+1`. No readiness, routing-count or output-fit oracle remains.
+Ordinary descriptor/data headers and reciprocal words are still input data:
+executing their setup constructors and integrating the normalized stream into
+the interior bank remain open, as do final weighted publication, bit-growth and
+storage bounds, boundary/coupling/recovery and the full line endpoint and costs.
+The expanded axiom audit passes 4377 guarded build jobs at 2.6 GiB combined
+peak. S3 remains active.
+
+
+Closed final-weight stage checkpoint (2026-10-25): `PhaseCellOutputBounds`
+proves that the actual scalar result has norm at most four. Restoring its
+cell scale is the exact numerator shift `d=b+2*l+2`, with
+`2^d=4*2^b*(2^l)^2`. Both shifted operands and final products fit at
+`w ≥ q+d+4`. The final error charges multiplier truncation and weight encoding
+at the restored magnitude: `(2+2^(d+2))/2^q`. Consequently the complete final
+weight-stage tolerance `2^(-j)` needs `q ≥ d+j+3`, or `b+2*l+j+5`, two bits
+beyond the triangular-stage budget.
+`PhaseCellOutputScale` generates counts, isolates the owned output prefix,
+executes the existing shift machine and restores its staging, leaving the
+borrowed suffix unchanged. `PhaseCellOutputClose.lean` proves `ScalarPlacement.closedOutputWeights_exec`, which saves the shift header, reuses the closed
+aligned-weight pass at extra shift zero, and restores the exact header symbols.
+Only the weighted output prefix changes; no readiness or output-fit oracle is
+supplied. Its explicit cost is prefix rescaling plus `closedWeightsCost q 0`
+and `4*d+4` for header saving/restoration. `PhaseCellOutputData` proves decoded
+word accuracy against the actual rational similarity weights.
+Data/descriptor generation, integrating stage banks and their computed arrays
+into the complete cell execution/validity theorem, final line ordering/conversion,
+boundary/coupling/recovery and line/setup/storage costs remain open. Both weight
+stages now execute as standalone 117-tape components. The expanded axiom audit
+passes 4398 guarded build jobs at 2.6 GiB combined peak. S3 remains active.
+
+
+Actual-arithmetic cell-validity checkpoint (2026-10-25): `PhaseCellRowTable`
+proves that compact index `n*L+(L-1-i)` selects row `n` and cell coordinate `i`.
+The final similarity table uses this actual reversed order, with ambient phase
+coordinates unchanged. `PhaseCellExecutedData` constructs the actual normalized
+input numerators, scalar interior stream and final shifted/weighted output
+words from raw Gaussian RHS data. Input disk, input-stage error and scalar
+magnitude bounds are derived from the constructors and selected weight bounds.
+`executedRun_valid` in `PhaseCellExecutedRun.lean` proves the complete real `CellRun.Valid` contract for these actual stage words and decoded
+output symbols, with no stage-error assumptions and no equality with the
+rational-floor reference. The common bounds are
+`q ≥ inputExponent p cExp+2*l+j+5` and
+`w ≥ q+inputExponent p cExp+2*l+6`, at tolerance `2^(-j)`.
+The shared `inputExponent` definition moved to `PhaseCellWeightData`; the old
+numerical-reference API retains the same definition and behavior.
+This composes the numerical contracts of the individually executed stages;
+it does not yet provide their complete bank-to-bank tape execution. That
+composition, data/descriptor generation, final ordering and complex/line
+endpoint, boundary/coupling/recovery and full setup/storage/line costs remain
+open. Guarded checks peak at 1910.7 MiB (actual run), 1902.1 MiB (stage data)
+and 1891.8 MiB (row table). The expanded axiom audit and
+reference regression pass 4401 guarded build jobs at 7.5 GiB combined peak.
+S3 remains active.
+
+
+Input/interior execution composition checkpoint (2026-10-25): `PhaseCellInputRows`
+proves structurally that the aligned product on a flattened batch is exactly
+the flattening of its rowwise products. `PhaseCellInputInstall` derives the
+transfer count, installs the normalized stream on raw input tape 111, and pays
+for releasing the owned table copy and normalization descriptor. Its endpoint
+is exactly `singleBranchInputWithXTail`, including the unchanged borrowed X
+suffix and persistent output tail. `PhaseCellInputStage` starts from raw RHS
+words, constructs the actual normalized words through execution, and installs
+them. `PhaseCellInputInterior` then executes the four triangular products,
+merge and retained scalar multiplication; no normalized-input data is assumed
+in its initial bank.
+`PhaseCellExecutionSizing` proves a conservative controller-compatible choice:
+`cExp=rhsExp+2*l+j+5`, `b=inputExponent p cExp`, `q=2*b`, `w=4*b+8`.
+It preserves the given RHS bound and satisfies the actual-run validity and
+final word-width bounds. `PhaseCellNormalizationHeader` uses the existing
+half-count machine on the precision header to generate the normalization
+count, preserving all actual header symbols. `inputInteriorFromPrecision_exec`
+therefore needs an empty normalization slot initially, and includes its
+`6*b+4` generation cost. Every other input/interior setup, routing and owned
+staging release cost is included. The interior endpoint still explicitly
+retains its repeated raw input and three scalar counters.
+Coefficient/table data generation, output-control and table loading after the
+interior stage, final stage composition and ordering, complex/line correctness,
+boundary/coupling/recovery and uniform setup/storage/line costs remain open.
+The even-precision choice has not yet been matched into a uniform line budget.
+The expanded axiom audit passes 4407 guarded build jobs at 2.5 GiB combined
+peak. S3 remains active.
+
+### Next implementation gates
+
+1. S3: implement one generated cell interval through S1 and prove `CellRun.Valid`
+   with rescaled error and a paid cost; cover clipped/empty cases before a line loop.
+2. S5: implement a generated boundary page and a repeated solve with explicit
+   computed-Schur perturbation, reciprocal stability, precision, storage and costs.
+3. S3: compose the two interior passes and S5 via the generic error lemmas and
+   establish the shared `SolveSpec` endpoint from actual returned words.
+4. S4: prove descriptor generation, locality, ownership/coverage and publication,
+   then batch equal keys and prove the complete ledger/amortization.
+
+The numerical interface is pinned; these execution, locality, stability and cost
+obligations remain open. They do not mark S3, S4 or S5 complete or change kappa.
+
+Verification: guarded checks pass for `PhaseCellInterface` (1730.6 MiB),
+`PhaseCellReferenceSpec` (1737.3 MiB) and `PhaseCellInterfaceCheck` (1723.0 MiB).
+The guarded audit build completes 3851 jobs at 2.4 GiB combined peak. The audit
+accepts only propext, Classical.choice and Quot.sound, with default proof limits.
+
 ## (a) The sizing without `d² ≤ b`
 
 At `ε > 1/2` the fact `d² ≤ b` is false, and so is every fact equivalent to it: `d ≤ ℓ` means
@@ -63,25 +795,17 @@ the working width needs only `(cG + G + m + 30) d ≤ b`.
 
 ## (b) M7: the faster Gaussian inverse and its execution
 
-**Status** (`PLAN.md`, M7 row; plan §8, M7a/M7b). Paused. Done and checked, off the main route
-(nothing in `mulInTime` uses them): b1, b2, b3a and b5a, and the math of b3s with the ring
-arithmetic of b5 (items 1–5 below; files `NLogN/SchurPerturbSolve`, `PhaseCellRoundedSchur`,
-`PhaseCellRoundedInterior`, `PhaseCellRoundedInverse`, `PhaseCellBoundaryOrder`,
-`PhaseCellBoundaryFold`, `PhaseCellConcreteInterior`, `PhaseCellConcreteSolve`, `ChirpForward`,
-`Mult/PhaseCellB0Line`, `Mult/ShortConv`, `Mult/ChirpRing`). What remains is machine work, and
-its payoff needs the bit supplier: near one the binding margins are the supplier-driven layer,
-chunk and exposure margins (the table in (c)).
+**Current status.** S2's forward primitive is complete; S3's inverse mathematics
+is checked, while the S3/S4/S5 machines and fused schedule are open. The shared
+contract above is the implementation entry point. The mathematics below remains
+a reference and is not yet used by `mulInTime` as a phase-cell inverse backend.
 
-**Resume point.** The b3s machine glue: a generic wrapper around `ldRpStage` (`Fast/LoadRing`) on
-its own register enum, placed by a layout in the manner of `RpLayout`/`RpRuns`
-(`Fast/RingProdRegs`), so that the b3 and b5 line machines share it. It pads `M` blocks of `A`
-input records and `M` kernels of `B` records into the stream format `rpStream M X` with records of
-`2^l` coefficients (zero beyond `A`, resp. `B`), runs the stage, and keeps a range of coefficients of
-each output record; its contract is stated against `rpOut_recOf`, its cost against `rpCost_le`.
-After it: b5b against `chirpAR` and `chirpAR_approx` (setup tables from the exponential evaluators
-of `Fast/TableExp` and `NLogN/PhaseCellExpSample`, the line machine with overlapping block windows
-on a periodically extended line, the replacement of the window line of `Fast/ResampA*`, costs in
-`Cost/MatchResampA`), then b3b and b3c against `pcSolve` and `phase_resampB₀_spec`.
+**Resume point.** Use S1's checked `ShortConv.Fixed.closed_exec` for the interior
+products, targeting `CellRun.Valid` and the backend-independent `SolveSpec`.
+Develop the S5 prepared-boundary endpoint in parallel in the design, with separate
+setup/solve/release costs. Compose these locally before introducing S4's generated
+core/halo schedule. The existing `pcSolve`/`phase_resampB₀_spec` and `rsbAllG`
+whole-axis path are references and optional adapters, not the required new schedule.
 
 **Checked pieces on the main route** (they serve the banded `B̃₀` of the present multiplier,
 `Mult/BandSpec`, `ConcreteB0`, `Fast/BandFits`): `NLogN/PhaseCellFactorization`
@@ -161,7 +885,8 @@ default build does not check them.
      scans, the boundary solve by the passes of `Fast/BandLine` on the boundary records, the
      second interior pass, and the merge.
    * **b3c, the costs.** The line cost `O(t p^(1+δ) (1 + w²/d))` plus a polynomial setup per
-     axis, matched into `rsbAllCostG` as `Cost/MatchBandB.lean` does for the banded line.
+     setup key, matched into the shared S3–S5 ledger above. `Cost/MatchBandB.lean`
+   remains a reference for supplier matching, not the required outer schedule.
 4. **Bulk execution (M7b).** Ordered core/halo windows of the same rounded matrix
    (core `L = 2^⌈8 log₂ p⌉`, halo `A = 4096 p³`, Neumann depth `J = 512 p²`, locality error
    below `2^(-16p)`), period cuts kept in every window, tensor errors in row norm without a volume
@@ -419,7 +1144,7 @@ Conservative, agent time, on the shared lock and the 24 GB machine.
 | b3a | the concrete phase-cell solve and its `B̃₀` interface | 924 | done |
 | b3s | the shared short-convolution layer on the ring product (also for b5): math and the b5 ring arithmetic done (150 + 176); the machine glue | 1–2k | 3–5 weeks |
 | b3b | the phase-cell machines: the per-axis loader (masks, weights, generators, boundary matrix, factor tables) and the line machine | 6–10k | 3–5 months |
-| b3c | the costs of b3b, matched into `rsbAllCostG` | 1–2k | 4–6 weeks |
+| b3c | the costs of b3b, matched into the shared S3–S5 ledger | 1–2k | 4–6 weeks |
 | b4 | bulk core/halo execution and tape transfer (M7b) | 6–12k | 3–6 months |
 | b5a | the chirped-correlation forward map for `Ã`: chirp identity, blocks, rounding errors | 588 | done |
 | b5b | its machine on b3s, the exponential tables, specs and costs | 3–5k | 2–3 months |
@@ -1077,3 +1802,347 @@ The final guarded sizing check peaks at 2832.9 MiB, and the guarded machine and
 supplier audit build completes 13925 jobs at 3.4 GiB combined peak. S2 is complete
 as a standalone primitive; full tensor/support-local scheduling, future sizing
 retunes and global machine integration remain S4/S6 and do not change kappa here.
+
+### Generated final output controls (2026-10-25)
+
+`ScalarPlacement.outputFromHeaders_exec` closes the final weight stage from
+ordinary retained headers: precision `q=2*b`, row exponent `l` and width `w`.
+It generates shift `d=b+2*l+2` and remainder `w-d`, executes rescaling and
+similarity multiplication, then erases both owned controls. Only the output
+prefix changes; prepared similarity data and borrowed suffixes survive exactly.
+The actual-word error contract is retained. The generated-control and cleanup
+overhead is `6*b+8*l+6*w+6*d+28`; the existing output execution cost is added.
+The whole-cell caller must still arrange the prepared similarity table after
+interior execution and release its retained work. Generated coefficient pages,
+boundary/coupling/recovery and the uniform line ledger remain required.
+
+The input/interior handoff `closedInputInterior_exec` releases the three
+readiness counters after the entire generated-normalization and actual-input
+pipeline. The following output stage may generate fresh counters. The normalized
+raw operand on 111 remains retained and must be explicitly released; the
+shared generator/scalar bank and arbitrary borrowed suffix remain untouched.
+
+The final similarity table may be retained immediately below the two generator
+banks and scalar on tape 110. `fetchOutputTable_exec` generates its address and
+length from ordinary retained dimensions, copies the table to 96 and restores
+110 exactly, including its arbitrary suffix. All addressing workspace is
+released, with cost `40*M*L*w+15*M*L+17*M+12*w+49`. This is a paid copy
+contract, not a coefficient-generation theorem. The caller still owes actual
+setup generation and cleanup of the owned copy after the final pass.
+
+### Cell arithmetic composition (2026-10-25)
+
+`cellArithmetic_exec` composes the complete actual-word interior chain from a
+staged raw source and reciprocal-weight copy. It borrows a retained page of two
+generator banks, the reciprocal scalar and final similarity table, preserves
+that entire page and arbitrary suffix, and emits the final weighted word list.
+The normalized raw operand on 111 and the copied final table on 96 are erased.
+Every normalization, multiplier, addressing and shift descriptor is generated
+and released. `cellArithmeticCost` adds every component cost, including both
+readiness releases, final-table movement and `4*M*L*w+2` input-copy release.
+The output remains in the compact reversed row order used by the numerical
+backend. Connecting constructed setup data to this exact execution, publishing
+row order, executing numerical setup and the boundary/line gates remain open.
+
+`constructedCell_exec` now instantiates the complete arithmetic execution with
+constructed generator/reciprocal words, actual ambient similarity weights and
+raw source rows. Its terminal stream is exactly `executedOutputWords`; the same
+contract supplies `CellRun.Valid` through `executedRun_valid` for each row.
+Generator, scalar and weight bounds are derived rather than supplied. This
+closes the arithmetic data/execution bridge while preserving the staged-bank
+boundary: setup generation and input staging still need executed, paid callers.
+
+`publishRows_exec` publishes coefficient-row reversal while preserving an
+arbitrary output suffix. It generates and releases the total prefix count,
+erases only the old prefix and uses two symbol moves to preserve word bits.
+Its bound is `42*M*L*w+19*M*L+26*M+24`; all other stacks are restored. The
+closed caller still owes generation of the batch/record headers and the
+identification of actual output-word rows before this publication primitive.
+
+The publication caller `publishFromDimensions_exec` now derives `M` and
+`L*w` from ordinary retained `2*M`, `L`, `w` headers and releases them after
+publication. Its bound is `42*M*L*w+19*M*L+34*M+6*L*w+9*L+37`. It restores
+all other stacks and the arbitrary output suffix. Row decomposition of actual
+terminal output data and composition into the cell caller are still required.
+
+`publishedCell_exec` now appends generated-header publication to constructed
+cell execution. A structural `outputRows_spec` produces equal-length rows from
+the actual terminal list, including empty-row cases. The final stream is exactly
+`publishedWords M L (executedOutputWords ...)`; retained setup/suffix and all
+cleanup guarantees survive. The cost adds `publishFromDimensionsCost`. The
+remaining numerical publication obligation is the coordinate-read identity
+between forward-order words and the reversed-index `executedRun` endpoint.
+
+`executedRun_y_published` closes the publication coordinate handoff: each
+`CellRun.y i` is exactly the decoded final word at forward position `n*L+i`.
+The underlying `publishedWords_read` reflects within each row and preserves
+arbitrary suffixes, without extra arithmetic/rounding or error. Together with
+`publishedCell_exec` and `executedRun_valid`, the real cell arithmetic and
+coordinate-order publication now share one actual-word numerical endpoint.
+Setup generation/source staging and the boundary/line gates remain required.
+
+### Amplified precision correction (2026-10-25)
+
+The earlier half-precision recovery choice `q=2*b` is insufficient for final
+error allocation: the rounded-cell estimate contains `2^b*η`. Final sizing
+now uses `q=4*b`, width `8*b+8` and stage exponent `2*b`; b is chosen from
+the requested final accuracy and original source magnitude.
+`execution_cell_error` proves the full rounded-cell error is at most `2^-j`.
+`quarterCount_exec` generates b from the retained precision, preserves every
+source symbol and releases the temporary half header for `22*b+10`. Existing
+half-count execution contracts are valid but do not instantiate this final
+sizing; normalization/output-shift wrappers still need migration. Preserve the
+ambient s in later line/error bounds.
+
+The quarter-count migration is complete through `publishedCell_sized_exec`.
+Both normalization and output-shift controls recover b from q=4*b using 115
+as restored intermediate workspace. The input/interior/output/publication
+execution contracts and costs now require q=4*b; the earlier q=2*b wrappers
+have been replaced. The sized caller derives stage precision 2*b and word
+width 8*b+8 from requested final accuracy and original RHS magnitude.
+Normalization costs 22*b+10; generated output controls cost
+22*b+8*l+4*w+6*d+29 before final control release. The existing complete
+rounded-cell error budget now fits the executed precision. Exact interior
+comparison still requires ambient geometry and a principal-system hypothesis.
+
+### Exact published real interior comparison (2026-10-25)
+
+`publishedCell_accuracy` proves final `2^-j` error for each actual published
+forward-order word against a solution of the original ambient principal
+system. It derives the stage validity, source bound and `L*η≤1`, applies the
+existing structural `rounded_cell` theorem and pays its amplified error using
+the quarter-count sizing. The caller still proves interval fit, interior
+membership, common phase cell and maximality in the stated principal set.
+These geometry conditions are not generated descriptors or a halo-local
+replacement theorem. Setup/source staging and boundary/line costs remain open.
+
+### Paid per-call payload staging (2026-10-25)
+
+The retained 110 page may contain two generator banks, scalar, output weights,
+then per-call RHS and reciprocal input weights. `stagePayloadBank_exec` starts
+with empty 93/96 work prefixes, copies RHS and reciprocal words with generated
+addresses and yields the exact existing input ABI. It restores the full page
+and arbitrary suffix. RHS is per-call borrowed payload and is not reusable
+setup-key data; gathering/packing still needs its own executed transfer ledger.
+`fetchPage_exec` is the single counted-copy engine, also used for final weights.
+Its bound is `(16+12*k)*M*L*w+15*M*L+17*M+12*w+4*k+42`. Staging adds the
+k=3/k=4 copies and `4*M*L*w+4` for moving RHS to its working port.
+
+`stagedCell_sized_exec` now composes paid payload staging with sized arithmetic
+and publication. Its endpoint is the initial empty-work bank with only the
+published output prefix replaced. The entire reusable setup and per-call RHS/
+reciprocal payload are restored, as are all headers, native stacks and the
+arbitrary output suffix. Staging adds `stagePayloadCost` to the complete cell
+cost. The `CellRun.Valid` numerical endpoint survives composition. Setup
+creation and initial payload gathering/packing still require executed callers;
+the per-call payload remains outside the reusable setup key.
+
+### Computable ambient geometry (2026-10-25)
+
+`PhaseCellDiscreteGeometry` computes exact phase indices by signed integer
+division, with a proof matching the existing tie convention. Its Boolean
+interior predicate, duplicate-free per-phase index lists and computed full
+interior set match the original analytic definitions. All coordinates and
+phase cuts remain ambient. These constructors do not generate artificial
+halo cuts and do not establish tape execution, scan cost or interval endpoints.
+They provide the computable predicates for that next descriptor stage.
+
+### Generated full-cell interval geometry (2026-10-25)
+
+`intervalStart`/`intervalLength` compute full ambient interior intervals from
+exact integer phase metadata, with zero length for empty phases. Convexity
+proves nonwrapping fit, exact coverage, common phase and maximality.
+`generatedCell_accuracy` applies the published real solver accuracy theorem
+using these computed endpoints and computed interior mask; only an interior
+anchor is needed to select a nonempty phase. No arbitrary interval/geometry
+oracle remains in that numerical specialization. This does not handle
+artificial halo cuts or establish execution/cost of descriptor generation.
+
+`PhaseCellGeneratedCover` computes the nonempty phase ownership schedule.
+Its generated intervals cover exactly the full ambient interior, with no
+duplicate phase keys and unique ownership of every coordinate. The number of
+keys is at most s. The list deduplicates exact integer phase labels; no
+arbitrary interval-cover input is assumed. This is metadata correctness, not
+executed descriptor generation or artificial-halo-cut geometry. Total-volume
+and length-group accounting remain separate cost obligations.
+
+`PhaseCellGeneratedVolume` closes full-interior volume accounting: every
+computed span length equals its phase-fiber cardinality, and the sum over the
+actual duplicate-free key list equals the computed interior mask cardinality
+and is at most s. The cardinality proof preserves physical-to-ambient
+coordinates exactly. This supplies a volume ledger for cell costs, while
+length-group scheduling and executed metadata/setup generation remain open.
+
+`PhaseCellLengthGroups` now computes equal-length phase batches and proves
+positive keys, nonempty batches, no duplicated keys/rows and exact volume
+preservation: sum of batch count times length equals the interior cardinality
+and is at most s. Natural-index `groupOrigin` matches the existing arithmetic
+ABI, with generated geometry for every bounded row. This is a numerical
+batching schedule, not an executed scheduler. Length equality alone does not
+identify the complete setup reuse key or any prepared boundary page.
+
+`lengthGroup_sized_exec` connects the computed equal-length schedule to the
+complete staged arithmetic/publication program. Batch count and origins are
+derived, not supplied; exact restoration and all component costs are retained.
+`lengthGroup_accuracy` derives requested published error for each actual row
+from generated ambient geometry. The constructed initial setup/payload bank
+still needs executed setup/gathering, and the outer key iteration is not yet
+an executed scheduler. Full reuse-key equality and boundary/line costs remain
+separate obligations.
+
+### Integer inverse-generator setup representation (2026-10-25)
+
+The shared structural generator engine now admits rings, so integer setup uses
+the same row evaluation/step definitions. `dyadicGeneratorIter_spec` identifies
+integer numerators at denominator 2^(P*n) with the existing exact rational
+recurrence. Actual coefficient numerators use the corrected exponential
+routine. Both encoded column banks are exactly integer-quotient encodings of
+that integer vector; no new numerical oracle or reference equality assumption
+is introduced. This representation prepares executed setup and avoids rational
+reductions, but reciprocal encoding, setup widths and paid tape execution are
+still required.
+
+The integer generator corner is proved positive, and
+`integerReciprocalWord_eq` identifies its integer-division scalar with the
+existing encoded reciprocal exactly. All three retained generator/scalar data
+now admit integer-only representations. Stored column entries fit width
+P*n+3; the reciprocal division numerator fits q+P*n+2. These do not yet bound
+all step accumulators or supply executed setup/cost/space contracts.
+
+Setup row products and arbitrary partial sums/RHS accumulators now have
+structural signed-word bounds. With L≤2^l, the common allowance
+`integerSetupWidth=P*(n+1)+q+l+5` covers those operations, stored integer
+columns and the reciprocal numerator and is monotone in iteration count.
+The first iterate is exactly a scaled unit vector, so row-step bounds apply
+from n≥1. The contracts do not yet establish tape execution, coefficient
+argument arithmetic, setup cost or total peak storage.
+
+### Executed integer setup initialization (2026-10-25)
+
+`generateSeed_exec` emits the actual scaled unit first iterate from unary
+L/W/P headers, with exact restoration and an arbitrary output suffix. It
+generates/releases L*W, emits zeros and replaces bit P in the first word; its
+cost is bounded by 10*L*W+9*L+6*P+17. The program is independent of the
+dimensions. Existing integer-data/format lemmas identify its output exactly
+with the first integer generator iterate. This is initialization, not a
+complete coefficient/row/iteration/reciprocal setup execution theorem.
+
+### Executed integer generator-row arithmetic (2026-10-25)
+
+The existing signed real multiplier stream now exposes its direct `Fits`
+contract, including truncation precision zero. The same scalar preparation
+program generates zero-precision readiness from ordinary retained headers
+when W≥5; the positive-precision API is preserved. `integerProducts_exec`
+executes those products with paid setup and exact operand/scratch restoration.
+`subtractRow_exec` consumes an arbitrary product list through the shared
+subtraction automaton, leaving one accumulator word and restored work tapes.
+The composed 117-tape `integerRow_exec` costs at most
+`prepareCost 0 W + L*(rmulCost W+13*W+12)+10`; generated counters remain explicit.
+`generatorRow_exec` proves the result is the next actual integer generator
+entry and derives its signed-word fit. The width applies to stored words;
+coefficient-page and scaled-RHS staging, row/iteration control, reciprocal and
+column encoding, setup release and combined peak/cost proofs remain required.
+This arithmetic kernel does not supply a free coefficient page or close S3.
+
+`integerRowPrepared_exec` separates the reusable arithmetic call from executed
+readiness generation. Only the accumulator word changes; installed counters,
+operands and scratch restore. Its bound is `L*(rmulCost W+13*W+12)+10`, allowing
+setup to be paid once across row calls. `rowColumnWords_eq` proves each row's
+column operand is the stored integer vector in its existing order. The outer
+iteration must still execute coefficient/RHS staging and publish each row.
+
+### Executed integer generator iteration (2026-10-25)
+
+Row staging now generates/releases L*W and copies borrowed column/factor/RHS
+prefixes with exact suffix restoration. Row publication releases only owned
+copies and preserves the output word's symbol order. The composed row call
+changes only the output prefix and costs at most
+`L*(rmulCost W+43*W+21)+14*W+55`. The consuming variant also releases the
+owned factor/RHS prefixes, keeping their arbitrary suffixes, with bound
+`integerRowCost L W=L*(rmulCost W+55*W+30)+20*W+73`.
+
+The existing unary scanner executes N such rows, restoring the original count
+symbols at bound `N*(integerRowCost L W+5)+4`. A stable context proves readiness,
+column storage and workspace survive each iteration. Descending generator rows
+and prefix publication emit the next complete integer column in its original
+order. All signed fits follow from the existing structural bounds. The initial
+wrapper generates readiness once at extra `prepareCost 0 W`, and the counters
+remain installed for reuse. The column is borrowed on 110, owned factor and RHS
+pages are consumed on 111/112, and output is prefixed on 113; these setup-local
+roles precede assembly of the retained runtime page.
+
+The factor page is independent of iteration count. The RHS page is the scaled
+unit seed in reverse word order. These identities do not execute page generation:
+coefficient/RHS construction, repeated-iteration control and column replacement,
+reciprocal/column encoding and complete setup release/peak-space/cost proofs
+remain required before this becomes a closed setup theorem.
+
+### Generated iteration RHS and exponent (2026-10-25)
+
+`generateReverseSeed_exec` emits the existing single-word power seed, generates
+(L-1)*W and prepends that many zero symbols. It restores every count and work
+tape at bound `10*L*W+15*L+6*d+37`, preserving an arbitrary existing suffix.
+`generateRhsPage_exec` handles empty interiors through an executed branch,
+with uniform bound `10*L*W+15*L+6*d+39`.
+
+`generateIterationRhs_exec` computes P*(n+1) from ordinary P/n headers, emits the
+page and releases the exponent header. Its bound is
+`10*L*W+15*L+12*P*n+21*P+49`. The composed `generateRhsIntegerStep_exec` executes
+RHS/exponent generation, scalar readiness and the entire generator row loop at
+`prepareCost 0 W + L*(integerRowCost L W+10*W+20)+21*W+53`.
+The original RHS suffix on 112 restores after the generated page is consumed;
+the temporary exponent on 115 restores. Ordinary P/n headers on 114/116 are
+borrowed. The factor page is still a stated consumed input, and the input column
+remains borrowed. Generating coefficients/factors, replacing the column and
+controlling repeated iterations, generating setup widths, reciprocal/column
+encoding and combined setup cost/space/release proofs remain separate obligations.
+
+### Executed integer-column construction (2026-10-25)
+
+The next-column transition is now an actual program: derive L*W once, erase
+only the owned old prefix, install the computed prefix and release temporary
+output, preserving both borrowed suffixes. Its bound is `18*L*W+9*L+18`.
+Factor copying derives L² and L²*W, restores the retained page and releases
+both generated counts at `16*L²*W+15*L²+9*L+22`.
+
+One repeatable iteration reuses readiness and the factor page, generates its
+RHS and exponent, executes every row, installs the next column and increments
+the ordinary iteration header. Only the current column and iteration count
+change. The bound is
+`I(L,W)=16*L²*W+15*L²+L*(integerRowCost L W+28*W+38)+21*W+94`.
+The existing unary scanner executes M calls at `M*(I(L,W)+5)+4`, restoring the
+original supplied count symbols. A stable context proves the next call's
+readiness, column fits, immutable factor page and empty workspace.
+
+`generateIntegerColumn_exec` emits the unit seed for a nonempty cell, initializes
+the iteration header, prepares readiness once and runs the complete loop. No input column,
+RHS page or readiness is supplied. It emits integer column M+1 at
+`prepareCost 0 W+M*(I(L,W)+5)+10*L*W+9*L+6*P+22`, with its arbitrary original
+column suffix retained. Signed decoding followed by division by 2^(P*(M+1))
+has the existing error ≤2^-M against the rounded Toeplitz inverse column. The
+actual decoded corner is positive, supplying the later reciprocal divisor.
+
+Setup-local roles: 109 retains the square factor page; 111 holds a consumed
+private copy; 110 holds the current column; 113 is temporary row output.
+The supplied iteration count on 101 is borrowed and restored through archive
+100 after zero-precision readiness has been generated. The multiplier reads
+its precision from its installed counter, so archive 100 may be live during
+this loop. Row headers 102/103, word width 94 and coefficient precision 114
+are borrowed. Header 116 is generated at 1 and incremented to M+1. Every RHS,
+exponent, square/symbol count and row work tape restores.
+
+This entry point still assumes the stated retained factor page and ordinary
+sizing headers. Its L²*W page remains an explicit storage obligation; neither
+this scalar cost nor per-module checking peaks establish the final S3 uniform
+cost/stock envelope. Coefficient/factor generation, final sizing/header
+selection, quotient/reciprocal encoding and setup release/combined peak/cost
+matching remain required, alongside outer scheduling and full-line composition.
+
+
+The executed column encoder now generates and releases its slice counters from
+retained P/n/q/W headers, preserves the raw integer column and borrowed suffixes,
+and emits the existing dyadic runtime column words. Signed decoding and the
+existing inverse-column error bound hold for the emitted words. The encoder
+cost is L*(20*W+6*(2*q+8)+23)+31*W+57. This is a separate verified entry point;
+composition with raw column generation, reciprocal and reversed-branch encoding,
+factor-page generation and the combined S3 cost/storage envelope remain open.
