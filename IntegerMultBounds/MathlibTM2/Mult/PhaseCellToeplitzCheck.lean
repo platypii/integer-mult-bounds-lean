@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedPublicationControls
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedScatter
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellScatterCoreRead
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedRawGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireGroupCost
@@ -952,6 +954,20 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowGaps_offset,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_absolute,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_absolute_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.trimAdvance_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.trimAdvanceUpdate_comp,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.trimAdvanceLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationControls_restore,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.sum_trimAdvances,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowGaps_trimAdvances,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowGaps_publicationGaps,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalPublicationGaps,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvances_lower,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.gatherControls_append,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalPublicationControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.protectedPublicationControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.protectedScatter_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
