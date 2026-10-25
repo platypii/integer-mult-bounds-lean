@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratorSetupAccuracy
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReversedColumnAccuracy
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedColumn
@@ -104,6 +106,16 @@ import Lean.Util.CollectAxioms
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realWord_bits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bits_realWord,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.copyRealBits_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.divideRealWords_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateReciprocalNumerator_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cropReciprocal_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateReciprocal_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generateIntegerReciprocal_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generateGenerators_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatorBank_accuracy,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.shiftReverse_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.reversedColumnWords_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateReversedColumn_exec,

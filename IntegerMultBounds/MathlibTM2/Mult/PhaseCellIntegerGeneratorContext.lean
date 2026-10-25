@@ -25,14 +25,14 @@ structure IntegerGeneratorContext {A : ℕ} (P s t u band L n w : ℕ)
 theorem IntegerGeneratorContext.update {A P s t u band L n w : ℕ}
     {tailX tailF : List (Fin (A + 4))} {S : Stacks 117 A}
     (h : IntegerGeneratorContext P s t u band L n w tailX tailF S) (k : Fin 117)
-    (hk : k ∈ [(100 : Fin 117), 101, 111]) (zs : List (Fin (A + 4))) :
+    (hk : k ∈ [(100 : Fin 117), 101, 111, 113]) (zs : List (Fin (A + 4))) :
     IntegerGeneratorContext P s t u band L n w tailX tailF { S with R := Function.update S.R k zs } := by
   have hoff (j : Fin 117) (hj : j ∈ [(103 : Fin 117), 114, 116, 108, 109, 107, 115]) : j ≠ k := by
-    have hd : [(103 : Fin 117), 114, 116, 108, 109, 107, 115].Disjoint [100, 101, 111] := by simp
+    have hd : [(103 : Fin 117), 114, 116, 108, 109, 107, 115].Disjoint [100, 101, 111, 113] := by simp
     intro he
     subst j
     exact List.disjoint_left.mp hd hj hk
-  refine ⟨h.row.update k ((by decide : [(100 : Fin 117), 101, 111].Sublist
+  refine ⟨h.row.update k ((by decide : [(100 : Fin 117), 101, 111, 113].Sublist
     [100, 101, 103, 108, 111, 112, 113, 116]).subset hk) zs, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · simpa [hoff 103 (by simp)] using h.count
   · simpa [hoff 114 (by simp)] using h.precision

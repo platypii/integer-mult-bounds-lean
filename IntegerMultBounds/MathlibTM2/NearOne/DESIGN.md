@@ -2171,3 +2171,24 @@ Signed decoding and error ≤2^-j are proved at iteration j+2, q≥j+2.
 The guarded S3 audit passes 4478 jobs at 2.6 GiB combined peak.
 Reciprocal encoding, factor-page generation, final sizing and combined
 setup/cost/storage remain open, as do the outer full-line S3 obligations.
+
+
+The inverse-generator setup is now composed end to end from the retained factor
+page: `ScalarPlacement.generateGenerators_exec` initializes and iterates the
+integer column, emits the first runtime generator on tape 111, constructs the
+shifted reverse on tape 113, and computes the reciprocal on tape 96. It generates
+`2^(q+P*n)` from ordinary headers, copies the positive signed corner into the
+existing binary restoring divider, converts and crops the quotient to runtime
+width, and releases numerator, binary workspace and counters. The raw column,
+factor page and borrowed suffixes remain explicit and preserved.
+`generatorBank_accuracy` proves stage error ≤2^-j for all three actually decoded
+banks at n=j+2 and q≥j+2. Division alone costs at most `W*(12*W+93)+75`;
+the complete reciprocal constructor costs at most
+`W*(12*W+128)+6*(2*q+8)+4*q+134`. `generatorSetupCost` adds these executed
+phases to column iteration and reversal without claiming a uniform S3 bound.
+The guarded axiom audit passes all 4486 jobs at 2.6 GiB combined peak.
+The retained dense square factor page is still supplied, and final sizing/header
+generation, packed payload assembly/release and combined peak/uniform cost
+matching remain open. Gathering/scheduling, halo cuts and complex/boundary/
+coupling/recovery/full-line composition also remain open. S3 is incomplete;
+this checkpoint does not change the proved multiplication saving.
