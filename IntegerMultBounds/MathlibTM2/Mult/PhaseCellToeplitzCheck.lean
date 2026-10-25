@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateLengthCandidates
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalKeysCore
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalGatherCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawNaturalGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedNaturalGroup
@@ -731,6 +733,39 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawNaturalGather_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawNaturalGroupInputBank_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawNaturalGroup_spec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.div_step_cases,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.phaseLower_step,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLength_middle,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLength_le_uniform,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthCandidates_uniform,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthCandidates_le,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLength_mem_candidates,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKeys_nodup,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKeys_sublist,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKeys_length_le,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.mem_naturalLengthKeys,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKey_pos,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKey_uniform,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKeys_pad,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthGroup_nodup,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthGroup_toFinset,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKeys_cover,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKeys_volume,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKeys_list_volume,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalLengthKeys_volume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitCurrentLength_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalEndpointLengthsCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalMiddleLengthsCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLengthCandidatesCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLengthCandidatePackets_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLengthCandidatePairs_bits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.lengthCandidatesController_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadCandidateHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedLengthCandidates_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateLengthCandidates_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLengthKeys_core_cover,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalKeyCores_eq_interior,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLengthKeys_errorOn,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalGroup_volume_le,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalStart_mono,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalOrigins_ordered,

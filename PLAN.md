@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1245 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1252 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and ambient input, generating origins, count and sweep controls, gathering their own RHS and retaining the original line, with shared inverse/weight initialization, requested ambient-core accuracy and full cleanup. Natural scheduling preserves interior volume. Global grouping, storage bounds, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Real natural groups execute from ordinary unary parameters and ambient input, generating origins, count and sweep controls, gathering their own RHS and retaining the original line, with shared inverse/weight initialization, requested ambient-core accuracy and full cleanup. At most four candidate lengths are generated from ordinary parameters; the mathematical key schedule covers exactly the interior and preserves volume/error. Global key execution/publication, storage bounds, boundary/coupling/recovery and uniform fast-line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6328,4 +6328,53 @@ incomplete and the proved multiplication saving is unchanged.
 The generated-control/raw-line checkpoint passes all 9859 guarded S3 audit jobs
 at 2.7 GiB combined peak. All eleven new modules pass individual guarded checks;
 maximum measured peak is 1963.5 MiB. Source-integrity, generated-summary and
+whitespace checks pass with default proof limits unchanged.
+
+
+### S3 bounded global length schedule and executed candidate discovery
+
+`naturalLength_middle` proves every non-endpoint phase has one of the adjacent
+lengths `s/(t-s)-2*band` and `(s/(t-s)+1)-2*band`. Together with the two clipped
+endpoint lengths, `naturalLength_mem_candidates` gives a fixed four-candidate
+list containing every actual cell length. `naturalLength_le_uniform` and
+`naturalLengthCandidates_uniform` bound all candidates by
+`(s/(t-s)+1)-2*band`; the FFT need not be sized to the whole ambient line.
+
+`naturalLengthKeys` removes duplicate candidates and empty groups as a
+computable mathematical schedule. It is a sublist of the four candidates, has
+at most four entries, and contains exactly the nonempty length classes.
+`naturalLengthKeys_list_volume` proves the exact ledger
+`sum_keys B(L)*L = interiorSet.card ≤ s`. `naturalLengthKeys_pad` transfers one
+common FFT-padding choice to every selected length.
+`naturalLengthKeys_core_cover` and `naturalKeyCores_eq_interior` identify the
+union of their actual published ambient cores with precisely the original
+interior mask. `naturalLengthKeys_errorOn` transfers the same uniform coordinate
+error to the whole interior without a key-count factor.
+
+`naturalEndpointLengthsCode_do` computes both clipped endpoints with the same
+verified interval code used by the real solver. `naturalMiddleLengthsCode_do`
+computes the two interior candidates, including truncated empty lengths. The
+combined candidate program uses 54 table atoms; generating its gap/one constants
+adds six. `lengthCandidatesController_exec` emits exactly the four fixed-width
+binary candidate words in candidate order, costing at most
+`60*tblC(V,V)+8*V+2` after its initialized binary header bank.
+
+`generateLengthCandidates_exec` supplies that entire bank from ordinary unary
+parameters, generates both workspace widths, loads only `s`, `t` and band width,
+runs discovery and releases all controller/width scratch. Its exact final bank
+differs only on 87, where the four binary words prefix an arbitrary borrowed
+suffix. No row length, batch count, phase constants, prepared interval or binary
+numeric table is supplied.
+
+The executed discovery stream deliberately contains all four candidates,
+including possible zeros, duplicates and candidates whose group is empty. The
+mathematical nonempty/deduplicated schedule is proved, but its runtime filtering,
+iteration of the raw group solver and ambient publication are not yet composed.
+Global execution, uniform fast solver/time and execution-wide storage bounds,
+artificial halo cuts and complex/boundary/coupling/recovery/full-line composition
+remain open. S3 remains incomplete and the proved saving is unchanged.
+
+The bounded length-discovery checkpoint passes all 9868 guarded S3 audit jobs
+at 4.1 GiB combined peak. All nine new modules pass individual guarded checks;
+maximum measured peak is 1842.8 MiB. Source-integrity, generated-summary and
 whitespace checks pass with default proof limits unchanged.
