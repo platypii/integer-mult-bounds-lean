@@ -31,8 +31,7 @@ theorem chirpControlNext_exec (hrg : Function.Injective rg) (dst : Fin T)
     ∃ (st' : TblSt 10 A) (v' : HS T Q A U) (S' : Stacks T A) (n : ℕ),
       ChirpControlReady st' s t m w (j + 1) ∧ st'.acc = st.acc ∧
       (∀ i, st'.val i < 2 ^ W) ∧ v'.user = v.user ∧
-      n ≤ 6 * tblC W e + W * (4 * (chirpAdvance s t m j * w) + 11) +
-        2 * (chirpAdvance s t m j * w) + 7 ∧
+      n ≤ 6 * tblC W e + 6 * (chirpAdvance s t m j * w) + 11 * W + 7 ∧
       Exec body (chirpControlNext rg dst) (mk v S) n (mk v' S') ∧
       tblHolds rg S' (tblRho W wl nl st') ∧
       S'.R dst = blank :: (List.replicate (chirpAdvance s t m j * w) tick ++ S.R dst) ∧

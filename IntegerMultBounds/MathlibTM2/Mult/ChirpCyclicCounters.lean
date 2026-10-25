@@ -62,7 +62,7 @@ theorem chirpCyclicCounters_at {T A : ℕ} (dst : Fin 5 → Fin T) (hdst : Funct
 theorem chirpCyclicCounters_cost {T : ℕ} (dst : Fin 5 → Fin T) (W s m w : ℕ) (hs : 0 < s)
     (σ : Fin 10 → ℕ) (hv : ∀ i, σ (chirpCyclicSlot i) = chirpCyclicCount s m w i) :
     unaryCopiesCost W σ (chirpCyclicAssignments dst) =
-      (4 * W + 2) * chirpCyclicCounterTotal s m w + 55 * W + 31 := by
+      6 * chirpCyclicCounterTotal s m w + 55 * W + 31 := by
   have h4 : σ 4 = chirpOffset s m * w := hv 0
   have h5 : σ 5 = (s - chirpOffset s m) * w := hv 1
   have h6 : σ 6 = chirpPeriods s m := hv 2
@@ -72,7 +72,7 @@ theorem chirpCyclicCounters_cost {T : ℕ} (dst : Fin 5 → Fin T) (W s m w : �
     rw [← Nat.add_mul, Nat.add_sub_of_le (chirpOffset_lt hs m).le]
   simp only [unaryCopiesCost, chirpCyclicAssignments, List.map_cons, List.map_nil,
     List.sum_cons, List.sum_nil, h4, h5, h6, h7, h9]
-  calc _ = (4 * W + 2) * (chirpOffset s m * w + (s - chirpOffset s m) * w +
+  calc _ = 6 * (chirpOffset s m * w + (s - chirpOffset s m) * w +
       chirpPeriods s m + (s + 3 * m) * w + (3 * m + 1) * w) + 55 * W + 31 := by ring
     _ = _ := by rw [hrot]; rfl
 

@@ -27,7 +27,7 @@ def unaryCopiesR (σ : Fin n → ℕ) (R : Regs T A) : List (Fin n × Fin T) →
   | (i, dst) :: ls => unaryCopiesR σ (Function.update R dst (List.replicate (σ i) tick ++ R dst)) ls
 
 def unaryCopiesCost (W : ℕ) (σ : Fin n → ℕ) (ls : List (Fin n × Fin T)) : ℕ :=
-  (ls.map (fun p => W * (4 * σ p.1 + 11) + 2 * σ p.1 + 6)).sum + 1
+  (ls.map (fun p => 6 * σ p.1 + 11 * W + 6)).sum + 1
 
 /-- Generic host execution; the binary bank, native stacks and left stacks are restored. -/
 theorem tblUnaryCopies_exec (hrg : Function.Injective rg) {W : ℕ}
@@ -45,7 +45,7 @@ theorem tblUnaryCopies_exec (hrg : Function.Injective rg) {W : ℕ}
     have hreg : [rg (.v i), dst, rg (.z 0), rg (.z 1), rg (.z 2)].Nodup := by
       simp [List.nodup_cons, hrg.eq_iff, hd, Ne.symm (hd (.z 0)),
         Ne.symm (hd (.z 1)), Ne.symm (hd (.z 2))]
-    obtain ⟨v₁, k₁, hu₁, hk₁, he₁⟩ := toUnary_exec body hreg (hfit i) v S
+    obtain ⟨v₁, k₁, hu₁, hk₁, he₁⟩ := toUnary_exec_linear body hreg (hfit i) v S
       (by simpa only [tblRho_v] using hS (.v i))
       (by simpa only [tblRho_z] using hS (.z 0))
       (by simpa only [tblRho_z] using hS (.z 1))
@@ -116,14 +116,14 @@ theorem unaryCopiesR_at (σ : Fin n → ℕ) (R : Regs T A) (ls : List (Fin n ×
 /-- Rewrite the conversion cost as a length term and a total number of generated ticks. -/
 theorem unaryCopiesCost_eq (W : ℕ) (σ : Fin n → ℕ) (ls : List (Fin n × Fin T)) :
     unaryCopiesCost W σ ls = ls.length * (11 * W + 6) +
-      (4 * W + 2) * (ls.map (fun p => σ p.1)).sum + 1 := by
+      6 * (ls.map (fun p => σ p.1)).sum + 1 := by
   induction ls with
   | nil => simp [unaryCopiesCost]
   | cons p ls ih =>
     unfold unaryCopiesCost at ih ⊢
     simp only [List.map_cons, List.sum_cons, List.length_cons]
-    calc _ = (W * (4 * σ p.1 + 11) + 2 * σ p.1 + 6) +
-        ((List.map (fun p => W * (4 * σ p.1 + 11) + 2 * σ p.1 + 6) ls).sum + 1) := by omega
+    calc _ = (6 * σ p.1 + 11 * W + 6) +
+        ((List.map (fun p => 6 * σ p.1 + 11 * W + 6) ls).sum + 1) := by omega
       _ = _ := by rw [ih]; ring
 
 end IntegerMultBounds.MathlibTM2.Mult.ShortConv

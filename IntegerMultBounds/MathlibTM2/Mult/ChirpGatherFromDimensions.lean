@@ -21,7 +21,7 @@ def chirpGatherFromDimensions (rg : TblR 10 → Fin T) (r : ChirpRawReg → Fin 
 
 def chirpGatherFromDimensionsCost (W e s t m w : ℕ) : ℕ :=
   let M := chirpBlockCount t m
-  chirpRawGatherCost W e s t m w M + 11 * tblC W e + W * (4 * M + 11) + 4 * M + 8
+  chirpRawGatherCost W e s t m w M + 11 * tblC W e + 8 * M + 11 * W + 8
 
 /-- All counters, the cyclic extension and gathering controls are generated and erased.
 Only the destination changes; the retained binary dimension bank and raw line are restored. -/
@@ -74,8 +74,8 @@ theorem chirpGatherFromDimensions_exec {rg : TblR 10 → Fin T} {r : ChirpRawReg
   refine ⟨v₃, _, hu₃.trans (hu₂.trans hu₁), ?_, (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl ?_⟩
   · rw [hc₂, List.length_replicate]
     change n₁ + (n₂ + (2 * M + 2)) ≤ chirpRawGatherCost W e s t m w M +
-      11 * tblC W e + W * (4 * M + 11) + 4 * M + 8
-    change n₁ ≤ 11 * tblC W e + W * (4 * M + 11) + 2 * M + 6 at hn₁
+      11 * tblC W e + 8 * M + 11 * W + 8
+    change n₁ ≤ 11 * tblC W e + 6 * M + 11 * W + 6 at hn₁
     omega
   · congr 1
     ext1

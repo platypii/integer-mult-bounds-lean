@@ -49,7 +49,7 @@ theorem chirpS1Dimensions_off {T A : ℕ} (dst : Fin 7 → Fin T) (q t m w l : �
 /-- Conversion pays once per emitted tick and once per each of the seven dimensions. -/
 theorem chirpS1Dimensions_cost {T : ℕ} (dst : Fin 7 → Fin T) (W q t m w l : ℕ) :
     unaryCopiesCost W (chirpS1DimensionValues q t m w l) (chirpS1Assignments dst) =
-      (4 * W + 2) * ((q + 1) + l + w + (3 * m + 1) + 4 * m + chirpBlockCount t m + m) +
+      6 * ((q + 1) + l + w + (3 * m + 1) + 4 * m + chirpBlockCount t m + m) +
         77 * W + 43 := by
   simp [unaryCopiesCost, chirpS1DimensionValues, chirpS1Assignments]
   ring

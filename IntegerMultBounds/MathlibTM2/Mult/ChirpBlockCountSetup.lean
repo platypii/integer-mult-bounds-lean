@@ -27,7 +27,7 @@ theorem chirpBlockCountSetup_exec (hrg : Function.Injective rg) (dst : Fin T)
     (hzero : ∀ i : Fin 10, 4 ≤ i.val → st.val i = 0) (hfit : ∀ i, st.val i < 2 ^ W)
     (v : HS T Q A U) (S : Stacks T A) (hS : tblHolds rg S (tblRho W wl nl st)) :
     ∃ v' k, v'.user = v.user ∧
-      k ≤ 11 * tblC W e + W * (4 * chirpBlockCount t m + 11) + 2 * chirpBlockCount t m + 6 ∧
+      k ≤ 11 * tblC W e + 6 * chirpBlockCount t m + 11 * W + 6 ∧
       Exec body (chirpBlockCountSetup rg dst) (mk v S) k
         (mk v' { S with R := Function.update S.R dst (List.replicate (chirpBlockCount t m) tick ++ S.R dst) }) := by
   classical
@@ -37,7 +37,7 @@ theorem chirpBlockCountSetup_exec (hrg : Function.Injective rg) (dst : Fin T)
   have hreg : [rg (.v 4), dst, rg (.z 0), rg (.z 1), rg (.z 2)].Nodup := by
     simp [List.nodup_cons, hrg.eq_iff, hout, Ne.symm (hout (.z 0)),
       Ne.symm (hout (.z 1)), Ne.symm (hout (.z 2))]
-  obtain ⟨v₂, k₂, hu₂, hk₂, he₂⟩ := toUnary_exec body hreg (by simpa only [hv₁] using hfit₁ 4) v₁ S₁
+  obtain ⟨v₂, k₂, hu₂, hk₂, he₂⟩ := toUnary_exec_linear body hreg (by simpa only [hv₁] using hfit₁ 4) v₁ S₁
     (by simpa only [tblRho_v, hv₁] using hb₁ (.v 4))
     (by simpa only [tblRho_z] using hb₁ (.z 0))
     (by simpa only [tblRho_z] using hb₁ (.z 1))

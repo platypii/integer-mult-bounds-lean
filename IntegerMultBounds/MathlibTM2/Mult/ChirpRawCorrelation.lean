@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.ChirpStreamCorrelation
-public import IntegerMultBounds.MathlibTM2.Mult.ChirpGatherFromDimensions
+public import IntegerMultBounds.MathlibTM2.Mult.ChirpGatherFromDimensionsMode
 
 /-! # Raw-line chirp correlation through one shared S1 call
 
@@ -28,8 +28,13 @@ def chirpRawCorrelationCost (W e dimW dimWidth s t q l m w : ℕ) : ℕ :=
     chirpStreamCorrelationCost W e dimW dimWidth t q l m w +
     2 * (chirpBlockCount t m * (3 * m + 1) * w) + 2
 
+def chirpRawCorrelationModeCost (shared : Bool) (W e dimW dimWidth s t q l m w : ℕ) : ℕ :=
+  chirpGatherFromDimensionsModeCost shared W e s t m w +
+    chirpStreamCorrelationCost W e dimW dimWidth t q l m w +
+    2 * (chirpBlockCount t m * (3 * m + 1) * w) + 2
+
 /-- Execute the raw-line-to-correlation pipeline with complete intermediate cleanup. -/
-theorem chirpRawCorrelation_exec (hcr : Function.Injective cr) (hdisj : ∀ r j, cr r ≠ ι j)
+theorem chirpRawCorrelation_exec {shared : Bool} (hcr : Function.Injective cr) (hdisj : ∀ r j, cr r ≠ ι j)
     (hι : Function.Injective ι) (hT : 64 ≤ T) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (hrg : Function.Injective rg)
     {dst batch batchSaved rowCount recordSaved wordR recordSymbols acc current savedSource saved buf tmp : Fin T}
@@ -87,7 +92,7 @@ theorem chirpRawCorrelation_exec (hcr : Function.Injective cr) (hdisj : ∀ r j,
     (hrawSep : ∀ r b, rg b ≠ raw r) (hrawDst : raw .dst = cr .xs)
     (hsval : st.val 0 = s) (htm : t + m < 2 ^ W) (hproduct : s * (t + m) < 2 ^ W)
     (hrawSrc : S.R (raw .raw) = cstream A w (chirpLine s u))
-    (hrawClean : ∀ r, r ≠ .raw → r ≠ .dst → S.R (raw r) = [])
+    (hrawClean : ChirpRawReady shared s t m w raw S)
     (hproducerOff : ∀ k ∈ [dst, wordR, batch, rowCount, recordSymbols, batchSaved, acc,
       savedSource, recordSaved, current, saved, buf, tmp], k ≠ cr .xs)
     (hdimXs : ∀ i, chirpBatchDimensions j records ex i ≠ cr .xs)
@@ -95,8 +100,8 @@ theorem chirpRawCorrelation_exec (hcr : Function.Injective cr) (hdisj : ∀ r j,
     (hworkspaceXs : ∀ k ∈ chirpBatchEmpty j rprg ex recordSaved' saved' acc' buf' savedBlock tmp', k ≠ cr .xs)
     (hprivateXs : ∀ r : Fin 91, 4 ≤ r.val → rpι r ≠ cr .xs)
     (houtputXs : ex .dst ≠ cr .xs) (hkernelXs : srcY ≠ cr .xs) :
-    ∃ v' n, v'.user = v.user ∧ n ≤ chirpRawCorrelationCost W e dimW dimWidth s t q l m w ∧
-      Exec body (.seq (chirpGatherFromDimensions rg raw) (.seq
+    ∃ v' n, v'.user = v.user ∧ n ≤ chirpRawCorrelationModeCost shared W e dimW dimWidth s t q l m w ∧
+      Exec body (.seq (chirpGatherFromDimensionsMode shared rg raw) (.seq
 (.seq (chirpMakeXSetup rg cr ι hι hT hQ batch batchSaved rowCount recordSaved wordR
           recordSymbols acc current savedSource saved buf tmp dst)
           (.seq (.seq (chirpS1DimensionSetup dimBank (chirpBatchDimensions j records ex))
@@ -112,7 +117,7 @@ theorem chirpRawCorrelation_exec (hcr : Function.Injective cr) (hdisj : ∀ r j,
     (chirpOperandX s t q m n (chirpInputNumerators s t α q m) u)
     (chirpOperandY m n (chirpKernelNumerators s t α q m))))
   have hx0 : S.R (cr .xs) = [] := (hS .xs).trans hXblank
-  obtain ⟨v₁, n₁, hu₁, hn₁, he₁⟩ := chirpGatherFromDimensions_exec (body := body) hrg hraw hrawSep
+  obtain ⟨v₁, n₁, hu₁, hn₁, he₁⟩ := chirpGatherFromDimensionsMode_exec (body := body) shared hrg hraw hrawSep
     wl nl hwl hnl heW st s t m w hsval htval hmval hwval hs hst.le ht hm hsize hvolume
     htm hproduct hzero hfit u v S hb hrawSrc hrawClean
   let S₁ : Stacks T A := { S with R := Function.update S.R (cr .xs) windows }
@@ -167,7 +172,7 @@ theorem chirpRawCorrelation_exec (hcr : Function.Injective cr) (hdisj : ∀ r j,
     simp only [S₂, S₁, Function.update_of_ne houtputXs.symm, Function.update_self]
   refine ⟨v₃, _, hu₃.trans (hu₂.trans hu₁), ?_, (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl ?_⟩
   · rw [htemp, hwindowLen]
-    unfold chirpRawCorrelationCost
+    unfold chirpRawCorrelationModeCost
     omega
   · congr 1
     ext1

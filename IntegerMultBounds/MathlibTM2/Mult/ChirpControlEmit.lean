@@ -26,11 +26,11 @@ theorem chirpControlEmit_exec {a dst work saved tmp : Fin T}
     (hreg : [a, dst, work, saved, tmp].Nodup) (W d : ℕ) (hd : d < 2 ^ W)
     (v : HS T Q A U) (S : Stacks T A) (ha : S.R a = binSyms W d)
     (hw : S.R work = []) (hs : S.R saved = []) (ht : S.R tmp = []) :
-    ∃ v' n, v'.user = v.user ∧ n ≤ W * (4 * d + 11) + 2 * d + 7 ∧
+    ∃ v' n, v'.user = v.user ∧ n ≤ 6 * d + 11 * W + 7 ∧
       Exec body (chirpControlEmit a dst work saved tmp) (mk v S) n
         (mk v' { S with R := (Function.update S.R dst
           (blank :: (List.replicate d tick ++ S.R dst))) }) := by
-  obtain ⟨v', n, hu, hn, he⟩ := toUnary_exec body hreg hd v S ha hw hs ht
+  obtain ⟨v', n, hu, hn, he⟩ := toUnary_exec_linear body hreg hd v S ha hw hs ht
   let S₁ : Stacks T A := { S with R := Function.update S.R dst (List.replicate d tick ++ S.R dst) }
   have hp : (Action.push (.rt dst) (fun _ : HS T Q A U => blank) .done).run (mk v' S₁) =
       mk v' { S with R := Function.update S.R dst (blank :: (List.replicate d tick ++ S.R dst)) } := by

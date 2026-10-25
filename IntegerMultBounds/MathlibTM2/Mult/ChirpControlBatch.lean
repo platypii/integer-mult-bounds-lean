@@ -35,7 +35,7 @@ theorem chirpControlBatch_exec (hrg : Function.Injective rg) (count saved acc ds
     (hlen : (S.R count).length = M) (hs0 : S.R saved = []) (ha0 : S.R acc = []) :
     ∃ v' n, v'.user = v.user ∧
       n ≤ M * (6 * tblC W e + 11 * W + 14) +
-        (4 * W + 4) * (chirpCenter s t m M * w) + 6 * tblC W e + 6 ∧
+        8 * (chirpCenter s t m M * w) + 6 * tblC W e + 6 ∧
       Exec body (chirpControlBatch rg count saved acc dst) (mk v S) n
         (mk v' { S with R := (Function.update S.R dst
           (gatherControls A (chirpAdvancesFrom s t m w 0 M) ++ S.R dst)) }) := by
@@ -70,7 +70,7 @@ theorem chirpControlBatch_exec (hrg : Function.Injective rg) (count saved acc ds
   have hp := Exec.act (body := body) (peekR count) (mk v S)
   rw [peekR_run] at hp
   have hsteps : 1 + (n₁ + (n₂ + ((2 * (S₂.R saved).length + 2) + (2 * (S₃.R acc).length + 2)))) ≤
-      M * (6 * tblC W e + 11 * W + 14) + (4 * W + 4) * (chirpCenter s t m M * w) +
+      M * (6 * tblC W e + 11 * W + 14) + 8 * (chirpCenter s t m M * w) +
         6 * tblC W e + 6 := by
     have hacc₃ : S₃.R acc = S₂.R acc := by simp [S₃, movedR, ‹saved ≠ acc›.symm, ‹count ≠ acc›.symm]
     rw [hacc₃, hacc₂, hsaved₂, List.length_reverse, List.length_reverse, hlen, length_gatherControls]
@@ -78,7 +78,7 @@ theorem chirpControlBatch_exec (hrg : Function.Injective rg) (count saved acc ds
     have hM : (chirpAdvancesFrom s t m w 0 M).length = M := by simp [chirpAdvancesFrom]
     rw [hM] at hn₁ ⊢
     calc _ ≤ 1 + (M * (6 * tblC W e + 11 * W + 10) +
-        (4 * W + 2) * (chirpCenter s t m M * w) + 1 +
+        6 * (chirpCenter s t m M * w) + 1 +
         (6 * tblC W e + ((2 * M + 2) + (2 * (chirpCenter s t m M * w + M) + 2)))) := by
           rw [chirpAdvances_sum]
           omega

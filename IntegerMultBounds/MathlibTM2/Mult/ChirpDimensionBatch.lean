@@ -23,7 +23,7 @@ variable {T Q A : ℕ} {U P : Type} {body : P → Pr P T Q A U}
 
 def chirpDimensionBatchCost (W width q t m w l : ℕ) : ℕ :=
   let K := (q + 1) + l + w + (3 * m + 1) + 4 * m + chirpBlockCount t m + m
-  18 * tblC W width + (4 * W + 2) * K + 77 * W + 43 +
+  18 * tblC W width + 6 * K + 77 * W + 43 +
     chirpBatchProductCost (q + 1) l w m (chirpBlockCount t m) + 2 * K + 15
 
 /-- Install all unary dimensions, execute S1 once, extract and erase installed dimensions. -/

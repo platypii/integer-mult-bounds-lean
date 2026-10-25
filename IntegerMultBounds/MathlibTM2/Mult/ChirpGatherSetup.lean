@@ -42,7 +42,7 @@ theorem chirpGatherSetup_exec (hrg : Function.Injective rg)
     (hclean : ∀ k ∈ [control, savedControl, advance, acc, current, savedSource, buf, tmp], S.R k = []) :
     ∃ v' n, v'.user = v.user ∧
       n ≤ M * (6 * tblC W e + 11 * W + 14 * ((3 * m + 1) * w) + 41) +
-        (4 * W + 18) * (chirpCenter s t m M * w) + 6 * tblC W e + 16 ∧
+        22 * (chirpCenter s t m M * w) + 6 * tblC W e + 16 ∧
       Exec body (chirpGatherSetup rg dst control savedControl advance window src acc current savedSource buf tmp count)
         (mk v S) n (mk v' { S with R := (Function.update S.R dst
           ((List.range M).flatMap (fun j => cstream A w (chirpWindow s t m j u)) ++ S.R dst)) }) := by
@@ -77,7 +77,7 @@ theorem chirpGatherSetup_exec (hrg : Function.Injective rg)
   have hcost : n₁ + (M * (14 * ((3 * m + 1) * w) + 25) + 12 * (chirpCenter s t m M * w) + 8 +
       (2 * (S₂.R control).length + 2)) ≤
       M * (6 * tblC W e + 11 * W + 14 * ((3 * m + 1) * w) + 41) +
-        (4 * W + 18) * (chirpCenter s t m M * w) + 6 * tblC W e + 16 := by
+        22 * (chirpCenter s t m M * w) + 6 * tblC W e + 16 := by
     rw [hcontrols]
     dsimp only [controls]
     rw [length_gatherControls, chirpAdvances_sum]

@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.ChirpS1Dimensions
-public import IntegerMultBounds.MathlibTM2.Mult.ChirpUnaryCopies
+public import IntegerMultBounds.MathlibTM2.Mult.ChirpDimensionScope
 
 /-! # Generate shared S1 unary dimensions and restore the binary bank -/
 
@@ -38,63 +38,18 @@ theorem chirpS1DimensionSetup_exec (hrg : Function.Injective rg) (dst : Fin 7 �
       k ≤ 18 * tblC W e + unaryCopiesCost W (chirpS1DimensionValues q t m w l) (chirpS1Assignments dst) ∧
       Exec body (chirpS1DimensionSetup rg dst) (mk v S) k
         (mk v' { S with R := unaryCopiesR (chirpS1DimensionValues q t m w l) S.R (chirpS1Assignments dst) }) := by
-  classical
-  obtain ⟨st₁, ⟨hv₁, ha₁, hfit₁⟩, hargs⟩ :=
-    (tblChirpS1Dimensions_do (e := e) st q t m w l hq ht hm hw hl ht0 hm0 hp hsize hkernel hfit).host
-      (body := body) hrg wl nl hwl hnl heW hfit
-  obtain ⟨v₁, S₁, k₁, hu₁, hk₁, he₁, hb₁, hfr₁⟩ := hargs v S hS
-  have hpout : ∀ p ∈ chirpS1Assignments dst, ∀ r, rg r ≠ p.2 := by
-    intro p hp
-    simp only [chirpS1Assignments, List.mem_cons, List.not_mem_nil, or_false] at hp
-    rcases hp with rfl | rfl | rfl | rfl | rfl | rfl | rfl
-    · exact hout 0
-    · exact hout 1
-    · exact hout 2
-    · exact hout 3
-    · exact hout 4
-    · exact hout 5
-    · exact hout 6
-  obtain ⟨v₂, k₂, hu₂, hk₂, he₂⟩ := tblUnaryCopies_exec (body := body) hrg wl nl st₁ hfit₁
-    (chirpS1Assignments dst) hpout v₁ S₁ hb₁
-  let S₂ : Stacks T A := { S₁ with R := unaryCopiesR st₁.val S₁.R (chirpS1Assignments dst) }
-  have hb₂ : tblHolds rg S₂ (tblRho W wl nl st₁) := by
-    intro r
-    change unaryCopiesR st₁.val S₁.R (chirpS1Assignments dst) (rg r) = _
-    rw [unaryCopiesR_off _ _ _ _ (fun p hp => (hpout p hp r).symm)]
-    exact hb₁ r
-  have hf₁ : ∀ i : Fin 10, i.val < 5 → st₁.val i = st.val i := by
-    intro i hi
-    rw [hv₁]
-    fin_cases i <;> first | (simp at hi; done) | simp [chirpS1DimensionValues, hq, ht, hm, hw, hl]
-  obtain ⟨st₃, ⟨hv₃, ha₃⟩, hclear⟩ :=
-    (tblChirpS1DimensionsClear_do (W := W) (e := e) st st₁ hf₁ hzero).host
-      (body := body) hrg wl nl hwl hnl heW hfit₁
-  have hst₃ : st₃ = st := by
-    have ha : st₃.acc = st.acc := ha₃.trans ha₁
-    cases st₃; cases st
-    simp_all only
-  subst st₃
-  obtain ⟨v₃, S₃, k₃, hu₃, hk₃, he₃, hb₃, hfr₃⟩ := hclear v₂ S₂ hb₂
-  rw [hv₁] at hk₂
-  refine ⟨v₃, k₁ + (k₂ + k₃), hu₃.trans (hu₂.trans hu₁), by omega,
-    (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl ?_⟩
-  congr 1
-  ext1
-  · exact hfr₃.1.trans hfr₁.1
-  · exact hfr₃.2.1.trans hfr₁.2.1
-  · exact hfr₃.2.2.1.trans hfr₁.2.2.1
-  funext k
-  by_cases hbank : ∃ r, rg r = k
-  · obtain ⟨r, rfl⟩ := hbank
-    change S₃.R (rg r) = unaryCopiesR (chirpS1DimensionValues q t m w l) S.R (chirpS1Assignments dst) (rg r)
-    rw [unaryCopiesR_off _ _ _ _ (fun p hp => (hpout p hp r).symm)]
-    exact (hb₃ r).trans (hS r).symm
-  · have hoff : ∀ r, rg r ≠ k := by simpa using hbank
-    rw [hfr₃.2.2.2 k hoff]
-    change unaryCopiesR st₁.val S₁.R (chirpS1Assignments dst) k = _
-    rw [unaryCopiesR_congr st₁.val (chirpS1DimensionValues q t m w l) S₁.R _
-      (fun p hp => congrFun hv₁ p.1)]
-    exact unaryCopiesR_congr_base _ _ _ _ k
-      (fun p hp => hfr₁.2.2.2 p.2 (hpout p hp)) (hfr₁.2.2.2 k hoff)
+  apply tblComputedUnaryCopies_exec (body := body) hrg wl nl hwl hnl heW
+    tblChirpS1Dimensions tblChirpS1DimensionsClear st (chirpS1DimensionValues q t m w l) 13 5
+    (tblChirpS1Dimensions_do st q t m w l hq ht hm hw hl ht0 hm0 hp hsize hkernel hfit)
+    (fun z hz => tblChirpS1DimensionsClear_do st z (by
+      intro i hi
+      rw [hz]
+      fin_cases i <;> first | (simp at hi; done) |
+        simp [chirpS1DimensionValues, hq, ht, hm, hw, hl]) hzero)
+    hfit (chirpS1Assignments dst) (by
+      intro a ha
+      simp only [chirpS1Assignments, List.mem_cons, List.not_mem_nil, or_false] at ha
+      rcases ha with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+      all_goals exact hout _) v S hS
 
 end IntegerMultBounds.MathlibTM2.Mult.ShortConv

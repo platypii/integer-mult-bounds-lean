@@ -1,11 +1,12 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.ChirpRawGatherData
+public import IntegerMultBounds.MathlibTM2.Mult.ChirpGatherMode
 
 /-! # Gather all chirp windows directly from the raw line
 
 Counter generation, cyclic extension, the shared sweep and all generated-word cleanup
-are composed here. The only initial unary input is the preserved block count.
+are composed here. Shared mode also borrows a retained advance schedule.
 -/
 
 @[expose] public section
@@ -19,18 +20,31 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 variable {T Q A : ℕ} {U P : Type} {body : P → Pr P T Q A U}
 
-def chirpRawGather (rg : TblR 10 → Fin T) (r : ChirpRawReg → Fin T) : Pr P T Q A U :=
+def chirpRawGatherWith (shared : Bool) (rg : TblR 10 → Fin T) (r : ChirpRawReg → Fin T) : Pr P T Q A U :=
   .seq (chirpCyclicSetup rg (chirpRawCounters r)) <|
   .seq (cyclicCopy (r (.counter 0)) (r (.counter 1)) (r (.counter 2)) (r .saved)
     (r (.counter 3)) (r .raw) (r .front) (r .back) (r .acc) (r .expanded)
     (r .extension) (r .buf) (r .tmp)) <|
-  .seq (chirpGatherSetup rg (r .dst) (r .control) (r .saved) (r .advance) (r (.counter 4))
+  .seq (chirpGatherMode shared rg (r .dst) (r .control) (r .saved) (r .advance) (r (.counter 4))
     (r .extension) (r .acc) (r .current) (r .savedSource) (r .buf) (r .tmp) (r .count))
     (clearWords (chirpRawClearRoles.map r))
 
-/-- Raw source and dimensions are retained, all generated setup is erased, and only the
-ordered window destination changes. There is no supplied extension or control schedule. -/
-theorem chirpRawGather_exec {rg : TblR 10 → Fin T} {r : ChirpRawReg → Fin T}
+/-- The original caller generates and releases its own schedule. -/
+def chirpRawGather (rg : TblR 10 → Fin T) (r : ChirpRawReg → Fin T) : Pr P T Q A U :=
+  chirpRawGatherWith false rg r
+
+/-- The grouped caller borrows and restores the same schedule on every line. -/
+def chirpRawGatherShared (rg : TblR 10 → Fin T) (r : ChirpRawReg → Fin T) : Pr P T Q A U :=
+  chirpRawGatherWith true rg r
+
+def chirpRawGatherWithCost (shared : Bool) (W e s t m w M : ℕ) : ℕ :=
+  chirpRawSetupCost W e s m w + chirpRawCopyCost s m w +
+    chirpGatherModeCost shared W e s t m w M +
+    (2 * (chirpCyclicCounterTotal s m w + (s + 3 * m) * w) + 13)
+
+/-- Raw source, dimensions and any shared schedule are retained; generated setup is erased.
+Only the ordered window destination changes. -/
+theorem chirpRawGatherWith_exec (shared : Bool) {rg : TblR 10 → Fin T} {r : ChirpRawReg → Fin T}
     (hrg : Function.Injective rg) (hr : Function.Injective r) (hsep : ∀ q b, rg b ≠ r q)
     {W e : ℕ} (wl nl : List (Fin (A + 4))) (hwl : wl.length = W) (hnl : nl.length = e) (heW : e ≤ W)
     (st : TblSt 10 A) (s t m w M : ℕ)
@@ -43,9 +57,10 @@ theorem chirpRawGather_exec {rg : TblR 10 → Fin T} {r : ChirpRawReg → Fin T}
     (u : ZMod s → GaussianInt) (hvalid : ∀ j < M, j * m < t)
     (v : HS T Q A U) (S : Stacks T A) (hS : tblHolds rg S (tblRho W wl nl st))
     (hsrc : S.R (r .raw) = cstream A w (chirpLine s u)) (hcount : (S.R (r .count)).length = M)
-    (hclean : ∀ q, q ≠ .raw → q ≠ .dst → q ≠ .count → S.R (r q) = []) :
-    ∃ v' n, v'.user = v.user ∧ n ≤ chirpRawGatherCost W e s t m w M ∧
-      Exec body (chirpRawGather rg r) (mk v S) n
+    (hcontrol : S.R (r .control) = if shared then gatherControls A (chirpAdvancesFrom s t m w 0 M) else [])
+    (hclean : ∀ q, q ≠ .raw → q ≠ .dst → q ≠ .count → q ≠ .control → S.R (r q) = []) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ chirpRawGatherWithCost shared W e s t m w M ∧
+      Exec body (chirpRawGatherWith shared rg r) (mk v S) n
         (mk v' { S with R := (Function.update S.R (r .dst)
           ((List.range M).flatMap (fun j => cstream A w (chirpWindow s t m j u)) ++ S.R (r .dst))) }) := by
   have hcounters := chirpRawCounters_injective hr
@@ -71,10 +86,10 @@ theorem chirpRawGather_exec {rg : TblR 10 → Fin T} {r : ChirpRawReg → Fin T}
       (chirpRawCounters r i) = _
     rw [chirpCyclicCounters_at (chirpRawCounters r) hcounters]
     change List.replicate (chirpCyclicCount s m w i) tick ++ S.R (r (.counter i)) = _
-    rw [hclean (.counter i) (by simp) (by simp) (by simp), List.append_nil]
+    rw [hclean (.counter i) (by simp) (by simp) (by simp) (by simp), List.append_nil]
   have clean₁ (q : ChirpRawReg) (hqc : ∀ i, ChirpRawReg.counter i ≠ q)
-      (hqr : q ≠ .raw) (hqd : q ≠ .dst) (hqn : q ≠ .count) : S₁.R (r q) = [] :=
-    (offRole₁ q hqc).trans (hclean q hqr hqd hqn)
+      (hqr : q ≠ .raw) (hqd : q ≠ .dst) (hqn : q ≠ .count) (hqo : q ≠ .control) : S₁.R (r q) = [] :=
+    (offRole₁ q hqc).trans (hclean q hqr hqd hqn hqo)
   have hb₁ : tblHolds rg S₁ (tblRho W wl nl st) := by
     intro b
     rw [off₁ _ (fun i => (hsep (.counter i) b).symm)]
@@ -91,7 +106,7 @@ theorem chirpRawGather_exec {rg : TblR 10 → Fin T} {r : ChirpRawReg → Fin T}
         apply clean₁ <;> simp)
   let ext := cstream A w (chirpExtended s m u)
   let S₂ : Stacks T A := { S₁ with R := Function.update S₁.R (r .extension) (ext ++ S₁.R (r .extension)) }
-  have hext₁ : S₁.R (r .extension) = [] := clean₁ .extension (by intro i; simp) (by simp) (by simp) (by simp)
+  have hext₁ : S₁.R (r .extension) = [] := clean₁ .extension (by intro i; simp) (by simp) (by simp) (by simp) (by simp)
   have hext₂ : S₂.R (r .extension) = ext := by simp [S₂, hext₁]
   have off₂ (k : Fin T) (hoff : k ≠ r .extension) : S₂.R k = S₁.R k := by simp [S₂, hoff]
   have hb₂ : tblHolds rg S₂ (tblRho W wl nl st) := by
@@ -100,14 +115,15 @@ theorem chirpRawGather_exec {rg : TblR 10 → Fin T} {r : ChirpRawReg → Fin T}
     exact hb₁ b
   have hready : ChirpControlReady st s t m w 0 :=
     ⟨hs, htval, hm, hw, by simpa using hzero 4 (by decide), by simpa using hzero 5 (by decide)⟩
-  obtain ⟨v₃, n₃, hu₃, hn₃, he₃⟩ := chirpGatherSetup_exec (body := body) hrg hsweep
+  obtain ⟨v₃, n₃, hu₃, hn₃, he₃⟩ := chirpGatherMode_exec (body := body) shared hrg hsweep
     (hsep .count) (hsep .saved) (hsep .acc) (hsep .control) wl nl hwl hnl heW s t m w M hs0 hst ht
     hk hnum hwidth st hready hzero hfit u hvalid v₂ S₂ hb₂
     (by rw [off₂ _ (hr.ne (by decide)), offRole₁ .count (by intro i; simp)]; exact hcount)
-    hext₂ (by rw [off₂ _ (hr.ne (by decide)), counters₁ 4]; simp [chirpCyclicCount]) (by
+    hext₂ (by rw [off₂ _ (hr.ne (by decide)), counters₁ 4]; simp [chirpCyclicCount])
+    (by rw [off₂ _ (hr.ne (by decide)), offRole₁ .control (by intro i; simp)]; exact hcontrol) (by
       intro k hmem
       simp only [List.mem_cons, List.not_mem_nil, or_false] at hmem
-      rcases hmem with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+      rcases hmem with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
         rw [off₂ _ (hr.ne (by decide))] <;> apply clean₁ <;> simp)
   let rows := (List.range M).flatMap (fun j => cstream A w (chirpWindow s t m j u))
   let S₃ : Stacks T A := { S₂ with R := Function.update S₂.R (r .dst) (rows ++ S₂.R (r .dst)) }
@@ -129,10 +145,10 @@ theorem chirpRawGather_exec {rg : TblR 10 → Fin T} {r : ChirpRawReg → Fin T}
   rw [hclearSize, hclearLen] at he₄
   change n₁ ≤ chirpRawSetupCost W e s m w at hn₁
   change n₂ ≤ chirpRawCopyCost s m w at hn₂
-  change n₃ ≤ chirpRawSweepCost W e s t m w M at hn₃
+  change n₃ ≤ chirpGatherModeCost shared W e s t m w M at hn₃
   refine ⟨v₄, _, hu₄.trans (hu₃.trans (hu₂.trans hu₁)), ?_,
     (Exec.seq he₁ (Exec.seq he₂ (Exec.seq he₃ he₄))).cast rfl ?_⟩
-  · unfold chirpRawGatherCost
+  · unfold chirpRawGatherWithCost
     omega
   · congr 1
     ext1
@@ -164,5 +180,28 @@ theorem chirpRawGather_exec {rg : TblR 10 → Fin T} {r : ChirpRawReg → Fin T}
         simp only [S₃, Function.update_self, offSetup _ hdstOff, rows]
       · simp only [S₃, Function.update_of_ne hkd]
         exact offSetup k hmem
+
+theorem chirpRawGather_exec {rg : TblR 10 → Fin T} {r : ChirpRawReg → Fin T}
+    (hrg : Function.Injective rg) (hr : Function.Injective r) (hsep : ∀ q b, rg b ≠ r q)
+    {W e : ℕ} (wl nl : List (Fin (A + 4))) (hwl : wl.length = W) (hnl : nl.length = e) (heW : e ≤ W)
+    (st : TblSt 10 A) (s t m w M : ℕ)
+    (hs : st.val 0 = s) (htval : st.val 1 = t) (hm : st.val 2 = m) (hw : st.val 3 = w)
+    (hs0 : 0 < s) (hst : s ≤ t) (ht : 0 < t)
+    (hsize : s + 3 * m + 1 < 2 ^ W) (hvolume : (s + 3 * m + 1) * w < 2 ^ W)
+    (hk : ∀ j < M, (j + 1) * m < 2 ^ W)
+    (hnum : ∀ j < M, s * ((j + 1) * m) < 2 ^ W) (hwidth : m * w < 2 ^ W)
+    (hzero : ∀ i : Fin 10, 4 ≤ i.val → st.val i = 0) (hfit : ∀ i, st.val i < 2 ^ W)
+    (u : ZMod s → GaussianInt) (hvalid : ∀ j < M, j * m < t)
+    (v : HS T Q A U) (S : Stacks T A) (hS : tblHolds rg S (tblRho W wl nl st))
+    (hsrc : S.R (r .raw) = cstream A w (chirpLine s u)) (hcount : (S.R (r .count)).length = M)
+    (hclean : ∀ q, q ≠ .raw → q ≠ .dst → q ≠ .count → S.R (r q) = []) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ chirpRawGatherCost W e s t m w M ∧
+      Exec body (chirpRawGather rg r) (mk v S) n
+        (mk v' { S with R := (Function.update S.R (r .dst)
+          ((List.range M).flatMap (fun j => cstream A w (chirpWindow s t m j u)) ++ S.R (r .dst))) }) := by
+  exact chirpRawGatherWith_exec (body := body) false hrg hr hsep wl nl hwl hnl heW
+    st s t m w M hs htval hm hw hs0 hst ht hsize hvolume hk hnum hwidth hzero hfit
+    u hvalid v S hS hsrc hcount (hclean .control (by simp) (by simp) (by simp))
+    (fun q hqr hqd hqn _ => hclean q hqr hqd hqn)
 
 end IntegerMultBounds.MathlibTM2.Mult.ShortConv

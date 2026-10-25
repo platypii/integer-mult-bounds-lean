@@ -38,7 +38,7 @@ theorem chirpOperandCountSetup_exec (hrg : Function.Injective rg) (dst : Fin 3 �
     (hzero : ∀ i : Fin 10, 4 ≤ i.val → st.val i = 0) (hfit : ∀ i, st.val i < 2 ^ W)
     (v : HS T Q A U) (S : Stacks T A) (hS : tblHolds rg S (tblRho W wl nl st)) :
     ∃ v' k, v'.user = v.user ∧
-      k ≤ 18 * tblC W e + (4 * W + 2) * (chirpBlockCount t m + (3 * m + 1) + (3 * m + 1) * w) + 33 * W + 19 ∧
+      k ≤ 18 * tblC W e + 6 * (chirpBlockCount t m + (3 * m + 1) + (3 * m + 1) * w) + 33 * W + 19 ∧
       Exec body (chirpOperandCountSetup rg dst) (mk v S) k
         (mk v' { S with R := unaryCopiesR (chirpOperandCountValues t m w) S.R (chirpOperandAssignments dst) }) := by
   classical
@@ -75,7 +75,7 @@ theorem chirpOperandCountSetup_exec (hrg : Function.Injective rg) (dst : Fin 3 �
     simp only [chirpOperandAssignments, List.mem_cons, List.not_mem_nil, or_false] at hp
     rcases hp with rfl | rfl | rfl <;> simp [chirpOperandCountValues, hc₁, hr₁, hv₁]
   have hcost : unaryCopiesCost W st₁.val (chirpOperandAssignments dst) =
-      (4 * W + 2) * (chirpBlockCount t m + (3 * m + 1) + (3 * m + 1) * w) + 33 * W + 19 := by
+      6 * (chirpBlockCount t m + (3 * m + 1) + (3 * m + 1) * w) + 33 * W + 19 := by
     simp [unaryCopiesCost, chirpOperandAssignments, hc₁, hr₁, hv₁]
     ring
   rw [hcost] at hk₂

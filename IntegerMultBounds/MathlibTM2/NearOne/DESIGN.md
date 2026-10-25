@@ -588,3 +588,492 @@ the correlation source and intermediate product source contain their shifted ver
 as owned working data. The structural E-product norm lemma discharges the next stage's
 input-bound precondition. Cleanup of those working streams, final precision reduction,
 cropping, generated output setup and composition with the correlation caller remain open.
+
+
+`chirpOutputFinish_exec` executes the final signed q-to-p precision reduction and
+crops the padded final block in one composed program. `chirpRound_exec` reuses the
+existing signed word pass over arbitrary lists; `chirpOutputRound_exec` derives
+its input fit from the product norm bound. `chirpRounded_norm` and
+`chirpRounded_fits` preserve the norm envelope and prove five guard bits suffice
+for the reduced output. `chirpCrop_stream_exec` erases the padded suffix and
+restores the retained prefix in order, including empty outputs. Both passes have
+exact step counts and restore every register except the stream. This supersedes
+the missing precision-reduction/cropping execution items above. Generation of the
+finishing counters, connection to product execution, intermediate cleanup and the
+complete original-input forward contract remain open.
+
+
+`chirpOutputComplete_exec` now composes both shifts/products with the checked
+rounding/cropping finish and erases both shifted intermediate streams. It changes
+only the consumed correlation source and final output; `chirpOutputCompleteCost`
+charges all phases. `chirpOutputNumerators_norm` supplies the finishing bound
+structurally over arbitrary equal-length rows. `chirpOutputFinished_coeff` and
+`chirpOutputFinished_value` read each retained word without signed aliasing.
+This supersedes the missing product/finish composition and intermediate-erasure
+items above; correlation-to-output composition is still required.
+
+`chirpOutputFactorSetup_exec` generates the E row and normalization word from a
+retained binary bank. It computes at q-Γ for E, restores q, computes 2^q/(2α)
+with the existing doubling/division programs and restores all evaluator work.
+`chirpOutputFactors_stream` identifies the generated E representation with the
+real-table multiplier input; `chirpOutputFactors_bound` derives its factor bound.
+`chirpOutputDimensionSetup_exec` computes and installs all nine shift/round/crop
+counters from p,q,l,Γ,w,t, then restores its binary work. Both setup contracts
+charge all arithmetic, output and restoration. `tblComputedUnaryCopies_exec`
+shares the structural bank-restoration proof with the existing S1 setup, removing
+its duplicated host proof. These supersede missing output-factor and counter
+computation, but initial binary-bank installation, multiplier templates and the
+full caller's setup/cleanup composition remain open. Precision/window choices,
+reuse across lines and the final forward error/cost theorem also remain required.
+
+The changed output/setup modules pass individual guarded checks (largest measured
+peak 1921.0 MiB). `ChirpOutputCompleteCheck` audits composition, factor generation,
+counter generation/restoration and final decoding against the standard three
+axioms; it passes. The refactored existing `ChirpS1DimensionCheck` also passes its
+guarded dependency build and axiom audit. This checkpoint is component validation,
+not the complete S2 forward contract or a stronger multiplication bound.
+
+
+The generated-data semantics and numerical gates are now closed structurally.
+`chirpCorrelationRows` describes the exact shared-correlation rows, and
+`chirpGeneratedCorrelationRows_norm` derives their unit-disk bound from the
+computed operands. `chirpOutputNumerators_getElem` proves periodic E lookup in
+flattened output order. The generic `chirpOutputTape_word` and specialized
+`chirpForwardTape_value` identify each actual returned signed word with `chirpAR`.
+`chirpForwardOutput_length` proves exactly t outputs after the final partial block.
+
+`chirpForwardSelected_error` proves scaled error at most 4 for that exact integer
+output representation under only s<t, α≥1, α²≤p and unit-disk input. Its explicit
+choices are m=α(⌊√p⌋+1), Γ=32p, l=⌈log₂(7m)⌉ and q=p+2Γ+l+13.
+`chirpForwardPrecision_gates` closes all three accumulated-error inequalities;
+`chirpForwardGrowth_good` and `chirpForwardWindow_machineGate` close the growing
+factor and integer evaluator gates. The working precision and signed input/output
+widths are bounded by 83p, 125p and 43p respectively. The table word choice
+13q+8 size(B)+16 satisfies both evaluator-precision envelopes; the caller still
+needs a common B and all volume/address fits.
+
+`tblChirpForwardWindow_do` executes the selected window from binary p and α:
+its root-search loop stops at ⌊√p⌋+1 and multiplies by α, in at most
+4(⌊√p⌋+1)+7 table atoms, with all intermediate fits derived. It supplies no
+square-root or window-value input. These facts supersede the missing returned-tape
+identification and mathematical precision/window choices above. They do not close
+initial bank/template installation, complete caller composition, shared-setup reuse,
+or the final actual cost comparison. S2 remains open until those machine obligations
+and the full forward contract are verified.
+
+The twelve new correlation/indexing/forward-sizing modules pass individual guarded
+checks; the largest measured peak is 1921.6 MiB. The guarded
+`ChirpForwardCheck` build and standard-axiom audit pass, covering the exact output
+data, tape semantics, selected error theorem, table word sizes and root-search
+execution. The active PLAN summary and whitespace checks also pass.
+
+
+The output-side caller is now assembled from binary banks.
+`chirpOutputGenerated_exec` installs all nine counters, executes the connected
+arithmetic and clears the counters, charging every conversion and erased symbol.
+`chirpOutputFromBanks_exec` also generates E and normalization, establishes both
+multiplier interfaces, invokes that caller and erases both factor tapes. Its
+exact final bank changes only the consumed correlation source and final output;
+all generated factors, counters, shifted intermediate streams and scratch are
+restored. The full bound is `chirpOutputFromBanksCost`, and the program text is
+independent of numerical dimensions. Binary bank installation and multiplier
+readiness are still caller preconditions.
+
+`ChirpOutputLayout` packages wiring and the shared E-product intermediate.
+`ChirpOutputState.install`, `ChirpOutputBase.installFactors` and
+`ChirpOutputLayout.clearFactors` prove the interface and cleanup structurally in
+arbitrary streams. `OutputPlacement.layout` and `layout_cross` give an explicit
+146-tape arithmetic allocation; they do not yet allocate the complete caller's
+additional table and correlation banks. `chirpOutputRun_exec` retains counters
+and factors so a future line batch can scope their setup once. The from-banks
+single-call wrapper currently generates and clears them for each invocation.
+This supersedes output-side factor/counter composition gaps above. Raw-line
+correlation integration, initial bank/readiness construction, full finite allocation,
+shared setup across lines and the final cost comparison remain open.
+
+The seven output-layout/caller modules pass individual guarded checks, with a
+largest measured peak of 1953.7 MiB. `ChirpOutputCallerCheck` passes its guarded
+build and standard-axiom audit, including the from-banks execution, full cleanup
+and concrete register allocation. PLAN consistency and whitespace checks pass.
+
+Caller bank initialization and release now have executed generic contracts.
+`chirpBankLoad_exec` copies the two caller length counters and pads raw binary
+words into all variable slots, preserving the sources. Repeated input sources
+are allowed, so all zero variables can share one empty source. Its `_holds`
+theorem establishes every evaluator role. `chirpBankClear_exec` clears the
+owned words and headers with exact symbol cost; `chirpBankClear_load` proves
+that loading then releasing a fresh bank restores the full register function.
+
+`tblChirpMultiplierDimensions_do` computes topN(w) by doubling to the first
+power strictly above 2w. `chirpMultiplierSetup_exec` installs w, q and topN(w)
+while restoring its binary bank. `chirpOutputMultiplierSetup_exec` reuses that
+bank for both output multipliers; its `_base` theorem establishes full readiness
+from fresh arithmetic registers. `ChirpInitializationCheck` passes the guarded
+build and standard-axiom audit for these initialization and release contracts.
+The complete caller still needs selected-parameter installation, concrete bank
+placement, correlation/output composition, shared setup and final total costs.
+
+`tblChirpForwardParameters_do` now combines the principal scalar generation in
+one 13-variable table program, from p and α alone. Its three stages reuse the
+proved root search, compute l by doubling from 1 until the power covers 7m, and
+compute Γ=32p, q=p+2Γ+l+13 and the two signed word widths with 36 fixed atoms.
+No selected window, logarithm, growth, precision or word-width value is supplied.
+All intermediate fits follow from 125p < 2^W, p≥1, α≥1 and α²≤p. The full
+atom bound is 4(⌊√p⌋+1)+7 + (4l+9+36). The three modules pass guarded
+checks at peaks 1833.0, 1953.2 and 1853.2 MiB. Consumer-bank installation,
+all volume/address fits and complete caller composition still remain.
+
+`chirpBankClone_exec` now executes consumer-bank installation from a computed
+source bank, retaining both headers and all source variables, with an exact
+copy cost and a complete spectator frame. `chirpForwardOutputBank_exec` composes
+selected-parameter generation with installation of the entire fresh 14-variable
+output-dimension bank. The source bank initially supplies p, α, zero and t;
+the generated bank contains p,q,l,Γ,w,t followed by eight zero workspace words.
+All generated parameter words now have proved fits in the selected-program postcondition.
+The source bank is retained with the computed parameters, and every register
+outside the two banks is preserved. Individual guarded checks pass at 1762.4 MiB
+for cloning, 1881.6 MiB for the strengthened parameter program and 1834.4 MiB
+for their output-bank composition. Initial loading of the source bank, the
+remaining consumer banks, full allocation, correlation/output composition,
+shared setup and the final cost bound remain open.
+
+`tblChirpForwardCallerParameters_do` adds the binary block count `(t-1)/m+1`
+to scalar selection, at five extra table atoms, reusing ring-search workspace.
+Its postcondition retains p,α,s,t and zero and proves all sixteen words fit.
+`chirpBankFamily_exec` structurally installs a list of disjoint consumer banks;
+`chirpForwardConsumers` supplies the five forward assignments. The coefficient
+bank receives q,s,t,α,M,m,Γ in slots 19,34,35,36,43,45,46, with all other
+variables copied from zero. `chirpForwardConsumerSetup_exec` composes scalar
+selection and family installation, retaining the source bank and all spectators
+and charging the whole execution. The four added modules pass guarded file
+checks below 1.9 GiB. `chirpBankEmissionSetup_exec` now replaces the source emission header by the
+computed w before cloning any consumer bank; the composed setup charges both
+clearing the old header and the linear binary-to-unary conversion. Its file
+check passes at 1312.4 MiB and the strengthened consumer setup at 1821.3 MiB.
+The family still requires concrete disjoint placement, initial source-bank
+loading and initial length counters. Full correlation/output composition,
+shared setup and the final forward cost contract remain open.
+
+`ForwardBankPlacement` provides a concrete 193-tape allocation for the source
+and all five consumer banks, with complete injection and separation proofs.
+It is independent of dimensions and does not include the arithmetic/correlation
+workspace. `chirpForwardSourceLoad_exec` now loads the complete fresh source
+bank from raw p,α,s,t words and a shared empty source, in exactly
+100W+8b+137 steps for b-bit inputs padded to W bits. It establishes both
+headers, all variables, accumulator and scratch and preserves every register
+outside the source bank. Its only separate length input is the W-length counter.
+The two file checks pass at 1822.0 and 1776.8 MiB. Full setup composition,
+raw-input/arithmetic/correlation placement, shared line setup and total caller
+costs remain open.
+
+`chirpForwardRawSetup_exec` now composes original-word loading and full consumer
+setup in one execution theorem, retaining computed scalar semantics, all bank
+contracts and the complete spectator frame. Its bound includes every loading,
+selection, header-conversion and consumer-installation step. The initial W-length
+counter remains a caller input. `chirpForwardCaller_fits` selects the common
+base B=max(s,t+125p), reuses W=13q+8 size(B)+16, and discharges raw-word,
+window/address/volume, output-crop, S1 and multiplier-size fit gates structurally.
+A generic quadratic envelope proves these fits; table evaluator bounds already
+use the same B and W. The two new checks pass at 1828.4 and 1870.1 MiB.
+Complete correlation/arithmetic allocation and composition, setup reuse across
+lines and the final actual total-cost comparison remain open.
+
+`chirpForwardLine_exec` now executes the actual raw-line correlation program
+followed by the output run and returns exactly the tape for `chirpForwardOutput`.
+Generated correlation-row length and disk bounds discharge the output stage's
+input interface. `ChirpOutputState.supplyInput` proves that supplying correlation
+rows preserves the prepared multiplier/factor state; `ChirpOutputLayout.consumeInput`
+proves the correlation input returns to its original empty state. The line changes
+only its final output tape, retaining raw input, factors, counters and all scratch.
+The cost is the sum of the actual correlation and output execution bounds.
+The two modified/new file checks pass at 1910.7 and 1930.4 MiB. This theorem
+retains the existing setup/layout preconditions: connecting the generated setup
+to the line in a full concrete allocation, grouped iteration/setup reuse and
+the final total-cost comparison remain open.
+
+`LinePlacement` embeds the output, table and shared-product banks in a fixed
+640-tape space, reusing their existing injection/layout proofs. A separate
+30-role processor shares the multiplier bank with sequential output arithmetic.
+Raw gathering and correlation extraction use separate private ranges; the
+extraction destination is the output input. Proved interfaces include output
+cross-separation, RpLayout, ChirpBatchLayout, raw injection/link, correlation
+dimension injection, dimension/scratch/operand support separation, private-bank
+separation and table/raw separation. The file check peaks at 1977.8 MiB.
+Remaining producer/control layout facts and the full instantiated line/setup
+execution are still required, together with shared-line iteration and total costs.
+
+`LinePlacement.program` now names the actual fixed 640-tape line program.
+`program_exec` supplies every static layout argument to the connected correlation/
+output theorem. `selected_program_exec` also removes all caller-selected
+numerical fit/window/E-factor conditions, deriving them from p,α,s,t with s<t,
+α≥1 and α²≤p. Both contracts emit exactly the forward output tape and retain
+setup while changing only the final output register. `ChirpLineControls`,
+`ChirpFixedLine` and `ChirpSelectedFixedLine` pass file checks at 1928.1,
+1948.7 and 1951.6 MiB. Prepared table streams, counters, binary banks and
+multiplier readiness remain genuine data preconditions. Establishing them from
+the raw setup around this fixed line, grouped iteration, final cleanup and total
+cost comparison remain open.
+
+`LinePlacement.readiness_exec` installs the operand producer's and both output
+multipliers' counters from the same retained q,w bank, charging three setup
+costs. Its `_ready` theorem derives the actual producer Ready and output-base
+contracts from fresh data banks, and `_bank` proves every source-bank slot
+restores. `tables_exec` generates G,K,E and normalization with one reused
+coefficient evaluator bank; only the four table destinations change.
+The padded table schedule exposed a missing bound in the former common base:
+M*m can exceed t. The base is now max(s,t+125p), and
+`chirpForwardCaller_tableBounds` proves M≤B, M*m≤B and 4m+1≤B, while the
+existing fit theorem still passes. The three file checks peak at 1927.3,
+1920.7 and 1869.6 MiB. Full generated-bank/readiness/table/counter composition
+around the fixed line, grouped reuse, cleanup and total-cost comparison remain open.
+
+`arithmeticSetup_exec` now executes the readiness and retained-table programs
+as one stage, with both source banks retained and a complete phase cost.
+`arithmeticSetup_prepared` derives the producer Ready, exact G/K streams and
+complete output factor/readiness state from fresh data banks and a clean
+multiplier bank. `tables_prepared` supplies the structural frame argument for
+all four table writes, preserving the already installed interfaces. Generic
+bank/processor and bank/output separation now centralizes those range proofs.
+The readiness, composition and prepared-state checks peak at 1926.9, 1914.3
+and 1919.3 MiB. Composing raw-bank setup, output counter installation and the
+fixed line, then grouped reuse, cleanup and the total-cost comparison remain open.
+
+`LinePlacement.prepare_exec` now executes readiness, all four retained tables
+and all nine output counters as one stage, with a full phase cost and exact
+final register state. `prepare_state` derives the producer Ready, G/K tapes,
+output factor/readiness interface, nine counter lengths and empty output work
+registers from fresh arithmetic/control banks. `counters_prepared` preserves
+the arithmetic state while installing dimensions. Generic bank frames show
+readiness/tables retain every binary bank and output control needed later.
+The new counter and complete-preparation checks peak at 1935.5 and 1920.5 MiB.
+Connecting the generated raw scalar/consumer-bank setup to these bank hypotheses,
+then fixed-line execution, grouped reuse, final cleanup and cost comparison remain open.
+
+`bankSetup_exec` now instantiates raw scalar/consumer-bank setup in the fixed
+640-tape layout with concrete raw scalar and width-counter positions.
+`consumer_state` derives all five bank schemas; coefficient-owned zeros and
+variable fits follow from the computed source. `prepare_from_source` feeds
+those schemas directly to complete arithmetic/counter preparation, deriving
+all table/numeric conditions from selected sizing and source semantics.
+Default proof limits are preserved through direct inequalities and source-fit
+transport. The three new checks peak at 1952.7, 1919.7 and 1940.7 MiB.
+`outside_banks` supplies the workspace spectator condition. Chaining raw setup
+and preparation with fresh-state frames, then fixed-line execution, grouped
+reuse, cleanup and the final total-cost comparison remain open.
+
+`LinePlacement.initialization` now chains raw source/consumer-bank setup with
+full readiness/table/counter preparation. `initialize_exec` constructs and
+prepares everything from raw scalar words and the stated width counter, with
+an explicit bound for all phases and a retained bank-stage/frame witness.
+`initialized_prepared` transports the fresh initial arithmetic state through
+that frame and derives the exact final producer Ready, G/K tapes, output state,
+nine counter lengths and empty output scratch. The check peaks at 1933.1 MiB.
+Raw/product workspace and input-data frames still need transport to fixed-line
+execution, followed by grouped reuse, final cleanup and total-cost comparison.
+
+`initializedLine_exec` is now the first complete initialized single-line
+execution contract in the fixed 640-tape allocation: raw scalar words, raw line,
+the stated W-length counter and fresh workspace feed initialization and the
+selected fixed-line program. No prepared bank/table/readiness/layout/numerical
+oracle remains. `readOutput` decodes the actual returned output tape, and the
+execution theorem also proves scaled resampling error at most 4 for that decoded
+result. The full initialization/correlation/output cost is charged. Setup remains
+allocated for reuse, so grouped execution and final cleanup are still required.
+`preparedStack_off` proves the exact 22-register write footprint and transports
+all raw/product/producer/control frames, including private product cleanliness.
+The source accumulator's empty-state fact is retained for subsequent bank cleanup.
+The frame and initialized-line checks peak at 1978.8 and 1942.4 MiB. Grouped
+reuse, complete setup cleanup/restoration and final actual cost comparison remain
+open; the W-length counter remains a stated caller input.
+
+`clearPrepared_exec` releases the 22 preparation tapes, charging twice their
+symbol volume plus 45. `clearPrepared_lineResult` proves restoration of their
+fresh original values while retaining output. `chirpBankFamilyClear_exec`
+releases a structural family of disjoint banks; the fixed six-bank release costs
+exactly 218W+12w+243 and makes every owned role empty. `release_exec` composes
+both phases, and `release_lineResult_exec` accepts the initialized-line bank
+witness directly. `releasedStack_readOutput` preserves actual output decoding.
+Fresh support is derived from the original fresh arithmetic state and raw-bank
+frame. The four release file checks peak at 1939.7, 1801.9, 1927.6 and 1924.2 MiB.
+Composing the release into a complete restored caller, grouped reuse and the final
+actual cost comparison remain open.
+
+`closedLine_exec` now executes raw initialization, the selected line and full
+release, restoring exactly the original state except the returned output tape.
+The actual decoded output has scaled error at most 4, and every phase is charged.
+The original bank-stage spectator frame is retained explicitly; restoration uses
+bank ownership and the preparation footprint, with no register-space enumeration.
+The restoration and closed-caller checks peak at 1922.3 and 1926.6 MiB.
+The cost still exposes the bank-stage witness inside release symbol volume;
+its selected-parameter reduction, grouped execution with one shared setup/release,
+and the final actual cost comparison remain open. The stated width-counter
+interface is unchanged.
+
+`stageLine_exec` and `collectLine_exec` now implement one grouped line's input
+staging/archiving and result collection. The round-trip register effect changes
+only the batch cursor and input/output archives, preserving all retained setup.
+`finishGroup_exec` restores the original input prefix and publishes output in
+line order by reversing archives once. `lineSymbolsSetup_exec` installs the one
+shared s*w counter from computed source words and restores its temporary zero
+slot and complete source bank. The three new checks peak at 1923.4, 1920.5 and
+1927.0 MiB. Retained readiness through staging and the repeated line loop still
+need proof; the group must then scope one initialization/release and close costs.
+
+`LineData.frame` now transports all retained tape requirements across changes to
+the raw input and high group ports; `LineData.stage` instantiates it for staging.
+`groupStep_exec` composes actual staging, selected forward execution and collection,
+changing only the batch cursor and two archives. Its additional cost is
+16 times input symbols plus twice output symbols plus 18. `groupStepR_low` and
+`LineData.groupStep` retain the complete prepared interface for the next line.
+The guarded checks peak at 1941.1 and 1930.3 MiB. The repeated counted loop and
+one group-wide initialization/release, grouped error/restoration and final numerical
+cost comparison remain open.
+
+`groupLoop_exec` now executes an arbitrary list of bounded lines by structural
+induction, retaining all shared data, archiving inputs/outputs and saving count
+symbols. Its state recurrence is a generic stream lemma. `preparedGroup_exec`
+restores the supplied count and original raw batch and publishes outputs in order,
+with only `groupOutput` changed in the final state. The bound sums all line costs
+and adds 5 per line, twice the input/output symbol volume, and 8. Both archives
+and the saved-count tape restore to empty. Guarded checks peak at 1967.2 and
+1934.9 MiB. One raw initialization/release around the prepared group, its decoded
+error contract and the final numerical cost comparison remain open.
+
+`initialized_lineData` now derives the retained interface from initialization;
+the single-line caller shares this proof. `initializedGroup_exec` executes raw
+initialization once, computes the shared s*w counter and executes every grouped
+line. `groupRelease_exec` clears that counter and releases all preparation and
+binary banks. The generic `releasedStack_eq_of_frame` restores arbitrary original
+spectators when only owned setup differs. `closedGroup_exec` composes all phases:
+its final state is exactly the original state with only the ordered output batch
+prepended to `groupOutput`. All raw/scalar inputs, count, archives and private/
+left/native stacks restore. Every phase is charged. The checks peak at 1924.6,
+1930.9, 1947.0, 1929.6 and 1927.4 MiB respectively (including the single-line
+refactor). The decoded grouped-error proof, release-volume and length reduction,
+and final numerical cost comparison remain open. The width-counter interface
+remains stated explicitly.
+
+`readGroupLine_published` recovers each actual output row before any suffix;
+`publishedGroup_error` gives scaled error at most 4 at every batch index.
+`GroupOutputError` packages that exact property for the caller.
+`groupInputBatch_length`, `groupOutputBatch_length`, `groupLineCost_sum` and
+`groupRunCost_eq` reduce all data lengths and line-cost sums to scalar dimensions.
+`LineData.clearPreparedCost` computes the exact retained release symbol volume:
+2 times (3(w+q+topN w) + (M(7m+1)+m+1)w + 4w + t(p+l+Γ+5)), plus 45.
+High group ports do not affect it. `closedGroup_exec` now combines raw-input
+execution, exact restoration except the published batch, decoded error at most
+4 for every line, and the scalar-only bound `selectedGroupCost s t α p N`.
+The bank-stage witness no longer appears in the cost. The checks peak at
+1927.2, 1919.6, 1949.8 and 1931.3 MiB. Final comparison of this cost with the
+intended fast-resampling bound remains open; the W-length counter interface is
+still stated. S2 is not marked complete by the explicit formula alone.
+
+The conversion budget now uses the existing host theorem `toUnary_exec_linear`:
+6*x+11*W+6 for the unchanged Horner program. This propagates through counter
+lists, advance emission, block-count setup and every caller cost. The shared
+symbol counter costs at most 2*tblC W w + 6*s*w + 11*W + 7. Control generation
+charges 8*D rather than (4*W+4)*D; full gather setup charges 22*D rather than
+(4*W+18)*D. `selectedGroupCost_affine` separates the exact shared zero-line
+cost from N times `selectedGroupUnitCost`. No execution or layout changes.
+The fixed advance schedule is still regenerated per line, charging
+6*M*tblC W w in that per-line budget, although the gather sweep restores it.
+Retaining the schedule across the group is the next cost-comparison task;
+the current budget is not yet claimed to meet the intended fast bound.
+
+`chirpGatherMode` and `chirpRawGatherWith_exec` share the sweep/cyclic/cleanup
+proofs between generated and retained advance controls. The dimensions bridge,
+correlation, fixed/selected forward line and `LineData` now carry that mode;
+the actual counted/prepared group can retain count and schedule across lines.
+`chirpGatherFromDimensionsModeCost_split` identifies the avoided per-line charge
+as M*(6*tblC W e+11*W+24)+10*D+17*tblC W e+11*W+16, D=chirpCenter s t m M*w.
+`controlsSetup_exec` executes generation from source slot 7 and the gather bank,
+restores both banks, and changes only the retained count and schedule tapes.
+Its guarded check peaks at 1940.5 MiB. The complete existing closed caller
+still selects generated mode; the next integration must turn generated controls
+into shared `LineData`, select the retained loop and clear those controls once.
+Only then does the complete caller inherit the per-line saving.
+
+The complete closed caller now uses retained controls. `LineData.transport`
+separates arithmetic/producer reads from raw-control readiness, and
+`LineData.shareControls` establishes shared readiness after actual generation.
+`initializedGroup_exec` runs `controlsSetup` once before the retained-mode loop.
+`controlsRelease_exec` and `controlsReleaseR_collect` erase the count/schedule
+once, preserving output and restoring their original empty tapes; the cost is
+2*(M+(D+M))+5, D=chirpCenter s t m M*w. `symbolGroupResult` feeds the existing
+symbol/arithmetic/bank restoration proof after that erasure. `closedGroup_exec`
+now composes the complete retained-control caller, still giving exact restoration,
+decoded error at most 4 for every published line and a scalar-only execution bound.
+`selectedGroupCost_affine` uses the retained unit cost, with control generation
+and release paid only in the shared term. The initialized-group and closed-group
+checks peak at 1958.9 and 1934.4 MiB. Final fast-cost matching remains open.
+
+`ChirpFastCost` now bounds every retained line, including transfer/archive work,
+by fixed scalar/header startup plus M*rpRecBound(q+1,l,w), six times
+(s+t+m+1)*rmulCost(w), and 2000*(s+t+m+1)*(w+1). The power-of-two ring is at
+most 14m and total padded block volume is at most t+m. Gathering, operand
+formation and output finishing have checked linear-volume bounds; the product
+estimate reuses S1's existing theorem. `selectedGroupCost_le_fast` discharges
+selected gates and lifts the unit bound through shared setup/release amortization.
+`closedGroup_exec` now includes that bound as well as the exact scalar bound,
+execution, restoration and decoded error. Checks peak at 1988.1 and 1934.9 MiB.
+The intended O(M(p)) comparison is still open: match the two supplier primitives
+and fixed startup to the resampling envelope. `Cost.MatchConv.mt_cv_ring_le`,
+`Cost.Growth.gr_ringBound_le` and `Cost.MatchBase.mt_rmul_le` already supply
+relevant packed-product and pointwise estimates.
+
+
+The supplier bridge now exists in `Cost/ChirpLogGrowth` and `Cost/ChirpSupplier`:
+selected recurring ring work is at most C*m*p^(129/128), and complete repeated
+line work is at most C*(s+t+m+1)*p^(129/128), plus explicit fixed startup.
+The closed group's fast budget has the corresponding uniform bound with shared
+setup once and fixed startup per line. Selected fixed startup is at most
+`32000*(W+1)^2 + (7056*mtCvKf 125+264000)*p^2`; all headers and cleanup are
+included. The supplier guarded check peaks at 2851.6 MiB. Address-width and
+startup absorption and shared setup amortization remain open; this is not yet
+the final O(M(p)) forward-resampling comparison.
+
+
+`Cost/ChirpAddressCost` now absorbs the selected address width and all per-line
+startup: the complete line budget is at most C*(p²+t)*p^(129/128), uniformly.
+For p²≤t it is at most C*t*p^(129/128). The actual scalar group budget is bounded
+by its zero-line shared setup plus N times the same uniform line envelope.
+This covers headers, loading, address operations and cleanup; the guarded check
+peaks at 2838.5 MiB and the expanded supplier axiom audit/build passes. Shared
+setup still needs a uniform dimension bound and amortization; outer integration
+must also establish the long-line regime before using its specialization.
+
+
+`Cost/ChirpSetupCost` bounds all shared setup/release by
+`6000000*(t+m+1)*(W+1)^3`. Its total-cost theorem holds for every group size,
+with repeated work C*N*(p²+t)*p^(129/128). Its amortized theorem bounds the
+actual scalar group budget by C*N*t*p^(129/128) under p²≤t and (W+1)³≤N.
+No supplier-cost or setup-cost inequality is assumed. These dimensional gates
+must still be audited against the intended caller before S2 is marked complete;
+the conditional comparison does not itself prove an outer sizing theorem.
+
+
+`Cost/ChirpForwardBudget` selects a single uniform constant and defines an
+all-size `chirpGroupAllowance` with no primitive-cost assumptions. The actual
+`closedGroup_exec` execution witness now satisfies that allowance and the
+conditional C*N*t*p^(129/128) bound, alongside exact restoration and decoded
+error. Its guarded check peaks at 2821.3 MiB; the expanded caller and supplier
+axiom audits/build pass. The caller still accepts arbitrary group length, so
+the size/count conditions are explicit rather than silently inferred. The
+referenced source note is absent locally and could not be fetched; intended
+outer sizing remains an acceptance-audit item, not a proved caller invariant.
+
+
+S2 completion: `Cost/ChirpCallerSizing` now discharges the conditional cost gates
+at the existing executable `Mult.Sizes`. Eventually every source/target axis
+pair has p²≤t, and complete complementary batches have N≥(W+1)³, for every
+mixture of source and target dimensions. The proof uses the existing radius
+growth theorem, modulus bounds and a generic positive-product lower bound.
+`chirp_runtime_group_cost` therefore bounds the actual scalar group budget by
+C*N*t*p^(129/128), and `closedGroup_exec` gives that same bound on the actual
+execution witness when its now-proved gates are supplied. Its all-size allowance,
+actual decoded error ≤4 and exact restoration except ordered output are also
+proved. The explicit bootstrap width/count counter ABI remains unchanged.
+The final guarded sizing check peaks at 2832.9 MiB, and the guarded machine and
+supplier audit build completes 13925 jobs at 3.4 GiB combined peak. S2 is complete
+as a standalone primitive; full tensor/support-local scheduling, future sizing
+retunes and global machine integration remain S4/S6 and do not change kappa here.

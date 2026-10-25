@@ -29,7 +29,7 @@ noncomputable def chirpMakeXSetup (rg : TblR 10 → Fin T) (cr : CR → Fin T)
 def chirpMakeXSetupCost (W e t m w : ℕ) : ℕ :=
   let M := chirpBlockCount t m
   let K := M + (3 * m + 1) + (3 * m + 1) * w
-  18 * tblC W e + (4 * W + 2) * K + 33 * W + 19 + chirpMakeXCost M m w + 2 * K + 7
+  18 * tblC W e + 6 * K + 33 * W + 19 + chirpMakeXCost M m w + 2 * K + 7
 
 /-- Geometry comes from the retained binary dimension bank. Only the X operand destination
 changes; every generated counter, intermediate stream, source and scratch tape is restored. -/

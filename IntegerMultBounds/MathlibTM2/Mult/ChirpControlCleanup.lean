@@ -41,14 +41,14 @@ theorem tblChirpControlClear_do {A W e : ℕ} (st u : TblSt 10 A) (s t m w j : �
 /-- Sum the actual per-packet bounds once, rather than charging the largest advance per block. -/
 theorem chirpControlLoopCost_eq (W e : ℕ) (ds : List ℕ) :
     chirpControlLoopCost W e ds =
-      ds.length * (6 * tblC W e + 11 * W + 10) + (4 * W + 2) * ds.sum + 1 := by
+      ds.length * (6 * tblC W e + 11 * W + 10) + 6 * ds.sum + 1 := by
   induction ds with
   | nil => simp [chirpControlLoopCost]
   | cons d ds ih =>
     unfold chirpControlLoopCost at ih ⊢
     simp only [List.map_cons, List.sum_cons, List.length_cons]
-    calc _ = (6 * tblC W e + W * (4 * d + 11) + 2 * d + 10) +
-        ((List.map (fun d => 6 * tblC W e + W * (4 * d + 11) + 2 * d + 10) ds).sum + 1) := by omega
+    calc _ = (6 * tblC W e + 6 * d + 11 * W + 10) +
+        ((List.map (fun d => 6 * tblC W e + 6 * d + 11 * W + 10) ds).sum + 1) := by omega
       _ = _ := by rw [ih]; ring
 
 end IntegerMultBounds.MathlibTM2.Mult.ShortConv

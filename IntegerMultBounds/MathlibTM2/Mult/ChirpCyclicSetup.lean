@@ -29,7 +29,7 @@ theorem chirpCyclicSetup_exec (hrg : Function.Injective rg) (dst : Fin 5 → Fin
     (hzero : ∀ i : Fin 10, 4 ≤ i.val → st.val i = 0) (hfit : ∀ i, st.val i < 2 ^ W)
     (v : HS T Q A U) (S : Stacks T A) (hS : tblHolds rg S (tblRho W wl nl st)) :
     ∃ v' k, v'.user = v.user ∧
-      k ≤ 25 * tblC W e + (4 * W + 2) * chirpCyclicCounterTotal s m w + 55 * W + 31 ∧
+      k ≤ 25 * tblC W e + 6 * chirpCyclicCounterTotal s m w + 55 * W + 31 ∧
       Exec body (chirpCyclicSetup rg dst) (mk v S) k
         (mk v' { S with R := unaryCopiesR (chirpCyclicValues s m w) S.R (chirpCyclicAssignments dst) }) := by
   classical

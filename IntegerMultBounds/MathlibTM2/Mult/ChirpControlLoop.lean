@@ -19,7 +19,7 @@ def chirpControlLoopBody (rg : TblR 10 → Fin T) (count saved dst : Fin T) : Pr
   .seq (.act (popPush count saved)) (.seq (chirpControlNext rg dst) (.act (peekR count)))
 
 def chirpControlLoopCost (W e : ℕ) (ds : List ℕ) : ℕ :=
-  (ds.map (fun d => 6 * tblC W e + W * (4 * d + 11) + 2 * d + 10)).sum + 1
+  (ds.map (fun d => 6 * tblC W e + 6 * d + 11 * W + 10)).sum + 1
 
 /-- Structural loop over the actual unary block count, computing every packet at runtime. -/
 theorem chirpControlLoop_exec (hrg : Function.Injective rg) (count saved dst : Fin T)

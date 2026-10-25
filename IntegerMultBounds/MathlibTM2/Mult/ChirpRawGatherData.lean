@@ -57,14 +57,14 @@ theorem chirpRawClearRoles_mem (q : ChirpRawReg) :
     · simp [chirpRawClearRoles]
 
 def chirpRawSetupCost (W e s m w : ℕ) : ℕ :=
-  25 * tblC W e + (4 * W + 2) * chirpCyclicCounterTotal s m w + 55 * W + 31
+  25 * tblC W e + 6 * chirpCyclicCounterTotal s m w + 55 * W + 31
 
 def chirpRawCopyCost (s m w : ℕ) : ℕ :=
   chirpPeriods s m * (8 * (s * w) + 9) + 10 * ((s + 3 * m) * w) + 10 * (s * w) + 38
 
 def chirpRawSweepCost (W e s t m w M : ℕ) : ℕ :=
   M * (6 * tblC W e + 11 * W + 14 * ((3 * m + 1) * w) + 41) +
-    (4 * W + 18) * (chirpCenter s t m M * w) + 6 * tblC W e + 16
+    22 * (chirpCenter s t m M * w) + 6 * tblC W e + 16
 
 def chirpRawGatherCost (W e s t m w M : ℕ) : ℕ :=
   chirpRawSetupCost W e s m w + chirpRawCopyCost s m w + chirpRawSweepCost W e s t m w M +
