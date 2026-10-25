@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchWeightSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchInverseSetup
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedCellSpec
@@ -639,6 +640,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ambientWeightSample_eq_weightData,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.executedOutputTable_single,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightPage_eq_execution_tables,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightBatchStepCost_origin,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightBatchStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightBatchLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packWeightBatch_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.reversedRowTable_eq_flatMap,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.batchWeightPage_eq_execution_tables,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.batchWeightSetupCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.batchWeightSetup_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedWeightSetup_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runtimeWeightSetup_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseWeightPage_exec,

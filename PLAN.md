@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1185 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1190 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | A sized real cell is closed with requested ambient-core accuracy. Shared batch inverse setup generates one inverse and replicates its exact grouped page at affine replica cost. Batched weights/payload/execution, control generation, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | A sized real cell is closed with requested ambient-core accuracy. Shared batch inverse setup generates one inverse and replicates its exact grouped page at affine replica cost. Batched weights are generated from owned origin packets and match both runtime tables. Shared inverse/weight composition, payload/execution, control generation, combined setup/storage bounds, gathering, boundary/coupling/recovery and uniform line costs remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -5973,3 +5973,39 @@ The shared inverse checkpoint passes all 9787 guarded S3 axiom-audit jobs at
 2.7 GiB combined peak. All eight new modules pass final individual guarded
 checks; maximum peak is 1949.0 MiB, below the per-module CI budget. Source
 integrity, generated-summary and whitespace checks pass.
+
+
+Batched numerical weights now have an executed raw-header construction.
+`weightBatchStep_exec` reads one owned ambient-origin packet, generates its
+ordered output and reciprocal input rows, consumes the origin header and
+prepends the two rows to separate accumulators. `weightBatchLoop_exec` uses a
+structural unary scan over arbitrary origins, preserving the original batch
+count symbols and all geometry. `packWeightBatch_exec` reverses whole rows in
+both accumulators and releases their copied prefixes. Cell order becomes
+forward without reversing coefficients or bits inside a row; output coordinates
+remain reversed within each cell, as required by the existing arithmetic.
+`batchWeightSetup_exec` composes count generation, the full numerical loop,
+packing and count release. Its endpoint changes only the consumed packet prefix
+on 109 and the new numerical page on 110; all borrowed accumulator and payload
+suffixes, geometry headers, native stacks and spectator fields are preserved.
+`reversedRowTable_eq_flatMap` and `batchWeightPage_eq_execution_tables` identify
+the generated page exactly with `executedOutputTable` and the flattened
+reciprocal `cellWeightRows`. No supplied numerical data or setup execution
+oracle is assumed.
+The row packer costs at most `B*(50*(L*w)+47)+30`.
+`weightBatchStepCost_origin` charges the origin-dependent unary work explicitly;
+`batchWeightSetupCost_le` gives the schedule-independent bound
+`L*(6*w+9)+40+B*(weightBatchStepCost(P,s,t,u,q,L,s,w)+50*(L*w)+52)`.
+This bound pays for numerical initialization and unary geometry loading at
+every cell. It is an executed construction bound, not the required final
+amortized fast-line estimate. Shared inverse/weight setup composition, payload
+layout and gathering, runtime headers, grouped execution/cleanup, efficient
+control generation, uniform total time/storage, halo cuts and
+complex/boundary/coupling/recovery/full-line composition remain open.
+S3 remains incomplete and the proved multiplication saving is unchanged.
+The batched-weight checkpoint passes all 9792 guarded S3 axiom-audit jobs
+at 2.6 GiB combined peak. All five new modules pass final individual guarded
+checks, with maximum peak 1957.2 MiB, below the per-module CI budget. Source
+integrity, generated-summary and whitespace checks pass. Shared inverse/weight
+composition and the full grouped runtime and uniform-cost obligations remain
+open.
