@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalInteriorCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolveNaturalInterior
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunNaturalLengthKeys
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProcessLengthKey
@@ -1026,6 +1027,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.released_keyLoop_initialized,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseKeyRuntime_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveNaturalInterior_spec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalPositiveLengthKeys_cell_count,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.sum_class_cost,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalPositiveLengthKeys_cost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sizedClosedBatchBound_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.naturalClassCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.initializeLengthKeysCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.lengthKeyLoopCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveNaturalInteriorCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do

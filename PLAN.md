@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1316 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1319 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. Uniform time/storage, halo cuts and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Fast asymptotic time/storage, halo cuts and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6782,3 +6782,43 @@ at 2.7 GiB combined peak. All nine new or revised non-audit modules pass final
 individual guarded checks; maximum measured peak is 1986.2 MiB. Default proof
 limits are unchanged. Source integrity, generated-summary and whitespace checks
 pass.
+
+
+### S3 whole-interior setup, coordinate and cell cost ledger
+
+`sizedClosedBatchBound_eq` separates the entire executed batch cost exactly as
+`setup(L) + B*L*batchCoordinateCost + B*batchCellCost`. It covers generated
+weights, four padded short-convolution records per cell, real multiplications,
+payload movement, publication and final cleanup. The nonlinear numerical
+construction remains in `setup(L)` and is paid once per length class.
+The repeated coefficients are independent of the batch count, class length and
+cell origins; their full arithmetic costs remain explicit.
+
+`naturalPositiveLengthKeys_cell_count` proves that the selected classes contain
+at most `t-s+1` cells in total. The existing exact coordinate-volume identity
+counts every interior coordinate once. `naturalPositiveLengthKeys_cost_le`
+combines these facts with the sublist of the four fixed length candidates:
+shared setup is bounded by those four candidate setups, coordinate work by the
+exact interior cardinality, and padded cell work by the number of natural phases.
+There is no class-count factor on either repeated-work term.
+
+`naturalClassCost_le` covers the actual empty/nonempty class branches, key
+decoding, origin scanning, gather-control generation, ambient gather/scatter and
+the numerical batch. `initializeLengthKeysCost_le` removes the selected-key
+count from the setup bound using the four-key limit. `solveNaturalInteriorCost_le`
+then bounds the actual initialized solver by `naturalInteriorCostBound`, including
+initialization and final width release. The resulting whole-line ledger is
+`initialization + four candidate setups + interiorCard*coordinateCost +
+(t-s+1)*cellCost + loop termination + final release`.
+
+This establishes the geometry-separated executed ledger, not the required fast
+asymptotic estimate. In particular, the current coordinate coefficient includes
+`(310*P+124)*tblC V w` for weight generation; its cost must be addressed rather
+than hidden in an assumed fast rate. Fast time and execution-wide storage,
+artificial halo cuts and complex/boundary/coupling/recovery/full-line assembly
+remain open. S3 is incomplete and the proved saving is unchanged.
+
+The whole-interior cost checkpoint passes all 9939 guarded S3 axiom-audit jobs
+at 2.7 GiB combined peak. All four new modules pass final individual guarded
+checks; maximum measured peak is 1995.2 MiB. Default proof limits are unchanged.
+Source integrity, generated-summary and whitespace checks pass.
