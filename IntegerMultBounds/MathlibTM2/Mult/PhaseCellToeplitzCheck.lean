@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunGeneratedHaloKeys
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedHaloClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloScatterPreservesClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedHaloScatter
@@ -1218,6 +1219,20 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedHaloGroupInput_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawHaloGroup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.finishControlledHaloGroupInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.conditionalHaloClass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.conditionalHaloGroupPreparation_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.haloLengthKeyLoop_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.haloLengthKeyStep_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.probeAndGatherHaloControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.probePreparedHaloOrigins_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloClassR_empty,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseEmptyPreparedHaloOrigins_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.probeHaloGroupInputBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.processHaloLengthKey_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedControlledHaloClass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseEmptyHaloGroup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runGeneratedHaloKeys_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runHaloKeys_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
