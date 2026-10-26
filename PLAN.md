@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1619 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1621 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8413,3 +8413,33 @@ clock, two complete prefix operations, two readiness lemmas and the owned-input
 core audit. Combined build peak is 4.4 GiB. All five new/revised Lean modules
 pass individual guarded checks at at most 2044.2 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 release of the initial interior result
+
+`retireInitialInterior` generates the byte clock from the retained masters,
+consumes exactly the owned line prefix on output port 132, and clears its two
+counter stacks. It preserves the borrowed output suffix and every other stack,
+including the computed residual, parked imaginary input, saved real component
+and saved original complex input. Its proved cost is
+`12*s*(2*q+8)+9*s+12*q+40`; no input-size counter is supplied for free.
+
+`retireInitialInterior_ready` derives the scratch preconditions from the released
+solver bank and restores readiness for the unchanged residual source. The actual
+`preparedSchurResidual` now executes this retirement immediately after computing
+the initial residual. Its exact final state restores output 132 to its original
+borrowed suffix, while preserving all residual accuracy, magnitude and physical
+read contracts and the saved complex/imaginary inputs. Its cost includes the
+complete generated retirement program. The initial interior field remains an
+existential mathematical witness used to describe the already-computed residual;
+its physical stream is no longer retained across the boundary solve.
+
+This closes initial-interior ownership release at the first complex-input
+endpoint. S5 still needs executed computed-table setup and solve; complete
+second-component sequence composition, scaling/final rounding and uniform fast
+time/simultaneous storage remain open. S3 remains partial.
+
+Validation: all 10,262 guarded stage-audit jobs pass, with explicit audits for
+retirement execution and readiness. Combined build peak is 2.7 GiB. All four
+new/revised Lean modules pass individual guarded checks at at most 2044.7 MiB.
+Added-source integrity, plan-status and whitespace checks pass; proof limits
+are unchanged.

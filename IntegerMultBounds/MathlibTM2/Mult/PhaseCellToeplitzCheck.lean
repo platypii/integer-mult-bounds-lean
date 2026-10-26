@@ -1575,6 +1575,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.restoreOriginalPrefix_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.restoreOriginalPrefix_after,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalPrefix_roundTrip,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireInitialInterior_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retireInitialInterior_ready,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalInputClock_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.saveOriginalInput_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.restoreOriginalInput_exec,
