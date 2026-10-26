@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1634 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1637 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8626,3 +8626,45 @@ for the fold-counter execution and its composition with generated boundary
 inputs. Combined build peak is 2.7 GiB. All three new/revised Lean modules pass
 individual guarded checks at at most 2053.2 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Closed generated folded-boundary page
+
+`BoundaryFoldPlacement` embeds the existing fold's complete register namespace
+in the retained 148-register bank. Its thirteen active roles use the generated
+coordinate/dimension ports and low scratch; the remaining roles may retain
+arbitrary spectator contents. A structural left inverse proves the finite role
+encoding injective, and permutation composition proves the placement injective
+and disjoint from the fold contract's clean multiplier bank. No proof limit is
+raised and no new folding algorithm is introduced.
+
+`retainedBoundaryFold_exec` runs the existing canonical fold with this placement.
+Its exact frame changes only the owned natural-coordinate source on 109 and
+folded result on 6, preserving every other stack, including the retained
+component streams on 144–147. The standard clean-workspace hypotheses are
+explicit: low scratch/multiplier ports are empty and the left bank is empty.
+
+`closedBoundaryFold_exec` now composes generated geometry width, header loading,
+actual boundary enumeration and word counting, all half-count/parity/byte
+counter generation, the physical fold, two paid moves back to the coordinate
+page, and temporary-control release. It starts from ordinary unary geometry
+headers and empty owned workspace. Its only final owned outputs are the
+canonical folded coordinate stream on 109, generated width on 115 and measured
+boundary cardinality on 116. Every other stack is restored exactly. Neither a
+boundary list, a fold order nor any loop counter is supplied by the caller.
+
+The proved bound is `preparedBoundaryFoldInputsCost` plus
+`70*(|B|+1)*(V+1)+71`; enumeration's ambient-axis scan remains explicitly charged
+inside the preparation cost. Empty boundaries and odd/even cardinalities use
+the same program. The physical folded stream is identified with `bFoldOrder`
+of the actual halo boundary, retaining its original ambient coordinates.
+
+This closes generated folded-order setup. Folded address/rank access, computed
+Schur entries and factor setup/solve/release still need execution proofs, as do
+the complete S3 uniform fast-time and simultaneous-storage endpoint. S3 remains
+partial.
+
+Validation: all 10,292 guarded stage-audit jobs pass, including twenty-one
+explicit placement, active-port, frame and complete setup execution audits.
+Combined build peak is 2.7 GiB. All four new/revised Lean modules pass individual
+guarded checks at at most 2055.1 MiB. Added-source integrity, plan-status and
+whitespace checks pass; proof limits are unchanged.

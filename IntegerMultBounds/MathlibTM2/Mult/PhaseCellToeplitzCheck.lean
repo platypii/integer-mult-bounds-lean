@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedBoundaryFold
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryFoldInputs
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryOrder
@@ -1609,6 +1611,29 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFold_runs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryOrder_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFoldCounters_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.code_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.base_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_mul,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.swap_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_m2wn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_kn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_tswn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_vk,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_ya,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_xs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_nv,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_tK,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_tC,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_ac2,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_sel,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_sn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_width,
+
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryInputReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedBoundaryFold_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedBoundaryFold_exec,
+
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryFoldInputs_exec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderCode_do,
