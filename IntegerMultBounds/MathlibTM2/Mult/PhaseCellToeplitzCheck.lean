@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLiftedCoefficientAccuracy
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDirectCoefficientAccuracy
 import IntegerMultBounds.NLogN.PhaseCellCouplingOffsets
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingSupportRow
@@ -1266,6 +1267,26 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawRepeatedBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installReplicaHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.replicaLoopR_off,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.nearestQ_period,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.betaQ_period,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.potentialQ_period,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.offset_le_liftedSource,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.liftedSource_cast,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.liftedTarget_cast,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.liftedTarget_le,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.liftedSource_zmod,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.liftedTarget_zmod,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.lifted_entry,
+      `IntegerMultBounds.NLogN.PhaseCellCrossCell.phaseQ_period,
+      `IntegerMultBounds.NLogN.PhaseCellCrossCell.latticeQ_period,
+      `IntegerMultBounds.NLogN.PhaseCellCrossCell.direct_period,
+      `IntegerMultBounds.NLogN.PhaseCellCrossCell.entry_period,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.liftCouplingCoordinates_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareDirectCoefficient_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.liftedDirectCoefficientCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.liftedCoefficientFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.lifted_phase_eq_iff,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.lifted_cross_coefficient_error,
       `IntegerMultBounds.NLogN.PhaseCellRationalArgs.naturalDistance_sq,
       `IntegerMultBounds.NLogN.PhaseCellRationalArgs.nearestNatural_cast,
       `IntegerMultBounds.NLogN.PhaseCellRationalArgs.latticeDistance_ratio,
