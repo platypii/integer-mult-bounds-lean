@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloScatterPreservesClass
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedHaloScatter
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedHaloPublicationControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawHaloGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawHaloGather
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloAdvanceControls
@@ -1185,6 +1188,22 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareHaloClassControls_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawHaloGroup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawHaloGroupInputBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloPublicationControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloPublicationGaps,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatter_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterRows_errorOn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterRows_preserves_class,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloOrigins_disjoint,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloSymbolOrigins_disjoint,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterGaps_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterGaps_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterGaps_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterRows_window,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterRows_word,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.protectedHaloPublicationControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.protectedHaloScatter_exec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloClass_intervals_separated,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
