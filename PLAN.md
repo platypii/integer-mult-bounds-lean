@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1617 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1619 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8377,3 +8377,39 @@ explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All seven new/revised Lean modules pass individual guarded checks,
 with a maximum of 2042.4 MiB. Added-source integrity, plan-status and whitespace
 checks pass; proof limits are unchanged.
+
+### S3 original-input preservation in the executed caller endpoints
+
+`originalInputClock_exec` constructs the byte count from the retained precision
+and line-length masters. `saveOriginalInput` and `restoreOriginalInput` generate
+that clock, execute the counted prefix operation, and clear both temporary
+counters. For width `w = 2*q+8`, their proved costs are respectively
+`16*s*w+9*s+12*q+44` and `12*s*w+9*s+12*q+40`. Their readiness lemmas obtain all
+low scratch conditions from `LengthKeyReady`, and restore the released bank.
+Neither operation requires an externally supplied byte clock or empty backup
+suffix.
+
+The actual `preparedSchurResidual` now saves the original complex line on 146
+before splitting its real and imaginary inputs and executing the initial real
+Schur pass. Its execution, numerical error and physical-read contracts include
+this saved prefix, and its cost pays the complete save program.
+
+`retainedRecoveryFinish` now runs second recovery and complex finalization,
+then restores the saved original line above its borrowed input suffix and
+releases the backup prefix. Its execution contract preserves the complex output
+and its requested dyadic accuracy, restores both borrowed suffixes and solver
+readiness, and pays the complete restore cost. The former owned-input endpoint
+is the explicit `retainedRecoveryFinishCore` used in this composition.
+
+These are actual beginning/end caller compositions. The middle sequence still
+requires S5's executed computed-table/solve and initial-interior retirement.
+The saved complex prefix occupies an additional `s*w` retained symbols; its
+simultaneous storage charge must be included in the outstanding global stock
+proof. Uniform fast time and the complete two-pass/SolveSpec endpoint remain
+open. S3 remains partial.
+
+Validation: all 10,260 guarded stage-audit jobs pass, including the generated
+clock, two complete prefix operations, two readiness lemmas and the owned-input
+core audit. Combined build peak is 4.4 GiB. All five new/revised Lean modules
+pass individual guarded checks at at most 2044.2 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
