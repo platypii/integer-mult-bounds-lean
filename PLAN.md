@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1588 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1591 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8065,4 +8065,30 @@ Validation: all 10,226 guarded stage-audit jobs pass, including 13 new
 explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All five new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2041.9 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 generated real-component inputs from the original complex RHS
+
+`splitComponentPrefix_exec` consumes the complex input prefix once, copies its
+imaginary component and restores its real component in natural order. Both
+borrowed suffixes and all counters/scratch are preserved. The fixed outer caller
+`splitComponentLine` generates and retires its own byte count from the retained
+axis and width headers, with cost at most `16*s*w+9*s+16`.
+
+`splitComponentLine_spec` connects the executed output tapes to exact real and
+imaginary RHS values. Both component magnitudes are bounded by the original
+complex magnitude, and their word fits follow from the original RHS budget;
+component extraction incurs no arithmetic error or extra precision allowance.
+`pairComponentWord_parts` proves that pairing the two extracted words recovers
+the original word.
+
+The inactive component must still be retained outside the real solver's scratch
+bank while each complete real solve runs. That two-solve composition, the S5
+boundary producer, final error allocation and uniform fast time/simultaneous
+storage remain open. S3 remains partial.
+
+Validation: all 10,229 guarded stage-audit jobs pass, including 12 new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All four new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2042.0 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.

@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPairComponentsAccuracy
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComponentInputs
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryPublishedHalo
 
@@ -1529,6 +1529,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMerge_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSplit_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSelectFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.imagPartSymbol_csyms,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.imagPartSymbol_cstream,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentWord_parts,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.splitComponentPrefix_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.splitComponentLine_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.value_imagPartWord_re,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.value_imagPartWord_im,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.value_imagPartWord_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentWords_norm_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentWords_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentInputs_read,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.splitComponentLine_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentStep_run,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponents_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentSymbol_csyms,
