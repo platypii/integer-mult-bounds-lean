@@ -23,7 +23,7 @@ def publishHalo : Pr P₀ 144 Q A U :=
 def publishHaloCost (P q s t u band a b : ℕ) : ℕ :=
   let w := 2*q+8
   installCouplingHeadersCost P q s t u band a b+
-    (closedPublicationMaskCost P q w s t u band a b+
+    (closedPublicationMaskCost s t band a b+
       (publicationSplitCost s w+(publicationSelectFromHeadersCost s w+
         releaseCouplingHeadersCost P q s t u band a b)))
 
@@ -113,10 +113,10 @@ theorem publishHalo_exec {P N q l s t u band a b : ℕ} [NeZero s]
   change installCouplingHeadersCost P q s t u band a b+
       (n₁+(n₂+(n₃+releaseCouplingHeadersCost P q s t u band a b))) ≤
     installCouplingHeadersCost P q s t u band a b+
-      (closedPublicationMaskCost P q w s t u band a b+
+      (closedPublicationMaskCost s t band a b+
         (publicationSplitCost s w+(publicationSelectFromHeadersCost s w+
           releaseCouplingHeadersCost P q s t u band a b)))
-  have hn₁' : n₁ ≤ closedPublicationMaskCost P q w s t u band a b := by simpa only [w] using hn₁
+  have hn₁' : n₁ ≤ closedPublicationMaskCost s t band a b := by exact hn₁
   have hn₃' : n₃ ≤ publicationSelectFromHeadersCost s w := by simpa only [w] using hn₃
   omega
 

@@ -22,14 +22,13 @@ theorem outerPublicationMask_exec {P q w s t u band a b : ℕ} [NeZero s]
     (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s)
     (raw : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
     (hready : CouplingReady P q w s t u band a b raw (embStk groupReg S)) :
-    ∃ v' n, v'.user = v.user ∧ n ≤ closedPublicationMaskCost P q w s t u band a b ∧
+    ∃ v' n, v'.user = v.user ∧ n ≤ closedPublicationMaskCost s t band a b ∧
       Exec (embTab groupReg body) outerPublicationMask (mk v S) n
         (mk v' {S with R := Function.update S.R 109 (publicationMaskSymbols A s t band a b)}) := by
   obtain ⟨v₁,n,hu₁,hn,he₁⟩ := closedPublicationMask_exec (body := body)
-    (P := P) (q := q) (w := w) (s := s) (t := t) (u := u) (band := band) (a := a) (b := b)
+    (s := s) (t := t) (band := band) (a := a) (b := b)
     hst haS hbS hbandS (embDn groupReg v) (embStk groupReg S)
-    hready.precision hready.fraction hready.width hready.axis hready.period hready.parameter
-    hready.bandwidth hready.lower hready.upper (hready.fresh 115 (by simp)) (hready.fresh 104 (by simp))
+    hready.axis hready.period hready.bandwidth hready.lower hready.upper (hready.fresh 115 (by simp))
     (hready.fresh 106 (by simp)) (hready.fresh 108 (by simp))
     (fun r hr => hready.low r (by omega))
   have hbody : ∀ p, (embTab groupReg body) (id p) = embProg groupReg id (body p) := fun _ => rfl
