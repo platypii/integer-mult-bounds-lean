@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1601 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1607 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8148,4 +8148,35 @@ Validation: all 10,239 guarded stage-audit jobs pass, including six new
 explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All seven new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2045.1 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 final complex pairing and owned-source release
+
+`finishComponents` reconstructs the word width, generates and copies its byte
+clock, retires the second solve's recovery/original RHS pages, pairs the saved
+real line with the current imaginary line, moves the complex result to the output
+port and releases both private counters. Its cost is at most
+`34*s*(2*q+8)+9*s+12*q+60`. Both output/saved-page borrowed suffixes are
+preserved, the source returns to its borrowed suffix, and all pairing scratch
+and the copied outer clock restore.
+
+`pairedCellRead_parts` proves directly that decoding the paired physical word
+returns the two physical component reads. Thus
+`pairedComponents_physical_accuracy` needs no additional integer-fit premise;
+the two established physical errors add once.
+`finishComponents_spec` combines this accuracy with actual execution and a
+returned `LengthKeyReady` invariant for the released source.
+
+`retainedRecoveryFinish_spec` composes the second retained recovery/publication
+call with this finalizer. It consumes the saved first result, publishes the
+complex line on the actual output port and carries its combined uniform halo
+error, restored source ownership and solver readiness. The complete initial-pass
+and S5 boundary execution for each component, full sequence composition, global
+error allocation and uniform fast time/simultaneous storage remain open. S3
+remains partial.
+
+Validation: all 10,245 guarded stage-audit jobs pass, including seven new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All seven new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2043.6 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
