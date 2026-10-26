@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRepeatedHaloCell
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawReplicaGather
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRepeatedClosedBatchSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRepeatedBatchCost
@@ -1070,6 +1071,34 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateReplicaControls_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawReplicaGather_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawReplicaGatherCost_le,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.mem_haloCellPhases,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloStop_le,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloInterior_phase_iff,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.cell_eq_naturalPhase,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloCells_cover,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLength_le_naturalLength,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloCells_ordered,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloCellPhases_nodup,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.halo_solver_geometry,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloPhase_card,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloIntervals_volume,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloCellPhases_volume,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.mem_haloVertices,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloVertices_card_le,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloInterior_subset,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloInterior_disjoint_boundary,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloInterior_union_boundary,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloBoundary_cover,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloBoundary_card_le,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloPhase_left_cut,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloPhase_right_cut,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLength_mem_candidates,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthCandidates_uniform,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_nodup,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_length_le,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_cover,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_pad,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedHaloCell_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do

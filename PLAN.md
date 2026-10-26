@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1337 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1338 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Equal-origin RHS replicas now share exact generated weights and inverse construction. Grouped-line integration/amortization, fast asymptotic time/storage, halo cuts and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Equal-origin RHS replicas now share exact generated weights and inverse construction. Clipped halo geometry and cell execution are proved. Grouped-line integration/amortization, fast time/storage, halo-descriptor execution and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6925,4 +6925,58 @@ S3 is incomplete and the proved saving is unchanged.
 The raw-replica-gather checkpoint passes all 9957 guarded S3 axiom-audit jobs
 at 2.7 GiB combined peak. All six new modules pass final individual guarded
 checks; maximum measured peak is 1950.6 MiB. Default proof limits are unchanged.
+Source integrity, generated-summary and whitespace checks pass.
+
+
+### S3 generated artificial halo cuts and executed clipped cells
+
+`haloStart`/`haloStop` clip the original ambient natural-cell intervals against
+`[a+band,b-band)`. The active interior `haloInterior` is the original computed
+interior intersected with those artificial endpoint guards. Empty and overlapping
+guards give empty cells directly. The ambient modulus, phase numbering,
+coefficient precision and matrix remain unchanged; no phase is restarted or
+periodic wrap introduced at a halo edge.
+
+`haloInterior_phase_iff` identifies each clipped interval exactly with its
+ambient phase fiber in the selected interior. `haloCells_cover` proves the
+positive generated phase list covers that interior. `halo_solver_geometry`
+proves nonwrapping endpoints, original ambient interior membership, constant
+phase and complete coverage of that phase inside the selected halo interior.
+`haloCells_ordered` separates different phase intervals. `haloIntervals_volume`
+and `haloCellPhases_volume` give the exact interior cardinality from the full
+phase scan and from its positive clipped-cell list respectively.
+
+Only intervals containing one of the two artificial endpoints can have a changed
+length. `haloPhase_left_cut`/`haloPhase_right_cut` identify their ambient phases.
+`haloLengthCandidates` contains the four original candidates and the two computed
+clipped endpoint lengths. `haloLengthKeys_cover` and `haloLengthKeys_length_le`
+prove a complete positive distinct schedule with at most six length keys.
+`haloLengthKeys_pad` preserves the common original padding bound because clipping
+cannot increase any interval length. These are computable metadata formulas;
+their tape-level descriptor/key generation is still an execution obligation.
+
+`haloBoundary` is exactly the selected halo vertices minus the computed interior.
+`haloInterior_union_boundary` and `haloInterior_disjoint_boundary` prove the
+partition. `haloBoundary_card_le` charges the original boundary vertices inside
+the halo plus at most `2*band` for the two artificial endpoint guards. It makes
+no local bandwidth, support/fill or boundary factorization claim; those remain
+S5 obligations.
+
+`repeatedHaloCell_spec` executes the generated/cleaned equal-key replica solver
+on each selected clipped cell, deriving all geometry from the halo formulas and
+generated phase membership. No free mask, interval cover, phase oracle or
+per-cell padding bound is requested. Distinct replica RHSs satisfy the same
+requested `1/2^target` original-coordinate core error on the selected halo
+interior system, with no replica-count factor. This is an interior pass, not a
+full halo solve: boundary/coupling/recovery and arithmetic-to-global locality
+composition are not supplied by the theorem.
+
+Grouped-line integration and paid setup multiplicities, fast time/storage,
+tape-level halo descriptor/key generation and complex/boundary/coupling/recovery/
+full-line assembly remain open. S4 still owns global locality and external
+layout/exposure. S3 is incomplete and the proved saving is unchanged.
+
+The clipped-halo-cell checkpoint passes all 9963 guarded S3 axiom-audit jobs
+at 2.7 GiB combined peak. All six new modules pass final individual guarded
+checks; maximum measured peak is 1947.6 MiB. Default proof limits are unchanged.
 Source integrity, generated-summary and whitespace checks pass.
