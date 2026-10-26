@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareCouplingOperandsSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellMaskedHaloLookupSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareCouplingCoefficientsSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOffsetCouplingRow
@@ -1428,6 +1429,25 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tableBitHost_exec,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloInteriorAt_spec,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloMaskAt_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedCouplingLookup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingIndexCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingIndexFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingInputWords_decode,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingInputOffsetLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingInputOffsetPass_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingInputWords_split,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingInputWords_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedCouplingLookupCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateCouplingInputsCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateCouplingInputs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloLookupFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloLookupWidth_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializeOriginHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCouplingOperands_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCouplingOperands_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tablePacketHost_exec,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.couplingIndex_lt,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.couplingIndex_cast,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
