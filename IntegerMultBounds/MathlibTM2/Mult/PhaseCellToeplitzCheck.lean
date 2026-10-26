@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawRepeatedHaloCell
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawRepeatedHaloCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloInteriorCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunGeneratedHaloKeys
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedHaloClass
@@ -1249,6 +1251,14 @@ run_cmd do
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.sum_fiber_card_mul,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_volume,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_cost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawReplicaGatherCost_affine,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedBatchCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedBatchCost_le_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedBatchInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedHaloCell_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedHaloInteriorCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedHaloInteriorCost_le_volume,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
