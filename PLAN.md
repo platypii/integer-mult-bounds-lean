@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1632 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1634 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8596,3 +8596,33 @@ new list/encoding, fold-execution and prepared-page execution audits. Combined
 build peak is 2.7 GiB. All four new/revised Lean modules pass individual guarded
 checks at at most 2052.2 MiB. Added-source integrity, plan-status and whitespace
 checks pass; proof limits are unchanged.
+
+### Generated fold counters from the actual boundary page
+
+`boundaryFoldCounters` uses the existing restoring unary division, copy and
+subtraction programs to derive the floor half-count, parity and first-half byte
+count from cardinality on 116 and width on 115. For `n` words of width `w`, its
+exact final state adds `floor(n/2)` ticks on 0, `ceil(n/2)-floor(n/2)` ticks on 2,
+and `ceil(n/2)*w` ticks on 3. Its temporary ceiling-count stack is cleared, its
+other scratch is restored, and both dimension streams retain their exact input
+symbols. It works for odd, even and zero cardinality without a parity premise.
+The proved bound is `n*(4*w+23)+26`.
+
+`preparedBoundaryFoldInputs` composes the actual width/header/enumeration/count
+program with this counter generation. Its single execution theorem starts from
+ordinary geometry headers and returns the owned coordinate page, its generated
+width, its measured cardinality and all three fold controls. Every other stack
+is restored. Its cost is the sum of the two executed programs, using the actual
+halo boundary cardinality; no half-count or parity control is supplied for free.
+
+The remaining fold-bank adapter must place these generated values and the
+coordinate page in the existing `bandFoldLineP` layout and release the controls
+after folding. The raw fold theorem alone is not yet a closed setup caller.
+Computed Schur entries, factor setup/solve/release, full S3 composition and the
+uniform fast-time/simultaneous-storage endpoint remain open. S3 remains partial.
+
+Validation: all 10,289 guarded stage-audit jobs pass, including explicit audits
+for the fold-counter execution and its composition with generated boundary
+inputs. Combined build peak is 2.7 GiB. All three new/revised Lean modules pass
+individual guarded checks at at most 2053.2 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.

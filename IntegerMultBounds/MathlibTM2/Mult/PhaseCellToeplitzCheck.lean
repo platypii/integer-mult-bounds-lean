@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryFoldInputs
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryOrder
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryFoldExecution
 
@@ -1606,6 +1608,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryIndexWords_fold,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFold_runs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryOrder_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFoldCounters_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryFoldInputs_exec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderCode_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderSymbols_length_le,
