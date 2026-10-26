@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1591 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1596 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8091,4 +8091,33 @@ Validation: all 10,229 guarded stage-audit jobs pass, including 12 new
 explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All four new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2042.0 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 retained component workspace and solver-bank restoration
+
+A fixed 148-register component controller now embeds the existing 144-register
+real solver and keeps four registers outside its image. The embedding preserves
+those outer registers at every executed solver endpoint. The two-port transport
+lemma carries the real solver's exact source/output frame without adding steps.
+
+`preparedComponentInputs_exec` reconstructs the private word-width header from
+the retained precision, executes the complex-input split, parks the imaginary
+RHS outside the real solver bank, and releases the private header. Its cost is
+at most `retainedComponentInputsCost s (2*q+8)+12*q+27`; the retained splitter
+cost is at most `20*s*w+9*s+20`. The returned low bank satisfies the original
+`LengthKeyReady` invariant for the exact real RHS, including empty scratch.
+The parked component's borrowed suffix and every other outer register survive.
+
+`retainedRecoveryPublishedHalo_spec` runs the existing recovery and final real
+publication inside this bank with its original numerical/error contracts and
+unchanged cost, preserving the parked component registers. The complete
+sequence still needs the S5 boundary producer and the transition that retires
+owned source prefixes, saves the first output and installs the second input.
+Full two-component solve composition, global error allocation and uniform fast
+time/simultaneous storage remain open. S3 remains partial.
+
+Validation: all 10,234 guarded stage-audit jobs pass, including eight new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All six new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2041.3 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.

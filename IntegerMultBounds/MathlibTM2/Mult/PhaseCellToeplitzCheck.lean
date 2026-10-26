@@ -1,8 +1,7 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComponentInputs
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedRecovery
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryPublishedHalo
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRealInteriorResidual
 
@@ -1529,6 +1528,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMerge_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSplit_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSelectFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentReg_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentProject_updateR,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentExec_twoPorts,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.parkComponent_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedComponentInputs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.preparedComponentInputs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRecoveryPublishedHalo_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.imagPartSymbol_csyms,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.imagPartSymbol_cstream,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentWord_parts,
