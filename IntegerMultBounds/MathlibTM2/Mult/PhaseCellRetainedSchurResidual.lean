@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRealInteriorResidual
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInitialErrorBudget
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComponentWorkspace
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundedAmbient
 public import IntegerMultBounds.NLogN.PhaseCellHaloSchurStability
@@ -28,15 +29,15 @@ theorem retainedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     (hband : PhaseCellBand.width p u ≤ s) (has : a ≤ s) (hbs : b ≤ s)
     (hpad : 2*((s/(t-s)+1)-2*PhaseCellBand.width p u) ≤ 2^l+1)
     (B : ZMod s → GaussianInt)
-    (hB : ∀ i, ‖value (executionPrecision p l target rhsExp) (B i)‖ ≤ (2 : ℝ)^rhsExp)
+    (hB : ∀ i, ‖value (executionPrecision p l (initialSchurTarget p u target rhsExp) rhsExp) (B i)‖ ≤ (2 : ℝ)^rhsExp)
     (v : HS 148 Q A U) (S : Stacks 148 A) (tail : List (Fin (A+4)))
     (h127 : S.R 127 = []) (h138 : S.R 138 = []) (h143 : S.R 143 = [])
     (haMaster : (S.R 141).length = a) (hbMaster : (S.R 142).length = b)
-    (hready : LengthKeyReady (2^15*p) (executionStagePrecision p l target rhsExp+1)
-      (executionPrecision p l target rhsExp) l s t u (PhaseCellBand.width p u) 0 0
-      (cstream A (executionWidth p l target rhsExp) (chirpLine s B)++tail) (embStk componentReg S)) :
-    let q := executionPrecision p l target rhsExp
-    let w := executionWidth p l target rhsExp
+    (hready : LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u target rhsExp) rhsExp+1)
+      (executionPrecision p l (initialSchurTarget p u target rhsExp) rhsExp) l s t u (PhaseCellBand.width p u) 0 0
+      (cstream A (executionWidth p l (initialSchurTarget p u target rhsExp) rhsExp) (chirpLine s B)++tail) (embStk componentReg S)) :
+    let q := executionPrecision p l (initialSchurTarget p u target rhsExp) rhsExp
+    let w := executionWidth p l (initialSchurTarget p u target rhsExp) rhsExp
     let band := PhaseCellBand.width p u
     let I := haloInterior s t band a b
     let boundary := haloBoundary s t band a b
@@ -46,21 +47,20 @@ theorem retainedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
       let output := cstream A w (chirpLine s D)++S.R 132
       let S' : Stacks 148 A := {S with R := Function.update (Function.update S.R 110 input) 132 output}
       (∀ c, SchurDominance.Solves (realMatrix s t p u) I (R c) c) ∧
-      v'.user = v.user ∧ n ≤ realInteriorResidualCost p l s t u target rhsExp a b ∧
+      v'.user = v.user ∧ n ≤ realInteriorResidualCost p l s t u (initialSchurTarget p u target rhsExp) rhsExp a b ∧
       Exec (embTab componentReg (embTab groupReg body)) (retainedSchurResidual hR hQ) (mk v S) n (mk v' S') ∧
       (∀ i, (C i).im = 0) ∧
       (∀ i, ‖value q (C i)‖ ≤ (2 : ℝ)^couplingRowExponent rhsExp (stableInteriorExponent p rhsExp)
         (8*p+1) (couplingCountExponent p u)) ∧
-      (∀ i ∈ boundary, |(value q (C i)).re-SchurDominance.residual (realMatrix s t p u) I R
-          (fun i => (value q (B i)).re) i| ≤
-        (2*band+1)*(2/(2 : ℝ)^q)+(2*band+1)*((2 : ℝ)^stableInteriorExponent p rhsExp*(1/(2 : ℝ)^q))+
-          2*(1/(2 : ℝ)^target)) ∧
+      (∀ i ∈ boundary, 8*p*|(value q (C i)).re-SchurDominance.residual (realMatrix s t p u) I R
+          (fun i => (value q (B i)).re) i| ≤ 1/(2 : ℝ)^(recoveryTarget p target+2)) ∧
       (∀ i, publishedCellRead q w (0 : ZMod s) (S'.R 110) i = (value q (C i)).re) ∧
-      LengthKeyReady (2^15*p) (executionStagePrecision p l target rhsExp+1) q l s t u band 0 0 input
+      LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u target rhsExp) rhsExp+1) q l s t u band 0 0 input
         (embStk componentReg S') := by
   dsimp only
-  let q := executionPrecision p l target rhsExp
-  let w := executionWidth p l target rhsExp
+  let firstTarget := initialSchurTarget p u target rhsExp
+  let q := executionPrecision p l firstTarget rhsExp
+  let w := executionWidth p l firstTarget rhsExp
   let band := PhaseCellBand.width p u
   let I := haloInterior s t band a b
   let : NeZero t := ⟨by omega⟩
@@ -90,18 +90,24 @@ theorem retainedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     refine Stacks.ext rfl rfl rfl ?_
     funext k
     by_cases h110 : k = 110 <;> by_cases h132 : k = 132 <;>
-      simp [h110,h132,input,output,embStk,componentReg,C,q,w,band]
+      simp [h110,h132,input,output,embStk,componentReg,C,q,w,band,firstTarget]
   obtain ⟨v₂,hu₂,he₂⟩ := componentExec_twoPorts (body := embTab groupReg body)
     (realInteriorResidual hR hQ) v S v₁ n input output hu₁ he₁'
   refine ⟨v₂,n,D,R,hRsolve,hu₂,hn,he₂,hCreal,hCnorm,?_,?_,?_⟩
   · intro i hi
-    simpa only [SchurDominance.residual,SchurDominance.couple] using hCerror i
+    have hh : |(value q (C i)).re-SchurDominance.residual (realMatrix s t p u) I R
+        (fun i => (value q (B i)).re) i| ≤
+        (2*band+1)*(2/(2 : ℝ)^q)+(2*band+1)*((2 : ℝ)^stableInteriorExponent p rhsExp*(1/(2 : ℝ)^q))+
+          2*(1/(2 : ℝ)^firstTarget) := by
+      simpa only [SchurDominance.residual,SchurDominance.couple] using hCerror i
+    have hscaled := mul_le_mul_of_nonneg_left hh (by positivity : (0 : ℝ) ≤ 8*p)
+    exact hscaled.trans (initialResidual_error_budget p u l target rhsExp (by omega))
   · intro i
     have hfits (j : ZMod s) : Fits w (C j) := fits_of_value_power
-      (stableInteriorResidual_width p u l target rhsExp) (C j) (hCnorm j)
+      (stableInteriorResidual_width p u l firstTarget rhsExp) (C j) (hCnorm j)
     have hread := publishedCellRead_encodedField (q := q) (w := w) (by omega : 4 ≤ A)
       (by dsimp [w,executionWidth]; omega : 0 < w) C (S.R 110) hfits i
-    simpa [input,C,q,w,band] using hread
+    simpa [input,C,q,w,band,firstTarget] using hread
   · have hproject : embStk componentReg {S with R := Function.update (Function.update S.R 110 input) 132 output} =
         {(embStk componentReg S) with R := (Function.update (Function.update (embStk componentReg S).R 110 input) 132 output)} := by
       have hlow : embStk componentReg {S with R := Function.update S.R 110 input} =

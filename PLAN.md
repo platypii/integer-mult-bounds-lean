@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1611 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1613 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8277,4 +8277,37 @@ Validation: all 10,252 guarded stage-audit jobs pass, including seven new
 explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All six new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2043.0 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 canonical boundary magnitude and allocated initial residual
+
+`stableSolve_norm` factors the inverse-margin magnitude argument for a published
+core inside any solved principal system. The existing interior bound reuses it;
+`haloBoundary_norm` applies it to the actual halo solution and boundary subset.
+A real boundary result within unit error is bounded by
+`2^(rhsExp+8*p+1)`. The closed recovery/tolerance and retained-controller
+interfaces now derive this magnitude from the proved boundary error and the
+original RHS bound. They require the structural real-output contract instead
+of a supplied boundary magnitude exponent/bound.
+
+With that canonical magnitude, `recoveryFirstTarget_canonical` identifies the
+shared initial target as `recoveryTarget + couplingCountExponent + 16*p + 3`.
+`initialResidual_roundoff_budget` pays all offset roundoff at the existing
+working precision. `initialResidual_error_budget` proves that the initial
+residual error, including its interior contribution and subsequent inverse
+margin amplification by `8*p`, costs at most one quarter of the boundary-error
+allowance.
+
+`retainedSchurResidual_spec` now selects this same canonical initial target and
+carries the amplified quarter-budget bound on its computed Schur RHS, together
+with exact physical decoding, magnitude and readiness. The remaining boundary
+allowance is available for S5's computed-matrix and solve errors; those still
+require proved setup/solve precision and executed construction. Complete
+sequence composition and uniform fast time/simultaneous storage remain open.
+S3 remains partial.
+
+Validation: all 10,254 guarded stage-audit jobs pass, including five new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All nine new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2042.9 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.

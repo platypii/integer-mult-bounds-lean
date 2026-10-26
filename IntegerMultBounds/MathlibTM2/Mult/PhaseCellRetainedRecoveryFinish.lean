@@ -20,7 +20,7 @@ noncomputable def retainedRecoveryFinish (hR : rpStates ≤ Q) (hQ : SS.states �
   .seq (retainedRecoveryPublishedHalo hR hQ) finishComponents
 
 theorem retainedRecoveryFinish_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
-    {p l s t u target rhsExp boundaryExp a b : ℕ} [NeZero s] {α d : ℝ}
+    {p l s t u target rhsExp a b : ℕ} [NeZero s] {α d : ℝ}
     (hp : 2 ≤ p) (hwidth : 8*p ≤ 2^u) (hα : 0 < α) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
     (hθ : 1/(4*(p : ℝ)) ≤ (t : ℝ)/s-1) (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
     (hband : PhaseCellBand.width p u ≤ s) (has : a ≤ s) (hbs : b ≤ s)
@@ -28,55 +28,54 @@ theorem retainedRecoveryFinish_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     (C B : ZMod s → GaussianInt) (x : ZMod s → ℝ) (ε : ℝ) (hε : 0 ≤ ε)
     (hεtarget : ε ≤ 1/(2 : ℝ)^recoveryTarget p (target+1))
     (hB : ∀ i, ‖value (executionPrecision p l
-      (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp) (B i)‖ ≤ (2 : ℝ)^rhsExp)
-    (hC : ∀ i ∈ haloBoundary s t (PhaseCellBand.width p u) a b,
-      ‖value (executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp)
-        (C i)‖ ≤ (2 : ℝ)^boundaryExp)
+      (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp) (B i)‖ ≤ (2 : ℝ)^rhsExp)
+    (hCreal : ∀ i ∈ haloBoundary s t (PhaseCellBand.width p u) a b, (C i).im = 0)
     (hxB : ∀ i ∈ haloBoundary s t (PhaseCellBand.width p u) a b,
-      |(value (executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp)
+      |(value (executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp)
         (C i)).re-x i| ≤ ε)
     (hx : SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x
       (fun i => (value (executionPrecision p l
-        (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp) (B i)).re))
+        (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp) (B i)).re))
     (v : HS 148 Q A U) (S : Stacks 148 A) (residual tail sourceTail savedTail : List (Fin (A+4)))
     (hresidual : residual.length = s*executionWidth p l
-      (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp)
+      (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp)
     (hready : LengthKeyReady (2^15*p)
-      (executionStagePrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp+1)
-      (executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp)
+      (executionStagePrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp+1)
+      (executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp)
       l s t u (PhaseCellBand.width p u) 0 0
       (residual++(cstream A (executionWidth p l
-        (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp) (chirpLine s B)++tail)) (embStk componentReg S))
+        (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp) (chirpLine s B)++tail)) (embStk componentReg S))
     (haMaster : (S.R 141).length = a) (hbMaster : (S.R 142).length = b)
     (hsource : S.R 132 = cstream A
-      (executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp)
+      (executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp)
       (chirpLine s C)++sourceTail)
     (h127 : S.R 127 = []) (h138 : S.R 138 = []) (h143 : S.R 143 = [])
     (X : ZMod s → GaussianInt) (realTarget : ZMod s → ℝ)
     (hX : PhaseCellInterface.ErrorOn (haloVertices s a b)
-      (fun i => publishedCellRead (executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp)
-        (executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp) (0 : ZMod s)
-        (cstream A (executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp)
+      (fun i => publishedCellRead (executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp)
+        (executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp) (0 : ZMod s)
+        (cstream A (executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp)
           (chirpLine s X)++savedTail) i) realTarget (1/(2 : ℝ)^(target+1)))
-    (h145 : S.R 145 = cstream A (executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp)
+    (h145 : S.R 145 = cstream A (executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp)
       (chirpLine s X)++savedTail) (h146 : S.R 146 = []) (h147 : S.R 147 = []) :
-    let q := executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp
-    let w := executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp
+    let q := executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp
+    let w := executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp
     let band := PhaseCellBand.width p u
     ∃ v' n, ∃ D : ZMod s → GaussianInt,
       let Y := fun i => realPartWord (publicationField t band a b D C i)
       let Z := cstream A w (chirpLine s (fun i => pairComponentWord (X i) (Y i)))++sourceTail
       let S' : Stacks 148 A := {S with R := Function.update (Function.update (Function.update S.R 110 tail) 145 savedTail) 132 Z}
-      v'.user = v.user ∧ n ≤ recoveryToleranceCost p l s t u (target+1) rhsExp boundaryExp a b+
+      v'.user = v.user ∧ n ≤ recoveryToleranceCost p l s t u (target+1) rhsExp a b+
         finishComponentsCost q s ∧
       Exec (embTab componentReg (embTab groupReg body)) (retainedRecoveryFinish hR hQ) (mk v S) n (mk v' S') ∧
       PhaseCellInterface.ErrorOn (haloVertices s a b) (pairedCellRead q w (S'.R 132))
         (fun i => (⟨realTarget i,x i⟩ : ℂ))
         (1/(2 : ℝ)^target) ∧
       LengthKeyReady (2^15*p)
-        (executionStagePrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp+1)
+        (executionStagePrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp+1)
         q l s t u band 0 0 tail (embStk componentReg S') := by
   dsimp only
+  let boundaryExp := stableInteriorExponent p rhsExp
   let countExp := couplingCountExponent p u
   let q := executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp countExp) rhsExp
   let w := executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp boundaryExp countExp) rhsExp
@@ -85,7 +84,7 @@ theorem retainedRecoveryFinish_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
   have hwq : w = 2*q+8 := by dsimp [w,q,executionWidth,executionPrecision]; omega
   obtain ⟨v₁,n₁,D,hu₁,hn₁,he₁,herror⟩ := retainedRecoveryPublishedHalo_spec (body := body) (target := target+1)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad C B x ε hε hεtarget
-    hB hC hxB hx v S residual tail sourceTail hresidual hready haMaster hbMaster hsource h127 h138 h143
+    hB hCreal hxB hx v S residual tail sourceTail hresidual hready haMaster hbMaster hsource h127 h138 h143
   let Y := fun i => realPartWord (publicationField t band a b D C i)
   let input := cstream A w (chirpLine s R)++(cstream A w (chirpLine s B)++tail)
   let output := cstream A w (chirpLine s Y)++sourceTail
@@ -125,15 +124,15 @@ theorem retainedRecoveryFinish_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     refine Stacks.ext rfl rfl rfl ?_
     funext k
     by_cases h110 : k = 110 <;> by_cases h132 : k = 132 <;> by_cases h145' : k = 145 <;>
-      simp [S₁,Y,w,band,← hwq,h110,h132,h145',countExp]
+      simp [S₁,Y,w,band,← hwq,h110,h132,h145',countExp,boundaryExp]
   · have hsum : E+E = 1/(2 : ℝ)^target := component_error_budget target
     rw [hsum] at hcomplex
-    simpa [S₁,Y,w,band,← hwq,countExp,q] using hcomplex
+    simpa [S₁,Y,w,band,← hwq,countExp,boundaryExp,q] using hcomplex
   · convert hready₂ using 1
     congr 1
     refine Stacks.ext rfl rfl rfl ?_
     funext k
     by_cases h110 : k = 110 <;> by_cases h132 : k = 132 <;> by_cases h145' : k = 145 <;>
-      simp [S₁,Y,w,band,← hwq,h110,h132,h145',countExp]
+      simp [S₁,Y,w,band,← hwq,h110,h132,h145',countExp,boundaryExp]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
