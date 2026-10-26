@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLiftedWithinCoefficient
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWithinCoefficientAccuracy
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedCrossCoefficient
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLiftedCoefficientAccuracy
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDirectCoefficientAccuracy
@@ -1361,6 +1363,24 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedHaloCell_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedHaloInteriorCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedHaloInteriorCost_le_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.distanceArgument_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.distanceSample_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.liftedWithinCoefficientCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.similarityArgumentAt_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.similaritySampleAt_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.withinCoefficientBody_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.within_coefficient_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selected_within_coefficient_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selected_within_coefficient_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.lifted_within_coefficient_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.withinCoefficientHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.lifted_naturalDistance,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.withinCoefficientWidth_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.gaussian_sample_grid,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.within_coefficient_word,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalDistance_eq_natAbs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.withinGridEmit_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.withinSimilaritySetup_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
