@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1469 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1480 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. Restoring fixed-point coupling-row arithmetic has support-priced time, derived word fits and explicit RHS/coefficient/input/truncation errors. The direct cross-cell coefficient branch now generates a sufficient logarithmic workspace, loads ordinary headers, generates constants and signed-coordinate lifts, and executes the exact selected sample; offset coupling semantics retain every periodic alias. The within-cell coefficient kernel now executes two corrected similarity samples and a distance sample, combines them by exact natural division, and has a shared sufficient workspace plus selected norm/error bounds. Its ordinary-header caller and phase selector remain open. External publication, uniform fast time/storage, generated coupling rows/iteration and complex/boundary/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. Restoring fixed-point coupling-row arithmetic has support-priced time, derived word fits and explicit RHS/coefficient/input/truncation errors. The direct cross-cell coefficient branch now generates a sufficient logarithmic workspace, loads ordinary headers, generates constants and signed-coordinate lifts, and executes the exact selected sample; offset coupling semantics retain every periodic alias. The within-cell coefficient kernel now executes two corrected similarity samples and a distance sample, combines them by exact natural division, and has a shared sufficient workspace plus selected norm/error bounds. One closed coefficient caller now loads ordinary headers, generates/releases the shared workspace, selects the diagonal/within/cross branch by natural comparisons and proves decoded error against the original signed-offset selected entry. External publication, uniform fast time/storage, generated coupling rows/iteration and complex/boundary/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -7445,3 +7445,42 @@ Validation: all 10,103 stage build jobs pass, including the 18 new theorem
 axiom checks with only approved axioms. The guarded audit build peaks at
 2.7 GiB. All twelve new modules pass individual guarded checks, each below
 2 GiB. Source-integrity, plan-status and whitespace checks pass.
+
+
+### S3 closed coefficient selection for all retained offsets
+
+`phaseArguments_do` computes the two natural comparison values
+`nearestNatural j+k` and `nearestNatural k+j`; their equality is exactly the
+original integer phase equality. `phaseCoefficientWidth_fits` covers both sums
+with the same generated logarithmic workspace used by the numerical branches.
+The table equality combinator pays for its two strict comparisons.
+`selectedCoefficientBody_do` handles the unit diagonal and selects the actual
+within-cell or direct cross-cell branch at the original lifted coordinates.
+Its uniform table-step bound is `930*P+367`.
+
+`liftedSelectedCoefficientCode_do` generates pi, q/P powers and the signed
+coordinate lifts before this selection. It emits the q-grid word of the
+original signed-offset selected entry, including offset zero, with no supplied
+phase or operation-fit premises. Its bound is `1084*P+4*q+783` table steps.
+
+The ordinary-header loader and workspace-generation/release proof are now
+structural lemmas over an arbitrary proved coefficient program. The existing
+direct header caller uses the shared loader, and its closed caller reuses the
+same workspace-generation/release proof. `closedSelectedCoefficient_exec`
+instantiates the complete program from ordinary unary headers, preserving all
+outer stacks except the emitted coefficient prefix. At the selected semantic
+precision, geometric budgets derive a uniform coefficient magnitude and word
+fit. `closedSelectedCoefficient_spec` proves that the actual decoded prefix is
+within `2^-q` of the original selected entry for every retained signed offset.
+There are no result-fit, phase-selection or supplied workspace premises.
+
+This closes coefficient generation for the retained offset primitive. Generating
+whole row support/masks and input gathers, composing the coupling/recovery
+iteration, uniform fast time/storage, and complex/boundary/full-line assembly
+remain open. S3 remains partial.
+
+Validation: all 10,114 stage build jobs pass, including the 15 new theorem
+axiom checks with only approved axioms. The guarded audit build peaks at
+2.7 GiB. All thirteen new or revised non-audit modules pass individual guarded
+checks, each at most 1938.3 MiB. Source-integrity, plan-status and whitespace
+checks pass.
