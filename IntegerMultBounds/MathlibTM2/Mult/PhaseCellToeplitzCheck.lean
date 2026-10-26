@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRestoredRawRepeatedHaloCell
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRestoredRawRepeatedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawRepeatedHaloCell
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawRepeatedHaloCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloInteriorCost
@@ -1254,6 +1256,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawReplicaGatherCost_affine,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedBatchCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawRepeatedBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredRawRepeatedBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredRawRepeatedHaloCell_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredRawRepeatedBatchCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedBatchCost_le_volume,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedBatchInput_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedHaloCell_spec,
