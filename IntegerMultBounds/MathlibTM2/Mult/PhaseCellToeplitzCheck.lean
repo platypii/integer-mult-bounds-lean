@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareCouplingCoefficientsSpec
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOffsetCouplingRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedSelectedCoefficientSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLiftedWithinCoefficient
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWithinCoefficientAccuracy
@@ -1397,6 +1399,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selectedCoefficientBody_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selected_coefficient_norm,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selected_coefficient_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.appendSelectedCoefficientCost_mono,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.appendSelectedCoefficient_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientOffsetLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientOffsetPass_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingCoefficientWords_bounds,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingCoefficientWords_decode,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingCoefficientWords_split,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingCoefficientWords_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateCouplingCoefficients_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.offsetCouplingRow_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCouplingCoefficientsCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCouplingCoefficients_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCouplingCoefficients_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
