@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFeedCouplingPass
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunCouplingRowsSpec
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawCouplingRowSpec
@@ -863,6 +865,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalGather_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalGatherCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedNaturalGroup_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.stageCouplingLines_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireCouplingLine_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.feedCouplingResult_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRowWords_eq_chirpLine,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRowField_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.CouplingReady.of_source_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.borrowedCouplingPass_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.borrowedCouplingPass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.feedCouplingPass_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedLoop_exec_costs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRowWords_length,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRowWords_getElem,

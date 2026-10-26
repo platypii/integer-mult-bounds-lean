@@ -29,43 +29,54 @@ structure CouplingReady {A : ℕ} (P q w s t u band a b : ℕ)
 
 variable {A P q w s t u band a b : ℕ} {raw : List (Fin (A+4))} {S : Stacks 117 A}
 
-theorem CouplingReady.of_frame (h : CouplingReady P q w s t u band a b raw S)
-    {S' : Stacks 117 A} (hL : S'.L = S.L)
-    (hR : ∀ k : Fin 117, k ≠ 93 → k ≠ 107 → k ≠ 113 → S'.R k = S.R k) :
-    CouplingReady P q w s t u band a b raw S' := by
+theorem CouplingReady.of_source_frame (h : CouplingReady P q w s t u band a b raw S)
+    {S' : Stacks 117 A} {raw' : List (Fin (A+4))} (hsource : S'.R 110 = raw')
+    (hL : S'.L = S.L)
+    (hR : ∀ k : Fin 117, k ≠ 93 → k ≠ 107 → k ≠ 113 → k ≠ 110 → S'.R k = S.R k) :
+    CouplingReady P q w s t u band a b raw' S' := by
   constructor
-  · rw [hR 114 (by decide) (by decide) (by decide)]; exact h.precision
-  · rw [hR 112 (by decide) (by decide) (by decide)]; exact h.fraction
-  · rw [hR 99 (by decide) (by decide) (by decide)]; exact h.parameter
-  · rw [hR 97 (by decide) (by decide) (by decide)]; exact h.axis
-  · rw [hR 98 (by decide) (by decide) (by decide)]; exact h.period
-  · rw [hR 100 (by decide) (by decide) (by decide)]; exact h.bandwidth
-  · rw [hR 101 (by decide) (by decide) (by decide)]; exact h.lower
-  · rw [hR 103 (by decide) (by decide) (by decide)]; exact h.upper
-  · rw [hR 94 (by decide) (by decide) (by decide)]; exact h.width
-  · rw [hR 110 (by decide) (by decide) (by decide)]; exact h.source
+  · rw [hR 114 (by decide) (by decide) (by decide) (by decide)]; exact h.precision
+  · rw [hR 112 (by decide) (by decide) (by decide) (by decide)]; exact h.fraction
+  · rw [hR 99 (by decide) (by decide) (by decide) (by decide)]; exact h.parameter
+  · rw [hR 97 (by decide) (by decide) (by decide) (by decide)]; exact h.axis
+  · rw [hR 98 (by decide) (by decide) (by decide) (by decide)]; exact h.period
+  · rw [hR 100 (by decide) (by decide) (by decide) (by decide)]; exact h.bandwidth
+  · rw [hR 101 (by decide) (by decide) (by decide) (by decide)]; exact h.lower
+  · rw [hR 103 (by decide) (by decide) (by decide) (by decide)]; exact h.upper
+  · rw [hR 94 (by decide) (by decide) (by decide) (by decide)]; exact h.width
+  · exact hsource
   · intro k hk
-    have hn : k ≠ 93 ∧ k ≠ 107 ∧ k ≠ 113 := by
+    have hn : k ≠ 93 ∧ k ≠ 107 ∧ k ≠ 113 ∧ k ≠ 110 := by
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
       rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
-    rw [hR k hn.1 hn.2.1 hn.2.2]
+    rw [hR k hn.1 hn.2.1 hn.2.2.1 hn.2.2.2]
     exact h.fresh k hk
   · intro i
-    have hn : mul i ≠ (93 : Fin 117) ∧ mul i ≠ 107 ∧ mul i ≠ 113 := by
+    have hn : mul i ≠ (93 : Fin 117) ∧ mul i ≠ 107 ∧ mul i ≠ 113 ∧ mul i ≠ 110 := by
       have hi := i.isLt
       simp only [mul,ne_eq,Fin.ext_iff]
       omega
-    rw [hL,hR (mul i) hn.1 hn.2.1 hn.2.2]
+    rw [hL,hR (mul i) hn.1 hn.2.1 hn.2.2.1 hn.2.2.2]
     exact h.clean i
   · intro r
     have hr := cr_range r
-    have hn : cr r ≠ (107 : Fin 117) ∧ cr r ≠ 113 := by
+    have hn : cr r ≠ (107 : Fin 117) ∧ cr r ≠ 113 ∧ cr r ≠ 110 := by
+      constructor
+      · intro he; have hv := congrArg Fin.val he; omega
       constructor <;> intro he <;> have hv := congrArg Fin.val he <;> omega
-    rw [hR (cr r) (by intro he; exact hr.2.2.1 (congrArg Fin.val he)) hn.1 hn.2]
+    rw [hR (cr r) (by intro he; exact hr.2.2.1 (congrArg Fin.val he)) hn.1 hn.2.1 hn.2.2]
     exact h.arithmetic r
   · intro k hk
     rw [hL]
     exact h.left k hk
+
+
+theorem CouplingReady.of_frame (h : CouplingReady P q w s t u band a b raw S)
+    {S' : Stacks 117 A} (hL : S'.L = S.L)
+    (hR : ∀ k : Fin 117, k ≠ 93 → k ≠ 107 → k ≠ 113 → S'.R k = S.R k) :
+    CouplingReady P q w s t u band a b raw S' :=
+  h.of_source_frame ((hR 110 (by decide) (by decide) (by decide)).trans h.source) hL
+    (fun k h93 h107 h113 _ => hR k h93 h107 h113)
 
 theorem CouplingReady.low (h : CouplingReady P q w s t u band a b raw S)
     (k : Fin 117) (hk : k.val < 63) : S.R k = [] := by
