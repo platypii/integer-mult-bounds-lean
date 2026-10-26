@@ -1,8 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateGatherControls
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawNaturalGather
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalGroupInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellControlledNaturalGroupInput
 
 /-! Ordinary parameters and one ambient line produce the closed solver's input.
 The original line is retained inside the borrowed payload suffix. -/
@@ -38,69 +36,10 @@ theorem rawNaturalGroupInputBank_exec (P N q l s t u band L : ℕ) [NeZero s]
         (mk v' (batchInputBank P N q l s t u band L B
           (fun n => (naturalGroupOrigin s t band L n).val) rhs (raw++borrowed) outTail inp out)) := by
   dsimp only
-  let w := 2*q+8
-  let V := weightWorkspaceWidth P q w t u
-  let B := (naturalLengthGroup s t band L).length
-  let raw := cstream A w (chirpLine s C)
-  let rhs := cstream A w ((List.range B).flatMap
-    (cellSourceRows L (naturalGroupOrigin s t band L) (fun _ => C)))
-  let S := naturalGroupInputBank P N q l s t u band L raw borrowed outTail inp out
-  obtain ⟨v₁, n₁, hu₁, hn₁, he₁⟩ := generateOriginAndGatherControls_exec (body := body)
-    P q s t u band L hP hs hst hu hgroup hband hL hLs hA v S
-    (by simp [S, naturalGroupInputBank, batchInputBank]) (by simp [S, naturalGroupInputBank, batchInputBank])
-    (by simp [S, naturalGroupInputBank, batchInputBank]) (by simp [S, naturalGroupInputBank, batchInputBank])
-    (by simp [S, naturalGroupInputBank, batchInputBank]) (by simp [S, naturalGroupInputBank, batchInputBank])
-    (by simp [S, naturalGroupInputBank, batchInputBank]) (by
-      intro k hk
-      have hn (n : ℕ) (hn : 31 ≤ n) : k.val ≠ n := by omega
-      simp [S, naturalGroupInputBank, batchInputBank, hn 101 (by decide), hn 102 (by decide),
-        hn 103 (by decide), hn 97 (by decide), hn 98 (by decide), hn 99 (by decide),
-        hn 100 (by decide), hn 109 (by decide), hn 112 (by decide), hn 114 (by decide),
-        hn 116 (by decide), hn 110 (by decide), hn 93 (by decide)]) (by
-      intro k hk
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-      all_goals simp [S, naturalGroupInputBank, batchInputBank])
-  let S₁ : Stacks 117 A := { S with R := originAndGatherControlsR A V s t band L w S.R }
-  obtain ⟨v₂, n₂, hu₂, hn₂, he₂⟩ := rawNaturalGather_exec (body := body)
-    q t band L hst hgroup C borrowed v₁ S₁
-    (by simp [S₁, originAndGatherControlsR, originControlsR, S, naturalGroupInputBank, batchInputBank])
-    (by simp [S₁, originAndGatherControlsR, originControlsR, S, naturalGroupInputBank, batchInputBank])
-    (by simp [S₁, originAndGatherControlsR, originControlsR, S, naturalGroupInputBank, batchInputBank])
-    (by simp [S₁, originAndGatherControlsR, originControlsR, S, naturalGroupInputBank, batchInputBank, raw, w])
-    (by simp [S₁, originAndGatherControlsR, S, naturalGroupInputBank, batchInputBank, w]) (by
-      intro k hk
-      have hn (n : ℕ) (hn : 11 ≤ n) : k.val ≠ n := by omega
-      simp [S₁, originAndGatherControlsR, originControlsR, Function.update_apply, Fin.ext_iff,
-        S, naturalGroupInputBank, batchInputBank,
-        hn 91 (by decide), hn 109 (by decide), hn 116 (by decide), hn 101 (by decide), hn 102 (by decide),
-        hn 103 (by decide), hn 97 (by decide), hn 98 (by decide), hn 99 (by decide),
-        hn 100 (by decide), hn 112 (by decide), hn 114 (by decide), hn 110 (by decide), hn 93 (by decide)]) (by
-      intro k hk
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hk
-      rcases hk with rfl | rfl | rfl
-      all_goals simp [S₁, originAndGatherControlsR, originControlsR, S, naturalGroupInputBank, batchInputBank])
-  refine ⟨v₂, n₁+n₂, hu₂.trans hu₁, by omega, (Exec.seq he₁ he₂).cast rfl ?_⟩
-  congr 1
-  ext1
-  · rfl
-  · rfl
-  · rfl
-  · funext k
-    by_cases h109 : k = 109
-    · subst k
-      simp [S₁, originAndGatherControlsR, originControlsR, S, naturalGroupInputBank, batchInputBank,
-        naturalOriginPackets_eq_rows, V, w]
-    by_cases h116 : k = 116
-    · subst k; simp [S₁, originAndGatherControlsR, originControlsR, batchInputBank, B]
-    by_cases h110 : k = 110
-    · subst k
-      simp [S₁, originAndGatherControlsR, originControlsR, S, naturalGroupInputBank, batchInputBank, rhs, B, w, raw]
-    by_cases h91 : k = 91
-    · subst k; simp [batchInputBank]
-    simp [S₁, originAndGatherControlsR, originControlsR, Function.update_apply, Fin.ext_iff,
-      S, naturalGroupInputBank, batchInputBank,
-      show k.val ≠ 109 from fun he => h109 (Fin.ext he), show k.val ≠ 116 from fun he => h116 (Fin.ext he),
-      show k.val ≠ 110 from fun he => h110 (Fin.ext he), show k.val ≠ 91 from fun he => h91 (Fin.ext he)]
+  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := generateNaturalGroupInputBank_exec (body := body)
+    P N q l s t u band L hP hs hst hu hgroup hband hL hLs hA C v borrowed outTail inp out
+  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := gatherControlledNaturalGroupInputBank_exec (body := body)
+    P N q l s t u band L hst hgroup C v₁ borrowed outTail inp out
+  exact ⟨v₂,n₁+n₂,hu₂.trans hu₁,by omega,Exec.seq he₁ he₂⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

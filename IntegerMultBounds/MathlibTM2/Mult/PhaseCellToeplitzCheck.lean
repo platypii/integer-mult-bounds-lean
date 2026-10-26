@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedNaturalClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedPublicationControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedScatter
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellScatterCoreRead
@@ -968,6 +969,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalPublicationControls_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.protectedPublicationControls_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.protectedScatter_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generateNaturalGroupInputBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.gatherControlledNaturalGroupInputBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedGroupInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finishNaturalClass_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedNaturalClass_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do

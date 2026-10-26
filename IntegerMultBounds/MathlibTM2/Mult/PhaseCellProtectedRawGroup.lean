@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOuterHeaders
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedNaturalGroup
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawNaturalGroupInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedGroupInput
 
 /-! An actual raw group solve inside a private 117-register bank. Retained outer
 parameters and remaining keys survive the numerical call; its generated batch
@@ -20,7 +20,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 noncomputable def protectedRawGroup (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 144 Q A U :=
-  .seq installGroupHeaders (.seq (embProg groupReg id rawNaturalGroupPrepare)
+  .seq installGroupHeaders (.seq protectedGroupInput
     (.seq (ucopy 116 129 133) (embProg groupReg id (closedBatch hR hQ))))
 
 def protectedRawGroupCost (p l B L s t u target rhsExp : ℕ) : ℕ :=
@@ -29,7 +29,8 @@ def protectedRawGroupCost (p l B L s t u target rhsExp : ℕ) : ℕ :=
   let P := 2^15*p
   let band := PhaseCellBand.width p u
   installGroupHeadersCost P N q l s t u band L +
-    generateOriginAndGatherControlsCost P q s t u band L + rawNaturalGatherCost q s +
+    generateOriginAndGatherControlsCost P q s t u band L +
+    (48*s*(executionWidth p l target rhsExp)+27) + rawNaturalGatherCost q s +
     (4*B+4)+sizedClosedBatchBound p l B L s t u target rhsExp
 
 theorem protectedRawGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
@@ -49,7 +50,9 @@ theorem protectedRawGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     (hleft : ∀ k : Fin 144, k.val < 117 → S.L k = [])
     (hblank : ∀ k : Fin 144, k.val < 117 → k ≠ 93 → k ≠ 110 → S.R k = [])
     (hsrc : S.R 110 = cstream A (executionWidth p l target rhsExp) (chirpLine s C) ++ borrowed)
-    (h129 : S.R 129 = []) (h133 : S.R 133 = []) :
+    (h129 : S.R 129 = []) (h133 : S.R 133 = [])
+    (hwidth : (S.R 130).length = executionWidth p l target rhsExp)
+    (hfresh : ∀ k ∈ [(131 : Fin 144),134,135], S.R k = []) :
     let B := (naturalLengthGroup s t (PhaseCellBand.width p u) L).length
     let lo := naturalGroupOrigin s t (PhaseCellBand.width p u) L
     let q := executionPrecision p l target rhsExp
@@ -62,7 +65,8 @@ theorem protectedRawGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
       S'.R 110 = rhs ++ (cstream A w (chirpLine s C) ++ borrowed) ∧
       (∀ k : Fin 144, k.val < 117 → k ≠ 93 → k ≠ 110 → S'.R k = []) ∧
       S'.R 129 = List.replicate B tick ∧
-      (∀ k : Fin 144, 117 ≤ k.val → k ≠ 129 → S'.R k = S.R k) ∧
+      (∀ k : Fin 144, 117 ≤ k.val → k ≠ 129 → k ≠ 140 → S'.R k = S.R k) ∧
+      S'.R 140 = gatherControls A (naturalScatterGaps s t (PhaseCellBand.width p u) L w)++S.R 140 ∧
       (∀ n : Fin B, ∀ i : Fin L, |(value q (decodeWord (((S'.R 93).drop ((n.val*L+i.val)*w)).take w))).re -
         x (lo n+(i.val : ZMod s))| ≤ 1/(2 : ℝ)^target) ∧
       (∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)
@@ -92,24 +96,37 @@ theorem protectedRawGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     P N q l s t u band L v S hmasters h133
   let S₁ : Stacks 144 A := { S with R := copiedGroupR P N q l s t u band L S.R }
   have hbank₁ := copiedGroup_project P N q l s t u band L S raw borrowed hleft hblank hsrc
-  obtain ⟨vp, np, hup, hnp, hep⟩ := rawNaturalGroupInputBank_exec (body := body)
-    P N q l s t u band L hP hs hst hu hgroup hband hg.1 hLs (by omega) C
-    (embDn groupReg v₁) borrowed (S.R 93) S.inp S.out
-  rw [← hw] at hep
+  have h128 : (S₁.R 128).length = L := by
+    dsimp only [S₁]
+    rw [copiedGroupR_off P N q l s t u band L S.R 128 (by decide)]
+    have hh := hmasters (128,102) (by simp [groupHeaderCopies])
+    simpa [groupHeaderValue] using hh
+  obtain ⟨v₂,S₂,np,hup,hnp,he₂,hbank₂,hleft₂,hoff₂,hctrl₂⟩ := protectedGroupInput_exec (body := body)
+    P N q l s t u band L hP hs hst hu hgroup hband hg.1 hLs (by omega) C v₁ S₁
+    borrowed (S.R 93) S.inp S.out (by simpa only [← hw] using hbank₁) h128
+    (by dsimp only [S₁]; rw [copiedGroupR_off P N q l s t u band L S.R 130 (by decide)]; simpa only [← hw] using hwidth)
+    (by
+      intro k hk
+      have hkhi : 117 ≤ k.val := by
+        simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+        rcases hk with rfl | rfl | rfl <;> decide
+      dsimp only [S₁]
+      rw [copiedGroupR_off P N q l s t u band L S.R k hkhi]
+      exact hfresh k hk)
+  rw [← hw] at hbank₂ hctrl₂ hnp
   have hbody : ∀ f, embTab groupReg body (id f) = embProg groupReg id (body f) := fun _ => rfl
-  obtain ⟨v₂, S₂, he₂, hv₂, hu₂, hbank₂, hoff₂⟩ := exec_emb groupReg_injective hbody hep v₁ rfl S₁ hbank₁
-  have hS₂off (k : Fin 144) (hk : 117 ≤ k.val) : S₂.L k = S.L k ∧ S₂.R k = S.R k := by
-    obtain ⟨hl, hr⟩ := hoff₂ k (groupReg_off k hk)
-    exact ⟨hl, hr.trans (copiedGroupR_off P N q l s t u band L S.R k hk)⟩
+  have hS₂left (k : Fin 144) (hk : 117 ≤ k.val) : S₂.L k = S.L k := hleft₂ k hk
+  have hS₂off (k : Fin 144) (hk : 117 ≤ k.val) (hk140 : k ≠ 140) : S₂.R k = S.R k :=
+    (hoff₂ k hk hk140).trans (copiedGroupR_off P N q l s t u band L S.R k hk)
   have h116 : (S₂.R 116).length = B := by
     have hh := congrArg (fun S : Stacks 117 A => (S.R 116).length) hbank₂
     simpa [embStk, groupReg, batchInputBank, B] using hh
   obtain ⟨v₃, hu₃, he₃⟩ := ucopy_exec (body := embTab groupReg body)
     (a := 116) (b := 129) (t := 133) (by decide) (by decide) (by decide) v₂ S₂
-    (by rw [(hS₂off 133 (by decide)).2]; exact h133)
+    (by rw [hS₂off 133 (by decide) (by decide)]; exact h133)
   let S₃ : Stacks 144 A := { S₂ with R := Function.update S₂.R 129 (List.replicate B tick) }
   have he₃' : Exec (embTab groupReg body) (ucopy 116 129 133) (mk v₂ S₂) (4*B+4) (mk v₃ S₃) := by
-    simpa [S₃, h116, (hS₂off 129 (by decide)).2, h129] using he₃
+    simpa [S₃, h116, hS₂off 129 (by decide) (by decide), h129] using he₃
   have hbank₃ : embStk groupReg S₃ = batchInputBank P N q l s t u band L B
       (fun n => (lo n).val) rhs (raw++borrowed) (S.R 93) S.inp S.out := by
     rw [groupProject_updateR S₂ 129 (List.replicate B tick) (by decide)]
@@ -123,10 +140,10 @@ theorem protectedRawGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
   have h93 : S₄.R 93 = Ss.R 93 := by simpa [groupReg] using hfinalR 93
   have h110 : S₄.R 110 = Ss.R 110 := by simpa [groupReg] using hfinalR 110
   refine ⟨v₄, S₄, installGroupHeadersCost P N q l s t u band L+(np+((4*B+4)+ns)),
-    hu₄.trans (hus.trans (hu₃.trans (hu₂.trans (hup.trans hu₁)))), ?_,
-    Exec.seq he₁ (Exec.seq he₂ (Exec.seq he₃' he₄)), ?_, ?_, ?_, h110.trans hrs, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    hu₄.trans (hus.trans (hu₃.trans (hup.trans hu₁))), ?_,
+    Exec.seq he₁ (Exec.seq he₂ (Exec.seq he₃' he₄)), ?_, ?_, ?_, h110.trans hrs, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · dsimp only [protectedRawGroupCost]
-    dsimp only [P,N,q,band,B] at *
+    dsimp only [P,N,q,band,B,w] at *
     omega
   · exact (congrArg (fun S : Stacks 117 A => S.inp) hbank₄).trans his
   · exact (congrArg (fun S : Stacks 117 A => S.out) hbank₄).trans hos
@@ -135,7 +152,7 @@ theorem protectedRawGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     · let i : Fin 117 := ⟨k.val,hk⟩
       have he : groupReg i = k := Fin.ext rfl
       rw [← he, hfinalL i, hls i, hleft (groupReg i) i.isLt]
-    · exact (hoff₄ k (groupReg_off k (by omega))).1.trans (hS₂off k (by omega)).1
+    · exact (hoff₄ k (groupReg_off k (by omega))).1.trans (hS₂left k (by omega))
   · intro k hk hk93 hk110
     let i : Fin 117 := ⟨k.val,hk⟩
     have he : groupReg i = k := Fin.ext rfl
@@ -144,9 +161,12 @@ theorem protectedRawGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
       (fun h => hk110 (he.symm.trans (congrArg groupReg h)))
   · have hh := (hoff₄ 129 (groupReg_off 129 (by decide))).2
     simpa [S₃] using hh
-  · intro k hk hk129
+  · intro k hk hk129 hk140
     have hr := (hoff₄ k (groupReg_off k hk)).2
-    exact hr.trans (by simpa [S₃,hk129] using (hS₂off k hk).2)
+    exact hr.trans (by simpa [S₃,hk129] using hS₂off k hk hk140)
+  · rw [(hoff₄ 140 (groupReg_off 140 (by decide))).2]
+    simpa only [S₃,S₁,copiedGroupR_off P N q l s t u band L S.R 140 (by decide),
+      Function.update_of_ne (by decide : (140 : Fin 144) ≠ 129),band,w] using hctrl₂
   · intro n i
     rw [h93]
     exact hpoints n i
