@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateHaloLengthKeys
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateHaloDescriptors
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRepeatedHaloCell
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawReplicaGather
@@ -1115,6 +1116,23 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadHaloHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloDescriptors_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateHaloDescriptors_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateHaloLengthKeys_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloEndpointLengthCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloEndpointLengthsCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloLengthCandidatesCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloLengthCandidatePackets_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloLengthCandidatePairs_bits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloLengthCandidatesController_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloLengthCandidates_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalPhaseCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalPhase_le_double_gap,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloPositiveLengthPackets_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareHaloLengthKeys_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selectSixPositiveLengths_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloIntervalWideCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLengthCandidatesCode_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalMiddleLengthsCode_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalIntervalWideCode_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do

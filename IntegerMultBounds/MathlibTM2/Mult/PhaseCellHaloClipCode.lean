@@ -65,6 +65,26 @@ theorem haloClipCode_do {A W w s t band a b phase : ℕ} (st : TblSt 16 A)
 
 def haloIntervalCode : TblCode 16 := naturalIntervalCode ;; haloClipCode
 
+theorem haloIntervalWideCode_do {A W w s t band a b phase : ℕ} (st : TblSt 16 A)
+    (hs' : st.val 0 = s) (hband : st.val 2 = band) (hphase : st.val 4 = phase)
+    (hden : st.val 6 = 2*(t-s)) (hone : st.val 7 = 1)
+    (ha : st.val 13 = a) (hb : st.val 14 = b) (has : a ≤ s) (hbs : b ≤ s)
+    (hs : 0 < s) (hst : s < t) (hphaseMax : phase ≤ 2*(t-s)+1)
+    (hwide : 8*(t+1)^2+2*band+8 < 2^W) :
+    TblDo A W w haloIntervalCode st (fun st' =>
+      st'.val 9 = haloStart s t band a phase ∧ st'.val 10 = haloStop s t band b phase ∧
+      st'.val 11 = haloLength s t band a b phase ∧ st'.acc = st.acc ∧
+      ∀ k, k ∉ [(8 : Fin 16),9,10,11] → st'.val k = st.val k) 30 := by
+  have haW : a+band < 2^W := by nlinarith only [hwide,has,hst]
+  have hsW : s < 2^W := by nlinarith only [hwide,hst]
+  have hi := naturalIntervalWideCode_do (A := A) (W := W) (w := w) st hs' hband hphase hden hone hs hst hphaseMax hwide
+  exact hi.seq (K₂ := 9) (fun st₁ ⟨hstart,hstop,_,hacc,hframe⟩ =>
+    (haloClipCode_do (A := A) (W := W) (w := w) st₁
+      ((hframe 2 (by simp)).trans hband) ((hframe 13 (by simp)).trans ha)
+      ((hframe 14 (by simp)).trans hb) hstart hstop haW (hbs.trans_lt hsW) hsW).mono
+        (fun st₂ ⟨hstart₂,hstop₂,hlen₂,hacc₂,hframe₂⟩ =>
+          ⟨hstart₂,hstop₂,hlen₂,hacc₂.trans hacc,fun k hk => (hframe₂ k hk).trans (hframe k hk)⟩) le_rfl)
+
 theorem haloIntervalCode_do {A W w s t band a b phase : ℕ} (st : TblSt 16 A)
     (hs' : st.val 0 = s) (hband : st.val 2 = band) (hphase : st.val 4 = phase)
     (hden : st.val 6 = 2*(t-s)) (hone : st.val 7 = 1)
@@ -74,15 +94,7 @@ theorem haloIntervalCode_do {A W w s t band a b phase : ℕ} (st : TblSt 16 A)
     TblDo A W w haloIntervalCode st (fun st' =>
       st'.val 9 = haloStart s t band a phase ∧ st'.val 10 = haloStop s t band b phase ∧
       st'.val 11 = haloLength s t band a b phase ∧ st'.acc = st.acc ∧
-      ∀ k, k ∉ [(8 : Fin 16),9,10,11] → st'.val k = st.val k) 30 := by
-  have haW : a+band < 2^W := by nlinarith only [hwide,has,hst]
-  have hsW : s < 2^W := by nlinarith only [hwide,hst]
-  have hi := naturalIntervalCode_do (A := A) (W := W) (w := w) st hs' hband hphase hden hone hs hst hphaseMax hwide
-  exact hi.seq (K₂ := 9) (fun st₁ ⟨hstart,hstop,_,hacc,hframe⟩ =>
-    (haloClipCode_do (A := A) (W := W) (w := w) st₁
-      ((hframe 2 (by simp)).trans hband) ((hframe 13 (by simp)).trans ha)
-      ((hframe 14 (by simp)).trans hb) hstart hstop haW (hbs.trans_lt hsW) hsW).mono
-        (fun st₂ ⟨hstart₂,hstop₂,hlen₂,hacc₂,hframe₂⟩ =>
-          ⟨hstart₂,hstop₂,hlen₂,hacc₂.trans hacc,fun k hk => (hframe₂ k hk).trans (hframe k hk)⟩) le_rfl)
+      ∀ k, k ∉ [(8 : Fin 16),9,10,11] → st'.val k = st.val k) 30 :=
+  haloIntervalWideCode_do st hs' hband hphase hden hone ha hb has hbs hs hst (by omega) hwide
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

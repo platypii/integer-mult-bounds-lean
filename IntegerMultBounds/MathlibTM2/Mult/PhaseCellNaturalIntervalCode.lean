@@ -18,17 +18,19 @@ def naturalIntervalCode : TblCode 16 :=
       (tblBlock 16 [.add 8 0 8] (.add 8 0 8) ;; (naturalLowerCode 10 ;;
         (tblNatMin 0 10 10 ;; (tblNatSub 10 2 10 ;; tblNatSub 10 9 11))))))
 
-theorem naturalIntervalCode_do {A W w s t band phase : ℕ} (st : TblSt 16 A)
+theorem naturalIntervalWideCode_do {A W w s t band phase : ℕ} (st : TblSt 16 A)
     (hs' : st.val 0 = s) (hband : st.val 2 = band) (hphase : st.val 4 = phase)
     (hden : st.val 6 = 2*(t-s)) (hone : st.val 7 = 1)
-    (hs : 0 < s) (hst : s < t) (hphaseMax : phase ≤ t-s)
+    (_hs : 0 < s) (hst : s < t) (hphaseMax : phase ≤ 2*(t-s)+1)
     (hwide : 8*(t+1)^2+2*band+8 < 2^W) :
     TblDo A W w naturalIntervalCode st (fun st' =>
       st'.val 9 = naturalStart s t band phase ∧ st'.val 10 = naturalStop s t band phase ∧
       st'.val 11 = naturalLength s t band phase ∧ st'.acc = st.acc ∧
       ∀ k, k ∉ [(8 : Fin 16), 9, 10, 11] → st'.val k = st.val k) 21 := by
   have hd : 0 < t-s := by omega
-  have hprod : s*(phase+1) ≤ t*(t+1) := Nat.mul_le_mul hst.le (by omega)
+  have hprod : s*(phase+1) ≤ 2*t*(t+1) := by
+    have hd := Nat.sub_le t s
+    nlinarith only [hphaseMax, hst.le, hd]
   have hdle : t-s ≤ t := Nat.sub_le _ _
   have hcalc : 2*s*(phase+1)+2*(t-s)+band+2 < 2^W := by nlinarith only [hwide, hprod, hdle]
   have hlo (p : ℕ) : phaseLower s (t-s) p ≤ 2*s*p+2*(t-s) := by
@@ -90,5 +92,16 @@ theorem naturalIntervalCode_do {A W w s t band phase : ℕ} (st : TblSt 16 A)
   intro k hk
   simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hk
   simp [S₈, S₇, S₆, S₅, S₄, S₃, S₂, S₁, hk.1, hk.2.1, hk.2.2.1, hk.2.2.2]
+
+theorem naturalIntervalCode_do {A W w s t band phase : ℕ} (st : TblSt 16 A)
+    (hs' : st.val 0 = s) (hband : st.val 2 = band) (hphase : st.val 4 = phase)
+    (hden : st.val 6 = 2*(t-s)) (hone : st.val 7 = 1)
+    (hs : 0 < s) (hst : s < t) (hphaseMax : phase ≤ t-s)
+    (hwide : 8*(t+1)^2+2*band+8 < 2^W) :
+    TblDo A W w naturalIntervalCode st (fun st' =>
+      st'.val 9 = naturalStart s t band phase ∧ st'.val 10 = naturalStop s t band phase ∧
+      st'.val 11 = naturalLength s t band phase ∧ st'.acc = st.acc ∧
+      ∀ k, k ∉ [(8 : Fin 16), 9, 10, 11] → st'.val k = st.val k) 21 :=
+  naturalIntervalWideCode_do st hs' hband hphase hden hone hs hst (by omega) hwide
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
