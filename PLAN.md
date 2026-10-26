@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1584 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1588 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8043,4 +8043,26 @@ Validation: all 10,222 guarded stage-audit jobs pass, including four new
 explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All five new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2038.0 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 executed pairing of real component lines
+
+`pairComponentLines` generates a byte clock from the retained axis length and
+word width, consumes two aligned real-component streams and publishes their
+complex pairing in natural order. It preserves the borrowed suffix on each
+source, restores its clock and scratch, and has cost at most
+`10*s*w+9*s+8`. The structural symbol pass and encoding lemmas apply to arbitrary
+lists, before instantiating the ambient-coordinate lines.
+
+`pairComponentLines_spec` connects that actual execution to the decoded complex
+output. Two component errors combine additively once, with no axis-length or
+window-count factor; word-fit and accuracy hypotheses are required only on the
+active coordinates. This supplies the final pairing operation. Running both real
+solves from the original complex input, the S5 boundary producer, complete error
+allocation and uniform time/simultaneous storage remain open. S3 remains partial.
+
+Validation: all 10,226 guarded stage-audit jobs pass, including 13 new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All five new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2041.9 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.

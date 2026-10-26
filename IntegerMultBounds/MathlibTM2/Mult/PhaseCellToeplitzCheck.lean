@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPairComponentsAccuracy
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryPublishedHalo
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRealInteriorResidual
@@ -1527,6 +1529,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMerge_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSplit_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSelectFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentStep_run,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponents_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentSymbol_csyms,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentSymbol_cstream,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentsToFirst_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentLines_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentWord_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.value_pairComponentWord_re,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.value_pairComponentWord_im,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairedCellRead_encodedField,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairedComponents_accuracy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentWords_chirpLine,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentLines_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationGeometryWidth_fits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatePublicationWidth_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedPublicationMaskCost_le,
