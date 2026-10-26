@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProcessReplicaHaloCell
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProcessReplicaCellCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRestoredRawRepeatedHaloCell
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRestoredRawRepeatedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawRepeatedHaloCell
@@ -1257,6 +1259,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawReplicaGatherCost_affine,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawRepeatedBatchCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawRepeatedBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installReplicaHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copiedReplicaR_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copiedReplica_project,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRawRepeatedBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.takeReplicaCell_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.processReplicaCell_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.processReplicaHaloCell_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRawRepeatedBatchCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.processReplicaCellCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredRawRepeatedBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredRawRepeatedHaloCell_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredRawRepeatedBatchCost_eq,
