@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInitializedInteriorResidual
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseCouplingHeaders
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingHeadersFrame
 
 /-! The owned interior and residual lines with all private coupling headers released. -/
 
@@ -93,23 +93,10 @@ theorem restoredInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     convert he₁ using 1
     apply congrArg (mk v₁)
     refine Stacks.ext rfl rfl rfl ?_
-    funext k
-    change couplingHeadersR (2^15*p) q s t u band a b S₁.R k =
-      Function.update (couplingHeadersR (2^15*p) q s t u band a b
-        (Function.update S.R 132 (cstream A w (chirpLine s D)++S.R 132)))
-        110 (cstream A w (chirpLine s R)++S.R 110) k
-    by_cases hk : k ∈ couplingHeaderRegisters
-    · simp only [couplingHeaderRegisters,List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
-        simp [S₁,couplingHeadersR,unaryCopiesR,couplingHeaderCopies,couplingHeaderValue]
-    · have h110 : (110 : Fin 144) ∉ couplingHeaderRegisters := by decide
-      by_cases hk110 : k = 110
-      · subst k
-        rw [couplingHeadersR_off (2^15*p) q s t u band a b _ _ h110]
-        simp [S₁]
-      · rw [couplingHeadersR_off (2^15*p) q s t u band a b _ _ hk]
-        simp only [S₁,Function.update_of_ne hk110]
-        rw [couplingHeadersR_off (2^15*p) q s t u band a b _ _ hk]
+    change couplingHeadersR (2^15*p) q s t u band a b
+      (Function.update (Function.update S.R 132 (cstream A w (chirpLine s D)++S.R 132))
+        110 (cstream A w (chirpLine s R)++S.R 110)) = _
+    exact couplingHeadersR_update (2^15*p) q s t u band a b _ 110 _ (by decide)
   refine ⟨v₂,n+releaseCouplingHeadersCost (2^15*p) q s t u band a b,D,hu₂.trans hu₁,
     Nat.add_le_add_right hn _,Exec.seq he₁' he₂,hDnorm,hDerror,hnorm,herror⟩
 

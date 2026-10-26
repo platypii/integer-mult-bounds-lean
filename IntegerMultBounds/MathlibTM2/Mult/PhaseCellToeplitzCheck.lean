@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryInterior
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRealInteriorResidual
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFeedCouplingPass
@@ -881,6 +883,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedCellRead_encodedField,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveHaloInterior_bounded_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingHeadersR_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellInterface.ErrorOn.union_ite,
+      `IntegerMultBounds.NLogN.SchurDominance.recovery_solves_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.LengthKeyReady.update_source,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingHeadersR_update,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredCouplingPass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.initializedInterior_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireAmbientSource_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recovery_execution_exponent,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recovery_execution_sizes,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recovery_coupling_width,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.recoveryInterior_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realPartSymbol_csyms,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realPartSymbol_cstream,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realPrefix_exec,

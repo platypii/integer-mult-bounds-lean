@@ -43,6 +43,18 @@ theorem ErrorOn.crop [NormedAddCommGroup E] {core halo : Finset ι} {out target 
     {error : ℝ} (h : ErrorOn halo out target error) (hcore : core ⊆ halo) :
     ErrorOn core out target error := fun i hi => h i (hcore hi)
 
+/-- Selecting the interior result or boundary result preserves the larger uniform error. -/
+theorem ErrorOn.union_ite [DecidableEq ι] [NormedAddCommGroup E]
+    {I B : Finset ι} {interior boundary target : ι → E} {interiorError boundaryError : ℝ}
+    (hI : ErrorOn I interior target interiorError) (hB : ErrorOn B boundary target boundaryError) :
+    ErrorOn (I∪B) (fun i => if i ∈ I then interior i else boundary i) target
+      (max interiorError boundaryError) := by
+  intro i hi
+  by_cases hiI : i ∈ I
+  · simpa only [ite_eq_left hiI] using (hI i hiI).trans (le_max_left _ _)
+  · have hiB : i ∈ B := (Finset.mem_union.mp hi).resolve_left hiI
+    simpa only [ite_eq_right hiI] using (hB i hiB).trans (le_max_right _ _)
+
 /-- Publishing one owned result at each coordinate incurs no factor for the number of windows. -/
 theorem norm_error_of_publish [Fintype ι] [NormedAddCommGroup E]
     (windows : List (Window ι)) (localOut : Window ι → ι → E) (out target : ι → E)
