@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1338 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1345 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Equal-origin RHS replicas now share exact generated weights and inverse construction. Clipped halo geometry and cell execution are proved. Grouped-line integration/amortization, fast time/storage, halo-descriptor execution and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Equal-origin RHS replicas now share exact generated weights and inverse construction. Clipped halo geometry, cell execution and descriptor generation from ordinary headers with full scratch release are proved. Grouped-line integration/amortization, fast time/storage, six-key halo scheduling and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6980,3 +6980,23 @@ The clipped-halo-cell checkpoint passes all 9963 guarded S3 axiom-audit jobs
 at 2.7 GiB combined peak. All six new modules pass final individual guarded
 checks; maximum measured peak is 1947.6 MiB. Default proof limits are unchanged.
 Source integrity, generated-summary and whitespace checks pass.
+
+### S3 executed halo descriptor generation
+
+The fixed 117-tape `generateHaloDescriptors` program starts from ordinary unary
+parameters, generates both runtime widths, loads the five geometry headers,
+computes the ambient phase constants, clips each cell at the halo endpoints and
+emits only positive origin/length pairs in ambient phase order. The packet
+representation and exact two-word descriptor length are proved. All temporary
+stacks are released; only the descriptor prefix on stack 109 changes, preserving
+its borrowed suffix and every other stack. Costs include width generation,
+header loading, the bounded phase scan, output movement and release.
+
+This closes descriptor generation, not the halo solver. Six-key tape scheduling,
+grouped integration/amortization, uniform fast time and execution-wide storage,
+and complex/boundary/coupling/recovery/full-line assembly remain open. S3 remains
+partial.
+
+Validation: all 9,970 stage audit jobs pass with only approved axioms; the
+guarded audit build peaks at 2.7 GiB. All seven new modules pass individual
+guarded checks, each at most 1855.1 MiB. Proof-integrity and plan checks pass.

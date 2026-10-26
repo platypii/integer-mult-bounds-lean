@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateHaloDescriptors
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRepeatedHaloCell
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawReplicaGather
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRepeatedClosedBatchSpec
@@ -1099,6 +1100,21 @@ run_cmd do
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_cover,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_pad,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedHaloCell_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloNatMax_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloClipCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloIntervalCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloDescriptorEmit_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloDescriptorRowCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloDescriptorCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloDescriptorPairs_real_bits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloDescriptorPackets_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloDescriptorHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloInitCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRawState_bounded,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloDescriptorController_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadHaloHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloDescriptors_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateHaloDescriptors_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
