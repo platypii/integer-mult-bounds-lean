@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingSupportRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolveReplicaHaloCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaHaloLoopCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProcessReplicaHaloCell
@@ -1263,6 +1264,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawRepeatedBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installReplicaHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.replicaLoopR_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.fixedPointRowPrepared_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.fixedPointRowCall_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.supportRow_zipWith,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.fixedPointRow_sum_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.fixedPointRow_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.fixedPointRow_sum_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.fixedPointRow_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.fixedPointRow_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coupling_row_perturb,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coupling_residual_perturb,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingRowCall_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingSupportRow_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareHaloReplicaSchedule_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedPrepareHaloReplicaSchedule_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copiedHaloGroupR_clear109,

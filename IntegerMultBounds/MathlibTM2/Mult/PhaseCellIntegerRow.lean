@@ -27,11 +27,11 @@ noncomputable def integerRowPrepared (hQ : SS.states ≤ Q) : Pr P 117 Q A U :=
 noncomputable def integerRow (hQ : SS.states ≤ Q) : Pr P 117 Q A U :=
   .seq prepare (integerRowPrepared hQ)
 
-theorem integerRowPrepared_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
-    {w : ℕ} (hw : 1 ≤ w) (xs as : List GaussianInt) (hlen : xs.length = as.length)
+theorem fixedPointRowPrepared_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    {q w : ℕ} (hw : 1 ≤ w) (hqw : q ≤ w) (xs as : List GaussianInt) (hlen : xs.length = as.length)
     (hxs : ∀ x ∈ xs, Fits w x) (has : ∀ a ∈ as, Fits w a ∧ a.im = 0)
     (v : HS 117 Q A U) (S : Stacks 117 A) (rhs : GaussianInt) (hc : CClean mul S)
-    (hready : Ready (fun r => S.R (cr r)) w 0)
+    (hready : Ready (fun r => S.R (cr r)) w q)
     (hwork : ∀ r ∈ [CR.xsv, .ysv, .acc, .out], S.R (cr r) = []) (hwR : (S.R 94).length = w)
     (hx : S.R (cr .xs) = cstream A w xs) (hy : S.R (cr .ys) = cstream A w as)
     (hrhs : S.R 96 = csyms A w rhs) (hsaved : S.R 97 = []) (htmp : S.R 98 = []) :
@@ -39,15 +39,13 @@ theorem integerRowPrepared_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       m ≤ xs.length * (rmulCost w + 13 * w + 12) + 10 ∧
       Exec body (integerRowPrepared hQ) (mk v S) m
         (mk v' { S with R := (Function.update S.R 96
-          (csyms A w (rhs - (List.zipWith (· * ·) xs as).sum))) }) := by
-  let products := List.zipWith (· * ·) xs as
+          (csyms A w (rhs - (List.zipWith (fun x a => tdivN q (x*a)) xs as).sum))) }) := by
+  let products := List.zipWith (fun x a => tdivN q (x*a)) xs as
   have hplen : products.length = xs.length := by simp [products, hlen]
   have hout : S.R (cr .out) = [] := hwork _ (by simp)
   obtain ⟨v₁, m₁, hu₁, hm₁, he₁⟩ := realWeightStream_exec_of_fits (body := body)
-    cr_injective cr_mul mul_injective (by decide) hQ hA hw (by omega : 0 ≤ w)
+    cr_injective cr_mul mul_injective (by decide) hQ hA hw hqw
     xs as hlen hxs has v S hc hready hx hy (hwork _ (by simp)) (hwork _ (by simp)) (hwork _ (by simp))
-  have he₁' := he₁
-  simp only [tdivN_precision_zero] at he₁'
   let S₁ : Stacks 117 A := { S with R := (Function.update S.R (cr .out)
     (cstream A w products ++ S.R (cr .out))) }
   obtain ⟨v₂, hu₂, he₂⟩ := subtractRow_exec (body := body) (w := w)
@@ -58,7 +56,7 @@ theorem integerRowPrepared_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (by simpa [S₁, cr, OutputPlacement.code] using hwR)
     (by simpa [S₁, cr, OutputPlacement.code] using htmp)
   refine ⟨v₂, m₁ + (products.length * (7 * w + 10) + 2), hu₂.trans hu₁, ?_,
-    (Exec.seq he₁' he₂).cast rfl ?_⟩
+    (Exec.seq he₁ he₂).cast rfl ?_⟩
   · rw [hplen]
     nlinarith only [hm₁]
   · congr 1
@@ -74,6 +72,23 @@ theorem integerRowPrepared_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       simpa [S₁, cr, OutputPlacement.code] using hout.symm
     simp [S₁, ha, ho]
 
+
+theorem integerRowPrepared_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    {w : ℕ} (hw : 1 ≤ w) (xs as : List GaussianInt) (hlen : xs.length = as.length)
+    (hxs : ∀ x ∈ xs, Fits w x) (has : ∀ a ∈ as, Fits w a ∧ a.im = 0)
+    (v : HS 117 Q A U) (S : Stacks 117 A) (rhs : GaussianInt) (hc : CClean mul S)
+    (hready : Ready (fun r => S.R (cr r)) w 0)
+    (hwork : ∀ r ∈ [CR.xsv, .ysv, .acc, .out], S.R (cr r) = []) (hwR : (S.R 94).length = w)
+    (hx : S.R (cr .xs) = cstream A w xs) (hy : S.R (cr .ys) = cstream A w as)
+    (hrhs : S.R 96 = csyms A w rhs) (hsaved : S.R 97 = []) (htmp : S.R 98 = []) :
+    ∃ v' m, v'.user = v.user ∧
+      m ≤ xs.length * (rmulCost w + 13 * w + 12) + 10 ∧
+      Exec body (integerRowPrepared hQ) (mk v S) m
+        (mk v' { S with R := (Function.update S.R 96
+          (csyms A w (rhs - (List.zipWith (· * ·) xs as).sum))) }) := by
+  simpa only [tdivN_precision_zero] using
+    fixedPointRowPrepared_exec (body := body) hQ hA hw (by omega : 0 ≤ w) xs as hlen hxs has
+      v S rhs hc hready hwork hwR hx hy hrhs hsaved htmp
 
 theorem integerRow_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {w : ℕ} (hw : 5 ≤ w) (xs as : List GaussianInt) (hlen : xs.length = as.length)

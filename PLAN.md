@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1436 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1441 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. External publication, uniform fast time/storage and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. Restoring fixed-point coupling-row arithmetic now has support-priced time, derived word fits and explicit RHS/coefficient/input/truncation errors. External publication, uniform fast time/storage, generated coupling rows/iteration and complex/boundary/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -7287,3 +7287,33 @@ Validation: all 10,065 stage audit jobs pass with only approved axioms. The
 guarded audit build peaks at 2.7 GiB; all six new modules pass individual
 guarded checks, each at most 2015.5 MiB. Source-integrity, plan-status and
 whitespace checks pass.
+
+
+### S3 fixed-point residual and recovery row arithmetic
+
+`fixedPointRowPrepared_exec` and `fixedPointRowCall_exec` generalize the existing
+integer row machine to an arbitrary grid precision without changing its program.
+The integer contracts are now zero-precision specializations of the common
+structural proof. The borrowed source, coefficient and RHS streams retain their
+arbitrary suffixes, every scratch stack restores, and only the result prefix
+changes. The actual cost is linear in the advertised row support times the
+scalar multiplication/word cost.
+
+`couplingRowCall_spec` derives operand and accumulator word fits from magnitude
+exponents and a support-count bound. Its decoded error is at most one product
+tolerance per support entry; subtraction is exact on integer numerators.
+`couplingSupportRow_spec` adds separate RHS, coefficient and computed-input
+errors. Input error is multiplied by row mass; coefficient and arithmetic errors
+are charged by actual support, with no ambient-line cardinality substituted.
+These contracts apply to both residual and recovery arithmetic on their computed
+inputs, including the separately stated larger recovery magnitudes.
+
+This is a restoring arithmetic kernel, not a closed coupling pass. Generating
+matrix coefficients, selecting/staging the true support, iterating the residual
+and recovery rows, and their full-line composition remain open. S3 also still
+requires uniform fast time/storage, complex and prepared-boundary integration.
+
+Validation: all 10,070 stage audit jobs pass with only approved axioms. The
+full guarded rebuild peaks at 26.8 GiB; all seven new or revised non-audit
+modules pass individual guarded checks, each at most 1924.9 MiB. Source-integrity,
+plan-status and whitespace checks pass.
