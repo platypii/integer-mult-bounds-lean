@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDirectCoefficientAccuracy
+import IntegerMultBounds.NLogN.PhaseCellCouplingOffsets
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingSupportRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolveReplicaHaloCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaHaloLoopCost
@@ -1264,6 +1266,24 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawRepeatedBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installReplicaHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.replicaLoopR_off,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.naturalDistance_sq,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.nearestNatural_cast,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.latticeDistance_ratio,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.latticeDistance_sq_le,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.latticeNumerator_ratio,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.direct_sample,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalDistanceCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.latticeArgument_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientGridEmit_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.directCoefficientBody_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.directCoefficientHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.direct_coefficient_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cross_coefficient_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cross_coefficient_fits,
+      `IntegerMultBounds.NLogN.PhaseCellMatrix.couplingOffsets_length,
+      `IntegerMultBounds.NLogN.PhaseCellMatrix.couplingOffsets_sum,
+      `IntegerMultBounds.NLogN.PhaseCellMatrix.couple_eq_offsetWindow,
+      `IntegerMultBounds.NLogN.PhaseCellMatrix.couple_eq_offsetList,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.fixedPointRowPrepared_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.fixedPointRowCall_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.supportRow_zipWith,

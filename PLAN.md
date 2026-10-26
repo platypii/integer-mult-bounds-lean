@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1441 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1447 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. Restoring fixed-point coupling-row arithmetic now has support-priced time, derived word fits and explicit RHS/coefficient/input/truncation errors. External publication, uniform fast time/storage, generated coupling rows/iteration and complex/boundary/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. Restoring fixed-point coupling-row arithmetic has support-priced time, derived word fits and explicit RHS/coefficient/input/truncation errors. The direct cross-cell coefficient branch now executes its natural lattice argument and exact selected sample; offset coupling semantics retain every periodic alias. External publication, uniform fast time/storage, generated coupling rows/iteration and complex/boundary/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -7317,3 +7317,37 @@ Validation: all 10,070 stage audit jobs pass with only approved axioms. The
 full guarded rebuild peaks at 26.8 GiB; all seven new or revised non-audit
 modules pass individual guarded checks, each at most 1924.9 MiB. Source-integrity,
 plan-status and whitespace checks pass.
+
+
+### S3 direct cross-cell coefficient execution
+
+`PhaseCellLatticeArgs` gives an unreduced natural numerator and denominator for
+the direct lattice exponent, retaining upward-tie nearest rounding. The
+subtracted square is proved smaller before natural subtraction is used, and
+`direct_sample` identifies the resulting corrected exponential exactly with the
+existing `PhaseCellCrossCell.direct` coefficient of the original rounded matrix.
+No rational normalization or ideal-exponential replacement is assumed.
+
+`directCoefficientBody_do` executes argument construction, corrected exponential
+evaluation and q-grid encoding in the 48-variable table machine. Semantic sample
+precision P and arithmetic grid precision q are distinct. The host execution
+constructs the word, prefixes it to the output stream, and releases the owned
+63-register table bank with a paid cost. Norm, storage fit and grid error bounds
+are proved for the produced coefficient; the cross-cell selection theorem
+compares it to the selected original unaliased entry.
+
+`couple_eq_offsetList` separately proves that enumerating retained signed lattice
+offsets gives the exact original principal-system coupling. Repeated wrapped
+residues contribute with their full multiplicity. This is the semantic support
+contract for the forthcoming generator, not a supplied deduplicated column mask.
+
+The direct host starts from an initialized binary parameter bank with explicit
+workspace inequalities. Ordinary-header loading/width selection, signed-coordinate
+lifting, the within-cell coefficient branch, generated masks/support and the
+complete coupling row loop remain open. Fast time/storage and the remaining
+complex/boundary/recovery/full-line assembly are still incomplete; S3 is partial.
+
+Validation: all 10,078 stage audit jobs pass with only approved axioms. The
+guarded audit build peaks at 2.7 GiB; all eight new modules pass individual
+guarded checks, each at most 1903.9 MiB. Source-integrity, plan-status and
+whitespace checks pass.
