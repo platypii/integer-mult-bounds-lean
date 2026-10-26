@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedCrossCoefficient
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLiftedCoefficientAccuracy
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDirectCoefficientAccuracy
 import IntegerMultBounds.NLogN.PhaseCellCouplingOffsets
@@ -1267,6 +1268,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawRepeatedBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installReplicaHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.replicaLoopR_off,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.nearestNatural_mul_le,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.naturalDistance_le_add,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.lattice_coordinate_bounds,
+      `IntegerMultBounds.NLogN.PhaseCellRationalArgs.lifted_coordinate_bound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.liftedCoefficientWidth_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.addUnarySizes_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateLiftedCoefficientWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedLiftedCoefficient_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedCrossCoefficient_spec,
       `IntegerMultBounds.NLogN.PhaseCellRationalArgs.nearestQ_period,
       `IntegerMultBounds.NLogN.PhaseCellRationalArgs.betaQ_period,
       `IntegerMultBounds.NLogN.PhaseCellRationalArgs.potentialQ_period,
