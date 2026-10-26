@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClassFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedRawGroup
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinishNaturalClass
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellScatterCoreRead
@@ -20,9 +21,6 @@ variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 noncomputable def protectedNaturalClass (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 144 Q A U :=
   .seq (protectedRawGroup hR hQ) finishNaturalClass
-
-def publishedClassR (R : Regs 144 A) (published : List (Fin (A+4))) : Regs 144 A :=
-  Function.update (Function.update (Function.update (Function.update R 128 []) 129 []) 132 published) 140 []
 
 theorem protectedNaturalClass_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {l L s t p u target rhsExp : ℕ} [NeZero s] {α d : ℝ}

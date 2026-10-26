@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOuterHeaders
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedNaturalGroup
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedBatchSolve
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedGroupInput
 
 /-! An actual raw group solve inside a private 117-register bank. Retained outer
@@ -21,7 +21,7 @@ variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 noncomputable def protectedRawGroup (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 144 Q A U :=
   .seq installGroupHeaders (.seq protectedGroupInput
-    (.seq (ucopy 116 129 133) (embProg groupReg id (closedBatch hR hQ))))
+    (protectedBatchSolve hR hQ))
 
 def protectedRawGroupCost (p l B L s t u target rhsExp : ℕ) : ℕ :=
   let q := executionPrecision p l target rhsExp
@@ -114,66 +114,34 @@ theorem protectedRawGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
       rw [copiedGroupR_off P N q l s t u band L S.R k hkhi]
       exact hfresh k hk)
   rw [← hw] at hbank₂ hctrl₂ hnp
-  have hbody : ∀ f, embTab groupReg body (id f) = embProg groupReg id (body f) := fun _ => rfl
   have hS₂left (k : Fin 144) (hk : 117 ≤ k.val) : S₂.L k = S.L k := hleft₂ k hk
   have hS₂off (k : Fin 144) (hk : 117 ≤ k.val) (hk140 : k ≠ 140) : S₂.R k = S.R k :=
     (hoff₂ k hk hk140).trans (copiedGroupR_off P N q l s t u band L S.R k hk)
-  have h116 : (S₂.R 116).length = B := by
-    have hh := congrArg (fun S : Stacks 117 A => (S.R 116).length) hbank₂
-    simpa [embStk, groupReg, batchInputBank, B] using hh
-  obtain ⟨v₃, hu₃, he₃⟩ := ucopy_exec (body := embTab groupReg body)
-    (a := 116) (b := 129) (t := 133) (by decide) (by decide) (by decide) v₂ S₂
-    (by rw [hS₂off 133 (by decide) (by decide)]; exact h133)
-  let S₃ : Stacks 144 A := { S₂ with R := Function.update S₂.R 129 (List.replicate B tick) }
-  have he₃' : Exec (embTab groupReg body) (ucopy 116 129 133) (mk v₂ S₂) (4*B+4) (mk v₃ S₃) := by
-    simpa [S₃, h116, hS₂off 129 (by decide) (by decide), h129] using he₃
-  have hbank₃ : embStk groupReg S₃ = batchInputBank P N q l s t u band L B
-      (fun n => (lo n).val) rhs (raw++borrowed) (S.R 93) S.inp S.out := by
-    rw [groupProject_updateR S₂ 129 (List.replicate B tick) (by decide)]
-    exact hbank₂
-  obtain ⟨vs, Ss, ns, hus, hns, hes, his, hos, hls, hrs, hcleans, hpoints, herrors, hprefix⟩ :=
-    closedNaturalGroup_spec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hgroup hpad
-      C hC x hx (embDn groupReg v₃) (S.R 93) (raw++borrowed) S.inp S.out
-  obtain ⟨v₄, S₄, he₄, hv₄, hu₄, hbank₄, hoff₄⟩ := exec_emb groupReg_injective hbody hes v₃ rfl S₃ hbank₃
-  have hfinalR (i : Fin 117) : S₄.R (groupReg i) = Ss.R i := congrArg (fun S : Stacks 117 A => S.R i) hbank₄
-  have hfinalL (i : Fin 117) : S₄.L (groupReg i) = Ss.L i := congrArg (fun S : Stacks 117 A => S.L i) hbank₄
-  have h93 : S₄.R 93 = Ss.R 93 := by simpa [groupReg] using hfinalR 93
-  have h110 : S₄.R 110 = Ss.R 110 := by simpa [groupReg] using hfinalR 110
-  refine ⟨v₄, S₄, installGroupHeadersCost P N q l s t u band L+(np+((4*B+4)+ns)),
-    hu₄.trans (hus.trans (hu₃.trans (hup.trans hu₁))), ?_,
-    Exec.seq he₁ (Exec.seq he₂ (Exec.seq he₃' he₄)), ?_, ?_, ?_, h110.trans hrs, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · dsimp only [protectedRawGroupCost]
-    dsimp only [P,N,q,band,B,w] at *
-    omega
-  · exact (congrArg (fun S : Stacks 117 A => S.inp) hbank₄).trans his
-  · exact (congrArg (fun S : Stacks 117 A => S.out) hbank₄).trans hos
-  · funext k
+  have hi₂ : S₂.inp = S.inp := congrArg (fun B : Stacks 117 A => B.inp) hbank₂
+  have ho₂ : S₂.out = S.out := congrArg (fun B : Stacks 117 A => B.out) hbank₂
+  have hL₂ : S₂.L = S.L := by
+    funext k
     by_cases hk : k.val < 117
     · let i : Fin 117 := ⟨k.val,hk⟩
       have he : groupReg i = k := Fin.ext rfl
-      rw [← he, hfinalL i, hls i, hleft (groupReg i) i.isLt]
-    · exact (hoff₄ k (groupReg_off k (by omega))).1.trans (hS₂left k (by omega))
-  · intro k hk hk93 hk110
-    let i : Fin 117 := ⟨k.val,hk⟩
-    have he : groupReg i = k := Fin.ext rfl
-    rw [← he, hfinalR i]
-    exact hcleans i (fun h => hk93 (he.symm.trans (congrArg groupReg h)))
-      (fun h => hk110 (he.symm.trans (congrArg groupReg h)))
-  · have hh := (hoff₄ 129 (groupReg_off 129 (by decide))).2
-    simpa [S₃] using hh
+      have hh := congrArg (fun B : Stacks 117 A => B.L i) hbank₂
+      have hz : S₂.L k = [] := by simpa [embStk,Function.comp_apply,he,batchInputBank] using hh
+      rw [hz,hleft k hk]
+    · exact hS₂left k (by omega)
+  obtain ⟨v₃,S₃,ns,hu₃,hns,he₃,hi₃,ho₃,hl₃,hr₃,hclean₃,hB₃,hoff₃,hpoints,herrors,hprefix⟩ :=
+    protectedBatchSolve_spec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hgroup hpad C hC x hx
+      v₂ S₂ borrowed (S.R 93) (by simpa only [hi₂,ho₂] using hbank₂)
+      (by rw [hS₂off 129 (by decide) (by decide)]; exact h129)
+      (by rw [hS₂off 133 (by decide) (by decide)]; exact h133)
+  refine ⟨v₃,S₃,installGroupHeadersCost P N q l s t u band L+(np+ns),
+    hu₃.trans (hup.trans hu₁),?_,Exec.seq he₁ (Exec.seq he₂ he₃),hi₃.trans hi₂,ho₃.trans ho₂,
+    hl₃.trans hL₂,hr₃,hclean₃,hB₃,?_,?_,hpoints,herrors,hprefix⟩
+  · dsimp only [protectedRawGroupCost]
+    dsimp only [P,N,q,band,B,w] at *
+    omega
   · intro k hk hk129 hk140
-    have hr := (hoff₄ k (groupReg_off k hk)).2
-    exact hr.trans (by simpa [S₃,hk129] using hS₂off k hk hk140)
-  · rw [(hoff₄ 140 (groupReg_off 140 (by decide))).2]
-    simpa only [S₃,S₁,copiedGroupR_off P N q l s t u band L S.R 140 (by decide),
-      Function.update_of_ne (by decide : (140 : Fin 144) ≠ 129),band,w] using hctrl₂
-  · intro n i
-    rw [h93]
-    exact hpoints n i
-  · intro n
-    rw [h93]
-    exact herrors n
-  · obtain ⟨ys, hylen, hy⟩ := hprefix
-    exact ⟨ys, hylen, h93.trans hy⟩
+    exact (hoff₃ k hk hk129).trans (hS₂off k hk hk140)
+  · rw [hoff₃ 140 (by decide) (by decide)]
+    simpa only [S₁,copiedGroupR_off P N q l s t u band L S.R 140 (by decide),band,w] using hctrl₂
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

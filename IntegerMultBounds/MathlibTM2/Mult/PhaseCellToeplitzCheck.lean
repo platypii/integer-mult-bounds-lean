@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProcessLengthKey
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConditionalGroupPreparation
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedNaturalClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedPublicationControls
@@ -988,6 +989,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.conditionalGroupPreparation_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completed_preparedOriginR,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.groupStacks_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredGroupR_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.publishedClassR_empty,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedBatchSolve_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedControlledGroupInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedControlledClass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.conditionalNaturalClass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.processLengthKey_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
