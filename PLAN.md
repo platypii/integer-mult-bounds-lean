@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1624 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1629 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8521,3 +8521,41 @@ for all ten new support, masking, fill and row-cardinality theorems. Combined
 build peak is 2.7 GiB. All three new/revised Lean modules pass individual guarded
 checks at at most 2043.5 MiB. Added-source integrity, plan-status and whitespace
 checks pass; proof limits are unchanged.
+
+### Executed natural boundary-coordinate enumeration
+
+`boundaryOrderRow` runs the existing executed local halo-boundary predicate and
+emits an unsigned ambient coordinate only when that predicate is true.
+`boundaryOrderCode` enumerates the ambient coordinate range with a proved
+`31*s+3` table-atom bound and retains the original geometry headers. It does not
+accept a boundary list, membership mask or count from the caller.
+
+`boundaryOrderHost` compiles that enumeration, publishes the coordinate words
+in emission order and releases the entire geometry table bank. Its bound is
+`(31*s+3)*tblC V V+2*s*V+62*V+65`. `boundaryOrderFromHeaders` loads the ordinary
+unary geometry headers. `closedBoundaryOrder` additionally generates a
+sufficient geometry-only width and clears it afterward, changing only the
+output prefix on 109 and preserving its arbitrary borrowed suffix. Its checked
+polynomial envelope is `5000*(s+t+band+a+b+1)*(V+4)^2`, with
+`V = publicationGeometryWidth t band`. All setup, output movement and workspace
+release are paid.
+
+`boundaryIndices_order` identifies the emitted coordinate order with `bOrder`
+of the actual halo boundary in the original ambient coordinates.
+`boundaryIndices_exact` proves no duplicate coordinates and exact underlying
+boundary set. `boundaryOrderSymbols_eq` identifies the emitted words with that
+coordinate list, and `boundaryOrderSymbols_length` proves its exact length is
+`|B|*V`, including an empty boundary.
+
+This generates natural boundary coordinates. Folding them into the local band
+order, generating rank/address maps, computing Schur entries and executing
+factor setup/solve/release remain open. Enumeration explicitly scans the
+ambient `s` coordinates; this cost has not been relabeled as halo length or
+absorbed into a uniform fast bound. Complete S3 execution and simultaneous
+storage remain open. S3 remains partial.
+
+Validation: all 10,275 guarded stage-audit jobs pass, including thirteen explicit
+new execution, cost and coordinate-order/volume audits. Combined build peak is
+2.7 GiB. All six new/revised Lean modules pass individual guarded checks at at
+most 2046.5 MiB. Added-source integrity, plan-status and whitespace checks pass;
+proof limits are unchanged.

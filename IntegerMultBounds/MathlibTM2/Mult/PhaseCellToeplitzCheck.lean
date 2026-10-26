@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedBoundaryOrder
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryOrderData
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryBand
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSecondComponentSchur
@@ -1590,6 +1593,20 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releasedSchurResidual_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.secondComponentSchur_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandBoundaryTable_support,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderRow_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderSymbols_length_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedBoundaryOrderCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedBoundaryOrderCost_halo_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedBoundaryOrder_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderSymbols_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryIndices_order,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryIndices_exact,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryIndices_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderSymbols_length,
+
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandBoundaryTable_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.foldBRel_row_card,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloBoundaryTable_entry_error,
