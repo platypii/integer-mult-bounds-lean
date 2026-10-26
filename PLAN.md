@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1308 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1316 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed counted loop executes the positive distinct length schedule, preserves borrowed suffixes and earlier-class accuracy, and proves the same whole-interior error on the physical ambient output. Class setup/solve/publication/cleanup and key discovery are executed. Composition of queue/header initialization, uniform time/storage, halo cuts and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. Uniform time/storage, halo cuts and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6739,3 +6739,46 @@ The counted-loop/whole-interior checkpoint passes all 9927 guarded S3
 axiom-audit jobs at 2.6 GiB combined peak. All eight new modules pass individual
 guarded checks; the largest final-check peak is 1974.0 MiB. Default proof limits
 are unchanged. Source integrity, generated-summary and whitespace checks pass.
+
+
+### S3 initialized whole-interior execution and final release
+
+`preparePositiveLengthKeys_exec` retains the generated word and arithmetic widths
+alongside the positive distinct key packets and owned count. The existing
+`generatePositiveLengthKeys_exec` API reuses this producer and clears the widths,
+so its statement and cost remain unchanged. No second candidate or origin scan
+is introduced to initialize the protected loop.
+
+`protectedPrepareLengthKeys_exec` runs that producer in the private bank while
+preserving all caller registers. `installKeyRuntime_exec` copies the two widths
+into their retained caller headers, transfers the packet queue in order using
+two moves, transfers the unary count, and clears the generated private operands.
+Its exact cost is `6*(V+w)+4*keys.length+2*K+19`. The pure frame lemmas commute
+these caller updates with private header copies without enumerating the full
+register bank.
+
+`initializeLengthKeys_exec` composes master-header copying, private key generation,
+caller installation and release of the private header copies. It starts from
+ordinary retained master parameters and blank private workspace, preserving the
+raw source and borrowed queue suffix. `LengthKeyReady.initialized` establishes
+the solver-loop invariant from the initialized state.
+
+`solveNaturalInterior_spec` composes initialization, the counted natural-key loop
+and `releaseKeyRuntime_exec`. The fixed program consumes exactly the generated
+queue/count and releases both retained widths. Its exact final stack record is
+`{ S with R := Function.update S.R 132 (E'++outputTail) }`: native input/output,
+all left stacks, raw input, master parameters, borrowed suffixes and every other
+right stack are restored. The physical final output satisfies the whole-interior
+error bound `1/2^target` without a class-count factor. The execution bound is the
+sum of initialization, counted-loop and final-release costs.
+
+This closes the executable initialization/loop/release composition. Uniform
+fast solver/time and execution-wide storage bounds, artificial halo cuts and
+complex/boundary/coupling/recovery/full-line assembly remain open. S3 remains
+incomplete and the proved saving is unchanged.
+
+The initialized-interior checkpoint passes all 9935 guarded S3 axiom-audit jobs
+at 2.7 GiB combined peak. All nine new or revised non-audit modules pass final
+individual guarded checks; maximum measured peak is 1986.2 MiB. Default proof
+limits are unchanged. Source integrity, generated-summary and whitespace checks
+pass.
