@@ -58,7 +58,9 @@ theorem solveHaloInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
       Exec (embTab groupReg body) (solveHaloInterior hR hQ) (mk v S) n
         (mk v' { S with R := Function.update S.R 132 (E'++outputTail) }) ∧
       PhaseCellInterface.ErrorOn (haloInterior s t (PhaseCellBand.width p u) a b)
-        (publishedCellRead q w (0 : ZMod s) (E'++outputTail)) x (1/(2 : ℝ)^target) := by
+        (publishedCellRead q w (0 : ZMod s) (E'++outputTail)) x (1/(2 : ℝ)^target) ∧
+      ((∃ zs : List GaussianInt, E = cstream A w zs) →
+        ∃ zs : List GaussianInt, E' = cstream A w zs) := by
   dsimp only
   let P := 2^15*p
   let N := executionStagePrecision p l target rhsExp+1
@@ -92,7 +94,7 @@ theorem solveHaloInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     obtain ⟨hb,_⟩ := weightWorkspaceWidth_control (q := q) (w := w) hP hs hst hu hband
     dsimp only [V]
     nlinarith only [hb,hst,hs]
-  obtain ⟨v₂,S₂,n₂,E',hu₂,hn₂,he₂,hi₂,ho₂,hl₂,hlen,hr₂,herror⟩ :=
+  obtain ⟨v₂,S₂,n₂,E',hu₂,hn₂,he₂,hi₂,ho₂,hl₂,hlen,hr₂,herror,hencode⟩ :=
     runGeneratedHaloKeys_spec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hband has hbs
       hwide hpad C hC x hx v₁ S₁ borrowed E outputTail (S.R 126) hE
       (by simpa [S₁,initializedKeyRuntimeR] using hdst)
@@ -112,7 +114,7 @@ theorem solveHaloInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     · change releasedKeyRuntimeR S₂.R = _
       rw [hr₂]
       exact released_keyLoop_initialized S.R V w K keys (E'++outputTail) h125 h127 h130
-  refine ⟨v₃,n₁+(n₂+(2*(V+w)+5)),E',hu₃.trans (hu₂.trans hu₁),?_,hlen,?_,?_⟩
+  refine ⟨v₃,n₁+(n₂+(2*(V+w)+5)),E',hu₃.trans (hu₂.trans hu₁),?_,hlen,?_,?_,hencode⟩
   · dsimp only [solveHaloInteriorCost]
     dsimp only [P,N,q,w,band,V] at *
     omega

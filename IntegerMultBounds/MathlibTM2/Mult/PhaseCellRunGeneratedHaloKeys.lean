@@ -47,7 +47,9 @@ theorem runGeneratedHaloKeys_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧ E'.length = s*w ∧
       S'.R = keyLoopR S.R keyTail [] (E'++outputTail) ∧
       PhaseCellInterface.ErrorOn (haloInterior s t band a b)
-        (publishedCellRead q w (0 : ZMod s) (S'.R 132)) x (1/(2 : ℝ)^target) := by
+        (publishedCellRead q w (0 : ZMod s) (S'.R 132)) x (1/(2 : ℝ)^target) ∧
+      ((∃ zs : List GaussianInt, E = cstream A w zs) →
+        ∃ zs : List GaussianInt, E' = cstream A w zs) := by
   dsimp only
   let band := PhaseCellBand.width p u
   have hbounds : ∀ L ∈ haloLengthKeys s t band a b,
@@ -61,11 +63,11 @@ theorem runGeneratedHaloKeys_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     have hb := PhaseCellBand.width_pos p u
     have hLs : L ≤ s := by dsimp only [band] at *; omega
     exact ⟨hpos,hLs,haloLengthKeys_pad hst band a b l hpad L hL,hLs.trans_lt hwide⟩
-  obtain ⟨v',S',n,E',hu',hn,he,hi,ho,hl,hlen,hframe,herror,hkeep⟩ := runHaloKeys_spec (body := body)
+  obtain ⟨v',S',n,E',hu',hn,he,hi,ho,hl,hlen,hframe,herror,hkeep,hencode⟩ := runHaloKeys_spec (body := body)
     hR hQ hA hp hst hu hαu hθ hgap hbudget hband has hbs (haloLengthKeys s t band a b)
     (haloLengthKeys_nodup s t band a b) hbounds C hC x hx v S borrowed E outputTail keyTail hE hdst
     (by simpa only [lengthKeyPackets,haloPositiveLengthPackets] using hkeys) hcount hready haMaster hbMaster
-  refine ⟨v',S',n,E',hu',hn,he,hi,ho,hl,hlen,hframe,?_⟩
+  refine ⟨v',S',n,E',hu',hn,he,hi,ho,hl,hlen,hframe,?_,hencode⟩
   exact haloLengthKeys_errorOn hst band a b _ x _ herror
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

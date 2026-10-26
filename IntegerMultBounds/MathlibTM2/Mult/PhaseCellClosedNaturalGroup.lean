@@ -63,6 +63,8 @@ theorem closedNaturalGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
     (fun n hn => (hgeometry ⟨n, hn⟩).2.2.1)
     (fun n hn => (hgeometry ⟨n, hn⟩).2.2.2.1)
     (fun n hn => (hgeometry ⟨n, hn⟩).2.2.2.2) v tail borrowed inp out
-  exact ⟨v', S', m, huser, hm.trans (sizedClosedBatchCost_le_bound p l B L s t u target rhsExp), he, hrest⟩
+  rcases hrest with ⟨hi,ho,hl,hr,hclean,hpoint,herror,ys,hylen,hys⟩
+  exact ⟨v',S',m,huser,hm.trans (sizedClosedBatchCost_le_bound p l B L s t u target rhsExp),
+    he,hi,ho,hl,hr,hclean,hpoint,herror,ys,hylen,hys⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

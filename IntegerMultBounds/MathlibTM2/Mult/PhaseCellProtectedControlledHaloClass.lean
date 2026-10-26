@@ -51,11 +51,11 @@ theorem protectedControlledHaloClass_spec (hR : rpStates ≤ Q) (hQ : SS.states 
     let lo := haloGroupOrigin s t (PhaseCellBand.width p u) a b L
     let q := executionPrecision p l target rhsExp
     let w := executionWidth p l target rhsExp
-    ∃ v' S' n, ∃ ys : List (Fin (A+4)), v'.user = v.user ∧
+    ∃ v' S' n, ∃ ys : EncodedStream A w, v'.user = v.user ∧
       n ≤ protectedControlledHaloClassCost p l B L s t u target rhsExp a b ∧
       Exec (embTab groupReg body) (protectedControlledHaloClass hR hQ) (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
-      ys.length = B*L*w ∧
+      ys.val.length = B*L*w ∧
       S'.R = publishedClassR (restoredGroupR S.R) (scatterRows (L*w) E (ys++S.R 93)
         (haloScatterGaps s t (PhaseCellBand.width p u) a b L w)++outputTail) ∧
       ∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)
@@ -149,7 +149,7 @@ theorem protectedControlledHaloClass_spec (hR : rpStates ≤ Q) (hQ : SS.states 
     by_cases hlo : k.val < 117
     · simp [restoredGroupR,hlo,hk93,hk110,hclean₂ k hlo hk93 hk110]
     · simpa [restoredGroupR,hlo] using (hR₂ k (by omega) hk129).trans (hR₁ k (by omega) hk140)
-  have hylen' : ys.length = B*(L*w) := by simpa only [Nat.mul_assoc] using hylen
+  have hylen' : ys.val.length = B*(L*w) := by simpa only [Nat.mul_assoc] using hylen
   refine ⟨v₃,S₃,n₁+(n₂+n₃),ys,hu₃.trans (hu₂.trans hu₁),?_,Exec.seq he₁ (Exec.seq he₂ he₃),
     hi₂.trans hi₁,ho₂.trans ho₁,hl₂.trans hl₁,hylen,hframe,?_⟩
   · dsimp only [protectedControlledHaloClassCost]

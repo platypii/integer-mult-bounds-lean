@@ -50,15 +50,17 @@ theorem runHaloKeys_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 �
       (∀ L ∈ keys, ∀ n : Fin (haloLengthGroup s t band a b L).length,
         PhaseCellInterface.ErrorOn (publishedCellCore (haloGroupOrigin s t band a b L n) L)
           (publishedCellRead q w (0 : ZMod s) (S'.R 132)) x (1/(2 : ℝ)^target)) ∧
-      ∀ K, K ∉ keys → ∀ n : Fin (haloLengthGroup s t band a b K).length, ∀ j ∈ publishedCellCore
+      (∀ K, K ∉ keys → ∀ n : Fin (haloLengthGroup s t band a b K).length, ∀ j ∈ publishedCellCore
         (haloGroupOrigin s t band a b K n) K,
-        publishedCellRead q w (0 : ZMod s) (S'.R 132) j = publishedCellRead q w (0 : ZMod s) (S.R 132) j := by
+        publishedCellRead q w (0 : ZMod s) (S'.R 132) j = publishedCellRead q w (0 : ZMod s) (S.R 132) j) ∧
+      ((∃ zs : List GaussianInt, E = cstream A w zs) →
+        ∃ zs : List GaussianInt, E' = cstream A w zs) := by
   dsimp only
   have hpeek := Exec.act (body := embTab groupReg body) (peekR 127) (mk v S)
   rw [peekR_run,hcount,count_head_isSome keys] at hpeek
-  obtain ⟨v',S',n,E',hu',hn,he,hi,ho,hl,hlen,hframe,herror,hkeep⟩ := haloLengthKeyLoop_spec (body := body)
+  obtain ⟨v',S',n,E',hu',hn,he,hi,ho,hl,hlen,hframe,herror,hkeep,hencode⟩ := haloLengthKeyLoop_spec (body := body)
     hR hQ hA hp hst hu hαu hθ hgap hbudget hband has hbs keys hnodup hbounds C hC x hx
     { v with flag := keys.head?.isSome } S borrowed E outputTail keyTail hE hdst hkeys hcount hready haMaster hbMaster rfl
-  exact ⟨v',S',n+1,E',hu',by omega,(Exec.seq hpeek he).cast (by omega) rfl,hi,ho,hl,hlen,hframe,herror,hkeep⟩
+  exact ⟨v',S',n+1,E',hu',by omega,(Exec.seq hpeek he).cast (by omega) rfl,hi,ho,hl,hlen,hframe,herror,hkeep,hencode⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

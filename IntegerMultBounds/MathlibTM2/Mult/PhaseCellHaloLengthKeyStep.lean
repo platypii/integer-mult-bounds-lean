@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellEncodedScatter
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProcessHaloLengthKey
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLengthKeyFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloScatterPreservesClass
@@ -58,9 +60,11 @@ theorem haloLengthKeyStep_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
       (∀ n : Fin (haloLengthGroup s t band a b L).length,
         PhaseCellInterface.ErrorOn (publishedCellCore (haloGroupOrigin s t band a b L n) L)
           (publishedCellRead q w (0 : ZMod s) (S'.R 132)) x (1/(2 : ℝ)^target)) ∧
-      ∀ K, K ≠ L → ∀ n : Fin (haloLengthGroup s t band a b K).length, ∀ j ∈ publishedCellCore
+      (∀ K, K ≠ L → ∀ n : Fin (haloLengthGroup s t band a b K).length, ∀ j ∈ publishedCellCore
         (haloGroupOrigin s t band a b K n) K,
-        publishedCellRead q w (0 : ZMod s) (S'.R 132) j = publishedCellRead q w (0 : ZMod s) (S.R 132) j := by
+        publishedCellRead q w (0 : ZMod s) (S'.R 132) j = publishedCellRead q w (0 : ZMod s) (S.R 132) j) ∧
+      ((∃ zs : List GaussianInt, E = cstream A w zs) →
+        ∃ zs : List GaussianInt, E' = cstream A w zs) := by
   dsimp only
   let band := PhaseCellBand.width p u
   let B := (haloLengthGroup s t band a b L).length
@@ -92,7 +96,7 @@ theorem haloLengthKeyStep_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     change S₁.R = publishedClassR (Function.update (Function.update S.R 127 cs) 126 keyTail) (E'++outputTail) at hframe
     exact hframe.trans (keyLoopR_step S.R keyTail cs (E'++outputTail) h128 h129 (hfresh 140 (by simp)))
   have hE' : E.length = s*w := hE
-  have hys : ys.length = B*(L*w) := by simpa only [Nat.mul_assoc] using hylen
+  have hys : ys.val.length = B*(L*w) := by simpa only [Nat.mul_assoc] using hylen
   have hX : B*(L*w) ≤ (ys++S.R 93).length := by simp only [List.length_append]; omega
   have hf := haloScatterGaps_fits s t band a b L w E hE'.ge
   have hlen : E'.length = s*w := by
@@ -104,14 +108,17 @@ theorem haloLengthKeyStep_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
   rw [peekR_run,hcount₁] at hp
   refine ⟨{ v₁ with flag := cs.head?.isSome },S₁,n₁+2,E',hu₁,rfl,by omega,
     (Exec.seq (hpop ▸ Exec.act (body := embTab groupReg body) (.pop (.rt 127) (fun v _ => v) .done) _)
-      (Exec.seq he₁ hp)).cast (by omega) rfl,hi₁,ho₁,hl₁,hlen,hframe',herror,?_⟩
-  intro K hKL n j hj
-  have h132 : S₁.R 132 = E'++outputTail := by simpa [keyLoopR] using congrArg (fun R => R 132) hframe'
-  rw [h132,hdst]
-  change publishedCellRead q w (0 : ZMod s)
-    (scatterRows (L*w) E (ys++S.R 93) (haloScatterGaps s t band a b L w)++outputTail) j = _
-  rw [← scatterRows_append (L*w) (haloScatterGaps s t band a b L w) E (ys++S.R 93) outputTail hf]
-  apply haloScatterRows_preserves_class t band a b L K q w hKL.symm (E++outputTail) (ys++S.R 93)
-    (by simp only [List.length_append]; omega) hX n j hj
+      (Exec.seq he₁ hp)).cast (by omega) rfl,hi₁,ho₁,hl₁,hlen,hframe',herror,?_,?_⟩
+  · intro K hKL n j hj
+    have h132 : S₁.R 132 = E'++outputTail := by simpa [keyLoopR] using congrArg (fun R => R 132) hframe'
+    rw [h132,hdst]
+    change publishedCellRead q w (0 : ZMod s)
+      (scatterRows (L*w) E (ys++S.R 93) (haloScatterGaps s t band a b L w)++outputTail) j = _
+    rw [← scatterRows_append (L*w) (haloScatterGaps s t band a b L w) E (ys++S.R 93) outputTail hf]
+    apply haloScatterRows_preserves_class t band a b L K q w hKL.symm (E++outputTail) (ys++S.R 93)
+      (by simp only [List.length_append]; omega) hX n j hj
+
+  · intro hEncoded
+    exact haloScatterRows_encoded s t band a b L E (S.R 93) ys hEncoded hylen
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -73,7 +73,7 @@ theorem protectedRawHaloGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
         x (lo n+(i.val : ZMod s))| ≤ 1/(2 : ℝ)^target) ∧
       (∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)
         (publishedBatchRead q w n.val L (lo n) (S'.R 93)) x (1/(2 : ℝ)^target)) ∧
-      ∃ ys : List (Fin (A+4)), ys.length = B*L*w ∧ S'.R 93 = ys ++ S.R 93 := by
+      ∃ ys : EncodedStream A w, ys.val.length = B*L*w ∧ S'.R 93 = ys ++ S.R 93 := by
   dsimp only
   let P := 2^15*p
   let N := executionStagePrecision p l target rhsExp+1

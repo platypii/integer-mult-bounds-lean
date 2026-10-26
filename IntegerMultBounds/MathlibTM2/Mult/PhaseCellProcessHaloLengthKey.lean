@@ -46,11 +46,11 @@ theorem processHaloLengthKey_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     let lo := haloGroupOrigin s t (PhaseCellBand.width p u) a b L
     let q := executionPrecision p l target rhsExp
     let w := executionWidth p l target rhsExp
-    ∃ v' S' n, ∃ ys : List (Fin (A+4)), v'.user = v.user ∧
+    ∃ v' S' n, ∃ ys : EncodedStream A w, v'.user = v.user ∧
       n ≤ (6*L+19*V+14)+conditionalHaloClassCost p l L s t u target rhsExp a b ∧
       Exec (embTab groupReg body) (processHaloLengthKey hR hQ) (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
-      ys.length = B*L*w ∧
+      ys.val.length = B*L*w ∧
       S'.R = publishedClassR (Function.update S.R 126 keyTail) (scatterRows (L*w) E (ys++S.R 93)
         (haloScatterGaps s t (PhaseCellBand.width p u) a b L w)++outputTail) ∧
       ∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)

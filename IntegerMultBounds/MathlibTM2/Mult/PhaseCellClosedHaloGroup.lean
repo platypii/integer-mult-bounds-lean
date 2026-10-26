@@ -45,7 +45,7 @@ theorem closedHaloGroup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 
         x (lo n+(i.val : ZMod s))| ≤ 1/(2 : ℝ)^target) ∧
       (∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)
         (publishedBatchRead q w n.val L (lo n) (S'.R 93)) x (1/(2 : ℝ)^target)) ∧
-      ∃ ys : List (Fin (A+4)), ys.length = B*L*w ∧ S'.R 93 = ys ++ tail := by
+      ∃ ys : EncodedStream A w, ys.val.length = B*L*w ∧ S'.R 93 = ys ++ tail := by
   dsimp only
   let band := PhaseCellBand.width p u
   let B := (haloLengthGroup s t band a b L).length

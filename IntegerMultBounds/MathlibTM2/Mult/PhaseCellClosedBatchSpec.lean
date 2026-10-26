@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellEncodedStream
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedBatchExec
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublishedAccuracy
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchCoreRead
@@ -48,7 +50,7 @@ theorem closedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 �
         x n (lo n+(i.val : ZMod s))| ≤ 1/(2 : ℝ)^target) ∧
       (∀ n : Fin B, PhaseCellInterface.ErrorOn (publishedCellCore (lo n) L)
         (publishedBatchRead q w n.val L (lo n) (S'.R 93)) (x n) (1/(2 : ℝ)^target)) ∧
-      ∃ ys : List (Fin (A+4)), ys.length = B*L*w ∧ S'.R 93 = ys ++ tail := by
+      ∃ ys : EncodedStream A w, ys.val.length = B*L*w ∧ S'.R 93 = ys ++ tail := by
   dsimp only
   let q := executionPrecision p l target rhsExp
   let w := executionWidth p l target rhsExp
@@ -75,7 +77,7 @@ theorem closedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 �
     simp [S', releasedCellBank, h93, h110]
   · intro n
     exact publishedBatchRead_errorOn q w n.val (lo n) (S'.R 93) (x n) _ (hfit n n.isLt) (hpoint n)
-  · refine ⟨cstream A w (publishedWords B L (executedOutputWords s t p u q l B L j cExp lo C)), ?_, rfl⟩
+  · refine ⟨encodedStream A w (publishedWords B L (executedOutputWords s t p u q l B L j cExp lo C)), ?_, rfl⟩
     simp [w]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
