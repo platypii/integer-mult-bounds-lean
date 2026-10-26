@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1623 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1624 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8482,3 +8482,42 @@ of the released initial pass and the composed second-component execution.
 Combined build peak is 4.3 GiB. All four new/revised Lean modules pass individual
 guarded checks at at most 2046.5 MiB. Added-source integrity, plan-status and
 whitespace checks pass; proof limits are unchanged.
+
+### Local boundary support and rounded fill for the S3–S5 handoff
+
+`halo_same_cell_interval` proves that a single ambient phase cell contains at
+most `6*w` local boundary vertices between any two of its coordinates: the
+existing ambient-boundary count contributes at most `4*w`, and the two
+artificial endpoint guard bands contribute at most `2*w`. It uses the actual
+`haloBoundary`, retaining ambient phases and periodic cuts. Empty/clipped
+halos require no extra assumptions.
+
+`halo_schur_cycRel` applies the existing elimination-support theorem to the
+actual halo principal subsystem and its generated interior set. Every
+eliminated coordinate is proved to be an ambient interior coordinate. It yields
+a cyclic boundary-rank band of half-width `6*w`; folding the actual halo
+boundary gives half-width `12*w+1` in `halo_schur_foldBRel`. This is a local
+support theorem with charged artificial cuts, rather than a relabeled full-line
+boundary result.
+
+`bandBoundaryTable` masks an approximated boundary matrix to this proved folded
+band. `bandBoundaryTable_error` proves that masking adds no entry error whenever
+the target matrix has the proved support. `haloBoundaryTable_entry_error`
+instantiates this for the exact local Schur matrix and the allocated entry
+precision, so the masked table can use the existing boundary-tolerance handoff.
+`bandBoundaryTable_factors` proves that zero-preserving rounded elimination
+retains the band and its triangular order. `foldBRel_row_card` and
+`bandBoundaryTable_factor_rows` bound supported entries per table/factor row by
+`2*W+1`, hence `24*w+3` at the local width, independently of boundary cardinality.
+
+These are support, numerical masking and rounded-fill proofs. They do not
+construct table entries, folded coordinate maps or factor pages on tape.
+Executed computed-Schur setup/solve/release, its precision and simultaneous
+page stock, the two-boundary-call composition and the global S3 fast-time bound
+remain open. S3 remains partial.
+
+Validation: all 10,270 guarded stage-audit jobs pass, including explicit audits
+for all ten new support, masking, fill and row-cardinality theorems. Combined
+build peak is 2.7 GiB. All three new/revised Lean modules pass individual guarded
+checks at at most 2043.5 MiB. Added-source integrity, plan-status and whitespace
+checks pass; proof limits are unchanged.

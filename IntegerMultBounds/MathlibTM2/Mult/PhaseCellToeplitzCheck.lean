@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryBand
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSecondComponentSchur
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginalPrefix
@@ -1587,6 +1589,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRecoveryFinishCore_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releasedSchurResidual_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.secondComponentSchur_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandBoundaryTable_support,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandBoundaryTable_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.foldBRel_row_card,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloBoundaryTable_entry_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandBoundaryTable_factors,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandBoundaryTable_factor_rows,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.halo_same_cell_interval,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.halo_cell_cycRel,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.halo_schur_cycRel,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.halo_schur_foldBRel,
+
 
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRecoveryFinish_spec,
