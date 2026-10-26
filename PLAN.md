@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1520 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1528 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. Restoring fixed-point coupling-row arithmetic has support-priced time, derived word fits and explicit RHS/coefficient/input/truncation errors. The direct cross-cell coefficient branch now generates a sufficient logarithmic workspace, loads ordinary headers, generates constants and signed-coordinate lifts, and executes the exact selected sample; offset coupling semantics retain every periodic alias. The within-cell coefficient kernel now executes two corrected similarity samples and a distance sample, combines them by exact natural division, and has a shared sufficient workspace plus selected norm/error bounds. One closed coefficient caller now loads ordinary headers, generates/releases the shared workspace, selects the diagonal/within/cross branch by natural comparisons and proves decoded error against the original signed-offset selected entry. The generated coefficient row now enumerates every retained signed offset, emits the full stream on the row coefficient port and generates its count, with exact restoration and per-word decoded error. Interior/boundary membership and a restoring masked lookup now execute from an initialized numeric geometry table. A raw-input operand preparer now captures/releases its ambient snapshot and generates aligned masked inputs, coefficients and count. An executed row caller retires both owned operand prefixes and the count after publishing its result. Geometry protection, multiplication readiness/RHS staging and one combined coupling/recovery caller remain. External publication, uniform fast time/storage and complex/boundary/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. Restoring fixed-point coupling-row arithmetic has support-priced time, derived word fits and explicit RHS/coefficient/input/truncation errors. The direct cross-cell coefficient branch now generates a sufficient logarithmic workspace, loads ordinary headers, generates constants and signed-coordinate lifts, and executes the exact selected sample; offset coupling semantics retain every periodic alias. The within-cell coefficient kernel now executes two corrected similarity samples and a distance sample, combines them by exact natural division, and has a shared sufficient workspace plus selected norm/error bounds. One closed coefficient caller now loads ordinary headers, generates/releases the shared workspace, selects the diagonal/within/cross branch by natural comparisons and proves decoded error against the original signed-offset selected entry. The generated coefficient row now enumerates every retained signed offset, emits the full stream on the row coefficient port and generates its count, with exact restoration and per-word decoded error. Interior/boundary membership and a restoring masked lookup now execute from an initialized numeric geometry table. A raw-input operand preparer now captures/releases its ambient snapshot and generates aligned masked inputs, coefficients and count. An executed row caller retires both owned operand prefixes and the count after publishing its result. A complete raw coupling-row caller now protects/restores geometry, generates/releases readiness, borrows the physical RHS, executes/publishes arithmetic and retires operands/count. Its original-matrix error contract derives operand/result fits from magnitudes. Row iteration and the boundary/recovery pipeline remain. External publication, uniform fast time/storage and complex/boundary/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -7637,3 +7637,46 @@ Validation: all 10,156 guarded stage-audit jobs pass, including the five new
 explicit theorem audits with only approved axioms; combined peak is 2.7 GiB.
 All five new modules pass individual guarded checks at at most 1939.1 MiB.
 Source-integrity, plan-status and whitespace checks pass.
+
+
+### S3 complete raw coupling row with protected geometry
+
+`withSavedHeader_exec` parks an arbitrary header on its own left stack, executes
+a framed call and restores the header exactly, for overhead `4*headerLength+4`.
+The geometry ports are outside the private multiplier bank. No additional save
+registers or prepared copies are required.
+
+`couplingReadiness_exec` reads unary precision from the coupling precision port,
+parks/restores the band header occupying the scalar setup port and generates the
+three actual multiplier counters. `borrowedRHSRow_exec` borrows a physical RHS
+prefix from its retained port, stages it above the untouched precision header,
+executes the consumed row and removes the staged RHS. The retained source and
+precision header survive. `generatedReadyRow_exec` composes this with readiness
+setup and releases every generated counter. `protectedCouplingRow_exec` parks
+and restores the three geometry headers needed as arithmetic scratch.
+
+`rawCouplingRow_exec` now composes raw ambient-source capture, aligned masked
+input/coefficient/count generation and the complete protected arithmetic call.
+Only the result prefix changes: geometry, precision, raw input, borrowed RHS,
+coefficient suffix, left stacks and all temporary storage restore exactly.
+The explicit cost is operand-generation cost plus generated arithmetic cost and
+`4*(s+t+u)+12` for geometry preservation.
+
+`rawCouplingRow_spec` derives operand/result word fits from the geometric budget,
+input/RHS magnitudes and support count. Its decoded result approximates the
+original masked `b-couple(realMatrix,T,x,i)` with error at most
+`L*2/2^q + rhsError + L*2^inputExp/2^q + K*inputError`, where `L=2*band+1` and
+`K` bounds original coefficient row mass. All periodic aliases are retained;
+there is no prepared readiness, mask, operand or result-fit premise.
+
+This closes the single-row source-capture/geometry/readiness/RHS/retirement
+integration gap recorded above. Generating the RHS sequence, executing complete
+residual/recovery row iterations, composing the boundary solver and full complex
+line, and proving uniform fast time/simultaneous storage remain open. Repeated
+source scans are still paid in the current cost. S3 remains partial; the proved
+multiplication saving is unchanged.
+
+Validation: all 10,164 guarded stage-audit jobs pass, including eleven new
+explicit theorem audits using only approved axioms. The combined audit peak is
+2.7 GiB. All eight new modules pass individual guarded checks at at most
+1946.6 MiB. Source-integrity, plan-status and whitespace checks pass.

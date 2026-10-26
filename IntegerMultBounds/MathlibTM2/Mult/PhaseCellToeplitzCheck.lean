@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawCouplingRowSpec
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConsumedIntegerRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawCouplingOperandsSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireCouplingOperands
@@ -1448,6 +1450,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloLookupWidth_fits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializeOriginHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.consumedIntegerRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.parkHeader_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.restoreHeader_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.withSavedHeader_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingInputWords_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.maskedCouplingRow_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingReadiness_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.borrowedRHSRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedReadyRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedCouplingRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawCouplingRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawCouplingRow_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.captureCouplingSource_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawCouplingOperands_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawCouplingOperands_spec,
