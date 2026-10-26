@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInteriorResidual
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRestoredInteriorResidual
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFeedCouplingPass
 
@@ -881,6 +881,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedCellRead_encodedField,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveHaloInterior_bounded_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingHeadersR_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rhsExponent_le_interiorOutputExponent,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializeInteriorOutput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.LengthKeyReady.update_output,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.initializedInteriorResidual_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseCouplingHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredInteriorResidual_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.interiorResidual_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingHeaderWidth_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installCouplingHeaders_exec,

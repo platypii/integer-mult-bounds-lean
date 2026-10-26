@@ -68,11 +68,8 @@ theorem interiorForCoupling_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (h
     borrowed outputTail E₀ hE₀ hdst h127 h138 haMaster hbMaster hready
   let S₁ : Stacks 144 A := {S with R := Function.update S.R 132 (cstream A w (chirpLine s D)++outputTail)}
   have hready₁ : LengthKeyReady (2^15*p) (executionStagePrecision p l target rhsExp+1)
-      q l s t u band 0 0 (cstream A w (chirpLine s C)++borrowed) S₁ := by
-    apply hready.of_frame (S' := S₁) (S.R 126) (S.R 127) (cstream A w (chirpLine s D)++outputTail) rfl
-    funext k
-    by_cases h126 : k = 126 <;> by_cases h127' : k = 127 <;> by_cases h132 : k = 132 <;>
-      simp [S₁,keyLoopR,h126,h127',h132]
+      q l s t u band 0 0 (cstream A w (chirpLine s C)++borrowed) S₁ :=
+    hready.update_output (cstream A w (chirpLine s D)++outputTail)
   obtain ⟨v₂,hu₂,he₂,hcoupling⟩ := installCouplingHeaders_exec (body := embTab groupReg body)
     (2^15*p) (executionStagePrecision p l target rhsExp+1) q l s t u band a b
     (cstream A w (chirpLine s C)++borrowed) v₁ S₁ hready₁

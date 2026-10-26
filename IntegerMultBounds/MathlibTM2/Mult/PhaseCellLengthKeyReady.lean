@@ -47,6 +47,17 @@ theorem LengthKeyReady.of_frame {A P N q l s t u band V w : ℕ} {input : List (
     rw [hR,keyLoopR_off S.R keys count output k h126 h127 h132]
     exact h.fresh k hk
 
+theorem LengthKeyReady.update_output {A P N q l s t u band V w : ℕ}
+    {input : List (Fin (A+4))} {S : Stacks 144 A}
+    (h : LengthKeyReady P N q l s t u band V w input S) (output : List (Fin (A+4))) :
+    LengthKeyReady P N q l s t u band V w input
+      {S with R := Function.update S.R 132 output} := by
+  apply h.of_frame (S' := {S with R := Function.update S.R 132 output})
+    (S.R 126) (S.R 127) output rfl
+  funext k
+  by_cases h126 : k = 126 <;> by_cases h127 : k = 127 <;> by_cases h132 : k = 132 <;>
+    simp [keyLoopR,h126,h127,h132]
+
 theorem count_head_isSome {A : ℕ} (keys : List ℕ) :
     (List.replicate keys.length (IntegerMultBounds.MathlibTM2.Node.tick : Fin (A+4))).head?.isSome = keys.head?.isSome := by
   cases keys <;> rfl

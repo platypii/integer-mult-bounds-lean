@@ -13,6 +13,11 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2.Fast
 def interiorOutputExponent (p l target rhsExp : ℕ) : ℕ :=
   executionExponent p l target rhsExp+2*l+4
 
+theorem rhsExponent_le_interiorOutputExponent (p l target rhsExp : ℕ) :
+    rhsExp ≤ interiorOutputExponent p l target rhsExp := by
+  dsimp [interiorOutputExponent,executionExponent,inputExponent,sourceExponent]
+  omega
+
 theorem weightedOutputNumerator_norm (q d : ℕ) (z : GaussianInt) (a : ℚ)
     (hz : ‖value q z‖ ≤ 4) (ha0 : 0 ≤ (a : ℝ)) (ha1 : (a : ℝ) ≤ 1) :
     ‖value q (weightedOutputNumerator q d z a)‖ ≤ (2 : ℝ)^(d+2) := by

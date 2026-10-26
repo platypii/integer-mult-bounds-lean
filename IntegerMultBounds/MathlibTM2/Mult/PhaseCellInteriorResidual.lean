@@ -64,6 +64,9 @@ theorem interiorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
           (couplingHeadersR (2^15*p) q s t u band a b
             (Function.update S.R 132 (cstream A w (chirpLine s D)++outputTail)))
           110 (cstream A w (chirpLine s R)++S.R 110))}) ∧
+      (∀ i, ‖value q (D i)‖ ≤ (2 : ℝ)^e) ∧
+      PhaseCellInterface.ErrorOn (haloInterior s t band a b)
+        (fun i => (value q (D i)).re) x (1/(2 : ℝ)^target) ∧
       (∀ i, ‖value q (R i)‖ ≤ (2 : ℝ)^couplingRowExponent rhsExp e (8*p+1) countExp) ∧
       ∀ i, |(value q (R i)).re-((value q (C i)).re-
         SchurDominance.couple (realMatrix s t p u) (haloInterior s t band a b) x i)| ≤
@@ -94,7 +97,7 @@ theorem interiorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
   let R := couplingRowField (2^15*p) q t u band a b false D C
   have hfit : ∀ i, Fits w (R i) := fun i => fits_of_value_power hrowWidth _ (hRnorm i)
   have hw : 0 < w := by dsimp [w,executionWidth]; omega
-  refine ⟨v₂,n₁+n₂,D,hu₂.trans hu₁,?_,(Exec.seq he₁ he₂).cast rfl ?_,hRnorm,?_⟩
+  refine ⟨v₂,n₁+n₂,D,hu₂.trans hu₁,?_,(Exec.seq he₁ he₂).cast rfl ?_,hDnorm,hDerror,hRnorm,?_⟩
   · change n₁+n₂ ≤ interiorForCouplingCost p l s t u target rhsExp a b+
       feedCouplingPassCost (2^15*p) q w s t u band a b
     simpa only [q,w,band] using Nat.add_le_add hn₁ hn₂
