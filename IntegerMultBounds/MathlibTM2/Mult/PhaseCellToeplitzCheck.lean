@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedHaloClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloScatterPreservesClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedHaloScatter
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedHaloPublicationControls
@@ -1204,6 +1205,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.protectedHaloPublicationControls_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.protectedHaloScatter_exec,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloClass_intervals_separated,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireHaloGroupCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finishHaloClass_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copiedGroupR_endpoint,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copiedHaloGroupR_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.groupProject_haloEndpoints,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copiedHaloGroup_project,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installHaloGroupHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedControlledHaloGroupInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedHaloBatchSolve_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedHaloClass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedHaloGroupInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawHaloGroup_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.finishControlledHaloGroupInput_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
