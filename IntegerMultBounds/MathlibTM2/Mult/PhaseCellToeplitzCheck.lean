@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloInteriorCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunGeneratedHaloKeys
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedHaloClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloScatterPreservesClass
@@ -1233,6 +1234,21 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseEmptyHaloGroup_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runGeneratedHaloKeys_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runHaloKeys_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.haloClassCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.initializeHaloLengthKeysCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.haloLengthKeyLoopCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveHaloInteriorCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.initializedKeyRuntimeR_copiedHaloGroupR,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.initializeHaloLengthKeys_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedPrepareHaloLengthKeys_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseHaloGroupHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveHaloInterior_spec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthGroup_nodup,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthGroup_fiber,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_cell_count,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.sum_fiber_card_mul,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_volume,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthKeys_cost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do

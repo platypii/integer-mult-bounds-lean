@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1402 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1409 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Equal-origin RHS replicas now share exact generated weights and inverse construction. Clipped halo geometry, cell execution and descriptor and positive distinct length-key generation from ordinary headers with full scratch release are proved. Grouped-line integration/amortization, fast time/storage, initialized halo caller, and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Equal-origin RHS replicas now share exact generated weights and inverse construction. Clipped halo geometry, cell execution and descriptor and positive distinct length-key generation from ordinary headers with full scratch release are proved. Grouped-line integration/amortization, fast time/storage, halo grouped amortization, and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -7167,7 +7167,7 @@ empty classes and proves uniform accuracy over the entire clipped interior.
 Previously published classes retain their exact physical reads, so the final
 error has no key-count factor. Every class and loop operation is paid.
 
-The initialized halo caller still needs to transfer generated keys and widths
+The halo grouped amortization still needs to transfer generated keys and widths
 into this bank and release its runtime headers. Grouped amortization, uniform
 fast time and execution-wide storage, and complex/boundary/coupling/recovery/
 full-line assembly remain open. S3 remains partial.
@@ -7176,3 +7176,30 @@ Validation: all 10,030 stage audit jobs pass with only approved axioms. The
 guarded audit build peaks at 2.7 GiB; all twelve new modules pass individual
 guarded checks, each at most 2000.7 MiB. Source-integrity, plan-status and
 whitespace checks pass.
+
+### S3 initialized halo interior solver and whole-interior ledger
+
+`solveHaloInterior_spec` is now one fixed initialized program from ordinary
+retained master parameters, endpoints and raw ambient input. It generates its
+positive distinct keys, count and both widths, transfers them into the outer
+runtime, releases private header copies, executes the counted halo class loop
+and releases runtime widths. Every stack except the ambient output is restored
+exactly, including raw source, endpoint/master headers and borrowed suffixes.
+Uniform error on the complete clipped interior of the original ambient matrix
+is proved. No prepared key queue or count is an input.
+
+The halo schedule has exact coordinate volume equal to the clipped interior
+cardinality, at most one cell per original phase, and at most six key setups.
+`solveHaloInteriorCost_le` separates these charges for the actual executed
+program, including initialization, endpoint handling and final release. The
+private header-release proof is shared with empty-class cleanup.
+
+This is a geometry-separated ledger, not the required fast asymptotic estimate.
+Grouped amortization and execution-wide storage remain open. Complex execution,
+boundary/coupling/recovery and full-line assembly are also incomplete. S3 remains
+partial.
+
+Validation: all 10,038 stage audit jobs pass with only approved axioms. The
+guarded audit build peaks at 2.7 GiB; all nine new or revised non-audit
+modules pass individual guarded checks, each at most 2005.7 MiB. Source
+integrity, plan-status and whitespace checks pass.
