@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1629 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1632 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8559,3 +8559,40 @@ new execution, cost and coordinate-order/volume audits. Combined build peak is
 2.7 GiB. All six new/revised Lean modules pass individual guarded checks at at
 most 2046.5 MiB. Added-source integrity, plan-status and whitespace checks pass;
 proof limits are unchanged.
+
+### Prepared boundary cardinality and the existing tape fold
+
+`preparedBoundaryOrder` generates the geometry width on 115, runs the actual
+boundary-coordinate generator on owned port 109, and applies the existing
+restoring fixed-width word counter to generate unary boundary cardinality on
+116. Its exact execution theorem retains these three owned outputs and restores
+every other stack. The count is derived from the emitted coordinates; no
+boundary cardinality is supplied. Counting costs `|B|*(6*V+6)+4`, in addition to
+the paid width/header/enumeration programs. Empty boundary pages are admitted.
+
+`boundaryOrderSymbols_cstream` identifies the generated coordinate symbols as
+ordinary encoded Gaussian words with real part equal to the ambient natural
+coordinate and imaginary part zero. `foldList_bOrder` proves that interleaving
+the first half of the actual natural boundary order with its reversed second
+half gives exactly `bFoldOrder` of that same boundary. Mapping this equality to
+the coordinate words yields `boundaryIndexWords_fold`.
+
+`boundaryFold_runs` instantiates the existing proved `bandFoldLineP` tape
+program on those words. It consumes the owned natural-order page, produces the
+canonical folded coordinate page and restores the other valuation entries and
+all registers outside its bank. Its bound is
+`60*(|B|+1)*V+60*|B|+60`, with explicit width, cardinality and half-count counter
+preconditions. This reuses the structural linear fold rather than introducing
+a second folding implementation.
+
+The prepared-order page now supplies actual width and boundary cardinality.
+Generating/loading the fold's half-count counters and composing the bank adapter
+remain open; this is not yet a closed folded-setup theorem. Schur-entry response
+generation, computed factor setup/solve/release and the complete S3 uniform
+fast-time/simultaneous-storage endpoint also remain open. S3 remains partial.
+
+Validation: all 10,287 guarded stage-audit jobs pass, including nine explicit
+new list/encoding, fold-execution and prepared-page execution audits. Combined
+build peak is 2.7 GiB. All four new/revised Lean modules pass individual guarded
+checks at at most 2052.2 MiB. Added-source integrity, plan-status and whitespace
+checks pass; proof limits are unchanged.
