@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginalPrefix
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedSchurResidual
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryTolerance
@@ -1569,6 +1571,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairedCellRead_parts,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairedComponents_physical_accuracy,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.finishComponents_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.saveOriginalPrefix_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.restoreOriginalPrefix_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.restoreOriginalPrefix_after,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalPrefix_roundTrip,
+
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRecoveryFinish_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentProject_updateR_inner,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.movePrefix_exec,

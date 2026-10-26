@@ -29,7 +29,7 @@ theorem finishComponents_spec {P N q l s t u band : ℕ} [NeZero s] (hA : 4 ≤ 
     (hready : LengthKeyReady P N q l s t u band 0 0 (recovery++(rhs++tail)) (embStk componentReg S))
     (hx : S.R 145 = cstream A (2*q+8) (chirpLine s X)++savedTail)
     (hy : S.R 132 = cstream A (2*q+8) (chirpLine s Y)++outputTail)
-    (h146 : S.R 146 = []) (h147 : S.R 147 = []) :
+    (h147 : S.R 147 = []) :
     let Z := cstream A (2*q+8) (chirpLine s (fun i => pairComponentWord (X i) (Y i)))++outputTail
     let S' : Stacks 148 A := {S with R := Function.update (Function.update (Function.update S.R 110 tail) 145 savedTail) 132 Z}
     ∃ v' n, v'.user = v.user ∧ n ≤ finishComponentsCost q s ∧
@@ -51,7 +51,7 @@ theorem finishComponents_spec {P N q l s t u band : ℕ} [NeZero s] (hA : 4 ≤ 
     (by simpa [componentReg] using hfresh 131 (by simp))
     (by simpa [componentReg] using hfresh 134 (by simp))
     (by simpa [componentReg] using hfresh 135 (by simp))
-    (by simpa [componentReg] using hfresh 136 (by simp)) h146 h147
+    (by simpa [componentReg] using hfresh 136 (by simp)) (by simpa [componentReg] using hfresh 140 (by simp)) h147
   refine ⟨v',n,hu,hn,?_,?_,?_⟩
   · simpa only [pairComponentWords_chirpLine] using he
   · simpa only [Function.update_self] using

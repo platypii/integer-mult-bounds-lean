@@ -57,7 +57,7 @@ theorem retainedRecoveryFinish_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
         (cstream A (executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp)
           (chirpLine s X)++savedTail) i) realTarget (1/(2 : ℝ)^(target+1)))
     (h145 : S.R 145 = cstream A (executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp)
-      (chirpLine s X)++savedTail) (h146 : S.R 146 = []) (h147 : S.R 147 = []) :
+      (chirpLine s X)++savedTail) (h147 : S.R 147 = []) :
     let q := executionPrecision p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp
     let w := executionWidth p l (recoveryFirstTarget p (recoveryTarget p (target+1)) rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) rhsExp
     let band := PhaseCellBand.width p u
@@ -117,7 +117,7 @@ theorem retainedRecoveryFinish_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     (by simp [hwq,chirpLine]) (by simp [hwq,chirpLine])
     (by simpa only [hwq] using hX') (by simpa only [hwq] using hY')
     v₁ S₁ hready₁ (by simpa [S₁,← hwq] using h145) (by simp [S₁,output,hwq])
-    (by simpa [S₁] using h146) (by simpa [S₁] using h147)
+    (by simpa [S₁] using h147)
   refine ⟨v₂,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,
     (Exec.seq he₁ he₂).cast rfl ?_,?_,?_⟩
   · apply congrArg (mk v₂)

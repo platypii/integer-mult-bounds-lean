@@ -30,7 +30,7 @@ theorem finishComponents_exec (hA : 4 ≤ A) (q s : ℕ) (xs ys : List GaussianI
     (hsrc : S.R 110 = recovery++(rhs++tail))
     (hx : S.R 145 = cstream A (2*q+8) xs++savedTail) (hy : S.R 132 = cstream A (2*q+8) ys++outputTail)
     (h94 : S.R 94 = []) (h131 : S.R 131 = []) (h134 : S.R 134 = []) (h135 : S.R 135 = [])
-    (h136 : S.R 136 = []) (h146 : S.R 146 = []) (h147 : S.R 147 = []) :
+    (h136 : S.R 136 = []) (h140 : S.R 140 = []) (h147 : S.R 147 = []) :
     ∃ v' n, v'.user = v.user ∧ n ≤ finishComponentsCost q s ∧
       Exec (embTab componentReg body) finishComponents (mk v S) n
         (mk v' {S with R := (Function.update (Function.update (Function.update S.R 110 tail) 145 savedTail)
@@ -60,7 +60,7 @@ theorem finishComponents_exec (hA : 4 ≤ A) (q s : ℕ) (xs ys : List GaussianI
     recovery rhs tail savedTail outputTail hr hb v₃ S₂ (by simp [S₂])
     (by simpa [S₂,S₁] using hsrc) (by simpa [S₂,S₁] using hx) (by simpa [S₂,S₁] using hy)
     (by simpa [S₂,S₁] using h134) (by simpa [S₂,S₁] using h136)
-    (by simpa [S₂,S₁] using h146) (by simpa [S₂,S₁] using h147)
+    (by simpa [S₂,S₁] using h140) (by simpa [S₂,S₁] using h147)
   let Z := cstream A w (List.zipWith pairComponentWord xs ys)++outputTail
   let S₃ : Stacks 148 A := {S₂ with R := (Function.update (Function.update (Function.update S₂.R 110 tail) 145 savedTail) 132 Z)}
   obtain ⟨v₅,hu₅,he₅⟩ := clearWords_exec (body := embTab componentReg body) [(94 : Fin 148),131] (by decide) v₄ S₃

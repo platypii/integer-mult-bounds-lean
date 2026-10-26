@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1616 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1617 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8349,3 +8349,31 @@ explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All four new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2043.6 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 preserved original-input prefix
+
+The complex finalizer now uses released low-bank register 140 for its copied
+clock. Its readiness contract already proves this register empty, so callers no
+longer need an empty register 146. The complete retained recovery/finalization
+execution preserves arbitrary contents of 146 without increasing the register
+bank or the existing time bound.
+
+`saveOriginalPrefix_exec` copies the original complex input from 110 to 146
+above its borrowed suffix, preserving the complete projected real-solver bank.
+`restoreOriginalPrefix_exec` restores the original input above its borrowed
+suffix and releases the saved prefix. Their exact costs are 10 bytes+10 and
+6 bytes+6, respectively. `originalPrefix_roundTrip` composes the two operations
+around an arbitrary executed owned-input computation, preserving its other
+results and restoring both borrowed suffixes. This uses structural prefix
+lemmas rather than new concrete checks.
+
+The caller still needs to generate and clear the byte clock around these
+operations and compose them around the actual complete two-pass sequence.
+S5's executed table/solve, initial-interior retirement, uniform fast time and
+simultaneous storage remain open; S3 remains partial.
+
+Validation: all 10,258 guarded stage-audit jobs pass, including four new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All seven new/revised Lean modules pass individual guarded checks,
+with a maximum of 2042.4 MiB. Added-source integrity, plan-status and whitespace
+checks pass; proof limits are unchanged.

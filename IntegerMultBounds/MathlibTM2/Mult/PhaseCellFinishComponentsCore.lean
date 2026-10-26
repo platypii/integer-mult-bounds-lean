@@ -25,7 +25,7 @@ theorem finishComponentsCore_exec (hA : 4 ≤ A) (s w : ℕ) (xs ys : List Gauss
     (v : HS 148 Q A U) (S : Stacks 148 A) (hcount : (S.R 131).length = s*w)
     (hsrc : S.R 110 = recovery++(rhs++tail))
     (hx : S.R 145 = cstream A w xs++savedTail) (hy : S.R 132 = cstream A w ys++outputTail)
-    (h134 : S.R 134 = []) (h136 : S.R 136 = []) (h146 : S.R 146 = []) (h147 : S.R 147 = []) :
+    (h134 : S.R 134 = []) (h136 : S.R 136 = []) (h140 : S.R 140 = []) (h147 : S.R 147 = []) :
     ∃ v' n, v'.user = v.user ∧ n ≤ 28*s*w+26 ∧
       Exec body finishComponentsCore (mk v S) n
         (mk v' {S with R := (Function.update (Function.update (Function.update S.R 110 tail) 145 savedTail)
@@ -42,7 +42,7 @@ theorem finishComponentsCore_exec (hA : 4 ≤ A) (s w : ℕ) (xs ys : List Gauss
   obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := finishComponentPair_exec (body := body) hA s w xs ys hxlen hylen
     savedTail outputTail v₂ S₂ (by simpa [S₂,S₁] using hcount)
     (by simpa [S₂,S₁] using hx) (by simpa [S₂,S₁] using hy)
-    (by simpa [S₂,S₁] using h134) (by simpa [S₂,S₁] using h146) (by simpa [S₂,S₁] using h147)
+    (by simpa [S₂,S₁] using h134) (by simpa [S₂,S₁] using h140) (by simpa [S₂,S₁] using h147)
   refine ⟨v₃,(6*recovery.length+6)+((6*rhs.length+6)+n₃),hu₃.trans (hu₂.trans hu₁),?_,
     (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl ?_⟩
   · rw [hr,hb]
