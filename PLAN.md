@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1621 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1623 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8443,3 +8443,42 @@ retirement execution and readiness. Combined build peak is 2.7 GiB. All four
 new/revised Lean modules pass individual guarded checks at at most 2044.7 MiB.
 Added-source integrity, plan-status and whitespace checks pass; proof limits
 are unchanged.
+
+### S3 executed transition through the second Schur RHS
+
+`releasedSchurResidual` composes the actual retained initial interior/residual
+pass with generated retirement of its temporary interior stream. It returns
+only the computed residual above the original RHS on 110, restoring 132 and
+all spectator banks exactly. Its numerical contract constructs the interior
+reference solve internally, derives the residual magnitude and realness,
+provides its amplified quarter-error bound on the actual halo boundary, and
+identifies its physical read. Its cost pays both executed programs.
+
+The first complex-input `preparedSchurResidual` now uses this shared caller,
+removing its duplicate retirement composition with the same exact state and
+cost. This is also the initial-pass caller for the second component.
+
+`secondComponentSchur` executes first recovery/publication, saves its real result
+on 145, retires the first component's owned RHS prefixes, moves the parked
+second RHS from 144 to 110, and executes the released initial Schur pass on that
+second RHS. Its single execution theorem supplies both the saved first-result
+accuracy and the second residual's magnitude, realness, amplified boundary
+error, actual physical read and solver readiness. Its exact state restores
+132 to its borrowed suffix, releases the parked prefix on 144, and preserves
+the saved original input on 146. It accepts encoded parked input with a proved
+magnitude, rather than a supplied second interior solution, residual or
+execution. The theorem works at the common allocated precision; the final
+complex caller instantiates the component target one bit above its requested
+output target.
+
+This closes the executed first-recovery-to-second-initial-pass composition.
+The remaining boundary results must still come from S5's executed computed
+Schur table/setup/solve, with paid release and support/precision/storage proofs.
+The complete two-boundary-call composition, scaling/final rounding, uniform
+fast time and simultaneous storage remain open. S3 remains partial.
+
+Validation: all 10,264 guarded stage-audit jobs pass, including explicit audits
+of the released initial pass and the composed second-component execution.
+Combined build peak is 4.3 GiB. All four new/revised Lean modules pass individual
+guarded checks at at most 2046.5 MiB. Added-source integrity, plan-status and
+whitespace checks pass; proof limits are unchanged.

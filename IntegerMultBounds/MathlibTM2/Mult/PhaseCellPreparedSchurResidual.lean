@@ -1,8 +1,7 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedSchurResidual
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleasedSchurResidual
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginalInputReady
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireInitialInteriorReady
 
 /-! Prepare a complex RHS and execute the first real Schur-residual pass with its allocated budget. -/
 
@@ -18,13 +17,13 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 noncomputable def preparedSchurResidual (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 148 Q A U :=
-  .seq saveOriginalInput (.seq preparedComponentInputs (.seq (retainedSchurResidual hR hQ) retireInitialInterior))
+  .seq saveOriginalInput (.seq preparedComponentInputs (releasedSchurResidual hR hQ))
 
 def preparedSchurResidualCost (p l s t u target rhsExp a b : ℕ) : ℕ :=
   let firstTarget := initialSchurTarget p u target rhsExp
   let q := executionPrecision p l firstTarget rhsExp
   saveOriginalInputCost q s+(preparedComponentInputsCost q s+
-    (realInteriorResidualCost p l s t u firstTarget rhsExp a b+retireInitialInteriorCost q s))
+    releasedSchurResidualCost p l s t u target rhsExp a b)
 
 theorem preparedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target rhsExp a b : ℕ} [NeZero s] {α d : ℝ}
@@ -91,52 +90,32 @@ theorem preparedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     simpa [← hwq,S₁,S₀,X,Y,B₁,chirpLine,List.map_map,Function.comp_def] using hready₁
   have hB₁ : ∀ i, ‖value q (B₁ i)‖ ≤ (2 : ℝ)^rhsExp := fun i =>
     (componentWords_norm_le q (B i)).1.trans (hB i)
-  obtain ⟨v₂,n₂,D,R,hRsolve,hu₂,hn₂,he₂,hCreal,hCnorm,hCerror,hread,hready₂⟩ := retainedSchurResidual_spec (body := body)
+  obtain ⟨v₂,n₂,D,R,hRsolve,hu₂,hn₂,he₂,hCreal,hCnorm,hCerror,hread,hready₂⟩ := releasedSchurResidual_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad B₁ hB₁ v₁ S₁ tail
     (by simpa [S₁,S₀] using h127) (by simpa [S₁,S₀] using h138) (by simpa [S₁,S₀] using h143)
-    (by simpa [S₁,S₀] using haMaster) (by simpa [S₁,S₀] using hbMaster) hready₁'
+    (by simpa [S₁,S₀] using haMaster) (by simpa [S₁,S₀] using hbMaster) hready₁' (by simpa [S₁,S₀] using h147)
   let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let input := cstream A w (chirpLine s C)++X
-  let output := cstream A w (chirpLine s D)++S.R 132
-  let S₂ : Stacks 148 A := {S₁ with R := Function.update (Function.update S₁.R 110 input) 132 output}
-  let Sfinal : Stacks 148 A := {S with R := (Function.update (Function.update (Function.update (Function.update S.R 110 input) 132 output) 144 Y) 146 (original++S.R 146))}
-  have he₂' : Exec (embTab componentReg (embTab groupReg body)) (retainedSchurResidual hR hQ)
+  let S₂ : Stacks 148 A := {S₁ with R := Function.update S₁.R 110 input}
+  let Sfinal : Stacks 148 A := {S with R := (Function.update (Function.update (Function.update S.R 110 input) 144 Y) 146 (original++S.R 146))}
+  have he₂' : Exec (embTab componentReg (embTab groupReg body)) (releasedSchurResidual hR hQ)
       (mk v₁ S₁) n₂ (mk v₂ S₂) := he₂
   have hframe : S₂ = Sfinal := by
     refine Stacks.ext rfl rfl rfl ?_
     funext k
     by_cases h110 : k = 110 <;> by_cases h132 : k = 132 <;> by_cases h144 : k = 144 <;> by_cases h146 : k = 146 <;>
-      simp [S₂,Sfinal,S₁,S₀,input,output,h110,h132,h144,h146]
+      simp [S₂,Sfinal,S₁,S₀,input,h110,h132,h144,h146]
   rw [hframe] at he₂'
   have hread' : ∀ i, publishedCellRead q w (0 : ZMod s) (S₂.R 110) i = (value q (C i)).re := hread
   rw [hframe] at hread'
   have hready₂' : LengthKeyReady (2^15*p) (executionStagePrecision p l firstTarget rhsExp+1)
       q l s t u band 0 0 input (embStk componentReg S₂) := hready₂
   rw [hframe] at hready₂'
-  obtain ⟨v₃,n₃,hu₃,hn₃,he₃,hready₃⟩ := retireInitialInterior_ready (body := embTab groupReg body)
-    (cstream A w (chirpLine s D)) (S.R 132) input (by simp [chirpLine,hwq])
-    v₂ Sfinal hready₂' (by simp [Sfinal,output]) (by simpa [Sfinal] using h147)
-  let S₃ : Stacks 148 A := {Sfinal with R := Function.update Sfinal.R 132 (S.R 132)}
-  let Sreleased : Stacks 148 A := {S with R := (Function.update (Function.update
-    (Function.update S.R 110 input) 144 Y) 146 (original++S.R 146))}
-  have hrelease : S₃ = Sreleased := by
-    refine Stacks.ext rfl rfl rfl ?_
-    funext k
-    by_cases h110 : k = 110 <;> by_cases h132 : k = 132 <;>
-      by_cases h144 : k = 144 <;> by_cases h146 : k = 146 <;>
-      simp [S₃,Sfinal,Sreleased,h110,h132,h144,h146]
-  have he₃' : Exec (embTab componentReg (embTab groupReg body)) retireInitialInterior
-      (mk v₂ Sfinal) n₃ (mk v₃ S₃) := he₃
-  rw [hrelease] at he₃'
-  have hready₃' : LengthKeyReady (2^15*p) (executionStagePrecision p l firstTarget rhsExp+1)
-      q l s t u band 0 0 input (embStk componentReg S₃) := hready₃
-  rw [hrelease] at hready₃'
-  refine ⟨v₃,n₀+(n₁+(n₂+n₃)),D,R,hRsolve,hu₃.trans (hu₂.trans (hu₁.trans hu₀)),
-    Nat.add_le_add hn₀ (Nat.add_le_add hn₁ (Nat.add_le_add hn₂ hn₃)),
-    Exec.seq he₀' (Exec.seq he₁' (Exec.seq he₂' he₃')),hCreal,hCnorm,?_,?_,hready₃'⟩
+  refine ⟨v₂,n₀+(n₁+n₂),D,R,hRsolve,hu₂.trans (hu₁.trans hu₀),
+    Nat.add_le_add hn₀ (Nat.add_le_add hn₁ hn₂),
+    Exec.seq he₀' (Exec.seq he₁' he₂'),hCreal,hCnorm,?_,hread',hready₂'⟩
   · intro i hi
     have hid (z : GaussianInt) : realPartWord (realPartWord z) = realPartWord z := rfl
     simpa only [B₁,hid,value_realPartWord_re] using hCerror i hi
-  · simpa [Sreleased,Sfinal,input,C,X,band,w,q,firstTarget] using hread'
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSecondComponentSchur
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginalPrefix
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedSchurResidual
@@ -1583,6 +1585,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.saveOriginalInput_ready,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoreOriginalInput_ready,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRecoveryFinishCore_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releasedSchurResidual_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.secondComponentSchur_spec,
 
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRecoveryFinish_spec,
