@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunNaturalLengthKeys
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProcessLengthKey
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConditionalGroupPreparation
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedNaturalClass
@@ -996,6 +997,22 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedControlledClass_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.conditionalNaturalClass_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.processLengthKey_spec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalStop_le_start,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.naturalClass_intervals_separated,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalScatterRows_preserves_class,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.keyLoopR_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.keyLoopR_comp,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.keyLoopR_self,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.publishedClassR_clean,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.keyLoopR_step,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.groupHeaderSources_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.keyLoopR_headers,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.LengthKeyReady.of_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.count_head_isSome,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.lengthKeyStep_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.lengthKeyLoop_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runLengthKeys_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runNaturalLengthKeys_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do

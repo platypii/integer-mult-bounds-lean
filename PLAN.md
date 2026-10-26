@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1301 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1308 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | One decoded binary key now executes the runtime-selected empty or nonempty class operation, reusing generated origins/controls through the actual solve, source restoration, accurate ambient publication and cleanup. The remaining key suffix and count metadata are preserved. Positive key discovery/count and exact interior volume/error are proved. The generated-key loop/initialization, uniform time/storage, halo cuts and complex/boundary/coupling/recovery/full-line composition remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed counted loop executes the positive distinct length schedule, preserves borrowed suffixes and earlier-class accuracy, and proves the same whole-interior error on the physical ambient output. Class setup/solve/publication/cleanup and key discovery are executed. Composition of queue/header initialization, uniform time/storage, halo cuts and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6692,3 +6692,50 @@ axiom-audit jobs at 2.7 GiB combined peak. All nine new or revised non-audit
 modules pass individual guarded checks; maximum measured peak is 1992.2 MiB.
 Default proof limits are unchanged. Source integrity, generated-summary and
 whitespace checks pass.
+
+
+### S3 counted key loop and final whole-interior accuracy
+
+`naturalClass_intervals_separated` proves that different length classes occupy
+separated original-coordinate natural intervals. `naturalScatterRows_preserves_class`
+uses that separation to preserve the exact encoded word reads on every other
+class when one class is published. Thus an earlier accuracy bound survives
+later publication with no extra arithmetic or key-count error.
+
+`lengthKeyStep_spec` executes the actual counted iteration body: discard one
+owned count symbol, decode/process one key, then inspect the remaining count.
+It restores the private bank and exposes the unchanged remaining class reads.
+`LengthKeyReady.of_frame` carries the retained-header/source/scratch invariant
+between iterations. The only changed right stacks are the owned queue on 126,
+count on 127 and ambient output on 132; all left stacks and native input/output
+are restored.
+
+`lengthKeyLoop_spec` structurally proves one fixed loop for an arbitrary distinct
+key list. Each iteration invokes the actual runtime-selected solver/publication
+program. The induction retains the final accuracy of every processed class by
+preserving its physical reads through the remaining iterations. It consumes
+exactly the owned count and packet prefix, leaves the borrowed key suffix and
+output suffix intact, and handles an empty schedule directly. No saved counter
+archive is required: the generated count is owned and consumed by the loop.
+
+`runLengthKeys_spec` reads the initial count and enters that loop. Its bound is
+`sum(keys.map (fun L => 6*L+19*V+14 + conditionalNaturalClassCost(...,L,...) + 3))+2`:
+three per-key control steps, one initial count read and one terminal loop test,
+in addition to the already paid decoder/class costs.
+`runNaturalLengthKeys_spec` instantiates the exact positive distinct schedule,
+including empty candidate classes, with the shared padding and binary-width
+bounds. Coverage of the original interior transfers the loop's final per-class
+accuracy to `ErrorOn (interiorSet ...)` on the final physical ambient output,
+with the requested `1/2^target` bound and no class-count factor.
+
+The loop theorem starts from the queued generated keys/count and retained
+ordinary headers. Composing their executable initialization (including the
+protected width headers) and final release remains open. Uniform fast
+solver/time and execution-wide storage bounds, artificial halo cuts and
+complex/boundary/coupling/recovery/full-line composition also remain open.
+S3 is incomplete and the proved saving is unchanged.
+
+The counted-loop/whole-interior checkpoint passes all 9927 guarded S3
+axiom-audit jobs at 2.6 GiB combined peak. All eight new modules pass individual
+guarded checks; the largest final-check peak is 1974.0 MiB. Default proof limits
+are unchanged. Source integrity, generated-summary and whitespace checks pass.
