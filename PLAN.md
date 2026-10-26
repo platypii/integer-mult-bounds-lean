@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1287 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1295 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | A nonempty real natural class executes in a protected 144-register caller from ordinary unary parameters and ambient input, with generated origins/count/gather/publication controls, shared numerical setup, accurate ambient publication and complete per-class cleanup. Positive distinct keys/count, per-key installation/probing and exact interior volume/error are proved. Global class iteration, uniform time/storage, halo cuts and complex/boundary/coupling/recovery/full-line composition remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | A nonempty real natural class executes through generated setup, the actual solve, source restoration, accurate ambient publication and cleanup. Runtime conditional preparation cleans empty classes and retains computed origins for the nonempty continuation. Positive key discovery/count, per-key installation and exact interior volume/error are proved. The guarded numerical continuation/key loop, uniform time/storage, halo cuts and complex/boundary/coupling/recovery/full-line composition remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6596,3 +6596,52 @@ jobs at 4.3 GiB combined peak. All six new or revised non-audit modules pass
 individual guarded checks; maximum measured peak is 1982.2 MiB. Default proof
 limits are unchanged. Source integrity, generated-summary and whitespace checks
 pass.
+
+
+### S3 shared origin probe and executed empty-class preparation
+
+`prepareOriginControls_exec` factors the existing runtime width generation and
+origin/count scan into a stage that retains both width headers. The original
+`generateOriginControls_exec` now composes this stage with width release and
+keeps its original API and bound. `completeGatherControls_exec` continues from
+those retained origins, count and widths, constructing gather controls and
+releasing the width headers. The original nonempty
+`generateOriginAndGatherControls_exec` reuses these stages with its original
+API and bound. The origin scan is performed once in either composition.
+
+`probePreparedOrigins_exec` reads the actual generated row count while retaining
+the origins and widths. `probeAndGatherControls_exec` uses that flag in a fixed
+runtime conditional: a nonempty class completes gather controls from the same
+origin packets; an empty class releases the widths and restores the original
+bank. It returns the exact nonempty-class flag. Its bound is the original
+origin-control cost, plus the nonempty-only advance-control cost, plus three
+control steps. `probeNaturalGroupInputBank_exec` supplies the corresponding
+ordinary-parameter bank interface.
+
+`releaseUnaryHeaders_exec` structurally restores a bank after a distinct list
+of private unary header copies. `releaseEmptyGroup_exec` instantiates it for
+the outer caller and clears the current length on 128, charging
+`2*(P+N+q+l+s+t+u+band+3*L)+23`. It preserves ambient source/output and all
+pending key metadata. `conditionalGroupPreparation_exec` now executes header
+installation, the embedded runtime probe/control preparation and the empty
+cleanup branch in the actual 144-register caller. An empty class returns every
+right stack to its original value except the released current length; a
+nonempty class retains the exact controlled private bank and all outer
+metadata. Native input/output and all left stacks are preserved, and the
+returned flag is the computed class-emptiness decision.
+
+This is the conditional preparation/empty-exit endpoint. Connecting its
+nonempty controlled-bank continuation to publication setup, the actual
+numerical solve and publication, then closing the generated-key loop and its
+initialization, remains open. The existing complete nonempty-class theorem
+still verifies independently. Uniform fast solver/time and execution-wide
+storage bounds, artificial halo cuts and complex/boundary/coupling/recovery/
+full-line composition also remain open. S3 is incomplete and the proved saving
+is unchanged.
+
+The conditional-preparation/empty-exit checkpoint passes all 9913 guarded S3
+axiom-audit jobs at 10.7 GiB combined peak, including the existing complete
+nonempty-class pipeline after the shared-stage refactor. All eleven new or
+revised non-audit modules pass individual guarded checks; maximum measured peak
+is 1963.1 MiB. Default proof limits are unchanged. Source integrity,
+generated-summary and whitespace checks pass.

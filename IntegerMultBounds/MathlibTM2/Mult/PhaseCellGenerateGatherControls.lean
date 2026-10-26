@@ -1,7 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateOriginControls
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalAdvanceControls
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCompleteGatherControls
 
 /-! Generate origin packets, batch count and RHS sweep controls together from
 ordinary parameters. One pair of generated width sources serves both controllers. -/
@@ -18,8 +17,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 def generateOriginAndGatherControls : Pr P₀ 117 Q A U :=
-  .seq generateRuntimeWidth (.seq generateWeightWidth
-    (.seq cleanOriginController (.seq preparedNaturalAdvanceControls (clearWords [94, 115]))))
+  .seq prepareOriginControls completeGatherControls
 
 def originAndGatherControlsR (A V s t band L w : ℕ) (R : Fin 117 → List (Fin (A+4))) :=
   Function.update (originControlsR A V s t band L R) 91
@@ -28,6 +26,18 @@ def originAndGatherControlsR (A V s t band L w : ℕ) (R : Fin 117 → List (Fin
 def generateOriginAndGatherControlsCost (P q s t u band L : ℕ) : ℕ :=
   generateOriginControlsCost P q s t u band L +
     preparedNaturalAdvanceCost (weightWorkspaceWidth P q (2*q+8) t u) s t band L (2*q+8)
+
+theorem completed_preparedOriginR (A P q s t u band L : ℕ) (R : Fin 117 → List (Fin (A+4)))
+    (h94 : R 94 = []) (h115 : R 115 = []) :
+    completedGatherR A s t band L (2*q+8) (preparedOriginR A P q s t u band L R) =
+      originAndGatherControlsR A (weightWorkspaceWidth P q (2*q+8) t u) s t band L (2*q+8) R := by
+  funext k
+  by_cases hk94 : k = 94
+  · subst k; simp [completedGatherR,originAndGatherControlsR,originControlsR,h94]
+  by_cases hk115 : k = 115
+  · subst k; simp [completedGatherR,originAndGatherControlsR,originControlsR,h115]
+  simp [completedGatherR,preparedOriginR,originAndGatherControlsR,originControlsR,
+    Function.update_apply,hk94,hk115]
 
 theorem generateOriginAndGatherControls_exec (P q s t u band L : ℕ)
     (hP : 13 ≤ P) (hs : 0 < s) (hst : s < t) (hu : 1 ≤ u)
@@ -44,71 +54,36 @@ theorem generateOriginAndGatherControls_exec (P q s t u band L : ℕ)
         (mk v' { S with R := originAndGatherControlsR A (weightWorkspaceWidth P q (2*q+8) t u) s t band L (2*q+8) S.R }) := by
   let w := 2*q+8
   let V := weightWorkspaceWidth P q w t u
-  obtain ⟨v₁, hu₁, he₁⟩ := generateRuntimeWidth_exec (body := body) q v S hq
-    (hfresh 94 (by simp)) (hfresh 104 (by simp))
-  let S₁ : Stacks 117 A := { S with R := Function.update S.R 94 (List.replicate w tick) }
-  obtain ⟨v₂, m₂, hu₂, hm₂, he₂⟩ := generateWeightWidth_exec (body := body) P q w t u v₁ S₁
-    (by simpa [S₁] using hPSrc) (by simpa [S₁] using hq) (by simp [S₁])
-    (by simpa [S₁] using htSrc) (by simpa [S₁] using huSrc) (by
+  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := prepareOriginControls_exec (body := body)
+    P q s t u band L hP hs hst hu hband hL hLs hA v S hPSrc hq hsSrc htSrc huSrc hbSrc hLSrc hblank (by
       intro k hk
-      simp only [List.mem_cons, List.not_mem_nil, or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl
-      all_goals simp only [S₁, Function.update_apply]
-      all_goals norm_num
-      all_goals first | exact hblank _ (by decide) | exact hfresh _ (by simp))
-  let S₂ : Stacks 117 A := { S₁ with R := Function.update S₁.R 115 (List.replicate V tick) }
-  obtain ⟨v₃, m₃, hu₃, hm₃, he₃⟩ := cleanOriginController_exec (body := body)
-    P q w s t u band L hP hs hst hu hband hL hLs hA v₂ S₂
-    (by simpa [S₂, S₁] using hsSrc) (by simpa [S₂, S₁] using htSrc)
-    (by simpa [S₂, S₁] using hbSrc) (by simpa [S₂, S₁] using hLSrc) (by simp [S₂, V])
-    (by simpa [S₂, S₁] using hfresh 104 (by simp))
-    (by simpa [S₂, S₁] using hfresh 106 (by simp))
-    (by simpa [S₂, S₁] using hfresh 116 (by simp)) (by
-      intro r
-      have hr := originReg_range r
-      have h94 : originReg r ≠ (94 : Fin 117) := by intro he; rw [he] at hr; omega
-      have h115 : originReg r ≠ (115 : Fin 117) := by intro he; rw [he] at hr; omega
-      simpa [S₂, S₁, h94, h115] using hblank _ hr)
-  let S₃ : Stacks 117 A := { S₂ with R := originControlsR A V s t band L S₂.R }
-  obtain ⟨v₄, S₄, m₄, hu₄, hm₄, he₄, hi₄, ho₄, hl₄, hr₄⟩ :=
-    preparedNaturalAdvanceControls_exec (body := body) P q w s t u band L hst.le hgroup v₃ S₃ (S.R 109)
-      (by simp [S₃, originControlsR, S₂, V]) (by simp [S₃, originControlsR, S₂, S₁])
-      (by simp [S₃, originControlsR, S₂, S₁, V]) (by simp [S₃, originControlsR]) (by
-        intro k hk
-        have h91 : k ≠ (91 : Fin 117) := by intro he; subst k; norm_num at hk
-        have h109 : k ≠ (109 : Fin 117) := by intro he; subst k; norm_num at hk
-        have h116 : k ≠ (116 : Fin 117) := by intro he; subst k; norm_num at hk
-        have h94 : k ≠ (94 : Fin 117) := by intro he; subst k; norm_num at hk
-        have h115 : k ≠ (115 : Fin 117) := by intro he; subst k; norm_num at hk
-        simpa [S₃, originControlsR, S₂, S₁, h109, h116, h94, h115] using hblank k (by omega)) (by
-        intro k hk
-        simp only [List.mem_cons, List.not_mem_nil, or_false] at hk
-        rcases hk with rfl | rfl | rfl | rfl
-        all_goals simpa [S₃, originControlsR, S₂, S₁] using hfresh _ (by simp))
-  have hS₄ : S₄ = { S₃ with R := (Function.update S₃.R 91
-      (naturalGatherControls A s t band L w ++ S₃.R 91)) } := Stacks.ext hi₄ ho₄ hl₄ hr₄
-  subst S₄
-  let S₄ : Stacks 117 A := { S₃ with R := (Function.update S₃.R 91
-    (naturalGatherControls A s t band L w ++ S₃.R 91)) }
-  obtain ⟨v₅, hu₅, he₅⟩ := clearWords_exec (body := body) [(94 : Fin 117), 115] (by decide) v₄ S₄
-  have hsum : (([(94 : Fin 117), 115]).map (fun k => (S₄.R k).length)).sum = w+V := by
-    simp [S₄, S₃, originControlsR, S₂, S₁]
-  refine ⟨v₅, (4*q+5)+(m₂+(m₃+(m₄+(2*(w+V)+5)))), hu₅.trans (hu₄.trans (hu₃.trans (hu₂.trans hu₁))), ?_,
-    (Exec.seq he₁ (Exec.seq he₂ (Exec.seq he₃ (Exec.seq he₄ he₅)))).cast (by rw [hsum]; rfl) ?_⟩
-  · dsimp only [generateOriginAndGatherControlsCost, generateOriginControlsCost]
-    dsimp only [w, V] at *
+      apply hfresh k
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk ⊢
+      rcases hk with rfl | rfl | rfl | rfl | rfl <;> simp)
+  let S₁ : Stacks 117 A := { S with R := preparedOriginR A P q s t u band L S.R }
+  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := completeGatherControls_exec (body := body)
+    P q w s t u band L hst.le hgroup v₁ S₁ (S.R 109)
+    (by simp [S₁,preparedOriginR,originControlsR,w])
+    (by simp [S₁,preparedOriginR,originControlsR,w])
+    (by simp [S₁,preparedOriginR,originControlsR,w])
+    (by simp [S₁,preparedOriginR,originControlsR]) (by
+      intro k hk
+      have hn (n : ℕ) (hn : 19 ≤ n) : k.val ≠ n := by omega
+      simpa [S₁,preparedOriginR,originControlsR,Function.update_apply,Fin.ext_iff,
+        hn 94 (by decide),hn 115 (by decide),hn 109 (by decide),hn 116 (by decide)] using hblank k (by omega)) (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl
+      all_goals simpa [S₁,preparedOriginR,originControlsR] using hfresh _ (by simp))
+  refine ⟨v₂,n₁+n₂,hu₂.trans hu₁,?_,(Exec.seq he₁ he₂).cast rfl ?_⟩
+  · dsimp only [generateOriginAndGatherControlsCost,generateOriginControlsCost,prepareOriginControlsCost] at *
+    dsimp only [w,V] at *
     omega
   · congr 1
     ext1
     · rfl
     · rfl
     · rfl
-    · funext k
-      by_cases h94 : k = 94
-      · subst k; simp [originAndGatherControlsR, originControlsR, hfresh 94 (by simp)]
-      by_cases h115 : k = 115
-      · subst k; simp [originAndGatherControlsR, originControlsR, hfresh 115 (by simp)]
-      simp [S₄, S₃, originAndGatherControlsR, originControlsR, S₂, S₁, h94, h115,
-        Function.update_apply, V, w]
+    exact completed_preparedOriginR A P q s t u band L S.R (hfresh 94 (by simp)) (hfresh 115 (by simp))
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

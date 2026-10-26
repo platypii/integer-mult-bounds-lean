@@ -49,4 +49,24 @@ theorem takeOuterLengthKey_exec (V L : ℕ) (hL : L < 2^V) (suffix : List (Fin (
         (mk v' { S with R := (Function.update (Function.update S.R 126 suffix) 128 (List.replicate L tick)) }) :=
   takeUnaryKey_exec (body := body) (by decide) V L hL suffix v S hV hsrc hfresh
 
+theorem groupStacks_eq {A : ℕ} (S T : Stacks 144 A)
+    (hp : embStk groupReg S = embStk groupReg T)
+    (hL : ∀ k : Fin 144, 117 ≤ k.val → S.L k = T.L k)
+    (hR : ∀ k : Fin 144, 117 ≤ k.val → S.R k = T.R k) : S = T := by
+  ext1
+  · exact congrArg (fun B : Stacks 117 A => B.inp) hp
+  · exact congrArg (fun B : Stacks 117 A => B.out) hp
+  · funext k
+    by_cases hk : k.val < 117
+    · let i : Fin 117 := ⟨k.val,hk⟩
+      have he : groupReg i = k := Fin.ext rfl
+      simpa only [embStk,Function.comp_apply,he] using congrArg (fun B : Stacks 117 A => B.L i) hp
+    · exact hL k (by omega)
+  · funext k
+    by_cases hk : k.val < 117
+    · let i : Fin 117 := ⟨k.val,hk⟩
+      have he : groupReg i = k := Fin.ext rfl
+      simpa only [embStk,Function.comp_apply,he] using congrArg (fun B : Stacks 117 A => B.R i) hp
+    · exact hR k (by omega)
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

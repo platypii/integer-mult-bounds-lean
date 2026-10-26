@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConditionalGroupPreparation
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedNaturalClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedPublicationControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedScatter
@@ -974,6 +975,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedGroupInput_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finishNaturalClass_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedNaturalClass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareOriginControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completeGatherControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.probePreparedOrigins_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedOriginR_empty,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseEmptyPreparedOrigins_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.probeAndGatherControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.probeNaturalGroupInputBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseUnaryHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseGroupHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseEmptyGroup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.conditionalGroupPreparation_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completed_preparedOriginR,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.groupStacks_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
