@@ -29,6 +29,17 @@ theorem componentProject_updateR {A : ℕ} (S : Stacks 148 A) (k : Fin 148)
   funext i
   simp [embStk,Function.comp_def,componentReg_off k hk i]
 
+theorem componentProject_updateR_inner {A : ℕ} (S : Stacks 148 A) (k : Fin 144)
+    (xs : List (Fin (A+4))) :
+    embStk componentReg {S with R := Function.update S.R (componentReg k) xs} =
+      {(embStk componentReg S) with R := Function.update (embStk componentReg S).R k xs} := by
+  refine Stacks.ext rfl rfl rfl ?_
+  funext i
+  by_cases hi : i = k
+  · subst i; simp [embStk]
+  · have hne : componentReg i ≠ componentReg k := fun he => hi (componentReg_injective he)
+    simp [embStk,Function.comp_def,hi,hne]
+
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 144 Q A U}
 
 theorem componentExec_twoPorts (p : Pr P₀ 144 Q A U) (v : HS 148 Q A U) (S : Stacks 148 A)

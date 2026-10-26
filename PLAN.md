@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1596 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1601 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8120,4 +8120,32 @@ Validation: all 10,234 guarded stage-audit jobs pass, including eight new
 explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All six new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2041.3 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 executed transition to the second component solve
+
+`movePrefix_exec` relocates an owned prefix in natural order and preserves both
+borrowed suffixes. `componentTransitionCore_exec` uses it to retire the recovery
+RHS and original RHS pages, save the first published line in an outer register,
+and install only the owned second-input prefix. The source, output and parked
+input suffixes are preserved, and all relocation scratch restores.
+
+`componentTransition_exec` reconstructs its word width from retained precision,
+generates the byte clock, runs the transition and releases both private counters.
+Its cost is at most `30*s*(2*q+8)+9*s+12*q+58`.
+`componentTransition_spec` proves the resulting low bank satisfies
+`LengthKeyReady` for the second input and the restored output suffix.
+
+`retainedRecoveryTransition_spec` composes the actual retained recovery and
+publication program with that transition. The first result's numerical error is
+proved on the physical saved-output register, and the returned bank is ready to
+run the second real solve. Moving the encoded result changes no numerical error.
+The S5 boundary producer, composition of the complete second solve and final
+pairing/release, complete error allocation and uniform fast time/simultaneous
+storage remain open. S3 remains partial.
+
+Validation: all 10,239 guarded stage-audit jobs pass, including six new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All seven new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2045.1 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.

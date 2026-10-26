@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedRecovery
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedRecoveryTransition
 
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRealInteriorResidual
@@ -1528,6 +1528,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMerge_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSplit_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSelectFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentProject_updateR_inner,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.movePrefix_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentTransitionCore_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentTransition_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.componentTransition_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRecoveryTransition_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentReg_off,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentProject_updateR,
