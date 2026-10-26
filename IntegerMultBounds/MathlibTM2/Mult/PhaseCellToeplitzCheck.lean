@@ -1,6 +1,8 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedSchurResidual
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedSchurResidual
+
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryTolerance
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedRecoveryFinish
 
@@ -1532,6 +1534,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMerge_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSplit_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSelectFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.preparedSchurResidual_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryTable_error_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_error_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryTable_row_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloBoundary_tolerance,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.stableSolve_norm,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloBoundary_norm,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recoveryFirstTarget_canonical,

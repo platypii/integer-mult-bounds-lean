@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1613 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1616 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8310,4 +8310,42 @@ Validation: all 10,254 guarded stage-audit jobs pass, including five new
 explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All nine new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2042.9 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 complex-input initial pass and computed-boundary tolerances
+
+`preparedSchurResidual_spec` now composes the executed complex-input split,
+parking of the imaginary RHS and the retained initial real interior/residual
+pass. It starts from the original complex line and returns the allocated
+physical Schur-RHS handoff with the original real RHS beneath it, the imaginary
+RHS preserved outside scratch, interior output retained and readiness restored.
+Its cost is the proved preparation cost plus the actual initial-pass cost; no
+component input, exact interior solution or execution is supplied by the caller.
+
+`boundaryErrorBits p target rhsExp` selects the row-perturbation/backward-residual
+allowance from the requested tolerance, inverse-margin bits and actual Schur-RHS
+magnitude. `boundary_error_budget` proves this allocation keeps the computed
+Schur system dominant and pays its matrix/solve error together with the initial
+quarter-budget.
+
+`boundaryTableBits` additionally pays the bit length of the actual boundary
+cardinality. `boundaryTable_error_budget` and `boundaryTable_row_budget` turn
+per-entry table error into the required row error. `haloBoundary_tolerance`
+combines those proved allocations with local Schur stability to give the exact
+forward boundary tolerance required by recovery. Its boundary count is the
+actual halo set, with no substituted full-line cardinality bound.
+
+These are executable initial-pass composition and numerical boundary acceptance
+proofs. S5's table construction, per-entry accuracy and bounded solve still
+require executed implementations; full sequence composition and uniform fast
+time/simultaneous storage also remain open. S3 remains partial.
+
+The complete caller must also restore its borrowed original complex input; the
+current component controller consumes explicitly owned private prefixes. That
+ownership/restoration composition remains part of the full-sequence obligation.
+
+Validation: all 10,257 guarded stage-audit jobs pass, including five new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All four new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2043.6 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
