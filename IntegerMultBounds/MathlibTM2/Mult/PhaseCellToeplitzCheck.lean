@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawHaloGather
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloAdvanceControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateHaloClassControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedHaloGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloKeysCore
@@ -1158,6 +1160,22 @@ run_cmd do
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloGroupOrigin_val,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloGroup_solver_geometry,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloGroups_cover,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloAdvanceControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originAdvances_haloControls,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloOriginAdvances_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloGather_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloGatherCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloGatherRows_eq_rhs,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloStart_mono,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloOrigins_length,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloOrigins_ordered,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloOrigins_fit,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloSymbolOrigins_ordered,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloSymbolOrigins_fit,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloGather_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.orderedGather_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawHaloGather_exec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloGroup_volume_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do

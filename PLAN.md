@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1361 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1369 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -7048,3 +7048,30 @@ Validation: all 9,987 stage audit jobs pass with only approved axioms. The
 guarded audit build peaks at 2.7 GiB; all nine new modules pass individual
 guarded checks, each at most 1946.1 MiB. Source-integrity, plan-status and
 whitespace checks pass.
+
+### S3 restoring halo RHS gathering and advance conversion
+
+Clipped class origins are ordered fitting windows in the original ambient line.
+The exact encoded windows equal the closed solver's RHS rows. Their coordinate
+volume is at most the ambient dimension. A shared structural execution lemma
+now handles arbitrary ordered fitting windows; the natural and halo gather
+contracts instantiate it.
+
+`preparedHaloAdvanceControls_exec` executes the existing origin converter on
+halo packets, constructs and releases its table bank, restores the origin queue
+and count, and emits exactly the restoring sweep controls. Conversion ticks are
+bounded by one encoded ambient line. `rawHaloGather_exec` copies the owned
+ambient prefix, gathers the exact clipped-class RHS and releases copies and
+controls. The original ambient prefix and arbitrary borrowed suffix remain
+under the RHS. Its proved bound is `rawNaturalGatherCost q s`, including width
+generation, counters, source copying, sweep movement and release.
+
+Ordinary class metadata, advance conversion, gathering and the closed solver
+still need one composed input-bank theorem. Publication and the halo key loop,
+grouped amortization, uniform fast time/storage and complex/boundary/coupling/
+recovery/full-line assembly remain open. S3 remains partial.
+
+Validation: all 9,996 stage audit jobs pass with only approved axioms. The
+guarded audit build peaks at 7.3 GiB; all ten new or revised non-audit modules
+pass individual guarded checks, each at most 1948.8 MiB. Source-integrity,
+plan-status and whitespace checks pass.
