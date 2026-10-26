@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolveReplicaHaloCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaHaloLoopCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProcessReplicaHaloCell
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProcessReplicaCellCost
@@ -1262,6 +1263,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedRawRepeatedBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installReplicaHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.replicaLoopR_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareHaloReplicaSchedule_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedPrepareHaloReplicaSchedule_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copiedHaloGroupR_clear109,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.initializeHaloReplicaSchedule_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.borrowReplicaEndpoints_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseReplicaEndpoints_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveReplicaHaloInterior_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveReplicaHaloInteriorCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.replicaLoopR_comp,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.replicaLoopR_self,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.ReplicaCellReady.of_frame,

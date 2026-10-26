@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1430 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1436 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. Replica schedule initialization/publication, uniform fast time/storage and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. External publication, uniform fast time/storage and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -7257,4 +7257,33 @@ full-line composition remain incomplete. S3 remains partial.
 Validation: all 10,059 stage audit jobs pass with only approved axioms. The
 guarded audit build peaks at 2.7 GiB; all six new modules pass individual
 guarded checks, each at most 1982.0 MiB. Source-integrity, plan-status and
+whitespace checks pass.
+
+
+### S3 initialized raw replica halo interior
+
+`solveReplicaHaloInterior_spec` now runs the complete clipped interior for a
+positive batch of distinct raw RHS lines from ordinary retained parameters,
+endpoints and replica count. The caller generates binary origin/length packets,
+counts those generated packets, installs runtime widths and releases private
+setup before executing the counted numerical loop. Endpoint stacks are borrowed
+as replica scratch through priced save/copy/release operations and restored with
+their exact original contents. No descriptor queue, loop count or width page is
+supplied as an input.
+
+Only the solved packed output prefix changes. Its exact volume and uniform
+interior error for every replica are proved against solutions of the original
+ambient matrix on the clipped interior. The full cost includes initialization,
+all cell calls, endpoint handling and final width release. Its affine replica
+identity separates one-time setup from coordinate/per-cell work and the six
+additional count-handling operations per replica.
+
+External publication remains S4/R4-owned. Full-source scans are still paid per
+cell, so this is not the required fast time bound. Uniform fast time/storage,
+complex execution, boundary/coupling/recovery and full-line composition remain
+open. S3 remains partial.
+
+Validation: all 10,065 stage audit jobs pass with only approved axioms. The
+guarded audit build peaks at 2.7 GiB; all six new modules pass individual
+guarded checks, each at most 2015.5 MiB. Source-integrity, plan-status and
 whitespace checks pass.
