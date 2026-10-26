@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInteriorForCoupling
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInteriorResidual
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFeedCouplingPass
 
@@ -867,19 +867,30 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalGather_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalGatherCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedNaturalGroup_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightedOutputNumerator_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightedOutputNumerators_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedWords_mem,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedOutputWords_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.interiorOutput_width,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundedEncodedStream_coe,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_mem,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterRows_range,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.chirpLine_ambientOfWords,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ambientOfWords_mem,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.encodedRange_ambient,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedCellRead_encodedField,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveHaloInterior_bounded_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingHeadersR_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.interiorResidual_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingHeaderWidth_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installCouplingHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.interiorForCoupling_spec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.encodedStream_coe,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cstream_take,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cstream_drop,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_source_suffix,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scatterRows_cstream,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowGaps_scale,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterGaps_scale,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloScatterRows_encoded,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.encodedStream_ambient,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveHaloInterior_encoded_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.stageCouplingLines_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireCouplingLine_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.feedCouplingResult_exec,

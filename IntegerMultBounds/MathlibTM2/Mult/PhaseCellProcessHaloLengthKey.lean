@@ -46,7 +46,7 @@ theorem processHaloLengthKey_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     let lo := haloGroupOrigin s t (PhaseCellBand.width p u) a b L
     let q := executionPrecision p l target rhsExp
     let w := executionWidth p l target rhsExp
-    ∃ v' S' n, ∃ ys : EncodedStream A w, v'.user = v.user ∧
+    ∃ v' S' n, ∃ ys : BoundedEncodedStream A w q (interiorOutputExponent p l target rhsExp), v'.user = v.user ∧
       n ≤ (6*L+19*V+14)+conditionalHaloClassCost p l L s t u target rhsExp a b ∧
       Exec (embTab groupReg body) (processHaloLengthKey hR hQ) (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧

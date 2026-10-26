@@ -56,7 +56,7 @@ theorem conditionalHaloClass_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     let lo := haloGroupOrigin s t (PhaseCellBand.width p u) a b L
     let q := executionPrecision p l target rhsExp
     let w := executionWidth p l target rhsExp
-    ∃ v' S' n, ∃ ys : EncodedStream A w, v'.user = v.user ∧
+    ∃ v' S' n, ∃ ys : BoundedEncodedStream A w q (interiorOutputExponent p l target rhsExp), v'.user = v.user ∧
       n ≤ conditionalHaloClassCost p l L s t u target rhsExp a b ∧
       Exec (embTab groupReg body) (conditionalHaloClass hR hQ) (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
@@ -133,7 +133,7 @@ theorem conditionalHaloClass_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
       · change v₁.flag = false
         simpa only [hflag₁,decide_eq_false_iff_not] using hB
       · simpa only [Action.run] using Exec.act (body := embTab groupReg body) .done (mk v₁ S₁)
-    refine ⟨v₁,S₁,n₁+2,encodedStream A w [],hu₁,?_,Exec.seq he₁ hcond,hi₁,ho₁,hl₁,?_,?_,?_⟩
+    refine ⟨v₁,S₁,n₁+2,boundedEncodedStream A w q (interiorOutputExponent p l target rhsExp) [] (by simp),hu₁,?_,Exec.seq he₁ hcond,hi₁,ho₁,hl₁,?_,?_,?_⟩
     · dsimp only [conditionalHaloClassCost]
       rw [ite_eq_right hB]
       dsimp only [P,N,q,band] at *

@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellEncodedStream
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundedEncodedStream
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloScatterSchedule
 
 /-! Aligned publication preserves the existing integer-word encoding. -/
@@ -70,16 +70,33 @@ theorem haloScatterGaps_scale (s t band a b L w : ℕ) :
     List.map_map,Function.comp_def] using
     windowGaps_scale L 0 w (IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloOrigins s t band a b L)
 
-theorem haloScatterRows_encoded {A w : ℕ} (s t band a b L : ℕ)
-    (E tail : List (Fin (A+4))) (X : EncodedStream A w)
-    (hE : ∃ zs : List GaussianInt, E = cstream A w zs)
+theorem scatterRows_mem {K : Type*} (L : ℕ) (E X : List K) (ds : List ℕ) (z : K)
+    (hz : z ∈ scatterRows L E X ds) : z ∈ E ∨ z ∈ X := by
+  induction ds generalizing E X with
+  | nil => simpa [scatterRows,scatterPrefix] using Or.inl hz
+  | cons d ds ih =>
+    rw [scatterRows_cons] at hz
+    rcases List.mem_append.mp hz with hz | hz
+    · rcases List.mem_append.mp hz with hz | hz
+      · exact Or.inl (List.mem_of_mem_take hz)
+      · exact Or.inr (List.mem_of_mem_take hz)
+    · rcases ih _ _ hz with hz | hz
+      · exact Or.inl (List.mem_of_mem_drop hz)
+      · exact Or.inr (List.mem_of_mem_drop hz)
+
+theorem haloScatterRows_range {A w q e : ℕ} (s t band a b L : ℕ)
+    (E tail : List (Fin (A+4))) (X : BoundedEncodedStream A w q e)
+    (hE : EncodedRange A w q e E)
     (hX : X.val.length = (IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloLengthGroup s t band a b L).length*L*w) :
-    ∃ zs : List GaussianInt,
-      scatterRows (L*w) E (X.val++tail) (haloScatterGaps s t band a b L w) = cstream A w zs := by
+    EncodedRange A w q e (scatterRows (L*w) E (X.val++tail) (haloScatterGaps s t band a b L w)) := by
   rw [scatterRows_source_suffix (L*w) E X.val tail _ (by simp [hX,Nat.mul_assoc])]
-  obtain ⟨es,rfl⟩ := hE
-  obtain ⟨xs,hxs⟩ := X.encoded
+  obtain ⟨es,rfl,hes⟩ := hE
+  obtain ⟨xs,hxs,hbound⟩ := X.bounded
   rw [hxs,haloScatterGaps_scale,scatterRows_cstream]
-  exact ⟨_,rfl⟩
+  refine ⟨_,rfl,?_⟩
+  intro z hz
+  rcases scatterRows_mem L es xs _ z hz with hz | hz
+  · exact hes z hz
+  · exact hbound z hz
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

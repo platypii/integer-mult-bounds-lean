@@ -1,9 +1,9 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolveHaloInterior
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellEncodedAmbient
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundedAmbient
 
-/-! The actual interior solve returns an encoded ambient integer field. -/
+/-! The executed interior result has a bounded integer field and exact normalized readout. -/
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
@@ -16,7 +16,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
-theorem solveHaloInterior_encoded_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+theorem solveHaloInterior_bounded_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {l s t p u target rhsExp a b : ℕ} [NeZero s] {α d : ℝ}
     (hp : 0 < p) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
     (hθ : 0 < (t : ℝ)/s-1) (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
@@ -29,6 +29,8 @@ theorem solveHaloInterior_encoded_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       (fun k => (value (executionPrecision p l target rhsExp) (C k)).re))
     (v : HS 144 Q A U) (S : Stacks 144 A) (borrowed outputTail : List (Fin (A+4)))
     (E₀ : ZMod s → GaussianInt)
+    (hE₀ : ∀ k, ‖value (executionPrecision p l target rhsExp) (E₀ k)‖ ≤
+      (2 : ℝ)^interiorOutputExponent p l target rhsExp)
     (hdst : S.R 132 = cstream A (executionWidth p l target rhsExp) (chirpLine s E₀)++outputTail)
     (h127 : S.R 127 = []) (h138 : S.R 138 = [])
     (haMaster : (S.R 141).length = a) (hbMaster : (S.R 142).length = b)
@@ -41,18 +43,30 @@ theorem solveHaloInterior_encoded_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       n ≤ solveHaloInteriorCost p l s t u target rhsExp a b ∧ (cstream A w (chirpLine s D)).length = s*w ∧
       Exec (embTab groupReg body) (solveHaloInterior hR hQ) (mk v S) n
         (mk v' { S with R := Function.update S.R 132 (cstream A w (chirpLine s D)++outputTail) }) ∧
+      (∀ k, ‖value q (D k)‖ ≤ (2 : ℝ)^interiorOutputExponent p l target rhsExp) ∧
       PhaseCellInterface.ErrorOn (haloInterior s t (PhaseCellBand.width p u) a b)
-        (publishedCellRead q w (0 : ZMod s) (cstream A w (chirpLine s D)++outputTail)) x (1/(2 : ℝ)^target) := by
+        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) := by
   dsimp only
+  let q := executionPrecision p l target rhsExp
   let w := executionWidth p l target rhsExp
-  obtain ⟨v',n,E',hu,hn,hE',he,herror,hencoded⟩ := solveHaloInterior_spec (body := body)
+  obtain ⟨v',n,E',hu,hn,hE',he,herror,hbounded⟩ := solveHaloInterior_spec (body := body)
     hR hQ hA hp hst hu hαu hθ hgap hbudget hband has hbs hpad C hC x hx v S
     borrowed (cstream A w (chirpLine s E₀)) outputTail (by simp [w]) hdst
     h127 h138 haMaster hbMaster hready
-  obtain ⟨D,hD⟩ := encodedStream_ambient (s := s) (by dsimp [w,executionWidth]; omega) E' hE'
-    (hencoded ⟨chirpLine s E₀,rfl⟩)
-  refine ⟨v',n,D,hu,hn,by simp,?_,?_⟩
+  have hE₀' : EncodedRange A w q (interiorOutputExponent p l target rhsExp) (cstream A w (chirpLine s E₀)) := by
+    refine ⟨chirpLine s E₀,rfl,?_⟩
+    intro z hz
+    obtain ⟨k,_,rfl⟩ := List.mem_map.mp hz
+    exact hE₀ (k : ZMod s)
+  have hw : 0 < w := by dsimp [w,executionWidth]; omega
+  obtain ⟨D,hD,hDnorm⟩ := encodedRange_ambient (s := s) hw E' hE' (hbounded hE₀')
+  have hfit : ∀ k, Fits w (D k) := fun k =>
+    fits_of_value_power (interiorOutput_width p l target rhsExp) (D k) (hDnorm k)
+  refine ⟨v',n,D,hu,hn,by simp,?_,hDnorm,?_⟩
   · simpa only [hD] using he
-  · simpa only [hD] using herror
+  · intro k hk
+    have hh := herror k hk
+    rw [hD,publishedCellRead_encodedField (by omega) hw D outputTail hfit k] at hh
+    exact hh
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

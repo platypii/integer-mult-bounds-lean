@@ -63,8 +63,8 @@ theorem haloLengthKeyStep_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
       (∀ K, K ≠ L → ∀ n : Fin (haloLengthGroup s t band a b K).length, ∀ j ∈ publishedCellCore
         (haloGroupOrigin s t band a b K n) K,
         publishedCellRead q w (0 : ZMod s) (S'.R 132) j = publishedCellRead q w (0 : ZMod s) (S.R 132) j) ∧
-      ((∃ zs : List GaussianInt, E = cstream A w zs) →
-        ∃ zs : List GaussianInt, E' = cstream A w zs) := by
+      (EncodedRange A w q (interiorOutputExponent p l target rhsExp) E →
+        EncodedRange A w q (interiorOutputExponent p l target rhsExp) E') := by
   dsimp only
   let band := PhaseCellBand.width p u
   let B := (haloLengthGroup s t band a b L).length
@@ -118,7 +118,7 @@ theorem haloLengthKeyStep_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     apply haloScatterRows_preserves_class t band a b L K q w hKL.symm (E++outputTail) (ys++S.R 93)
       (by simp only [List.length_append]; omega) hX n j hj
 
-  · intro hEncoded
-    exact haloScatterRows_encoded s t band a b L E (S.R 93) ys hEncoded hylen
+  · intro hBounded
+    exact haloScatterRows_range s t band a b L E (S.R 93) ys hBounded hylen
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

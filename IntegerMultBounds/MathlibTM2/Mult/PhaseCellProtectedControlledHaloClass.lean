@@ -51,7 +51,7 @@ theorem protectedControlledHaloClass_spec (hR : rpStates ≤ Q) (hQ : SS.states 
     let lo := haloGroupOrigin s t (PhaseCellBand.width p u) a b L
     let q := executionPrecision p l target rhsExp
     let w := executionWidth p l target rhsExp
-    ∃ v' S' n, ∃ ys : EncodedStream A w, v'.user = v.user ∧
+    ∃ v' S' n, ∃ ys : BoundedEncodedStream A w q (interiorOutputExponent p l target rhsExp), v'.user = v.user ∧
       n ≤ protectedControlledHaloClassCost p l B L s t u target rhsExp a b ∧
       Exec (embTab groupReg body) (protectedControlledHaloClass hR hQ) (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧

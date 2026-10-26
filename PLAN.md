@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1550 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1553 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. Restoring fixed-point coupling-row arithmetic has support-priced time, derived word fits and explicit RHS/coefficient/input/truncation errors. The direct cross-cell coefficient branch now generates a sufficient logarithmic workspace, loads ordinary headers, generates constants and signed-coordinate lifts, and executes the exact selected sample; offset coupling semantics retain every periodic alias. The within-cell coefficient kernel now executes two corrected similarity samples and a distance sample, combines them by exact natural division, and has a shared sufficient workspace plus selected norm/error bounds. One closed coefficient caller now loads ordinary headers, generates/releases the shared workspace, selects the diagonal/within/cross branch by natural comparisons and proves decoded error against the original signed-offset selected entry. The generated coefficient row now enumerates every retained signed offset, emits the full stream on the row coefficient port and generates its count, with exact restoration and per-word decoded error. Interior/boundary membership and a restoring masked lookup now execute from an initialized numeric geometry table. A raw-input operand preparer now captures/releases its ambient snapshot and generates aligned masked inputs, coefficients and count. An executed row caller retires both owned operand prefixes and the count after publishing its result. A complete raw coupling-row caller now protects/restores geometry, generates/releases readiness, borrows the physical RHS, executes/publishes arithmetic and retires operands/count. Its original-matrix error contract derives operand/result fits from magnitudes. An initialized ambient row pass now generates its clock, consumes consecutive RHS words, advances coordinates, restores natural output order and releases clock/index, with exact volume and uniform original-matrix error. A restoring adapter now borrows original RHS on port 110 and an encoded published solution on port 132, executes the row pass, restores both lines and can feed the encoded result above the retained RHS on port 110. The result has an ambient integer-field representation and derived norm bound. The actual halo-interior caller now preserves exact word encoding and reconstructs coupling runtime headers from retained masters. Reusable magnitude/error handoff for its returned integer field and the S5 boundary transition remain. External publication, uniform fast time/storage and complex/boundary/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | Initialized natural and clipped-halo interior programs generate schedules, gather raw input, solve/publish every class and restore every stack except output. Exact whole-interior ledgers and equal-origin replica kernels are proved; the repeated kernel composes its raw RHS gather, protected solve and counted RHS retirement, restoring the raw source and outer stacks. A descriptor-driven replica step now decodes ambient origin/length, copies retained scalar inputs and releases private headers, changing only the queue and solved output. The counted generated halo replica schedule now has exact executed costs/volume and uniform interior block reads. The replica caller generates its own descriptor queue/count/widths and restores endpoints and all workspace except packed output. Restoring fixed-point coupling-row arithmetic has support-priced time, derived word fits and explicit RHS/coefficient/input/truncation errors. The direct cross-cell coefficient branch now generates a sufficient logarithmic workspace, loads ordinary headers, generates constants and signed-coordinate lifts, and executes the exact selected sample; offset coupling semantics retain every periodic alias. The within-cell coefficient kernel now executes two corrected similarity samples and a distance sample, combines them by exact natural division, and has a shared sufficient workspace plus selected norm/error bounds. One closed coefficient caller now loads ordinary headers, generates/releases the shared workspace, selects the diagonal/within/cross branch by natural comparisons and proves decoded error against the original signed-offset selected entry. The generated coefficient row now enumerates every retained signed offset, emits the full stream on the row coefficient port and generates its count, with exact restoration and per-word decoded error. Interior/boundary membership and a restoring masked lookup now execute from an initialized numeric geometry table. A raw-input operand preparer now captures/releases its ambient snapshot and generates aligned masked inputs, coefficients and count. An executed row caller retires both owned operand prefixes and the count after publishing its result. A complete raw coupling-row caller now protects/restores geometry, generates/releases readiness, borrows the physical RHS, executes/publishes arithmetic and retires operands/count. Its original-matrix error contract derives operand/result fits from magnitudes. An initialized ambient row pass now generates its clock, consumes consecutive RHS words, advances coordinates, restores natural output order and releases clock/index, with exact volume and uniform original-matrix error. A restoring adapter now borrows original RHS on port 110 and an encoded published solution on port 132, executes the row pass, restores both lines and can feed the encoded result above the retained RHS on port 110. The result has an ambient integer-field representation and derived norm bound. The actual halo-interior caller now preserves exact word encoding and reconstructs coupling runtime headers from retained masters. The returned integer field now carries derived norm and exact normalized decoding, and an actual interior-to-residual caller composes those facts with the row pass. Prepared S5 boundary/recovery transitions and global precision/cost closure remain. External publication, uniform fast time/storage and complex/boundary/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -7813,3 +7813,54 @@ explicit theorem audits with only approved axioms. The successful audit build
 peaks at 2.7 GiB combined. All twenty-four new/revised Lean modules, including
 the audit root, pass individual guarded checks at at most 2028.4 MiB.
 Source-integrity, plan-status and whitespace checks pass.
+
+
+### S3 bounded interior output and executed interior-to-residual composition
+
+`publishedOutputWords_norm` bounds the actual published integer numerators by
+`2^interiorOutputExponent`, where the exponent is
+`executionExponent(p,l,target,rhsExp)+2*l+4`. The proof follows the existing
+scalar product, exact rescaling, generated similarity weight and publication
+permutation; it does not assume a result norm. The bound is independent of the
+current cell length and number of cells.
+
+`BoundedEncodedStream` carries the same actual byte prefix with an integer-word
+witness and its normalized magnitude bound. The closed batch, clipped group,
+protected class and counted key loop preserve that witness. Aligned scattering
+inherits the common bound from the old ambient line and the new computed words.
+`interiorOutput_width` proves that the existing execution width covers those
+numerators. `encodedRange_ambient` and `publishedCellRead_encodedField` therefore
+identify the returned ambient field's normalized values with its physical
+reads exactly, rather than only proving that some word list encodes the bytes.
+
+`solveHaloInterior_bounded_spec` returns that bounded field and the existing
+core-error contract directly for its normalized values. The pre-existing
+ambient output field has an explicit initial magnitude bound; the computed
+result has none supplied. `interiorForCoupling_spec` now carries this numerical
+handoff through the executed header reconstruction.
+
+`interiorResidual_spec` executes the interior solve, reconstructs its coupling
+runtime, borrows both actual lines, computes every residual row and feeds the
+residual above the retained original RHS. It preserves the solved interior
+line on port 132 and restores all other borrowed payloads and suffixes. The
+residual is an exact encoded integer field with a derived norm bound. Its error
+against the original `b-A_BI*x` expression is at most
+`L*2/2^q + L*2^e/2^q + K/2^target`, with `L=2*band+1` and the derived interior
+exponent `e`. There is no supplied magnitude, format or approximation hypothesis
+about the executed interior result. The cost is the sum of the two existing
+executed stage bounds.
+
+The support-count, row-width and original coefficient row-mass budgets remain
+explicit. Closing those budgets uniformly in the final parameter regime, the
+S5 prepared-boundary operation, recovery/final-interior composition and full
+complex-line assembly remain open. The current magnitude estimate is coarse;
+complete shared-precision closure and uniform fast time/simultaneous storage
+are still unproved. S3 remains partial and kappa is unchanged.
+
+Encoding-only wrappers were superseded and removed; restore from `4e78d06f`.
+
+Validation: all 10,189 guarded stage-audit jobs pass, including fifteen new
+explicit theorem audits with only approved axioms. Combined build peak is
+7.7 GiB. All twenty-four new/revised Lean modules, including the audit root,
+pass individual guarded checks at at most 2029.2 MiB. Source-integrity,
+plan-status and whitespace checks pass.

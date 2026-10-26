@@ -57,8 +57,8 @@ theorem haloLengthKeyLoop_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
       (∀ K, K ∉ keys → ∀ n : Fin (haloLengthGroup s t band a b K).length, ∀ j ∈ publishedCellCore
         (haloGroupOrigin s t band a b K n) K,
         publishedCellRead q w (0 : ZMod s) (S'.R 132) j = publishedCellRead q w (0 : ZMod s) (S.R 132) j) ∧
-      ((∃ zs : List GaussianInt, E = cstream A w zs) →
-        ∃ zs : List GaussianInt, E' = cstream A w zs) := by
+      (EncodedRange A w q (interiorOutputExponent p l target rhsExp) E →
+        EncodedRange A w q (interiorOutputExponent p l target rhsExp) E') := by
   dsimp only
   induction keys generalizing v S E with
   | nil =>
@@ -78,7 +78,7 @@ theorem haloLengthKeyLoop_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
   | cons L keys ih =>
     obtain ⟨hLnot,hnd⟩ := List.nodup_cons.mp hnodup
     obtain ⟨hL,hLs,hpad,hfit⟩ := hbounds L (by simp)
-    obtain ⟨v₁,S₁,n₁,E₁,hu₁,hflag₁,hn₁,he₁,hi₁,ho₁,hl₁,hE₁,hframe₁,herror₁,hkeep₁,hencode₁⟩ :=
+    obtain ⟨v₁,S₁,n₁,E₁,hu₁,hflag₁,hn₁,he₁,hi₁,ho₁,hl₁,hE₁,hframe₁,herror₁,hkeep₁,hbound₁⟩ :=
       haloLengthKeyStep_spec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hband has hbs hL hLs hpad C hC x hx
         v S borrowed E outputTail (lengthKeyPackets A V keys++keyTail) tick (List.replicate keys.length tick)
         (by simpa [List.replicate_succ] using hcount) hfit hready.keyWidth
@@ -92,7 +92,7 @@ theorem haloLengthKeyLoop_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
       simpa [keyLoopR] using congrArg (fun R => R 127) hframe₁
     have hdst₁ : S₁.R 132 = E₁++outputTail := by
       simpa [keyLoopR] using congrArg (fun R => R 132) hframe₁
-    obtain ⟨v₂,S₂,n₂,E₂,hu₂,hn₂,he₂,hi₂,ho₂,hl₂,hE₂,hframe₂,herror₂,hkeep₂,hencode₂⟩ :=
+    obtain ⟨v₂,S₂,n₂,E₂,hu₂,hn₂,he₂,hi₂,ho₂,hl₂,hE₂,hframe₂,herror₂,hkeep₂,hbound₂⟩ :=
       ih hnd (fun K hK => hbounds K (by simp [hK])) v₁ S₁ E₁ hE₁ hdst₁ hkeys₁ hcount₁ hready₁
         (by rw [hframe₁]; simpa [keyLoopR] using haMaster)
         (by rw [hframe₁]; simpa [keyLoopR] using hbMaster)
@@ -117,6 +117,6 @@ theorem haloLengthKeyLoop_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
       have hKL : K ≠ L := fun he => hK (List.mem_cons.mpr (Or.inl he))
       have hKtail : K ∉ keys := fun hk => hK (List.mem_cons.mpr (Or.inr hk))
       exact (hkeep₂ K hKtail n j hj).trans (hkeep₁ K hKL n j hj)
-    · exact fun h => hencode₂ (hencode₁ h)
+    · exact fun h => hbound₂ (hbound₁ h)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

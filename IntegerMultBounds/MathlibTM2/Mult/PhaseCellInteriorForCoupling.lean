@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolveHaloInteriorEncoded
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolveHaloInteriorBounded
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallCouplingHeaders
 
 /-! Execute the interior solve and reconstruct the next coupling runtime bank. -/
@@ -37,6 +37,8 @@ theorem interiorForCoupling_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (h
       (fun k => (value (executionPrecision p l target rhsExp) (C k)).re))
     (v : HS 144 Q A U) (S : Stacks 144 A) (borrowed outputTail : List (Fin (A+4)))
     (E₀ : ZMod s → GaussianInt)
+    (hE₀ : ∀ k, ‖value (executionPrecision p l target rhsExp) (E₀ k)‖ ≤
+      (2 : ℝ)^interiorOutputExponent p l target rhsExp)
     (hdst : S.R 132 = cstream A (executionWidth p l target rhsExp) (chirpLine s E₀)++outputTail)
     (h127 : S.R 127 = []) (h138 : S.R 138 = [])
     (haMaster : (S.R 141).length = a) (hbMaster : (S.R 142).length = b)
@@ -54,15 +56,16 @@ theorem interiorForCoupling_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (h
       CouplingReady (2^15*p) q w s t u band a b (cstream A w (chirpLine s C)++borrowed)
         (embStk groupReg {S with R := (couplingHeadersR (2^15*p) q s t u band a b
           (Function.update S.R 132 (cstream A w (chirpLine s D)++outputTail)))}) ∧
+      (∀ k, ‖value q (D k)‖ ≤ (2 : ℝ)^interiorOutputExponent p l target rhsExp) ∧
       PhaseCellInterface.ErrorOn (haloInterior s t band a b)
-        (publishedCellRead q w (0 : ZMod s) (cstream A w (chirpLine s D)++outputTail)) x (1/(2 : ℝ)^target) := by
+        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) := by
   dsimp only
   let q := executionPrecision p l target rhsExp
   let w := executionWidth p l target rhsExp
   let band := PhaseCellBand.width p u
-  obtain ⟨v₁,n₁,D,hu₁,hn₁,hlen,he₁,herror⟩ := solveHaloInterior_encoded_spec (body := body)
+  obtain ⟨v₁,n₁,D,hu₁,hn₁,hlen,he₁,hDnorm,herror⟩ := solveHaloInterior_bounded_spec (body := body)
     hR hQ hA hp hst hu hαu hθ hgap hbudget hband has hbs hpad C hC x hx v S
-    borrowed outputTail E₀ hdst h127 h138 haMaster hbMaster hready
+    borrowed outputTail E₀ hE₀ hdst h127 h138 haMaster hbMaster hready
   let S₁ : Stacks 144 A := {S with R := Function.update S.R 132 (cstream A w (chirpLine s D)++outputTail)}
   have hready₁ : LengthKeyReady (2^15*p) (executionStagePrecision p l target rhsExp+1)
       q l s t u band 0 0 (cstream A w (chirpLine s C)++borrowed) S₁ := by
@@ -80,7 +83,7 @@ theorem interiorForCoupling_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (h
       (embStk groupReg {S₁ with R := couplingHeadersR (2^15*p) q s t u band a b S₁.R}) := by
     simpa only [hw] using hcoupling
   refine ⟨v₂,n₁+installCouplingHeadersCost (2^15*p) q s t u band a b,D,hu₂.trans hu₁,
-    ?_,Exec.seq he₁ he₂,hcoupling',herror⟩
+    ?_,Exec.seq he₁ he₂,hcoupling',hDnorm,herror⟩
   change n₁+installCouplingHeadersCost (2^15*p) q s t u band a b ≤
     solveHaloInteriorCost p l s t u target rhsExp a b+installCouplingHeadersCost (2^15*p) q s t u band a b
   exact Nat.add_le_add_right hn₁ _

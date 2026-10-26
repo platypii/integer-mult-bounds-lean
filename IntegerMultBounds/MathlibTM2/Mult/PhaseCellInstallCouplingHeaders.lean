@@ -26,6 +26,19 @@ def couplingHeadersR {A : ℕ} (P q s t u band a b : ℕ) (R : Regs 144 A) : Reg
   Function.update (unaryCopiesR (couplingHeaderValue P q s t u band a b) R couplingHeaderCopies)
     94 (List.replicate (2*q+8) tick)
 
+theorem couplingHeadersR_off {A : ℕ} (P q s t u band a b : ℕ) (R : Regs 144 A) (k : Fin 144)
+    (hk : k ∉ [(114 : Fin 144),112,97,98,99,100,101,103,94]) :
+    couplingHeadersR P q s t u band a b R k = R k := by
+  have h94 : k ≠ 94 := by intro he; subst k; simp at hk
+  unfold couplingHeadersR
+  rw [Function.update_of_ne h94]
+  apply unaryCopiesR_off
+  intro r hr he
+  apply hk
+  simp only [couplingHeaderCopies,List.mem_cons,List.not_mem_nil,or_false] at hr
+  rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  all_goals subst k; simp
+
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 144 Q A U}
 
 def installCouplingHeaders : Pr P₀ 144 Q A U :=
@@ -91,14 +104,7 @@ theorem installCouplingHeaders_exec (P N q l s t u band a b : ℕ)
       h.blank r.2 hf.1 hf.2.1 hf.2.2,List.append_nil]
   let S₂ : Stacks 144 A := {S with R := couplingHeadersR P q s t u band a b S.R}
   have hoff₂ (k : Fin 144) (hk : k ∉ [(114 : Fin 144),112,97,98,99,100,101,103,94]) : S₂.R k = S.R k := by
-    have h94 : k ≠ 94 := by intro he; subst k; simp at hk
-    change Function.update S₁.R 94 _ k = _
-    rw [Function.update_of_ne h94]
-    apply hoff k
-    intro hm
-    apply hk
-    simp only [couplingHeaderCopies,List.map_cons,List.map_nil,List.mem_cons,List.not_mem_nil,or_false] at hm
-    rcases hm with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp
+    exact couplingHeadersR_off P q s t u band a b S.R k hk
   refine ⟨v₂,hu₂.trans hu₁,(Exec.seq he₁ he₂).cast ?_ rfl,?_⟩
   · simp [copyUnaryHeadersCost,couplingHeaderCopies,value,couplingHeaderValue,installCouplingHeadersCost]
     omega
