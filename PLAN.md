@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1607 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1608 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8179,4 +8179,35 @@ Validation: all 10,245 guarded stage-audit jobs pass, including seven new
 explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All seven new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2043.6 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 automatic coupling mass and support-count budgets
+
+`couplingOffsets_mass_eq_row` identifies the absolute mass of the actual reversed
+signed-offset list with the original matrix row sum. Positivity permits this
+identity while retaining every periodic alias. The selected rounded-operator
+bound then proves `couplingOffsets_mass_le_two`, uniformly in the ambient row
+and independently of halo size. No local/full-line cardinality substitution is
+used.
+
+`couplingCountExponent` is the binary size of `2*PhaseCellBand.width p u+1`.
+Its support-count bound is automatic; its exponent is at most `8*p+3` and fits
+`executionExponent` for every admitted initial target/RHS budget. The generated
+offset lists and runtime counters already have this count.
+
+The executed initial real residual, recovery, real publication, retained
+transition and final complex-publication theorems now select this exponent
+internally and use the proved mass bound 2. Their interfaces no longer require
+a caller-supplied mass constant, mass proof, count exponent, support-count bound
+or count-precision bound. The residual's propagated interior error is charged
+with factor 2, and recovery's boundary-error contribution is `2*boundaryError`.
+
+These support/mass budget obligations are closed. Prepared S5 boundary execution,
+complete sequence composition, final error allocation and uniform fast
+time/simultaneous storage remain open. S3 remains partial.
+
+Validation: all 10,247 guarded stage-audit jobs pass, including six new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All nine new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2039.6 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
