@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawHaloGroup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawHaloGather
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloAdvanceControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateHaloClassControls
@@ -1176,6 +1177,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.orderedGather_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawHaloGather_exec,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloGroup_volume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completeHaloGatherControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generateHaloGroupInputBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.gatherControlledHaloGroupInputBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completed_preparedHaloClassR,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateHaloOriginAndGatherControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareHaloClassControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawHaloGroup_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.rawHaloGroupInputBank_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do

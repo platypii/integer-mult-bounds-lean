@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1369 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1375 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -7075,3 +7075,27 @@ Validation: all 9,996 stage audit jobs pass with only approved axioms. The
 guarded audit build peaks at 7.3 GiB; all ten new or revised non-audit modules
 pass individual guarded checks, each at most 1948.8 MiB. Source-integrity,
 plan-status and whitespace checks pass.
+
+### S3 raw halo group composition
+
+`rawHaloGroup_spec` now composes the ordinary unary-parameter caller with the
+closed group solver. One pair of generated widths serves origin/count discovery
+and advance conversion. The program generates every origin and sweep control,
+gathers its own RHS from the ambient line, releases the widths and owned halo
+endpoint headers, and reaches the exact closed solver input bank.
+
+The executed solver returns the uniform cell error and exact encoded output
+size, with only the solver output and RHS/source payload remaining. The original
+ambient prefix and borrowed suffix remain under the gathered RHS. The cost
+bound includes metadata, conversion, gathering, endpoint release and the closed
+solver. The previously released-width metadata API is retained as a short
+composition of the new shared-width producer and release.
+
+Publication and the protected halo key loop remain open, alongside grouped
+amortization, uniform fast time and execution-wide storage, and complex/
+boundary/coupling/recovery/full-line assembly. S3 remains partial.
+
+Validation: all 10,002 stage audit jobs pass with only approved axioms. The
+guarded audit build peaks at 2.7 GiB; all seven new or revised non-audit
+modules pass individual guarded checks, each at most 1971.1 MiB. Source
+integrity, plan-status and whitespace checks pass.
