@@ -1,5 +1,9 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConsumedIntegerRow
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawCouplingOperandsSpec
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireCouplingOperands
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareCouplingOperandsSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellMaskedHaloLookupSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareCouplingCoefficientsSpec
@@ -1443,6 +1447,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloLookupFromHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloLookupWidth_fits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializeOriginHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.consumedIntegerRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.captureCouplingSource_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawCouplingOperands_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawCouplingOperands_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireCouplingOperands_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCouplingOperands_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCouplingOperands_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tablePacketHost_exec,
