@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedSchurResidual
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedRecoveryFinish
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedRecoveryTransition
@@ -1530,6 +1532,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMerge_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSplit_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSelectFromHeaders_exec,
+      `IntegerMultBounds.NLogN.SchurDominance.schur_residual_error,
+      `IntegerMultBounds.NLogN.SchurDominance.approximate_solves_bound,
+      `IntegerMultBounds.NLogN.SchurDominance.computed_schur_error,
+      `IntegerMultBounds.NLogN.PhaseCellMatrix.halo_schur_stageInv,
+      `IntegerMultBounds.NLogN.PhaseCellMatrix.halo_computed_schur_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.stableInteriorResidual_width,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedSchurResidual_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRoundoff_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recoveryGuardBits_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recovery_error_budget,

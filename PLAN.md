@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1610 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1611 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8242,4 +8242,39 @@ Validation: all 10,249 guarded stage-audit jobs pass, including six new
 explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All six new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2042.5 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 executed initial Schur RHS and local backward-error handoff
+
+`retainedSchurResidual_spec` now executes the initial real interior/residual pass
+inside the component controller. Its proof constructs an exact interior
+reference solver from dominance; the caller supplies no reference solution or
+solver. The returned integer residual is real, has the derived dyadic magnitude
+bound, decodes exactly from the actual source tape and approximates the exact
+Schur RHS with the proved coupling/interior error. The source retains the
+original RHS underneath, the interior output is retained, the outer component
+registers survive and the low bank returns `LengthKeyReady`.
+
+`stableInteriorResidual_width` factors the common width proof, now reused by the
+initial numerical proof and physical residual decoding.
+
+`halo_schur_stageInv` proves margin `1/(8*p)` and row mass at most 2 for the
+Schur matrix of the actual clipped halo, using its generated interior and
+boundary sets. It keeps the original ambient matrix and its global phases;
+no full-line boundary-cardinality or bandwidth bound is reused as a halo bound.
+
+`computed_schur_error` and `halo_computed_schur_error` convert a computed boundary
+matrix's row perturbation `εA`, backward residual `δ` and supplied RHS error `E`
+into forward boundary error. They derive the candidate magnitude
+`(ρ+δ)/(μ-εA)` and error `(δ+εA*(ρ+δ)/(μ-εA)+E)/μ` for `εA<μ`.
+This provides the numerical S3–S5 handoff on the actual residual. S5 still has to
+construct its table, prove these perturbation/backward-error contracts and
+execute setup/solve/release, including retirement of owned interior output.
+Complete sequence composition and uniform fast time/simultaneous storage remain
+open. S3 remains partial.
+
+Validation: all 10,252 guarded stage-audit jobs pass, including seven new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All six new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2043.0 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.

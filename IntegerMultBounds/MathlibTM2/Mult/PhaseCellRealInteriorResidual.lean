@@ -126,12 +126,7 @@ theorem realInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     rfl
   · intro i
     have hsharpWidth : q+couplingRowExponent rhsExp (stableInteriorExponent p rhsExp)
-        (8*p+1) countExp+2 ≤ w := by
-      have he := stableInteriorExponent_le_outputExponent p l target rhsExp
-      have hwide : q+couplingRowExponent rhsExp (interiorOutputExponent p l target rhsExp)
-          (8*p+1) countExp+2 ≤ w := hrowWidth
-      dsimp only [couplingRowExponent] at hwide ⊢
-      omega
+        (8*p+1) countExp+2 ≤ w := stableInteriorResidual_width p u l target rhsExp
     have hC' (i) : ‖value q (C' i)‖ ≤ (2 : ℝ)^rhsExp := by
       rw [value_realPartWord_norm]
       exact (Complex.abs_re_le_norm _).trans (hC i)
