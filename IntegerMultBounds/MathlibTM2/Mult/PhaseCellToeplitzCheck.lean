@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellMaskedHaloLookupSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareCouplingCoefficientsSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOffsetCouplingRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedSelectedCoefficientSpec
@@ -1412,6 +1413,21 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCouplingCoefficientsCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCouplingCoefficients_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCouplingCoefficients_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.copyIndexedWord_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloInteriorMaskCore_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloInteriorMaskCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloMaskPhaseCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloMembershipHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.invertHaloMaskCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloMembershipMaskCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloPhaseBitCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.maskedHaloLookup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.maskedHaloLookup_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.maskedIndexedWord_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainBinaryBit_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tableBitHost_exec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloInteriorAt_spec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloMaskAt_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
