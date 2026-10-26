@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1331 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1337 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -6880,4 +6880,49 @@ also remain open. S3 is incomplete and the proved saving is unchanged.
 The equal-origin replica checkpoint passes all 9951 guarded S3 axiom-audit jobs
 at 4.2 GiB combined peak. All twelve new modules pass final individual guarded
 checks; maximum measured peak is 1967.3 MiB. Default proof limits are unchanged.
+Source integrity, generated-summary and whitespace checks pass.
+
+
+### S3 raw equal-origin replica gathering
+
+`flatten_uniform_window` proves a generic physical-slice identity over arbitrary
+fixed-width rows. `replicaAmbientStream_window` instantiates it for distinct
+ambient RHS lines: the slice at symbol position `(n*s+origin)*w` is exactly
+replica `n`'s `cellSourceRows` input at the same ambient origin. The proof requires
+`origin+L≤s`, so no row reads through into the next RHS line.
+
+`replicaSymbolOrigins_ordered` and `replicaSymbolOrigins_fit` establish one ordered
+sweep over these windows. `replicaGather_exec` executes the existing restoring
+gather engine, generates/releases its row-symbol count, and publishes the exact
+numerical RHS batch in replica order. Native/left stacks, source, controls and
+all scratch restore; total source movement is bounded by `B*s*w` for `B` replicas.
+
+`unaryGatherControl_exec` and `repeatUnaryGatherControl_exec` generate delimited
+control packets from retained unary dimensions. `generateReplicaControls_exec`
+constructs the initial origin seek, repeated line strides and terminal zero
+advance. It uses one owned copy of the positive replica count and restores every
+source dimension and temporary counter. No binary table arithmetic or supplied
+control stream is needed.
+
+`rawReplicaGather_exec` composes runtime width/control generation, paid copying
+of the complete ambient batch, the actual sweep, and release of every generated
+count/control/width and source copy. It begins with raw consecutive ambient RHS
+lines and ordinary unary dimensions. Its exact final frame changes only 110,
+prefixing the gathered numerical RHS to the unchanged original ambient input and
+arbitrary borrowed suffix. `rawReplicaGatherCost_le` bounds this transport by
+`250*B*s*(2*q+8)` for a positive batch and nonempty in-bounds cell.
+
+This closes the raw transport for one selected ambient origin. Repeating a full
+ambient-batch sweep separately for every cell would introduce an extra factor;
+that schedule is not claimed fast. The shared contract assigns grouped exposure/
+publication and layout restoration to S4/R4. The fast outer composition still
+needs an exposure/transposition schedule with proved multiplicities, and must
+charge these transfers explicitly. The exact equal-key solver itself retains
+its setup-once cost decomposition. Fast amortization/storage, artificial halo
+cuts and complex/boundary/coupling/recovery/full-line assembly remain open.
+S3 is incomplete and the proved saving is unchanged.
+
+The raw-replica-gather checkpoint passes all 9957 guarded S3 axiom-audit jobs
+at 2.7 GiB combined peak. All six new modules pass final individual guarded
+checks; maximum measured peak is 1950.6 MiB. Default proof limits are unchanged.
 Source integrity, generated-summary and whitespace checks pass.

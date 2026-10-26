@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawReplicaGather
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRepeatedClosedBatchSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRepeatedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalInteriorCost
@@ -1053,6 +1054,22 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedClosedBatch_sized_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedClosedBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedClosedBatchCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.flatten_uniform_window,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaAmbientWords_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaAmbient_window,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaAmbientStream_window,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaSymbolOrigins_ordered,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaSymbolOrigins_fit,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaGatherRows_eq_rhs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaSymbolOrigins_succ,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaWindowAdvances,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaGatherControls_succ,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaGather_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unaryGatherControl_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.repeatUnaryGatherControl_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateReplicaControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawReplicaGather_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rawReplicaGatherCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
