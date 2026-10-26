@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1608 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1610 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8210,4 +8210,36 @@ Validation: all 10,247 guarded stage-audit jobs pass, including six new
 explicit theorem audits with only approved axioms. Combined build peak is
 2.7 GiB. All nine new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2039.6 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 allocated dyadic recovery and complex-publication errors
+
+`recoveryGuardBits p = Nat.size (8*p)+3` pays the complete inverse-margin
+amplification of coupling roundoff and boundary error. `recoveryTarget` adds
+these guard bits to the requested output target. `couplingRoundoff_budget`
+prices all generated offsets and the boundary magnitude; the existing shared
+execution precision automatically satisfies its bit requirement.
+
+`selected_recovery_error_budget` proves the complete published halo error,
+including the boundary/interior maximum, is at most `2^-target` whenever S5's
+boundary error is at most `2^-(recoveryTarget p target)`. The boundary magnitude
+is still the stated computed-input budget. The executed
+`recoveryPublishedHalo_tolerance` theorem instantiates this allocation and
+retains its exact source/output frame and paid cost.
+
+The retained recovery and transition interfaces now expose the requested dyadic
+error directly. The final complex recovery/publication interface reserves half
+the final allowance for each physical component and proves the resulting complex
+output error is at most `2^-target`; it no longer returns an unallocated sum of
+component errors. Its precision and cost explicitly use that tighter allocation.
+
+Recovery/publication and final pairing error allocation are closed under the
+stated S5 boundary contract. S5's computed-Schur stability/precision and actual
+boundary execution, complete initial-pass/full-sequence composition, and uniform
+fast time/simultaneous storage remain open. S3 remains partial.
+
+Validation: all 10,249 guarded stage-audit jobs pass, including six new
+explicit theorem audits with only approved axioms. Combined build peak is
+2.7 GiB. All six new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2042.5 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
