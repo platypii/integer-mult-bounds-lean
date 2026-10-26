@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1319 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1331 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Fast asymptotic time/storage, halo cuts and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Equal-origin RHS replicas now share exact generated weights and inverse construction. Grouped-line integration/amortization, fast asymptotic time/storage, halo cuts and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -6821,4 +6821,63 @@ remain open. S3 is incomplete and the proved saving is unchanged.
 The whole-interior cost checkpoint passes all 9939 guarded S3 axiom-audit jobs
 at 2.7 GiB combined peak. All four new modules pass final individual guarded
 checks; maximum measured peak is 1995.2 MiB. Default proof limits are unchanged.
+Source integrity, generated-summary and whitespace checks pass.
+
+
+### S3 exact equal-origin weight/inverse reuse across RHS replicas
+
+The current scalar whole-interior ledger exposes numerical weight evaluation
+per coordinate. The new equal-origin batch entry preserves the exact existing
+weight words and numerical error analysis, while moving that evaluation outside
+the replica loop. Sharing requires identical ambient origin, cell length,
+geometry and precision, not merely equal lengths. Each replica may carry a
+different raw RHS. This is the full numerical reuse key for this cell primitive;
+local halo/cut reuse and the outer grouped-line schedule remain separate gates.
+
+`repeatWeightBanks_exec` uses counted copies to stage both halves of one exact
+weight page, restoring the original page, row/batch counters and all borrowed
+suffixes. `packRepeatedWeights_exec` releases that single source page and
+publishes the two repeated banks in the existing runtime order.
+`replicateWeightPage_exec` generates/releases the row-symbol count and restores
+all other stacks, with cost `B*(70*L*w+77)+24*L*w+9*L+62`.
+`repeatedWeightSetup_exec` generates the single numerical page from ordinary
+unary headers, then executes this replication. It requires no supplied pi,
+exponential, weight page or prepared table state.
+
+`finishBatchSetup_exec` supplies the shared inverse continuation.
+`repeatedBatchWeightedSetup_exec` generates word width and exact weights,
+releases the owned unary origin, constructs one inverse and installs the
+ordinary batch bank. `repeatedGeneratedBatchSetup_exec` then routes the distinct
+raw RHS blocks into the existing arithmetic ABI. Its exact affine cost is
+`setup(0) + B*(154*L*(2*q+8)+15*L+141)`: all weight and inverse construction is in
+`setup(0)`, and the repeated coefficient contains only word transport.
+`repeatedBatchInputBank_setup_exec` closes that entry from a concrete raw bank
+with one unary ambient origin, rather than one binary origin packet per replica.
+
+`repeatedGeneratedBatch_sized_exec` composes this setup with the existing actual
+normalized arithmetic and publication. `repeatedClosedBatch_sized_exec` releases
+the runtime pages/counters. `repeatedClosedBatch_spec` proves requested
+`1/2^target` accuracy on every original-coordinate core for distinct RHS replicas,
+with the same magnitude, geometry and solve assumptions as the prior cell
+primitive. Every private stack is blank at return except the published output
+and restored raw RHS/borrowed suffix; no replica-count error factor is added.
+
+`repeatedClosedBatchCost_eq` separates the complete generated/cleaned execution as
+`setup(0) + B*L*coordinateCost + B*cellCost`. With execution word width `w` and
+precision `q`, the repeated coordinate coefficient is
+`3*rmulCost(w)+885*w+4*(inputExponent+2*l+2)+433`; the cell coefficient is
+`4*rpRecBound(q,l,w)+248*2^l*w+781`. Neither contains the table exponential
+compiler or an inverse-construction cost. The exact numerical construction
+remains fully charged once in shared setup.
+
+The existing single-line `solveNaturalInterior` caller is unchanged and still
+uses its original per-coordinate weight-generation ledger. Connecting grouped
+RHS lines to the new equal-key entry, proving actual setup multiplicities and
+amortization, fast asymptotic time and execution-wide storage remain required.
+Artificial halo cuts and complex/boundary/coupling/recovery/full-line assembly
+also remain open. S3 is incomplete and the proved saving is unchanged.
+
+The equal-origin replica checkpoint passes all 9951 guarded S3 axiom-audit jobs
+at 4.2 GiB combined peak. All twelve new modules pass final individual guarded
+checks; maximum measured peak is 1967.3 MiB. Default proof limits are unchanged.
 Source integrity, generated-summary and whitespace checks pass.

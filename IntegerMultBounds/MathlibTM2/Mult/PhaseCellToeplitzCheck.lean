@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRepeatedClosedBatchSpec
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRepeatedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalInteriorCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolveNaturalInterior
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunNaturalLengthKeys
@@ -1035,6 +1037,22 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.initializeLengthKeysCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.lengthKeyLoopCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.solveNaturalInteriorCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.repeatWeightBanks_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packRepeatedWeights_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicateWeightPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.batchWeightPage_const,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.repeatedWeightSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.finishBatchSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedBatchWeightedSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedGeneratedBatchSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedGeneratedBatchSetupCost_affine,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedBatchBank_update109,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedGeneratedBatchBank_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedBatchInputBank_setup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedGeneratedBatch_sized_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedClosedBatch_sized_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedClosedBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.repeatedClosedBatchCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
