@@ -36,16 +36,16 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 def releaseOriginBank : Pr P₀ 117 Q A U := clearWords originPorts
 
-theorem releaseOriginBank_exec (V : ℕ) (value : Fin 16 → ℕ)
+theorem releaseOriginBank_width_exec (V W : ℕ) (hWV : W ≤ V) (value : Fin 16 → ℕ)
     (v : HS 117 Q A U) (S : Stacks 117 A)
-    (hS : tblHolds originReg S (tblRho V (List.replicate V tick) (List.replicate V tick) ⟨value, []⟩)) :
+    (hS : tblHolds originReg S (tblRho V (List.replicate V tick) (List.replicate W tick) ⟨value, []⟩)) :
     ∃ v' m, v'.user = v.user ∧ m ≤ 62*V+63 ∧
       Exec body releaseOriginBank (mk v S) m
         (mk v' { S with R := fun k => if k.val < 31 then [] else S.R k }) := by
   have hlen (k : Fin 117) (hk : k ∈ originPorts) : (S.R k).length ≤ V := by
     obtain ⟨r, rfl⟩ := originReg_covers k ((mem_originPorts k).mp hk)
     rw [hS r]
-    cases r <;> simp [tblRho, binSyms]
+    cases r <;> simp [tblRho, binSyms, hWV]
   have hsum : (originPorts.map (fun k => (S.R k).length)).sum ≤ 31*V := by
     have hh : ∀ rs : List (Fin 117), (∀ k ∈ rs, (S.R k).length ≤ V) →
         (rs.map (fun k => (S.R k).length)).sum ≤ rs.length*V := by
@@ -70,6 +70,14 @@ theorem releaseOriginBank_exec (V : ℕ) (value : Fin 16 → ℕ)
   · simp only [originPorts, List.length_ofFn] at *
     omega
   · simpa only [releaseOriginBank, mem_originPorts] using he
+
+theorem releaseOriginBank_exec (V : ℕ) (value : Fin 16 → ℕ)
+    (v : HS 117 Q A U) (S : Stacks 117 A)
+    (hS : tblHolds originReg S (tblRho V (List.replicate V tick) (List.replicate V tick) ⟨value, []⟩)) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ 62*V+63 ∧
+      Exec body releaseOriginBank (mk v S) m
+        (mk v' { S with R := fun k => if k.val < 31 then [] else S.R k }) :=
+  releaseOriginBank_width_exec V V le_rfl value v S hS
 
 open IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 

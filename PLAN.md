@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1570 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1583 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -7997,4 +7997,30 @@ Validation: all 10,208 guarded stage-audit jobs pass, including eleven new
 explicit theorem audits with only approved axioms. Combined build peak is
 22.4 GiB. All eleven new/revised Lean modules, including the audit root, pass
 individual guarded checks at at most 2036.8 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### S3 physical publication of the recovered real halo
+
+The publication program generates the interior membership mask from the halo
+headers, splits the retained interior and boundary pages, and selects their words
+in a single sequential scan. It projects the selected words to their real parts,
+preserves the original suffix and releases its private headers and scratch.
+`publishHalo_exec` proves the resulting physical stack and its explicit cost.
+
+`publishedHalo_accuracy` connects the decoded published words to the numerical
+halo error. `recoveryPublishedHalo_spec` composes this publication with the
+executed recovery and second interior pass at their shared precision. The
+published real line has the maximum of the boundary error and the proved recovery
+interior error, and the original right-hand side remains retained.
+
+S3 remains partial: the S5 boundary producer and its error contract, complex
+assembly, complete error allocation, automatic support and row-mass budgets,
+uniform fast time and simultaneous storage still need proofs. The publication
+mask currently uses the existing coefficient-width workspace; a smaller geometry
+workspace remains an optimization to establish before a fast-time bound.
+
+Validation: all 10,221 guarded stage-audit jobs pass, including 22 new
+explicit theorem audits with only approved axioms. Combined build peak is
+33.9 GiB. All 15 new/revised Lean modules, including the audit root, pass
+individual guarded checks at at most 2040.8 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.

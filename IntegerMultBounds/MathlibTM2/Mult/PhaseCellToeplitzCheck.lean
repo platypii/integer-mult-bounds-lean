@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryInterior
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryPublishedHalo
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRealInteriorResidual
 
@@ -1510,6 +1510,28 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloInteriorMaskCode_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloMaskPhaseCode_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloMembershipHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseOriginBank_width_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMaskSymbol,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMaskRow_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMaskCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMaskSymbols_getElem,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMaskHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMaskFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationChoose_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSelectWord_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationWords_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationWords_getElem,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSelectLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMaskSymbols_eq_flags,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationWords_chirpLine,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMerge_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSplit_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationSelectFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedPublicationMask_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.outerPublicationMask_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.publishHalo_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishedHalo_accuracy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.recoveryPublishedHalo_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.invertHaloMaskCode_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloMembershipMaskCode_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloPhaseBitCode_do,
