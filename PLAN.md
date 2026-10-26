@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1353 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1361 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Equal-origin RHS replicas now share exact generated weights and inverse construction. Clipped halo geometry, cell execution and descriptor and positive distinct length-key generation from ordinary headers with full scratch release are proved. Grouped-line integration/amortization, fast time/storage, halo class execution and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
+| S3 fast inverse map | 🟡 math / 🟡 kernels | One fixed program initializes and executes the positive distinct length schedule from ordinary master headers and raw input, proves whole-interior accuracy, releases its widths and restores every stack except the ambient output. The whole-interior ledger separates shared setup, coordinate volume and padded cell work. Equal-origin RHS replicas now share exact generated weights and inverse construction. Clipped halo geometry, cell execution and descriptor and positive distinct length-key generation from ordinary headers with full scratch release are proved. Grouped-line integration/amortization, fast time/storage, halo class gathering/publication and key-loop composition, and complex/boundary/coupling/recovery/full-line assembly remain. Shared S3–S5 interface is pinned. | 6–10k |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -7024,3 +7024,27 @@ Validation: all 9,978 audit jobs pass with only approved axioms. The final
 guarded audit build peaks at 2.7 GiB; all twelve new or revised non-audit
 modules pass individual guarded checks, each at most 1866.5 MiB. Source
 integrity, plan-status and whitespace checks pass.
+
+### S3 clipped length classes and closed group accuracy
+
+`haloLengthGroup` selects positive clipped cells of one length in ambient phase
+order. Its generated origins satisfy the solver geometry contract. The generated
+halo keys cover exactly the clipped interior through these groups, and uniform
+per-cell error composes without a factor for the number of keys.
+
+`generateHaloClassControls` starts with ordinary unary geometry and a positive
+length, generates its widths, emits the exact class origins and owned unary
+count, then releases all scratch. The origin packet representation matches the
+closed batch solver. `closedHaloGroup_spec` executes that solver for a nonempty
+class on the clipped interior of the same ambient matrix, with accuracy, cost,
+output size and cleanup proved.
+
+The control producer and closed group solver remain separate execution pieces.
+RHS gathering/publication and the key-loop composition still need integration.
+Grouped amortization, uniform fast time and execution-wide storage, and complex/
+boundary/coupling/recovery/full-line assembly remain open. S3 remains partial.
+
+Validation: all 9,987 stage audit jobs pass with only approved axioms. The
+guarded audit build peaks at 2.7 GiB; all nine new modules pass individual
+guarded checks, each at most 1946.1 MiB. Source-integrity, plan-status and
+whitespace checks pass.
