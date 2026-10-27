@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2201 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2205 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14150,5 +14150,37 @@ entry points still use the earlier backend. S3 stays partial; kappa is unchanged
 
 Validation: the expanded standard-axiom audit passes all 15,052 jobs (3.4 GiB
 combined peak RSS), retaining all prior entries and adding 15. All nine new
+modules and the audit pass individual guarded checks below the 4 GiB module
+budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
+
+### S3 checkpoint: generate and release retained coefficients around the batch
+
+`placedFamilySetup_exec` places the actual numerical family generator in the
+complete inverse bank. It uses ordinary scalar/geometry masters and changes
+only the retained-family tape on register 260. The factor and coupling banks
+are disjoint from its seven workspace ports.
+
+`generatedFamilyComplexBatch_spec` now generates that family once, runs the
+entire repeated complex batch, and pays for its final erasure. Its caller has
+no supplied numerical interior page premise. The structural installation
+lemma avoids comparing expanded generated data during proof checking.
+
+`familyCouplingKeySetup_exec` and `familyCouplingKeyRelease_exec` execute the
+existing numerical coupling construction and release below the family ports.
+`generatedCouplingFamilyComplexBatch_spec` composes both coefficient setups,
+the retained-family complex batch and both releases. Only the ordered output
+prefix changes; all source buffers, masters, borrowed factor data, cache
+suffixes, counters and left stacks restore. Both setups and releases are paid
+once, outside the replica-count term, and each replica retains the same
+uniform physical error bound.
+
+Remaining: join generated factor/publication setup and release to this new
+batch and connect the ordinary-scalar caller, then prove selected uniform
+time matching and simultaneous whole-execution live storage. The ordinary
+caller still uses the earlier interior backend. S3 stays partial; kappa is
+unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,056 jobs (3.5 GiB
+combined peak RSS), retaining all prior entries and adding seven. All four new
 modules and the audit pass individual guarded checks below the 4 GiB module
 budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
