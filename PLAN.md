@@ -11915,3 +11915,38 @@ Validation: all 14,815 guarded stage-audit jobs pass (3.4 GiB combined peak).
 All six new row-step/outer-workspace/outer-row/loop/run/capture-pass modules pass
 individual guarded checks (maximum 1956.7 MiB). Source-integrity, whitespace
 and plan-status checks pass; default proof limits remain unchanged.
+
+### Integrate capture-once coupling behind the existing inverse ABI
+
+The retained-source outer workspace now fits the existing 144-register coupling
+bank. Register 141 is outside row arithmetic and is not read by the pass after
+ordinary headers are installed. `captureCouplingSource_prefix_exec` generalizes
+capture to prepend the owned line above an arbitrary destination suffix. The
+original fresh-destination theorem specializes it. The captured pass borrows
+register 141's suffix and uses counted prefix retirement to restore it exactly,
+including the caller's original ordinary master value and all left stacks.
+
+`runCouplingRows` now executes this captured-source implementation, and its paid
+cost is `capturedCouplingRowsCost`. `runCouplingRows_exec` retains the original
+interface and output frame through the proved equality of core register views.
+Consequently the initial residual coupling, recovery coupling and generated
+boundary-column setup consumers use the new pass through their existing calls;
+no widening or alternate composed inverse pipeline is required.
+
+The actual one-time prefix retirement has more control work than erasing a fresh
+cache. The updated legacy-cost comparison pays that work explicitly and proves
+nonincrease for axes with at least two rows. The current caller uses the actual
+new allowance for every admitted axis, without relying on that comparison.
+The former full-pass per-row-capture audit was removed; restore it from dc798e22
+for the old implementation. The legacy reference allowance remains only in the
+separate cost-comparison module.
+
+Indexed input/coefficient lookup and scalar row arithmetic remain paid. Final
+fast supplier/setup matching, simultaneous live storage and endpoint/resource
+integration remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,815 guarded stage-audit jobs pass after the full dependent
+inverse rebuild (21.8 GiB combined peak). All eight changed/new capture,
+workspace, row, loop, run, borrowed-cache and cost modules pass individual guarded
+checks (maximum 1959.1 MiB). Changed-source integrity, whitespace and
+plan-status checks pass; default proof limits remain unchanged.

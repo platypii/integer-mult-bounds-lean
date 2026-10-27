@@ -14,9 +14,9 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.MathlibTM2.Mult.ShortConv
 
-variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 145 Q A U}
+variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 144 Q A U}
 
-noncomputable def runCachedCouplingRows (hQ : SS.states ≤ Q) (boundary : Bool) : Pr P₀ 145 Q A U :=
+noncomputable def runCachedCouplingRows (hQ : SS.states ≤ Q) (boundary : Bool) : Pr P₀ 144 Q A U :=
   .seq (ucopy 97 143 135) (.seq (cachedCouplingRowLoop hQ boundary)
     (.seq (reversePrefixInPlace 97 104 94 113 115 105 106 108 109) (uclear 107)))
 
@@ -27,9 +27,9 @@ theorem runCachedCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b 
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
     (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s) (hP : 13 ≤ P)
     (C : ZMod s → GaussianInt) (rhs : List GaussianInt) (hlen : rhs.length = s)
-    (tail rhsTail : List (Fin (A+4))) (v : HS 145 Q A U) (S : Stacks 145 A)
+    (tail rhsTail : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
     (hready : CouplingReady P q w s t u band a b (cstream A w (chirpLine s C)++tail) (embStk cachedCouplingCoreReg (embStk cachedCouplingOuterReg S)))
-    (hcache : ∃ cacheTail, S.R 144 = cstream A w (chirpLine s C)++cacheTail)
+    (hcache : ∃ cacheTail, S.R 141 = cstream A w (chirpLine s C)++cacheTail)
     (hindex : S.R 107 = []) (hrhs : S.R 93 = cstream A w rhs++rhsTail)
     (h143 : S.R 143 = []) (h135 : S.R 135 = [])
     (hxs : ∀ j < s, ∀ x ∈ couplingInputWords boundary t band a b j C, Fits w x)
@@ -41,9 +41,9 @@ theorem runCachedCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b 
   have hs : (S.R 97).length = s := hready.axis
   have hwS : (S.R 94).length = w := hready.width
   obtain ⟨v₁,hu₁,he₁⟩ := ucopy_exec (body)
-    (show (97 : Fin 145) ≠ 143 by decide) (show (97 : Fin 145) ≠ 135 by decide)
-    (show (143 : Fin 145) ≠ 135 by decide) v S h135
-  let S₁ : Stacks 145 A := {S with R := Function.update S.R 143 (List.replicate s tick)}
+    (show (97 : Fin 144) ≠ 143 by decide) (show (97 : Fin 144) ≠ 135 by decide)
+    (show (143 : Fin 144) ≠ 135 by decide) v S h135
+  let S₁ : Stacks 144 A := {S with R := Function.update S.R 143 (List.replicate s tick)}
   have he₁' : Exec (body) (ucopy 97 143 135) (mk v S) (4*s+4) (mk v₁ S₁) := by
     simpa [S₁,hs,h143] using he₁
   have hready₁ : CouplingReady P q w s t u band a b
@@ -59,12 +59,12 @@ theorem runCachedCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b 
     (by simp [S₁,hindex]) (by simpa [S₁] using hrhs) (by simp [S₁,hlen])
     (by simpa only [Nat.zero_add,hlen] using hxs) (by simpa only [Nat.zero_add,hlen] using has)
   let ys := couplingRowWords P q t u band a b boundary C 0 rhs
-  let S₂ : Stacks 145 A := {S₁ with R := (Function.update (Function.update (Function.update (Function.update S₁.R
+  let S₂ : Stacks 144 A := {S₁ with R := (Function.update (Function.update (Function.update (Function.update S₁.R
     93 rhsTail) 107 (List.replicate s tick)) 113 (cstream A w ys.reverse++S₁.R 113)) 143 [])}
   have he₂' : Exec (body) (cachedCouplingRowLoop hQ boundary) (mk v₁ S₁) m₂ (mk v₂ S₂) := by
     simpa [S₂,ys,hlen,S₁,hindex] using he₂
   have hys : ys.length = s := by simp [ys,hlen]
-  have hfresh : ∀ k ∈ [(104 : Fin 145),115,105,106,108,109], S₂.R k = [] := by
+  have hfresh : ∀ k ∈ [(104 : Fin 144),115,105,106,108,109], S₂.R k = [] := by
     intro k hk
     have hlow : k.val < 117 := by
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
@@ -88,7 +88,7 @@ theorem runCachedCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b 
     (saved := 105) (buf := 106) (tmp := 108) (count := 109) (by decide)
     w ys.reverse (S.R 113) v₂ S₂
     (by simp [S₂,S₁,hs,hys]) (by simpa [S₂,S₁] using hwS) (by simp [S₂,S₁]) hfresh
-  let S₃ : Stacks 145 A := {S₂ with R := Function.update S₂.R 113 (cstream A w ys++S.R 113)}
+  let S₃ : Stacks 144 A := {S₂ with R := Function.update S₂.R 113 (cstream A w ys++S.R 113)}
   have he₃' : Exec (body) (reversePrefixInPlace 97 104 94 113 115 105 106 108 109)
       (mk v₂ S₂) m₃ (mk v₃ S₃) := by simpa [S₃] using he₃
   have h107₃ : S₃.R 107 = List.replicate s tick := by simp [S₃,S₂]

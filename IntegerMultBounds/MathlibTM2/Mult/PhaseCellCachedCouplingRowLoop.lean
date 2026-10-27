@@ -13,9 +13,9 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.MathlibTM2.Mult.ShortConv
 
-variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 145 Q A U}
+variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 144 Q A U}
 
-noncomputable def cachedCouplingRowLoop (hQ : SS.states ≤ Q) (boundary : Bool) : Pr P₀ 145 Q A U :=
+noncomputable def cachedCouplingRowLoop (hQ : SS.states ≤ Q) (boundary : Bool) : Pr P₀ 144 Q A U :=
   countedLoop 143 (cachedOuterCouplingRow hQ boundary)
 
 def cachedCouplingRowLoopCost (P q w s t u band a b i N : ℕ) : ℕ :=
@@ -25,9 +25,9 @@ theorem cachedCouplingRowLoop_exec (hQ : SS.states ≤ Q) {P q w s t u band a b 
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
     (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s) (hP : 13 ≤ P)
     (C : ZMod s → GaussianInt) (rhs : List GaussianInt) (hrows : i+rhs.length ≤ s)
-    (tail rhsTail : List (Fin (A+4))) (v : HS 145 Q A U) (S : Stacks 145 A)
+    (tail rhsTail : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
     (hready : CouplingReady P q w s t u band a b (cstream A w (chirpLine s C)++tail) (embStk cachedCouplingCoreReg (embStk cachedCouplingOuterReg S)))
-    (hcache : ∃ cacheTail, S.R 144 = cstream A w (chirpLine s C)++cacheTail)
+    (hcache : ∃ cacheTail, S.R 141 = cstream A w (chirpLine s C)++cacheTail)
     (hindex : (S.R 107).length = i) (hrhs : S.R 93 = cstream A w rhs++rhsTail)
     (hcount : (S.R 143).length = rhs.length)
     (hxs : ∀ j < rhs.length, ∀ x ∈ couplingInputWords boundary t band a b (i+j) C, Fits w x)
@@ -38,9 +38,9 @@ theorem cachedCouplingRowLoop_exec (hQ : SS.states ≤ Q) {P q w s t u band a b 
           93 rhsTail) 107 (List.replicate rhs.length tick++S.R 107))
           113 (cstream A w (couplingRowWords P q t u band a b boundary C i rhs).reverse++S.R 113)) 143 [])}) := by
   let ys := couplingRowWords P q t u band a b boundary C i rhs
-  let Inv : ℕ → Stacks 145 A → Prop := fun j B =>
+  let Inv : ℕ → Stacks 144 A → Prop := fun j B =>
     B.inp = S.inp ∧ B.out = S.out ∧ B.L = S.L ∧
-    (∀ k : Fin 145, k ≠ 93 → k ≠ 107 → k ≠ 113 → k ≠ 143 → B.R k = S.R k) ∧
+    (∀ k : Fin 144, k ≠ 93 → k ≠ 107 → k ≠ 113 → k ≠ 143 → B.R k = S.R k) ∧
     B.R 93 = cstream A w (rhs.drop j)++rhsTail ∧
     B.R 107 = List.replicate j tick++S.R 107 ∧
     B.R 113 = cstream A w (ys.take j).reverse++S.R 113
@@ -49,7 +49,7 @@ theorem cachedCouplingRowLoop_exec (hQ : SS.states ≤ Q) {P q w s t u band a b 
     rcases h with ⟨hi,ho,hl,hf,hr,hj,hy⟩
     exact ⟨hi,ho,hl,by intro k h93 h107 h113 h143; simpa [h143] using hf k h93 h107 h113 h143,
       by simpa using hr,by simpa using hj,by simpa using hy⟩
-  have hstep : ∀ j < rhs.length, ∀ (vi : HS 145 Q A U) B, Inv j B →
+  have hstep : ∀ j < rhs.length, ∀ (vi : HS 144 Q A U) B, Inv j B →
       ∃ v' B' m, v'.user = vi.user ∧ m ≤ cachedCouplingRowStepCost P q w s t u band a b (i+j) ∧
         Exec (body) (cachedOuterCouplingRow hQ boundary) (mk vi B) m (mk v' B') ∧
         B'.R 143 = B.R 143 ∧ Inv (j+1) B' := by
@@ -72,9 +72,9 @@ theorem cachedCouplingRowLoop_exec (hQ : SS.states ≤ Q) {P q w s t u band a b 
       rw [hr,List.drop_eq_getElem_cons hj,cstream_cons,List.append_assoc]
     obtain ⟨v',m,hu,hm,he⟩ := cachedOuterCouplingRow_exec (body := body) hQ boundary hA hw5 hqw
       hst haS hbS hbandS (by omega) hP C rhs[j] tail (cstream A w (rhs.drop (j+1))++rhsTail)
-      vi B hreadyB (by obtain ⟨cacheTail,hh⟩ := hcache; exact ⟨cacheTail,(hf 144 (by decide) (by decide) (by decide) (by decide)).trans hh⟩) hindexB hrhsB (hxs j hj) (has j hj)
+      vi B hreadyB (by obtain ⟨cacheTail,hh⟩ := hcache; exact ⟨cacheTail,(hf 141 (by decide) (by decide) (by decide) (by decide)).trans hh⟩) hindexB hrhsB (hxs j hj) (has j hj)
     let z := couplingRowWord P q t u band a b (i+j) boundary C rhs[j]
-    let B' : Stacks 145 A := {B with R := (Function.update (Function.update (Function.update B.R
+    let B' : Stacks 144 A := {B with R := (Function.update (Function.update (Function.update B.R
       113 (csyms A w z++B.R 113)) 93 (cstream A w (rhs.drop (j+1))++rhsTail)) 107 (tick::B.R 107))}
     have hylen : j < ys.length := by simpa [ys] using hj
     have hyget : ys[j] = z := couplingRowWords_getElem P q t u band a b i boundary C rhs j hj
