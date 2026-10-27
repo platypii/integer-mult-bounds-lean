@@ -11,6 +11,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageBoundaryAmbient
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPagePublicationSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageBoundaryRecovered
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComponentTransition
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComputedBoundaryRhs
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedInverseCaller
@@ -2077,6 +2078,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolve_frame_exact,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_private,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireCountedLine_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageRecoveryReg_project_ports,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageSchurResidual_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageBoundaryRhs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageComputedBoundaryRhs_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageRecoveryReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageRecoveryPublishedHalo_at_precision,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.sharedPageRetireResidual_exec,

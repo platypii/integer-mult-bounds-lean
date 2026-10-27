@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1917 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1921 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11270,3 +11270,39 @@ recovery-register-map/precision/retirement/composed-halo/component-transition
 contract audits (5.6 GiB combined peak). All four new modules pass individual
 guarded checks (maximum 2957.6 MiB). Source-integrity, whitespace and plan-status
 checks pass; proof limits are unchanged.
+
+### Compute and gather the boundary RHS on the retained page
+
+`sharedPageSchurResidual_spec` executes the interior solve and forward coupling
+in the 240-register shared bank under an arbitrary caller procedure table. It
+returns the actual residual field, its realness and magnitude bounds, the exact
+interior-solve map used in the Schur residual, the required residual approximation
+bound, byte-level publication reads, and arithmetic readiness. Its exact frame
+changes only the source and initial-interior publication tapes; the factor page,
+folded coordinates, batch tapes and scatter controls are preserved.
+
+`sharedPageBoundaryRhs_exec` gathers that ambient residual into factor RHS port
+206 with generated controls and restores all other tapes, including both the
+coordinate page and ambient residual stream. `sharedPageComputedBoundaryRhs_spec`
+executes the two stages together, so the folded boundary RHS is computed from the
+ordinary input RHS rather than supplied as an execution premise. It retains the
+numerical Schur-residual and readiness contracts. The budget keeps the actual
+interior/residual cost and `boundaryRhsPrepareCost` explicit.
+
+`retireCountedLine_exec` generalizes owned-line retirement over arbitrary distinct
+registers with retained row and width masters. It restores every private control
+and costs `rows*(12*width+9)+12`. The existing shared-page recovery residual
+retirement now instantiates this structural theorem instead of duplicating its
+proof. The same primitive can retire the owned initial-interior and folded-result
+lines when closing the complete prepared real-component driver.
+
+Actual residual generation and boundary gathering now execute in the shared-page
+bank. Composing them with the retained solve/recovery and owned-line retirement
+in the complete complex/replica caller, matching grouped fast setup/interior
+costs, and simultaneous live storage remain open. S3 remains partial.
+
+Validation: all 14,769 guarded stage-audit jobs pass, including five new explicit
+generic-retirement/projected-frame/generated-residual/gather/composition audits
+(5.0 GiB combined peak). All four new modules and the revised retirement adapter
+pass individual guarded checks (maximum 2933.8 MiB). Source-integrity, whitespace
+and plan-status checks pass; proof limits are unchanged.
