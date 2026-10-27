@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2145 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2149 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13743,3 +13743,39 @@ S3 stays partial; kappa is unchanged.
 Validation: the expanded standard-axiom audit passes all 14,996 jobs (3.4 GiB
 combined peak RSS). All five new modules pass individual guarded checks below
 the 4 GiB module budget. Proof-integrity and whitespace checks pass.
+
+### S3 checkpoint: complete cached controlled halo class
+
+`cachedProtectedControlledHaloClass_spec` composes the existing controlled
+halo gathering, cached protected numerical solve, scatter publication and
+per-class release in the 148-register workspace. The actual published ambient
+cores have the requested uniform error bound and bounded encoded result rows.
+The final register function is exactly `publishedClassR (restoredGroupR S.R)`
+with the stated scattered prefix. Inputs, left stacks, borrowed source/output
+suffixes and private scratch restore as specified.
+
+The theorem explicitly preserves every register at 144 or above, including
+the retained weight page, its clock and both cache scratch ports. The solve
+contract now also proves preservation of every left stack. The gather and
+finish bridges execute the existing 144-register programs under the disjoint
+placement; no separate tape implementation or supplied arithmetic execution
+is used. The three small class-frame update definitions are now polymorphic
+in the register count, preserving the original 144-register specializations.
+
+`cachedProtectedControlledHaloClassCost_eq` separates complete class work into
+its zero-cell bill, `(B*L)*cachedBatchCoordinateCost`, and
+`B*(cachedBatchCellCost+12*weightWorkspaceWidth+13)`. This includes gathering,
+origin removal, the saved row count, arithmetic, scatter and teardown, while
+retained weight generation/release retain their separate executed charges.
+
+Runtime conditional/empty classes, the generated length-class loop and retained
+key setup/release across complete inverse calls remain to be integrated with
+this backend. Final selected uniform time matching and simultaneous
+whole-execution live storage remain open. S3 stays partial and kappa is
+unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,000 jobs; the
+complete downstream rebuild peaked at 26.3 GiB combined RSS under the guard.
+All seven changed/new modules pass individual guarded checks, with maximum
+peak RSS 2016.6 MiB. The original 144-register callers rebuild successfully.
+Proof-integrity, plan-status and whitespace checks pass.

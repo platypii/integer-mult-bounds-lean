@@ -19,7 +19,7 @@ variable {Q A : ℕ} {U P : Type} {body : P → Pr P 144 Q A U}
 def finishNaturalClass : Pr P 144 Q A U :=
   .seq retireGroupRHS (.seq protectedScatter (clearWords [128,129]))
 
-def finishedClassR (R : Regs 144 A) (ambient sourceTail published : List (Fin (A+4))) : Regs 144 A :=
+def finishedClassR {T : ℕ} [NeZero T] (R : Regs T A) (ambient sourceTail published : List (Fin (A+4))) : Regs T A :=
   Function.update (Function.update (Function.update (Function.update (Function.update
     (Function.update R 110 ambient) 93 sourceTail) 132 published) 140 []) 128 []) 129 []
 

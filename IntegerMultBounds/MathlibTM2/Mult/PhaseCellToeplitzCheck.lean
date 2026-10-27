@@ -36,7 +36,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBatchWeightCache
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchWeightedSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedClosedBatchSpec
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedProtectedHaloBatchSolve
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedControlledHaloClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedFactorComplexBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedCacheComplexBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedComplexBatch
@@ -2487,6 +2487,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cachedGroupLegacyReg_off,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cachedGroupCore_view,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedProtectedHaloBatchSolve_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedProtectedHaloBatchSolve_frame_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedProtectedControlledHaloGroupInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cachedGroup_finished_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cachedFinishHaloClass_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedPublishedClassR_cache,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedProtectedControlledHaloClass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedProtectedControlledHaloClassCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCouplingCacheRelease_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_succ,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_length_le,

@@ -10,10 +10,10 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 
 open IntegerMultBounds.MathlibTM2.Node
 
-def restoredGroupR {A : ℕ} (R : Regs 144 A) : Regs 144 A :=
+def restoredGroupR {A T : ℕ} [NeZero T] (R : Regs T A) : Regs T A :=
   fun k => if k.val < 117 ∧ k ≠ 93 ∧ k ≠ 110 then [] else R k
 
-def publishedClassR {A : ℕ} (R : Regs 144 A) (published : List (Fin (A+4))) : Regs 144 A :=
+def publishedClassR {A T : ℕ} [NeZero T] (R : Regs T A) (published : List (Fin (A+4))) : Regs T A :=
   Function.update (Function.update (Function.update (Function.update R 128 []) 129 []) 132 published) 140 []
 
 theorem restoredGroupR_frame {A : ℕ} (R R₀ : Regs 144 A)

@@ -47,7 +47,7 @@ theorem cachedProtectedHaloBatchSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states
     ∃ v' S' m, v'.user = v.user ∧ m ≤ (4*B+4)+cachedBatchFromOriginsCost p l B L s t u target rhsExp ∧
       Exec body (cachedProtectedHaloBatchSolve hR hQ)
         (mk v S₀) m (mk v' S') ∧
-      S'.R 129 = List.replicate B tick ∧
+      S'.R 129 = List.replicate B tick ∧ S'.L = S₀.L ∧
       (∀ i, 117 ≤ i.val → i ≠ 129 → S'.L i = S₀.L i ∧ S'.R i = S₀.R i) ∧
       (embStk weightCacheCoreReg (embStk cachedGroupReg S')).inp = inp ∧ (embStk weightCacheCoreReg (embStk cachedGroupReg S')).out = out ∧ (∀ k, (embStk weightCacheCoreReg (embStk cachedGroupReg S')).L k = []) ∧ (embStk weightCacheCoreReg (embStk cachedGroupReg S')).R 110 = rhs ++ borrowed ∧
       (∀ k : Fin 117, k ≠ 93 → k ≠ 110 → (embStk weightCacheCoreReg (embStk cachedGroupReg S')).R k = []) ∧
@@ -81,9 +81,27 @@ theorem cachedProtectedHaloBatchSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states
   obtain ⟨v₂,F,he₂,hv₂,hu₂,hproj,hoff₂⟩ := exec_emb (body' := body) (ι := Empty.elim)
     cachedGroupReg_injective (fun p => nomatch p) he v₁ rfl T rfl
   refine ⟨v₂,F,(4*B+4)+m,hu₂.trans (hu.trans hu₁),by dsimp [B,band] at hm ⊢; omega,
-    Exec.seq he₁' he₂,?_,?_,?_⟩
+    Exec.seq he₁' he₂,?_,?_,?_,?_⟩
   · have h := (hoff₂ 129 (cachedGroupReg_off 129 (by decide) (by decide))).2
     simpa [T] using h
+  · funext i
+    by_cases hlo : i.val < 117
+    · let j : Fin 117 := ⟨i.val,hlo⟩
+      have heq : cachedGroupReg (weightCacheCoreReg j) = i := by
+        apply Fin.ext
+        simp [cachedGroupReg,weightCacheCoreReg,j,hlo]
+      have hf := congrArg (fun S : Stacks 121 A => S.L (weightCacheCoreReg j)) hproj
+      have hz := hrest.2.2.1 j
+      have hi := congrArg (fun S : Stacks 117 A => S.L j) hinput
+      have hi' : S₀.L i = [] := by
+        simpa only [embStk_L,heq,batchInputBank] using hi
+      rw [← heq]
+      exact (hf.trans hz).trans (by simpa only [heq] using hi'.symm)
+    by_cases hmid : i.val < 144
+    · exact (hoff₂ i (cachedGroupReg_off i (by omega) hmid)).1
+    · obtain ⟨j,hj,heq⟩ := cachedGroupReg_high i (by omega)
+      have h := (congrArg (fun S : Stacks 121 A => S.L j) hproj).trans (hoff j hj).1
+      simpa only [embStk_L,heq] using h
   · intro i hi h129i
     by_cases hmid : i.val < 144
     · have h := hoff₂ i (cachedGroupReg_off i hi hmid)
