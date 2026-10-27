@@ -12648,3 +12648,43 @@ All 23 affected implementation modules pass individual guarded checks, maximum
 1994.2 MiB. The new guard-generation, branch-count, loop and whole-pass cost
 contracts are included in the stage axiom audit. Source-integrity, whitespace and
 plan-status checks pass; default proof limits are unchanged.
+
+### S3 guarded recovery costs reach the shared complex-batch ledger
+
+The source mode is now an explicit parameter of the executed coupling costs:
+`runCouplingRowsCost`, `borrowedCouplingPassCost`, `feedCouplingPassCost` and
+`restoredCouplingPassCost`. Their execution/specification theorems retain the
+actual guarded cost from `spatialCouplingRows_exec`. Residual calls use false;
+recovery and original boundary-column calls use true. Numerical conclusions,
+programs and restoration frames are unchanged.
+
+`spatialCouplingGuardedRowsCost_eq` exposes paid source and guard setup, one
+prepared coefficient packet, the actual selected row-branch sum, cursor/stream
+work and final release. `feedCouplingPassCost_eq` and
+`restoredCouplingPassCost_eq` separate that kernel charge from source transport
+and ordinary-header setup/release. `spatialCouplingGuardedRowsCost_recovery_le`
+and `restoredCouplingPassCost_recovery_le` replace the branch sum by its proved
+zero/full-row count, retaining the explicit ambient-outside-halo charge.
+
+`recoveryToleranceOverhead_guarded_le` carries this allowance through the full
+recovery overhead. `sharedComplexBatchGeometryLineCost` now uses it in the two
+real-component solves. The line and counted-batch geometry bounds retain their
+setup/release and replica multiplicities; their enlarged-boundary estimate now
+requires the existing valid-descriptor condition b ≤ s explicitly. This closes
+propagation of the guarded recovery saving into the shared inverse resource
+ledger. The coefficient backend remains polynomial and is still charged, not
+replaced by a hypothetical fast supplier.
+
+Removed the superseded uniform coupling-cost chain and its comparison lemmas;
+restore from `7df2a1cc`.
+
+Final fast supplier/setup matching, treatment of clipped-halo ambient overhead,
+simultaneous whole-execution live storage and endpoint/resource integration
+remain open. S3 stays partial; kappa is unchanged.
+
+Validation: all 14,874 guarded stage-audit jobs pass, including the shared raw
+inverse caller, closed complex batch and resource ledger (21.9 GiB combined peak).
+All 17 affected implementation modules pass individual guarded checks, maximum
+2962.2 MiB. The stage axiom audit covers the stronger coupling and shared-batch
+cost contracts. Source-integrity, whitespace and plan-status checks pass;
+default proof limits are unchanged.

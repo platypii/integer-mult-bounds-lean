@@ -19,8 +19,8 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 noncomputable def runCouplingRows (hQ : SS.states ≤ Q) (boundary : Bool) : Pr P₀ 144 Q A U :=
   spatialCouplingRows hQ boundary
 
-def runCouplingRowsCost (P q w s t u band a b : ℕ) : ℕ :=
-  spatialCouplingRowsCost P q w s t u band a b
+def runCouplingRowsCost (boundary : Bool) (P q w s t u band a b : ℕ) : ℕ :=
+  spatialCouplingGuardedRowsCost boundary P q w s t u band a b
 
 theorem runCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
@@ -32,7 +32,7 @@ theorem runCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ}
     (h143 : S.R 143 = []) (h135 : S.R 135 = [])
     (hxs : ∀ j < s, ∀ x ∈ couplingInputWords boundary t band a b j C, Fits w x)
     (has : ∀ j < s, ∀ z ∈ couplingCoefficientWords P q s t u band j, Fits w z ∧ z.im = 0) :
-    ∃ v' m, v'.user = v.user ∧ m ≤ runCouplingRowsCost P q w s t u band a b ∧
+    ∃ v' m, v'.user = v.user ∧ m ≤ runCouplingRowsCost boundary P q w s t u band a b ∧
       Exec (embTab groupReg body) (runCouplingRows hQ boundary) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update S.R 93 rhsTail)
           113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by

@@ -20,9 +20,9 @@ variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 noncomputable def restoredCouplingPass (hQ : SS.states ≤ Q) (boundary : Bool) : Pr P₀ 144 Q A U :=
   .seq installCouplingHeaders (.seq (feedCouplingPass hQ boundary) releaseCouplingHeaders)
 
-def restoredCouplingPassCost (P q s t u band a b : ℕ) : ℕ :=
+def restoredCouplingPassCost (boundary : Bool) (P q s t u band a b : ℕ) : ℕ :=
   installCouplingHeadersCost P q s t u band a b+
-    (feedCouplingPassCost P q (2*q+8) s t u band a b+
+    (feedCouplingPassCost boundary P q (2*q+8) s t u band a b+
       releaseCouplingHeadersCost P q s t u band a b)
 
 theorem restoredCouplingPass_spec (hQ : SS.states ≤ Q)
@@ -49,7 +49,7 @@ theorem restoredCouplingPass_spec (hQ : SS.states ≤ Q)
     (hsource : S.R 132 = cstream A (2*q+8) (chirpLine s C)++sourceTail)
     (h143 : S.R 143 = []) :
     let R := couplingRowField (2^15*p) q t u band a b boundary C B
-    ∃ v' n, v'.user = v.user ∧ n ≤ restoredCouplingPassCost (2^15*p) q s t u band a b ∧
+    ∃ v' n, v'.user = v.user ∧ n ≤ restoredCouplingPassCost boundary (2^15*p) q s t u band a b ∧
       Exec (embTab groupReg body) (restoredCouplingPass hQ boundary) (mk v S) n
         (mk v' {S with R := Function.update S.R 110 (cstream A (2*q+8) (chirpLine s R)++S.R 110)}) ∧
       LengthKeyReady (2^15*p) N q l s t u band 0 0

@@ -39,7 +39,7 @@ theorem runCouplingRows_spec (hQ : SS.states ≤ Q)
     (hindex : S.R 107 = []) (hrhs : S.R 93 = cstream A w (chirpLine s B)++rhsTail)
     (h143 : S.R 143 = []) (h135 : S.R 135 = []) :
     let ys := couplingRowWords (2^15*p) q t u band a b boundary C 0 (chirpLine s B)
-    ∃ v' m, v'.user = v.user ∧ m ≤ runCouplingRowsCost (2^15*p) q w s t u band a b ∧
+    ∃ v' m, v'.user = v.user ∧ m ≤ runCouplingRowsCost boundary (2^15*p) q w s t u band a b ∧
       Exec (embTab groupReg body) (runCouplingRows hQ boundary) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update S.R 93 rhsTail)
           113 (cstream A w ys++S.R 113))}) ∧

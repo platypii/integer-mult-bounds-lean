@@ -21,17 +21,8 @@ noncomputable def runPreparedPacketCouplingRows (hQ : SS.states ≤ Q) : Pr P₀
   .seq (ucopy 97 143 104) (.seq (packetSpatialCouplingRowLoop hQ)
     (.seq restoreSpatialCouplingCursor (.seq (reversePrefixInPlace 97 104 94 113 115 105 106 108 109) (uclear 107))))
 
-def runPreparedPacketCouplingRowsCost (P q w s t u band : ℕ) : ℕ :=
-  packetSpatialCouplingRowLoopCost P q w s t u band s+32*s*w+34*s+28+transferCountedLineCost s w
-
 def runPreparedPacketGuardedCost (boundary : Bool) (P q w s t u band a b : ℕ) : ℕ :=
   packetSpatialGuardedLoopCost boundary P q w s t u band a b s+32*s*w+34*s+28+transferCountedLineCost s w
-
-theorem runPreparedPacketGuardedCost_le (boundary : Bool) (P q w s t u band a b : ℕ) :
-    runPreparedPacketGuardedCost boundary P q w s t u band a b ≤ runPreparedPacketCouplingRowsCost P q w s t u band := by
-  have h := packetSpatialGuardedLoopCost_le boundary P q w s t u band a b s
-  dsimp [runPreparedPacketGuardedCost,runPreparedPacketCouplingRowsCost]
-  omega
 
 theorem runPreparedPacketCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)

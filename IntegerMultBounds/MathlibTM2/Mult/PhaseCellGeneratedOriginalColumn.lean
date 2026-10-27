@@ -22,7 +22,7 @@ noncomputable def generatedOriginalColumn (hQ : SS.states ≤ Q) : Pr P₀ 144 Q
 
 def generatedOriginalColumnCost (p q w s t u a b : ℕ) : ℕ :=
   originalColumnInputsCost s w q+
-    (borrowedCouplingPassCost (2^15*p) q w s t u (PhaseCellBand.width p u) a b+releaseColumnSourcesCost s w)
+    (borrowedCouplingPassCost true (2^15*p) q w s t u (PhaseCellBand.width p u) a b+releaseColumnSourcesCost s w)
 
 theorem generatedOriginalColumn_spec (hQ : SS.states ≤ Q)
     {p q w s t u a b : ℕ} [NeZero s] {α d : ℝ}

@@ -20,21 +20,10 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 144 Q A U}
 noncomputable def runSpatialCouplingRows (hQ : SS.states ≤ Q) (boundary : Bool) : Pr P₀ 144 Q A U :=
   .seq (prepareCouplingGuard boundary) (.seq prepareRetainedCouplingPacket (.seq (runPreparedPacketCouplingRows hQ) (uclear 135)))
 
-def runSpatialCouplingRowsCost (P q w s t u band a b : ℕ) : ℕ :=
-  let V := liftedCoefficientWidth P q w s t u band
-  prepareCouplingGuardCost s t band a b+buildMarkedRowCoefficientPacketCost P q w s t u band 0+
-    runPreparedPacketCouplingRowsCost P q w s t u band+24*V+4
-
 def runSpatialCouplingGuardedCost (boundary : Bool) (P q w s t u band a b : ℕ) : ℕ :=
   let V := liftedCoefficientWidth P q w s t u band
   prepareCouplingGuardCost s t band a b+buildMarkedRowCoefficientPacketCost P q w s t u band 0+
     runPreparedPacketGuardedCost boundary P q w s t u band a b+24*V+4
-
-theorem runSpatialCouplingGuardedCost_le (boundary : Bool) (P q w s t u band a b : ℕ) :
-    runSpatialCouplingGuardedCost boundary P q w s t u band a b ≤ runSpatialCouplingRowsCost P q w s t u band a b := by
-  have h := runPreparedPacketGuardedCost_le boundary P q w s t u band a b
-  dsimp [runSpatialCouplingGuardedCost,runSpatialCouplingRowsCost]
-  omega
 
 theorem runSpatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)

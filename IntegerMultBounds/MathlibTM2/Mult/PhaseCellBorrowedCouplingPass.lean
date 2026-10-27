@@ -19,8 +19,8 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 noncomputable def borrowedCouplingPass (hQ : SS.states ≤ Q) (boundary : Bool) : Pr P₀ 144 Q A U :=
   .seq stageCouplingLines (.seq (runCouplingRows hQ boundary) retireCouplingLine)
 
-def borrowedCouplingPassCost (P q w s t u band a b : ℕ) : ℕ :=
-  runCouplingRowsCost P q w s t u band a b+38*s*w+18*s+38
+def borrowedCouplingPassCost (boundary : Bool) (P q w s t u band a b : ℕ) : ℕ :=
+  runCouplingRowsCost boundary P q w s t u band a b+38*s*w+18*s+38
 
 theorem borrowedCouplingPass_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
@@ -33,7 +33,7 @@ theorem borrowedCouplingPass_exec (hQ : SS.states ≤ Q) {P q w s t u band a b :
     (h131 : S.R 131 = []) (h134 : S.R 134 = []) (h135 : S.R 135 = [])
     (hxs : ∀ j < s, ∀ x ∈ couplingInputWords boundary t band a b j C, Fits w x)
     (has : ∀ j < s, ∀ z ∈ couplingCoefficientWords P q s t u band j, Fits w z ∧ z.im = 0) :
-    ∃ v' m, v'.user = v.user ∧ m ≤ borrowedCouplingPassCost P q w s t u band a b ∧
+    ∃ v' m, v'.user = v.user ∧ m ≤ borrowedCouplingPassCost boundary P q w s t u band a b ∧
       Exec (embTab groupReg body) (borrowedCouplingPass hQ boundary) (mk v S) m
         (mk v' {S with R := (Function.update S.R 113
           (cstream A w (couplingRowWords P q t u band a b boundary C 0 (chirpLine s B))++S.R 113))}) := by

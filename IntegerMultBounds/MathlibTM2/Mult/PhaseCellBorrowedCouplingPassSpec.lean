@@ -40,7 +40,7 @@ theorem borrowedCouplingPass_spec (hQ : SS.states ≤ Q)
     (hindex : S.R 107 = []) (hsource : S.R 132 = cstream A w (chirpLine s C)++sourceTail)
     (h143 : S.R 143 = []) (h131 : S.R 131 = []) (h134 : S.R 134 = []) (h135 : S.R 135 = []) :
     let ys := couplingRowWords (2^15*p) q t u band a b boundary C 0 (chirpLine s B)
-    ∃ v' m, v'.user = v.user ∧ m ≤ borrowedCouplingPassCost (2^15*p) q w s t u band a b ∧
+    ∃ v' m, v'.user = v.user ∧ m ≤ borrowedCouplingPassCost boundary (2^15*p) q w s t u band a b ∧
       Exec (embTab groupReg body) (borrowedCouplingPass hQ boundary) (mk v S) m
         (mk v' {S with R := Function.update S.R 113 (cstream A w ys++S.R 113)}) ∧
       ys = chirpLine s (couplingRowField (2^15*p) q t u band a b boundary C B) ∧

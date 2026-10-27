@@ -21,7 +21,7 @@ noncomputable def interiorResidual (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
 
 def interiorResidualCost (p l s t u target rhsExp a b : ℕ) : ℕ :=
   interiorForCouplingCost p l s t u target rhsExp a b+
-    feedCouplingPassCost (2^15*p) (executionPrecision p l target rhsExp)
+    feedCouplingPassCost false (2^15*p) (executionPrecision p l target rhsExp)
       (executionWidth p l target rhsExp) s t u (PhaseCellBand.width p u) a b
 
 theorem interiorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
@@ -99,7 +99,7 @@ theorem interiorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
   have hw : 0 < w := by dsimp [w,executionWidth]; omega
   refine ⟨v₂,n₁+n₂,D,hu₂.trans hu₁,?_,(Exec.seq he₁ he₂).cast rfl ?_,hDnorm,hDerror,hRnorm,?_⟩
   · change n₁+n₂ ≤ interiorForCouplingCost p l s t u target rhsExp a b+
-      feedCouplingPassCost (2^15*p) q w s t u band a b
+      feedCouplingPassCost false (2^15*p) q w s t u band a b
     simpa only [q,w,band] using Nat.add_le_add hn₁ hn₂
   · apply congrArg (mk v₂)
     rw [hfield]

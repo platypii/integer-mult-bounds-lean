@@ -25,21 +25,8 @@ noncomputable def packetSpatialCouplingRowStep (hQ : SS.states ≤ Q) : Pr P₀ 
     (.seq (discardPrefix 94 93 104 105)
       (.seq advanceSpatialCouplingCursor (.act (.push (.rt 107) (fun _ => tick) .done))))
 
-def packetSpatialCouplingRowStepCost (P q w s t u band : ℕ) : ℕ :=
-  packetSpatialCouplingRowCost P q w s t u band+10*w+13
-
 def packetSpatialGuardedStepCost (skip : Bool) (P q w s t u band : ℕ) : ℕ :=
   (if skip then zeroPacketSpatialCouplingRowCost P q w s t u band else packetSpatialCouplingRowCost P q w s t u band)+10*w+13
-
-theorem packetSpatialGuardedStepCost_le (skip : Bool) (P q w s t u band : ℕ) :
-    packetSpatialGuardedStepCost skip P q w s t u band ≤ packetSpatialCouplingRowStepCost P q w s t u band := by
-  have hc : 10*w+10 ≤ prepareCountedCouplingInputsCost band w := by
-    dsimp [prepareCountedCouplingInputsCost,copyCountedLineCost]
-    nlinarith [Nat.zero_le (band*w)]
-  have hz : zeroPacketSpatialCouplingRowCost P q w s t u band ≤ packetSpatialCouplingRowCost P q w s t u band := by
-    dsimp [zeroPacketSpatialCouplingRowCost,packetSpatialCouplingRowCost,markedRowCoefficientCost]
-    omega
-  cases skip <;> simp [packetSpatialGuardedStepCost,packetSpatialCouplingRowStepCost,hz]
 
 theorem packetSpatialCouplingRowStep_exec (hQ : SS.states ≤ Q) {P q w s t u band a b i : ℕ} [NeZero s]
     (boundary skip : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)

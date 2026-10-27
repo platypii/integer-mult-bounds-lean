@@ -48,7 +48,7 @@ theorem originalColumnPass_spec (hQ : SS.states ≤ Q)
     let band := PhaseCellBand.width p u
     let column := couplingRowField (2^15*p) q t u band a b true (negativeUnitField q j) (fun _ => 0)
     let output := cstream A w (chirpLine s column)++S.R 113
-    ∃ v' m, v'.user = v.user ∧ m ≤ borrowedCouplingPassCost (2^15*p) q w s t u band a b ∧
+    ∃ v' m, v'.user = v.user ∧ m ≤ borrowedCouplingPassCost true (2^15*p) q w s t u band a b ∧
       Exec (embTab groupReg body) (borrowedCouplingPass hQ true) (mk v S) m
         (mk v' {S with R := Function.update S.R 113 output}) ∧
       (∀ i, ‖value q (column i)‖ ≤ (2 : ℝ)^couplingRowExponent 0 0 (8*p+1) (couplingCountExponent p u)) ∧

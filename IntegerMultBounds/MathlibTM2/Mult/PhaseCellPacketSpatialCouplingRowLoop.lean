@@ -21,19 +21,8 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 144 Q A U}
 noncomputable def packetSpatialCouplingRowLoop (hQ : SS.states ≤ Q) : Pr P₀ 144 Q A U :=
   countedLoop 143 (packetSpatialCouplingRowStep hQ)
 
-def packetSpatialCouplingRowLoopCost (P q w s t u band N : ℕ) : ℕ :=
-  (Finset.range N).sum (fun _ => packetSpatialCouplingRowStepCost P q w s t u band+3)+2
-
 def packetSpatialGuardedLoopCost (boundary : Bool) (P q w s t u band a b N : ℕ) : ℕ :=
   (Finset.range N).sum (fun j => packetSpatialGuardedStepCost (couplingSkipAt boundary s t band a b j) P q w s t u band+3)+2
-
-theorem packetSpatialGuardedLoopCost_le (boundary : Bool) (P q w s t u band a b N : ℕ) :
-    packetSpatialGuardedLoopCost boundary P q w s t u band a b N ≤ packetSpatialCouplingRowLoopCost P q w s t u band N := by
-  unfold packetSpatialGuardedLoopCost packetSpatialCouplingRowLoopCost
-  apply Nat.add_le_add_right
-  apply Finset.sum_le_sum
-  intro j hj
-  exact Nat.add_le_add_right (packetSpatialGuardedStepCost_le _ P q w s t u band) 3
 
 theorem packetSpatialCouplingRowLoop_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)

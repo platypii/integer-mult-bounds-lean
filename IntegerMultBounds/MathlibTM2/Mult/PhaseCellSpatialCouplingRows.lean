@@ -23,8 +23,8 @@ noncomputable def spatialCouplingRows (hQ : SS.states ≤ Q) (boundary : Bool) :
   .seq (prepareSpatialCouplingSource boundary)
     (.seq (runSpatialCouplingRows hQ boundary) retireSpatialCouplingSource)
 
-def spatialCouplingRowsCost (P q w s t u band a b : ℕ) : ℕ :=
-  prepareSpatialCouplingSourceCost s t band a b w+runSpatialCouplingRowsCost P q w s t u band a b+
+def spatialCouplingGuardedRowsCost (boundary : Bool) (P q w s t u band a b : ℕ) : ℕ :=
+  prepareSpatialCouplingSourceCost s t band a b w+runSpatialCouplingGuardedCost boundary P q w s t u band a b+
     retireSpatialCouplingSourceCost s band w
 
 theorem spatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
@@ -37,7 +37,7 @@ theorem spatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : 
     (h143 : S.R 143 = []) (h135 : S.R 135 = [])
     (hxs : ∀ j < s, ∀ x ∈ couplingInputWords boundary t band a b j C, Fits w x)
     (has : ∀ j < s, ∀ z ∈ couplingCoefficientWords P q s t u band j, Fits w z ∧ z.im = 0) :
-    ∃ v' m, v'.user = v.user ∧ m ≤ spatialCouplingRowsCost P q w s t u band a b ∧
+    ∃ v' m, v'.user = v.user ∧ m ≤ spatialCouplingGuardedRowsCost boundary P q w s t u band a b ∧
       Exec body (spatialCouplingRows hQ boundary) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update S.R 93 rhsTail)
           113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
@@ -70,8 +70,7 @@ theorem spatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : 
     (by simpa [S₂,S₁,groupReg] using hf 104 (by simp))
     (by simpa [S₂,S₁,groupReg] using hf 105 (by simp))
   refine ⟨v₃,m₁+(m₂+m₃),hu₃.trans (hu₂.trans hu₁),
-    by have hm₂u := hm₂.trans (runSpatialCouplingGuardedCost_le boundary P q w s t u band a b)
-       dsimp only [spatialCouplingRowsCost]; omega,
+    by dsimp only [spatialCouplingGuardedRowsCost]; omega,
     (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl ?_⟩
   apply congrArg (mk v₃)
   refine Stacks.ext rfl rfl rfl ?_

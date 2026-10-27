@@ -23,7 +23,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageInteriorCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingRows
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCursor
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCost
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingPassCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGuardedCouplingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellZeroPacketSpatialCouplingRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateDeepCouplingMask
@@ -2221,6 +2221,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.realInteriorResidualCost_geometry_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.recoveryToleranceCost_split,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.recoveryToleranceCost_geometry_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.feedCouplingPassCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredCouplingPassCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingGuardedRowsCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingGuardedRowsCost_recovery_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoredCouplingPassCost_recovery_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.recoveryToleranceOverhead_guarded_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchLineCost_geometry_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexClosedBatchCost_geometry_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedCouplingCoreReg_injective,
@@ -2273,10 +2279,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packetSpatialCouplingRow_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingSkipAt_sound,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepareCouplingGuard_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packetSpatialGuardedStepCost_le,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packetSpatialGuardedLoopCost_le,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runPreparedPacketGuardedCost_le,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runSpatialCouplingGuardedCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingGuard_true_count,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingGuard_full_count_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packetSpatialGuardedLoopCost_recovery,
@@ -2284,7 +2286,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packetSpatialCouplingRowStep_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packetSpatialCouplingRowLoop_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runPreparedPacketCouplingRows_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingRowsCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRowWord_spatial,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.spatialCouplingInputWords_window,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copyCountedLine_exec,

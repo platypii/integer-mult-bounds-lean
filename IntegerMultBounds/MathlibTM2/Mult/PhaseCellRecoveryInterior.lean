@@ -28,7 +28,7 @@ noncomputable def recoveryInterior (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
 
 def recoveryInteriorCost (p l s t u target rhsExp boundaryExp countExp a b : ℕ) : ℕ :=
   let q := executionPrecision p l (recoveryFirstTarget p target rhsExp boundaryExp countExp) rhsExp
-  retireAmbientSourceCost q s+(restoredCouplingPassCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+
+  retireAmbientSourceCost q s+(restoredCouplingPassCost true (2^15*p) q s t u (PhaseCellBand.width p u) a b+
     initializedInteriorCost p l s t u target (recoveryRhsExponent p rhsExp boundaryExp countExp) a b)
 
 theorem recoveryInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
