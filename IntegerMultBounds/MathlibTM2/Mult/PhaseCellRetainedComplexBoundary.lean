@@ -27,6 +27,12 @@ variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 noncomputable def retainedComplexBoundary (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 224 Q A U :=
   .seq physicalOriginalComponentInputs (retainedBoundaryPair hR hQ)
 
+noncomputable def retainedComplexBoundaryCost (p u l s t a b target : ℕ) [NeZero s] : ℕ :=
+  let N := (haloBoundary s t (PhaseCellBand.width p u) a b).card
+  let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
+  let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+  originalComponentInputsCost q s+retainedBoundaryPairCost p u l s t a b target
+
 theorem retainedComplexBoundary_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target a b : ℕ} [NeZero s] {α d : ℝ}
     (hp : 2 ≤ p) (hwidth : 8*p ≤ 2^u) (hα : 0 < α) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
@@ -54,7 +60,7 @@ theorem retainedComplexBoundary_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) y (fun i => (value q (F i)).im) →
       ∃ v' n, ∃ G : ZMod s → GaussianInt,
         let S' : Stacks 224 A := {S with R := Function.update S.R 132 (cstream A w (chirpLine s G)++S.R 132)}
-        v'.user = v.user ∧
+        v'.user = v.user ∧ n ≤ retainedComplexBoundaryCost p u l s t a b target ∧
         Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))) (retainedComplexBoundary hR hQ) (mk v S) n (mk v' S') ∧
         PhaseCellInterface.ErrorOn (haloVertices s a b) (pairedCellRead q w (S'.R 132))
@@ -93,7 +99,7 @@ theorem retainedComplexBoundary_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     intro i
     exact (componentWords_norm_le q (F i)).2.trans (hF i)
   intro x y hx hy
-  obtain ⟨v₁,n₁,X,Y,hu₁,he₁,herror⟩ := retainedBoundaryPair_spec (body := body) (target := target)
+  obtain ⟨v₁,n₁,X,Y,hu₁,hn₁,he₁,herror⟩ := retainedBoundaryPair_spec (body := body) (target := target)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad FRe hRe v₀ M tail
     (by simpa [M] using h109) (by simpa [M] using h115) (by simpa [M] using h116) hleft hready₀
     (by simpa [M] using haMaster) (by simpa [M] using hbMaster)
@@ -105,7 +111,8 @@ theorem retainedComplexBoundary_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     (by simp [M]) x y
     (by simpa only [FRe,value_realPartWord_re] using hx) (by simpa only [FIm,value_imagPartWord_re] using hy)
   let G := fun i => pairComponentWord (X i) (Y i)
-  refine ⟨v₁,n₀+n₁,G,hu₁.trans hu₀,(Exec.seq he₀ he₁).cast rfl ?_,?_⟩
+  refine ⟨v₁,n₀+n₁,G,hu₁.trans hu₀,?_,(Exec.seq he₀ he₁).cast rfl ?_,?_⟩
+  · exact Nat.add_le_add hn₀ hn₁
   · apply congrArg (mk v₁)
     refine Stacks.ext rfl rfl rfl ?_
     funext i

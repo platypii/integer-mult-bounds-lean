@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `retainedComplexBoundary_spec` executes from one encoded complex input and the retained ordinary-parameter readiness bank: preserve/split the input, generate the residual and boundary table, construct/factor/solve/unscale the boundary system, generate ambient publication, recover both components, pair the complex output and restore every stack except its owned output prefix. Physical halo reads have error at most `2^-target`; no supplied boundary solutions, columns, factors or publication controls remain. Shared arithmetic precision and exact borrowed-suffix restoration are proved. `retainedInverse_spec` specializes the executed solver to the full complex matrix equation with uniform coordinate error. Packed-table retirement now has an explicit polynomial bound in ordinary geometry. Closed caller/setup, uniform fast time and simultaneous live-storage bounds remain open, including the factor-bank release volume and matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `retainedComplexBoundary_spec` executes from one encoded complex input and the retained ordinary-parameter readiness bank: preserve/split the input, generate the residual and boundary table, construct/factor/solve/unscale the boundary system, generate ambient publication, recover both components, pair the complex output and restore every stack except its owned output prefix. Physical halo reads have error at most `2^-target`; no supplied boundary solutions, columns, factors or publication controls remain. Shared arithmetic precision and exact borrowed-suffix restoration are proved. `retainedInverse_spec` specializes the executed solver to the full complex matrix equation with uniform coordinate error. Packed-table retirement now has an explicit polynomial bound in ordinary geometry. The complete retained inverse execution now has a dimension-only time bound, including factor-bank release. Closed caller/setup, uniform fast time and simultaneous live-storage bounds remain open, including matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -10839,3 +10839,30 @@ The three new modules check individually at 2863.9 MiB (persistent bound),
 2831.1 MiB (release volume) and 1786.9 MiB (factor pages); the refactored factor
 module checks at 2491.9 MiB. Whitespace and plan-status checks pass. Proof limits
 are unchanged.
+
+
+### Derive the released-bank bound through the complete retained inverse
+
+Factor initialization now derives `BoundaryPermanentBound` from generated setup
+and the exact factor-page volumes. The bound is preserved through both triangular
+solves, unscaling, real unfolding and ambient publication. Publication therefore
+bounds the entire released register bank using only the ordinary dimensions.
+`retainedBoundaryRecoveredCost` combines publication, recovery, packed-table
+retirement and workspace release without a reached-state parameter.
+
+The recovery, transition and finish contracts no longer expose the publication
+state or its execution witnesses. The complete pair, original complex-input
+caller and full inverse contract now carry total time bounds:
+`retainedBoundaryPairCost` and `retainedComplexBoundaryCost`. Their bounds include
+both real solves, input preservation/splitting, complex pairing and restoration.
+The previous reached-state interface is available at restore commit `6c212ba7`.
+
+This closes the reached-factor-bank volume accounting gap. The resulting bound
+still requires matching to the uniform fast S3 budget; closed caller/setup and
+simultaneous live-storage gates remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,712 guarded stage-audit jobs pass against the strengthened
+factor/solve/unfold/publication/recovery/pair/complex/inverse contracts, with a
+3.4 GiB combined peak in the final rebuild. All thirteen changed proof modules
+pass individual guarded checks below 3 GiB (maximum 2991.4 MiB). Changed-source
+proof-integrity, whitespace and plan-status checks pass. Proof limits are unchanged.

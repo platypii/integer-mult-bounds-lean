@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryReleaseVolume
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryRealUnfold
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryPublish
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryReady
@@ -77,6 +79,8 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       (S'.R 141).length = a ∧ (S'.R 142).length = b ∧
       S'.R 127 = [] ∧ S'.R 138 = [] ∧ S'.R 143 = [] ∧
       BoundaryRetirementReady S' s B.card W w ∧
+      (boundaryOwnedRegs.map fun i => (S'.R i).length).sum ≤
+        boundaryOwnedRegs.length*(publicationGeometryWidth t band+B.card+boundaryPermanentSizeBound q band B.card) ∧
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
       (∀ i ∈ B, |publishedCellRead q w (0 : ZMod s) (S'.R 132) i-x i| ≤ 3/(2 : ℝ)^target) ∧
@@ -91,7 +95,7 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   obtain ⟨v₁,S₁,n₁,D,columns,solution,hu₁,hn₁,he₁,hlen,hsolLen,hsrc,h217,
-    h110,h132,hinp,hout,hL,hlegacy,hpub,hcoords,hretire₁,hzero,hacc⟩ :=
+    h110,h132,hinp,hout,hL,hlegacy,hpub,hcoords,hretire₁,hperm,hzero,hacc⟩ :=
     retainedBoundaryRealUnfold_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad F hF v S tail h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -134,13 +138,46 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
       rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
         simpa [S₂,S₂base] using hretire₁.scratch _ (by simp)
+  have hperm₂ : BoundaryPermanentBound (boundaryFactorState S₂) (boundaryPermanentSizeBound q band B.card) := by
+    intro r hr
+    have ho (k : RsbR) (hk : k ∈ boundaryTransientRoles) : boundaryFactorReg r ≠ boundaryFactorReg k := by
+      intro he
+      have hh := boundaryFactorReg_injective he
+      subst r
+      exact hr hk
+    have h189 : boundaryFactorReg r ≠ 189 := ho .m2wn (by simp [boundaryTransientRoles])
+    have h191 : boundaryFactorReg r ≠ 191 := ho .kn (by simp [boundaryTransientRoles])
+    have h198 : boundaryFactorReg r ≠ 198 := ho .tK (by simp [boundaryTransientRoles])
+    have h204 : boundaryFactorReg r ≠ 204 := ho .sel (by simp [boundaryTransientRoles])
+    have h206 : boundaryFactorReg r ≠ 206 := ho .vk (by simp [boundaryTransientRoles])
+    have h109 : boundaryFactorReg r ≠ 109 := boundaryFactorReg_off r 109 (by decide)
+    have h132 : boundaryFactorReg r ≠ 132 := boundaryFactorReg_off r 132 (by decide)
+    simpa [S₂,S₂base,boundaryFactorState,h189,h191,h198,h204,h206,h109,h132] using hperm r hr
+  have hvolume : (boundaryOwnedRegs.map fun i => (S₂.R i).length).sum ≤
+      boundaryOwnedRegs.length*(V+B.card+boundaryPermanentSizeBound q band B.card) := by
+    apply boundaryReleaseVolume_le S₂ hperm₂
+    · have hh : (S₁.R 115).length = V := hpub.geometry
+      simpa [S₂,S₂base] using hh.le
+    · exact hretire₂.rows.le
+    · intro r hr hrsrc
+      simp only [boundaryTransientRoles,List.mem_cons,List.not_mem_nil,or_false] at hr
+      rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+      · exact False.elim (hrsrc rfl)
+      · simp [S₂,S₂base,boundaryFactorState,boundaryFactorReg]
+      · simp [S₂,S₂base,boundaryFactorState,boundaryFactorReg]
+      · simp [S₂,S₂base,boundaryFactorState,boundaryFactorReg]
+      · simp [S₂,S₂base,boundaryFactorState,boundaryFactorReg]
+      · simp [S₂,S₂base,boundaryFactorState,boundaryFactorReg]
+      · simpa [S₂,S₂base,boundaryFactorState,boundaryFactorReg] using h217
+    · exact hretire₂.scratch 184 (by simp)
+    · simpa [S₂,S₂base] using hpub.scratch 223 (by simp)
   have hcost₂ : n₂ ≤ 9+generatedBoundaryUnfoldCost B.card V+(4*(B.card*V)+4)+
       generateBoundaryAdvancesCost B.card V w s+93*s*w+45 := by
     simpa only [hzero,Nat.mul_zero,Nat.zero_add] using hn₂
   have hn : n₁+n₂ ≤ retainedBoundaryPublishedCost p u l s t a b target := by
     simpa only [retainedBoundaryPublishedCost,Nat.add_assoc] using Nat.add_le_add hn₁ hcost₂
   refine ⟨v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,?_,
-    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,?_,hinp,hout,hL,?_,hready₂,?_,?_,?_,?_,?_,hretire₂,?_⟩
+    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,?_,hinp,hout,hL,?_,hready₂,?_,?_,?_,?_,?_,hretire₂,hvolume,?_⟩
   · simpa only [Nat.add_assoc] using hn
   · simp [S₂,S₂base,h132,List.append_assoc,w,bits,B,G]
   · simpa [S₂,S₂base] using h110

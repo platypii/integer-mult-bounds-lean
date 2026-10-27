@@ -54,20 +54,15 @@ theorem retainedBoundaryTransition_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     let band := PhaseCellBand.width p u
     let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-    ∃ v₀ S₀ n₀, ∃ solution : List GaussianInt,
+    ∃ solution : List GaussianInt,
       let G := boundarySolutionField B solution
-      n₀ ≤ retainedBoundaryPublishedCost p u l s t a b solveTarget ∧
-      Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
-        (embTab componentReg (embTab groupReg body))))) (retainedBoundaryPublished hR hQ)
-        (mk v S) n₀ (mk v₀ S₀) ∧
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
       ∃ v' n, ∃ E : ZMod s → GaussianInt,
         let Y := fun i => realPartWord (publicationField t band a b E G i)
         let S' : Stacks 224 A := {S with R := Function.update (Function.update (Function.update S.R
           110 (next++tail)) 144 parkedTail) 145 (cstream A w (chirpLine s Y)++S.R 145)}
-        v'.user = v.user ∧ n ≤ n₀+recoveryToleranceCost p l s t u bits 2 a b+
-          haloBoundaryRetirementCostBound s t band a b w+releaseBoundaryWorkspaceCost s w S₀+cleanComponentTransitionCost q s ∧
+        v'.user = v.user ∧ n ≤ retainedBoundaryRecoveredCost p u l s t a b target+cleanComponentTransitionCost q s ∧
         Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))) (retainedBoundaryTransition hR hQ)
           (mk v S) n (mk v' S') ∧
@@ -82,10 +77,10 @@ theorem retainedBoundaryTransition_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   let band := PhaseCellBand.width p u
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-  obtain ⟨v₀,S₀,n₀,solution,hn₀,he₀,hrec⟩ := retainedBoundaryRecovered_spec (body := body)
+  obtain ⟨solution,hrec⟩ := retainedBoundaryRecovered_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad F hF v S tail
     h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
-  refine ⟨v₀,S₀,n₀,solution,hn₀,he₀,?_⟩
+  refine ⟨solution,?_⟩
   intro x hx
   obtain ⟨v₁,n₁,E,hu₁,hn₁,he₁,herror⟩ := hrec x hx
   let G := boundarySolutionField B solution

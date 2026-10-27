@@ -73,6 +73,7 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       S'.R 109 = cstream A (publicationGeometryWidth t band) ((bFoldOrder s B).map
         (fun j : ZMod s => (⟨(j.val : ℤ),0⟩ : GaussianInt))) ∧
       BoundaryRetirementReady S' s B.card (12*band+1) w ∧
+      BoundaryPermanentBound (boundaryFactorState S') (boundaryPermanentSizeBound q band B.card) ∧
       (([189,191,198,206] : List (Fin 224)).map fun i => (S'.R i).length).sum = 0 ∧
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
@@ -85,7 +86,7 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   obtain ⟨v₁,S₁,n₁,D,columns,solution,hu₁,hn₁,he₁,hlen,hsolLen,hfit,hsrc,h110,h132,
-    hinp,hout,hL,hlegacy,hready₁,h119,hreset,hcount,hmul,h184,h223,h220,h221,h206,hcoords,h115,h116,hheaders,hacc⟩ :=
+    hinp,hout,hL,hlegacy,hready₁,h119,hreset,hcount,hmul,h184,h223,h220,h221,h206,hcoords,h115,h116,hheaders,hperm,hacc⟩ :=
     retainedBoundarySolve_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad F hF v S tail h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -189,10 +190,24 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     nlinarith only [hn₂,hsum]
   have hn : n₁+n₂ ≤ retainedBoundaryRealUnfoldCost p u l s t a b target := by
     simpa only [retainedBoundaryRealUnfoldCost,Nat.add_assoc] using Nat.add_le_add hn₁ hcost₂
+  have hperm₂ : BoundaryPermanentBound (boundaryFactorState S₂)
+      (boundaryPermanentSizeBound q (PhaseCellBand.width p u) B.card) := by
+    intro r hr
+    have ho (k : RsbR) (hk : k ∈ boundaryTransientRoles) : boundaryFactorReg r ≠ boundaryFactorReg k := by
+      intro he
+      have hh := boundaryFactorReg_injective he
+      subst r
+      exact hr hk
+    have h189 : boundaryFactorReg r ≠ 189 := ho .m2wn (by simp [boundaryTransientRoles])
+    have h191 : boundaryFactorReg r ≠ 191 := ho .kn (by simp [boundaryTransientRoles])
+    have h198 : boundaryFactorReg r ≠ 198 := ho .tK (by simp [boundaryTransientRoles])
+    have h204 : boundaryFactorReg r ≠ 204 := ho .sel (by simp [boundaryTransientRoles])
+    have h217 : boundaryFactorReg r ≠ 217 := ho .dout (by simp [boundaryTransientRoles])
+    simpa [S₂,S₀,boundaryFactorState,h189,h191,h198,h204,h217] using hperm r hr
   have hzero : (([189,191,198,206] : List (Fin 224)).map fun i => (S₂.R i).length).sum = 0 := by
     simp [S₂,S₀,h206]
   refine ⟨v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,hn,
-    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,hinp,hout,hL,hlegacy₂,hpub,?_,hretire,hzero,?_⟩
+    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,hinp,hout,hL,hlegacy₂,hpub,?_,hretire,hperm₂,hzero,?_⟩
   · simp [S₂,w,bits,B]
   · simp [S₂,w,bits,B]
   · simpa [S₂,S₀] using h110

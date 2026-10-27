@@ -2,6 +2,8 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryFactorPreparedRun
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnfoldHeaderVolume
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryPermanentBound
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorTableVolume
 
 /-! Generate all setup and execute boundary factorization from retained masters and the emitted input page. -/
 
@@ -58,6 +60,7 @@ theorem initializedBoundaryFactor_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       (boundaryFactorState S') .kn = (List.replicate B.card (σ .ms)).flatten ∧ (boundaryFactorState S') .mwn = σ (.cm .wn) ++ σ .m2wn ∧
       RsbReady (boundaryFactorState S') w q ∧
       boundaryUnfoldHeaderVolume (boundaryFactorState S') ≤ 12*band*w+B.card*(12*band+1) ∧
+      BoundaryPermanentBound (boundaryFactorState S') (boundaryPermanentSizeBound q band B.card) ∧
       ∀ r, r ∉ ([.src, .hf, .df, .dout, .bo, .vk, .m2n, .kn, .ms, .mwn, .ef, .xs] : List RsbR) →
         (boundaryFactorState S') r = σ r := by
   dsimp only
@@ -112,8 +115,46 @@ theorem initializedBoundaryFactor_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     have hsel : (boundaryFactorState S₁) .sel = [] := hprepared.empty .sel (by simp [boundaryFactorScratch])
     simp only [boundaryUnfoldHeaderVolume,hframe' .m2wn (by decide),hframe' .tK (by decide),
       hframe' .sel (by decide),hm2wn,hkn,htK,hsel,List.length_nil,Nat.add_zero,le_refl]
+  have hblank (r : RsbR) (hr : r ∈ ([.cm .xs,.cm .ys,.cm .out,.prm,.dtab,.padc] : List RsbR)) :
+      (boundaryFactorState S₁) r = [] := by
+    have hroles : ∀ r ∈ ([RsbR.cm .xs,.cm .ys,.cm .out,.prm,.dtab,.padc] : List RsbR),
+        154 ≤ (boundaryFactorReg r).val ∧ boundaryFactorReg r ∉ boundaryFactorDimensionPorts ∧
+        boundaryFactorReg r ≠ 160 ∧ boundaryFactorReg r ≠ 161 ∧ boundaryFactorReg r ≠ 162 ∧
+        boundaryFactorReg r ≠ 191 ∧ boundaryFactorReg r ≠ 218 ∧ boundaryFactorReg r ≠ 186 := by decide
+    obtain ⟨hge,hports,h160,h161,h162,h191,h218,h186⟩ := hroles r hr
+    change boundaryFactorSetupR p q S.R (boundaryFactorReg r) = []
+    rw [boundaryFactorSetupR_off p q S.R _ hports h160 h161 h162 h191 h218 h186]
+    exact hnew _ hge
+  have hvol := factorTableVolumes A w q (factorNewtonSteps p q) (12*band+1) B.card
+    (factorIntegerRows (factorWindowValues B (12*band+1) columns))
+    (factorIntegerRows (factorInputValues B (12*band+1) B.card columns))
+    (by simp [factorIntegerRows,factorWindowValues])
+    (factorIntegerRows_row_length _ _ (factorWindowValues_row_length B (12*band+1) columns))
+    (factorIntegerRows_row_length _ _ (factorInputValues_row_length B (12*band+1) B.card columns))
+    (by simp [factorIntegerRows,factorInputValues])
+  have hperm : BoundaryPermanentBound (boundaryFactorState S₂) (boundaryPermanentSizeBound q band B.card) := by
+    apply boundaryPermanentBound_of_factor (boundaryFactorState S₁) (boundaryFactorState S₂) hprepared
+    · intro c hc
+      apply hblank
+      simpa using hc
+    · intro r hr
+      apply hblank
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hr
+      rcases hr with rfl | rfl | rfl <;> decide
+    · rw [hbo]
+      simpa only [← hw] using hvol.1.le
+    · rw [hhf]
+      simpa only [← hw] using hvol.2.1.le
+    · rw [hdf]
+      simpa only [← hw] using hvol.2.2.le
+    · exact hm2n'
+    · simpa only [← hw] using hmwn'
+    · exact hms
+    · exact hef
+    · exact hxs
+    · exact hframe'
   refine ⟨v₂,S₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hinp,hout,hL,?_,h184',h223',h220',h221',h119,hsolve,hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,
-    hdout,hvk,hef,hxs,hkn,hms,hm2n,hkn',hmwnControl,hready',hheaders,hframe'⟩
+    hdout,hvk,hef,hxs,hkn,hms,hm2n,hkn',hmwnControl,hready',hheaders,hperm,hframe'⟩
   intro i hi
   exact (hlegacy i hi).trans (boundaryFactorSetupR_legacy p q S.R i)
 

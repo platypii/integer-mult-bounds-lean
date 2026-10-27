@@ -49,7 +49,7 @@ theorem retainedInverse_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 
     ∀ z : ZMod s → ℂ,
       Matrix.mulVec (fun i j => (realMatrix s t p u i j : ℂ)) z = (fun i => value q (F i)) →
       ∃ v' n, ∃ G : ZMod s → GaussianInt,
-        v'.user = v.user ∧
+        v'.user = v.user ∧ n ≤ retainedComplexBoundaryCost p u l s t 0 s target ∧
         Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))) (retainedComplexBoundary hR hQ)
           (mk v S) n (mk v' {S with R := Function.update S.R 132 (cstream A w (chirpLine s G)++S.R 132)}) ∧
@@ -76,11 +76,11 @@ theorem retainedInverse_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 
     intro i _
     have hh := congrArg Complex.im (congrFun hz i)
     simpa [Matrix.mulVec,dotProduct,Complex.mul_im] using hh
-  obtain ⟨v',n,G,hu,he,herror⟩ := retainedComplexBoundary_spec (body := body)
+  obtain ⟨v',n,G,hu,hn,he,herror⟩ := retainedComplexBoundary_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband (Nat.zero_le s) (le_refl s) hpad F hF v S tail
     h109 h115 h116 hleft hready (by simp [h141]) hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
     (fun i => (z i).re) (fun i => (z i).im) hx hy
-  refine ⟨v',n,G,hu,he,?_⟩
+  refine ⟨v',n,G,hu,hn,he,?_⟩
   intro i
   have hh := herror i (by rw [hfull]; exact Finset.mem_univ i)
   simpa only [Function.update_self,Complex.eta] using hh

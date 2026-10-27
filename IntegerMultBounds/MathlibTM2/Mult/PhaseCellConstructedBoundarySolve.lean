@@ -100,7 +100,8 @@ theorem constructedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
       RsbReady (boundaryFactorState S') w q ∧ (S'.R 119).length = q ∧
       (∀ i : Fin 64, S'.R (boundaryFactorMulReg i) = []) ∧
       S'.R 184 = [] ∧ S'.R 223 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] ∧
-      boundaryUnfoldHeaderVolume (boundaryFactorState S') ≤ 12*band*w+B.card*W := by
+      boundaryUnfoldHeaderVolume (boundaryFactorState S') ≤ 12*band*w+B.card*W ∧
+      BoundaryPermanentBound (boundaryFactorState S') (boundaryPermanentSizeBound q band B.card) := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let band := PhaseCellBand.width p u
@@ -115,7 +116,7 @@ theorem constructedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     hlegacy₁,hmul,h106,h139',h184,h223,h220,h221,h119,hready,hbo,hhf,hdf,hsrc,hm2n,hmwn,hsn,hdout,hvk,hrest⟩ :=
     constructedBoundaryFactor_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
       v S tail h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
-  obtain ⟨_,_,_,_,_,_,_,_,hheaders,_⟩ := hrest
+  obtain ⟨_,_,_,_,_,_,_,_,hheaders,hperm,_⟩ := hrest
   obtain ⟨hbo',hhf',hdf'⟩ := boundaryFactor_solve_tables q w K B W columns (boundaryFactorState S₁) hbo hhf hdf
   have hsV : s ≤ 2^V := by
     have hfit : 8*(t+1)^2+2*band+8 < 2^V := publicationGeometryWidth_fits t band
@@ -202,9 +203,13 @@ theorem constructedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
   have hheaders' : boundaryUnfoldHeaderVolume (boundaryFactorState S₂) ≤ 12*band*w+B.card*W := by
     rw [hpost]
     simpa only [boundaryUnfoldHeaderVolume_update_dout,boundaryUnfoldHeaderVolume_update_vk] using hheaders
+  have hperm' : BoundaryPermanentBound (boundaryFactorState S₂) (boundaryPermanentSizeBound q band B.card) := by
+    rw [hpost]
+    exact (hperm.update .vk (by simp [boundaryTransientRoles]) []).update .dout
+      (by simp [boundaryTransientRoles]) _
   refine ⟨v₂,S₂,n₁+n₂,columns,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hlen,hcolumns,
     hformat,hstorage,herror,hrank,hinp₂.trans hinp₁,hout₂.trans hout₁,hL₂.trans hL₁,?_,h109',h115',h116',h132',hboFinal,hhfFinal,hdfFinal,hresetReady,hsolutionLen,hsolutionBound,congrFun hpost .dout,
-    congrFun hpost .vk,hready',h119',hmul',h184',h223',h220',h221',hheaders'⟩
+    congrFun hpost .vk,hready',h119',hmul',h184',h223',h220',h221',hheaders',hperm'⟩
   intro i hi109 hi115 hi116 hi132
   by_cases hi140 : i = 140
   · subst i

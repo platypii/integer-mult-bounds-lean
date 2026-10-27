@@ -26,6 +26,19 @@ noncomputable def retainedBoundaryRecovered (hR : rpStates ≤ Q) (hQ : SS.state
   .seq (retainedBoundaryPublished hR hQ)
     (.seq (physicalRecoveryPublishedHalo hR hQ) (.seq retirePublishedBoundary releaseBoundaryWorkspace))
 
+noncomputable def retainedBoundaryRecoveredCost (p u l s t a b target : ℕ) [NeZero s] : ℕ :=
+  let band := PhaseCellBand.width p u
+  let N := (haloBoundary s t band a b).card
+  let solveTarget := boundaryRecoveryTarget p target
+  let bits := boundaryTableBits p solveTarget 2 N
+  let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+  let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+  retainedBoundaryPublishedCost p u l s t a b solveTarget+
+    recoveryToleranceCost p l s t u bits 2 a b+
+    haloBoundaryRetirementCostBound s t band a b w+
+    releaseBoundaryWorkspaceCostBound s w (publicationGeometryWidth t band) N
+      (boundaryPermanentSizeBound q band N)
+
 theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target a b : ℕ} [NeZero s] {α d : ℝ}
     (hp : 2 ≤ p) (hwidth : 8*p ≤ 2^u) (hα : 0 < α) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
@@ -50,19 +63,14 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     let band := PhaseCellBand.width p u
     let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-    ∃ v₀ S₀ n₀, ∃ solution : List GaussianInt,
+    ∃ solution : List GaussianInt,
       let G := boundarySolutionField B solution
-      n₀ ≤ retainedBoundaryPublishedCost p u l s t a b solveTarget ∧
-      Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
-        (embTab componentReg (embTab groupReg body))))) (retainedBoundaryPublished hR hQ)
-        (mk v S) n₀ (mk v₀ S₀) ∧
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
       ∃ v' n, ∃ E : ZMod s → GaussianInt,
         let Y := fun i => realPartWord (publicationField t band a b E G i)
         let S' : Stacks 224 A := {S with R := Function.update S.R 132 (cstream A w (chirpLine s Y)++S.R 132)}
-        v'.user = v.user ∧ n ≤ n₀+recoveryToleranceCost p l s t u bits 2 a b+
-          haloBoundaryRetirementCostBound s t band a b w+releaseBoundaryWorkspaceCost s w S₀ ∧
+        v'.user = v.user ∧ n ≤ retainedBoundaryRecoveredCost p u l s t a b target ∧
         Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))) (retainedBoundaryRecovered hR hQ)
           (mk v S) n (mk v' S') ∧
@@ -77,12 +85,12 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   obtain ⟨v₀,S₀,n₀,D,columns,solution,hu₀,
     hn₀,he₀,hcols,hlen,h132,h110,h109',h204,h206,hinp,hout,hL,hframe₀,hready₀,
-    ha₀,hb₀,h127₀,h138₀,h143₀,hretire₀,hacc⟩ := retainedBoundaryPublished_spec (body := body)
+    ha₀,hb₀,h127₀,h138₀,h143₀,hretire₀,hvolume,hacc⟩ := retainedBoundaryPublished_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad F hF v S tail
     h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
   let G := boundarySolutionField B solution
   let sourceTail := bandTableWords A w B (12*band+1) columns 0++cstream A w (chirpLine s D)++S.R 132
-  refine ⟨v₀,S₀,n₀,solution,hn₀,he₀,?_⟩
+  refine ⟨solution,?_⟩
   intro x hx
   obtain ⟨herror,hreal,hmag,hfit⟩ := hacc x hx
   have hsource : S.R 110 = cstream A w (chirpLine s F)++tail := hready.source
@@ -146,11 +154,13 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     (by simpa [S₂] using hretire₀.scratch 131 (by simp))
     (by simpa [S₂] using hretire₀.scratch 134 (by simp))
     (by simpa [S₂] using hretire₀.scratch 135 (by simp))
-  have hn₃' : n₃ ≤ releaseBoundaryWorkspaceCost s w S₀ := hn₃
+  have hn₃' : n₃ ≤ releaseBoundaryWorkspaceCostBound s w (publicationGeometryWidth t band) B.card
+      (boundaryPermanentSizeBound q band B.card) :=
+    hn₃.trans (releaseBoundaryWorkspaceCost_le S₀ hvolume)
   refine ⟨v₃,n₀+(n₁+(n₂+n₃)),E,hu₃.trans (hu₂.trans (hu₁.trans hu₀)),?_,
     (Exec.seq he₀ (Exec.seq he₁ (Exec.seq he₂' he₃))).cast rfl ?_,?_⟩
   · have hh := Nat.add_le_add hn₁ (Nat.add_le_add hn₂' hn₃')
-    simpa only [Nat.add_assoc] using Nat.add_le_add_left hh n₀
+    simpa only [retainedBoundaryRecoveredCost,Nat.add_assoc] using Nat.add_le_add hn₀ hh
   · apply congrArg (mk v₃)
     refine Stacks.ext hinp hout hL ?_
     funext i

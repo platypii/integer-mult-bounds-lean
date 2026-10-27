@@ -26,6 +26,13 @@ variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 noncomputable def retainedBoundaryPair (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 224 Q A U :=
   .seq (retainedBoundaryTransition hR hQ) (retainedBoundaryFinish hR hQ)
 
+noncomputable def retainedBoundaryPairCost (p u l s t a b target : ℕ) [NeZero s] : ℕ :=
+  let N := (haloBoundary s t (PhaseCellBand.width p u) a b).card
+  let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
+  let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+  2*retainedBoundaryRecoveredCost p u l s t a b (target+1)+
+    cleanComponentTransitionCost q s+cleanFinishComponentsCost q s
+
 theorem retainedBoundaryPair_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target a b : ℕ} [NeZero s] {α d : ℝ}
     (hp : 2 ≤ p) (hwidth : 8*p ≤ 2^u) (hα : 0 < α) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
@@ -61,7 +68,7 @@ theorem retainedBoundaryPair_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
       let Z := cstream A w (chirpLine s (fun i => pairComponentWord (X i) (Y i)))++S.R 132
       let S' : Stacks 224 A := {S with R := (Function.update (Function.update (Function.update (Function.update S.R
         110 (original++tail)) 144 parkedTail) 146 originalTail) 132 Z)}
-      v'.user = v.user ∧
+      v'.user = v.user ∧ n ≤ retainedBoundaryPairCost p u l s t a b target ∧
       Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
         (embTab componentReg (embTab groupReg body))))) (retainedBoundaryPair hR hQ) (mk v S) n (mk v' S') ∧
       PhaseCellInterface.ErrorOn (haloVertices s a b) (pairedCellRead q w (S'.R 132))
@@ -72,7 +79,7 @@ theorem retainedBoundaryPair_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
   let band := PhaseCellBand.width p u
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-  obtain ⟨vp,Sp,np,solution,hnp,hep,hstep⟩ :=
+  obtain ⟨solution,hstep⟩ :=
     retainedBoundaryTransition_spec (body := body) (target := target+1)
       hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad F hF v S tail
       h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -87,7 +94,7 @@ theorem retainedBoundaryPair_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     have h144' : i ≠ 144 := by intro h; subst i; norm_num at hi
     have h145' : i ≠ 145 := by intro h; subst i; norm_num at hi
     simpa [M,h110,h144',h145'] using hnew i hi
-  obtain ⟨vp₂,Sp₂,np₂,solution₂,hnp₂,hep₂,hfinish⟩ :=
+  obtain ⟨solution₂,hfinish⟩ :=
     retainedBoundaryFinish_spec (body := body) (target := target)
       hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad H hH v₁ M tail
       (by simpa [M] using h109) (by simpa [M] using h115) (by simpa [M] using h116) hleft hready₁
@@ -98,7 +105,9 @@ theorem retainedBoundaryPair_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
       X x (S.R 145) original originalTail herror₁ (by simp [M]; rfl) horiginal (by simpa [M] using h146)
   obtain ⟨v₂,n₂,E₂,hu₂,hn₂,he₂,herror₂⟩ := hfinish y hy
   let Y := fun i => realPartWord (publicationField t band a b E₂ (boundarySolutionField B solution₂) i)
-  refine ⟨v₂,n₁+n₂,X,Y,hu₂.trans hu₁,(Exec.seq he₁ he₂).cast rfl ?_,?_⟩
+  refine ⟨v₂,n₁+n₂,X,Y,hu₂.trans hu₁,?_,(Exec.seq he₁ he₂).cast rfl ?_,?_⟩
+  · simpa only [retainedBoundaryPairCost,two_mul,Nat.add_assoc,Nat.add_left_comm,Nat.add_comm]
+      using Nat.add_le_add hn₁ hn₂
   · apply congrArg (mk v₂)
     refine Stacks.ext rfl rfl rfl ?_
     funext i
