@@ -56,6 +56,19 @@ theorem boundaryArithmeticExec_source (p : Pr P 148 Q A U) (v : HS 151 Q A U) (S
   rw [embOvr_updR boundaryArithmeticReg_injective (embStk boundaryArithmeticReg S) S 110 output,embOvr_stk]
   rfl
 
+
+theorem boundaryArithmeticProject_updateR_inner {A : ℕ} (S : Stacks 151 A) (k : Fin 148)
+    (xs : List (Fin (A+4))) :
+    embStk boundaryArithmeticReg {S with R := Function.update S.R (boundaryArithmeticReg k) xs} =
+      {(embStk boundaryArithmeticReg S) with R := Function.update (embStk boundaryArithmeticReg S).R k xs} := by
+  refine Stacks.ext rfl rfl rfl ?_
+  funext i
+  by_cases hi : i = k
+  · subst i; simp [embStk]
+  · have hne : boundaryArithmeticReg i ≠ boundaryArithmeticReg k :=
+      fun h => hi (boundaryArithmeticReg_injective h)
+    simp [embStk,Function.comp_def,hi,hne]
+
 theorem boundaryArithmeticProject_source {A : ℕ} (S : Stacks 151 A) (output : List (Fin (A+4))) :
     embStk boundaryArithmeticReg {S with R := Function.update S.R 110 output} =
       {(embStk boundaryArithmeticReg S) with R := Function.update (embStk boundaryArithmeticReg S).R 110 output} := by

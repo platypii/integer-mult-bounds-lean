@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1659 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1662 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8897,3 +8897,39 @@ placement/frame/execution audits. Combined build peak is 2.7 GiB. Both new
 modules and the audit root pass individual guarded checks at at most 2058.4 MiB.
 Added-source integrity, plan-status and whitespace checks pass; proof limits
 are unchanged.
+
+### Indexed execution from the resident folded page through Schur-column publication
+
+`residentBoundaryWord` and `loadResidentCoordinate` perform the restoring lookup
+and paid unary decoding directly in the 151-port resident-page placement.
+`selectResidentCoordinate` additionally consumes the lookup index on port 0,
+freeing that arithmetic scratch port. It returns boundary membership and the
+inverse folded position, with cost
+`n*(12*V+11)+27*V+6*x+36`, where `x` is the selected ambient coordinate.
+`LengthKeyReady.update_coordinate` proves that the retained coordinate is a
+spectator of solver readiness.
+
+`indexedSchurColumn_spec` composes this actual selection with the resident-page
+Schur-column program and final coordinate cleanup. The caller supplies the
+prepared folded page, its generated geometry width, a folded-page index and
+ordinary projected readiness with that index removed. Boundary membership,
+coordinate fit and the coordinate header are derived internally. The output
+has entry error at most `2^-target` against the actual Schur column selected by
+`bFoldAt`; realness, magnitude and reusable readiness are preserved. Its exact
+frame consumes the lookup index and publishes the result on 110, restoring all
+other stacks, including the page, headers, retained component streams and
+coordinate port 139. The explicit bound adds selection, the existing generated
+column cost and `2*x+2` for coordinate release. No coordinate, original column,
+Schur matrix or supplied execution is an input.
+
+The resident-page loader and arithmetic caller are now composed. The complete
+page-setup-to-table loop, streaming the required band entries, factor/solve and
+release, the final S3 endpoint, and uniform fast-time/simultaneous storage remain
+open. Both ambient scans and unary-coordinate costs remain explicit; no fast
+repeated-column claim is made. S3 remains partial.
+
+Validation: all 10,319 guarded stage-audit jobs pass, including six new explicit
+projection, coordinate-readiness, lookup/selection and indexed execution audits.
+Combined build peak is 2.7 GiB. All four new/revised modules and the audit root
+pass individual guarded checks at at most 2060.6 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
