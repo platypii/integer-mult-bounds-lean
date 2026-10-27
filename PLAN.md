@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1842 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1845 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10596,3 +10596,33 @@ new precision/alignment/error-budget audits. Final incremental combined peak is
 1998.4 MiB for retained recovery, and 1948.2 MiB for the boundary/recovery
 budget. Source-integrity, whitespace and plan-status
 checks pass. Proof limits are unchanged.
+
+### Executed retained boundary solve through full halo recovery
+
+The ordinary arithmetic `LengthKeyReady` invariant now follows from the physical
+boundary frame. Real unfolding exposes that frame; ambient publication carries
+it through and restores the recovery masters and required scratch. The published
+boundary field also exposes its word-fit certificate for physical readback.
+
+`physicalRecoveryPublishedHalo_at_precision` lifts recovery into the full
+224-tape bank with exact updates on 110 and 132 and preserves every other tape.
+`retainedBoundaryRecovered_spec` composes the actual retained residual, constructed
+boundary solve, unscale/unfold, generated ambient publication and recovery.
+With the allocated boundary solve target, the physical published halo reads have
+error at most `2^-target` against every exact real principal solution. Both solve
+and unfold predecessor executions are retained in the cost certificate, and the
+recovery cost is added to the actual publication execution cost.
+
+The residual on 110 and table/initial-interior streams below the recovered output
+on 132 are still owned data. Complete retirement, real/imaginary assembly and
+uniform final time/live-storage bounds remain open. This is a real-component
+execution endpoint, not the complete S3 inverse. S3 remains partial; kappa is
+unchanged.
+
+Validation: all 14,690 guarded stage-audit jobs pass, including explicit physical
+readiness, lifted recovery and composed recovery axiom audits. Combined peak is
+3.4 GiB. Proof limits are unchanged.
+Individual guarded checks peak at 2904.2 MiB for readiness transport, 2911.5 MiB
+for physical recovery, 2957.4 MiB for the strengthened publication endpoint and
+2941.2 MiB for composed recovery. Source-integrity, whitespace and plan-status
+checks pass.

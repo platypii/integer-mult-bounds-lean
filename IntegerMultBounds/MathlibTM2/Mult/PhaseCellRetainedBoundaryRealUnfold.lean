@@ -63,6 +63,8 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       S'.R 110 = cstream A w (chirpLine s C)++S.R 110 ∧
       S'.R 132 = bandTableWords A w B W columns 0++cstream A w (chirpLine s D)++S.R 132 ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
+      (∀ i : Fin 154, i ≠ 109 → i ≠ 110 → i ≠ 115 → i ≠ 116 → i ≠ 132 →
+        S'.R (boundaryFactorLegacyReg i) = S.R (boundaryFactorLegacyReg i)) ∧
       BoundaryPublicationReady S' s B.card (publicationGeometryWidth t band) w ∧
       S'.R 109 = cstream A (publicationGeometryWidth t band) ((bFoldOrder s B).map
         (fun j : ZMod s => (⟨(j.val : ℤ),0⟩ : GaussianInt))) ∧
@@ -138,12 +140,23 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
         · simpa [S₂,S₀] using hc 215 (by simp)
         · simpa [S₂,S₀] using h220
         · simpa [S₂,S₀] using h206
+  have hlegacy₂ (i : Fin 154) (hi109 : i ≠ 109) (hi110 : i ≠ 110)
+      (hi115 : i ≠ 115) (hi116 : i ≠ 116) (hi132 : i ≠ 132) :
+      S₂.R (boundaryFactorLegacyReg i) = S.R (boundaryFactorLegacyReg i) := by
+    have ho (j : Fin 224) (hj : 154 ≤ j.val) : boundaryFactorLegacyReg i ≠ j := by
+      intro h
+      have hv := congrArg (fun k : Fin 224 => k.val) h
+      change i.val = j.val at hv
+      have hi := i.isLt
+      omega
+    simpa [S₂,S₀,ho 189 (by decide),ho 191 (by decide),ho 198 (by decide),
+      ho 204 (by decide),ho 217 (by decide)] using hlegacy i hi109 hi110 hi115 hi116 hi132
   have hn : n₁+n₂ ≤ retainedBoundarySolveCost p u l s t a b target+
       (2*(([189,191,198,204] : List (Fin 224)).map fun i => (S₁.R i).length).sum+9)+
         generatedBoundaryUnfoldCost B.card w+(B.card*(12*w+9)+12) := by
     simpa only [Nat.add_assoc] using Nat.add_le_add hn₁ hn₂
   refine ⟨v₁,S₁,n₁,v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,hn₁,he₁,hn,
-    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,hinp,hout,hL,hpub,?_,?_⟩
+    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,hinp,hout,hL,hlegacy₂,hpub,?_,?_⟩
   · simp [S₂,w,bits,B]
   · simp [S₂,w,bits,B]
   · simpa [S₂,S₀] using h110

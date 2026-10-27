@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryRealUnfold
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryPublish
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryReady
 
 /-! Execute the accurate retained boundary solve through ambient publication. -/
 
@@ -71,11 +72,17 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       S'.R 110 = cstream A w (chirpLine s C)++S.R 110 ∧
       S'.R 109 = [] ∧ S'.R 204 = [] ∧ S'.R 206 = [] ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
+      LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+        q l s t u band 0 0 (S'.R 110)
+        (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg S')))) ∧
+      (S'.R 141).length = a ∧ (S'.R 142).length = b ∧
+      S'.R 127 = [] ∧ S'.R 138 = [] ∧ S'.R 143 = [] ∧
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
       (∀ i ∈ B, |publishedCellRead q w (0 : ZMod s) (S'.R 132) i-x i| ≤ 3/(2 : ℝ)^target) ∧
       (∀ i, (G i).im = 0) ∧
-      (∀ i, ‖value q (G i)‖ ≤ (2 : ℝ)^stableInteriorExponent p 2) := by
+      (∀ i, ‖value q (G i)‖ ≤ (2 : ℝ)^stableInteriorExponent p 2) ∧
+      (∀ i, Fits w (G i)) := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let band := PhaseCellBand.width p u
@@ -84,7 +91,7 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   obtain ⟨v₀,S₀,n₀,v₁,S₁,n₁,D,columns,solution,hu₁,hn₀,he₀,hn₁,he₁,hlen,hsolLen,hsrc,h217,
-    h110,h132,hinp,hout,hL,hpub,hcoords,hacc⟩ :=
+    h110,h132,hinp,hout,hL,hlegacy,hpub,hcoords,hacc⟩ :=
     retainedBoundaryRealUnfold_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad F hF v S tail h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -103,18 +110,41 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let S₂base : Stacks 224 A := {S₁ with R := fun i => if i ∈ ([189,191,198] : List (Fin 224)) then [] else S₁.R i}
   let S₂ : Stacks 224 A := {S₂base with R := (Function.update (Function.update (Function.update (Function.update S₂base.R
     109 []) 206 []) 204 []) 132 (cstream A w (chirpLine s G)++S₁.R 132))}
+  have hframe (i : Fin 154) (hi109 : i ≠ 109) (hi110 : i ≠ 110)
+      (hi115 : i ≠ 115) (hi116 : i ≠ 116) (hi132 : i ≠ 132) :
+      S₂.R (boundaryFactorLegacyReg i) = S.R (boundaryFactorLegacyReg i) := by
+    have ho (j : Fin 224) (hj : 154 ≤ j.val) : boundaryFactorLegacyReg i ≠ j := by
+      intro h
+      have hv := congrArg (fun k : Fin 224 => k.val) h
+      change i.val = j.val at hv
+      have hi := i.isLt
+      omega
+    have h109 : boundaryFactorLegacyReg i ≠ 109 := by simpa [boundaryFactorLegacyReg,Fin.ext_iff] using hi109
+    have h132 : boundaryFactorLegacyReg i ≠ 132 := by simpa [boundaryFactorLegacyReg,Fin.ext_iff] using hi132
+    simpa [S₂,S₂base,h109,h132,ho 189 (by decide),ho 191 (by decide),ho 198 (by decide),
+      ho 204 (by decide),ho 206 (by decide)] using hlegacy i hi109 hi110 hi115 hi116 hi132
+  have hready₂ := boundaryRecoveryReady_of_frame (S' := S₂) hready hinp hout hL hframe
   have hn : n₁+n₂ ≤ _ := Nat.add_le_add hn₁ hn₂
   refine ⟨v₀,S₀,n₀,v₁,S₁,n₁,v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,he₀,he₁,?_,
-    Exec.seq he₁ he₂,hsolLen,?_,?_,?_,?_,?_,hinp,hout,hL,?_⟩
+    Exec.seq he₁ he₂,hsolLen,?_,?_,?_,?_,?_,hinp,hout,hL,hready₂,?_,?_,?_,?_,?_,?_⟩
   · simpa only [Nat.add_assoc] using hn
   · simp [S₂,S₂base,h132,List.append_assoc,w,bits,B,G]
   · simpa [S₂,S₂base] using h110
   · simp [S₂]
   · simp [S₂]
   · simp [S₂]
+  · have hf : S₂.R 141 = S.R 141 := hframe 141 (by decide) (by decide) (by decide) (by decide) (by decide)
+    rw [hf]
+    exact haMaster
+  · have hf : S₂.R 142 = S.R 142 := hframe 142 (by decide) (by decide) (by decide) (by decide) (by decide)
+    rw [hf]
+    exact hbMaster
+  · exact (hframe 127 (by decide) (by decide) (by decide) (by decide) (by decide)).trans h127
+  · exact (hframe 138 (by decide) (by decide) (by decide) (by decide) (by decide)).trans h138
+  · exact (hframe 143 (by decide) (by decide) (by decide) (by decide) (by decide)).trans h143
   · intro x hx
     obtain ⟨herror,hmag,hfit⟩ := hacc x hx
-    refine ⟨?_,fun i => boundarySolutionField_im B solution i,hmag⟩
+    refine ⟨?_,fun i => boundarySolutionField_im B solution i,hmag,hfit⟩
     intro i hi
     have hread := publishedCellRead_encodedField (q := q) (w := w) (by omega : 4 ≤ A) hw
       G (S₁.R 132) hfit i
