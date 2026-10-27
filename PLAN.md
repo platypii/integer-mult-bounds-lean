@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1809 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1812 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10054,3 +10054,51 @@ Validation of the Gaussian-output/normalized-RHS/unscaled-error chunk: all
 Combined build peak is 3.4 GiB; individual added modules check below 2.8 GiB.
 Plan-status, added-source integrity and whitespace checks pass. Proof limits
 are unchanged.
+
+### Cancelled scale and polynomial perturbation budget
+
+`boundary_unscaled_error_identity` cancels the inverse normalization scale from
+the retained RHS and matrix perturbation terms exactly.
+`boundary_unscaled_total_error_budget` bounds the complete scalar expression by
+`2/2^target + 32p (2^-bits + δ + N ε X)`, using the existing canonical precision
+and normalization budgets. `boundary_perturbation_target` proves that the
+perturbation summand is at most `2^-(target+1)` when row error and retained RHS
+error meet `boundaryErrorBits` and the original exact boundary solution obeys
+`X ≤ 16p·2^rhsExp`. Thus these hypotheses give total error at most
+`3·2^-target`, without exponential amplification of the matrix or residual error.
+The module's individual guarded check peaks at 2851.9 MiB. The constructed
+endpoint must still establish the stable exact-solution bound and retained RHS
+budget, instantiate the combined numerical theorem and derive the magnitude for
+recovery. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,655 guarded stage-audit jobs pass, including three new explicit
+scale-cancellation and total-error-budget axiom audits. Combined peak is 3.4 GiB.
+Plan-status and whitespace checks pass. Proof limits are unchanged.
+
+### Dyadic solve target and stable recovery magnitude
+
+`boundary_unscaled_solve_target` combines the complete actual normalized solve
+with the polynomial budgets: entry error `2^-boundaryTableBits`, retained RHS
+error `2^-boundaryErrorBits`, and exact solution magnitude `16p·2^rhsExp` imply
+unscaled output error at most `3·2^-target`. The theorem refers directly to the
+actual Gaussian solution word and exact boundary-coordinate system. It checks
+individually at 2834.3 MiB.
+
+`dominant_complex_solution_bound` derives the required exact magnitude from the
+two real solves and dominance. `phaseCell_exact_solution_bound` specializes it
+to the original phase-cell matrix using its proved gap, independently of the
+larger retained residual. `boundary_computed_solution_magnitude` shows that an
+output with the proved dyadic error fits the existing
+`stableInteriorExponent p rhsExp`; recovery sizing therefore need not absorb
+the normalization scale. The magnitude module checks at 1948.7 MiB.
+
+The constructed Schur execution endpoint must still identify the restricted
+full solution and instantiate its retained residual error, then use these
+theorems to close accuracy and magnitude in its postcondition. Recovery,
+retirement, uniform time and simultaneous live storage remain open. S3 remains
+partial and kappa is unchanged.
+
+Validation of the total-budget/dyadic-target/stable-magnitude chunk: all 14,657
+guarded stage-audit jobs pass, including seven new explicit axiom audits.
+Combined peak is 3.4 GiB; individual modules remain below 2.8 GiB. Plan-status,
+added-source integrity and whitespace checks pass. Proof limits are unchanged.
