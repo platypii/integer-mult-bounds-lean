@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2174 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2180 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14015,3 +14015,41 @@ Validation: the expanded standard-axiom audit passes all 15,025 jobs (3.4 GiB
 combined peak RSS). All five new modules and the audit pass individual guarded
 checks below the 4 GiB module budget. Proof-integrity, audit-coverage,
 plan-status and whitespace checks pass.
+
+### S3 checkpoint: retained-family first inverse interior/residual stage
+
+`familyInitializedInterior_spec` initializes the owned ambient prefix from
+the actual RHS, executes the retained-family solve, and returns a bounded
+Gaussian-integer field with uniform interior error. Its exact final frame
+prepends only the owned result on register 132 and retains the whole family.
+
+`familyInverseReg` places this backend in a fixed 263-register workspace. The
+existing 256-register inverse bank, including both coupling coefficient
+caches, keeps its original placement. The seven family ports occupy 256–262;
+the retained queue is 260. Injectivity, legacy views and disjointness are
+proved structurally. `placedFamilyInitializedInterior_spec` executes the
+backend in this joint workspace and preserves every factor/cache register.
+
+`placedFamilyInteriorForCoupling_spec` executes the interior backend and
+installs the ordinary coupling-row ABI. `familyInteriorResidual_spec` then
+executes the existing cached residual-row pass in the legacy bank, carrying
+its numerical residual bound and the interior result bound.
+`familyRestoredInteriorResidual_spec` releases the private coupling headers.
+Its exact final frame changes only the owned interior and residual prefixes
+on registers 132 and 110. Thus both coupling coefficient caches, factor data,
+all seven family ports, retained masters, borrowed suffixes and left stacks
+survive this complete first inverse stage.
+
+Remaining: replace the recovery interior stage and compose both stages into
+the complete real/complex inverse and repeated-call wrappers, including
+one-time family setup and final release, then finish selected uniform time
+matching and simultaneous whole-execution live storage. The shared recovery
+precision is already proved by `recovery_execution_sizes`; the new backend
+has not yet been composed through that second stage. S3 stays partial; kappa
+is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,031 jobs (3.4 GiB
+combined peak RSS), retaining all earlier audit entries and adding 15. All
+six new modules and the audit pass individual guarded checks below the 4 GiB
+module budget. Proof-integrity, audit-coverage, plan-status and whitespace
+checks pass.

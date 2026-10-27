@@ -38,6 +38,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedClosedBatchSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedControlledHaloClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedProcessHaloLengthKey
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyRestoredInteriorResidual
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedFamilyHaloInterior
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilySolveHaloInteriorBounded
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateHaloWeightFamily
@@ -2956,7 +2957,22 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tablePacketHost_exec,
       `IntegerMultBounds.NLogN.PhaseCellRationalArgs.couplingIndex_lt,
       `IntegerMultBounds.NLogN.PhaseCellRationalArgs.couplingIndex_cast,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperCropFromDimensions_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyLegacyBank_update_output,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInitializedInterior_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseLegacyReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseLegacyReg_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseReg_legacy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseReg_port,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverse_legacy_view,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedFamilyInitializedInterior_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyCouplingSourceReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyCouplingSourceReg_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedFamilyInteriorForCoupling_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInteriorResidual_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyCouplingHeadersRelease_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyRestoredInteriorResidual_spec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
