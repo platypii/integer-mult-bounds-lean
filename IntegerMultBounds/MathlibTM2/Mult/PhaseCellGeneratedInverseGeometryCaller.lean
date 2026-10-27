@@ -19,7 +19,7 @@ variable {Q A : ℕ} {P U : Type} {body : P → Pr P 296 Q A U}
 noncomputable def generatedInverseCallerGeometryCost (W p u l target s t : ℕ) [NeZero s] : ℕ :=
   inverseScalarAtoms p s t u 0 s*tblC W 0+
     inverseMasterCopyCost W (inverseMasterValues p u l target s t 0 s)+
-    (generatedClosedComplexBatchCost p u l s t 0 s target 0+
+    (generatedComplexSetupCostBound p u l s t 0 s target+
       generatedComplexGeometryLineCost p u l s t 0 s target+5)+
     inverseReleaseCost W (inverseMasterValues p u l target s t 0 s)
 
@@ -27,7 +27,7 @@ theorem generatedInverseCallerCost_geometry_le {s t : ℕ} [NeZero s] (hst : s <
     (W p u l target : ℕ) :
     generatedInverseCallerCost W p u l target s t ≤
       generatedInverseCallerGeometryCost W p u l target s t := by
-  have h := generatedClosedComplexBatchCost_geometry_le hst p u l 0 s target 1 le_rfl
+  have h := generatedClosedComplexBatchCost_full_geometry_le hst p u l 0 s target 1 le_rfl
   dsimp only [generatedInverseCallerCost,generatedInverseCallerGeometryCost]
   simp only [one_mul] at h
   omega

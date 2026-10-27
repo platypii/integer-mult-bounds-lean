@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2124 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2126 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `sharedInverseCaller_spec` executes a fixed 280-register inverse caller from binary ordinary scalars and one encoded complex line, with a derived scalar width. It generates the band, boundary count, arithmetic precisions and unary masters, constructs one shared boundary page, reuses it across both real-component solves, releases it, and restores every stack except its owned output prefix, including scalar setup and all borrowed suffixes. Uniform coordinate error is at most `2^-target`. No supplied readiness bank, boundary solution, column, factor or publication control remains. The complete setup/solve/release execution has a dimension-only time bound. `sharedComplexClosedBatch_spec` now executes a counted complex batch with one generated factor/publication setup, both component solves per replica, ordered publication and full page release; its exact final frame changes only the batch output prefix. Uniform fast time matching and simultaneous live-storage bounds remain open, including matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `generatedInverseCaller_spec` executes the generated cached inverse in a fixed 296-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It constructs factor/publication pages and coefficient keys, reuses them across both real components, releases them, and restores every stack except the owned output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedComplexBatch_spec` extends this to a counted complex batch with one shared construction bill. The actual caller has a geometry-separated bound including clipped Schur-column gathering and generated factor setup. Final uniform fast time matching and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -13576,3 +13576,29 @@ partial and kappa is unchanged.
 Validation: the expanded stage standard-axiom audit passes all 14,975 jobs
 (3.4 GiB combined peak RSS). All six new modules pass individual guarded checks
 below the 4 GiB module budget. Proof-integrity and whitespace checks pass.
+
+### S3 checkpoint: explicit generated factor-construction bill
+
+`retainedColumnCollectionCost_le` bounds the actual clipped folded-band gather
+by at most `2*(12*band+1)+1` entries, with row-count and physical-coordinate
+bounds for every selection/copy. It includes generated interval controls,
+entry-loop clocks, cleanup and resident-source retirement. No dense full
+boundary-column gather is substituted for the clipped schedule.
+
+`tableColumnCost_le` removes the current column index and coordinate from the
+construction bound. `constructedBoundaryTableCost_le` sums that uniform bill
+over the actual boundary count. `constructedBoundaryFactorCost_le` adds the
+generated factor data, factor headers and axis factorization. The complete
+batch setup bound now uses this explicit construction bill, and
+`generatedInverseCaller_geometry_spec` carries it through actual scalar
+setup, cached solve and release execution.
+
+Final uniform fast time matching still needs to estimate these explicit
+arithmetic/setup terms at the selected parameters. The simultaneous
+whole-execution live-storage theorem remains open. S3 stays partial; neither
+the shared interface nor kappa changes.
+
+Validation: the expanded standard-axiom audit passes all 14,977 jobs (3.5 GiB
+combined peak RSS). All four changed/new modules pass individual guarded
+checks below the 4 GiB module budget. Proof-integrity and whitespace checks
+pass.

@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedInteriorGeometryCost
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBatchCost
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryTableCost
 
 /-! A geometry ledger for the complete generated batch, with one construction bill. -/
 
@@ -60,5 +61,39 @@ theorem generatedClosedComplexBatchCost_geometry_le {s t : ℕ} [NeZero s]
   rw [generatedClosedComplexBatchCost_eq]
   exact Nat.add_le_add_left
     (Nat.mul_le_mul_left replicas (generatedComplexLineCost_geometry_le hst p u l a b target hb)) _
+
+noncomputable def generatedComplexSetupCostBound (p u l s t a b target : ℕ) [NeZero s] : ℕ :=
+  let N := (haloBoundary s t (PhaseCellBand.width p u) a b).card
+  let band := PhaseCellBand.width p u
+  let W := 12*band+1
+  let solveTarget := boundaryRecoveryTarget p (target+1)
+  let bits := boundaryTableBits p solveTarget 2 N
+  let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+  let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+  let V := publicationGeometryWidth t band
+  constructedBoundaryFactorCostBound p u l s t a b solveTarget 2+
+    sharedPagePublicationSetupCost N V w s+
+    (couplingKeySetupCost (2^15*p) q s t u band a b+
+      (s*(4*w+9)+2*s*w+16)+couplingKeyReleaseCost (2^15*p) q s t u band a b
+        (couplingCoefficientPage (2^15*p) q s t u band a b s).length)+
+    placedFactorBatchReleaseCostBound s 0 N W w V
+      (boundaryPermanentSizeBound q band N) (12*band*w+N*W)
+
+
+theorem generatedClosedComplexBatchCost_setup_le (p u l s t a b target : ℕ) [NeZero s] :
+    generatedClosedComplexBatchCost p u l s t a b target 0 ≤
+      generatedComplexSetupCostBound p u l s t a b target := by
+  have h := constructedBoundaryFactorCost_le p u l s t a b (boundaryRecoveryTarget p (target+1)) 2
+  dsimp only [generatedClosedComplexBatchCost,generatedComplexSetupCostBound]
+  simp only [Nat.mul_zero,Nat.zero_mul,Nat.add_zero]
+  nlinarith only [h]
+
+theorem generatedClosedComplexBatchCost_full_geometry_le {s t : ℕ} [NeZero s]
+    (hst : s < t) (p u l a b target replicas : ℕ) (hb : b ≤ s) :
+    generatedClosedComplexBatchCost p u l s t a b target replicas ≤
+      generatedComplexSetupCostBound p u l s t a b target +
+        replicas*generatedComplexGeometryLineCost p u l s t a b target := by
+  exact (generatedClosedComplexBatchCost_geometry_le hst p u l a b target replicas hb).trans
+    (Nat.add_le_add_right (generatedClosedComplexBatchCost_setup_le p u l s t a b target) _)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
