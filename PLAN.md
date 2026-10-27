@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2205 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2215 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `generatedInverseCaller_spec` executes the generated cached inverse in a fixed 296-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It constructs factor/publication pages and coefficient keys, reuses them across both real components, releases them, and restores every stack except the owned output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedComplexBatch_spec` extends this to a counted complex batch with one shared construction bill. The actual caller has a geometry-separated bound including clipped Schur-column gathering and generated factor setup. Final uniform fast time matching and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. Final selected uniform fast time matching and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -14182,5 +14182,43 @@ unchanged.
 
 Validation: the expanded standard-axiom audit passes all 15,056 jobs (3.5 GiB
 combined peak RSS), retaining all prior entries and adding seven. All four new
+modules and the audit pass individual guarded checks below the 4 GiB module
+budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
+
+### S3 checkpoint: generated factor page and ordinary-scalar retained-family caller
+
+`familyFactorBatchSetup_spec` executes the existing numerical Schur-column,
+factor and publication-control construction below the seven interior-family
+ports. `generatedFactorFamilyComplexBatch_spec` composes this construction
+with the generated coupling/interior coefficient batch. No numerical factor
+page, Schur RHS or interior coefficient family is supplied by the caller.
+
+`familyFactorBatchRelease_exec` reuses the existing factor release implementation
+through the legacy projection, with its existing retained-volume cost bound.
+The restoration theorem lifts its exact frame through the seven added ports.
+`generatedClosedFamilyComplexBatch_spec` therefore executes and releases the
+complete setup around a counted complex batch. Every replica has the uniform
+physical error bound, and only the ordered output prefix changes. The ledger
+charges each setup and release once and uses retained-family costs for every
+first/recovery interior pass of both real solves.
+
+`familyInverseCaller_sized_spec` installs scalar-generated masters, executes
+that closed inverse for one complex line and releases all headers in a fixed
+303-register workspace. `familyInverseCaller_spec` derives the scalar word
+width and all room witnesses. The caller accepts ordinary binary scalars and
+encoded complex input; it requires no prebuilt numerical page or readiness
+witness. It restores scalar inputs, raw input, borrowed suffixes, all generated
+data, scratch and left stacks, publishing only register 132's output prefix.
+For every solution of the full ambient complex system, the physical readout
+has coordinate error at most `2^-target`.
+
+Remaining: match this retained-family caller's actual ledger to the selected
+uniform fast time envelope and prove simultaneous whole-execution live storage,
+including all retained pages, inputs, output and scratch. The numerical caller
+composition is installed, but these resource gates remain open. S3 stays
+partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,066 jobs (3.4 GiB
+combined peak RSS), retaining all prior entries and adding 20. All ten new
 modules and the audit pass individual guarded checks below the 4 GiB module
 budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
