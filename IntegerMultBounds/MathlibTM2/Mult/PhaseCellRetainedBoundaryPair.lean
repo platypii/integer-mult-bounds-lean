@@ -72,7 +72,7 @@ theorem retainedBoundaryPair_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
   let band := PhaseCellBand.width p u
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-  obtain ⟨vr,Sr,nr,vu,Su,nu,vp,Sp,np,solution,her,heu,hnp,hep,hstep⟩ :=
+  obtain ⟨vp,Sp,np,solution,hnp,hep,hstep⟩ :=
     retainedBoundaryTransition_spec (body := body) (target := target+1)
       hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad F hF v S tail
       h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -87,7 +87,7 @@ theorem retainedBoundaryPair_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     have h144' : i ≠ 144 := by intro h; subst i; norm_num at hi
     have h145' : i ≠ 145 := by intro h; subst i; norm_num at hi
     simpa [M,h110,h144',h145'] using hnew i hi
-  obtain ⟨vr₂,Sr₂,nr₂,vu₂,Su₂,nu₂,vp₂,Sp₂,np₂,solution₂,her₂,heu₂,hnp₂,hep₂,hfinish⟩ :=
+  obtain ⟨vp₂,Sp₂,np₂,solution₂,hnp₂,hep₂,hfinish⟩ :=
     retainedBoundaryFinish_spec (body := body) (target := target)
       hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad H hH v₁ M tail
       (by simpa [M] using h109) (by simpa [M] using h115) (by simpa [M] using h116) hleft hready₁

@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryFactorPreparedRun
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnfoldHeaderVolume
 
 /-! Generate all setup and execute boundary factorization from retained masters and the emitted input page. -/
 
@@ -56,6 +57,7 @@ theorem initializedBoundaryFactor_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       ((boundaryFactorState S') .kn).length = B.card * ((12*band) + 1) ∧ (boundaryFactorState S') .ms = σ .dst ∧ (boundaryFactorState S') .m2n = σ .ms ∧
       (boundaryFactorState S') .kn = (List.replicate B.card (σ .ms)).flatten ∧ (boundaryFactorState S') .mwn = σ (.cm .wn) ++ σ .m2wn ∧
       RsbReady (boundaryFactorState S') w q ∧
+      boundaryUnfoldHeaderVolume (boundaryFactorState S') ≤ 12*band*w+B.card*(12*band+1) ∧
       ∀ r, r ∉ ([.src, .hf, .df, .dout, .bo, .vk, .m2n, .kn, .ms, .mwn, .ef, .xs] : List RsbR) →
         (boundaryFactorState S') r = σ r := by
   dsimp only
@@ -102,8 +104,16 @@ theorem initializedBoundaryFactor_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     rw [show S₂.R 119 = S₁.R 119 from hlegacy 119 (by decide),
       show S₁.R 119 = S.R 119 from boundaryFactorSetupR_legacy p q S.R 119]
     exact hmasterQ
+  have hw : w = 2*q+8 := by dsimp [w,q,executionWidth,executionPrecision]; omega
+  have hheaders : boundaryUnfoldHeaderVolume (boundaryFactorState S₂) ≤ 12*band*w+B.card*(12*band+1) := by
+    have hm2wn : ((boundaryFactorState S₁) .m2wn).length = 12*band*w := by
+      simpa only [hw] using hprepared.m2wn
+    have htK : (boundaryFactorState S₁) .tK = [] := hprepared.empty .tK (by simp [boundaryFactorScratch])
+    have hsel : (boundaryFactorState S₁) .sel = [] := hprepared.empty .sel (by simp [boundaryFactorScratch])
+    simp only [boundaryUnfoldHeaderVolume,hframe' .m2wn (by decide),hframe' .tK (by decide),
+      hframe' .sel (by decide),hm2wn,hkn,htK,hsel,List.length_nil,Nat.add_zero,le_refl]
   refine ⟨v₂,S₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hinp,hout,hL,?_,h184',h223',h220',h221',h119,hsolve,hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,
-    hdout,hvk,hef,hxs,hkn,hms,hm2n,hkn',hmwnControl,hready',hframe'⟩
+    hdout,hvk,hef,hxs,hkn,hms,hm2n,hkn',hmwnControl,hready',hheaders,hframe'⟩
   intro i hi
   exact (hlegacy i hi).trans (boundaryFactorSetupR_legacy p q S.R i)
 

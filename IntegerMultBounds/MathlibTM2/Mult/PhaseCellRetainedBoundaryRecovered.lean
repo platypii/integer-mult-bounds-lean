@@ -48,23 +48,11 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     let solveTarget := boundaryRecoveryTarget p target
     let bits := boundaryTableBits p solveTarget 2 B.card
     let band := PhaseCellBand.width p u
-    let V := publicationGeometryWidth t band
     let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-    ∃ vsolve Ssolve nsolve vunfold Sunfold nunfold v₀ S₀ n₀, ∃ solution : List GaussianInt,
+    ∃ v₀ S₀ n₀, ∃ solution : List GaussianInt,
       let G := boundarySolutionField B solution
-      Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
-        (embTab componentReg (embTab groupReg body))))) (retainedBoundarySolve hR hQ)
-        (mk v S) nsolve (mk vsolve Ssolve) ∧
-      Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
-        (embTab componentReg (embTab groupReg body))))) (retainedBoundaryRealUnfold hR hQ)
-        (mk v S) nunfold (mk vunfold Sunfold) ∧
-      n₀ ≤ retainedBoundarySolveCost p u l s t a b solveTarget+
-        (2*(([189,191,198,204] : List (Fin 224)).map fun i => (Ssolve.R i).length).sum+9)+
-        generatedBoundaryUnfoldCost B.card w+(B.card*(12*w+9)+12)+
-        (2*(([189,191,198,206] : List (Fin 224)).map fun i => (Sunfold.R i).length).sum+9)+
-        generatedBoundaryUnfoldCost B.card V+(4*(B.card*V)+4)+
-        generateBoundaryAdvancesCost B.card V w s+93*s*w+45 ∧
+      n₀ ≤ retainedBoundaryPublishedCost p u l s t a b solveTarget ∧
       Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
         (embTab componentReg (embTab groupReg body))))) (retainedBoundaryPublished hR hQ)
         (mk v S) n₀ (mk v₀ S₀) ∧
@@ -87,15 +75,14 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let band := PhaseCellBand.width p u
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-  obtain ⟨vsolve,Ssolve,nsolve,vunfold,Sunfold,nunfold,v₀,S₀,n₀,D,columns,solution,hu₀,
-    hesolve,heunfold,hn₀,he₀,hcols,hlen,h132,h110,h109',h204,h206,hinp,hout,hL,hframe₀,hready₀,
+  obtain ⟨v₀,S₀,n₀,D,columns,solution,hu₀,
+    hn₀,he₀,hcols,hlen,h132,h110,h109',h204,h206,hinp,hout,hL,hframe₀,hready₀,
     ha₀,hb₀,h127₀,h138₀,h143₀,hretire₀,hacc⟩ := retainedBoundaryPublished_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad F hF v S tail
     h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
   let G := boundarySolutionField B solution
   let sourceTail := bandTableWords A w B (12*band+1) columns 0++cstream A w (chirpLine s D)++S.R 132
-  refine ⟨vsolve,Ssolve,nsolve,vunfold,Sunfold,nunfold,v₀,S₀,n₀,solution,
-    hesolve,heunfold,hn₀,he₀,?_⟩
+  refine ⟨v₀,S₀,n₀,solution,hn₀,he₀,?_⟩
   intro x hx
   obtain ⟨herror,hreal,hmag,hfit⟩ := hacc x hx
   have hsource : S.R 110 = cstream A w (chirpLine s F)++tail := hready.source

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1862 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1863 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `retainedComplexBoundary_spec` executes from one encoded complex input and the retained ordinary-parameter readiness bank: preserve/split the input, generate the residual and boundary table, construct/factor/solve/unscale the boundary system, generate ambient publication, recover both components, pair the complex output and restore every stack except its owned output prefix. Physical halo reads have error at most `2^-target`; no supplied boundary solutions, columns, factors or publication controls remain. Shared arithmetic precision and exact borrowed-suffix restoration are proved. `retainedInverse_spec` specializes the executed solver to the full complex matrix equation with uniform coordinate error. Packed-table retirement now has an explicit polynomial bound in ordinary geometry. Closed caller/setup, uniform fast time and simultaneous live-storage bounds remain open, including reached-header bounds and matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `retainedComplexBoundary_spec` executes from one encoded complex input and the retained ordinary-parameter readiness bank: preserve/split the input, generate the residual and boundary table, construct/factor/solve/unscale the boundary system, generate ambient publication, recover both components, pair the complex output and restore every stack except its owned output prefix. Physical halo reads have error at most `2^-target`; no supplied boundary solutions, columns, factors or publication controls remain. Shared arithmetic precision and exact borrowed-suffix restoration are proved. `retainedInverse_spec` specializes the executed solver to the full complex matrix equation with uniform coordinate error. Packed-table retirement now has an explicit polynomial bound in ordinary geometry. Closed caller/setup, uniform fast time and simultaneous live-storage bounds remain open, including the factor-bank release volume and matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -10784,3 +10784,34 @@ recovery and transition modules check at 2969.5 and 2945.2 MiB. Source-integrity
 whitespace and plan-status checks pass. Proof limits are unchanged.
 The affected finish module checks at 2947.5 MiB; all new and changed proof modules
 remain below 3 GiB.
+
+### Bound obsolete unfold headers and simplify the publication cost interface
+
+`boundaryUnfoldHeaderVolume` tracks only the four obsolete factor headers used
+by unfolding. Factor initialization proves its bound
+`12*band*w+N*(12*band+1)` from the prepared dimensions and clean scratch; factor
+construction, triangular solving and exact unscaling preserve it structurally.
+The retained solve now carries that derived fact. Real unfolding clears the old
+headers, and its postcondition proves that the later coordinate-unfold retirement
+volume is exactly zero.
+
+`retainedBoundaryRealUnfoldCost` and `retainedBoundaryPublishedCost` now bound the
+actual executions using only ordinary parameters. The two previous reached-tape
+retirement sums are gone. The publication, recovery, transition and finish
+interfaces no longer expose solve/unfold predecessor-state witnesses that those
+sums required. The full complex and inverse callers still check against the
+simpler interfaces. The prior predecessor-witness interface is available at
+restore commit `42d0f452`.
+
+The reached publication state remains exposed only for the factor-bank release
+volume; deriving its dimension bound is still open. Closed caller/setup,
+uniform fast asymptotic matching and simultaneous live-storage gates also remain
+open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,709 guarded stage-audit jobs pass, including the two new
+header-volume preservation audits and the strengthened factor/solve/unfold/
+publication/inverse audits. The final rebuild peaks at 10.3 GiB combined; every
+affected proof module checks individually below 3 GiB (maximum 2975.8 MiB).
+The header-volume module now imports only the resampling core and checks at
+1772.8 MiB. Source-integrity, whitespace and plan-status checks pass. Proof limits
+are unchanged.

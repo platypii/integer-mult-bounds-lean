@@ -95,6 +95,7 @@ theorem constructedBoundaryUnscaledSolve_spec (hR : rpStates ≤ Q) (hQ : SS.sta
       RsbReady (boundaryFactorState S') w q ∧ (S'.R 119).length = q ∧
       (∀ i : Fin 64, S'.R (boundaryFactorMulReg i) = []) ∧
       S'.R 184 = [] ∧ S'.R 223 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] ∧
+      boundaryUnfoldHeaderVolume (boundaryFactorState S') ≤ 12*band*w+B.card*W ∧
       ∀ (R : (ZMod s → ℝ) → ZMod s → ℝ) (x b₀ : ZMod s → ℝ),
       (∀ c, SchurDominance.Solves (realMatrix s t p u) (haloInterior s t band a b) (R c) c) →
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x b₀ →
@@ -116,7 +117,7 @@ theorem constructedBoundaryUnscaledSolve_spec (hR : rpStates ≤ Q) (hQ : SS.sta
   let K := factorNewtonSteps p q
   intro C rhsTail hC hRhs
   obtain ⟨v₁,S₁,n₁,columns,hu₁,hn₁,he₁,hlen,hcolumns,hformat,hstorage,herror,hrank,hinp,hout,hL,hlegacy,
-    hcoordinates,h115',h116',h132',hbo,hhf,hdf,hreset,hsolLen,hsolBound,hsrc,hvk,hready',h119,hmul,h184,h223,h220,h221⟩ :=
+    hcoordinates,h115',h116',h132',hbo,hhf,hdf,hreset,hsolLen,hsolBound,hsrc,hvk,hready',h119,hmul,h184,h223,h220,h221,hheaders⟩ :=
     constructedBoundarySolve_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
       v S tail h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew C rhsTail hC hRhs
   let AZ := factorRankIntegerMatrix B W columns
@@ -164,8 +165,11 @@ theorem constructedBoundaryUnscaledSolve_spec (hR : rpStates ≤ Q) (hQ : SS.sta
       change i.val = 217 at hv
       omega
     simpa only [S₂,Function.update_of_ne hi217] using hmul i
+  have hheadersFinal : boundaryUnfoldHeaderVolume (boundaryFactorState S₂) ≤ 12*band*w+B.card*W := by
+    rw [hstate]
+    simpa only [boundaryUnfoldHeaderVolume_update_dout] using hheaders
   refine ⟨v₂,S₂,n₁+n₂,columns,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂',hlen,hcolumns,hformat,
-    hstorage,herror,hrank,hinp,hout,hL,?_,?_,?_,?_,?_,?_,?_,?_,hreset',?_,hresultFits,?_,?_,hreadyFinal,?_,hmulFinal,?_,?_,?_,?_,?_⟩
+    hstorage,herror,hrank,hinp,hout,hL,?_,?_,?_,?_,?_,?_,?_,?_,hreset',?_,hresultFits,?_,?_,hreadyFinal,?_,hmulFinal,?_,?_,?_,?_,hheadersFinal,?_⟩
   · intro i hi109 hi115 hi116 hi132
     have hi217 : boundaryFactorLegacyReg i ≠ 217 := by
       intro hi

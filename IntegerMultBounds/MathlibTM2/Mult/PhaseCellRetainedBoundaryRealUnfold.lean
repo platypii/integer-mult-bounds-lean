@@ -22,6 +22,14 @@ variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 noncomputable def retainedBoundaryRealUnfold (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 224 Q A U :=
   .seq (retainedBoundarySolve hR hQ) boundaryRealUnfold
 
+noncomputable def retainedBoundaryRealUnfoldCost (p u l s t a b target : ℕ) [NeZero s] : ℕ :=
+  let band := PhaseCellBand.width p u
+  let N := (haloBoundary s t band a b).card
+  let bits := boundaryTableBits p target 2 N
+  let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+  retainedBoundarySolveCost p u l s t a b target+(2*(12*band*w+N*(12*band+1))+9)+
+    generatedBoundaryUnfoldCost N w+(N*(12*w+9)+12)
+
 theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target a b : ℕ} [NeZero s] {α d : ℝ}
     (hp : 2 ≤ p) (hwidth : 8*p ≤ 2^u) (hα : 0 < α) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
@@ -46,16 +54,11 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     let W := 12*band+1
     let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-    ∃ v₁ S₁ n₁ v' S' n, ∃ D : ZMod s → GaussianInt, ∃ columns : List (ZMod s → GaussianInt),
+    ∃ v' S' n, ∃ D : ZMod s → GaussianInt, ∃ columns : List (ZMod s → GaussianInt),
     ∃ solution : List GaussianInt,
       let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
-      v'.user = v.user ∧ n₁ ≤ retainedBoundarySolveCost p u l s t a b target ∧
-      Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
-        (embTab componentReg (embTab groupReg body))))) (retainedBoundarySolve hR hQ)
-        (mk v S) n₁ (mk v₁ S₁) ∧
-      n ≤ retainedBoundarySolveCost p u l s t a b target+
-        (2*(([189,191,198,204] : List (Fin 224)).map fun i => (S₁.R i).length).sum+9)+
-          generatedBoundaryUnfoldCost B.card w+(B.card*(12*w+9)+12) ∧
+      v'.user = v.user ∧
+      n ≤ retainedBoundaryRealUnfoldCost p u l s t a b target ∧
       Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
         (embTab componentReg (embTab groupReg body))))) (retainedBoundaryRealUnfold hR hQ)
         (mk v S) n (mk v' S') ∧
@@ -70,6 +73,7 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       S'.R 109 = cstream A (publicationGeometryWidth t band) ((bFoldOrder s B).map
         (fun j : ZMod s => (⟨(j.val : ℤ),0⟩ : GaussianInt))) ∧
       BoundaryRetirementReady S' s B.card (12*band+1) w ∧
+      (([189,191,198,206] : List (Fin 224)).map fun i => (S'.R i).length).sum = 0 ∧
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
       (∀ i ∈ B, |(value q (boundarySolutionField B solution i)).re-x i| ≤ 3/(2 : ℝ)^target) ∧
@@ -81,7 +85,7 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   obtain ⟨v₁,S₁,n₁,D,columns,solution,hu₁,hn₁,he₁,hlen,hsolLen,hfit,hsrc,h110,h132,
-    hinp,hout,hL,hlegacy,hready₁,h119,hreset,hcount,hmul,h184,h223,h220,h221,h206,hcoords,h115,h116,hacc⟩ :=
+    hinp,hout,hL,hlegacy,hready₁,h119,hreset,hcount,hmul,h184,h223,h220,h221,h206,hcoords,h115,h116,hheaders,hacc⟩ :=
     retainedBoundarySolve_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad F hF v S tail h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -177,12 +181,18 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       · have hh : S.R 137 = [] := by simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using hready.fresh 137 (by simp)
         exact (hlegacy₂ 137 (by decide) (by decide) (by decide) (by decide) (by decide)).trans hh
       · exact (hlegacy₂ 138 (by decide) (by decide) (by decide) (by decide) (by decide)).trans h138
-  have hn : n₁+n₂ ≤ retainedBoundarySolveCost p u l s t a b target+
-      (2*(([189,191,198,204] : List (Fin 224)).map fun i => (S₁.R i).length).sum+9)+
-        generatedBoundaryUnfoldCost B.card w+(B.card*(12*w+9)+12) := by
-    simpa only [Nat.add_assoc] using Nat.add_le_add hn₁ hn₂
-  refine ⟨v₁,S₁,n₁,v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,hn₁,he₁,hn,
-    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,hinp,hout,hL,hlegacy₂,hpub,?_,hretire,?_⟩
+  have hsum : (([189,191,198,204] : List (Fin 224)).map fun i => (S₁.R i).length).sum ≤
+      12*PhaseCellBand.width p u*w+B.card*(12*PhaseCellBand.width p u+1) := by
+    simpa [boundaryUnfoldHeaderVolume,boundaryFactorState,boundaryFactorReg,Nat.add_assoc] using hheaders
+  have hcost₂ : n₂ ≤ (2*(12*PhaseCellBand.width p u*w+B.card*(12*PhaseCellBand.width p u+1))+9)+
+      generatedBoundaryUnfoldCost B.card w+(B.card*(12*w+9)+12) := by
+    nlinarith only [hn₂,hsum]
+  have hn : n₁+n₂ ≤ retainedBoundaryRealUnfoldCost p u l s t a b target := by
+    simpa only [retainedBoundaryRealUnfoldCost,Nat.add_assoc] using Nat.add_le_add hn₁ hcost₂
+  have hzero : (([189,191,198,206] : List (Fin 224)).map fun i => (S₂.R i).length).sum = 0 := by
+    simp [S₂,S₀,h206]
+  refine ⟨v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,hn,
+    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,hinp,hout,hL,hlegacy₂,hpub,?_,hretire,hzero,?_⟩
   · simp [S₂,w,bits,B]
   · simp [S₂,w,bits,B]
   · simpa [S₂,S₀] using h110

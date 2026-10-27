@@ -97,6 +97,7 @@ theorem constructedBoundaryFactor_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       ((boundaryFactorState S') .kn).length = B.card * (W) ∧ (boundaryFactorState S') .ms = σ .dst ∧ (boundaryFactorState S') .m2n = σ .ms ∧
       (boundaryFactorState S') .kn = (List.replicate B.card (σ .ms)).flatten ∧ (boundaryFactorState S') .mwn = σ (.cm .wn) ++ σ .m2wn ∧
       RsbReady (boundaryFactorState S') w q ∧
+      boundaryUnfoldHeaderVolume (boundaryFactorState S') ≤ 12*band*w+B.card*W ∧
       ∀ r, r ∉ ([.src, .hf, .df, .dout, .bo, .vk, .m2n, .kn, .ms, .mwn, .ef, .xs] : List RsbR) →
         (boundaryFactorState S') r = σ r := by
   dsimp only

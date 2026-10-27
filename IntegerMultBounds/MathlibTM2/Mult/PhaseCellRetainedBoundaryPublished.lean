@@ -21,6 +21,15 @@ variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 noncomputable def retainedBoundaryPublished (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 224 Q A U :=
   .seq (retainedBoundaryRealUnfold hR hQ) preparedBoundaryPublish
 
+noncomputable def retainedBoundaryPublishedCost (p u l s t a b target : ℕ) [NeZero s] : ℕ :=
+  let band := PhaseCellBand.width p u
+  let N := (haloBoundary s t band a b).card
+  let bits := boundaryTableBits p target 2 N
+  let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+  let V := publicationGeometryWidth t band
+  retainedBoundaryRealUnfoldCost p u l s t a b target+9+generatedBoundaryUnfoldCost N V+
+    (4*(N*V)+4)+generateBoundaryAdvancesCost N V w s+93*s*w+45
+
 theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target a b : ℕ} [NeZero s] {α d : ℝ}
     (hp : 2 ≤ p) (hwidth : 8*p ≤ 2^u) (hα : 0 < α) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
@@ -43,26 +52,14 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     let bits := boundaryTableBits p target 2 B.card
     let band := PhaseCellBand.width p u
     let W := 12*band+1
-    let V := publicationGeometryWidth t band
     let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-    ∃ v₀ S₀ n₀ v₁ S₁ n₁ v' S' n, ∃ D : ZMod s → GaussianInt,
+    ∃ v' S' n, ∃ D : ZMod s → GaussianInt,
     ∃ columns : List (ZMod s → GaussianInt), ∃ solution : List GaussianInt,
       let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
       let G := boundarySolutionField B solution
       v'.user = v.user ∧
-      Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
-        (embTab componentReg (embTab groupReg body))))) (retainedBoundarySolve hR hQ)
-        (mk v S) n₀ (mk v₀ S₀) ∧
-      Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
-        (embTab componentReg (embTab groupReg body))))) (retainedBoundaryRealUnfold hR hQ)
-        (mk v S) n₁ (mk v₁ S₁) ∧
-      n ≤ retainedBoundarySolveCost p u l s t a b target+
-        (2*(([189,191,198,204] : List (Fin 224)).map fun i => (S₀.R i).length).sum+9)+
-        generatedBoundaryUnfoldCost B.card w+(B.card*(12*w+9)+12)+
-        (2*(([189,191,198,206] : List (Fin 224)).map fun i => (S₁.R i).length).sum+9)+
-        generatedBoundaryUnfoldCost B.card V+(4*(B.card*V)+4)+
-        generateBoundaryAdvancesCost B.card V w s+93*s*w+45 ∧
+      n ≤ retainedBoundaryPublishedCost p u l s t a b target ∧
       Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
         (embTab componentReg (embTab groupReg body))))) (retainedBoundaryPublished hR hQ)
         (mk v S) n (mk v' S') ∧
@@ -93,8 +90,8 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let bits := boundaryTableBits p target 2 B.card
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-  obtain ⟨v₀,S₀,n₀,v₁,S₁,n₁,D,columns,solution,hu₁,hn₀,he₀,hn₁,he₁,hlen,hsolLen,hsrc,h217,
-    h110,h132,hinp,hout,hL,hlegacy,hpub,hcoords,hretire₁,hacc⟩ :=
+  obtain ⟨v₁,S₁,n₁,D,columns,solution,hu₁,hn₁,he₁,hlen,hsolLen,hsrc,h217,
+    h110,h132,hinp,hout,hL,hlegacy,hpub,hcoords,hretire₁,hzero,hacc⟩ :=
     retainedBoundaryRealUnfold_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad F hF v S tail h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -137,8 +134,12 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
       rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
         simpa [S₂,S₂base] using hretire₁.scratch _ (by simp)
-  have hn : n₁+n₂ ≤ _ := Nat.add_le_add hn₁ hn₂
-  refine ⟨v₀,S₀,n₀,v₁,S₁,n₁,v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,he₀,he₁,?_,
+  have hcost₂ : n₂ ≤ 9+generatedBoundaryUnfoldCost B.card V+(4*(B.card*V)+4)+
+      generateBoundaryAdvancesCost B.card V w s+93*s*w+45 := by
+    simpa only [hzero,Nat.mul_zero,Nat.zero_add] using hn₂
+  have hn : n₁+n₂ ≤ retainedBoundaryPublishedCost p u l s t a b target := by
+    simpa only [retainedBoundaryPublishedCost,Nat.add_assoc] using Nat.add_le_add hn₁ hcost₂
+  refine ⟨v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,?_,
     Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,?_,hinp,hout,hL,?_,hready₂,?_,?_,?_,?_,?_,hretire₂,?_⟩
   · simpa only [Nat.add_assoc] using hn
   · simp [S₂,S₂base,h132,List.append_assoc,w,bits,B,G]

@@ -71,6 +71,7 @@ theorem retainedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
         (fun j : ZMod s => (⟨(j.val : ℤ),0⟩ : GaussianInt))) ∧
       S'.R 115 = List.replicate (publicationGeometryWidth t band) tick ∧
       S'.R 116 = List.replicate B.card tick ∧
+      boundaryUnfoldHeaderVolume (boundaryFactorState S') ≤ 12*band*w+B.card*W ∧
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
       ∀ i < B.card, ‖value q (solution.getD i 0) - (x (bFoldAt s B i) : ℂ)‖ ≤ 3/(2 : ℝ)^target ∧
@@ -106,7 +107,7 @@ theorem retainedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     exact ⟨(Complex.abs_re_le_norm _).trans (hmag i),(Complex.abs_im_le_norm _).trans (hmag i)⟩
   obtain ⟨v₂,S₂,n₂,columns,hu₂,hn₂,he₂,hlen,hcolumns,hformat,hstorage,herror,hrank,hinp,hout,hL,hlegacy,
     hcoordinates,h115',h116',h132',hbo,hhf,hdf,hreset,hsolLen,hsolFits,hsrc,hvk,hready₂,h119,hmul,
-    h184,h223,h220,h221,hacc⟩ :=
+    h184,h223,h220,h221,hheaders,hacc⟩ :=
     constructedBoundaryUnscaledSolve_spec (body := body) (target := target) (rhsExp := 2)
       hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
       v₁ S₁ input
@@ -118,7 +119,7 @@ theorem retainedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
       hnew₁ C (S.R 110) hC (by simp [S₁,input,w,bits,B])
   refine ⟨v₂,S₂,n₁+n₂,D,columns,_,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,
     Exec.seq he₁ he₂,hlen,hsolLen,hsolFits,hsrc,?_,?_,hinp,hout,hL,?_,
-    hready₂,h119,hreset,?_,hmul,h184,h223,h220,h221,hvk,hcoordinates,h115',h116',?_⟩
+    hready₂,h119,hreset,?_,hmul,h184,h223,h220,h221,hvk,hcoordinates,h115',h116',hheaders,?_⟩
   · have h := hlegacy 110 (by decide) (by decide) (by decide) (by decide)
     simpa [boundaryFactorLegacyReg,S₁,input,w,bits,B,C,q,band] using h
   · simpa [S₁,output,List.append_assoc] using h132'

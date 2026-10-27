@@ -2038,6 +2038,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.physicalOriginalComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedComplexBoundary_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedInverse_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryUnfoldHeaderVolume_update_vk,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryUnfoldHeaderVolume_update_dout,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloBoundary_card_bound,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.clipUnaryCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.clippedBandControlsCost_le,
