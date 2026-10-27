@@ -38,6 +38,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedClosedBatchSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedControlledHaloClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedProcessHaloLengthKey
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedFamilyHaloInterior
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilySolveHaloInteriorBounded
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateHaloWeightFamily
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedHaloWeightKey
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyHaloLengthKeyLoopSpec
@@ -778,7 +780,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.twoBranchesFromSingleInput_with_x_tail_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.fixedBranchMerge_with_x_tail_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.mergedBranches_with_x_tail_exec,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.takeFromWords_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.route_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.routeR_ready,
@@ -787,7 +788,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.run_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.applyScalar_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.applyCanonical_exec,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.bank_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.bank_lt,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.loadBank_exec,
@@ -799,7 +799,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.setupPorts_nodup,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepare_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepareCanonical_exec,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cr_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.mul_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cr_range,
@@ -810,7 +809,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.unarySetup_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.table_room,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.unarySetup_room,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realScalarStream_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realScalar_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realScalar_output_error,
@@ -819,7 +817,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairNumerator_norm,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.branchDifference_norm,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.branchScalar_output_error,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.halfCount_loop_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.halfCount_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.branchWords_exec,
@@ -830,7 +827,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairNumerator_disk,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.fits_of_disk,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.branchDifference_word,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.takePrefix_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.mergePair_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.mergeFromWords_exec,
@@ -847,7 +843,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.duplicateStream_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.branch_input_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.twoBranchesFromSingleInput_exec,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.lower_scale,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upper_scale,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upperOperand_block,
@@ -864,7 +859,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.value_block_im_zero,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.upper_cell_scale,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.lower_cell_scale,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishPairResult_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finishTriangularPair_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.compactTriangularPair_exec,
@@ -1113,7 +1107,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingInputWords_realPart,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRowField_realPart,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realResidualProjection_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.stableInterior_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.stableInterior_norm ] do
+    for ax in ← collectAxioms name do
+      unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
+        throwError "{name} depends on unapproved axiom {ax}"
+
+open Lean in
+run_cmd do
+  for name in #[
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.interiorResidual_width,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.stableInteriorExponent_le_outputExponent,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRowField_error,
@@ -1813,7 +1814,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedSchurResidual_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRoundoff_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recoveryGuardBits_spec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recovery_error_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recovery_error_budget ] do
+    for ax in ← collectAxioms name do
+      unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
+        throwError "{name} depends on unapproved axiom {ax}"
+
+open Lean in
+run_cmd do
+  for name in #[
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selected_recovery_error_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.component_error_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.recoveryPublishedHalo_tolerance,
@@ -1873,7 +1881,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_sel,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_sn,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryFoldPlacement.reg_width,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryInputReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedBoundaryFold_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedBoundaryFold_exec,
@@ -2514,13 +2521,28 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadWeightKey_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.collectWeightKey_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.restoreWeightKeyFamily_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.storeGeneratedWeightKey_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.storeGeneratedWeightKey_exec ] do
+    for ax in ← collectAxioms name do
+      unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
+        throwError "{name} depends on unapproved axiom {ax}"
+
+open Lean in
+run_cmd do
+  for name in #[
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyCoreReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyCoreReg_off,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.loadedWeightKeyBank_project,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.loadedWeightKeyBank_low,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.collectedWeightKeyBank_projectR,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamily_release_published,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.initializedFamilyKeyR_legacy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.LengthKeyReady.initialized_family,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.initializeFamilyHaloKeys_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepareHaloWeightFamily_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familySolveHaloInterior_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familySolveHaloInterior_bounded_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyLegacyBank_update_high,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedFamilyHaloInterior_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyLegacyReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyLegacyReg_off,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generateHaloWeightClass_exec,
@@ -2796,15 +2818,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_solve_runs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_foldedSolve_runs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.constructedBoundaryFactor_spec,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_width,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_error_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_schur_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_magnitude_budget,
-
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releasedSchurColumn_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.schurColumn_input_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.schurColumn_pass_budget,
@@ -2814,10 +2833,7 @@ run_cmd do
       `IntegerMultBounds.NLogN.SchurDominance.residual_lipschitz,
       `IntegerMultBounds.NLogN.SchurDominance.schur_column_error,
       `IntegerMultBounds.NLogN.PhaseCellMatrix.halo_schur_column_error,
-
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryFoldInputs_exec,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderCode_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderSymbols_length_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderHost_exec,
@@ -2830,7 +2846,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryIndices_exact,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryIndices_length,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOrderSymbols_length,
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandBoundaryTable_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.foldBRel_row_card,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloBoundaryTable_entry_error,
@@ -2840,9 +2855,6 @@ run_cmd do
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.halo_cell_cycRel,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.halo_schur_cycRel,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.halo_schur_foldBRel,
-
-
-
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRecoveryFinish_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentProject_updateR_inner,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.movePrefix_exec,

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2169 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2174 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13974,3 +13974,44 @@ Validation: the expanded standard-axiom audit passes all 15,020 jobs (3.4 GiB
 combined peak RSS). All three new modules pass individual guarded checks below
 the 4 GiB module budget. Proof-integrity, plan-status and whitespace checks
 pass.
+
+### S3 checkpoint: generated family setup and reusable complete interior pass
+
+`initializeFamilyHaloKeys_exec` lifts the executed key initializer into the
+151-register family workspace. It preserves every retained family port and
+establishes the existing caller invariant on the original numerical ports.
+`prepareHaloWeightFamily_exec` composes key initialization, complete numerical
+family generation and key-width release. Its exact final state changes only
+register 148, prepending the generated family to the borrowed family suffix.
+No runtime key queue, numerical page or private scalar copy is supplied or
+left behind by this setup operation.
+
+`familySolveHaloInterior_spec` initializes the actual positive distinct halo
+length schedule, executes the numerical family loop, restores the family,
+and releases runtime widths. It proves uniform error on the entire halo
+interior and preserves encoded-output boundedness. Its exact final frame
+changes only the ambient publication on register 132; retained family,
+masters, input, left stacks, key suffix and temporary ports are restored.
+`familySolveHaloInterior_bounded_spec` exposes a bounded Gaussian-integer
+field with the exact normalized readout needed by the inverse caller.
+
+`generatedFamilyHaloInterior_spec` executes family setup followed by a
+complete interior pass with no supplied-page hypothesis. It retains the
+computed family for subsequent passes and charges actual setup separately
+from the reusable interior-pass cost. The flag entry proof is structural in
+an arbitrary Boolean, avoiding reduction of the concrete generated key list.
+
+Remaining: integrate this retained backend through both complete inverse
+passes and repeated calls, including final cache release, then prove selected
+uniform time matching and simultaneous whole-execution live storage. S3
+stays partial; kappa is unchanged.
+
+The axiom audit's single large theorem-name array exceeded the code generator's
+default recursion limit after these additions. It now uses four batches of
+at most 700 entries, preserving all 2,520 prior entries and adding eight.
+No proof or code-generation limits were raised.
+
+Validation: the expanded standard-axiom audit passes all 15,025 jobs (3.4 GiB
+combined peak RSS). All five new modules and the audit pass individual guarded
+checks below the 4 GiB module budget. Proof-integrity, audit-coverage,
+plan-status and whitespace checks pass.
