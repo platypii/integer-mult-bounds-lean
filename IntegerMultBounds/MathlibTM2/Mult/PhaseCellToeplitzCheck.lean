@@ -300,6 +300,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPhysicalRetainedSchurResidual
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundarySolve
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolutionField
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnfold
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBoundaryUnfold
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -2006,6 +2007,9 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_im,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_sizes,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryUnfoldCounters_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedBoundaryUnfold_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryUnfold_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unfold_field,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorFr_two_updates,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unfold_physical_exec,

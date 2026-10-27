@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1819 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1821 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10274,3 +10274,27 @@ stage-audit jobs pass, including nine new explicit field, ordering and physical
 inverse-fold axiom audits. Combined peak is 3.4 GiB; both new modules check below
 3 GiB. Plan-status, added-source integrity and whitespace checks pass. Proof
 limits are unchanged.
+
+### Generated and retired physical inverse-fold controls
+
+`boundaryUnfoldCounters_exec` builds half-count and parity headers on 189/191
+from the retained boundary count on 116 in at most `16N+22` steps, restoring
+its private scratch. `generatedBoundaryUnfold_exec` composes those controls with
+the actual inverse-fold program and retires them afterward. Its exact physical
+poststate changes only the folded source 217 and natural-order destination 204.
+`preparedBoundaryUnfold_exec` first retires obsolete factor header/destination
+tapes 189/191/198/204, charging their actual lengths, then executes generated
+unfolding. It therefore accepts arbitrary old factor headers rather than
+requiring externally supplied controls or blank obsolete headers. The count
+and word-width masters are retained. The counter module checks at 1823.5 MiB;
+the complete generated/prepared module checks at 2924.1 MiB.
+
+Real projection, zero ambient initialization and scatter publication still need
+actual execution and composition with the solved state. Recovery precision
+alignment, complete recovery/cleanup, inverse assembly and final resource
+bounds remain open. S3 remains partial and kappa is unchanged.
+
+Validation: all 14,666 guarded stage-audit jobs pass, including three new explicit
+counter/generated/prepared-unfold axiom audits. Combined peak is 3.4 GiB; both
+new modules check below 3 GiB. Plan-status, added-source integrity and whitespace
+checks pass. Proof limits are unchanged.
