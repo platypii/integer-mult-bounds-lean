@@ -26,7 +26,7 @@ def publicationField {s : ℕ} [NeZero s] (t band a b : ℕ)
 theorem publicationMaskSymbols_eq_flags (A s t band a b : ℕ) :
     publicationMaskSymbols A s t band a b =
       (publicationFlags s t band a b).map (fun flag => pairSym A flag flag) := by
-  simp [publicationMaskSymbols,publicationFlags,List.map_map,Function.comp_def]
+  simp [publicationMaskSymbols,couplingSourceMaskSymbols,haloMaskAt,publicationFlags,List.map_map,Function.comp_def]
 
 theorem publicationWords_chirpLine {A w s t band a b : ℕ} [NeZero s]
     (hst : s < t) (hbs : b ≤ s) (D C : ZMod s → GaussianInt) :

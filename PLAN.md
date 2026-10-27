@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1981 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1985 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12147,3 +12147,32 @@ inverse still uses indexed coupling.
 Validation: all 14,830 guarded stage-audit jobs pass (3.4 GiB combined peak).
 Both new modules pass individual guarded checks (maximum 1965.6 MiB).
 Source-integrity and whitespace checks pass; default proof limits are unchanged.
+
+### Generate either spatial source mask from ordinary geometry
+
+The publication mask implementation is now factored through a boundary-parameterized
+halo membership scan. `couplingSourceMaskRow_do` and
+`couplingSourceMaskCode_do` execute the original interior or boundary membership
+test once per ambient coordinate, emitting one selection symbol per coordinate.
+`couplingSourceMaskHost_exec` compiles and executes that table, transfers the
+selection stream, and releases its table bank. `couplingSourceMaskFromHeaders_exec`
+loads the ordinary unary geometry; `closedCouplingSourceMask_exec` also generates
+and releases the required geometry precision. The exact final frame prepends only
+the mask stream on 109 and restores all other tapes and borrowed suffixes.
+
+Both halo sides share the same proved cost allowance, including all geometry
+conversion and table work. `closedCouplingSourceMaskCost_halo_le` retains the
+existing dimension/bit-size bound. The old publication APIs specialize the common
+implementation at the interior side, replacing their duplicated proofs; their
+statements, emitted symbols and cost allowances are preserved.
+
+This closes executed mask generation for spatial source preparation. Applying
+the masks to an ambient data stream, cyclic padding, complete source lifecycle
+and inverse integration remain open. Final fast supplier/setup matching, combined
+live storage and endpoint/resource integration remain open; S3 stays partial.
+
+Validation: all 14,834 guarded stage-audit jobs pass, including rebuilt inverse
+callers and complete batch/resource modules (24.4 GiB combined peak).
+All nine new/refactored modules pass individual guarded checks (maximum
+1858.7 MiB). Source-integrity, whitespace and plan-status checks pass; default
+proof limits are unchanged.
