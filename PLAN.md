@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2049 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2060 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12991,4 +12991,53 @@ kappa is unchanged.
 Validation: the expanded guarded stage audit passes all 14,900 jobs (3.4 GiB
 combined peak RSS). All eight new implementation modules pass individual
 guarded checks, with maximum peak RSS 1961.5 MiB. Proof-integrity, plan-status
+and whitespace checks pass.
+
+### S3 complete restoring sparse-page reader and retained guards
+
+`couplingCoefficientPageSuffix` aligns the sparse coefficient cursor with the
+ambient row scan. The active-row reader executes the existing fast arithmetic,
+then moves the consumed coefficient row into a reversed saved prefix. Skipped
+rows copy the RHS without touching the coefficient cursor or evaluating any
+coefficient. The counted loop tracks both coefficient and source cursors,
+the actual guard stream, the RHS and the reversed output prefix.
+
+`runPreparedPageCouplingRows_exec` restores the full coefficient page and its
+saved suffix, restores the spatial source cursor, publishes results in natural
+order, and releases its index and row clock. The output is exactly the existing
+`guardedCouplingRowWords` field. Its exact frame changes only the RHS and result
+prefixes and consumes the provided work-guard prefix; retained page metadata
+restore. `runCachedPageCouplingRows_exec` first copies the retained guard stream
+into that work prefix in `10*s+10` steps, and restores the retained guards as
+well. Repeated passes therefore require no coefficient evaluation or geometry
+guard regeneration inside this reader.
+
+`buildCouplingPageCache_exec` constructs the coefficient page and retains the
+matching guard bytes after the setup packet slot is released. Setup includes
+a second paid geometry scan for those retained bytes. The cache owns ports
+135 (guards), 138 (coefficients), 139 (word count), and 140 (row width).
+`releaseCouplingPageCache_exec` releases exactly these owned data.
+`closedPageCouplingRows_exec` composes actual setup, reading and release from
+ordinary headers, with no supplied numerical page or mask. Both retained data
+and all scratch restore, and every operation has an executed cost.
+
+The reader ledger counts the actual full/skipped rows and exposes fast
+arithmetic only on the full rows. `consumePageSpatialCouplingRowCost_eq` gives
+`(2*band+1)*(rmulCost w+103*w+59)+prepareCost q w+32*w+8*q+8*band+
+2*topN w+156`. The complete reader geometry bound pays linear ambient copies,
+source and page restoration, and full-row arithmetic on at most
+`haloBoundaryCountBound s t (2*band) a b+4*band` rows. The retained stock theorem
+also charges the guard bytes and both unary metadata masters; it is not an
+execution-wide peak bound.
+
+The standalone cache setup/read/release backend is now checked. Production
+still needs to place its retained cache outside the interior solver's scratch,
+construct/cache both required precision keys, and hoist setup/release around
+the complete complex batch. Those integration duties, final uniform time
+matching and simultaneous whole-execution live storage remain open. S3 stays
+partial; kappa is unchanged.
+
+Validation: the expanded guarded stage audit passes all 14,911 jobs (3.5 GiB
+combined peak RSS). All eleven new implementation modules pass individual
+guarded checks, with maximum peak RSS 1985.0 MiB. Proof-integrity, plan-status
 and whitespace checks pass.
