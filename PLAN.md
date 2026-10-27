@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2012 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2016 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12445,3 +12445,34 @@ recovery/publication and the existing coefficient consumer, then integrating
 the retained packet across the production row loop, remains open. Final fast
 supplier/setup matching, combined live storage and endpoint/resource integration
 also remain open. S3 stays partial.
+
+### S3 retained coefficient packet lifecycle
+
+`buildMarkedRowCoefficientPacket_exec` now generates the selected binary width
+from ordinary headers, publishes the seven-field row packet with a marked unary
+width prefix, releases its table bank and clears the width scratch. Only the
+packet prefix on port 109 changes; an arbitrary borrowed suffix is preserved.
+Its setup cost is the existing width-generation and raw-packet publication cost
+plus `6*V+7` for marking and width release.
+
+`markedRowCoefficient_exec` consumes that marked width prefix, executes the
+complete ordered coefficient row from binary headers, advances the packet index
+and republishes its marked width prefix. It changes only the coefficient prefix
+on 111 and the retained packet on 113, from index i to i+1. Width scratch 115,
+all table/scratch tapes and every borrowed suffix restore exactly. Its cost is
+`rowCoefficientFromPacketCost P q V w band + 22*V+25`, independent of the unary
+row index or geometry values outside the existing numeric backend. The generic
+`publishMarkedWidth_exec` and intermediate `rowCoefficientPacketStep_exec`
+provide the separate release and index-advance contracts.
+
+These are executed packet setup and repeated-row supplier endpoints, not yet
+the production spatial row loop. That loop must embed the supplier packet view
+separately from arithmetic output 113, retain the packet alongside its ambient
+source, update the loop invariant and retire the owned packet once. Final fast
+supplier/setup matching, simultaneous live storage and endpoint/resource
+integration remain open. S3 stays partial; kappa is unchanged.
+
+Validation: all 14,865 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All four new modules pass individual guarded checks below 2 GiB. The stage
+axiom audit includes all four execution contracts. Source-integrity, whitespace
+and plan-status checks pass; proof limits are unchanged.

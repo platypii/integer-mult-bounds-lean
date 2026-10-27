@@ -26,6 +26,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCursor
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedCoefficientRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBuildRowCoefficientPacket
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBuildMarkedRowCoefficientPacket
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAdvanceBinaryPacket
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTakeMarkedWidth
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRowCoefficientFromPacket
@@ -1683,6 +1684,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rowCoefficientPacket_length,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadedBinaryState_rowCoefficientPacket,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishRowCoefficientPacket_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishMarkedWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rowCoefficientPacketStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.markedRowCoefficient_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.buildMarkedRowCoefficientPacket_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advanceBinaryPacket_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.takeMarkedWidth_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.borrowRowCoefficientPacket_exec,
