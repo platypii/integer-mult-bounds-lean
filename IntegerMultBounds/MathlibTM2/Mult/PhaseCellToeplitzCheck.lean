@@ -23,7 +23,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageInteriorCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingRows
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCursor
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunSpatialCouplingRows
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareSpatialCouplingSource
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireSpatialCouplingSource
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
@@ -2214,6 +2214,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingRowStep_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingRowLoop_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runSpatialCouplingRows_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingRows_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingRowsCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRowWord_spatial,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.spatialCouplingInputWords_window,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.copyCountedLine_exec,

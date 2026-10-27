@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingRows
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingRows
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOuterWorkspace
 
 /-! Generate the whole-line row clock, execute every coupling row and publish
@@ -17,10 +17,10 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 noncomputable def runCouplingRows (hQ : SS.states ≤ Q) (boundary : Bool) : Pr P₀ 144 Q A U :=
-  capturedCouplingRows hQ boundary
+  spatialCouplingRows hQ boundary
 
 def runCouplingRowsCost (P q w s t u band a b : ℕ) : ℕ :=
-  capturedCouplingRowsCost P q w s t u band a b
+  spatialCouplingRowsCost P q w s t u band a b
 
 theorem runCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
@@ -36,15 +36,7 @@ theorem runCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ}
       Exec (embTab groupReg body) (runCouplingRows hQ boundary) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update S.R 93 rhsTail)
           113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
-  have hmap (i : Fin 117) : cachedCouplingOuterReg (cachedCouplingCoreReg i) = groupReg i := by
-    apply Fin.ext
-    simp [cachedCouplingOuterReg,cachedCouplingCoreReg,groupReg,i.isLt]
-  have hview : embStk cachedCouplingCoreReg (embStk cachedCouplingOuterReg S) = embStk groupReg S := by
-    refine Stacks.ext rfl rfl ?_ ?_
-    · funext i; exact congrArg S.L (hmap i)
-    · funext i; exact congrArg S.R (hmap i)
-  exact capturedCouplingRows_exec (body := embTab groupReg body) hQ boundary hA hw5 hqw
-    hst haS hbS hbandS hP C rhs hlen tail rhsTail v S
-    (by rw [hview]; exact hready) hindex hrhs h143 h135 hxs has
+  exact spatialCouplingRows_exec (body := embTab groupReg body) hQ boundary hA hw5 hqw
+    hst haS hbS hbandS hP C rhs hlen tail rhsTail v S hready hindex hrhs h143 h135 hxs has
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

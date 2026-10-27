@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1995 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1997 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12241,3 +12241,38 @@ remain open; S3 stays partial.
 Validation: all 14,844 guarded stage-audit jobs pass (4.3 GiB combined peak).
 All five new modules pass individual guarded checks (maximum 1942.0 MiB).
 Source-integrity and whitespace checks pass; default proof limits are unchanged.
+
+### Integrate complete spatial coupling into the inverse caller
+
+`spatialCouplingRows_exec` composes actual halo-mask generation, ambient-source
+masking, cyclic padding, the complete spatial arithmetic pass, cursor restoration
+and padded-source retirement. Its ordinary-header premises and final two-port
+frame match the established coupling caller: consume RHS 93 and prepend ordered
+exact row results on 113; restore all other tapes, including original source,
+both borrowed source-bank suffixes, geometry and scratch.
+
+`runCouplingRows` and its cost now select that executed spatial implementation.
+`runCouplingRows_exec` retains its existing statement and caller ABI. Both
+initial residual and recovery coupling, including factor-construction callers,
+therefore use streaming windows rather than per-operand absolute indexed input
+lookups. Every signed offset and wrapped alias remains in the actual rounded
+row calculation; masked zeros retain their execution cost.
+
+The replacement does not establish the final fast bound. Actual coefficient
+supply and repeated ordinary-header arithmetic work still need final fast
+supplier/setup matching, and whole-execution live storage and endpoint/resource
+integration remain open. S3 stays partial.
+
+`spatialCouplingRowsCost_eq` gives the exact integrated ledger: the sum of actual
+coefficient-generator allowances over ambient rows, `s` protected arithmetic-row
+allowances, one closed geometry-mask setup, and stream/header overhead
+`s*(64*band*wordWidth+50*band+146*wordWidth+4*(s+t+u)+173)`
+plus `band*(62*wordWidth+35)+154`. In particular, the repeated header work remains
+visible; no final quasi-linear coupling claim follows just from replacing seeks.
+
+Validation: all 14,846 guarded stage-audit jobs pass. The production integration
+rebuild, including inverse, selected raw caller, closed complex batch and resource
+ledger, peaks at 21.7 GiB combined; the final incremental audit peaks at 3.4 GiB.
+The new complete-pass/cost modules and changed production wrapper pass individual
+guarded checks (maximum 1950.9 MiB). Source-integrity and whitespace checks pass;
+default proof limits are unchanged.
