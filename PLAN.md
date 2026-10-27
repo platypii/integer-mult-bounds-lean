@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2130 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2134 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13632,5 +13632,37 @@ selected uniform time estimate and simultaneous whole-execution live-storage
 bound, remains open. S3 stays partial; kappa is unchanged.
 
 Validation: the expanded standard-axiom audit passes all 14,981 jobs (3.5 GiB
+combined peak RSS). All four new modules pass individual guarded checks below
+the 4 GiB module budget. Proof-integrity and whitespace checks pass.
+
+### S3 checkpoint: grouped weight replay reaches inverse setup
+
+`generatedBatchWeightCache_exec` now generates the full grouped weight page
+with the existing numerical implementation and retains it in the four-register
+cache. `cacheBatchWeightPage_exec` constructs its symbol clock from the actual
+batch, row and word headers and restores the product counters. The exact final
+frame consumes the advertised origin packets, preserves the raw RHS and every
+other register, and adds only the retained page and clock.
+
+`cachedBatchWeightedSetup_exec` replays that page and executes inverse setup,
+producing exactly the existing `batchWeightedBank` after projection into the
+117-register core. This is the existing batch ABI, including its generator and
+weight ordering. The cache, borrowed suffix and all off-core registers survive.
+Repeated calls receive the control tail directly; they do not regenerate or
+consume a new binary-origin stream.
+
+`cachedBatchWeightedSetupCost_affine` proves the actual setup ledger is its
+zero-cell cost plus `B*(58*(L*(2*q+8))+49)`. Weight evaluation is absent from that
+cell increment. The existing inverse construction remains an explicit fixed
+setup charge. `batchWeightCache_volume` counts the page, clock and scratch
+simultaneously: retained stock is exactly `4*(B*(L*w))` plus the borrowed suffix.
+
+The cached weighted setup still needs composition with runtime routing,
+arithmetic, publication and cleanup, followed by integration into both interior
+passes and the complete inverse loop. Final uniform fast time matching and
+simultaneous whole-execution live storage remain open. S3 stays partial;
+kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 14,985 jobs (4.4 GiB
 combined peak RSS). All four new modules pass individual guarded checks below
 the 4 GiB module budget. Proof-integrity and whitespace checks pass.

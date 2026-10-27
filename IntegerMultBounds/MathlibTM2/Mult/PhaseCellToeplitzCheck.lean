@@ -32,6 +32,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPageCouplingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedClosedComplexBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedInverseGeometryCaller
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseWeightCache
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBatchWeightCache
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchWeightedSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedFactorComplexBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedCacheComplexBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedComplexBatch
@@ -2453,6 +2455,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightCacheCoreReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedWeightCache_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseWeightCache_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cacheBatchWeightPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedBatchWeightCache_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.batchWeightCache_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.preparedBatchWeightedSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.preparedBatchWeightedBank_weights,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedBatchWeightedSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedBatchWeightedSetupCost_affine,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCouplingCacheRelease_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_succ,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_length_le,
