@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1805 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1809 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10006,5 +10006,51 @@ remain open and kappa is unchanged.
 Validation of the allocated/rank/scale error chunk: all 14,650 guarded
 stage-audit jobs pass, including eight new explicit axiom audits. Combined build
 peak is 5.5 GiB; each of the four added proof modules checks below 2.8 GiB.
+Plan-status, added-source integrity and whitespace checks pass. Proof limits
+are unchanged.
+
+### Accuracy of the actual Gaussian solution list
+
+`boundary_solution_part_error` transfers allocated rank-solve error to an actual
+Gaussian list component using its structural projection identity.
+`boundary_solution_norm_error` combines real and imaginary estimates into a
+complex norm bound for the decoded output record, with at most twice the scalar
+error bound. `boundary_solves_rank` reindexes an exact boundary solve in the
+factorizer's actual folded order. `boundary_solution_coordinate_error` therefore
+accepts exact real/imaginary solves on boundary coordinates directly and compares
+output record i against `x (bFoldAt s B i)`. These results cover the actual
+`bandSolveVec` list returned by constructed execution, rather than an independent
+scalar solve. The individual guarded check peaks at 2839.6 MiB. Instantiation
+with the actual normalized retained residual and combination of the remaining
+perturbation budgets are still required. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,651 guarded stage-audit jobs pass, including four new
+Gaussian-output and exact-coordinate reindexing axiom audits. Combined build
+peak is 3.4 GiB. Plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Actual normalized residual through unscaled output accuracy
+
+`boundary_normalized_rhs_spec` derives length, half-unit component bounds and
+accuracy for the actual folded normalized residual list from the retained
+residual's magnitude and error bounds. `boundary_normalized_solution_error`
+feeds that list directly into the Gaussian-output accuracy theorem; no separate
+normalized RHS oracle is required. `boundary_solves_div` scales exact boundary
+systems structurally. `boundary_unscaled_solve_error` consequently compares the
+computed unscaled Gaussian output word against an exact solution of the original
+boundary-coordinate system. Its bound explicitly includes solve-rounding,
+retained-RHS error, and constructed-matrix entry error. It uses the canonical
+precision, Newton count, and actual normalized list throughout. The individual
+normalized-solution and unscaled-solution modules check at 2824.7 MiB and
+2833.2 MiB respectively; normalized RHS checks below 2.8 GiB.
+
+The actual Schur-system execution endpoint still needs to instantiate this
+combined theorem, simplify the three error contributions with retained column
+and residual budgets, and derive the sharp solution magnitude needed by
+recovery. Recovery/publication composition, retirement, uniform time and
+simultaneous live storage remain open. S3 remains partial and kappa is unchanged.
+
+Validation of the Gaussian-output/normalized-RHS/unscaled-error chunk: all
+14,654 guarded stage-audit jobs pass, including eight new explicit axiom audits.
+Combined build peak is 3.4 GiB; individual added modules check below 2.8 GiB.
 Plan-status, added-source integrity and whitespace checks pass. Proof limits
 are unchanged.

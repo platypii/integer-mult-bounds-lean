@@ -289,6 +289,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryLineError
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryLineErrorBudget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRankError
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryScaleError
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolutionError
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnscaledSolveError
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -1995,6 +1997,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_im,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_sizes,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_normalized_rhs_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_normalized_solution_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_solves_div,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unscaled_solve_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_solution_part_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_solution_norm_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_solves_rank,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_solution_coordinate_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_rank_row_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_rank_allocated_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_normalized_rhs_error,
