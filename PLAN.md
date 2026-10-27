@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1817 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1819 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10231,3 +10231,46 @@ Validation: all 14,662 guarded stage-audit jobs pass, including the new explicit
 composed retained-boundary execution axiom audit. Combined peak is 3.4 GiB;
 the new module checks below 3 GiB. Plan-status, added-source integrity and
 whitespace checks pass. Proof limits are unchanged.
+
+### Real ambient boundary field for recovery
+
+`boundarySolutionField` unfolds the actual computed folded solution list using
+`bFoldPos`, takes each word's real part and fills the complement of the boundary
+with zero. Structural theorems prove realness everywhere, zero support off the
+boundary, word fit from the actual list, boundary-coordinate accuracy from the
+proved folded output error, and the same global stable magnitude. The
+published-read theorem proves that an encoded ambient stream of this field has
+exactly the recovery read semantics. The final individual guarded check peaks
+at 2904.6 MiB.
+
+This is the numerical/encoding interface for publication; an actual program
+still must materialize that ambient stream from the computed list. Recovery
+precision alignment, publication/recovery execution, retirement, full inverse
+assembly, uniform time and simultaneous live storage remain open. S3 remains
+partial and kappa is unchanged.
+
+Validation: all 14,663 guarded stage-audit jobs pass, including six new explicit
+ambient-boundary-field axiom audits. Combined peak is 3.4 GiB. Plan-status and
+whitespace checks pass; proof limits are unchanged.
+
+### Executed inverse folding of computed boundary values
+
+`boundary_unfold_physical_exec` reuses the structural inverse-fold machine in
+the physical factor bank. With its half-count/parity headers and scratch ready,
+it consumes the computed folded solution on tape 217 and puts natural boundary
+order on tape 204, preserving every other physical tape. Its time is at most
+`60 (N+1) w + 60 N + 60`. `boundary_unfold_field` identifies the real projection
+of this actual output with the recovery field in ascending `bOrder` coordinates.
+`boundaryFactorFr_two_updates` proves the complete physical two-port frame from
+the virtual run. The new module checks individually at 2906.4 MiB.
+
+Generation/retirement of inverse-fold counters, real projection, zero ambient
+initialization and actual scatter publication remain open. Recovery precision
+alignment, complete recovery/cleanup, full inverse assembly and final resource
+bounds remain open. S3 remains partial and kappa is unchanged.
+
+Validation of the recovery-field/inverse-fold chunk: all 14,664 guarded
+stage-audit jobs pass, including nine new explicit field, ordering and physical
+inverse-fold axiom audits. Combined peak is 3.4 GiB; both new modules check below
+3 GiB. Plan-status, added-source integrity and whitespace checks pass. Proof
+limits are unchanged.

@@ -298,6 +298,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRealSchurTarget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedResidualLift
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPhysicalRetainedSchurResidual
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundarySolve
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolutionField
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnfold
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -2004,6 +2006,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_im,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_sizes,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unfold_field,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorFr_two_updates,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unfold_physical_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolutionField_im,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolutionField_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolutionField_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolutionField_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolutionField_magnitude,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolutionField_published_read,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedBoundarySolve_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.embStk_updateR_inner,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_retained_project_outputs,
