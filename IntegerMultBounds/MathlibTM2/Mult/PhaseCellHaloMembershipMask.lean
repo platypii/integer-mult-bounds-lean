@@ -35,12 +35,12 @@ def haloMembershipMaskCode (boundary : Bool) : TblCode 16 :=
 theorem haloMembershipMaskCode_do {A V w s t band a b k : ℕ} (boundary : Bool) (st : TblSt 16 A)
     (hs : st.val 0 = s) (ht : st.val 1 = t) (hband : st.val 2 = band) (hk : st.val 3 = k)
     (ha : st.val 4 = a) (hb : st.val 5 = b)
-    (hs0 : 0 < s) (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s)
+    (hs0 : 0 < s) (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s)
     (hwide : 8*(t+1)^2+2*band+8 < 2^V) :
     TblDo A V w (haloMembershipMaskCode boundary) st (fun st' =>
       st'.val 15 = (if haloMaskAt boundary s t band a b k then 1 else 0) ∧
       st'.acc = st.acc ∧ ∀ r : Fin 16, r.val < 6 → st'.val r = st.val r) 25 := by
-  have hcore := haloInteriorMaskCode_do (w := w) st hs ht hband hk ha hb hs0 hst haS hbS hbandS hwide
+  have hcore := haloInteriorMaskCode_do (w := w) st hs ht hband hk ha hb hs0 hst haS hbS hwide
   cases boundary
   · exact hcore.mono (fun _ h => h) (by omega)
   · unfold haloMembershipMaskCode

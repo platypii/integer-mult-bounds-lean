@@ -37,7 +37,7 @@ def couplingSourceMaskHostCost (V s : ℕ) : ℕ := (29*s+3)*tblC V 1+64*V+2*s+6
 theorem couplingSourceMaskHost_exec (boundary : Bool) {V s t band a b : ℕ} (st : TblSt 16 A)
     (hs : st.val 0 = s) (ht : st.val 1 = t) (hband : st.val 2 = band)
     (ha : st.val 4 = a) (hb : st.val 5 = b) (hacc : st.acc = [])
-    (hs0 : 0 < s) (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s)
+    (hs0 : 0 < s) (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s)
     (hwide : 8*(t+1)^2+2*band+8 < 2^V) (hbound : ∀ r, st.val r < 2^V)
     (v : HS 117 Q A U) (S : Stacks 117 A)
     (hS : tblHolds originReg S (tblRho V (List.replicate V tick) (List.replicate V tick) st)) :
@@ -69,7 +69,7 @@ theorem couplingSourceMaskHost_exec (boundary : Bool) {V s t band a b : ℕ} (st
       have hh := hS r
       cases r <;> simp_all [S₂,S₁,tblRho]
   have hc := couplingSourceMaskCode_do boundary (A := A) (V := V) (w := 1) st hs ht hband ha hb
-    hs0 hst haS hbS hbandS hwide
+    hs0 hst haS hbS hwide
   obtain ⟨st',hout,hrun⟩ := TblDo.host (body := body) originReg_injective
     (List.replicate V tick) [tick] (by simp) (by simp) hV (hc.bounded hbound) hbound
   obtain ⟨v₃,S₃,m₃,hu₃,hm₃,he₃,hh₃,hf₃⟩ := hrun v₁ S₂ hh₂

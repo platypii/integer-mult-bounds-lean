@@ -24,7 +24,7 @@ theorem publicationMaskRow_do {A V w s t band a b k : ℕ} (st : TblSt 16 A)
         (if haloInteriorAt s t band a b k then 1 else 0)).reverse ++ st.acc ∧
       ∀ r : Fin 16, r.val < 6 → st'.val r = st.val r) 26 := by
   simpa [publicationMaskRow,haloMaskAt] using
-    couplingSourceMaskRow_do false st hs ht hband hk ha hb hs0 hst haS hbS hbandS hwide
+    couplingSourceMaskRow_do false st hs ht hband hk ha hb hs0 hst haS hbS hwide
 
 def publicationMaskCode : TblCode 16 :=
   couplingSourceMaskCode false
@@ -40,6 +40,6 @@ theorem publicationMaskCode_do {A V w s t band a b : ℕ} (st : TblSt 16 A)
           (if haloInteriorAt s t band a b k then 1 else 0))).reverse ++ st.acc)
       (29*s+3) := by
   simpa [publicationMaskCode,haloMaskAt] using
-    couplingSourceMaskCode_do false st hs ht hband ha hb hs0 hst haS hbS hbandS hwide
+    couplingSourceMaskCode_do false st hs ht hband ha hb hs0 hst haS hbS hwide
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

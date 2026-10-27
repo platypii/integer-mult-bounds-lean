@@ -29,7 +29,7 @@ def generateDeepCouplingMaskCost (s t band a b : ℕ) : ℕ :=
   closedCouplingSourceMaskCost s t (2*band) a b+8*band+6
 
 theorem generateDeepCouplingMask_exec {s t band a b : ℕ} [NeZero s]
-    (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : 2*band ≤ s)
+    (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s)
     (v : HS 117 Q A U) (S : Stacks 117 A)
     (hs : (S.R 97).length = s) (ht : (S.R 98).length = t) (hband : (S.R 100).length = band)
     (ha : (S.R 101).length = a) (hb : (S.R 103).length = b)
@@ -48,7 +48,7 @@ theorem generateDeepCouplingMask_exec {s t band a b : ℕ} [NeZero s]
   let e : Fin 117 → Fin 117 := Equiv.swap 96 100
   have he : Function.Injective e := (Equiv.swap 96 100).injective
   obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := closedCouplingSourceMask_exec
-    (body := fun p : Empty => nomatch p) false hst haS hbS hbandS (embDn e v₁) (embStk e S₁)
+    (body := fun p : Empty => nomatch p) (band := 2*band) false hst haS hbS (embDn e v₁) (embStk e S₁)
     (by simpa [e,embStk,S₁,Equiv.swap_apply_def] using hs)
     (by simpa [e,embStk,S₁,Equiv.swap_apply_def] using ht)
     (by simp [e,embStk,S₁,Equiv.swap_apply_def])

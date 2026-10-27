@@ -48,6 +48,6 @@ theorem publicationMaskHost_exec {V s t band a b : ℕ} (st : TblSt 16 A)
         (mk v' {S with R := fun r => if r.val < 31 then [] else if r = 109 then
           publicationMaskSymbols A s t band a b++S.R r else S.R r}) := by
   simpa [publicationMaskHost,publicationMaskHostCost,publicationMaskSymbols] using
-    couplingSourceMaskHost_exec false st hs ht hband ha hb hacc hs0 hst haS hbS hbandS hwide hbound v S hS
+    couplingSourceMaskHost_exec false st hs ht hband ha hb hacc hs0 hst haS hbS hwide hbound v S hS
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

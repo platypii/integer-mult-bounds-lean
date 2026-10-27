@@ -44,6 +44,6 @@ theorem closedPublicationMask_exec {s t band a b : ℕ} [NeZero s]
       Exec body closedPublicationMask (mk v S) n
         (mk v' {S with R := Function.update S.R 109 (publicationMaskSymbols A s t band a b++S.R 109)}) := by
   simpa [closedPublicationMask,closedPublicationMaskCost,publicationMaskSymbols] using
-    closedCouplingSourceMask_exec false hst haS hbS hbandS v S hs ht hband ha hb h115 h106 h108 hblank
+    closedCouplingSourceMask_exec false hst haS hbS v S hs ht hband ha hb h115 h106 h108 hblank
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

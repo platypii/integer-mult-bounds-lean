@@ -23,7 +23,7 @@ def couplingSourceMaskFromHeadersCost (V s t band a b : ℕ) : ℕ :=
   (104*V+137)+((s+t+band+a+b)*(4*V+10)+36*V+61)+couplingSourceMaskHostCost V s
 
 theorem couplingSourceMaskFromHeaders_exec (boundary : Bool) {V s t band a b : ℕ} [NeZero s]
-    (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s)
+    (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s)
     (hwide : 8*(t+1)^2+2*band+8 < 2^V)
     (v : HS 117 Q A U) (S : Stacks 117 A)
     (hsSrc : (S.R 97).length = s) (htSrc : (S.R 98).length = t)
@@ -62,7 +62,7 @@ theorem couplingSourceMaskFromHeaders_exec (boundary : Bool) {V s t band a b : �
     (s := s) (t := t) (band := band) (a := a) (b := b) st
     (by simp [st,haloLookupHeaderState]) (by simp [st,haloLookupHeaderState])
     (by simp [st,haloLookupHeaderState]) (by simp [st,haloLookupHeaderState])
-    (by simp [st,haloLookupHeaderState]) rfl (NeZero.pos s) hst haS hbS hbandS hwide hstV v₁ S₁ hh₁
+    (by simp [st,haloLookupHeaderState]) rfl (NeZero.pos s) hst haS hbS hwide hstV v₁ S₁ hh₁
   have hcost : loadOriginListCost V value haloLookupHeaders =
       (s+t+band+a+b)*(4*V+10)+36*V+61 := by
     simp [loadOriginListCost,haloLookupHeaders,value,hsSrc,htSrc,hbandSrc,hindex,haSrc,hbSrc]

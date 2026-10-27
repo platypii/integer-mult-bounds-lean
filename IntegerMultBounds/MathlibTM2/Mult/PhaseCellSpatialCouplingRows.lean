@@ -21,10 +21,10 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 144 Q A U}
 
 noncomputable def spatialCouplingRows (hQ : SS.states ≤ Q) (boundary : Bool) : Pr P₀ 144 Q A U :=
   .seq (prepareSpatialCouplingSource boundary)
-    (.seq (runSpatialCouplingRows hQ) retireSpatialCouplingSource)
+    (.seq (runSpatialCouplingRows hQ boundary) retireSpatialCouplingSource)
 
 def spatialCouplingRowsCost (P q w s t u band a b : ℕ) : ℕ :=
-  prepareSpatialCouplingSourceCost s t band a b w+runSpatialCouplingRowsCost P q w s t u band+
+  prepareSpatialCouplingSourceCost s t band a b w+runSpatialCouplingRowsCost P q w s t u band a b+
     retireSpatialCouplingSourceCost s band w
 
 theorem spatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
@@ -50,7 +50,7 @@ theorem spatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : 
   have hview : embStk groupReg S₁ = embStk groupReg S :=
     groupProject_updateR S 141 _ (by decide)
   obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := runSpatialCouplingRows_exec (body := body) hQ boundary hA hw5 hqw
-    hst hP C rhs hlen (S.R 141) rhsTail (cstream A w (chirpLine s C)++tail) v₁ S₁
+    hst haS hbS hP C rhs hlen (S.R 141) rhsTail (cstream A w (chirpLine s C)++tail) v₁ S₁
     (by rw [hview]; exact hready) (by simp [S₁,input,F])
     (by simpa [S₁] using hindex) (by simpa [S₁] using hrhs)
     (by simpa [S₁] using h143) (by simpa [S₁] using h135) hxs has
@@ -70,7 +70,8 @@ theorem spatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : 
     (by simpa [S₂,S₁,groupReg] using hf 104 (by simp))
     (by simpa [S₂,S₁,groupReg] using hf 105 (by simp))
   refine ⟨v₃,m₁+(m₂+m₃),hu₃.trans (hu₂.trans hu₁),
-    by dsimp only [spatialCouplingRowsCost]; omega,
+    by have hm₂u := hm₂.trans (runSpatialCouplingGuardedCost_le boundary P q w s t u band a b)
+       dsimp only [spatialCouplingRowsCost]; omega,
     (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl ?_⟩
   apply congrArg (mk v₃)
   refine Stacks.ext rfl rfl rfl ?_

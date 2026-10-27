@@ -36,7 +36,7 @@ theorem publicationMaskFromHeaders_exec {V s t band a b : ℕ} [NeZero s]
       Exec body publicationMaskFromHeaders (mk v S) m
         (mk v' {S with R := Function.update S.R 109 (publicationMaskSymbols A s t band a b++S.R 109)}) := by
   simpa [publicationMaskFromHeaders,publicationMaskFromHeadersCost,publicationMaskSymbols] using
-    couplingSourceMaskFromHeaders_exec false hst haS hbS hbandS hwide v S
+    couplingSourceMaskFromHeaders_exec false hst haS hbS hwide v S
       hsSrc htSrc hbandSrc haSrc hbSrc hindex hVsrc h106 hblank
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

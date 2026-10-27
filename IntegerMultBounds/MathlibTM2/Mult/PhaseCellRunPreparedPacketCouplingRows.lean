@@ -24,23 +24,33 @@ noncomputable def runPreparedPacketCouplingRows (hQ : SS.states ≤ Q) : Pr P₀
 def runPreparedPacketCouplingRowsCost (P q w s t u band : ℕ) : ℕ :=
   packetSpatialCouplingRowLoopCost P q w s t u band s+32*s*w+34*s+28+transferCountedLineCost s w
 
+def runPreparedPacketGuardedCost (boundary : Bool) (P q w s t u band a b : ℕ) : ℕ :=
+  packetSpatialGuardedLoopCost boundary P q w s t u band a b s+32*s*w+34*s+28+transferCountedLineCost s w
+
+theorem runPreparedPacketGuardedCost_le (boundary : Bool) (P q w s t u band a b : ℕ) :
+    runPreparedPacketGuardedCost boundary P q w s t u band a b ≤ runPreparedPacketCouplingRowsCost P q w s t u band := by
+  have h := packetSpatialGuardedLoopCost_le boundary P q w s t u band a b s
+  dsimp [runPreparedPacketGuardedCost,runPreparedPacketCouplingRowsCost]
+  omega
+
 theorem runPreparedPacketCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
-    (hst : s < t) (hP : 13 ≤ P)
+    (hst : s < t) (hbS : b ≤ s) (hP : 13 ≤ P)
     (C : ZMod s → GaussianInt) (rhs : List GaussianInt) (hlen : rhs.length = s)
-    (tail packetTail rhsTail raw : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
+    (tail packetTail maskTail rhsTail raw : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
     (hready : CouplingReady P q w s t u band a b raw (embStk groupReg S))
     (hsource : S.R 141 = cstream A w (cyclicPaddedLine (fun j : ZMod s =>
       if j ∈ (if boundary then haloBoundary s t band a b else haloInterior s t band a b)
       then C j else 0) band)++tail)
+    (hmask : S.R 136 = couplingGuardSymbols boundary A s t band a b++maskTail)
     (hindex : S.R 107 = []) (hrhs : S.R 93 = cstream A w rhs++rhsTail)
     (h143 : S.R 143 = [])
     (hpacket : S.R 135 = markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band 0++packetTail)
     (hxs : ∀ j < s, ∀ x ∈ couplingInputWords boundary t band a b j C, Fits w x)
     (has : ∀ j < s, ∀ z ∈ couplingCoefficientWords P q s t u band j, Fits w z ∧ z.im = 0) :
-    ∃ v' m, v'.user = v.user ∧ m ≤ runPreparedPacketCouplingRowsCost P q w s t u band ∧
+    ∃ v' m, v'.user = v.user ∧ m ≤ runPreparedPacketGuardedCost boundary P q w s t u band a b ∧
       Exec (body) (runPreparedPacketCouplingRows hQ) (mk v S) m
-        (mk v' {S with R := (Function.update (Function.update (Function.update S.R 135
+        (mk v' {S with R := (Function.update (Function.update (Function.update (Function.update S.R 136 maskTail) 135
           (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band s++packetTail)) 93 rhsTail)
           113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
   have hs : (S.R 97).length = s := hready.axis
@@ -54,16 +64,18 @@ theorem runPreparedPacketCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u b
   have hready₁ : CouplingReady P q w s t u band a b raw (embStk groupReg S₁) := by
     rw [show embStk groupReg S₁ = embStk groupReg S from groupProject_updateR S 143 _ (by decide)]
     exact hready
+  have htake : (couplingGuardSymbols boundary A s t band a b).take s = couplingGuardSymbols boundary A s t band a b :=
+    List.take_of_length_le (by simp)
   obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := packetSpatialCouplingRowLoop_exec (body := body) hQ boundary hA hw5 hqw
-    hst hP C rhs (by omega) tail packetTail rhsTail raw v₁ S₁ hready₁
-    (by simpa [S₁] using hsource) (by simpa [S₁] using hpacket) (by simpa [S₁] using hindex)
+    hst hbS hP C rhs (by omega) tail packetTail maskTail rhsTail raw v₁ S₁ hready₁
+    (by simpa [S₁] using hsource) (by simpa [S₁] using hpacket) (by simpa [S₁,hlen,htake] using hmask) (by simpa [S₁] using hindex)
     (by simpa [S₁] using hrhs) (by simp [S₁,hlen])
     (by simpa only [hlen] using hxs) (by simpa only [hlen] using has)
   let F := fun j : ZMod s => if j ∈
     (if boundary then haloBoundary s t band a b else haloInterior s t band a b) then C j else 0
   let source := cyclicPaddedLine F band
   let ys := couplingRowWords P q t u band a b boundary C 0 rhs
-  let S₂ : Stacks 144 A := {S₁ with R := (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update S₁.R 135
+  let S₂ : Stacks 144 A := {S₁ with R := (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update S₁.R 136 maskTail) 135
     (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band s++packetTail))
     93 rhsTail) 107 (List.replicate s tick)) 113 (cstream A w ys.reverse++S₁.R 113)) 143 [])
     141 (cstream A w (source.drop s)++tail))
@@ -84,6 +96,7 @@ theorem runPreparedPacketCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u b
     have hlow : k.val < 117 := by
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
       rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+    have hn136 : k ≠ 136 := by intro he; subst k; norm_num at hlow
     have hn135 : k ≠ 135 := by intro he; subst k; norm_num at hlow
     have hn141 : k ≠ 141 := by intro he; subst k; norm_num at hlow
     have hn142 : k ≠ 142 := by intro he; subst k; norm_num at hlow
@@ -100,7 +113,7 @@ theorem runPreparedPacketCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u b
       simp [groupReg,r]
     change S.R (groupReg r) = [] at hh
     rw [hmap] at hh
-    simpa [SR,S₂,S₁,hn135,hn141,hn142,hne.1,hne.2.1,hne.2.2.1,hne.2.2.2] using hh
+    simpa [SR,S₂,S₁,hn136,hn135,hn141,hn142,hne.1,hne.2.1,hne.2.2.1,hne.2.2.2] using hh
   obtain ⟨v₃,m₃,hu₃,hm₃,he₃⟩ := reversePrefixInPlace_exec (body := body)
     (records := 97) (recordSaved := 104) (width := 94) (src := 113) (dst := 115)
     (saved := 105) (buf := 106) (tmp := 108) (count := 109) (by decide)
@@ -113,15 +126,15 @@ theorem runPreparedPacketCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u b
   obtain ⟨v₄,hu₄,he₄⟩ := uclear_exec (body := body) 107 v₃ S₃
   refine ⟨v₄,(4*s+4)+(m₂+(mR+(m₃+(2*s+2)))),hu₄.trans (hu₃.trans (huR.trans (hu₂.trans hu₁))),?_,
     (Exec.seq he₁' (Exec.seq he₂' (Exec.seq heR (Exec.seq he₃' he₄)))).cast (by rw [h107₃]; simp) ?_⟩
-  · have hm₂' : m₂ ≤ packetSpatialCouplingRowLoopCost P q w s t u band s := by simpa [hlen] using hm₂
+  · have hm₂g : m₂ ≤ packetSpatialGuardedLoopCost boundary P q w s t u band a b s := by simpa [hlen] using hm₂
     have hm₃' : m₃ ≤ 32*s*w+28*s+22 := by simpa [hys] using hm₃
-    dsimp only [runPreparedPacketCouplingRowsCost]
+    dsimp only [runPreparedPacketGuardedCost]
     omega
   · apply congrArg (mk v₄)
     refine Stacks.ext rfl rfl rfl ?_
     funext k
     by_cases h107 : k = 107 <;> by_cases h143' : k = 143 <;> by_cases h113 : k = 113 <;>
-      by_cases h135 : k = 135 <;> by_cases h141 : k = 141 <;> by_cases h142 : k = 142 <;>
-      simp [S₃,SR,S₂,S₁,h107,h143',h113,h135,h141,h142,hindex,h143,ys,hsource,source,F,Function.update_apply]
+      by_cases h136 : k = 136 <;> by_cases h135 : k = 135 <;> by_cases h141 : k = 141 <;> by_cases h142 : k = 142 <;>
+      simp [S₃,SR,S₂,S₁,h107,h143',h113,h136,h135,h141,h142,hindex,h143,ys,hsource,source,F,Function.update_apply]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

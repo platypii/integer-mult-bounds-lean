@@ -21,14 +21,14 @@ def couplingSourceMaskRow (boundary : Bool) : TblCode 16 := haloMembershipMaskCo
 theorem couplingSourceMaskRow_do (boundary : Bool) {A V w s t band a b k : ℕ} (st : TblSt 16 A)
     (hs : st.val 0 = s) (ht : st.val 1 = t) (hband : st.val 2 = band) (hk : st.val 3 = k)
     (ha : st.val 4 = a) (hb : st.val 5 = b)
-    (hs0 : 0 < s) (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s)
+    (hs0 : 0 < s) (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s)
     (hwide : 8*(t+1)^2+2*band+8 < 2^V) :
     TblDo A V w (couplingSourceMaskRow boundary) st (fun st' =>
       st'.acc = (tblPairs A w (if haloMaskAt boundary s t band a b k then 1 else 0)
         (if haloMaskAt boundary s t band a b k then 1 else 0)).reverse ++ st.acc ∧
       ∀ r : Fin 16, r.val < 6 → st'.val r = st.val r) 26 := by
   have hm := haloMembershipMaskCode_do (A := A) (V := V) (w := w) boundary st
-    hs ht hband hk ha hb hs0 hst haS hbS hbandS hwide
+    hs ht hband hk ha hb hs0 hst haS hbS hwide
   unfold couplingSourceMaskRow
   refine hm.seq (K₂ := 1) (fun st' ⟨hflag,hacc,hframe⟩ => ?_)
   apply TblDo.ins (.emit 15 15)
@@ -40,7 +40,7 @@ def couplingSourceMaskCode (boundary : Bool) : TblCode 16 := tblFor 3 0 (couplin
 theorem couplingSourceMaskCode_do (boundary : Bool) {A V w s t band a b : ℕ} (st : TblSt 16 A)
     (hs : st.val 0 = s) (ht : st.val 1 = t) (hband : st.val 2 = band)
     (ha : st.val 4 = a) (hb : st.val 5 = b)
-    (hs0 : 0 < s) (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s)
+    (hs0 : 0 < s) (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s)
     (hwide : 8*(t+1)^2+2*band+8 < 2^V) :
     TblDo A V w (couplingSourceMaskCode boundary) st (fun st' =>
       st'.acc = ((List.range s).flatMap (fun k =>
@@ -67,7 +67,7 @@ theorem couplingSourceMaskCode_do (boundary : Bool) {A V w s t band a b : ℕ} (
         ((hf 2 (by decide) (by decide)).trans hband) hindex
         ((hf 4 (by decide) (by decide)).trans ha)
         ((hf 5 (by decide) (by decide)).trans hb)
-        hs0 hst haS hbS hbandS hwide
+        hs0 hst haS hbS hwide
       exact hrow.mono (fun st₂ ⟨hrowacc,hframe⟩ =>
         ⟨(hframe 3 (by decide)).trans hindex,(hframe 0 (by decide)).trans hcount,by
           constructor

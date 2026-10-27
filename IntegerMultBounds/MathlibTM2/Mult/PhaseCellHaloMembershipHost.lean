@@ -31,7 +31,7 @@ theorem haloMembershipHost_exec {V s t band a b k : ℕ} (boundary : Bool) (st :
         (mk v' {S with R := fun r => if r.val < 31 then [] else if r = 109 then
           (if haloMaskAt boundary s t band a b k then [tick] else []) else S.R r}) := by
   have hc := haloMembershipMaskCode_do (w := V) boundary st hs ht hband hk ha hb
-    hs0 hst haS hbS hbandS hwide
+    hs0 hst haS hbS hwide
   have hV : 0 < V := by
     by_contra hn
     have hzero : V = 0 := by omega

@@ -28,7 +28,7 @@ theorem boundaryOrderRow_do {A V w s t band a b k : ℕ} (st : TblSt 16 A)
       st'.acc = (if haloMaskAt true s t band a b k then tblPairs A w k 0 else []).reverse ++ st.acc ∧
       ∀ r : Fin 16, r.val < 6 → st'.val r = st.val r) 28 := by
   have hm := haloMembershipMaskCode_do (A := A) (V := V) (w := w) true st
-    hs ht hband hk ha hb hs0 hst haS hbS hbandS hwide
+    hs ht hband hk ha hb hs0 hst haS hbS hwide
   unfold boundaryOrderRow
   apply hm.seq (K₂ := 3)
   intro st₁ ⟨hflag,hacc,hframe⟩

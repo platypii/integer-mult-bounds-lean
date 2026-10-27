@@ -47,7 +47,7 @@ theorem closedCouplingSourceMaskCost_halo_le {s t band a b : ℕ}
     (Nat.mul_le_mul (Nat.mul_le_mul_left 4000 hcount) (Nat.pow_le_pow_left hwidth 2))
 
 theorem closedCouplingSourceMask_exec (boundary : Bool) {s t band a b : ℕ} [NeZero s]
-    (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s)
+    (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s)
     (v : HS 117 Q A U) (S : Stacks 117 A)
     (hs : (S.R 97).length = s) (ht : (S.R 98).length = t)
     (hband : (S.R 100).length = band)
@@ -67,7 +67,7 @@ theorem closedCouplingSourceMask_exec (boundary : Bool) {s t band a b : ℕ} [Ne
       exact hblank k hk31)
   let S₁ : Stacks 117 A := {S with R := Function.update S.R 115 (List.replicate V tick)}
   obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := couplingSourceMaskFromHeaders_exec boundary (body := body)
-    (V := V) (s := s) (t := t) (band := band) (a := a) (b := b) hst haS hbS hbandS
+    (V := V) (s := s) (t := t) (band := band) (a := a) (b := b) hst haS hbS
     (publicationGeometryWidth_fits t band) v₁ S₁
     (by simpa [S₁] using hs) (by simpa [S₁] using ht) (by simpa [S₁] using hband)
     (by simpa [S₁] using ha) (by simpa [S₁] using hb) (by simpa [S₁] using h108)

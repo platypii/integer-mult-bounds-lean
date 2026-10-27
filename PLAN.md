@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2021 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2023 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12603,3 +12603,48 @@ All six new modules pass individual guarded checks, maximum 1952.4 MiB.
 The stage axiom audit includes the geometry, cost, mask generation and shortcut
 execution contracts. Source-integrity, whitespace and plan-status checks pass;
 default proof limits are unchanged.
+
+### S3 production recovery loop consumes generated zero-row guards
+
+The mask compiler's executable oversized-band branch already returns an empty
+interior mask. Its interior, membership and source-mask contracts now omit the
+unnecessary `band ≤ s` premise; the private phase-computation branch derives
+that bound from `band ≤ b ≤ s` when needed. The deep-mask generator therefore
+handles all band sizes. No new size premise is imposed on the closed inverse.
+
+`prepareCouplingGuard_exec` generates one owned guard symbol per ambient row on
+outer port 136. Recovery uses the computed 2*band interior mask; the residual
+pass generates false guards. The generator preserves arbitrary borrowed suffixes
+and all ordinary headers. The production row step consumes one symbol and
+executes the certified zero shortcut or the existing full row. Its counted-loop
+invariant now carries the remaining guard stream alongside the source cursor,
+packet index, RHS and result streams. The whole pass consumes exactly the owned
+guard prefix and restores the original 136 suffix, with the existing public
+whole-pass frame unchanged.
+
+`packetSpatialCouplingRowLoop_exec`, `runPreparedPacketCouplingRows_exec` and
+`runSpatialCouplingRows_exec` expose the sum of the actual selected row-branch
+allowances. Uniform comparison lemmas keep the existing higher caller ledger
+valid, with paid guard setup and two control steps per row included.
+`spatialCouplingRowsCost_eq` records that conservative uniform ledger.
+
+`couplingGuard_true_count` identifies the generated true-bit count with the
+2*band halo-interior cardinality. `packetSpatialGuardedLoopCost_recovery` gives
+the exact resulting zero/full-row cost split. The corresponding upper bound
+charges full rows to `s - card(haloVertices) + haloBoundaryCountBound ... (2*band)`.
+The first term explicitly retains work outside a clipped target halo; it is not
+silently dropped. The second term is at most
+`min (b-a) (4*band*(t-s+2))`, including artificial cuts. For a full-line halo the
+outside-halo term vanishes.
+
+This integrates the zero-row shortcut into production and removes its size gate.
+Final fast supplier/setup matching, treatment of clipped-halo ambient overhead,
+simultaneous whole-execution live storage and endpoint/resource integration
+remain open. S3 stays partial; kappa is unchanged.
+
+Validation: all 14,874 guarded stage-audit jobs pass, including the selected raw
+inverse caller, closed complex batch and resource ledger (24.4 GiB combined peak).
+All 23 affected implementation modules pass individual guarded checks, maximum
+1994.2 MiB. The new guard-generation, branch-count, loop and whole-pass cost
+contracts are included in the stage axiom audit. Source-integrity, whitespace and
+plan-status checks pass; default proof limits are unchanged.

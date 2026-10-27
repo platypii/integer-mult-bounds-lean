@@ -27,7 +27,7 @@ theorem outerCouplingSourceMask_exec (boundary : Bool) {P q w s t u band a b : �
         (mk v' {S with R := Function.update S.R 109 (couplingSourceMaskSymbols boundary A s t band a b)}) := by
   obtain ⟨v₁,n,hu₁,hn,he₁⟩ := closedCouplingSourceMask_exec boundary (body := fun p : Empty => nomatch p)
     (s := s) (t := t) (band := band) (a := a) (b := b)
-    hst haS hbS hbandS (embDn groupReg v) (embStk groupReg S)
+    hst haS hbS (embDn groupReg v) (embStk groupReg S)
     hready.axis hready.period hready.bandwidth hready.lower hready.upper (hready.fresh 115 (by simp))
     (hready.fresh 106 (by simp)) (hready.fresh 108 (by simp))
     (fun r hr => hready.low r (by omega))

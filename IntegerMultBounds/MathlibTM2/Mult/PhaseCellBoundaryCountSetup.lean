@@ -28,7 +28,7 @@ theorem boundaryCountRow_do {A V w s t band a b k m : ℕ} (st : TblSt 17 A)
       z.val 16 = m+(if haloMaskAt true s t band a b k then 1 else 0) ∧
       z.acc = st.acc ∧ ∀ r : Fin 17, r.val < 6 → z.val r = st.val r) 28 := by
   have hmask := (haloMembershipMaskCode_do (A := A) (V := V) (w := w) true
-    (st.restrict boundaryCountMaskMap) hs ht hband hk ha hb hs0 hst haS hbS hbandS hwide).rename boundaryCountMaskMap_injective
+    (st.restrict boundaryCountMaskMap) hs ht hband hk ha hb hs0 hst haS hbS hwide).rename boundaryCountMaskMap_injective
   unfold boundaryCountRow
   apply hmask.seq (K₂ := 3)
   intro z ⟨⟨hflag,hacc,hframe⟩,hoff⟩
