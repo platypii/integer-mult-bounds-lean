@@ -1,5 +1,9 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalLineTables
+
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryLineSizes
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolveReady
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryFactor
@@ -1911,6 +1915,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_factorPrepared_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializedBoundaryFactor_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.boundaryFactorLegacy_input,
+      `IntegerMultBounds.NLogN.SchurDominance.exists_solver,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineTables_lengths,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineTables_factor,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_re,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_im,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_sizes,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_line_execution_bits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_line_roundoff_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_line_allocated_sizes,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolveScratch_cases,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundarySolveReady.update_vk,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolveReady_of_factor,

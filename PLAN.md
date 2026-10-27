@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1764 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1768 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9651,3 +9651,40 @@ workspace, padding and triangular solve axiom audits; combined peak 3.4 GiB.
 The new module and stage root pass individual guarded checks at 2864.4 MiB
 and 2956.8 MiB respectively. Source-integrity, plan-status and whitespace
 checks pass. Proof limits are unchanged.
+
+### Allocated numerical bounds for the computed boundary solve
+
+`naturalLineSolve_sizes` proves solution and forward-substitution bounds for
+an arbitrary natural-order integer band matrix, zero outside its finite rank
+range. It uses the actual matrix's dominance invariant directly, without a
+folded periodic matrix representation. The exact `exists_solver` theorem now
+requires only a finite active set: its previously required ambient `Fintype`
+instance was unused by the existing proof and is removed.
+
+`boundary_line_execution_bits` and `boundary_line_roundoff_budget` show that
+the retained execution precision also pays the triangular solve's stronger
+perturbation budget. `boundary_line_allocated_sizes` specializes the natural
+estimate to `factorRankIntegerMatrix`, deriving all precision, Newton-count
+and perturbation premises from the allocated headers and the constructed
+matrix invariant. A scaled RHS of grid norm at most `1/2` yields solution
+values at most `8*p+1` and forward values at most `3*(8*p+1)+1`.
+
+`naturalLineTables_factor` identifies the natural solve's multiplier columns,
+upper columns and reciprocal records with the factorizer's emitted tables.
+`naturalLineSolve_re` and `naturalLineSolve_im` identify its Gaussian runtime
+solve with the scalar integer solve of each component. These are structural
+identities, including the table counts; no numerical or execution oracle is
+needed for this bridge.
+
+The backward-head and coefficient fit bounds, gathered/scaled RHS construction,
+full constructed-factor/solve composition, cleanup, recovery/publication and
+the inverse endpoint remain open. Uniform fast time and complete simultaneous
+live storage also remain open. S3 remains partial.
+
+Validation: all 14,612 guarded stage-audit jobs pass, including nine new explicit
+exact-solver, natural solve, allocated precision/size and table/projection axiom
+audits. The solver generalization rebuilt dependents with combined peak 33.8 GiB;
+the final stage build peaks at 3.4 GiB. Individual guarded checks of the five
+new/revised proof modules peak at 2881.2 MiB or less; the final audit root
+checks at 2956.8 MiB. Source-integrity, plan-status and whitespace checks pass.
+Proof limits are unchanged.

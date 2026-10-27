@@ -15,7 +15,7 @@ open scoped BigOperators
 open Finset
 
 /-- Dominance yields an exact solver for every right-hand side. -/
-theorem exists_solver {ι : Type*} [Fintype ι] [DecidableEq ι] (A : Matrix ι ι ℝ)
+theorem exists_solver {ι : Type*} [DecidableEq ι] (A : Matrix ι ι ℝ)
     (S : Finset ι) (μ : ℝ) (hμ : 0<μ) (hA : DominatesOn A S μ) :
     ∃ R : (ι → ℝ) → ι → ℝ, ∀ c, Solves A S (R c) c := by
   let M : Matrix S S ℝ := fun i j => A i j
