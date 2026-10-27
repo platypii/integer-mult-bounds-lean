@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBandParameterSetup
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInversePrecisionSetup
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryReleaseVolume
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorTableVolume
 
@@ -2041,6 +2044,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.physicalOriginalComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedComplexBoundary_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedInverse_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblRootSuccessor_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblBitCount_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandRootMap_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblBandParameter_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inverseExecutionExponent_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblInverseExponent_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblInverseDimensionWords_do,
       `IntegerMultBounds.MathlibTM2.Fast.length_facLf,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorReg_cover,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryPermanentBound.update,

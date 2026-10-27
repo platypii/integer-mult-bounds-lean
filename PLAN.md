@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1866 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1869 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10866,3 +10866,32 @@ factor/solve/unfold/publication/recovery/pair/complex/inverse contracts, with a
 3.4 GiB combined peak in the final rebuild. All thirteen changed proof modules
 pass individual guarded checks below 3 GiB (maximum 2991.4 MiB). Changed-source
 proof-integrity, whitespace and plan-status checks pass. Proof limits are unchanged.
+
+### Executable scalar selection for the inverse caller
+
+`tblRootSuccessor_do` and `tblBitCount_do` give structural table programs for
+`Nat.sqrt x+1` and `Nat.size x`, including x=0, unchanged accumulators and derived
+word fits. `tblBandParameter_do` composes integer division with the root search
+to compute the canonical `PhaseCellBand.width p u` from only p and u in
+`4*band+12` table atoms.
+
+`inverseExecutionExponent_eq` identifies the retained inverse's selected working
+exponent with
+`target+2*l+24*p+4*Nat.size (8*p)+Nat.size N+Nat.size (2*band+1)+28`.
+`tblInverseExponent_do` computes this affine expression from the three bit counts
+in 42 atoms. `tblInverseDimensionWords_do` computes the actual q, stage count,
+word width and scaled arithmetic parameter from that exponent and p in 31 atoms.
+All programs have fixed syntax and proved fits; no parameter value is compiled
+into their syntax.
+
+These scalar selection components still need composition with boundary counting,
+physical header installation and the retained inverse. The caller therefore
+still takes its readiness bank; closed setup is not yet proved. Uniform fast time
+matching and simultaneous live-storage gates also remain open. S3 remains
+partial; kappa is unchanged.
+
+Validation: all 14,715 guarded stage-audit jobs pass, including seven new explicit
+scalar-selection axiom audits; the final rebuild peaks at 3.4 GiB combined.
+Individual guarded checks peak at 1352.9 MiB (root/bit-count arithmetic),
+1774.2 MiB (band selection) and 2027.0 MiB (precision and dimension words).
+Source-integrity, whitespace and plan-status checks pass. Proof limits are unchanged.
