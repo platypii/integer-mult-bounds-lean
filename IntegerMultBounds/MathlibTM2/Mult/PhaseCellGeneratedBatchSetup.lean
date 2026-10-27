@@ -30,26 +30,16 @@ def generatedBatchBank {A : ℕ} (S : Stacks 117 A) (P s t u band L q N l B : �
       (List.range B).flatMap (fun i => outputWeightRow A (2*q+8) q P s t u L (lo i)) ++
       rhs ++ (List.range B).flatMap (fun i => inputWeightRow A (2*q+8) q P s t u L (lo i)) ++ borrowed)) } q l B
 
-theorem generatedBatchSetup_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
-    {P s t u band L q N l B : ℕ} (lo : ℕ → ℕ)
-    (hP : 13 ≤ P) (hqMax : q ≤ 2*(N+1)) (hs : 0 < s) (hst : s < t) (hu : 1 ≤ u)
-    (hL : 0 < L) (hLs : L ≤ s) (hlo : ∀ i < B, lo i < s)
-    (v : HS 117 Q A U) (S : Stacks 117 A) (rhs borrowed control : List (Fin (A+4)))
-    (hprecision : (S.R 114).length = P) (hsR : (S.R 97).length = s) (htR : (S.R 98).length = t)
-    (huR : (S.R 99).length = u) (hband : (S.R 100).length = band)
-    (hrows : (S.R 102).length = L) (hcount : (S.R 103).length = L)
-    (hq : (S.R 112).length = q) (hN : (S.R 101).length = N)
-    (hB : S.R 116 = List.replicate B tick) (hl : control.length = l)
-    (hpacket : S.R 109 = (List.range B).flatMap (fun i => binSyms (weightWorkspaceWidth P q (2*q+8) t u) (lo i)) ++ control)
-    (hsrc : S.R 110 = rhs ++ borrowed) (hrhs : rhs.length = B*L*(2*q+8))
-    (hclean : CClean mul S) (hblank : ∀ r, S.R (cr r) = [])
-    (hfresh : ∀ k ∈ [(64 : Fin 117), 65, 94, 96, 104, 105, 106, 107, 108, 111, 113, 115], S.R k = []) :
-    ∃ v' m, v'.user = v.user ∧ m ≤ generatedBatchSetupCost P N q s t u band l L B ∧
-      Exec body (generatedBatchSetup hQ) (mk v S) m
-        (mk v' (generatedBatchBank S P s t u band L q N l B lo rhs borrowed control)) := by
-  obtain ⟨v₁, m₁, hu₁, hm₁, he₁⟩ := batchWeightedSetup_exec (body := body) (band := band)
-    hQ hA lo hP hqMax hs hst hu hL hLs hlo v S control hprecision hsR htR huR hband
-    hrows hcount hq hN hB hpacket hclean hblank hfresh
+theorem weightedBatchRuntime_exec (P N q l s t u band L B : ℕ) (lo : ℕ → ℕ)
+    (v₁ : HS 117 Q A U) (S : Stacks 117 A) (rhs borrowed control : List (Fin (A+4)))
+    (hprecision : (S.R 114).length = P) (hN : (S.R 101).length = N)
+    (hq : (S.R 112).length = q) (hcount : (S.R 103).length = L) (hl : control.length = l)
+    (hsrc : S.R 110 = rhs++borrowed) (hrhs : rhs.length = B*L*(2*q+8))
+    (hfresh : ∀ k ∈ ([(104 : Fin 117),105,106,107,108] : List (Fin 117)), S.R k = []) :
+    ∃ v₂ m₂, v₂.user = v₁.user ∧ m₂ ≤ prepareBatchRuntimeCost P N q l B L (2*q+8) ∧
+      Exec body prepareBatchRuntime
+        (mk v₁ (batchWeightedBank S P s t u band L q N B lo control)) m₂
+        (mk v₂ (generatedBatchBank S P s t u band L q N l B lo rhs borrowed control)) := by
   let W := batchWeightedBank S P s t u band L q N B lo control
   let outs := (List.range B).flatMap (fun i => outputWeightRow A (2*q+8) q P s t u L (lo i))
   let factors := (List.range B).flatMap (fun i => inputWeightRow A (2*q+8) q P s t u L (lo i))
@@ -83,9 +73,37 @@ theorem generatedBatchSetup_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       · simp [W, batchWeightedBank, batchInverseBank, consumedGeometryBank, geometryHeaderPorts]
       all_goals simpa [W, batchWeightedBank, batchInverseBank, batchWeightedBase,
         consumedGeometryBank, geometryHeaderPorts] using hfresh _ (by simp))
-  refine ⟨v₂, m₁+m₂, hu₂.trans hu₁, by dsimp only [generatedBatchSetupCost]; omega,
-    (Exec.seq he₁ he₂).cast rfl ?_⟩
+  refine ⟨v₂,m₂,hu₂,hm₂,he₂.cast rfl ?_⟩
   congr 1
-  simp only [generatedBatchBank, W, pre, outs, factors, List.append_assoc]
+  simp only [generatedBatchBank,W,pre,outs,factors,List.append_assoc]
+
+theorem generatedBatchSetup_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    {P s t u band L q N l B : ℕ} (lo : ℕ → ℕ)
+    (hP : 13 ≤ P) (hqMax : q ≤ 2*(N+1)) (hs : 0 < s) (hst : s < t) (hu : 1 ≤ u)
+    (hL : 0 < L) (hLs : L ≤ s) (hlo : ∀ i < B, lo i < s)
+    (v : HS 117 Q A U) (S : Stacks 117 A) (rhs borrowed control : List (Fin (A+4)))
+    (hprecision : (S.R 114).length = P) (hsR : (S.R 97).length = s) (htR : (S.R 98).length = t)
+    (huR : (S.R 99).length = u) (hband : (S.R 100).length = band)
+    (hrows : (S.R 102).length = L) (hcount : (S.R 103).length = L)
+    (hq : (S.R 112).length = q) (hN : (S.R 101).length = N)
+    (hB : S.R 116 = List.replicate B tick) (hl : control.length = l)
+    (hpacket : S.R 109 = (List.range B).flatMap (fun i => binSyms (weightWorkspaceWidth P q (2*q+8) t u) (lo i)) ++ control)
+    (hsrc : S.R 110 = rhs ++ borrowed) (hrhs : rhs.length = B*L*(2*q+8))
+    (hclean : CClean mul S) (hblank : ∀ r, S.R (cr r) = [])
+    (hfresh : ∀ k ∈ [(64 : Fin 117), 65, 94, 96, 104, 105, 106, 107, 108, 111, 113, 115], S.R k = []) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ generatedBatchSetupCost P N q s t u band l L B ∧
+      Exec body (generatedBatchSetup hQ) (mk v S) m
+        (mk v' (generatedBatchBank S P s t u band L q N l B lo rhs borrowed control)) := by
+  obtain ⟨v₁, m₁, hu₁, hm₁, he₁⟩ := batchWeightedSetup_exec (body := body) (band := band)
+    hQ hA lo hP hqMax hs hst hu hL hLs hlo v S control hprecision hsR htR huR hband
+    hrows hcount hq hN hB hpacket hclean hblank hfresh
+  obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := weightedBatchRuntime_exec (body := body)
+    P N q l s t u band L B lo v₁ S rhs borrowed control hprecision hN hq hcount hl hsrc hrhs
+    (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl
+      all_goals exact hfresh _ (by simp))
+  exact ⟨v₂,m₁+m₂,hu₂.trans hu₁,by dsimp only [generatedBatchSetupCost]; omega,Exec.seq he₁ he₂⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

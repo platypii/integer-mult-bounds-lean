@@ -34,6 +34,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedInverseGeometryCaller
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseWeightCache
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBatchWeightCache
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchWeightedSetup
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchCost
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedClosedBatchSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedFactorComplexBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedCacheComplexBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedComplexBatch
@@ -2462,6 +2464,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.preparedBatchWeightedBank_weights,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedBatchWeightedSetup_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedBatchWeightedSetupCost_affine,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightedBatchRuntime_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedGeneratedBatchSetup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedBatchBank_cachedCore,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedBatchInputBank_setup_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedGeneratedBatch_sized_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedClosedBatch_sized_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedClosedBatchCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedClosedBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCouplingCacheRelease_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_succ,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_length_le,

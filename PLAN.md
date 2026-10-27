@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2134 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2140 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13666,3 +13666,47 @@ kappa is unchanged.
 Validation: the expanded standard-axiom audit passes all 14,985 jobs (4.4 GiB
 combined peak RSS). All four new modules pass individual guarded checks below
 the 4 GiB module budget. Proof-integrity and whitespace checks pass.
+
+### S3 checkpoint: complete cached-weight cell batch
+
+`cachedClosedBatch_sized_exec` now executes retained grouped weights through
+inverse setup, raw-payload routing, four-product arithmetic, publication and
+runtime teardown. Every cell has the existing `CellRun.Valid` guarantee for
+the actual published result. The projected core ends in `releasedCellBank`,
+restoring the raw RHS and borrowed suffix with all private runtime storage
+released; every off-core register, including the weight cache and clock,
+is preserved exactly.
+
+`cachedBatchInputBank_setup_exec` admits raw RHS words, ordinary unary geometry
+and precision headers, and the retained key. Its control stream contains no
+repeated binary-origin packets. It produces the same arithmetic input bank as
+the original generator path. Both paths now use `weightedBatchRuntime_exec`,
+factored from the existing routing proof; the original caller contract is
+unchanged.
+
+`cachedClosedBatchCost_eq` separates the actual complete batch bill into its
+zero-cell setup cost, interior-coordinate charge and padded-cell charge.
+The coordinate charge is `3*rmulCost(w)+835*w` plus the explicit input/precision
+counter terms; the cell charge is `704+4*rpRecBound(q,l,w)+248*(2^l*w)`.
+Exponential-derived weight generation is absent from repeated coordinate work.
+Generation and final release of the retained weight key remain separately
+executed and priced by their existing contracts.
+
+The new backend still needs placement into the generated natural cell classes,
+both interior passes and the full inverse loop. Final selected uniform time
+matching and simultaneous whole-execution live storage remain open. S3 stays
+partial and kappa is unchanged.
+
+The cached batch also has the numerical endpoint `cachedClosedBatch_spec`:
+requested pointwise accuracy on every ambient cell core, the existing
+`publishedBatchRead` uniform `ErrorOn` guarantee, and a bounded encoded output
+stream at the selected interior-output exponent. The proof reads the actual
+projected result from the cleaned cached execution. There is no cell-count
+factor in the error guarantee.
+
+Validation: the final expanded standard-axiom audit passes all 14,991 jobs
+(3.4 GiB peak for the final build; the earlier downstream rebuild peaked at
+26.4 GiB combined). All seven changed/new proof modules pass individual guarded
+checks, with maximum peak RSS 1975.8 MiB. Proof-integrity and whitespace checks
+pass. Existing inverse contracts rebuild successfully after the shared routing
+proof was factored.
