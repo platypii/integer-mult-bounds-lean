@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2118 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2124 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13547,3 +13547,32 @@ Validation: the expanded standard-axiom audit passes all 14,969 jobs (3.4 GiB
 combined peak RSS). The three changed/new proof modules pass individual
 guarded checks below the 4 GiB module budget. Proof-integrity and whitespace
 checks pass.
+
+### S3 checkpoint: generated cached geometry ledger
+
+The generated batch cost now has an exact affine decomposition:
+`generatedClosedComplexBatchCost_eq` separates the once-only construction and
+release bill from `replicas * generatedComplexLineCost`. The per-input term
+includes both real components, input splitting/joining, output tape movement
+and replica-dependent release clocks; no factor or coefficient generation is
+charged again for each input.
+
+`placedCachedRestoredCouplingPassCost_geometry_le` carries the active-row page
+reader bound through source staging, feeding and private header restoration.
+`placedCachedRealInteriorResidualCost_geometry_le` and
+`placedCachedRecoveryToleranceCost_geometry_le` combine those bounds with the
+actual clipped-interior solver geometry ledger. The complete complex-component
+and batch inequalities feed `generatedInverseCaller_geometry_spec`, which
+prices the actual ordinary-scalar caller execution. The coefficient-page term
+is bounded by the boundary neighbourhood rather than the whole dense line.
+`generatedInverseCaller_spec` also derives the scalar word width and removes
+supplied scalar room witnesses from the new caller contract.
+
+These are finite geometry bounds, not the final uniform fast time theorem.
+Generated factor setup still needs its final uniform estimate, and the
+simultaneous whole-execution live-storage theorem remains open. S3 stays
+partial and kappa is unchanged.
+
+Validation: the expanded stage standard-axiom audit passes all 14,975 jobs
+(3.4 GiB combined peak RSS). All six new modules pass individual guarded checks
+below the 4 GiB module budget. Proof-integrity and whitespace checks pass.
