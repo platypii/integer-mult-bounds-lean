@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2038 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2041 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12915,3 +12915,39 @@ Validation: the production rebuild passes all 14,889 guarded stage jobs
 the same target at 3.4 GiB combined peak. All 40 changed/new implementation
 modules pass individual guarded checks, with maximum peak RSS 3003.3 MiB.
 Proof-integrity, plan-status and whitespace checks pass.
+
+### S3 executed coefficient-page row setup and reader
+
+The next fast-time route moves coefficient evaluation into paid reuse-key
+setup. `prepareCouplingCoefficientRow_exec` evaluates one actual spatial row
+from the retained numeric packet, advances that packet, and transfers the
+reversed coefficient symbols to a page staging stack. Its coefficient bank
+and all transport scratch restore. `finishCouplingCoefficientPage_exec`
+reverses an accumulated page using its explicit word counter, restores the
+staging suffix, and releases the counter. `buildCouplingCoefficientRow_exec`
+composes actual generation, counter copying and finalization for one row,
+leaving the forward coefficient prefix on port 138. Its complete cost is paid.
+
+`pageSpatialCouplingRow_exec` reads that retained coefficient prefix, prepares
+the actual spatial source window and executes the existing fast row arithmetic.
+Only the result prefix changes: the coefficient page, source, RHS, headers and
+spectators restore exactly. Its cost no longer includes coefficient evaluation:
+`(2*band+1)*(rmulCost w+93*w+50)+prepareCost q w+32*w+8*q+8*band+
+2*topN w+146`, proved by `pageSpatialCouplingRowCost_eq`.
+`builtPageSpatialCouplingRow_exec` composes setup with this reader, so the
+reader's numerical page premise has an executed producer and a paid cost.
+The row-count master is explicit retained metadata, and no approximate
+coefficient oracle is supplied. Wrapped offsets retain their original words.
+
+This is a checked setup/reader primitive, not yet a production page backend.
+Whole-page generation over active rows, the page cursor and its restoration,
+per-key ownership across both precisions/components/replicas, and final page
+release still need integration. The production caller continues to use its
+existing packet supplier until those lifecycle contracts are complete. Final
+fast-time matching and simultaneous whole-execution live storage remain open;
+S3 stays partial and kappa is unchanged.
+
+Validation: the expanded guarded stage audit passes all 14,892 jobs (3.4 GiB
+combined peak RSS). All three new implementation modules pass individual
+guarded checks, with maximum peak RSS 1973.6 MiB. Proof-integrity, plan-status
+and whitespace checks pass.
