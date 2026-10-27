@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1936 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1942 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `closedInverseCaller_spec` executes a fixed 264-register inverse caller from binary ordinary scalars and one encoded complex line, with a derived scalar width. It generates the band, boundary count, arithmetic precisions and unary masters, runs the full retained numerical inverse, and restores every stack except its owned output prefix, including scalar setup and all borrowed suffixes. Uniform coordinate error is at most `2^-target`. No supplied readiness bank, boundary solution, column, factor or publication control remains. The complete setup/solve/release execution has a dimension-only time bound. Uniform fast time matching and simultaneous live-storage bounds remain open, including matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `sharedInverseCaller_spec` executes a fixed 280-register inverse caller from binary ordinary scalars and one encoded complex line, with a derived scalar width. It generates the band, boundary count, arithmetic precisions and unary masters, constructs one shared boundary page, reuses it across both real-component solves, releases it, and restores every stack except its owned output prefix, including scalar setup and all borrowed suffixes. Uniform coordinate error is at most `2^-target`. No supplied readiness bank, boundary solution, column, factor or publication control remains. The complete setup/solve/release execution has a dimension-only time bound. Uniform fast time matching and simultaneous live-storage bounds remain open, including matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -11459,3 +11459,79 @@ closed-complex audits (3.4 GiB combined peak). All four new modules and the
 strengthened constructed-complex module pass individual guarded checks (maximum
 3038.8 MiB). Source-integrity, whitespace and plan-status checks pass; proof
 limits are unchanged.
+
+### Place the shared-page core beside the raw-scalar caller
+
+`PhaseCellSharedInverseCallerWorkspace` embeds the existing 264-register scalar
+setup/release bank and the 240-register shared-page core in 280 registers. The
+legacy core keeps addresses below 224; the shared private registers move above
+the scalar bank. Injectivity, scalar/core disjointness, compatibility with the
+legacy embedding, and coverage of the whole caller bank are proved structurally.
+`sharedInverseCaller` composes actual scalar-header installation, the complete
+shared-page complex inverse, and scalar-header release under these embeddings.
+
+The program and register layout check with a 2938.2 MiB peak. Its raw-scalar
+execution/accuracy/restoration theorem is still to be proved; this construction
+alone does not close that integration gate. The grouped fast-cost and
+simultaneous live-storage gates also remain open. S3 remains partial.
+
+The caller's shared-core view now agrees exactly with the legacy scalar-header
+view (`sharedInverseCoreView`). `sharedInverseHeaders_ready` transfers the
+existing generated-header readiness theorem through that equality, with no new
+arithmetic assumptions. `sharedInverseOutput_frame` lifts the closed inverse's
+single output update to the entire caller state, and
+`sharedInverseOutput_scalars` proves that this output preserves every binary
+scalar word. These contracts and all register-layout facts are included in the
+stage axiom audit.
+
+Validation: all 14,786 guarded stage-audit jobs pass (3.4 GiB combined peak).
+The new header-view/frame module checks individually at 2932.3 MiB. The complete
+raw-scalar execution theorem, grouped fast allowance and simultaneous live
+storage remain open.
+
+### Execute the shared-page inverse in the scalar caller bank
+
+`sharedInverseCoreCall_spec` now executes the complete setup/complex solve/release
+core inside the actual 280-register caller. Its frame restores the entire outer
+state except for output tape 132, including every scalar-bank word and every
+private shared-page register. It retains the dimension-only cost and physical
+complex error bound. `sharedInverseCoreCall_full_spec` specializes this contract
+to the full ambient matrix equation and gives the error at every coordinate,
+without an externally supplied real/imaginary solution interface.
+
+Both execution contracts are included in the stage axiom audit. All 14,787
+guarded audit jobs pass (3.4 GiB combined peak); the core-call module checks
+individually at 2943.8 MiB. Scalar setup/release composition around this executed
+core still needs its final caller theorem. Grouped fast-cost and simultaneous
+live-storage obligations remain open; S3 remains partial.
+
+
+### Close the raw-scalar caller around one shared boundary page
+
+`sharedInverseCaller_sized_spec` executes scalar-header installation, the full
+shared-page complex inverse, and scalar-header release in the 280-register
+caller. The source is the ordinary encoded complex line and the binary inputs
+are ordinary dimensions and precision targets. Its exact final state is the
+initial state with only the complex result prepended to tape 132. Every input
+word, arithmetic master, factor/publication control, private register, left
+stack and borrowed suffix restores exactly. The time bound includes scalar
+setup, one page construction/publication setup, both component solves, complex
+assembly, page retirement and scalar release.
+
+`sharedInverseCaller_spec` selects the scalar word width from the dimensions;
+it requires no supplied readiness bank or scalar-room witnesses. Its physical
+output has coordinate error at most `2^-target` for the full ambient matrix
+equation. The existing arbitrary-port scalar installation proof is reused.
+`releaseInverseHeaders_exec` factors release over arbitrary disjoint ports, and
+the legacy 264-register caller now specializes it instead of duplicating the
+proof. The shared caller consequently installs and releases its headers
+directly in the outer bank.
+
+This closes the single-line raw-scalar/shared-page caller integration gate.
+Replica/group integration, final fast setup/interior cost matching and
+simultaneous live storage remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,790 guarded stage-audit jobs pass, including the new caller,
+release and register-port contracts (5.6 GiB combined peak). All seven changed/new proof modules pass individual guarded checks (maximum
+3141.8 MiB). Changed-source integrity, whitespace and plan-status checks
+pass; default proof limits are unchanged.

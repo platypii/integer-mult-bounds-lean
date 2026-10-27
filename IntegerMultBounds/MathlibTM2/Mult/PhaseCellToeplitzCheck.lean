@@ -16,6 +16,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageRealComponent
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComplexComponent
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageConstructedComplex
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageClosedComplex
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedSharedInverseCaller
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedInverseCaller
@@ -2089,6 +2090,23 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageOwnedVolume_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageReleaseCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageClosedComplex_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseSetupReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseCoreReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseCoreReg_legacy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseScalarReg_core,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseCallerReg_cover,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseCoreView,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseHeaders_ready,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseOutput_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseOutput_scalars,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseCoreCall_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseCoreCall_full_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseInverseHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseScalarReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseMasterPort_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseScalarReg_master,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseCaller_sized_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedInverseCaller_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageBoundaryFactory_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageInverseSetup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageConstructedComplex_spec,

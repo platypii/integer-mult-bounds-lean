@@ -1,7 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseCallerWorkspace
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClearInverseScalars
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseInverseHeaders
 
 /-! Release generated unary masters and restore the scalar setup bank after the retained solve. -/
 
@@ -27,9 +26,6 @@ variable {Q A : ℕ} {P U : Type} {body : P → Pr P 264 Q A U}
 def releaseInverseCaller : Pr P 264 Q A U :=
   .seq (clearWords inverseMasterRegs) (tblCompile inverseScalarReg tblClearInverseScalars)
 
-def inverseReleaseCost (W : ℕ) (values : Fin 10 → ℕ) : ℕ :=
-  2*((List.finRange 10).map values).sum+21+17*tblC W 0
-
 theorem releaseInverseCaller_exec {W : ℕ} (wl : List (Fin (A+4))) (hwl : wl.length = W)
     (st initial : TblSt 25 A) (values : Fin 10 → ℕ)
     (hkeep : ∀ i : Fin 25, i.val < 8 → st.val i = initial.val i)
@@ -42,24 +38,11 @@ theorem releaseInverseCaller_exec {W : ℕ} (wl : List (Fin (A+4))) (hwl : wl.le
       tblHolds inverseScalarReg S' (tblRho W wl [] initial) ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
       ∀ i, S'.R (inverseCoreReg i) = if inverseCoreReg i ∈ inverseMasterRegs then [] else S.R (inverseCoreReg i) := by
-  obtain ⟨v₁,hu₁,he₁⟩ := clearWords_exec (body := body) inverseMasterRegs inverseMasterRegs_nodup v S
-  let S₁ : Stacks 264 A := {S with R := fun i => if i ∈ inverseMasterRegs then [] else S.R i}
-  have hh₁ : tblHolds inverseScalarReg S₁ (tblRho W wl [] st) := by
-    intro r
-    simpa [S₁,inverseScalarReg_not_master] using hS r
-  have hc := tblClearInverseScalars_do (A := A) (W := W) (e := 0) st initial hkeep hzero hacc
-  obtain ⟨z,hz,hrun⟩ := hc.host (body := body) inverseScalarReg_injective wl [] hwl rfl (Nat.zero_le W) hfit
-  subst z
-  obtain ⟨v₂,S₂,n₂,hu₂,hn₂,he₂,hh₂,hframe⟩ := hrun v₁ S₁ hh₁
-  have hsum : (inverseMasterRegs.map fun r => (S.R r).length).sum = ((List.finRange 10).map values).sum := by
-    simp only [inverseMasterRegs,List.map_map,Function.comp_def,hheaders]
-  refine ⟨v₂,S₂,(2*(inverseMasterRegs.map fun r => (S.R r).length).sum+2*inverseMasterRegs.length+1)+n₂,
-    hu₂.trans hu₁,?_,Exec.seq he₁ he₂,hh₂,hframe.1,hframe.2.1,hframe.2.2.1,?_⟩
-  · rw [hsum]
-    simp only [inverseReleaseCost,inverseMasterRegs,List.length_map,List.length_finRange]
-    have hn₂' : n₂ ≤ 17*tblC W 0 := hn₂
-    omega
-  · intro i
-    exact hframe.2.2.2 (inverseCoreReg i) (fun r => inverseScalarReg_core r i)
+  obtain ⟨v',S',n,hu,hn,he,hh,hinp,hout,hL,hframe⟩ :=
+    releaseInverseHeaders_exec (body := body) inverseScalarReg inverseScalarReg_injective
+      inverseMasterPort inverseMasterPort_injective inverseScalarReg_master
+      wl hwl st initial values hkeep hzero hacc hfit v S hS hheaders
+  exact ⟨v',S',n,hu,hn,he,hh,hinp,hout,hL,
+    fun i => hframe (inverseCoreReg i) (fun r => inverseScalarReg_core r i)⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
