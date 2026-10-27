@@ -11,13 +11,15 @@ open IntegerMultBounds.MathlibTM2.Mult.ShortConv
 
 theorem spatialCouplingRowsCost_eq (P q w s t u band a b : ℕ) :
     spatialCouplingRowsCost P q w s t u band a b =
-      (Finset.range s).sum (fun i => closedRowCoefficientCost P q w s t u band i)+
+      buildMarkedRowCoefficientPacketCost P q w s t u band 0+
+      s*markedRowCoefficientCost P q (liftedCoefficientWidth P q w s t u band) w band+
       s*generatedReadyRowCost (2*band+1) q w band+closedCouplingSourceMaskCost s t band a b+
-      s*(32*band*w+22*band+146*w+139)+band*(62*w+35)+154 := by
+      s*(32*band*w+22*band+146*w+139)+band*(62*w+35)+154+16*(liftedCoefficientWidth P q w s t u band)+4 := by
   simp only [spatialCouplingRowsCost,prepareSpatialCouplingSourceCost,
     prepareMaskedCouplingSourceCost,maskCouplingSourceCost,padCouplingSourceCost,
-    runSpatialCouplingRowsCost,spatialCouplingRowLoopCost,spatialCouplingRowStepCost,
-    spatialCouplingRowCost_eq,transferCountedLineCost,retireSpatialCouplingSourceCost,
+    runSpatialCouplingRowsCost,runPreparedPacketCouplingRowsCost,packetSpatialCouplingRowLoopCost,
+    packetSpatialCouplingRowStepCost,packetSpatialCouplingRowCost,prepareCountedCouplingInputsCost,
+    copyCountedLineCost,transferCountedLineCost,retireSpatialCouplingSourceCost,
     retireCountedLineCost,Finset.sum_add_distrib,Finset.sum_const,Finset.card_range,smul_eq_mul]
   ring
 

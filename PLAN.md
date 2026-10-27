@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2016 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2015 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12476,3 +12476,49 @@ Validation: all 14,865 guarded stage-audit jobs pass (3.4 GiB combined peak).
 All four new modules pass individual guarded checks below 2 GiB. The stage
 axiom audit includes all four execution contracts. Source-integrity, whitespace
 and plan-status checks pass; proof limits are unchanged.
+
+### S3 production coupling reuses retained binary headers
+
+`runSpatialCouplingRows_exec` now executes the retained packet lifecycle in the
+production residual/recovery pass. It builds one marked seven-field coefficient
+packet on outer port 135 from the ordinary headers at row zero, runs all spatial
+rows with that packet, then retires it once. The row-clock copy uses fresh core
+scratch 104, leaving 135 available throughout the loop. The public whole-pass
+ABI and exact final frame are unchanged: only the consumed RHS and ordered
+result prefix change, including restoration of the borrowed source and saved
+cursor suffixes.
+
+`packetSpatialCouplingRowLoop_exec` tracks packet index j together with the
+positioned ambient source, visited source prefix, unary coordinate, RHS tail
+and reversed result prefix. Each row uses a separate supplier view that maps
+native packet port 113 to outer 135. Arithmetic keeps its ordinary output port
+113. The coefficient supplier restores its width/table scratch before the
+input-window copy and arithmetic execute. No ordinary unary geometry conversion
+or width generation is repeated inside this production row loop.
+
+`spatialCouplingRowsCost_eq` now separates one
+`buildMarkedRowCoefficientPacketCost ... 0`, s copies of
+`markedRowCoefficientCost P q V w band`, s arithmetic row costs, source-mask
+setup, stream/cursor work and one `16*V+4` packet retirement, where
+V is the selected lifted coefficient width. The packet occupies `8*V+1` symbols
+throughout the row loop, independently of its current index. This closes the
+retained header/width lifecycle integration gate. The numeric table backend
+still has its existing quadratic width-dependent cost; final fast
+supplier/setup matching is not proved by caching headers. Simultaneous whole
+execution live-storage and final endpoint/resource integration remain open.
+S3 stays partial; kappa is unchanged.
+
+The prepared arithmetic proof is factored into
+`preparedCouplingArithmetic_exec`, used by the packet-backed production row.
+Input-window/count preparation is likewise
+independent of the coefficient supplier. No proof limits or integrity
+requirements changed.
+
+Removed the superseded ordinary-header spatial-row pipeline; restore from `bee44614`.
+
+Validation: the production change rebuilds and passes all 14,864 guarded stage
+audit jobs, including the selected raw inverse caller, closed complex batch and
+resource ledger (21.9 GiB combined peak). The final audit after removing the
+superseded pipeline also passes. All nine retained new/changed implementation
+modules pass individual guarded checks, maximum 1976.5 MiB. Source-integrity,
+whitespace and plan-status checks pass; default proof limits are unchanged.
