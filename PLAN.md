@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1845 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1850 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10626,3 +10626,35 @@ Individual guarded checks peak at 2904.2 MiB for readiness transport, 2911.5 MiB
 for physical recovery, 2957.4 MiB for the strengthened publication endpoint and
 2941.2 MiB for composed recovery. Source-integrity, whitespace and plan-status
 checks pass.
+
+### Retire packed table and initial interior below recovered output
+
+`retirePackedBandTable_exec` consumes the actual clipped packed page in reverse
+column order from retained row-count, band-width and word-width headers. The
+counted-loop invariant now exposes the remaining count after its pop; the former
+loop theorem specializes the stronger structural proof. Each column's byte clock
+is generated from its clipped interval, checked once, used for prefix retirement
+and released. All scratch and the borrowed suffix are restored.
+
+`retirePublishedBoundary_exec` parks the recovered ambient prefix on an empty
+tape, retires the table and initial-interior prefix below it, and restores the
+recovered prefix over the original borrowed suffix. Its cost is the explicit
+column-retirement sum plus `18*s*w+9*s+18`. The reached solved/unfolded/published
+states carry a derived `BoundaryRetirementReady` certificate; no new runtime data
+are supplied by the specification.
+
+`retainedBoundaryRecovered_spec` now executes this retirement after actual halo
+recovery. Tape 132 contains the recovered real line directly above its original
+suffix, with the same proved `2^-target` error. The residual stream on 110,
+remaining factor/header bank retirement, real/imaginary assembly and uniform
+final time/live-storage bounds remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,695 guarded stage-audit jobs pass, including five explicit
+new counted-loop/column/step/table/published-retirement axiom audits. The broader
+rebuild peaks at 34.4 GiB combined; the final incremental audit peaks at 3.4 GiB.
+Individual checks of the four retirement modules peak at 1930.6, 1916.5, 1924.8
+and 1937.9 MiB. Source-integrity, whitespace and plan-status checks pass. Proof
+limits are unchanged.
+The retirement certificate, strengthened unfold/publication endpoints, composed
+recovery endpoint and generalized counted loop check at 2814.7, 2963.3, 2975.9,
+2946.8 and 1319.0 MiB respectively; every changed module stays below 3 GiB.

@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryPublished
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPhysicalRecoveryPublishedHalo
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryBudget
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetirePublishedBoundary
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryPublish
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryReady
 
@@ -21,7 +22,8 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 noncomputable def retainedBoundaryRecovered (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 224 Q A U :=
-  .seq (retainedBoundaryPublished hR hQ) (physicalRecoveryPublishedHalo hR hQ)
+  .seq (retainedBoundaryPublished hR hQ)
+    (.seq (physicalRecoveryPublishedHalo hR hQ) retirePublishedBoundary)
 
 theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target a b : ℕ} [NeZero s] {α d : ℝ}
@@ -48,10 +50,8 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     let V := publicationGeometryWidth t band
     let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-    ∃ vsolve Ssolve nsolve vunfold Sunfold nunfold v₀ S₀ n₀, ∃ D : ZMod s → GaussianInt, ∃ columns : List (ZMod s → GaussianInt),
-    ∃ solution : List GaussianInt,
+    ∃ vsolve Ssolve nsolve vunfold Sunfold nunfold v₀ S₀ n₀, ∃ solution : List GaussianInt,
       let G := boundarySolutionField B solution
-      let sourceTail := bandTableWords A w B (12*band+1) columns 0++cstream A w (chirpLine s D)++S.R 132
       Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
         (embTab componentReg (embTab groupReg body))))) (retainedBoundarySolve hR hQ)
         (mk v S) nsolve (mk vsolve Ssolve) ∧
@@ -74,8 +74,9 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
         let Y := fun i => realPartWord (publicationField t band a b E G i)
         let S' : Stacks 224 A := {S₀ with R := (Function.update
           (Function.update S₀.R 110 (cstream A w (chirpLine s R)++(cstream A w (chirpLine s F)++tail)))
-          132 (cstream A w (chirpLine s Y)++sourceTail))}
-        v'.user = v.user ∧ n ≤ n₀+recoveryToleranceCost p l s t u bits 2 a b ∧
+          132 (cstream A w (chirpLine s Y)++S.R 132))}
+        v'.user = v.user ∧ n ≤ n₀+recoveryToleranceCost p l s t u bits 2 a b+
+          retirePublishedBoundaryCost s B.card (12*band+1) w ∧
         Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))) (retainedBoundaryRecovered hR hQ)
           (mk v S) n (mk v' S') ∧
@@ -89,13 +90,13 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   obtain ⟨vsolve,Ssolve,nsolve,vunfold,Sunfold,nunfold,v₀,S₀,n₀,D,columns,solution,hu₀,
-    hesolve,heunfold,hn₀,he₀,hlen,h132,h110,h109',h204,h206,hinp,hout,hL,hready₀,
-    ha₀,hb₀,h127₀,h138₀,h143₀,hacc⟩ := retainedBoundaryPublished_spec (body := body)
+    hesolve,heunfold,hn₀,he₀,hcols,hlen,h132,h110,h109',h204,h206,hinp,hout,hL,hready₀,
+    ha₀,hb₀,h127₀,h138₀,h143₀,hretire₀,hacc⟩ := retainedBoundaryPublished_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad F hF v S tail
     h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
   let G := boundarySolutionField B solution
   let sourceTail := bandTableWords A w B (12*band+1) columns 0++cstream A w (chirpLine s D)++S.R 132
-  refine ⟨vsolve,Ssolve,nsolve,vunfold,Sunfold,nunfold,v₀,S₀,n₀,D,columns,solution,
+  refine ⟨vsolve,Ssolve,nsolve,vunfold,Sunfold,nunfold,v₀,S₀,n₀,solution,
     hesolve,heunfold,hn₀,he₀,?_⟩
   intro x hx
   obtain ⟨herror,hreal,hmag,hfit⟩ := hacc x hx
@@ -124,6 +125,37 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     (3/(2 : ℝ)^solveTarget) (by positivity) (boundaryRecovery_workingTarget p target B.card)
     (boundaryRecovery_error_budget p target) hF (fun i _ => hreal i) hboundary hx
     v₀ S₀ _ tail sourceTail hresidual hready₀' ha₀ hb₀ h132 h127₀ h138₀ h143₀
-  exact ⟨v₁,n₀+n₁,E,hu₁.trans hu₀,Nat.add_le_add_left hn₁ n₀,Exec.seq he₀ he₁,hfinal⟩
+  let R := couplingRowField (2^15*p) q t u band a b true G F
+  let Y := fun i => realPartWord (publicationField t band a b E G i)
+  let S₁ : Stacks 224 A := {S₀ with R := (Function.update
+    (Function.update S₀.R 110 (cstream A w (chirpLine s R)++(cstream A w (chirpLine s F)++tail)))
+    132 (cstream A w (chirpLine s Y)++sourceTail))}
+  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := retirePublishedBoundary_exec (body := embTab boundaryFactorLegacyReg
+    (embTab tableReg (embTab boundaryArithmeticReg (embTab componentReg (embTab groupReg body)))))
+    B (12*band+1) w columns hcols (cstream A w (chirpLine s Y)) (cstream A w (chirpLine s D))
+    (S.R 132) (by simp [chirpLine]) (by simp [chirpLine]) v₁ S₁
+    (by simpa [S₁] using hretire₀.ambient) (by simpa [S₁] using hretire₀.band)
+    (by simpa [S₁] using hretire₀.rows) (by simpa [S₁] using hretire₀.width)
+    (by simp [S₁,sourceTail,List.append_assoc]) (by
+      intro i hi
+      have hi110 : i ≠ 110 := by simp only [List.mem_cons,List.not_mem_nil,or_false] at hi; rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+      have hi132 : i ≠ 132 := by simp only [List.mem_cons,List.not_mem_nil,or_false] at hi; rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+      simpa [S₁,hi110,hi132] using hretire₀.scratch i hi)
+  refine ⟨v₂,n₀+(n₁+n₂),E,hu₂.trans (hu₁.trans hu₀),?_,
+    (Exec.seq he₀ (Exec.seq he₁ he₂)).cast rfl ?_,?_⟩
+  · have hh := Nat.add_le_add hn₁ hn₂
+    simpa only [Nat.add_assoc] using Nat.add_le_add_left hh n₀
+  · apply congrArg (mk v₂)
+    refine Stacks.ext rfl rfl rfl ?_
+    funext i
+    by_cases h132' : i = 132 <;> simp [S₁,h132',R,Y] <;> rfl
+  · intro i hi
+    have hh := hfinal i hi
+    change ‖publishedCellRead q w (0 : ZMod s) (cstream A w (chirpLine s Y)++S.R 132) i-x i‖ ≤ _
+    change ‖publishedCellRead q w (0 : ZMod s) (cstream A w (chirpLine s Y)++sourceTail) i-x i‖ ≤ _ at hh
+    simpa only [publishedCellRead,ZMod.val_zero,Nat.sub_zero,
+      cstream_word w (chirpLine s Y) (S.R 132) i.val (by simpa using i.val_lt),
+      cstream_word w (chirpLine s Y) sourceTail i.val (by simpa using i.val_lt)] using hh
+
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

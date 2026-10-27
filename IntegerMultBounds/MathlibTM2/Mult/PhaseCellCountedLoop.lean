@@ -21,17 +21,18 @@ def countedLoopBody (count : Fin T) (p : Pr P T Q A U) : Pr P T Q A U :=
 def countedLoop (count : Fin T) (p : Pr P T Q A U) : Pr P T Q A U :=
   .seq (.act (peekR count)) (.loop (·.flag) (countedLoopBody count p))
 
-theorem countedLoop_exec_costs (count : Fin T) (p : Pr P T Q A U) (N : ℕ) (c : ℕ → ℕ)
+/-- The body may inspect the remaining count after the loop pops one symbol. -/
+theorem countedLoop_exec_remaining_costs (count : Fin T) (p : Pr P T Q A U) (N : ℕ) (c : ℕ → ℕ)
     (Inv : ℕ → Stacks T A → Prop)
     (hstable : ∀ j S xs, Inv j S → Inv j { S with R := Function.update S.R count xs })
-    (hstep : ∀ j < N, ∀ (v : HS T Q A U) S, Inv j S →
+    (hstep : ∀ j < N, ∀ (v : HS T Q A U) S, Inv j S → (S.R count).length = N-(j+1) →
       ∃ v' S' m, v'.user = v.user ∧ m ≤ c j ∧ Exec body p (mk v S) m (mk v' S') ∧
         S'.R count = S.R count ∧ Inv (j+1) S')
     (v : HS T Q A U) (S : Stacks T A) (hcount : (S.R count).length = N) (hInv : Inv 0 S) :
     ∃ v' S' m, v'.user = v.user ∧ m ≤ (Finset.range N).sum (fun j => c j+3)+2 ∧
       Exec body (countedLoop count p) (mk v S) m (mk v' S') ∧ S'.R count = [] ∧ Inv N S' := by
   have hloop : ∀ (xs : List (Fin (A+4))) (j : ℕ) (vi : HS T Q A U) Si,
-      Si.R count = xs → j+xs.length ≤ N → Inv j Si → vi.flag = xs.head?.isSome →
+      Si.R count = xs → j+xs.length = N → Inv j Si → vi.flag = xs.head?.isSome →
       ∃ vf Sf m, vf.user = vi.user ∧ m ≤ (Finset.range xs.length).sum (fun k => c (j+k)+3)+1 ∧
         Exec body (.loop (·.flag) (countedLoopBody count p)) (mk vi Si) m (mk vf Sf) ∧
         Sf.R count = [] ∧ Inv (j+xs.length) Sf := by
@@ -48,7 +49,7 @@ theorem countedLoop_exec_costs (count : Fin T) (p : Pr P T Q A U) (N : ℕ) (c :
         simpa [S₁, Action.run, hxs, update_rt] using
           (Exec.act (body := body) (.pop (.rt count) (fun v _ => v) .done) (mk vi Si))
       obtain ⟨v₁, S₂, m₁, hu₁, hm₁, he₁, hc₁, hi₁⟩ := hstep j (by simp at hN; omega) vi S₁
-        (hstable j Si xs hI)
+        (hstable j Si xs hI) (by simp [S₁]; simp only [List.length_cons] at hN; omega)
       have hc₂ : S₂.R count = xs := by simpa [S₁] using hc₁
       have hpeek := Exec.act (body := body) (peekR count) (mk v₁ S₂)
       rw [peekR_run] at hpeek
@@ -71,6 +72,18 @@ theorem countedLoop_exec_costs (count : Fin T) (p : Pr P T Q A U) (N : ℕ) (c :
     { v with flag := (S.R count).head?.isSome } S rfl (by omega) hInv rfl
   exact ⟨v', S', 1+m, hu, by rw [hcount] at hm; simp only [Nat.zero_add] at hm; omega,
     Exec.seq hpeek he, hc, by simpa only [hcount, Nat.zero_add] using hi⟩
+
+theorem countedLoop_exec_costs (count : Fin T) (p : Pr P T Q A U) (N : ℕ) (c : ℕ → ℕ)
+    (Inv : ℕ → Stacks T A → Prop)
+    (hstable : ∀ j S xs, Inv j S → Inv j { S with R := Function.update S.R count xs })
+    (hstep : ∀ j < N, ∀ (v : HS T Q A U) S, Inv j S →
+      ∃ v' S' m, v'.user = v.user ∧ m ≤ c j ∧ Exec body p (mk v S) m (mk v' S') ∧
+        S'.R count = S.R count ∧ Inv (j+1) S')
+    (v : HS T Q A U) (S : Stacks T A) (hcount : (S.R count).length = N) (hInv : Inv 0 S) :
+    ∃ v' S' m, v'.user = v.user ∧ m ≤ (Finset.range N).sum (fun j => c j+3)+2 ∧
+      Exec body (countedLoop count p) (mk v S) m (mk v' S') ∧ S'.R count = [] ∧ Inv N S' := by
+  exact countedLoop_exec_remaining_costs count p N c Inv hstable
+    (fun j hj v S hI _ => hstep j hj v S hI) v S hcount hInv
 
 theorem countedLoop_exec (count : Fin T) (p : Pr P T Q A U) (N c : ℕ)
     (Inv : ℕ → Stacks T A → Prop)

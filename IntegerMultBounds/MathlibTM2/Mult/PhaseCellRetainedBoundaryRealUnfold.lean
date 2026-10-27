@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundarySolve
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRetirementReady
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRealUnfold
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryPublicationReady
 
@@ -68,6 +69,7 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       BoundaryPublicationReady S' s B.card (publicationGeometryWidth t band) w ∧
       S'.R 109 = cstream A (publicationGeometryWidth t band) ((bFoldOrder s B).map
         (fun j : ZMod s => (⟨(j.val : ℤ),0⟩ : GaussianInt))) ∧
+      BoundaryRetirementReady S' s B.card (12*band+1) w ∧
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
       (∀ i ∈ B, |(value q (boundarySolutionField B solution i)).re-x i| ≤ 3/(2 : ℝ)^target) ∧
@@ -151,12 +153,36 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       omega
     simpa [S₂,S₀,ho 189 (by decide),ho 191 (by decide),ho 198 (by decide),
       ho 204 (by decide),ho 217 (by decide)] using hlegacy i hi109 hi110 hi115 hi116 hi132
+  have hretire : BoundaryRetirementReady S₂ s B.card (12*PhaseCellBand.width p u+1) w := by
+    refine ⟨hpub.ambient,?_,?_,hpub.width,?_⟩
+    · simpa [S₂,S₀] using congrArg List.length h116
+    · have hh : (S₁.R 190).length = 12*PhaseCellBand.width p u+1 := by
+        simpa [boundaryFactorState,boundaryFactorReg] using hreset.m2n
+      simpa [S₂,S₀] using hh
+    · intro i hi
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+      · exact hpub.scratch 184 (by simp)
+      · simp [S₂]
+      · exact (hlegacy₂ 152 (by decide) (by decide) (by decide) (by decide) (by decide)).trans h152
+      · exact (hlegacy₂ 151 (by decide) (by decide) (by decide) (by decide) (by decide)).trans h151
+      · have hh : S.R 131 = [] := by simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using hready.fresh 131 (by simp)
+        exact (hlegacy₂ 131 (by decide) (by decide) (by decide) (by decide) (by decide)).trans hh
+      · have hh : S.R 134 = [] := by simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using hready.fresh 134 (by simp)
+        exact (hlegacy₂ 134 (by decide) (by decide) (by decide) (by decide) (by decide)).trans hh
+      · have hh : S.R 135 = [] := by simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using hready.fresh 135 (by simp)
+        exact (hlegacy₂ 135 (by decide) (by decide) (by decide) (by decide) (by decide)).trans hh
+      · have hh : S.R 136 = [] := by simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using hready.fresh 136 (by simp)
+        exact (hlegacy₂ 136 (by decide) (by decide) (by decide) (by decide) (by decide)).trans hh
+      · have hh : S.R 137 = [] := by simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using hready.fresh 137 (by simp)
+        exact (hlegacy₂ 137 (by decide) (by decide) (by decide) (by decide) (by decide)).trans hh
+      · exact (hlegacy₂ 138 (by decide) (by decide) (by decide) (by decide) (by decide)).trans h138
   have hn : n₁+n₂ ≤ retainedBoundarySolveCost p u l s t a b target+
       (2*(([189,191,198,204] : List (Fin 224)).map fun i => (S₁.R i).length).sum+9)+
         generatedBoundaryUnfoldCost B.card w+(B.card*(12*w+9)+12) := by
     simpa only [Nat.add_assoc] using Nat.add_le_add hn₁ hn₂
   refine ⟨v₁,S₁,n₁,v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,hn₁,he₁,hn,
-    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,hinp,hout,hL,hlegacy₂,hpub,?_,?_⟩
+    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,hinp,hout,hL,hlegacy₂,hpub,?_,hretire,?_⟩
   · simp [S₂,w,bits,B]
   · simp [S₂,w,bits,B]
   · simpa [S₂,S₀] using h110

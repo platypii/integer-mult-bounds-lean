@@ -66,7 +66,7 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
         (embTab componentReg (embTab groupReg body))))) (retainedBoundaryPublished hR hQ)
         (mk v S) n (mk v' S') ∧
-      solution.length = B.card ∧
+      columns.length = B.card ∧ solution.length = B.card ∧
       S'.R 132 = cstream A w (chirpLine s G)++
         (bandTableWords A w B W columns 0++cstream A w (chirpLine s D)++S.R 132) ∧
       S'.R 110 = cstream A w (chirpLine s C)++S.R 110 ∧
@@ -77,6 +77,7 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
         (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg S')))) ∧
       (S'.R 141).length = a ∧ (S'.R 142).length = b ∧
       S'.R 127 = [] ∧ S'.R 138 = [] ∧ S'.R 143 = [] ∧
+      BoundaryRetirementReady S' s B.card W w ∧
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
       (∀ i ∈ B, |publishedCellRead q w (0 : ZMod s) (S'.R 132) i-x i| ≤ 3/(2 : ℝ)^target) ∧
@@ -91,7 +92,7 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   obtain ⟨v₀,S₀,n₀,v₁,S₁,n₁,D,columns,solution,hu₁,hn₀,he₀,hn₁,he₁,hlen,hsolLen,hsrc,h217,
-    h110,h132,hinp,hout,hL,hlegacy,hpub,hcoords,hacc⟩ :=
+    h110,h132,hinp,hout,hL,hlegacy,hpub,hcoords,hretire₁,hacc⟩ :=
     retainedBoundaryRealUnfold_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad F hF v S tail h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -124,9 +125,19 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     simpa [S₂,S₂base,h109,h132,ho 189 (by decide),ho 191 (by decide),ho 198 (by decide),
       ho 204 (by decide),ho 206 (by decide)] using hlegacy i hi109 hi110 hi115 hi116 hi132
   have hready₂ := boundaryRecoveryReady_of_frame (S' := S₂) hready hinp hout hL hframe
+  have hretire₂ : BoundaryRetirementReady S₂ s B.card (12*band+1) w := by
+    refine ⟨?_,?_,?_,?_,?_⟩
+    · simpa [S₂,S₂base] using hretire₁.ambient
+    · simpa [S₂,S₂base] using hretire₁.rows
+    · simpa [S₂,S₂base] using hretire₁.band
+    · simpa [S₂,S₂base] using hretire₁.width
+    · intro i hi
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+        simpa [S₂,S₂base] using hretire₁.scratch _ (by simp)
   have hn : n₁+n₂ ≤ _ := Nat.add_le_add hn₁ hn₂
   refine ⟨v₀,S₀,n₀,v₁,S₁,n₁,v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,he₀,he₁,?_,
-    Exec.seq he₁ he₂,hsolLen,?_,?_,?_,?_,?_,hinp,hout,hL,hready₂,?_,?_,?_,?_,?_,?_⟩
+    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,?_,hinp,hout,hL,hready₂,?_,?_,?_,?_,?_,hretire₂,?_⟩
   · simpa only [Nat.add_assoc] using hn
   · simp [S₂,S₂base,h132,List.append_assoc,w,bits,B,G]
   · simpa [S₂,S₂base] using h110
