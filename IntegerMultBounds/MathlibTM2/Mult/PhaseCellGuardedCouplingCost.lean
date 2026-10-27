@@ -1,9 +1,9 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunSpatialCouplingRows
-public import IntegerMultBounds.NLogN.PhaseCellHaloCouplingBudget
+public import IntegerMultBounds.NLogN.PhaseCellHaloExterior
 
-/-! Exact branch counts in the executed ambient recovery loop. -/
+/-! Exact branch counts in both executed ambient coupling loops. -/
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -27,7 +27,6 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingPassCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGuardedCouplingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellZeroPacketSpatialCouplingRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateRecoveryCouplingMask
-import IntegerMultBounds.NLogN.PhaseCellHaloCouplingBudget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedCoefficientRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBuildPreparedRowPacket
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBuildMarkedRowCoefficientPacket
@@ -2281,8 +2280,6 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.realInteriorResidualOverhead_guarded_le,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloInterior_shift,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloInterior_stencil_disjoint_boundary,
-      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloCouplingGuardCost_eq,
-      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloCouplingGuardCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRowWord_zero_window,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advanceMarkedBinaryPacket_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateRecoveryCouplingMask_exec,

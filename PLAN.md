@@ -12738,3 +12738,21 @@ passed its axiom audit (21.8 GiB combined peak RSS). All 17 changed/new
 implementation modules passed individual guarded checks; the largest was
 `PhaseCellSharedPageInteriorCost` at 2963.8 MiB, below the 4 GiB module target.
 Plan-status and whitespace checks passed.
+
+### S3 resource audit: retire the superseded target-only ledger
+
+Removed `PhaseCellHaloCouplingBudget`: its target-only deep-interior ledger
+was unused by the executed ambient loops and their new mode-specific bounds.
+`PhaseCellGuardedCouplingCost` now imports exterior geometry directly, and the
+axiom audit no longer retains the obsolete declarations. Restore from `6bfbee34`.
+The guarded stage audit passes all 14,881 jobs (3.4 GiB combined peak); the
+changed cost module passes its individual check at 1948.3 MiB.
+
+The next fast-time gate is concrete: `rowCoefficientFromPacketCost` includes
+`(2*band*(930*P+372)+10)*tblC V w`, with
+`tblC V w = 32*(V+4)^2+8*w`. The selected width is
+`V = w+q+13*P+8*liftedCoefficientSize s t u band+16`. Thus header retention
+and zero-row skipping alone do not establish fast coefficient arithmetic.
+The remaining arithmetic loop/compiler cost must be matched or replaced before
+claiming the uniform S3 bound. Whole-execution live storage and final
+endpoint/resource integration also remain open; S3 stays partial.
