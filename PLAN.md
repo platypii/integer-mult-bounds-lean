@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1841 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1842 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10569,3 +10569,30 @@ retained ambient-publication axiom audit and strengthened handoff/solve audits.
 Combined peak is 3.4 GiB; new and strengthened handoff/endpoint modules check
 below 3 GiB. Plan-status, added-source integrity and whitespace checks pass.
 Proof limits are unchanged.
+
+### Shared boundary/recovery precision alignment
+
+Recovery accuracy is now independent of its finer working target.
+`recoveryPublishedHalo_tolerance_at_precision` and the retained-register version
+execute with any working target at least the requested output target, while
+requiring only the boundary tolerance allocated for that output target. Existing
+same-target interfaces specialize these theorems. The generic error budget
+separates interior approximation, arithmetic roundoff and boundary error.
+
+`boundaryRecoveryTarget` reserves two solve bits beyond `recoveryTarget`.
+The proved `3·2^-solveTarget` boundary error then meets recovery's tolerance.
+`boundaryRecovery_published_error_budget` combines this error with the actual
+`initialSchurTarget` arithmetic bank and proves the requested halo error. No
+precision conversion or additional runtime program is required.
+
+The numerical precision mismatch is resolved. Carrying `LengthKeyReady` through
+the published physical endpoint and composing the actual recovery execution
+remain open, followed by complete retirement, inverse assembly and uniform final
+time/live-storage bounds. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,687 guarded stage-audit jobs pass, including seven explicit
+new precision/alignment/error-budget audits. Final incremental combined peak is
+3.4 GiB. Individual checks peak at 2002.2 MiB for recovery tolerance and
+1998.4 MiB for retained recovery, and 1948.2 MiB for the boundary/recovery
+budget. Source-integrity, whitespace and plan-status
+checks pass. Proof limits are unchanged.

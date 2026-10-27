@@ -291,6 +291,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRankError
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryScaleError
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolutionError
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnscaledSolveError
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryBudget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryTotalErrorBudget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnscaledSolveTarget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryExactBounds
@@ -2170,6 +2171,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.preparedComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRecoveryPublishedHalo_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedRecoveryPublishedHalo_at_precision,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.recoveryPublishedHalo_tolerance_at_precision,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selected_recovery_error_budget_of_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRecovery_error_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRecovery_workingTarget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRecovery_shared_target,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRecovery_published_error_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.imagPartSymbol_csyms,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.imagPartSymbol_cstream,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairComponentWord_parts,

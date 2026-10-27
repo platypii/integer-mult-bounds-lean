@@ -90,6 +90,41 @@ theorem selected_recovery_error_budget (p u l target rhsExp boundaryExp : ℕ) {
     (inputExp := boundaryExp) (couplingCountExponent_spec p u) hbits hε
   simpa only [Nat.cast_add,Nat.cast_mul,Nat.cast_ofNat,Nat.cast_one] using hh
 
+/-- Extra interior accuracy may be spent independently of the boundary tolerance. -/
+theorem recovery_error_budget_of_le {p target workingTarget n countExp inputExp q : ℕ} {ε : ℝ}
+    (htarget : recoveryTarget p target ≤ workingTarget)
+    (hcount : n ≤ 2^countExp)
+    (hbits : recoveryTarget p target+countExp+inputExp+2 ≤ q)
+    (hε : ε ≤ 1/(2 : ℝ)^recoveryTarget p target) :
+    max (1/(2 : ℝ)^workingTarget+8*p*((n : ℝ)*(2/(2 : ℝ)^q)+
+      (n : ℝ)*((2 : ℝ)^inputExp*(1/(2 : ℝ)^q))+2*ε)) ε ≤ 1/(2 : ℝ)^target := by
+  have hprecision : 1/(2 : ℝ)^workingTarget ≤ 1/(2 : ℝ)^recoveryTarget p target :=
+    one_div_le_one_div_of_le (by positivity) (pow_le_pow_right₀ (by norm_num) htarget)
+  exact (max_le_max (add_le_add hprecision le_rfl) le_rfl).trans
+    (recovery_error_budget hcount hbits hε)
+
+/-- A finer shared arithmetic bank also meets a coarser recovery error target. -/
+theorem selected_recovery_error_budget_of_le (p u l target workingTarget rhsExp boundaryExp : ℕ)
+    {ε : ℝ} (htarget : target ≤ workingTarget)
+    (hε : ε ≤ 1/(2 : ℝ)^recoveryTarget p target) :
+    let q := executionPrecision p l
+      (recoveryFirstTarget p (recoveryTarget p workingTarget) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp
+    let band := PhaseCellBand.width p u
+    max (1/(2 : ℝ)^recoveryTarget p workingTarget+8*p*((2*band+1)*(2/(2 : ℝ)^q)+
+      (2*band+1)*((2 : ℝ)^boundaryExp*(1/(2 : ℝ)^q))+2*ε)) ε ≤ 1/(2 : ℝ)^target := by
+  dsimp only
+  have hbits : recoveryTarget p target+couplingCountExponent p u+boundaryExp+2 ≤
+      executionPrecision p l
+        (recoveryFirstTarget p (recoveryTarget p workingTarget) rhsExp boundaryExp (couplingCountExponent p u)) rhsExp := by
+    rw [(recovery_execution_sizes p l (recoveryTarget p workingTarget) rhsExp boundaryExp (couplingCountExponent p u)).1]
+    dsimp [executionPrecision,executionExponent,inputExponent,sourceExponent,recoveryRhsExponent,
+      couplingRowExponent,recoveryTarget]
+    omega
+  have hh := recovery_error_budget_of_le (p := p) (target := target)
+    (workingTarget := recoveryTarget p workingTarget) (inputExp := boundaryExp)
+    (by dsimp [recoveryTarget]; omega) (couplingCountExponent_spec p u) hbits hε
+  simpa only [Nat.cast_add,Nat.cast_mul,Nat.cast_ofNat,Nat.cast_one] using hh
+
 theorem component_error_budget (target : ℕ) :
     1/(2 : ℝ)^(target+1)+1/(2 : ℝ)^(target+1) = 1/(2 : ℝ)^target := by
   rw [pow_succ]
