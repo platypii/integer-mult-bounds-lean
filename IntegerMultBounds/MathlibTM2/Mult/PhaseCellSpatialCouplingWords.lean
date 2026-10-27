@@ -23,6 +23,19 @@ def spatialCouplingCoefficientWords (P q s t u band i : ℕ) : List GaussianInt 
   (spatialCouplingOffsets band).map (fun δ : ℤ =>
     rationalWord q (PhaseCellCrossCell.entry P s t u band i ((i : ℤ)+δ)))
 
+theorem spatialCouplingCoefficientWords_split (P q s t u band i : ℕ) :
+    spatialCouplingCoefficientWords P q s t u band i =
+      offsetCoefficientWords true P q s t u band i band ++
+      [signedCoefficientWord false P q s t u band i 0] ++
+      (offsetCoefficientWords false P q s t u band i band).reverse := by
+  simp [spatialCouplingCoefficientWords,spatialCouplingOffsets,offsetCoefficientWords,
+    signedCoefficientWord,List.map_reverse,List.map_map,Function.comp_def,PhaseCellRationalArgs.couplingOffset,
+    List.append_assoc]
+
+@[simp] theorem spatialCouplingCoefficientWords_length (P q s t u band i : ℕ) :
+    (spatialCouplingCoefficientWords P q s t u band i).length = 2*band+1 := by
+  simp [spatialCouplingCoefficientWords]
+
 theorem spatialCouplingInputWords_perm {s : ℕ} [NeZero s] (boundary : Bool) (t band a b i : ℕ)
     (C : ZMod s → GaussianInt) :
     (spatialCouplingInputWords boundary t band a b i C).Perm (couplingInputWords boundary t band a b i C) :=

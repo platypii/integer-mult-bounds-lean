@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1972 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1973 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12017,3 +12017,23 @@ Validation: all 14,821 guarded stage-audit jobs pass (3.4 GiB combined peak).
 All six new spatial offset/word, copy/transfer, window and cursor modules pass
 individual guarded checks (maximum 1946.2 MiB). Source-integrity, whitespace
 and plan-status checks pass; default proof limits remain unchanged.
+
+### Generate the coefficient stream in spatial window order
+
+`spatialCouplingCoefficientWords_split` identifies the spatial stream as the
+negative offset pass, the zero coefficient, and the reversed positive offset
+pass. This retains every original signed offset and wrapped alias.
+`generateSpatialCouplingCoefficients_exec` executes that order directly from
+ordinary headers: positive pass, owned-prefix reversal, zero supplier, negative
+pass. Only the coefficient prefix on 111 changes; all counters, scratch and
+borrowed suffixes restore exactly. Its allowance is the existing coefficient
+generator cost plus `32*band*wordWidth+28*band+22` for the local reversal.
+
+This closes the coefficient-ordering component. Executed masked/padded-source
+setup and composition with the complete arithmetic row loop remain open, as do
+final fast supplier/setup matching, combined live storage and endpoint/resource
+integration. S3 remains partial; the inverse still uses indexed coupling.
+
+Validation: all 14,822 guarded stage-audit jobs pass (4.3 GiB combined peak).
+Both changed/new proof modules pass individual guarded checks (maximum
+1951.1 MiB). Default proof limits remain unchanged.
