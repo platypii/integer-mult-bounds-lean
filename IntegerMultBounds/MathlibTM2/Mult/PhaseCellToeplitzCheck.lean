@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedColumnEntry
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFoldedBandSchedule
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellIndexedSchurColumn
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySchurColumn
@@ -1686,6 +1689,16 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selectResidentCoordinate_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.LengthKeyReady.update_coordinate,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.indexedSchurColumn_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateWordWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.residentColumnWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.copyResidentEntry_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selectedColumnEntry_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.foldedBandIndices_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.foldedBandIndices_length_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.mem_foldedBandIndices,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.foldedBandRows_length_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.mem_foldedBandRows,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.foldedBandColumn_storage,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,

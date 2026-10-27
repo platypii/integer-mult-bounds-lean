@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1662 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1667 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8932,4 +8932,39 @@ Validation: all 10,319 guarded stage-audit jobs pass, including six new explicit
 projection, coordinate-readiness, lookup/selection and indexed execution audits.
 Combined build peak is 2.7 GiB. All four new/revised modules and the audit root
 pass individual guarded checks at at most 2060.6 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Restoring computed-entry extraction and clipped folded-band storage schedule
+
+`generateWordWidth_exec` factors the structural width reconstruction shared by
+the existing coupling caller and the resident entry extractor. Both placements
+instantiate the same program and proof; the existing `8*q+9` cost is unchanged.
+`copyResidentEntry_exec` generates width `2*q+8` from retained precision, copies
+the selected ambient word from computed column 110 onto the retained suffix on
+132, and releases the width header. It restores the entire source column and
+all other stacks, charging the generated offset and restoring source motion.
+
+`selectedColumnEntry_exec` composes resident folded-page lookup, unary decoding,
+entry copying and coordinate cleanup. Its exact frame consumes the row lookup
+index and prepends one computed word on 132, preserving the page, computed
+column and all other stacks. The extracted word's decoded real value equals
+the corresponding physical published-column read exactly, so extraction adds
+no numerical error and does not require an additional signed-fit hypothesis.
+Its cost includes the folded-page scan, unary coordinate, ambient column scan,
+width generation and cleanup.
+
+`foldedBandIndices` gives the clipped contiguous rank interval for a column's
+folded band. The membership theorem identifies its mapped rows exactly with
+boundary membership and `FoldBRel`; each column has at most `2*W+1` scheduled
+entries. Their packed words occupy at most `(2*W+1)*wordWidth` symbols. This is
+a bound for the selected packed entries, not the complete machine's live
+storage. The executable loop generating these row controls and accumulating
+the complete table still needs composition. Factor/solve/release, the final
+endpoint and uniform fast-time/simultaneous storage also remain open. S3 is
+partial; the explicit source scans are not a fast repeated-access bound.
+
+Validation: all 10,324 guarded stage-audit jobs pass, including ten new explicit
+width, extraction and band-schedule audits. The shared-definition rebuild peaks
+at 13.8 GiB combined. All six new/revised modules and the audit root pass
+individual guarded checks at at most 2057.2 MiB. Added/revised-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
