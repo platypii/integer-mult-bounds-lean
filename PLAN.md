@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2161 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2164 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13877,3 +13877,35 @@ unchanged.
 Validation: the expanded standard-axiom audit passes all 15,012 jobs (3.4 GiB
 combined peak RSS). Both new modules pass individual guarded checks below the
 4 GiB module budget. Proof-integrity and whitespace checks pass.
+
+### S3 checkpoint: numerical counted halo loop with reusable page family
+
+`familyHaloLengthKeyStep_spec` now derives a counted numerical step directly
+from `familyProcessHaloLengthKey_spec`. It uses the existing `LengthKeyReady`
+caller invariant projected onto the original 144 ports, selects the matching
+retained page, pops the count, executes the parsed class, and tests the
+remaining count. It proves the published class error, preservation of other
+classes' physical reads, bounded encoded output, caller restoration, exact
+family suffix advancement, and cache scratch release.
+
+`familyHaloLengthKeyTraversal_spec` inducts over the actual distinct runtime
+length keys. Earlier classes retain their accuracy because later scatters
+preserve their physical reads; the tolerance has no key-count factor.
+`familyHaloLengthKeyLoop_spec` executes the final family restoration and gives
+the complete numerical contract for `familyHaloLengthKeyLoop`, including
+empty key lists, borrowed suffixes, all left stacks, restored family register
+148, empty completed register 150, clean cache ports, and the existing exact
+loop cost ledger. No abstract per-step numerical execution hypothesis remains.
+
+The superseded invariant-parameterized traversal wrappers were removed;
+restore them from `cc4ac9c4` if needed.
+
+Remaining: generate every numerical page and packet family, compose this
+reusable numerical loop through both complete inverse passes, and prove final
+selected uniform time matching and simultaneous whole-execution live storage.
+S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,015 jobs (3.4 GiB
+combined peak RSS). All five new or changed numerical-loop modules pass
+individual guarded checks below the 4 GiB module budget. Proof-integrity,
+plan-status and whitespace checks pass.

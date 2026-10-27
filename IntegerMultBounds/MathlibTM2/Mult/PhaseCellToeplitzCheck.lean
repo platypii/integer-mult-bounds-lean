@@ -38,7 +38,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedClosedBatchSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedControlledHaloClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedProcessHaloLengthKey
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyHaloLengthKeyLoop
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyHaloLengthKeyLoopSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyProcessHaloLengthKey
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellStoreGeneratedWeightKey
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedFactorComplexBatch
@@ -2519,10 +2519,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.loadedWeightKeyBank_low,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.collectedWeightKeyBank_projectR,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamily_release_published,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightFamilyLoop_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightFamilyLoop_restore_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyHaloLengthKeyStep_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyHaloLengthKeyLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyLegacyBank_pop,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyLegacyBank_published,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.LengthKeyReady.pop_family,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyHaloLengthKeyStep_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyHaloLengthKeyTraversal_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyHaloLengthKeyLoop_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyHaloLengthKeyLoopCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyHaloLengthKeyLoopCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyProcessHaloLengthKey_spec,
