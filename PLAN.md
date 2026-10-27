@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1698 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1706 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9212,3 +9212,48 @@ layout/count, address, restoration and decoded-entry audits. Combined build peak
 is 2.7 GiB. All four new modules and the audit root pass individual guarded
 checks at at most 2068.7 MiB. Added-source integrity, plan-status and
 whitespace checks pass; proof limits are unchanged.
+
+### Executed rank-to-address generation and restoring packed-entry lookup
+
+`packedSizeStep_exec` generates one clipped block size from runtime cursor,
+band and boundary-count headers, adds it to an address accumulator, releases
+its temporary controls and advances the cursor. `packedSizeLoop_exec` executes
+a structural counted scan over the later columns; `packedBandWordCount_succ`
+connects its growing accumulator with the coefficient-independent packed-size
+function. `packedSizeSum_exec` then consumes the owned cursor/count headers,
+restoring all other ports. Every block calculation, accumulator copy, scan and
+cleanup is explicitly charged.
+
+`packedSuffixControls_exec` derives `start = n+1` and `count = N-(n+1)` from
+borrowed column-rank and cardinality headers. `packedSuffixAddress_exec` joins
+that setup with the actual summation, so the later-column word count is no
+longer supplied. `packedWithinAddress_exec` computes the selected row's reverse
+block displacement by endpoint generation, unary clipping, decrement and row
+subtraction, restoring all of its scratch. `generatePackedAddress_exec`
+composes the two contributions and proves that the generated unary header has
+exactly the computable `packedEntryOffset N W n m` length. The program reads
+only runtime dimensions/ranks, not coefficients or a precomputed address.
+
+`rankedBoundaryEntry_exec` now joins actual address generation to packed-word
+lookup and final address release. It borrows the half-band width header on 94,
+parks and restores its exact symbols while generating coefficient word width
+from retained precision, and preserves row/column ranks on 108/107, cardinality,
+table and suffix, and all scratch. Its final exact physical frame changes only
+copied-entry port 143. The physical copied word decodes exactly to the selected
+entry of the masked computed boundary matrix. No address header, address
+execution or additional signed-fit/error hypothesis is supplied. The explicit
+cost includes all address setup/scans, width parking/restoration, table access
+and address cleanup.
+
+This closes runtime rank-to-packed-entry lookup for in-band entries. Producing
+fixed band-factor rows, including their zero padding and precision/word
+representation, and joining factorization/solve/release to the full endpoint
+remain open. Uniform fast time, complete simultaneous live storage and the
+final S3 theorem also remain open. The lookup's ordinary half-band and rank
+headers still need their factor-caller setup. S3 remains partial.
+
+Validation: all 10,363 guarded stage-audit jobs pass, including nine new explicit
+count-growth, block summation, control generation, complete address and ranked
+lookup audits. Combined build peak is 2.7 GiB. All nine new/revised modules and
+the audit root pass individual guarded checks at at most 2065.6 MiB. Added/revised-source
+integrity, plan-status and whitespace checks pass; proof limits are unchanged.

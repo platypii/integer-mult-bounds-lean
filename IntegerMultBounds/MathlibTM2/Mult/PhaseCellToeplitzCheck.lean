@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRankedBoundaryEntry
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryEntry
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryTable
@@ -1764,6 +1766,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedEntryOffset_lt,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.copyPackedWord_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedBoundaryEntry_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedBandWordCount_succ,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedSizeStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedSizeLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedSizeSum_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedSuffixControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedSuffixAddress_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedWithinAddress_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatePackedAddress_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rankedBoundaryEntry_exec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,

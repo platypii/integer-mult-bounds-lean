@@ -53,6 +53,19 @@ def packedBandWordCount (rowCount W : ℕ) : ℕ → ℕ → ℕ
   | 0, _ => 0
   | L+1, n => packedBandWordCount rowCount W L (n+1)+(min rowCount (n+W+1)-(n-W))
 
+
+theorem packedBandWordCount_succ (N W L start : ℕ) :
+    packedBandWordCount N W (L+1) start = packedBandWordCount N W L start+
+      (min N (start+L+W+1)-(start+L-W)) := by
+  induction L generalizing start with
+  | zero => simp [packedBandWordCount]
+  | succ L ih =>
+      change packedBandWordCount N W (L+1) (start+1)+(min N (start+W+1)-(start-W)) = _
+      rw [ih (start+1)]
+      change (packedBandWordCount N W L (start+1)+_)+_ =
+        (packedBandWordCount N W L (start+1)+_)+_
+      simp [Nat.add_assoc,Nat.add_comm,Nat.add_left_comm]
+
 theorem bandTableValues_length (B : Finset (ZMod s)) (W : ℕ)
     (columns : List (ZMod s → GaussianInt)) (n : ℕ) :
     (bandTableValues B W columns n).length = packedBandWordCount B.card W columns.length n := by
