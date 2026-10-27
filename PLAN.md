@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2180 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2184 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14051,5 +14051,41 @@ is unchanged.
 Validation: the expanded standard-axiom audit passes all 15,031 jobs (3.4 GiB
 combined peak RSS), retaining all earlier audit entries and adding 15. All
 six new modules and the audit pass individual guarded checks below the 4 GiB
+module budget. Proof-integrity, audit-coverage, plan-status and whitespace
+checks pass.
+
+### S3 checkpoint: retained-family recovery and uniform publication target
+
+`familyRecoveryInterior_spec` executes retirement of the initial residual,
+existing cached boundary coupling, and the second retained-family interior
+solve. `recovery_execution_sizes` identifies the first and second pass
+precisions, stage precisions and widths, so the same generated weight family
+is reused with no regeneration. The exact final frame changes only the
+recovery RHS and owned interior output; all numerical caches, retained
+masters, borrowed suffixes and left stacks survive. The proof carries the
+interior recovery error and the glued full-halo error.
+
+`familyRecoveryPublishedHalo_spec` publishes the recovered real halo field
+and preserves the same cache frame. The tolerance theorems allocate the
+existing uniform dyadic error budget, including the version where target
+precision is lower than working precision. Their costs use the actual
+retained-family backend and include coupling, publication and cleanup.
+
+`familyRealInteriorResidual_spec` adds the paid real projection to the first
+inverse stage and proves the precision-independent interior magnitude and
+residual magnitude bounds required by the boundary solver. This closes the
+numerical interfaces for both inverse interior stages, including their
+shared family and existing coupling-cache formats.
+
+Remaining: compose the boundary RHS/solve/recovery wrappers into the complete
+real and complex inverse and repeated-call wrappers, with one-time family
+setup and final release, then prove selected uniform time matching and
+simultaneous whole-execution live storage. The complete inverse entry points
+still use the earlier backend until that composition is installed. S3 stays
+partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,035 jobs (3.4 GiB
+combined peak RSS), retaining all prior entries and adding eight. All four
+new modules and the audit pass individual guarded checks below the 4 GiB
 module budget. Proof-integrity, audit-coverage, plan-status and whitespace
 checks pass.

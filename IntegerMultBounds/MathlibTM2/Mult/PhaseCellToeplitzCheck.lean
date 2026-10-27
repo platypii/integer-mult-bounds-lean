@@ -38,6 +38,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedClosedBatchSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedControlledHaloClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedProcessHaloLengthKey
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyRealInteriorResidual
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyRecoveryTolerance
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyRestoredInteriorResidual
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedFamilyHaloInterior
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilySolveHaloInteriorBounded
@@ -2972,7 +2974,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedFamilyInteriorForCoupling_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInteriorResidual_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyCouplingHeadersRelease_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyRestoredInteriorResidual_spec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyRestoredInteriorResidual_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyAmbientSourceRetire_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyRecoveryInterior_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyPublishHalo_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyRecoveryPublishedHalo_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyRealResidualProjection_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyRealInteriorResidual_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyRecoveryPublishedHalo_tolerance_at_precision,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyRecoveryPublishedHalo_tolerance ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
