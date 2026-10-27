@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1894 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1897 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11063,3 +11063,34 @@ normalization or replace the full inverse caller. S3 remains partial.
 Validation: the new module passes the guarded single-file check (2857.2 MiB
 peak), and all 14,742 guarded stage-audit jobs pass, including both new contract
 audits (3.4 GiB combined peak). Proof limits are unchanged.
+
+### Reuse the factor page for residuals at their original scale
+
+`preparedResidualSolve_exec` now composes generated residual normalization, the
+retained triangular solve, and generated unscaling/publication in one fixed
+226-register program. Its inputs satisfy the actual coupling-row residual bound,
+not a separately supplied normalized half-bound. It derives both the normalized
+input bound and the computed solution bound from allocated precision and the
+computed matrix's rank invariant. Its exact final state consumes only the RHS
+and appends the original-scale solution to the publication tape; every factor,
+master, private tape, left stack and borrowed output suffix is restored.
+`preparedResidualSolve_ready` exposes readiness for the next residual.
+
+`preparedResidualSolveCost_le` includes all generated normalization and
+unscaling overhead and bounds the complete repeated kernel by
+`1000*(N+1)*W*(rmulCost (2*q+8)+(2*q+8)+1)`.
+`preparedResidual_selected_fast_le` matches the actual selected inverse precision;
+`preparedHaloResidual_selected_fast_le` derives geometry bit bounds and the
+actual halo row cap. Both preserve a uniform `C*(N+1)*W*p^(129/128)` repeated
+allowance. Factor generation remains a separate setup charge.
+
+The shared-page batch still uses its normalized kernel. Switching its counted
+loop to this original-scale kernel, then connecting grouped residual generation,
+recovery and complex assembly, remains open. Full setup/interior cost matching
+and simultaneous live storage also remain open. S3 remains partial.
+
+Validation: all 14,745 guarded stage-audit jobs pass, including six new explicit
+execution/readiness/cost/precision/geometry contract audits (3.4 GiB combined
+peak). All three new modules pass individual guarded checks (maximum 2865.1 MiB
+for the final sources). Source-integrity, whitespace and plan-status checks pass;
+proof limits are unchanged.
