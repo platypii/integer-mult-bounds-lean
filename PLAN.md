@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1824 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1826 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10350,3 +10350,27 @@ jobs pass, including three new explicit projection/real-unfold/retained-path
 axiom audits and the strengthened solve audit. Combined peak is 3.4 GiB; all
 new and revised modules check below 3 GiB. Plan-status, added-source integrity
 and whitespace checks pass. Proof limits are unchanged.
+
+### Sparse ambient boundary scatter
+
+`boundaryScatterOrigins` and `boundaryScatterGaps` give the disjoint one-word
+publication schedule in ascending boundary order. Structural theorems prove
+fit, exact length, word scaling and total gap volume. `boundary_scatter_field`
+shows that scattering the packed boundary values into a zero line realizes the
+zero-extended ambient field exactly; `boundary_scatter_cstream` proves the same
+identity for the actual integer-word encoding.
+
+`boundaryScatter_exec` executes that publication through the existing scatter
+machine. With its gap controls and zero ambient prefix ready, it consumes the
+packed source prefix, preserves the borrowed source/output suffixes, and writes
+exactly the encoded ambient field. Its proved time is at most `35sw+6`.
+Individual checks peak at 2920.6 MiB for data/order/encoding and 2898.4 MiB for
+execution. Actual generation of the delimited controls and zero ambient prefix,
+and composition with the retained solved state, remain open. Recovery precision
+alignment/composition, complete retirement, inverse assembly and final resource
+bounds remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,671 guarded stage-audit jobs pass, including ten new explicit
+boundary scatter data/encoding/execution axiom audits. Combined peak is 3.4 GiB;
+both added modules check below 3 GiB. Plan-status, added-source integrity and
+whitespace checks pass. Proof limits are unchanged.
