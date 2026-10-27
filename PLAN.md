@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2041 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2049 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12950,4 +12950,45 @@ S3 stays partial and kappa is unchanged.
 Validation: the expanded guarded stage audit passes all 14,892 jobs (3.4 GiB
 combined peak RSS). All three new implementation modules pass individual
 guarded checks, with maximum peak RSS 1973.6 MiB. Proof-integrity, plan-status
+and whitespace checks pass.
+
+### S3 whole sparse coefficient-page generation and release
+
+`couplingCoefficientPage` lists exactly the spatial coefficient rows selected
+by the actual coupling guard, in ascending coordinate order. Its structural
+prefix law supports a counted generation loop without reducing concrete data
+in the kernel. `couplingCoefficientPageRow_exec` advances the retained numeric
+packet on every coordinate; active rows execute coefficient evaluation and
+add their generated row width to the word counter. The masked step consumes
+the actual guard symbol. `couplingCoefficientPageLoop_exec` proves the exact
+staged page, emitted word count, final packet and guard suffix after the scan.
+
+`prepareCouplingPageCounts_exec` derives the ambient row clock and coefficient
+row width from ordinary unary masters. `buildCouplingCoefficientPage_exec`
+composes guard generation, initial packet construction, both clocks, the full
+active-row scan, publication and packet release. No coefficient row, mask or
+page-size oracle is supplied. Its exact frame retains only the computed
+coefficient prefix on 138, its word count on 139 and its row width on 140;
+staging and borrowed suffixes restore. All setup work has an executed cost.
+`releaseCouplingCoefficientPage_exec` consumes exactly that prefix using the
+retained count, restores its suffix, and releases both owned metadata masters.
+
+`couplingCoefficientPage_length` identifies the exact word count as
+`fullRowCount*(2*band+1)`. The geometry bound makes it at most
+`(haloBoundaryCountBound s t (2*band) a b+4*band)*(2*band+1)`.
+The symbol-plus-metadata stock is bounded by this word allowance times `w+1`,
+plus `2*band+1` for the row-width master. This is a retained-page stock theorem,
+not a simultaneous execution-peak theorem.
+
+Whole-page setup and release are now executed. The remaining page work is the
+active-row read cursor and its exact restoration, placement outside live
+interior scratch, reuse-key ownership at both required precisions, and
+production batch integration. The production solver still uses its packet
+supplier until those reader lifecycle facts are proved. Final uniform time
+matching and whole-execution live storage remain open; S3 stays partial and
+kappa is unchanged.
+
+Validation: the expanded guarded stage audit passes all 14,900 jobs (3.4 GiB
+combined peak RSS). All eight new implementation modules pass individual
+guarded checks, with maximum peak RSS 1961.5 MiB. Proof-integrity, plan-status
 and whitespace checks pass.
