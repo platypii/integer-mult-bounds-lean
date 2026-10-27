@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1717 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1727 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9329,3 +9329,44 @@ comparison, selector, word, row execution and grid/format audits. Combined build
 peak is 2.7 GiB. All eight new modules and the audit root pass individual guarded
 checks at at most 2067.1 MiB. Added-source integrity, plan-status and whitespace
 checks pass; proof limits are unchanged.
+
+### Execute the complete initial-window and shifted-row factor input page
+
+`factorWindow_exec` now generates the `W+1` start-zero rows of the initial
+window, each with `2*W+1` words. Its outer scan descends the row cursor and
+prepends whole rows, producing ascending row order. It generates its own count
+from the retained half-band width and releases both count and row cursor.
+
+`factorInputs_exec` generates all `B.card` shifted update rows. For start
+`n = 1,...,B.card`, it derives row rank `W+n` from runtime width/start headers
+and executes the existing complete row emitter at columns `n,...,n+2*W`.
+The outer scan again prepends rows in natural order. Row-rank setup is released
+at every iteration; the starting cursor and outer count are released last.
+Neither loop assumes a supplied row execution or any coefficient oracle.
+
+`factorPage_exec` composes these generators into the exact initial-window,
+then update-row source page required by the band factorizer. The only final
+physical change is the page prepended on port 140: the packed table and suffix,
+retained headers, all scan controls and arithmetic scratch are restored. Its
+explicit cost includes both generators and every inner row operation.
+
+The page-value contracts establish row counts, common row length, realness,
+width fit, exact zero-extended matrix windows and total coefficient count
+`(W+1+B.card)*(2*W+1)`. The integer-row compatibility lemmas identify the
+emitted Gaussian words exactly with `colC` of their real integer coordinates,
+matching the factorizer's input representation without additional rounding.
+
+`generatedFactorPage_exec` also derives the half-band header `12*band+1` from
+retained master 124, executes the full page generator and releases that header.
+Its exact final frame again changes only port 140; no supplied factor-width
+header or setup execution is needed.
+
+Full factorization/solve/release composition and its stability/precision
+conditions remain open, as do uniform fast time, complete simultaneous live
+storage and the final S3 theorem. S3 remains partial.
+
+Validation: all 10,384 guarded stage-audit jobs pass, including 25 new explicit
+window/input scans, full page, setup, shape, grid, format and integer-row audits.
+Combined build peak is 2.7 GiB. All ten new modules and the audit root pass
+individual guarded checks at at most 2072.3 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.

@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorPageSetup
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorPageIntegers
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorRowValues
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorEntry
@@ -1797,6 +1799,31 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRankWord_value,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRowValues_grid,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRowValues_format,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWindowStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWindowLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWindowCount_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWindow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorSlidingStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputCursor_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWindowValues_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputValues_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWindowValues_row_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputValues_row_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWindowValues_grid,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputValues_grid,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWindowValues_format,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputValues_format,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorPageValues_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorIntegerRows_colC,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorIntegerRows_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorIntegerRows_row_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWindowIntegers_colC,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputIntegers_colC,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorBandWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedFactorPage_exec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,
