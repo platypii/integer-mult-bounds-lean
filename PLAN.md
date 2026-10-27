@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2033 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2036 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12815,3 +12815,31 @@ pass (21.8 GiB combined peak RSS). All eight changed/new implementation modules
 and the shared interior-cost module pass individual guarded checks; the largest
 is 2964.4 MiB, below the 4 GiB module target. Proof-integrity, plan-status and
 whitespace checks pass.
+
+### S3 executed endpoints consume the geometry ledger
+
+`sharedComplexClosedBatch_geometry_spec` returns the executed complex batch
+with the time bound `sharedComplexBatchKeyCost + replicas *
+sharedComplexBatchGeometryLineCost`. The contract preserves the complete
+ordered result, per-replica error and exact restoration frame of the closed
+batch. Thus the interior-volume, mode-specific coupling counts and prepared
+boundary solve bound are now available directly with execution. Setup and
+release are charged once through the key term.
+
+`sharedPageClosedComplexCost_le_batch` bounds the single-complex caller by a
+one-replica closed batch, including the latter's extra transport and release.
+`sharedInverseCallerCost_geometry_le` carries that bound through the raw
+scalar-header install and release costs. `sharedInverseCaller_geometry_spec`
+exports the corresponding raw execution contract, preserving the selected
+width/precision hypotheses, inverse error and exact frame. This is an explicit
+conservative bound; no batch overhead is silently discarded.
+
+These endpoints connect the geometry ledger to actual execution at both the
+shared batch and raw full-line caller. They do not match the remaining numeric
+suppliers or key setup into the final uniform fast-time envelope, and do not
+prove simultaneous whole-execution live storage. Those requirements and final
+resource matching remain open; S3 stays partial and kappa is unchanged.
+
+Validation: the expanded guarded stage audit passes all 14,887 jobs (3.4 GiB
+combined peak RSS). All three new modules pass individual guarded checks;
+the largest is 2971.6 MiB. Plan-status and whitespace checks pass.
