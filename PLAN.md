@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2149 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2153 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13779,3 +13779,32 @@ complete downstream rebuild peaked at 26.3 GiB combined RSS under the guard.
 All seven changed/new modules pass individual guarded checks, with maximum
 peak RSS 2016.6 MiB. The original 144-register callers rebuild successfully.
 Proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: cached runtime class dispatch and parsed keys
+
+`cachedConditionalHaloPreparation_exec` lifts the existing executed row-count
+probe and empty-class release into the 148-register workspace. Its actual
+returned flag selects the numerical branch. `cachedConditionalHaloClass_spec`
+now covers both branches with the same publication/restoration/error contract.
+A valid weight page and clean cache scratch are required only for nonempty
+classes. Empty classes preserve arbitrary cache contents and execute only the
+verified preparation/release and empty exit.
+
+`cachedProcessHaloLengthKey_spec` decodes a runtime binary length packet,
+installs its unary header, executes that conditional class and preserves the
+unconsumed key suffix. Its cost includes actual decoding, probing, either
+class execution or empty cleanup, and publication. Both branches explicitly
+preserve the full retained weight cache and all left stacks. Empty output is
+a bounded encoded stream of length zero; the core-error guarantee remains
+independent of the number of selected classes.
+
+The counted length-class loop still needs a proved matching retained page for
+each selected length; one compact page is not assumed to serve different
+keys. Generated key setup/release across both interior passes and complete
+inverse calls, final selected uniform time matching and simultaneous
+whole-execution live storage remain open. S3 stays partial and kappa is
+unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,004 jobs (3.5 GiB
+combined peak RSS). All four new modules pass individual guarded checks below
+the 4 GiB module budget. Proof-integrity and whitespace checks pass.
