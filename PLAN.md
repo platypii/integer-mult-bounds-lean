@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1839 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1841 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10379,7 +10379,7 @@ whitespace checks pass. Proof limits are unchanged.
 
 `boundaryPublish_exec` composes the existing structural zero-word initializer
 with actual sparse boundary scatter. It generates an s-word zero ambient prefix
-from retained dimension 97 and word width 160, then writes the ascending
+from retained dimension 121 and word width 160, then writes the ascending
 boundary values into it. The packed prefix on 204 is consumed, its borrowed
 suffix restores, and tape 132 receives exactly the encoded ambient boundary
 field above its original retained contents. All count and initialization scratch
@@ -10537,3 +10537,35 @@ Validation: all 14,684 guarded stage-audit jobs pass, including four new explici
 coordinate-encoding/boundary-advance/generated/prepared-publication axiom audits.
 Combined peak is 3.4 GiB; all three new modules check below 3 GiB. Plan-status,
 added-source integrity and whitespace checks pass. Proof limits are unchanged.
+
+### Retained solve through accurate ambient boundary publication
+
+The physical handoff now exposes its derived `BoundaryPublicationReady`
+certificate: retained ambient master, arithmetic/geometry widths, exact unary
+boundary count, clean multiplier bank and publication scratch. Publication uses
+ambient master 121, which the actual `LengthKeyReady` interface retains; arithmetic
+header 97 is transient. The folded coordinate page and readiness are carried
+through the executed real unfold.
+
+`retainedBoundaryPublished_spec` composes actual retained residual production,
+constructed columns/factors/solve, exact unscaling, real unfolding, coordinate
+preparation, advance/control generation, zero initialization and ambient scatter
+publication. Tape 132 contains exactly the ambient boundary field above the
+retained table/interior stream. Owned coordinate and packed-value tapes are
+empty; the residual stream, I/O and left frame are preserved. Published reads
+have proved boundary error `3·2^-target`, and the published field is real with
+the existing stable recovery magnitude. Cost witnesses include the actual solve
+and unfold predecessor states, so header retirement is charged at reached tape
+lengths. Uniform bounds on these lengths remain required.
+
+Individual guarded checks peak at 2822.5 MiB for the handoff certificate,
+2925.0 MiB for the strengthened solve, 2929.1 MiB for real unfolding and
+2947.4 MiB for the composed ambient endpoint. Recovery precision alignment and
+composition, complete retirement, inverse assembly and uniform final time/live
+storage remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,686 guarded stage-audit jobs pass, including the new explicit
+retained ambient-publication axiom audit and strengthened handoff/solve audits.
+Combined peak is 3.4 GiB; new and strengthened handoff/endpoint modules check
+below 3 GiB. Plan-status, added-source integrity and whitespace checks pass.
+Proof limits are unchanged.

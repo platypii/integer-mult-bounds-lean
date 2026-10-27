@@ -22,7 +22,7 @@ theorem generatedBoundaryPublish_exec (hA : 4 ≤ A) (s : ℕ) [NeZero s] (B : F
     (V w : ℕ) (hw : 1 ≤ w) (hsV : s ≤ 2^V)
     (G : ZMod s → GaussianInt) (hoff : ∀ i ∉ B, G i = 0)
     (coordinateTail sourceTail : List (Fin (A+4))) (v : HS 224 Q A U) (S : Stacks 224 A)
-    (hs : (S.R 97).length = s) (hwidth : (S.R 160).length = w) (hV : (S.R 115).length = V)
+    (hs : (S.R 121).length = s) (hwidth : (S.R 160).length = w) (hV : (S.R 115).length = V)
     (hc : S.R 116 = List.replicate B.card tick)
     (hcoords : S.R 109 = cstream A V ((bOrder s B).map
       (fun j : ZMod s => (⟨(j.val : ℤ),0⟩ : GaussianInt)))++coordinateTail)

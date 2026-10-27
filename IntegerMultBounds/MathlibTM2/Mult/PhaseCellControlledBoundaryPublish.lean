@@ -21,7 +21,7 @@ def controlledBoundaryPublish : Pr P 224 Q A U :=
 theorem controlledBoundaryPublish_exec (s : ℕ) [NeZero s] (B : Finset (ZMod s)) (w : ℕ) (hw : 1 ≤ w)
     (G : ZMod s → GaussianInt) (hoff : ∀ i ∉ B, G i = 0)
     (sourceTail borrowed : List (Fin (A+4))) (v : HS 224 Q A U) (S : Stacks 224 A)
-    (hs : (S.R 97).length = s) (hwidth : (S.R 160).length = w)
+    (hs : (S.R 121).length = s) (hwidth : (S.R 160).length = w)
     (hc : S.R 116 = List.replicate B.card tick)
     (hadv : S.R 206 = gatherControls A (originAdvances w 0 (boundaryScatterOrigins s B)++[0])++borrowed)
     (hsrc : S.R 204 = cstream A w ((bOrder s B).map G)++sourceTail)

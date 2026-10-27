@@ -16,14 +16,14 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 224 Q A U}
 
 def boundaryPublish : Pr P 224 Q A U :=
-  .seq (zeroWords 97 160 132 184 217 223) (scatterBatch 220 223 201 160 204 132 208 211 215)
+  .seq (zeroWords 121 160 132 184 217 223) (scatterBatch 220 223 201 160 204 132 208 211 215)
 
 /-- The ambient prefix is generated from retained dimensions; only the gap stream
 is supplied here. The packed boundary prefix is consumed and all borrowed tails restore. -/
 theorem boundaryPublish_exec (s : ℕ) [NeZero s] (B : Finset (ZMod s)) (w : ℕ) (hw : 1 ≤ w)
     (G : ZMod s → GaussianInt) (hoff : ∀ i ∉ B, G i = 0)
     (sourceTail : List (Fin (A+4))) (v : HS 224 Q A U) (S : Stacks 224 A)
-    (hs : (S.R 97).length = s) (hwidth : (S.R 160).length = w)
+    (hs : (S.R 121).length = s) (hwidth : (S.R 160).length = w)
     (hc : S.R 220 = gatherControls A (boundaryScatterGaps s B w))
     (hsrc : S.R 204 = cstream A w ((bOrder s B).map G)++sourceTail)
     (hclean : ∀ i ∈ ([184,217,223,201,208,211,215] : List (Fin 224)), S.R i = []) :
@@ -32,7 +32,7 @@ theorem boundaryPublish_exec (s : ℕ) [NeZero s] (B : Finset (ZMod s)) (w : ℕ
         (mk v' {S with R := (Function.update (Function.update S.R 204 sourceTail) 132
           (cstream A w (chirpLine s G)++S.R 132))}) := by
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := zeroWords_exec (body := body)
-    (rows := 97) (width := 160) (dst := 132) (count := 184) (saved := 217) (tmp := 223)
+    (rows := 121) (width := 160) (dst := 132) (count := 184) (saved := 217) (tmp := 223)
     (by decide) s w v S hs hwidth
     (hclean 184 (by simp)) (hclean 217 (by simp)) (hclean 223 (by simp))
   let S₁ : Stacks 224 A := {S with R := Function.update S.R 132 (cstream A w (List.replicate s 0)++S.R 132)}

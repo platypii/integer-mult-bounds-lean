@@ -22,7 +22,7 @@ theorem preparedBoundaryPublish_exec (hA : 4 ≤ A) (s : ℕ) [NeZero s] (B : Fi
     (G : ZMod s → GaussianInt) (hoff : ∀ i ∉ B, G i = 0)
     (sourceTail : List (Fin (A+4))) (v : HS 224 Q A U) (S : Stacks 224 A)
     (hleft : ∀ i, S.L i = []) (hmul : ∀ i : Fin 64, S.R (boundaryFactorMulReg i) = [])
-    (hs : (S.R 97).length = s) (hwidth : (S.R 160).length = w) (hV : (S.R 115).length = V)
+    (hs : (S.R 121).length = s) (hwidth : (S.R 160).length = w) (hV : (S.R 115).length = V)
     (hc : S.R 116 = List.replicate B.card tick)
     (hcoords : S.R 109 = cstream A V ((bFoldOrder s B).map
       (fun j : ZMod s => (⟨(j.val : ℤ),0⟩ : GaussianInt))))

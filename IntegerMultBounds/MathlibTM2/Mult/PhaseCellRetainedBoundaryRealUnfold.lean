@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundarySolve
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRealUnfold
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryPublicationReady
 
 /-! Execute the retained boundary solve and inverse fold and real-project its computed output. -/
 
@@ -62,6 +63,9 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       S'.R 110 = cstream A w (chirpLine s C)++S.R 110 ∧
       S'.R 132 = bandTableWords A w B W columns 0++cstream A w (chirpLine s D)++S.R 132 ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
+      BoundaryPublicationReady S' s B.card (publicationGeometryWidth t band) w ∧
+      S'.R 109 = cstream A (publicationGeometryWidth t band) ((bFoldOrder s B).map
+        (fun j : ZMod s => (⟨(j.val : ℤ),0⟩ : GaussianInt))) ∧
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
       (∀ i ∈ B, |(value q (boundarySolutionField B solution i)).re-x i| ≤ 3/(2 : ℝ)^target) ∧
@@ -73,7 +77,7 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   obtain ⟨v₁,S₁,n₁,D,columns,solution,hu₁,hn₁,he₁,hlen,hsolLen,hfit,hsrc,h110,h132,
-    hinp,hout,hL,hlegacy,hready₁,h119,hreset,hcount,hmul,h184,h223,h220,h221,hacc⟩ :=
+    hinp,hout,hL,hlegacy,hready₁,h119,hreset,hcount,hmul,h184,h223,h220,h221,h206,hcoords,h115,h116,hacc⟩ :=
     retainedBoundarySolve_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad F hF v S tail h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -95,16 +99,56 @@ theorem retainedBoundaryRealUnfold_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   let S₀ : Stacks 224 A := {S₁ with R := fun i => if i ∈ ([189,191,198,204] : List (Fin 224)) then [] else S₁.R i}
   let S₂ : Stacks 224 A := {S₀ with R := (Function.update (Function.update S₀.R 217 []) 204
     (cstream A w ((bOrder s B).map (boundarySolutionField B solution))))}
+  have hmFinal : ∀ i : Fin 64, S₂.R (boundaryFactorMulReg i) = [] := by
+    intro i
+    have ho (j : Fin 224) (hj : 64 ≤ j.val) : boundaryFactorMulReg i ≠ j := by
+      intro h
+      have hv := congrArg (fun k : Fin 224 => k.val) h
+      change i.val = j.val at hv
+      have hi := i.isLt
+      omega
+    simpa [S₂,S₀,ho 189 (by decide),ho 191 (by decide),ho 198 (by decide),
+      ho 204 (by decide),ho 217 (by decide)] using hmul i
+  have hpub : BoundaryPublicationReady S₂ s B.card (publicationGeometryWidth t (PhaseCellBand.width p u)) w := by
+    refine ⟨hleft₁,hmFinal,?_,?_,?_,?_,?_⟩
+    · have hs : (S.R 121).length = s := by
+        simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg,groupHeaderValue] using
+          hready.masters (121,97) (by simp [groupHeaderCopies])
+      have hf : S₁.R 121 = S.R 121 := hlegacy 121 (by decide) (by decide) (by decide) (by decide) (by decide)
+      simpa [S₂,S₀,hf] using hs
+    · simpa [S₂,S₀,boundaryFactorState,boundaryFactorReg] using hready₁.wn
+    · simpa [S₂,S₀] using congrArg List.length h115
+    · simpa [S₂,S₀] using h116
+    · intro i hi
+      have hm : i ∈ ([0,1,2,3,4,5,6,7,8,9] : List (Fin 224)) ∨
+          i ∈ ([184,217,223,201,208,211,215,220,206] : List (Fin 224)) := List.mem_append.mp hi
+      rcases hm with hm | hm
+      · have hlt : i.val < 64 := by
+          simp only [List.mem_cons,List.not_mem_nil,or_false] at hm
+          rcases hm with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+        exact hmFinal ⟨i.val,hlt⟩
+      · simp only [List.mem_cons,List.not_mem_nil,or_false] at hm
+        rcases hm with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+        · simpa [S₂,S₀] using h184
+        · simp [S₂]
+        · simpa [S₂,S₀] using h223
+        · simpa [S₂,S₀] using hc 201 (by simp)
+        · simpa [S₂,S₀] using hc 208 (by simp)
+        · simpa [S₂,S₀] using hc 211 (by simp)
+        · simpa [S₂,S₀] using hc 215 (by simp)
+        · simpa [S₂,S₀] using h220
+        · simpa [S₂,S₀] using h206
   have hn : n₁+n₂ ≤ retainedBoundarySolveCost p u l s t a b target+
       (2*(([189,191,198,204] : List (Fin 224)).map fun i => (S₁.R i).length).sum+9)+
         generatedBoundaryUnfoldCost B.card w+(B.card*(12*w+9)+12) := by
     simpa only [Nat.add_assoc] using Nat.add_le_add hn₁ hn₂
   refine ⟨v₁,S₁,n₁,v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,hn₁,he₁,hn,
-    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,hinp,hout,hL,?_⟩
+    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,hinp,hout,hL,hpub,?_,?_⟩
   · simp [S₂,w,bits,B]
   · simp [S₂,w,bits,B]
   · simpa [S₂,S₀] using h110
   · simpa [S₂,S₀] using h132
+  · simpa [S₂,S₀] using hcoords
   · intro x hx
     have ha := hacc x hx
     exact ⟨boundarySolutionField_error q B solution x _ (fun i hi => (ha i hi).1),
