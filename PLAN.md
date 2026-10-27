@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1750 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1757 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9541,3 +9541,43 @@ composed physical-construction audits. Combined build peak is 3.4 GiB. All five
 new modules and the audit root pass individual guarded checks at at most
 2948.7 MiB, below the 4 GiB per-module target. Added-source integrity, plan-status
 and whitespace checks pass; proof limits are unchanged.
+
+### Generate Newton controls and encoded constants, completing physical factor setup
+
+The unary setup interpreter now supports fixed natural division with the same
+borrowed-input and restored-scratch contract. `boundaryFactorNewtonPrelude_exec`
+derives `256*p` by dividing retained master `2^15*p` by 128, multiplies by
+`q+1`, and releases the intermediate dimensions. `boundaryFactorNewtonHeader_exec`
+uses the existing `unarySize_exec` halving routine to emit exactly
+`factorNewtonSteps p q`, then releases its owned operand. Only the iteration
+header on 191 changes; arbitrary master symbols and all scratch are restored.
+Its explicit bound uses the existing `19*n+8` digit-count cost.
+
+`csyms_pow_two` proves the exact single-real-bit representation of a power of
+two. `setPowerWord_exec` executes that bit edit in an owned zero word, preserving
+the position header, suffix and all scratch. `boundaryFactorSeed_exec` constructs
+the zero word from generated word width, derives position `q-2` from retained
+precision, edits it and releases the position header. The resulting word is
+exactly `csyms A (2*q+8) ⟨2^(q-2),0⟩`, with no supplied word or seed execution.
+
+`boundaryFactorConstants_exec` composes the Newton count, seed and full encoded
+zero mask. Its exact final frame changes only ports 191, 218 and 186; multiplier
+readiness is preserved. `boundaryFactorSetup_exec` joins this to generated
+readiness and all eight dimension/volume headers, giving the complete physical
+setup from retained precision/band/cardinality masters and clean workspace.
+`boundaryFactorSetupR_legacy` preserves every legacy tape, including the input
+page, packed table and all retained masters. The seed, mask and logarithmic
+count have direct physical output contracts, and every setup operation is charged.
+
+Replacing the partial header stage in the constructed-page caller with this
+complete setup, composing actual factorization/solve/release, and proving the
+full real/imaginary endpoint remain open. Uniform fast time, simultaneous live
+storage and the final S3 theorem remain open. S3 remains partial.
+
+Validation: all 14,601 guarded stage-audit jobs pass, including 11 new explicit
+Newton-prelude/count, encoded power-bit/seed, complete constants/setup and frame
+audits, plus the strengthened generic unary interpreter with fixed division.
+Combined build peak is 3.4 GiB. All nine new/revised modules and the audit root
+pass individual guarded checks at at most 2951.4 MiB, below the 4 GiB per-module
+target. Added/revised-source integrity, plan-status and whitespace checks pass;
+proof limits are unchanged.

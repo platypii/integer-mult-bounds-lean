@@ -46,6 +46,12 @@ theorem boundaryFactorHeaderSetup_exec (q band N : ℕ) (v : HS 224 Q A U) (S : 
   exact ⟨v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,
     boundaryFactorDimensions_ready q (2*q+8) S₁ hready₁⟩
 
+theorem boundaryFactorHeaderR_off (q : ℕ) (R : Regs 224 A) (i : Fin 224)
+    (hports : i ∉ boundaryFactorDimensionPorts) (h160 : i ≠ 160) (h161 : i ≠ 161) (h162 : i ≠ 162) :
+    boundaryFactorHeaderR q R i = R i := by
+  rw [boundaryFactorHeaderR,boundaryFactorDimensions_off _ _ hports]
+  simp [boundaryFactorCounterR,h160,h161,h162]
+
 theorem boundaryFactorHeaderR_legacy (q : ℕ) (R : Regs 224 A) (i : Fin 154) :
     boundaryFactorHeaderR q R (boundaryFactorLegacyReg i) = R (boundaryFactorLegacyReg i) := by
   have hi := i.isLt

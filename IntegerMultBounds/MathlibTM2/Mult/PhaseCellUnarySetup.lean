@@ -13,6 +13,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 inductive Op (T : ℕ)
   | add (c : ℕ) (a dst tmp : Fin T)
+  | div (c : ℕ) (a dst tmp : Fin T)
   | mul (a b dst saved tmp : Fin T)
   | push (dst : Fin T) (c : ℕ)
   | clear (dst : Fin T)
@@ -21,6 +22,7 @@ variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
 def Op.program : Op T → Pr P T Q A U
   | .add c a dst tmp => umul c a dst tmp
+  | .div c a dst tmp => udiv c a dst tmp
   | .mul a b dst saved tmp => unaryProduct a b dst saved tmp
   | .push dst c => .act (pushN dst (fun _ => tick) c .done)
   | .clear dst => uclear dst
@@ -28,12 +30,14 @@ def Op.program : Op T → Pr P T Q A U
 def Op.runR (op : Op T) (R : Regs T A) : Regs T A :=
   match op with
   | .add c a dst _ => Function.update R dst (List.replicate (c*(R a).length) tick++R dst)
+  | .div c a dst _ => Function.update R dst (List.replicate ((R a).length/c) tick++R dst)
   | .mul a b dst _ _ => Function.update R dst (List.replicate ((R a).length*(R b).length) tick++R dst)
   | .push dst c => Function.update R dst (List.replicate c tick++R dst)
   | .clear dst => Function.update R dst []
 
 def Op.dst : Op T → Fin T
   | .add _ _ dst _ => dst
+  | .div _ _ dst _ => dst
   | .mul _ _ dst _ _ => dst
   | .push dst _ => dst
   | .clear dst => dst
@@ -45,6 +49,7 @@ theorem Op.runR_off (op : Op T) (R : Regs T A) (i : Fin T) (hi : i ≠ op.dst) :
 def Op.cost (op : Op T) (R : Regs T A) : ℕ :=
   match op with
   | .add _ a _ _ => 4*(R a).length+4
+  | .div _ a _ _ => 4*(R a).length+4
   | .mul a b _ _ _ => (R a).length*(4*(R b).length+9)+4
   | .push _ _ => 1
   | .clear dst => 2*(R dst).length+2
@@ -52,6 +57,7 @@ def Op.cost (op : Op T) (R : Regs T A) : ℕ :=
 def Op.Ready (op : Op T) (R : Regs T A) : Prop :=
   match op with
   | .add _ a dst tmp => [a,dst,tmp].Nodup ∧ R tmp = []
+  | .div c a dst tmp => 1 ≤ c ∧ [a,dst,tmp].Nodup ∧ R tmp = []
   | .mul a b dst saved tmp => [a,b,dst,saved,tmp].Nodup ∧ R saved = [] ∧ R tmp = []
   | .push _ _ => True
   | .clear _ => True
@@ -65,6 +71,11 @@ theorem Op.exec (op : Op T) (v : HS T Q A U) (S : Stacks T A) (h : op.Ready S.R)
     regs_ne hnd
     obtain ⟨v',hu,he⟩ := umul_exec body c ‹a ≠ dst› ‹a ≠ tmp› ‹dst ≠ tmp› v S h.2
     exact ⟨v',_,hu,le_rfl,he⟩
+  | div c a dst tmp =>
+    have hnd := h.2.1
+    regs_ne hnd
+    obtain ⟨v',n,hu,hn,he⟩ := udiv_exec (body := body) h.1 ‹a ≠ dst› ‹a ≠ tmp› ‹dst ≠ tmp› v S h.2.2
+    exact ⟨v',n,hu,hn,he⟩
   | mul a b dst saved tmp =>
     obtain ⟨v',n,hu,hn,he⟩ := unaryProduct_exec (body := body) h.1 v S h.2.1 h.2.2
     exact ⟨v',n,hu,hn,he⟩
