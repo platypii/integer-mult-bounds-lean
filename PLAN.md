@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2010 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2012 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12423,3 +12423,25 @@ selected raw caller, closed complex batch and resource ledger (21.8 GiB combined
 peak). All seven new/refactored implementation modules pass individual guarded
 checks (maximum 2007.5 MiB). Source-integrity, whitespace and plan-status checks
 pass; default proof limits are unchanged.
+
+### S3 checkpoint: binary packet advancement and marked width extraction
+
+`advanceBinaryPacket_exec` advances the leading fixed-width binary field in
+`14*V+15` steps. It preserves an arbitrary packet suffix, the width master and
+all scratch tapes, including the zero-width case. This supplies the index-update
+primitive for a retained row-header packet.
+
+`takeMarkedWidth_exec` consumes a unary tick prefix and its zero-bit delimiter
+in `2*V+3` steps, transfers the ticks onto a width tape and preserves its previous
+suffix and every other tape. This supplies width recovery from a self-describing
+packet without keeping the arithmetic width scratch occupied across rows.
+
+Both contracts are included in the stage axiom audit. The guarded stage build
+passes all 14,861 jobs (3.4 GiB combined peak); individual guarded checks stay
+below 2 GiB. No proof limits or integrity requirements changed.
+
+This is a primitive-level checkpoint. Composing packet advancement, width
+recovery/publication and the existing coefficient consumer, then integrating
+the retained packet across the production row loop, remains open. Final fast
+supplier/setup matching, combined live storage and endpoint/resource integration
+also remain open. S3 stays partial.
