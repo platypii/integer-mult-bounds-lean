@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2095 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2099 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13348,3 +13348,36 @@ Validation: the expanded guarded stage axiom audit passes all 14,946 jobs
 (3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 All three new modules pass individual guarded checks, with maximum peak RSS
 3018.7 MiB, below the 4 GiB module budget.
+
+### S3 complete cached complex-component execution
+
+`placedCachedBoundaryPair_spec` runs both real component solves against the
+same retained factor page and coefficient key, switches the parked component,
+and joins the two computed real outputs. Its exact frame restores the original
+input and parked/saved suffixes. The shared error budget gives complex
+coordinate error at most `2^-target`.
+
+`placedCachedComplexComponent_spec` first splits the actual encoded complex
+input into real/imaginary lines while retaining the original words, then runs
+that cached pair. Its exact final frame changes only port 132's owned paired
+output prefix. The original complex input, both coefficient banks, shared
+boundary page, publication controls, component parking registers and every
+borrowed suffix restore. The decoded paired output satisfies the uniform
+complex target error. All splitting, switching, both solves and joining carry
+their executed costs.
+
+Placed split, transition and join contracts lift the existing ordinary
+algorithms into the disjoint workspace. The component transition's arithmetic
+projection and factor/cache preservation are proved structurally. The same
+selected coefficient key is retained throughout both real solves and their
+residual/recovery passes; it is not rebuilt between components.
+
+The counted complex batch and generated cache setup/release still need their
+composition and hoisting around repetitions. Uniform fast time matching and
+simultaneous whole-execution live storage remain open. S3 stays partial; kappa
+is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,950 jobs
+(3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+All four new modules pass individual guarded checks, with maximum peak RSS
+3096.6 MiB, below the 4 GiB module budget.

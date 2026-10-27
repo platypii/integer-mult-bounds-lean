@@ -29,6 +29,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingPassCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPageSpatialCouplingRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseCouplingCoefficientPage
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPageCouplingCost
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedComplexComponent
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedRealComponent
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedComputedBoundarySolve
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedRecoveryTolerance
@@ -2384,6 +2385,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedBoundaryResidualRetire_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedBoundaryRecovered_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedRealComponent_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedBoundary_transition,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedArithmetic_transition,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedComponentTransition_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedFinishComponents_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedOriginalComponentInputs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedBoundaryPair_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedComplexComponent_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCouplingCacheRelease_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_succ,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_length_le,
