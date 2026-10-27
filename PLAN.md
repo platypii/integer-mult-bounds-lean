@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1735 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1740 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9418,3 +9418,47 @@ allocated-margin audits. Combined build peak is 4.4 GiB. All eight new modules
 and the audit root pass individual guarded checks at at most 2942.4 MiB, below
 the 4 GiB per-module target. Added-source integrity, plan-status and whitespace
 checks pass; proof limits are unchanged.
+
+### Discharge canonical factor precision and execute prepared boundary factorization
+
+`factor_execution_bits` proves that the existing execution precision, at the
+`boundaryTableBits` entry target, exceeds `4*p + 2*Nat.size B.card + 36`.
+The structural power bounds in `factor_roundoff_budget`,
+`factor_stage_roundoff_budget` and `factor_record_width_budget` pay the Newton
+rounding allowance, accumulated stage perturbation and every record's allocated
+width `2*q+8`. No larger working precision or proof limit is introduced.
+
+`factorNewtonSteps p q = Nat.size (256*p*(q+1))` supplies a concrete Newton
+iteration count. A structural contraction proof shows that a block of `256*p`
+powers halves the initial contraction factor; the chosen count therefore pays
+the reciprocal error condition. `factorNewtonSteps_bound` proves the count is
+at most `8 + Nat.size p + Nat.size (q+1)`, preserving logarithmic iteration cost.
+
+`factorIntegerState_allocated_fits` joins these bounds with the allocated
+positive dominance margin. It derives `FacFits` for every actual emitted-page
+factor state without any remaining precision, Newton, width or per-state fit
+hypothesis. `constructedBoundaryFactorPage_allocated_spec` attaches these facts
+to the actual retained-master table/page execution, retaining its exact frame,
+accuracy, format, readiness-after-consumption and explicit cost contracts.
+
+`boundary_axisPrep_allocated_runs` instantiates the existing executed band
+factorization and table-preparation machine with these exact computed integer
+rows and derived fit facts. Its source is the full emitted Gaussian page; its
+Newton seed is one fixed encoded `2^(q-2)` word, independent of the pivot. It
+produces the forward multipliers, transposed backward columns and reciprocal
+tables with the existing explicit preparation cost and frame. The hypotheses
+are the ordinary machine readiness, seed and control/header layout, not a
+supplied factorization execution or numerical-fit oracle.
+
+Generating that physical factor workspace and its runtime control headers,
+joining its register map to the constructed page, executing the real/imaginary
+solves and releases, and proving the full endpoint remain open. Uniform fast
+time, complete simultaneous live storage and the final S3 theorem remain open.
+S3 remains partial.
+
+Validation: all 14,584 guarded stage-audit jobs pass, including nine new explicit
+precision, width, logarithmic Newton-count/error, allocated-fit, constructed-page
+and executed factor-preparation audits. Combined build peak is 5.6 GiB. All five
+new modules and the audit root pass individual guarded checks at at most
+2942.9 MiB, below the 4 GiB per-module target. Added-source integrity, plan-status
+and whitespace checks pass; proof limits are unchanged.

@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryFactorFits
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryFactorRuns
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryFactorPage
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorStateFits
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorStabilityBudget
@@ -1844,6 +1846,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorIntegerState_fits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryTable_factor_margin_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactor_stageInv_allocated,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorNewtonSteps_bound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorNewtonSteps_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factor_execution_bits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factor_roundoff_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factor_record_width_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factor_stage_roundoff_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorIntegerState_allocated_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.constructedBoundaryFactorPage_allocated_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_axisPrep_allocated_runs,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,
