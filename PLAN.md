@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1924 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1929 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11343,4 +11343,41 @@ Validation: all 14,772 guarded stage-audit jobs pass, including four new explici
 shared-solve/register-map/computed-RHS-solve/complete-real-component contract
 audits (3.5 GiB combined peak). All three new modules pass individual guarded
 checks (maximum 2994.2 MiB). Source-integrity, whitespace and plan-status checks
+pass; proof limits are unchanged.
+
+### Execute both components of an ordinary complex input on one retained page
+
+`sharedPageBoundaryPair_spec` now executes the complete real-component driver
+twice with the same computed factor page and scatter advances. The component
+transition parks the first recovered result and loads the second RHS; the finish
+stage pairs the actual decoded component words and restores the borrowed
+original input. `sharedPageArithmetic_transition` and
+`sharedPageFactor_transition` prove the required source/readiness change and
+unchanged factor state structurally, so the second solve introduces no fresh-page
+oracles or factor setup charge. Two component targets at `target+1` yield the
+paired `2^-target` error through the existing physical-read error budget.
+
+`sharedPageOriginalComponentInputs_exec` preserves and splits an ordinary complex
+input in the shared bank. `sharedPageComplexComponent_spec` composes that split
+with the complete shared-page pair. Its exact final state changes only tape 132
+by prepending the complex halo result. The original input, parked components,
+factor page, folded coordinate page, scatter advances, batch tapes, masters,
+private controls and all left stacks restore exactly. The actual paired physical
+read has `ErrorOn (haloVertices s a b) ... (1/2^target)`.
+
+The explicit budget contains the input split, twice the actual prepared
+real-component cost, and component transition/finish cleanup. Factor construction
+and publication-control generation are absent from the repeated component path;
+they still require once-per-key composition and release in the closed caller.
+Their actual setup charges are not omitted from the final S3 obligation.
+
+The prepared complex-input driver is now complete. Closing its generated page
+setup/release and raw-scalar/replica caller, matching grouped fast setup/interior
+costs, and simultaneous live-storage bounds remain open. S3 remains partial;
+kappa is unchanged.
+
+Validation: all 14,777 guarded stage-audit jobs pass, including six new explicit
+finish/component-frame/paired-solve/original-input/complex-component contract
+audits (3.5 GiB combined peak). All five new modules pass individual guarded
+checks (maximum 3054.5 MiB). Source-integrity, whitespace and plan-status checks
 pass; proof limits are unchanged.
