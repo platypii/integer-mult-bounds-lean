@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1909 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1913 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11196,3 +11196,40 @@ generated-unfold/register-map/shared-page/conversion/cost audits (5.7 GiB
 combined peak). All three new modules pass individual guarded checks (maximum
 2931.4 MiB). Source-integrity, whitespace and plan-status checks pass; proof
 limits are unchanged.
+
+### Publish ambient boundary fields with reusable scatter advances
+
+`sharedPagePublicationSetup_exec` now executes coordinate unfolding and advance
+generation once from the retained folded coordinate page. It restores that page,
+the factor bank, batch stream, clocks and private coordinate tapes, retaining only
+the generated advance stream on a separate register. Setup pays its actual
+`sharedPageBoundaryCoordinatesCost + generateBoundaryAdvancesCost`; that cost is
+not assumed fast or silently charged per row.
+
+`sharedPageControlledScatter_exec` publishes a natural-order boundary list while
+preserving the advance stream, including an arbitrary borrowed suffix. Its
+repeated cost is `89*s*w+41`. `sharedPageBoundaryAmbient_exec` composes borrowed
+batch-row unfolding with this reusable scatter. Its exact final state changes
+only tape 132 by prepending the ambient zero-extended real boundary field; every
+other tape is restored, including the factor page, original folded coordinates,
+full batch solution stream and its suffix, and retained advances. The contract
+also transfers folded numerical error and word fit to `ErrorOn B` for the actual
+published bytes consumed by recovery.
+
+`sharedPageBoundaryAmbientCost_le` bounds the complete repeated conversion and
+publication by `400*(s+1)*(w+1)` for `N ≤ s`. Coordinate and advance generation
+remain outside this repeated allowance. The shared publication bank uses 240
+registers. The existing separate-register unfolding and borrowing contracts now
+work under an arbitrary caller procedure table, embedding their call-free native
+programs through `Empty`, so the stages compose under the full inverse table.
+
+Ambient scattering with actual setup reuse is now executed. Grouped residual
+generation, recovery/complex assembly in the shared-page full inverse, complete
+setup/interior cost matching, and simultaneous live-storage bounds remain open.
+S3 remains partial; kappa is unchanged.
+
+Validation: all 14,761 guarded stage-audit jobs pass, including eight new explicit
+coordinate/setup/retained-control/scatter/ambient-byte-error/cost audits (5.6 GiB
+combined peak). All four new modules and both revised adapters pass individual
+guarded checks (maximum 2954.4 MiB). Source-integrity, whitespace and plan-status
+checks pass; proof limits are unchanged.
