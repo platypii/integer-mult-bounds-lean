@@ -38,6 +38,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedClosedBatchSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedControlledHaloClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedProcessHaloLengthKey
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedHaloWeightKey
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyHaloLengthKeyLoopSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyProcessHaloLengthKey
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellStoreGeneratedWeightKey
@@ -2519,6 +2520,9 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.loadedWeightKeyBank_low,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.collectedWeightKeyBank_projectR,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamily_release_published,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedHaloWeightCache_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyGenerateReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedHaloWeightKey_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyHaloLengthKeyStep_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyLegacyBank_pop,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyLegacyBank_published,

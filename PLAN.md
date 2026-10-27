@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2164 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2166 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13909,3 +13909,34 @@ Validation: the expanded standard-axiom audit passes all 15,015 jobs (3.4 GiB
 combined peak RSS). All five new or changed numerical-loop modules pass
 individual guarded checks below the 4 GiB module budget. Proof-integrity,
 plan-status and whitespace checks pass.
+
+### S3 checkpoint: generated numerical halo weight packets
+
+`generatedHaloWeightCache_exec` composes the executed halo-origin control
+generator with grouped numerical weight generation. Its inputs are ordinary
+unary geometry, precision, row length and endpoint headers. No origin packet
+or numerical page is supplied as an input hypothesis. The generated origins
+use the exact binary width expected by numerical generation; all origin
+packets are consumed. Temporary widths, endpoint copies and row count are
+released, including when the selected group is empty.
+
+`generatedHaloWeightKey_exec` places that generator in the existing
+151-register family workspace, builds the actual unary packet header from
+the computed replay clock, and prepends the reversed packet to the completed
+family stream. The generated page is exactly the `batchWeightPage` required
+by `familyHaloLengthKeyLoop_spec`, with the same halo group, origins,
+precision and row order. The exact final register frame restores active page,
+clock and packet-header scratch ports and preserves all other registers
+except the consumed endpoint copies and completed-family accumulator.
+The cost includes origin generation, numerical page construction, temporary
+header release and packet collection.
+
+Remaining: install/release the private scalar headers and iterate this
+numerical packet generator over all runtime keys, restore the generated
+family into queue order, compose reuse through the complete inverse passes,
+and finish selected uniform time matching and simultaneous whole-execution
+live storage. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,017 jobs. Both
+new modules pass individual guarded checks below the 4 GiB module budget.
+Proof-integrity, plan-status and whitespace checks pass.
