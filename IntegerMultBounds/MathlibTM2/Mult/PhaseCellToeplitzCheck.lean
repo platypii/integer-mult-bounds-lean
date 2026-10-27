@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryFactorPhysical
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryFactorMultiplierSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryFactorFits
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryFactorRuns
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryFactorPage
@@ -1855,6 +1857,22 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorIntegerState_allocated_fits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.constructedBoundaryFactorPage_allocated_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_axisPrep_allocated_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorLegacyReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorMulReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorReg_range,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorReg_disjoint,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorReg_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorFr_legacy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_axisPrep_physical_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorScalarReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorScalarReg_cm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorScalarReg_low,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorScalarReg_width,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorScalarReg_precision,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorCountersFromWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorCounterR_ready,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorMultiplierSetup_exec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,

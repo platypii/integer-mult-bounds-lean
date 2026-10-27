@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1740 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1745 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9462,3 +9462,43 @@ and executed factor-preparation audits. Combined build peak is 5.6 GiB. All five
 new modules and the audit root pass individual guarded checks at at most
 2942.9 MiB, below the 4 GiB per-module target. Added-source integrity, plan-status
 and whitespace checks pass; proof limits are unchanged.
+
+### Install a physical factor bank and generate its multiplier readiness
+
+`boundaryFactorReg` places the factorizer's 69 roles on a fresh fixed bank of
+224 total tapes, with its owned source mapped directly to physical port 140.
+`boundaryFactorLegacyReg` embeds the existing 154-tape caller unchanged. A
+structural decoder proves bank injectivity; the multiplier's 64 low scratch
+tapes are disjoint. `boundaryFactorFr_legacy` proves that a factor run preserves
+input/output, all left stacks and every legacy right tape except owned source
+140, including the packed table, coordinate page and retained masters.
+
+`boundary_axisPrep_physical_exec` now gives an actual `Exec` of the allocated
+factorization/table-preparation program on this physical bank. Its output
+contracts read the actual resulting stacks, rather than a supplied abstract
+post-valuation. All numerical fits still come from canonical allocation, and
+the frame protects the entire legacy caller. The ordinary factor workspace,
+seed and dimension-header requirements remain explicit.
+
+`boundaryFactorScalarReg` adapts the existing scalar setup program to this bank.
+`boundaryFactorCountersFromWidth_exec` executes it with an empty call type, so
+it works under any enclosing body table and introduces no call-body assumption.
+It generates the word-width, precision and `topN` counters and restores all its
+binary setup scratch. `boundaryFactorMultiplierSetup_exec` first reconstructs
+word width from retained precision on 119, executes that generator and releases
+the private width header. Its exact final frame changes only counter ports
+160/161/162, and it returns `RsbReady`. No supplied word width, topN counter or
+readiness execution is required.
+
+Generating the remaining factor dimensions, logarithmic Newton-count header
+and seed, lifting/composing the constructed-page execution into this physical
+bank, executing real/imaginary solves and releases, and proving the full
+endpoint remain open. Uniform fast time, complete simultaneous live storage
+and the final S3 theorem remain open. S3 remains partial.
+
+Validation: all 14,589 guarded stage-audit jobs pass, including 16 new explicit
+register injection/disjointness, legacy frame, physical factor execution, scalar
+adaptation and generated-counter/readiness audits. Combined build peak is
+3.4 GiB. All five new modules and the audit root pass individual guarded checks
+at at most 2948.1 MiB, below the 4 GiB per-module target. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
