@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1850 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1853 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10658,3 +10658,34 @@ limits are unchanged.
 The retirement certificate, strengthened unfold/publication endpoints, composed
 recovery endpoint and generalized counted loop check at 2814.7, 2963.3, 2975.9,
 2946.8 and 1319.0 MiB respectively; every changed module stays below 3 GiB.
+
+### Restored real-component workspace and executed component transition
+
+`releaseBoundaryWorkspace_exec` retires the final ambient residual on 110 and
+clears all owned boundary headers/factor tapes, charging their actual reached
+lengths. The strengthened `retainedBoundaryRecovered_spec` now restores the
+entire initial stack bank except the recovered real output prefix on 132. The
+original RHS on 110, parked components, borrowed suffixes, I/O and left stacks
+are restored exactly; the published error remains at most `2^-target`.
+
+`cleanComponentTransition_exec` switches inputs after this restored real solve:
+it retires the old RHS, parks the real output on 145, installs the next component
+from 144 and releases its counters. Its explicit cost is
+`24*s*(2*q+8)+9*s+12*q+52`. `retainedBoundaryTransition_spec` executes the complete
+retained solve/recovery/release and this transition, proving the saved real
+result's physical read accuracy and the ordinary `LengthKeyReady` invariant for
+the next component. Parked registers lie outside the arithmetic image.
+
+Second-component execution/complex pairing and original-input restoration still
+need composition with these generated solver endpoints. Uniform final time and
+simultaneous live-storage bounds also remain open, including bounds for the
+actual retirement lengths. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,698 guarded stage-audit jobs pass, including four explicit new
+release/switch/projection/composed-transition axiom audits. Combined peak is
+3.4 GiB. Individual guarded checks peak at 1908.6 MiB for release, 1826.8 MiB for
+clean switching, 2969.1 MiB for the restored solve, 2947.0 MiB for the composed
+transition and 2908.0 MiB for projection/readiness. Source-integrity, whitespace
+and plan-status checks pass. Proof limits are unchanged.
+The strengthened published-frame module checks at 2973.2 MiB; every changed
+module remains below 3 GiB.

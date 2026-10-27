@@ -72,6 +72,8 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       S'.R 110 = cstream A w (chirpLine s C)++S.R 110 ∧
       S'.R 109 = [] ∧ S'.R 204 = [] ∧ S'.R 206 = [] ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
+      (∀ i : Fin 154, i ≠ 110 → i ≠ 115 → i ≠ 116 → i ≠ 132 →
+        S'.R (boundaryFactorLegacyReg i) = S.R (boundaryFactorLegacyReg i)) ∧
       LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
         q l s t u band 0 0 (S'.R 110)
         (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg S')))) ∧
@@ -137,13 +139,17 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
         simpa [S₂,S₂base] using hretire₁.scratch _ (by simp)
   have hn : n₁+n₂ ≤ _ := Nat.add_le_add hn₁ hn₂
   refine ⟨v₀,S₀,n₀,v₁,S₁,n₁,v₂,S₂,n₁+n₂,D,columns,solution,hu₂.trans hu₁,he₀,he₁,?_,
-    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,?_,hinp,hout,hL,hready₂,?_,?_,?_,?_,?_,hretire₂,?_⟩
+    Exec.seq he₁ he₂,hlen,hsolLen,?_,?_,?_,?_,?_,hinp,hout,hL,?_,hready₂,?_,?_,?_,?_,?_,hretire₂,?_⟩
   · simpa only [Nat.add_assoc] using hn
   · simp [S₂,S₂base,h132,List.append_assoc,w,bits,B,G]
   · simpa [S₂,S₂base] using h110
   · simp [S₂]
   · simp [S₂]
   · simp [S₂]
+  · intro i hi110 hi115 hi116 hi132
+    by_cases hi109 : i = 109
+    · subst i; simp [S₂,boundaryFactorLegacyReg,h109]
+    · exact hframe i hi109 hi110 hi115 hi116 hi132
   · have hf : S₂.R 141 = S.R 141 := hframe 141 (by decide) (by decide) (by decide) (by decide) (by decide)
     rw [hf]
     exact haMaster

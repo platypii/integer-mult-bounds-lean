@@ -54,4 +54,21 @@ theorem boundaryRecoveryReady_of_frame {A P N q l s t u band V w : ℕ}
   rw [hproject]
   exact (hready.update_source (S'.R 110)).update_output (S'.R 132)
 
+/-- Switching parked components changes only the arithmetic source in its logical view. -/
+theorem boundaryRecoveryProject_transition {A : ℕ} (S : Stacks 224 A)
+    (input parked output : List (Fin (A+4))) :
+    embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg
+      {S with R := Function.update (Function.update (Function.update S.R 110 input) 144 parked) 145 output}))) =
+    {(embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg S)))) with
+      R := Function.update
+        (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg S)))).R
+        110 input} := by
+  refine Stacks.ext rfl rfl rfl ?_
+  funext i
+  have hi144 : i.val ≠ 144 := by have hi := i.isLt; omega
+  have hi145 : i.val ≠ 145 := by have hi := i.isLt; omega
+  by_cases hi109 : i = 109 <;> by_cases hi115 : i = 115 <;> by_cases hi116 : i = 116 <;>
+    simp_all [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg,
+      Function.update_apply,Fin.ext_iff]
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

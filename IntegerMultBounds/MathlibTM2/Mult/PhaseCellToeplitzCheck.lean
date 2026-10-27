@@ -312,6 +312,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryCoordinatePrepare
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryPublish
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryPublished
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryRecovered
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryTransition
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -2022,6 +2023,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.boundaryRecoveryReady_of_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.physicalRecoveryPublishedHalo_at_precision,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedBoundaryRecovered_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseBoundaryWorkspace_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cleanComponentTransition_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.boundaryRecoveryProject_transition,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedBoundaryTransition_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedLoop_exec_remaining_costs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retirePackedBandColumn_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retirePackedBandStep_exec,

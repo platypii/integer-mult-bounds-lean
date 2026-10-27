@@ -4,10 +4,11 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryPublish
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPhysicalRecoveryPublishedHalo
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryBudget
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetirePublishedBoundary
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseBoundaryWorkspace
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryPublish
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryReady
 
-/-! Execute the accurate retained boundary solve through ambient publication. -/
+/-! Recover a real halo line and restore the entire borrowed boundary workspace. -/
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
@@ -23,7 +24,7 @@ variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 noncomputable def retainedBoundaryRecovered (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 224 Q A U :=
   .seq (retainedBoundaryPublished hR hQ)
-    (.seq (physicalRecoveryPublishedHalo hR hQ) retirePublishedBoundary)
+    (.seq (physicalRecoveryPublishedHalo hR hQ) (.seq retirePublishedBoundary releaseBoundaryWorkspace))
 
 theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target a b : ℕ} [NeZero s] {α d : ℝ}
@@ -70,13 +71,10 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       ∀ x : ZMod s → ℝ,
       SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x (fun i => (value q (F i)).re) →
       ∃ v' n, ∃ E : ZMod s → GaussianInt,
-        let R := couplingRowField (2^15*p) q t u band a b true G F
         let Y := fun i => realPartWord (publicationField t band a b E G i)
-        let S' : Stacks 224 A := {S₀ with R := (Function.update
-          (Function.update S₀.R 110 (cstream A w (chirpLine s R)++(cstream A w (chirpLine s F)++tail)))
-          132 (cstream A w (chirpLine s Y)++S.R 132))}
+        let S' : Stacks 224 A := {S with R := Function.update S.R 132 (cstream A w (chirpLine s Y)++S.R 132)}
         v'.user = v.user ∧ n ≤ n₀+recoveryToleranceCost p l s t u bits 2 a b+
-          retirePublishedBoundaryCost s B.card (12*band+1) w ∧
+          retirePublishedBoundaryCost s B.card (12*band+1) w+releaseBoundaryWorkspaceCost s w S₀ ∧
         Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))) (retainedBoundaryRecovered hR hQ)
           (mk v S) n (mk v' S') ∧
@@ -90,7 +88,7 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   obtain ⟨vsolve,Ssolve,nsolve,vunfold,Sunfold,nunfold,v₀,S₀,n₀,D,columns,solution,hu₀,
-    hesolve,heunfold,hn₀,he₀,hcols,hlen,h132,h110,h109',h204,h206,hinp,hout,hL,hready₀,
+    hesolve,heunfold,hn₀,he₀,hcols,hlen,h132,h110,h109',h204,h206,hinp,hout,hL,hframe₀,hready₀,
     ha₀,hb₀,h127₀,h138₀,h143₀,hretire₀,hacc⟩ := retainedBoundaryPublished_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad F hF v S tail
     h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -141,14 +139,58 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       have hi110 : i ≠ 110 := by simp only [List.mem_cons,List.not_mem_nil,or_false] at hi; rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
       have hi132 : i ≠ 132 := by simp only [List.mem_cons,List.not_mem_nil,or_false] at hi; rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
       simpa [S₁,hi110,hi132] using hretire₀.scratch i hi)
-  refine ⟨v₂,n₀+(n₁+n₂),E,hu₂.trans (hu₁.trans hu₀),?_,
-    (Exec.seq he₀ (Exec.seq he₁ he₂)).cast rfl ?_,?_⟩
-  · have hh := Nat.add_le_add hn₁ hn₂
-    simpa only [Nat.add_assoc] using Nat.add_le_add_left hh n₀
-  · apply congrArg (mk v₂)
+  let S₂ : Stacks 224 A := {S₀ with R := (Function.update
+    (Function.update S₀.R 110 (cstream A w (chirpLine s R)++(cstream A w (chirpLine s F)++tail)))
+    132 (cstream A w (chirpLine s Y)++S.R 132))}
+  have he₂' : Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
+      (embTab componentReg (embTab groupReg body))))) retirePublishedBoundary (mk v₁ S₁) n₂ (mk v₂ S₂) := by
+    convert he₂ using 1
+    apply congrArg (mk v₂)
     refine Stacks.ext rfl rfl rfl ?_
     funext i
-    by_cases h132' : i = 132 <;> simp [S₁,h132',R,Y] <;> rfl
+    by_cases h132' : i = 132 <;> simp [S₂,S₁,h132']
+  obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := releaseBoundaryWorkspace_exec (body := embTab boundaryFactorLegacyReg
+    (embTab tableReg (embTab boundaryArithmeticReg (embTab componentReg (embTab groupReg body)))))
+    s w (cstream A w (chirpLine s R)) (cstream A w (chirpLine s F)++tail) v₂ S₂
+    (by simpa [S₂] using hretire₀.ambient) (by simpa [S₂] using hretire₀.width)
+    (by simp [S₂]) (by simp [chirpLine])
+    (by simpa [S₂] using hretire₀.scratch 131 (by simp))
+    (by simpa [S₂] using hretire₀.scratch 134 (by simp))
+    (by simpa [S₂] using hretire₀.scratch 135 (by simp))
+  have hn₃' : n₃ ≤ releaseBoundaryWorkspaceCost s w S₀ := hn₃
+  refine ⟨v₃,n₀+(n₁+(n₂+n₃)),E,hu₃.trans (hu₂.trans (hu₁.trans hu₀)),?_,
+    (Exec.seq he₀ (Exec.seq he₁ (Exec.seq he₂' he₃))).cast rfl ?_,?_⟩
+  · have hh := Nat.add_le_add hn₁ (Nat.add_le_add hn₂ hn₃')
+    simpa only [Nat.add_assoc] using Nat.add_le_add_left hh n₀
+  · apply congrArg (mk v₃)
+    refine Stacks.ext hinp hout hL ?_
+    funext i
+    by_cases hiOwned : i ∈ boundaryOwnedRegs
+    · have hi132 : i ≠ 132 := by
+        rw [boundaryOwnedRegs_mem] at hiOwned
+        rcases hiOwned with rfl | rfl | hiOwned <;> simp_all [Fin.ext_iff] <;> omega
+      have hblank : S.R i = [] := by
+        rw [boundaryOwnedRegs_mem] at hiOwned
+        rcases hiOwned with rfl | rfl | hi
+        · exact h115
+        · exact h116
+        · exact hnew i hi
+      simp [hiOwned,hi132,hblank]
+    · have hi115 : i ≠ 115 := by intro h; apply hiOwned; simp [h]
+      have hi116 : i ≠ 116 := by intro h; apply hiOwned; simp [h]
+      have hi154 : i.val < 154 := by
+        by_contra h
+        apply hiOwned
+        rw [boundaryOwnedRegs_mem]
+        exact Or.inr (Or.inr (by omega))
+      by_cases hi110 : i = 110
+      · subst i; simp [hiOwned,hsource]
+      by_cases hi132 : i = 132
+      · subst i; simp [hiOwned,S₂]; rfl
+      have hf : S₀.R i = S.R i := hframe₀ ⟨i.val,hi154⟩
+        (by simpa [Fin.ext_iff] using hi110) (by simpa [Fin.ext_iff] using hi115)
+        (by simpa [Fin.ext_iff] using hi116) (by simpa [Fin.ext_iff] using hi132)
+      simpa [hiOwned,hi110,hi132,S₂] using hf
   · intro i hi
     have hh := hfinal i hi
     change ‖publishedCellRead q w (0 : ZMod s) (cstream A w (chirpLine s Y)++S.R 132) i-x i‖ ≤ _
@@ -156,6 +198,5 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     simpa only [publishedCellRead,ZMod.val_zero,Nat.sub_zero,
       cstream_word w (chirpLine s Y) (S.R 132) i.val (by simpa using i.val_lt),
       cstream_word w (chirpLine s Y) sourceTail i.val (by simpa using i.val_lt)] using hh
-
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
