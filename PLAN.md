@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1667 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1671 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8968,3 +8968,40 @@ width, extraction and band-schedule audits. The shared-definition rebuild peaks
 at 13.8 GiB combined. All six new/revised modules and the audit root pass
 individual guarded checks at at most 2057.2 MiB. Added/revised-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Executed folded-band accumulation loop with complete control release
+
+`columnEntryStep_exec` copies the retained folded-row cursor into the lookup
+index, executes resident-page selection and entry extraction, then advances
+the cursor. It prepends one whole word to the retained table suffix on 132 and
+preserves every other stack. Its cost includes cursor copying, the selected
+entry routine and the cursor increment.
+
+`columnEntryLoop_exec` uses the existing structural counted scan to accumulate
+an arbitrary in-range contiguous folded-row interval. Its invariant tracks the
+cursor and exactly the reversed prefix of copied whole words; the resident
+page, ambient computed column, original table suffix and arbitrary counter
+symbols are preserved. Its bound sums the actual per-entry costs and charges
+the counted-scan overhead. `collectColumnEntries_exec` then consumes both owned
+cursor/count controls, charging their lengths, and restores all other stacks
+apart from the accumulated table prefix.
+
+`collectFoldedBand_exec` specializes this executable collector to the clipped
+interval `n-W` through `min rowCount (n+W+1)`. Its packed output is exactly the
+reverse of the proved `foldedBandRows` schedule mapped through the computed
+column, so the existing exact-support and `(2*W+1)*wordWidth` storage results
+apply to the accumulated prefix. The column and folded page remain intact.
+
+The caller still supplies ordinary unary cursor/count headers for that clipped
+interval. Generating them from the retained column index, band and boundary
+cardinality, composing column generation with collection/source retirement,
+and the outer complete-table loop remain open. Factor/solve/release, the full
+S3 endpoint and uniform fast-time/simultaneous storage also remain open. The
+explicit cost pays repeated page/column scans and asserts no fast-access bound;
+S3 remains partial.
+
+Validation: all 10,328 guarded stage-audit jobs pass, including four new explicit
+step, loop, cleanup and folded-band collection audits. Combined build peak is
+2.7 GiB. All four new modules and the audit root pass individual guarded checks
+at at most 2058.1 MiB. Added-source integrity, plan-status and whitespace checks
+pass; proof limits are unchanged.

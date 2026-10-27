@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCollectFoldedBand
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedColumnEntry
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFoldedBandSchedule
 
@@ -1699,6 +1701,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.foldedBandRows_length_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.mem_foldedBandRows,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.foldedBandColumn_storage,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.columnEntryStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.columnEntryLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.collectColumnEntries_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.collectFoldedBand_exec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,
