@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1967 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1972 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11950,3 +11950,70 @@ inverse rebuild (21.8 GiB combined peak). All eight changed/new capture,
 workspace, row, loop, run, borrowed-cache and cost modules pass individual guarded
 checks (maximum 1959.1 MiB). Changed-source integrity, whitespace and
 plan-status checks pass; default proof limits remain unchanged.
+
+### Prove spatial coupling order and execute local-window input copies
+
+`spatialCouplingOffsets_perm` reorders the original signed stencil without
+deduplicating wrapped aliases. `spatialCouplingOffsets_eq_range` identifies the
+order with the contiguous integer offsets `-band,...,band`.
+`cyclicPaddedLine_window` proves that each ambient row reads precisely that
+stencil as a contiguous window of one cyclically padded line. Its indices retain
+the original `ZMod s` coordinates, including repeated residues when offsets wrap.
+
+`couplingRowWord_spatial` proves exact equality of the actual fixed-point row
+result after reordering both input and coefficient words together: every rounded
+`tdivN` product is retained, and only their summation order changes. The input and
+coefficient permutations also preserve their word-format premises.
+
+`copyCountedLine_exec` is a generic structural prefix copier with generated
+row/width controls and exact restoration. `copySpatialCouplingInputs_exec`
+instantiates it at a positioned cyclic source cursor, generating the actual
+spatial operand stream on port 110. Its allowance is
+`(2*band+1)*(16*wordWidth+9)+16`, independent of absolute row index and ambient
+line length. The source cursor, borrowed suffix, controls and scratch restore
+exactly.
+
+The executed padding/mask source setup, cursor advancement/restoration,
+coefficient ordering and replacement row loop still need composition. The closed
+inverse continues to use its verified indexed lookup path until that replacement
+is complete. Final fast supplier/setup matching, simultaneous live storage and
+endpoint/resource integration remain open. S3 remains partial.
+
+Validation: all 14,819 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All four new offset/window, spatial-word, generic-copy and local-input-copy
+modules pass individual guarded checks (maximum 1930.5 MiB). Default proof limits
+remain unchanged.
+
+### Execute and restore the spatial source cursor
+
+`advanceSpatialCouplingCursor_exec` moves exactly one encoded source word to a
+saved-prefix tape after each row, restoring its width counter and scratch. It
+costs `4*wordWidth+4`, independent of absolute row index. The source and saved
+prefix use borrowed ports 141 and 142; their original suffixes are preserved.
+
+`transferCountedLine_exec` restores a counted prefix with generated row/width
+controls. `restoreSpatialCouplingCursor_exec` and `_at` use it to reconstruct the
+entire padded source and restore the saved-prefix tape's original suffix after
+any admitted number of visits. The restoration allowance is linear in visited
+word count; it does not move or erase the borrowed suffix.
+
+`spatialCouplingInputsStep_exec` composes actual local-window copying with one
+cursor advance. Its exact three-port frame retains the spatial operands on 110,
+advances the unread source on 141 and prepends the traversed word, reversed, to
+142; all other tapes restore exactly. The row's input words still correspond to
+the original ambient coordinates and the proved exact fixed-point dot product.
+
+`spatialCouplingCursor_volume` proves the simultaneous cursor stock identity:
+unread padded source plus saved visited prefix has exactly
+`(s+2*band)*wordWidth` owned bytes, plus the two unchanged borrowed suffix lengths.
+This is a component stock identity, not the final whole-inverse live-storage
+bound. Executed padded/masked-source setup, coefficient ordering and the complete
+replacement arithmetic loop remain open. The closed inverse still uses the
+verified indexed coupling path until that composition is checked. Final fast
+supplier/setup matching, combined live storage and endpoint/resource integration
+remain open. S3 remains partial.
+
+Validation: all 14,821 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All six new spatial offset/word, copy/transfer, window and cursor modules pass
+individual guarded checks (maximum 1946.2 MiB). Source-integrity, whitespace
+and plan-status checks pass; default proof limits remain unchanged.

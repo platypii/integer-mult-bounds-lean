@@ -1,0 +1,65 @@
+module
+
+public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSlice
+public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
+
+/-! Copy a line prefix with generated row/width controls and exact restoration. -/
+
+@[expose] public section
+namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
+
+open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Mult.ShortConv
+
+variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
+
+def copyCountedLine (rows width src dst count saved tmp : Fin T) : Pr P T Q A U :=
+  .seq (unaryProduct rows width count saved tmp)
+    (.seq (copyPrefix count src dst saved tmp) (uclear count))
+
+def copyCountedLineCost (s w : ℕ) : ℕ := s*(16*w+9)+16
+
+theorem copyCountedLine_exec (rows width src dst count saved tmp : Fin T)
+    (hreg : [rows,width,src,dst,count,saved,tmp].Nodup) (s w : ℕ)
+    (words tail : List (Fin (A+4))) (hlen : words.length = s*w)
+    (v : HS T Q A U) (S : Stacks T A)
+    (hs : (S.R rows).length = s) (hw : (S.R width).length = w)
+    (hsource : S.R src = words++tail) (hcount : S.R count = [])
+    (hsaved : S.R saved = []) (htmp : S.R tmp = []) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ copyCountedLineCost s w ∧
+      Exec body (copyCountedLine rows width src dst count saved tmp) (mk v S) n
+        (mk v' {S with R := Function.update S.R dst (words++S.R dst)}) := by
+  have h5 : [rows,width,count,saved,tmp].Nodup := by
+    simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,not_false_eq_true,not_or] at hreg ⊢
+    tauto
+  have hc : [count,src,dst,saved,tmp].Nodup := by
+    simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,not_false_eq_true,not_or] at hreg ⊢
+    tauto
+  have hn : src ≠ count ∧ dst ≠ count ∧ saved ≠ count ∧ tmp ≠ count := by
+    simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,not_false_eq_true,not_or] at hc
+    tauto
+  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := unaryProduct_exec (body := body)
+    (a := rows) (b := width) (dst := count) (t₁ := saved) (t₂ := tmp) h5 v S hsaved htmp
+  let S₁ : Stacks T A := {S with R := Function.update S.R count (List.replicate (s*w) tick)}
+  have he₁' : Exec body (unaryProduct rows width count saved tmp) (mk v S) n₁ (mk v₁ S₁) := by
+    simpa only [hs,hw,hcount,List.append_nil] using he₁
+  have hn₁' : n₁ ≤ s*(4*w+9)+4 := by simpa only [hs,hw] using hn₁
+  obtain ⟨v₂,hu₂,he₂⟩ := copyPrefix_exec (body := body) hc v₁ S₁ words tail
+    (by simpa [S₁,hn.1] using hsource) (by simp [S₁,hlen])
+    (by simpa [S₁,hn.2.2.1] using hsaved) (by simpa [S₁,hn.2.2.2] using htmp)
+  let S₂ : Stacks T A := {S₁ with R := Function.update S₁.R dst (words++S₁.R dst)}
+  obtain ⟨v₃,hu₃,he₃⟩ := uclear_exec body count v₂ S₂
+  have hclock : (S₂.R count).length = s*w := by simp [S₂,S₁,hn.2.1.symm]
+  refine ⟨v₃,n₁+((10*words.length+10)+(2*(S₂.R count).length+2)),hu₃.trans (hu₂.trans hu₁),?_,
+    (Exec.seq he₁' (Exec.seq he₂ he₃)).cast rfl ?_⟩
+  · rw [hlen,hclock]
+    dsimp only [copyCountedLineCost]
+    nlinarith only [hn₁']
+  · apply congrArg (mk v₃)
+    refine Stacks.ext rfl rfl rfl ?_
+    funext i
+    by_cases hiCount : i = count <;> by_cases hiDst : i = dst <;>
+      simp [S₂,S₁,hiCount,hiDst,hn.2.1,hn.2.1.symm,hcount]
+
+end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
