@@ -23,20 +23,13 @@ def rowCoefficientHeaderState (P q s t u band i : ℕ) : TblSt 50 A :=
     (Function.update (Function.update (Function.update (fun _ => 0) 19 P) 44 q) 34 s)
       35 t) 36 u) 37 i) 49 band,[]⟩
 
-def rowCoefficientFromHeaders (code : TblCode 50) : Pr P₀ 117 Q A U :=
-  .seq initializeRowCoefficientBank (.seq (loadRowCoefficientList rowCoefficientHeaders)
-    (rowCoefficientHost code))
+def initializeRowCoefficientHeaders : Pr P₀ 117 Q A U :=
+  .seq initializeRowCoefficientBank (loadRowCoefficientList rowCoefficientHeaders)
 
-def rowCoefficientFromHeadersCost (K P q V w s t u band i N : ℕ) : ℕ :=
-  (304*V+4*w+409)+((P+q+s+t+u+i+band)*(4*V+10)+42*V+71)+
-    (K*tblC V w+2*(N*w)+130*V+133)
+def initializeRowCoefficientHeadersCost (P q V w s t u band i : ℕ) : ℕ :=
+  (304*V+4*w+409)+((P+q+s+t+u+i+band)*(4*V+10)+42*V+71)
 
-theorem rowCoefficientFromHeaders_exec {V w q P s t u band i K : ℕ}
-    (code : TblCode 50) (words : List GaussianInt)
-    (hc : TblDo A V w code (rowCoefficientHeaderState P q s t u band i)
-      (fun st' => st'.acc = (cstream A w words).reverse) K)
-    (hstV : ∀ r, (rowCoefficientHeaderState (A := A) P q s t u band i).val r < 2^V)
-    (hw : w ≤ V)
+theorem initializeRowCoefficientHeaders_exec {V w q P s t u band i : ℕ}
     (v : HS 117 Q A U) (S : Stacks 117 A)
     (hPsrc : (S.R 114).length = P) (hqsrc : (S.R 112).length = q)
     (hsSrc : (S.R 97).length = s) (htSrc : (S.R 98).length = t)
@@ -44,10 +37,10 @@ theorem rowCoefficientFromHeaders_exec {V w q P s t u band i K : ℕ}
     (hiSrc : (S.R 107).length = i)
     (hVsrc : (S.R 115).length = V) (hwsrc : (S.R 94).length = w) (h106 : S.R 106 = [])
     (hblank : ∀ r ∈ rowCoefficientPorts, S.R r = []) :
-    ∃ v' m, v'.user = v.user ∧ m ≤ rowCoefficientFromHeadersCost K P q V w s t u band i words.length ∧
-      Exec body (rowCoefficientFromHeaders code) (mk v S) m
-        (mk v' {S with R := (Function.update S.R 111
-          (cstream A w words++S.R 111))}) := by
+    ∃ v' S' m, v'.user = v.user ∧ m ≤ initializeRowCoefficientHeadersCost P q V w s t u band i ∧
+      Exec body initializeRowCoefficientHeaders (mk v S) m (mk v' S') ∧
+      tblHolds rowCoefficientReg S' (tblRho V (List.replicate V tick) (List.replicate w tick)
+        (rowCoefficientHeaderState P q s t u band i)) ∧ tblFr rowCoefficientReg S S' := by
   let initial : TblSt 50 A := ⟨fun _ => 0,[]⟩
   let st := rowCoefficientHeaderState (A := A) P q s t u band i
   obtain ⟨v₁,hu₁,he₁,hh₁⟩ := initializeRowCoefficientBank_exec (body := body) V w v S
@@ -70,10 +63,6 @@ theorem rowCoefficientFromHeaders_exec {V w q P s t u band i K : ℕ}
     simp [loadedRowCoefficientState,rowCoefficientHeaders,initial,st,rowCoefficientHeaderState,
       value,hPsrc,hqsrc,hsSrc,htSrc,huSrc,hbSrc,hiSrc]
   rw [hstate] at hh₂
-  obtain ⟨v₃,m₃,hu₃,hm₃,he₃⟩ := rowCoefficientHost_exec (body := body)
-    code st (cstream A w words)
-    (by simpa only [st,rowCoefficientHeaderState,List.append_nil] using hc) hstV rfl
-    (List.replicate V tick) (List.replicate w tick) (by simp) (by simp) hw v₂ S₂ hh₂
   have hoff₂ (r : Fin 117) (hr : r ∉ rowCoefficientPorts) : S₂.R r = S.R r :=
     (hf₂.2.2.2 r (rowCoefficientReg_off r hr)).trans (hoff₁ r hr)
   have hcost : loadRowCoefficientListCost V value rowCoefficientHeaders =
@@ -81,19 +70,61 @@ theorem rowCoefficientFromHeaders_exec {V w q P s t u band i K : ℕ}
     simp [loadRowCoefficientListCost,rowCoefficientHeaders,value,hPsrc,hqsrc,hsSrc,htSrc,
       huSrc,hbSrc,hiSrc]; ring
   rw [hcost] at hm₂
-  refine ⟨v₃,(304*V+4*w+409)+(m₂+m₃),hu₃.trans (hu₂.trans hu₁),?_,
-    (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl ?_⟩
-  · dsimp only [rowCoefficientFromHeadersCost]
-    have hm₃' : m₃ ≤ K*tblC V w+2*(words.length*w)+130*V+133 := by simpa using hm₃
+  refine ⟨v₂,S₂,(304*V+4*w+409)+m₂,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,hh₂,?_,?_,?_,?_⟩
+  · dsimp only [initializeRowCoefficientHeadersCost]
     omega
-  · congr 1
-    refine Stacks.ext hf₂.1 hf₂.2.1 hf₂.2.2.1 ?_
+  · exact hf₂.1
+  · exact hf₂.2.1
+  · exact hf₂.2.2.1
+  · intro r hr
+    exact hoff₂ r (by
+      intro hk
+      obtain ⟨k,hk⟩ := rowCoefficientReg_covers r hk
+      exact hr k hk)
+
+def rowCoefficientFromHeaders (code : TblCode 50) : Pr P₀ 117 Q A U :=
+  .seq initializeRowCoefficientHeaders (rowCoefficientHost code)
+
+def rowCoefficientFromHeadersCost (K P q V w s t u band i N : ℕ) : ℕ :=
+  initializeRowCoefficientHeadersCost P q V w s t u band i+
+    (K*tblC V w+2*(N*w)+130*V+133)
+
+theorem rowCoefficientFromHeaders_exec {V w q P s t u band i K : ℕ}
+    (code : TblCode 50) (words : List GaussianInt)
+    (hc : TblDo A V w code (rowCoefficientHeaderState P q s t u band i)
+      (fun st' => st'.acc = (cstream A w words).reverse) K)
+    (hstV : ∀ r, (rowCoefficientHeaderState (A := A) P q s t u band i).val r < 2^V)
+    (hw : w ≤ V)
+    (v : HS 117 Q A U) (S : Stacks 117 A)
+    (hPsrc : (S.R 114).length = P) (hqsrc : (S.R 112).length = q)
+    (hsSrc : (S.R 97).length = s) (htSrc : (S.R 98).length = t)
+    (huSrc : (S.R 99).length = u) (hbSrc : (S.R 100).length = band)
+    (hiSrc : (S.R 107).length = i)
+    (hVsrc : (S.R 115).length = V) (hwsrc : (S.R 94).length = w) (h106 : S.R 106 = [])
+    (hblank : ∀ r ∈ rowCoefficientPorts, S.R r = []) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ rowCoefficientFromHeadersCost K P q V w s t u band i words.length ∧
+      Exec body (rowCoefficientFromHeaders code) (mk v S) m
+        (mk v' {S with R := (Function.update S.R 111
+          (cstream A w words++S.R 111))}) := by
+  obtain ⟨v₁,S₁,m₁,hu₁,hm₁,he₁,hh₁,hf₁⟩ := initializeRowCoefficientHeaders_exec (body := body)
+    v S hPsrc hqsrc hsSrc htSrc huSrc hbSrc hiSrc hVsrc hwsrc h106 hblank
+  obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := rowCoefficientHost_exec (body := body)
+    code (rowCoefficientHeaderState P q s t u band i) (cstream A w words)
+    (by simpa only [rowCoefficientHeaderState,List.append_nil] using hc) hstV rfl
+    (List.replicate V tick) (List.replicate w tick) (by simp) (by simp) hw v₁ S₁ hh₁
+  refine ⟨v₂,m₁+m₂,hu₂.trans hu₁,?_,(Exec.seq he₁ he₂).cast rfl ?_⟩
+  · have hm₂' : m₂ ≤ K*tblC V w+2*(words.length*w)+130*V+133 := by simpa using hm₂
+    dsimp only [rowCoefficientFromHeadersCost]
+    omega
+  · apply congrArg (mk v₂)
+    refine Stacks.ext hf₁.1 hf₁.2.1 hf₁.2.2.1 ?_
     funext r
     by_cases hr : r ∈ rowCoefficientPorts
     · have hr111 : r ≠ 111 := by intro he; subst r; simp at hr
       simp [hr,hr111,hblank r hr]
-    · by_cases hr111 : r = 111
-      · subst r; simp [hoff₂ 111 (by simp)]
-      · simp [hr,hr111,hoff₂ r hr]
+    · have hoff := hf₁.2.2.2 r (rowCoefficientReg_off r hr)
+      by_cases hr111 : r = 111
+      · subst r; simp [hoff]
+      · simp [hr,hr111,hoff]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2005 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2010 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12380,4 +12380,46 @@ Validation: all 14,854 guarded stage-audit jobs pass, including rebuilt inverse,
 selected raw caller, closed complex batch and resource ledger (21.8 GiB combined
 peak). All seven new/changed implementation modules pass individual guarded
 checks (maximum 2014.6 MiB). Source-integrity, whitespace and plan-status checks
+pass; default proof limits are unchanged.
+
+### Publish and borrow reusable binary coefficient-header packets
+
+`publishBinaryHeaders_exec` copies selected table fields into an owned binary
+packet prefix, preserving the table and all borrowed suffixes.
+`borrowBinaryHeaders_exec` generates a byte clock, copies that retained prefix
+above an arbitrary working-tape suffix, loads the selected table fields, and
+releases its clock. Its final frame restores every register outside the table,
+including the original packet and the working suffix. Its allowance depends on
+field count and bit width, not on the represented unary geometry values.
+
+The concrete `rowCoefficientPacket` stores row index first, followed by the six
+fixed row-header values. Publication costs at most `70*V+71`; borrowing and
+loading all seven fields costs at most `144*V+73`. The packet length is exactly
+`7*V`, and `loadedBinaryState_rowCoefficientPacket` identifies its reconstructed
+state with the existing row supplier's numerical header state.
+
+`initializeRowCoefficientHeaders_exec` and `clearRowCoefficientBank_exec` factor
+the existing table setup and release proofs so publication and ordinary
+coefficient execution share them. `buildRowCoefficientPacket_exec` converts the
+ordinary headers, publishes their packet, and releases the whole table bank;
+only the packet prefix on 109 changes.
+
+`rowCoefficientFromPacket_exec` initializes the row table, borrows binary
+headers, executes the complete ordered coefficient row and releases its bank.
+It restores the retained packet and every other tape except coefficient prefix
+111. Port 113 is the packet source in this supplier view and must be embedded
+separately from arithmetic's result view. Its header-load allowance is `144*V+73`,
+with no unary dimension/coordinate loads. The caller supplies the already
+selected width master; numeric fits follow from the existing selected width.
+
+This supplies executed packet publication and coefficient consumption endpoints.
+Packet index advancement, width-master lifecycle and integration across the
+production row loop remain open; production still uses the verified row-wide
+ordinary-header supplier. Final fast supplier/setup matching, combined live
+storage and endpoint/resource integration remain open. S3 stays partial.
+
+Validation: all 14,859 guarded stage-audit jobs pass, including rebuilt inverse,
+selected raw caller, closed complex batch and resource ledger (21.8 GiB combined
+peak). All seven new/refactored implementation modules pass individual guarded
+checks (maximum 2007.5 MiB). Source-integrity, whitespace and plan-status checks
 pass; default proof limits are unchanged.

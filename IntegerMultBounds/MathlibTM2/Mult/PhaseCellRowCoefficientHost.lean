@@ -68,6 +68,33 @@ theorem rowCoefficientReg_off (k : Fin 117) (hk : k ∉ rowCoefficientPorts) (r 
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 117 Q A U}
 
+theorem clearRowCoefficientBank_exec (V w : ℕ) (val : Fin 50 → ℕ)
+    (wl nl : List (Fin (A+4))) (hwl : wl.length = V) (hnl : nl.length = w) (hw : w ≤ V)
+    (v : HS 117 Q A U) (S : Stacks 117 A)
+    (hS : tblHolds rowCoefficientReg S (tblRho V wl nl ⟨val,[]⟩)) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ 130*V+131 ∧
+      Exec body (clearWords rowCoefficientPorts) (mk v S) m
+        (mk v' {S with R := fun k => if k ∈ rowCoefficientPorts then [] else S.R k}) := by
+  obtain ⟨v',hu,he⟩ := clearWords_exec (body := body) rowCoefficientPorts rowCoefficientPorts_nodup v S
+  have hlen (k : Fin 117) (hk : k ∈ rowCoefficientPorts) : (S.R k).length ≤ V := by
+    obtain ⟨r,rfl⟩ := rowCoefficientReg_covers k hk
+    rw [hS r]
+    cases r <;> simp [tblRho,hwl,hnl,hw]
+  have hsum : (rowCoefficientPorts.map (fun k => (S.R k).length)).sum ≤ 65*V := by
+    have bound (rs : List (Fin 117)) : (∀ k ∈ rs, (S.R k).length ≤ V) →
+        (rs.map (fun k => (S.R k).length)).sum ≤ rs.length*V := by
+      induction rs with
+      | nil => simp
+      | cons k rs ih =>
+        intro h
+        simpa [Nat.succ_mul,Nat.add_mul,Nat.add_comm] using
+          Nat.add_le_add (h k (by simp)) (ih (fun j hj => h j (by simp [hj])))
+    simpa [rowCoefficientPorts,coefficientPorts] using bound rowCoefficientPorts hlen
+  refine ⟨v',_,hu,?_,he⟩
+  have hp : rowCoefficientPorts.length = 65 := by simp [rowCoefficientPorts,coefficientPorts]
+  rw [hp]
+  omega
+
 def rowCoefficientHost (code : TblCode 50) : Pr P 117 Q A U :=
   .seq (tblHost rowCoefficientReg code 111) (clearWords rowCoefficientPorts)
 
@@ -85,34 +112,17 @@ theorem rowCoefficientHost_exec {V w K : ℕ} (code : TblCode 50) (st : TblSt 50
       wl nl hwl hnl hw hcode hstV v S hS
   rw [hpost,hacc,List.append_nil,List.length_reverse] at hm₁
   rw [hpost,hacc,List.append_nil,List.reverse_reverse] at houtput
-  obtain ⟨v₂,hu₂,he₂⟩ := clearWords_exec (body := body) rowCoefficientPorts rowCoefficientPorts_nodup v₁ S₁
-  have hlen (k : Fin 117) (hk : k ∈ rowCoefficientPorts) : (S₁.R k).length ≤ V := by
-    obtain ⟨r,rfl⟩ := rowCoefficientReg_covers k hk
-    rw [hholds r]
-    cases r <;> simp [tblRho,hwl,hnl,hw]
-  have hsum : (rowCoefficientPorts.map (fun k => (S₁.R k).length)).sum ≤ 65*V := by
-    have bound (rs : List (Fin 117)) : (∀ k ∈ rs, (S₁.R k).length ≤ V) →
-        (rs.map (fun k => (S₁.R k).length)).sum ≤ rs.length*V := by
-      induction rs with
-      | nil => simp
-      | cons k rs ih =>
-        intro h
-        simpa [Nat.succ_mul,Nat.add_mul,Nat.add_comm] using
-          Nat.add_le_add (h k (by simp)) (ih (fun j hj => h j (by simp [hj])))
-    simpa [rowCoefficientPorts,coefficientPorts] using bound rowCoefficientPorts hlen
-  refine ⟨v₂,m₁+(2*(rowCoefficientPorts.map (fun k => (S₁.R k).length)).sum+2*rowCoefficientPorts.length+1),
-    hu₂.trans hu₁,?_,(Exec.seq he₁ he₂).cast rfl ?_⟩
-  · have hp : rowCoefficientPorts.length = 65 := by simp [rowCoefficientPorts,coefficientPorts]
-    rw [hp]
-    nlinarith only [hm₁,hsum]
-  · apply congrArg (mk v₂)
-    refine Stacks.ext hin hout hleft ?_
-    funext k
-    by_cases hk : k ∈ rowCoefficientPorts
-    · simp [hk]
-    by_cases ho : k = 111
-    · subst k; simpa using houtput
-    simp only [hk,ite_false,ho]
-    exact hframe k ho (rowCoefficientReg_off k hk)
+  obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := clearRowCoefficientBank_exec (body := body) V w st'.val
+    wl nl hwl hnl hw v₁ S₁ hholds
+  refine ⟨v₂,m₁+m₂,hu₂.trans hu₁,by omega,(Exec.seq he₁ he₂).cast rfl ?_⟩
+  apply congrArg (mk v₂)
+  refine Stacks.ext hin hout hleft ?_
+  funext k
+  by_cases hk : k ∈ rowCoefficientPorts
+  · simp [hk]
+  by_cases ho : k = 111
+  · subst k; simpa using houtput
+  simp only [hk,ite_false,ho]
+  exact hframe k ho (rowCoefficientReg_off k hk)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

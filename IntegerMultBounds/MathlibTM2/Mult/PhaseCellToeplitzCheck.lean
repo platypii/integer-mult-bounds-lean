@@ -25,6 +25,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingRows
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCursor
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedCoefficientRow
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBuildRowCoefficientPacket
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRowCoefficientFromPacket
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareSpatialCouplingSource
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetireSpatialCouplingSource
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
@@ -1672,6 +1674,16 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rowCoefficientFromHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rowCoefficientHeaderState_fits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedRowCoefficient_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.clearRowCoefficientBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializeRowCoefficientHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.borrowBinaryHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishBinaryHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rowCoefficientPacket_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadedBinaryState_rowCoefficientPacket,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishRowCoefficientPacket_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.borrowRowCoefficientPacket_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.buildRowCoefficientPacket_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rowCoefficientFromPacket_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selected_coefficient_norm,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selected_coefficient_fits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.appendSelectedCoefficientCost_mono,
