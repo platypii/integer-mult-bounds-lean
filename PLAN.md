@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1954 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1958 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11740,3 +11740,86 @@ All four new release/frame/cost/closed-batch modules and both strengthened
 setup/constructed-batch modules pass individual guarded checks (maximum
 3029.9 MiB). Changed-source integrity, whitespace and plan-status checks pass;
 default proof limits are unchanged.
+
+### Expose the one-key affine cost ledger and repeated boundary row work
+
+`sharedComplexClosedBatchCost_affine` gives the exact identity between the paid
+closed-batch cost and one fixed key charge plus the replica count times a complete
+line charge. The key charge includes the generated page setup and fixed release
+stock; repeated result handling and counter work are charged per line.
+`sharedComplexClosedBatchCost_groups` sums the replica counts of groups
+concatenated under the same key without paying setup again for each group.
+The theorem does not identify different geometry/precision keys or charge
+external S4 exposure for free.
+
+`sharedComplexBatchLineCost_boundary` exposes exactly two prepared boundary
+solves in each complex line. `sharedComplexBatchLineCost_boundary_le` bounds them
+by actual boundary rows plus one, actual solver bandwidth `12*band+1`, and
+`rmulCost workingWidth + workingWidth + 1`. All other numerical and transfer
+terms remain explicit in `sharedComplexBatchNonBoundaryLineCost` (the complement
+of the two boundary-solver calls, including their gather/publication costs).
+`sharedComplexClosedBatchCost_boundary_le` carries this bound into the actual
+closed-batch ledger, with the key charge paid once.
+
+This exposes repeated boundary row/bandwidth work before final asymptotic
+matching. Fast bounds for the remaining interior/coupling/setup terms,
+simultaneous live storage and the final S3 endpoint/resource integration remain
+open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,804 guarded stage-audit jobs pass (3.4 GiB combined peak).
+The one-key ledger and repeated-boundary line-cost modules pass individual
+guarded checks at 2939.3 and 2946.3 MiB. Source-integrity, whitespace and
+plan-status checks pass; default proof limits remain unchanged.
+
+### Expose both halo-interior passes in the complete line ledger
+
+`realInteriorResidualCost_split` and `recoveryToleranceCost_split` identify the
+actual initial and recovery halo-interior calls inside the numerical path.
+The recovery call retains its separately selected recovery target and larger
+proved RHS exponent. Their geometry bounds reuse `solveHaloInteriorCost_le`,
+whose ledger prices the actual halo-interior coordinate volume and phase-cell
+count, with candidate setups charged separately. Initialization, coupling header
+installation/release, coupling execution, projection and publication remain paid
+in explicit overhead terms.
+
+`sharedComplexBatchLineCost_geometry_le` combines those two interior-pass bounds
+per real component with the already exposed pair of boundary solves.
+`sharedComplexClosedBatchCost_geometry_le` carries the resulting complete line
+allowance into the executed one-key batch, paying the key charge once. The
+recovery and initial passes are not assumed to share numerical targets or input
+magnitude bounds.
+
+Coupling work still uses its actual full row/offset schedule. No nonzero-only
+charge is asserted for entries the program visits and masks out. A faster
+coupling schedule or a bound paying those visits, final supplier/precision/setup
+matching, simultaneous live storage and final endpoint/resource integration
+remain open. S3 remains partial.
+
+Validation: all 14,805 guarded stage-audit jobs pass (3.4 GiB combined peak).
+The interior-pass split/geometry/batch-ledger module passes its individual guarded
+check at 2947.2 MiB. Source-integrity, whitespace and plan-status checks pass;
+default proof limits remain unchanged.
+
+### Identify the per-row ambient capture in the paid coupling schedule
+
+The actual `rawCouplingOperands` program generates a whole-line byte clock,
+copies the ambient source prefix and clears that copy for every row. Its
+`rawCouplingOperandsCost` contains `s*(16*wordWidth+9)+16` for capture plus
+`2*(s*wordWidth)+2` for retirement. `couplingRowStepCost_capture_le` and
+`couplingRowLoopCost_capture_le` propagate that paid term through the row step
+and counted loop. `runCouplingRowsCost_capture_le` proves that the current full
+row allowance contains at least `18*s*s*wordWidth`.
+
+This is explicitly a lower bound on the declared allowance, not a theorem that
+every execution requires that much time. It identifies an implemented repeated
+copy that cannot be dropped from this ledger by bounding coupling nonzeros.
+Source retention across rows and cheaper indexed access/scheduling are the next
+coupling implementation targets. Coefficient lookup and scalar arithmetic also
+remain paid; removing repeated source capture alone will not prove the final
+fast bound. S3 remains partial, with setup/supplier matching, simultaneous live
+storage and endpoint/resource integration still open.
+
+Validation: all 14,806 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All four new affine/boundary/interior/coupling-capture cost modules pass
+individual guarded checks (maximum 2947.2 MiB). Source-integrity, whitespace
+and plan-status checks pass; proof limits remain unchanged.

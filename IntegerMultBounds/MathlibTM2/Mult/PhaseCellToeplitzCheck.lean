@@ -19,6 +19,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageClosedComplex
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedSharedInverseCaller
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComplexBatchStep
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageClosedComplexBatch
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageInteriorCost
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingCaptureCost
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedInverseCaller
@@ -2138,6 +2140,21 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchReleaseResult_restore,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchReleaseCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexClosedBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexClosedBatchCost_affine,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexClosedBatchCost_mono,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexClosedBatchCost_groups,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchLineCost_boundary,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchLineCost_boundary_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexClosedBatchCost_boundary_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.realInteriorResidualCost_split,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.realInteriorResidualCost_geometry_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.recoveryToleranceCost_split,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.recoveryToleranceCost_geometry_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchLineCost_geometry_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexClosedBatchCost_geometry_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingRowStepCost_capture_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingRowLoopCost_capture_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runCouplingRowsCost_capture_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageBoundaryFactory_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageInverseSetup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageConstructedComplex_spec,
