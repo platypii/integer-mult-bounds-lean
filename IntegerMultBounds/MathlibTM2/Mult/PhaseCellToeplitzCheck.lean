@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryFactorPage
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorStateFits
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorStabilityBudget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorPageSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorPageIntegers
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorRow
@@ -1824,6 +1827,23 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputIntegers_colC,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorBandWidth_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedFactorPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedFactorPage_ready_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.constructedBoundaryFactorPage_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRankMatrix_band,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryTable_row_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryTable_stageInv,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bFoldAt_sum,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRankMatrix_stageInv,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRankIntegerMatrix_out,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRankIntegerMatrix_value,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWindowIntegers_windowZ,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputIntegers_inputsZ,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRankIntegerMatrix_band,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorIntegerState_window,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorIntegerStage_sizes,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorIntegerState_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryTable_factor_margin_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactor_stageInv_allocated,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,

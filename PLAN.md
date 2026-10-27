@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1727 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1735 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9370,3 +9370,51 @@ window/input scans, full page, setup, shape, grid, format and integer-row audits
 Combined build peak is 2.7 GiB. All ten new modules and the audit root pass
 individual guarded checks at at most 2072.3 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Compose table construction with the complete factor page and its stability interface
+
+`constructedBoundaryFactorPage_spec` executes folded-page setup, every computed
+Schur column, packed-table construction and the full factor-input page from the
+ordinary retained-master invariant. The columns, accurate matrix, packed table,
+factor-width header and emitted rows are all produced by this execution. The
+final exact physical frame changes only the folded coordinate page and headers,
+packed table and factor-input page. Clearing the consumed factor-page port
+restores `LengthKeyReady`; this is a readiness statement, not an assumed page
+consumption execution. The explicit cost includes the complete table builder
+and generated factor page.
+
+`boundaryTable_stageInv` converts the produced entry error into row error
+`B.card * 2^-target` and the corresponding dominance/mass losses. The composed
+constructor returns this invariant both on boundary coordinates and natural
+factor ranks. `factorRankMatrix_band` proves the exact required band support.
+The rank transfer uses a structural sum bijection over the folded boundary;
+it does not evaluate or compare concrete matrix data.
+
+`factorRankIntegerMatrix_value`, `factorWindowIntegers_windowZ` and
+`factorInputIntegers_inputsZ` identify the actual emitted integer rows with one
+zero-extended band matrix. `factorIntegerState_window` identifies every
+intermediate `facState` with that matrix's integer elimination-stage window.
+`factorIntegerStage_sizes` and `factorIntegerState_fits` adapt the existing
+stage/Newton bounds to this actual computed matrix, including arbitrary positive
+half-band width and the zero-padding cases. They derive all pivot, reciprocal,
+truncated-product, row-entry and multiplier fits from the rank stage invariant
+and explicit precision/Newton/width inequalities, rather than a supplied
+per-step `FacFits` oracle.
+
+`boundaryTable_factor_margin_budget` proves that the existing
+`boundaryTableBits` allocation bounds total row error by `1/(16*p)`.
+`boundaryFactor_stageInv_allocated` therefore gives the positive `1/(16*p)`
+margin and `9/4` mass used by the factor-stage size proof.
+
+The remaining precision/Newton/width inequalities still need their canonical
+allocation proofs, and the actual factorization/solve/release programs still
+need composing with this produced page and the full endpoint. Uniform fast
+time, complete simultaneous live storage and the final S3 theorem remain open.
+S3 remains partial.
+
+Validation: all 14,579 guarded stage-audit jobs pass, including 17 new explicit
+ready-handoff, constructed-page, band/stability, integer-state, size/fit and
+allocated-margin audits. Combined build peak is 4.4 GiB. All eight new modules
+and the audit root pass individual guarded checks at at most 2942.4 MiB, below
+the 4 GiB per-module target. Added-source integrity, plan-status and whitespace
+checks pass; proof limits are unchanged.
