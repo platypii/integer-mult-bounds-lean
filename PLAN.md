@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1745 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1750 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9502,3 +9502,42 @@ adaptation and generated-counter/readiness audits. Combined build peak is
 3.4 GiB. All five new modules and the audit root pass individual guarded checks
 at at most 2948.1 MiB, below the 4 GiB per-module target. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Generate physical factor dimensions and compose them with table/page construction
+
+`UnarySetup.exec` proves a structural straight-line setup interpreter for borrowed
+unary additions/products, fixed pushes and cleanup. Each instruction charges its
+actual arithmetic cost and restores its scratch; the list theorem carries the
+exact resulting register function. Its frame lemmas preserve every unwritten
+tape. This factors the repeated tape argument out of the concrete setup.
+
+`boundaryFactorDimensions_exec` now generates the eight factor dimension/volume
+headers from retained band/cardinality masters and generated word width. It
+constructs `k=12*band`, `W=k+1`, `2*W`, the pivot count, `k*w`, `2*W*w`,
+`(2*W+1)*w` and `(W+1)*(2*W+1)*w`. The temporary row-count header is released.
+The proved explicit cost includes every scan and unary product. Multiplication
+readiness and all tapes outside the declared header ports are preserved.
+`boundaryFactorHeaderSetup_exec` composes this with generated multiplier
+readiness; `boundaryFactorHeaderR_legacy` preserves every legacy tape exactly.
+
+`boundaryFactorHeaderHandoff_exec` supplies the structural bridge from any
+legacy table state with the proved frame to the fresh physical factor bank.
+`constructedBoundaryFactorHeaders_spec` lifts the actual allocated table/page
+construction into that bank and executes the combined header setup. It returns
+the exact physical state, live input page, `RsbReady`, column accuracy/format,
+packed-table storage bound, entry error, rank-matrix stability and all canonical
+factor-state fits. No table, column family, readiness execution or factor
+dimension header is supplied. The cost includes full construction and setup.
+The handoff and width conversion are factored to keep default proof limits.
+
+The logarithmic Newton-count header and encoded seed/mask still need runtime
+generation. Complete factorization/solve/release composition, the full real and
+imaginary endpoint, uniform fast time, simultaneous live storage and the final
+S3 theorem remain open. S3 remains partial.
+
+Validation: all 14,594 guarded stage-audit jobs pass, including 13 new explicit
+structural setup/frame, dimension, readiness-preservation, legacy handoff and
+composed physical-construction audits. Combined build peak is 3.4 GiB. All five
+new modules and the audit root pass individual guarded checks at at most
+2948.7 MiB, below the 4 GiB per-module target. Added-source integrity, plan-status
+and whitespace checks pass; proof limits are unchanged.
