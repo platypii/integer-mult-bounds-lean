@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBorrowedCouplingPass
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingRowField
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingPassOutputSpec
 
 /-! Restoring physical line handoff with uniform residual/recovery accuracy
 and a reusable ambient integer output and norm bound. -/
@@ -65,27 +65,7 @@ theorem borrowedCouplingPass_spec (hQ : SS.states ≤ Q)
         have hh := couplingCoefficientWords_bounds (q := q) (band := band) (i := j)
           hp (NeZero.pos s) hst hαu hθ hgap hbudget z hz
         exact ⟨fits_of_value_power hwCoeff z hh.1,hh.2⟩)
-  refine ⟨v',m,hu,hm,he,guardedCouplingRowWords_eq_chirpLine _ _ _ _ _ _ _ _ _ _,by simp,?_,?_⟩
-  · exact guardedCouplingRowField_norm boundary hp hst hαu hθ hgap hbudget C B hcount hB hC
-  · intro j hj hobserved
-    let ys := guardedCouplingRowWords (2^15*p) q t u band a b boundary C 0 (chirpLine s B)
-    have hj' : j < ys.length := by simpa [ys] using hj
-    have hget : ys[j] = guardedCouplingRowWord (2^15*p) q t u band a b j boundary C (B (j : ZMod s)) := by
-      have hh := guardedCouplingRowWords_getElem (2^15*p) q t u band a b 0 boundary C (chirpLine s B) j
-        (by simpa using hj)
-      simpa [ys,chirpLine] using hh
-    rw [cstream_word w ys (S.R 113) j hj',hget]
-    rw [guardedCouplingRowWord_eq hst (2^15*p) q u band a b j boundary hbS hj C (B (j : ZMod s)) hobserved]
-    have herror := maskedCouplingRow_error boundary hA hp hst hαu hθ hgap hbudget hw hj C x (B (j : ZMod s))
-      (b₀ (j : ZMod s)) K ε rhsError hε (by simpa [hband] using hcount) (hB _)
-      (by simpa [hband] using hC) (by simpa [hband] using hx) (by simpa [hband] using hmass j hj)
-      (hBError _) (S.R 113)
-    have hword (z : GaussianInt) : (csyms A w z++S.R 113).take w = csyms A w z := by
-      have hlen : (csyms A w z).length = w := by simp
-      simp only [List.take_append,hlen,Nat.sub_self,List.take_zero,List.append_nil]
-      simpa only [hlen] using (show (csyms A w z).take (csyms A w z).length = csyms A w z from List.take_length)
-    dsimp only at herror
-    rw [hword] at herror
-    simpa only [couplingRowWord,hband] using herror
+  exact ⟨v',m,hu,hm,he,couplingPass_output_spec boundary hA hp hst hαu hθ hgap hbudget
+    hw hbS hband C B x b₀ K ε rhsError hε hcount hB hC hx hmass hBError (S.R 113)⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

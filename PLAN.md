@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2067 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2073 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13108,3 +13108,35 @@ kappa is unchanged.
 Validation: the expanded guarded stage axiom audit passes all 14,918 jobs
 (3.4 GiB combined peak RSS). Both new modules pass individual guarded checks,
 with maximum peak RSS 2957.1 MiB. Proof-integrity and whitespace checks pass.
+
+### S3 cached borrowed-line and next-input handoffs
+
+`placedCachedBorrowedCouplingPass_exec` stages the original RHS and published
+solution, executes the complete cached spatial pass, then retires the borrowed
+source copy. Its exact frame changes only result port 113. Ordinary staging and
+retirement scratch, both source lines, both cache keys and all borrowed suffixes
+restore. The executed cost adds the existing linear staging/retirement bill to
+the cached spatial ledger.
+
+`couplingPass_output_spec` factors the common field identity, output length,
+norm and observed-coordinate error proof out of the original packet backend.
+Both the original and cached borrowed-pass specifications now use this one
+backend-independent lemma. The cached specification therefore exposes the same
+residual/recovery accuracy and reusable ambient integer field.
+
+`placedCachedFeedCouplingPass_spec` feeds that computed field onto the next
+raw-input solve's port 110, restores the previous result suffix, and retains
+both original source lines and both cache keys. Its complete execution and
+numerical guarantee no longer require a supplied padded source or coefficient
+packet, but do require the computed cache descriptor from placed setup.
+
+The enclosing residual/recovery solvers and counted complex batch still need
+this cached handoff wired into their production calls and both precision keys
+hoisted around the batch. Uniform fast time matching and simultaneous
+whole-execution live storage remain open. S3 remains partial; kappa is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,924 jobs.
+The dependency rebuild peaks at 31.2 GiB combined RSS under the guarded build;
+all seven changed modules pass individual checks, with maximum peak RSS
+2964.3 MiB, below the 4 GiB module budget.
+Proof-integrity and whitespace checks pass.
