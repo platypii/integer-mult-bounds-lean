@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1869 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1873 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10895,3 +10895,37 @@ scalar-selection axiom audits; the final rebuild peaks at 3.4 GiB combined.
 Individual guarded checks peak at 1352.9 MiB (root/bit-count arithmetic),
 1774.2 MiB (band selection) and 2027.0 MiB (precision and dimension words).
 Source-integrity, whitespace and plan-status checks pass. Proof limits are unchanged.
+
+### Compose scalar selection and install the inverse master headers
+
+`boundaryCountCode_do` counts the actual halo boundary directly from ordinary
+scalar geometry, before any coefficient or boundary page exists. Its result is
+exactly `(haloBoundary s t band a b).card`, its accumulator is unchanged and its
+atom bound is `31*s+4`. The count uses the already verified halo membership test;
+it is not supplied by the caller.
+
+`tblComputedInversePrecision_do` composes the three bit counts, affine exponent
+and dimension-word programs. `tblInverseScalars_do` then composes band selection,
+boundary counting and precision selection from only the eight scalar inputs
+p, u, l, target, s, t, a and b. It preserves all eight inputs and proves the exact
+band, boundary cardinality, working exponent, q, stage count, word width and
+scaled arithmetic parameter, including every word fit. Its atom bound is
+`4*band+31*s+4*(size(8*p)+size(N)+size(2*band+1))+116`.
+
+`installInverseHeaders_exec` executes that fixed scalar program and converts its
+results into the ten ordinary unary masters. It charges all table execution and
+unary conversions and proves the exact header prefixes, untouched spectators,
+input/output/left-stack restoration and retained binary-bank contract. The
+header ports and scalar register map are structural parameters, so the setup can
+be placed outside the retained solver without duplicating its proof.
+
+Physical bank placement, cleanup of the derived scalar workspace and composition
+with the retained inverse remain open; the public retained caller still takes
+its readiness bank. Uniform fast time matching and simultaneous live-storage
+bounds also remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,719 guarded stage-audit jobs pass, including seven new explicit
+composition/counting/header-installation axiom audits; final combined peak is
+3.4 GiB. All five changed implementation modules pass individual guarded checks
+(maximum 2240.6 MiB). Source-integrity, whitespace and plan-status checks pass.
+Proof limits are unchanged.

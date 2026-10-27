@@ -132,4 +132,34 @@ theorem tblBitCount_do {A W e : ℕ} (st : TblSt 4 A) (x : ℕ)
       · exact hpow.trans_lt hroom
       · omega⟩) (by omega)
 
+/-- Count bits in any four distinct registers, retaining the source and every spectator. -/
+theorem tblBitCount_at {n A W e : ℕ} (f : Fin 4 → Fin n) (hf : Function.Injective f)
+    (st : TblSt n A) (x : ℕ) (hx : st.val (f 0) = x) (hroom : 2*(x+1) < 2^W)
+    (hfit : ∀ i, st.val i < 2^W) :
+    TblDo A W e (tblBitCount.rename f) st
+      (fun z => z.val (f 3) = Nat.size x ∧ z.acc = st.acc ∧
+        (∀ i, i ≠ f 1 → i ≠ f 2 → i ≠ f 3 → z.val i = st.val i) ∧
+        ∀ i, z.val i < 2^W) (4*Nat.size x+7) := by
+  have h := (tblBitCount_do (A := A) (W := W) (e := e) (st.restrict f) x hx hroom).rename hf
+  exact h.mono (fun z ⟨⟨hv,ha,hvfit⟩,hoff⟩ => by
+    refine ⟨congrFun hv 3,ha,?_,?_⟩
+    · intro i h1 h2 h3
+      by_cases h0 : i = f 0
+      · subst i
+        exact (congrFun hv 0).trans hx.symm
+      · exact hoff i (by intro j; fin_cases j <;> first | exact Ne.symm h0 | exact Ne.symm h1 | exact Ne.symm h2 | exact Ne.symm h3)
+    · intro i
+      by_cases hi : ∃ j, f j = i
+      · obtain ⟨j,rfl⟩ := hi
+        exact hvfit j
+      · rw [hoff i (by intro j he; exact hi ⟨j,he⟩)]
+        exact hfit i) (le_refl _)
+
+/-- Binary table execution preserves the word bound, including untouched variables. -/
+theorem tblDo_with_fits {n A W e K : ℕ} {c : TblCode n} {st : TblSt n A}
+    {Post : TblSt n A → Prop} (h : TblDo A W e c st Post K) (hfit : ∀ i, st.val i < 2^W) :
+    TblDo A W e c st (fun z => Post z ∧ ∀ i, z.val i < 2^W) K := by
+  obtain ⟨z,k,hbig,hpost,hcost⟩ := h
+  exact ⟨z,k,hbig,⟨hpost,hbig.lt hfit⟩,hcost⟩
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

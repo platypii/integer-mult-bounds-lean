@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallInverseHeaders
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBandParameterSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInversePrecisionSetup
 
@@ -2044,6 +2046,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.physicalOriginalComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedComplexBoundary_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedInverse_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblBitCount_at,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblDo_with_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryCountRow_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryCountCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblComputedInversePrecision_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblInverseScalars_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.installInverseHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblRootSuccessor_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblBitCount_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandRootMap_injective,
