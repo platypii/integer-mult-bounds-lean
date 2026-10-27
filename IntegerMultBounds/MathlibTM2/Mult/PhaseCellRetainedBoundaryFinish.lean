@@ -84,7 +84,7 @@ theorem retainedBoundaryFinish_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
         let S' : Stacks 224 A := {S with R := (Function.update (Function.update (Function.update (Function.update S.R
           110 (original++tail)) 145 savedTail) 146 originalTail) 132 Z)}
         v'.user = v.user ∧ n ≤ n₀+recoveryToleranceCost p l s t u bits 2 a b+
-          retirePublishedBoundaryCost s B.card (12*band+1) w+releaseBoundaryWorkspaceCost s w S₀+cleanFinishComponentsCost q s ∧
+          haloBoundaryRetirementCostBound s t band a b w+releaseBoundaryWorkspaceCost s w S₀+cleanFinishComponentsCost q s ∧
         Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))) (retainedBoundaryFinish hR hQ)
           (mk v S) n (mk v' S') ∧

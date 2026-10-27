@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryPublished
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPhysicalRecoveryPublishedHalo
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryBudget
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetirePublishedBoundary
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRetirementCost
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseBoundaryWorkspace
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryPublish
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryReady
@@ -74,7 +74,7 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
         let Y := fun i => realPartWord (publicationField t band a b E G i)
         let S' : Stacks 224 A := {S with R := Function.update S.R 132 (cstream A w (chirpLine s Y)++S.R 132)}
         v'.user = v.user ∧ n ≤ n₀+recoveryToleranceCost p l s t u bits 2 a b+
-          retirePublishedBoundaryCost s B.card (12*band+1) w+releaseBoundaryWorkspaceCost s w S₀ ∧
+          haloBoundaryRetirementCostBound s t band a b w+releaseBoundaryWorkspaceCost s w S₀ ∧
         Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))) (retainedBoundaryRecovered hR hQ)
           (mk v S) n (mk v' S') ∧
@@ -128,7 +128,7 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   let S₁ : Stacks 224 A := {S₀ with R := (Function.update
     (Function.update S₀.R 110 (cstream A w (chirpLine s R)++(cstream A w (chirpLine s F)++tail)))
     132 (cstream A w (chirpLine s Y)++sourceTail))}
-  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := retirePublishedBoundary_exec (body := embTab boundaryFactorLegacyReg
+  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := retirePublishedBoundary_exec_bounded (body := embTab boundaryFactorLegacyReg
     (embTab tableReg (embTab boundaryArithmeticReg (embTab componentReg (embTab groupReg body)))))
     B (12*band+1) w columns hcols (cstream A w (chirpLine s Y)) (cstream A w (chirpLine s D))
     (S.R 132) (by simp [chirpLine]) (by simp [chirpLine]) v₁ S₁
@@ -139,6 +139,8 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       have hi110 : i ≠ 110 := by simp only [List.mem_cons,List.not_mem_nil,or_false] at hi; rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
       have hi132 : i ≠ 132 := by simp only [List.mem_cons,List.not_mem_nil,or_false] at hi; rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
       simpa [S₁,hi110,hi132] using hretire₀.scratch i hi)
+  have hn₂' : n₂ ≤ haloBoundaryRetirementCostBound s t band a b w :=
+    hn₂.trans (haloBoundary_retirement_cost_le hst band a b w)
   let S₂ : Stacks 224 A := {S₀ with R := (Function.update
     (Function.update S₀.R 110 (cstream A w (chirpLine s R)++(cstream A w (chirpLine s F)++tail)))
     132 (cstream A w (chirpLine s Y)++S.R 132))}
@@ -160,7 +162,7 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
   have hn₃' : n₃ ≤ releaseBoundaryWorkspaceCost s w S₀ := hn₃
   refine ⟨v₃,n₀+(n₁+(n₂+n₃)),E,hu₃.trans (hu₂.trans (hu₁.trans hu₀)),?_,
     (Exec.seq he₀ (Exec.seq he₁ (Exec.seq he₂' he₃))).cast rfl ?_,?_⟩
-  · have hh := Nat.add_le_add hn₁ (Nat.add_le_add hn₂ hn₃')
+  · have hh := Nat.add_le_add hn₁ (Nat.add_le_add hn₂' hn₃')
     simpa only [Nat.add_assoc] using Nat.add_le_add_left hh n₀
   · apply congrArg (mk v₃)
     refine Stacks.ext hinp hout hL ?_

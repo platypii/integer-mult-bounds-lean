@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1860 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1862 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `retainedComplexBoundary_spec` executes from one encoded complex input and the retained ordinary-parameter readiness bank: preserve/split the input, generate the residual and boundary table, construct/factor/solve/unscale the boundary system, generate ambient publication, recover both components, pair the complex output and restore every stack except its owned output prefix. Physical halo reads have error at most `2^-target`; no supplied boundary solutions, columns, factors or publication controls remain. Shared arithmetic precision and exact borrowed-suffix restoration are proved. The final inverse caller/setup interface, uniform fast time and simultaneous live-storage bounds remain open, including bounds on reached retirement lengths and matching the prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `retainedComplexBoundary_spec` executes from one encoded complex input and the retained ordinary-parameter readiness bank: preserve/split the input, generate the residual and boundary table, construct/factor/solve/unscale the boundary system, generate ambient publication, recover both components, pair the complex output and restore every stack except its owned output prefix. Physical halo reads have error at most `2^-target`; no supplied boundary solutions, columns, factors or publication controls remain. Shared arithmetic precision and exact borrowed-suffix restoration are proved. `retainedInverse_spec` specializes the executed solver to the full complex matrix equation with uniform coordinate error. Packed-table retirement now has an explicit polynomial bound in ordinary geometry. Closed caller/setup, uniform fast time and simultaneous live-storage bounds remain open, including reached-header bounds and matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -10752,3 +10752,35 @@ preparation, physical preparation and original-complex-input execution axiom
 audits. Combined peak is 3.4 GiB. Individual guarded checks peak at 1956.7 MiB,
 2908.9 MiB and 2941.3 MiB respectively; all new modules remain below 3 GiB.
 Source-integrity, whitespace and plan-status checks pass. Proof limits are unchanged.
+
+### Full complex inverse contract and dimension-only table retirement bound
+
+`retainedInverse_spec` specializes the executed, restored complex solver to the
+full interval. Its premise is the ordinary complex matrix equation
+`Matrix.mulVec (fun i j => (realMatrix ... i j : ℂ)) z = decodedRhs`; its result is
+an actual execution with physical coordinate error at most `2^-target` against
+`z`. The source, borrowed suffixes, I/O and every stack except the owned output
+prefix are restored. Real/imaginary row equations follow structurally from the
+complex equation, without a second numerical backend.
+
+Packed-table retirement now has a dimension-only bound:
+`N*(40*N+36*W+12*(2*W+1)*w+88)+6`. The published-prefix retirement bound adds
+`18*s*w+9*s+18`. The clipped controls and each column/step are bounded once,
+then the counted sum is bounded structurally. The actual recovery, transition
+and finish endpoints now use this bound, with
+`N ≤ min (b-a) (2*band*(t-s+2))` proved from the interval and original phase cuts.
+This eliminates the packed-retirement finite sum in favor of ordinary geometry.
+
+This polynomial bound is an accounting step, not the final fast asymptotic
+estimate. Closed inverse caller/setup, reached-header/factor-bank bounds,
+complete uniform time matching and simultaneous live-storage gates remain open.
+S3 remains partial; kappa is unchanged.
+
+Validation: all 14,708 guarded stage-audit jobs pass, including eleven explicit
+inverse/cardinality/retirement-budget axiom audits. Combined peak is 3.4 GiB.
+Individual guarded checks peak at 1750.8 MiB for the geometry count, 1937.3 MiB
+for retirement bounds and 2929.0 MiB for the full inverse contract. The affected
+recovery and transition modules check at 2969.5 and 2945.2 MiB. Source-integrity,
+whitespace and plan-status checks pass. Proof limits are unchanged.
+The affected finish module checks at 2947.5 MiB; all new and changed proof modules
+remain below 3 GiB.

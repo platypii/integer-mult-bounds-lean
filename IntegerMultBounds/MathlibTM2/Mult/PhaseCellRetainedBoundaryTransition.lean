@@ -79,7 +79,7 @@ theorem retainedBoundaryTransition_spec (hR : rpStates ≤ Q) (hQ : SS.states �
         let S' : Stacks 224 A := {S with R := Function.update (Function.update (Function.update S.R
           110 (next++tail)) 144 parkedTail) 145 (cstream A w (chirpLine s Y)++S.R 145)}
         v'.user = v.user ∧ n ≤ n₀+recoveryToleranceCost p l s t u bits 2 a b+
-          retirePublishedBoundaryCost s B.card (12*band+1) w+releaseBoundaryWorkspaceCost s w S₀+cleanComponentTransitionCost q s ∧
+          haloBoundaryRetirementCostBound s t band a b w+releaseBoundaryWorkspaceCost s w S₀+cleanComponentTransitionCost q s ∧
         Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
           (embTab componentReg (embTab groupReg body))))) (retainedBoundaryTransition hR hQ)
           (mk v S) n (mk v' S') ∧

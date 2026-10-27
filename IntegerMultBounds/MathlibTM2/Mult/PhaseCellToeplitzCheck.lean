@@ -315,6 +315,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryRecovered
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryTransition
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryPair
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedComplexBoundary
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedInverse
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -2036,6 +2037,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.physicalOriginalComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedComplexBoundary_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedInverse_spec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloBoundary_card_bound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.clipUnaryCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.clippedBandControlsCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retirePackedBandColumnCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retirePackedBandStepCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retirePackedBandTableCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retirePublishedBoundaryCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retirePublishedBoundaryCostBound_mono,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloBoundary_retirement_cost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retirePublishedBoundary_exec_bounded,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedLoop_exec_remaining_costs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retirePackedBandColumn_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retirePackedBandStep_exec,
