@@ -36,19 +36,19 @@ theorem familyHaloInteriorGeometryCost_eq (p l s t u target rhsExp a b : ℕ) :
   ring
 
 /-- Actual first-pass precision and a derived ring length give a uniform arithmetic allowance. -/
-theorem familyInterior_selected_fast_le (ct cG : ℕ) :
-    ∃ C : ℝ, 0 ≤ C ∧ ∀ A p u target s t a b : ℕ, ∀ [NeZero s],
+theorem familyInteriorGeometry_selected_fast_le (ct cG : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ p u target s t a b : ℕ, ∀ [NeZero s],
       1 ≤ p → s < t → PhaseCellBand.width p u ≤ s →
       1/(4*(p : ℝ)) ≤ (t : ℝ)/s-1 → target ≤ ct*p → Nat.size (2*s+1) ≤ cG*p →
       let l := haloInverseRingLog s t
       let N := (haloBoundary s t (PhaseCellBand.width p u) a b).card
       let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
       let stage := initialSchurTarget p u bits 2
-      (familySolveHaloInteriorCost A p l s t u stage 2 a b : ℝ) ≤
+      (familyHaloInteriorGeometryCost p l s t u stage 2 a b : ℝ) ≤
         (familyHaloControlCost p l s t u stage 2 a b : ℝ)+C*(t : ℝ)*(p : ℝ)^(129/128 : ℝ) := by
   obtain ⟨K,hK,hfast⟩ := inverseCachedArithmetic_selected_fast_le 20 ct cG 20
   refine ⟨9*K,by positivity,?_⟩
-  intro A p u target s t a b _ hp hst hband hθ ht hgeometry
+  intro p u target s t a b _ hp hst hband hθ ht hgeometry
   dsimp only
   let l := haloInverseRingLog s t
   let N := (haloBoundary s t (PhaseCellBand.width p u) a b).card
@@ -81,12 +81,29 @@ theorem familyInterior_selected_fast_le (ct cG : ℕ) :
       _ ≤ K*(9*(t : ℝ))*(p : ℝ)^(129/128 : ℝ) :=
         mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_left hsum hK) hMp
       _ = _ := by ring
-  have hcost := familySolveHaloInteriorCost_geometry_le hst A p l u stage 2 a b
-  rw [familyHaloInteriorGeometryCost_eq] at hcost
-  have hcostR : (familySolveHaloInteriorCost A p l s t u stage 2 a b : ℝ) ≤
-      (familyHaloControlCost p l s t u stage 2 a b : ℝ)+
-        (I : ℝ)*((cachedBatchCoordinateCost p l stage 2+44*w : ℕ) : ℝ)+
-        ((t-s+1 : ℕ) : ℝ)*(cachedBatchCellCost p l stage 2 : ℝ) := by exact_mod_cast hcost
-  linarith only [hcostR,harithmetic]
+  rw [familyHaloInteriorGeometryCost_eq]
+  push_cast at harithmetic ⊢
+  dsimp only [I,w,l,stage,bits,N] at harithmetic
+  linarith only [harithmetic]
+
+/-- Attach the selected geometry allowance to the actual executed pass ledger. -/
+theorem familyInterior_selected_fast_le (ct cG : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ A p u target s t a b : ℕ, ∀ [NeZero s],
+      1 ≤ p → s < t → PhaseCellBand.width p u ≤ s →
+      1/(4*(p : ℝ)) ≤ (t : ℝ)/s-1 → target ≤ ct*p → Nat.size (2*s+1) ≤ cG*p →
+      let l := haloInverseRingLog s t
+      let N := (haloBoundary s t (PhaseCellBand.width p u) a b).card
+      let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
+      let stage := initialSchurTarget p u bits 2
+      (familySolveHaloInteriorCost A p l s t u stage 2 a b : ℝ) ≤
+        (familyHaloControlCost p l s t u stage 2 a b : ℝ)+C*(t : ℝ)*(p : ℝ)^(129/128 : ℝ) := by
+  obtain ⟨C,hC,hfast⟩ := familyInteriorGeometry_selected_fast_le ct cG
+  refine ⟨C,hC,?_⟩
+  intro A p u target s t a b _ hp hst hband hθ ht hgeometry
+  have h := hfast p u target s t a b hp hst hband hθ ht hgeometry
+  have hcost := familySolveHaloInteriorCost_geometry_le hst A p (haloInverseRingLog s t) u
+    (initialSchurTarget p u (boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2
+      (haloBoundary s t (PhaseCellBand.width p u) a b).card) 2) 2 a b
+  exact (Nat.cast_le (α := ℝ)).mpr hcost |>.trans h
 
 end IntegerMultBounds.MathlibTM2.Cost

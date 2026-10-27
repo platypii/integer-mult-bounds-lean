@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2225 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2229 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14294,3 +14294,41 @@ Validation: the expanded standard-axiom audit passes all 15,112 jobs (3.5 GiB
 combined peak RSS), retaining all prior entries and adding 11. All four new
 modules and the audit pass individual guarded checks below the 4 GiB module
 budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
+
+### S3 checkpoint: fast recovery and prepared-boundary work in the actual caller ledger
+
+`familyInteriorGeometry_selected_fast_le` exposes the first-pass geometry
+allowance while preserving the existing executed-pass theorem as a corollary.
+`familyHaloInteriorArithmetic_congr` proves that equal working exponents give
+identical cached coordinate, padded-cell and family-traversal arithmetic.
+Recovery's proved exponent identity therefore transfers the selected allowance
+to its larger RHS magnitude. `familyInteriorPair_selected_fast_le` charges both
+passes while retaining both control bills explicitly.
+
+The real-component and paired-complex bounds now cover all four interior passes.
+`familyBoundaryLine_selected_fast_le` instantiates the prepared residual solver's
+fast bound at the same actual inverse precision and selected ring logarithm.
+The exact boundary-cost split removes precisely the two solve charges from the
+remaining line ledger; its natural subtraction is justified by the proved split.
+
+`familyComplexBatch_selected_work_fast_le` and
+`familyInverseCaller_selected_work_fast_le` carry the combined allowance into
+the actual generated batch and ordinary-scalar caller cost functions. Under
+fixed linear target and ambient-bit bounds, the repeated arithmetic is bounded
+by `C*(t+(N+1)*W)*p^(129/128)`, with the actual boundary row count `N` and band
+width `W=12*band+1`. Batch setup is paid once and the repeated allowance scales
+with the replica count. Scalar header work, coupling, control/address work and
+remaining tape work are still charged explicitly in the remaining ledger.
+Boundary rank has not been substituted for tensor dimension or a density bound.
+
+Remaining: bound the remaining coupling/control/address/tape ledger, match
+actual setup multiplicities and boundary density to the final fast envelope,
+and prove simultaneous whole-execution live storage. The four interior passes
+and both prepared boundary solves are now in the uniform work allowance, but
+S3's complete resource gates remain open. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,116 jobs (3.4 GiB
+combined peak RSS), retaining all prior entries and adding 11. All four new
+modules, the revised interior module and the audit pass individual guarded
+checks below the 4 GiB module budget. Proof-integrity, audit-coverage,
+plan-status and whitespace checks pass.

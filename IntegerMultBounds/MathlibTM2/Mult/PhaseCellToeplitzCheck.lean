@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyBatchFast
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyInteriorFast
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyInverseGeometryCaller
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedFamilyInverseCaller
@@ -3066,7 +3067,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.phaseGap_cellLength_le,
       `IntegerMultBounds.MathlibTM2.Cost.haloInverseRingLog_bounds,
       `IntegerMultBounds.MathlibTM2.Cost.haloInverseRing_paddedVolume_le,
-      `IntegerMultBounds.MathlibTM2.Cost.inverseCachedArithmetic_selected_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.inverseCachedArithmetic_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyInteriorGeometry_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexBatch_selected_work_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_work_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyBoundaryLine_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexRemainingLineCost_boundary_split,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexGeometry_selected_work_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyRealComponentGeometryCost_split,
+      `IntegerMultBounds.MathlibTM2.Cost.familyRealComponentGeometry_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexGeometry_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyHaloInteriorArithmetic_congr,
+      `IntegerMultBounds.MathlibTM2.Cost.familyInteriorPair_selected_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
