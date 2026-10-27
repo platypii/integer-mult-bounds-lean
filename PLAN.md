@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2104 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2107 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13411,3 +13411,35 @@ Validation: the expanded guarded stage axiom audit passes all 14,955 jobs
 (3.5 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 All five new modules pass individual guarded checks, with maximum peak RSS
 3340.7 MiB, below the 4 GiB module budget.
+
+### S3 generated coefficient key hoisted around the counted batch
+
+`generatedCacheComplexBatch_spec` now constructs the actual retained coefficient
+page and guards from ordinary length-key masters, executes the entire counted
+cached complex batch, and releases the key afterward. No supplied coefficient
+page, guard stream or cache-readiness descriptor remains in this batch contract.
+Setup is executed once before all replicas; release is executed once after
+ordered publication. The same selected key is reused across every replica and
+both of each replica's real residual/recovery passes.
+
+`couplingKeySetup_exec` and `couplingKeyRelease_exec` generate and release their
+private coupling headers around the cache operation, restoring the complete
+ordinary workspace. The coefficient bank permits a borrowed suffix; the other
+three owned cache ports start empty and restore empty. The final batch frame
+changes only port 132's owned output prefix, including restoration of the
+borrowed coefficient suffix, other cache bank, original input, factor page,
+controls, clocks, parked streams, private headers and scratch. The per-replica
+uniform complex target-error relation is unchanged. Setup, all replicas,
+publication and release each contribute their executed cost.
+
+Structural cache/header commutation and output-restoration lemmas keep the
+batch proof within default proof limits. The enclosing generated factor-page
+and ordinary-scalar caller still needs this batch substituted into its complete
+setup/solve/release composition. Final uniform fast time matching and
+simultaneous whole-execution live storage remain open. S3 stays partial; kappa
+is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,958 jobs
+(3.5 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+All three new modules pass individual guarded checks, with maximum peak RSS
+3053.7 MiB, below the 4 GiB module budget.
