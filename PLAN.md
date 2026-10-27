@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1978 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1979 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12070,7 +12070,7 @@ Source-integrity and whitespace checks pass; default proof limits are unchanged.
 ### Compose spatial row arithmetic with actual cursor advancement
 
 `spatialCouplingReg` embeds the native spatial row into the 144-port workspace,
-placing its source 92 on outer 141 while retaining the ordinary coefficient,
+placing its retained source 117 on outer 141 while retaining the ordinary coefficient,
 RHS, result and header addresses. Its injectivity keeps outer saved cursor 142
 and loop counter 143 outside the row workspace.
 `outerSpatialCouplingRow_exec` lifts the complete row to an arbitrary outer
@@ -12091,4 +12091,30 @@ S3 stays partial and the production inverse retains the indexed path.
 
 Validation: all 14,827 guarded stage-audit jobs pass (3.4 GiB combined peak).
 Both new modules pass individual guarded checks (maximum 1944.2 MiB).
+Source-integrity and whitespace checks pass; default proof limits are unchanged.
+
+### Separate the retained spatial source from arithmetic scratch
+
+Interface inspection before counted-loop composition found that native port 92
+is a scalar arithmetic role. The previous 117-port spatial-row contract required
+both the retained source and fresh arithmetic on that port, making it unusable
+for nonempty input even though its conditional execution proof checked.
+
+`spatialCouplingOperands_exec` now lifts operand preparation into the established
+118-port cached workspace: lookup source 92 maps to retained source 117, while
+arithmetic keeps the original 117-port core, including fresh scalar role 92.
+`spatialCouplingRow_exec` composes those separate views and preserves retained
+source 117 through the entire protected arithmetic execution. Its statement
+continues to publish the original indexed row's exact rounded result and restore
+all other tapes. The existing injective core embedding excludes source 117.
+
+The corrected outer embedding maps native 117 to outer 141. Outer row and step
+contracts take cleanliness from the separate core projection and the unread
+source from physical port 141. Their exact result and five-port step frames and
+cost allowances are unchanged. This corrects the spatial-row interface rather
+than completing the counted pass: loop/restoration, masked/padded-source setup,
+inverse integration and final S3 resource gates remain open. S3 stays partial.
+
+Validation: all 14,828 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All four affected modules pass individual guarded checks (maximum 1968.8 MiB).
 Source-integrity and whitespace checks pass; default proof limits are unchanged.

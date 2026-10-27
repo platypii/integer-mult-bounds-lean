@@ -2185,6 +2185,7 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateSpatialCouplingCoefficients_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareSpatialCouplingCoefficients_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareSpatialCouplingOperands_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingOperands_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingRowCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingRow_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.spatialCouplingReg_injective,
