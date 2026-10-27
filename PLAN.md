@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2166 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2169 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13940,3 +13940,37 @@ live storage. S3 stays partial; kappa is unchanged.
 Validation: the expanded standard-axiom audit passes all 15,017 jobs. Both
 new modules pass individual guarded checks below the 4 GiB module budget.
 Proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: complete runtime numerical weight-family generation
+
+`generateHaloWeightClass_exec` installs private scalar and endpoint copies
+from retained caller masters, executes the numerical packet generator, and
+releases all private header copies. The exact final frame changes only the
+completed-family accumulator. It preserves the retained masters, left stacks,
+payloads, active-cache ports and all borrowed suffixes.
+
+`generateHaloWeightLengthKey_exec` consumes an actual binary runtime length
+packet, installs its unary length, generates the matching numerical packet,
+and releases the unary length. Its exact final frame changes only the key
+suffix and completed-family accumulator. Origin packets and numerical pages
+are derived from ordinary scalar inputs, never supplied by a page hypothesis.
+
+`generateHaloWeightFamilyLoop_exec` executes that operation under the actual
+counted key loop. `generateHaloWeightFamily_exec` then moves the completed
+stream into register 148 in the original key order and clears register 150.
+The resulting family is exactly the `haloWeightKeyPages` family consumed by
+`familyHaloLengthKeyLoop_spec`, including empty key lists and zero-row
+classes. The setup key queue/count are consumed; all other caller registers
+are restored, apart from the generated family prepended to its borrowed
+queue suffix. The cost includes decoding, actual numerical generation,
+scalar setup/release, count control and final family restoration.
+
+Remaining: compose setup-key reinstallation and retained-family reuse through
+the complete inverse passes, then prove final selected uniform time matching
+and simultaneous whole-execution live storage. S3 stays partial; kappa is
+unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,020 jobs (3.4 GiB
+combined peak RSS). All three new modules pass individual guarded checks below
+the 4 GiB module budget. Proof-integrity, plan-status and whitespace checks
+pass.
