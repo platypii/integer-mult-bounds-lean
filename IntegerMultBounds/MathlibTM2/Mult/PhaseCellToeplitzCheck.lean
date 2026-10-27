@@ -14,6 +14,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComponentTransition
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComputedBoundaryRhs
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageRealComponent
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComplexComponent
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageConstructedComplex
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedInverseCaller
@@ -2080,6 +2081,9 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolve_frame_exact,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_private,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageBoundaryFactory_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageInverseSetup_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageConstructedComplex_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageFinishComponents_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageArithmetic_transition,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageFactor_transition,

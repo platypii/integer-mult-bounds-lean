@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1929 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1932 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11381,3 +11381,38 @@ finish/component-frame/paired-solve/original-input/complex-component contract
 audits (3.5 GiB combined peak). All five new modules pass individual guarded
 checks (maximum 3054.5 MiB). Source-integrity, whitespace and plan-status checks
 pass; proof limits are unchanged.
+
+### Generate one page and publication setup before the complete complex solve
+
+`sharedPageBoundaryFactory_spec` executes the actual Schur/factor construction
+in the 240-register bank. In addition to computed columns, rank stability,
+natural factor bytes and readiness, it preserves the ordinary arithmetic frame,
+exports retained coordinates and count/width masters, proves all low/private
+frame facts, and retains band-table, header and permanent-page size bounds.
+The arithmetic source survives factory execution unchanged.
+
+`sharedPageInverseSetup_spec` composes that factory with executed reusable
+publication setup. It creates the advance stream outside the native bank while
+preserving the factor page, ordinary readiness and coordinate page. The budget
+contains one actual `constructedBoundaryFactorCost` plus one actual
+`sharedPagePublicationSetupCost`.
+
+`sharedPageConstructedComplex_spec` now executes this setup followed by the
+complete ordinary complex-input driver. Its premises contain the ordinary RHS,
+geometry, arithmetic readiness and fresh workspace, not supplied columns or
+factors. The program constructs one page and one advance stream before both
+component solves. It returns the actual complex physical-read error
+`2^-target`, the computed page/table frame, and concrete size bounds needed by
+release. The result remains published over the retained generated band table
+and the original output suffix; those owned setup pages are not yet retired.
+
+Once-per-key generated setup is now composed with both component solves.
+Releasing that setup while preserving the result, adapting the raw-scalar/replica
+caller, matching grouped fast setup/interior costs, and simultaneous live-storage
+bounds remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,780 guarded stage-audit jobs pass, including three new explicit
+generated-factory/combined-setup/constructed-complex contract audits (3.5 GiB
+combined peak). All three new modules pass individual guarded checks (maximum
+3014.2 MiB). Source-integrity, whitespace and plan-status checks pass; proof
+limits are unchanged.
