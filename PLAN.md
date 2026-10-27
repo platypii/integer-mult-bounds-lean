@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1973 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1976 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12037,3 +12037,32 @@ integration. S3 remains partial; the inverse still uses indexed coupling.
 Validation: all 14,822 guarded stage-audit jobs pass (4.3 GiB combined peak).
 Both changed/new proof modules pass individual guarded checks (maximum
 1951.1 MiB). Default proof limits remain unchanged.
+
+### Execute complete coupling arithmetic from a spatial window
+
+`prepareSpatialCouplingCoefficients_exec` generates the spatial coefficients and
+common unary row count. `prepareSpatialCouplingOperands_exec` then copies the
+aligned input window from native source 92, preserving its entire unread stream
+and borrowed suffix. It uses the existing source embedding interface; its local
+copy allowance is `copyCountedLineCost (2*band+1) wordWidth`, independent of the
+absolute row position.
+
+`spatialCouplingRow_exec` composes these actual operand programs with protected
+row arithmetic. The temporary input/coefficient prefixes and row count are
+consumed; all ordinary geometry, original operands, source cursor, arithmetic
+workspace and borrowed suffixes restore. Only the result prefix on 113 changes.
+The result is the original indexed row's exact rounded dot product, using the
+joint spatial permutation with every wrapped alias retained. Original indexed
+operand-fit hypotheses transfer through the proved permutations.
+
+`spatialCouplingRowCost_eq` separates the unchanged coefficient supplier and
+protected arithmetic allowances from the explicit local streaming overhead
+`64*band*wordWidth+50*band+16*wordWidth+4*(s+t+u)+64`.
+This closes arithmetic for one positioned spatial row. Executed masked/padded
+source setup, the full advancing/restoring row loop and inverse integration
+remain open. Final fast supplier/setup matching, combined live storage and
+endpoint/resource integration remain open; S3 stays partial.
+
+Validation: all 14,825 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All three new modules pass individual guarded checks (maximum 1952.1 MiB).
+Source-integrity and whitespace checks pass; default proof limits are unchanged.
