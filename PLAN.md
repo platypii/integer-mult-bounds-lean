@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1757 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1763 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9581,3 +9581,45 @@ Combined build peak is 3.4 GiB. All nine new/revised modules and the audit root
 pass individual guarded checks at at most 2951.4 MiB, below the 4 GiB per-module
 target. Added/revised-source integrity, plan-status and whitespace checks pass;
 proof limits are unchanged.
+
+### Execute complete boundary factorization from the constructed Schur page
+
+`BoundaryFactorPrepared` collects the ordinary physical factor preconditions:
+readiness, the generated seed and mask, every dimension/count/volume header,
+and the empty scratch roles. `boundaryFactorSetupR_prepared` derives all fields
+from the generated setup's exact frame and clean initial bank. Width conversion
+is structural over an arbitrary valuation, avoiding expansion of concrete table
+states under the default proof limits.
+
+`initializedBoundaryFactor_exec` now executes complete setup followed by band
+factorization and table preparation. Its caller supplies retained masters, clean
+workspace and the actual encoded page, together with the already-proved matrix
+accuracy/format invariant; no factor header, seed, mask, readiness execution or
+per-step fit is supplied. It returns the actual forward multiplier, transposed
+backward-column and reciprocal streams, consumes its full source page, retains
+multiplication readiness and the line-solve dimensions, and preserves every
+legacy tape outside the owned source port. Every setup and factorization cost
+is included.
+
+`boundaryFactorLegacy_input` derives the physical input contract from an
+arbitrary legacy table frame and the retained-master invariant. Finally,
+`constructedBoundaryFactor_spec` composes the actual folded-page/table/input-page
+constructor, physical lift, generated setup and executed factorization. The
+column family is produced by that execution. Its returned numerical contracts
+include column accuracy/format, the packed-table bound and entry error; the
+actual resulting tapes hold exactly the factors of that produced matrix. The
+consumed factor-input port is restored to its original suffix, and all legacy
+pages and masters retain the exact constructed-table frame. No table, column
+family, matrix-entry or factorization-execution oracle is assumed.
+
+The real/imaginary boundary RHS gathering and line solves, factor/table cleanup,
+recovery/publication composition and full inverse endpoint remain open, as do
+uniform fast time, complete simultaneous live storage and the final S3 theorem.
+S3 remains partial.
+
+Validation: all 14,607 guarded stage-audit jobs pass, including ten new explicit
+setup-state, prepared-factor, initialized factorization, legacy-input and full
+constructed-factorization audits. Combined build peak is 3.4 GiB. All six new
+modules and the audit root pass individual guarded checks at at most 2954.5 MiB,
+below the 4 GiB per-module target. Added-source integrity, plan-status and
+whitespace checks pass; proof limits are unchanged.
