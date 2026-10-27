@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2221 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2225 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14255,5 +14255,42 @@ S3 stays partial; kappa is unchanged.
 
 Validation: the expanded standard-axiom audit passes all 15,072 jobs (3.4 GiB
 combined peak RSS), retaining all prior entries and adding 14. All six new
+modules and the audit pass individual guarded checks below the 4 GiB module
+budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
+
+### S3 checkpoint: selected padded cells and fast interior arithmetic
+
+`phaseCell_rpRec_fast_le` bounds the complete packed ring-record cost, including
+conversions, by padded length times `p^(129/128)` at linear precision, width
+and padded length. `cachedBatchCoordinate_fast_le` and
+`cachedBatchCell_fast_le` include the actual cached scalar arithmetic,
+normalization, tape movement, padded products and release clocks.
+`inverseCachedArithmetic_selected_fast_le` derives their working-width bounds
+from the caller's actual inverse precision formula, assuming fixed linear
+bounds on target precision, ring logarithm and ambient geometry bit count.
+
+`haloInverseRingLog` selects a ring logarithm from the ambient phase gap. Its
+padding fits every clipped cell. The inverse ABI's existing phase-gap premise
+proves `s/(t-s) ≤ 4*p`, so the selected padded length and logarithm are both at
+most `20*p`. Across all clipped phases, total padded volume is at most `8*t`.
+These are proved sizing consequences, not separately supplied ring-size or
+padded-volume premises.
+
+`familyInterior_selected_fast_le` applies those choices to the actual first
+retained-family interior pass at the caller's selected Schur precision. Under
+fixed linear target and geometry-bit bounds, the executed cost is at most its
+explicit shared-control/address ledger plus `C*t*p^(129/128)`, for a constant
+independent of dimensions, target, alphabet and input. The shared-control
+ledger still includes key initialization, candidate controls and per-phase
+address work; it has not been silently absorbed into this arithmetic bound.
+
+Remaining: carry the selected estimates through recovery and the complete
+complex caller; bound control/address work and actual setup amortization in
+the final fast envelope; prove simultaneous whole-execution live storage.
+This is the selected interior arithmetic step, not completion of S3's full
+resource gates. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,112 jobs (3.5 GiB
+combined peak RSS), retaining all prior entries and adding 11. All four new
 modules and the audit pass individual guarded checks below the 4 GiB module
 budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.

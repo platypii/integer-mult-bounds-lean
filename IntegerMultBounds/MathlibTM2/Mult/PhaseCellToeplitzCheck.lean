@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyInteriorFast
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyInverseGeometryCaller
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedFamilyInverseCaller
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedCouplingFamilyComplexBatch
@@ -3054,7 +3055,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedClosedFamilyComplexBatchCost_geometry_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedClosedFamilyComplexBatchCost_setup_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedClosedFamilyComplexBatchCost_setup_le,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedClosedFamilyComplexBatchCost_full_geometry_le ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedClosedFamilyComplexBatchCost_full_geometry_le,
+      `IntegerMultBounds.MathlibTM2.Cost.phaseCell_rpRec_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.cachedBatchCoordinate_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.cachedBatchCell_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyHaloInteriorGeometryCost_eq,
+      `IntegerMultBounds.MathlibTM2.Cost.familyInterior_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.haloInverseRingLog_fits,
+      `IntegerMultBounds.MathlibTM2.Cost.haloInverseRingSize_le,
+      `IntegerMultBounds.MathlibTM2.Cost.phaseGap_cellLength_le,
+      `IntegerMultBounds.MathlibTM2.Cost.haloInverseRingLog_bounds,
+      `IntegerMultBounds.MathlibTM2.Cost.haloInverseRing_paddedVolume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseCachedArithmetic_selected_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
