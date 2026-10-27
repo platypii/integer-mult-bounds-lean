@@ -78,8 +78,15 @@ theorem constructedBoundaryFactor_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
         |bandBoundaryTable B W (computedBoundaryTable A q w B columns) i j-
           (SchurDominance.run (realMatrix s t p u) (haloVertices s a b)
             (haloInterior s t band a b).toList).1 i j| ≤ 1/(2 : ℝ)^bits) ∧
+      SchurDominance.StageInv (factorRankMatrix A q w B W columns) (Finset.range B.card)
+        (1/(8*(p : ℝ))-(B.card : ℝ)*(1/(2 : ℝ)^bits))
+        (2+(B.card : ℝ)*(1/(2 : ℝ)^bits)) ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
       (∀ i : Fin 154, i ≠ 140 → S'.R (boundaryFactorLegacyReg i) = E₁.R i) ∧
+      (∀ i : Fin 64, S'.R (boundaryFactorMulReg i) = []) ∧ S'.R 106 = [] ∧ S'.R 139 = [] ∧
+      S'.R 184 = [] ∧ S'.R 223 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] ∧
+      (S'.R 119).length = q ∧
+      BoundarySolveReady (boundaryFactorState S') q w (W) B.card ∧
       (boundaryFactorState S') .bo = cstream A w ((facLf q K rows inputs B.card).map fun x => (⟨x, 0⟩ : GaussianInt)) ∧
       (boundaryFactorState S') .hf = cstream A w ((List.range B.card).reverse.map fun m =>
         colC (Mult.BandFactor.ucolZ (W) (facUr q K rows inputs B.card) m)).flatten ∧
@@ -130,9 +137,24 @@ theorem constructedBoundaryFactor_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     (body := embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg (embTab componentReg (embTab groupReg body)))))
     hQ hA p u l target rhsExp B (PhaseCellBand.width p u) columns hp hlen hformat hrank v₂ S₁
     hinput.left hinput.clean hinput.fresh hinput.masterP hinput.masterQ hinput.band hinput.card (S.R 140) hsrc
+  have hmul' (i : Fin 64) : S₃.R (boundaryFactorMulReg i) = [] := by
+    let j : Fin 154 := ⟨i.val,by omega⟩
+    have hj : boundaryFactorLegacyReg j = boundaryFactorMulReg i := Fin.ext rfl
+    have hh := hlegacy j (by intro h; have hv := congrArg (fun k : Fin 154 => k.val) h; have := i.isLt; change i.val = 140 at hv; omega)
+    rw [hj] at hh
+    exact hh.trans (hinput.clean (boundaryFactorMulReg i) i.isLt)
+  have h106orig : S.R 106 = [] := by
+    simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+      hready.blank 106 (by decide) (by decide) (by decide)
+  have h106' : S₃.R 106 = [] := by
+    have hh := congrArg (fun X : Stacks 154 A => X.R 106) hproj
+    exact (hlegacy 106 (by decide)).trans (hh.trans (by simp [E₁,E,embStk,boundaryFactorLegacyReg,h106orig]))
+  have h139' : S₃.R 139 = [] := by
+    have hh := congrArg (fun X : Stacks 154 A => X.R 139) hproj
+    exact (hlegacy 139 (by decide)).trans (hh.trans (by simp [E₁,E,embStk,boundaryFactorLegacyReg,h139]))
   have hL₁ : S₁.L = S.L := funext (fun i => (hinput.left i).trans (hleft i).symm)
   refine ⟨v₃,S₃,n₁+n₃,columns,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hn₁ hn₃,
-    Exec.seq he₂' he₃,hlen,hcolumns,hformat,hstorage,herror,hinp,hout,hL.trans hL₁,?_,hpost⟩
+    Exec.seq he₂' he₃,hlen,hcolumns,hformat,hstorage,herror,hrank,hinp,hout,hL.trans hL₁,?_,hmul',h106',h139',hpost⟩
   intro i hi
   have hh := congrArg (fun X : Stacks 154 A => X.R i) hproj
   exact (hlegacy i hi).trans hh

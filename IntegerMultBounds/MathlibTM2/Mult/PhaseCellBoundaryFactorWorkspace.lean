@@ -269,6 +269,10 @@ theorem boundaryFactorReg_disjoint (r : RsbR) (i : Fin 64) : boundaryFactorReg r
   · rw [hr] at hh; norm_num at hh; omega
   · omega
 
+theorem boundaryFactorReg_private (r : RsbR) :
+    boundaryFactorReg r ≠ 184 ∧ boundaryFactorReg r ≠ 223 := by
+  cases r <;> first | decide | (rename_i c; cases c <;> decide)
+
 theorem boundaryFactorReg_off (r : RsbR) (i : Fin 154) (hi : i ≠ 140) :
     boundaryFactorReg r ≠ boundaryFactorLegacyReg i := by
   intro h

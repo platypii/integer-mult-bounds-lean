@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1790 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1792 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9851,3 +9851,41 @@ physical and existing caller contracts also pass. Combined final build peak is
 guarded checks: proof modules peak at 2846.8 MiB or less and the audit root at
 2965.5 MiB. Source-integrity, plan-status and whitespace checks pass. Proof
 limits are unchanged.
+
+### Constructed factorization-to-solve composition
+
+The prepared factorizer now returns its solve-readiness record and physical
+frame. The initialized and fully constructed factorizer contracts derive all
+normalization scratch emptiness, the retained precision master and clean
+multiplier bank from the actual setup and execution. The constructed result
+also returns the computed rank-matrix invariant, rather than requiring it
+again as a solve premise.
+
+`boundaryFactor_solve_tables` identifies the emitted page's three factor tapes
+with the natural-order triangular solve tables. `constructedBoundarySolve_spec`
+composes the actual Schur table/input-page construction, generated physical
+factorization, ambient residual gather, generated normalization and triangular
+solve. Its column family and factors are produced by that execution; neither
+matrix/factor data nor a solver execution is supplied by the caller.
+
+The final solution port contains exactly the runtime solve of the normalized
+retained residual restricted to folded boundary rank order. The contract keeps
+column accuracy/format, the masked matrix-entry error and stability invariant,
+the packed-table bound, exact coordinate/table prefixes and retained factors.
+It preserves endpoints, all left stacks and every legacy tape except the owned
+coordinate/table pages and their two headers. Normalization scratch is empty,
+and clearing the solution port restores the solve-readiness record for reuse.
+All costs are the composed, executed construction/setup/gather/solve bounds.
+
+Unscaled solution accuracy and executed unscaling, factor/table retirement,
+recovery/publication composition and the inverse endpoint remain open, as do
+uniform fast time and complete simultaneous live storage. S3 remains partial;
+kappa is unchanged.
+
+Validation: all 14,636 guarded stage-audit jobs pass, including three new
+explicit private-bank, factor-layout and constructed boundary-solve execution
+axiom audits; all strengthened factorizer contracts remain audited. Combined
+build peak is 7.9 GiB. All six new/revised proof modules and the audit root pass
+individual guarded checks: proof modules peak at 2936.5 MiB or less and the
+audit root at 2966.8 MiB. Added-source integrity, plan-status and whitespace
+checks pass. Proof limits are unchanged.

@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundarySolve
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBoundaryGatherSolve
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryNormalizeSolve
@@ -1924,6 +1926,9 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializedBoundaryFactor_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.boundaryFactorLegacy_input,
       `IntegerMultBounds.NLogN.SchurDominance.exists_solver,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorReg_private,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactor_solve_tables,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.constructedBoundarySolve_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_normalization_precision,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_normalization_roundtrip_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_residual_normalization_bound,

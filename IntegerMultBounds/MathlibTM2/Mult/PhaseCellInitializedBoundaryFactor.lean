@@ -43,6 +43,9 @@ theorem initializedBoundaryFactor_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       Exec body (initializedBoundaryFactor hQ) (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
       (∀ i : Fin 154, i ≠ 140 → S'.R (boundaryFactorLegacyReg i) = S.R (boundaryFactorLegacyReg i)) ∧
+      S'.R 184 = [] ∧ S'.R 223 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] ∧
+      (S'.R 119).length = q ∧
+      BoundarySolveReady (boundaryFactorState S') q w (12*band+1) B.card ∧
       (boundaryFactorState S') .bo = cstream A w ((facLf q K rows inputs B.card).map fun x => (⟨x, 0⟩ : GaussianInt)) ∧
       (boundaryFactorState S') .hf = cstream A w ((List.range B.card).reverse.map fun m =>
         colC (Mult.BandFactor.ucolZ ((12*band) + 1) (facUr q K rows inputs B.card) m)).flatten ∧
@@ -73,9 +76,34 @@ theorem initializedBoundaryFactor_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       ((factorWindowValues B (12*band+1) columns).flatten++(factorInputValues B (12*band+1) B.card columns).flatten)++SRC := by
     have hh : S₁.R 140 = S.R 140 := boundaryFactorSetupR_legacy p q S.R 140
     exact hh.trans hsrc
-  obtain ⟨v₂,S₂,n₂,hu₂,hn₂,he₂,hinp,hout,hL,hlegacy,hpost⟩ := boundary_factorPrepared_exec (body := body)
+  obtain ⟨v₂,S₂,n₂,hu₂,hn₂,he₂,hinp,hout,hL,hlegacy,hframe,hpost⟩ := boundary_factorPrepared_exec (body := body)
     hQ hA p u l target rhsExp B band columns hp hlen hformat hstage v₁ S₁ hleft hmul hprepared SRC hsrc₁
-  refine ⟨v₂,S₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hinp,hout,hL,?_,hpost⟩
+  obtain ⟨hsolve,hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,hdout,hvk,hef,hxs,hkn,hms,hm2n,hkn',hmwnControl,hready',hframe'⟩ := hpost
+  have h184 : S₁.R 184 = [] := by
+    rw [show S₁.R 184 = S.R 184 from boundaryFactorSetupR_off p q S.R 184 (by decide)
+      (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]
+    exact hnew 184 (by decide)
+  have h223 : S₁.R 223 = [] := by
+    obtain ⟨_,_,_,_,_,_,_,_,h⟩ := boundaryFactorSetupR_dimensions p q band B.card S.R hmasterBand hmasterCard hnew
+    exact h
+  have h184' : S₂.R 184 = [] := (hframe.2.2.2 184 (fun r => (boundaryFactorReg_private r).1)).trans h184
+  have h223' : S₂.R 223 = [] := (hframe.2.2.2 223 (fun r => (boundaryFactorReg_private r).2)).trans h223
+  have h220 : S₁.R 220 = [] := by
+    rw [show S₁.R 220 = S.R 220 from boundaryFactorSetupR_off p q S.R 220 (by decide)
+      (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]
+    exact hnew 220 (by decide)
+  have h221 : S₁.R 221 = [] := by
+    rw [show S₁.R 221 = S.R 221 from boundaryFactorSetupR_off p q S.R 221 (by decide)
+      (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]
+    exact hnew 221 (by decide)
+  have h220' : S₂.R 220 = [] := (hframe' .dtab (by decide)).trans h220
+  have h221' : S₂.R 221 = [] := (hframe' .padc (by decide)).trans h221
+  have h119 : (S₂.R 119).length = q := by
+    rw [show S₂.R 119 = S₁.R 119 from hlegacy 119 (by decide),
+      show S₁.R 119 = S.R 119 from boundaryFactorSetupR_legacy p q S.R 119]
+    exact hmasterQ
+  refine ⟨v₂,S₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hinp,hout,hL,?_,h184',h223',h220',h221',h119,hsolve,hbo,hhf,hdf,hsrc',hm2n',hmwn',hsn,
+    hdout,hvk,hef,hxs,hkn,hms,hm2n,hkn',hmwnControl,hready',hframe'⟩
   intro i hi
   exact (hlegacy i hi).trans (boundaryFactorSetupR_legacy p q S.R i)
 
