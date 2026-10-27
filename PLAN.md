@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1885 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1893 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11004,3 +11004,45 @@ explicit frame/reuse/row-work/precision/fast-cost axiom audits; final combined
 peak is 3.4 GiB. All five new modules pass individual guarded checks (maximum
 2864.9 MiB). Source-integrity, whitespace and plan-status checks pass. Proof limits
 are unchanged.
+
+
+### Execute a whole boundary RHS batch after one generated factor setup
+
+`preparedBoundaryBatch_exec` now executes a fixed 234-register driver over an
+arbitrary list of normalized RHS vectors with one shared boundary key. It derives
+the byte clock from the prepared row/width headers, copies the replica count,
+executes the counted loop and restores the borrowed RHS stream in its original
+order. Solutions publish in the same order over an arbitrary output suffix.
+Every other register, including the factor pages, masters, count, private archives,
+controls and all left stacks, is restored exactly. Empty batches and empty
+boundaries are included. The proof archives actual bytes and uses list take/drop
+invariants; it does not assume an arithmetic execution oracle.
+
+`preparedBoundaryFactory_spec` exposes the already executed Schur/factor factory
+in the reusable bank. `constructedBoundaryBatch_spec` composes that factory once
+with the complete batch. Its returned page retains the computed factor byte
+contents, numerical accuracy, readiness and clean-workspace facts needed by a
+later batch. The factor setup is outside the counted loop and is charged once,
+not once per component or replica.
+
+The exact batch budget is
+`N*(6*w+9)+16+R*(N*(preparedBoundaryRowCost w W+22*w)+12*W*w+75)`.
+It is bounded by `600*(R+1)*(N+1)*W*(rmulCost w+w+1)`.
+The selected-precision fast theorem bounds the repeated batch by
+`C*(R+1)*(N+1)*(12*band+1)*p^(129/128)` under explicit linear precision bands.
+`constructedBoundaryBatch_selected_allowance` derives the bit-count bounds from
+ambient geometry and leaves precisely one actual factory cost plus the fast
+repeated allowance. It makes no fast-setup assumption and drops no setup charge.
+
+The normalized boundary batch is now executed with real setup reuse. Connecting
+it to grouped interior/residual generation, normalization, unscaling, recovery
+and complex assembly in the full inverse caller remains open. The original
+single-line closed caller still constructs its page per component. Full setup
+and interior cost matching and simultaneous live-storage bounds remain open.
+S3 remains partial; kappa is unchanged.
+
+Validation: all 14,741 guarded stage-audit jobs pass, including thirteen new
+explicit batch-routing/loop/restoration/generated-page/fast-cost axiom audits.
+Final combined peak is 3.4 GiB. All eight new modules pass individual guarded
+checks (maximum 2939.5 MiB). Source-integrity, whitespace and plan-status checks
+pass. Proof limits are unchanged.

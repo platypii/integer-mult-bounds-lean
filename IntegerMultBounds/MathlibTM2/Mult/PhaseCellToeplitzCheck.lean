@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellConstructedBoundaryBatch
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryReuse
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
 
@@ -2051,6 +2053,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.physicalOriginalComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedComplexBoundary_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedInverse_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryBatchCoreReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryBatchCoreReg_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryBatchStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryBatchLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cstream_flatten_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryBatch_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.preparedBoundaryFactory_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.constructedBoundaryBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Cost.preparedBoundaryBatchCost_eq,
+      `IntegerMultBounds.MathlibTM2.Cost.preparedBoundaryBatchCost_le,
+      `IntegerMultBounds.MathlibTM2.Cost.preparedBoundaryBatch_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.preparedBoundaryBatch_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.constructedBoundaryBatch_selected_allowance,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolve_frame_exact,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_private,
