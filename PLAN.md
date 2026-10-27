@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2081 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2085 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13226,3 +13226,33 @@ Validation: the expanded guarded stage axiom audit passes all 14,932 jobs
 (3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 All three new modules pass individual guarded checks, with maximum peak RSS
 2971.0 MiB, below the 4 GiB module budget.
+
+### S3 cached recovery coupling and second interior solve
+
+`placedCachedRestoredCouplingPass_spec` installs the coupling headers from the
+ordinary retained masters, runs the cached boundary row pass, feeds its actual
+computed field into the next input, and releases the headers. It proves the
+same unguarded boundary-coupling field, norm and uniform error guarantee as the
+existing recovery pass. Its exact final frame changes only the owned input
+prefix on port 110, and its projected length-key readiness is restored.
+
+`placedCachedRecoveryInterior_spec` retires the actual first residual prefix,
+executes that cached boundary pass and runs the generated second interior
+solve. It derives the needed interior solution internally and proves both the
+interior recovery error and the glued core/boundary error, together with the
+computed RHS and interior magnitude bounds. The executed cost charges residual
+retirement, the cached row ledger, and the second interior solve. The final
+frame changes only the owned input and interior-output prefixes; both retained
+coefficient keys and all private headers and scratch restore.
+
+The ordinary placed header installer, residual retirement and initialized
+interior solver have separate executed contracts. Recovery real projection,
+publication/tolerance and enclosing boundary/complex batch integration remain
+open, including hoisting both precision-key setup/release around the batch.
+Final uniform fast time matching and whole-execution live storage remain open.
+S3 stays partial; kappa is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,936 jobs
+(3.5 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+All four new modules pass individual guarded checks, with maximum peak RSS
+3006.5 MiB, below the 4 GiB module budget.
