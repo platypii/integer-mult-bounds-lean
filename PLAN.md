@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1942 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1946 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11535,3 +11535,72 @@ Validation: all 14,790 guarded stage-audit jobs pass, including the new caller,
 release and register-port contracts (5.6 GiB combined peak). All seven changed/new proof modules pass individual guarded checks (maximum
 3141.8 MiB). Changed-source integrity, whitespace and plan-status checks
 pass; default proof limits are unchanged.
+
+### Route complete complex replicas over the retained page
+
+`sharedComplexBatchStep` places the prepared 240-register complex kernel in a
+248-register batch bank. `sharedComplexBatchPark_exec` consumes one solved input
+prefix and its output prefix into reversed saved streams, restoring the reusable
+byte clock and scratch. The retained output page is exposed again for the next
+replica. `sharedComplexBatchPark_coreFrame` preserves every other core register.
+Its two actual transfers cost exactly `8*lineBytes+8`.
+
+`sharedComplexBatchStep_of_exec` proves the execution/frame composition with a
+prepared complex-kernel execution: the page restores exactly, the input advances
+by one line and both saved streams grow. This is a structural scheduling lemma;
+it does not replace numerical-kernel hypotheses with a free execution oracle in
+a closed caller. Instantiating it with the prepared numerical contract and
+proving the counted replica loop remain open, as do final grouped fast costs
+and simultaneous live storage. S3 remains partial.
+
+Validation: all 14,791 guarded stage-audit jobs pass (3.4 GiB combined peak).
+The batch-step module passes its individual guarded check at 2942.2 MiB.
+Whitespace and plan-status checks pass; proof limits remain unchanged.
+
+### Specialize the replica step to the executed numerical complex kernel
+
+`sharedComplexBatchStep_spec` now instantiates the scheduling composition with
+`sharedPageComplexComponent_spec`. It executes both real solves on the prepared
+page, parks the actual encoded complex input and result, advances the input
+stream and preserves the original page. The returned result retains the halo
+error `2^-target`; the explicit cost is the complete prepared complex kernel
+plus `8*(s*w)+8` for the two counted prefix transfers. This theorem has the
+actual prepared numerical hypotheses, not a supplied arithmetic execution.
+
+`sharedComplexBatchNext_core` identifies the next kernel view with just a source
+update. `sharedComplexBatchNext_ready` transfers arithmetic readiness to the next
+source, and `sharedComplexBatchNext_factor` proves exact factor-state equality.
+These are the retained-page invariants needed by the forthcoming counted loop.
+The counted numerical replica loop, its setup/release caller, final grouped
+fast costs and simultaneous live storage remain open. S3 remains partial.
+
+Validation: all 14,793 guarded stage-audit jobs pass (5.6 GiB combined peak).
+The numerical step and next-state/readiness modules pass individual guarded
+checks at 2940.2 and 2935.2 MiB respectively. Proof limits remain unchanged.
+
+### Execute a counted numerical complex-replica loop on one page
+
+`sharedComplexBatchLoop_spec` now runs the actual prepared complex kernel and
+prefix-parking step for a counted list of complex input lines. The invariant
+tracks the unread input suffix, reversed borrowed-input stream, reversed
+computed-output stream, unchanged retained page and a `List.Forall₂` numerical
+contract for every completed replica. Each iteration specializes the actual
+numerical step theorem and carries arithmetic readiness and exact factor-state
+preservation to the next line. The empty batch is included.
+
+At termination the count is empty, the original input bytes and computed results
+are saved in order-reversed streams, and every other stack restores exactly.
+Each result has halo error `2^-target` against its input's exact real/imaginary
+solutions. The loop costs at most the replica count times the full prepared
+complex step plus its three-instruction loop overhead, with two fixed loop
+instructions. No page setup charge is repeated inside this loop.
+
+Generating/restoring batch counters and byte clocks, restoring the borrowed
+input and publishing the saved output in order, and composing one page
+setup/release around that prepared batch remain open. Final grouped fast costs
+and simultaneous live storage also remain open. S3 remains partial.
+
+Validation: all 14,794 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All four new replica-step/numerical/readiness/loop modules pass individual
+guarded checks (maximum 2975.2 MiB). Source-integrity, whitespace and plan-status
+checks pass; default proof limits are unchanged.
