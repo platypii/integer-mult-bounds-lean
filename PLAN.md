@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1958 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1961 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11823,3 +11823,60 @@ Validation: all 14,806 guarded stage-audit jobs pass (3.4 GiB combined peak).
 All four new affine/boundary/interior/coupling-capture cost modules pass
 individual guarded checks (maximum 2947.2 MiB). Source-integrity, whitespace
 and plan-status checks pass; proof limits remain unchanged.
+
+### Generate coupling operands from a retained ambient source
+
+`cachedCouplingLookupReg` moves the lookup source from native register 92 to a
+separate retained register 117 in a 118-register workspace; the arithmetic core
+keeps its original register map. Both maps are injective. The lookup image
+excludes the original source/scratch port 92, so retaining the source does not
+occupy the arithmetic row's scratch bank.
+
+`cachedCouplingOperands_exec` executes the actual coefficient and masked-input
+generators through this lookup view. Its exact frame changes only operand ports
+110/111 and the generated row count 102. The retained source bank, original
+arithmetic port 92, all headers, left stacks and spectators restore exactly.
+Its paid cost is `prepareCouplingOperandsCost`; it performs no ambient-source
+capture or source-copy erasure per row. This is an executed operand supplier,
+not an assumed table or arithmetic result.
+
+The next integration is the protected arithmetic row on the original core view,
+then one capture/release around its counted row loop. The existing closed inverse
+still uses the old coupling path until that complete replacement is verified.
+Indexed lookup/scalar cost, final fast setup/supplier matching, simultaneous live
+storage and endpoint/resource integration remain open. S3 remains partial.
+
+Validation: all 14,808 guarded stage-audit jobs pass (3.4 GiB combined peak).
+The retained-source workspace and executed operand supplier pass individual
+guarded checks at 1929.4 and 1935.5 MiB. Source-integrity, whitespace and
+plan-status checks pass; default proof limits remain unchanged.
+
+### Execute the complete coupling row from retained source data
+
+`cachedCouplingRow_exec` now composes retained-source coefficient/input generation
+with the actual protected fixed-point arithmetic row in 118 registers. The lookup
+view reads its source from retained register 117; arithmetic uses the original
+117-register core, including its independent port 92. The complete execution
+changes only the result prefix on port 113. Retained source bytes and suffix,
+original operand/RHS tails, row-count scratch, headers, left stacks and spectators
+restore exactly. Arithmetic output and word-fit premises are the same as in the
+checked raw row.
+
+`cachedCouplingRowCost_saving` gives the exact paid-allowance identity: the old
+row cost is the new retained-source row cost plus `18*s*wordWidth+9*s+18` for
+capture/retirement. The new row performs neither operation. Its implementation
+retains coefficient lookup, masked-input lookup and scalar arithmetic costs.
+The arithmetic embedding is proved directly in the composed row; a redundant
+standalone wrapper proof was removed before publication.
+
+The next step is the retained-source row/count loop and one actual source
+capture/release around the pass, then switching the composed inverse to that
+verified path. Until that integration the existing closed inverse still uses
+the old coupling path. Indexed-access costs, final fast supplier/setup matching,
+simultaneous live storage and endpoint/resource integration remain open. S3
+remains partial.
+
+Validation: all 14,809 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All three new retained-source workspace/operand/complete-row modules pass
+individual guarded checks (maximum 1964.9 MiB). Source-integrity, whitespace
+and plan-status checks pass; default proof limits remain unchanged.
