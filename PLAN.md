@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1637 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1640 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8668,3 +8668,48 @@ explicit placement, active-port, frame and complete setup execution audits.
 Combined build peak is 2.7 GiB. All four new/revised Lean modules pass individual
 guarded checks at at most 2055.1 MiB. Added-source integrity, plan-status and
 whitespace checks pass; proof limits are unchanged.
+
+### Folded-coordinate access and executed Schur-column accuracy
+
+`boundaryCoordinate` instantiates the existing restoring indexed-word program
+on the canonical folded page. Its execution theorem returns the encoded ambient
+coordinate `bFoldAt B j`, proves membership in the actual boundary and proves
+its folded position is `j`. It preserves the coordinate page and every other
+stack except the borrowed output prefix, restoring all six temporary ports.
+The unary rank is explicit, and the bound `j*(12*w+9)+10*w+22` charges the source
+scan; this lookup is not a certificate of fast repeated table access.
+
+`residual_column_eq_run` identifies the interior residual of an original matrix
+column with the corresponding Schur column. `solver_lipschitz`,
+`residual_lipschitz` and `schur_column_error` charge pointwise input-column error
+through the exact interior solve and the stated row mass, separately from the
+computed residual's execution error. `halo_schur_column_error` discharges those
+bounds for the actual halo subsystem using inverse margin `1/(8*p)` and row
+mass at most 2, giving amplification `1+16*p` without a halo-cardinality factor.
+
+`releasedSchurColumn_spec` applies this result to the actual executed, released
+initial Schur pass. It constructs its interior solve internally, runs the
+interior/residual programs and retires the temporary interior stream. Its
+physical residual read on each boundary row approximates the corresponding
+exact local Schur entry with error at most
+`2^-(recoveryTarget p target+2)/(8*p)+(1+16*p)*η`, assuming the encoded input
+column has proved error `η` against that original-matrix column. All existing
+execution, magnitude, residual and restoration contracts are retained.
+
+`schurColumnBits p entryBits = entryBits+size(1+16*p)+1` allocates the input-column
+precision. Together with the executed residual pass at target `entryBits`,
+`schurColumn_total_budget` bounds the combined error by `2^-entryBits`.
+Instantiating `entryBits` with the existing `boundaryTableBits` allocation gives
+the required table-entry allowance.
+
+The original-matrix column stream and its magnitude/error certificate still
+need an executed producer. These results do not assume or produce a completed
+Schur/factor table. Streaming address access, entry construction, factor
+setup/solve/release, full S3 composition and uniform fast-time/simultaneous
+storage remain open. S3 remains partial.
+
+Validation: all 10,297 guarded stage-audit jobs pass, including ten explicit
+new coordinate-access, column-identity, perturbation, execution-result and
+precision-budget audits. Combined build peak is 4.0 GiB. All six new/revised
+Lean modules pass individual guarded checks at at most 2055.7 MiB. Added-source
+integrity, plan-status and whitespace checks pass; proof limits are unchanged.

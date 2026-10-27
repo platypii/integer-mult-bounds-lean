@@ -1,5 +1,9 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryCoordinate
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSchurColumnResult
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSchurColumnBudget
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClosedBoundaryFold
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryFoldInputs
@@ -1633,6 +1637,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryInputReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedBoundaryFold_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedBoundaryFold_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryCoordinate_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releasedSchurColumn_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.schurColumn_input_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.schurColumn_pass_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.schurColumn_total_budget,
+      `IntegerMultBounds.NLogN.SchurDominance.residual_column_eq_run,
+      `IntegerMultBounds.NLogN.SchurDominance.solver_lipschitz,
+      `IntegerMultBounds.NLogN.SchurDominance.residual_lipschitz,
+      `IntegerMultBounds.NLogN.SchurDominance.schur_column_error,
+      `IntegerMultBounds.NLogN.PhaseCellMatrix.halo_schur_column_error,
+
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryFoldInputs_exec,
 
