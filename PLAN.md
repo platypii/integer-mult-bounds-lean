@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2140 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2145 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13710,3 +13710,36 @@ Validation: the final expanded standard-axiom audit passes all 14,991 jobs
 checks, with maximum peak RSS 1975.8 MiB. Proof-integrity and whitespace checks
 pass. Existing inverse contracts rebuild successfully after the shared routing
 proof was factored.
+
+### S3 checkpoint: cached halo groups in the protected caller
+
+`cachedBatchFromOrigins_spec` accepts the ordinary gathered `batchInputBank`
+used by the existing group preparation path. `discardBatchOrigins_exec`
+constructs the runtime packet width and packet-symbol count from the retained
+scalar headers, consumes exactly the binary origin prefix, and restores its
+width/product/parser scratch. The remaining control tail is unchanged. The
+cached numerical solver then restores the raw RHS, preserves the weight key
+and provides the same pointwise/core-error and output-magnitude contracts.
+No repeated exponential weight evaluation is introduced by this adapter.
+
+`cachedClosedHaloGroup_spec` instantiates that execution with the actual
+`haloLengthGroup` origins and its proved solver geometry. The adapter's exact
+cost identity preserves the cached coordinate charge and adds only
+`12*weightWorkspaceWidth+9` per cell, plus one width-construction bill.
+
+`cachedProtectedHaloBatchSolve_spec` saves the generated row count and executes
+this halo solver in a fixed 148-register caller. The four cache ports occupy
+144–147, disjoint from the original 144-register gather/publication workspace.
+The saved count is returned on port 129; all other retained caller registers
+and the complete weight cache restore. The projected core carries the actual
+numerical and RHS-restoration contracts. `cachedGroupCore_view` proves the
+legacy caller and cached solver see the same core.
+
+Composition with protected class gathering/publication and the natural length
+class loop remains next, followed by both full inverse passes. Final uniform
+fast time matching and simultaneous whole-execution live storage remain open.
+S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 14,996 jobs (3.4 GiB
+combined peak RSS). All five new modules pass individual guarded checks below
+the 4 GiB module budget. Proof-integrity and whitespace checks pass.
