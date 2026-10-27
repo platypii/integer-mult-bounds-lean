@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1829 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1831 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10425,3 +10425,31 @@ Validation of the generated-zero/control-conversion/publication chunk: all
 axiom audits. Combined peak is 3.4 GiB; all three new modules check below 3 GiB.
 Plan-status, added-source integrity and whitespace checks pass. Proof limits
 are unchanged.
+
+### Direct coordinate-to-advance runtime step
+
+The binary table advance generator needs a workspace fitting scaled coordinates,
+while the retained coordinate page guarantees only coordinate width. The direct
+unary route avoids enlarging that binary page. `takeNaturalCoordinate_exec`
+consumes one actual encoded coordinate word, preserves the remaining packet
+queue and width, appends its unary value and restores all conversion scratch,
+with cost at most `6x+23V+18`.
+
+`boundaryAdvancePacket_exec` computes the difference from the previous coordinate,
+scales it by retained word width, emits a reversed delimited packet, updates the
+cursor, and clears all local scratch. `boundaryAdvanceNext_exec` composes the
+reader and packet emission into one fixed runtime step, changing only the
+coordinate source, previous-coordinate header and packet accumulator. Its bound
+is `x(10w+29)+23V+43`. It needs no scaled-coordinate binary-fit hypothesis.
+Individual checks peak at 1819.8 MiB for the reader and 1888.2 MiB for packet and
+complete step.
+
+The counted loop and final stream reversal/terminal delimiter still need
+execution and composition with natural retained coordinates. Coordinate-page
+preparation, recovery composition/cleanup, inverse assembly and final resource
+bounds remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,676 guarded stage-audit jobs pass, including three new explicit
+coordinate-reader/advance-packet/combined-step axiom audits. Combined peak is
+3.4 GiB; both added modules check below 2 GiB. Plan-status, added-source integrity
+and whitespace checks pass. Proof limits are unchanged.
