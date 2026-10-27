@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRestoredInteriorResidual
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRealResidualProjection
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellResidualSizing
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingFieldError
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGuardedCouplingField
 public import IntegerMultBounds.NLogN.PhaseCellCouplingMass
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSupportBudget
 
@@ -50,7 +50,7 @@ theorem realInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     let band := PhaseCellBand.width p u
     let e := stableInteriorExponent p rhsExp
     ∃ v' n, ∃ D : ZMod s → GaussianInt,
-      let R := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (C i))
+      let R := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (C i))
       v'.user = v.user ∧ n ≤ realInteriorResidualCost p l s t u target rhsExp a b ∧
       Exec (embTab groupReg body) (realInteriorResidual hR hQ) (mk v S) n
         (mk v' {S with R := (Function.update
@@ -62,7 +62,7 @@ theorem realInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
         (fun i => (value q (D i)).re) x (1/(2 : ℝ)^target) ∧
       (∀ i, (R i).im = 0) ∧
       (∀ i, ‖value q (R i)‖ ≤ (2 : ℝ)^couplingRowExponent rhsExp e (8*p+1) (couplingCountExponent p u)) ∧
-      ∀ i, |(value q (R i)).re-((value q (C i)).re-
+      ∀ i ∈ haloBoundary s t band a b, |(value q (R i)).re-((value q (C i)).re-
         SchurDominance.couple (realMatrix s t p u) (haloInterior s t band a b) x i)| ≤
           (2*band+1)*(2/(2 : ℝ)^q)+(2*band+1)*((2 : ℝ)^e*(1/(2 : ℝ)^q))+2*(1/(2 : ℝ)^target) := by
   dsimp only
@@ -82,7 +82,7 @@ theorem realInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
   obtain ⟨v₁,n₁,D,hu₁,hn₁,he₁,hDnorm,hDerror,hRnorm,hRerror⟩ := restoredInteriorResidual_spec
     (body := body) hR hQ hA hp0 hst hu hαu hθ0 hgap hbudget hband has hbs hpad C hC x hx
     v S borrowed h127 h138 haMaster hbMaster hready h143 hcount hrowWidth 2 hmass
-  let R := couplingRowField (2^15*p) q t u band a b false D C
+  let R := guardedCouplingRowField (2^15*p) q t u band a b false D C
   let S₁ : Stacks 144 A := {S with R := (Function.update
     (Function.update S.R 132 (cstream A w (chirpLine s D)++S.R 132))
     110 (cstream A w (chirpLine s R)++S.R 110))}
@@ -101,9 +101,9 @@ theorem realInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
   have hD' : ∀ i ∈ haloInterior s t band a b,
       ‖value q (D' i)‖ ≤ (2 : ℝ)^stableInteriorExponent p rhsExp :=
     stableInterior_norm hp0 _ hdom C D hC x hx hDerror
-  have hR' : ∀ i, ‖value q (couplingRowField (2^15*p) q t u band a b false D' C' i)‖ ≤
+  have hR' : ∀ i, ‖value q (guardedCouplingRowField (2^15*p) q t u band a b false D' C' i)‖ ≤
       (2 : ℝ)^couplingRowExponent rhsExp (stableInteriorExponent p rhsExp) (8*p+1) countExp :=
-    couplingRowField_norm false hp0 hst hαu hθ0 hgap hbudget D' C' hcount
+    guardedCouplingRowField_norm false hp0 hst hαu hθ0 hgap hbudget D' C' hcount
       (fun i => by
         rw [value_realPartWord_norm]
         exact (Complex.abs_re_le_norm _).trans (hC i)) hD'
@@ -114,28 +114,28 @@ theorem realInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     have hDline : (chirpLine s D).map realPartWord = chirpLine s D' := by
       simp [chirpLine,D',List.map_map,Function.comp_def]
     have hRline : (chirpLine s R).map realPartWord =
-        chirpLine s (couplingRowField (2^15*p) q t u band a b false D' C') := by
-      simp [chirpLine,R,D',C',List.map_map,Function.comp_def,couplingRowField_realPart]
+        chirpLine s (guardedCouplingRowField (2^15*p) q t u band a b false D' C') := by
+      simp [chirpLine,R,D',C',List.map_map,Function.comp_def,guardedCouplingRowField_realPart]
     refine Stacks.ext rfl rfl rfl ?_
     funext k
     by_cases hk110 : k = 110 <;> by_cases hk132 : k = 132 <;>
       simp [S₁,hDline,hRline,hk110,hk132,q,w,band,C']
   · simpa only [D',value_realPartWord_re] using hDerror
   · intro i
-    rw [← couplingRowField_realPart]
+    rw [← guardedCouplingRowField_realPart]
     rfl
-  · intro i
+  · intro i hi
     have hsharpWidth : q+couplingRowExponent rhsExp (stableInteriorExponent p rhsExp)
         (8*p+1) countExp+2 ≤ w := stableInteriorResidual_width p u l target rhsExp
     have hC' (i) : ‖value q (C' i)‖ ≤ (2 : ℝ)^rhsExp := by
       rw [value_realPartWord_norm]
       exact (Complex.abs_re_le_norm _).trans (hC i)
-    have hpoint := couplingRowField_error (A := A) (w := w) (rhsExp := rhsExp)
+    have hpoint := guardedCouplingRowField_error (A := A) (w := w) (rhsExp := rhsExp)
       (inputExp := stableInteriorExponent p rhsExp) (countExp := countExp) false hA
       hp0 hst hαu hθ0 hgap hbudget hsharpWidth D' C' x (fun i => (value q (C i)).re)
       2 (1/(2 : ℝ)^target) 0 (by positivity) hcount hC' hD'
       (by intro j hj; simpa only [D',value_realPartWord_re,Real.norm_eq_abs] using hDerror j hj)
-      hmass (by intro j; simp [C']) i
+      hmass (by intro j; simp [C']) hbs i (Or.inr hi)
     simpa only [Bool.false_eq_true,ite_false,add_zero] using hpoint
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

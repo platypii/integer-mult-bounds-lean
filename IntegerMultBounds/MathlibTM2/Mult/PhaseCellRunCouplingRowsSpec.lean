@@ -38,13 +38,13 @@ theorem runCouplingRows_spec (hQ : SS.states ≤ Q)
       (cstream A w (chirpLine s C)++tail) (embStk groupReg S))
     (hindex : S.R 107 = []) (hrhs : S.R 93 = cstream A w (chirpLine s B)++rhsTail)
     (h143 : S.R 143 = []) (h135 : S.R 135 = []) :
-    let ys := couplingRowWords (2^15*p) q t u band a b boundary C 0 (chirpLine s B)
+    let ys := guardedCouplingRowWords (2^15*p) q t u band a b boundary C 0 (chirpLine s B)
     ∃ v' m, v'.user = v.user ∧ m ≤ runCouplingRowsCost boundary (2^15*p) q w s t u band a b ∧
       Exec (embTab groupReg body) (runCouplingRows hQ boundary) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update S.R 93 rhsTail)
           113 (cstream A w ys++S.R 113))}) ∧
       (cstream A w ys).length = s*w ∧
-      ∀ j < s, |(value q (decodeWord (((cstream A w ys++S.R 113).drop (j*w)).take w))).re-
+      ∀ j < s, (boundary = true ∨ (j : ZMod s) ∈ haloBoundary s t band a b) → |(value q (decodeWord (((cstream A w ys++S.R 113).drop (j*w)).take w))).re-
         (b₀ (j : ZMod s)-SchurDominance.couple (realMatrix s t p u)
           (if boundary then haloBoundary s t band a b else haloInterior s t band a b) x (j : ZMod s))| ≤
           (2*band+1)*(2/(2 : ℝ)^q)+rhsError+(2*band+1)*((2 : ℝ)^inputExp*(1/(2 : ℝ)^q))+K*ε := by
@@ -63,14 +63,15 @@ theorem runCouplingRows_spec (hQ : SS.states ≤ Q)
           hp (NeZero.pos s) hst hαu hθ hgap hbudget z hz
         exact ⟨fits_of_value_power hwCoeff z hh.1,hh.2⟩)
   refine ⟨v',m,hu,hm,he,by simp,?_⟩
-  intro j hj
-  let ys := couplingRowWords (2^15*p) q t u band a b boundary C 0 (chirpLine s B)
+  intro j hj hobserved
+  let ys := guardedCouplingRowWords (2^15*p) q t u band a b boundary C 0 (chirpLine s B)
   have hj' : j < ys.length := by simpa [ys] using hj
-  have hget : ys[j] = couplingRowWord (2^15*p) q t u band a b j boundary C (B (j : ZMod s)) := by
-    have hh := couplingRowWords_getElem (2^15*p) q t u band a b 0 boundary C (chirpLine s B) j
+  have hget : ys[j] = guardedCouplingRowWord (2^15*p) q t u band a b j boundary C (B (j : ZMod s)) := by
+    have hh := guardedCouplingRowWords_getElem (2^15*p) q t u band a b 0 boundary C (chirpLine s B) j
       (by simpa using hj)
     simpa [ys,chirpLine] using hh
   rw [cstream_word w ys (S.R 113) j hj',hget]
+  rw [guardedCouplingRowWord_eq hst (2^15*p) q u band a b j boundary hbS hj C (B (j : ZMod s)) hobserved]
   have herror := maskedCouplingRow_error boundary hA hp hst hαu hθ hgap hbudget hw hj C x (B (j : ZMod s))
     (b₀ (j : ZMod s)) K ε rhsError hε (by simpa [hband] using hcount) (hB _)
     (by simpa [hband] using hC) (by simpa [hband] using hx) (by simpa [hband] using hmass j hj)

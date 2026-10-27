@@ -41,7 +41,7 @@ theorem runSpatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b
     ∃ v' m, v'.user = v.user ∧ m ≤ runSpatialCouplingGuardedCost boundary P q w s t u band a b ∧
       Exec (body) (runSpatialCouplingRows hQ boundary) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update S.R 93 rhsTail)
-          113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
+          113 (cstream A w (guardedCouplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
   let V := liftedCoefficientWidth P q w s t u band
   obtain ⟨vG,mG,huG,hmG,heG⟩ := prepareCouplingGuard_exec (body := body) boundary hst haS hbS raw v S hready
   let G : Stacks 144 A := {S with R := Function.update S.R 136 (couplingGuardSymbols boundary A s t band a b++S.R 136)}
@@ -61,7 +61,7 @@ theorem runSpatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b
     (by simpa [S₁,G] using h143) (by simp [S₁,V]) hxs has
   let S₂ : Stacks 144 A := {S₁ with R := (Function.update (Function.update (Function.update (Function.update S₁.R 136 (S.R 136)) 135
     (markedRowCoefficientPacket A V P q s t u band s++S.R 135)) 93 rhsTail)
-    113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S₁.R 113))}
+    113 (cstream A w (guardedCouplingRowWords P q t u band a b boundary C 0 rhs)++S₁.R 113))}
   obtain ⟨v₃,hu₃,he₃⟩ := uclear_exec (body := body) 135 v₂ S₂
   have hlen₂ : (S₂.R 135).length = 12*V+1 := by simp [S₂,h135]
   refine ⟨v₃,mG+(m₁+(m₂+(24*V+4))),hu₃.trans (hu₂.trans (hu₁.trans huG)),?_,

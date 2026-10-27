@@ -39,7 +39,7 @@ theorem physicalRetainedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states
     let I := haloInterior s t band a b
     let boundary := haloBoundary s t band a b
     ∃ v' n, ∃ D : ZMod s → GaussianInt, ∃ R : (ZMod s → ℝ) → ZMod s → ℝ,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+      let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
       let input := cstream A w (chirpLine s C)++S.R 110
       let output := cstream A w (chirpLine s D)++S.R 132
       let S' : Stacks 224 A := {S with R := Function.update (Function.update S.R 110 input) 132 output}
@@ -69,7 +69,7 @@ theorem physicalRetainedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states
   let q := executionPrecision p l (initialSchurTarget p u target rhsExp) rhsExp
   let w := executionWidth p l (initialSchurTarget p u target rhsExp) rhsExp
   let band := PhaseCellBand.width p u
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let input := cstream A w (chirpLine s C)++S.R 110
   let output := cstream A w (chirpLine s D)++S.R 132
   have he' : Exec (embTab componentReg (embTab groupReg body)) (retainedSchurResidual hR hQ)

@@ -57,7 +57,7 @@ theorem interiorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
     let band := PhaseCellBand.width p u
     let e := interiorOutputExponent p l target rhsExp
     ∃ v' n, ∃ D : ZMod s → GaussianInt,
-      let R := couplingRowField (2^15*p) q t u band a b false D C
+      let R := guardedCouplingRowField (2^15*p) q t u band a b false D C
       v'.user = v.user ∧ n ≤ interiorResidualCost p l s t u target rhsExp a b ∧
       Exec (embTab groupReg body) (interiorResidual hR hQ) (mk v S) n
         (mk v' {S with R := (Function.update
@@ -68,7 +68,7 @@ theorem interiorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
       PhaseCellInterface.ErrorOn (haloInterior s t band a b)
         (fun i => (value q (D i)).re) x (1/(2 : ℝ)^target) ∧
       (∀ i, ‖value q (R i)‖ ≤ (2 : ℝ)^couplingRowExponent rhsExp e (8*p+1) countExp) ∧
-      ∀ i, |(value q (R i)).re-((value q (C i)).re-
+      ∀ i ∈ haloBoundary s t band a b, |(value q (R i)).re-((value q (C i)).re-
         SchurDominance.couple (realMatrix s t p u) (haloInterior s t band a b) x i)| ≤
           (2*band+1)*(2/(2 : ℝ)^q)+(2*band+1)*((2 : ℝ)^e*(1/(2 : ℝ)^q))+K*(1/(2 : ℝ)^target) := by
   dsimp only
@@ -94,7 +94,7 @@ theorem interiorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
     (by rw [hoff 131 (by decide)]; simpa [base] using hready.fresh 131 (by simp))
     (by rw [hoff 134 (by decide)]; simpa [base] using hready.fresh 134 (by simp))
     (by rw [hoff 135 (by decide)]; simpa [base] using hready.fresh 135 (by simp))
-  let R := couplingRowField (2^15*p) q t u band a b false D C
+  let R := guardedCouplingRowField (2^15*p) q t u band a b false D C
   have hfit : ∀ i, Fits w (R i) := fun i => fits_of_value_power hrowWidth _ (hRnorm i)
   have hw : 0 < w := by dsimp [w,executionWidth]; omega
   refine ⟨v₂,n₁+n₂,D,hu₂.trans hu₁,?_,(Exec.seq he₁ he₂).cast rfl ?_,hDnorm,hDerror,hRnorm,?_⟩
@@ -106,8 +106,8 @@ theorem interiorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
     change {S₁ with R := Function.update S₁.R 110 (cstream A w (chirpLine s R)++S₁.R 110)} = _
     rw [hoff 110 (by decide)]
     rfl
-  · intro i
-    have hh := hpoint i.val i.val_lt
+  · intro i hi
+    have hh := hpoint i.val i.val_lt (Or.inr (by simpa using hi))
     rw [hfield] at hh
     have hread := publishedCellRead_encodedField (q := q) (by omega : 4 ≤ A) hw R (S₁.R 110) hfit i
     simp only [publishedCellRead,ZMod.val_zero,Nat.sub_zero] at hread

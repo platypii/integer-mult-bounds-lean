@@ -27,7 +27,7 @@ def restoredCouplingPassCost (boundary : Bool) (P q s t u band a b : ℕ) : ℕ 
 
 theorem restoredCouplingPass_spec (hQ : SS.states ≤ Q)
     {p q N l s t u band a b rhsExp inputExp countExp : ℕ} [NeZero s] {α d : ℝ}
-    (boundary : Bool) (hA : 96 ≤ A) (hp : 0 < p) (hst : s < t)
+    (hA : 96 ≤ A) (hp : 0 < p) (hst : s < t)
     (hαu : α^2 = (u : ℝ)) (hθ : 0 < (t : ℝ)/s-1)
     (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
     (hw : q+couplingRowExponent rhsExp inputExp (8*p+1) countExp+2 ≤ 2*q+8)
@@ -35,9 +35,9 @@ theorem restoredCouplingPass_spec (hQ : SS.states ≤ Q)
     (C B : ZMod s → GaussianInt) (x b₀ : ZMod s → ℝ) (K ε rhsError : ℝ) (hε : 0 ≤ ε)
     (hcount : 2*band+1 ≤ 2^countExp)
     (hB : ∀ i, ‖value q (B i)‖ ≤ (2 : ℝ)^rhsExp)
-    (hC : ∀ i ∈ (if boundary then haloBoundary s t band a b else haloInterior s t band a b),
+    (hC : ∀ i ∈ (if true then haloBoundary s t band a b else haloInterior s t band a b),
       ‖value q (C i)‖ ≤ (2 : ℝ)^inputExp)
-    (hx : ∀ i ∈ (if boundary then haloBoundary s t band a b else haloInterior s t band a b),
+    (hx : ∀ i ∈ (if true then haloBoundary s t band a b else haloInterior s t band a b),
       |(value q (C i)).re-x i| ≤ ε)
     (hmass : ∀ i < s, (((couplingOffsets band).reverse).map (fun δ =>
       |(PhaseCellCrossCell.entry (2^15*p) s t u band i (i+δ) : ℝ)|)).sum ≤ K)
@@ -48,16 +48,16 @@ theorem restoredCouplingPass_spec (hQ : SS.states ≤ Q)
     (haMaster : (S.R 141).length = a) (hbMaster : (S.R 142).length = b)
     (hsource : S.R 132 = cstream A (2*q+8) (chirpLine s C)++sourceTail)
     (h143 : S.R 143 = []) :
-    let R := couplingRowField (2^15*p) q t u band a b boundary C B
-    ∃ v' n, v'.user = v.user ∧ n ≤ restoredCouplingPassCost boundary (2^15*p) q s t u band a b ∧
-      Exec (embTab groupReg body) (restoredCouplingPass hQ boundary) (mk v S) n
+      let R := couplingRowField (2^15*p) q t u band a b true C B
+    ∃ v' n, v'.user = v.user ∧ n ≤ restoredCouplingPassCost true (2^15*p) q s t u band a b ∧
+      Exec (embTab groupReg body) (restoredCouplingPass hQ true) (mk v S) n
         (mk v' {S with R := Function.update S.R 110 (cstream A (2*q+8) (chirpLine s R)++S.R 110)}) ∧
       LengthKeyReady (2^15*p) N q l s t u band 0 0
         (cstream A (2*q+8) (chirpLine s R)++S.R 110)
         {S with R := Function.update S.R 110 (cstream A (2*q+8) (chirpLine s R)++S.R 110)} ∧
       (∀ i, ‖value q (R i)‖ ≤ (2 : ℝ)^couplingRowExponent rhsExp inputExp (8*p+1) countExp) ∧
       ∀ i, |(value q (R i)).re-(b₀ i-SchurDominance.couple (realMatrix s t p u)
-        (if boundary then haloBoundary s t band a b else haloInterior s t band a b) x i)| ≤
+        (if true then haloBoundary s t band a b else haloInterior s t band a b) x i)| ≤
           (2*band+1)*(2/(2 : ℝ)^q)+rhsError+(2*band+1)*((2 : ℝ)^inputExp*(1/(2 : ℝ)^q))+K*ε := by
   dsimp only
   obtain ⟨v₁,hu₁,he₁,hcoupling⟩ := installCouplingHeaders_exec (body := embTab groupReg body)
@@ -67,7 +67,7 @@ theorem restoredCouplingPass_spec (hQ : SS.states ≤ Q)
   have hoff (k : Fin 144) (hk : k ∉ couplingHeaderRegisters) : S₁.R k = S.R k :=
     couplingHeadersR_off (2^15*p) q s t u band a b S.R k hk
   obtain ⟨v₂,n₂,hu₂,hn₂,he₂,hfield,hlen,hnorm,herror⟩ := feedCouplingPass_spec (body := body)
-    hQ boundary hA hp hst hαu hθ hgap hbudget hw haS hbS hbandS hband C B x b₀ K ε rhsError hε
+    hQ true hA hp hst hαu hθ hgap hbudget hw haS hbS hbandS hband C B x b₀ K ε rhsError hε
     hcount hB hC hx hmass hBError tail sourceTail v₁ S₁ hcoupling
     (by rw [hoff 107 (by decide)]; exact hready.blank 107 (by decide) (by decide) (by decide))
     (by rw [hoff 132 (by decide)]; exact hsource)
@@ -75,7 +75,12 @@ theorem restoredCouplingPass_spec (hQ : SS.states ≤ Q)
     (by rw [hoff 131 (by decide)]; exact hready.fresh 131 (by simp))
     (by rw [hoff 134 (by decide)]; exact hready.fresh 134 (by simp))
     (by rw [hoff 135 (by decide)]; exact hready.fresh 135 (by simp))
-  let R := couplingRowField (2^15*p) q t u band a b boundary C B
+  have hsame : guardedCouplingRowField (2^15*p) q t u band a b true C B =
+      couplingRowField (2^15*p) q t u band a b true C B := by
+    funext i
+    exact guardedCouplingRowField_eq hst (2^15*p) q u band a b true hbS C B i (Or.inl rfl)
+  rw [hsame] at hfield hnorm
+  let R := couplingRowField (2^15*p) q t u band a b true C B
   let S₂ : Stacks 144 A := {S with R := (Function.update S.R 110
     (cstream A (2*q+8) (chirpLine s R)++S.R 110))}
   have hready₂ : LengthKeyReady (2^15*p) N q l s t u band 0 0
@@ -90,7 +95,7 @@ theorem restoredCouplingPass_spec (hQ : SS.states ≤ Q)
     exact hready₂.blank k hk117 hk93 hk110
   obtain ⟨v₃,hu₃,he₃⟩ := releaseCouplingHeaders_exec (body := embTab groupReg body)
     (2^15*p) q s t u band a b v₂ S₂ hblank
-  have he₂' : Exec (embTab groupReg body) (feedCouplingPass hQ boundary) (mk v₁ S₁) n₂
+  have he₂' : Exec (embTab groupReg body) (feedCouplingPass hQ true) (mk v₁ S₁) n₂
       (mk v₂ {S₂ with R := couplingHeadersR (2^15*p) q s t u band a b S₂.R}) := by
     rw [hfield] at he₂
     convert he₂ using 1
@@ -105,7 +110,7 @@ theorem restoredCouplingPass_spec (hQ : SS.states ≤ Q)
     ?_,Exec.seq he₁ (Exec.seq he₂' he₃),hready₂,hnorm,?_⟩
   · exact Nat.add_le_add_left (Nat.add_le_add_right hn₂ _) _
   · subst band
-    exact couplingRowField_error boundary hA hp hst hαu hθ hgap hbudget hw C B x b₀ K ε rhsError
+    exact couplingRowField_error true hA hp hst hαu hθ hgap hbudget hw C B x b₀ K ε rhsError
       hε hcount hB hC hx hmass hBError
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -103,11 +103,11 @@ theorem retainedBoundaryRecovered_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     rw [publishedCellRead_encodedField (q := q) (w := w) (by omega : 4 ≤ A) hw G sourceTail hfit i] at hh
     exact hh
   have hresidual : (cstream A w (chirpLine s
-      (couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))))).length = s*w := by
+      (guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))))).length = s*w := by
     simp [hwq,chirpLine]
   have hready₀' : LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
       q l s t u band 0 0
-      (cstream A w (chirpLine s (couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))))++
+      (cstream A w (chirpLine s (guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))))++
         (cstream A w (chirpLine s F)++tail))
       (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg S₀)))) := by
     rw [← hsource,← h110]

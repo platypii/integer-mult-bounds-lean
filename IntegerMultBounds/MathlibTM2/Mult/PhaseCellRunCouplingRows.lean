@@ -35,7 +35,7 @@ theorem runCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ}
     ∃ v' m, v'.user = v.user ∧ m ≤ runCouplingRowsCost boundary P q w s t u band a b ∧
       Exec (embTab groupReg body) (runCouplingRows hQ boundary) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update S.R 93 rhsTail)
-          113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
+          113 (cstream A w (guardedCouplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
   exact spatialCouplingRows_exec (body := embTab groupReg body) hQ boundary hA hw5 hqw
     hst haS hbS hbandS hP C rhs hlen tail rhsTail v S hready hindex hrhs h143 h135 hxs has
 

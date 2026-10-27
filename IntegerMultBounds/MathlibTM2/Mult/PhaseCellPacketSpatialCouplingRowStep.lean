@@ -34,7 +34,7 @@ theorem packetSpatialCouplingRowStep_exec (hQ : SS.states ≤ Q) {P q w s t u ba
     (C : ZMod s → GaussianInt) (tail packetTail maskTail raw : List (Fin (A+4)))
     (v : HS 144 Q A U) (S : Stacks 144 A)
     (hmask : S.R 136 = IntegerMultBounds.MathlibTM2.Layer.pairSym A skip skip::maskTail)
-    (hskip : skip = true → (i : ZMod s) ∈ couplingZeroRows boundary s t band a b)
+    (hskip : skip = couplingSkipAt boundary s t band a b i)
     (hready : CouplingReady P q w s t u band a b raw (embStk groupReg S))
     (hpacket : S.R 135 = markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band i++packetTail)
     (hsrc : S.R 141 = cstream A w ((cyclicPaddedLine (fun j : ZMod s =>
@@ -49,7 +49,7 @@ theorem packetSpatialCouplingRowStep_exec (hQ : SS.states ≤ Q) {P q w s t u ba
         (mk v' {S with R := (Function.update (Function.update (Function.update (Function.update
           (Function.update (Function.update (Function.update S.R 136 maskTail) 135
             (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band (i+1)++packetTail)) 113
-            (csyms A w (couplingRowWord P q t u band a b i boundary C rhs)++S.R 113))
+            (csyms A w (guardedCouplingRowWord P q t u band a b i boundary C rhs)++S.R 113))
           93 rhsTail)
           141 (cstream A w ((cyclicPaddedLine (fun j : ZMod s =>
             if j ∈ (if boundary then haloBoundary s t band a b else haloInterior s t band a b)
@@ -61,7 +61,7 @@ theorem packetSpatialCouplingRowStep_exec (hQ : SS.states ≤ Q) {P q w s t u ba
   obtain ⟨v₁,m₁,hu₁,hm₁,he₁⟩  := maskedPacketSpatialCouplingRow_exec (body := body)
     hQ boundary skip hA hw5 hqw hst hi hP C tail packetTail raw maskTail v S hmask hskip hready hpacket hsrc
     rhs rhsTail hrhs hxs has
-  let z := couplingRowWord P q t u band a b i boundary C rhs
+  let z := guardedCouplingRowWord P q t u band a b i boundary C rhs
   let S₁ : Stacks 144 A := {S with R := (Function.update (Function.update (Function.update S.R 136 maskTail) 135
     (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band (i+1)++packetTail)) 113 (csyms A w z++S.R 113))}
   have he₁' : Exec body (maskedPacketSpatialCouplingRow hQ) (mk v S) m₁ (mk v₁ S₁) := by
@@ -69,7 +69,7 @@ theorem packetSpatialCouplingRowStep_exec (hQ : SS.states ≤ Q) {P q w s t u ba
     apply congrArg (mk v₁)
     refine Stacks.ext rfl rfl rfl ?_
     funext k
-    by_cases h113 : k = 113 <;> by_cases h135 : k = 135 <;> simp_all [S₁,z,couplingRowWord]
+    by_cases h113 : k = 113 <;> by_cases h135 : k = 135 <;> simp_all [S₁,z,guardedCouplingRowWord]
   have hw : (S.R 94).length = w := hready.width
   have hf104 : S.R 104 = [] := hready.fresh 104 (by simp)
   have hf105 : S.R 105 = [] := hready.fresh 105 (by simp)

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2036 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2038 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12878,3 +12878,40 @@ Validation: the final expanded guarded stage audit passes all 14,887 jobs
 (10.3 GiB combined peak RSS). All nine changed implementation modules pass
 individual guarded checks in their final versions; the largest is the complete
 real component at 3004.5 MiB. Plan-status and whitespace checks pass.
+
+### S3 production skips unobserved deep-interior residual rows
+
+The production guard now generates the combined enlarged-interior/exterior
+mask for both coupling directions. Its ordinary-header compiler, publication,
+restoration and scan cost are unchanged. `guardedCouplingRowWord` records the
+actual skipped-row result (the RHS word) rather than asserting the underlying
+interior coupling is zero. `guardedCouplingRowWord_eq` proves agreement with
+the original row on all recovery coordinates and all residual boundary
+coordinates. A skipped row cannot belong to the boundary, as witnessed by the
+zero-offset case of the stencil-disjointness theorem.
+
+The packet row, counted loop, source cursor, restored stream and physical
+feed now produce this guarded row field. The numerical handoff keeps global
+magnitude bounds, while residual accuracy is asserted where it is consumed:
+on the boundary. Projection to real words commutes with the guarded field.
+The retained Schur residual supplies exactly those facts to the already
+abstracted boundary consumer. Recovery and generated boundary columns retain
+the original field on every coordinate, with explicit equality proofs at
+their handoffs. No signed offsets or wrapped aliases are discarded.
+
+The actual counted branch ledger now bounds full rows in both directions by
+`haloBoundaryCountBound s t (2*band) a b + 4*band`, hence by
+`min (b-a) (4*band*(t-s+2)) + 4*band`. The former residual `(b-a)+4*band`
+full-row charge is removed. Ambient input/output scans, generated guards,
+packet advancement and skipped-row RHS copies remain paid. These counts
+flow through the existing shared-batch and raw-caller geometry endpoints.
+
+This closes the unobserved deep-interior residual full-row overhead gate.
+Remaining numeric supplier/key setup matching and simultaneous whole-execution
+live storage still prevent S3 completion. Kappa is unchanged.
+
+Validation: the production rebuild passes all 14,889 guarded stage jobs
+(21.8 GiB combined peak RSS); the final expanded explicit axiom audit passes
+the same target at 3.4 GiB combined peak. All 40 changed/new implementation
+modules pass individual guarded checks, with maximum peak RSS 3003.3 MiB.
+Proof-integrity, plan-status and whitespace checks pass.

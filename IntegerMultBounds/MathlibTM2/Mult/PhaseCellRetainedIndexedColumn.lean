@@ -51,7 +51,7 @@ theorem retainedIndexedColumn_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     let band := PhaseCellBand.width p u
     let B := couplingRowField (2^15*p) q t u band a b true (negativeUnitField q j) (fun _ => 0)
     ∃ v' m, ∃ D : ZMod s → GaussianInt,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+      let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
       let output := cstream A w (chirpLine s C)++tail
       let S' : Stacks 154 A := {S with R := Function.update S.R 110 output}
       v'.user = v.user ∧ m ≤ retainedIndexedColumnCost p u l s t a b target n j.val ∧
@@ -100,7 +100,7 @@ theorem retainedIndexedColumn_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
   let w := executionWidth p l (initialSchurTarget p u target 2) 2
   let band := PhaseCellBand.width p u
   let B := couplingRowField (2^15*p) q t u band a b true (negativeUnitField q j) (fun _ => 0)
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let output := cstream A w (chirpLine s C)++tail
   let Sfinal : Stacks 154 A := {S with R := Function.update S.R 110 output}
   have he₃' : Exec (embTab tableReg (embTab boundaryArithmeticReg (embTab componentReg (embTab groupReg body))))

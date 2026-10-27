@@ -52,7 +52,7 @@ theorem initializedInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     let band := PhaseCellBand.width p u
     let e := interiorOutputExponent p l target rhsExp
     ∃ v' n, ∃ D : ZMod s → GaussianInt,
-      let R := couplingRowField (2^15*p) q t u band a b false D C
+      let R := guardedCouplingRowField (2^15*p) q t u band a b false D C
       v'.user = v.user ∧ n ≤ initializedInteriorResidualCost p l s t u target rhsExp a b ∧
       Exec (embTab groupReg body) (initializedInteriorResidual hR hQ) (mk v S) n
         (mk v' {S with R := (Function.update
@@ -63,7 +63,7 @@ theorem initializedInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       PhaseCellInterface.ErrorOn (haloInterior s t band a b)
         (fun i => (value q (D i)).re) x (1/(2 : ℝ)^target) ∧
       (∀ i, ‖value q (R i)‖ ≤ (2 : ℝ)^couplingRowExponent rhsExp e (8*p+1) countExp) ∧
-      ∀ i, |(value q (R i)).re-((value q (C i)).re-
+      ∀ i ∈ haloBoundary s t band a b, |(value q (R i)).re-((value q (C i)).re-
         SchurDominance.couple (realMatrix s t p u) (haloInterior s t band a b) x i)| ≤
           (2*band+1)*(2/(2 : ℝ)^q)+(2*band+1)*((2 : ℝ)^e*(1/(2 : ℝ)^q))+K*(1/(2 : ℝ)^target) := by
   dsimp only

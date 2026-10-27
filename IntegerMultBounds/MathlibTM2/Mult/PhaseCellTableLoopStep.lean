@@ -82,7 +82,7 @@ theorem tableLoopStep_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96
     (by rw [hoff 143 (by decide) (by decide) (by decide) (by decide)]; exact h143)
     (by rw [hoff 147 (by decide) (by decide) (by decide) (by decide)]; exact h147)
   let B := couplingRowField (2^15*p) q t u band a b true (negativeUnitField q j) (fun _ => 0)
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let output := bandColumnWords A w boundary (12*band+1) n C++Si.R 132
   let S₁ : Stacks 154 A := {Si with R := Function.update Si.R 132 output}
   have he₂ := Exec.act (body := embTab tableReg (embTab boundaryArithmeticReg (embTab componentReg (embTab groupReg body))))

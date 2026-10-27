@@ -75,11 +75,17 @@ theorem originalColumnPass_spec (hQ : SS.states ≤ Q)
     (by intro k _; simp)
     (couplingOffsets_mass_le_two hst hα p u hp hwidth hαu hθ hgap hbudget)
     (by intro k; simp [value]) tail sourceTail v S hready hindex hsource h143 h131 h134 h135
+  have hsame : guardedCouplingRowField (2^15*p) q t u band a b true
+      (negativeUnitField q j) (fun _ => 0) = couplingRowField (2^15*p) q t u band a b true
+      (negativeUnitField q j) (fun _ => 0) := by
+    funext i
+    exact guardedCouplingRowField_eq hst (2^15*p) q u band a b true hbS _ _ i (Or.inl rfl)
+  rw [hsame] at hfield hnorm
   have hfit (i : ZMod s) : Fits w (column i) := fits_of_value_power hw _ (hnorm i)
   have hw0 : 0 < w := by omega
   have haccuracy (i : ZMod s) : |(value q (column i)).re-realMatrix s t p u i j| ≤
       3*(2*band+1)*(1/(2 : ℝ)^q) := by
-    have hh := herror i.val i.val_lt
+    have hh := herror i.val i.val_lt (Or.inl rfl)
     rw [hfield,cstream_word w (chirpLine s column) (S.R 113) i.val (by simpa using i.val_lt)] at hh
     simp only [chirpLine,List.getElem_map,List.getElem_range,ZMod.natCast_zmod_val] at hh
     rw [decodeWord_of_fits (by omega) hw0 _ (hfit i)] at hh

@@ -42,7 +42,7 @@ theorem retainedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     let I := haloInterior s t band a b
     let boundary := haloBoundary s t band a b
     ∃ v' n, ∃ D : ZMod s → GaussianInt, ∃ R : (ZMod s → ℝ) → ZMod s → ℝ,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+      let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
       let input := cstream A w (chirpLine s C)++S.R 110
       let output := cstream A w (chirpLine s D)++S.R 132
       let S' : Stacks 148 A := {S with R := Function.update (Function.update S.R 110 input) 132 output}
@@ -78,7 +78,7 @@ theorem retainedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     (by simpa [embStk,componentReg] using h127) (by simpa [embStk,componentReg] using h138)
     (by simpa [embStk,componentReg] using haMaster) (by simpa [embStk,componentReg] using hbMaster)
     hready (by simpa [embStk,componentReg] using h143)
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let input := cstream A w (chirpLine s C)++S.R 110
   let output := cstream A w (chirpLine s D)++S.R 132
   have he₁' : Exec (embTab groupReg body) (realInteriorResidual hR hQ)
@@ -99,7 +99,7 @@ theorem retainedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
         (fun i => (value q (B i)).re) i| ≤
         (2*band+1)*(2/(2 : ℝ)^q)+(2*band+1)*((2 : ℝ)^stableInteriorExponent p rhsExp*(1/(2 : ℝ)^q))+
           2*(1/(2 : ℝ)^firstTarget) := by
-      simpa only [SchurDominance.residual,SchurDominance.couple] using hCerror i
+      simpa only [SchurDominance.residual,SchurDominance.couple] using hCerror i hi
     have hscaled := mul_le_mul_of_nonneg_left hh (by positivity : (0 : ℝ) ≤ 8*p)
     exact hscaled.trans (initialResidual_error_budget p u l target rhsExp (by omega))
   · intro i

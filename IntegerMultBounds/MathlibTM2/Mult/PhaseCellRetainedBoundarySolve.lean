@@ -50,7 +50,7 @@ theorem retainedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
     ∃ v' S' n, ∃ D : ZMod s → GaussianInt, ∃ columns : List (ZMod s → GaussianInt),
     ∃ solution : List GaussianInt,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
+      let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
       v'.user = v.user ∧ n ≤ retainedBoundarySolveCost p u l s t a b target ∧
       Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
         (embTab componentReg (embTab groupReg body))))) (retainedBoundarySolve hR hQ)
@@ -88,7 +88,7 @@ theorem retainedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     physicalRetainedSchurResidual_spec (body := body) (target := bits) (rhsExp := 2)
       hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
       F hF v S tail h127 h138 h143 haMaster hbMaster hready
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
   let input := cstream A w (chirpLine s C)++S.R 110
   let output := cstream A w (chirpLine s D)++S.R 132
   let S₁ : Stacks 224 A := {S with R := Function.update (Function.update S.R 110 input) 132 output}

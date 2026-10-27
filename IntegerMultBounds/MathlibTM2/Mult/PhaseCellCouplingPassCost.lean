@@ -44,7 +44,7 @@ def spatialCouplingCostBound (boundary : Bool) (P q w s t u band a b : â„•) : â„
   prepareSpatialCouplingSourceCost s t band a b w+
     prepareCouplingGuardCost s t band a b+buildMarkedRowCoefficientPacketCost P q w s t u band 0+
     s*zeroPacketSpatialCouplingRowCost P q w s t u band+
-    ((if boundary then haloBoundaryCountBound s t (2*band) a b else b-a)+4*band)*
+    (haloBoundaryCountBound s t (2*band) a b+4*band)*
       packetSpatialCouplingRowCost P q w s t u band+
     s*(10*w+16)+2+32*s*w+34*s+28+transferCountedLineCost s w+
     24*liftedCoefficientWidth P q w s t u band+4+retireSpatialCouplingSourceCost s band w

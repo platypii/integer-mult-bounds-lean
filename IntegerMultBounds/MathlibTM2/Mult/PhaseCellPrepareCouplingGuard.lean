@@ -14,7 +14,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
 def couplingSkipAt (boundary : Bool) (s t band a b i : ℕ) : Bool :=
-  recoveryGuardMaskAt boundary s t (2*band) a b i
+  recoveryGuardMaskAt true s t (2*band) a b i
 
 def couplingGuardSymbols (boundary : Bool) (A s t band a b : ℕ) : List (Fin (A+4)) :=
   (List.range s).map (fun i => pairSym A (couplingSkipAt boundary s t band a b i) (couplingSkipAt boundary s t band a b i))
@@ -24,13 +24,13 @@ def couplingGuardSymbols (boundary : Bool) (A s t band a b : ℕ) : List (Fin (A
 
 theorem couplingSkipAt_sound {s t : ℕ} [NeZero s] (hst : s < t) (boundary : Bool)
     (band a b i : ℕ) (hb : b ≤ s) (hi : i < s) (h : couplingSkipAt boundary s t band a b i = true) :
-    (i : ZMod s) ∈ couplingZeroRows boundary s t band a b := by
-  exact (recoveryGuardMaskAt_spec hst boundary band a b i hb hi).mp h
+    (i : ZMod s) ∈ couplingZeroRows true s t band a b := by
+  exact (recoveryGuardMaskAt_spec hst true band a b i hb hi).mp h
 
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 144 Q A U}
 
 def prepareCouplingGuard (boundary : Bool) : Pr P₀ 144 Q A U :=
-  embProg (couplingViewReg 109 136) Empty.elim (generateRecoveryCouplingMask (P₀ := Empty) boundary)
+  embProg (couplingViewReg 109 136) Empty.elim (generateRecoveryCouplingMask (P₀ := Empty) true)
 
 def prepareCouplingGuardCost (s t band a b : ℕ) : ℕ :=
   generateRecoveryCouplingMaskCost s t band a b
@@ -45,7 +45,7 @@ theorem prepareCouplingGuard_exec {P q w s t u band a b : ℕ} [NeZero s]
           (couplingGuardSymbols boundary A s t band a b++S.R 136))}) := by
   let e := couplingViewReg 109 136
   obtain ⟨v₁,m,hu₁,hm,he₁⟩ := generateRecoveryCouplingMask_exec
-    (body := fun p : Empty => nomatch p) boundary hst ha hb (embDn e v) (embStk e S)
+    (body := fun p : Empty => nomatch p) true hst ha hb (embDn e v) (embStk e S)
     hready.axis hready.period hready.bandwidth hready.lower hready.upper
     (hready.fresh 96 (by simp)) (hready.fresh 104 (by simp))
     (hready.fresh 115 (by simp)) (hready.fresh 106 (by simp)) (hready.fresh 108 (by simp))

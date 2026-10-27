@@ -40,7 +40,7 @@ theorem spatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : 
     ∃ v' m, v'.user = v.user ∧ m ≤ spatialCouplingGuardedRowsCost boundary P q w s t u band a b ∧
       Exec body (spatialCouplingRows hQ boundary) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update S.R 93 rhsTail)
-          113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
+          113 (cstream A w (guardedCouplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
   obtain ⟨v₁,m₁,hu₁,hm₁,he₁⟩ := prepareSpatialCouplingSource_exec (body := body)
     boundary (by omega) hst haS hbS hbandS C tail v S hready hindex h135 h143
   let F := fun j : ZMod s => if j ∈
@@ -54,7 +54,7 @@ theorem spatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : 
     (by rw [hview]; exact hready) (by simp [S₁,input,F])
     (by simpa [S₁] using hindex) (by simpa [S₁] using hrhs)
     (by simpa [S₁] using h143) (by simpa [S₁] using h135) hxs has
-  let ys := couplingRowWords P q t u band a b boundary C 0 rhs
+  let ys := guardedCouplingRowWords P q t u band a b boundary C 0 rhs
   let S₂ : Stacks 144 A := {S₁ with R := (Function.update (Function.update S₁.R 93 rhsTail)
     113 (cstream A w ys++S₁.R 113))}
   have hs : (S.R 97).length = s := hready.axis

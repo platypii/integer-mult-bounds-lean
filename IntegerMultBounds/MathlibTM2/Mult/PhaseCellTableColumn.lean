@@ -56,7 +56,7 @@ theorem tableColumn_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 �
     let band := PhaseCellBand.width p u
     let B := couplingRowField (2^15*p) q t u band a b true (negativeUnitField q j) (fun _ => 0)
     ∃ v' m, ∃ D : ZMod s → GaussianInt,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+      let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
       let output := cstream A w ((foldedBandRows (haloBoundary s t band a b) (12*band+1) n).reverse.map C)++S.R 132
       let S' : Stacks 154 A := {S with R := Function.update S.R 132 output}
       v'.user = v.user ∧ m ≤ tableColumnCost p u l s t a b target n j.val ∧
@@ -82,7 +82,7 @@ theorem tableColumn_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 �
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad n hn v S tail pageTail
     hindex hpageWidth hpage hready haMaster hbMaster h0 h139 h127 h138 h143 h147
   let B := couplingRowField (2^15*p) q t u band a b true (negativeUnitField q j) (fun _ => 0)
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let S₁ : Stacks 154 A := {S with R := Function.update S.R 110 (cstream A w (chirpLine s C)++tail)}
   have hq : (S₁.R 119).length = q := by
     simpa [S₁,embStk,componentReg,boundaryArithmeticReg,tableReg,groupHeaderValue,q] using

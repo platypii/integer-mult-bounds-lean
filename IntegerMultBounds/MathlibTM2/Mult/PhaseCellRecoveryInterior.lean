@@ -132,7 +132,7 @@ theorem recoveryInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁,hready₁,hRnorm,hRerror⟩ := restoredCouplingPass_spec (body := body)
     (q := q) (N := executionStagePrecision p l (recoveryFirstTarget p target rhsExp boundaryExp countExp) rhsExp+1)
     (l := l)
-    hQ true hA hp0 hst hαu hθ0 hgap hbudget (recovery_coupling_width p l target rhsExp boundaryExp countExp)
+    hQ hA hp0 hst hαu hθ0 hgap hbudget (recovery_coupling_width p l target rhsExp boundaryExp countExp)
     has hbs hband rfl C B x (fun i => (value q (B i)).re) 2 ε 0 hε hcount hB hC hxB hmass
     (by intro i; simp) tail sourceTail v₀ S₀ hreadyq (by simpa [S₀] using haMaster)
     (by simpa [S₀] using hbMaster) hsourceq (by simpa [S₀] using h143)

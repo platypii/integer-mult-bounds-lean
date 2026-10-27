@@ -45,7 +45,7 @@ theorem preparedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     let I := haloInterior s t band a b
     let boundary := haloBoundary s t band a b
     ∃ v' n, ∃ D : ZMod s → GaussianInt, ∃ R : (ZMod s → ℝ) → ZMod s → ℝ,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+      let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
       let input := cstream A w (chirpLine s C)++(cstream A w ((chirpLine s B).map realPartWord)++tail)
       let S' : Stacks 148 A := {S with R := (Function.update (Function.update (Function.update S.R 110 input)
         144 (cstream A w ((chirpLine s B).map imagPartWord)++S.R 144))
@@ -94,7 +94,7 @@ theorem preparedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad B₁ hB₁ v₁ S₁ tail
     (by simpa [S₁,S₀] using h127) (by simpa [S₁,S₀] using h138) (by simpa [S₁,S₀] using h143)
     (by simpa [S₁,S₀] using haMaster) (by simpa [S₁,S₀] using hbMaster) hready₁' (by simpa [S₁,S₀] using h147)
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let input := cstream A w (chirpLine s C)++X
   let S₂ : Stacks 148 A := {S₁ with R := Function.update S₁.R 110 input}
   let Sfinal : Stacks 148 A := {S with R := (Function.update (Function.update (Function.update S.R 110 input) 144 Y) 146 (original++S.R 146))}

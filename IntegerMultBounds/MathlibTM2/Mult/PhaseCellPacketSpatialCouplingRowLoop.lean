@@ -44,7 +44,7 @@ theorem packetSpatialCouplingRowLoop_exec (hQ : SS.states ≤ Q) {P q w s t u ba
         (mk v' {S with R := (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update S.R 136 maskTail) 135
           (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band rhs.length++packetTail))
           93 rhsTail) 107 (List.replicate rhs.length tick++S.R 107))
-          113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs).reverse++S.R 113)) 143 [])
+          113 (cstream A w (guardedCouplingRowWords P q t u band a b boundary C 0 rhs).reverse++S.R 113)) 143 [])
           141 (cstream A w ((cyclicPaddedLine (fun j : ZMod s =>
             if j ∈ (if boundary then haloBoundary s t band a b else haloInterior s t band a b)
             then C j else 0) band).drop rhs.length)++tail))
@@ -54,7 +54,7 @@ theorem packetSpatialCouplingRowLoop_exec (hQ : SS.states ≤ Q) {P q w s t u ba
   let F := fun j : ZMod s => if j ∈
     (if boundary then haloBoundary s t band a b else haloInterior s t band a b) then C j else 0
   let source := cyclicPaddedLine F band
-  let ys := couplingRowWords P q t u band a b boundary C 0 rhs
+  let ys := guardedCouplingRowWords P q t u band a b boundary C 0 rhs
   let guards := (couplingGuardSymbols boundary A s t band a b).take rhs.length
   have hguards : guards.length = rhs.length := by simp [guards]; omega
   let Inv : ℕ → Stacks 144 A → Prop := fun j B =>
@@ -104,16 +104,16 @@ theorem packetSpatialCouplingRowLoop_exec (hQ : SS.states ≤ Q) {P q w s t u ba
     obtain ⟨v',m,hu,hm,he⟩ := packetSpatialCouplingRowStep_exec (body := body)
       hQ boundary (couplingSkipAt boundary s t band a b j) hA hw5 hqw hst (by omega) hP C tail packetTail
       (guards.drop (j+1)++maskTail) raw vi B hmaskj
-      (couplingSkipAt_sound hst boundary band a b j hbS (by omega)) hreadyB hpacketB hsrcB
+      rfl hreadyB hpacketB hsrcB
       rhs[j] (cstream A w (rhs.drop (j+1))++rhsTail) hrhsB (hxs j hj) (has j hj)
-    let z := couplingRowWord P q t u band a b j boundary C rhs[j]
+    let z := guardedCouplingRowWord P q t u band a b j boundary C rhs[j]
     let B' : Stacks 144 A := {B with R := (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update B.R 136 (guards.drop (j+1)++maskTail)) 135
       (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band (j+1)++packetTail))
       113 (csyms A w z++B.R 113)) 93 (cstream A w (rhs.drop (j+1))++rhsTail))
       141 (cstream A w (source.drop (j+1))++tail))
       142 ((csyms A w (F ((j : ZMod s)-(band : ZMod s)))).reverse++B.R 142)) 107 (tick::B.R 107))}
     have hylen : j < ys.length := by simpa [ys] using hj
-    have hyget : ys[j] = z := by simpa [ys,z] using couplingRowWords_getElem P q t u band a b 0 boundary C rhs j hj
+    have hyget : ys[j] = z := by simpa [ys,z] using guardedCouplingRowWords_getElem P q t u band a b 0 boundary C rhs j hj
     have hnext : cstream A w (ys.take (j+1)).reverse = csyms A w z++cstream A w (ys.take j).reverse := by
       rw [List.take_succ_eq_append_getElem hylen,List.reverse_append,List.reverse_singleton,
         cstream_append,cstream_cons,cstream_nil,List.append_nil,hyget]

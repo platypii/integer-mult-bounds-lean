@@ -50,7 +50,7 @@ theorem indexedSchurColumn_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
     let band := PhaseCellBand.width p u
     let B := couplingRowField (2^15*p) q t u band a b true (negativeUnitField q j) (fun _ => 0)
     ∃ v' m, ∃ D : ZMod s → GaussianInt,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+      let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
       let output := cstream A w (chirpLine s C)++tail
       let S' : Stacks 151 A := {S with R := (Function.update (Function.update S.R 0 []) 110 output)}
       v'.user = v.user ∧ m ≤ indexedSchurColumnCost p u l s t a b target n j.val ∧
@@ -106,7 +106,7 @@ theorem indexedSchurColumn_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
   let q := executionPrecision p l (initialSchurTarget p u target 2) 2
   let w := executionWidth p l (initialSchurTarget p u target 2) 2
   let B := couplingRowField (2^15*p) q t u band a b true (negativeUnitField q j) (fun _ => 0)
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let output := cstream A w (chirpLine s C)++tail
   let S₂ : Stacks 151 A := {S₁ with R := Function.update S₁.R 110 output}
   obtain ⟨v₃,hu₃,he₃⟩ := uclear_exec

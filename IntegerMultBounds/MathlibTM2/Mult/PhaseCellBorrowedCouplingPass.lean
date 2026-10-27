@@ -36,7 +36,7 @@ theorem borrowedCouplingPass_exec (hQ : SS.states ≤ Q) {P q w s t u band a b :
     ∃ v' m, v'.user = v.user ∧ m ≤ borrowedCouplingPassCost boundary P q w s t u band a b ∧
       Exec (embTab groupReg body) (borrowedCouplingPass hQ boundary) (mk v S) m
         (mk v' {S with R := (Function.update S.R 113
-          (cstream A w (couplingRowWords P q t u band a b boundary C 0 (chirpLine s B))++S.R 113))}) := by
+          (cstream A w (guardedCouplingRowWords P q t u band a b boundary C 0 (chirpLine s B))++S.R 113))}) := by
   have hs : (S.R 97).length = s := hready.axis
   have hwS : (S.R 94).length = w := hready.width
   have hrhs : S.R 110 = cstream A w (chirpLine s B)++tail := hready.source
@@ -60,7 +60,7 @@ theorem borrowedCouplingPass_exec (hQ : SS.states ≤ Q) {P q w s t u band a b :
     hst haS hbS hbandS hP C (chirpLine s B) (by simp) (S.R 110) (S.R 93) v₁ S₁ hready₁
     (by simpa [S₁] using hindex) (by simp [S₁,rhs]) (by simpa [S₁] using h143)
     (by simpa [S₁] using h135) hxs has
-  let ys := couplingRowWords P q t u band a b boundary C 0 (chirpLine s B)
+  let ys := guardedCouplingRowWords P q t u band a b boundary C 0 (chirpLine s B)
   let S₂ : Stacks 144 A := {S₁ with R := (Function.update (Function.update S₁.R 93 (S.R 93))
     113 (cstream A w ys++S₁.R 113))}
   obtain ⟨v₃,m₃,hu₃,hm₃,he₃⟩ := retireCouplingLine_exec (body := embTab groupReg body)

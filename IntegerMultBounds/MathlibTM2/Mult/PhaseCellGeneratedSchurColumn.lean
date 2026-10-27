@@ -44,7 +44,7 @@ theorem generatedSchurColumn_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     let band := PhaseCellBand.width p u
     let B := couplingRowField (2^15*p) q t u band a b true (negativeUnitField q j) (fun _ => 0)
     ∃ v' m, ∃ D : ZMod s → GaussianInt,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+      let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
       let output := cstream A w (chirpLine s C)++tail
       let S' : Stacks 148 A := {S with R := Function.update S.R 110 output}
       v'.user = v.user ∧ m ≤ generatedSchurColumnCost p u l s t a b target j.val ∧
@@ -95,7 +95,7 @@ theorem generatedSchurColumn_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     (by simpa [S₁] using h127) (by simpa [S₁] using h138) (by simpa [S₁] using h143)
     (by simpa [S₁] using haMaster) (by simpa [S₁] using hbMaster) hready₁'
     (by simpa [S₁] using h147) j hj δ (by dsimp [δ]; positivity) hcolumn
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let result := cstream A w (chirpLine s C)
   let S₂ : Stacks 148 A := {S₁ with R := Function.update S₁.R 110 (result++inputB)}
   have he₂' : Exec (embTab componentReg (embTab groupReg body)) (releasedSchurResidual hR hQ)

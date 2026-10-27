@@ -47,7 +47,7 @@ theorem releasedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     let I := haloInterior s t band a b
     let boundary := haloBoundary s t band a b
     ∃ v' n, ∃ D : ZMod s → GaussianInt, ∃ R : (ZMod s → ℝ) → ZMod s → ℝ,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+      let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
       let input := cstream A w (chirpLine s C)++S.R 110
       let S' : Stacks 148 A := {S with R := Function.update S.R 110 input}
       (∀ c, SchurDominance.Solves (realMatrix s t p u) I (R c) c) ∧
@@ -70,7 +70,7 @@ theorem releasedSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
   obtain ⟨v₁,n₁,D,R,hRsolve,hu₁,hn₁,he₁,hCreal,hCnorm,hCerror,hread,hready₁⟩ := retainedSchurResidual_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad B hB v S tail
     h127 h138 h143 haMaster hbMaster hready
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let input := cstream A w (chirpLine s C)++S.R 110
   let output := cstream A w (chirpLine s D)++S.R 132
   let S₁ : Stacks 148 A := {S with R := Function.update (Function.update S.R 110 input) 132 output}

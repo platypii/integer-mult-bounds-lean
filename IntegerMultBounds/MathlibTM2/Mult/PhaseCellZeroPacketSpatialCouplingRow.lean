@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAdvanceMarkedBinaryPacket
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPacketSpatialCouplingRow
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryGuardSemantics
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGuardedCouplingRowValue
 
 /-! Skip coefficient generation and arithmetic for certified zero coupling rows. -/
 
@@ -64,7 +65,7 @@ theorem guardedPacketSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u
     (hst : s < t) (hi : i < s) (hP : 13 ≤ P)
     (C : ZMod s → GaussianInt) (tail packetTail raw : List (Fin (A+4)))
     (v : HS 144 Q A U) (S : Stacks 144 A) (hflag : v.flag = skip)
-    (hskip : skip = true → (i : ZMod s) ∈ couplingZeroRows boundary s t band a b)
+    (hskip : skip = couplingSkipAt boundary s t band a b i)
     (hready : CouplingReady P q w s t u band a b raw (embStk groupReg S))
     (hpacket : S.R 135 = markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band i++packetTail)
     (hsrc : S.R 141 = cstream A w ((cyclicPaddedLine (fun j : ZMod s =>
@@ -77,18 +78,20 @@ theorem guardedPacketSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u
       m ≤ (if skip then zeroPacketSpatialCouplingRowCost P q w s t u band else packetSpatialCouplingRowCost P q w s t u band)+1 ∧
       Exec body (guardedPacketSpatialCouplingRow hQ) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update S.R 113
-          (csyms A w (couplingRowWord P q t u band a b i boundary C rhs)++S.R 113)) 135
+          (csyms A w (guardedCouplingRowWord P q t u band a b i boundary C rhs)++S.R 113)) 135
           (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band (i+1)++packetTail))}) := by
   cases skip with
   | true =>
     obtain ⟨v',hu,he⟩ := zeroPacketSpatialCouplingRow_exec (body := body) raw packetTail rhsTail rhs v S hready hpacket hrhs
     refine ⟨v',zeroPacketSpatialCouplingRowCost P q w s t u band+1,hu,by simp,?_⟩
-    rw [couplingRowWord_zero_window P q t u band a b i boundary C rhs (fun δ hδ => couplingZeroRows_stencil_disjoint hst.le boundary band a b i (hskip rfl) hδ)]
+    simp only [guardedCouplingRowWord,← hskip,ite_true]
     exact Exec.cond_true hflag he
   | false =>
     obtain ⟨v',m,hu,hm,he⟩ := packetSpatialCouplingRow_exec (body := body)
       hQ boundary hA hw5 hqw hst hi hP C tail packetTail raw v S hready hpacket hsrc rhs rhsTail hrhs hxs has
-    exact ⟨v',m+1,hu,by simpa using Nat.add_le_add_right hm 1,Exec.cond_false hflag he⟩
+    exact ⟨v',m+1,hu,by simpa using Nat.add_le_add_right hm 1,by
+      simp only [guardedCouplingRowWord,← hskip,Bool.false_eq_true,ite_false]
+      exact Exec.cond_false hflag he⟩
 
 noncomputable def maskedPacketSpatialCouplingRow (hQ : SS.states ≤ Q) : Pr P₀ 144 Q A U :=
   .seq (.act (.pop (.rt 136) (fun v o => {v with flag := pairRe (o.getD blank)}) .done))
@@ -100,7 +103,7 @@ theorem maskedPacketSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u 
     (C : ZMod s → GaussianInt) (tail packetTail raw : List (Fin (A+4)))
     (maskTail : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
     (hmask : S.R 136 = pairSym A skip skip::maskTail)
-    (hskip : skip = true → (i : ZMod s) ∈ couplingZeroRows boundary s t band a b)
+    (hskip : skip = couplingSkipAt boundary s t band a b i)
     (hready : CouplingReady P q w s t u band a b raw (embStk groupReg S))
     (hpacket : S.R 135 = markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band i++packetTail)
     (hsrc : S.R 141 = cstream A w ((cyclicPaddedLine (fun j : ZMod s =>
@@ -113,7 +116,7 @@ theorem maskedPacketSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u 
       m ≤ (if skip then zeroPacketSpatialCouplingRowCost P q w s t u band else packetSpatialCouplingRowCost P q w s t u band)+2 ∧
       Exec body (maskedPacketSpatialCouplingRow hQ) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update (Function.update S.R 136 maskTail) 113
-          (csyms A w (couplingRowWord P q t u band a b i boundary C rhs)++S.R 113)) 135
+          (csyms A w (guardedCouplingRowWord P q t u band a b i boundary C rhs)++S.R 113)) 135
           (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band (i+1)++packetTail))}) := by
   let S₀ : Stacks 144 A := {S with R := Function.update S.R 136 maskTail}
   let v₀ : HS 144 Q A U := {v with flag := skip}

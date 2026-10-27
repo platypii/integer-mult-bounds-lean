@@ -43,7 +43,7 @@ theorem runPreparedPacketCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u b
       Exec (body) (runPreparedPacketCouplingRows hQ) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update (Function.update (Function.update S.R 136 maskTail) 135
           (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band s++packetTail)) 93 rhsTail)
-          113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
+          113 (cstream A w (guardedCouplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
   have hs : (S.R 97).length = s := hready.axis
   have hwS : (S.R 94).length = w := hready.width
   obtain ⟨v₁,hu₁,he₁⟩ := ucopy_exec (body)
@@ -65,7 +65,7 @@ theorem runPreparedPacketCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u b
   let F := fun j : ZMod s => if j ∈
     (if boundary then haloBoundary s t band a b else haloInterior s t band a b) then C j else 0
   let source := cyclicPaddedLine F band
-  let ys := couplingRowWords P q t u band a b boundary C 0 rhs
+  let ys := guardedCouplingRowWords P q t u band a b boundary C 0 rhs
   let S₂ : Stacks 144 A := {S₁ with R := (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update S₁.R 136 maskTail) 135
     (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band s++packetTail))
     93 rhsTail) 107 (List.replicate s tick)) 113 (cstream A w ys.reverse++S₁.R 113)) 143 [])

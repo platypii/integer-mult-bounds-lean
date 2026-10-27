@@ -58,7 +58,7 @@ theorem retainedBoundaryPublished_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
     ∃ v' S' n, ∃ D : ZMod s → GaussianInt,
     ∃ columns : List (ZMod s → GaussianInt), ∃ solution : List GaussianInt,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
+      let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
       let G := boundarySolutionField B solution
       v'.user = v.user ∧
       n ≤ retainedBoundaryPublishedCost p u l s t a b target ∧

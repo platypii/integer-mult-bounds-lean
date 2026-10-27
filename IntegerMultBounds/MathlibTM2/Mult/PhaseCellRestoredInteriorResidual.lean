@@ -53,7 +53,7 @@ theorem restoredInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     let band := PhaseCellBand.width p u
     let e := interiorOutputExponent p l target rhsExp
     ∃ v' n, ∃ D : ZMod s → GaussianInt,
-      let R := couplingRowField (2^15*p) q t u band a b false D C
+      let R := guardedCouplingRowField (2^15*p) q t u band a b false D C
       v'.user = v.user ∧ n ≤ restoredInteriorResidualCost p l s t u target rhsExp a b ∧
       Exec (embTab groupReg body) (restoredInteriorResidual hR hQ) (mk v S) n
         (mk v' {S with R := (Function.update
@@ -63,7 +63,7 @@ theorem restoredInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
       PhaseCellInterface.ErrorOn (haloInterior s t band a b)
         (fun i => (value q (D i)).re) x (1/(2 : ℝ)^target) ∧
       (∀ i, ‖value q (R i)‖ ≤ (2 : ℝ)^couplingRowExponent rhsExp e (8*p+1) countExp) ∧
-      ∀ i, |(value q (R i)).re-((value q (C i)).re-
+      ∀ i ∈ haloBoundary s t band a b, |(value q (R i)).re-((value q (C i)).re-
         SchurDominance.couple (realMatrix s t p u) (haloInterior s t band a b) x i)| ≤
           (2*band+1)*(2/(2 : ℝ)^q)+(2*band+1)*((2 : ℝ)^e*(1/(2 : ℝ)^q))+K*(1/(2 : ℝ)^target) := by
   dsimp only
@@ -73,7 +73,7 @@ theorem restoredInteriorResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
   obtain ⟨v₁,n,D,hu₁,hn,he₁,hDnorm,hDerror,hnorm,herror⟩ := initializedInteriorResidual_spec (body := body)
     hR hQ hA hp hst hu hαu hθ hgap hbudget hband has hbs hpad C hC x hx v S borrowed
     h127 h138 haMaster hbMaster hready h143 hcount hrowWidth K hmass
-  let R := couplingRowField (2^15*p) q t u band a b false D C
+  let R := guardedCouplingRowField (2^15*p) q t u band a b false D C
   let S₁ : Stacks 144 A := {S with R := (Function.update
     (Function.update S.R 132 (cstream A w (chirpLine s D)++S.R 132))
     110 (cstream A w (chirpLine s R)++S.R 110))}

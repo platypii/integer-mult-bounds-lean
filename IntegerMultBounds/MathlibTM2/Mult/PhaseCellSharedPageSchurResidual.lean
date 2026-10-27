@@ -78,7 +78,7 @@ theorem sharedPageSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
   obtain ⟨v₁,n,D,R,hRsolve,hu₁,hn,he,hreal,hmag,herr,hread,hready'⟩ := physicalRetainedSchurResidual_spec
     (body := fun p : Empty => nomatch p) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
     B hB (embDn sharedPageRecoveryReg v) T tail h127 h138 h143 haMaster hbMaster hready
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+  let C := guardedCouplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let input := cstream A w (chirpLine s C)++S.R 110
   let output := cstream A w (chirpLine s D)++S.R 132
   obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_emb_ovr (ι := Empty.elim) (body' := body)
