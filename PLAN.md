@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1640 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1647 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8712,4 +8712,55 @@ Validation: all 10,297 guarded stage-audit jobs pass, including ten explicit
 new coordinate-access, column-identity, perturbation, execution-result and
 precision-budget audits. Combined build peak is 4.0 GiB. All six new/revised
 Lean modules pass individual guarded checks at at most 2055.7 MiB. Added-source
+integrity, plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Constructive original-column inputs and the boundary-coupling column pass
+
+`csyms_negative_power_two` proves the scaled negative unit's exact symbol
+format using a signed-word slice: `q` zero pairs followed by `w-q` real sign
+bits. `negativeUnitWord` generates that format from ordinary unary width and
+precision, preserving those headers and its borrowed output suffix while
+releasing temporary counters. Its exact cost is `10*w+2*q+18`.
+
+`zeroWords` generates the byte count for a zero-word line, emits it and releases
+the count, with bound `10*n*w+9*n+10`. `negativeUnitBasis` uses that operation
+and `negativeUnitWord` to build an ambient negative basis vector at its retained
+unary coordinate on 136, above the borrowed suffix on 132. It generates both
+padding lengths, restores all headers and work ports, and costs at most
+`10*n*w+17*n+2*q+40`. No basis page or byte count is supplied.
+
+`negativeUnitField_words` identifies this stream with the ambient field that
+is exactly `-1` at the selected coordinate after normalization and zero
+elsewhere. Its realness and norm at most one are proved. `couple_negative_unit`
+identifies boundary coupling against this field with the negative original
+matrix column.
+
+`originalColumnPass_spec` instantiates the actual restoring boundary-coupling
+pass with this negative basis and a zero RHS. It produces the original-matrix
+column on 113, including every periodic alias, preserving both source streams
+and the borrowed output suffix. Its decoded physical error is at most
+`3*(2*band+1)*2^-q`. The computed column is real, its general representation bound
+is derived, and its sharper norm bound is `2` plus that same error; no separate
+operand/result fit premises are inputs.
+
+`originalColumn_precision` and `originalColumn_width` prove the shared executed
+precision and word width satisfy this pass. `originalColumn_error_budget` pays
+its error within `2^-schurColumnBits`; `originalColumn_schur_budget` combines
+that with the executed Schur-residual allowance to obtain `2^-entryBits`.
+`originalColumn_magnitude_budget` gives the RHS exponent 2 bound for the next
+interior pass at that precision.
+
+The construction primitives and column pass have execution proofs, but their
+closed staging/release composition is still required: prepare the zero RHS and
+basis in the caller, run the pass, retire both owned sources and publish the
+column for its interior response. The selected coordinate must also be loaded
+from the folded page. This pass retains its full ambient-row cost; no fast
+repeated-column setup bound is claimed. Computed table/factor setup/solve,
+complete S3 composition and uniform time/simultaneous storage remain open.
+S3 remains partial.
+
+Validation: all 10,304 guarded stage-audit jobs pass, including seventeen
+explicit new format, stream-construction, field, original-column execution and
+precision/magnitude audits. Combined build peak is 4.3 GiB. All eight new/revised
+Lean modules pass individual guarded checks at at most 2056.5 MiB. Added-source
 integrity, plan-status and whitespace checks pass; proof limits are unchanged.

@@ -1,5 +1,9 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginalColumnBudget
+
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginalColumnPass
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryCoordinate
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSchurColumnResult
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSchurColumnBudget
@@ -1638,6 +1642,25 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedBoundaryFold_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedBoundaryFold_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryCoordinate_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.csyms_negative_one,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.csyms_negative_power_two,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.negativeUnitWord_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.zeroWords_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.negativeUnitBasis_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.negativeUnitField_value,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.negativeUnitField_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.negativeUnitField_real,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.negativeUnitField_words,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couple_negative_unit,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumnPass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_width,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_error_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_schur_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_magnitude_budget,
+
+
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releasedSchurColumn_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.schurColumn_input_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.schurColumn_pass_budget,
