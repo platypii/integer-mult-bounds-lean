@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1657 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1659 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8865,5 +8865,35 @@ conversion is paid explicitly and supplies no fast repeated-access claim.
 Validation: all 10,314 guarded stage-audit jobs pass, including the three new
 explicit decoder/loader audits. Combined build peak is 2.7 GiB. Both new modules
 and the audit root pass individual guarded checks at at most 2055.6 MiB.
+Added-source integrity, plan-status and whitespace checks pass; proof limits
+are unchanged.
+
+### Resident folded page during executed Schur-column arithmetic
+
+`boundaryArithmeticReg` embeds the 148-port arithmetic bank into 151 physical
+ports, sending arithmetic registers 109/115/116 to fresh ports 148/149/150.
+The prepared folded page and its width/cardinality headers remain resident on
+physical 109/115/116, outside the arithmetic image. The map is injective and
+`boundaryArithmeticProject_page` proves that arbitrary retained page/header
+contents do not affect the arithmetic view. This resolves the workspace
+conflict by static placement; it adds no page copies or execution steps.
+
+`boundarySchurColumn_spec` runs the actual generated Schur-column program in
+this placement. It preserves the existing entry accuracy, realness, magnitude,
+explicit time bound and returned readiness. Its exact physical frame changes
+only port 110, so it restores every other stack, including the resident page,
+its headers and the parked complex-component streams. The three new physical
+tapes provide arithmetic scratch, with its original restoration guarantees.
+
+The caller still requires the selected coordinate and projected arithmetic
+readiness. Composing the resident-page coordinate loader with this placement,
+streaming the required band entries, constructing and releasing the factor
+page, and the final solve endpoint remain open. The ambient scan cost remains
+explicit; neither a fast repeated-column bound nor the full simultaneous
+retained-page/scratch storage bound follows from this placement. S3 is partial.
+
+Validation: all 10,316 guarded stage-audit jobs pass, including six new explicit
+placement/frame/execution audits. Combined build peak is 2.7 GiB. Both new
+modules and the audit root pass individual guarded checks at at most 2058.4 MiB.
 Added-source integrity, plan-status and whitespace checks pass; proof limits
 are unchanged.
