@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1921 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1924 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11306,3 +11306,41 @@ generic-retirement/projected-frame/generated-residual/gather/composition audits
 (5.0 GiB combined peak). All four new modules and the revised retirement adapter
 pass individual guarded checks (maximum 2933.8 MiB). Source-integrity, whitespace
 and plan-status checks pass; proof limits are unchanged.
+
+### Close the complete prepared real-component inverse
+
+`sharedPageResidualSolve_exec` executes normalization, retained triangular solve,
+unscaling and folded-result publication under the arbitrary shared caller table.
+`sharedPageComputedBoundarySolve_spec` composes this kernel with actual interior
+residual generation and boundary gathering. It carries the computed Schur-table
+error through the numerical solve, returns word fit and boundary accuracy, and
+preserves arithmetic readiness. No supplied boundary residual or arithmetic
+execution oracle replaces the generated RHS.
+
+`sharedPageRealComponent_spec` now executes the full prepared real-component
+path: compute the interior/residual, gather the actual boundary RHS, solve on the
+retained factor page, retire the initial-interior tape, publish and recover the
+halo, retire the recovery residual, and retire the owned folded solution. Its
+exact final state changes only tape 132 by prepending the recovered halo over
+its original suffix. The input RHS, factor page, folded coordinates, batch/result
+tapes, scatter advances, masters, private controls and all left stacks restore
+exactly. The actual published halo has `ErrorOn (haloVertices s a b) ...
+(1/2^target)`.
+
+The full component budget includes the actual initial interior/residual and
+recovery costs, gather and retained-solve costs, ambient publication, and every
+owned-line retirement. It introduces no factor-generation charge per component;
+page construction and publication setup remain separate. These remaining
+interior/setup terms are not asserted to satisfy the final grouped fast bound.
+
+This closes the prepared real-component driver with ordinary RHS input and
+complete ownership restoration. Composing the complete complex/replica caller
+with actual once-per-key page setup and release, grouped fast setup/interior cost
+matching, and simultaneous live-storage bounds remain open. S3 remains partial;
+kappa is unchanged.
+
+Validation: all 14,772 guarded stage-audit jobs pass, including four new explicit
+shared-solve/register-map/computed-RHS-solve/complete-real-component contract
+audits (3.5 GiB combined peak). All three new modules pass individual guarded
+checks (maximum 2994.2 MiB). Source-integrity, whitespace and plan-status checks
+pass; proof limits are unchanged.
