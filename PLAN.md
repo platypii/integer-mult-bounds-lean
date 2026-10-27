@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2065 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2067 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13083,3 +13083,28 @@ whole-execution live storage. S3 remains partial; kappa is unchanged.
 Validation: the expanded guarded stage axiom audit passes all 14,916 jobs
 (3.4 GiB combined peak RSS). Both new modules pass individual guarded checks,
 with maximum peak RSS 2947.5 MiB. Proof-integrity and whitespace checks pass.
+
+### S3 complete cached spatial source lifecycle
+
+`placedCachedSpatialCouplingRows_exec` composes actual masked cyclic source
+preparation, the restoring cached reader, and source retirement in the
+256-register workspace. Its exact output frame matches the existing spatial
+pass: only RHS port 93 and result port 113 change. Both retained key banks and
+all source scratch restore. The cost includes source generation and retirement
+and the existing cached-reader ledger, with no coefficient packet generation.
+
+Source preparation must use `couplingSourceReg`, the ordinary legacy placement:
+it borrows logical slot 135 as empty scratch. The reader alone uses the cache
+placement, where logical slot 135 denotes retained guards. The new executed
+source preparation/retirement contracts prove this separation without assuming
+an externally supplied padded source.
+
+The next integration point is `borrowedCouplingPass`, which stages the original
+RHS and published solution before invoking the spatial pass. Its cached variant
+and the enclosing residual/recovery and batch calls remain open. Final uniform
+time matching and whole-execution live storage are also open. S3 stays partial;
+kappa is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,918 jobs
+(3.4 GiB combined peak RSS). Both new modules pass individual guarded checks,
+with maximum peak RSS 2957.1 MiB. Proof-integrity and whitespace checks pass.
