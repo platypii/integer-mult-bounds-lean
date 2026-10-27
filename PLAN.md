@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2030 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2033 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12779,4 +12779,39 @@ integration remain open. S3 stays partial.
 Validation: all 14,881 guarded stage build jobs and the axiom audit pass
 (21.6 GiB combined peak RSS). All five changed implementation modules pass
 individual guarded checks, with peak RSS at most 1956.5 MiB. Plan-status and
+whitespace checks pass.
+
+### S3 coefficient rows retain the source similarity sample
+
+`prepareCoefficientSource_do` executes the source similarity sample once per
+full coefficient row, after the source index is lifted. Register 26 retains
+that computed value throughout both signed sweeps. The existing fixed table
+bank already owns this register; no new tape, packet field or supplied
+numerical value is introduced. `CoefficientSweepReady` now includes the
+source-sample invariant. Instruction-destination frame proofs show both the
+direct branch and the cached within-cell branch preserve it, as does the
+separately emitted unit diagonal.
+
+`withinCoefficientFromSource_do` uses the retained source numerator and computes
+only the target similarity and distance samples. `phaseCoefficientFromSource`
+selects this body or the unchanged direct lattice body using the actual phase
+comparison. The executed coefficient words, including wrapped-alias offsets,
+are unchanged. `indexedPreparedCoefficientRow_do` generates the cache before
+either sweep; both ordinary-header and retained-packet suppliers consume that
+execution and release all private storage through their existing host.
+
+The row's table-atom allowance changes from
+`2*band*(930*P+370)+10` to
+`310*P+2*band*(620*P+256)+131`. The one-time source setup is charged even for an
+empty band or rows using only direct coefficients. The new cost reaches the
+closed and packet suppliers and their production callers. This removes one
+exponential evaluation per within-cell offset, but the remaining Taylor loops
+and table arithmetic still require final fast-time matching. Whole-execution
+live storage and final endpoint/resource integration remain open. S3 stays
+partial; kappa is unchanged.
+
+Validation: all 14,884 guarded stage build jobs and the expanded axiom audit
+pass (21.8 GiB combined peak RSS). All eight changed/new implementation modules
+and the shared interior-cost module pass individual guarded checks; the largest
+is 2964.4 MiB, below the 4 GiB module target. Proof-integrity, plan-status and
 whitespace checks pass.

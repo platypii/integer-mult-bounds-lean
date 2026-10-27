@@ -12,6 +12,7 @@ open IntegerMultBounds IntegerMultBounds.Resampling.WeightNat IntegerMultBounds.
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellRationalArgs
 
 structure CoefficientSweepReady {A : ℕ} (P q s t u band i : ℕ) (st : TblSt 50 A) : Prop where
+  sourceSample : st.val 26 = similarityGridNumerator P s t u (liftedSource s band i)
   pi : st.val 18 = piN P
   precision : st.val 19 = P
   sign : st.val 22 = 1
@@ -25,9 +26,9 @@ structure CoefficientSweepReady {A : ℕ} (P q s t u band i : ℕ) (st : TblSt 5
 
 theorem CoefficientSweepReady.of_frame {A P q s t u band i : ℕ} {st st' : TblSt 50 A}
     (h : CoefficientSweepReady P q s t u band i st)
-    (hf : ∀ r ∈ [(18 : Fin 50),19,22,34,35,36,37,39,40,49], st'.val r = st.val r) :
+    (hf : ∀ r ∈ [(26 : Fin 50),18,19,22,34,35,36,37,39,40,49], st'.val r = st.val r) :
     CoefficientSweepReady P q s t u band i st' := by
-  exact ⟨(hf 18 (by simp)).trans h.pi,(hf 19 (by simp)).trans h.precision,
+  exact ⟨(hf 26 (by simp)).trans h.sourceSample,(hf 18 (by simp)).trans h.pi,(hf 19 (by simp)).trans h.precision,
     (hf 22 (by simp)).trans h.sign,(hf 34 (by simp)).trans h.dimension,
     (hf 35 (by simp)).trans h.period,(hf 36 (by simp)).trans h.parameter,
     (hf 37 (by simp)).trans h.source,(hf 39 (by simp)).trans h.grid,
@@ -46,7 +47,7 @@ theorem preparedCoefficientSweep_do {A w q P s t u band i : ℕ}
     TblDo A (liftedCoefficientWidth P q w s t u band) w (preparedCoefficientSweep negative) st
       (fun st' => CoefficientSweepReady P q s t u band i st' ∧
         st'.acc = (cstream A w (coefficientSweepWords negative P q s t u band i band)).reverse++st.acc)
-      (band*(930*P+370)+3) := by
+      (band*(620*P+256)+3) := by
   let V := liftedCoefficientWidth P q w s t u band
   let F := fun n => csyms A w (signedCoefficientWord negative P q s t u band i
     (if negative then band-n else n+1))
@@ -60,26 +61,27 @@ theorem preparedCoefficientSweep_do {A w q P s t u band i : ℕ}
   have hc : TblDo A V w (preparedCoefficientSweep negative) st
       (fun st' => CoefficientSweepReady P q s t u band i st' ∧
         st'.acc = ((List.range band).flatMap F).reverse++st.acc)
-      (1+(band*((930*P+367)+1+2)+2)) := by
-    apply TblDo.for band (930*P+367) hready.bandwidth hbV (by decide) Inv
+      (1+(band*((620*P+253)+1+2)+2)) := by
+    apply TblDo.for band (620*P+253) hready.bandwidth hbV (by decide) Inv
     · constructor
       · apply hready.of_frame
         intro r hr
         have hn : r ≠ (48 : Fin 50) := by
           simp only [List.mem_cons,List.not_mem_nil,or_false] at hr
-          rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+          rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
         simp [hn]
       · simp
     · intro n hn st₁ ⟨hready₁,hacc⟩ hindex hcount
-      have hrow := coefficientSweepStep_do (A := A) (w := w) negative st₁ hready₁.pi
+      have hrow := coefficientSweepStep_do (A := A) (w := w) negative st₁ hready₁.sourceSample hready₁.pi
         hready₁.precision hready₁.sign hready₁.dimension hready₁.period hready₁.parameter
         hready₁.source hindex hready₁.bandwidth hready₁.grid hready₁.scale hs0 hst hP hn hi
       refine hrow.mono (fun st₂ h => ⟨h.2.2.2.2.2.1.trans hindex,
-        h.2.2.2.2.2.2.trans hcount,?_,?_⟩) le_rfl
+        h.2.2.2.2.2.2.1.trans hcount,?_,?_⟩) le_rfl
       · apply hready₁.of_frame
         intro r hr
         simp only [List.mem_cons,List.not_mem_nil,or_false] at hr
-        rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+        rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+        · exact h.2.2.2.2.2.2.2
         · exact h.2.1
         · exact h.2.2.1
         · exact h.2.2.2.1
@@ -89,7 +91,7 @@ theorem preparedCoefficientSweep_do {A w q P s t u band i : ℕ}
         · exact h.2.2.2.2.1 37 (by decide) (by decide) (by decide)
         · exact h.2.2.2.2.1 39 (by decide) (by decide) (by decide)
         · exact h.2.2.2.2.1 40 (by decide) (by decide) (by decide)
-        · exact h.2.2.2.2.2.2
+        · exact h.2.2.2.2.2.2.1
       · rw [h.1,hacc,List.range_succ]
         simp [F,List.reverse_append,List.append_assoc]
     · intro st' hI _ _
