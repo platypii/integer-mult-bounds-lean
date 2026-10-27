@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1997 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1998 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12276,3 +12276,33 @@ ledger, peaks at 21.7 GiB combined; the final incremental audit peaks at 3.4 GiB
 The new complete-pass/cost modules and changed production wrapper pass individual
 guarded checks (maximum 1950.9 MiB). Source-integrity and whitespace checks pass;
 default proof limits are unchanged.
+
+### Eliminate per-row parking of ordinary geometry headers
+
+`couplingArithmeticReg` is an involutive scratch permutation exchanging native
+97/115, 98/116 and 99/108. `unparkedCouplingRow_exec` embeds the existing generated
+readiness/arithmetic program through that permutation. Its arithmetic scratch
+uses the three tapes already fresh after coefficient generation, while ordinary
+geometry on 97–99 remains untouched. It consumes the same operand/count prefixes,
+borrows the same RHS, publishes the same exact rounded result and restores all
+other tapes. Only the existing left-stack condition on port 100 is needed.
+
+The production spatial row now uses this renamed arithmetic subcall, with no
+additional outer registers or caller premises. Its allowance is the generated
+arithmetic-row allowance directly: the former `4*(s+t+u)+12` parking allowance is
+removed from every row. The integrated ledger therefore decreases by
+`s*(4*(s+t+u)+12)` and exposes stream overhead
+`s*(64*band*wordWidth+50*band+146*wordWidth+161)`
+plus `band*(62*wordWidth+35)+154`, in addition to actual coefficient supply,
+`s` generated arithmetic rows and one closed mask setup.
+
+This removes the quadratic geometry-parking contribution. Ordinary-header
+conversion inside coefficient supply, final fast supplier/setup matching,
+combined live storage and endpoint/resource integration remain open; S3 stays
+partial. No final quasi-linear supplier bound is claimed.
+
+Validation: all 14,847 guarded stage-audit jobs pass, including rebuilt inverse,
+selected raw caller, closed complex batch and resource ledger (21.9 GiB combined
+peak). The new renamed arithmetic module and changed spatial row/cost modules
+pass individual guarded checks (maximum 1968.4 MiB). Source-integrity, whitespace
+and plan-status checks pass; default proof limits are unchanged.

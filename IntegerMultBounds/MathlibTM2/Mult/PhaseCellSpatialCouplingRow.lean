@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingOperands
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedCouplingRow
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellUnparkedCouplingRow
 
 /-! Execute spatial coupling rows with a retained source outside arithmetic scratch. -/
 
@@ -17,18 +17,21 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 118 Q A U}
 
+noncomputable def spatialArithmeticRow (hQ : SS.states ≤ Q) : Pr P₀ 118 Q A U :=
+  embProg cachedCouplingCoreReg Empty.elim (unparkedCouplingRow (P := Empty) hQ)
+
 noncomputable def spatialCouplingRow (hQ : SS.states ≤ Q) : Pr P₀ 118 Q A U :=
-  .seq spatialCouplingOperands (cachedProtectedCouplingRow hQ)
+  .seq spatialCouplingOperands (spatialArithmeticRow hQ)
 
 def spatialCouplingRowCost (P q w s t u band i : ℕ) : ℕ :=
   prepareSpatialCouplingOperandsCost P q w s t u band i+
-    generatedReadyRowCost (2*band+1) q w band+4*(s+t+u)+12
+    generatedReadyRowCost (2*band+1) q w band
 
 theorem spatialCouplingRowCost_eq (P q w s t u band i : ℕ) :
     spatialCouplingRowCost P q w s t u band i =
       generateCouplingCoefficientsCost P q w s t u band i +
       generatedReadyRowCost (2*band+1) q w band +
-      64*band*w+50*band+16*w+4*(s+t+u)+64 := by
+      64*band*w+50*band+16*w+52 := by
   unfold spatialCouplingRowCost prepareSpatialCouplingOperandsCost
     prepareSpatialCouplingCoefficientsCost generateSpatialCouplingCoefficientsCost copyCountedLineCost
   ring
@@ -114,13 +117,13 @@ theorem spatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u band a b i :
     have hn102 : cachedCouplingCoreReg k ≠ 102 := cachedCouplingCoreReg_injective.ne h102
     simp only [M,S₁,T,embStk,Function.comp_def,Function.update_of_ne h110,Function.update_of_ne h111,
       Function.update_of_ne h102,Function.update_of_ne hn110,Function.update_of_ne hn111,Function.update_of_ne hn102]
-  obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := protectedCouplingRow_exec (body := fun p : Empty => nomatch p) (L := 2*band+1) hQ hA hw5 hqw xs as rhs
+  obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := unparkedCouplingRow_exec (body := fun p : Empty => nomatch p) (L := 2*band+1) hQ hA hw5 hqw xs as rhs
     (by simp [xs,spatialCouplingInputWords]) (by simp [as])
     (by intro x hx; exact hxs x ((spatialCouplingInputWords_perm boundary t band a b i C).mem_iff.mp hx))
     (by intro z hz; exact has z ((spatialCouplingCoefficientWords_perm P q s t u band i).mem_iff.mp hz)) (embDn cachedCouplingCoreReg v₁) S₁ (T.R 110) (T.R 111) rhsTail
     (by simp [S₁]) (by simpa [S₁,T,embStk,cachedCouplingCoreReg] using hwsrc) (by simpa [S₁,T,embStk,cachedCouplingCoreReg] using hqsrc)
     (by simp [S₁]) (by simp [S₁]) (by simpa [S₁,T,embStk,cachedCouplingCoreReg] using hrhs) hc₁
-    (by intro r; rw [hcrOff r]; exact hcr r) hleft
+    (by intro r; rw [hcrOff r]; exact hcr r) (hleft 100 (by simp))
     (by intro k hk hgeom
         simp only [integerRowWork,List.mem_cons,List.not_mem_nil,or_false] at hk
         rcases hk with h | h | h | h | h | h | h | h | h | h | h | h | h
@@ -138,7 +141,10 @@ theorem spatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u band a b i :
         · subst k; simpa [S₁,T,embStk,cachedCouplingCoreReg] using h105
         · subst k; simpa [S₁,T,embStk,cachedCouplingCoreReg] using h106)
     (by simpa [S₁,T,embStk,cachedCouplingCoreReg] using h109)
-  have hm₂' : m₂ ≤ generatedReadyRowCost (2*band+1) q w band+4*(s+t+u)+12 := by
+    (by simpa [S₁,T,embStk,cachedCouplingCoreReg] using h108)
+    (by simpa [S₁,T,embStk,cachedCouplingCoreReg] using h115)
+    (by simpa [S₁,T,embStk,cachedCouplingCoreReg] using h116)
+  have hm₂' : m₂ ≤ generatedReadyRowCost (2*band+1) q w band := by
     simpa [S₁,hbandSrc,hsSrc,htSrc,husrc,T,embStk,cachedCouplingCoreReg] using hm₂
   have hresult :
       {S₁ with R := (Function.update (Function.update (Function.update (Function.update S₁.R
