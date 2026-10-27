@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1814 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1816 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10155,3 +10155,49 @@ axiom audits and the strengthened constructed solve audit. Combined peak is
 3.4 GiB; individual new modules and the strengthened execution module remain
 below 3 GiB. Plan-status, added-source integrity and whitespace checks pass.
 Proof limits are unchanged.
+
+### Physical two-output residual handoff
+
+`exec_emb_two_outputs` structurally lifts a two-output execution through an
+injective tape embedding, with its exact complete physical frame.
+`boundary_retained_residual_lift` applies it through the arithmetic, table and
+legacy embeddings used by the constructed boundary solver. The retained
+residual's updates become exactly physical tapes 110 and 132; every other tape,
+all left stacks, and I/O are unchanged, with the same execution step count and
+preserved user state. This keeps the retained interior stream and larger-bank
+workspace suitable for the next stage without supplying an independent frame
+oracle. The individual guarded check peaks at 2900.4 MiB.
+
+The next composition still must transport the retained residual's readiness
+through these physical updates, instantiate its precision at the constructed
+column target and join the two actual executions. Publication/recovery,
+retirement, uniform time and simultaneous live storage remain open. S3 remains
+partial and kappa is unchanged.
+
+Validation: all 14,660 guarded stage-audit jobs pass, including two new explicit
+two-output/physical-residual-lift axiom audits. Combined peak is 3.4 GiB.
+Plan-status and whitespace checks pass. Proof limits are unchanged.
+
+### Physical retained residual with readiness preserved
+
+`embStk_updateR_inner` and `boundary_retained_project_outputs` prove that the
+physical two-output poststate projects exactly to the native residual poststate.
+`physicalRetainedSchurResidual_spec` now executes the complete retained residual
+in the same 224-tape bank and procedure-table embedding as the constructed
+boundary solve. It returns the actual interior and residual fields, exact
+interior solver, weighted Schur residual accuracy, realness, magnitude and
+published-read guarantees. Its physical state changes exactly 110 and 132, and
+its final `LengthKeyReady` is transported to the actual physical poststate.
+The native step bound and user state are preserved. The individual guarded
+check peaks at 2909.0 MiB; the updated lift/projection module peaks at 2901.8 MiB.
+
+Joining this physical execution with the constructed solve, at the column
+target and common precision, remains open. Publication/recovery, retirement,
+uniform time and simultaneous live storage remain open. S3 remains partial;
+kappa is unchanged.
+
+Validation of the physical residual handoff chunk: all 14,661 guarded stage-audit
+jobs pass, including five new explicit lift/projection/physical-residual axiom
+audits. Combined peak is 3.4 GiB; both added modules check below 3 GiB.
+Plan-status, added-source integrity and whitespace checks pass. Proof limits
+are unchanged.

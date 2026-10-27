@@ -295,6 +295,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryTotalErrorBudget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnscaledSolveTarget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryExactBounds
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRealSchurTarget
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedResidualLift
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPhysicalRetainedSchurResidual
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -2001,6 +2003,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_im,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_sizes,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.embStk_updateR_inner,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_retained_project_outputs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.physicalRetainedSchurResidual_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.exec_emb_two_outputs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_retained_residual_lift,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_exact_schur_solves,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_retained_rhs_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_retained_rhs_accuracy,
