@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1990 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1995 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12208,4 +12208,36 @@ endpoint/resource integration remain open; S3 stays partial.
 
 Validation: all 14,839 guarded stage-audit jobs pass (3.4 GiB combined peak).
 All five new modules pass individual guarded checks (maximum 1939.4 MiB).
+Source-integrity and whitespace checks pass; default proof limits are unchanged.
+
+### Execute cyclic source padding and retire its owned prefix
+
+`cyclicPaddedLine_split` identifies the required ambient padding as the final
+`band` words, the full line, and the first `band` words, for every `band ≤ s`.
+The full-width case retains all three periods and all original wrapped aliases.
+`padPrefixInPlace_exec` executes those three interval copies, retires the old
+owned line, and installs the padded prefix above the unchanged borrowed suffix.
+All scratch and supplied byte controls restore; the source is its only changed
+tape. Its allowance is `(26*rowCount+28*band)*wordWidth+46`.
+
+`padCouplingSource_exec` generates those byte controls from ordinary dimension,
+bandwidth and word-width headers, executes padding, and releases all generated
+controls. Its allowance is `(s+band)*(38*wordWidth+9)+68`.
+`prepareSpatialCouplingSource_exec` composes actual mask generation, ambient-data
+masking and cyclic padding. From original headers and ambient input it produces
+exactly the source required by the proved complete spatial coupling pass,
+prepended above arbitrary original contents of port 141; all other tapes restore.
+
+`retireSpatialCouplingSource_exec` generates the padded row count `s+2*band`,
+removes exactly its encoded owned prefix, restores the borrowed suffix, and
+releases its controls. Its allowance includes the executed count generation,
+byte retirement and release. This supplies both endpoints for composition of
+source setup, the whole spatial arithmetic pass and final retirement.
+
+That composition and production inverse integration remain open. Final fast
+supplier/setup matching, combined live storage and endpoint/resource integration
+remain open; S3 stays partial.
+
+Validation: all 14,844 guarded stage-audit jobs pass (4.3 GiB combined peak).
+All five new modules pass individual guarded checks (maximum 1942.0 MiB).
 Source-integrity and whitespace checks pass; default proof limits are unchanged.
