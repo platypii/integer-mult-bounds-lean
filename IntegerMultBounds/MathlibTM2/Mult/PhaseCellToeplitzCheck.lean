@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryNormalizeSolve
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryGatherSolve
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolvePhysical
@@ -1920,6 +1922,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializedBoundaryFactor_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.boundaryFactorLegacy_input,
       `IntegerMultBounds.NLogN.SchurDominance.exists_solver,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.normalized_component_bound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.normalizeBoundaryWord_bound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_normalization_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_normalization_scalar_value,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.normalizeBoundaryWord_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.normalizeBoundaryWord_scaled_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.powerWordHeader_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_normalize_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorState_update,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorFr_update,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryNormalizePhysical_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryNormalizeSolve_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsWord_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsGather_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsPrepare_exec,

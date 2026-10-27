@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1780 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1785 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9769,3 +9769,44 @@ and gather/solve execution axiom audits. Combined build peak is 3.4 GiB. All
 five new modules and the audit root pass individual guarded checks: new modules
 peak at 2845.6 MiB or less and the audit root at 2961.8 MiB. Source-integrity,
 plan-status and whitespace checks pass. Proof limits are unchanged.
+
+### Physical residual normalization and normalized boundary solve
+
+`normalizeBoundaryWord_bound` proves that the actual multiplier/truncation
+`z ↦ tdivN q (z * 2^e)` sends component grid magnitude at most `2^E` into
+`1/2` whenever `q = E+e+1`. `boundary_normalization_fits` derives source,
+scalar and result fits at width `2*q+8`. The scalar's exact decoded value is
+`2^(-(E+1))`; `normalizeBoundaryWord_scaled_error` bounds normalization error
+against division by `2^(E+1)` by `2/2^q`.
+
+`powerWordHeader_exec` constructs the encoded scalar from runtime width and
+exponent headers, preserving those headers and its scratch. The structural
+`boundary_normalize_runs` proof executes the real multiplier stream and restores
+natural word order in place. Its explicit cost is
+`N*(rmulCost w + 12*w + 8)+12`.
+
+`boundaryNormalizePhysical_exec` composes scalar construction, in-place
+normalization and scalar retirement on the fixed 224-tape bank. Its exact final
+state changes only RHS port 206. The exponent header, factor tables, legacy
+pages, endpoints, word-width header and every private scratch tape restore.
+
+`boundaryNormalizeSolve_exec` composes this executed normalizer with the
+allocated physical triangular solve. The caller supplies the raw residual's
+component bound `2^E`, rather than a half-unit bound or a normalization-execution
+oracle. The returned solution is the exact runtime solve of the actually
+normalized residual words, with all numerical fit premises derived.
+
+The exponent header is still a runtime input, with the proved relation
+`q = E+e+1`. Generating it from retained magnitude/precision masters, composing
+the raw gather and constructed factorization, unscaling/solve accuracy, cleanup,
+recovery/publication and the inverse endpoint remain open. Uniform fast time
+and complete simultaneous live storage also remain open. S3 remains partial;
+kappa is unchanged.
+
+Validation: all 14,629 guarded stage-audit jobs pass, including twelve new
+explicit normalization bound/fit/error, runtime scalar construction, state/frame,
+physical normalization and normalized-solve execution axiom audits. Combined
+build peak is 3.4 GiB. All five new modules and the audit root pass individual
+guarded checks: new modules peak at 2846.0 MiB or less and the audit root at
+2964.7 MiB. Source-integrity, plan-status and whitespace checks pass. Proof
+limits are unchanged.
