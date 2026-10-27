@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2126 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2130 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13602,3 +13602,35 @@ Validation: the expanded standard-axiom audit passes all 14,977 jobs (3.5 GiB
 combined peak RSS). All four changed/new modules pass individual guarded
 checks below the 4 GiB module budget. Proof-integrity and whitespace checks
 pass.
+
+### S3 checkpoint: generated weight-cache lifecycle
+
+The remaining repeated-cost audit exposed exponential-derived weight generation
+in the interior coordinate charge (`batchCoordinateCost` still includes
+`(310*P+124)*tblC V w`). The current finite geometry bound alone therefore
+does not discharge the intended fast repeated-line estimate. The next schedule
+change is to retain the computed weight pages for replicas with the same key.
+
+`generatedWeightCache_exec` now executes the existing numerical weight-page
+generator in a 121-register placement, moves its actual output into retained
+storage, and generates the replay clock. No alternative rounding specification
+or supplied coefficient page is used. The generation bill is the existing
+`retainedWeightPageCost` plus `20*(L*w)+14` tape steps. The original payload,
+coefficient-table readiness, left/native stacks, spectators and scratch are
+preserved as stated by the frame contract.
+
+`replayWeightPage_exec` copies and splits that exact retained page into the
+existing input/output weight streams in `32*(L*w)+22` steps, restoring the
+source page, arbitrary borrowed suffix and all other registers.
+`releaseWeightCache_exec` erases only the owned page prefix and replay clock
+in `16*(L*w)+8` steps. The cache occupies four extra registers; its retained
+stock is the two encoded weight rows and a unary symbol-count clock.
+
+The complete inverse still uses the prior weighting schedule. Integrating this
+lifecycle across generated cell classes and repeated solves, then proving the
+selected uniform time estimate and simultaneous whole-execution live-storage
+bound, remains open. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 14,981 jobs (3.5 GiB
+combined peak RSS). All four new modules pass individual guarded checks below
+the 4 GiB module budget. Proof-integrity and whitespace checks pass.
