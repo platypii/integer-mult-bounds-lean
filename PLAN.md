@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2017 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2021 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12560,3 +12560,46 @@ peak). All twelve affected implementation modules pass individual guarded
 checks, maximum 1997.4 MiB. New preparation, packet load/publication, fits and
 indexed-row execution contracts are in the stage axiom audit. Source-integrity,
 whitespace and plan-status checks pass; proof limits are unchanged.
+
+### S3 zero-row guard geometry and executed shortcut
+
+`haloInterior_shift` proves that a radius-r stencil around an interior point
+with guard band w+r stays in the interior with guard band w. It retains both
+the ambient phase cell and the artificial halo endpoint cuts. Consequently,
+every signed spatial offset of a point in the 2*band halo interior misses the
+ordinary halo boundary. `couplingRowWord_deep_interior` proves the corresponding
+boundary-source recovery row equals its RHS exactly, including rounded products.
+Signed offsets remain ordered and are not deduplicated when residues alias.
+
+`zeroPacketSpatialCouplingRow_exec` executes the zero-row shortcut: it advances
+the retained marked packet, copies the RHS to the output, and restores every
+other tape. Its cost is `22*V+10*w+35`; no coefficient generation or row
+arithmetic is executed. The conditional and mask-consuming execution contracts
+have the same row semantics and packet advancement as the full row. The latter
+consumes one owned guard symbol and charges two control steps in addition to
+the selected row branch.
+
+`generateDeepCouplingMask_exec` generates the enlarged-interior mask from
+ordinary headers and restores its temporary doubled band. Its cost is
+`closedCouplingSourceMaskCost s t (2*band) a b + 8*band+6`.
+`deepCouplingMask_at_spec` connects its actual encoded guard symbols to the
+geometric zero-row certificate. This generator currently requires `2*band ≤ s`.
+The counted production loop has not yet been switched to the mask-consuming
+row; integration must discharge that condition or extend guard generation to
+the remaining size regime, then carry and consume the generated mask in the
+loop invariant. No production runtime saving is claimed yet.
+
+`haloCouplingGuardCost_eq` separates zero and full row branches on halo targets.
+`haloCouplingGuardCost_le` bounds that ledger by `(b-a)*(zeroCost+1)` plus
+`min (b-a) (4*band*(t-s+2))*(rowCost+1)`. Thus expensive halo recovery rows are
+charged to an enlarged boundary with the original and artificial cuts included.
+The execution-level counted-loop ledger and the treatment of ambient rows
+outside the target halo remain integration duties. Final fast supplier/setup
+matching, whole-execution live storage and endpoint/resource integration remain
+open. S3 stays partial; kappa is unchanged.
+
+Validation: all 14,872 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All six new modules pass individual guarded checks, maximum 1952.4 MiB.
+The stage axiom audit includes the geometry, cost, mask generation and shortcut
+execution contracts. Source-integrity, whitespace and plan-status checks pass;
+default proof limits are unchanged.

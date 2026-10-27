@@ -24,6 +24,9 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingRows
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCursor
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCost
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellZeroPacketSpatialCouplingRow
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateDeepCouplingMask
+import IntegerMultBounds.NLogN.PhaseCellHaloCouplingBudget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedCoefficientRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBuildPreparedRowPacket
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBuildMarkedRowCoefficientPacket
@@ -2255,6 +2258,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingViewReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepareRetainedCouplingPacket_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedCouplingCoefficients_exec,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloInterior_shift,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloInterior_stencil_disjoint_boundary,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloCouplingGuardCost_eq,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloCouplingGuardCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingRowWord_deep_interior,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advanceMarkedBinaryPacket_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateDeepCouplingMask_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.deepCouplingMask_at_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.zeroPacketSpatialCouplingRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.guardedPacketSpatialCouplingRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.maskedPacketSpatialCouplingRow_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packetSpatialCouplingRow_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packetSpatialCouplingRowStep_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packetSpatialCouplingRowLoop_exec,
