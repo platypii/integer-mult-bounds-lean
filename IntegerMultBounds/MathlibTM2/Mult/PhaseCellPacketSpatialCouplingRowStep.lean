@@ -34,7 +34,7 @@ theorem packetSpatialCouplingRowStep_exec (hQ : SS.states ≤ Q) {P q w s t u ba
     (C : ZMod s → GaussianInt) (tail packetTail maskTail raw : List (Fin (A+4)))
     (v : HS 144 Q A U) (S : Stacks 144 A)
     (hmask : S.R 136 = IntegerMultBounds.MathlibTM2.Layer.pairSym A skip skip::maskTail)
-    (hskip : skip = true → boundary = true ∧ (i : ZMod s) ∈ haloInterior s t (2*band) a b)
+    (hskip : skip = true → (i : ZMod s) ∈ couplingZeroRows boundary s t band a b)
     (hready : CouplingReady P q w s t u band a b raw (embStk groupReg S))
     (hpacket : S.R 135 = markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band i++packetTail)
     (hsrc : S.R 141 = cstream A w ((cyclicPaddedLine (fun j : ZMod s =>

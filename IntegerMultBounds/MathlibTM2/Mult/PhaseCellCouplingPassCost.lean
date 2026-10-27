@@ -40,32 +40,40 @@ theorem spatialCouplingGuardedRowsCost_eq (boundary : Bool) (P q w s t u band a 
     retireCountedLineCost,Finset.sum_add_distrib,Finset.sum_const,Finset.card_range,smul_eq_mul]
   ring
 
-def spatialCouplingRecoveryCostBound (P q w s t u band a b : ℕ) [NeZero s] : ℕ :=
+def spatialCouplingCostBound (boundary : Bool) (P q w s t u band a b : ℕ) : ℕ :=
   prepareSpatialCouplingSourceCost s t band a b w+
     prepareCouplingGuardCost s t band a b+buildMarkedRowCoefficientPacketCost P q w s t u band 0+
     s*zeroPacketSpatialCouplingRowCost P q w s t u band+
-    (s-(haloVertices s a b).card+haloBoundaryCountBound s t (2*band) a b)*
+    ((if boundary then haloBoundaryCountBound s t (2*band) a b else b-a)+4*band)*
       packetSpatialCouplingRowCost P q w s t u band+
     s*(10*w+16)+2+32*s*w+34*s+28+transferCountedLineCost s w+
     24*liftedCoefficientWidth P q w s t u band+4+retireSpatialCouplingSourceCost s band w
 
-theorem spatialCouplingGuardedRowsCost_recovery_le {s t : ℕ} [NeZero s] (hst : s < t)
-    (P q w u band a b : ℕ) (hb : b ≤ s) :
-    spatialCouplingGuardedRowsCost true P q w s t u band a b ≤
-      spatialCouplingRecoveryCostBound P q w s t u band a b := by
-  have h := packetSpatialGuardedLoopCost_recovery_le hst P q w u band a b hb
+theorem spatialCouplingGuardedRowsCost_le {s t : ℕ} [NeZero s] (hst : s < t)
+    (boundary : Bool) (P q w u band a b : ℕ) (hb : b ≤ s) :
+    spatialCouplingGuardedRowsCost boundary P q w s t u band a b ≤
+      spatialCouplingCostBound boundary P q w s t u band a b := by
+  have h := packetSpatialGuardedLoopCost_le hst boundary P q w u band a b hb
   dsimp only [spatialCouplingGuardedRowsCost,runSpatialCouplingGuardedCost,
-    runPreparedPacketGuardedCost,spatialCouplingRecoveryCostBound]
+    runPreparedPacketGuardedCost,spatialCouplingCostBound]
   omega
 
 theorem restoredCouplingPassCost_recovery_le {s t : ℕ} [NeZero s] (hst : s < t)
     (P q u band a b : ℕ) (hb : b ≤ s) :
     restoredCouplingPassCost true P q s t u band a b ≤
-      spatialCouplingRecoveryCostBound P q (2*q+8) s t u band a b+
+      spatialCouplingCostBound true P q (2*q+8) s t u band a b+
       installCouplingHeadersCost P q s t u band a b+releaseCouplingHeadersCost P q s t u band a b+
       50*s*(2*q+8)+27*s+50 := by
   rw [restoredCouplingPassCost_eq]
-  have h := spatialCouplingGuardedRowsCost_recovery_le hst P q (2*q+8) u band a b hb
+  have h := spatialCouplingGuardedRowsCost_le hst true P q (2*q+8) u band a b hb
+  omega
+
+theorem feedCouplingPassCost_residual_le {s t : ℕ} [NeZero s] (hst : s < t)
+    (P q w u band a b : ℕ) (hb : b ≤ s) :
+    feedCouplingPassCost false P q w s t u band a b ≤
+      spatialCouplingCostBound false P q w s t u band a b+50*s*w+27*s+50 := by
+  rw [feedCouplingPassCost_eq]
+  have h := spatialCouplingGuardedRowsCost_le hst false P q w u band a b hb
   omega
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

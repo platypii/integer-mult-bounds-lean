@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2023 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2030 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12688,3 +12688,53 @@ All 17 affected implementation modules pass individual guarded checks, maximum
 2962.2 MiB. The stage axiom audit covers the stronger coupling and shared-batch
 cost contracts. Source-integrity, whitespace and plan-status checks pass;
 default proof limits are unchanged.
+
+### S3 exterior zero rows remove clipped-halo full-row overhead
+
+`haloExteriorAt` certifies a nonwrapping stencil entirely before or after the
+halo. `haloExterior_stencil_disjoint` proves that none of its signed offsets
+reaches a halo vertex. This makes the row exactly zero for either source mask,
+not just boundary-source recovery. `recoveryZeroRows` combines those exterior
+points with the existing enlarged-interior certificate. Ambient wrap guards
+remain conservative; signed offsets are never deduplicated.
+
+The executed geometry compiler now combines the exterior test with the
+recovery-only deep-interior test. Its numeric intermediates and fixed atom
+allowance are proved by `exteriorMaskCode_do` and
+`recoveryGuardMembershipCode_do`; its complete mask scan, ordinary-header
+loading, publication and release have closed execution contracts. The common
+publication/release proof is factored into `originStreamHost_exec`, also used
+by the existing source-mask host. `generateRecoveryCouplingMask_exec` doubles
+and restores the temporary band header and generates the combined mask. No
+external mask or numerical zero-window oracle is introduced.
+
+Production residual and recovery loops now consume these generated guards.
+The shortcut row is justified by a zero-window certificate for the stated
+source mode, with the same packet advancement, RHS/result semantics and exact
+restoration frame as before. The public caller ABI is unchanged.
+
+`couplingGuard_true_count` and `packetSpatialGuardedLoopCost_counts` count the
+actual selected zero set in either direction. Full residual rows are bounded
+by `(b-a)+4*band`; full recovery rows by
+`haloBoundaryCountBound s t (2*band) a b + 4*band`. The latter is at most
+`min (b-a) (4*band*(t-s+2)) + 4*band`. Both include the ambient wrap strips and
+artificial halo cuts. The former `s-card(haloVertices)` full-row charge has been
+removed; ambient input/output scans and guard setup remain explicitly paid.
+
+`spatialCouplingCostBound` carries both mode-specific counts through the
+restored/feed callers. The shared complex-line geometry envelope now applies
+them to both residual and recovery overheads, retaining the real-component,
+replica and setup/release multiplicities. This closes the expensive
+clipped-halo ambient-row overhead gate. It does not prove the remaining numeric
+supplier or setup cost is fast, and does not replace a whole-execution storage
+bound. Final fast-time matching, simultaneous live storage and final
+endpoint/resource integration remain open. S3 stays partial; kappa is unchanged.
+
+Removed the deep-only guard generator and deep-only zero-row specializations;
+restore from `f99efeca`.
+
+Validation: the guarded Toeplitz stage build completed all 14,882 jobs and
+passed its axiom audit (21.8 GiB combined peak RSS). All 17 changed/new
+implementation modules passed individual guarded checks; the largest was
+`PhaseCellSharedPageInteriorCost` at 2963.8 MiB, below the 4 GiB module target.
+Plan-status and whitespace checks passed.

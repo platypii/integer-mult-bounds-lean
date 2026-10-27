@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateDeepCouplingMask
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateRecoveryCouplingMask
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedCouplingPacket
 
 /-! Prepare one owned row-guard symbol per ambient coordinate, above a borrowed suffix. -/
@@ -14,7 +14,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
 def couplingSkipAt (boundary : Bool) (s t band a b i : ℕ) : Bool :=
-  boundary && haloMaskAt false s t (2*band) a b i
+  recoveryGuardMaskAt boundary s t (2*band) a b i
 
 def couplingGuardSymbols (boundary : Bool) (A s t band a b : ℕ) : List (Fin (A+4)) :=
   (List.range s).map (fun i => pairSym A (couplingSkipAt boundary s t band a b i) (couplingSkipAt boundary s t band a b i))
@@ -24,20 +24,16 @@ def couplingGuardSymbols (boundary : Bool) (A s t band a b : ℕ) : List (Fin (A
 
 theorem couplingSkipAt_sound {s t : ℕ} [NeZero s] (hst : s < t) (boundary : Bool)
     (band a b i : ℕ) (hb : b ≤ s) (hi : i < s) (h : couplingSkipAt boundary s t band a b i = true) :
-    boundary = true ∧ (i : ZMod s) ∈ haloInterior s t (2*band) a b := by
-  have hh : boundary = true ∧ haloMaskAt false s t (2*band) a b i = true := by
-    simpa only [couplingSkipAt,Bool.and_eq_true] using h
-  obtain ⟨hboundary,hmask⟩ := hh
-  exact ⟨hboundary,(haloMaskAt_spec false hst (2*band) a b i hb hi).mp hmask⟩
+    (i : ZMod s) ∈ couplingZeroRows boundary s t band a b := by
+  exact (recoveryGuardMaskAt_spec hst boundary band a b i hb hi).mp h
 
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 144 Q A U}
 
 def prepareCouplingGuard (boundary : Bool) : Pr P₀ 144 Q A U :=
-  if boundary then embProg (couplingViewReg 109 136) Empty.elim (generateDeepCouplingMask (P₀ := Empty))
-  else umulSym 1 (pairSym A false false) 97 136 104
+  embProg (couplingViewReg 109 136) Empty.elim (generateRecoveryCouplingMask (P₀ := Empty) boundary)
 
 def prepareCouplingGuardCost (s t band a b : ℕ) : ℕ :=
-  generateDeepCouplingMaskCost s t band a b+4*s+4
+  generateRecoveryCouplingMaskCost s t band a b
 
 theorem prepareCouplingGuard_exec {P q w s t u band a b : ℕ} [NeZero s]
     (boundary : Bool) (hst : s < t) (ha : a ≤ s) (hb : b ≤ s)
@@ -47,27 +43,20 @@ theorem prepareCouplingGuard_exec {P q w s t u band a b : ℕ} [NeZero s]
       Exec body (prepareCouplingGuard boundary) (mk v S) m
         (mk v' {S with R := (Function.update S.R 136
           (couplingGuardSymbols boundary A s t band a b++S.R 136))}) := by
-  have hs : (S.R 97).length = s := hready.axis
-  cases boundary with
-  | false =>
-    obtain ⟨v',hu,he⟩ := umulSym_exec (body := body) 1 (pairSym A false false)
-      (a := 97) (b := 136) (t := 104) (by decide) (by decide) (by decide) v S (hready.fresh 104 (by simp))
-    refine ⟨v',4*s+4,hu,by dsimp [prepareCouplingGuardCost]; omega,?_⟩
-    simpa [prepareCouplingGuard,couplingGuardSymbols,couplingSkipAt,hs,List.map_const'] using he
-  | true =>
-    let e := couplingViewReg 109 136
-    obtain ⟨v₁,m,hu₁,hm,he₁⟩ := generateDeepCouplingMask_exec
-      (body := fun p : Empty => nomatch p) hst ha hb (embDn e v) (embStk e S)
-      hready.axis hready.period hready.bandwidth hready.lower hready.upper
-      (hready.fresh 96 (by simp)) (hready.fresh 104 (by simp))
-      (hready.fresh 115 (by simp)) (hready.fresh 106 (by simp)) (hready.fresh 108 (by simp))
-      (by intro r hr; have hn : r ≠ 109 := by intro h; subst r; norm_num at hr
-          simpa [e,couplingViewReg,embStk,hn] using hready.low r (by omega))
-    obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_emb_ovr (ι := Empty.elim) (body' := body)
-      (couplingViewReg_injective 109 136 (by decide)) (fun p => nomatch p) he₁ v rfl S rfl
-    refine ⟨v₂,m,hu₂.trans hu₁,by dsimp [prepareCouplingGuardCost]; omega,he₂.cast rfl ?_⟩
-    apply congrArg (mk v₂)
-    rw [embOvr_updR (couplingViewReg_injective 109 136 (by decide)),embOvr_stk]
-    rfl
+  let e := couplingViewReg 109 136
+  obtain ⟨v₁,m,hu₁,hm,he₁⟩ := generateRecoveryCouplingMask_exec
+    (body := fun p : Empty => nomatch p) boundary hst ha hb (embDn e v) (embStk e S)
+    hready.axis hready.period hready.bandwidth hready.lower hready.upper
+    (hready.fresh 96 (by simp)) (hready.fresh 104 (by simp))
+    (hready.fresh 115 (by simp)) (hready.fresh 106 (by simp)) (hready.fresh 108 (by simp))
+    (by intro r hr; have hn : r ≠ 109 := by intro h; subst r; norm_num at hr
+        simpa [e,couplingViewReg,embStk,hn] using hready.low r (by omega))
+  obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_emb_ovr (ι := Empty.elim) (body' := body)
+    (couplingViewReg_injective 109 136 (by decide)) (fun p => nomatch p) he₁ v rfl S rfl
+  refine ⟨v₂,m,hu₂.trans hu₁,by dsimp [prepareCouplingGuardCost]; omega,he₂.cast rfl ?_⟩
+  apply congrArg (mk v₂)
+  rw [embOvr_updR (couplingViewReg_injective 109 136 (by decide)),embOvr_stk]
+  rfl
+
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

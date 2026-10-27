@@ -20,6 +20,23 @@ def realInteriorResidualOverhead (p l s t u target rhsExp a b : ℕ) : ℕ :=
     feedCouplingPassCost false (2^15*p) q w s t u band a b+
     releaseCouplingHeadersCost (2^15*p) q s t u band a b+realResidualProjectionCost q s
 
+def realInteriorResidualGuardedOverhead (p l s t u target rhsExp a b : ℕ) : ℕ :=
+  let band := PhaseCellBand.width p u
+  let q := executionPrecision p l target rhsExp
+  let w := executionWidth p l target rhsExp
+  initializeInteriorOutputCost q s+installCouplingHeadersCost (2^15*p) q s t u band a b+
+    spatialCouplingCostBound false (2^15*p) q w s t u band a b+50*s*w+27*s+50+
+    releaseCouplingHeadersCost (2^15*p) q s t u band a b+realResidualProjectionCost q s
+
+theorem realInteriorResidualOverhead_guarded_le {s t : ℕ} [NeZero s] (hst : s < t)
+    (p l u target rhsExp a b : ℕ) (hb : b ≤ s) :
+    realInteriorResidualOverhead p l s t u target rhsExp a b ≤
+      realInteriorResidualGuardedOverhead p l s t u target rhsExp a b := by
+  have h := feedCouplingPassCost_residual_le hst (2^15*p) (executionPrecision p l target rhsExp)
+    (executionWidth p l target rhsExp) u (PhaseCellBand.width p u) a b hb
+  dsimp only [realInteriorResidualOverhead,realInteriorResidualGuardedOverhead]
+  omega
+
 theorem realInteriorResidualCost_split (p l s t u target rhsExp a b : ℕ) :
     realInteriorResidualCost p l s t u target rhsExp a b =
       solveHaloInteriorCost p l s t u target rhsExp a b+
@@ -65,14 +82,14 @@ theorem recoveryToleranceCost_geometry_le {s t : ℕ} [NeZero s] (hst : s < t)
   exact Nat.add_le_add_right (solveHaloInteriorCost_le hst p l u (recoveryTarget p target)
     (recoveryRhsExponent p rhsExp (stableInteriorExponent p rhsExp) (couplingCountExponent p u)) a b) _
 
-def recoveryToleranceGuardedOverhead (p l s t u target rhsExp a b : ℕ) [NeZero s] : ℕ :=
+def recoveryToleranceGuardedOverhead (p l s t u target rhsExp a b : ℕ) : ℕ :=
   let stageTarget := recoveryTarget p target
   let boundaryExp := stableInteriorExponent p rhsExp
   let countExp := couplingCountExponent p u
   let q := executionPrecision p l (recoveryFirstTarget p stageTarget rhsExp boundaryExp countExp) rhsExp
   let recoveryExp := recoveryRhsExponent p rhsExp boundaryExp countExp
   let band := PhaseCellBand.width p u
-  retireAmbientSourceCost q s+spatialCouplingRecoveryCostBound (2^15*p) q (2*q+8) s t u band a b+
+  retireAmbientSourceCost q s+spatialCouplingCostBound true (2^15*p) q (2*q+8) s t u band a b+
     installCouplingHeadersCost (2^15*p) q s t u band a b+releaseCouplingHeadersCost (2^15*p) q s t u band a b+
     50*s*(2*q+8)+27*s+50+
     initializeInteriorOutputCost (executionPrecision p l stageTarget recoveryExp) s+
@@ -100,7 +117,7 @@ noncomputable def sharedComplexBatchGeometryLineCost (p u l s t a b target : ℕ
   let V := publicationGeometryWidth t band
   originalComponentInputsCost q s+
     2*((haloInteriorCostBound p l s t u initialTarget 2 a b+
-          realInteriorResidualOverhead p l s t u initialTarget 2 a b)+
+          realInteriorResidualGuardedOverhead p l s t u initialTarget 2 a b)+
       boundaryRhsPrepareCost V w N s+retireCountedLineCost s w+sharedPageBoundaryAmbientCost N w s+
       (haloInteriorCostBound p l s t u (recoveryTarget p bits) recoveryExp a b+
         recoveryToleranceGuardedOverhead p l s t u bits 2 a b)+
@@ -115,11 +132,12 @@ theorem sharedComplexBatchLineCost_geometry_le {s t b : ℕ} [NeZero s] (hst : s
   let N := (haloBoundary s t (PhaseCellBand.width p u) a b).card
   let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
   have hres := realInteriorResidualCost_geometry_le hst p l u (initialSchurTarget p u bits 2) 2 a b
+  have hresg := realInteriorResidualOverhead_guarded_le hst p l u (initialSchurTarget p u bits 2) 2 a b hbS
   have hrec := recoveryToleranceCost_geometry_le hst p l u bits 2 a b
   have hguard := recoveryToleranceOverhead_guarded_le hst p l u bits 2 a b hbS
   apply (sharedComplexBatchLineCost_boundary_le p u l s t a b target).trans
   dsimp only [sharedComplexBatchNonBoundaryLineCost,sharedComplexBatchGeometryLineCost]
-  dsimp only [bits,N] at hres hrec hguard
+  dsimp only [bits,N] at hres hresg hrec hguard
   omega
 
 theorem sharedComplexClosedBatchCost_geometry_le {s t b : ℕ} [NeZero s] (hst : s < t) (hbS : b ≤ s)

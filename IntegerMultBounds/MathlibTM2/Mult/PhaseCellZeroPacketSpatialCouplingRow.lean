@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAdvanceMarkedBinaryPacket
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPacketSpatialCouplingRow
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellZeroCouplingRow
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryGuardSemantics
 
 /-! Skip coefficient generation and arithmetic for certified zero coupling rows. -/
 
@@ -64,7 +64,7 @@ theorem guardedPacketSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u
     (hst : s < t) (hi : i < s) (hP : 13 ≤ P)
     (C : ZMod s → GaussianInt) (tail packetTail raw : List (Fin (A+4)))
     (v : HS 144 Q A U) (S : Stacks 144 A) (hflag : v.flag = skip)
-    (hskip : skip = true → boundary = true ∧ (i : ZMod s) ∈ haloInterior s t (2*band) a b)
+    (hskip : skip = true → (i : ZMod s) ∈ couplingZeroRows boundary s t band a b)
     (hready : CouplingReady P q w s t u band a b raw (embStk groupReg S))
     (hpacket : S.R 135 = markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band i++packetTail)
     (hsrc : S.R 141 = cstream A w ((cyclicPaddedLine (fun j : ZMod s =>
@@ -81,10 +81,9 @@ theorem guardedPacketSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u
           (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band (i+1)++packetTail))}) := by
   cases skip with
   | true =>
-    obtain ⟨rfl,hdeep⟩ := hskip rfl
     obtain ⟨v',hu,he⟩ := zeroPacketSpatialCouplingRow_exec (body := body) raw packetTail rhsTail rhs v S hready hpacket hrhs
     refine ⟨v',zeroPacketSpatialCouplingRowCost P q w s t u band+1,hu,by simp,?_⟩
-    rw [couplingRowWord_deep_interior hst.le P q u band a b i C rhs hdeep]
+    rw [couplingRowWord_zero_window P q t u band a b i boundary C rhs (fun δ hδ => couplingZeroRows_stencil_disjoint hst.le boundary band a b i (hskip rfl) hδ)]
     exact Exec.cond_true hflag he
   | false =>
     obtain ⟨v',m,hu,hm,he⟩ := packetSpatialCouplingRow_exec (body := body)
@@ -101,7 +100,7 @@ theorem maskedPacketSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u 
     (C : ZMod s → GaussianInt) (tail packetTail raw : List (Fin (A+4)))
     (maskTail : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
     (hmask : S.R 136 = pairSym A skip skip::maskTail)
-    (hskip : skip = true → boundary = true ∧ (i : ZMod s) ∈ haloInterior s t (2*band) a b)
+    (hskip : skip = true → (i : ZMod s) ∈ couplingZeroRows boundary s t band a b)
     (hready : CouplingReady P q w s t u band a b raw (embStk groupReg S))
     (hpacket : S.R 135 = markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band i++packetTail)
     (hsrc : S.R 141 = cstream A w ((cyclicPaddedLine (fun j : ZMod s =>
