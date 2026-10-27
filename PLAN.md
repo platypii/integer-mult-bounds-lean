@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2192 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2201 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14128,3 +14128,27 @@ combined peak RSS), retaining all prior entries and adding 11. All eight new
 modules and the audit pass individual guarded checks below the 4 GiB module
 budget. Proof-integrity, audit-coverage, plan-status and whitespace checks
 pass.
+
+### S3 checkpoint: retained-family complex inverse and repeated-input batch
+
+`familyBoundaryPair_spec` composes the two real-component solves with one
+retained numerical weight family and factor page. `familyComplexComponent_spec`
+adds the executed real/imaginary input split and final complex pairing. Both
+interior passes of each real solve use the retained-family backend.
+
+`familyComplexBatch_spec` executes the counted repeated-input batch. Its exact
+final frame restores the borrowed inputs, parked component tapes, counters,
+factor page, coupling pages and numerical family, publishing only the ordered
+encoded output prefix on register 132. Each replica has the allocated uniform
+physical error bound, with no replica-count factor in the error. The cost
+ledger includes the actual component solves, parking, loop and final cleanup.
+
+Remaining: install one-time family setup and final release around the batch,
+connect the generated ordinary-scalar caller, and prove selected uniform time
+matching and simultaneous whole-execution live storage. The ordinary-scalar
+entry points still use the earlier backend. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,052 jobs (3.4 GiB
+combined peak RSS), retaining all prior entries and adding 15. All nine new
+modules and the audit pass individual guarded checks below the 4 GiB module
+budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
