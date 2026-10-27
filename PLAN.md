@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1863 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1866 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10814,4 +10814,28 @@ publication/inverse audits. The final rebuild peaks at 10.3 GiB combined; every
 affected proof module checks individually below 3 GiB (maximum 2975.8 MiB).
 The header-volume module now imports only the resampling core and checks at
 1772.8 MiB. Source-integrity, whitespace and plan-status checks pass. Proof limits
+are unchanged.
+
+### Factor-page and workspace-release volume lemmas
+
+The forward factor-table length argument is now a reusable structural lemma.
+`factorTableVolumes` derives the encoded sizes of the forward, upper and
+reciprocal pages from the window dimensions. `BoundaryPermanentBound` bounds
+registers that persist through solving; its factor-preparation theorem accounts
+for prepared headers, clean scratch and the three factor pages. A register-cover
+lemma then converts a persistent-register bound and cleared transient registers
+into a bound on the entire released bank and its release cost.
+
+These are support lemmas. Instantiating and carrying the persistent bound through
+the retained execution is still open, so the public recovery interface still
+exposes the publication state for its release cost. S3 remains partial; the
+closed caller/setup, uniform fast asymptotic and simultaneous live-storage gates
+remain open. Kappa is unchanged.
+
+Validation: all 14,712 guarded stage-audit jobs pass, including seven new explicit
+axiom audits for the structural length, register coverage, persistent bounds,
+factor-page volumes and release budget. The rebuild peaks at 16.9 GiB combined.
+The three new modules check individually at 2863.9 MiB (persistent bound),
+2831.1 MiB (release volume) and 1786.9 MiB (factor pages); the refactored factor
+module checks at 2491.9 MiB. Whitespace and plan-status checks pass. Proof limits
 are unchanged.

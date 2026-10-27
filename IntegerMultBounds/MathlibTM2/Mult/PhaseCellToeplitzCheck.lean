@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryReleaseVolume
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorTableVolume
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryUnscaledSolve
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundarySolve
@@ -2038,6 +2041,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.physicalOriginalComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedComplexBoundary_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedInverse_spec,
+      `IntegerMultBounds.MathlibTM2.Fast.length_facLf,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorReg_cover,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryPermanentBound.update,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryPermanentBound_of_factor,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorTableVolumes,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryReleaseVolume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseBoundaryWorkspaceCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryUnfoldHeaderVolume_update_vk,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryUnfoldHeaderVolume_update_dout,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloBoundary_card_bound,

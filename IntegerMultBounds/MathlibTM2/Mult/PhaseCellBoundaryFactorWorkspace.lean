@@ -260,6 +260,12 @@ theorem boundaryFactorReg_range (r : RsbR) :
   | padc => decide
   | prm => decide
 
+/-- Every owned factor-bank tape is a register image or one of the two private tapes. -/
+theorem boundaryFactorReg_cover (i : Fin 224) (hi : 154 ≤ i.val) (h184 : i ≠ 184) (h223 : i ≠ 223) :
+    ∃ r, boundaryFactorReg r = i := by
+  refine ⟨boundaryFactorDecode i,?_⟩
+  fin_cases i <;> first | (simp_all; done) | rfl
+
 theorem boundaryFactorReg_disjoint (r : RsbR) (i : Fin 64) : boundaryFactorReg r ≠ boundaryFactorMulReg i := by
   intro h
   have hi := i.isLt

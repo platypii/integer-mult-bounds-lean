@@ -1580,6 +1580,24 @@ theorem band_axisTr_runs (hrg : Function.Injective rg) (hdisj : ∀ r j, rg r �
 def facLf (P K : ℕ) (rows inputs : List (List ℤ)) (s : ℕ) : List ℤ :=
   ((List.range s).map fun j => Mult.BandFactor.lcolZ P K (facState P K rows inputs j)).flatten
 
+/-- The forward factor table has one fixed-width column per pivot. -/
+theorem length_facLf (P K B n : ℕ) (rows inputs : List (List ℤ))
+    (hrows : rows.length = B+1) (hrl : ∀ row ∈ rows, row.length = 2*B+1)
+    (hin : ∀ row ∈ inputs, row.length = 2*B+1) (hn : n ≤ inputs.length) :
+    (facLf P K rows inputs n).length = n*B := by
+  rw [facLf,List.length_flatten,List.map_map]
+  rw [List.map_congr_left (g := fun _ => B) (fun j hj => by
+    have hj' := List.mem_range.mp hj
+    obtain ⟨hl,_⟩ := facState_shape P K B rows inputs hrows hrl hin j (by omega)
+    obtain ⟨r,rest,hr⟩ : ∃ r rest, facState P K rows inputs j = r::rest := by
+      cases h : facState P K rows inputs j with
+      | nil => rw [h] at hl; simp at hl
+      | cons r rest => exact ⟨r,rest,rfl⟩
+    simp only [Function.comp,hr,Mult.BandFactor.lcolZ,List.length_map]
+    rw [hr] at hl
+    simpa using hl)]
+  simp
+
 /-- The pivot rows in pivot order. -/
 def facUr (P K : ℕ) (rows inputs : List (List ℤ)) (s : ℕ) : List (List ℤ) :=
   (List.range s).map fun j => (facState P K rows inputs j).headD []
@@ -1632,18 +1650,8 @@ theorem band_axisPrep_runs (hrg : Function.Injective rg) (hdisj : ∀ r j, rg r 
   set Lf := facLf P K rows inputs s with hLfdef
   set Ur := facUr P K rows inputs s with hUrdef
   have hshape := fun j (hj : j ≤ s) => facState_shape P K (k + 1) rows inputs hrows hrl hin j (by omega)
-  have hLf : Lf.length = s * (k + 1) := by
-    rw [hLfdef, facLf, List.length_flatten, List.map_map,
-      List.map_congr_left (g := fun _ => k + 1) (fun j hj => by
-        have hj' := List.mem_range.mp hj
-        obtain ⟨hl, -⟩ := hshape j hj'.le
-        obtain ⟨r0, rest, hr⟩ : ∃ r0 rest, facState P K rows inputs j = r0 :: rest := by
-          cases h : facState P K rows inputs j with
-          | nil => rw [h] at hl; simp at hl
-          | cons a l => exact ⟨a, l, rfl⟩
-        simp only [Function.comp, hr, Mult.BandFactor.lcolZ, List.length_map]
-        rw [hr] at hl; simpa using hl), List.map_const', List.sum_replicate, List.length_range,
-      smul_eq_mul]
+  have hLf : Lf.length = s * (k + 1) :=
+    length_facLf P K (k+1) s rows inputs hrows hrl hin (by omega)
   have hUr : Ur.length = s := by simp [hUrdef, facUr]
   have hUrow : ∀ row ∈ Ur, row.length = 2 * (k + 1) + 1 := by
     intro row hrow
