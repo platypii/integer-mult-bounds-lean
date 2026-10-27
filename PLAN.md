@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2099 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2104 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13381,3 +13381,33 @@ Validation: the expanded guarded stage axiom audit passes all 14,950 jobs
 (3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 All four new modules pass individual guarded checks, with maximum peak RSS
 3096.6 MiB, below the 4 GiB module budget.
+
+### S3 counted cached complex batch with ordered publication
+
+`cachedComplexBatchLoop_spec` executes every replica with the cached complex
+component. Its structural invariant tracks remaining input, reversed saved
+input, reversed computed output and the per-replica accuracy relation. The
+coefficient descriptor follows from the invariant's exact frame at every
+iteration; no geometry or coefficient setup is performed inside this loop.
+The original factor page and scatter controls remain available across replicas.
+
+`cachedComplexBatch_spec` generates the row/replica clocks, executes that loop,
+restores the complete original input stream, publishes computed replicas in
+natural order and releases its clocks and parked banks. Its exact final frame
+changes only port 132's owned batch-output prefix. Both coefficient banks,
+ordinary workspace, shared factor page, controls, input and borrowed suffixes
+restore. A `List.Forall₂` relation proves uniform complex target error for every
+input/output pair. The cost charges the actual clocks, per-replica cached
+component, parking, loop overhead and final publication.
+
+Separate step, parking and finish contracts retain the original linear
+operations. The prepared cached batch is now complete. Generated coefficient
+cache setup/release still needs composition around the batch, together with the
+enclosing ordinary-scalar/factor-page caller. Uniform fast time matching and
+simultaneous whole-execution live storage remain open. S3 stays partial; kappa
+is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,955 jobs
+(3.5 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+All five new modules pass individual guarded checks, with maximum peak RSS
+3340.7 MiB, below the 4 GiB module budget.
