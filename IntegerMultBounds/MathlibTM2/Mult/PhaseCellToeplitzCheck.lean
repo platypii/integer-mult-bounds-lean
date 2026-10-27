@@ -29,6 +29,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingPassCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPageSpatialCouplingRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseCouplingCoefficientPage
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPageCouplingCost
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedRealComponent
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedComputedBoundarySolve
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedRecoveryTolerance
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedRecoveryInterior
@@ -2379,6 +2380,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedBoundaryRhs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedComputedBoundaryRhs_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedComputedBoundarySolve_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedBoundaryAmbient_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedBoundaryResidualRetire_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedBoundaryRecovered_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedRealComponent_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCouplingCacheRelease_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_succ,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_length_le,
