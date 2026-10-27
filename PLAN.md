@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1671 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1676 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9005,3 +9005,38 @@ step, loop, cleanup and folded-band collection audits. Combined build peak is
 2.7 GiB. All four new modules and the audit root pass individual guarded checks
 at at most 2058.1 MiB. Added-source integrity, plan-status and whitespace checks
 pass; proof limits are unchanged.
+
+### Generate the clipped band controls and execute prepared collection
+
+`bandIntervalEndpoints_exec` constructs unary `n-W` and `n+W+1` from borrowed
+index/band headers. `clipUnary_exec` clips an owned count to a borrowed bound
+and restores its scratch through structural unary arithmetic. Their composition
+`clippedBandControls_exec` generates cursor `n-W` and count
+`min rowCount (n+W+1)-(n-W)`, restoring all input headers and temporary controls.
+All costs are explicit; the proofs retain the default heartbeat/depth limits.
+
+`residentBandControls_exec` instantiates this construction in the resident bank.
+It generates `W = 12*band+1` from retained geometry on 124, uses the boundary
+cardinality on 116, derives both collector controls from the column index on 0,
+and releases the temporary band header, complement and lookup index. The
+ordinary geometry/cardinality headers and every other stack are preserved.
+
+`preparedBandCollection_exec` composes that actual setup with the executed
+folded-band collector. It no longer takes a supplied cursor, count or band-width
+header. Its output prepends exactly the reversed folded-band words of the
+computed column to table port 132. The column, resident page, page suffix,
+retained masters and all temporary stacks are restored; only the owned lookup
+index is consumed and the table prefix grows. Its bound pays setup, all entry
+lookups/scans, accumulation and complete control release.
+
+Composition with actual column generation and retirement, retaining the column
+index across that lifecycle, and the outer complete-table loop remain open.
+Factor/solve/release, the full S3 endpoint and uniform fast-time/simultaneous
+storage also remain open. Repeated page/column scans are still charged
+explicitly; S3 remains partial.
+
+Validation: all 10,333 guarded stage-audit jobs pass, including six new explicit
+endpoint, clipping, control-generation and prepared-collection audits. Combined
+build peak is 4.1 GiB. All five new modules and the audit root pass individual
+guarded checks at at most 2057.6 MiB. Added-source integrity, plan-status
+and whitespace checks pass; proof limits are unchanged.
