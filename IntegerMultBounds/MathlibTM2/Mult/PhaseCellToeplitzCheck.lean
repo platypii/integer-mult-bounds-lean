@@ -294,6 +294,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnscaledSolveError
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryTotalErrorBudget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnscaledSolveTarget
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryExactBounds
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRealSchurTarget
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -2000,6 +2001,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_im,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_sizes,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_exact_schur_solves,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_retained_rhs_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_retained_rhs_accuracy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_real_schur_target,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unscaled_solve_target,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.dominant_complex_solution_bound,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.phaseCell_exact_solution_bound,

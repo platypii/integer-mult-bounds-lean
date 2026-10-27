@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1812 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1814 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10102,3 +10102,56 @@ Validation of the total-budget/dyadic-target/stable-magnitude chunk: all 14,657
 guarded stage-audit jobs pass, including seven new explicit axiom audits.
 Combined peak is 3.4 GiB; individual modules remain below 2.8 GiB. Plan-status,
 added-source integrity and whitespace checks pass. Proof limits are unchanged.
+
+### Native retained Schur postconditions imply numerical output accuracy
+
+`boundary_exact_schur_solves` identifies the restricted principal-system solution
+as an exact solution of the reduced boundary matrix. The retained residual's
+weighted real error at the column target implies the needed boundary RHS budget
+via `boundary_retained_rhs_budget`; `boundary_retained_rhs_accuracy` transfers
+that real residual error to the complex norm used by the Gaussian solve.
+
+`boundary_real_schur_target` combines these adapters with the actual normalized
+Gaussian solve and exact unscaling. Its premises match native retained Schur
+postconditions: original principal-system solve, dominance, input magnitude,
+computed column accuracy, retained residual realness/magnitude and weighted
+residual error. It derives the exact solution magnitude internally and proves
+unscaled output error at most `3·2^-target`. No separate reduced-system solve,
+complex residual oracle or exact solution magnitude premise remains. The two
+modules check individually at 2836.5 MiB and 2840.3 MiB.
+
+The execution endpoint must still instantiate the principal sets and run matrix,
+align retained-residual and constructed-column precision, and attach the result
+to its actual output postcondition. Recovery/retirement, uniform time and
+simultaneous live storage remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,659 guarded stage-audit jobs pass, including four new explicit
+Schur/retained-RHS/native-target axiom audits. Combined peak is 3.4 GiB.
+Plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Constructed execution returns accurate boundary output
+
+`constructedBoundaryUnscaledSolve_spec` now includes a numerical postcondition
+for the actual returned `solution` list and native tape 217. From an exact solve
+on `haloVertices`, the retained residual's native realness and weighted error,
+and the original RHS magnitude, it proves output record i is within
+`3·2^-target` of the exact solution at `bFoldAt i`, and its decoded magnitude is
+at most `2^stableInteriorExponent p rhsExp`. The theorem instantiates actual
+constructed columns, their entry error and rank invariant; uses the proved
+interior/boundary partition and dominance; and relates the mapped unscale list
+to the actual output record. Execution, time, frame, factor tables and scratch
+cleanup postconditions are preserved. The strengthened module's individual
+guarded check peaks at 2940.9 MiB.
+
+This closes conditional accuracy and recovery magnitude for the executed
+constructed solve. Composition with the residual-producing execution, including
+precision/header alignment, remains open. Boundary publication, retained
+recovery, factor/table/page retirement, uniform time and simultaneous live
+storage remain open. S3 remains partial and kappa is unchanged.
+
+Validation of the native-Schur/constructed-output accuracy chunk: all 14,659
+guarded stage-audit jobs pass, including four new native Schur adapter/target
+axiom audits and the strengthened constructed solve audit. Combined peak is
+3.4 GiB; individual new modules and the strengthened execution module remain
+below 3 GiB. Plan-status, added-source integrity and whitespace checks pass.
+Proof limits are unchanged.

@@ -2,6 +2,9 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundarySolve
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBoundaryUnscale
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRealSchurTarget
+public import IntegerMultBounds.NLogN.PhaseCellBoundary
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryExactBounds
 
 /-! Construct and solve the boundary system, then undo normalization exactly on tapes. -/
 
@@ -91,7 +94,18 @@ theorem constructedBoundaryUnscaledSolve_spec (hR : rpStates ≤ Q) (hQ : SS.sta
       S'.R 217 = cstream A w solution ∧ S'.R 206 = [] ∧
       RsbReady (boundaryFactorState S') w q ∧ (S'.R 119).length = q ∧
       (∀ i : Fin 64, S'.R (boundaryFactorMulReg i) = []) ∧
-      S'.R 184 = [] ∧ S'.R 223 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] := by
+      S'.R 184 = [] ∧ S'.R 223 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] ∧
+      ∀ (R : (ZMod s → ℝ) → ZMod s → ℝ) (x b₀ : ZMod s → ℝ),
+      (∀ c, SchurDominance.Solves (realMatrix s t p u) (haloInterior s t band a b) (R c) c) →
+      SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x b₀ →
+      (∀ j ∈ haloVertices s a b, |b₀ j| ≤ (2 : ℝ)^rhsExp) →
+      (∀ j ∈ B, (C j).im = 0) →
+      (∀ j ∈ B, 8*(p : ℝ)*|(value q (C j)).re -
+        SchurDominance.residual (realMatrix s t p u) (haloInterior s t band a b) R b₀ j| ≤
+          1/(2 : ℝ)^(recoveryTarget p bits+2)) →
+      ∀ i < B.card, ‖value q (solution.getD i 0) - (x (bFoldAt s B i) : ℂ)‖ ≤
+        3/(2 : ℝ)^target ∧
+        ‖value q (solution.getD i 0)‖ ≤ (2 : ℝ)^stableInteriorExponent p rhsExp := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let band := PhaseCellBand.width p u
@@ -151,7 +165,7 @@ theorem constructedBoundaryUnscaledSolve_spec (hR : rpStates ≤ Q) (hQ : SS.sta
       omega
     simpa only [S₂,Function.update_of_ne hi217] using hmul i
   refine ⟨v₂,S₂,n₁+n₂,columns,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂',hlen,hcolumns,hformat,
-    hstorage,herror,hrank,hinp,hout,hL,?_,?_,?_,?_,?_,?_,?_,?_,hreset',?_,hresultFits,?_,?_,hreadyFinal,?_,hmulFinal,?_,?_,?_,?_⟩
+    hstorage,herror,hrank,hinp,hout,hL,?_,?_,?_,?_,?_,?_,?_,?_,hreset',?_,hresultFits,?_,?_,hreadyFinal,?_,hmulFinal,?_,?_,?_,?_,?_⟩
   · intro i hi109 hi115 hi116 hi132
     have hi217 : boundaryFactorLegacyReg i ≠ 217 := by
       intro hi
@@ -175,5 +189,37 @@ theorem constructedBoundaryUnscaledSolve_spec (hR : rpStates ≤ Q) (hQ : SS.sta
   · simpa [S₂] using h223
   · simpa [S₂] using h220
   · simpa [S₂] using h221
+  · intro R x b₀ hRsolve hx hb₀ hreal herr i hi
+    let I := haloInterior s t band a b
+    have hU : I ∪ B = haloVertices s a b := haloInterior_union_boundary s t band a b
+    let M := realMatrix s t p u
+    let : NeZero t := ⟨by omega⟩
+    have hM : SchurDominance.DominatesOn M (I ∪ B) (1/(8*(p : ℝ))) := by
+      rw [hU]
+      exact SchurDominance.dominates_mono M Finset.univ (haloVertices s a b) _
+        (Finset.subset_univ _) (matrix_gap s t hst hα p u hp hwidth hαu hθ hgap hbudget)
+    have hx' : SchurDominance.Solves M (I ∪ B) x b₀ := by rw [hU]; exact hx
+    have hb' : ∀ j ∈ I ∪ B, |b₀ j| ≤ (2 : ℝ)^rhsExp := by rw [hU]; exact hb₀
+    have he' : ∀ i ∈ B, ∀ j ∈ B,
+        |bandBoundaryTable B W (computedBoundaryTable A q w B columns) i j -
+          (SchurDominance.run M (I ∪ B) I.toList).1 i j| ≤ 1/(2 : ℝ)^bits := by
+      rw [hU]
+      exact herror
+    have hacc := boundary_real_schur_target A p u l target rhsExp B W columns hp (by omega) hlen
+      C hformat hrank M I (haloInterior_disjoint_boundary s t band a b) hM R hRsolve
+      x b₀ hx' hb' he' hC hreal herr i hi
+    have hiSol : i < sol.length := by rw [hsolLen]; exact hi
+    have hget : result.getD i 0 = unscaleBoundaryWord q (sol.getD i 0) := by
+      change (sol.map (unscaleBoundaryWord q)).getD i 0 = _
+      rw [List.getD_eq_getElem _ _ (by simpa using hiSol),
+        List.getD_eq_getElem _ _ hiSol,List.getElem_map]
+    rw [hget]
+    have hxBound : ‖(x (bFoldAt s B i) : ℂ)‖ ≤ 16*(p : ℝ)*(2 : ℝ)^rhsExp := by
+      have h := SchurDominance.solves_bound M (I ∪ B) _ (by positivity) hM x b₀ hx'
+        ((2 : ℝ)^rhsExp) hb' _ (Finset.mem_union_right I (bFoldAt_mem s B i hi))
+      rw [div_div_eq_mul_div,div_one] at h
+      rw [Complex.norm_real,Real.norm_eq_abs]
+      nlinarith only [h,show (0 : ℝ) ≤ (p : ℝ)*(2 : ℝ)^rhsExp by positivity]
+    exact ⟨hacc,boundary_computed_solution_magnitude p rhsExp target (by omega) _ _ hxBound hacc⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
