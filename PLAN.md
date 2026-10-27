@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1682 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1689 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9083,3 +9083,50 @@ workspace/frame, retirement, retained execution and lifecycle audits. Combined
 build peak is 2.7 GiB. All six new modules and the audit root pass individual
 guarded checks at at most 2061.8 MiB. Added-source integrity, plan-status
 and whitespace checks pass; proof limits are unchanged.
+
+### Executed complete boundary-table loop and packed-page error contract
+
+`scanInvariant_exec` supplies a structural counted scan whose invariant may
+contain coefficients obtained from execution. It preserves the left bank,
+tracks the actual per-iteration costs, and restores the count/saved-count ports.
+This avoids assuming a predetermined coefficient field or execution trace for
+every column. `TableLoopInvariant` combines the actual accumulated column list,
+its decoded entry accuracy and the exact frame outside the table/cursor and
+scan controls. The readiness transfer lemmas permit arbitrary accumulated table
+prefixes and outer controls while retaining the original solver source.
+
+`bandTableWords` specifies the physical column-block packing, including both
+descending column order and descending folded-row order within each block. Its
+append theorem matches actual stack accumulation. The packed prefix is bounded
+by `columnCount*(2*W+1)*wordWidth`. `computedBoundaryTable_error` transfers the
+produced column family to the full boundary matrix; band masking retains the
+same entry error, with no additional numerical or cardinality factor.
+
+`tableLoopStep_spec` joins the actual single-column lifecycle to cursor advance
+and extends the packed-page invariant with the column actually produced.
+`tableColumnsLoop_spec` executes all boundary columns and returns the entire
+accurate column family and physical packed prefix. `buildBoundaryTable_spec`
+generates the count from retained boundary cardinality, runs that complete
+loop and releases every outer control. Its final exact physical frame changes
+only table port 132. The original source, resident folded page and suffix,
+geometry/precision masters, parked component streams and all scratch/control
+ports are restored, and solver readiness is returned. The table is no longer a
+supplied matrix, factor page, coefficient family or collection of executions.
+
+The public builder proves `2^-target` decoded entry error for the masked actual
+halo Schur table and a packed-prefix bound
+`boundaryCount*(24*band+3)*wordWidth`. This is the retained table prefix's size,
+not a complete simultaneous machine-storage theorem. Its time bound sums the
+actual column-generation, gathering, retirement and scan/setup/release costs;
+no fast repeated-source-access bound is claimed.
+
+Composing the prepared folded-page setup with this builder, executing table
+access/factorization/solve/release and joining the full real/imaginary endpoint
+remain open. Uniform fast time, the full simultaneous storage bound and the
+final S3 theorem remain open. S3 is partial.
+
+Validation: all 10,346 guarded stage-audit jobs pass, including fourteen new
+explicit scan, packing/error, frame/readiness, invariant and complete-builder
+audits. Combined build peak is 2.7 GiB. All seven new modules and the audit root
+pass individual guarded checks at at most 2064.7 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.

@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBuildBoundaryTable
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTableColumn
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBandCollection
@@ -1725,6 +1727,20 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.collectRetireColumn_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedColumnCollection_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.tableColumn_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scanInvariant_loop,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scanInvariant_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandTableWords_append,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.bandTableWords_storage,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ColumnFamilyAccurate.append,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.computedBoundaryTable_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.computedBoundaryTable_band_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.LengthKeyReady.of_registers,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.tableLoopReady_of_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.TableLoopInvariant.of_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.TableLoopInvariant.ready,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.tableLoopStep_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.tableColumnsLoop_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.buildBoundaryTable_spec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,
