@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1893 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1894 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11046,3 +11046,20 @@ explicit batch-routing/loop/restoration/generated-page/fast-cost axiom audits.
 Final combined peak is 3.4 GiB. All eight new modules pass individual guarded
 checks (maximum 2939.5 MiB). Source-integrity, whitespace and plan-status checks
 pass. Proof limits are unchanged.
+
+### Restore the shared factor bank after unscaling and publication
+
+`preparedBoundaryUnscale_exec` lifts the existing generated unscaling program
+into the reusable 226-register bank and publishes the unscaled solution over an
+arbitrary borrowed output suffix. It consumes the native solution tape, restores
+the private transfer tape, and preserves every other register exactly, including
+the computed factor page. Its explicit cost is
+`generatedBoundaryUnscaleCost q N+4*N*(2*q+8)+4`.
+`preparedBoundaryUnscale_project` proves the resulting native-bank projection:
+only the native output tape is retired. This supplies the unscaling/publication
+adapter for a future residual-normalizing reusable solve; it does not yet connect
+normalization or replace the full inverse caller. S3 remains partial.
+
+Validation: the new module passes the guarded single-file check (2857.2 MiB
+peak), and all 14,742 guarded stage-audit jobs pass, including both new contract
+audits (3.4 GiB combined peak). Proof limits are unchanged.
