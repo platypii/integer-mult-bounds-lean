@@ -19,7 +19,7 @@ def sharedPageBoundaryRhs : Pr P 240 Q A U :=
   embProg sharedPageRecoveryReg Empty.elim (boundaryRhsPhysical (P := Empty))
 
 theorem sharedPageBoundaryRhs_exec {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (V w : ℕ)
-    (hA : 4 ≤ A) (hs : s ≤ 2^V) (C : ZMod s → GaussianInt)
+    (hA : 4 ≤ A) (hs : s ≤ 2^V) (C D : ZMod s → GaussianInt) (hCD : ∀ i ∈ B, C i = D i)
     (coordinateTail rhsTail : List (Fin (A+4))) (v : HS 240 Q A U) (S : Stacks 240 A)
     (hN : (S.R 116).length = B.card) (hV : (S.R 115).length = V) (hw : (S.R 160).length = w)
     (hcoordinates : S.R 109 = cstream A V ((bFoldOrder s B).map
@@ -30,13 +30,13 @@ theorem sharedPageBoundaryRhs_exec {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (V
     ∃ v' n, v'.user = v.user ∧ n ≤ boundaryRhsPrepareCost V w B.card s ∧
       Exec body sharedPageBoundaryRhs (mk v S) n
         (mk v' {S with R := (Function.update S.R 206
-          (cstream A w ((List.range B.card).map (fun j => C (bFoldAt s B j)))++S.R 206))}) := by
+          (cstream A w ((List.range B.card).map (fun j => D (bFoldAt s B j)))++S.R 206))}) := by
   let T := embStk sharedPageRecoveryReg S
   have hz : ∀ r : Fin 224, 1 ≤ r.val → r.val < 7 → T.R r = [] := by
     intro r hr1 hr7
     exact hblank (sharedPageRecoveryReg r) hr1 hr7
   obtain ⟨v₁,n,hu₁,hn,he⟩ := boundaryRhsPhysical_exec (body := fun p : Empty => nomatch p)
-    B V w hA hs C coordinateTail rhsTail (embDn sharedPageRecoveryReg v) T
+    B V w hA hs C D hCD coordinateTail rhsTail (embDn sharedPageRecoveryReg v) T
     hN hV hw hcoordinates hrhs h0 h106 h139 hz
   obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_emb_ovr (ι := Empty.elim) (body' := body)
     sharedPageRecoveryReg_injective (fun p => nomatch p) he v rfl S rfl

@@ -79,7 +79,7 @@ theorem generatedBoundaryGatherSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
   have h0 : S.R 0 = [] := hmul 0
   have hblank (r : Fin 224) (_hr1 : 1 ≤ r.val) (hr7 : r.val < 7) : S.R r = [] := by
     exact hmul (⟨r.val,by omega⟩ : Fin 64)
-  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := boundaryRhsPhysical_exec (body := body) B V w (by omega) hs C
+  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := boundaryRhsPhysical_exec (body := body) B V w (by omega) hs C C (by intro i hi; rfl)
     coordinateTail rhsTail v S hN hV hwidth hcoordinates hrhs h0 h106 h139 hblank
   let b := (List.range B.card).map (fun j => C (bFoldAt s B j))
   let S₁ : Stacks 224 A := {S with R := Function.update S.R 206 (cstream A w b)}

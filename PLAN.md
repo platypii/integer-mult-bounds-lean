@@ -12843,3 +12843,38 @@ resource matching remain open; S3 stays partial and kappa is unchanged.
 Validation: the expanded guarded stage audit passes all 14,887 jobs (3.4 GiB
 combined peak RSS). All three new modules pass individual guarded checks;
 the largest is 2971.6 MiB. Plan-status and whitespace checks pass.
+
+### S3 residual consumption depends only on boundary values
+
+The residual gathers now distinguish the actual ambient input field `C` from
+the advertised boundary field `D`, requiring equality only on the boundary
+set. `boundaryRhsPrepare_exec` proves equality of their folded words using
+`bFoldAt_mem`. `boundaryRhsPhysical_exec` and `sharedPageBoundaryRhs_exec` carry
+the same contract through their physical placements, with unchanged executable
+programs, prices, suffix preservation and exact restoration. Existing gathered
+solves and the computed shared-page RHS instantiate this stronger interface.
+
+This removes a consumer-side obstacle to skipping residual rows that are never
+observed by the boundary solve. It does not yet skip those rows: the residual
+producer still promises the exact ambient `couplingRowField`, and its generic
+pointwise-error theorem still covers every ambient index. The producer
+change must preserve boundary agreement and global magnitude bounds; numerical
+row skipping cannot be
+justified by claiming the interior coupling itself is zero. No fast-time or
+whole-execution storage completion is claimed. S3 stays partial.
+
+The shared residual handoff now carries the actually produced residual field
+as an existential witness, rather than defining it by the current ambient
+coupling formula. `sharedPageSchurResidual_spec`, the computed RHS and solve
+contracts, and the complete real component carry its global magnitude and
+reality bounds, boundary Schur-residual error, exact encoded reads, readiness
+and restoration. The current producer still constructs the same field. This
+separates its internal row construction from the facts the prepared boundary
+solver actually consumes, without adding an unproved numerical hypothesis.
+Actual target-restricted residual execution is still pending; current runtime
+and cost definitions are unchanged.
+
+Validation: the final expanded guarded stage audit passes all 14,887 jobs
+(10.3 GiB combined peak RSS). All nine changed implementation modules pass
+individual guarded checks in their final versions; the largest is the complete
+real component at 3004.5 MiB. Plan-status and whitespace checks pass.

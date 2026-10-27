@@ -37,7 +37,7 @@ def boundaryRhsPhysical : Pr P 224 Q A U :=
   embProg boundaryRhsReg Empty.elim (boundaryRhsPrepare (P := Empty))
 
 theorem boundaryRhsPhysical_exec {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (V w : ℕ)
-    (hA : 4 ≤ A) (hs : s ≤ 2^V) (C : ZMod s → GaussianInt)
+    (hA : 4 ≤ A) (hs : s ≤ 2^V) (C D : ZMod s → GaussianInt) (hCD : ∀ i ∈ B, C i = D i)
     (coordinateTail rhsTail : List (Fin (A+4))) (v : HS 224 Q A U) (S : Stacks 224 A)
     (hN : (S.R 116).length = B.card) (hV : (S.R 115).length = V) (hw : (S.R 160).length = w)
     (hcoordinates : S.R 109 = cstream A V ((bFoldOrder s B).map
@@ -48,9 +48,9 @@ theorem boundaryRhsPhysical_exec {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (V w
     ∃ v' n, v'.user = v.user ∧ n ≤ boundaryRhsPrepareCost V w B.card s ∧
       Exec body boundaryRhsPhysical (mk v S) n
         (mk v' {S with R := (Function.update S.R 206
-          (cstream A w ((List.range B.card).map (fun j => C (bFoldAt s B j)))++S.R 206))}) := by
+          (cstream A w ((List.range B.card).map (fun j => D (bFoldAt s B j)))++S.R 206))}) := by
   obtain ⟨v₁,n,hu₁,hn,he₁⟩ := boundaryRhsPrepare_exec (body := fun e : Empty => nomatch e)
-    B V w hA hs C coordinateTail rhsTail (embDn boundaryRhsReg v) (embStk boundaryRhsReg S)
+    B V w hA hs C D hCD coordinateTail rhsTail (embDn boundaryRhsReg v) (embStk boundaryRhsReg S)
     (by simpa [embStk,boundaryRhsReg] using hN) (by simpa [embStk,boundaryRhsReg] using hV)
     (by simpa [embStk,boundaryRhsReg] using hw)
     (by simpa [embStk,boundaryRhsReg] using hcoordinates)

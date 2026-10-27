@@ -77,8 +77,8 @@ theorem sharedPageComputedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.stat
     S.R 109 = cstream A V ((bFoldOrder s B).map (fun k : ZMod s => (⟨(k.val : ℤ),0⟩ : GaussianInt)))++coordinateTail →
     (S.R 119).length = q →
     (∀ i ∈ ([127,138,143,106,139,206,223,184,220,221,225] : List (Fin 240)), S.R i = []) →
-    ∃ v' n, ∃ D : ZMod s → GaussianInt, ∃ solution : List GaussianInt,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
+    ∃ v' n, ∃ D C : ZMod s → GaussianInt, ∃ solution : List GaussianInt,
+
       let S' : Stacks 240 A := {S with R := (Function.update
         (Function.update (Function.update S.R 110 (cstream A w (chirpLine s C)++S.R 110)) 132
           (cstream A w (chirpLine s D)++S.R 132)) 224 (cstream A w solution++S.R 224))}
@@ -111,11 +111,10 @@ theorem sharedPageComputedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.stat
   have hblank : ∀ r : Fin 240, 1 ≤ r.val → r.val < 7 → S.R r = [] := by
     intro r hr1 hr7
     exact hmul ⟨r.val,by omega⟩
-  obtain ⟨v₁,n₁,D,R,hRsolve,hu₁,hn₁,he₁,hreal,hmag,herr,hread,hready₁⟩ := sharedPageComputedBoundaryRhs_spec
+  obtain ⟨v₁,n₁,D,C,R,hRsolve,hu₁,hn₁,he₁,hreal,hmag,herr,hread,hready₁⟩ := sharedPageComputedBoundaryRhs_spec
     (body := body) (target := bits) (rhsExp := 2) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
     F hF v S tail (hclean _ (by simp)) (hclean _ (by simp)) (hclean _ (by simp)) ha hb hready
     V hsV coordinateTail hN hV hw hcoordinates (hmul 0) (hclean _ (by simp)) (hclean _ (by simp)) hblank
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
   let rhs := (List.range B.card).map (fun j => C (bFoldAt s B j))
   have hrhs : rhs.length = B.card := by simp [rhs]
   have hbound : ∀ z ∈ rhs, |gv q z.re| ≤ (2 : ℝ)^couplingRowExponent 2 (stableInteriorExponent p 2)
@@ -157,7 +156,7 @@ theorem sharedPageComputedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.stat
   let solution := (bandSolveVec q W Lc Uc rcs (rhs.map (normalizeBoundaryWord q (q/2-1)))).map (unscaleBoundaryWord q)
   have hfit := boundary_residual_solution_format A p u l target 2 B W columns hp
     (Nat.le_trans (by decide : 4 ≤ 96) hA) hlen hformat hstage rhs hrhs hbound
-  refine ⟨v₂,n₁+n₂,D,solution,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,(Exec.seq he₁' he₂).cast rfl ?_,
+  refine ⟨v₂,n₁+n₂,D,C,solution,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,(Exec.seq he₁' he₂).cast rfl ?_,
     hfit.1,hfit.2,?_,?_⟩
   · apply congrArg (mk v₂)
     refine Stacks.ext rfl rfl rfl ?_

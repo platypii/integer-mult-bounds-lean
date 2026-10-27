@@ -113,11 +113,10 @@ theorem sharedPageRealComponent_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
     rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
       exact hclean _ (by simp)
-  obtain ⟨v₁,n₁,D,solution,hu₁,hn₁,he₁,hsolLen,hfit,hready₁,hacc⟩ := sharedPageComputedBoundarySolve_spec
+  obtain ⟨v₁,n₁,D,C,solution,hu₁,hn₁,he₁,hsolLen,hfit,hready₁,hacc⟩ := sharedPageComputedBoundarySolve_spec
     (body := body) (target := solveTarget) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
     columns hlen hformat hstage htable F hF v S tail coordinateTail V hready ha hb hleft hmul
     hsolve hbo hhf hdf hsV hN hV hw hcoordinates hmaster hz
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (F i))
   let input := cstream A w (chirpLine s C)++S.R 110
   let interior := cstream A w (chirpLine s D)
   let folded := cstream A w solution

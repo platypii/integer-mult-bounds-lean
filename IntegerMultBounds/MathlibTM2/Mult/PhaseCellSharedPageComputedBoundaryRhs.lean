@@ -59,8 +59,8 @@ theorem sharedPageComputedBoundaryRhs_spec (hR : rpStates ≤ Q) (hQ : SS.states
     let band := PhaseCellBand.width p u
     let I := haloInterior s t band a b
     let boundary := haloBoundary s t band a b
-    ∃ v' n, ∃ D : ZMod s → GaussianInt, ∃ R : (ZMod s → ℝ) → ZMod s → ℝ,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+    ∃ v' n, ∃ D C : ZMod s → GaussianInt, ∃ R : (ZMod s → ℝ) → ZMod s → ℝ,
+
       let input := cstream A w (chirpLine s C)++S.R 110
       let output := cstream A w (chirpLine s D)++S.R 132
       let S' : Stacks 240 A := {S with R := (Function.update
@@ -83,10 +83,9 @@ theorem sharedPageComputedBoundaryRhs_spec (hR : rpStates ≤ Q) (hQ : SS.states
   let w := executionWidth p l (initialSchurTarget p u target rhsExp) rhsExp
   let band := PhaseCellBand.width p u
   let boundary := haloBoundary s t band a b
-  obtain ⟨v₁,n₁,D,R,hRsolve,hu₁,hn₁,he₁,hreal,hmag,herr,hread,hready'⟩ := sharedPageSchurResidual_spec
+  obtain ⟨v₁,n₁,D,C,R,hRsolve,hu₁,hn₁,he₁,hreal,hmag,herr,hread,hready'⟩ := sharedPageSchurResidual_spec
     (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
     B hB v S tail h127 h138 h143 haMaster hbMaster hready
-  let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
   let input := cstream A w (chirpLine s C)++S.R 110
   let output := cstream A w (chirpLine s D)++S.R 132
   let S₁ : Stacks 240 A := {S with R := Function.update (Function.update S.R 110 input) 132 output}
@@ -96,11 +95,11 @@ theorem sharedPageComputedBoundaryRhs_spec (hR : rpStates ≤ Q) (hQ : SS.states
     have h132 : r ≠ 132 := by intro he; subst r; simp at hr7
     simpa [S₁,h110,h132] using hblank r hr1 hr7
   obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := sharedPageBoundaryRhs_exec (body := body) boundary V w
-    (Nat.le_trans (by decide : 4 ≤ 96) hA) hsV C coordinateTail (S.R 110) v₁ S₁
+    (Nat.le_trans (by decide : 4 ≤ 96) hA) hsV C C (by intro i hi; rfl) coordinateTail (S.R 110) v₁ S₁
     (by simpa [S₁] using hN) (by simpa [S₁] using hV) (by simpa [S₁] using hw)
     (by simpa [S₁] using hcoordinates) (by rfl)
     (by simpa [S₁] using h0) (by simpa [S₁] using h106) (by simpa [S₁] using h139) hz
-  refine ⟨v₂,n₁+n₂,D,R,hRsolve,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,
+  refine ⟨v₂,n₁+n₂,D,C,R,hRsolve,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,
     (Exec.seq he₁ he₂).cast rfl ?_,hreal,hmag,herr,?_,?_⟩
   · apply congrArg (mk v₂)
     rfl

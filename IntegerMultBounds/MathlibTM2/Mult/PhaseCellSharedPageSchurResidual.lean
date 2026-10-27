@@ -54,8 +54,8 @@ theorem sharedPageSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     let band := PhaseCellBand.width p u
     let I := haloInterior s t band a b
     let boundary := haloBoundary s t band a b
-    ∃ v' n, ∃ D : ZMod s → GaussianInt, ∃ R : (ZMod s → ℝ) → ZMod s → ℝ,
-      let C := couplingRowField (2^15*p) q t u band a b false D (fun i => realPartWord (B i))
+    ∃ v' n, ∃ D C : ZMod s → GaussianInt, ∃ R : (ZMod s → ℝ) → ZMod s → ℝ,
+
       let input := cstream A w (chirpLine s C)++S.R 110
       let output := cstream A w (chirpLine s D)++S.R 132
       let S' : Stacks 240 A := {S with R := Function.update (Function.update S.R 110 input) 132 output}
@@ -83,7 +83,7 @@ theorem sharedPageSchurResidual_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
   let output := cstream A w (chirpLine s D)++S.R 132
   obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_emb_ovr (ι := Empty.elim) (body' := body)
     sharedPageRecoveryReg_injective (fun p => nomatch p) he v rfl S rfl
-  refine ⟨v₂,n,D,R,hRsolve,hu₂.trans hu₁,hn,he₂.cast rfl ?_,hreal,hmag,herr,hread,?_⟩
+  refine ⟨v₂,n,D,C,R,hRsolve,hu₂.trans hu₁,hn,he₂.cast rfl ?_,hreal,hmag,herr,hread,?_⟩
   · apply congrArg (mk v₂)
     let T₀ : Stacks 224 A := {T with R := Function.update T.R 110 input}
     change embOvr sharedPageRecoveryReg ({T₀ with R := Function.update T₀.R 132 output} : Stacks 224 A).get S = _

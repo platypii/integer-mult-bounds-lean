@@ -19,7 +19,7 @@ def boundaryRhsPrepare : Pr P 148 Q A U := .seq (ucopy 116 0 1) boundaryRhsGathe
 def boundaryRhsPrepareCost (V w N s : ℕ) : ℕ := 4*N+4+boundaryRhsGatherCost V w N s
 
 theorem boundaryRhsPrepare_exec {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (V w : ℕ)
-    (hA : 4 ≤ A) (hs : s ≤ 2^V) (C : ZMod s → GaussianInt)
+    (hA : 4 ≤ A) (hs : s ≤ 2^V) (C D : ZMod s → GaussianInt) (hCD : ∀ i ∈ B, C i = D i)
     (coordinateTail rhsTail : List (Fin (A+4))) (v : HS 148 Q A U) (S : Stacks 148 A)
     (hN : (S.R 116).length = B.card) (hV : (S.R 115).length = V) (hw : (S.R 94).length = w)
     (hcoordinates : S.R 109 = cstream A V ((bFoldOrder s B).map
@@ -30,7 +30,13 @@ theorem boundaryRhsPrepare_exec {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (V w 
     ∃ v' n, v'.user = v.user ∧ n ≤ boundaryRhsPrepareCost V w B.card s ∧
       Exec body boundaryRhsPrepare (mk v S) n
         (mk v' {S with R := (Function.update S.R 143
-          (cstream A w ((List.range B.card).map (fun j => C (bFoldAt s B j)))++S.R 143))}) := by
+          (cstream A w ((List.range B.card).map (fun j => D (bFoldAt s B j)))++S.R 143))}) := by
+  have hfold : (List.range B.card).map (fun j => C (bFoldAt s B j)) =
+      (List.range B.card).map (fun j => D (bFoldAt s B j)) := by
+    apply List.map_congr_left
+    intro j hj
+    exact hCD _ (bFoldAt_mem s B j (List.mem_range.mp hj))
+  rw [← hfold]
   obtain ⟨v₁,hu₁,he₁⟩ := ucopy_exec body (a := 116) (b := 0) (t := 1)
     (by decide) (by decide) (by decide) v S (hblank 1 (by decide) (by decide))
   let S₁ : Stacks 148 A := {S with R := Function.update S.R 0 (List.replicate B.card tick)}
