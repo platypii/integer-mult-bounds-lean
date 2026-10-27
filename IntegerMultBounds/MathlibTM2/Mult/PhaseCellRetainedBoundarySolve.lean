@@ -63,6 +63,8 @@ theorem retainedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
       (∀ i : Fin 154, i ≠ 109 → i ≠ 110 → i ≠ 115 → i ≠ 116 → i ≠ 132 →
         S'.R (boundaryFactorLegacyReg i) = S.R (boundaryFactorLegacyReg i)) ∧
       RsbReady (boundaryFactorState S') w q ∧ (S'.R 119).length = q ∧
+      BoundarySolveReady (Function.update (boundaryFactorState S') .dout []) q w W B.card ∧
+      (S'.R 116).length = B.card ∧
       (∀ i : Fin 64, S'.R (boundaryFactorMulReg i) = []) ∧
       S'.R 184 = [] ∧ S'.R 223 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] ∧
       ∀ x : ZMod s → ℝ,
@@ -112,7 +114,7 @@ theorem retainedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
       hnew₁ C (S.R 110) hC (by simp [S₁,input,w,bits,B])
   refine ⟨v₂,S₂,n₁+n₂,D,columns,_,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,
     Exec.seq he₁ he₂,hlen,hsolLen,hsolFits,hsrc,?_,?_,hinp,hout,hL,?_,
-    hready₂,h119,hmul,h184,h223,h220,h221,?_⟩
+    hready₂,h119,hreset,?_,hmul,h184,h223,h220,h221,?_⟩
   · have h := hlegacy 110 (by decide) (by decide) (by decide) (by decide)
     simpa [boundaryFactorLegacyReg,S₁,input,w,bits,B,C,q,band] using h
   · simpa [S₁,output,List.append_assoc] using h132'
@@ -125,6 +127,7 @@ theorem retainedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
     · intro h
       apply hi132
       exact boundaryFactorLegacyReg_injective h
+  · simpa only [List.length_replicate] using congrArg List.length h116'
   · intro x hx i hi
     exact hacc R x (fun j => (value q (F j)).re) hRsolve hx
       (fun j _ => (Complex.abs_re_le_norm _).trans (hF j))

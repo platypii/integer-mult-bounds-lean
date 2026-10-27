@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1821 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1824 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10298,3 +10298,55 @@ Validation: all 14,666 guarded stage-audit jobs pass, including three new explic
 counter/generated/prepared-unfold axiom audits. Combined peak is 3.4 GiB; both
 new modules check below 3 GiB. Plan-status, added-source integrity and whitespace
 checks pass. Proof limits are unchanged.
+
+### Actual retained solve followed by generated inverse folding
+
+`retainedBoundarySolve_spec` now exposes its already-proved restored solve
+workspace and exact boundary count. `retainedBoundaryRealUnfold_spec` consumes those
+facts to compose the actual residual, constructed solve, exact unscale, obsolete
+header retirement, generated counters and physical inverse-fold executions.
+Natural boundary order is returned on tape 204 and tape 217 is empty. The
+retained residual and interior prefixes on 110/132 and I/O/left frame are
+preserved. The actual intermediate solve execution is included as a witness,
+so the charged retirement lengths refer to the reached machine state. The time
+bound adds those actual retirement lengths and the proved generated unfold
+cost; uniform bounds on those lengths remain required.
+
+The theorem also returns the recovery field's boundary accuracy, global stable
+magnitude and word fit directly from its actual computed solution. The new
+module checks individually at 2923.3 MiB; the strengthened solve module checks
+at 2922.4 MiB. Actual real projection and ambient scattering, recovery precision
+alignment/composition, retirement, inverse assembly and final uniform resource
+bounds remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,667 guarded stage-audit jobs pass, including the new explicit
+retained-solve/unfold axiom audit and strengthened solve audit. Combined peak
+is 3.4 GiB. Plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Executed real projection on the retained boundary path
+
+`boundaryRealProjection_exec` generates the owned byte count from boundary count
+116 and word width 160, projects the stream on 204 in place, preserves its
+borrowed suffix and retires all private count/scratch. Its time is at most
+`N (12w+9)+12`. `boundaryRealUnfold_exec` composes generated inverse folding and
+real projection and identifies the encoded physical output with
+`(bOrder s B).map (boundarySolutionField B solution)`.
+
+The main new wrapper is `retainedBoundaryRealUnfold_spec`: it now composes
+retained residual production, accurate constructed solve, unscaling, inverse
+folding and actual real projection. Tape 204 holds the recovery field's values
+in ascending boundary order. The retained interior/residual prefixes and
+I/O/left frame are preserved; recovery-field accuracy, stable magnitude and
+word fit are proved. Only this complete real-output wrapper is retained, with
+no intermediate unfold-only wrapper. Individual checks peak at 2915.6 MiB for
+projection, 2904.9 MiB for real unfolding and 2923.9 MiB for retained composition.
+
+Ambient scatter publication and its generated controls, recovery precision
+alignment/composition, complete retirement, inverse assembly and final uniform
+time/live-storage bounds remain open. S3 remains partial; kappa is unchanged.
+
+Validation of the retained-solve/real-unfold chunk: all 14,669 guarded stage-audit
+jobs pass, including three new explicit projection/real-unfold/retained-path
+axiom audits and the strengthened solve audit. Combined peak is 3.4 GiB; all
+new and revised modules check below 3 GiB. Plan-status, added-source integrity
+and whitespace checks pass. Proof limits are unchanged.

@@ -301,6 +301,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundarySolve
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolutionField
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnfold
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBoundaryUnfold
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryRealUnfold
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -2007,6 +2008,9 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_im,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_sizes,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRealProjection_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRealUnfold_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedBoundaryRealUnfold_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryUnfoldCounters_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedBoundaryUnfold_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryUnfold_exec,
