@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorRow
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorRowValues
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorEntry
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorZeroEntry
 
@@ -1782,6 +1784,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.feedFactorWord_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorEntry_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorZeroEntry_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unaryIfLt_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unaryIfLeSum_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorChoice_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorWord_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRankWord_format,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorInputRowStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRowLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRowCount_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRowValues_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRankWord_value,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRowValues_grid,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorRowValues_format,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,

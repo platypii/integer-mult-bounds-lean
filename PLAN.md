@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1709 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1717 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9295,3 +9295,37 @@ existing loop/builder contracts. Combined build peak is 2.7 GiB. All nine
 new/revised modules and the audit root pass individual guarded checks at at most
 2066.5 MiB. Added/revised-source integrity, plan-status and whitespace checks
 pass; proof limits are unchanged.
+
+### Execute complete fixed-width factor rows with runtime padding selection
+
+`unaryIfLt_exec` and `unaryIfLeSum_exec` provide borrowed unary comparisons
+that restore their controls before executing either continuation. `factorChoice_exec`
+uses runtime ranks, cardinality and half-band width to choose actual packed-table
+lookup or zero-word emission. `factorWord_exec` therefore emits a canonical real,
+width-fitting word for every natural row/column pair, including out-of-range and
+out-of-band padding, while changing only factor-input port 140.
+
+`factorRowLoop_exec` scans columns downward and prepends each emitted word,
+producing ascending column order. `factorRow_exec` generates the full `2*W+1`
+count, borrows the caller's starting-column cursor, emits the complete row, and
+releases its controls. Its final exact physical frame changes only port 140:
+the packed table, retained headers, arbitrary cursor symbols and all scratch
+are restored. Explicit costs include runtime comparisons, lookup or padding,
+count/cursor setup, scanning and cleanup.
+
+`factorRowValues_grid` identifies these words exactly with the factorizer's
+`winRow` of the zero-extended masked computed boundary matrix. The same row
+contract supports the initial window's start-zero rows and later shifted rows;
+all words are real and fit their allocated width. No additional rounding or
+supplied row execution is assumed.
+
+This closes individual fixed-width row emission. Composing the initial window
+and later input-row page, executing factorization/solve/release, and proving the
+full endpoint remain open. Uniform fast time, complete simultaneous live storage
+and the final S3 theorem remain open. S3 is partial.
+
+Validation: all 10,374 guarded stage-audit jobs pass, including 13 new explicit
+comparison, selector, word, row execution and grid/format audits. Combined build
+peak is 2.7 GiB. All eight new modules and the audit root pass individual guarded
+checks at at most 2067.1 MiB. Added-source integrity, plan-status and whitespace
+checks pass; proof limits are unchanged.
