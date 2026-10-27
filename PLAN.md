@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1768 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1775 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9688,3 +9688,45 @@ the final stage build peaks at 3.4 GiB. Individual guarded checks of the five
 new/revised proof modules peak at 2881.2 MiB or less; the final audit root
 checks at 2956.8 MiB. Source-integrity, plan-status and whitespace checks pass.
 Proof limits are unchanged.
+
+### Allocated physical boundary triangular solve
+
+`boundary_line_rcs_lower` proves that every actual computed reciprocal record
+has grid value at least `1/4`. It identifies the record with its natural-rank
+pivot, uses the allocated stage and Newton budgets, and pays the reciprocal
+rounding error. `triangular_part_bounds` structurally bounds backward heads
+from the computed solution and this positive reciprocal bound, for either
+Gaussian component and arbitrary triangular tables.
+
+`boundary_line_part` transfers the allocated scalar solution/forward bounds to
+both Gaussian components. `boundary_line_allocated_rhsFits` derives all three
+runtime RHS fit premises (forward heads, backward heads and rounded backward
+outputs), and solution-record fits, from the matrix invariant and an input
+component bound of `1/2`. It needs no per-step fit oracle.
+
+`FacFits.tables` and `naturalLineTables_fits` derive every multiplier, upper
+column and reciprocal coefficient fit from the existing factor-step proofs;
+`naturalLineTables_widths` supplies their exact row widths.
+`boundary_foldedSolve_allocated_runs` combines these facts with actual RHS
+padding and both triangular passes. Every numerical fit premise is derived
+from the constructed matrix invariant and the retained precision/Newton count.
+
+`boundary_foldedSolve_physical_exec` executes that program on the fixed
+224-tape factor bank. The gathered RHS port is consumed, the solution is
+written on the output port, and all factor tables, control headers, endpoint
+stacks, left stacks and every legacy tape are preserved. Its explicit time
+bound is `4*N*w + 4*W*w + 8 + bandLinePassCost w N W`.
+
+The caller still supplies the gathered/scaled RHS and the factor-bank layout.
+Their full composition with constructed factorization, RHS gathering/scaling,
+solve accuracy and recovery/publication remains open, as do cleanup, the
+inverse endpoint and uniform fast time/simultaneous live storage. S3 remains
+partial; kappa is unchanged.
+
+Validation: all 14,619 guarded stage-audit jobs pass, including eleven new
+explicit reciprocal, component/record-fit, coefficient-table and allocated
+runtime/physical execution axiom audits. Combined build peak is 3.4 GiB.
+All seven new modules and the audit root pass individual guarded checks:
+new modules peak at 2865.5 MiB or less and the audit root at 2959.2 MiB.
+Source-integrity, plan-status and whitespace checks pass. Proof limits are
+unchanged.

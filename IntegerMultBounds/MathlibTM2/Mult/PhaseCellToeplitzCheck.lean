@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolvePhysical
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalLineTables
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryLineSizes
@@ -1916,6 +1918,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializedBoundaryFactor_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.boundaryFactorLegacy_input,
       `IntegerMultBounds.NLogN.SchurDominance.exists_solver,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.newtonZ_quarter_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_line_rcs_lower,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.triangular_part_bounds,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_line_part,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_line_allocated_rhsFits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.FacFits.tables,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.integer_getD_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineTables_widths,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineTables_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_foldedSolve_allocated_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_foldedSolve_physical_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineTables_lengths,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineTables_factor,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_re,
