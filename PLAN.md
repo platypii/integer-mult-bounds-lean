@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2063 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2065 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13063,3 +13063,23 @@ kappa is unchanged.
 Validation: the expanded guarded stage audit passes all 14,914 jobs (3.5 GiB
 combined peak RSS). The three new modules pass individual guarded checks below
 the 4 GiB module budget. Proof-integrity and whitespace checks pass.
+
+### S3 placed restoring reader and cache release
+
+`placedCouplingCacheRead_exec` now executes the cached reader in the disjoint
+256-register workspace. The computed cache descriptor supplies its actual
+retained guards, coefficient page and metadata. The exact frame changes only
+RHS port 93 and result port 113; the selected cache descriptor remains true,
+and the other key's four ports are untouched. All source, coefficient and
+work cursors restore at the existing executed reader cost.
+
+`placedCouplingCacheRelease_exec` removes one key's owned guards, coefficient
+prefix and metadata, restores its borrowed coefficient suffix, and preserves
+the entire legacy bank exactly. This completes the placed setup/read/release
+contracts. Production replacement of packet readers, two-precision key setup
+and batch hoisting remain open, as do uniform time matching and simultaneous
+whole-execution live storage. S3 remains partial; kappa is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,916 jobs
+(3.4 GiB combined peak RSS). Both new modules pass individual guarded checks,
+with maximum peak RSS 2947.5 MiB. Proof-integrity and whitespace checks pass.
