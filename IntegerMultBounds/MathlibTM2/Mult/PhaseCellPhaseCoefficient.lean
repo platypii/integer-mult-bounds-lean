@@ -17,7 +17,7 @@ open IntegerMultBounds IntegerMultBounds.Resampling.WeightNat
 def phaseCoefficientBody : TblCode 48 := phaseArguments ;;
   tableIfEq 42 43 withinCoefficientBody directCoefficientBody
 
-theorem phaseCoefficientBody_do {A w q P s t u band i d : ℕ}
+theorem phaseCoefficientBody_frame_do {A w q P s t u band i d : ℕ}
     (negative : Bool) (st : TblSt 48 A)
     (hpi : st.val 18 = piN P) (hP' : st.val 19 = P) (hneg : st.val 22 = 1)
     (hs : st.val 34 = s) (ht : st.val 35 = t) (hu : st.val 36 = u)
@@ -28,7 +28,9 @@ theorem phaseCoefficientBody_do {A w q P s t u band i d : ℕ}
     TblDo A (liftedCoefficientWidth P q w s t u band) w phaseCoefficientBody st
       (fun st' => st'.acc = (csyms A w (rationalWord q
         (PhaseCellCrossCell.entry P s t u band (liftedSource s band i)
-          (liftedTarget negative s band i d)))).reverse ++ st.acc) (930*P+365) := by
+          (liftedTarget negative s band i d)))).reverse ++ st.acc ∧
+        st'.val 18 = st.val 18 ∧ st'.val 19 = st.val 19 ∧ st'.val 22 = st.val 22 ∧
+        ∀ r : Fin 48, 34 ≤ r.val → r.val ≤ 40 → st'.val r = st.val r) (930*P+365) := by
   let V := liftedCoefficientWidth P q w s t u band
   have hc := liftedCoefficientWidth_fits negative P q w s t u band i d hi hd
   have hw := withinCoefficientWidth_fits negative P q w s t u band i d hi hd
@@ -42,7 +44,9 @@ theorem phaseCoefficientBody_do {A w q P s t u band i d : ℕ}
   have hcore : TblDo A V w phaseCoefficientBody st
       (fun st' => st'.acc = (csyms A w (rationalWord q
         (PhaseCellCrossCell.entry P s t u band (liftedSource s band i)
-          (liftedTarget negative s band i d)))).reverse ++ st.acc) (11+((930*P+352)+2)) := by
+          (liftedTarget negative s band i d)))).reverse ++ st.acc ∧
+        st'.val 18 = st.val 18 ∧ st'.val 19 = st.val 19 ∧ st'.val 22 = st.val 22 ∧
+        ∀ r : Fin 48, 34 ≤ r.val → r.val ≤ 40 → st'.val r = st.val r) (11+((930*P+352)+2)) := by
     unfold phaseCoefficientBody
     refine hargs.seq (fun s₁ h₁ => ?_)
     have hf (r : Fin 48) (hr : r ∉ [(41 : Fin 48),42,43]) := h₁.2.2.2 r hr
@@ -67,7 +71,13 @@ theorem phaseCoefficientBody_do {A w q P s t u band i d : ℕ}
         hw.sourceExponent hw.targetExponent hw.distanceSquare hw.scaledDistance hw.weightedDistance
         hw.distanceExponent
       exact hbody.mono (fun s₂ h₂ => by
-        simpa only [PhaseCellCrossCell.entry,if_pos hphase,h₁.2.2.1] using h₂.1) le_rfl
+        refine ⟨?_,h₂.2.1.trans (hf 18 (by simp)),h₂.2.2.1.trans (hf 19 (by simp)),
+          h₂.2.2.2.1.trans (hf 22 (by simp)),?_⟩
+        · simpa only [PhaseCellCrossCell.entry,if_pos hphase,h₁.2.2.1] using h₂.1
+        · intro r hrlo hrhi
+          exact (h₂.2.2.2.2 r hrlo hrhi).trans (hf r (by
+            simp only [List.mem_cons,List.not_mem_nil,or_false,not_or,ne_eq]
+            refine ⟨?_,?_,?_⟩ <;> intro he <;> have hv := congrArg Fin.val he <;> omega))) le_rfl
     · intro he
       have hphase : PhaseCellCrossCell.phaseQ s t (liftedSource s band i) ≠
           PhaseCellCrossCell.phaseQ s t (liftedTarget negative s band i d) := by
@@ -89,7 +99,28 @@ theorem phaseCoefficientBody_do {A w q P s t u band i d : ℕ}
         hs0 hst hP hc.sourceIndex hc.targetIndex hc.twiceModulus hc.sourceNearest hc.targetNearest
         hc.sourceSquare hc.targetSquare hc.modulusSquare hc.semanticWidth hc.exponentWidth hc.gridWidth
       exact hbody.mono (fun s₂ h₂ => by
-        simpa only [PhaseCellCrossCell.entry,if_neg hphase,if_pos hband,h₁.2.2.1] using h₂.1) (by omega)
+        refine ⟨?_,h₂.2.1.trans (hf 18 (by simp)),h₂.2.2.1.trans (hf 19 (by simp)),
+          h₂.2.2.2.1.trans (hf 22 (by simp)),?_⟩
+        · simpa only [PhaseCellCrossCell.entry,if_neg hphase,if_pos hband,h₁.2.2.1] using h₂.1
+        · intro r hrlo hrhi
+          exact (h₂.2.2.2.2 r hrlo hrhi).trans (hf r (by
+            simp only [List.mem_cons,List.not_mem_nil,or_false,not_or,ne_eq]
+            refine ⟨?_,?_,?_⟩ <;> intro he <;> have hv := congrArg Fin.val he <;> omega))) (by omega)
   exact hcore.mono (fun _ h => h) (by omega)
+
+theorem phaseCoefficientBody_do {A w q P s t u band i d : ℕ}
+    (negative : Bool) (st : TblSt 48 A)
+    (hpi : st.val 18 = piN P) (hP' : st.val 19 = P) (hneg : st.val 22 = 1)
+    (hs : st.val 34 = s) (ht : st.val 35 = t) (hu : st.val 36 = u)
+    (hj : st.val 37 = liftedSource s band i) (hk : st.val 38 = liftedTarget negative s band i d)
+    (hq : st.val 39 = 2^q) (hpowP : st.val 40 = 2^P)
+    (hs0 : 0 < s) (hst : s < t) (hP : 13 ≤ P) (hd : d ≤ band) (hi : i < s)
+    (hjk : liftedSource s band i ≠ liftedTarget negative s band i d) :
+    TblDo A (liftedCoefficientWidth P q w s t u band) w phaseCoefficientBody st
+      (fun st' => st'.acc = (csyms A w (rationalWord q
+        (PhaseCellCrossCell.entry P s t u band (liftedSource s band i)
+          (liftedTarget negative s band i d)))).reverse ++ st.acc) (930*P+365) := by
+  exact (phaseCoefficientBody_frame_do negative st hpi hP' hneg hs ht hu hj hk hq hpowP
+    hs0 hst hP hd hi hjk).mono (fun _ h => h.1) le_rfl
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

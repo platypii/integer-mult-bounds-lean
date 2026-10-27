@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1998 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2001 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12306,3 +12306,41 @@ selected raw caller, closed complex batch and resource ledger (21.9 GiB combined
 peak). The new renamed arithmetic module and changed spatial row/cost modules
 pass individual guarded checks (maximum 1968.4 MiB). Source-integrity, whitespace
 and plan-status checks pass; default proof limits are unchanged.
+
+### Reuse prepared constants across complete binary coefficient sweeps
+
+The coefficient selection proofs now expose the frame already established by
+both numerical branches. `phaseCoefficientBody_frame_do` and
+`selectedCoefficientBody_frame_do` retain pi, semantic precision, sign and the
+original geometry/grid variables; the existing output-only contracts specialize
+these stronger proofs. The unit emitter has the corresponding explicit frame.
+
+`preparedCoefficientEntry_do` embeds the selected body in a 50-variable table,
+isolating binary sweep index and bandwidth in variables 48/49 outside numerical
+scratch. `coefficientSweepStep_do` constructs each unreduced target coordinate,
+emits the original signed coefficient word, and preserves constants, geometry
+and sweep controls. `preparedCoefficientSweep_do` executes an entire counted
+sweep without unary offset conversions or repeated constant preparation. Its
+allowance is `band*(930*P+372)+3` table atoms.
+
+`preparedCoefficientRow_do` composes negative sweep, unit diagonal and positive
+sweep, with exact equality to `spatialCouplingCoefficientWords`, retaining every
+wrapped alias and rounding. `coefficientRowCode_do` starts from numeric precision,
+geometry and row headers, prepares pi/scaling constants once, lifts the row, and
+emits the whole ordered row. Its allowance is
+`154*P+4*q+2*band*(930*P+372)+423` table atoms. All coordinate/precision fit bounds
+follow from the existing selected workspace width; no workspace-bound premises
+were added.
+
+This completes the reusable table backend for row-wide coefficient supply.
+The host bank/load/release composition and production supplier replacement are
+still open; the inverse continues using the existing verified supplier until
+that composition passes. Retaining converted headers across rows, final fast
+supplier/setup matching, combined live storage and endpoint/resource integration
+remain open. S3 stays partial.
+
+Validation: all 14,850 guarded stage-audit jobs pass, including rebuilt accuracy,
+inverse, selected raw caller, closed complex batch and resource ledger (24.1 GiB
+combined peak). All five new/changed proof modules pass individual guarded checks
+(maximum 1953.2 MiB). Source-integrity, whitespace and plan-status checks pass;
+default proof limits are unchanged.
