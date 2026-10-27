@@ -65,6 +65,20 @@ theorem ColumnFamilyAccurate.append (A q w : ℕ) (B : Finset (ZMod s))
     subst n
     simpa using hC i hi
 
+
+def ColumnFamilyFormat (w : ℕ) (columns : List (ZMod s → GaussianInt)) : Prop :=
+  ∀ C ∈ columns, (∀ i, (C i).im = 0) ∧ ∀ i, Fits w (C i)
+
+theorem ColumnFamilyFormat.append (w : ℕ) (columns : List (ZMod s → GaussianInt))
+    (C : ZMod s → GaussianInt) (hcolumns : ColumnFamilyFormat w columns)
+    (hreal : ∀ i, (C i).im = 0) (hfit : ∀ i, Fits w (C i)) :
+    ColumnFamilyFormat w (columns++[C]) := by
+  intro D hD
+  simp only [List.mem_append,List.mem_singleton] at hD
+  rcases hD with hD | hD
+  · exact hcolumns D hD
+  · subst D; exact ⟨hreal,hfit⟩
+
 noncomputable def computedBoundaryTable (A q w : ℕ) (B : Finset (ZMod s))
     (columns : List (ZMod s → GaussianInt)) : Matrix (ZMod s) (ZMod s) ℝ :=
   fun i j => if h : bFoldPos s B j < columns.length then

@@ -19,7 +19,7 @@ noncomputable def tableLoopRegs {A s : ℕ} [NeZero s] (w : ℕ) (B : Finset (ZM
 def TableLoopInvariant {A s : ℕ} [NeZero s] (q w : ℕ) (B : Finset (ZMod s)) (W : ℕ)
     (Sh : Matrix (ZMod s) (ZMod s) ℝ) (ε : ℝ) (base : Regs 154 A) (n : ℕ) (R : Regs 154 A) : Prop :=
   ∃ columns : List (ZMod s → GaussianInt), columns.length = n ∧
-    ColumnFamilyAccurate A q w B Sh ε columns ∧
+    ColumnFamilyAccurate A q w B Sh ε columns ∧ ColumnFamilyFormat w columns ∧
     ∀ k : Fin 154, k ≠ 152 → k ≠ 153 → R k = tableLoopRegs w B W base columns k
 
 theorem TableLoopInvariant.of_frame {A s : ℕ} [NeZero s] {q w W n : ℕ} {B : Finset (ZMod s)}
@@ -27,8 +27,8 @@ theorem TableLoopInvariant.of_frame {A s : ℕ} [NeZero s] {q w W n : ℕ} {B : 
     (hframe : ∀ k : Fin 154, k ≠ 152 → k ≠ 153 → R' k = R k)
     (h : TableLoopInvariant q w B W Sh ε base n R) :
     TableLoopInvariant q w B W Sh ε base n R' := by
-  obtain ⟨columns,hlen,hcolumns,hr⟩ := h
-  exact ⟨columns,hlen,hcolumns,fun k hk152 hk153 => (hframe k hk152 hk153).trans (hr k hk152 hk153)⟩
+  obtain ⟨columns,hlen,hcolumns,hformat,hr⟩ := h
+  exact ⟨columns,hlen,hcolumns,hformat,fun k hk152 hk153 => (hframe k hk152 hk153).trans (hr k hk152 hk153)⟩
 
 theorem TableLoopInvariant.ready {A P N q l s t u band V width w W n : ℕ} [NeZero s]
     {B : Finset (ZMod s)} {Sh : Matrix (ZMod s) (ZMod s) ℝ} {ε : ℝ}
@@ -40,7 +40,7 @@ theorem TableLoopInvariant.ready {A P N q l s t u band V width w W n : ℕ} [NeZ
       (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg S'))) := by
   apply ScalarPlacement.tableLoopReady_of_frame hready hL
   intro k hk hk132
-  obtain ⟨columns,hlen,hcolumns,hr⟩ := h
+  obtain ⟨columns,hlen,hcolumns,hformat,hr⟩ := h
   rw [hr k (by omega) (by omega)]
   simp [tableLoopRegs,hk132,show k ≠ 151 by omega]
 

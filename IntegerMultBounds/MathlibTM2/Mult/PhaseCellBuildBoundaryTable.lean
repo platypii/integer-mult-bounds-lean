@@ -55,7 +55,7 @@ theorem buildBoundaryTable_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
         (buildBoundaryTable hR hQ) (mk v S) m (mk v' S') ∧ columns.length = B.card ∧
       ColumnFamilyAccurate A q w B
         (SchurDominance.run (realMatrix s t p u) (haloVertices s a b)
-          (haloInterior s t (PhaseCellBand.width p u) a b).toList).1 (1/(2 : ℝ)^target) columns ∧
+          (haloInterior s t (PhaseCellBand.width p u) a b).toList).1 (1/(2 : ℝ)^target) columns ∧ ColumnFamilyFormat w columns ∧
       LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u target 2) 2+1)
         q l s t u (PhaseCellBand.width p u) 0 0 tail
         (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg S'))) ∧
@@ -84,7 +84,7 @@ theorem buildBoundaryTable_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
     dsimp only [S₁]
     rw [tableProject_updateR_outer S 152 _ (by decide)]
     exact hready
-  obtain ⟨v₂,m₂,columns,hu₂,hm₂,he₂,hlen,hcolumns,hready₂⟩ := tableColumnsLoop_spec (body := body)
+  obtain ⟨v₂,m₂,columns,hu₂,hm₂,he₂,hlen,hcolumns,hformat,hready₂⟩ := tableColumnsLoop_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad v₁ S₁ tail pageTail
     (by simpa [S₁] using hrows) (by simpa [S₁] using hpageWidth) (by simpa [S₁] using hpage) hready₁
     (by simpa [S₁] using haMaster) (by simpa [S₁] using hbMaster) (by simpa [S₁] using h0)
@@ -112,7 +112,7 @@ theorem buildBoundaryTable_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
       by_cases hk132 : k = 132 <;> by_cases hk151 : k = 151 <;> by_cases hk152 : k = 152 <;>
         simp [Sfinal,S₂,S₁,hk132,hk151,hk152,h151,h152]
   refine ⟨v₃,(4*B.card+4)+(m₂+(4*B.card+5)),columns,hu₃.trans (hu₂.trans hu₁),
-    Nat.add_le_add_left (Nat.add_le_add_right hm₂ _) _,Exec.seq he₁' (Exec.seq he₂' he₃'),hlen,hcolumns,?_,?_,?_⟩
+    Nat.add_le_add_left (Nat.add_le_add_right hm₂ _) _,Exec.seq he₁' (Exec.seq he₂' he₃'),hlen,hcolumns,hformat,?_,?_,?_⟩
   · apply tableLoopReady_of_frame (S' := Sfinal) hready rfl
     intro k hk hk132
     simp [Sfinal,hk132]

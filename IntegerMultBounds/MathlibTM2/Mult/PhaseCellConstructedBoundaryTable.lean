@@ -55,7 +55,7 @@ theorem constructedBoundaryTable_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
         (constructedBoundaryTable hR hQ) (mk v S) m (mk v' S') ∧ columns.length = B.card ∧
       ColumnFamilyAccurate A q w B
         (SchurDominance.run (realMatrix s t p u) (haloVertices s a b)
-          (haloInterior s t (PhaseCellBand.width p u) a b).toList).1 (1/(2 : ℝ)^target) columns ∧
+          (haloInterior s t (PhaseCellBand.width p u) a b).toList).1 (1/(2 : ℝ)^target) columns ∧ ColumnFamilyFormat w columns ∧
       LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u target 2) 2+1)
         q l s t u (PhaseCellBand.width p u) 0 0 tail
         (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg S'))) ∧
@@ -132,14 +132,14 @@ theorem constructedBoundaryTable_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     dsimp only [S₁]
     rw [tableArithmeticProject_page]
     exact hready
-  obtain ⟨v₂,m₂,columns,hu₂,hm₂,he₂,hlen,hcolumns,hready₂,hstorage,herror⟩ := buildBoundaryTable_spec (body := body)
+  obtain ⟨v₂,m₂,columns,hu₂,hm₂,he₂,hlen,hcolumns,hformat,hready₂,hstorage,herror⟩ := buildBoundaryTable_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad v₁ S₁ tail []
     (by simp [S₁,B,band]) (by simp [S₁,V,band]) (by simp [S₁,page,V,B,band]) hready₁
     (by simpa [S₁] using haMaster) (by simpa [S₁] using hbMaster) (by simpa [S₁] using h0)
     (by simpa [S₁] using h139) (by simpa [S₁] using h127) (by simpa [S₁] using h138)
     (by simpa [S₁] using h143) (by simpa [S₁] using h147) (by simpa [S₁] using h151)
     (by simpa [S₁] using h153) (by simpa [S₁] using h152)
-  refine ⟨v₂,m₁+m₂,columns,hu₂.trans hu₁,Nat.add_le_add hm₁ hm₂,?_,hlen,hcolumns,?_,hstorage,herror⟩
+  refine ⟨v₂,m₁+m₂,columns,hu₂.trans hu₁,Nat.add_le_add hm₁ hm₂,?_,hlen,hcolumns,hformat,?_,hstorage,herror⟩
   · simpa [constructedBoundaryTable,S₁,page,V,B,band] using Exec.seq he₁ he₂
   · simpa [S₁,page,V,B,band] using hready₂
 

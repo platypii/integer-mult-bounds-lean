@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTableColumn
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTableLoopInvariant
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellResidualSizing
 
 /-! Extend the packed-page invariant by one actually computed column. -/
 
@@ -61,11 +62,11 @@ theorem tableLoopStep_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96
   let q := executionPrecision p l (initialSchurTarget p u target 2) 2
   let w := executionWidth p l (initialSchurTarget p u target 2) 2
   let j := bFoldAt s boundary n
-  obtain ⟨columns,hlen,hcolumns,hr⟩ := hInv
+  obtain ⟨columns,hlen,hcolumns,hformat,hr⟩ := hInv
   have hoff (k : Fin 154) (hk132 : k ≠ 132) (hk151 : k ≠ 151) (hk152 : k ≠ 152) (hk153 : k ≠ 153) :
       Si.R k = S.R k := by rw [hr k hk152 hk153]; simp [tableLoopRegs,hk132,hk151]
   have hcursor : (Si.R 151).length = n := by rw [hr 151 (by decide) (by decide)]; simp [tableLoopRegs,hlen]
-  have hreadyi := TableLoopInvariant.ready hready hL ⟨columns,hlen,hcolumns,hr⟩
+  have hreadyi := TableLoopInvariant.ready hready hL ⟨columns,hlen,hcolumns,hformat,hr⟩
   obtain ⟨v₁,m₁,D,hu₁,hm₁,he₁,hreal,hnorm,herror,hready₁⟩ := tableColumn_spec (body := body)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad n hn v Si tail pageTail
     (by rw [hoff 116 (by decide) (by decide) (by decide) (by decide)]; exact hrows)
@@ -91,10 +92,14 @@ theorem tableLoopStep_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96
       (.act (.push (.rt 151) (fun _ => tick) .done)) (mk v₁ S₁) 1 (mk v₁ {Si with R := R'}) := by
     simpa [S₁,R',Action.run,update_rt] using he₂
   refine ⟨v₁,R',m₁+1,hu₁,Nat.add_le_add_right hm₁ 1,Exec.seq he₁ he₂',by simp [R',S₁],by simp [R',S₁],?_⟩
-  refine ⟨columns++[C],by simp [hlen],?_,?_⟩
+  refine ⟨columns++[C],by simp [hlen],?_,?_,?_⟩
   · apply ColumnFamilyAccurate.append _ _ _ _ _ _ _ _ hcolumns
     intro i hi
     simpa [columnWordRead,hlen,C,B,q,w,band,boundary,j] using herror i hi
+  · apply ColumnFamilyFormat.append w columns C hformat hreal
+    intro i
+    exact fits_of_value_power
+      (stableInteriorResidual_width p u l (initialSchurTarget p u target 2) 2) (C i) (hnorm i)
   · intro k hk152 hk153
     by_cases hk132 : k = 132
     · subst k

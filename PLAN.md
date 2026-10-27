@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1706 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1709 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9257,3 +9257,41 @@ count-growth, block summation, control generation, complete address and ranked
 lookup audits. Combined build peak is 2.7 GiB. All nine new/revised modules and
 the audit root pass individual guarded checks at at most 2065.6 MiB. Added/revised-source
 integrity, plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Preserve canonical real coefficient words and execute factor-input word paths
+
+`ColumnFamilyFormat` records that every produced column is real and fits its
+allocated coefficient width. The complete-table invariant now carries this
+property through actual column accumulation; the existing numerical magnitude
+bound and `stableInteriorResidual_width` derive it at each step. The loop,
+complete builder and setup-composed constructor return it alongside the entry
+accuracy and packed-page representation. This strengthens the produced-table
+contract without changing the executed programs or their costs.
+
+`feedFactorWord_exec` reconstructs coefficient width from retained precision,
+moves exactly one owned lookup word from 143 onto the factor-input suffix on
+140 in its original order, and releases its width control. Both borrowed tails
+and all scratch are restored. `factorEntry_exec` composes actual ranked lookup
+with that move. Its final exact frame changes only factor-input port 140; the
+packed table, rank/width/cardinality headers and lookup destination are restored.
+The emitted word is real, fits its width and has grid value exactly equal to
+the selected masked computed boundary entry. The format evidence comes from
+the actual complete table builder, with no separate fit or realness oracle.
+
+`factorZeroEntry_exec` supplies the padding path: it generates one full encoded
+zero word using the retained precision and restores its temporary width and
+copy scratch. It also changes only factor-input port 140. Neither path adds
+rounding, and both charge width setup, word motion/emission and cleanup.
+
+The fixed-width factor-row loop and its runtime branch selection between
+in-band lookup and padding remain open. The factorizer's initial window and
+later input-row layout still need the composed execution contract, followed by
+factorization/solve/release and the full endpoint. Uniform fast time, complete
+simultaneous storage and the final S3 theorem remain open. S3 is partial.
+
+Validation: all 10,366 guarded stage-audit jobs pass, including four new explicit
+format-extension, word-feed, real entry and padding audits, plus the strengthened
+existing loop/builder contracts. Combined build peak is 2.7 GiB. All nine
+new/revised modules and the audit root pass individual guarded checks at at most
+2066.5 MiB. Added/revised-source integrity, plan-status and whitespace checks
+pass; proof limits are unchanged.

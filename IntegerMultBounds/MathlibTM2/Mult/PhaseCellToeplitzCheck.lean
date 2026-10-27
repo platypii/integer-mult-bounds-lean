@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorEntry
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorZeroEntry
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRankedBoundaryEntry
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryEntry
@@ -1775,6 +1778,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedWithinAddress_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatePackedAddress_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.rankedBoundaryEntry_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ColumnFamilyFormat.append,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.feedFactorWord_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorEntry_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.factorZeroEntry_exec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,

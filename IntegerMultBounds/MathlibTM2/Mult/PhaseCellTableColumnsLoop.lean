@@ -57,7 +57,7 @@ theorem tableColumnsLoop_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
         (tableColumnsLoop hR hQ) (mk v S) m (mk v' S') ∧ columns.length = B.card ∧
       ColumnFamilyAccurate A q w B
         (SchurDominance.run (realMatrix s t p u) (haloVertices s a b)
-          (haloInterior s t (PhaseCellBand.width p u) a b).toList).1 (1/(2 : ℝ)^target) columns ∧
+          (haloInterior s t (PhaseCellBand.width p u) a b).toList).1 (1/(2 : ℝ)^target) columns ∧ ColumnFamilyFormat w columns ∧
       LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u target 2) 2+1)
         q l s t u (PhaseCellBand.width p u) 0 0 tail
         (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg S'))) := by
@@ -82,7 +82,7 @@ theorem tableColumnsLoop_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
     exact tableLoopStep_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
       n hn vi S tail pageTail hrows hpageWidth hpage hready haMaster hbMaster h0 h139 h127 h138 h143 h147 Si hL hInv
   have hInv : Inv 0 S.R := by
-    refine ⟨[],rfl,?_,?_⟩
+    refine ⟨[],rfl,?_,by simp [ColumnFamilyFormat],?_⟩
     · intro n hn
       simp at hn
     · intro k _ _
@@ -92,7 +92,7 @@ theorem tableColumnsLoop_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
     (body := embTab tableReg (embTab boundaryArithmeticReg (embTab componentReg (embTab groupReg body))))
     (show (152 : Fin 154) ≠ 153 by decide) hframe hstep 0 v S (by simp [hcount,B]) rfl hInv
   have hInvN : Inv B.card R' := by simpa [hcount] using hInv'
-  obtain ⟨columns,hlen,hcolumns,hr⟩ := hInvN
+  obtain ⟨columns,hlen,hcolumns,hformat,hr⟩ := hInvN
   let S' : Stacks 154 A := {S with R := (Function.update (Function.update S.R 132
     (bandTableWords A w B W columns 0++S.R 132)) 151 (List.replicate B.card tick))}
   have hR : R' = S'.R := by
@@ -103,7 +103,7 @@ theorem tableColumnsLoop_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
     · subst k; simpa [S',h153] using h153'
     simpa [S',tableLoopRegs,hlen] using hr k hk152 hk153
   rw [hR] at he
-  refine ⟨v',m,columns,hu',?_,he,hlen,hcolumns,?_⟩
+  refine ⟨v',m,columns,hu',?_,he,hlen,hcolumns,hformat,?_⟩
   · simpa [tableColumnsLoopCost,hcount,h153,c,B] using hm
   · apply tableLoopReady_of_frame (S' := S') hready rfl
     intro k hk hk132
