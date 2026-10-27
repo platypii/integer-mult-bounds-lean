@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2073 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2075 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13140,3 +13140,30 @@ The dependency rebuild peaks at 31.2 GiB combined RSS under the guarded build;
 all seven changed modules pass individual checks, with maximum peak RSS
 2964.3 MiB, below the 4 GiB module budget.
 Proof-integrity and whitespace checks pass.
+
+### S3 cached interior solve and boundary residual composition
+
+`placedInteriorForCoupling_spec` executes the actual interior solver and header
+installation in the ordinary nested workspace within the 256-register bank.
+Its projected poststate is coupling-ready; it retains the original interior
+norm and approximation guarantees. The ordinary placement is disjoint from
+both retained coefficient keys even while the solver uses its old scratch.
+
+`placedCachedInteriorResidual_spec` composes that execution with the cached
+borrowed-line/next-input handoff. It proves the computed interior field's norm
+and approximation error and the actual boundary residual's norm and pointwise
+error, with a cost consisting of the interior solve plus the cached coupling
+ledger. The cache descriptor survives the entire interior solver before being
+used by the handoff. Its exact physical poststate includes the installed
+coupling headers and the generated residual input prefix.
+
+This is the solver/residual composition checkpoint. Initial output allocation,
+private-header release and real projection still need their cached composition,
+as do recovery and the enclosing complex batch with both precision keys
+hoisted. Uniform fast time matching and whole-execution live storage remain
+open. S3 remains partial; kappa is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,926 jobs
+(3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+Both new modules pass individual guarded checks, with maximum peak RSS
+2998.3 MiB, below the 4 GiB module budget.
