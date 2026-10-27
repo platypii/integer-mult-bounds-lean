@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1932 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1936 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11415,4 +11415,47 @@ Validation: all 14,780 guarded stage-audit jobs pass, including three new explic
 generated-factory/combined-setup/constructed-complex contract audits (3.5 GiB
 combined peak). All three new modules pass individual guarded checks (maximum
 3014.2 MiB). Source-integrity, whitespace and plan-status checks pass; proof
+limits are unchanged.
+
+### Close shared-page setup, solve and release with exact restoration
+
+`sharedPageRetireBandTable_exec` lifts actual packed-table retirement into the
+shared bank. `sharedPageRelease_exec` preserves the complex result above the
+generated band table, retires that table over its borrowed suffix, restores the
+result, and clears only owned coordinates, factor/header pages and scatter
+advances. Its frame restores all temporary controls and left stacks.
+
+`sharedPageAdvances_volume` bounds the retained advance stream by `2*s*w+1`.
+`sharedPageOwnedVolume_le` bounds all owned setup bytes, including the retained
+inverse-fold headers, using the actual coordinate/count dimensions, permanent
+page bound and header volume. `sharedPageReleaseCost_le` turns that volume into a
+dimension-only release allowance. These are bounds on the released stock; they
+do not yet prove simultaneous live storage throughout the full execution.
+
+`sharedPageClosedComplex_spec` composes the executed one-time page/publication
+setup, both complete real solves, complex pairing and full release. Its exact
+final state is the original state with only tape 132 gaining the complex halo
+result over its original suffix. The original input, arithmetic masters,
+coordinates, factors, publication controls, parked components, private tapes and
+all left stacks restore exactly. The physical complex output retains error
+`2^-target`; the proof transfers reads across the removed table suffix directly,
+without adding an integer-fit premise.
+
+`sharedPageClosedComplexCost` contains one actual factor factory, one actual
+publication setup, both component solves and pairing/cleanup, and the bounded
+release. It depends only on ordinary dimensions and targets, not on tape-tail
+lengths or supplied execution costs. The constructed-complex contract now also
+exports the concrete headers, coordinate/control streams and clean transient
+ports needed by release.
+
+The shared-page complex setup/solve/release gate is closed. Adapting the raw
+scalar/replica caller, matching the final grouped fast setup/interior allowance,
+and simultaneous live-storage bounds remain open. S3 remains partial; kappa is
+unchanged.
+
+Validation: all 14,784 guarded stage-audit jobs pass, including seven new explicit
+packed-retirement/owned-bank/release/advance-volume/owned-volume/bounded-release/
+closed-complex audits (3.4 GiB combined peak). All four new modules and the
+strengthened constructed-complex module pass individual guarded checks (maximum
+3038.8 MiB). Source-integrity, whitespace and plan-status checks pass; proof
 limits are unchanged.

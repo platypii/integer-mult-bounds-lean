@@ -63,7 +63,13 @@ theorem sharedPageConstructedComplex_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       (∀ i : Fin 240, 224 ≤ i.val → i ≠ 239 → page.R i = S.R i) ∧
       (bandTableWords A w B W columns 0).length ≤ B.card*(2*W+1)*w ∧
       boundaryUnfoldHeaderVolume (boundaryFactorState (embStk sharedPageRecoveryReg page)) ≤ 12*band*w+B.card*W ∧
-      BoundaryPermanentBound (boundaryFactorState (embStk sharedPageRecoveryReg page)) (boundaryPermanentSizeBound q band B.card) := by
+      BoundaryPermanentBound (boundaryFactorState (embStk sharedPageRecoveryReg page)) (boundaryPermanentSizeBound q band B.card) ∧
+      BoundarySolveReady (boundaryFactorState (embStk sharedPageRecoveryReg page)) q w W B.card ∧
+      page.R 109 = cstream A V ((bFoldOrder s B).map (fun j : ZMod s => (⟨(j.val : ℤ),0⟩ : GaussianInt))) ∧
+      page.R 115 = List.replicate V tick ∧ page.R 116 = List.replicate B.card tick ∧
+      (page.R 160).length = w ∧ (page.R 190).length = W ∧ (page.R 121).length = s ∧
+      page.R 239 = gatherControls A (originAdvances w 0 (boundaryScatterOrigins s B)++[0]) ∧
+      page.R 206 = [] ∧ page.R 217 = [] ∧ page.R 184 = [] ∧ page.R 223 = [] := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let band := PhaseCellBand.width p u
@@ -127,6 +133,7 @@ theorem sharedPageConstructedComplex_spec (hR : rpStates ≤ Q) (hQ : SS.states 
     hsolve.ready.wn (by simpa only [List.append_nil] using hcoords) h119 hz hN hsolve.sn h121 []
     (by simpa only [List.append_nil] using hadv) x y hx hy
   refine ⟨v₂,page,n₁+n₂,columns,Z,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hfinal,
-    hlen,h132,hinp,hout,hL,hframe,hprivate,hstorage,hheaders,hperm⟩
+    hlen,h132,hinp,hout,hL,hframe,hprivate,hstorage,hheaders,hperm,hsolve,hcoords,hV,hN,hsolve.ready.wn,hsolve.m2n,h121,hadv,
+    h206,hsolve.empty .dout (by simp [boundarySolveScratch]),h184,h223⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
