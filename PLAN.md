@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2184 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2192 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14089,3 +14089,42 @@ combined peak RSS), retaining all prior entries and adding eight. All four
 new modules and the audit pass individual guarded checks below the 4 GiB
 module budget. Proof-integrity, audit-coverage, plan-status and whitespace
 checks pass.
+
+### S3 checkpoint: complete prepared real inverse with retained interior weights
+
+`familyRetainedSchurResidual_spec` derives the executed real Schur residual
+and its error contract from the new retained-family first pass.
+`familyComputedBoundaryRhs_spec` gathers those actual residual words into the
+existing boundary factor bank, preserving coordinate tapes and all caches.
+`familyComputedBoundarySolve_spec` executes the retained normalized/unscaled
+boundary solve and proves its actual solution format and accuracy. No
+boundary RHS is supplied independently of the executed interior residual.
+
+`familyBoundaryRecovered_spec` scatters that computed boundary solution,
+executes retained-family recovery/publication at the shared precision, and
+retires the owned recovery residual. The boundary/factor operations use their
+existing numerical implementation in the legacy bank, disjoint from family
+ports 256–262.
+
+`familyRealComponent_spec` composes the complete prepared real-component
+inverse: computed residual, actual boundary solve, first-interior retirement,
+boundary recovery/publication, and folded-solution retirement. Its exact
+final frame changes only the owned output prefix on register 132. Raw input,
+all masters, coordinate tapes, factor page, both coupling pages, the numerical
+weight family, borrowed suffixes and left stacks are restored. The final
+physical readout has the allocated uniform halo error. Its cost uses the new
+retained-family costs in both interior passes and includes every boundary
+operation and retirement.
+
+Remaining: compose the complex component, repeated-input batch and ordinary
+scalar caller with one-time family setup and final release, then prove
+selected uniform time matching and simultaneous whole-execution live
+storage. The complete ordinary-scalar entry points still use the earlier
+backend until this remaining composition is installed. S3 stays partial;
+kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,043 jobs (3.5 GiB
+combined peak RSS), retaining all prior entries and adding 11. All eight new
+modules and the audit pass individual guarded checks below the 4 GiB module
+budget. Proof-integrity, audit-coverage, plan-status and whitespace checks
+pass.
