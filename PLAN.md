@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1833 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1836 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10479,3 +10479,31 @@ Validation: all 14,678 guarded stage-audit jobs pass, including two new explicit
 coordinate-loop/finalized-advance-generator axiom audits. Combined peak is
 3.4 GiB; both added modules check below 2 GiB. Plan-status, added-source integrity
 and whitespace checks pass. Proof limits are unchanged.
+
+### Retained coordinate-page preparation
+
+`boundaryCoordinateUnfold_exec` reuses the generated inverse-fold program through
+a finite tape permutation: coordinate source 109 and geometry width 115 replace
+the solution source/width ports, while natural output goes to 206. The proof
+establishes the exact physical poststate, preserving the solution words on 204,
+arithmetic width on 160 and all unrelated tapes. Old auxiliary headers are
+retired with their actual lengths charged. `embOvr_equiv_project` supplies the
+structural full-bank lifting argument.
+
+`unfoldList_foldList` proves the inverse-fold identity over arbitrary lists;
+`boundary_unfold_coordinates` identifies the actual coordinate page with
+ascending `bOrder`. `prepareBoundaryCoordinates_exec` then restores that ascending
+encoded page to tape 109 using two reversals and leaves 206/217 empty. This is
+the input expected by the direct coordinate-to-advance generator. Individual
+checks peak at 2921.0 MiB for physical coordinate unfolding, 2711.1 MiB for the
+structural ordering proof and 2909.8 MiB for complete preparation.
+
+Composition of coordinate preparation, advance generation and publication with
+the retained solved state remains open, followed by recovery precision
+alignment/composition, complete retirement, inverse assembly and final resource
+bounds. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,681 guarded stage-audit jobs pass, including six new explicit
+coordinate-permutation/lift/order/preparation axiom audits. Combined peak is
+3.4 GiB; all three added modules check below 3 GiB. Plan-status, added-source
+integrity and whitespace checks pass. Proof limits are unchanged.

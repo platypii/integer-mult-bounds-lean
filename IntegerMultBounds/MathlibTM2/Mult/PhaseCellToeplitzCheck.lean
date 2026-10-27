@@ -307,6 +307,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryPublish
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellControlledBoundaryPublish
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryAdvancePacket
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGenerateBoundaryAdvances
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryCoordinatePrepare
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -2013,6 +2014,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_im,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_sizes,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryCoordinatePerm_mul,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.embOvr_equiv_project,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryCoordinateUnfold_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unfoldList_foldList,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unfold_coordinates,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareBoundaryCoordinates_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryAdvanceLoop_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateBoundaryAdvances_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.takeNaturalCoordinate_exec,
