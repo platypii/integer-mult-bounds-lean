@@ -24,6 +24,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingRows
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSpatialCouplingCursor
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunSpatialCouplingRows
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareMaskedCouplingSource
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedInverseCaller
@@ -1681,6 +1682,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingSourceMaskHost_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couplingSourceMaskFromHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedCouplingSourceMask_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.maskedTransferWord_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.maskedTransferLine_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.maskCouplingSource_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.maskedLine_halo,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.maskCouplingSource_halo_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.outerCouplingSourceMask_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepareMaskedCouplingSource_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedCouplingSourceMaskCost_halo_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMaskSymbols_getElem,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publicationMaskHost_exec,

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1985 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1990 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12176,3 +12176,36 @@ callers and complete batch/resource modules (24.4 GiB combined peak).
 All nine new/refactored modules pass individual guarded checks (maximum
 1858.7 MiB). Source-integrity, whitespace and plan-status checks pass; default
 proof limits are unchanged.
+
+### Apply the generated halo mask to the actual ambient data stream
+
+`maskedTransferWord_exec` consumes one selection symbol and one encoded word,
+emitting either that word or an encoded zero. `maskedTransferLine_exec` lifts it
+structurally to an arbitrary aligned stream with exact source/mask consumption,
+reversed output and scratch restoration. Both branches are charged; masked zeros
+are not treated as free. No separate full zero line is materialized.
+
+`maskCouplingSource_exec` captures the ambient source once above an arbitrary
+borrowed suffix on 142, generates its row clock, executes the masking scan, and
+orders the output on 141. It preserves original source 110 and restores copy
+bank 142, clock, scratch and temporary accumulator 107 exactly. It consumes the
+selection stream on 109 and prepends only the masked line on 141. Its explicit
+allowance is `s*(28*wordWidth+28)+24`, including capture, mask application and
+output ordering, independent of absolute indexed seeks.
+
+`maskedLine_halo` identifies selection by the executed natural mask with the
+original ambient halo membership. `outerCouplingSourceMask_exec` runs the closed
+mask supplier inside an arbitrary outer procedure table.
+`prepareMaskedCouplingSource_exec` composes actual mask generation and data
+application from ordinary headers and the original ambient input. Its final
+frame prepends only the masked line on 141; original input, both borrowed bank
+suffixes and all other tapes restore. This closes the executed masked-line
+preparation for either halo side.
+
+Cyclic padding, the complete source lifecycle and inverse integration remain
+open. Final fast supplier/setup matching, combined live storage and
+endpoint/resource integration remain open; S3 stays partial.
+
+Validation: all 14,839 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All five new modules pass individual guarded checks (maximum 1939.4 MiB).
+Source-integrity and whitespace checks pass; default proof limits are unchanged.
