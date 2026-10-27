@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2113 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2116 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13500,3 +13500,26 @@ Validation: the expanded guarded stage axiom audit passes all 14,964 jobs
 (3.5 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 All four new modules pass individual guarded checks, with maximum peak RSS
 3015.7 MiB, below the 4 GiB module budget.
+
+### S3 checkpoint: generated single-input core and scalar-bank placement
+
+`generatedSingleComplex_spec` specializes the fully generated, cached, closed
+batch to one complex input, including initialization and release of the replica
+counter. It preserves the exact output-only final frame and uniform complex
+error guarantee, with its actual execution cost bounded by the batch cost for
+one input plus five steps.
+
+The generated core now has a disjoint 296-register placement beside the existing
+ordinary-scalar bank. `generatedInverseCoreCall_spec` transports the complete
+execution, cost, error and restoration contracts into that placement. Register
+injectivity, legacy compatibility, scalar/core disjointness and register cover
+are proved. The outer caller program is defined, but its ordinary-scalar header
+setup/release correctness proof has not yet been composed with this core.
+
+S3 remains partial. The remaining caller composition, uniform fast time
+matching (including generated factor setup) and simultaneous whole-execution
+live-storage bound remain open; kappa is unchanged.
+
+Validation: the expanded stage axiom audit passes all 14,967 jobs (3.4 GiB
+combined peak RSS). All three new modules pass individual guarded checks;
+maximum peak RSS is 2978.5 MiB. Proof-integrity and whitespace checks pass.
