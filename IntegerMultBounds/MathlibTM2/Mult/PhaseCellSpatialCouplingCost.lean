@@ -11,9 +11,9 @@ open IntegerMultBounds.MathlibTM2.Mult.ShortConv
 
 theorem spatialCouplingRowsCost_eq (P q w s t u band a b : ℕ) :
     spatialCouplingRowsCost P q w s t u band a b =
-      (Finset.range s).sum (fun i => generateCouplingCoefficientsCost P q w s t u band i)+
+      (Finset.range s).sum (fun i => closedRowCoefficientCost P q w s t u band i)+
       s*generatedReadyRowCost (2*band+1) q w band+closedCouplingSourceMaskCost s t band a b+
-      s*(64*band*w+50*band+146*w+161)+band*(62*w+35)+154 := by
+      s*(32*band*w+22*band+146*w+139)+band*(62*w+35)+154 := by
   simp only [spatialCouplingRowsCost,prepareSpatialCouplingSourceCost,
     prepareMaskedCouplingSourceCost,maskCouplingSourceCost,padCouplingSourceCost,
     runSpatialCouplingRowsCost,spatialCouplingRowLoopCost,spatialCouplingRowStepCost,

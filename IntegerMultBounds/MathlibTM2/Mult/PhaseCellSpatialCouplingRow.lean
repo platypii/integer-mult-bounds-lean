@@ -29,9 +29,9 @@ def spatialCouplingRowCost (P q w s t u band i : ℕ) : ℕ :=
 
 theorem spatialCouplingRowCost_eq (P q w s t u band i : ℕ) :
     spatialCouplingRowCost P q w s t u band i =
-      generateCouplingCoefficientsCost P q w s t u band i +
+      closedRowCoefficientCost P q w s t u band i +
       generatedReadyRowCost (2*band+1) q w band +
-      64*band*w+50*band+16*w+52 := by
+      32*band*w+22*band+16*w+30 := by
   unfold spatialCouplingRowCost prepareSpatialCouplingOperandsCost
     prepareSpatialCouplingCoefficientsCost generateSpatialCouplingCoefficientsCost copyCountedLineCost
   ring

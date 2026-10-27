@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2001 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2005 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12344,3 +12344,40 @@ inverse, selected raw caller, closed complex batch and resource ledger (24.1 GiB
 combined peak). All five new/changed proof modules pass individual guarded checks
 (maximum 1953.2 MiB). Source-integrity, whitespace and plan-status checks pass;
 default proof limits are unchanged.
+
+### Integrate row-wide coefficient supply on the existing host ABI
+
+`rowCoefficientReg` hosts the 50-variable row backend using the original low
+63-register bank and existing fresh offset-control tapes 108/116. No additional
+outer registers or caller premises are needed. `rowCoefficientHost_exec` transfers
+the ordered coefficient stream to 111 and releases all 65 workspace ports.
+`initializeRowCoefficientBank_exec`, `loadRowCoefficientList_exec` and
+`rowCoefficientFromHeaders_exec` construct the bank and load the seven table
+arguments once for a whole row, preserving every ordinary header and spectator.
+
+`closedRowCoefficient_exec` also generates and releases the workspace precision.
+It starts from ordinary headers and fresh workspace, executes one constant setup
+and both binary offset sweeps, emits exactly `spatialCouplingCoefficientWords`,
+and restores every other tape, including 108/116 and borrowed suffixes.
+`generateSpatialCouplingCoefficients` now selects this closed row-wide supplier;
+its public execution statement is unchanged. The previous per-offset spatial
+supplier implementation can be restored from commit `097c79e8`.
+
+The production inverse therefore no longer reloads unary parameters or prepares
+pi/scaling constants for each individual coupling coefficient. The separate
+positive-prefix reversal is also removed. The exact integrated ledger now has
+one `closedRowCoefficientCost` per ambient row, generated arithmetic per row,
+one closed mask setup, and overhead
+`s*(32*band*wordWidth+22*band+146*wordWidth+139)`
+plus `band*(62*wordWidth+35)+154`.
+
+Header conversion and width selection still occur once per row. Retaining those
+across rows, final fast supplier/setup matching, combined live storage and
+endpoint/resource integration remain open; S3 stays partial. The row-wide table
+backend's polynomial atom/host bound is not a final fast supplier bound.
+
+Validation: all 14,854 guarded stage-audit jobs pass, including rebuilt inverse,
+selected raw caller, closed complex batch and resource ledger (21.8 GiB combined
+peak). All seven new/changed implementation modules pass individual guarded
+checks (maximum 2014.6 MiB). Source-integrity, whitespace and plan-status checks
+pass; default proof limits are unchanged.
