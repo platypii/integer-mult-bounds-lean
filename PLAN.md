@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1853 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1857 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10689,3 +10689,37 @@ transition and 2908.0 MiB for projection/readiness. Source-integrity, whitespace
 and plan-status checks pass. Proof limits are unchanged.
 The strengthened published-frame module checks at 2973.2 MiB; every changed
 module remains below 3 GiB.
+
+### Executed second component and complex pairing with restored original input
+
+The existing native pairing proof now lifts into the physical 224-tape bank via
+an injective register embedding; its procedure-free execution is reused directly.
+`cleanFinishComponents_exec` consumes the second RHS, pairs the saved real stream
+with the recovered imaginary stream, releases the saved result and restores the
+original input from 146. Borrowed suffixes and all other tapes are restored. Its
+explicit cost is `34*s*(2*q+8)+9*s+12*q+60`.
+
+`retainedBoundaryFinish_spec` executes the generated second-component solve,
+recovery and workspace release before pairing. Two component error allocations
+of `2^-(target+1)` yield physical complex error at most `2^-target`; pairing uses
+actual decoded words without an extra fit hypothesis. The reached predecessor
+states and the second solve's explicit stage cost bounds remain exposed.
+
+`retainedBoundaryPair_spec` composes the actual first-component transition and
+second-component finish. From prepared real/imaginary inputs and a saved original
+page, it executes both generated solves, publishes the paired complex halo line,
+restores the original source on 110 and retires the owned prefixes on 144/146.
+The saved-result tape 145 and the remaining stack bank are restored exactly.
+The composed theorem currently establishes execution, accuracy and ownership;
+uniform time and simultaneous live-storage bounds remain open.
+
+Composition of original complex-input preservation/splitting with this endpoint
+still remains, together with the final ordinary-parameter inverse interface and
+uniform resource gates. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,702 guarded stage-audit jobs pass, including explicit lifted
+pairing, clean finish, second-component and composed two-component axiom audits.
+Combined peak is 3.4 GiB. Individual guarded checks peak at 1805.2 MiB for lifted
+pairing, 1841.3 MiB for clean finishing, 2947.1 MiB for the generated second
+component and 2952.8 MiB for the composed pair. All new modules stay below 3 GiB.
+Source-integrity, whitespace and plan-status checks pass. Proof limits are unchanged.
