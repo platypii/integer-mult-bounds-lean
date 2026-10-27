@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1880 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1885 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10964,3 +10964,43 @@ workspace/readiness/cleanup/closed-caller/sizing axiom audits. Final combined pe
 is 3.4 GiB. All eight changed implementation modules pass individual guarded
 checks (maximum 3086.3 MiB for the composed caller, below the 4 GiB module target).
 Source-integrity, whitespace and plan-status checks pass. Proof limits are unchanged.
+
+
+### Reusable prepared boundary kernel and fast repeated-work bound
+
+The cost audit confirms that the current closed caller constructs its boundary
+page twice, once per real component. Those setup charges cannot be treated as
+shared. `boundarySolve_frame_exact` now derives the full physical two-port frame
+from the triangular solver's logical frame, without losing private registers.
+
+`preparedBoundarySolve_exec` supplies a fixed 226-register kernel on an already
+computed factor page. It consumes an owned, normalized boundary RHS and publishes
+the computed solution over an arbitrary output suffix. Every other register,
+including factors, headers, scratch and all left stacks, is restored exactly.
+The numerical fit conditions still follow from the generated rank matrix's
+invariant and allocated precision. Projection, factor-frame and readiness
+lemmas prove that the page can accept another RHS while its output stays parked.
+Empty boundaries are admitted.
+
+The exact repeated cost is
+`N*((2*W+1)*rmulCost w+92*W*w+120*W+108*w+172)+12*W*w+50`.
+It is bounded by `400*(N+1)*W*(rmulCost w+w+1)`. The actual halo cardinality is
+bounded by `min (b-a) (2*band*(t-s+2))`; replicas multiply this repeated cost and
+introduce no factor-generation charge. `Cost.preparedBoundary_selected_fast_le`
+matches the actual inverse precision formula to a uniform
+`C*(N+1)*(12*band+1)*p^(129/128)` allowance when the target, ring logarithm and
+geometry bit counts lie in the stated linear precision bands.
+`preparedHaloBoundary_selected_fast_le` derives the bit-count premises from
+ordinary ambient geometry and applies the actual boundary-count bound.
+
+This establishes the reusable repeated boundary kernel and its scalar fast bound.
+The closed complex caller still rebuilds its page per component; executing reuse
+across its components/replicas, matching all remaining setup and interior costs,
+and proving simultaneous live storage remain open. S3 remains partial; kappa is
+unchanged.
+
+Validation: all 14,733 guarded stage-audit jobs pass, including seventeen new
+explicit frame/reuse/row-work/precision/fast-cost axiom audits; final combined
+peak is 3.4 GiB. All five new modules pass individual guarded checks (maximum
+2864.9 MiB). Source-integrity, whitespace and plan-status checks pass. Proof limits
+are unchanged.

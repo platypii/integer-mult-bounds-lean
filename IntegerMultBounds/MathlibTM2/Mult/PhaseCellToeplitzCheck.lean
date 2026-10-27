@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryReuse
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedInverseCaller
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallInverseHeaders
@@ -2048,6 +2051,23 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.physicalOriginalComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedComplexBoundary_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedInverse_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolve_frame_exact,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_private,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundarySolve_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundarySolve_project,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundarySolve_factor_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundarySolve_ready,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundarySolveCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundarySolveCost_mono_rows,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryRowCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundarySolveCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloBoundarySolveCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundarySolveCost_replicas,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseExecutionWidth_le,
+      `IntegerMultBounds.MathlibTM2.Cost.preparedBoundary_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.preparedBoundary_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.preparedHaloBoundary_selected_fast_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblClearInverseScalars_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseCoreReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseScalarReg_injective,
