@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1897 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1904 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11094,3 +11094,41 @@ execution/readiness/cost/precision/geometry contract audits (3.4 GiB combined
 peak). All three new modules pass individual guarded checks (maximum 2865.1 MiB
 for the final sources). Source-integrity, whitespace and plan-status checks pass;
 proof limits are unchanged.
+
+### Execute original-scale residual batches after one generated setup
+
+`preparedResidualBatch_exec` now runs the residual-normalizing kernel through a
+whole counted batch on the retained factor page. Each iteration borrows one RHS,
+normalizes and solves it, undoes normalization, and archives the original-scale
+solution. The batch restores the original RHS stream and its borrowed suffix,
+count master, byte clock and private archives, and publishes solutions in input
+order over the existing output suffix. Every other tape and all left stacks are
+restored exactly. Inputs use the actual coupling-row residual bound. Empty
+batches and empty boundaries remain included.
+
+`preparedBoundaryFactory_spec` now also exports the generated precision header
+and clean normalization/unscaling scratch. `constructedResidualBatch_spec`
+executes this actual factory once before the batch and returns those controls,
+computed factor bytes, accuracy, readiness and clean-workspace facts for later
+reuse. The normalized predecessor's factory caller continues to build with the
+stronger contract.
+
+`preparedResidualBatchCost_le` includes routing, controls, normalization,
+unscaling and publication and bounds the repeated work by
+`1200*(R+1)*(N+1)*W*(rmulCost (2*q+8)+(2*q+8)+1)`.
+`constructedResidualBatch_selected_allowance` matches the actual inverse
+precision and ambient halo row count. It retains exactly one actual factory cost
+plus `C*(R+1)*(haloBoundaryCountBound+1)*(12*band+1)*p^(129/128)`;
+no factor setup is multiplied by the batch size or assumed fast.
+
+The boundary batch now accepts original-scale residuals and returns original-scale
+solutions with executed factor reuse. Connecting grouped interior/residual
+generation, recovery and complex assembly in the full inverse caller remains
+open. Full setup/interior cost matching and simultaneous live storage remain
+open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,752 guarded stage-audit jobs pass, including eight new
+explicit residual-step/loop/restoration/generated-setup/fast-cost contract
+audits (5.7 GiB combined peak). All seven new modules pass individual guarded
+checks (maximum 2974.9 MiB). Source-integrity, whitespace and plan-status checks
+pass; proof limits are unchanged.

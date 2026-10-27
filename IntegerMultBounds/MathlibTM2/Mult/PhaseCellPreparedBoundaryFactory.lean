@@ -66,7 +66,8 @@ theorem preparedBoundaryFactory_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
       σ .df = cstream A w ((naturalLineRcs q K W B.card AZ).map fun x => (⟨x,0⟩ : GaussianInt)) ∧
       S'.R 206 = [] ∧ S'.R 224 = S.R 224 ∧ S'.R 225 = S.R 225 ∧
       (∀ i : Fin 224, S'.L (preparedBoundaryCoreReg i) = []) ∧
-      (∀ i : Fin 64, S'.R (preparedBoundaryCoreReg (boundaryFactorMulReg i)) = []) := by
+      (∀ i : Fin 64, S'.R (preparedBoundaryCoreReg (boundaryFactorMulReg i)) = []) ∧
+      (S'.R 119).length = q ∧ S'.R 223 = [] ∧ S'.R 184 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let bits := boundaryTableBits p target rhsExp B.card
@@ -87,7 +88,7 @@ theorem preparedBoundaryFactory_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     preparedBoundaryCoreReg_injective (fun _ => rfl) he v rfl S rfl
   let S₁ := embOvr preparedBoundaryCoreReg T₁.get S
   have hproj : embStk preparedBoundaryCoreReg S₁ = T₁ := embStk_ovr preparedBoundaryCoreReg_injective T₁ S
-  refine ⟨v₂,S₁,n,columns,hu₂.trans hu₁,hn,he₂,hlen,hformat,hcolumns,hstage,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,S₁,n,columns,hu₂.trans hu₁,hn,he₂,hlen,hformat,hcolumns,hstage,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · rw [hproj]; exact hsolve
   · rw [hproj]; exact hbo'
   · rw [hproj]; exact hhf'
@@ -102,5 +103,11 @@ theorem preparedBoundaryFactory_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
   · intro i
     have hh := congrArg (fun R : Stacks 224 A => R.R (boundaryFactorMulReg i)) hproj
     exact hh.trans (hmul i)
+  · have hh := congrArg (fun R : Stacks 224 A => (R.R 119).length) hproj
+    exact hh.trans h119
+  · exact (congrArg (fun R : Stacks 224 A => R.R 223) hproj).trans h223
+  · exact (congrArg (fun R : Stacks 224 A => R.R 184) hproj).trans h184
+  · exact (congrArg (fun R : Stacks 224 A => R.R 220) hproj).trans h220
+  · exact (congrArg (fun R : Stacks 224 A => R.R 221) hproj).trans h221
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
