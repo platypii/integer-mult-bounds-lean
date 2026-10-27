@@ -16,10 +16,10 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 def markedRowCoefficientPacket (A V P q s t u band i : ℕ) : List (Fin (A+4)) :=
-  List.replicate V tick++bitSymbol false::rowCoefficientPacket A V P q s t u band i
+  List.replicate V tick++bitSymbol false::preparedRowPacket A V P q s t u band i
 
 @[simp] theorem markedRowCoefficientPacket_length (A V P q s t u band i : ℕ) :
-    (markedRowCoefficientPacket A V P q s t u band i).length = 8*V+1 := by
+    (markedRowCoefficientPacket A V P q s t u band i).length = 12*V+1 := by
   simp [markedRowCoefficientPacket]; omega
 
 def markedRowCoefficient : Pr P₀ 117 Q A U :=
@@ -43,7 +43,7 @@ theorem markedRowCoefficient_exec {P q w s t u band i : ℕ}
           (cstream A w (spatialCouplingCoefficientWords P q s t u band i)++S.R 111)) 113
           (markedRowCoefficientPacket A (liftedCoefficientWidth P q w s t u band) P q s t u band (i+1)++tail))}) := by
   let V := liftedCoefficientWidth P q w s t u band
-  let packet := rowCoefficientPacket A V P q s t u band i++tail
+  let packet := preparedRowPacket A V P q s t u band i++tail
   obtain ⟨v₁,hu₁,he₁⟩ := takeMarkedWidth_exec (body := body) 113 115 (by decide) V packet v S
     (by simpa [packet,V,markedRowCoefficientPacket,List.append_assoc] using hpacket)
   let S₁ : Stacks 117 A := {S with R := (Function.update (Function.update S.R 113 packet)
@@ -62,7 +62,7 @@ theorem markedRowCoefficient_exec {P q w s t u band i : ℕ}
       rw [hoff₁ r h113 h115]; exact hblank r hr)
   let S₂ : Stacks 117 A := {S₁ with R := (Function.update (Function.update S₁.R 111
     (cstream A w (spatialCouplingCoefficientWords P q s t u band i)++S₁.R 111)) 113
-    (rowCoefficientPacket A V P q s t u band (i+1)++tail))}
+    (preparedRowPacket A V P q s t u band (i+1)++tail))}
   obtain ⟨v₃,hu₃,he₃⟩ := publishMarkedWidth_exec (body := body) 115 113 105 (by decide) v₂ S₂
     (by simpa [S₂,S₁] using h105)
   have hlen : (S₂.R 115).length = V := by simp [S₂,S₁,h115]

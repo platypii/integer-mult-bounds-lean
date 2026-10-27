@@ -74,9 +74,55 @@ theorem preparedCoefficientRow_do {A w q P s t u band i : ℕ} (st : TblSt 50 A)
     simp [cstream_append,cstream_cons,cstream_nil,List.reverse_append,List.append_assoc]
   exact hc.mono (fun _ h => h) (by nlinarith)
 
+/-- Numeric row headers together with the constants shared by all rows. -/
+structure CoefficientRowReady {A : ℕ} (P q s t u band i : ℕ) (st : TblSt 50 A) : Prop where
+  pi : st.val 18 = IntegerMultBounds.Resampling.WeightNat.piN P
+  precision : st.val 19 = P
+  sign : st.val 22 = 1
+  dimension : st.val 34 = s
+  period : st.val 35 = t
+  parameter : st.val 36 = u
+  source : st.val 37 = i
+  grid : st.val 39 = 2^q
+  scale : st.val 40 = 2^P
+  bandwidth : st.val 49 = band
+
+def indexedPreparedCoefficientRow : TblCode 50 :=
+  tblBlock 50 [.mul 49 34 43] (.add 37 43 37) ;; preparedCoefficientRow
+
+theorem indexedPreparedCoefficientRow_do {A w q P s t u band i : ℕ} (st : TblSt 50 A)
+    (hready : CoefficientRowReady P q s t u band i st)
+    (hs0 : 0 < s) (hst : s < t) (hP : 13 ≤ P) (hi : i < s) :
+    TblDo A (liftedCoefficientWidth P q w s t u band) w indexedPreparedCoefficientRow st
+      (fun st' => st'.acc = (cstream A w (spatialCouplingCoefficientWords P q s t u band i)).reverse++st.acc)
+      (2*band*(930*P+372)+10) := by
+  let V := liftedCoefficientWidth P q w s t u band
+  let S₁ : TblSt 50 A := ⟨Function.update (Function.update st.val 43 (band*s)) 37 (liftedSource s band i),st.acc⟩
+  have hcap : i+band*s < 2^V :=
+    (liftedCoefficientWidth_fits false P q w s t u band i 0 hi (by omega)).coordinates
+  have hlift : TblDo A V w (tblBlock 50 [.mul 49 34 43] (.add 37 43 37)) st (fun st' => st' = S₁) 2 := by
+    apply TblDo.block
+    · simp [tblFitsList,TblIns.fits,TblIns.exact,hready.dimension,hready.source,hready.bandwidth]
+      omega
+    · simp [tblExactList,TblIns.exact,hready.dimension,hready.source,hready.bandwidth,S₁,liftedSource]
+  have hrow : CoefficientSweepReady P q s t u band i S₁ := by
+    exact ⟨by simpa [S₁] using hready.pi,by simpa [S₁] using hready.precision,
+      by simpa [S₁] using hready.sign,by simpa [S₁] using hready.dimension,
+      by simpa [S₁] using hready.period,by simpa [S₁] using hready.parameter,
+      by simp [S₁],by simpa [S₁] using hready.grid,by simpa [S₁] using hready.scale,
+      by simpa [S₁] using hready.bandwidth⟩
+  have hc : TblDo A V w indexedPreparedCoefficientRow st
+      (fun st' => st'.acc = (cstream A w (spatialCouplingCoefficientWords P q s t u band i)).reverse++st.acc)
+      (2+(2*band*(930*P+372)+8)) := by
+    unfold indexedPreparedCoefficientRow
+    refine hlift.seq (fun st₁ he => ?_)
+    subst st₁
+    exact (preparedCoefficientRow_do S₁ hrow hs0 hst hP hi).mono (fun _ h => h.2) le_rfl
+  exact hc.mono (fun _ h => h) (by omega)
+
 def coefficientRowCode : TblCode 50 :=
   prepareDirectCoefficient.rename coefficientSweepReg ;;
-    (tblBlock 50 [.mul 49 34 43] (.add 37 43 37) ;; preparedCoefficientRow)
+    indexedPreparedCoefficientRow
 
 theorem coefficientRowCode_do {A w q P s t u band i : ℕ} (st : TblSt 50 A)
     (hP' : st.val 19 = P) (hq : st.val 44 = q)
@@ -103,31 +149,21 @@ theorem coefficientRowCode_do {A w q P s t u band i : ℕ} (st : TblSt 50 A)
     have hs₁ : st₁.val 34 = s := (hframe 34 (by decide) (by decide) (by decide) (by decide)).trans hs
     have hi₁ : st₁.val 37 = i := (hframe 37 (by decide) (by decide) (by decide) (by decide)).trans hi'
     have hb₁ : st₁.val 49 = band := h49.trans hb
-    let S₂ : TblSt 50 A := ⟨Function.update (Function.update st₁.val 43 (band*s)) 37 (liftedSource s band i),st₁.acc⟩
-    have hcap : i+band*s < 2^V :=
-      (liftedCoefficientWidth_fits false P q w s t u band i 0 hi (by omega)).coordinates
-    have hlift : TblDo A V w (tblBlock 50 [.mul 49 34 43] (.add 37 43 37)) st₁ (fun st' => st' = S₂) 2 := by
-      apply TblDo.block
-      · simp [tblFitsList,TblIns.fits,TblIns.exact,hs₁,hi₁,hb₁]
-        omega
-      · simp [tblExactList,TblIns.exact,hs₁,hi₁,hb₁,S₂,liftedSource]
-    refine hlift.seq (fun st₂ he => ?_)
-    subst st₂
-    have hready : CoefficientSweepReady P q s t u band i S₂ := by
+    have hready : CoefficientRowReady P q s t u band i st₁ := by
       constructor
-      · simpa [S₂,coefficientSweepReg,TblSt.restrict] using h₁.1.1
-      · simpa [S₂,coefficientSweepReg,TblSt.restrict] using h₁.1.2.1
-      · simpa [S₂,coefficientSweepReg,TblSt.restrict] using h₁.1.2.2.1
-      · simpa [S₂] using hs₁
-      · simpa [S₂,coefficientSweepReg] using (hframe 35 (by decide) (by decide) (by decide) (by decide)).trans ht
-      · simpa [S₂,coefficientSweepReg] using (hframe 36 (by decide) (by decide) (by decide) (by decide)).trans hu
-      · simp [S₂]
-      · simpa [S₂,coefficientSweepReg,TblSt.restrict] using h₁.1.2.2.2.1
-      · simpa [S₂,coefficientSweepReg,TblSt.restrict] using h₁.1.2.2.2.2.1
-      · simpa [S₂] using hb₁
+      · simpa [coefficientSweepReg,TblSt.restrict] using h₁.1.1
+      · simpa [coefficientSweepReg,TblSt.restrict] using h₁.1.2.1
+      · simpa [coefficientSweepReg,TblSt.restrict] using h₁.1.2.2.1
+      · exact hs₁
+      · simpa [coefficientSweepReg] using (hframe 35 (by decide) (by decide) (by decide) (by decide)).trans ht
+      · simpa [coefficientSweepReg] using (hframe 36 (by decide) (by decide) (by decide) (by decide)).trans hu
+      · exact hi₁
+      · simpa [coefficientSweepReg,TblSt.restrict] using h₁.1.2.2.2.1
+      · simpa [coefficientSweepReg,TblSt.restrict] using h₁.1.2.2.2.2.1
+      · exact hb₁
     have hacc₁ : st₁.acc = st.acc := h₁.1.2.2.2.2.2.1
-    exact (preparedCoefficientRow_do S₂ hready hs0 hst hP hi).mono
-      (fun _ h => by simpa [S₂,hacc₁] using h.2) le_rfl
+    have hr := indexedPreparedCoefficientRow_do (w := w) st₁ hready hs0 hst hP hi
+    exact hr.mono (fun _ h => by simpa [hacc₁] using h) (by omega)
   exact hc.mono (fun _ h => h) (by nlinarith)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

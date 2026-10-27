@@ -39,6 +39,7 @@ def retainedCouplingCoefficients : Pr P₀ 144 Q A U :=
   embProg (couplingViewReg 113 135) Empty.elim (markedRowCoefficient (P₀ := Empty))
 
 theorem prepareRetainedCouplingPacket_exec {P q w s t u band a b i : ℕ}
+    (hP : 13 ≤ P) (hiRow : i < s)
     (raw : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
     (hready : CouplingReady P q w s t u band a b raw (embStk groupReg S))
     (hi : (S.R 107).length = i) :
@@ -58,7 +59,7 @@ theorem prepareRetainedCouplingPacket_exec {P q w s t u band a b i : ℕ}
     · subst r; exact hready.fresh 116 (by simp)
   obtain ⟨v₁,m,hu₁,hm,he₁⟩ := buildMarkedRowCoefficientPacket_exec
     (body := fun p : Empty => nomatch p) (P := P) (q := q) (w := w) (s := s) (t := t)
-    (u := u) (band := band) (i := i) (embDn e v) (embStk e S)
+    (u := u) (band := band) (i := i) hP hiRow (embDn e v) (embStk e S)
     hready.precision hready.fraction hready.axis hready.period hready.parameter hready.bandwidth hi
     (hready.fresh 115 (by simp)) hready.width (hready.fresh 104 (by simp))
     (hready.fresh 105 (by simp)) (hready.fresh 106 (by simp)) hb

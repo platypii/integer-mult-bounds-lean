@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2015 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2017 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12522,3 +12522,41 @@ resource ledger (21.9 GiB combined peak). The final audit after removing the
 superseded pipeline also passes. All nine retained new/changed implementation
 modules pass individual guarded checks, maximum 1976.5 MiB. Source-integrity,
 whitespace and plan-status checks pass; default proof limits are unchanged.
+
+### S3 production packets retain pi and scaling powers
+
+The production coefficient packet now contains the seven numeric row headers
+and four prepared constants: pi, the unit sign, the q-bit grid and the semantic
+scaling power. `prepareRowConstants_do` constructs these constants once from the
+ordinary precision headers. `buildPreparedRowPacket_exec` executes that setup,
+publishes the selected eleven binary fields and releases the private table bank.
+No preparation scratch or supplied coefficient page becomes a caller premise.
+The existing semantic precision and row-index hypotheses prove every published
+value fits the selected logarithmic workspace.
+
+`indexedPreparedCoefficientRow_do` consumes the prepared constants and performs
+only coordinate lifting and the two ordered coefficient sweeps. The production
+`rowCoefficientFromPacket_exec` now uses this code directly. Its atom allowance
+is `2*band*(930*P+372)+10`; the former `154*P+4*q+413` constant-preparation
+allowance is paid in packet construction instead of on every row. Loading the
+four extra fields adds `80*V+32` to the row host allowance. Packet construction
+charges its actual table execution, publication and release explicitly.
+
+The marked packet occupies `12*V+1` symbols. The whole-pass caller and exact
+final frame are unchanged, and its final packet retirement is now priced at
+`24*V+4`. The row loop still advances only the first binary field, preserving all
+constants, numeric headers and borrowed packet suffixes. This is reuse within
+one executed coupling pass. Final fast-time matching, setup matching across the
+complete shared-key batch, simultaneous whole-execution live storage and final
+endpoint/resource integration remain open; the coefficient sweeps still use the
+existing polynomial numeric backend. S3 stays partial; kappa is unchanged.
+
+Removed the superseded seven-field packet and raw packet builder; restore from
+`58c46cc1`.
+
+Validation: all 14,866 guarded stage-audit jobs pass, including the shared raw
+inverse caller, closed complex batch and resource ledger (21.8 GiB combined
+peak). All twelve affected implementation modules pass individual guarded
+checks, maximum 1997.4 MiB. New preparation, packet load/publication, fits and
+indexed-row execution contracts are in the stage axiom audit. Source-integrity,
+whitespace and plan-status checks pass; proof limits are unchanged.

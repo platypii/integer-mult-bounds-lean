@@ -23,7 +23,7 @@ noncomputable def runSpatialCouplingRows (hQ : SS.states ≤ Q) : Pr P₀ 144 Q 
 def runSpatialCouplingRowsCost (P q w s t u band : ℕ) : ℕ :=
   let V := liftedCoefficientWidth P q w s t u band
   buildMarkedRowCoefficientPacketCost P q w s t u band 0+
-    runPreparedPacketCouplingRowsCost P q w s t u band+16*V+4
+    runPreparedPacketCouplingRowsCost P q w s t u band+24*V+4
 
 theorem runSpatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
@@ -44,7 +44,7 @@ theorem runSpatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b
           113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
   let V := liftedCoefficientWidth P q w s t u band
   obtain ⟨v₁,m₁,hu₁,hm₁,he₁⟩ := prepareRetainedCouplingPacket_exec (body := body)
-    (i := 0) raw v S hready (by simp [hindex])
+    (i := 0) hP (NeZero.pos s) raw v S hready (by simp [hindex])
   let S₁ : Stacks 144 A := {S with R := (Function.update S.R 135
     (markedRowCoefficientPacket A V P q s t u band 0++S.R 135))}
   have hready₁ : CouplingReady P q w s t u band a b raw (embStk groupReg S₁) := by
@@ -58,8 +58,8 @@ theorem runSpatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b
     (markedRowCoefficientPacket A V P q s t u band s++S.R 135)) 93 rhsTail)
     113 (cstream A w (couplingRowWords P q t u band a b boundary C 0 rhs)++S₁.R 113))}
   obtain ⟨v₃,hu₃,he₃⟩ := uclear_exec (body := body) 135 v₂ S₂
-  have hlen₂ : (S₂.R 135).length = 8*V+1 := by simp [S₂,h135]
-  refine ⟨v₃,m₁+(m₂+(16*V+4)),hu₃.trans (hu₂.trans hu₁),?_,
+  have hlen₂ : (S₂.R 135).length = 12*V+1 := by simp [S₂,h135]
+  refine ⟨v₃,m₁+(m₂+(24*V+4)),hu₃.trans (hu₂.trans hu₁),?_,
     (Exec.seq he₁ (Exec.seq he₂ he₃)).cast ?_ ?_⟩
   · dsimp only [runSpatialCouplingRowsCost]; omega
   · rw [hlen₂]; omega
