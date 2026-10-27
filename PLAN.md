@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1650 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1655 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8804,3 +8804,36 @@ of input generation, source release and the composed original-column caller.
 Combined build peak is 2.7 GiB. All four new/revised Lean modules pass individual
 guarded checks at at most 2057.2 MiB. Added-source integrity, plan-status and
 whitespace checks pass; proof limits are unchanged.
+
+### Generated Schur column with complete temporary-source release
+
+`restoredOriginalColumn` installs the coupling headers from retained masters,
+loads a copy of the selected unary coordinate from 139 into temporary port 136,
+generates the original-matrix column, clears that copy and releases the headers.
+Its exact frame changes only output port 110 and restores `LengthKeyReady`.
+`retainedOriginalColumn` embeds this caller into the retained 148-port bank,
+preserving the parked component streams and the selected coordinate.
+
+`generatedSchurColumn_spec` composes that producer with the executed released
+interior-response/residual pass at the allocated precision. It proves physical
+output error at most `2^-target` against the actual halo Schur column, together
+with realness, a coefficient magnitude bound and an explicit execution-cost
+bound. The caller supplies ordinary retained masters, readiness and a selected
+boundary coordinate; no original column, Schur matrix, interior solution or
+execution is supplied. `releaseSchurColumnInput` then discards the intermediate
+original-column prefix beneath the result and restores all its scratch ports.
+The complete producer changes only port 110, publishing the Schur column above
+the borrowed suffix, and returns reusable solver readiness.
+
+This closes coupling-header restoration and the executed interior composition
+for the generated-column caller. Folded-coordinate loading and page parking,
+streaming band-table construction, factor/solve/release, the full S3 endpoint,
+and uniform fast-time/simultaneous storage remain open. The explicit ambient
+row-scan cost is retained; no fast repeated-column bound is claimed. S3 remains
+partial.
+
+Validation: all 10,312 guarded stage-audit jobs pass, including five new
+explicit execution/readiness audits. Combined build peak is 2.7 GiB. All five
+new modules and the audit root pass individual guarded checks at at most
+2057.8 MiB. Added-source integrity, plan-status and whitespace checks
+pass; proof limits are unchanged.
