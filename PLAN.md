@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1831 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1833 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10451,5 +10451,31 @@ bounds remain open. S3 remains partial; kappa is unchanged.
 
 Validation: all 14,676 guarded stage-audit jobs pass, including three new explicit
 coordinate-reader/advance-packet/combined-step axiom audits. Combined peak is
+3.4 GiB; both added modules check below 2 GiB. Plan-status, added-source integrity
+and whitespace checks pass. Proof limits are unchanged.
+
+### Counted coordinate loop and finalized origin advances
+
+`boundaryAdvanceLoop_exec` proves the structural runtime loop over any ascending
+encoded coordinate list, including empty input. It consumes the owned page
+prefix and count, emits the reversed advance controls and leaves the cursor at
+the last coordinate, preserving the remaining tape frame.
+`generateBoundaryAdvances_exec` snapshots/restores the unary boundary count,
+executes the counted loop, clears the cursor, reverses the packet accumulator,
+and adds the terminal delimiter. Only coordinate source 109 and advance output
+206 change; borrowed coordinate/output suffixes are preserved and all local
+scratch restores. The generated stream is exactly
+`gatherControls (originAdvances w 0 origins ++ [0])`.
+
+The closed time bound is `N (bound (10w+29)+23V+54)+2 bound (w+1)+13`.
+The direct route uses the retained coordinate width and unary scaling, requiring
+no binary workspace for scaled offsets. Individual checks peak at 1926.4 MiB
+for the loop and 1993.2 MiB for the complete generator. The folded retained
+coordinate page still needs to be converted to ascending order and fed to this
+generator; composition with publication/recovery and final cleanup/resource
+bounds remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,678 guarded stage-audit jobs pass, including two new explicit
+coordinate-loop/finalized-advance-generator axiom audits. Combined peak is
 3.4 GiB; both added modules check below 2 GiB. Plan-status, added-source integrity
 and whitespace checks pass. Proof limits are unchanged.
