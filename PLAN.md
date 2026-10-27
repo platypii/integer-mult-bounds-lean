@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1906 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1909 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11166,3 +11166,33 @@ contracts (3.4 GiB final combined peak). Both new modules and all three changed
 proof-bearing modules pass individual guarded checks (maximum 2985.8 MiB).
 Source-integrity, whitespace and plan-status checks pass; proof limits are
 unchanged.
+
+### Borrow and unfold batch results without retiring the shared factor headers
+
+The existing recovery-publication path reuses registers 189, 191 and 198 as
+inverse-fold controls and retires their factor headers. The new
+`generatedBoundaryRealUnfold_exec` isolates generated unfolding and real
+projection from that retirement. `sharedPageBoundaryRealUnfold_exec` embeds this
+program with those three controls and its destination mapped to four separate
+registers beyond the 234-register batch bank. It consumes the native solution
+port and produces the real natural-order boundary list while preserving the
+original factor headers, pages and batch controls.
+
+`residualBatchRecoveryInput_exec` generates a byte clock from the actual row and
+width masters, borrows the first folded solution from the published batch stream,
+and executes this separate-register unfold. Its exact final state differs only
+at the new natural-order output port: the batch stream and arbitrary suffix,
+factor page, all native tapes, clock and scratch are restored.
+`residualBatchRecoveryInputCost_le` bounds all copying, controls, unfolding and
+real projection by `200*(N+1)*(w+1)`.
+
+This is an executed conversion to the natural-order boundary list. Scattering it
+to the ambient recovery field, executing grouped residual generation and
+recovery/complex assembly with the same shared page, complete setup/interior
+cost matching, and simultaneous live storage remain open. S3 remains partial.
+
+Validation: all 14,757 guarded stage-audit jobs pass, including five new explicit
+generated-unfold/register-map/shared-page/conversion/cost audits (5.7 GiB
+combined peak). All three new modules pass individual guarded checks (maximum
+2931.4 MiB). Source-integrity, whitespace and plan-status checks pass; proof
+limits are unchanged.

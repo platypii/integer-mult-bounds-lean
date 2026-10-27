@@ -6,6 +6,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryReuse
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryUnscale
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedResidual
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellConstructedResidualBatch
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellResidualBatchRecoveryInput
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedInverseCaller
@@ -2072,6 +2073,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolve_frame_exact,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_private,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedBoundaryRealUnfold_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.sharedPageBoundaryUnfoldReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.sharedPageBoundaryRealUnfold_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.residualBatchRecoveryInputCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.residualBatchRecoveryInput_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_residual_solution_accuracy,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_residual_solution_format,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedResidualBatchStep_exec,
