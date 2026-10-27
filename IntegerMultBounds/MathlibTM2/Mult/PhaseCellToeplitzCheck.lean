@@ -284,6 +284,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOutputClose
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedRun
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizationHeader
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutionSizing
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalLineError
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -1989,6 +1990,9 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_re,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_im,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_sizes,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_perturbed_error,
+      `IntegerMultBounds.NLogN.SchurDominance.solves_perturbation_bound,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_line_execution_bits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_line_roundoff_budget,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_line_allocated_sizes,

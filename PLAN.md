@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1800 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1801 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9931,3 +9931,34 @@ Combined build peak is 3.4 GiB. All ten new/revised proof modules and the audit
 root pass individual guarded checks: proof modules peak at 2943.9 MiB or less
 and the audit root at 2967.9 MiB. Added-source integrity, plan-status and whitespace
 checks pass. Proof limits are unchanged.
+
+### Natural-order computed-matrix forward error
+
+`naturalLineSolve_error` now bounds the decoded integer solve against any exact
+solution of the computed rank matrix, with half-unit RHS, by
+`62000 (2p)^3 N^2 (2^-q (1 + 180 / β²))`. The proof transfers the actual window
+factorization to the generic rounded band solve and checks agreement of the
+machine's unguarded Newton rules with the analysed guarded rules. It uses the
+existing precision assumptions, without the extra error-at-most-one premise
+needed by the coarse size theorem. Empty boundaries are included.
+
+The individual guarded check passes at 2838.8 MiB. All 14,645 guarded stage-audit
+jobs pass, including the new explicit forward-error axiom audit; combined peak
+is 3.4 GiB. This is the computed-matrix error only: perturbation from the exact
+Schur matrix, normalized RHS error, and the final unscaled accuracy bound still
+need composition. S3 remains partial and kappa is unchanged.
+
+The same module now also proves `naturalLineSolve_perturbed_error`, combining
+the integer solve's forward error with matrix row error ε and RHS error δ.
+The additional error is `(δ + εX)/μ`, where μ is the computed matrix's dominance
+margin and X bounds the original exact solution. The structural
+`solves_perturbation_bound` proves this comparison directly through the residual
+of the difference of the two exact solutions. It applies to arbitrary finite
+active sets, including the empty set, and needs no matrix inverse representation.
+The combined module passes its individual guarded check at 2841.8 MiB; the
+structural comparison module passes at 1733.7 MiB. Specialization to constructed
+Schur columns and the gathered normalized RHS remains required.
+
+Validation of the combined error chunk: all 14,646 guarded stage-audit jobs
+pass, including all three new explicit axiom audits. Combined peak is 3.4 GiB.
+Plan-status and whitespace checks pass. Existing proof limits are unchanged.
