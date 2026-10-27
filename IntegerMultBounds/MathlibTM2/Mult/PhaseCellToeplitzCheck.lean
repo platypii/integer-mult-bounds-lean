@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryTable
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBuildBoundaryTable
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTableColumn
@@ -1741,6 +1743,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.tableLoopStep_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.tableColumnsLoop_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.buildBoundaryTable_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySetupR_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySetupR_update,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.installBoundarySetupHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseBoundarySetupHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tableFoldReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tableBoundaryFold_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareBoundaryPage_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tableArithmeticProject_page,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.constructedBoundaryTable_spec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,

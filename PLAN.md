@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1689 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1694 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9129,4 +9129,46 @@ Validation: all 10,346 guarded stage-audit jobs pass, including fourteen new
 explicit scan, packing/error, frame/readiness, invariant and complete-builder
 audits. Combined build peak is 2.7 GiB. All seven new modules and the audit root
 pass individual guarded checks at at most 2064.7 MiB. Added-source integrity,
+plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Folded-page setup composed with complete computed-table construction
+
+`installBoundarySetupHeaders_exec` copies only the five geometry headers needed
+by folded-page setup from retained masters 121/122/124/141/142. Its cost is
+`4*(s+t+band+a+b)+21`; the matching release costs
+`2*(s+t+band+a+b)+11`. Neither coupling precision/width nor multiplier headers
+are unnecessarily installed. The payload commutation/frame lemmas permit the
+new coordinate page to survive header release.
+
+`tableBoundaryFold_exec` places the existing complete coordinate-page constructor
+in the 154-port table bank without tying it to a second procedure table. The
+constructor is instantiated with an empty procedure type and embedded into the
+actual caller; no supplied execution, procedure oracle or new workspace is
+introduced. `prepareBoundaryPage_exec` composes ordinary geometry-header setup,
+coordinate generation/folding, cardinality and width generation, and complete
+runtime-header release. Only the owned page on 109 and its headers on 115/116
+change; masters, source, retained components and all scratch are restored.
+
+`tableArithmeticProject_page` proves that these generated resident resources
+leave the relocated arithmetic view unchanged. `constructedBoundaryTable_spec`
+uses that fact to compose preparation with the actual complete table builder.
+It starts from retained solver readiness, ordinary masters and empty owned page
+ports; no folded page, width, cardinality, coefficient family, Schur matrix or
+execution is supplied. Its final frame retains the generated folded page and
+headers alongside the packed table on 132. It returns solver readiness, the
+exact packed representation, the packed-table size bound and `2^-target`
+decoded entry accuracy against the actual masked halo Schur matrix. All setup,
+folding, table-generation and cleanup costs are explicitly included.
+
+The page-setup/table-production composition is now closed. Executed access to
+the packed table, factorization/solve/release and the full real/imaginary endpoint
+remain open, as do uniform fast time, complete simultaneous live storage and
+the final S3 theorem. The retained table-prefix bound alone is not the complete
+storage contract, and explicit scan costs alone are not the uniform fast-time
+bound. S3 remains partial.
+
+Validation: all 10,351 guarded stage-audit jobs pass, including nine new explicit
+header/frame, procedure-free folding, prepared-page and composed table audits.
+Combined build peak is 2.7 GiB. All five new modules and the audit root pass
+individual guarded checks at at most 2065.9 MiB. Added-source integrity,
 plan-status and whitespace checks pass; proof limits are unchanged.
