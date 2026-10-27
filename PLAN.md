@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2109 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2113 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13472,3 +13472,31 @@ Validation: the expanded guarded stage axiom audit passes all 14,960 jobs
 (3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 Both new modules pass individual guarded checks, with maximum peak RSS
 3061.0 MiB, below the 4 GiB module budget.
+
+### S3 complete generated cached setup/solve/release batch
+
+`generatedClosedComplexBatch_spec` now composes the generated factor-page and
+cached-replica caller with actual factor-page release. The full execution
+constructs the factor page and scatter controls, generates one coefficient key,
+executes every complex replica, releases the coefficient key, and releases the
+factor page. Its exact final frame changes only port 132's owned ordered batch
+output prefix. Original inputs, both cache banks and borrowed coefficient
+suffixes, factor/coordinate/control tapes, parked streams, clocks, private
+headers and scratch all restore. Every input/output pair has the uniform
+complex target-error guarantee.
+
+The placed factor release retains the existing batch-sized result clock and
+preserves the per-row master. Separate execution, exact restoration and
+release-cost contracts account for the actual owned page stock. The complete
+batch cost is dimension-only and includes generated factor setup, coefficient
+setup/release, every cached component and final page release.
+
+The ordinary-scalar outer caller still needs this new complete batch composed
+with its scalar setup/release. Final uniform fast time matching (including the
+generated factor setup bill) and simultaneous whole-execution live storage
+remain open. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,964 jobs
+(3.5 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+All four new modules pass individual guarded checks, with maximum peak RSS
+3015.7 MiB, below the 4 GiB module budget.
