@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolveReady
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryFactor
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryFactorSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryFactorHeaders
@@ -1909,6 +1911,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_factorPrepared_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializedBoundaryFactor_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.boundaryFactorLegacy_input,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolveScratch_cases,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundarySolveReady.update_vk,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolveReady_of_factor,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_padRhs_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_solve_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_foldedSolve_runs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.constructedBoundaryFactor_spec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,

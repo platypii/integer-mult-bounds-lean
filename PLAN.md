@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1763 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1764 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9623,3 +9623,31 @@ constructed-factorization audits. Combined build peak is 3.4 GiB. All six new
 modules and the audit root pass individual guarded checks at at most 2954.5 MiB,
 below the 4 GiB per-module target. Added-source integrity, plan-status and
 whitespace checks pass; proof limits are unchanged.
+
+### Folded boundary RHS triangular execution
+
+`BoundarySolveReady` isolates the restored multiplier, width/count headers and
+scratch required by the two triangular passes. `boundarySolveReady_of_factor`
+derives this contract from the generated factor setup and the factorizer's
+existing exact frame and explicit empty-port postconditions. Updating the RHS
+port preserves the contract.
+
+`boundaryPadRhs` appends the required zero look-ahead records to a gathered,
+folded RHS without changing its order or the factor tables. Its structural
+execution proof costs at most `4*N*w + 4*W*w + 8` steps.
+`boundary_foldedSolve_runs` composes this actual padding program with the
+forward/backward triangular passes. Only the RHS and solution ports change;
+all factor tables and control headers are retained for subsequent RHS vectors.
+The theorem still assumes coefficient and intermediate solve fit bounds; it
+is not yet an allocated solve theorem for the constructed matrix.
+
+Boundary RHS gathering, the constructed-matrix solve fit/error bounds and the
+full constructed-factor-to-solve composition remain open, along with cleanup,
+recovery/publication, the inverse endpoint and uniform time/live storage. S3
+remains partial.
+
+Validation: all 14,608 guarded stage-audit jobs pass, including six new explicit
+workspace, padding and triangular solve axiom audits; combined peak 3.4 GiB.
+The new module and stage root pass individual guarded checks at 2864.4 MiB
+and 2956.8 MiB respectively. Source-integrity, plan-status and whitespace
+checks pass. Proof limits are unchanged.
