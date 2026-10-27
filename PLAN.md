@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2078 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2081 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13198,3 +13198,31 @@ Validation: the expanded guarded stage axiom audit passes all 14,929 jobs
 (3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 All three new modules pass individual guarded checks, with maximum peak RSS
 2973.8 MiB, below the 4 GiB module budget.
+
+### S3 real cached residual and retained Schur contract
+
+`placedCachedRealInteriorResidual_spec` composes the restoring cached execution
+with paid real projection in the ordinary workspace. It returns real integer
+interior and residual fields, the precision-independent interior magnitude
+bound, the resulting sharper residual magnitude bound, and the original
+coordinate approximation/error guarantees. Its exact final frame still changes
+only the owned prefixes on ports 132 and 110. Both cache keys and all private
+headers, scratch and borrowed suffixes restore.
+
+`placedRealResidualProjection_exec` executes the existing real-prefix algorithm
+in the disjoint workspace. `placedCachedRetainedSchurResidual_spec` chooses the
+interior solution operator internally and turns the generated real residual
+into the scaled Schur RHS contract. It proves the scaled boundary error,
+decoded reads of the actual words, and the restored length-key readiness for
+the next solve. The cached path therefore no longer requires a supplied real
+interior solution or an externally supplied residual line at this handoff.
+
+Recovery and the enclosing boundary/complex batch calls still need their cached
+variants and both precision keys hoisted around the batch. Final uniform fast
+time matching and simultaneous whole-execution live storage remain open. S3
+stays partial; kappa is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,932 jobs
+(3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+All three new modules pass individual guarded checks, with maximum peak RSS
+2971.0 MiB, below the 4 GiB module budget.
