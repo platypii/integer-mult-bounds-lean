@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1816 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1817 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10201,3 +10201,33 @@ jobs pass, including five new explicit lift/projection/physical-residual axiom
 audits. Combined peak is 3.4 GiB; both added modules check below 3 GiB.
 Plan-status, added-source integrity and whitespace checks pass. Proof limits
 are unchanged.
+
+### Executed retained residual and accurate constructed boundary solve
+
+`retainedBoundarySolve_spec` now composes the actual physical retained Schur
+residual execution with constructed columns, factorization, gather,
+normalization, triangular solve and exact unscaling. Both stages use the same
+column target and canonical precision. The starting RHS is bounded by four,
+matching the boundary constructor's normalized arithmetic interface. The
+residual's actual magnitude, realness, weighted error and transported readiness
+supply all boundary-solve premises internally; no supplied residual field or
+residual accuracy oracle remains.
+
+The composed theorem returns the actual encoded solution on tape 217, exact
+retained interior and residual stream prefixes on 132 and 110, output length and
+word fit, user state, complete I/O/left frame, legacy frame outside owned ports,
+precision master, clean multiplier bank and private scratch emptiness. For any
+exact principal-system solution of the decoded original real RHS, it proves
+output error `3·2^-target` and the existing stable recovery magnitude. The cost
+is the sum of the two proved execution bounds. Its individual guarded check
+peaks at 2924.7 MiB.
+
+This closes the residual-to-accurate-boundary execution composition for the
+normalized real RHS interface. Boundary publication/unfolding, retained recovery,
+factor/table/page retirement, full inverse assembly, uniform time and complete
+simultaneous live storage remain open. S3 remains partial and kappa is unchanged.
+
+Validation: all 14,662 guarded stage-audit jobs pass, including the new explicit
+composed retained-boundary execution axiom audit. Combined peak is 3.4 GiB;
+the new module checks below 3 GiB. Plan-status, added-source integrity and
+whitespace checks pass. Proof limits are unchanged.
