@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryNormalization
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryScalarInPlace
 
 /-! Normalize a gathered RHS in place while preserving the triangular factor bank. -/
 
@@ -37,19 +38,14 @@ theorem boundary_normalize_runs (hrg : Function.Injective rg) (hdisj : ∀ r j, 
   have hz0 : |gv q (0 : ℤ)| ≤ (2 : ℝ)^E := by rw [gv_zero,abs_zero]; positivity
   have hfc : Fits (2*q+8) (⟨(2 : ℤ)^e,0⟩ : GaussianInt) :=
     (boundary_normalization_fits q E e hq 0 ⟨hz0,hz0⟩).2.1
-  have hscale := band_scale_runs (body := body) hrg hdisj hι hT hQ hA
-    (x := .vk) (y := .dtab) (o := .ya)
-    ⟨by decide,by decide,by decide,fun _ => ⟨by simp,by simp,by simp⟩⟩
-    σ hready (by omega) (by omega) xs ((2 : ℤ)^e) hfx hfc hx hc hya
-  let σ₁ := Function.update (Function.update σ .ya
-    (cstream A (2*q+8) (xs.map (normalizeBoundaryWord q e)))) .vk []
-  have hmove₁ := rsb_moveR_runs (body := body) (ι := ι) hrg (a := .ya) (b := .ac2) (by decide) σ₁
-  let σ₂ := Function.update (Function.update σ₁ .ya []) .ac2 ((σ₁ .ya).reverse ++ σ₁ .ac2)
-  have hmove₂ := rsb_moveR_runs (body := body) (ι := ι) hrg (a := .ac2) (b := .vk) (by decide) σ₂
-  refine ((RsbRuns.seq hdisj hscale (RsbRuns.seq hdisj hmove₁ hmove₂)).congr ?_).mono ?_
-  · funext r
-    cases r <;> simp [σ₂,σ₁,hya,hac2]
-  · simp [boundaryNormalizeCost,σ₂,σ₁,hac2,length_cstream,Nat.mul_add]
-    ring_nf; omega
+  have hrun := boundary_scalarInPlace_runs (body := body) hrg hdisj hι hT hQ hA .vk
+    ⟨by decide,by decide,by decide,fun _ => ⟨by simp,by simp,by simp⟩⟩ (by decide)
+    (2*q+8) q σ hready (by omega) (by omega) xs ((2 : ℤ)^e) hfx hfc hx hc hya hac2
+  have heq : (xs.map fun z => tdivN q (z * ⟨(2 : ℤ)^e,0⟩)) = xs.map (normalizeBoundaryWord q e) :=
+    List.map_congr_left (fun _ _ => rfl)
+  change RsbRuns body rg ι (boundaryScalarInPlaceP rg hι hT hQ .vk) σ
+    (Function.update σ .vk (cstream A (2*q+8) (xs.map (normalizeBoundaryWord q e))))
+    (boundaryScalarInPlaceCost (2*q+8) xs.length)
+  simpa only [heq] using hrun
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

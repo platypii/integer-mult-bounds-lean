@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryFactor
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBoundaryGatherSolve
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryFactorSolveTables
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolutionBounds
 
 /-! Construct the boundary matrix and factors, then gather, normalize and solve the retained residual. -/
 
@@ -94,8 +95,10 @@ theorem constructedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
       (boundaryFactorState S') .hf = cstream A w ((naturalLineUc q K W B.card AZ).map colC).flatten ∧
       (boundaryFactorState S') .df = cstream A w ((naturalLineRcs q K W B.card AZ).map fun x => (⟨x,0⟩ : GaussianInt)) ∧
       BoundarySolveReady (Function.update (boundaryFactorState S') .dout []) q w W B.card ∧
+      solution.length = B.card ∧ (∀ z ∈ solution, |gv q z.re| ≤ 8*p+1 ∧ |gv q z.im| ≤ 8*p+1) ∧
       S'.R 217 = cstream A w solution ∧ S'.R 206 = [] ∧
-      RsbReady (boundaryFactorState S') w q ∧
+      RsbReady (boundaryFactorState S') w q ∧ (S'.R 119).length = q ∧
+      (∀ i : Fin 64, S'.R (boundaryFactorMulReg i) = []) ∧
       S'.R 184 = [] ∧ S'.R 223 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
@@ -171,9 +174,32 @@ theorem constructedBoundarySolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
   have hresetReady : BoundarySolveReady (Function.update (boundaryFactorState S₂) .dout []) q w W B.card := by
     rw [hreset]
     exact hready
+  let rhs := ((List.range B.card).map (fun j => C (bFoldAt s B j))).map (normalizeBoundaryWord q (q/2-1))
+  have hrhsLen : rhs.length = B.card := by simp [rhs]
+  obtain ⟨hqNorm,hqEven,_,_⟩ := boundary_normalization_precision p u l target rhsExp B.card
+  change 2 ≤ q at hqNorm
+  change q%2 = 0 at hqEven
+  have hsplit : q = q/2+(q/2-1)+1 := by omega
+  have hrhsBound : ∀ z ∈ rhs, |gv q z.re| ≤ 1/2 ∧ |gv q z.im| ≤ 1/2 := by
+    intro z hz
+    obtain ⟨x,hx,rfl⟩ := List.mem_map.mp hz
+    obtain ⟨j,hj,rfl⟩ := List.mem_map.mp hx
+    have hraw := boundary_residual_normalization_bound p u l target rhsExp B.card (C (bFoldAt s B j))
+      (hC _ (bFoldAt_mem s B j (List.mem_range.mp hj)))
+    exact normalizeBoundaryWord_bound q (q/2) (q/2-1) hsplit _ hraw
+  have hsolutionLen := naturalLineSolve_length q K W B.card (factorRankIntegerMatrix B W columns) rhs hrhsLen
+  have hsolutionBound := boundary_line_allocated_solution_bounds A p u l target rhsExp B W columns hp (by omega) hlen
+    hformat hrank rhs hrhsLen hrhsBound
+  have h119' : (S₂.R 119).length = q := by
+    have hh := hlegacy₂ 119
+    change S₂.R 119 = S₁.R 119 at hh
+    rw [hh]
+    exact h119
+  have hmul' (i : Fin 64) : S₂.R (boundaryFactorMulReg i) = [] :=
+    (hframe.2.2.2 _ (fun r => boundaryFactorReg_disjoint r i)).trans (hmul i)
   refine ⟨v₂,S₂,n₁+n₂,columns,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hlen,hcolumns,
-    hformat,hstorage,herror,hrank,hinp₂.trans hinp₁,hout₂.trans hout₁,hL₂.trans hL₁,?_,h109',h115',h116',h132',hboFinal,hhfFinal,hdfFinal,hresetReady,congrFun hpost .dout,
-    congrFun hpost .vk,hready',h184',h223',h220',h221'⟩
+    hformat,hstorage,herror,hrank,hinp₂.trans hinp₁,hout₂.trans hout₁,hL₂.trans hL₁,?_,h109',h115',h116',h132',hboFinal,hhfFinal,hdfFinal,hresetReady,hsolutionLen,hsolutionBound,congrFun hpost .dout,
+    congrFun hpost .vk,hready',h119',hmul',h184',h223',h220',h221'⟩
   intro i hi109 hi115 hi116 hi132
   by_cases hi140 : i = 140
   · subst i

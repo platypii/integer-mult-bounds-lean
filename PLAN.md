@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1792 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1800 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9888,4 +9888,46 @@ axiom audits; all strengthened factorizer contracts remain audited. Combined
 build peak is 7.9 GiB. All six new/revised proof modules and the audit root pass
 individual guarded checks: proof modules peak at 2936.5 MiB or less and the
 audit root at 2966.8 MiB. Added-source integrity, plan-status and whitespace
+checks pass. Proof limits are unchanged.
+
+### Executed exact unscaling of the constructed boundary solution
+
+`boundary_unscale_product` proves that the existing fixed-point multiplier with
+scalar numerator `2^(q+q/2+1)` computes multiplication by `2^(q/2+1)` exactly;
+its truncation divides an exact multiple of `2^q`. `unscaleBoundaryWord_value`
+identifies the decoded scale. `boundary_unscale_fits` proves that the coarse
+solution component bound `8*p+1` still fits width `2*q+8` after unscaling under
+`p ≤ q/2`, which follows from the allocated precision. The scalar also fits
+that same word width.
+
+The shared structural `boundary_scalarInPlace_runs` proof now supplies both
+normalization and unscaling, restoring natural record order and every other
+port. The existing normalization program definition is unchanged.
+`boundaryUnscaleHeader_exec` generates the scalar exponent from the retained
+precision master. `generatedBoundaryUnscale_exec` constructs the scalar,
+executes exact in-place solution unscaling and retires the scalar, exponent
+header and private scratch. Its exact final state changes only solution port
+217, with all setup and multiplier costs charged.
+
+The constructed solve now returns its derived solution length/component bounds,
+precision master and clean multiplier bank. `constructedBoundaryUnscaledSolve_spec`
+composes the actual table construction, factorization, raw RHS gather, generated
+normalization, triangular solve and generated exact unscaling. Its returned
+unscaled solution words all fit the original allocated width. Matrix/error
+facts, owned page prefixes, factor tables and readiness after output retirement
+are retained for recovery and cleanup; endpoints, left stacks and the existing
+legacy frame are preserved.
+
+Accuracy of the computed unscaled solution against the exact Schur solve,
+factor/table retirement, recovery/publication composition and the inverse
+endpoint remain open. Uniform fast time and complete simultaneous live storage
+also remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,644 guarded stage-audit jobs pass, including fourteen new
+explicit exact-unscale, scalar/word-fit, shared scalar execution, generated
+header/physical execution, solution-bound and constructed unscaled-solve axiom
+audits. The strengthened solve and shared normalization proofs remain audited.
+Combined build peak is 3.4 GiB. All ten new/revised proof modules and the audit
+root pass individual guarded checks: proof modules peak at 2943.9 MiB or less
+and the audit root at 2967.9 MiB. Added-source integrity, plan-status and whitespace
 checks pass. Proof limits are unchanged.

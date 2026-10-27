@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundaryUnscaledSolve
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundarySolve
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBoundaryGatherSolve
@@ -1926,6 +1928,20 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializedBoundaryFactor_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.boundaryFactorLegacy_input,
       `IntegerMultBounds.NLogN.SchurDominance.exists_solver,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.integer_unscale_exact,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unscale_product,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.gaussian_two_pow_real,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unscaleBoundaryWord_value,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unscale_scalar_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unscale_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_scalarInPlace_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_unscale_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryUnscaleHeader_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryUnscalePhysical_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedBoundaryUnscale_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_line_allocated_solution_bounds,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.constructedBoundaryUnscaledSolve_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactorReg_private,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryFactor_solve_tables,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.constructedBoundarySolve_spec,
