@@ -108,7 +108,7 @@ theorem sharedPageClosedComplex_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     · simpa [S₁] using (hprivate 232 (by decide) (by decide)).trans (hnew 232 (by decide))
     · simpa [S₁] using (hprivate 233 (by decide) (by decide)).trans (hnew 233 (by decide))
     · simpa [S₁] using (hprivate 237 (by decide) (by decide)).trans (hnew 237 (by decide))
-  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := sharedPageRelease_exec (body := body) B W w columns hlen result (S.R 132)
+  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := sharedPageRelease_exec (body := body) (rows := s) B W w columns hlen result (S.R 132)
     (by simp [result,chirpLine]) v₁ S₁ (by simpa [S₁] using hs) (by simpa [S₁] using hW)
     (by have hh : page.R 116 = List.replicate B.card tick := hN; simp only [S₁,Function.update_of_ne (by decide : (116 : Fin 240) ≠ 132),hh,List.length_replicate])
     (by simpa [S₁] using hw) (by change result++page.R 132 = _; rw [h132]) hz

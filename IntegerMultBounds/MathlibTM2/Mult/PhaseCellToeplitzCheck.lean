@@ -18,7 +18,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageConstructedComplex
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageClosedComplex
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedSharedInverseCaller
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComplexBatchStep
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComplexBatchLoop
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageConstructedComplexBatch
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedInverseCaller
@@ -2119,6 +2119,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchNext_ready,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchNext_factor,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchLoop_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchFinish_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexBatchSetup_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedComplexConstructedBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageBoundaryFactory_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageInverseSetup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageConstructedComplex_spec,

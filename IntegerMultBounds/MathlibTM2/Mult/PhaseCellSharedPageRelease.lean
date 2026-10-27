@@ -31,25 +31,25 @@ def sharedPageReleaseCost (s N W w : ℕ) (S : Stacks 240 A) : ℕ :=
   retirePackedBandTableCost N W w+12*s*w+9*s+12+
     2*(sharedPageOwnedRegs.map fun i => (S.R i).length).sum+2*sharedPageOwnedRegs.length+1
 
-theorem sharedPageRelease_exec {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (W w : ℕ)
+theorem sharedPageRelease_exec {s rows : ℕ} [NeZero s] (B : Finset (ZMod s)) (W w : ℕ)
     (columns : List (ZMod s → GaussianInt)) (hlen : columns.length = B.card)
-    (result tail : List (Fin (A+4))) (hresult : result.length = s*w)
+    (result tail : List (Fin (A+4))) (hresult : result.length = rows*w)
     (v : HS 240 Q A U) (S : Stacks 240 A)
-    (hs : (S.R 121).length = s) (hW : (S.R 190).length = W)
+    (hs : (S.R 121).length = rows) (hW : (S.R 190).length = W)
     (hN : (S.R 116).length = B.card) (hw : (S.R 160).length = w)
     (hsource : S.R 132 = result++(bandTableWords A w B W columns 0++tail))
     (hfresh : ∀ i ∈ ([152,151,131,134,135,136,137,138,231,232,233,237] : List (Fin 240)), S.R i = []) :
-    ∃ v' n, v'.user = v.user ∧ n ≤ sharedPageReleaseCost s B.card W w S ∧
+    ∃ v' n, v'.user = v.user ∧ n ≤ sharedPageReleaseCost rows B.card W w S ∧
       Exec body sharedPageRelease (mk v S) n
         (mk v' {S with R := fun i => if i ∈ sharedPageOwnedRegs then [] else
           (Function.update S.R 132 (result++tail)) i}) := by
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := unaryProduct_exec (body := body)
     (a := 121) (b := 160) (dst := 231) (t₁ := 232) (t₂ := 233) (by decide) v S
     (hfresh _ (by simp)) (hfresh _ (by simp))
-  let S₁ : Stacks 240 A := {S with R := Function.update S.R 231 (List.replicate (s*w) tick)}
+  let S₁ : Stacks 240 A := {S with R := Function.update S.R 231 (List.replicate (rows*w) tick)}
   have he₁' : Exec body (unaryProduct 121 160 231 232 233) (mk v S) n₁ (mk v₁ S₁) := by
     simpa only [hs,hw,hfresh 231 (by simp),List.append_nil] using he₁
-  have hn₁' : n₁ ≤ s*(4*w+9)+4 := by simpa only [hs,hw] using hn₁
+  have hn₁' : n₁ ≤ rows*(4*w+9)+4 := by simpa only [hs,hw] using hn₁
   obtain ⟨v₂,hu₂,he₂⟩ := transfer_exec (body := body) (count := 231) (src := 132) (dst := 237) (tmp := 233)
     (by decide) v₁ S₁ result (bandTableWords A w B W columns 0++tail)
     (by simpa [S₁] using hsource) (by simp [S₁,hresult]) (by simpa [S₁] using hfresh 233 (by simp))
@@ -71,7 +71,7 @@ theorem sharedPageRelease_exec {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (W w :
     simpa [S₄,S₃,S₂,movedR] using he₄
   obtain ⟨v₅,hu₅,he₅⟩ := uclear_exec body 231 v₄ S₄
   let S₅ : Stacks 240 A := {S₄ with R := Function.update S₄.R 231 []}
-  have he₅' : Exec body (uclear 231) (mk v₄ S₄) (2*(s*w)+2) (mk v₅ S₅) := by
+  have he₅' : Exec body (uclear 231) (mk v₄ S₄) (2*(rows*w)+2) (mk v₅ S₅) := by
     simpa [S₅,S₄,S₃,S₂,S₁] using he₅
   have hbase : S₅ = {S with R := Function.update S.R 132 (result++tail)} := by
     refine Stacks.ext rfl rfl rfl ?_
@@ -90,7 +90,7 @@ theorem sharedPageRelease_exec {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (W w :
       simp at hi
     rw [hbase]
     exact congrArg List.length (Function.update_of_ne hi132 _ _)
-  refine ⟨v₆,n₁+((4*result.length+4)+(n₃+((2*result.length+2)+((2*(s*w)+2)+
+  refine ⟨v₆,n₁+((4*result.length+4)+(n₃+((2*result.length+2)+((2*(rows*w)+2)+
     (2*(sharedPageOwnedRegs.map fun i => (S.R i).length).sum+2*sharedPageOwnedRegs.length+1))))),
     hu₆.trans (hu₅.trans (hu₄.trans (hu₃.trans (hu₂.trans hu₁)))),?_,
     (Exec.seq he₁' (Exec.seq he₂' (Exec.seq he₃ (Exec.seq he₄' (Exec.seq he₅' he₆))))).cast (by rw [hsum]) ?_⟩

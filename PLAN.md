@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1946 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1950 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11604,3 +11604,58 @@ Validation: all 14,794 guarded stage-audit jobs pass (3.4 GiB combined peak).
 All four new replica-step/numerical/readiness/loop modules pass individual
 guarded checks (maximum 2975.2 MiB). Source-integrity, whitespace and plan-status
 checks pass; default proof limits are unchanged.
+
+### Restore and publish a complete prepared complex batch
+
+`sharedComplexBatchFinish_exec` executes restoration of the reversed borrowed
+input stream and publication of the reversed solution stream in original order,
+then clears the owned byte clock. It restores the saved-stream registers and
+preserves every other tape, including the retained boundary page.
+
+`sharedComplexBatch_spec` composes actual byte-clock generation from the row and
+word-width masters, a borrowed replica-count copy, the counted numerical complex
+loop, and that finish program. Its exact final state is the initial state with
+only tape 132 gaining the ordered encoded result batch above its original suffix.
+The input batch, replica-count master, all loop/copy clocks, saved streams and
+scratch restore exactly. The error relation covers every input/result pair; the
+empty batch is included. The explicit bound includes generation, repeated
+numerical kernels, parking, loop overhead, input restoration, ordered publication
+and clock release.
+
+One generated factor/publication setup and full page release around this prepared
+batch remain to be composed. Final grouped fast-cost matching and simultaneous
+live-storage bounds remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,796 guarded stage-audit jobs pass (3.5 GiB combined peak).
+The finish and full prepared-batch modules pass individual guarded checks at
+2939.3 and 3020.1 MiB respectively. Source-integrity, whitespace and plan-status
+checks pass; proof limits remain unchanged.
+
+### Construct one page for the complete complex batch
+
+`sharedComplexBatchSetup_spec` executes the existing factor factory and one-time
+publication setup in the 248-register batch bank. It exports all prepared
+numerical/page/readiness/ownership bounds and preserves every batch-control
+register outside the native core.
+
+`sharedComplexConstructedBatch_spec` now composes that actual setup with the full
+prepared numerical batch. The factory and publication setup are charged once,
+independently of the replica count. All replicas use the generated columns,
+factors, coordinate stream and scatter controls; no supplied coefficient or
+factor page remains. The theorem retains the per-line numerical relation,
+ordered publication, exact batch-control restoration and the detailed page
+metadata needed for final release.
+
+`sharedPageRelease_exec` now separates the number of result rows from the ambient
+matrix dimension. Its structural proof and executed program are unchanged; this
+permits saving an arbitrary whole result batch above a page for the original
+ambient matrix. The existing single-line consumer supplies its original row count explicitly.
+The batch release adapter, final closed batch frame, grouped fast-cost matching
+and simultaneous live storage remain open. S3 remains partial.
+
+
+Validation: all 14,798 guarded stage-audit jobs pass (3.6 GiB combined peak).
+All four new batch-finish/prepared-batch/setup/constructed-batch modules and both
+changed release/single-line-release consumers pass individual guarded checks
+(maximum 3043.2 MiB). Changed-source integrity, whitespace and plan-status checks
+pass; default proof limits are unchanged.
