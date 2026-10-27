@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2060 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2063 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13041,3 +13041,25 @@ Validation: the expanded guarded stage audit passes all 14,911 jobs (3.5 GiB
 combined peak RSS). All eleven new implementation modules pass individual
 guarded checks, with maximum peak RSS 1985.0 MiB. Proof-integrity, plan-status
 and whitespace checks pass.
+
+### S3 disjoint two-key cache placement and executed setup
+
+The 256-register workspace now places two four-port cache keys beyond the
+complete existing 248-register batch bank. `couplingCacheReg` preserves the
+actual nested native-header placement and redirects only the four owned cache
+ports. Its injectivity and disjointness from the other key are proved.
+
+`CouplingPageCacheReady` records the computed guards, coefficient page, unary
+word count and row width. Arbitrary legacy batch execution preserves this
+record, as does work on the other key. `placedCouplingCacheSetup_exec` executes
+cache generation in the new placement with the existing setup cost and restores
+the complete legacy workspace exactly, including borrowed coefficient suffixes.
+
+This is the placement/setup checkpoint. Placed reading and release, production
+batch integration and setup/release hoisting remain open, together with final
+uniform time matching and whole-execution live storage. S3 remains partial;
+kappa is unchanged.
+
+Validation: the expanded guarded stage audit passes all 14,914 jobs (3.5 GiB
+combined peak RSS). The three new modules pass individual guarded checks below
+the 4 GiB module budget. Proof-integrity and whitespace checks pass.
