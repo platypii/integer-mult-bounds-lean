@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedInverseCaller
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallInverseHeaders
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBandParameterSetup
@@ -2046,6 +2048,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.physicalOriginalComponentInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedComplexBoundary_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedInverse_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblClearInverseScalars_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseCoreReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseScalarReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseScalarReg_core,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseMasterPort_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseCallerReg_cover,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseHeaders_ready,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseInverseCaller_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedInverseCaller_sized_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inversePrecisionRoom_mono,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseCallerWordWidth_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedInverseCaller_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblBitCount_at,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblDo_with_fits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryCountRow_do,

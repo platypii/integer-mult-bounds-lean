@@ -51,7 +51,7 @@ theorem installInverseHeaders_exec (rg : TblR 25 → Fin T) (hrg : Function.Inje
       Exec body (installInverseHeaders rg ports) (mk v S) n (mk v' S') ∧
       tblHolds rg S' (tblRho W wl [] z) ∧
       (∀ i : Fin 8, z.val ⟨i.val,by omega⟩ = st.val ⟨i.val,by omega⟩) ∧
-      (∀ i, z.val i < 2^W) ∧
+      z.acc = st.acc ∧ (∀ i, z.val i < 2^W) ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
       (∀ i, S'.R (ports i) = List.replicate (inverseMasterValues p u l target s t a b i) Node.tick++S.R (ports i)) ∧
       ∀ k, (∀ r, rg r ≠ k) → (∀ i, ports i ≠ k) → S'.R k = S.R k := by
@@ -82,7 +82,7 @@ theorem installInverseHeaders_exec (rg : TblR 25 → Fin T) (hrg : Function.Inje
       inverseMasterCopyCost W (inverseMasterValues p u l target s t a b) := by
     simp only [unaryCopiesCost,inverseHeaderAssignments,List.map_map,inverseMasterCopyCost]
     simp only [Function.comp_def,hvalue]
-  refine ⟨v₂,S₂,n₁+n₂,z,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,hkeep,hfitZ,
+  refine ⟨v₂,S₂,n₁+n₂,z,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,hkeep,hacc,hfitZ,
     hframe.1,hframe.2.1,hframe.2.2.1,?_,?_⟩
   · exact Nat.add_le_add hn₁ (hn₂.trans_eq hcost)
   · intro r

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1873 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1880 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `retainedComplexBoundary_spec` executes from one encoded complex input and the retained ordinary-parameter readiness bank: preserve/split the input, generate the residual and boundary table, construct/factor/solve/unscale the boundary system, generate ambient publication, recover both components, pair the complex output and restore every stack except its owned output prefix. Physical halo reads have error at most `2^-target`; no supplied boundary solutions, columns, factors or publication controls remain. Shared arithmetic precision and exact borrowed-suffix restoration are proved. `retainedInverse_spec` specializes the executed solver to the full complex matrix equation with uniform coordinate error. Packed-table retirement now has an explicit polynomial bound in ordinary geometry. The complete retained inverse execution now has a dimension-only time bound, including factor-bank release. Closed caller/setup, uniform fast time and simultaneous live-storage bounds remain open, including matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `closedInverseCaller_spec` executes a fixed 264-register inverse caller from binary ordinary scalars and one encoded complex line, with a derived scalar width. It generates the band, boundary count, arithmetic precisions and unary masters, runs the full retained numerical inverse, and restores every stack except its owned output prefix, including scalar setup and all borrowed suffixes. Uniform coordinate error is at most `2^-target`. No supplied readiness bank, boundary solution, column, factor or publication control remains. The complete setup/solve/release execution has a dimension-only time bound. Uniform fast time matching and simultaneous live-storage bounds remain open, including matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -10929,3 +10929,38 @@ composition/counting/header-installation axiom audits; final combined peak is
 3.4 GiB. All five changed implementation modules pass individual guarded checks
 (maximum 2240.6 MiB). Source-integrity, whitespace and plan-status checks pass.
 Proof limits are unchanged.
+
+
+### Close the raw-scalar inverse caller and restore its setup bank
+
+`closedInverseCaller_spec` executes a fixed 264-register caller from the eight
+ordinary binary scalar inputs and one complex coefficient line. The scalar bank
+occupies 40 registers disjoint from the retained solver's 224 registers. Setup
+generates the band, actual boundary cardinality, arithmetic precision and unary
+masters; the generated headers now establish `LengthKeyReady` internally.
+The existing retained inverse executes unchanged inside that bank.
+
+Release clears the ten generated masters and restores all seventeen derived
+scalar variables to their original zero words, while preserving the eight
+original scalar inputs and the width word. The public execution ends in exactly
+the original stack state with only the complex output prefix added on register
+132. This includes the source line, arbitrary borrowed suffixes, all left stacks
+and input/output streams. Its coordinate error is at most `2^-target`, and
+`closedInverseCallerCost` pays scalar generation, unary installation, both real
+solves, complex publication and complete setup release.
+
+`inverseCallerWordWidth` uses only ordinary dimensions and the bound N≤s.
+`inverseCallerWordWidth_fits` derives all scalar arithmetic room conditions, so
+the selected-width contract needs neither a supplied readiness bank nor separate
+room witnesses. The lower sized contract remains available for callers that
+already own a suitable binary width.
+
+This closes the caller/setup gate. Uniform fast time matching, including the
+prepared-boundary budget, and simultaneous live-storage bounds remain open.
+S3 remains partial; kappa is unchanged.
+
+Validation: all 14,726 guarded stage-audit jobs pass, including twelve new explicit
+workspace/readiness/cleanup/closed-caller/sizing axiom audits. Final combined peak
+is 3.4 GiB. All eight changed implementation modules pass individual guarded
+checks (maximum 3086.3 MiB for the composed caller, below the 4 GiB module target).
+Source-integrity, whitespace and plan-status checks pass. Proof limits are unchanged.
