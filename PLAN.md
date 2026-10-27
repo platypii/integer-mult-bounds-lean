@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1836 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1839 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10507,3 +10507,33 @@ Validation: all 14,681 guarded stage-audit jobs pass, including six new explicit
 coordinate-permutation/lift/order/preparation axiom audits. Combined peak is
 3.4 GiB; all three added modules check below 3 GiB. Plan-status, added-source
 integrity and whitespace checks pass. Proof limits are unchanged.
+
+### Fully generated ambient publication from retained coordinates
+
+`boundaryCoordinatePackets` identifies the actual ascending coordinate encoding
+with the runtime reader's packets. `boundaryOriginAdvances_exec` specializes the
+complete generator to the actual boundary order, deriving sorting, length and
+coordinate bounds from boundary membership and the retained geometry width.
+`generatedBoundaryPublish_exec` consumes that page, generates all origin advances
+and scatter controls, initializes the zero ambient line, publishes the boundary
+field and retires both control streams. It preserves borrowed coordinate/value
+suffixes and every unrelated physical tape, with time at most
+`generateBoundaryAdvancesCost N V w s + 93sw + 45`.
+
+`preparedBoundaryPublish_exec` adds actual inverse folding of the retained
+coordinate page. Its inputs are the folded coordinate page, ascending boundary
+values and ordinary dimension headers; it needs no supplied origin advances,
+scatter schedule or zero prefix. Tape 132 receives exactly the ambient recovery
+field above its retained contents, while owned coordinate and packed-value
+prefixes are consumed. Obsolete header retirement is charged by actual lengths.
+Individual checks peak at 2905.9 MiB for boundary-specific advances, 2930.6 MiB
+for generated publication and 2926.4 MiB for complete preparation/publication.
+
+Composition with the retained solved-state endpoint, recovery precision
+alignment/composition, complete retirement, inverse assembly and uniform final
+time/live-storage bounds remain open. S3 remains partial; kappa is unchanged.
+
+Validation: all 14,684 guarded stage-audit jobs pass, including four new explicit
+coordinate-encoding/boundary-advance/generated/prepared-publication axiom audits.
+Combined peak is 3.4 GiB; all three new modules check below 3 GiB. Plan-status,
+added-source integrity and whitespace checks pass. Proof limits are unchanged.
