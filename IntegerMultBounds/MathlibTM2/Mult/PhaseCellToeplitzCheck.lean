@@ -303,6 +303,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnfold
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBoundaryUnfold
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedBoundaryRealUnfold
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryScatter
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryPublish
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellControlledBoundaryPublish
 import Lean.Util.CollectAxioms
 
 /-! Integrity audit of the executed S3 triangular stages and its stream interpretation. -/
@@ -2009,6 +2011,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_im,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_sizes,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.naturalLineSolve_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryPublicationGaps,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryOriginAdvances_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryPublicationControls_nonempty_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.conditionalBoundaryPublicationControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.controlledBoundaryPublish_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryPublish_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryScatterOrigins_disjoint,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryScatterOrigins_fit,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_scatter_field,

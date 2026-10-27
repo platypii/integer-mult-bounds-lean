@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1826 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1829 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -10374,3 +10374,54 @@ Validation: all 14,671 guarded stage-audit jobs pass, including ten new explicit
 boundary scatter data/encoding/execution axiom audits. Combined peak is 3.4 GiB;
 both added modules check below 3 GiB. Plan-status, added-source integrity and
 whitespace checks pass. Proof limits are unchanged.
+
+### Generated zero ambient prefix and sparse publication
+
+`boundaryPublish_exec` composes the existing structural zero-word initializer
+with actual sparse boundary scatter. It generates an s-word zero ambient prefix
+from retained dimension 97 and word width 160, then writes the ascending
+boundary values into it. The packed prefix on 204 is consumed, its borrowed
+suffix restores, and tape 132 receives exactly the encoded ambient boundary
+field above its original retained contents. All count and initialization scratch
+restore. Its time is at most `54sw+16`; the individual guarded check peaks at
+2921.1 MiB. This removes the caller-supplied zero-prefix premise.
+
+The delimited scatter controls are still supplied. The existing origin-advance
+and publication-control converter is the next route for generating them from
+retained coordinates. Coordinate preparation/control generation, composition
+with the solved state, recovery precision alignment/composition, full retirement,
+inverse assembly and final resource bounds remain open. S3 remains partial and
+kappa is unchanged.
+
+Validation: all 14,672 guarded stage-audit jobs pass, including the new explicit
+zero-initialized boundary publication axiom audit. Combined peak is 3.4 GiB.
+Plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Origin-advance conversion and locally cleaned publication
+
+`boundaryPublicationGaps` identifies the exact boundary scatter schedule with
+publication gaps of ascending origin advances. The advance-volume bound is at
+most `sw`. `boundaryPublicationControls_nonempty_exec` runs the existing converter
+on the physical boundary bank, restoring the source advances and count and
+emitting the exact scatter controls in at most `33sw+21` steps.
+`conditionalBoundaryPublicationControls_exec` handles both empty and nonempty
+boundaries with bound `33sw+23`.
+
+`controlledBoundaryPublish_exec` composes conversion, generated zero ambient
+initialization, actual sparse scattering and control retirement. Only the packed
+source prefix and ambient destination change: tape 204's borrowed suffix
+restores and tape 132 receives the encoded recovery field above its original
+contents. Origin advances, count, masters and scratch restore. Its total time is
+at most `89sw+41`. Individual checks peak at 2930.4 MiB for converter/empty case
+and 2926.7 MiB for the complete controlled publisher.
+
+The origin-advance stream remains supplied. Preparation of retained coordinates
+and generation of those advances, composition with the solved state, recovery
+precision alignment/composition, complete retirement, inverse assembly and final
+uniform resource bounds remain open. S3 remains partial; kappa is unchanged.
+
+Validation of the generated-zero/control-conversion/publication chunk: all
+14,674 guarded stage-audit jobs pass, including six new explicit publication
+axiom audits. Combined peak is 3.4 GiB; all three new modules check below 3 GiB.
+Plan-status, added-source integrity and whitespace checks pass. Proof limits
+are unchanged.
