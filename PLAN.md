@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1976 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1978 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12065,4 +12065,30 @@ endpoint/resource integration remain open; S3 stays partial.
 
 Validation: all 14,825 guarded stage-audit jobs pass (3.4 GiB combined peak).
 All three new modules pass individual guarded checks (maximum 1952.1 MiB).
+Source-integrity and whitespace checks pass; default proof limits are unchanged.
+
+### Compose spatial row arithmetic with actual cursor advancement
+
+`spatialCouplingReg` embeds the native spatial row into the 144-port workspace,
+placing its source 92 on outer 141 while retaining the ordinary coefficient,
+RHS, result and header addresses. Its injectivity keeps outer saved cursor 142
+and loop counter 143 outside the row workspace.
+`outerSpatialCouplingRow_exec` lifts the complete row to an arbitrary outer
+procedure table, preserving every outer spectator and borrowed suffix.
+
+`spatialCouplingRowStep_exec` executes that row, consumes one RHS word, advances
+one encoded source word into the reversed saved bank, and increments coordinate
+107. Its exact five-port frame changes only 113 (result), 93 (remaining RHS),
+107 (coordinate), 141 (unread spatial source) and 142 (saved visited prefix).
+The coefficient and arithmetic workspace restore, and outer loop counter 143
+is preserved. The allowance is `spatialCouplingRowCost+10*wordWidth+11`, including
+actual RHS disposal, source transfer and index increment.
+
+The complete counted row-loop/restoration composition, executed masked/padded
+source setup and inverse integration remain open. Final fast supplier/setup
+matching, combined live storage and endpoint/resource integration remain open;
+S3 stays partial and the production inverse retains the indexed path.
+
+Validation: all 14,827 guarded stage-audit jobs pass (3.4 GiB combined peak).
+Both new modules pass individual guarded checks (maximum 1944.2 MiB).
 Source-integrity and whitespace checks pass; default proof limits are unchanged.
