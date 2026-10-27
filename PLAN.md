@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1913 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1917 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11232,4 +11232,41 @@ Validation: all 14,761 guarded stage-audit jobs pass, including eight new explic
 coordinate/setup/retained-control/scatter/ambient-byte-error/cost audits (5.6 GiB
 combined peak). All four new modules and both revised adapters pass individual
 guarded checks (maximum 2954.4 MiB). Source-integrity, whitespace and plan-status
+checks pass; proof limits are unchanged.
+
+### Execute halo recovery while retaining the shared page
+
+`sharedPageRecoveryPublishedHalo_at_precision` executes the existing physical
+recovery pipeline in the 240-register bank under an arbitrary caller procedure
+table. Its exact frame changes only the arithmetic source and publication tapes;
+the computed factor page, folded coordinate page, borrowed batch streams and
+retained scatter advances survive unchanged.
+
+`sharedPageBoundaryRecovered_spec` composes borrowed batch-row unfolding,
+reusable ambient publication and executed halo recovery at the actual selected
+inverse precision. It transfers the byte-level boundary error contract into
+recovery, using the shared target and boundary error budgets. The resulting halo
+has `ErrorOn (haloVertices s a b) ... (1/2^target)`.
+`sharedPageRetireResidual_exec` then removes recovery's owned coupling-residual
+prefix with a clock generated from the retained ambient row and width masters.
+It restores all private controls. The combined recovery stage leaves the original
+RHS at the source head and only the recovered halo published over the original
+output suffix. It charges the actual recovery tolerance cost plus ambient
+publication and `s*(12*w+9)+12` residual retirement.
+
+`sharedPageComponentTransition_exec` also lifts the existing component transition
+into the shared bank. It parks a recovered real output, restores the publication
+suffix and loads the next parked RHS, preserving every factor/control tape and
+all private scratch. This is available for composing the shared-page complex
+pair without releasing or reconstructing the factor page.
+
+Recovery now executes after shared-page ambient publication with the selected
+numerical target and residual retirement. Grouped residual generation and the
+complete complex/replica caller, full setup/interior cost matching, and
+simultaneous live-storage bounds remain open. S3 remains partial.
+
+Validation: all 14,765 guarded stage-audit jobs pass, including five new explicit
+recovery-register-map/precision/retirement/composed-halo/component-transition
+contract audits (5.6 GiB combined peak). All four new modules pass individual
+guarded checks (maximum 2957.6 MiB). Source-integrity, whitespace and plan-status
 checks pass; proof limits are unchanged.
