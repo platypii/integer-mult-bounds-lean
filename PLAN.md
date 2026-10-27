@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2153 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2159 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13807,4 +13807,39 @@ unchanged.
 
 Validation: the expanded standard-axiom audit passes all 15,004 jobs (3.5 GiB
 combined peak RSS). All four new modules pass individual guarded checks below
+the 4 GiB module budget. Proof-integrity and whitespace checks pass.
+
+### S3 checkpoint: ordered weight-key families and matched class execution
+
+`weightKeyFamily` stores each exact grouped page with a unary symbol-count
+header. `familyProcessHaloLengthKey_spec` now loads the next packet, executes
+the actual parsed-length conditional class with that page, and collects the
+used packet. The family head is the page for the same ambient parameters,
+precision, halo and current length as the binary length packet. The remaining
+length and family suffixes advance together; a separate per-class cache
+assumption is no longer needed inside this operation.
+
+The fixed 151-register workspace leaves the 148-register cached caller intact
+and adds the family queue, saved header and completed-packet accumulator.
+`loadWeightKey_exec` and `collectWeightKey_exec` restore all temporary cache
+ports after each class, preserve native/left stacks and borrowed suffixes, and
+charge `18*page.length+28` steps around the actual class execution.
+`storeGeneratedWeightKey_exec` constructs a packet from the actual generated
+page and replay clock in `14*page.length+24` steps. The final
+`restoreWeightKeyFamily_exec` returns completed packets in their original
+order in `2*family.length+2` steps.
+
+`haloWeightKeyFamily_length_le` uses the proved total interior volume of the
+generated halo-length groups. Encoded pages and their unary headers together
+occupy at most `4*s*w+keyCount` symbols, with no extra class-count factor on
+the coordinate volume. This is the family stock bound, not a simultaneous
+whole-execution space theorem.
+
+The full counted loop, composition of numerical page generation/packet setup
+for every key, and reuse through both complete inverse passes remain to be
+integrated. Final selected uniform time matching and simultaneous
+whole-execution live storage remain open. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,010 jobs (3.5 GiB
+combined peak RSS). All six new modules pass individual guarded checks below
 the 4 GiB module budget. Proof-integrity and whitespace checks pass.

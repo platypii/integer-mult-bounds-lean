@@ -38,6 +38,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedClosedBatchSpec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedControlledHaloClass
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedProcessHaloLengthKey
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyProcessHaloLengthKey
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellStoreGeneratedWeightKey
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedFactorComplexBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedCacheComplexBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedComplexBatch
@@ -2500,6 +2502,23 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedPublishedClassR_empty,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedConditionalHaloClass_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedProcessHaloLengthKey_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightKeyPacket_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightKeyFamily_cons,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.weightKeyFamily_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloWeightKeyPages_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloWeightKeyFamily_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloWeightKeyFamily_length_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadWeightKey_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.collectWeightKey_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.restoreWeightKeyFamily_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.storeGeneratedWeightKey_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyCoreReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamilyCoreReg_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.loadedWeightKeyBank_project,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.loadedWeightKeyBank_low,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.collectedWeightKeyBank_projectR,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.weightFamily_release_published,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyProcessHaloLengthKey_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCouplingCacheRelease_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_succ,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_length_le,
