@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2088 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2092 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13284,3 +13284,37 @@ Validation: the expanded guarded stage axiom audit passes all 14,939 jobs
 (3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 All three new modules pass individual guarded checks, with maximum peak RSS
 2968.1 MiB, below the 4 GiB module budget.
+
+### S3 cached residual through the computed boundary solve
+
+`placedCachedComputedBoundaryRhs_spec` now computes the cached real Schur
+residual and gathers its actual boundary entries into the retained factor
+bank's RHS port 206. The ambient residual/interior words and all factor and
+coordinate data are preserved by this gather. Its numerical contract carries
+the scaled Schur residual error and the decoded physical input guarantee into
+the boundary solver.
+
+`placedCachedComputedBoundarySolve_spec` composes that generated RHS with the
+actual reusable normalized/unscaled boundary solve. It proves the returned
+boundary solution's length, word fit, readiness, precision-independent magnitude
+and coordinate approximation guarantees against the true halo solution. The
+executed cost is the cached real residual ledger plus actual gather and prepared
+boundary solve costs. The exact final frame changes only the owned ambient
+input/interior prefixes and boundary solution prefix on port 224; the temporary
+boundary RHS is retired and both retained coefficient keys restore.
+
+`couplingBoundaryReg` embeds the complete ordinary 240-register boundary caller
+in the 256-register workspace. Separate executed gather and residual-solve
+contracts preserve the original algorithms and bills. The source projection
+has image below register 154, so updates to factor-bank ports preserve its
+readiness without expanding the full concrete workspace.
+
+The enclosing recovered-boundary, real/complex component and counted batch
+callers still need composition, with both precision-key setup/release hoisted
+around the batch. Uniform fast time matching and simultaneous whole-execution
+live storage remain open. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,943 jobs
+(3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+All four new modules pass individual guarded checks, with maximum peak RSS
+2985.7 MiB, below the 4 GiB module budget.

@@ -29,6 +29,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingPassCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPageSpatialCouplingRow
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseCouplingCoefficientPage
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPageCouplingCost
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedComputedBoundarySolve
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedRecoveryTolerance
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedRecoveryInterior
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCachedRetainedSchurResidual
@@ -2371,6 +2372,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedRecoveryPublishedHalo_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedRecoveryPublishedHalo_tolerance_at_precision,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedRecoveryPublishedHalo_tolerance,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.placedBoundaryResidualSolve_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingBoundaryReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingSourceReg_lt,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingSource_high_update,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedBoundaryRhs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedComputedBoundaryRhs_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCachedComputedBoundarySolve_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedCouplingCacheRelease_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_succ,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCoefficientPage_length_le,
