@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLoadBoundaryCoordinate
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedSchurColumn
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedOriginalColumn
@@ -1665,6 +1667,9 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseSchurColumnInput_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseSchurColumnInput_ready,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedSchurColumn_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.decodeNaturalWord_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadBoundaryCoordinate_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadBoundaryCoordinate_generatedWidth,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1655 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1657 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8837,3 +8837,33 @@ explicit execution/readiness audits. Combined build peak is 2.7 GiB. All five
 new modules and the audit root pass individual guarded checks at at most
 2057.8 MiB. Added-source integrity, plan-status and whitespace checks
 pass; proof limits are unchanged.
+
+### Load the generated folded boundary coordinate into the arithmetic caller
+
+`decodeNaturalWord_exec` consumes one owned paired real coordinate word,
+converts its real bits to the binary ABI and performs the existing linear-cost
+Horner unary conversion. It appends the coordinate ticks to the destination,
+consumes the word and restores all conversion scratch, with bound
+`6*x+17*w+12`.
+
+`loadBoundaryCoordinate_exec` composes the actual restoring folded-page lookup
+with this decoder. It preserves the folded page, its borrowed suffix, width,
+lookup index and every other stack; only port 139 becomes the selected unary
+coordinate. It proves boundary membership and inverse folded position. Its cost
+is `j*(12*w+9)+27*w+6*x+34`, retaining both the page scan and unary decoding
+costs. `loadBoundaryCoordinate_generatedWidth` proves that the width generated
+by the existing geometry setup suffices, so no extra coordinate-fit assumption
+is needed for the actual page. This closes the representation gap between the
+folded-page coordinate and the generated Schur-column caller.
+
+Page parking during arithmetic remains open: the retained page on 109 and its
+headers on 115/116 conflict with the low arithmetic workspace. Streaming table
+construction, factor/solve/release, the full endpoint and uniform time/storage
+bounds remain open; S3 is partial. In particular, this linear unary coordinate
+conversion is paid explicitly and supplies no fast repeated-access claim.
+
+Validation: all 10,314 guarded stage-audit jobs pass, including the three new
+explicit decoder/loader audits. Combined build peak is 2.7 GiB. Both new modules
+and the audit root pass individual guarded checks at at most 2055.6 MiB.
+Added-source integrity, plan-status and whitespace checks pass; proof limits
+are unchanged.
