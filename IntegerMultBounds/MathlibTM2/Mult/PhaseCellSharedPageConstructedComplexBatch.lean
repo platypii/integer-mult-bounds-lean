@@ -61,7 +61,7 @@ theorem sharedComplexConstructedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states
       (∀ i : Fin 248, 240 ≤ i.val → page.R i = S.R i) ∧
       columns.length = B.card ∧
       (embStk sharedComplexBatchCoreReg page).R 132 = bandTableWords A w B W columns 0++(embStk sharedComplexBatchCoreReg S).R 132 ∧
-      (embStk sharedComplexBatchCoreReg page).inp = (embStk sharedComplexBatchCoreReg S).inp ∧ (embStk sharedComplexBatchCoreReg page).out = (embStk sharedComplexBatchCoreReg S).out ∧ (embStk sharedComplexBatchCoreReg page).L = (embStk sharedComplexBatchCoreReg S).L ∧
+      (embStk sharedComplexBatchCoreReg page).inp = (embStk sharedComplexBatchCoreReg S).inp ∧ (embStk sharedComplexBatchCoreReg page).out = (embStk sharedComplexBatchCoreReg S).out ∧ page.L = S.L ∧
       (∀ i : Fin 154, i ≠ 109 → i ≠ 115 → i ≠ 116 → i ≠ 132 →
         (embStk sharedComplexBatchCoreReg page).R (sharedPageRecoveryReg (boundaryFactorLegacyReg i)) = (embStk sharedComplexBatchCoreReg S).R (sharedPageRecoveryReg (boundaryFactorLegacyReg i))) ∧
       (∀ i : Fin 240, 224 ≤ i.val → i ≠ 239 → (embStk sharedComplexBatchCoreReg page).R i = (embStk sharedComplexBatchCoreReg S).R i) ∧
@@ -84,7 +84,7 @@ theorem sharedComplexConstructedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   let V := publicationGeometryWidth t band
   intro Fs hF v S tail hready hleft ha hb hclean hnew hcount hfresh x y hx hy
-  obtain ⟨v₁,page,n₁,columns,hu₁,hn₁,he₁,hoff,hlen,hformat,hcolumns,hstage,hsolve,hbo,hhf,hdf,h206,h224,h225,
+  obtain ⟨v₁,page,n₁,columns,hu₁,hn₁,he₁,hoff,hoffL,hlen,hformat,hcolumns,hstage,hsolve,hbo,hhf,hdf,h206,h224,h225,
     hleft₁,hmul,h119,h223,h184,h220,h221,herror,hready₁,hcoords,hV,hN,h132,hinp,hout,hL,hframe,hprivate,
     hstorage,hheaders,hperm,hadv⟩ := sharedComplexBatchSetup_spec (body := body) (target := solveTarget) (rhsExp := 2)
     hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad v S
@@ -141,8 +141,16 @@ theorem sharedComplexConstructedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states
           simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
           rcases hi with rfl | rfl | rfl | rfl | rfl | rfl <;> decide
         exact (hoff i hge).trans (hfresh i hi)) x y hx hy
+  have hLfull : page.L = S.L := by
+    funext i
+    by_cases hi : i.val < 240
+    · let j : Fin 240 := ⟨i.val,hi⟩
+      have hj : sharedComplexBatchCoreReg j = i := Fin.ext rfl
+      rw [← hj]
+      exact congrFun hL j
+    · exact hoffL i (by omega)
   refine ⟨v₂,page,n₁+n₂,columns,Zs,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hfinal,hoff,
-    hlen,h132,hinp,hout,hL,hframe,hprivate,hstorage,hheaders,hperm,hsolve,hcoords,hV,hN,hsolve.ready.wn,hsolve.m2n,h121,hadv,
+    hlen,h132,hinp,hout,hLfull,hframe,hprivate,hstorage,hheaders,hperm,hsolve,hcoords,hV,hN,hsolve.ready.wn,hsolve.m2n,h121,hadv,
     h206,hsolve.empty .dout (by simp [boundarySolveScratch]),h184,h223⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -53,6 +53,7 @@ theorem sharedComplexBatchSetup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
         sharedPagePublicationSetupCost B.card (publicationGeometryWidth t band) w s ∧
       Exec body (sharedComplexBatchSetup hR hQ) (mk v S) n (mk v' S') ∧
       (∀ i : Fin 248, 240 ≤ i.val → S'.R i = S.R i) ∧
+      (∀ i : Fin 248, 240 ≤ i.val → S'.L i = S.L i) ∧
       columns.length = B.card ∧ ColumnFamilyFormat w columns ∧
       ColumnFamilyAccurate A q w B
         (SchurDominance.run (realMatrix s t p u) (haloVertices s a b) (haloInterior s t band a b).toList).1
@@ -101,7 +102,10 @@ theorem sharedComplexBatchSetup_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     intro i hi
     exact (embOvr_off (e := sharedComplexBatchCoreReg) page.get S
       (fun k => sharedComplexBatchCoreReg_off k i hi)).2
-  refine ⟨hoff,?_⟩
+  refine ⟨hoff,?_,?_⟩
+  · intro i hi
+    exact (embOvr_off (e := sharedComplexBatchCoreReg) page.get S
+      (fun k => sharedComplexBatchCoreReg_off k i hi)).1
   simpa only [hproject] using hrest
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

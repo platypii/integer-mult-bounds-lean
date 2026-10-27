@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1950 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1954 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `sharedInverseCaller_spec` executes a fixed 280-register inverse caller from binary ordinary scalars and one encoded complex line, with a derived scalar width. It generates the band, boundary count, arithmetic precisions and unary masters, constructs one shared boundary page, reuses it across both real-component solves, releases it, and restores every stack except its owned output prefix, including scalar setup and all borrowed suffixes. Uniform coordinate error is at most `2^-target`. No supplied readiness bank, boundary solution, column, factor or publication control remains. The complete setup/solve/release execution has a dimension-only time bound. Uniform fast time matching and simultaneous live-storage bounds remain open, including matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `sharedInverseCaller_spec` executes a fixed 280-register inverse caller from binary ordinary scalars and one encoded complex line, with a derived scalar width. It generates the band, boundary count, arithmetic precisions and unary masters, constructs one shared boundary page, reuses it across both real-component solves, releases it, and restores every stack except its owned output prefix, including scalar setup and all borrowed suffixes. Uniform coordinate error is at most `2^-target`. No supplied readiness bank, boundary solution, column, factor or publication control remains. The complete setup/solve/release execution has a dimension-only time bound. `sharedComplexClosedBatch_spec` now executes a counted complex batch with one generated factor/publication setup, both component solves per replica, ordered publication and full page release; its exact final frame changes only the batch output prefix. Uniform fast time matching and simultaneous live-storage bounds remain open, including matching prepared boundary costs into the S3 budget. Shared S3–S5 interface remains pinned; kappa is unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -11659,3 +11659,84 @@ All four new batch-finish/prepared-batch/setup/constructed-batch modules and bot
 changed release/single-line-release consumers pass individual guarded checks
 (maximum 3043.2 MiB). Changed-source integrity, whitespace and plan-status checks
 pass; default proof limits are unchanged.
+
+### Execute page release with a batch-sized result counter
+
+`sharedComplexBatchReleaseReg` routes only the native release row-count port to
+fresh register 240, keeping the original row master 121 outside its image.
+Injectivity, owned-page register compatibility and control-register separation
+are proved structurally. `sharedComplexBatchRelease_exec` generates the actual
+`replicaCount*rows` counter, executes packed-table retirement and owned-page
+release while preserving the whole result batch, then clears the temporary
+counter. Its explicit allowance contains counter generation, actual page release
+and counter erasure.
+
+`sharedComplexBatchReleaseResult` records the exact resulting stack override.
+Its off-image frame and original row-master restoration are proved.
+`sharedComplexBatchReleaseCost_eq` identifies the owned-page stock in the adapted
+release view with the original batch core, so the generated counter does not
+inflate the page-volume allowance. The final closed setup/batch/release frame,
+dimension-only release allowance, final fast-cost matching and simultaneous live
+storage remain open. S3 remains partial.
+
+Validation: all 14,799 guarded stage-audit jobs pass (3.4 GiB combined peak).
+The batch-release adapter passes its individual guarded check at 2955.6 MiB.
+Source-integrity, whitespace and plan-status checks pass; proof limits remain
+unchanged.
+
+### Close the batch release frame and its dimension-only allowance
+
+`sharedComplexBatchReleaseResult_frame` now identifies the adapter's exact
+poststate with clearing precisely the mapped owned page and replacing the
+result/table prefix by the preserved whole result batch. It proves the full
+left-stack/input/output frame as well as every right register, including the
+fresh counter. `sharedComplexBatchReleaseResult_restore` combines that frame
+with setup ownership/restoration facts to obtain the original state with only
+its advertised output prefix changed.
+
+`sharedComplexBatchReleaseCostBound` separates batch-result traffic from retained
+page stock. `sharedComplexBatchReleaseCost_le` bounds counter construction,
+release and counter erasure using the original page-volume bound at the ambient
+row count; only result handling grows with the replica count. This includes the
+empty batch and does not claim a simultaneous live-storage bound.
+
+Composing the actual generated setup/batch and release executions, transferring
+the numerical reads across the retired table suffix, matching final fast costs
+and simultaneous live storage remain open. S3 remains partial.
+
+Validation: all 14,801 guarded stage-audit jobs pass (3.4 GiB combined peak).
+The release-frame and dimension-only cost modules pass individual guarded
+checks at 2941.0 and 2925.3 MiB. Source-integrity, whitespace and plan-status
+checks pass; default proof limits remain unchanged.
+
+
+### Close setup, numerical complex batch and full page release
+
+`sharedComplexClosedBatch_spec` composes the executed generated factory and
+publication setup, the counted complete complex batch, and adapted whole-batch
+page release. Its exact final state is the original state with only tape 132
+gaining the ordered encoded result batch above its original suffix. Original
+inputs, row/count masters, all arithmetic/factor/publication pages, private batch
+controls, every left stack and borrowed suffix restore exactly. Setup now exports
+its off-core left-stack frame, and the constructed-batch contract exposes the
+resulting whole-bank left-stack equality required by this final restoration.
+
+The per-input/result numerical relation retains halo error `2^-target` after the
+packed table suffix is removed. Physical reads transfer directly across that
+suffix; no extra integer-fit or free execution premise is added. Empty batches
+are admitted. `sharedComplexClosedBatchCost` pays one actual factor factory and
+publication setup, all repeated numerical/parking/loop/restoration/publication
+work, and the dimension-only full release allowance. It depends only on ordinary
+dimensions, targets and the replica count, not on borrowed suffix lengths or a
+supplied execution cost.
+
+The one-key generated-page complete-complex-batch setup/solve/release gate is
+closed. The final fast setup/interior/group allowance, simultaneous live-storage
+bounds and final S3 endpoint/resource integration remain open. S3 remains partial;
+kappa is unchanged.
+
+Validation: all 14,802 guarded stage-audit jobs pass (3.5 GiB combined peak).
+All four new release/frame/cost/closed-batch modules and both strengthened
+setup/constructed-batch modules pass individual guarded checks (maximum
+3029.9 MiB). Changed-source integrity, whitespace and plan-status checks pass;
+default proof limits are unchanged.
