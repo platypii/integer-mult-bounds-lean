@@ -51,6 +51,7 @@ theorem boundary_foldedSolve_physical_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A
       Exec body (boundaryFoldedSolve hQ) (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
       (∀ i : Fin 154, S'.R (boundaryFactorLegacyReg i) = S.R (boundaryFactorLegacyReg i)) ∧
+      RsbFr boundaryFactorReg S S' ∧
       boundaryFactorState S' = Function.update (Function.update σ .vk []) .dout
         (cstream A w (bandSolveVec q W Lc Uc rcs b)) := by
   dsimp only
@@ -61,7 +62,7 @@ theorem boundary_foldedSolve_physical_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A
     (boundaryFactorState S) hready b hb hbin hvk hbo hhf hdf
   obtain ⟨v',S',n,hu,hn,he,hholds,hframe⟩ := hrun v S ⟨hleft,hmul⟩ (fun _ => rfl)
   obtain ⟨hinp,hout,hL,hlegacy⟩ := boundaryFactorFr_legacy hframe
-  refine ⟨v',S',n,hu,hn,he,hinp,hout,hL,?_,funext hholds⟩
+  refine ⟨v',S',n,hu,hn,he,hinp,hout,hL,?_,hframe,funext hholds⟩
   intro i
   by_cases hi : i = 140
   · subst i

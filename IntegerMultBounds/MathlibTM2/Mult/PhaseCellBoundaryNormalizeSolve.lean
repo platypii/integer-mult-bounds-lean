@@ -72,7 +72,7 @@ theorem boundaryNormalizeSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     simpa only [S₁,ys,hw] using he₁
   have hstate : boundaryFactorState S₁ = Function.update (boundaryFactorState S) .vk (cstream A w ys) :=
     boundaryFactorState_update S .vk _
-  obtain ⟨v₂,S₂,n₂,hu₂,hn₂,he₂,hinp,hout,hL,hlegacy,hpost⟩ := boundary_foldedSolve_physical_exec (body := body)
+  obtain ⟨v₂,S₂,n₂,hu₂,hn₂,he₂,hinp,hout,hL,hlegacy,_hframe,hpost⟩ := boundary_foldedSolve_physical_exec (body := body)
     hQ hA p u l target rhsExp B W columns hp hlen hformat hstage v₁ S₁ hleft (by
       intro i
       have hi206 : boundaryFactorMulReg i ≠ 206 := by

@@ -84,7 +84,7 @@ theorem boundaryGatherSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
   have he₁' : Exec body boundaryRhsPhysical (mk v S) n₁ (mk v₁ S₁) := by simpa [S₁,b,hvk] using he₁
   have hstate : boundaryFactorState S₁ = Function.update (boundaryFactorState S) .vk (cstream A w b) :=
     boundaryFactorState_update_rhs S _
-  obtain ⟨v₂,S₂,n₂,hu₂,hn₂,he₂,hinp,hout,hL,hlegacy,hpost⟩ := boundary_foldedSolve_physical_exec (body := body)
+  obtain ⟨v₂,S₂,n₂,hu₂,hn₂,he₂,hinp,hout,hL,hlegacy,_hframe,hpost⟩ := boundary_foldedSolve_physical_exec (body := body)
     hQ hA p u l target rhsExp B W columns hp hlen hformat hstage v₁ S₁ hleft
     (by
       intro i
