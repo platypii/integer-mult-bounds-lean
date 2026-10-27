@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2075 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2078 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13167,3 +13167,34 @@ Validation: the expanded guarded stage axiom audit passes all 14,926 jobs
 (3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 Both new modules pass individual guarded checks, with maximum peak RSS
 2998.3 MiB, below the 4 GiB module budget.
+
+### S3 generated output allocation and restoring cached residual
+
+`placedCachedInitializedInteriorResidual_spec` allocates the initial ambient
+output from the actual encoded RHS, then executes the cached interior/residual
+composition. No supplied initial output field remains. Its executed allocation
+cost and exact frame are derived from the existing ordinary initializer.
+
+`placedCachedRestoredInteriorResidual_spec` releases the private coupling
+headers after this generated execution. Its exact final frame changes only
+port 132 (owned interior output prefix) and port 110 (owned residual input
+prefix). Both retained coefficient keys, all borrowed suffixes, ordinary
+scratch and the entire private header bank restore. The interior norm and
+approximation guarantees and boundary residual norm/error guarantees carry
+through this restoring execution.
+
+`placedInteriorOutputInitialize_exec` and `placedCouplingHeadersRelease_exec`
+provide the ordinary placed control contracts. The structural embedding lemmas
+`embOvr_overwrite` and `embOvr_updateR_base` eliminate overwritten temporary
+output prefixes without comparing expanded concrete workspace terms.
+
+Real projection and its precision-independent magnitude estimates remain to
+be composed with this cached path, followed by recovery and the enclosing
+complex batch with both precision keys hoisted. Final uniform fast time and
+whole-execution live-storage bounds remain open. S3 stays partial; kappa is
+unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,929 jobs
+(3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+All three new modules pass individual guarded checks, with maximum peak RSS
+2973.8 MiB, below the 4 GiB module budget.
