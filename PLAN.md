@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1676 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1682 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9039,4 +9039,47 @@ Validation: all 10,333 guarded stage-audit jobs pass, including six new explicit
 endpoint, clipping, control-generation and prepared-collection audits. Combined
 build peak is 4.1 GiB. All five new modules and the audit root pass individual
 guarded checks at at most 2057.6 MiB. Added-source integrity, plan-status
+and whitespace checks pass; proof limits are unchanged.
+
+### Complete executed single-column table lifecycle
+
+`tableReg` embeds the resident 151-port bank into a fixed 154-port bank, reserving
+151 for the folded-column cursor and 152/153 for the outer counted scan. The
+projection/frame lemmas prove that retained outer controls do not interfere
+with embedded arithmetic. `retainedIndexedColumn_spec` copies the cursor into
+the consumed lookup index and executes the actual indexed column producer,
+preserving the outer cursor and both count controls. Only temporary source 110
+changes; the numerical column accuracy, realness, magnitude and readiness are
+retained.
+
+`retireResidentColumn_exec` reconstructs word width and ambient byte count from
+the retained precision/length masters, consumes exactly one owned column prefix,
+and restores the borrowed source suffix and every scratch port. Its bound pays
+width/count generation, full source motion and complete cleanup.
+`collectRetireColumn_exec` joins prepared band collection with that retirement;
+`retainedColumnCollection_exec` obtains the column index from the retained outer
+cursor and lifts the actual combined execution into the table-loop bank.
+
+`tableColumn_spec` now composes the whole lifecycle: obtain the selected column
+from the resident page, generate its original/interior response, collect exactly
+its clipped folded-band entries, release every temporary control and retire the
+ambient column. Its final physical frame changes only table port 132, prepending
+that column's packed band entries. The original source, resident page, headers,
+complex-component streams and all outer controls are restored exactly, and it
+returns the original source's solver readiness with the enlarged table suffix.
+The decoded emitted words carry `2^-target` error against the actual selected
+Schur column; extraction introduces no new rounding. The explicit time bound
+includes both copies of the retained cursor and every generation, collection
+and retirement cost. No column, Schur matrix, interior solution or execution is
+supplied to this caller.
+
+The outer complete-table loop and its global packed-page error contract remain
+open, followed by factor/solve/release and the full S3 endpoint. Uniform fast
+time and simultaneous retained-page/scratch storage also remain open; this
+lifecycle still pays the explicit repeated source scans. S3 remains partial.
+
+Validation: all 10,339 guarded stage-audit jobs pass, including ten new explicit
+workspace/frame, retirement, retained execution and lifecycle audits. Combined
+build peak is 2.7 GiB. All six new modules and the audit root pass individual
+guarded checks at at most 2061.8 MiB. Added-source integrity, plan-status
 and whitespace checks pass; proof limits are unchanged.

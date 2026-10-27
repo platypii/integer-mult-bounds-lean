@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTableColumn
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBandCollection
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCollectFoldedBand
@@ -1713,6 +1715,16 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.residentBandWidth_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.residentBandControls_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBandCollection_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tableReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tableProject_updateR_inner,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tableProject_updateR_outer,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tableExec_twoPorts,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tableExec_threePorts,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retireResidentColumn_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedIndexedColumn_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.collectRetireColumn_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedColumnCollection_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.tableColumn_spec,
 
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,
