@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2107 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2109 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13443,3 +13443,32 @@ Validation: the expanded guarded stage axiom audit passes all 14,958 jobs
 (3.5 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 All three new modules pass individual guarded checks, with maximum peak RSS
 3053.7 MiB, below the 4 GiB module budget.
+
+### S3 generated factor-page setup composed with cached replicas
+
+`placedFactorBatchSetup_spec` executes the existing generated factor-page and
+publication-control setup in the 256-register workspace. Its full original
+factor, format, accuracy, readiness and storage-stock contracts are retained,
+and its exact high-register frame preserves both coefficient banks and batch
+controls, including arbitrary borrowed cache suffixes.
+
+`generatedFactorComplexBatch_spec` composes that setup with the generated-key
+cached batch. No supplied factor columns, prepared factor page, coordinate
+stream, scatter controls or coefficient-cache descriptor remains in this
+contract. The factor page and publication controls are built once, followed by
+one coefficient-key setup, all replicas and coefficient-key release. The output
+is ordered and satisfies the uniform complex target error for every replica.
+The exact final state is the generated retained page plus its owned output
+prefix; all pre-existing high workspace and coefficient suffixes restore.
+The executed bill includes actual factor construction, publication setup,
+coefficient setup/release, every cached component and batch publication.
+
+The retained factor-page release still needs composition with this new caller,
+followed by the ordinary-scalar outer caller. Final uniform fast time matching
+(including the generated factor setup bill) and simultaneous whole-execution
+live storage remain open. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,960 jobs
+(3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+Both new modules pass individual guarded checks, with maximum peak RSS
+3061.0 MiB, below the 4 GiB module budget.
