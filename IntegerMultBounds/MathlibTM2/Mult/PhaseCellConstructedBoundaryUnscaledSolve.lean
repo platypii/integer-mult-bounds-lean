@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConstructedBoundarySolve
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedBoundaryUnscale
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRealSchurTarget
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellResidualBoundaryAccuracy
 public import IntegerMultBounds.NLogN.PhaseCellBoundary
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryExactBounds
 
@@ -213,21 +213,8 @@ theorem constructedBoundaryUnscaledSolve_spec (hR : rpStates ≤ Q) (hQ : SS.sta
           (SchurDominance.run M (I ∪ B) I.toList).1 i j| ≤ 1/(2 : ℝ)^bits := by
       rw [hU]
       exact herror
-    have hacc := boundary_real_schur_target A p u l target rhsExp B W columns hp (by omega) hlen
+    exact (boundary_residual_solution_accuracy A p u l target rhsExp B W columns hp (by omega) hlen
       C hformat hrank M I (haloInterior_disjoint_boundary s t band a b) hM R hRsolve
-      x b₀ hx' hb' he' hC hreal herr i hi
-    have hiSol : i < sol.length := by rw [hsolLen]; exact hi
-    have hget : result.getD i 0 = unscaleBoundaryWord q (sol.getD i 0) := by
-      change (sol.map (unscaleBoundaryWord q)).getD i 0 = _
-      rw [List.getD_eq_getElem _ _ (by simpa using hiSol),
-        List.getD_eq_getElem _ _ hiSol,List.getElem_map]
-    rw [hget]
-    have hxBound : ‖(x (bFoldAt s B i) : ℂ)‖ ≤ 16*(p : ℝ)*(2 : ℝ)^rhsExp := by
-      have h := SchurDominance.solves_bound M (I ∪ B) _ (by positivity) hM x b₀ hx'
-        ((2 : ℝ)^rhsExp) hb' _ (Finset.mem_union_right I (bFoldAt_mem s B i hi))
-      rw [div_div_eq_mul_div,div_one] at h
-      rw [Complex.norm_real,Real.norm_eq_abs]
-      nlinarith only [h,show (0 : ℝ) ≤ (p : ℝ)*(2 : ℝ)^rhsExp by positivity]
-    exact ⟨hacc,boundary_computed_solution_magnitude p rhsExp target (by omega) _ _ hxBound hacc⟩
+      x b₀ hx' hb' he' hC hreal herr).2 i hi
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -94,7 +94,7 @@ theorem constructedBoundaryBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     (embTab componentReg (embTab groupReg body))))
   let nativeBody := embTab preparedBoundaryCoreReg coreBody
   let outerBody := embTab preparedBoundaryBatchCoreReg nativeBody
-  obtain ⟨v₁,T₁,n₁,columns,hu₁,hn₁,he₁,hlen,hformat,hcolumns,hstage,hsolve,hbo,hhf,hdf,h206,h224,h225',hleft',hmul,hmaster,h223,h184,h220,h221⟩ :=
+  obtain ⟨v₁,T₁,n₁,columns,hu₁,hn₁,he₁,hlen,hformat,hcolumns,hstage,hsolve,hbo,hhf,hdf,h206,h224,h225',hleft',hmul,hmaster,h223,h184,h220,h221,herror⟩ :=
     preparedBoundaryFactory_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
       (embDn preparedBoundaryBatchCoreReg v) T tail h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew

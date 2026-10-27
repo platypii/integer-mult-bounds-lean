@@ -2072,6 +2072,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundarySolve_frame_exact,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryCoreReg_private,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_residual_solution_accuracy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundary_residual_solution_format,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedResidualBatchStep_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedResidualBatchLoop_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedResidualBatch_exec,

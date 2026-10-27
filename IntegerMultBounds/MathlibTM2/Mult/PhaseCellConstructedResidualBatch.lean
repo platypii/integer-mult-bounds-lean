@@ -2,6 +2,9 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryFactory
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedResidualBatch
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellResidualBoundaryAccuracy
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellResidualBoundaryFormat
+public import IntegerMultBounds.NLogN.PhaseCellBoundary
 
 /-! Execute one generated factor setup followed by a whole batch on the same computed page. -/
 
@@ -84,7 +87,21 @@ theorem constructedResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
       (∀ i : Fin 64, page.R (preparedBoundaryBatchCoreReg (preparedBoundaryCoreReg (boundaryFactorMulReg i))) = []) ∧
       (∀ k : Fin 234, 226 ≤ k.val → page.R k = S.R k) ∧
       (page.R 119).length = q ∧ page.R 223 = [] ∧ page.R 184 = [] ∧
-      page.R 220 = [] ∧ page.R 221 = [] := by
+      page.R 220 = [] ∧ page.R 221 = [] ∧
+      (∀ row ∈ bs, (solve row).length = B.card ∧ ∀ z ∈ solve row, Fits w z) ∧
+      (∀ row ∈ bs, ∀ (C : ZMod s → GaussianInt),
+        row = (List.range B.card).map (fun j => C (bFoldAt s B j)) →
+        ∀ (R : (ZMod s → ℝ) → ZMod s → ℝ) (x b₀ : ZMod s → ℝ),
+        (∀ c, SchurDominance.Solves (realMatrix s t p u) (haloInterior s t band a b) (R c) c) →
+        SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x b₀ →
+        (∀ j ∈ haloVertices s a b, |b₀ j| ≤ (2 : ℝ)^rhsExp) →
+        (∀ j ∈ B, (C j).im = 0) →
+        (∀ j ∈ B, 8*(p : ℝ)*|(value q (C j)).re -
+          SchurDominance.residual (realMatrix s t p u) (haloInterior s t band a b) R b₀ j| ≤
+            1/(2 : ℝ)^(recoveryTarget p bits+2)) →
+        ∀ i < B.card, ‖value q ((solve row).getD i 0) - (x (bFoldAt s B i) : ℂ)‖ ≤
+          3/(2 : ℝ)^target ∧
+          ‖value q ((solve row).getD i 0)‖ ≤ (2 : ℝ)^stableInteriorExponent p rhsExp) := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let bits := boundaryTableBits p target rhsExp B.card
@@ -97,7 +114,7 @@ theorem constructedResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     (embTab componentReg (embTab groupReg body))))
   let nativeBody := embTab preparedBoundaryCoreReg coreBody
   let outerBody := embTab preparedBoundaryBatchCoreReg nativeBody
-  obtain ⟨v₁,T₁,n₁,columns,hu₁,hn₁,he₁,hlen,hformat,hcolumns,hstage,hsolve,hbo,hhf,hdf,h206,h224,h225',hleft',hmul,hmaster,h223,h184,h220,h221⟩ :=
+  obtain ⟨v₁,T₁,n₁,columns,hu₁,hn₁,he₁,hlen,hformat,hcolumns,hstage,hsolve,hbo,hhf,hdf,h206,h224,h225',hleft',hmul,hmaster,h223,h184,h220,h221,herror⟩ :=
     preparedBoundaryFactory_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
       (embDn preparedBoundaryBatchCoreReg v) T tail h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -123,7 +140,7 @@ theorem constructedResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     ((hprivate 230 (by decide)).trans h230) ((hprivate 231 (by decide)).trans h231)
     ((hprivate 232 (by decide)).trans h232) ((hprivate 233 (by decide)).trans h233)
     (by rw [hprivate 229 (by decide)]; exact hcount) ((hprivate 226 (by decide)).trans hsource)
-  refine ⟨v₂,page,n₁+n₂,columns,hu₂.trans (hu₁'.trans hu₁),Nat.add_le_add hn₁ hn₂,?_,hlen,hformat,hcolumns,?_,?_,?_,?_,h206',h225'',?_,?_,hprivate,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,page,n₁+n₂,columns,hu₂.trans (hu₁'.trans hu₁),Nat.add_le_add hn₁ hn₂,?_,hlen,hformat,hcolumns,?_,?_,?_,?_,h206',h225'',?_,?_,hprivate,?_,?_,?_,?_,?_,?_,?_⟩
   · simpa only [constructedResidualBatch,outerBody,nativeBody,coreBody,B,W,h224'] using Exec.seq he₁' he₂
   · rw [hproj]; exact hsolve
   · rw [hproj]; exact hbo
@@ -140,5 +157,34 @@ theorem constructedResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
   · exact (congrArg (fun R : Stacks 226 A => R.R 184) hproj).trans h184
   · exact (congrArg (fun R : Stacks 226 A => R.R 220) hproj).trans h220
   · exact (congrArg (fun R : Stacks 226 A => R.R 221) hproj).trans h221
+  · intro row hrow
+    exact boundary_residual_solution_format A p u l target rhsExp B W columns hp (by omega) hlen
+      hformat hstage row (hrows row hrow) (hbound row hrow)
+  · intro row hrow C hrowC R x b₀ hR hx hb₀ hreal herr
+    let I := haloInterior s t (PhaseCellBand.width p u) a b
+    let M := realMatrix s t p u
+    have hU : I ∪ B = haloVertices s a b := haloInterior_union_boundary s t (PhaseCellBand.width p u) a b
+    let : NeZero t := ⟨by omega⟩
+    have hM : SchurDominance.DominatesOn M (I ∪ B) (1/(8*(p : ℝ))) := by
+      rw [hU]
+      exact SchurDominance.dominates_mono M Finset.univ (haloVertices s a b) _
+        (Finset.subset_univ _) (matrix_gap s t hst hα p u hp hwidth hαu hθ hgap hbudget)
+    have hmag : ∀ j ∈ B, |gv q (C j).re| ≤ (2 : ℝ)^couplingRowExponent rhsExp
+        (stableInteriorExponent p rhsExp) (8*p+1) (couplingCountExponent p u) ∧
+        |gv q (C j).im| ≤ (2 : ℝ)^couplingRowExponent rhsExp
+        (stableInteriorExponent p rhsExp) (8*p+1) (couplingCountExponent p u) := by
+      intro j hj
+      have hmem : C j ∈ row := by
+        rw [hrowC]
+        apply List.mem_map.mpr
+        exact ⟨bFoldPos s B j,List.mem_range.mpr (bFoldPos_lt s B j hj),
+          congrArg C (bFoldAt_bFoldPos s B j hj)⟩
+      exact hbound row hrow (C j) hmem
+    have hacc := boundary_residual_solution_accuracy A p u l target rhsExp B W columns hp (by omega) hlen
+      C hformat hstage M I (haloInterior_disjoint_boundary s t (PhaseCellBand.width p u) a b) hM R hR x b₀
+      (by rw [hU]; exact hx) (by rw [hU]; exact hb₀)
+      (by rw [hU]; exact herror) hmag hreal herr
+    rw [hrowC]
+    exact hacc.2
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

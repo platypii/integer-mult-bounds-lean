@@ -67,7 +67,11 @@ theorem preparedBoundaryFactory_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
       S'.R 206 = [] ∧ S'.R 224 = S.R 224 ∧ S'.R 225 = S.R 225 ∧
       (∀ i : Fin 224, S'.L (preparedBoundaryCoreReg i) = []) ∧
       (∀ i : Fin 64, S'.R (preparedBoundaryCoreReg (boundaryFactorMulReg i)) = []) ∧
-      (S'.R 119).length = q ∧ S'.R 223 = [] ∧ S'.R 184 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] := by
+      (S'.R 119).length = q ∧ S'.R 223 = [] ∧ S'.R 184 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] ∧
+      (∀ i ∈ B, ∀ j ∈ B,
+        |bandBoundaryTable B W (computedBoundaryTable A q w B columns) i j-
+          (SchurDominance.run (realMatrix s t p u) (haloVertices s a b)
+            (haloInterior s t band a b).toList).1 i j| ≤ 1/(2 : ℝ)^bits) := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let bits := boundaryTableBits p target rhsExp B.card
@@ -88,7 +92,7 @@ theorem preparedBoundaryFactory_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     preparedBoundaryCoreReg_injective (fun _ => rfl) he v rfl S rfl
   let S₁ := embOvr preparedBoundaryCoreReg T₁.get S
   have hproj : embStk preparedBoundaryCoreReg S₁ = T₁ := embStk_ovr preparedBoundaryCoreReg_injective T₁ S
-  refine ⟨v₂,S₁,n,columns,hu₂.trans hu₁,hn,he₂,hlen,hformat,hcolumns,hstage,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,S₁,n,columns,hu₂.trans hu₁,hn,he₂,hlen,hformat,hcolumns,hstage,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,herror⟩
   · rw [hproj]; exact hsolve
   · rw [hproj]; exact hbo'
   · rw [hproj]; exact hhf'

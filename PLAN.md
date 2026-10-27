@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1904 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1906 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11132,3 +11132,37 @@ explicit residual-step/loop/restoration/generated-setup/fast-cost contract
 audits (5.7 GiB combined peak). All seven new modules pass individual guarded
 checks (maximum 2974.9 MiB). Source-integrity, whitespace and plan-status checks
 pass; proof limits are unchanged.
+
+### Attach numerical recovery contracts to the executed residual batch
+
+`boundary_residual_solution_accuracy` factors the original-scale boundary
+accuracy argument over an arbitrary matrix, interior set and computed factor
+tables. It establishes the result's row count, coordinate error
+`3/2^target`, and the stable interior magnitude bound. The existing single-line
+unscaled solver now uses this same structural lemma instead of duplicating the
+unscale-index and magnitude argument.
+
+`boundary_residual_solution_format` proves row count and word fit for an
+original-scale solution from the computed matrix's rank invariant and actual
+coupling-row residual magnitude bound. This ensures publication is decodable at
+the allocated word width; it does not assume fit of the computed result.
+
+`preparedBoundaryFactory_spec` retains the executed factory's actual banded
+Schur-table error bound. `constructedResidualBatch_spec` now returns format and
+numerical accuracy for each executed batch row. Its proof recovers boundary
+values through the ambient fold positions, derives the input magnitude from the
+batch premise, uses the ambient matrix gap, and supplies the actual factory
+error to the generic accuracy theorem. Residual approximation and exact-solve
+premises remain explicit, matching the existing single-line recovery interface.
+
+This closes the numerical handoff from the executed shared-page boundary batch
+to recovery. Executing grouped residual generation and recovery/complex assembly
+in the same shared-page full inverse caller, full setup/interior cost matching,
+and simultaneous live-storage bounds remain open. S3 remains partial.
+
+Validation: all 14,754 guarded stage-audit jobs pass, including the two new
+explicit generic accuracy/format audits and the strengthened factory/batch
+contracts (3.4 GiB final combined peak). Both new modules and all three changed
+proof-bearing modules pass individual guarded checks (maximum 2985.8 MiB).
+Source-integrity, whitespace and plan-status checks pass; proof limits are
+unchanged.
