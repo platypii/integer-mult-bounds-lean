@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2085 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2088 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13256,3 +13256,31 @@ Validation: the expanded guarded stage axiom audit passes all 14,936 jobs
 (3.5 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
 All four new modules pass individual guarded checks, with maximum peak RSS
 3006.5 MiB, below the 4 GiB module budget.
+
+### S3 cached recovery publication and dyadic tolerance
+
+`placedCachedRecoveryPublishedHalo_spec` composes cached recovery with actual
+halo publication. It selects the interior/boundary field, projects to real
+integer words and proves the decoded published coordinates satisfy the glued
+recovery error bound. The exact final frame changes only the owned residual
+input and published halo prefixes. Both retained coefficient keys, parked
+component data, private headers, scratch and borrowed suffixes restore.
+
+`placedPublishHalo_exec` lifts the existing publication algorithm into the
+ordinary disjoint workspace with its original executed cost and projected
+length-key readiness. `placedCachedRecoveryPublishedHalo_tolerance_at_precision`
+then applies the existing selected recovery error budget to give uniform
+coordinate error at most `2^-target`, including when the working precision
+exceeds the requested target. The equal-target theorem is its direct instance.
+The boundary magnitude bound is derived from the supplied boundary solution's
+realness and error, rather than assumed separately.
+
+The enclosing boundary and complex batch callers still need their cached
+residual/recovery variants composed, with both precision-key setup/release
+hoisted around the batch. Final uniform fast time matching and simultaneous
+whole-execution live storage remain open. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded guarded stage axiom audit passes all 14,939 jobs
+(3.4 GiB combined peak RSS). Proof-integrity and whitespace checks pass.
+All three new modules pass individual guarded checks, with maximum peak RSS
+2968.1 MiB, below the 4 GiB module budget.
