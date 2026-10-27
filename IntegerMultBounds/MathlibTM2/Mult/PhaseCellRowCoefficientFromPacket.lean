@@ -22,7 +22,7 @@ def rowCoefficientFromPacket : Pr P₀ 117 Q A U :=
     (.seq (borrowPreparedRowPacket rowCoefficientReg 113 107 109 104 105) (rowCoefficientHost indexedPreparedCoefficientRow))
 
 def rowCoefficientFromPacketCost (P q V w band : ℕ) : ℕ :=
-  (2*band*(930*P+372)+10)*tblC V w+658*V+4*w+2*((2*band+1)*w)+647
+  (2*band*(930*P+370)+10)*tblC V w+658*V+4*w+2*((2*band+1)*w)+647
 
 theorem rowCoefficientFromPacket_exec {P q w s t u band i : ℕ}
     (hs0 : 0 < s) (hst : s < t) (hP : 13 ≤ P) (hi : i < s)
@@ -63,7 +63,7 @@ theorem rowCoefficientFromPacket_exec {P q w s t u band i : ℕ}
     (hf₂.2.2.2 r (rowCoefficientReg_off r hr)).trans (hoff₁ r hr)
   refine ⟨v₃,(304*V+4*w+409)+(m₂+m₃),hu₃.trans (hu₂.trans hu₁),?_,
     (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl ?_⟩
-  · have hm₃' : m₃ ≤ (2*band*(930*P+372)+10)*tblC V w+
+  · have hm₃' : m₃ ≤ (2*band*(930*P+370)+10)*tblC V w+
         2*((2*band+1)*w)+130*V+133 := by simpa [V] using hm₃
     dsimp only [rowCoefficientFromPacketCost]
     dsimp only [V] at hm₂ hm₃' ⊢

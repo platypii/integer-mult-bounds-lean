@@ -24,7 +24,7 @@ def closedRowCoefficient : Pr P₀ 117 Q A U :=
 def closedRowCoefficientCost (P q w s t u band i : ℕ) : ℕ :=
   let V := liftedCoefficientWidth P q w s t u band
   generateLiftedCoefficientWidthCost P q w s t u band+
-    rowCoefficientFromHeadersCost (154*P+4*q+2*band*(930*P+372)+423)
+    rowCoefficientFromHeadersCost (154*P+4*q+2*band*(930*P+370)+423)
       P q V w s t u band i (2*band+1)+2*V+2
 
 theorem rowCoefficientHeaderState_fits (P q w s t u band i : ℕ) (hi : i < s) :
@@ -89,7 +89,7 @@ theorem closedRowCoefficient_exec {P q w s t u band i : ℕ}
   obtain ⟨v₃,hu₃,he₃⟩ := uclear_exec (body := body) 115 v₂ S₂
   refine ⟨v₃,m₁+(m₂+(2*V+2)),hu₃.trans (hu₂.trans hu₁),?_,
     (Exec.seq he₁ (Exec.seq he₂ he₃)).cast (by simp [S₂,S₁]) ?_⟩
-  · have hm₂' : m₂ ≤ rowCoefficientFromHeadersCost (154*P+4*q+2*band*(930*P+372)+423)
+  · have hm₂' : m₂ ≤ rowCoefficientFromHeadersCost (154*P+4*q+2*band*(930*P+370)+423)
         P q V w s t u band i (2*band+1) := by simpa using hm₂
     dsimp only [closedRowCoefficientCost]
     dsimp only [V] at hm₂' ⊢

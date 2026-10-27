@@ -58,12 +58,12 @@ theorem preparedCoefficientRow_do {A w q P s t u band i : ℕ} (st : TblSt 50 A)
     TblDo A (liftedCoefficientWidth P q w s t u band) w preparedCoefficientRow st
       (fun st' => CoefficientSweepReady P q s t u band i st' ∧
         st'.acc = (cstream A w (spatialCouplingCoefficientWords P q s t u band i)).reverse++st.acc)
-      (2*band*(930*P+372)+8) := by
+      (2*band*(930*P+370)+8) := by
   have hneg := preparedCoefficientSweep_do (A := A) (w := w) true st hready hs0 hst hP hi
   have hc : TblDo A (liftedCoefficientWidth P q w s t u band) w preparedCoefficientRow st
       (fun st' => CoefficientSweepReady P q s t u band i st' ∧
         st'.acc = (cstream A w (spatialCouplingCoefficientWords P q s t u band i)).reverse++st.acc)
-      ((band*(930*P+372)+3)+(2+(band*(930*P+372)+3))) := by
+      ((band*(930*P+370)+3)+(2+(band*(930*P+370)+3))) := by
     unfold preparedCoefficientRow
     refine hneg.seq (fun st₁ h₁ => ?_)
     refine (preparedUnitCoefficient_do st₁ h₁.1).seq (fun st₂ h₂ => ?_)
@@ -95,7 +95,7 @@ theorem indexedPreparedCoefficientRow_do {A w q P s t u band i : ℕ} (st : TblS
     (hs0 : 0 < s) (hst : s < t) (hP : 13 ≤ P) (hi : i < s) :
     TblDo A (liftedCoefficientWidth P q w s t u band) w indexedPreparedCoefficientRow st
       (fun st' => st'.acc = (cstream A w (spatialCouplingCoefficientWords P q s t u band i)).reverse++st.acc)
-      (2*band*(930*P+372)+10) := by
+      (2*band*(930*P+370)+10) := by
   let V := liftedCoefficientWidth P q w s t u band
   let S₁ : TblSt 50 A := ⟨Function.update (Function.update st.val 43 (band*s)) 37 (liftedSource s band i),st.acc⟩
   have hcap : i+band*s < 2^V :=
@@ -113,7 +113,7 @@ theorem indexedPreparedCoefficientRow_do {A w q P s t u band i : ℕ} (st : TblS
       by simpa [S₁] using hready.bandwidth⟩
   have hc : TblDo A V w indexedPreparedCoefficientRow st
       (fun st' => st'.acc = (cstream A w (spatialCouplingCoefficientWords P q s t u band i)).reverse++st.acc)
-      (2+(2*band*(930*P+372)+8)) := by
+      (2+(2*band*(930*P+370)+8)) := by
     unfold indexedPreparedCoefficientRow
     refine hlift.seq (fun st₁ he => ?_)
     subst st₁
@@ -131,7 +131,7 @@ theorem coefficientRowCode_do {A w q P s t u band i : ℕ} (st : TblSt 50 A)
     (hs0 : 0 < s) (hst : s < t) (hP : 13 ≤ P) (hi : i < s) :
     TblDo A (liftedCoefficientWidth P q w s t u band) w coefficientRowCode st
       (fun st' => st'.acc = (cstream A w (spatialCouplingCoefficientWords P q s t u band i)).reverse++st.acc)
-      (154*P+4*q+2*band*(930*P+372)+423) := by
+      (154*P+4*q+2*band*(930*P+370)+423) := by
   let V := liftedCoefficientWidth P q w s t u band
   have hf := withinCoefficientWidth_fits false P q w s t u band i 0 hi (by omega)
   have hp := (prepareDirectCoefficient_do (A := A) (w := w) (V := V)
@@ -139,7 +139,7 @@ theorem coefficientRowCode_do {A w q P s t u band i : ℕ} (st : TblSt 50 A)
       coefficientSweepReg_injective
   have hc : TblDo A V w coefficientRowCode st
       (fun st' => st'.acc = (cstream A w (spatialCouplingCoefficientWords P q s t u band i)).reverse++st.acc)
-      ((154*P+4*q+413)+(2+(2*band*(930*P+372)+8))) := by
+      ((154*P+4*q+413)+(2+(2*band*(930*P+370)+8))) := by
     unfold coefficientRowCode
     refine hp.seq (fun st₁ h₁ => ?_)
     have hframe (r : Fin 48) (hr : 34 ≤ r.val) (h39 : r ≠ 39) (h40 : r ≠ 40) (h45 : r ≠ 45) :

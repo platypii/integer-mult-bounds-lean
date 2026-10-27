@@ -46,7 +46,7 @@ theorem preparedCoefficientSweep_do {A w q P s t u band i : ℕ}
     TblDo A (liftedCoefficientWidth P q w s t u band) w (preparedCoefficientSweep negative) st
       (fun st' => CoefficientSweepReady P q s t u band i st' ∧
         st'.acc = (cstream A w (coefficientSweepWords negative P q s t u band i band)).reverse++st.acc)
-      (band*(930*P+372)+3) := by
+      (band*(930*P+370)+3) := by
   let V := liftedCoefficientWidth P q w s t u band
   let F := fun n => csyms A w (signedCoefficientWord negative P q s t u band i
     (if negative then band-n else n+1))
@@ -60,8 +60,8 @@ theorem preparedCoefficientSweep_do {A w q P s t u band i : ℕ}
   have hc : TblDo A V w (preparedCoefficientSweep negative) st
       (fun st' => CoefficientSweepReady P q s t u band i st' ∧
         st'.acc = ((List.range band).flatMap F).reverse++st.acc)
-      (1+(band*((930*P+369)+1+2)+2)) := by
-    apply TblDo.for band (930*P+369) hready.bandwidth hbV (by decide) Inv
+      (1+(band*((930*P+367)+1+2)+2)) := by
+    apply TblDo.for band (930*P+367) hready.bandwidth hbV (by decide) Inv
     · constructor
       · apply hready.of_frame
         intro r hr

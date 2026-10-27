@@ -12756,3 +12756,27 @@ and zero-row skipping alone do not establish fast coefficient arithmetic.
 The remaining arithmetic loop/compiler cost must be matched or replaced before
 claiming the uniform S3 bound. Whole-execution live storage and final
 endpoint/resource integration also remain open; S3 stays partial.
+
+### S3 supplier sweeps omit the impossible diagonal branch
+
+Both signed sweeps enumerate strictly positive offset magnitudes. The generic
+selected-entry program nevertheless compared source and target for equality at
+every offset. `preparedCoefficientEntry` now directly executes the phase-selected
+off-diagonal body. Its contract requires positive offset magnitude, and proves
+coordinate inequality from `lifted_naturalDistance`; each sweep discharges that
+requirement structurally. The unit diagonal remains emitted once between sweeps.
+This uses lifted coordinates, so even offsets that alias modulo the ambient
+length retain the original coefficient semantics.
+
+The proved loop allowance falls from `930*P+372` to `930*P+370` per offset,
+removing `4*band` table atoms per full coefficient row. The lower allowance is
+carried through closed row generation and the retained-packet production
+supplier, so downstream caller costs consume it. The Taylor arithmetic and
+quadratic table compiler remain; this is a constant-cost reduction, not a proof
+of the final fast-time bound. Simultaneous storage and final resource
+integration remain open. S3 stays partial.
+
+Validation: all 14,881 guarded stage build jobs and the axiom audit pass
+(21.6 GiB combined peak RSS). All five changed implementation modules pass
+individual guarded checks, with peak RSS at most 1956.5 MiB. Plan-status and
+whitespace checks pass.
