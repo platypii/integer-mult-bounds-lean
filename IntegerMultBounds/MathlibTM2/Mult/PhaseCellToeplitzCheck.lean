@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellRetainedCouplingPass
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyBatchFast
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyInteriorFast
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyInverseGeometryCaller
@@ -3078,7 +3079,36 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.familyRealComponentGeometry_selected_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyComplexGeometry_selected_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyHaloInteriorArithmetic_congr,
-      `IntegerMultBounds.MathlibTM2.Cost.familyInteriorPair_selected_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.familyInteriorPair_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.retainedCouplingRows_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.generatedRetainedCouplingRows_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.placedCachedCouplingGeometryCost_retained_le,
+      `IntegerMultBounds.MathlibTM2.Cost.placedCachedCouplingGeometry_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.placedCachedRestoredCouplingPass_fast_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedCouplingArithmetic_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedConsumePageSpatialCouplingRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.RetainedCouplingReady.of_generated,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedCouplingCounters_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.RetainedCouplingReady.of_source_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.RetainedCouplingReady.of_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.RetainedCouplingReady.low,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedCouplingRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedGuardedPageSpatialCouplingRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedMaskedPageSpatialCouplingRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedPageSpatialGuardedLoopCost_counts,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedConsumePageSpatialCouplingRowCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedPageSpatialGuardedLoopCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runRetainedPageCouplingRowsCost_geometry_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runGeneratedRetainedPageCouplingRowsCost_geometry_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedConsumePageSpatialCouplingRowCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runRetainedPageCouplingRowsGeometryCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedPageSpatialCouplingRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedPageSpatialCouplingRowCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedPageSpatialCouplingRowLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedPageSpatialCouplingRowStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCounterBank_ovr,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runGeneratedRetainedPageCouplingRows_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runRetainedPageCouplingRows_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

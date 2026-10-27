@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2229 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2243 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. Final selected uniform fast time matching and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. Final selected uniform fast time matching and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -14332,3 +14332,47 @@ combined peak RSS), retaining all prior entries and adding 11. All four new
 modules, the revised interior module and the audit pass individual guarded
 checks below the 4 GiB module budget. Proof-integrity, audit-coverage,
 plan-status and whitespace checks pass.
+
+### S3 checkpoint: generate scalar readiness once per coupling pass
+
+The coupling resource audit found `prepareCost q w` inside every active row.
+Its unary-to-binary scalar setup has quadratic word-width work, so the previous
+row ledger could not support the intended fast arithmetic allowance merely
+by reusing numerical coefficients.
+
+The retained coupling backend now generates the scalar counters once before
+the complete counted row loop and releases their owned tapes afterward.
+`RetainedCouplingReady` distinguishes retained counters from empty scratch,
+including the topN counter on port 92. The source-window preparation already
+maps its local port 92 to the separate padded-source tape, so it preserves the
+actual counter. Prepared row arithmetic, coefficient-page advancement, active
+and skipped guard branches, row counting, source cursor restoration and ordered
+publication all preserve the retained readiness.
+
+`runGeneratedRetainedPageCouplingRows_exec` starts from the ordinary coupling
+headers and fresh scalar workspace, executes counter generation, all rows and
+final counter erasure, and proves the existing stream/frame contract. It has
+no supplied counter-readiness premise. `runPreparedPageCouplingRows` now uses
+this implementation behind its existing interface, so the complete generated
+ordinary-scalar inverse and both coupling directions execute the new backend.
+The earlier per-row composition can be restored from commit `1e996ef0`.
+
+The row and whole-pass ledgers charge counter setup/release once, outside active
+row volume. `placedCachedRestoredCouplingPass_fast_le` bounds actual row
+arithmetic, coefficient-page traversal and linear source staging by
+`C*(s+active*(2*band+1))*p^(129/128)` at linear working width. Mask generation,
+ordinary header controls and the one counter construction/release remain
+explicit in `retainedCouplingControlCost`. The numerical row results, cache
+formats and complete inverse restoration/error contracts are unchanged.
+
+Remaining: combine these coupling bounds with the selected complete caller
+allowance, bound remaining controls and tape work, match setup multiplicities
+and boundary density to the final fast envelope, and prove simultaneous live
+storage throughout the complete execution. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,130 jobs (12.0 GiB
+combined peak RSS), retaining all prior entries and adding 29. All 14 new
+modules, both revised coupling modules and the audit pass individual guarded
+checks below the 4 GiB module budget. The complete selected ordinary-scalar
+caller rebuild also passes. Proof-integrity, audit-coverage, plan-status and
+whitespace checks pass.

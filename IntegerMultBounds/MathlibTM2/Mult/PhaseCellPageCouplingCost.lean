@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunPreparedPageCouplingRows
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedPageCouplingCost
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRunCachedPageCouplingRows
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGuardedCouplingCost
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingCoefficientPageSize
@@ -60,20 +61,15 @@ theorem pageSpatialGuardedLoopCost_le {s t : ℕ} [NeZero s] (hst : s < t)
   omega
 
 def runPreparedPageCouplingRowsGeometryCost (q w s t band a b : ℕ) : ℕ :=
-  let active := haloBoundaryCountBound s t (2*band) a b+4*band
-  s*(10*w+10)+active*consumePageSpatialCouplingRowCost q w band+s*(10*w+16)+2+
-    32*s*w+34*s+28+transferCountedLineCost s w+transferCountedLineCost (active*(2*band+1)) w
+  (prepareCost q w+6*q+4*band+10)+runRetainedPageCouplingRowsGeometryCost q w s t band a b+
+    (2*(w+q+Schoenhage.Schedule.topN w)+7)
 
 theorem runPreparedPageCouplingRowsCost_geometry_le {s t : ℕ} [NeZero s] (hst : s < t)
     (boundary : Bool) (P q w u band a b : ℕ) (hb : b ≤ s) :
     runPreparedPageCouplingRowsCost boundary q w s t band a b
         (couplingCoefficientPage P q s t u band a b s).length ≤
       runPreparedPageCouplingRowsGeometryCost q w s t band a b := by
-  have hloop := pageSpatialGuardedLoopCost_le hst boundary q w band a b hb
-  have hwords := couplingCoefficientPage_length_le_geometry hst P q u band a b hb
-  have hrestore := Nat.mul_le_mul_right (10*w+9) hwords
-  dsimp only [runPreparedPageCouplingRowsCost,runPreparedPageCouplingRowsGeometryCost,transferCountedLineCost]
-  omega
+  exact runGeneratedRetainedPageCouplingRowsCost_geometry_le hst boundary P q w u band a b hb
 
 theorem runCachedPageCouplingRowsCost_geometry_le {s t : ℕ} [NeZero s] (hst : s < t)
     (boundary : Bool) (P q w u band a b : ℕ) (hb : b ≤ s) :
