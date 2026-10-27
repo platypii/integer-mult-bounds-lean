@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1647 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1650 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -8764,3 +8764,43 @@ explicit new format, stream-construction, field, original-column execution and
 precision/magnitude audits. Combined build peak is 4.3 GiB. All eight new/revised
 Lean modules pass individual guarded checks at at most 2056.5 MiB. Added-source
 integrity, plan-status and whitespace checks pass; proof limits are unchanged.
+
+### Generated original column with source release and readiness restoration
+
+`originalColumnInputs` now composes zero-RHS generation with the actual negative
+basis constructor. It starts from reusable coupling headers and the retained
+unary coordinate on 136, creates both owned source prefixes and returns
+`CouplingReady` for them. Its bound is `20*s*w+26*s+2*q+50`; no source page,
+padding length or byte count is supplied.
+
+`releaseColumnSources` generates one ambient byte count, consumes exactly the
+owned RHS and basis prefixes on 110 and 132, clears that count, and executes the
+existing result feeder from 113 to 110. Its exact frame restores both borrowed
+source suffixes and the old result suffix, publishing the column above the
+original RHS suffix. All temporary ports are restored. Its bound is
+`30*s*w+18*s+30`, including result publication.
+
+`generatedOriginalColumn_spec` composes these two programs around the actual
+boundary-coupling pass. From ordinary coupling headers and a selected boundary
+coordinate it constructs the sources, computes the original-matrix column,
+retires both sources and publishes the computed column. The final state changes
+only port 110; every other stack, including the selected coordinate, is restored
+exactly. Its physical output carries the proved coefficient error, realness and
+`2+error` magnitude bound, and it returns reusable coupling readiness for the
+new raw RHS. Its cost is the explicit sum of preparation, the existing ambient
+coupling pass and source release/publication. No original column or exact Schur
+matrix is an input.
+
+The folded-page coordinate still needs to be loaded into the unary coordinate
+header, and the prepared page must be parked while arithmetic uses its low-bank
+workspace. Coupling-header installation/release and composition with the
+executed interior response remain open for this new caller. Table/factor
+setup/solve/release, the full S3 endpoint and uniform fast-time/simultaneous
+storage also remain open. The existing ambient-row pass cost is retained, with
+no fast repeated-column bound claimed. S3 remains partial.
+
+Validation: all 10,307 guarded stage-audit jobs pass, including explicit audits
+of input generation, source release and the composed original-column caller.
+Combined build peak is 2.7 GiB. All four new/revised Lean modules pass individual
+guarded checks at at most 2057.2 MiB. Added-source integrity, plan-status and
+whitespace checks pass; proof limits are unchanged.

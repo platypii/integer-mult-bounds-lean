@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedOriginalColumn
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginalColumnBudget
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginalColumnPass
@@ -1653,6 +1655,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.negativeUnitField_words,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.couple_negative_unit,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumnPass_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseColumnSources_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumnInputs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedOriginalColumn_spec,
+
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.originalColumn_real,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_precision,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.originalColumn_width,
