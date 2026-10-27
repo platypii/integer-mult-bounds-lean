@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1979 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1981 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -12117,4 +12117,33 @@ inverse integration and final S3 resource gates remain open. S3 stays partial.
 
 Validation: all 14,828 guarded stage-audit jobs pass (3.4 GiB combined peak).
 All four affected modules pass individual guarded checks (maximum 1968.8 MiB).
+Source-integrity and whitespace checks pass; default proof limits are unchanged.
+
+### Execute and restore the complete spatial coupling pass
+
+`spatialCouplingRowLoop_exec` executes the counted sequence of actual spatial
+row steps from coordinate zero. Its structural invariant tracks remaining RHS,
+coordinate, accumulated exact row results, unread padded source and the reversed
+visited prefix, while preserving ordinary core readiness and outer spectators.
+It supports any initial row prefix of length at most the ambient axis length.
+Each row uses the original indexed fit hypotheses and publishes exactly the
+original rounded row value; wrapped aliases retain their multiplicities.
+
+`runSpatialCouplingRows_exec` generates the whole-axis row clock, executes every
+row, restores unread source 141 and saved cursor 142, reverses the result prefix
+into coordinate order, and clears clock and coordinate. Its final frame changes
+only consumed RHS 93 and published result prefix 113. Both original cursor banks,
+all borrowed suffixes, headers and arithmetic workspace restore exactly. The
+allowance is the sum of actual row-step costs (including loop control), plus
+`32*s*wordWidth+34*s+28+transferCountedLineCost s wordWidth` for clock setup,
+source restoration, output ordering and coordinate release.
+
+This closes the executed advancing/restoring arithmetic pass from an already
+prepared spatial source. Executed masked/padded-source setup and inverse
+integration remain open, along with final fast supplier/setup matching, combined
+live storage and endpoint/resource integration. S3 stays partial; the production
+inverse still uses indexed coupling.
+
+Validation: all 14,830 guarded stage-audit jobs pass (3.4 GiB combined peak).
+Both new modules pass individual guarded checks (maximum 1965.6 MiB).
 Source-integrity and whitespace checks pass; default proof limits are unchanged.
