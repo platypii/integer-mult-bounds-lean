@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2159 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2161 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -13843,3 +13843,37 @@ whole-execution live storage remain open. S3 stays partial; kappa is unchanged.
 Validation: the expanded standard-axiom audit passes all 15,010 jobs (3.5 GiB
 combined peak RSS). All six new modules pass individual guarded checks below
 the 4 GiB module budget. Proof-integrity and whitespace checks pass.
+
+### S3 checkpoint: counted retained-family traversal and restoration ledger
+
+`weightFamilyLoop_exec` proves structural traversal for an arbitrary ordered
+key list and a per-key caller invariant. It tracks both physical family queues
+outside that invariant: each class consumes its matching packet and prepends
+the reversed packet to the completed stream. `weightFamilyLoop_restore_exec`
+then executes the final move, restoring the original family and borrowed
+suffix, clearing the completed stream, and preserving all other final caller
+registers. The empty key list is included.
+
+`familyHaloLengthKeyStep_exec` adds the actual counter pop and remaining-count
+probe around an executed `familyProcessHaloLengthKey` call.
+`familyHaloLengthKeyLoop_exec` composes these steps into the actual loop and
+final restoration, assuming a per-class numerical invariant for the popped
+counter state. This is a structural execution theorem, not yet an
+instantiation of the complete numerical loop invariant from
+`familyProcessHaloLengthKey_spec`.
+
+`familyHaloLengthKeyLoopCost_eq` includes parsing, cached conditional classes,
+all loop control, packet traversal and final restoration. The retained-family
+and control overhead is exactly `44*w*sum(B(L)*L)+33*keyCount+3` beyond parsing
+and class costs. For the actual halo-length keys, the volume theorem bounds
+this overhead by `44*s*w+33*keyCount+3`.
+
+Remaining: instantiate the numerical error/restoration invariant for this
+loop, generate every numerical page and packet family, compose reuse through
+both complete inverse passes, and prove final selected uniform time matching
+and simultaneous whole-execution live storage. S3 stays partial; kappa is
+unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,012 jobs (3.4 GiB
+combined peak RSS). Both new modules pass individual guarded checks below the
+4 GiB module budget. Proof-integrity and whitespace checks pass.
