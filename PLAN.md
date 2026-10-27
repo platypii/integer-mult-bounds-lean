@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1801 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1805 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9962,3 +9962,49 @@ Schur columns and the gathered normalized RHS remains required.
 Validation of the combined error chunk: all 14,646 guarded stage-audit jobs
 pass, including all three new explicit axiom audits. Combined peak is 3.4 GiB.
 Plan-status and whitespace checks pass. Existing proof limits are unchanged.
+
+### Allocated boundary accuracy and unscaled roundoff
+
+`boundary_line_allocated_error` specializes the combined matrix/RHS error bound
+to the constructed boundary rank matrix and canonical allocated precision. It
+derives the degraded dominance invariant, Newton iteration budget, and numerical
+smallness premises internally. Its individual guarded check peaks at 2835.0 MiB.
+`boundary_line_roundoff_target` sharpens the existing unit-error estimate to an
+arbitrary dyadic target. `boundary_line_error_precision` proves that the existing
+allocated precision pays both this target and exact unscaling; consequently
+`boundary_line_unscaled_roundoff_budget` bounds the unscaled solve-rounding term
+by `2^-target`. This does not yet include matrix or RHS perturbation terms.
+The budget module passes an individual guarded check below 2.8 GiB. No word
+width, iteration count or proof limit was increased. S3 remains partial; kappa
+is unchanged. The constructed Schur/RHS specialization, sharp solution magnitude,
+recovery/cleanup and final time/storage bounds remain open.
+
+Validation: all 14,648 guarded stage-audit jobs pass, including four new
+allocated-error and unscaled-roundoff axiom audits. Combined build peak is
+5.6 GiB. Plan-status and whitespace checks pass.
+
+### Boundary-coordinate perturbation and scale transfer
+
+`boundary_rank_row_error` transfers the constructed masked table's entrywise
+accuracy ε to row accuracy `B.card * ε` for the actual integer rank matrix.
+`boundary_rank_allocated_error` combines this with allocated Newton/solve error,
+accepting the original boundary-coordinate matrix directly, pulled back by the
+same `bFoldAt` indexing used by the physical solve. No independent rank-matrix
+accuracy premise is needed. The module's individual guarded check peaks at
+2823.8 MiB.
+
+`boundary_normalized_rhs_error` propagates retained residual error δ through the
+actual normalization word, yielding `2/2^q + δ/2^(E+1)`.
+`boundary_unscaled_solution_error` transfers normalized solution error ε through
+exact unscaling, yielding `2^(q/2+1) * ε`, with no added rounding. This module's
+individual guarded check peaks at 2828.6 MiB. The final constructed endpoint
+still needs to instantiate these lemmas for its actual Gaussian list components
+and exact Schur solution, and combine the remaining perturbation budgets. S3
+remains partial; recovery/retirement, uniform time and simultaneous live storage
+remain open and kappa is unchanged.
+
+Validation of the allocated/rank/scale error chunk: all 14,650 guarded
+stage-audit jobs pass, including eight new explicit axiom audits. Combined build
+peak is 5.5 GiB; each of the four added proof modules checks below 2.8 GiB.
+Plan-status, added-source integrity and whitespace checks pass. Proof limits
+are unchanged.
