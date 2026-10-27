@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1775 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1780 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -9730,3 +9730,42 @@ All seven new modules and the audit root pass individual guarded checks:
 new modules peak at 2865.5 MiB or less and the audit root at 2959.2 MiB.
 Source-integrity, plan-status and whitespace checks pass. Proof limits are
 unchanged.
+
+### Generated folded RHS gather and physical gather/solve composition
+
+`boundaryRhsWord_exec` decodes one rank's actual retained coordinate, copies
+that word from the ambient RHS and retires the decoded coordinate. The
+coordinate page, source line, rank, both widths and every lookup scratch tape
+are restored. The cost includes coordinate lookup/decoding and source motion.
+
+`boundaryRhsGather_exec` runs a descending rank clock. Each lookup prepends its
+word, so the final stream is exactly the ambient RHS restricted to the natural
+boundary rank order, without an extra output reversal. `boundaryRhsPrepare_exec`
+generates this clock from the retained boundary-cardinality header and consumes
+it completely. Neither a gather schedule nor a source-access execution oracle
+is supplied.
+
+`boundaryRhsPhysical_exec` places the gather on the fixed 224-tape bank, reads
+the word width from the multiplier's retained width header, and writes directly
+to the triangular RHS port (206). Every other physical stack is preserved,
+including all factor tables, the source residual, the coordinate page and
+retained masters. Its explicit bound is `boundaryRhsPrepareCost V w N s`.
+
+`boundaryGatherSolve_exec` composes this actual gather with the allocated
+physical triangular solve for an ambient RHS whose boundary components have
+grid magnitude at most `1/2`. The vector is derived from the retained source
+line and coordinate page, rather than supplied separately. It returns the
+exact runtime solve of those gathered values, preserving all legacy tapes and
+factor tables. The total paid bound is gather cost plus padding/triangular cost.
+
+Normalization of the larger retained residual, full composition with the
+constructed factorization, solve accuracy, cleanup and recovery/publication
+remain open, together with the inverse endpoint and uniform time/live storage.
+S3 remains partial; kappa is unchanged.
+
+Validation: all 14,624 guarded stage-audit jobs pass, including seven new
+explicit RHS lookup, gather, generated-clock, physical placement, state bridge
+and gather/solve execution axiom audits. Combined build peak is 3.4 GiB. All
+five new modules and the audit root pass individual guarded checks: new modules
+peak at 2845.6 MiB or less and the audit root at 2961.8 MiB. Source-integrity,
+plan-status and whitespace checks pass. Proof limits are unchanged.
