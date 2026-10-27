@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1961 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 1967 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -11879,4 +11879,39 @@ remains partial.
 Validation: all 14,809 guarded stage-audit jobs pass (3.4 GiB combined peak).
 All three new retained-source workspace/operand/complete-row modules pass
 individual guarded checks (maximum 1964.9 MiB). Source-integrity, whitespace
+and plan-status checks pass; default proof limits remain unchanged.
+
+### Capture once, execute the complete coupling row pass, and release
+
+`cachedCouplingRowStep_exec` consumes one RHS word, publishes the actual residual
+or recovery row word and advances the row index without changing retained source
+data. `cachedOuterCouplingRow_exec` isolates that arithmetic core from the outer
+counter in a 145-register workspace. `cachedCouplingRowLoop_exec` executes the
+counted row list with preserved arithmetic readiness, retained source, original
+headers and untouched spectators.
+
+`runCachedCouplingRows_exec` generates the outer count, runs those rows, restores
+the index controls and reverses the accumulated results into their original
+order. `capturedCouplingRows_exec` wraps this complete run with one actual ambient
+prefix capture and one cache erasure. Its exact final frame consumes the RHS
+prefix and publishes the result prefix, restoring the cache and all other tapes.
+The cache suffix is independent of the original source suffix: capture copies
+only the owned line, while arbitrary borrowed source suffixes remain untouched.
+
+`cachedCouplingRowLoopCost_saving` accounts for the removed capture/retirement
+allowance at every row. `capturedCouplingRowsCost_saving` then pays one such
+charge for the whole pass. `capturedCouplingRowsCost_le` proves that the new
+paid pass allowance is no larger than the previous one for a nonempty axis.
+Coefficient/indexed-input lookup, row arithmetic and ordered publication still
+have their actual costs.
+
+The pass is now an executed replacement primitive. Switching both coupling calls
+in the inverse to this widened/register-mapped path is next; the existing closed
+inverse remains on the old path until that integration is checked. Indexed
+access, final fast supplier/setup matching, simultaneous live storage and final
+endpoint/resource integration remain open. S3 remains partial.
+
+Validation: all 14,815 guarded stage-audit jobs pass (3.4 GiB combined peak).
+All six new row-step/outer-workspace/outer-row/loop/run/capture-pass modules pass
+individual guarded checks (maximum 1956.7 MiB). Source-integrity, whitespace
 and plan-status checks pass; default proof limits remain unchanged.

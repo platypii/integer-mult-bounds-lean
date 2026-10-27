@@ -21,7 +21,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComplexBatchStep
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageClosedComplexBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageInteriorCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingCaptureCost
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedCouplingRow
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCapturedCouplingRows
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPreparedBoundary
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedInverseCaller
@@ -2163,6 +2163,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedCouplingOperands_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedCouplingRow_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedCouplingRowCost_saving,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedCouplingRowStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedCouplingOuterReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedCouplingOuterReg_off,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedOuterCouplingRow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedCouplingRowLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runCachedCouplingRows_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedCouplingCaptureReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.capturedCouplingRows_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.cachedCouplingRowLoopCost_saving,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.capturedCouplingRowsCost_saving,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.capturedCouplingRowsCost_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageBoundaryFactory_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageInverseSetup_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.sharedPageConstructedComplex_spec,
