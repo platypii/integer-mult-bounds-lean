@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Host.EmitRun
+import IntegerMultBounds.NLogN.PhaseCellHaloRunMask
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellGeometryControlSizing
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryHaloGatherCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryHaloGatherControls
@@ -3173,7 +3176,34 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.selectedWeightWorkspaceWidth_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedHaloControlCells_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.geometryTableCost_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedHaloPhaseTables_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedHaloPhaseTables_fast_le,
+      `IntegerMultBounds.MathlibTM2.Stack.ExecWithin.toExec,
+      `IntegerMultBounds.MathlibTM2.Stack.ExecWithin.mono,
+      `IntegerMultBounds.MathlibTM2.Stack.ExecWithin.initial,
+      `IntegerMultBounds.MathlibTM2.Stack.ExecWithin.final,
+      `IntegerMultBounds.MathlibTM2.Fast.Main.mn_size_update,
+      `IntegerMultBounds.MathlibTM2.Fast.Main.mn_act_size,
+      `IntegerMultBounds.MathlibTM2.Fast.Main.mn_exec_size,
+      `IntegerMultBounds.MathlibTM2.Fast.Main.mn_progPush_le_pushC,
+      `IntegerMultBounds.MathlibTM2.Fast.Main.mn_sumR_le_size,
+      `IntegerMultBounds.MathlibTM2.Fast.Main.mn_native_exec_within,
+      `IntegerMultBounds.MathlibTM2.Host.emitRun_pushBound,
+      `IntegerMultBounds.MathlibTM2.Host.emitRun_exec,
+      `IntegerMultBounds.MathlibTM2.Host.emitRun_within,
+      `IntegerMultBounds.NLogN.IntervalRunMask.bounds,
+      `IntegerMultBounds.NLogN.IntervalRunMask.ordered_of_pairwise,
+      `IntegerMultBounds.NLogN.IntervalRunMask.length_mask,
+      `IntegerMultBounds.NLogN.IntervalRunMask.contains_below,
+      `IntegerMultBounds.NLogN.IntervalRunMask.getElem?_mask,
+      `IntegerMultBounds.NLogN.IntervalRunMask.mask_eq_map,
+      `IntegerMultBounds.NLogN.IntervalRunMask.length_runs,
+      `IntegerMultBounds.NLogN.IntervalRunMask.flatten_runs,
+      `IntegerMultBounds.NLogN.IntervalRunMask.sum_runs,
+      `IntegerMultBounds.NLogN.IntervalRunMask.emission_cost,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloRunIntervals_ordered,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloRunIntervals_contains,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloRunMask_eq,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloRunIntervals_length_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

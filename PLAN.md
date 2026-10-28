@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2264 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2265 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14637,3 +14637,39 @@ prior audit entries remain and ten selected-sizing facts are added. Both new
 modules, all six revised modules and the audit pass individual guarded checks
 below the 4 GiB module budget. The extracted axis-density module checks below
 1 GiB. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
+
+### S3 checkpoint: interval rasterization and certified run emission
+
+The generic `IntervalRunMask` construction rasterizes ordered disjoint intervals
+as alternating false gaps and true bodies, followed by the final false gap.
+It proves the resulting bits agree pointwise with interval membership, their
+length is exactly the covered span, and there are exactly `2*m+1` runs for `m`
+intervals. Summing the actual binary-count emitter allowance gives
+`8*(stop-start)+(11*W+8)*(2*m+1)`, separating output volume from interval overhead.
+`PhaseCellHaloRunMask` instantiates this construction with the existing positive
+halo intervals: they are ordered, there are at most `t-s+1`, and rasterization
+is exactly the existing `haloInteriorAt` mask. The geometry proof reuses the
+existing phase-cover and separation theorems.
+
+`Host.emitRun` retains its binary count, emits a constant symbol, and restores
+its four owned scratch registers in at most `8*n+11*W+8` steps. Its execution
+also carries a bound on every intermediate store, including retained caller
+stacks. The generic `Stack.ExecWithin` certificate mirrors structured execution
+and tracks outstanding call depth. Existing push-count and stack-volume facts
+have been extracted from the multiplier into `StackResources`, preserving their
+names; call-free programs now derive an execution-wide certificate from their
+structural push bound. This avoids duplicating a storage proof for each stream
+primitive.
+
+The actual mask backend is still the earlier per-coordinate implementation.
+Next is the fixed runtime loop that computes each phase's endpoints once and
+uses the run emitter; this checkpoint does not assume an externally supplied
+interval stream or discharge mask setup cost. Compiled-machine trace storage,
+whole-caller simultaneous storage, selected setup accounting and amortization
+remain open. S3 stays partial; kappa is unchanged.
+
+Validation: the affected-caller/axiom audit build passes all 15,283 jobs;
+all eight new/revised Lean modules pass individual guarded checks, with the
+largest at 3,057 MiB. All 2,726 previous audit names remain, with 27 additional
+facts checked against the standard axiom allowlist. Proof-integrity,
+plan-status and whitespace checks pass.

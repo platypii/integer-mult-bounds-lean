@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Fast.MainRegs
+public import IntegerMultBounds.MathlibTM2.StackResources
 public import IntegerMultBounds.MathlibTM2.Fast.SrcDirectStage
 public import IntegerMultBounds.MathlibTM2.Cost.Total
 public import IntegerMultBounds.MathlibTM2.Fast.ParamMachine
@@ -185,32 +186,7 @@ def mnFast {K : ℕ} (distP fwdP oppP : MnPr (prime + K)) : MnPr (prime + K) :=
 
 /-! ### Pushes per action -/
 
-section Push
 
-variable {K' : Type} {Γ : K' → Type} {σ' : Type} {P' : Type}
-
-/-- The largest number of symbols one run of an action pushes. -/
-def mnActPush : Action Γ σ' → ℕ
-  | .done => 0
-  | .push _ _ a => mnActPush a + 1
-  | .peek _ _ a => mnActPush a
-  | .pop _ _ a => mnActPush a
-  | .load _ a => mnActPush a
-  | .branch _ a b => max (mnActPush a) (mnActPush b)
-
-/-- The largest push count of the actions of a program (calls excluded). -/
-def mnProgPush : Prog P' Γ σ' → ℕ
-  | .act a => mnActPush a
-  | .seq p q => max (mnProgPush p) (mnProgPush q)
-  | .cond _ p q => max (mnProgPush p) (mnProgPush q)
-  | .loop _ p => mnProgPush p
-  | .call _ => 0
-
-/-- The largest push count of the actions of a procedure table. -/
-def mnPushC [Fintype P'] (body : P' → Prog P' Γ σ') : ℕ :=
-  Finset.univ.sup fun f => mnProgPush (body f)
-
-end Push
 
 /-! ### The distribution contract -/
 
