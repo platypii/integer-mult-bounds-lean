@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellBoundaryFactorSetupPolynomial
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFactorPage
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBoundaryWidths
 
 /-! Numerical boundary-factor preparation is paid at the actual selected caller
 precision, leaving only computed Schur columns in the shared setup bill. -/
@@ -28,45 +29,32 @@ theorem selectedBoundaryFactorPreparation_poly_le (ct : ℕ) :
       let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
       boundaryFactorSetupCost p q band N+
           bandAxisPrepCost (2*q+8) (12*band) (factorNewtonSteps p q) N ≤ C*t^6 := by
-  let cw := 1032+8*ct
-  let cR := 2*cw+400
+  obtain ⟨c,hc,hwidths⟩ := selectedInverseBoundaryWidths_le ct
+  let cR := 14*c+102
   let B := 1000000+10000000*(ssMulConst+1)
   refine ⟨B*cR^6,?_⟩
   intro n h i _ u target a b htarget hband
   dsimp only
+  obtain ⟨hpt,hN,hq,hw,hV,hW,hB⟩ := hwidths n h i u target a b htarget hband
   let p := Sizes.p n
   let s := Sizes.s n i
   let t := Sizes.t n i
-  let l := haloInverseRingLog s t
   let band := PhaseCellBand.width p u
   let N := (haloBoundary s t band a b).card
   let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
-  let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
-  have hp : 1 ≤ p := by have := h.thirteen_le_p; dsimp only [p]; omega
-  have hpt : p ≤ t := selectedPrecision_le_axis h i
-  have hst : s < t := h.good.lt i
-  have ht : 1 ≤ t := by omega
-  have hB : band ≤ 17*p := by
-    have hsqrt := Nat.sqrt_le_self (16*p/u)
-    have hdiv := Nat.div_le_self (16*p) u
-    dsimp only [band,PhaseCellBand.width]
-    omega
-  have hN : N ≤ t := (show N ≤ s by simpa [N] using (haloBoundary s t band a b).card_le_univ).trans hst.le
-  have hw := selectedInverseWorkingWidth_le ct h i u target a b htarget hband
-  have hwidth : 2*q+8 ≤ cw*p := by
-    convert hw using 1
-    dsimp only [q,p,l,bits,N,band,s,t,executionPrecision,executionWidth]
-    omega
-  have hq : q ≤ cw*t := (show q ≤ 2*q+8 by omega).trans
-    (hwidth.trans (Nat.mul_le_mul_left cw hpt))
-  have hb : band ≤ 17*t := hB.trans (Nat.mul_le_mul_left 17 hpt)
+  let q := executionPrecision p (haloInverseRingLog s t) (initialSchurTarget p u bits 2) 2
+  have ht : 1 ≤ t := by have := h.good.lt i; dsimp only [t]; omega
+  have hqt : q ≤ c*t := hq.trans (Nat.mul_le_mul_left c hpt)
+  have hbt : band ≤ c*t := hB.trans (Nat.mul_le_mul_left c hpt)
   have hR : p+2*q+12*band+N+100 ≤ cR*t := by
+    change p ≤ t at hpt
+    change N ≤ t at hN
     dsimp only [cR]
-    nlinarith only [hpt,hq,hb,hN,ht]
-  have hc := boundaryFactorPreparationCost_poly p q band N
+    nlinarith only [hpt,hqt,hbt,hN,ht]
+  have hprep := boundaryFactorPreparationCost_poly p q band N
   have hpower := Nat.pow_le_pow_left hR 6
-  have hbound := hc.trans (Nat.mul_le_mul_left B hpower)
-  simpa only [mul_pow,Nat.mul_assoc] using hbound
+  have hbound := hprep.trans (Nat.mul_le_mul_left B hpower)
+  simpa only [t,mul_pow,Nat.mul_assoc] using hbound
 
 theorem selectedFamilySetup_table_le (ct : ℕ) :
     ∃ C : ℕ, ∀ (n : ℕ) (h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],

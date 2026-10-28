@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2343 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2346 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15374,3 +15374,34 @@ Validation: all 15,254 affected audit-build jobs pass (3.5 GiB combined peak).
 All three new modules and the audit pass individual guarded checks; peak RSS is
 3,316 MiB. All 2,965 prior audit names remain and seven new facts are covered.
 New-file proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: Schur-table formatting priced and boundary widths shared
+
+`columnEntryStepCost_poly` and `columnCollectionCostBound_poly` price the actual
+folded-rank lookup, clipped-band controls, resident word copy and column cleanup.
+`prepareBoundaryPageCost_poly` includes generated coordinate ordering, fold
+counters and canonical folding. `constructedBoundaryTableCostBound_format_le`
+therefore charges only the boundary count times its uniform computed-column
+allowance outside a polynomial formatting bill.
+
+`selectedInverseBoundaryWidths_le` centralizes the actual numerical width,
+precision, geometry width, bandwidth, boundary count and selected axis-room
+bounds. The factor-page and numerical factor-preparation specializations now
+consume this same lemma instead of repeating their sizing derivations.
+`selectedSchurTableFormatting_le` applies it to the actual column-collection
+precision. `selectedFamilySetup_columns_le` reaches the whole executed family
+setup ledger: its only remaining unbounded computation term is
+`N*retainedIndexedColumnCost ... bits N s`, with the actual halo boundary
+cardinality `N`; ordering, collection and all previously priced setup work are
+covered by `C*t^6*p^4`.
+
+The indexed-column allowance is a proved uniform upper bound for the executed
+column loop, not a supplied numerical result. Its older interior/residual and
+coupling computations still need polynomial construction bounds. Actual reuse
+multiplicities/amortization and simultaneous whole-caller compiled-machine
+storage remain required. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,257 affected audit-build jobs pass (3.5 GiB combined peak).
+All five changed/new modules and the audit pass individual guarded checks;
+peak RSS is 3,315 MiB. All 2,972 prior audit names remain and seven new facts
+are covered. Changed-file proof-integrity, plan-status and whitespace checks pass.

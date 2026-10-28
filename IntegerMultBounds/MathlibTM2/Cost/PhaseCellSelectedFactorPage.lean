@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFactorPagePolynomial
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBoundaryWidths
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilySetupFactor
 
 /-! Price factor-page assembly at the actual selected dimensions. Computation of
@@ -27,56 +28,44 @@ theorem selectedGeneratedFactorPage_poly_le (ct : ℕ) :
       let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
       let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
       generatedFactorPageCost q band N ≤ C*t^5 := by
-  let cw := 1032+8*ct
-  let cR := 2*cw+500
+  obtain ⟨c,hc,hwidths⟩ := selectedInverseBoundaryWidths_le ct
+  let cR := 4*c+10
   refine ⟨20000000*cR^5,?_⟩
   intro n h i _ u target a b htarget hband
   dsimp only
+  obtain ⟨hpt,hN,hq,hw,hV,hW,hB⟩ := hwidths n h i u target a b htarget hband
   let p := Sizes.p n
   let s := Sizes.s n i
   let t := Sizes.t n i
-  let l := haloInverseRingLog s t
   let band := PhaseCellBand.width p u
   let N := (haloBoundary s t band a b).card
   let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
-  let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+  let q := executionPrecision p (haloInverseRingLog s t) (initialSchurTarget p u bits 2) 2
   let W := 12*band+1
   let R := cR*t
-  have hp : 1 ≤ p := by have := h.thirteen_le_p; dsimp only [p]; omega
-  have hst : s < t := h.good.lt i
-  have ht : 1 ≤ t := by omega
-  have hpt : p ≤ t := selectedPrecision_le_axis h i
-  have hR : 1 ≤ R := by dsimp only [R,cR,cw]; nlinarith only [ht]
-  have hB : band ≤ 17*p := by
-    have hsqrt := Nat.sqrt_le_self (16*p/u)
-    have hdiv := Nat.div_le_self (16*p) u
-    dsimp only [band,PhaseCellBand.width]
-    omega
-  have hW : W ≤ 205*p := by dsimp only [W]; omega
-  have hN : N ≤ t := (show N ≤ s by simpa [N] using (haloBoundary s t band a b).card_le_univ).trans hst.le
-  have hw := selectedInverseWorkingWidth_le ct h i u target a b htarget hband
-  have hwidth : 2*q+8 ≤ cw*p := by
-    convert hw using 1
-    dsimp only [q,p,l,bits,N,band,s,t,executionPrecision,executionWidth]
-    omega
-  have hwR : 2*q+8 ≤ R := hwidth.trans ((Nat.mul_le_mul_left cw hpt).trans
-    (Nat.mul_le_mul_right t (by dsimp only [cR]; omega)))
-  have hqR : q ≤ R := (show q ≤ 2*q+8 by omega).trans hwR
-  have hWR : W ≤ R := hW.trans ((Nat.mul_le_mul_left 205 hpt).trans
-    (Nat.mul_le_mul_right t (by dsimp only [cR,cw]; omega)))
-  have hNR : N ≤ R := hN.trans (by dsimp only [R,cR,cw]; nlinarith only [Nat.zero_le t])
+  have ht : 1 ≤ t := by have := h.good.lt i; dsimp only [t]; omega
+  have htR : t ≤ R := by dsimp only [R,cR]; nlinarith only [Nat.zero_le (c*t)]
+  have hR : 1 ≤ R := ht.trans htR
+  have hscale : c*p ≤ R := (Nat.mul_le_mul_left c hpt).trans
+    (Nat.mul_le_mul_right t (by dsimp only [cR]; omega))
+  have hwR : 2*q+8 ≤ R := (show 2*q+8 ≤ executionWidth p (haloInverseRingLog s t) (initialSchurTarget p u bits 2) 2 by
+    dsimp only [q,executionPrecision,executionWidth]; omega).trans (hw.trans hscale)
+  have hqR : q ≤ R := hq.trans hscale
+  have hWR : W ≤ R := hW.trans hscale
+  have hNR : N ≤ R := hN.trans htR
+  have hWt : W ≤ c*t := hW.trans (Nat.mul_le_mul_left c hpt)
   have henv : N+2*W+2 ≤ R := by
-    have hWt := hW.trans (Nat.mul_le_mul_left 205 hpt)
-    dsimp only [R,cR,cw]
-    nlinarith only [hN,hWt,ht,Nat.zero_le (ct*t)]
-  have hc := factorPageCost_poly hR hqR hWR hNR hwR henv
-  have hBR : band ≤ R := (show band ≤ W by dsimp only [W]; omega).trans hWR
+    change N ≤ t at hN
+    dsimp only [R,cR]
+    nlinarith only [hN,hWt,ht,Nat.zero_le (c*t)]
+  have hf := factorPageCost_poly hR hqR hWR hNR hwR henv
+  have hBR : band ≤ R := hB.trans hscale
   have hp5 : R ≤ R^5 := by simpa using Nat.pow_le_pow_right hR (show 1 ≤ 5 by decide)
   have hcost : generatedFactorPageCost q band N ≤ 20000000*R^5 := by
     dsimp only [generatedFactorPageCost]
     change _ ≤ _
-    nlinarith only [hc,hBR,hWR,hR,hp5]
-  simpa only [R,mul_pow,Nat.mul_assoc] using hcost
+    nlinarith only [hf,hBR,hWR,hR,hp5]
+  simpa only [R,t,mul_pow,Nat.mul_assoc] using hcost
 
 theorem selectedFamilySetup_factorArithmetic_le (ct : ℕ) :
     ∃ C : ℕ, ∀ (n : ℕ) (h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],
