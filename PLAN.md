@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2356 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2357 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15517,3 +15517,32 @@ Validation: all 15,267 affected audit-build jobs pass (3.5 GiB combined peak).
 The changed volume module, new key-family module and audit pass individual
 guarded checks. All 2,999 prior audit names remain and six new facts are covered.
 Changed-file proof-integrity, plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: setup trace stock includes nested procedure calls
+
+`StackCallResources.mn_exec_within` extends the call-free resource lemma to
+executions with procedure calls. The invariant charges all stack contents and
+outstanding return depth at every intermediate store. The finite-table corollary
+uses a fixed syntactic push constant for the entry program and procedure table;
+this constant does not depend on the input sizes or recursive call count.
+
+`selectedFamilyAllKeysSetup_scaled_volume_le` strengthens the whole-key-family
+budget to absorb any fixed natural multiplier. `selectedFamilySetup_trace_volume_le`
+applies it to the actual generated closed empty-batch lifecycle: every execution
+with the existing setup time certificate has total stack stock plus return depth
+at most initial stock plus `T`, uniformly over admissible selected keys. This
+includes nested arithmetic calls and simultaneous retained data/scratch rather
+than just final bank lengths. No arithmetic workspace bound for repeated batches
+is inferred from their total running time.
+
+The remaining storage obligation is sharper live repeated-batch accounting and
+a bridge to the compiled-machine stock invariant. Executed distinct-key grouping,
+external exposure/publication and restoration also remain required handoffs.
+S3 stays partial; kappa is unchanged.
+
+Validation: all 15,269 affected audit-build jobs pass (3.4 GiB combined peak).
+Both new resource modules, the changed key-family module and the audit pass
+individual guarded checks; peak RSS is 3,319 MiB. All 3,005 prior audit names
+remain and four new facts are covered. Changed-file proof-integrity, plan-status
+and whitespace checks pass.

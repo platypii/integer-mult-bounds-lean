@@ -59,23 +59,32 @@ theorem selectedFamilyKeySetupCost_poly_le (ct : ℕ) :
     exact_mod_cast hc.trans hm
   · exact Nat.zero_le _
 
-theorem selectedFamilyAllKeysSetup_volume_le (ct : ℕ) :
+theorem selectedFamilyAllKeysSetup_scaled_volume_le (ct scale : ℕ) :
     ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
       ∀ [NeZero (Sizes.s n i)], ∀ A : ℕ,
-      (∑ key : SelectedFamilyKey n i ct, selectedFamilyKeySetupCost n i ct A key) ≤ Sizes.T n := by
+      scale*(∑ key : SelectedFamilyKey n i ct, selectedFamilyKeySetupCost n i ct A key) ≤ Sizes.T n := by
   obtain ⟨C,hcost⟩ := selectedFamilyKeySetupCost_poly_le ct
-  filter_upwards [hcost,selectedAxisPolynomial_le_volume (2*(ct+1)*C) 6 8] with n hc hv
+  filter_upwards [hcost,selectedAxisPolynomial_le_volume (scale*2*(ct+1)*C) 6 8] with n hc hv
   intro h i _ A
   have hsum := Finset.sum_le_sum (s := Finset.univ)
     (fun key _ => hc h i A key)
   have hcard := selectedFamilyKey_card_le n h i ct
-  calc
-    _ ≤ Fintype.card (SelectedFamilyKey n i ct)*(C*Sizes.t n i^6*Sizes.p n^4) := by
-      simpa only [Finset.sum_const,Finset.card_univ,smul_eq_mul] using hsum
-    _ ≤ (2*(ct+1)*Sizes.t n i^2*Sizes.p n^2)*(C*Sizes.t n i^6*Sizes.p n^4) :=
-      Nat.mul_le_mul_right _ hcard
-    _ = (2*(ct+1)*C)*Sizes.t n i^8*Sizes.p n^6 := by ring
-    _ ≤ Sizes.T n := hv i
+  have hpoly : (∑ key : SelectedFamilyKey n i ct, selectedFamilyKeySetupCost n i ct A key) ≤
+      (2*(ct+1)*C)*Sizes.t n i^8*Sizes.p n^6 := by
+    calc
+      _ ≤ Fintype.card (SelectedFamilyKey n i ct)*(C*Sizes.t n i^6*Sizes.p n^4) := by
+        simpa only [Finset.sum_const,Finset.card_univ,smul_eq_mul] using hsum
+      _ ≤ (2*(ct+1)*Sizes.t n i^2*Sizes.p n^2)*(C*Sizes.t n i^6*Sizes.p n^4) :=
+        Nat.mul_le_mul_right _ hcard
+      _ = (2*(ct+1)*C)*Sizes.t n i^8*Sizes.p n^6 := by ring
+  exact (Nat.mul_le_mul_left scale hpoly).trans
+    ((by convert hv i using 1 <;> ring) : scale*((2*(ct+1)*C)*Sizes.t n i^8*Sizes.p n^6) ≤ Sizes.T n)
+
+theorem selectedFamilyAllKeysSetup_volume_le (ct : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
+      ∀ [NeZero (Sizes.s n i)], ∀ A : ℕ,
+      (∑ key : SelectedFamilyKey n i ct, selectedFamilyKeySetupCost n i ct A key) ≤ Sizes.T n := by
+  simpa only [one_mul] using selectedFamilyAllKeysSetup_scaled_volume_le ct 1
 
 /-- Any distinct-key subfamily pays no more setup than the complete family. -/
 theorem selectedFamilyDistinctKeysSetup_volume_le (ct : ℕ) :
