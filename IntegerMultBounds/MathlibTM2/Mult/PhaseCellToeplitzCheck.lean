@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyDensityCaller
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyKernelCaller
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellRetainedCouplingPass
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyBatchFast
@@ -3117,7 +3118,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.familyComplexGeometry_selected_gap_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyComplexBatch_selected_kernel_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_kernel_fast_le,
-      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_kernel_spec ] do
+      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_kernel_spec,
+      `IntegerMultBounds.MathlibTM2.Cost.axisGap_mul_dimension_le,
+      `IntegerMultBounds.MathlibTM2.Cost.axisGapVolume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedAxisGapVolume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_density_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexBatch_selected_density_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_density_spec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

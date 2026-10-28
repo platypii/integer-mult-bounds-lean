@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2247 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2249 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. Final selected uniform fast time matching and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. All inverse kernels now satisfy the selected `t*(1+band²/d)*p^(129/128)` allowance, with density proved from the actual axis bounds and setup/control bills still explicit. Bounding those remaining bills and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -14400,5 +14400,33 @@ storage throughout the complete execution. S3 stays partial; kappa is unchanged.
 
 Validation: the expanded standard-axiom audit passes all 15,134 jobs (3.4 GiB
 combined peak RSS), preserving all prior entries and adding eight. All four new
+modules and the audit pass individual guarded checks below the 4 GiB module
+budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: selected axis density in the complete kernel allowance
+
+`axisGap_mul_dimension_le` derives `d*(t-s) ≤ t` from the subtraction-free
+`Moduli.AxisBounds.lower` inequality. `axisGapVolume_le` consequently bounds
+the actual phase-gap volume by `t*(1+band²/d)`. `selectedAxisGapVolume_le`
+instantiates that estimate with `Sizes.Big.good.bounds` on every actual axis;
+the tensor dimension stays distinct from boundary rank and row count.
+
+`familyComplexBatch_selected_density_fast_le` carries this allowance through
+the counted repeated-input batch, with shared setup outside the replica term.
+`familyInverseCaller_selected_density_fast_le` and
+`familyInverseCaller_selected_density_spec` attach it to the ordinary-scalar
+caller cost and its actual execution, restoration and physical error contract.
+Ring log and scalar width remain derived. No boundary-density premise is
+silently assumed: the caller takes the proved axis inequalities, which the
+selected sizes supply.
+
+Remaining: bound the explicit control and tape work, match generated setup
+multiplicities/amortization to the final fast envelope, and prove simultaneous
+live storage throughout the complete execution. The density step for the
+full-line kernel budget is now closed. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,136 jobs (3.4 GiB
+combined peak RSS), preserving all prior entries and adding six. Both new
 modules and the audit pass individual guarded checks below the 4 GiB module
 budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
