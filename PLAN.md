@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2428 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2432 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -16143,3 +16143,35 @@ combined costs and stock. S3 remains partial; kappa is unchanged.
 Validation: all three modules pass individual guarded checks (maximum 3,034 MiB);
 the expanded axiom audit passes (15,342 jobs; 3.5 GiB combined peak), with ten
 new public facts covered. Proof-integrity, whitespace and PLAN checks pass.
+
+
+### S3 checkpoint: normalization composes with the actual decoded solver output
+
+`PhaseCellCanonicalOutput` proves that replacing an arbitrary returned numerator
+by its signed representative preserves every encoded byte. Its decoded field is
+exactly the value of that representative. This removes a hidden integration
+assumption: the production solver guarantees decoded accuracy, not strict fits
+of the unconstrained numerator witness it returns.
+
+`finalRound_tape_exec` now consumes precisely this decoded accuracy interface.
+It derives the signed bounds from the decoded magnitude and produces the exact
+scaled/rounded decoded result with one execution witness and frame restoration.
+`computed_solution_norm` obtains the magnitude allowance from the exact solution
+bound and solver error. `scaleRound_error` prices final rounding and scaled solve
+error separately.
+
+`solver_round_exec` composes an arbitrary frame-restoring numerical solver's
+actual execution with this pass. The resulting program restores the original
+frame except the result stream, has the explicit sum of execution times, and
+returns error at most `2/2^p + 2^-target/2^j` from the scaled exact solution.
+It does not require the original numerator witness to fit and does not assume
+that a mathematical rounded result has already been executed.
+
+The closed dispatcher still must instantiate this composition, generate its
+rounding counters from scalar metadata, select sufficient widths (including the
+separate shift), and transport aggregate fast time and compiled stock. Its input
+conversion and normalized numerical endpoint also remain to be joined in that
+closed execution. S3 remains partial; kappa is unchanged.
+Validation: all four modules pass guarded individual checks (maximum 3,079 MiB);
+the expanded audit passes (15,358 jobs; 3.5 GiB combined peak), covering all nine
+new public facts. Proof-integrity, whitespace and PLAN checks pass.
