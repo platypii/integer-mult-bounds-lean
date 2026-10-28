@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2269 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2273 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14709,3 +14709,37 @@ Validation: the 15,160-job affected-caller/standard-axiom audit build passes.
 The four new modules and audit pass individual guarded checks (largest
 3,056 MiB); all 2,753 previous audit names remain and nine new facts are
 covered. Proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: phase-based runtime run producer
+
+`haloRunRowCode` reuses the existing executed halo interval arithmetic, then
+emits a false gap and true body for a positive interval. Its retained cursor
+advances only for positive cells; empty phases emit nothing. `haloRunScanCode`
+executes the row once per phase, and `haloRunCode` appends the final false tail.
+The exact table bound is `40*(t-s+1)+6`, for either count packets or companion
+flags. A structural prefix algebra (`cursor`, `prefixRuns`) connects the loop
+invariant directly to the earlier `IntervalRunMask.runs` list, without repeating
+the mask membership or geometry-cover arguments.
+
+The shared `tblMapHost_runs` helper publishes table emissions through an
+arbitrary symbol map and preserves its table layout and external stack frame.
+`haloRunHost_exec` instantiates it for the actual run producer and real-bit
+projection, starting from the scalar table bank. Projection lemmas prove that
+the count mode yields precisely the consumer's binary count packets and that
+the one-bit flag mode yields precisely its physical flag stream. The host bound
+is `(40*(t-s+1)+6)*tblC(W,w)+2*(2*m+1)*w+2`, with `m` the number of positive
+halo intervals. All intermediate table values remain bounded at width `W`.
+
+Remaining integration: compose ordinary scalar header loading, the count and
+flag producer passes, bank release and the fixed consumer; replace the actual
+coupling/publication/recovery mask backends and propagate the revised cost.
+The producer theorem now generates metadata from scalar table values, but the
+final caller still uses its earlier mask backend. Selected setup accounting,
+amortization and whole-caller compiled-machine storage remain open. S3 stays
+partial; kappa is unchanged.
+
+Validation: the affected-caller/standard-axiom audit build passes all 15,165
+jobs. All five new modules and the audit pass individual guarded checks,
+with a largest peak of 3,060 MiB. All 2,762 prior audit names remain and twelve
+additional facts are checked. Proof-integrity, plan-status and whitespace
+checks pass.

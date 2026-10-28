@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloRunHost
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellEmitHaloRunMask
 
 import IntegerMultBounds.MathlibTM2.Host.EmitRun
@@ -3214,7 +3216,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitRunPackets_pushBound,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitRunPackets_certify,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitRunPackets_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitHaloRunMask_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitHaloRunMask_exec,
+      `IntegerMultBounds.NLogN.IntervalRunMask.cursor_append,
+      `IntegerMultBounds.NLogN.IntervalRunMask.prefixRuns_append,
+      `IntegerMultBounds.NLogN.IntervalRunMask.runs_eq_prefix,
+      `IntegerMultBounds.MathlibTM2.Fast.TableVM.tblMapHost_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunEmitCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunRowCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunScanCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runPairStream_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runPairStream_counts_real_bits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runPairStream_flags_real_bits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunHost_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
