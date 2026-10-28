@@ -1,5 +1,9 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyDispatchOutputStock
+
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyDispatchCost
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPhysicalDispatch
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorBankFinish
@@ -3627,7 +3631,16 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseBatch_bank_stock_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyInverseBatchCallerCost_input_le,
       `IntegerMultBounds.MathlibTM2.Cost.physicalFamilyDispatchCost_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedPhysicalFamilyKeyBatches_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPhysicalFamilyKeyBatches_fast_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyDispatchInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorListLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyDispatchLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyDispatch_exec,
+      `IntegerMultBounds.MathlibTM2.Cost.familyDispatchInput_restore_le_cost,
+      `IntegerMultBounds.MathlibTM2.Cost.familyDispatch_restore_ledger_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyDispatchProduced_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyDispatchProduced_length_le_tape,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyDispatch_outputs_length_le_tape ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

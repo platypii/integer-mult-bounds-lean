@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2398 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2404 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15944,3 +15944,49 @@ combined peak). All five new modules and the audit pass individual guarded
 checks, each below 3,324 MiB peak RSS. All 3,087 prior audit facts remain,
 with eight new execution and cost facts covered. New-file proof-integrity,
 plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: the numerical descriptor loop executes and restores its borrowed frame
+
+`FamilyDispatchInput` records ordinary per-group scalar inputs, raw payload,
+replica count and width word. `FamilyDispatchReady` ties those words to the
+advertised geometry, precision, input magnitude and actual replica count.
+It contains no execution assumption or supplied coefficient/factor page.
+`familyDispatchInput_exec` instantiates the actual clean-bank numerical step;
+its output includes time, uniform errors and the existing same-trace stock
+certificate. The square-root parameter is selected from the semantic `u`.
+
+`descriptorListLoop_exec` proves the physical counted loop structurally over
+an arbitrary descriptor list. It tracks the remaining source, saved packet
+reverses, result chunks and fresh bank/scratch ports exactly. Runtime values
+and record count do not enter the fixed program syntax. `familyDispatchLoop_exec`
+instantiates this structural theorem with the checked numerical entry, so every
+advertised group executes one real raw batch call and receives the stated error
+contract. The final output stream contains the produced chunks in reverse group
+order, with each chunk's coefficient order preserved.
+
+`familyDispatch_exec` wraps that loop in the actual counter-copy, tape-restoration
+and counter-restoration programs. Only the produced result prefix changes:
+the descriptor tape, borrowed loop-counter symbols, saved tapes, working bank,
+scratch, native/left stacks and all spectators restore. Its explicit time is
+`sum_records (physicalDispatchCost+3) + 6*recordCount + 2*tapeLength + 10`.
+`familyDispatch_restore_ledger_le` absorbs the complete loop/restoration ledger
+into `2*sum_records physicalDispatchCost+10`; scanning and restoration are paid.
+
+`familyDispatchProduced_length` derives each output chunk's actual length from
+its numerical `Forall₂` relation. `familyDispatch_outputs_length_le_tape` bounds
+the accumulated output by the physical descriptor tape length, using the input
+payload already present in each ready bank. This is a needed input to the
+remaining simultaneous-stock proof, rather than a supplied output-size bound.
+
+Next: connect the executed record list and distinct complete keys to the
+selected aggregate time theorem, and lift the per-step trace certificates through
+the counted loop and restoration for the loop-wide simultaneous stock bound.
+The full S3 interface completion audit remains required. S3 stays partial;
+kappa is unchanged.
+
+Validation: the expanded audit passes all 15,319 affected build jobs (3.5 GiB
+combined peak). All six new modules and the audit pass individual guarded
+checks, each below 3,333 MiB peak RSS. All 3,095 prior audit facts remain,
+with nine new execution, ledger and output-stock facts covered. New-file
+proof-integrity, plan-status and whitespace checks pass.
