@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellInputShiftCost
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInputShiftSolve
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedDispatchInput
@@ -3840,7 +3842,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inputShiftWordPass_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblPrepareInputShift_do,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.restoreInputShift_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.ShortConv.signedWiden_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.ShortConv.signedWiden_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inputShiftSolve_exec_trace,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inputUnshiftField_shift,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inputShiftField_flatten,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inputShiftField_value,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inputBatch_unit,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.gridFamilyInverseBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Cost.inputShiftBatchCost_le_roundCost,
+      `IntegerMultBounds.MathlibTM2.Cost.inputShiftBatchCost_le_callerCost,
+      `IntegerMultBounds.MathlibTM2.Cost.inputShiftBatchCost_le_callerStock,
+      `IntegerMultBounds.MathlibTM2.Cost.gridFamilyInverseBatchCost_le_callerCost,
+      `IntegerMultBounds.MathlibTM2.Cost.gridFamilyInverseBatchStockCost_le_callerStock ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
