@@ -66,7 +66,7 @@ theorem familyInverseCaller_geometry_spec (recovery : Bool) (hR : rpStates ≤ Q
         ∀ i, ‖pairedCellRead q w (cstream A w (chirpLine s G)++S.R 132) i-z i‖ ≤ 1/(2 : ℝ)^target := by
   dsimp only
   intro z hz
-  obtain ⟨v',n,G,huser,hcost,hexec,herror⟩ := familyInverseCaller_sized_spec (body := body)
+  obtain ⟨v',n,G,huser,hcost,hexec,herror,_htrace⟩ := familyInverseCaller_sized_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband hpad
     hbandRoom hgeometryRoom hprecisionRoom F hF v S tail wl hwl hscalar hleft hblank hsource z hz
   exact ⟨v',n,G,huser,hcost.trans (familyInverseCallerCost_geometry_le hst A W p u l target),hexec,herror⟩

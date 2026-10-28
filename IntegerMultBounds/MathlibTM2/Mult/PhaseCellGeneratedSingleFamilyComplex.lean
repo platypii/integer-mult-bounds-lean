@@ -15,6 +15,8 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
+open IntegerMultBounds.MathlibTM2.Fast.Main
+
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 263 Q A U}
 
 noncomputable def generatedSingleFamilyComplex (recovery : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 263 Q A U :=
@@ -57,7 +59,14 @@ theorem generatedSingleFamilyComplex_spec (recovery : Bool) (hR : rpStates ≤ Q
           (cstream A w (chirpLine s Z)++S.R 132))}) ∧
       PhaseCellInterface.ErrorOn (haloVertices s a b)
         (pairedCellRead q w (cstream A w (chirpLine s Z)++S.R 132))
-          (fun i => (⟨x i,y i⟩ : ℂ)) (1/(2 : ℝ)^target) := by
+          (fun i => (⟨x i,y i⟩ : ℂ)) (1/(2 : ℝ)^target) ∧
+      ∀ C, mnProgPush (generatedSingleFamilyComplex (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          (C+1)*(1+generatedClosedFamilyComplexBatchStockCost A p u l s t a b target 1+4))
+          depth (generatedSingleFamilyComplex recovery hR hQ) (mk v S) n
+          (mk v' {S with R := (Function.update S.R 132
+            (cstream A w (chirpLine s Z)++S.R 132))}) := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let band := PhaseCellBand.width p u
@@ -82,7 +91,7 @@ theorem generatedSingleFamilyComplex_spec (recovery : Bool) (hR : rpStates ≤ Q
       change (couplingCachePort recovery i).val = 246 at hv
       omega
     simp [S₁,hne]
-  obtain ⟨v₂,n,Zs,hu₂,hn₂,he₂,hgood,_htrace⟩ := generatedClosedFamilyComplexBatch_spec (body := body)
+  obtain ⟨v₂,n,Zs,hu₂,hn₂,he₂,hgood,htrace⟩ := generatedClosedFamilyComplexBatch_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
     [F] (by intro G hG i; rcases List.mem_singleton.mp hG with rfl; exact hF i) v S₁ tail
     (by change LengthKeyReady _ _ _ _ _ _ _ _ _ _ _ (embStk familyCouplingSourceReg S₁)
@@ -128,8 +137,17 @@ theorem generatedSingleFamilyComplex_spec (recovery : Bool) (hR : rpStates ≤ Q
         funext i
         by_cases h246 : i = 246 <;> by_cases h132 : i = 132 <;>
           simp [S₂,S₁,h246,h132,hfresh 246 (by simp)]
-    refine ⟨v₃,1+(n+4),Z,hu₃.trans hu₂,?_,Exec.seq he₁ (Exec.seq he₂' he₃'),?_⟩
+    refine ⟨v₃,1+(n+4),Z,hu₃.trans hu₂,?_,Exec.seq he₁ (Exec.seq he₂' he₃'),?_,?_⟩
     · simpa using (by omega : 1+(n+4) ≤ generatedClosedFamilyComplexBatchCost A p u l s t a b target 1+5)
     · simpa [S₁] using hZ
+    · intro C hp hb depth
+      have hmiddle : ∀ c, mnProgPush (generatedClosedFamilyComplexBatch (P := P) (U := U) (A := A) recovery hR hQ) ≤ c →
+          (∀ f, mnProgPush (body f) ≤ c) → ∀ d,
+          ExecWithin body (fun j z => mnSize z+j ≤ mnSize (mk v S₁)+d+
+            (c+1)*generatedClosedFamilyComplexBatchStockCost A p u l s t a b target 1)
+            d (generatedClosedFamilyComplexBatch recovery hR hQ) (mk v S₁) n (mk v₂ S₂) := by
+        intro c hc hbody d
+        simpa [S₂,output,S₁] using htrace c hc hbody d
+      exact mn_lifecycle_exec_within he₁ le_rfl hmiddle he₃' le_rfl C hp hb depth
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

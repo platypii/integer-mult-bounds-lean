@@ -59,7 +59,7 @@ theorem selectedFamilyInverseCaller_spec (ct : ℕ) :
   intro recovery hR hQ hA u target α d hp hwidth hα hst hu hαu hθ hgap hbudget hband
     huBound htarget F hF v S tail wl hwl hscalar hleft hblank hsource
   intro z hz
-  obtain ⟨v',m,G,huser,hcost,hexec,herror⟩ := familyInverseCaller_spec (body := body)
+  obtain ⟨v',m,G,huser,hcost,hexec,herror,_htrace⟩ := familyInverseCaller_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband
     (haloInverseRingLog_fits _ _ _) F hF v S tail wl hwl hscalar hleft hblank hsource z hz
   have hbound := hn h i A

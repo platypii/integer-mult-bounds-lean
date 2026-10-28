@@ -1,5 +1,8 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
+public import IntegerMultBounds.MathlibTM2.StackExecutionUnique
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyInverseCallerWorkspace
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedFactorBatchReleaseCost
 
@@ -14,6 +17,8 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
+
+open IntegerMultBounds.MathlibTM2.Fast.Main
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 303 Q A U}
 
@@ -57,19 +62,42 @@ theorem familyInverseCoreCall_spec (recovery : Bool) (hR : rpStates ≤ Q) (hQ :
           (cstream A w (chirpLine s Z)++S.R 132))}) ∧
       PhaseCellInterface.ErrorOn (haloVertices s a b)
         (pairedCellRead q w (cstream A w (chirpLine s Z)++S.R 132))
-          (fun i => (⟨x i,y i⟩ : ℂ)) (1/(2 : ℝ)^target) := by
+          (fun i => (⟨x i,y i⟩ : ℂ)) (1/(2 : ℝ)^target) ∧
+      ∀ C, mnProgPush (familyInverseCoreCall (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          (C+1)*(1+generatedClosedFamilyComplexBatchStockCost A p u l s t a b target 1+4))
+          depth (familyInverseCoreCall recovery hR hQ) (mk v S) n
+          (mk v' {S with R := (Function.update S.R 132
+            (cstream A w (chirpLine s Z)++S.R 132))}) := by
   dsimp only
   intro F hF v S tail hready hguard hwords hrowsKey hfamilyFresh hleft ha hb hclean hnew hfresh h137 x y hx hy
-  obtain ⟨vi,n,Z,huI,hn,he,herror⟩ := generatedSingleFamilyComplex_spec
+  obtain ⟨vi,n,Z,huI,hn,he,herror,htrace⟩ := generatedSingleFamilyComplex_spec
     (body := fun p : Empty => nomatch p) recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
     hband has hbs hpad F hF (embDn familyInverseCoreReg v) (embStk familyInverseCoreReg S)
     tail hready hguard hwords hrowsKey hfamilyFresh hleft ha hb hclean hnew hfresh h137 x y hx hy
   obtain ⟨v',hv',hu',he'⟩ := exec_emb_ovr (ι := Empty.elim) (body' := body)
     familyInverseCoreReg_injective (fun p => nomatch p) he v rfl S rfl
-  refine ⟨v',n,Z,hu'.trans huI,hn,he'.cast rfl ?_,herror⟩
-  apply congrArg (mk v')
-  rw [embOvr_updR familyInverseCoreReg_injective,embOvr_stk]
-  rfl
+  let output := cstream A (executionWidth p l (initialSchurTarget p u
+    (boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2
+      (haloBoundary s t (PhaseCellBand.width p u) a b).card) 2) 2) (chirpLine s Z)
+  have hfinal : embOvr familyInverseCoreReg
+      ({embStk familyInverseCoreReg S with R := Function.update (embStk familyInverseCoreReg S).R 132 (output++S.R 132)}).get S =
+      {S with R := Function.update S.R 132 (output++S.R 132)} := by
+    rw [embOvr_updR familyInverseCoreReg_injective,embOvr_stk]
+    rfl
+  have heOut := he'.cast rfl (congrArg (mk v') hfinal)
+  refine ⟨v',n,Z,hu'.trans huI,hn,heOut,herror,?_⟩
+  intro C hp hb depth
+  have hsmallpush : mnProgPush (generatedSingleFamilyComplex (P := Empty) (U := U) (A := A) recovery hR hQ) ≤ C := by
+    simpa only [familyInverseCoreCall,embProg_push] using hp
+  have hs := htrace C hsmallpush (fun f => nomatch f) depth
+  obtain ⟨vf,hvf,huf,ht⟩ := exec_emb_ovr_within_stock familyInverseCoreReg
+    familyInverseCoreReg_injective (ι := Empty.elim) (body' := body) (fun f => nomatch f)
+    hs v rfl S rfl
+  have hsame := (ht.toExec.unique heOut).2
+  rw [hsame] at ht
+  exact ht
 
 theorem familyInverseCoreCall_full_spec (recovery : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target : ℕ} [NeZero s] {α d : ℝ}
@@ -104,7 +132,12 @@ theorem familyInverseCoreCall_full_spec (recovery : Bool) (hR : rpStates ≤ Q) 
       let S' : Stacks 303 A := {S with R := Function.update S.R 132 (cstream A w (chirpLine s Z)++S.R 132)}
       v'.user = v.user ∧ n ≤ generatedClosedFamilyComplexBatchCost A p u l s t 0 s target 1+5 ∧
       Exec body (familyInverseCoreCall recovery hR hQ) (mk v S) n (mk v' S') ∧
-      ∀ i, ‖pairedCellRead q w (S'.R 132) i-z i‖ ≤ 1/(2 : ℝ)^target := by
+      (∀ i, ‖pairedCellRead q w (S'.R 132) i-z i‖ ≤ 1/(2 : ℝ)^target) ∧
+      ∀ C, mnProgPush (familyInverseCoreCall (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          (C+1)*(1+generatedClosedFamilyComplexBatchStockCost A p u l s t 0 s target 1+4))
+          depth (familyInverseCoreCall recovery hR hQ) (mk v S) n (mk v' S') := by
   dsimp only
   intro F hF v S tail hready hguard hwords hrowsKey hfamilyFresh hleft ha hb hclean hnew hfresh h137 z hz
   have hfull : haloVertices s 0 s = Finset.univ := by
@@ -129,11 +162,11 @@ theorem familyInverseCoreCall_full_spec (recovery : Bool) (hR : rpStates ≤ Q) 
     intro i _
     have hh := congrArg Complex.im (congrFun hz i)
     simpa [Matrix.mulVec,dotProduct,Complex.mul_im] using hh
-  obtain ⟨v',n,Z,hu',hn,he,herror⟩ := familyInverseCoreCall_spec (body := body)
+  obtain ⟨v',n,Z,hu',hn,he,herror,htrace⟩ := familyInverseCoreCall_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband (Nat.zero_le s) (le_refl s)
     hpad F hF v S tail hready hguard hwords hrowsKey hfamilyFresh hleft ha hb hclean hnew hfresh h137
     (fun i => (z i).re) (fun i => (z i).im) hx hy
-  refine ⟨v',n,Z,hu',hn,he,?_⟩
+  refine ⟨v',n,Z,hu',hn,he,?_,htrace⟩
   intro i
   have hh := herror i (by rw [hfull]; exact Finset.mem_univ i)
   simpa only [Complex.eta,Function.update_self] using hh

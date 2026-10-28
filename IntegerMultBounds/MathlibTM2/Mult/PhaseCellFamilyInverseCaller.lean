@@ -15,12 +15,20 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
+open IntegerMultBounds.MathlibTM2.Fast.Main
+
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 303 Q A U}
 
 noncomputable def familyInverseCallerCost (A W p u l target s t : ℕ) [NeZero s] : ℕ :=
   inverseScalarAtoms p s t u 0 s*tblC W 0+
     inverseMasterCopyCost W (inverseMasterValues p u l target s t 0 s)+
     (generatedClosedFamilyComplexBatchCost A p u l s t 0 s target 1+5)+
+    inverseReleaseCost W (inverseMasterValues p u l target s t 0 s)
+
+noncomputable def familyInverseCallerStockCost (A W p u l target s t : ℕ) [NeZero s] : ℕ :=
+  (inverseScalarAtoms p s t u 0 s*tblC W 0+
+    inverseMasterCopyCost W (inverseMasterValues p u l target s t 0 s))+
+    (1+generatedClosedFamilyComplexBatchStockCost A p u l s t 0 s target 1+4)+
     inverseReleaseCost W (inverseMasterValues p u l target s t 0 s)
 
 theorem familyInverseCaller_sized_spec (recovery : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
@@ -54,7 +62,13 @@ theorem familyInverseCaller_sized_spec (recovery : Bool) (hR : rpStates ≤ Q) (
         Exec body
           (familyInverseCaller recovery hR hQ) (mk v S) n
           (mk v' {S with R := Function.update S.R 132 (cstream A w (chirpLine s G)++S.R 132)}) ∧
-        ∀ i, ‖pairedCellRead q w (cstream A w (chirpLine s G)++S.R 132) i-z i‖ ≤ 1/(2 : ℝ)^target := by
+        (∀ i, ‖pairedCellRead q w (cstream A w (chirpLine s G)++S.R 132) i-z i‖ ≤ 1/(2 : ℝ)^target) ∧
+        ∀ C, mnProgPush (familyInverseCaller (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+          (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+          ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+            (C+1)*familyInverseCallerStockCost A W p u l target s t)
+            depth (familyInverseCaller recovery hR hQ) (mk v S) n
+            (mk v' {S with R := Function.update S.R 132 (cstream A w (chirpLine s G)++S.R 132)}) := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) 0 s
   let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 B.card
@@ -138,7 +152,7 @@ theorem familyInverseCaller_sized_spec (recovery : Bool) (hR : rpStates ≤ Q) (
     rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
     all_goals exact hclean _ (by intro j; fin_cases j <;> decide) (by decide) (by decide)
   intro z hz
-  obtain ⟨v₂,n₂,G,hu₂,hn₂,he₂,herror⟩ := familyInverseCoreCall_full_spec (body := body)
+  obtain ⟨v₂,n₂,G,hu₂,hn₂,he₂,herror,htrace⟩ := familyInverseCoreCall_full_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband hpad F hF v₁ S₁ tail hready'
     (hclean _ (by cases recovery <;> intro j <;> fin_cases j <;> decide) (by cases recovery <;> decide) (by cases recovery <;> decide))
     (hclean _ (by cases recovery <;> intro j <;> fin_cases j <;> decide) (by cases recovery <;> decide) (by cases recovery <;> decide))
@@ -204,11 +218,15 @@ theorem familyInverseCaller_sized_spec (recovery : Bool) (hR : rpStates ≤ Q) (
       have hr132 : familyInverseScalarReg r ≠ 132 := familyInverseScalarReg_core r 132
       rw [Function.update_of_ne hr132]
       exact (hscalar r).symm
-  refine ⟨v₃,n₁+(n₂+n₃),G,hu₃.trans (hu₂.trans hu₁),?_,?_,?_⟩
+  refine ⟨v₃,n₁+(n₂+n₃),G,hu₃.trans (hu₂.trans hu₁),?_,?_,?_,?_⟩
   · simpa only [familyInverseCallerCost,Nat.add_assoc] using Nat.add_le_add hn₁ (Nat.add_le_add hn₂ hn₃)
   · exact (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl (congrArg (mk v₃) hfinal)
   · intro i
     have hh : ‖pairedCellRead q w (cstream A w (chirpLine s G)++S₁.R 132) i-z i‖ ≤ 1/(2 : ℝ)^target := herror i
     simpa only [h132] using hh
+  · intro C hp hb depth
+    have ht := mn_lifecycle_exec_within he₁ hn₁ htrace he₃ hn₃ C hp hb depth
+    rw [hfinal] at ht
+    exact ht
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

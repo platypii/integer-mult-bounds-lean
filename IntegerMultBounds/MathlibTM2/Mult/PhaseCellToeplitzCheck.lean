@@ -1,5 +1,8 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Host.EmbedStock
+import IntegerMultBounds.MathlibTM2.StackExecutionUnique
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedClosedBatchCompiled
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBatchCompiled
@@ -3556,7 +3559,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Fast.Main.mn_lifecycle_exec_within,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedClosedFamilyComplexBatchStockCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.generatedClosedFamilyComplexBatchStockCost_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedClosedFamilyBatch_compiled_volume_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedClosedFamilyBatch_compiled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Host.embProg_execWithin,
+      `IntegerMultBounds.MathlibTM2.Host.embK_injective,
+      `IntegerMultBounds.MathlibTM2.Host.embOvr_stock,
+      `IntegerMultBounds.MathlibTM2.Host.embAct_push,
+      `IntegerMultBounds.MathlibTM2.Host.embProg_push,
+      `IntegerMultBounds.MathlibTM2.Host.exec_emb_ovr_within_stock,
+      `IntegerMultBounds.MathlibTM2.Stack.Exec.unique ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

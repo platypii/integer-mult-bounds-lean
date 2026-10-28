@@ -14,6 +14,8 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
+open IntegerMultBounds.MathlibTM2.Fast.Main
+
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 303 Q A U}
 
 theorem familyInverseCaller_spec (recovery : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
@@ -43,7 +45,13 @@ theorem familyInverseCaller_spec (recovery : Bool) (hR : rpStates ≤ Q) (hQ : S
         Exec body
           (familyInverseCaller recovery hR hQ) (mk v S) n
           (mk v' {S with R := Function.update S.R 132 (cstream A w (chirpLine s G)++S.R 132)}) ∧
-        ∀ i, ‖pairedCellRead q w (cstream A w (chirpLine s G)++S.R 132) i-z i‖ ≤ 1/(2 : ℝ)^target := by
+        (∀ i, ‖pairedCellRead q w (cstream A w (chirpLine s G)++S.R 132) i-z i‖ ≤ 1/(2 : ℝ)^target) ∧
+        ∀ C, mnProgPush (familyInverseCaller (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+          (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+          ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+            (C+1)*familyInverseCallerStockCost A (inverseCallerWordWidth p u l target s t) p u l target s t)
+            depth (familyInverseCaller recovery hR hQ) (mk v S) n
+            (mk v' {S with R := Function.update S.R 132 (cstream A w (chirpLine s G)++S.R 132)}) := by
   obtain ⟨hbandRoom,hgeometryRoom,hprecisionRoom⟩ := inverseCallerWordWidth_fits p u l target s t
   exact familyInverseCaller_sized_spec (body := body) recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
     hband hpad hbandRoom hgeometryRoom hprecisionRoom F hF v S tail wl hwl hscalar hleft hblank hsource

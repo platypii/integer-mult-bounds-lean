@@ -53,7 +53,7 @@ theorem familyInverseCaller_selected_kernel_spec (ct cG : ℕ) :
     htarget hgeometry F hF v S tail wl hwl hscalar hleft hblank hsource
   dsimp only
   intro z hz
-  obtain ⟨v',n,G,huser,hcost,hexec,herror⟩ := familyInverseCaller_spec (body := body)
+  obtain ⟨v',n,G,huser,hcost,hexec,herror,_htrace⟩ := familyInverseCaller_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband
     (haloInverseRingLog_fits s t (PhaseCellBand.width p u)) F hF v S tail wl hwl hscalar hleft hblank hsource z hz
   have hbound := hprice A (inverseCallerWordWidth p u (haloInverseRingLog s t) target s t)
