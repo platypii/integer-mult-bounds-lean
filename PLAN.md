@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2312 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2320 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15094,3 +15094,41 @@ The five new modules and audit pass individual guarded checks; the new modules
 peak below 1,844 MiB and the audit below 3,073 MiB. All 2,854 prior audit names
 remain and 24 new facts are covered. Proof-integrity, plan-status and whitespace
 checks pass.
+
+### S3 checkpoint: fully generated boundary RHS component in the retained layout
+
+`BoundaryRhsFoldPlacement` relocates the existing fold by two register swaps:
+it consumes the selected RHS at 143 using numerical width 94, while preserving
+the coordinate page at 109 and its geometry-width counter at 115. The placement
+is structurally injective and disjoint from the existing multiplier bank.
+`boundaryRhsFoldCounters` embeds the existing counter generator at width 94;
+`preparedBoundaryRhsFold_exec` composes counter generation, canonical folding,
+output transfer and complete counter release in at most `250*(N+1)*(w+1)` steps.
+
+`maskedBoundaryRhs_exec` combines one ordered scan with this prepared fold and
+consumes its owned mask, producing exactly the solver's `bFoldOrder` RHS. Its
+whole ledger is at most `600*(s+1)*(w+1)`. `boundaryRhsMask` embeds the actual
+closed mask generator with output 139 and transient width 138, so the retained
+coordinate page and geometry width are untouched.
+
+`generatedBoundaryRhs_exec` now executes the complete geometry-header-to-mask-
+to-gather-to-fold pipeline. It restores every stack except its owned output at
+143, including arbitrary borrowed coordinate data and the ambient RHS suffix.
+All mask data and fold counters execute internally; only the already retained
+boundary cardinality and working width are supplied.
+`generatedBoundaryRhs_selected_fast_le` proves an actual `O(t*p)` selected cost
+for this complete generated pipeline.
+
+The outer family entry point still selects `familyBoundaryRhs` through the old
+repeated-index gather. Next: install/release its scalar headers without assuming
+the retained coordinate ports are empty, embed the new component in the family
+workspace, transfer its owned output onto the factor RHS suffix, and propagate
+the new cost through the family caller and remaining-control theorem. The old
+`boundaryRhsPrepareCost` remainder is not yet discharged. Shared setup
+amortization and whole-caller compiled-machine storage remain open.
+S3 stays partial; kappa is unchanged.
+
+Validation: all 15,231 affected audit-build jobs pass (3.4 GiB combined peak).
+All eight new modules and the audit pass individual guarded checks below 4 GiB.
+All 2,878 prior audit names remain and 39 new facts, including the placement
+lemmas, are covered. Proof-integrity, plan-status and whitespace checks pass.

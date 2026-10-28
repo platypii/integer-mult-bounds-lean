@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBoundaryRhs
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRhsMaskSelection
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilyRhsFast
@@ -3354,7 +3356,46 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsFold_runs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsFlags_halo,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMask_flags,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsHaloGather_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsHaloGather_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_m2wn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_kn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_tswn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_vk,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_ya,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_xs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_nv,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_tK,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_tC,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_ac2,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_sel,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_sn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_width,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.BoundaryRhsFoldPlacement.reg_mul,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedBoundaryRhsFold_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsCounterReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsCounterReg_zero,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsCounterReg_two,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsCounterReg_three,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsCounterReg_width,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsCounterReg_count,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsFoldCounters_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedBoundaryRhsFold_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.maskedBoundaryRhs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_s,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_t,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_band,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_a,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_b,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_work,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_clock,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_output,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_width,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_low,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMask_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedBoundaryRhs_exec,
+      `IntegerMultBounds.MathlibTM2.Cost.generatedBoundaryRhs_selected_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
