@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2437 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2440 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -16204,3 +16204,31 @@ kappa is unchanged.
 Validation: all five modules pass individual guarded checks (maximum 1,617 MiB);
 the expanded axiom audit passes (15,363 jobs; 3.5 GiB combined peak), covering
 all six new public facts. Proof-integrity and whitespace checks pass.
+
+
+### S3 checkpoint: generated final rounding has a complete execution lifecycle
+
+`generatedFinalRound_exec` combines binary scalar arithmetic, unary counter
+installation, signed word rounding and counter release in one execution.
+It consumes the solver's actual decoded-output magnitude contract, derives fits
+through signed representatives, and returns the exact scaled/rounded decoded
+field. The binary bank, native stacks, left stacks, scratch and all generated
+counter ports are restored; only the result stream changes.
+
+The time bound is `13*tblC W 0+16*w+44*W+38+s*(14*w+23)`.
+`topShiftWordCost_eq` factors the per-word cost once over arbitrary dimensions;
+it is `12*w+22` whenever the truncated and retained bits fit the input word.
+`roundPorts_separate` similarly isolates finite register separation before any
+numerical instantiation, avoiding case-by-case simplification of the full solver.
+The same execution exports an `ExecWithin` stock/depth certificate with this
+linear allowance, ready to compose with the existing solver certificate.
+
+The remaining production integration must derive these binary dimensions and
+width conditions from the inverse metadata, place the stage into the batch
+schedule, join input conversion and the numerical endpoint, and pay the combined
+aggregate bounds. This checkpoint completes the standalone rounding lifecycle;
+it does not establish the closed normalized dispatcher. S3 remains partial;
+kappa is unchanged.
+Validation: all three modules pass guarded individual checks (maximum 3,087 MiB);
+the expanded audit passes (15,366 jobs; 3.5 GiB combined peak), covering all five
+new public facts. Proof-integrity and whitespace checks pass.

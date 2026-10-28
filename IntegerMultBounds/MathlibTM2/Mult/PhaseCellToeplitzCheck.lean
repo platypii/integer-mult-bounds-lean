@@ -1,5 +1,9 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundHeaderFrame
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundCost
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedFinalRound
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundScalarSetup
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallRoundHeaders
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundHeaderBounds
@@ -3736,7 +3740,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundHeaderCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundHeaders_ready,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblRoundRelease_do,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedRoundHeaders_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedRoundHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundHeader_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundPorts_separate,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.topShiftWordCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finalRound_pass_cost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedFinalRound_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
