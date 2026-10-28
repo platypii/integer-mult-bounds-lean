@@ -1,5 +1,12 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDerivedInverseRoundBatch
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedBatchAccuracy
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyBatchRoundReady
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedFamilyInverseBatch
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedBatchDescriptorCall
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedBatchDispatchStep
+
 import IntegerMultBounds.MathlibTM2.Fast.TableView
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareInverseRound
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseRoundView
@@ -3784,7 +3791,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseRoundScalarReg_ports,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepareInverseRound_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedInverseRound_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseRoundBatch_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseRoundBatch_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseInputScalars_fit,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseRoundBatch_derived_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundedField_accuracy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.normalizedBatch_accuracy,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseSmallPorts_blank,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedFamilyInverseBatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedFamilyInverseBatchDescriptorCall_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedFamilyInverseBatchDispatchStep_spec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

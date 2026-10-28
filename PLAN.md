@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2453 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2459 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -16311,3 +16311,43 @@ numerical endpoint. S3 remains partial; kappa is unchanged.
 Validation: all six modules pass individual guarded checks (maximum 3,313 MiB);
 the expanded audit passes (15,379 jobs; 3.5 GiB combined peak), covering all eleven
 new public facts. Proof-integrity and whitespace checks pass.
+
+
+### S3 checkpoint: the numerical batch and descriptor step execute normalized output
+
+`inverseRoundBatch_derived_exec` closes scalar fits and word room from the same
+ordinary inverse input bank and derived scalar width used by the production
+caller. No additional width/readiness certificate is supplied by the client.
+`inverseSmallPorts_blank` extracts the released core frame required by rounding.
+
+`normalizedFamilyInverseBatch_spec` executes the existing shared-setup complex
+batch caller followed by the concrete rounding lifecycle. It returns p-grid
+words of width `2*p+13`, with shift `j = Nat.size (4*p)`, and uniform active-set
+error `2/2^p + 2^-target/2^j` from the scaled exact principal solution.
+`normalizedBatch_accuracy` proves this over an arbitrary active set and batch:
+principal diagonal dominance supplies the stable exact-solution magnitude, and
+the decoded raw error supplies the computed magnitude only at the coordinate
+being published. There is no factor for the batch length or number of windows.
+
+The same numerical execution exports summed time and an `ExecWithin` stock/depth
+certificate. The latter preserves the existing solver stock certificate and
+adds the linear normalization allowance; it does not substitute solver time for
+solver stock. All scalar/native/left/source/workspace stacks are restored except
+the private normalized result prefix.
+
+`normalizedFamilyInverseBatchDescriptorCall_spec` loads and executes that caller
+from a physical descriptor packet. `normalizedFamilyInverseBatchDispatchStep_spec`
+then collects the normalized output and clears the 303-register bank, preserving
+the original descriptor-tape/private-buffer ABI. It transports the same output,
+coordinate error, physical cost and stock trace through collection and cleanup.
+
+Remaining: lift this normalized step through the descriptor loop, pay its extra
+setup and linear batch allowance with the existing distinct-key fast/stock
+ledgers, and join the actual input conversion with the full normalized operator
+endpoint. The new normalization cost has the same scalar-setup and linear-word
+shape as the raw caller; bounding it by a fixed multiple of the existing raw
+allowance should reuse the already proved aggregate ledger rather than repeat
+geometric/key estimates. S3 remains partial; kappa is unchanged.
+Validation: all six modules pass individual guarded checks (maximum 3,322 MiB);
+the expanded axiom audit passes (15,385 jobs; 3.5 GiB combined peak), covering
+all eight new public facts. Proof-integrity and whitespace checks pass.
