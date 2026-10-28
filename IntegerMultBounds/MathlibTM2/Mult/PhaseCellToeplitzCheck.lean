@@ -3253,3 +3253,24 @@ run_cmd do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
   logInfo "Phase-cell Toeplitz stage axiom audit passed."
+
+open Lean in
+run_cmd do
+  for name in #[
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.recoveryWindow_bounds,
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.recoveryWindows_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializeHaloRunHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recoveryWindowCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recoveryWindowCounters_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recoveryWindowFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.applyRecoveryWindow_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recoveryWindows_symbols,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recoveryWindowMask_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedRecoveryRunMask_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.recoveryWindowMaskCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedRecoveryRunMaskCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedRecoveryRunMaskCost_halo_le ] do
+    for ax in ← collectAxioms name do
+      unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
+        throwError "{name} depends on unapproved axiom {ax}"
+  logInfo "Recovery interval mask axiom audit passed."

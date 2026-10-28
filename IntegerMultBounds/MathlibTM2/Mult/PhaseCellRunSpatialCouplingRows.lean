@@ -43,7 +43,7 @@ theorem runSpatialCouplingRows_exec (hQ : SS.states ≤ Q) {P q w s t u band a b
         (mk v' {S with R := (Function.update (Function.update S.R 93 rhsTail)
           113 (cstream A w (guardedCouplingRowWords P q t u band a b boundary C 0 rhs)++S.R 113))}) := by
   let V := liftedCoefficientWidth P q w s t u band
-  obtain ⟨vG,mG,huG,hmG,heG⟩ := prepareCouplingGuard_exec (body := body) boundary hst haS hbS raw v S hready
+  obtain ⟨vG,mG,huG,hmG,heG⟩ := prepareCouplingGuard_exec (body := body) boundary hst haS hbS (by omega) raw v S hready
   let G : Stacks 144 A := {S with R := Function.update S.R 136 (couplingGuardSymbols boundary A s t band a b++S.R 136)}
   have hreadyG : CouplingReady P q w s t u band a b raw (embStk groupReg G) := by
     rw [show embStk groupReg G = embStk groupReg S from groupProject_updateR S 136 _ (by decide)]

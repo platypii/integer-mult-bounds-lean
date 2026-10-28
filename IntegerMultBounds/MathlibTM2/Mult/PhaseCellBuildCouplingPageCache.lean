@@ -48,7 +48,7 @@ theorem buildCouplingPageCache_exec {P q w s t u band a b : ℕ} [NeZero s]
       have h140 := groupReg_off 140 (by decide) k
       simp [B,embStk,Function.comp_def,h138,h139,h140]
     rw [hview]; exact hready
-  obtain ⟨vG,mG,huG,hmG,heG⟩ := prepareCouplingGuard_exec (body := body) true hst ha hb raw vB B hreadyB
+  obtain ⟨vG,mG,huG,hmG,heG⟩ := prepareCouplingGuard_exec (body := body) true hst ha hb hA raw vB B hreadyB
   let G : Stacks 144 A := {B with R := Function.update B.R 136 (flags++S.R 136)}
   obtain ⟨v₁,hu₁,he₁⟩ := transfer_exec (body := body) (count := 97) (src := 136) (dst := 137) (tmp := 105)
     (by decide) vG G flags (S.R 136) (by simp [G,B]) (by simp [flags]; exact hready.axis)

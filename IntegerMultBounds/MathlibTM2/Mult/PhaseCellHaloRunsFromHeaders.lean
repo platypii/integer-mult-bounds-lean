@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloRunEmissionWidth
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInitializeOriginHeaders
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInitializeHaloRunHeaders
 
 /-! Generate binary run metadata from retained ordinary scalar headers. -/
 
@@ -13,12 +13,6 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Layer IntegerMultBounds.MathlibTM2.Fast.TableVM
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
-def haloRunHeaders : List (Fin 117 × Fin 16) :=
-  [(97,0),(98,1),(100,2),(101,13),(103,14)]
-
-def haloRunRawState (A s t band a b : ℕ) : TblSt 16 A :=
-  ⟨Function.update (Function.update (Function.update (Function.update
-    (Function.update (fun _ => 0) 0 s) 1 t) 2 band) 13 a) 14 b,[]⟩
 
 def haloRunMetadata (flags : Bool) (A W s t band a b : ℕ) : List (Fin (A+4)) :=
   let xs := IntervalRunMask.runs 0 s (haloRunIntervals s t band a b)
@@ -47,21 +41,10 @@ theorem haloRunsFromHeaders_exec (flags : Bool) (out : Fin 117) (hout : 31 ≤ o
       Exec body (haloRunsFromHeaders flags out) (mk v S) m
         (mk v' {S with R := Function.update S.R out (haloRunMetadata flags A W s t band a b++S.R out)}) := by
   let st := haloRunRawState A s t band a b
-  let value := fun r : Fin 117 => (S.R r).length
   let w := haloRunEmissionWidth flags W
-  have hsep : ∀ r ∈ haloRunHeaders, ∀ x, originReg x ≠ r.1 := by
-    intro r hr x he
-    have hv : 31 ≤ r.1.val := by
-      simp only [haloRunHeaders,List.mem_cons,List.not_mem_nil,or_false] at hr
-      rcases hr with rfl | rfl | rfl | rfl | rfl <;> decide
-    have hx := originReg_range x
-    have hh := congrArg Fin.val he
-    omega
-  obtain ⟨v₁,S₁,n₁,hu₁,hn₁,he₁,hh₁,hf₁⟩ := initializeOriginHeaders_exec (body := body)
-    haloRunHeaders hsep W value v S (by intros; rfl) hWsrc h106 hblank
-  have hstate : loadedOriginState value haloRunHeaders ⟨fun _ => 0,[]⟩ = st := by
-    simp [loadedOriginState,haloRunHeaders,st,haloRunRawState,value,hs,ht,hband,ha,hb]
-  rw [hstate] at hh₁
+  obtain ⟨v₁,S₁,n₁,hu₁,hn₁,he₁,hh₁,hf₁⟩ := initializeHaloRunHeaders_exec (body := body)
+    W s t band a b v S hs ht hband ha hb hWsrc h106 hblank
+  change tblHolds originReg S₁ (tblRho W (List.replicate W tick) (List.replicate W tick) st) at hh₁
   have hoff (r : Fin 117) (hr : 31 ≤ r.val) : S₁.R r = S.R r :=
     hf₁.2.2.2 r (fun x he => by have hx := originReg_range x; have hv := congrArg Fin.val he; omega)
   obtain ⟨v₂,hu₂,he₂⟩ := setHaloRunEmissionWidth_exec (body := body) flags W v₁ S₁ (hh₁ .wn)
@@ -103,11 +86,6 @@ theorem haloRunsFromHeaders_exec (flags : Bool) (out : Fin 117) (hout : 31 ≤ o
       have hsW : s < 2^W := by nlinarith only [hwide,hst]
       simp only [Nat.sub_zero] at hsum
       omega
-  have hcost : loadOriginListCost W value haloRunHeaders =
-      (s+t+band+a+b)*(4*W+10)+30*W+51 := by
-    simp [loadOriginListCost,haloRunHeaders,value,hs,ht,hband,ha,hb]
-    ring
-  rw [hcost] at hn₁
   refine ⟨v₃,n₁+(setHaloRunEmissionWidthCost flags W+n₃),hu₃.trans (hu₂.trans hu₁),?_,
     (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl ?_⟩
   · dsimp only [haloRunsFromHeadersCost]
