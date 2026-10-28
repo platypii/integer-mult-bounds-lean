@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2393 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2398 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15900,4 +15900,47 @@ Validation: the expanded audit passes all 15,308 affected build jobs (3.5 GiB
 combined peak). All seven new modules and the audit pass individual guarded
 checks, each below 3,323 MiB peak RSS. All 3,073 prior audit facts remain,
 with fourteen new structural/execution facts covered. New-file proof-integrity,
+plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: one physical dispatch step restores its empty working bank
+
+`finishPlacedDescriptorBank_exec` identifies the exact frame after collection:
+the original working bank is empty again, the descriptor source has advanced,
+the consumed packet reverse remains on the saved tape, and the produced batch
+is prefixed on the external result stack. All other stacks agree with the
+original frame. Collection and erasure cost at most
+`6*producedLength + 2*sum_port inputWordLength + 2*portCount + 5`.
+
+`familyInverseBatchDispatchStep_spec` composes the physical loader, actual raw
+batch solver and this cleanup. The same output witness carries uniform error,
+exact restoration of the private bank, time and an all-intermediate-store stock
+certificate. The existing `familyBatchWords_length` and the produced `Forall₂`
+relation identify the output length as `replicas*s*wordWidth`; no output-size
+oracle or duplicate length lemma is introduced. Scalar fitting and numerical
+setup remain derived by the raw caller.
+
+`familyInverseBatch_bank_stock_le` prices all 303 serialized input ports using
+the ordinary scalar-bank, source, blank-workspace and actual counter ABI. It
+includes the whole raw batch and replica counter, plus any advertised borrowed
+tail and existing output prefix. For private packets with empty tail/prefix,
+this supplies exactly the stock premise of `physicalFamilyDispatchCost_le`.
+That theorem absorbs the complete loader/caller/collection/cleanup bill into
+`16000*familyInverseBatchCallerCost`, using a simple input-size lower bound on
+the actual raw cost. The constant is fixed and independent of all dimensions.
+
+`selectedPhysicalFamilyKeyBatches_fast_le` sums these physical dispatch costs
+over any distinct complete-key family, obtaining `32000*T` plus the existing
+per-input fast density term with a fixed rescaled constant. Descriptor movement
+and erasure therefore preserve the complete-key asymptotic time envelope.
+
+Next: put these concrete, clean-bank steps into the counted key loop, prove the
+actual ordered-descriptor/result invariant and final tape/count restoration,
+and establish the loop-wide simultaneous stock bound. The full S3 interface
+completion audit remains required; S3 is partial and kappa is unchanged.
+
+Validation: the expanded audit passes all 15,313 affected build jobs (3.5 GiB
+combined peak). All five new modules and the audit pass individual guarded
+checks, each below 3,324 MiB peak RSS. All 3,087 prior audit facts remain,
+with eight new execution and cost facts covered. New-file proof-integrity,
 plan-status and whitespace checks pass.
