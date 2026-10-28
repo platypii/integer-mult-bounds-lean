@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2468 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2479 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -16389,3 +16389,31 @@ and locality remain S4/R4 handoffs. S3 remains partial; kappa is unchanged.
 Validation: all nine modules pass individual guarded checks (maximum 3,354 MiB);
 the expanded axiom audit passes (15,394 jobs; 3.5 GiB combined peak), covering
 all fourteen new public facts. Proof-integrity and whitespace checks pass.
+
+
+### S3 checkpoint: reversible input conversion with a general solver composition
+
+`inputShiftBatch_derived_exec` now executes both directions of the exact p-grid
+input conversion in the actual 303-register caller bank. It derives the shift
+and complementary word widths from the ordinary binary inverse scalars,
+generates three unary controls once for the whole list, and clears them again.
+The scalar bank, native input/output, left stacks and every other register are
+restored. The original unit-input bound supplies both forward and inverse signed
+fits; sign extension after inverse truncation restores the original source bytes
+without retaining a second copy of the source.
+
+`inputShiftSolve_exec` composes forward conversion, any solver that changes only
+the result register, and inverse conversion. It preserves an arbitrary predicate
+on that same returned output and adds two explicit conversion bills. This is a
+general execution lemma over an arbitrary input list and solver, rather than a
+separate restoration proof for each numerical endpoint.
+
+S3 remains open: instantiate this wrapper with the normalized complex batch
+solver, transport its execution-wide stock certificate and selected time bounds,
+and connect the resulting production dispatcher to the full normalized operator
+contract. This checkpoint does not claim that final composition or change kappa.
+
+Validation: all eleven new modules pass guarded standalone checks (maximum
+3,307 MiB). The expanded axiom audit passes with all fifteen new public facts
+covered (15,405 jobs; 3.5 GiB combined peak). Proof-integrity, generated PLAN
+and whitespace checks pass.

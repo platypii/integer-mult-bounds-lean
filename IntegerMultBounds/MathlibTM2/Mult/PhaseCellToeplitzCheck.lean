@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInputShiftSolve
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedDispatchInput
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedDispatchProgram
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedDispatchLoopTrace
@@ -3823,7 +3825,22 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.selectedNormalizedDispatchLedger_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedNormalizedDispatchStockLedger_scaled_volume_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedNormalizedFamilyDispatch_spec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedNormalizedFamilyDispatch_compiled_spec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedNormalizedFamilyDispatch_compiled_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inputShiftBatch_derived_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inputShiftBatch_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inputShift_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inputShiftPort_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inputShiftScalar_port,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inputShiftHeaderCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepareInputShiftHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inputShift_tdiv,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inputShift_roundtrip,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblInputShiftDimensions_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inputShiftSolve_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inputShiftWordPass_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblPrepareInputShift_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.restoreInputShift_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.ShortConv.signedWiden_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
