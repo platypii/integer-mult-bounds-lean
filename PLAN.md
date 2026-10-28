@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2327 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2329 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15195,3 +15195,33 @@ All 12 changed/new Lean modules, including the audit, pass individual guarded
 checks; maximum peak RSS is 3,312 MiB. All 2,926 prior audit names remain and
 four new facts are covered. Changed-file proof-integrity, plan-status and
 whitespace checks pass.
+
+### S3 checkpoint: complete fast batch and raw-caller time allowances
+
+`selectedFamilyBatch_fast_le` propagates the complete selected line bound to the
+actual generated batch ledger: one `generatedFamilyComplexSetupCostBound` bill
+plus `replicas` times the complete fast line allowance. There is no remaining
+per-line control, coupling or boundary charge outside that allowance.
+`selectedFamilyBatch_density_fast_le` uses the actual selected axis inequalities
+to express the repeated term as `replicas*C*t*(1+band^2/d)*p^(129/128)`.
+
+`familyInverseSharedSetupCost` isolates the outer caller's ordinary scalar
+loading, master copies, shared batch construction/release, and scalar cleanup.
+`selectedFamilyInverseCaller_fast_le` and its density form leave only this bill
+outside the complete line allowance. `selectedFamilyInverseCaller_spec` attaches
+that density-form price to the actual 303-register raw inverse execution, with
+its derived scalar width, generated numerical pages, exact borrowed-stack
+restoration and uniform `2^-target` error guarantee. No readiness, coefficient
+page or arithmetic execution is supplied to this endpoint.
+
+This isolates the shared setup obligation; it does not amortize that bill.
+The existing batch executes construction once per reuse key, but bounds on the
+construction cost, actual key multiplicities and amortizing replica counts still
+need proof. In particular, the Schur table construction's boundary-column loops
+remain in the setup bill. Simultaneous whole-caller compiled-machine storage
+also remains required. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,240 affected audit-build jobs pass (3.4 GiB combined peak).
+Both new modules and the audit pass individual guarded checks; peak RSS is
+3,312 MiB. All 2,930 prior audit names remain and five new facts are covered.
+New-file proof-integrity and whitespace checks pass.
