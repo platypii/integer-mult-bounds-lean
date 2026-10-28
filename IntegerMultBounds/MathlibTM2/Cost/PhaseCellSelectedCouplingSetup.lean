@@ -15,6 +15,23 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2.Mult
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 
+theorem selectedLiftedCoefficientWidth_le (cw : ℕ) {n : ℕ} (h : Sizes.Big n) (i : Fin (Sizes.d n))
+    (q w u band : ℕ) (hw : w ≤ cw*Sizes.p n) (hq : q ≤ w) (hu : u ≤ Sizes.p n)
+    (hband : band ≤ Sizes.s n i) :
+    liftedCoefficientWidth (2^15*Sizes.p n) q w (Sizes.s n i) (Sizes.t n i) u band ≤
+      (2*cw+426064)*Sizes.p n := by
+  have hp := h.thirteen_le_p
+  have hst := h.good.lt i
+  have hbitsT : Nat.size (Sizes.t n i) ≤ Sizes.p n+1 := by
+    have htbits := selectedAxisBits_le n i
+    have hell := selectedAxisLog_le_precision h
+    omega
+  have hbitsS := (Nat.size_le_size hst.le).trans hbitsT
+  have hbitsB := (Nat.size_le_size (hband.trans hst.le)).trans hbitsT
+  have hbitsU : Nat.size u ≤ Sizes.p n := (Nat.size_le.mpr Nat.lt_two_pow_self).trans hu
+  dsimp only [liftedCoefficientWidth,liftedCoefficientSize]
+  nlinarith only [hw,hq,hbitsT,hbitsS,hbitsB,hbitsU,hp]
+
 theorem selectedCouplingKeySetup_poly_le (cw cB : ℕ) :
     ∃ C : ℕ, ∀ (n : ℕ) (h : Sizes.Big n) (i : Fin (Sizes.d n)) (q u band a b : ℕ),
       2*q+8 ≤ cw*Sizes.p n → u ≤ Sizes.p n → band ≤ cB*Sizes.p n →
@@ -43,18 +60,8 @@ theorem selectedCouplingKeySetup_poly_le (cw cB : ℕ) :
   have hwZ := hparam w cw hw (by dsimp only [cZ]; omega)
   have huZ := hparam u 1 (by simpa using hu) (by dsimp only [cZ]; omega)
   have hBZ := hparam band cB hB (by dsimp only [cZ]; omega)
-  have hbitsT : Nat.size t ≤ p+1 := by
-    have htbits := selectedAxisBits_le n i
-    have hell := selectedAxisLog_le_precision h
-    dsimp only [p,t] at *
-    omega
-  have hbitsS : Nat.size s ≤ p+1 := (Nat.size_le_size hst.le).trans hbitsT
-  have hbitsB : Nat.size band ≤ p+1 := (Nat.size_le_size (hband.trans hst.le)).trans hbitsT
-  have hbitsU : Nat.size u ≤ p := (Nat.size_le.mpr Nat.lt_two_pow_self).trans hu
-  have hVZ : liftedCoefficientWidth (2^15*p) q w s t u band ≤ Z := by
-    dsimp only [liftedCoefficientWidth,liftedCoefficientSize,Z,cZ]
-    dsimp only [p,s,t,w] at *
-    nlinarith only [hw,hq,hbitsT,hbitsS,hbitsB,hbitsU,hp]
+  have hV := selectedLiftedCoefficientWidth_le cw h i q w u band hw (by dsimp only [w]; omega) hu hband
+  have hVZ := hparam _ (2*cw+426064) hV (by dsimp only [cZ]; omega)
   have hcache := buildCouplingPageCacheCost_poly (a := a) (b := b)
     ht hZ hst.le hPZ hqZ hwZ huZ hBZ hVZ
   have hpp : p ≤ t*p := Nat.le_mul_of_pos_left _ ht

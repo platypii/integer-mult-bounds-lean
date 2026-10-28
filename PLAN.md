@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2346 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2350 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15404,4 +15404,36 @@ storage remain required. S3 stays partial; kappa is unchanged.
 Validation: all 15,257 affected audit-build jobs pass (3.5 GiB combined peak).
 All five changed/new modules and the audit pass individual guarded checks;
 peak RSS is 3,315 MiB. All 2,972 prior audit names remain and seven new facts
+are covered. Changed-file proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: computed Schur columns reduced to their interior construction
+
+`generatedReadyRowCost_poly` prices the actual generated row arithmetic with the
+multiplication supplier's cubic bound. `packetSpatialGuardedStepCost_poly` and
+the counted-loop theorem include both active and skipped rows, retained-packet
+coefficient generation, copied inputs, numerical setup and cleanup.
+`borrowedCouplingPassCost_poly` includes packet initialization and all spatial
+source preparation/retirement, retaining its two geometry masks explicitly.
+
+`selectedLiftedCoefficientWidth_le` centralizes the numerical coefficient-width
+bound and replaces the duplicated derivation in coupling-cache setup.
+`selectedBorrowedCouplingPass_poly_le` reuses it to price the whole uncached
+coefficient-producing coupling pass by `C*t^5` at selected sizes, including masks.
+`retainedIndexedColumnCost_controls_le` separates one actual interior solve and
+the two actual uncached coupling calls from ordinary column control/payload work.
+
+`selectedIndexedSchurColumn_interior_le` combines these prices at the constructor's
+actual inverse precision. `selectedFamilySetup_interiorConstruction_le` reaches
+the full shared setup ledger: outside `C*t^6*p^4`, it pays only the actual boundary
+cardinality times `solveHaloInteriorCost` at that construction precision. No
+coefficient or residual result is supplied, and no construction call is charged
+the repeated-line rate without a bound for that executed path.
+
+Next: price that older interior construction routine, then prove actual reuse
+multiplicities and amortizing replica counts. Simultaneous whole-caller
+compiled-machine storage remains required. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,261 affected audit-build jobs pass (3.5 GiB combined peak).
+All five changed/new modules and the audit pass individual guarded checks;
+peak RSS is 3,315 MiB. All 2,979 prior audit names remain and nine new facts
 are covered. Changed-file proof-integrity, plan-status and whitespace checks pass.

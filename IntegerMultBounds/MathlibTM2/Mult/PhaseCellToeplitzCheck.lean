@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSchurColumn
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSchurTableFormatting
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBoundaryFactorPreparation
@@ -3475,7 +3477,16 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.constructedBoundaryTableCostBound_format_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedInverseBoundaryWidths_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedSchurTableFormatting_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_columns_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_columns_le,
+      `IntegerMultBounds.MathlibTM2.Cost.generatedReadyRowCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.packetSpatialGuardedStepCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.packetSpatialGuardedLoopCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.borrowedCouplingPassCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedBorrowedCouplingPass_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.retainedIndexedColumnCost_controls_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedIndexedSchurColumn_interior_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_interiorConstruction_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedLiftedCoefficientWidth_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
