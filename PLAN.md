@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2307 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2312 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15058,4 +15058,39 @@ Validation: all 15,217 affected audit-build jobs pass (3.5 GiB combined peak).
 The three new cost modules and audit pass individual guarded checks below
 4 GiB; the new modules peak below 3,025 MiB. All 2,849 prior audit names remain
 and five new facts are covered. Proof-integrity, plan-status and whitespace
+checks pass.
+
+### S3 checkpoint: linear boundary RHS selection and canonical folding contracts
+
+`Host.GatherPrefix` extends the existing gather program's contract to arbitrary
+encoded symbols above a borrowed source suffix. The scan restores source and
+mask, preserves every other stack, and costs at most `8*n+8`.
+`Host.ExpandMask` expands retained record selectors using an ordinary unary
+record width, restoring both selector and width sources.
+
+`Host.gatherRecords_exec` composes expansion, one prefix scan and release. It
+selects fixed-width records in order in at most `n*(16*w+10)+16` steps, retaining
+source, selectors and arbitrary borrowed source/output suffixes. Its structural
+`gatherRecords_within` certificate bounds every intermediate stack configuration
+of that same execution, including retained caller stacks and call depth.
+
+`boundaryRhsHaloGather_exec` instantiates the record gather with the existing
+generated halo boundary-mask format: one scan produces exactly the physical
+boundary RHS order. `boundaryRhsFold_runs` reuses the existing linear fold on
+those arbitrary RHS values and proves the exact canonical `bFoldOrder` required
+by the numerical solver. The data identities are structural over arbitrary
+boundaries and coefficient functions, with no supplied numerical samples.
+
+The retained caller still selects the earlier repeated-index gather. Next:
+install the new mask/gather/fold pipeline, generate its counters in the caller's
+register layout, preserve its borrowed folded coordinate page and suffixes, and
+replace `boundaryRhsPrepareCost` in the actual selected ledger. This checkpoint
+does not claim the old gather's quadratic charge is closed. Shared setup
+amortization and whole-caller compiled-machine storage also remain open.
+S3 stays partial; kappa is unchanged.
+
+Validation: all 15,223 affected audit-build jobs pass (3.5 GiB combined peak).
+The five new modules and audit pass individual guarded checks; the new modules
+peak below 1,844 MiB and the audit below 3,073 MiB. All 2,854 prior audit names
+remain and 24 new facts are covered. Proof-integrity, plan-status and whitespace
 checks pass.

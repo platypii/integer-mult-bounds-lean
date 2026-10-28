@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRhsMaskSelection
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilyRhsFast
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedInteriorFast
@@ -3328,7 +3330,31 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.selectedCouplingPublicationControls_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyComplexControlRemainingCost_rhs_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyControls_rhs_fast_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyLine_rhs_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyLine_rhs_fast_le,
+      `IntegerMultBounds.MathlibTM2.Host.length_gatherSymbols,
+      `IntegerMultBounds.MathlibTM2.Host.gatherPrefix_loop,
+      `IntegerMultBounds.MathlibTM2.Host.gatherPrefix_exec,
+      `IntegerMultBounds.MathlibTM2.Host.expandedMask_length,
+      `IntegerMultBounds.MathlibTM2.Host.expandedMask_reverse,
+      `IntegerMultBounds.MathlibTM2.Host.repeatMaskWord_exec,
+      `IntegerMultBounds.MathlibTM2.Host.expandMask_exec,
+      `IntegerMultBounds.MathlibTM2.Host.gatherSymbols_append,
+      `IntegerMultBounds.MathlibTM2.Host.gatherSymbols_map,
+      `IntegerMultBounds.MathlibTM2.Host.gatherSymbols_filter,
+      `IntegerMultBounds.MathlibTM2.Host.gatherSymbols_replicate,
+      `IntegerMultBounds.MathlibTM2.Host.gatherSymbols_flatten,
+      `IntegerMultBounds.MathlibTM2.Host.expandedMask_bits,
+      `IntegerMultBounds.MathlibTM2.Host.gatherRecords_pushBound,
+      `IntegerMultBounds.MathlibTM2.Host.gatherRecords_exec,
+      `IntegerMultBounds.MathlibTM2.Host.gatherRecords_within,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsFlags_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhs_select_ordered,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhs_select_folded,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsOrderedGather_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsFold_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsFlags_halo,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMask_flags,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsHaloGather_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
