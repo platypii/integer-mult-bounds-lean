@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2459 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2468 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. The cached caller executes geometry-width origin classification and advance controls for both empty and nonempty classes, converting origins to the numerical packet format. Their tighter price now reaches the retained interior ledger; selected-size bounds pay repeated cell controls and phase-table work in `O(t*p)`. The production boundary RHS now uses generated masks, one linear record scan and canonical folding; its complete header/setup/transfer/release bill is uniformly `O(t*p)`. `selectedFamilyLine_fast_le` bounds the actual generated family line by `C*(t+(t-s)*band²)*p^(129/128)` without a gather remainder. All admissible selected setup keys together cost at most one whole-box volume per axis; `selectedFamilyKeyBatches_fast_le` composes actual batch costs over any distinct-key subfamily with explicit replica counts. The complete 263-register generated lifecycle now has a compiled stock bound `initialStock + D*replicas*s*w + 1 + T`, including all setup and release. The raw 303-register caller now exports a transported stock certificate, including scalar-header installation and release. The derived raw-header allowance is now priced and the compiled caller is bounded in its actual native/left frame and borrowed-tail/output-prefix lengths. The actual ordered descriptor dispatcher now executes the advertised batches, restoring its tape, counter and private workspace. For a record list with distinct complete keys, `selectedFamilyDispatch_spec` combines fast time, uniform errors and an execution-wide stock certificate for the same output witness. `selectedFamilyDispatch_compiled_spec` now bounds every compiled configuration by initial stock plus a fixed multiple of encoded batch size, one entry unit and box volume, for that same numerical execution. The executed solver now supplies the full real `SolveSpec` through a general quantization lift, with a dyadic error budget and a normalized `B₀` numerical theorem whose smallness gate is proved. S3 remains open for the normalized map’s tape-level precision conversion, component pairing, scaling/final rounding and their execution costs and stock. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. The cached caller executes geometry-width origin classification and advance controls for both empty and nonempty classes, converting origins to the numerical packet format. Their tighter price now reaches the retained interior ledger; selected-size bounds pay repeated cell controls and phase-table work in `O(t*p)`. The production boundary RHS now uses generated masks, one linear record scan and canonical folding; its complete header/setup/transfer/release bill is uniformly `O(t*p)`. `selectedFamilyLine_fast_le` bounds the actual generated family line by `C*(t+(t-s)*band²)*p^(129/128)` without a gather remainder. All admissible selected setup keys together cost at most one whole-box volume per axis; `selectedFamilyKeyBatches_fast_le` composes actual batch costs over any distinct-key subfamily with explicit replica counts. The complete 263-register generated lifecycle now has a compiled stock bound `initialStock + D*replicas*s*w + 1 + T`, including all setup and release. The raw 303-register caller now exports a transported stock certificate, including scalar-header installation and release. The derived raw-header allowance is now priced and the compiled caller is bounded in its actual native/left frame and borrowed-tail/output-prefix lengths. The actual ordered descriptor dispatcher now executes the advertised batches, restoring its tape, counter and private workspace. For a record list with distinct complete keys, `selectedFamilyDispatch_spec` combines fast time, uniform errors and an execution-wide stock certificate for the same output witness. `selectedFamilyDispatch_compiled_spec` now bounds every compiled configuration by initial stock plus a fixed multiple of encoded batch size, one entry unit and box volume, for that same numerical execution. The executed solver now supplies the full real `SolveSpec` through a general quantization lift, with a dyadic error budget and a normalized `B₀` numerical theorem whose smallness gate is proved. The normalized dispatcher now executes scaling/final rounding through the full restored descriptor loop, with selected fast time and compiled stock for the same normalized output witness. S3 remains open for joining executed input precision conversion and the full normalized operator endpoint to this production dispatcher. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -16351,3 +16351,41 @@ geometric/key estimates. S3 remains partial; kappa is unchanged.
 Validation: all six modules pass individual guarded checks (maximum 3,322 MiB);
 the expanded axiom audit passes (15,385 jobs; 3.5 GiB combined peak), covering
 all eight new public facts. Proof-integrity and whitespace checks pass.
+
+
+### S3 checkpoint: the complete normalized dispatcher has fast time and compiled stock
+
+`normalizedDispatchInput_exec` uses the existing raw descriptor record/readiness
+interface. `normalizedFamilyDispatchLoop_exec_trace` instantiates the generic
+structural descriptor loop with normalized numerical steps.
+`normalizedFamilyDispatch_exec_trace` restores the original tape and actual clock
+symbols after all steps, preserving native/left/private workspace and appending
+only the ordered normalized results. Its output relation retains the uniform
+active-coordinate error for every record and replica.
+
+`inverseRoundBatchCost_le_callerCost` and `inverseRoundBatchCost_le_callerStock`
+absorb normalization into eight times the raw batch allowances. The normalized
+step is therefore at most nine times the corresponding raw physical time/stock
+allowance; its narrower output needs no additional movement allowance. Generic
+list-sum lemmas transfer both complete ledgers without repeating selected key or
+geometry estimates.
+
+`selectedNormalizedFamilyDispatch_spec` proves the actual normalized execution's
+fast-time bound, preserving the `p^(129/128)` replica exponent and density factor.
+The fixed setup coefficient is `576000*T`, and the replica constant is fixed
+independently of the selected size. `selectedNormalizedFamilyDispatch_compiled_spec`
+bounds every compiled configuration by
+`initialStock + E*sum_records(replicas*s*inputWordWidth) + 1 + T` for the same
+normalized numerical execution. It reuses the existing distinct-complete-key
+volume theorem at a larger fixed scaling. No per-replica setup, new key premise,
+or independent output/execution witness is introduced.
+
+This closes the normalized descriptor-loop and aggregate-resource obligations.
+The remaining full S3 audit must still join actual input precision conversion
+and the normalized operator accuracy/unit-ball endpoint to this production
+execution; the previously checked real `SolveSpec` and normalized numerical
+interface alone do not establish that composition. External exposure/publication
+and locality remain S4/R4 handoffs. S3 remains partial; kappa is unchanged.
+Validation: all nine modules pass individual guarded checks (maximum 3,354 MiB);
+the expanded axiom audit passes (15,394 jobs; 3.5 GiB combined peak), covering
+all fourteen new public facts. Proof-integrity and whitespace checks pass.

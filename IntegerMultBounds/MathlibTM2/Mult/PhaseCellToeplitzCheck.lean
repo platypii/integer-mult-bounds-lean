@@ -1,5 +1,15 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedDispatchInput
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedDispatchProgram
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedDispatchLoopTrace
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedDispatchTrace
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellNormalizationCost
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellNormalizedDispatchCost
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedNormalizedDispatch
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedNormalizedFamilyDispatch
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCompiledNormalizedFamilyDispatch
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDerivedInverseRoundBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedBatchAccuracy
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyBatchRoundReady
@@ -3799,7 +3809,21 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseSmallPorts_blank,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedFamilyInverseBatch_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedFamilyInverseBatchDescriptorCall_spec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedFamilyInverseBatchDispatchStep_spec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedFamilyInverseBatchDispatchStep_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedDispatchInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedFamilyDispatchLoop_exec_trace,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedFamilyDispatch_exec_trace,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseRoundBatchCost_le_callerCost,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseRoundBatchCost_le_callerStock,
+      `IntegerMultBounds.MathlibTM2.Cost.normalized_output_width_le,
+      `IntegerMultBounds.MathlibTM2.Cost.normalizedDispatchInput_cost_le,
+      `IntegerMultBounds.MathlibTM2.Cost.normalizedDispatchInput_stock_le,
+      `IntegerMultBounds.MathlibTM2.Cost.normalizedDispatch_time_ledger_le,
+      `IntegerMultBounds.MathlibTM2.Cost.normalizedDispatch_stock_ledger_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedNormalizedDispatchLedger_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedNormalizedDispatchStockLedger_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedNormalizedFamilyDispatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedNormalizedFamilyDispatch_compiled_spec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
