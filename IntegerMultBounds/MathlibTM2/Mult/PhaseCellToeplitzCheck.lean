@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedInteriorFast
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellNumericalSetupPolynomial
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellInteriorControlRemainder
@@ -3308,7 +3310,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadCoefficientHeadersLinear_exec,
       `IntegerMultBounds.MathlibTM2.Cost.scalarPrepareCost_le,
       `IntegerMultBounds.MathlibTM2.Cost.numericalGeneratorSetupCost_poly,
-      `IntegerMultBounds.MathlibTM2.Cost.headerGeneratorSetupCost_poly ] do
+      `IntegerMultBounds.MathlibTM2.Cost.headerGeneratorSetupCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedAxis_eventually_polynomial,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedConstructionWidths_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedHeaderGeneratorSetup_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.scalarPrepareCost_arg_le,
+      `IntegerMultBounds.MathlibTM2.Cost.fixedEmptyBatchCost_le,
+      `IntegerMultBounds.MathlibTM2.Cost.cachedClosedBatchCost_zero_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedCachedZeroBatch_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedNumericalSetupSum_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyHaloControlCost_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorControls_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorPair_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

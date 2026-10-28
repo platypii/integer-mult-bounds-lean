@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2300 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2304 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14989,3 +14989,39 @@ minutes). All six new/modified implementation and cost modules plus the audit
 pass individual guarded checks below 4 GiB. All 2,829 prior audit names remain
 and nine new theorems are covered. Proof-integrity, plan-status and whitespace
 checks pass.
+
+### S3 checkpoint: complete selected interior-pass time bounds
+
+`selectedAxis_eventually_polynomial` derives a uniform axis allowance for every
+fixed polynomial in precision from `p^e ≤ r` eventually and `t ∈ {r/2,r}`.
+`selectedConstructionWidths_le` derives the actual integer and coefficient
+construction widths as quadratic precision bounds. Together with the linear
+header loader, these give `selectedHeaderGeneratorSetup_fast_le`: the complete
+header generator is eventually at most `301*t` for fixed linear parameter bounds.
+
+`cachedClosedBatchCost_zero_poly` includes all remaining zero-cell batch work:
+scalar readiness, fixed convolution setup/header decoding, padding, runtime
+installation, construction release and final cleanup. Its polynomial bound
+combines with header generation in `selectedCachedZeroBatch_fast_le`. Candidate
+lengths are at most `5*p` from the existing phase-gap premise, so the structural
+six-candidate sum `selectedNumericalSetupSum_fast_le` is eventually `O(t)`.
+The sum proof evaluates only its list length, keeping numerical cost terms opaque.
+
+`familyHaloControlCost_selected_fast_le` now closes the entire selected interior
+control ledger with `O(t*p)`, without a numerical setup remainder.
+`selectedInteriorControls_fast_le` instantiates this at both actual first-pass
+and recovery precisions. `selectedInteriorPair_fast_le` combines those complete
+control bounds with the verified arithmetic bound: both actual interior geometry
+ledgers together cost `O(t*p^(129/128))`, eventually and uniformly in the selected
+axis and permitted target/endpoints.
+
+Other caller controls, shared boundary/coefficient setup multiplicities and
+amortization, and simultaneous whole-caller compiled-machine storage remain
+open. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,214 affected audit-build jobs pass (3.5 GiB combined peak).
+All four new modules and the audit pass individual guarded checks, with a
+largest peak of 3,325 MiB. All 2,838 prior audit names are retained and eleven
+new theorems are covered. Proof-integrity, plan-status and whitespace checks
+pass. The selected setup composition checks structurally without expanding
+the six concrete numerical cost terms.
