@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyDispatchInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyDispatchLoopTrace
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorListLoop
 
 /-! A fixed counted loop executes every advertised numerical descriptor exactly once. -/
@@ -14,16 +14,6 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
 variable {T Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T Q A U}
-
-noncomputable def familyDispatchLoop (work : Fin 303 → Fin T)
-    (src saved count tmp spare result clock : Fin T) (recovery : Bool)
-    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P T Q A U :=
-  countedLoop clock (familyInverseBatchDispatchStep work src saved count tmp spare result recovery hR hQ)
-
-def FamilyDispatchProduced (p l t : ℕ)
-    (x y : FamilyDispatchInput s A → (ZMod s → GaussianInt) → ZMod s → ℝ)
-    (r : FamilyDispatchInput s A) (output : List (Fin (A+4))) : Prop :=
-  ∃ Zs, output = r.output p l t Zs ∧ FamilyDispatchApprox p l t r (x r) (y r) Zs
 
 theorem familyDispatchLoop_exec (work : Fin 303 → Fin T) (hwork : Function.Injective work)
     (src saved count tmp spare result clock : Fin T)
@@ -48,62 +38,9 @@ theorem familyDispatchLoop_exec (work : Fin 303 → Fin T) (hwork : Function.Inj
       Exec body (familyDispatchLoop work src saved count tmp spare result clock recovery hR hQ)
         (mk v S) n (mk v' (descriptorLoopFinal work FamilyDispatchInput.words records src saved result clock rest outputs S)) ∧
       List.Forall₂ (FamilyDispatchProduced p l t x y) records outputs := by
-  have hsub : [src,saved,count,tmp,spare].Nodup := by
-    simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or] at hreg ⊢
-    tauto
-  have houter : [src,saved,result,clock].Nodup := by
-    simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or] at hreg ⊢
-    tauto
-  have hr := hreg
-  regs_ne hr
-  have hresult : result ∉ [src,saved,count,tmp,spare] := by
-    simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
-    exact ⟨‹src ≠ result›.symm,‹saved ≠ result›.symm,‹count ≠ result›.symm,
-      ‹tmp ≠ result›.symm,‹spare ≠ result›.symm⟩
-  have hn (i : Fin 303) : work i ≠ src ∧ work i ≠ saved ∧ work i ≠ count ∧
-      work i ≠ tmp ∧ work i ≠ spare ∧ work i ≠ result ∧ work i ≠ clock := by
-    simpa only [List.mem_cons,List.not_mem_nil,or_false,not_or] using hsep i
-  let fresh := List.ofFn work ++ [count,tmp,spare]
-  have hcontrol : ∀ k ∈ [count,tmp,spare], k ∉ [src,saved,result,clock] := by
-    intro k hk
-    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-    rcases hk with hk | hk | hk
-    · subst k
-      simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
-      exact ⟨‹src ≠ count›.symm,‹saved ≠ count›.symm,‹count ≠ result›,‹count ≠ clock›⟩
-    · subst k
-      simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
-      exact ⟨‹src ≠ tmp›.symm,‹saved ≠ tmp›.symm,‹tmp ≠ result›,‹tmp ≠ clock›⟩
-    · subst k
-      simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
-      exact ⟨‹src ≠ spare›.symm,‹saved ≠ spare›.symm,‹spare ≠ result›,‹spare ≠ clock›⟩
-  have hfresh : ∀ k ∈ fresh, k ∉ [src,saved,result,clock] := by
-    intro k hk
-    rcases List.mem_append.mp hk with hk | hk
-    · obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hk
-      simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
-      exact ⟨(hn i).1,(hn i).2.1,(hn i).2.2.2.2.2.1,(hn i).2.2.2.2.2.2⟩
-    · exact hcontrol k hk
-  have hcountFresh : count ∈ fresh := List.mem_append_right _ (by simp)
-  have htmpFresh : tmp ∈ fresh := List.mem_append_right _ (by simp)
-  have hspareFresh : spare ∈ fresh := List.mem_append_right _ (by simp)
-  apply descriptorListLoop_exec work FamilyDispatchInput.words src saved result clock houter fresh hfresh S.L
-    (familyInverseBatchDispatchStep work src saved count tmp spare result recovery hR hQ)
-    (fun r => r.cost p l t work) (FamilyDispatchProduced p l t x y) records ?_ v S rest ?_ rfl hsource hclock
-  · intro r hm vi Si tail hf hL hs
-    obtain ⟨vf,n,Zs,hu,hnTime,he,ha,ht⟩ := familyDispatchInput_exec (body := body) work hwork
-      src saved count tmp spare result hsub hresult (fun i => (hn i).2.2.2.2.2.1)
-      (by intro i; simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
-          exact ⟨(hn i).1,(hn i).2.1,(hn i).2.2.1,(hn i).2.2.2.1,(hn i).2.2.2.2.1⟩)
-      recovery hR hQ hA hp hst hθ hgap r (hready r hm) (x r) (y r) (hx r hm) (hy r hm)
-      vi Si tail (fun i => hf (work i) (List.mem_append_left _ (List.mem_ofFn.mpr ⟨i,rfl⟩)))
-      (by intro i; rw [hL]; exact hleft i) hs
-      (hf count hcountFresh) (hf tmp htmpFresh) (hf spare hspareFresh)
-    exact ⟨vf,n,r.output p l t Zs,hu,hnTime,he,Zs,rfl,ha⟩
-  · intro k hk
-    rcases List.mem_append.mp hk with hk | hk
-    · obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hk
-      exact hblank i
-    · exact hscratch k hk
+  obtain ⟨v',n,outputs,hu,hn,he,hgood,_⟩ := familyDispatchLoop_exec_trace (body := body)
+    work hwork src saved count tmp spare result clock hreg hsep recovery hR hQ hA hp hst hθ hgap
+    records hready x y hx hy v S rest hblank hleft hscratch hsource hclock
+  exact ⟨v',n,outputs,hu,hn,he,hgood⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
