@@ -10,6 +10,15 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 
 open IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
+theorem recoveryWindowMaskCost_eq (W s t B a b : ℕ) :
+    recoveryWindowMaskCost W s t B a b =
+      2*(s+t+B+a+b)*(4*W+10)+(580*W+538)+576*(W+4)^2+
+        6*(recoveryWindowLower false s B a+recoveryWindowUpper false s B b+
+          recoveryWindowLower true s B a+recoveryWindowUpper true s B b)+12*s := by
+  simp [recoveryWindowMaskCost,applyRecoveryWindowCost,recoveryWindowFromHeadersCost,
+    recoveryWindowCountersCost,tblC]
+  ring
+
 theorem recoveryWindowMaskCost_le (W s t B a b : ℕ) :
     recoveryWindowMaskCost W s t B a b ≤ 800*(s+t+B+a+b+1)*(W+4)^2 := by
   let H := s+t+B+a+b+1
@@ -34,9 +43,7 @@ theorem recoveryWindowMaskCost_le (W s t B a b : ℕ) :
   have hrest : 6*ends+12*s ≤ 2*H*D := by nlinarith only [hends,hs,Nat.mul_le_mul_left H hD]
   have heq : recoveryWindowMaskCost W s t B a b =
       2*(s+t+B+a+b)*(4*W+10)+(580*W+538)+576*D+6*ends+12*s := by
-    simp [recoveryWindowMaskCost,applyRecoveryWindowCost,recoveryWindowFromHeadersCost,
-      recoveryWindowCountersCost,tblC,D,ends]
-    ring
+    exact recoveryWindowMaskCost_eq W s t B a b
   rw [heq]
   change _ ≤ 800*H*D
   nlinarith only [hlinear,htable,hload,hrest]

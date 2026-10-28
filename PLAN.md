@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2290 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2292 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14871,3 +14871,40 @@ five chunks of at most 700 facts. All seventeen new/revised modules pass
 individual guarded checks, with a largest peak below 3,066 MiB. All 2,794 prior
 audit names remain and thirteen new facts are covered. Proof-integrity,
 plan-status and whitespace checks pass.
+
+### S3 checkpoint: selected mask costs are uniformly O(t*p)
+
+`PhaseCellMaskPhaseCost` bounds the actual three mask ledgers by a shared
+phase/output budget
+`(t-s+1)*(W+4)^2+(s+t+B+a+b+1)*(W+4)`, where `W` is the generated publication
+geometry width. The repeated run arithmetic is quadratic only in the phase
+term; scalar loading and output work retain their linear-width allowance.
+The endpoint-window computations contribute a constant number of quadratic
+width terms. Exact ledger expansions have been factored into shared lemmas
+and reused by both the coarse compatibility proofs and these finer bounds.
+
+`PhaseCellSelectedMaskCost` proves directly from selected sizes that any band
+`B ≤ 2*s` gives `W+4 ≤ 6*p` and `(W+4)^2 ≤ 4096*d*p`. The original-axis gap
+bound `d*(t-s) ≤ t` then pays the quadratic phase term, including the phase
+count's extra endpoint. The scalar/header factor is at most `7*t`, yielding
+a uniform `O(t*p)` bound for the complete phase/output budget.
+
+`selectedMasks_fast_le` instantiates these results with the actual publication
+and coupling band and the actual doubled recovery band, including the recovery
+wrapper's band construction and cleanup. Their combined cost is at most
+`C*t*p`, uniformly in the selected input size and axis, from the existing band
+and endpoint bounds. No externally supplied geometry-width, density or
+arithmetic-readiness hypothesis is added.
+
+Remaining: combine these mask bounds with shared/header/setup controls at the
+actual first/recovery working widths, finish setup multiplicities and
+amortization, and prove simultaneous whole-caller compiled-machine storage.
+This closes selected mask pricing, not the entire remaining-control ledger.
+S3 stays partial; kappa is unchanged.
+
+Validation: the full affected-caller/standard-axiom audit build passes all
+15,185 jobs, including the selected retained-family inverse caller (30.8 GiB
+combined peak RSS, 6.3 minutes). Both new cost modules, both refactored ledger
+modules and the audit pass individual guarded checks, with a largest peak
+below 3,066 MiB. All 2,807 prior audit names remain and eight new facts are
+covered. Proof-integrity, plan-status and whitespace checks pass.

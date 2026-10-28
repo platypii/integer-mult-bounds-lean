@@ -9,6 +9,17 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 
 open IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
+theorem closedHaloRunMaskCost_eq (s t band a b : ℕ) :
+    let W := publicationGeometryWidth t band
+    let N := t-s+1
+    let R := 2*(haloRunIntervals s t band a b).length+1
+    closedHaloRunMaskCost s t band a b =
+      (396*W+554)+38*(t+band)+2*(s+t+band+a+b)*(4*W+10)+
+        (40*N+13)*(64*(W+4)^2+8*W+8)+R*(2*W+4)+10*s+(19*W+22)*(2*N+1) := by
+  simp [closedHaloRunMaskCost,haloRunMaskFromHeadersCost,haloRunsFromHeadersCost,
+    haloRunEmissionWidth,setHaloRunEmissionWidthCost,generatePublicationWidthCost,tblC]
+  ring
+
 theorem closedHaloRunMaskCost_le_sharp (s t band a b : ℕ) :
     closedHaloRunMaskCost s t band a b ≤
       3600*(s+t+band+a+b+1)*(publicationGeometryWidth t band+4)^2 := by
@@ -51,9 +62,7 @@ theorem closedHaloRunMaskCost_le_sharp (s t band a b : ℕ) :
   have heq : closedHaloRunMaskCost s t band a b =
       (396*W+554)+38*(t+band)+2*(s+t+band+a+b)*(4*W+10)+
         (40*N+13)*(64*D+8*W+8)+R*(2*W+4)+10*s+(19*W+22)*(2*N+1) := by
-    simp [closedHaloRunMaskCost,haloRunMaskFromHeadersCost,haloRunsFromHeadersCost,
-      haloRunEmissionWidth,setHaloRunEmissionWidthCost,generatePublicationWidthCost,tblC,W,N,R,D]
-    ring
+    exact closedHaloRunMaskCost_eq s t band a b
   rw [heq]
   change _ ≤ 3600*H*D
   nlinarith only [hlinear,htable,hload,hpairs,houtput,hscan,hgeometry]
