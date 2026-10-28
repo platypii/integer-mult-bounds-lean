@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2357 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2358 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15546,3 +15546,31 @@ Both new resource modules, the changed key-family module and the audit pass
 individual guarded checks; peak RSS is 3,319 MiB. All 3,005 prior audit names
 remain and four new facts are covered. Changed-file proof-integrity, plan-status
 and whitespace checks pass.
+
+
+### S3 checkpoint: setup stock holds on the compiled machine at every prefix
+
+`StackCompileInvariant.ReachWithin` records a counted compiled-machine trace
+whose invariant holds at every configuration. Its prefix theorem relates that
+certificate to every deterministic execution prefix. `ExecWithin.sim` strengthens
+the existing compiler simulation to preserve a store invariant indexed by the
+actual compiled return-stack length, through sequences, branches, loops and
+procedure calls.
+
+`compiledSize` sums every compiled stack, including the return stack.
+`ExecWithin.stock_sim` transfers a structured stock bound to the compiled code;
+`ExecWithin.stock_run_main` additionally certifies the entry push and final
+return/halt. `selectedFamilySetup_compiled_volume_le` applies this bridge to any
+procedure-table placement of the actual generated empty-batch lifecycle with its
+existing executed time certificate. At every compiled configuration, total stack
+stock is at most the initial stock plus one entry return marker plus `T`.
+
+This closes the compiler-transfer gap for the setup lifecycle. It does not bound
+live repeated-batch scratch independently of the number of replicas, execute
+distinct-key grouping, or supply external exposure/publication and restoration.
+Those remain required handoffs. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,271 affected audit-build jobs pass (3.5 GiB combined peak).
+Both new modules and the audit pass individual guarded checks. All 3,009 prior
+audit names remain and twelve new compiler/resource facts are covered.
+Changed-file proof-integrity, plan-status and whitespace checks pass.

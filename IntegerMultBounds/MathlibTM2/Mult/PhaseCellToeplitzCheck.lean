@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSetupCompiled
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSetupTrace
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSetupKeys
@@ -3515,7 +3517,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Fast.Main.mn_exec_within,
       `IntegerMultBounds.MathlibTM2.Fast.Main.mn_exec_finite_within,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyAllKeysSetup_scaled_volume_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_trace_volume_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_trace_volume_le,
+      `IntegerMultBounds.MathlibTM2.Stack.ReachWithin.single,
+      `IntegerMultBounds.MathlibTM2.Stack.ReachWithin.trans,
+      `IntegerMultBounds.MathlibTM2.Stack.ReachWithin.toReach,
+      `IntegerMultBounds.MathlibTM2.Stack.ReachWithin.mono,
+      `IntegerMultBounds.MathlibTM2.Stack.ReachWithin.at_prefix,
+      `IntegerMultBounds.MathlibTM2.Stack.compiledInv_cfg,
+      `IntegerMultBounds.MathlibTM2.Stack.ExecWithin.sim,
+      `IntegerMultBounds.MathlibTM2.Stack.compiledSize_cfg,
+      `IntegerMultBounds.MathlibTM2.Stack.compiledInv_stock,
+      `IntegerMultBounds.MathlibTM2.Stack.ExecWithin.stock_sim,
+      `IntegerMultBounds.MathlibTM2.Stack.ExecWithin.stock_run_main,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_compiled_volume_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
