@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundHeaderFrame
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedRoundList
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundTape
 public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundCost
@@ -17,12 +17,6 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.NLogN
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Fast.Main
 
 variable {T Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T Q A U}
-
-def generatedFinalRound (rg : TblR 8 → Fin T) (ports : Fin 4 → Fin T)
-    (src dst tmp sp sg cy : Fin T) : Pr P T Q A U :=
-  .seq (generatedRoundHeaders rg ports)
-    (.seq (topPass src dst (topShiftWord src dst tmp (ports 0) (ports 1) (ports 2) (ports 3) sp sg cy))
-      (clearWords ((List.finRange 4).map ports)))
 
 theorem generatedFinalRound_exec (hA : 4 ≤ A) (rg : TblR 8 → Fin T) (hrg : Function.Injective rg)
     (ports : Fin 4 → Fin T) (hports : Function.Injective ports) (hsep : ∀ i r, rg r ≠ ports i)
@@ -50,61 +44,28 @@ theorem generatedFinalRound_exec (hA : 4 ≤ A) (rg : TblR 8 → Fin T) (hrg : F
           (C+1)*(13*tblC W 0+16*w+44*W+38+s*(14*w+23))) depth
           (generatedFinalRound rg ports src dst tmp sp sg cy) (mk v S) n
           (mk v' {S with R := (Function.update S.R src (cstream A (p+E+5) (chirpLine s H)))}) := by
-  have hsepRound := roundPorts_separate hreg
-  obtain ⟨v₁,S₁,n₁,hu₁,hn₁,he₁,hh₁,hi₁,ho₁,hL₁,hhead,hframe⟩ :=
-    generatedRoundHeaders_exec (body := body) rg hrg ports hports hsep wl hwl st
-      h0 h1 h2 h3 h4 h5 h6 h7 hp hsize hroom hfit v S hS
-  have hoff (r : Fin T) (hr : ∀ i, ports i ≠ r) : S₁.R r = S.R r :=
-    roundHeader_frame rg ports S S₁ _ hS hh₁ hframe r hr
-  have hhead₁ (i : Fin 4) : S₁.R (ports i) = List.replicate (roundHeaderValues w q p j E i) tick := by
-    simpa only [hheaders,List.append_nil] using hhead i
-  have hfree (r : Fin T) (hr : r ∈ [src,dst,tmp,sp,sg,cy]) : S₁.R r = S.R r := by
-    exact hoff r (fun i => hsepRound i r hr)
-  have hg := roundHeaders_ready w q p j E ports tmp sp sg cy S₁ hhead₁
-    ((hfree tmp (by simp)).trans (hblank tmp (by simp)))
-    ((hfree sp (by simp)).trans (hblank sp (by simp)))
-    ((hfree sg (by simp)).trans (hblank sg (by simp)))
-    ((hfree cy (by simp)).trans (hblank cy (by simp)))
-  obtain ⟨v₂,H,hu₂,he₂,hd⟩ := finalRound_tape_exec (body := body) hA hreg w q p j E (p+E+5)
-    hp hw le_rfl hsize G hG v₁ S₁ ((hfree src (by simp)).trans hsrc)
-    ((hfree dst (by simp)).trans (hblank dst (by simp))) hg
-  let S₂ : Stacks T A := {S₁ with R := Function.update S₁.R src (cstream A (p+E+5) (chirpLine s H))}
-  let rs := (List.finRange 4).map ports
-  have hnd : rs.Nodup := (List.nodup_finRange 4).map hports
-  have hs₂ (i : Fin 4) : S₂.R (ports i) = S₁.R (ports i) := by
-    have hne : ports i ≠ src := hsepRound i src (by simp)
-    exact Function.update_of_ne hne _ _
-  have hsum : (rs.map fun r => (S₂.R r).length).sum = 2*w := by
-    simp only [rs,List.map_map,Function.comp_def,hs₂,hhead₁,List.length_replicate]
-    simp [roundHeaderValues,List.finRange_succ]
-    omega
-  obtain ⟨v₃,hu₃,he₃⟩ := clearWords_exec (body := body) rs hnd v₂ S₂
-  have hfinal : {S₂ with R := fun r => if r ∈ rs then [] else S₂.R r} =
-      {S with R := Function.update S.R src (cstream A (p+E+5) (chirpLine s H))} := by
-    apply Stacks.ext
-    · exact hi₁
-    · exact ho₁
-    · exact hL₁
-    funext r
-    by_cases hr : r ∈ rs
-    · obtain ⟨i,_,rfl⟩ := List.mem_map.mp hr
-      have hne : ports i ≠ src := hsepRound i src (by simp)
-      simp only [hr,ite_true,Function.update_of_ne hne,hheaders]
-    · have hoffr : ∀ i, ports i ≠ r := by
-        intro i he
-        exact hr (List.mem_map.mpr ⟨i,List.mem_finRange i,he⟩)
-      simp only [hr,ite_false,S₂]
-      by_cases he : r = src
-      · subst r; simp only [Function.update_self]
-      · simp only [Function.update_of_ne he]
-        exact hoff r hoffr
-  have he := (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl (congrArg (mk v₃) hfinal)
-  have hc : n₁+((1+(s*(topShiftWordCost w (q-p+j) (p+E+5)+1)+1)+(2*(s*(p+E+5))+2))+
-      (2*(rs.map fun r => (S₂.R r).length).sum+2*rs.length+1)) ≤
-      13*tblC W 0+16*w+44*W+38+s*(14*w+23) := by
-    simp only [hsum,rs,List.length_map,List.length_finRange]
-    have hpass := finalRound_pass_cost_le hsize s
-    omega
-  exact ⟨v₃,_,H,hu₃.trans (hu₂.trans hu₁),hc,he,hd,mn_bounded_exec_certify he hc⟩
+  have hread (i : ZMod s) : pairedCellRead q w (cstream A w (chirpLine s G)) i =
+      value q (IntegerMultBounds.MathlibTM2.LayerMachine.symZ w (G i)) := by
+    simpa only [List.append_nil] using pairedCellRead_signed (q := q) hA (show 1 ≤ w by omega) G [] i
+  obtain ⟨v',n,hu,hn,he,hd,ht⟩ := generatedFinalRound_list_exec (body := body) hA rg hrg ports hports
+    hsep hreg wl hwl st h0 h1 h2 h3 h4 h5 h6 h7 hp (by omega : 1 ≤ w) hsize hroom hfit (chirpLine s G)
+    v S hS hsrc hblank hheaders
+  let H : ZMod s → GaussianInt := fun i => finalRoundWord w q p j (G i)
+  have hmap : (chirpLine s G).map (finalRoundWord w q p j) = chirpLine s H := by
+    simp only [chirpLine,List.map_map,Function.comp_def,H]
+  rw [hmap] at he ht
+  refine ⟨v',n,H,hu,?_,he,?_,?_⟩
+  · simpa only [chirpLine,List.length_map,List.length_range] using hn
+  · intro i
+    have hmem : G i ∈ chirpLine s G := List.mem_map.mpr ⟨i.val,List.mem_range.mpr i.val_lt,by simp⟩
+    have hb : ‖value q (IntegerMultBounds.MathlibTM2.LayerMachine.symZ w (G i))‖ ≤ 8*(2 : ℝ)^E := by
+      rw [←hread i]
+      exact hG i
+    have hf := finalRound_fits q p j E (p+E+5) hp le_rfl _ hb
+    have hv := pairedCellRead_encodedField (q := p) hA (show 0 < p+E+5 by omega) H [] i hf
+    rw [List.append_nil] at hv
+    rw [hv,hread i]
+    exact hd (G i) hmem
+  · simpa only [chirpLine,List.length_map,List.length_range] using ht
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.ChirpOutputBounds
-public import IntegerMultBounds.MathlibTM2.Node.TopWord
+public import IntegerMultBounds.MathlibTM2.Mult.SignedRoundExec
 
 /-! # Execute the final signed precision reduction on a chirp stream
 
@@ -35,31 +35,11 @@ theorem chirpRound_exec (hA : 4 ≤ A) {src dst tmp cW cS cE cD sp sg cy : Fin T
           (2 * (xs.length * k) + 2))
         (mk v' { S with R := (Function.update S.R src
           (cstream A k (xs.map (tdivN d)))) }) := by
-  have hreg' := hreg
-  regs_ne hreg'
-  have hframe : TopWordFrame src dst (topShiftG tmp cW cS cE cD sp sg cy (A := A) w d k) := by
-    intro R l l' ⟨hW, hS, hE, hD, hsp, hsg, hcy, htmp⟩
-    refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> simp_all [ne_comm]
-  have hmap : (xs.map (csyms A w)).map (topShiftF A d k) =
-      (xs.map (tdivN d)).map (csyms A k) := by
-    simp only [List.map_map]
-    apply List.map_congr_left
-    intro x hx
-    have hf := hxs x hx
-    exact topShiftF_coeffSyms hA hw hdk x
-      ⟨⟨(abs_lt.mp hf.1).1.le, (abs_lt.mp hf.1).2⟩,
-        ⟨(abs_lt.mp hf.2).1.le, (abs_lt.mp hf.2).2⟩⟩
-  obtain ⟨v', hu, he⟩ := topPass_exec body ‹src ≠ dst› hframe hw
-    (topShiftWord_spec body hA hreg hw hdk) (xs.map (csyms A w)) v S
-    (by intro x hx; obtain ⟨z, hz, rfl⟩ := List.mem_map.mp hx; simp [csyms])
-    (by simpa only [cstream, List.flatMap_def] using hsrc) hdst hg
-  rw [hmap] at he
-  refine ⟨v', hu, he.cast ?_ ?_⟩
-  · simp only [List.length_map]
-    change 1 + (xs.length * (topShiftWordCost w d k + 1) + 1) +
-      (2 * (cstream A k (xs.map (tdivN d))).length + 2) = _
-    simp
-  · rfl
+  apply signedRound_exec hA hreg w d k hw hdk xs _ v S hsrc hdst hg
+  intro x hx
+  have hf := hxs x hx
+  exact ⟨⟨(abs_lt.mp hf.1).1.le,(abs_lt.mp hf.1).2⟩,
+    ⟨(abs_lt.mp hf.2).1.le,(abs_lt.mp hf.2).2⟩⟩
 
 /-- The final precision reduction preserves the output norm envelope. -/
 theorem chirpRounded_norm {p q : ℕ} (hpq : p ≤ q) (l Γ : ℕ) (x : GaussianInt)

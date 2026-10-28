@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2440 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2447 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -16232,3 +16232,47 @@ kappa is unchanged.
 Validation: all three modules pass guarded individual checks (maximum 3,087 MiB);
 the expanded audit passes (15,366 jobs; 3.5 GiB combined peak), covering all five
 new public facts. Proof-integrity and whitespace checks pass.
+
+
+### S3 checkpoint: one normalization setup covers an arbitrary batch stream
+
+`generatedFinalRound_list_exec` generalizes the complete generated rounding
+lifecycle to an arbitrary word list, including an empty batch. The generated
+program is unchanged. One setup/release bill is followed by time linear in the
+total number of words; the original single-line theorem is now a corollary.
+`roundBatchWords_flatten` identifies that single pass with mapping normalization
+over the ordered field batch.
+
+`SignedRoundExec.signedRound_exec` factors the word-pass proof over signed
+representability, including the negative endpoint. The existing strict-fit chirp
+rounding theorem is now a corollary with its original API. Consequently the
+normalization runtime needs no global magnitude bound: every encoded word can
+be canonicalized to its signed representative. `roundBatchField_decoded` needs
+a magnitude bound only at the coordinate where decoded accuracy is claimed,
+so this interface also applies to clipped halo output.
+
+`inverseNormalizationShift` selects `Nat.size (4*p)`. Its checked bounds give
+`4*p ≤ 2^j` and `j ≤ p+2`. `FamilyDispatchInput.round_dimensions` proves from
+actual dispatcher precision/width definitions that this shift and magnitude
+exponent `p+8` fit the existing solver words. `inverse_round_magnitude` derives
+that magnitude allowance from the stable inverse bound `64*p` and solve error.
+
+The remaining concrete placement can reuse the existing scalar bank after the
+solver: recompute inverse dimensions, compute the bit length of `4*p` in scalar
+scratch, rename the rounding arithmetic into other scalar scratch, install the
+four counters on the now-empty core ports, and release scalar scratch after
+copying. This needs no extra register solely for an external shift when the
+selected logarithmic shift is used. The closed batch execution, input conversion
+and aggregate time/compiled stock still need to be joined. S3 remains partial;
+kappa is unchanged.
+
+`tblRoundSelection_do` now executes that shift/magnitude selection in the existing
+25-variable inverse bank. It uses only scratch indices 8,9,10,12,14, preserves the
+original eight scalar inputs and the computed precision/width fields 18 and 20,
+and has cost at most `4*Nat.size (4*p)+19` scalar atoms. Concrete counter placement
+and final release of the combined inverse/rounding scratch remain to be joined.
+Validation: all nine changed/new modules pass guarded individual checks (maximum
+3,278 MiB). The expanded axiom audit and chirp rounding regression audit pass
+(15,377 jobs; final incremental peak 3.5 GiB), covering twelve new public facts.
+The dependency rebuild also passed (35.2 GiB combined peak, 12 minutes).
+Proof-integrity and whitespace checks pass.

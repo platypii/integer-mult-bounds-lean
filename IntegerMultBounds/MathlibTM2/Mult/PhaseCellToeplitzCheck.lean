@@ -1,5 +1,14 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundSelectionSetup
+
+import IntegerMultBounds.MathlibTM2.Mult.SignedRoundExec
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundList
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedRoundList
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundBatchWords
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundDimensionSelection
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundMagnitudeSelection
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundHeaderFrame
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedFinalRound
@@ -3745,7 +3754,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundPorts_separate,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.topShiftWordCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finalRound_pass_cost_le,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedFinalRound_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedFinalRound_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.ShortConv.signedRound_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finalRound_list_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedFinalRound_list_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundBatchWords_flatten,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundBatchField_decoded,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inverseNormalizationShift_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inverseNormalizationShift_large,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inverse_round_dimensions,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.FamilyDispatchInput.round_dimensions,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inverse_round_magnitude,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundBitCountMap_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblRoundSelection_do ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
