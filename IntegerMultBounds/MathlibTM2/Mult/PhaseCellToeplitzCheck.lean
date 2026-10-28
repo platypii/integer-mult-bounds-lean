@@ -1,5 +1,15 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCanonicalInverseExec
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCanonicalInverseInput
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedB0Budget
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedB0Line
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedInverse
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedInverseBudget
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedRealSolveSpec
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellQuantizedSolveSpec
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRealInputWord
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCompiledFamilyDispatch
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedFamilyDispatch
@@ -3663,7 +3673,28 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.familyDispatchInput_restore_le_stock,
       `IntegerMultBounds.MathlibTM2.Cost.familyDispatch_stock_ledger_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyDispatchStockLedger_scaled_volume_le,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedFamilyDispatch_compiled_spec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedFamilyDispatch_compiled_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalInverse_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalInverseInput_scalars,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalInverseInput_core,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalInverseInput_source,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalInverseInput_left,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalInverseInput_output,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.executedInverse_normalized_smallness,
+      `IntegerMultBounds.MathlibTM2.Mult.FastB0.executed_phase_resampB₀_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.executedInverseOutput_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseFullInputPrecision_ge,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseFullInput_rounding_budget,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.executedRealInverse_dyadic_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.executedRealInverse_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellInterface.SolveSpec.mono_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellInterface.SolveSpec.of_rhs_rounding,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_value_re,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_value_im,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_norm_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_grid ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
