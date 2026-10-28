@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2295 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2296 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14932,3 +14932,27 @@ Validation: all 15,188 affected audit-build jobs pass (3.5 GiB combined peak).
 The three new modules and the audit pass individual guarded checks, each below
 4 GiB. All 2,815 prior audit names are retained and eleven new theorems are
 covered. Plan-status, proof-integrity and whitespace checks pass.
+
+### S3 checkpoint: complete native interior-control remainder
+
+`cachedHaloClassSharedCost_native_le` separates each actual cached-class shared
+ledger into origin/advance controls, numerical zero-cell batch setup, and a
+linear header/workspace plus gather allowance. The selected bound sums all six
+length candidates and combines length-key initialization, repeated cell controls
+and final workspace cleanup.
+
+`familyHaloControlCost_native_fast_le` bounds the entire interior control ledger
+by `familyHaloNumericalSetupCost + C*t*p`. The explicit numerical remainder is
+the six-candidate sum of `cachedClosedBatchCost` at zero batch count, so no
+construction work is hidden or assumed free. `selectedInteriorNativeControls_fast_le`
+applies this result at both actual inverse precisions, deriving working widths
+and ring-log bounds from selected sizes.
+
+Remaining: price the explicit numerical setup sum, finish the other caller
+controls and shared setup multiplicities/amortization, and prove simultaneous
+whole-caller compiled-machine storage. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,189 affected audit-build jobs pass (3.5 GiB combined peak).
+The new module and audit pass individual guarded checks at 2,962 and 3,062 MiB
+peak respectively. All 2,826 prior audit names remain, with three new theorems
+covered. Proof-integrity, plan-status and whitespace checks pass.

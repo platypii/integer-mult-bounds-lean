@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellInteriorControlRemainder
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedInteriorInitialization
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedMaskCost
@@ -3292,7 +3294,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.selectedSharedHaloControlCandidates_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.executionSharedHaloControlCost_congr,
       `IntegerMultBounds.MathlibTM2.Cost.selectedInverseWorkingWidth_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorSetupControls_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorSetupControls_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.cachedHaloClassSharedCost_native_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyHaloControlCost_native_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorNativeControls_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
