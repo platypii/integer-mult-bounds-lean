@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2329 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2332 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15225,3 +15225,33 @@ Validation: all 15,240 affected audit-build jobs pass (3.4 GiB combined peak).
 Both new modules and the audit pass individual guarded checks; peak RSS is
 3,312 MiB. All 2,930 prior audit names remain and five new facts are covered.
 New-file proof-integrity and whitespace checks pass.
+
+### S3 checkpoint: numerical weight-family setup has a proved polynomial price
+
+`sharedBatchWeightSetupCost_poly` prices the actual retained weight initializer,
+row generator and formatting in at most `1000000*t*Z^4` steps when `Z` bounds
+precision, cell length and numerical workspace width. Its bound is structural
+and linear in ambient axis volume, with no concrete generated certificates.
+`generateHaloWeightLengthKeyCost_poly` adds the executed class controls, ordinary
+header installation/release, cache formatting and key consumption.
+`prepareHaloWeightFamilyCost_poly` sums those costs over the actual list of at
+most six keys and includes initialization, family restoration and cleanup.
+
+`selectedWeightFamilySetup_poly_le` applies the selected phase-gap and numerical
+width bounds: every candidate length is at most `5*p`, and the entire generated
+family costs at most `C*t*p^4`, uniformly over the selected axes.
+`selectedFamilySetup_weight_le` instantiates this at the actual boundary/recovery
+precision and reaches the executed setup ledger. The numerical family
+construction and final erasure add at most `C*t*p^4` beyond the base generated
+Schur/factor setup bill.
+
+This is a price for a previously explicit construction bill, not an amortization
+claim. The base Schur/factor/publication/coupling setup still needs a uniform
+bound, and actual reuse-key multiplicities and replica counts must pay the shared
+bills. Simultaneous whole-caller compiled-machine storage remains open.
+S3 stays partial; kappa is unchanged.
+
+Validation: all 15,243 affected audit-build jobs pass (3.5 GiB combined peak).
+All three new modules and the audit pass individual guarded checks; peak RSS is
+3,314 MiB. All 2,935 prior audit names remain and five new facts are covered.
+New-file proof-integrity, plan-status and whitespace checks pass.

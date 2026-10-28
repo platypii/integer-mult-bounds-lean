@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilySetupWeight
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilyCaller
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilyFast
@@ -3419,7 +3421,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCaller_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatch_density_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCaller_density_fast_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCaller_spec ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCaller_spec,
+      `IntegerMultBounds.MathlibTM2.Cost.sharedBatchWeightSetupCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.generateHaloWeightLengthKeyCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.prepareHaloWeightFamilyCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedWeightFamilySetup_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_weight_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
