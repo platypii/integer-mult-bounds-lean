@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedInteriorInitialization
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedMaskCost
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloRunHost
@@ -3279,7 +3281,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.closedMaskCosts_phase_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedMaskGeometryWidth_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedMaskPhaseBudget_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedMasks_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedMasks_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPrecision_le_axis,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedAxisLog_le_precision,
+      `IntegerMultBounds.MathlibTM2.Cost.initializeHaloLengthKeysBound_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedLengthKeyInitialization_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedExecutionLengthKeyInitialization_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.sharedHaloControls_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedSharedHaloControls_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedSharedHaloControlCandidates_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.executionSharedHaloControlCost_congr,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedInverseWorkingWidth_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorSetupControls_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

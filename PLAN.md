@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2292 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2295 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14908,3 +14908,27 @@ combined peak RSS, 6.3 minutes). Both new cost modules, both refactored ledger
 modules and the audit pass individual guarded checks, with a largest peak
 below 3,066 MiB. All 2,807 prior audit names remain and eight new facts are
 covered. Proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: initialization and shared controls at actual inverse precisions
+
+`PhaseCellLengthKeySetup` bounds the actual length-key initialization ledger by
+a linear header/workspace term and one quadratic workspace setup. The selected
+axis satisfies `p ≤ t`, so the latter is absorbed into `O(t*p)`.
+`PhaseCellSharedHaloControl` separately prices origin classification and advance
+setup, using the sparse phase-table bound, then sums over all six length
+candidates. These are structural bounds on the actual cost definitions.
+
+`selectedInteriorSetupControls_fast_le` instantiates both bounds at the caller's
+actual first-pass and recovery precisions. It derives the working-width and
+ring-log bounds from selected sizes and reuses the recovery exponent identity;
+no external working-width witness is required. The combined initialization and
+six-candidate origin/advance costs of both stages are at most `C*t*p`.
+
+Numerical cached-batch setup, the rest of the control ledger, setup
+multiplicities/amortization, and simultaneous whole-caller compiled-machine
+storage remain open. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,188 affected audit-build jobs pass (3.5 GiB combined peak).
+The three new modules and the audit pass individual guarded checks, each below
+4 GiB. All 2,815 prior audit names are retained and eleven new theorems are
+covered. Plan-status, proof-integrity and whitespace checks pass.
