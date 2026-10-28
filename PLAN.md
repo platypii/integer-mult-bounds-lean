@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2425 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2428 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -16117,3 +16117,29 @@ Validation: the normalized endpoint and expanded axiom audit build successfully
 (15,339 jobs; 3.5 GiB combined peak). The audit includes all 21 new public facts.
 Individual guarded checks of all nine new modules pass (maximum 3,247 MiB);
 proof-integrity, whitespace and generated PLAN checks pass.
+
+
+### S3 checkpoint: exact input conversion and linear final scaling/rounding
+
+`realInputWord_half_grid` identifies the real solver's quantizer on a halved
+p-grid input with an exact numerator shift. `halfGrid_exec` reuses the existing
+word-preserving shift execution and restores its counters and scratch.
+`halfGrid_fits` derives signed fits from the input norm and five guard bits;
+`halfGrid_decoded` proves the converted stream decodes to the half-sized RHS.
+
+`finalRound_runs` reuses the linear signed word pass, combining the output shift
+and p-grid rounding in one truncation. It admits arbitrary `j`, subject to the
+explicit storage width condition. `finalRound_fits` derives output fits from the
+solver magnitude bound. `finalRound_field_exec` exports the same execution,
+restoration, explicit time and exact decoded normalized output in one theorem.
+The earlier uncommitted scalar-multiplication approach was replaced by this
+linear pass.
+
+These are generic stream execution components, not yet the closed production
+normalized dispatcher. The remaining composition must install their counters,
+select widths from the actual solver parameters, retain/restore the borrowed
+input, connect complex assembly to the numerical endpoint, and transport the
+combined costs and stock. S3 remains partial; kappa is unchanged.
+Validation: all three modules pass individual guarded checks (maximum 3,034 MiB);
+the expanded axiom audit passes (15,342 jobs; 3.5 GiB combined peak), with ten
+new public facts covered. Proof-integrity, whitespace and PLAN checks pass.

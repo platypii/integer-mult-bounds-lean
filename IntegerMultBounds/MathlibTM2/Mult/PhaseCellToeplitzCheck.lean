@@ -1,5 +1,11 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundFits
+
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInputPrecision
+
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundRuns
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCanonicalInverseExec
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCanonicalInverseInput
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedB0Budget
@@ -3694,7 +3700,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_norm,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_norm_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_error,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_grid ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_grid,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finalRound_decoded,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finalRound_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.realInputWord_half_grid,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.halfGrid_value,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.halfGrid_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.halfGrid_decoded,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.halfGrid_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.value_finalRound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finalRound_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finalRound_field_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
