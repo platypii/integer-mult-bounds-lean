@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyBatchStock
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyComplexBatchNumerics
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComplexBatchReady
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedLoop
@@ -15,11 +17,6 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
-
-def familyComplexBatchNext {A : ℕ} (S : Stacks 263 A)
-    (input output tail : List (Fin (A+4))) : Stacks 263 A :=
-  {S with R := (Function.update (Function.update (Function.update S.R 110 tail)
-    241 (input.reverse++S.R 241)) 242 (output.reverse++S.R 242))}
 
 theorem familyBoundaryReg_off (i : Fin 240) (j : Fin 263) (hj : 240 ≤ j.val) :
     familyBoundaryReg i ≠ j := by

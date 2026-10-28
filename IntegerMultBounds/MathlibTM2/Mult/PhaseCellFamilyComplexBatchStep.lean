@@ -16,6 +16,11 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 263 Q A U}
 
+def familyComplexBatchNext {A : ℕ} (S : Stacks 263 A)
+    (input output tail : List (Fin (A+4))) : Stacks 263 A :=
+  {S with R := (Function.update (Function.update (Function.update S.R 110 tail)
+    241 (input.reverse++S.R 241)) 242 (output.reverse++S.R 242))}
+
 def familyComplexBatchPark : Pr P 263 Q A U :=
   .seq (transfer 243 110 241 244) (transfer 243 132 242 244)
 

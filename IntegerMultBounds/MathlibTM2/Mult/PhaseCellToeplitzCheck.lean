@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBatchStepTrace
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSetupCompiled
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSetupTrace
@@ -3529,7 +3531,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Stack.compiledInv_stock,
       `IntegerMultBounds.MathlibTM2.Stack.ExecWithin.stock_sim,
       `IntegerMultBounds.MathlibTM2.Stack.ExecWithin.stock_run_main,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_compiled_volume_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_compiled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.mnSize_mk_updateR,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyComplexBatchNext_stock,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyComplexBatch_stock_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyBatchWords_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyComplexBatchPrefix_stock_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexBatchStepCost_line_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatchStepCost_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatchStep_trace_volume_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

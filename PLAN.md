@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2358 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2360 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15574,3 +15574,35 @@ Validation: all 15,271 affected audit-build jobs pass (3.5 GiB combined peak).
 Both new modules and the audit pass individual guarded checks. All 3,009 prior
 audit names remain and twelve new compiler/resource facts are covered.
 Changed-file proof-integrity, plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: live batch boundary stock and one-step scratch are separated
+
+`familyComplexBatchNext_stock` proves the actual parking transition preserves
+all original input stock and adds exactly its output length. The input is saved
+for later restoration rather than discarded. `familyComplexBatch_stock_le` prices
+the four varying registers simultaneously with every retained page and spectator.
+`familyComplexBatchPrefix_stock_le` instantiates it for the actual remaining-input,
+saved-input and produced-output streams of the family loop: every iteration
+boundary needs at most initial stock plus one full batch of output words.
+
+The unchanged `familyComplexBatchNext` definition is placed with its step program,
+so these resource lemmas can sit below the loop proof without an import cycle.
+`familyComplexBatchStepCost` names the existing executed one-step allowance.
+Its selected-size price, multiplied by any fixed syntactic push constant, is
+eventually at most `T`. `selectedFamilyBatchStep_trace_volume_le` certifies every
+intermediate store of that actual step, including nested calls and return depth,
+with initial step stock plus `T`. Scratch is priced per step, not multiplied by
+the replica count; accumulated output has its separate boundary-stock allowance.
+
+Next: carry these two bounds through the counted loop and complete lifecycle,
+then apply the compiled-machine resource bridge. Executed distinct-key grouping
+and external exposure/publication/restoration handoffs remain required.
+S3 stays partial; kappa is unchanged.
+
+Validation: the affected loop/caller regression build passes all 15,095 jobs
+(10.6 GiB combined peak); the expanded audit passes all 15,273 jobs (10.5 GiB
+combined peak). Both new modules, both changed step/loop modules and the audit
+pass individual guarded checks; peak RSS is 3,320 MiB. All 3,021 prior audit
+names remain and eight new facts are covered. The relocated definition is
+unchanged. Changed-file proof-integrity, plan-status and whitespace checks pass.
