@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSetupVolume
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedInteriorConstruction
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSchurColumn
@@ -3496,7 +3498,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorConstruction_weights_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorConstruction_poly_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_poly_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatch_poly_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatch_poly_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.ml_poly_r_le_T,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedSetupPolynomial_le_volume,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_volume_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

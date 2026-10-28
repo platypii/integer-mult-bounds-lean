@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2353 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2355 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15464,3 +15464,27 @@ Validation: all 15,264 affected audit-build jobs pass (3.5 GiB combined peak).
 All three new modules and the audit pass individual guarded checks; peak RSS
 is 3,316 MiB. All 2,988 prior audit names remain and eight new facts are covered.
 Changed-file proof-integrity, plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: complete setup fits below whole-box volume
+
+`ml_poly_r_le_T` now lives in the shared `Cost.PolynomialVolume` module, with
+its existing statement and proof preserved; the layout matching caller imports
+that module. `selectedSetupPolynomial_le_volume` uses the actual selected
+`t_i ≤ r` and `p = 6*b` to prove `A*t_i^6*p^4 ≤ T` eventually, uniformly in the
+axis, for every fixed natural coefficient `A`.
+
+`selectedFamilySetup_volume_le` combines that growth bound with the full executed
+setup price and rounds its real constant upward. Each selected family's entire
+setup is eventually at most `T`, uniformly in admissible halo cuts and precision.
+This does not bound the number of distinct setup keys, establish an executed
+whole-box grouping, or identify its replica counts. Those obligations and
+simultaneous whole-caller compiled-machine storage remain open. S3 stays partial;
+kappa is unchanged.
+
+Validation: all 15,266 affected audit-build jobs pass (3.4 GiB combined peak).
+The original layout caller's guarded regression build passes (12.6 GiB combined
+peak). Both new modules, the layout caller and the audit pass individual guarded
+checks; peak RSS is 3,338 MiB. All 2,996 prior audit names remain, with the
+shared growth fact and two new setup-volume facts added. The moved proof is
+unchanged. Changed-file proof-integrity, plan-status and whitespace checks pass.
