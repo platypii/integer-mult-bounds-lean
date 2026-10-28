@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2252 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2258 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14471,3 +14471,52 @@ preserving all prior entries and adding eleven. All three new modules, both
 revised modules and the audit pass individual guarded checks below the 4 GiB
 module budget. Proof-integrity, audit-coverage, plan-status and whitespace
 checks pass.
+
+### S3 checkpoint: linear conversion from geometry packets to the numerical ABI
+
+`widenOriginPacket_exec` pads a geometry origin with high zero bits using only
+linear tape operations. `widenOriginPackets_exec` proves the counted pass over
+an arbitrary ordered list: packet order and values are preserved, the count
+is restored, and all conversion scratch is released. Its bound is
+`B*(10*W+10*V+23)+6`, separating geometry width `V` from numerical width `W`.
+The conversion uses the controller's existing empty low-register workspace.
+
+`haloGeometryWidth_le_weightWorkspaceWidth` and its selected-band instance
+prove the widths are compatible. `prepareOriginWidening_exec` generates the
+numerical-width header while preserving the geometry header;
+`widenGeometryOrigins_exec` composes generation, conversion and header erasure.
+`completeGeometryHaloGather_exec` combines actual geometry-width advancement,
+the numerical packet conversion and release of both width headers, preserving
+the origin/count/gather-control interface needed by the numerical batch.
+
+The complete inverse has not yet selected this new control path. Remaining:
+install the generated geometry path across nonempty and empty class branches,
+replace the old control ledger and close its selected bound; then close setup
+multiplicities/amortization and simultaneous whole-execution live storage.
+S3 stays partial; kappa is unchanged.
+
+Validation: all 15,145 standard-axiom audit jobs pass (3.4 GiB combined peak
+RSS), retaining every prior entry and adding seven. All six new modules and
+the audit pass individual guarded checks below the 4 GiB module budget.
+Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
+
+### S3 proof-architecture correction
+
+Local tape-level completion has produced too much repeated composition and
+width/frame plumbing. Further work should be driven from the full S3 endpoint,
+including its actual selected time bound, paid setup multiplicity and live
+storage requirement, rather than from the next convenient helper theorem.
+
+Reuse the existing `HostSpec`, `SymSpec`/`PricedSymSpec`, numerical error
+composition and prepared-page proofs. Factor only the missing reusable
+contracts: framed stream traversal/width conversion, and setup–repeat–release
+with an actual execution-wide resource invariant. Prove sequence/loop/frame
+composition at that level and instantiate register placements at the boundary.
+An endpoint restoration theorem alone is not a peak-storage theorem.
+
+Apply the contracts first to the origin/gather control path and make them replace
+repeated concrete composition proofs. Keep parameter/width facts separate from
+execution proofs and discharge their selected instances in one place. Retain
+verified numerical work; avoid a wholesale rewrite or an abstract contract that
+merely assumes the missing time/storage conclusions. Judge the refactor by a
+shorter complete caller proof and fewer outstanding S3 endpoint obligations.

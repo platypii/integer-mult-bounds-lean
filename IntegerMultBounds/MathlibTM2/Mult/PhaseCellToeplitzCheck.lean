@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCompleteGeometryHaloGather
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareGeometryHaloClassControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloAdvanceWidth
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyDensityCaller
@@ -3137,7 +3138,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloClass_compact_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloControlWidth_le_geometryWidth,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateHaloGeometryWidth_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareGeometryHaloClassControls_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareGeometryHaloClassControls_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.widenOriginPacket_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.widenOriginPackets_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloGeometryWidth_le_weightWorkspaceWidth,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selectedHaloGeometryWidth_le_weightWorkspaceWidth,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareOriginWidening_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.widenGeometryOrigins_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completeGeometryHaloGather_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
