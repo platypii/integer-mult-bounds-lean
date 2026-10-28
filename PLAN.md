@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2432 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2437 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -16175,3 +16175,32 @@ closed execution. S3 remains partial; kappa is unchanged.
 Validation: all four modules pass guarded individual checks (maximum 3,079 MiB);
 the expanded audit passes (15,358 jobs; 3.5 GiB combined peak), covering all nine
 new public facts. Proof-integrity, whitespace and PLAN checks pass.
+
+
+### S3 checkpoint: final-rounding counters are generated from binary scalars
+
+`tblRoundScalars` computes retained width `p+E+5`, truncated bits `q-p+j`,
+and discarded high padding `w-(q-p+j)-(p+E+5)` in ten fixed scalar instructions.
+The five binary inputs `w,q,p,j,E` are preserved. Its no-overflow proof uses the
+actual word-size condition and scalar word room, with no supplied unary lengths.
+
+`installRoundHeaders_exec` uses the structural binary-to-unary loader for all
+four counters. Their total size is exactly `2*w`; `roundHeaderCost_eq` gives
+conversion cost `12*w+44*W+25`. `roundHeaders_ready` derives the signed word
+pass's readiness contract from the generated counters.
+
+`tblRoundRelease_do` clears the three computed scalar scratch words.
+`generatedRoundHeaders_exec` combines scalar arithmetic, conversion and release,
+restoring the original ordinary binary input bank. It retains the generated
+counter prefixes and restores native/left/spectator stacks, at cost at most
+`13*tblC W 0+12*w+44*W+25`.
+
+These theorems remove the free unary-counter prerequisite from the rounding
+stage. The closed normalized dispatcher must still supply/derive its binary
+rounding dimensions from the inverse metadata, select compatible widths, place
+and release the counters, compose input conversion/solver/final normalization,
+and transport the combined fast costs and compiled stock. S3 remains partial;
+kappa is unchanged.
+Validation: all five modules pass individual guarded checks (maximum 1,617 MiB);
+the expanded axiom audit passes (15,363 jobs; 3.5 GiB combined peak), covering
+all six new public facts. Proof-integrity and whitespace checks pass.

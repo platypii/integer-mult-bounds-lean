@@ -1,5 +1,11 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundScalarSetup
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallRoundHeaders
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundHeaderBounds
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundScalarRelease
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedRoundHeaders
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCanonicalOutput
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinalRoundTape
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedError
@@ -3724,7 +3730,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finalRound_tape_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.computed_solution_norm,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.scaleRound_error,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.solver_round_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.solver_round_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblRoundScalars_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.installRoundHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundHeaderCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundHeaders_ready,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblRoundRelease_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedRoundHeaders_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
