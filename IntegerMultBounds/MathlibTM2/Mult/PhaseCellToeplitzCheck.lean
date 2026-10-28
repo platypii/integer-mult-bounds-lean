@@ -1,5 +1,12 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Fast.TableView
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareInverseRound
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseRoundView
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareInverseRoundExec
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedInverseRound
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseRoundBatch
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundSelectionSetup
 
 import IntegerMultBounds.MathlibTM2.Mult.SignedRoundExec
@@ -3766,7 +3773,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.FamilyDispatchInput.round_dimensions,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.inverse_round_magnitude,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.roundBitCountMap_injective,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblRoundSelection_do ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblRoundSelection_do,
+      `IntegerMultBounds.MathlibTM2.Fast.TableVM.TblR.rename_injective,
+      `IntegerMultBounds.MathlibTM2.Fast.TableVM.tblRho_restrict,
+      `IntegerMultBounds.MathlibTM2.Fast.TableVM.tblHolds_restrict,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblPrepareInverseRound_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseRoundVariables_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseRoundScalarReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseRoundPorts_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseRoundScalarReg_ports,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepareInverseRound_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedInverseRound_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseRoundBatch_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

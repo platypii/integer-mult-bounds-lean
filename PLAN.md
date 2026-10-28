@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2447 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2453 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -16276,3 +16276,38 @@ Validation: all nine changed/new modules pass guarded individual checks (maximum
 (15,377 jobs; final incremental peak 3.5 GiB), covering twelve new public facts.
 The dependency rebuild also passed (35.2 GiB combined peak, 12 minutes).
 Proof-integrity and whitespace checks pass.
+
+
+### S3 checkpoint: closed normalization reuses the actual 303-register inverse bank
+
+`tblPrepareInverseRound_do` composes the existing inverse scalar setup with the
+selected logarithmic shift/magnitude computation and scratch initialization.
+It derives the rounding view from the original eight scalar inputs, preserving
+those inputs and computing actual precision/width fields. `prepareInverseRound_exec`
+executes this preparation in `familyInverseScalarReg` and preserves every core
+register, including the batch output and borrowed source.
+
+`Fast.TableView` proves once that an injective variable selection shares a scalar
+bank without copying it. `inverseRoundScalarReg` selects the eight rounding
+variables from the existing 25-variable bank. The four counters occupy released
+core ports 0–3; the signed pass uses ports 4–8 and output 132. All injections and
+scalar/counter separation are proved.
+
+`inverseRoundBatch_exec` is now a closed execution in that same workspace:
+prepare scalar dimensions, generate counters, round the whole arbitrary batch
+stream once, release the counters, then clear the computed inverse scalar
+scratch. It restores the original ordinary scalar bank, native/left stacks,
+borrowed source and all workspace; only output 132 changes. Output word width is
+`2*p+13`, shift is `Nat.size (4*p)`, and the cost is one scalar setup/release bill
+plus a term linear in the total number of encoded words. No extra register bank,
+preloaded rounding counters or global output magnitude premise is supplied.
+
+The fixed-layout specialization is factored before numerical instantiation to
+keep default checking limits; the final composition builds in about three
+seconds. The remaining integration is to insert this closed stage before each
+private batch is collected, transport its normalized coordinate error and
+aggregate resource bounds, and join the executed input conversion/normalized
+numerical endpoint. S3 remains partial; kappa is unchanged.
+Validation: all six modules pass individual guarded checks (maximum 3,313 MiB);
+the expanded audit passes (15,379 jobs; 3.5 GiB combined peak), covering all eleven
+new public facts. Proof-integrity and whitespace checks pass.
