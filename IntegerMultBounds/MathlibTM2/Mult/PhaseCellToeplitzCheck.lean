@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedRawCallerFrame
+
 import IntegerMultBounds.MathlibTM2.Host.EmbedStock
 import IntegerMultBounds.MathlibTM2.StackExecutionUnique
 
@@ -3566,7 +3568,20 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Host.embAct_push,
       `IntegerMultBounds.MathlibTM2.Host.embProg_push,
       `IntegerMultBounds.MathlibTM2.Host.exec_emb_ovr_within_stock,
-      `IntegerMultBounds.MathlibTM2.Stack.Exec.unique ] do
+      `IntegerMultBounds.MathlibTM2.Stack.Exec.unique,
+      `IntegerMultBounds.MathlibTM2.Host.mnSize_mk_stock,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseCaller_initial_stock_le,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseExecutionExponent_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseCallerWordWidth_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseMasterValues_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseHeaderCosts_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseCallerHeaders_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedRawHeaderCost_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCallerStockCost_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCallerStockCost_input_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCallerStock_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCaller_compiled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCaller_framed_compiled_volume_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
