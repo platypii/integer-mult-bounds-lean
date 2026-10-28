@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyInverseBatchCaller
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedRawCallerFrame
 
 import IntegerMultBounds.MathlibTM2.Host.EmbedStock
@@ -3581,7 +3583,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.familyInverseCallerStockCost_input_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCallerStock_scaled_volume_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCaller_compiled_volume_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCaller_framed_compiled_volume_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyInverseCaller_framed_compiled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyBatchHeaders_install_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyBatchHeaders_release_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseBatchCoreCall_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseBatchCaller_spec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

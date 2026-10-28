@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2378 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2383 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15786,3 +15786,33 @@ expanded audit passes all 15,293 affected jobs (3.5 GiB combined peak). All
 seven new modules and the audit pass individual guarded checks; peak RSS is
 3,332 MiB. All 3,047 prior audit names remain and thirteen new facts are
 covered. Changed-file proof-integrity, plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: raw scalar headers wrap an arbitrary counted family batch
+
+`familyInverseBatchCaller_spec` constructs the complete 303-register raw caller
+for an arbitrary list of inputs and arbitrary admissible boundary cuts. The
+ordinary scalar bank supplies the geometry and precision inputs; the borrowed
+unary replica counter has the actual input-list length. One header installation
+prepares the whole batch, the generated closed batch shares its setup, and one
+header release restores the original frame and counter, with only the encoded
+batch output prefixed on register 132. This is an actual composed execution,
+not a list of singleton invocations or an assumed execution certificate.
+
+`FamilyBatchCoreReady` isolates the placed core interface. `FamilyBatchHeaders`
+packages the installed metadata and frame facts. Separate installation, placed
+batch execution and release lemmas make the final caller proof a short
+composition. The same final witness carries time, uniform coordinate error and
+an all-intermediate-store resource certificate. The explicit caller time and
+stock costs each charge header installation and release once per batch.
+
+Next: derive the scalar width and price this raw batch interface across complete
+keys, then connect the complete-key sum to an executed grouping driver. External
+exposure/publication/restoration handoffs remain required. S3 stays partial;
+kappa is unchanged.
+
+Validation: the expanded audit builds all 15,298 affected jobs (3.5 GiB
+combined peak). All five new modules and the audit pass individual guarded
+checks; peak RSS is 3,590 MiB. All 3,060 prior audit names remain, with four
+new execution facts covered. New-file proof-integrity, plan-status and
+whitespace checks pass.
