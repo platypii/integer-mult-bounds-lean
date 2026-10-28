@@ -1,5 +1,10 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorBankFinish
+
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyInverseBatchDescriptorCall
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorTapeCost
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedRawBatchCompiled
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyInverseBatchCaller
@@ -3598,7 +3603,21 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyAllKeysHeaders_scaled_volume_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyDistinctKeysHeaders_volume_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedRawFamilyKeyBatches_fast_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedRawFamilyBatch_compiled_volume_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedRawFamilyBatch_compiled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.takeDescriptorPacket_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorBankR_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorBankR_update,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.takeDescriptorBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorBankR_member,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorBankR_ofFn,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.takePlacedDescriptorBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorBankTape_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.takeDescriptorBankCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.takeDescriptorBankCost_le_tape,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.takePlacedDescriptorBankCost_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.restoreDescriptorTape_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseBatchDescriptorCall_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.finishDescriptorBank_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2386 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2393 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15851,4 +15851,53 @@ Validation: the expanded audit passes all 15,301 affected build jobs (3.5 GiB
 combined peak). Both generalized modules, all three new modules and the audit
 pass individual guarded checks; peak RSS is 3,331 MiB. All 3,064 prior audit
 facts remain and nine new theorems are covered. Changed-file proof-integrity,
+plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: the raw batch entry reads its bank from a physical descriptor tape
+
+`descriptorPacket` prefixes an arbitrary word with its unary length and a
+terminator. `takeDescriptorPacket_exec` consumes exactly one packet, appends
+its word to the destination and saves the packet's exact reverse. The payload
+may contain any alphabet symbol; no reserved payload delimiter is assumed.
+Its time is at most `23*wordLength+24`, including reading and clearing the
+length counter, copying the payload and preserving the restoration record.
+
+`takeDescriptorBank_exec` composes this operation structurally over an arbitrary
+fixed destination list. Distinct-port facts show each destination receives
+exactly its advertised word. `takePlacedDescriptorBank_exec` applies that proof
+to a finite register placement; runtime word sizes and values do not enter the
+program syntax. The numerical entry uses the fixed 303-port raw bank.
+
+`familyInverseBatchDescriptorCall_spec` now executes that physical loader and
+the actual placed raw batch caller. The tape contains ordinary scalar inputs,
+the raw line batch and its actual replica counter; no numerical readiness or
+factor page is supplied. The result includes the encoded batch output,
+uniform coordinate errors, the consumed-source/saved-tape effects, and the
+same-execution intermediate-stock certificate. Loader time and stock are
+explicit additions to the existing raw batch allowances. The working bank
+remains loaded after this entry; it is not yet the complete group dispatcher.
+
+The scanner costs at most `24*physicalTapeLength+1`.
+`takePlacedDescriptorBankCost_eq` exposes its exact bound as
+`23*sum_port wordLength+24*portCount+1`. `restoreDescriptorTape_exec`
+restores the consumed prefix from the saved reverse in `2*consumedLength+2`
+steps. These operations preserve native/left stacks and unrelated registers.
+
+`finishDescriptorBank_exec` collects a bank's output in its original order and
+clears the private bank, leaving the result stream outside that bank. It restores
+the transfer scratch and preserves all other stacks. Its cost is bounded by
+`4*outputLength + 2*sum_bank wordLength + 2*portCount + 5`, so neither collecting
+the result nor zeroing the next iteration's workspace is free.
+
+Next: compose loading, execution and output collection in the actual counted
+distinct-key loop with final tape restoration, and match the resulting physical
+ledger and simultaneous stock to the selected bounds. S4/R4 still supplies the
+ordered gathered batches and owns external exposure/publication. S3 remains
+partial; kappa is unchanged.
+
+Validation: the expanded audit passes all 15,308 affected build jobs (3.5 GiB
+combined peak). All seven new modules and the audit pass individual guarded
+checks, each below 3,323 MiB peak RSS. All 3,073 prior audit facts remain,
+with fourteen new structural/execution facts covered. New-file proof-integrity,
 plan-status and whitespace checks pass.
