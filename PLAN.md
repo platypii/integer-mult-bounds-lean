@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2355 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2356 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. The cached caller executes geometry-width origin classification and advance controls for both empty and nonempty classes, converting origins to the numerical packet format. Their tighter price now reaches the retained interior ledger; selected-size bounds pay repeated cell controls and phase-table work in `O(t*p)`. The production boundary RHS now uses generated masks, one linear record scan and canonical folding; its complete header/setup/transfer/release bill is uniformly `O(t*p)`. `selectedFamilyLine_fast_le` bounds the actual generated family line by `C*(t+(t-s)*band²)*p^(129/128)` without a gather remainder. Shared setup multiplicities/amortization and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. The cached caller executes geometry-width origin classification and advance controls for both empty and nonempty classes, converting origins to the numerical packet format. Their tighter price now reaches the retained interior ledger; selected-size bounds pay repeated cell controls and phase-table work in `O(t*p)`. The production boundary RHS now uses generated masks, one linear record scan and canonical folding; its complete header/setup/transfer/release bill is uniformly `O(t*p)`. `selectedFamilyLine_fast_le` bounds the actual generated family line by `C*(t+(t-s)*band²)*p^(129/128)` without a gather remainder. All admissible selected setup keys together cost at most one whole-box volume per axis; `selectedFamilyKeyBatches_fast_le` composes actual batch costs over any distinct-key subfamily with explicit replica counts. Executed distinct-key grouping and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -15488,3 +15488,32 @@ peak). Both new modules, the layout caller and the audit pass individual guarded
 checks; peak RSS is 3,338 MiB. All 2,996 prior audit names remain, with the
 shared growth fact and two new setup-volume facts added. The moved proof is
 unchanged. Changed-file proof-integrity, plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: the complete admissible setup-key family costs at most T
+
+`SelectedFamilyKey` enumerates the varying `(u,target,a,b)` parameters at a fixed
+selected axis and precision budget; all other parameters of this generated entry
+are fixed or derived. The key count is at most `2*(ct+1)*t^2*p^2`.
+`selectedFamilyKeySetupCost_poly_le` prices every admissible entry by the same
+`C*t^6*p^4`; inadmissible band choices contribute zero.
+
+`selectedAxisPolynomial_le_volume` generalizes the existing selected-axis growth
+bound. `selectedFamilyAllKeysSetup_volume_le` sums the actual setup allowances
+over the entire finite key family and proves the sum is eventually at most `T`.
+Consequently any distinct-key subfamily has the same setup allowance, independent
+of its replica counts. `selectedFamilyKeyBatches_fast_le` applies this directly
+to a sum of actual generated closed complex-batch costs: one `T` setup bill plus
+the fast density-weighted repeated-line terms, with each actual replica count
+left explicit.
+
+This replaces a per-key minimum-reuse requirement with a whole-family setup
+budget. It does not execute grouping, prove that a scheduler constructs each key
+at most once, or price external exposure/publication and restoration. Those
+schedule handoffs and simultaneous whole-caller compiled-machine storage remain
+required. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,267 affected audit-build jobs pass (3.5 GiB combined peak).
+The changed volume module, new key-family module and audit pass individual
+guarded checks. All 2,999 prior audit names remain and six new facts are covered.
+Changed-file proof-integrity, plan-status and whitespace checks pass.

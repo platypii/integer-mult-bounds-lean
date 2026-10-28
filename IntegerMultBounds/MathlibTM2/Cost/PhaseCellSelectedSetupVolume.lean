@@ -13,16 +13,21 @@ open Filter IntegerMultBounds IntegerMultBounds.MathlibTM2.Mult
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 
+theorem selectedAxisPolynomial_le_volume (A k m : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ i : Fin (Sizes.d n),
+      A * Sizes.t n i ^ m * Sizes.p n ^ k ≤ Sizes.T n := by
+  filter_upwards [ml_poly_r_le_T (A*6^k) k m] with n hn i
+  calc
+    A * Sizes.t n i ^ m * Sizes.p n ^ k ≤
+        A * Sizes.r n ^ m * Sizes.p n ^ k :=
+      Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (mt_t_le_r n i) m))
+    _ = (A*6^k)*Sizes.b n ^ k*Sizes.r n ^ m := by simp only [Sizes.p,mul_pow]; ring
+    _ ≤ Sizes.T n := hn
+
 theorem selectedSetupPolynomial_le_volume (A : ℕ) :
     ∀ᶠ n : ℕ in atTop, ∀ i : Fin (Sizes.d n),
-      A * Sizes.t n i ^ 6 * Sizes.p n ^ 4 ≤ Sizes.T n := by
-  filter_upwards [ml_poly_r_le_T (A*6^4) 4 6] with n hn i
-  calc
-    A * Sizes.t n i ^ 6 * Sizes.p n ^ 4 ≤
-        A * Sizes.r n ^ 6 * Sizes.p n ^ 4 :=
-      Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (mt_t_le_r n i) 6))
-    _ = (A*6^4)*Sizes.b n ^ 4*Sizes.r n ^ 6 := by simp only [Sizes.p,mul_pow]; ring
-    _ ≤ Sizes.T n := hn
+      A * Sizes.t n i ^ 6 * Sizes.p n ^ 4 ≤ Sizes.T n :=
+  selectedAxisPolynomial_le_volume A 4 6
 
 theorem selectedFamilySetup_volume_le (ct : ℕ) :
     ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
