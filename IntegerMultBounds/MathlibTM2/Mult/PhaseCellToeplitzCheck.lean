@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellS3
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCompiledGridFamilyDispatch
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellInputShiftCost
@@ -3871,7 +3873,31 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.value_norm_mono_precision,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.GridDispatchReady.raw,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.gridFamilyDispatch_exec_trace,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedGridFamilyDispatch_spec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedGridFamilyDispatch_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.FastB0.smallgap_inverse_value_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.haloVertices_full,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalGridInput_scalars,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalGridInput_core,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalGridInput_source,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalGridInput_count,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.canonicalGridInput_left,
+      `IntegerMultBounds.MathlibTM2.Mult.FastB0.rounded_inverse_endpoint,
+      `IntegerMultBounds.MathlibTM2.Mult.FastB0.concrete_resampB₀_specGrid,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.complexInputWord_value,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.complexInputWord_grid,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.gridInput_norm,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.gridInput_error,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.gridInput_grid,
+      `IntegerMultBounds.MathlibTM2.Mult.FastB0.executed_dispatch_resampB₀_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.executedDispatchGrid_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.gridInverse_normalized_smallness,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.gridInverse_operator_error_le_ten,
+      `IntegerMultBounds.MathlibTM2.Mult.FastB0.resampB₀Of_grid_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedDispatchApprox_full_operator,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.normalizedDispatchProduced_full_operator,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedGridFamilyDispatch_operator_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.singletonGridDispatch_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.singletonGridRecord_ready ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

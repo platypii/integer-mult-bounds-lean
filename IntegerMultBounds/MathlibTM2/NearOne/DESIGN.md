@@ -17,8 +17,8 @@ Notation: `b = ⌈log₂ n⌉`, `p = 6b`, `d = ⌊b^ε⌋` (`d^64 ≤ b^31` at `
 
 ## Shared S3–S5 interface (pinned 2026-10-24)
 
-This is the implementation contract for the inverse work packages. S3/S4/S5
-remain open. It supersedes the older whole-axis loader/resume instructions below;
+This is the implementation contract for the inverse work packages. S3 is
+implemented at this supplier boundary; S4/S5 remain open. It supersedes the older whole-axis loader/resume instructions below;
 `rsbAllG` and `pcSolve` are reference implementations, not required execution
 schedules. S2 remains the completed forward primitive.
 
@@ -54,6 +54,25 @@ normalized `B₀ J / 2^j` error/unit-ball guarantees. Its numerical hypotheses,
 including `hsmall`, must be proved by the caller. They are not discarded by this
 interface. `PhaseCellReferenceSpec.pcSolve_spec` anchors the full endpoint to the
 existing checked reference solve.
+
+Current S3 acceptance (2026-10-28): `Mult/PhaseCellS3.lean` combines actual
+production execution, restoration, selected fast time and compiled stock with
+normalized exact-inverse error at most `3/2^p` and unit-ball preservation for
+full-line records. General halos retain their principal-system error contract.
+`FastB0.executed_dispatch_resampB₀_spec` supplies the complete normalized `B₀`
+`ApproxMap` with uniform scaled error 10 and unit-ball preservation, using an
+output chosen from the same restored descriptor dispatcher. Complex input
+quantization is charged explicitly; `target ≥ p+8` discharges the smallness gate.
+This complex-vector bridge avoids identifying the shared batch execution with
+two independent real calls. The full real `SolveSpec` above remains proved.
+
+All twelve new/changed implementation modules pass guarded standalone checks
+(maximum 3,328 MiB), as does the expanded S3 axiom audit (3,376 MiB).
+The expanded audit and both S2 forward/supplier audits pass together (15,587
+jobs; 8.3 GiB combined peak), with default proof limits and only the three
+approved axioms. S4's exposure/publication, halo/global locality and tensor
+composition, remaining S5/S6 work and kappa are unchanged. Implementation
+checkpoints below are historical; the current S3 acceptance is recorded here.
 
 ### Geometry, cuts and boundary order
 

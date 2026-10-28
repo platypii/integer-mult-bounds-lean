@@ -19,12 +19,11 @@ open ContinuousLinearMap
 
 variable {s t : ℕ} [NeZero s] [NeZero t] {α : ℝ}
 
-theorem smallgap_inverse_spec (p j : ℕ) (J L : (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ))
+theorem smallgap_inverse_value_spec (p j : ℕ) (J L : (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ))
     (hJn : ‖J‖≤4*(p : ℝ)) (hj : 4*(p : ℝ)≤2^j) {δ₀ e : ℝ} (hdiff : ‖L-J‖≤δ₀)
-    (hsmall : e+δ₀/2≤1/2) (Jt : (ZMod s → ℂ) → ZMod s → ℂ)
-    (hJt : ∀ v : ZMod s → ℂ, ‖v‖≤1 → ‖Jt v-((2 : ℂ)^j)⁻¹ • L ((1/2 : ℂ) • v)‖≤e)
-    (v : ZMod s → ℂ) (hv : ‖v‖≤1) :
-    ‖Jt v‖≤1 ∧ 2^p*‖Jt v-(((2 : ℂ)^j)⁻¹ • J) ((1/2 : ℂ) • v)‖≤2^p*(e+δ₀/2) := by
+    (hsmall : e+δ₀/2≤1/2) (v y : ZMod s → ℂ) (hv : ‖v‖≤1)
+    (hJt : ‖y-((2 : ℂ)^j)⁻¹ • L ((1/2 : ℂ) • v)‖≤e) :
+    ‖y‖≤1 ∧ 2^p*‖y-(((2 : ℂ)^j)⁻¹ • J) ((1/2 : ℂ) • v)‖≤2^p*(e+δ₀/2) := by
   have hc : ‖((2 : ℂ)^j)⁻¹‖≤1 := by
     rw [norm_inv, norm_pow, RCLike.norm_two]
     exact inv_le_one_of_one_le₀ (one_le_pow₀ (by norm_num))
@@ -38,8 +37,8 @@ theorem smallgap_inverse_spec (p j : ℕ) (J L : (ZMod s → ℂ) →L[ℂ] (ZMo
           mul_le_mul hc ((le_opNorm _ _).trans (mul_le_mul hdiff hhalf (norm_nonneg _) hδ0))
             (norm_nonneg _) zero_le_one
       _=δ₀/2 := by ring
-  have herr : ‖Jt v-(((2 : ℂ)^j)⁻¹ • J) ((1/2 : ℂ) • v)‖≤e+δ₀/2 :=
-    (norm_sub_le_norm_sub_add_norm_sub _ _ _).trans (add_le_add (hJt v hv) hLJ)
+  have herr : ‖y-(((2 : ℂ)^j)⁻¹ • J) ((1/2 : ℂ) • v)‖≤e+δ₀/2 :=
+    (norm_sub_le_norm_sub_add_norm_sub _ _ _).trans (add_le_add (hJt) hLJ)
   have hJv : ‖(((2 : ℂ)^j)⁻¹ • J) ((1/2 : ℂ) • v)‖≤1/2 := by
     rw [smul_apply, norm_smul, hcR]
     have hpos : (0 : ℝ)<2^j := by positivity
@@ -50,8 +49,16 @@ theorem smallgap_inverse_spec (p j : ℕ) (J L : (ZMod s → ℂ) →L[ℂ] (ZMo
           rw [inv_mul_le_iff₀ hpos]
           nlinarith
   refine ⟨?_, by gcongr⟩
-  have h1 := norm_sub_norm_le (Jt v) ((((2 : ℂ)^j)⁻¹ • J) ((1/2 : ℂ) • v))
+  have h1 := norm_sub_norm_le (y) ((((2 : ℂ)^j)⁻¹ • J) ((1/2 : ℂ) • v))
   linarith
+
+theorem smallgap_inverse_spec (p j : ℕ) (J L : (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ))
+    (hJn : ‖J‖≤4*(p : ℝ)) (hj : 4*(p : ℝ)≤2^j) {δ₀ e : ℝ} (hdiff : ‖L-J‖≤δ₀)
+    (hsmall : e+δ₀/2≤1/2) (Jt : (ZMod s → ℂ) → ZMod s → ℂ)
+    (hJt : ∀ v : ZMod s → ℂ, ‖v‖≤1 → ‖Jt v-((2 : ℂ)^j)⁻¹ • L ((1/2 : ℂ) • v)‖≤e)
+    (v : ZMod s → ℂ) (hv : ‖v‖≤1) :
+    ‖Jt v‖≤1 ∧ 2^p*‖Jt v-(((2 : ℂ)^j)⁻¹ • J) ((1/2 : ℂ) • v)‖≤2^p*(e+δ₀/2) := by
+  exact smallgap_inverse_value_spec p j J L hJn hj hdiff hsmall v (Jt v) hv (hJt v hv)
 
 /-- The pipeline interface for `B̃₀` built on a small-gap computed inverse. -/
 theorem smallgap_resampB₀_spec (p j : ℕ) (J L : (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ))

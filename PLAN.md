@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2493 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2504 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. The cached caller executes geometry-width origin classification and advance controls for both empty and nonempty classes, converting origins to the numerical packet format. Their tighter price now reaches the retained interior ledger; selected-size bounds pay repeated cell controls and phase-table work in `O(t*p)`. The production boundary RHS now uses generated masks, one linear record scan and canonical folding; its complete header/setup/transfer/release bill is uniformly `O(t*p)`. `selectedFamilyLine_fast_le` bounds the actual generated family line by `C*(t+(t-s)*band²)*p^(129/128)` without a gather remainder. All admissible selected setup keys together cost at most one whole-box volume per axis; `selectedFamilyKeyBatches_fast_le` composes actual batch costs over any distinct-key subfamily with explicit replica counts. The complete 263-register generated lifecycle now has a compiled stock bound `initialStock + D*replicas*s*w + 1 + T`, including all setup and release. The raw 303-register caller now exports a transported stock certificate, including scalar-header installation and release. The derived raw-header allowance is now priced and the compiled caller is bounded in its actual native/left frame and borrowed-tail/output-prefix lengths. The actual ordered descriptor dispatcher now executes the advertised batches, restoring its tape, counter and private workspace. For a record list with distinct complete keys, `selectedFamilyDispatch_spec` combines fast time, uniform errors and an execution-wide stock certificate for the same output witness. `selectedFamilyDispatch_compiled_spec` now bounds every compiled configuration by initial stock plus a fixed multiple of encoded batch size, one entry unit and box volume, for that same numerical execution. The executed solver now supplies the full real `SolveSpec` through a general quantization lift, with a dyadic error budget and a normalized `B₀` numerical theorem whose smallness gate is proved. The normalized dispatcher now executes scaling/final rounding through the full restored descriptor loop, with selected fast time and compiled stock for the same normalized output witness. The p-grid batch wrapper now executes exact half-RHS input conversion, the normalized complex solve and exact source restoration, carrying the same output witness through numerical, time and execution-wide stock guarantees. Its complete time and stock allowances are at most 41 times the raw caller allowances. The p-grid wrapper now reaches the full restored production dispatcher, with the selected fast-time rate and a stock bound on every compiled configuration for the same output witness. S3 remains open for connecting the full normalized operator endpoint to this production execution. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | ✅ | `PhaseCellS3.selectedGridFamilyDispatch_operator_spec` combines actual restored production execution, normalized exact-inverse error at most `3/2^p`, unit-ball preservation, selected `p^(129/128)` fast time and a bound on every compiled configuration for the same returned outputs. The 303-register caller generates and releases interior, coupling and computed-Schur data, shares setup across replicas and both real components, converts p-grid inputs exactly, and executes scaling/final rounding. Arbitrary cut/halo batches retain their principal-system error contract. Complete-key setup, scalar/header work, transfers and erasure are paid. `executed_dispatch_resampB₀_spec` supplies the normalized `B₀` `ApproxMap` with uniform scaled error 10 and unit-ball preservation from actual dispatcher outputs, including input quantization and proved smallness. The full real `SolveSpec` is also proved. S4 owns halo locality, exposure/publication and tensor composition. Kappa is unchanged. | Implemented |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -16482,3 +16482,55 @@ standalone checks (maximum 3,329 MiB). The expanded axiom audit passes with all
 sixteen new public facts covered (15,419 jobs; 12.9 GiB combined peak while
 rebuilding the existing raw and normalized dispatcher dependents). Proof-integrity,
 generated PLAN and whitespace checks pass.
+
+
+### S3 complete: the production dispatcher supplies the normalized operator endpoint
+
+The final entry point is `Mult/PhaseCellS3.lean`. Its
+`selectedGridFamilyDispatch_operator_spec` returns one actual execution/output
+witness carrying restoration, the principal-system numerical contract, the
+normalized exact-inverse contract, selected fast time and compiled stock.
+For full-line descriptors with `target ≥ p+8`, the decoded inverse result keeps
+the unit ball and has scaled error at most 3 against `J(v/2)/2^j`.
+General clipped/empty halo batches retain `gridFamilyDispatch_exec_trace` and
+its uniform principal-system coordinate error; no halo/global locality identity
+is assumed.
+
+`executed_dispatch_resampB₀_spec` defines the numerical inverse by selecting a
+returned output of that same production dispatcher on an ordinary singleton
+record. `singletonGridRecord_ready` constructs its scalar/input bank, and
+`singletonGridDispatch_exec` proves execution with exact tape/clock/workspace
+restoration. Execution uniqueness ties the chosen output bytes to the numerical
+witness. Complex p-grid quantization is norm-preserving, has an exact grid
+retraction law and is charged in the error. The resulting normalized `B₀` map
+has `ApproxMap` error 10 and preserves the unit ball. The target `p+8` proves the
+smallness gate; no reference solve or supplied arithmetic execution is used.
+The earlier full real `SolveSpec` endpoint and its dyadic error budget remain
+available unchanged.
+
+Completion audit against the pinned interface:
+
+| Required S3 evidence | Checked endpoint |
+| --- | --- |
+| Generated interior/coupling/Schur setup and repeated solves; ordinary scalar inputs and derived widths | `familyInverseCaller_spec`, `gridFamilyInverseBatch_spec` |
+| Arbitrary cuts, ambient coordinates, recovery magnitudes and coordinate error | `generatedClosedFamilyComplexBatch_spec`, `gridFamilyDispatch_exec_trace` |
+| Actual interior/boundary work and paid setup multiplicity | `familyInverseCaller_geometry_spec`, `selectedFamilyLine_fast_le`, `selectedFamilyKeyBatches_fast_le` |
+| Full real solver, input rounding and proved numerical precision | `executedRealInverse_dyadic_spec`, `gridInverse_normalized_smallness` |
+| Exact input conversion, complex assembly, scaling, final rounding and source restoration | `gridFamilyInverseBatch_spec` |
+| Normalized exact-inverse error and unit ball for the same production outputs | `selectedGridFamilyDispatch_operator_spec` |
+| Complete normalized operator approximation and unit ball from actual dispatcher execution | `executed_dispatch_resampB₀_spec` |
+| Restored descriptor tape, counters, native/left frame, spectators and arbitrary result suffix | `gridFamilyDispatch_exec_trace` |
+| Selected fast time and simultaneous stock throughout compiled execution | `selectedGridFamilyDispatch_operator_spec` |
+
+Validation: all twelve new/changed implementation modules pass guarded
+standalone checks (maximum 3,328 MiB); the expanded S3 audit also passes
+standalone (3,376 MiB). The expanded S3 audit covers all twenty-four new public
+facts. It and both S2 forward/supplier regression audits pass a guarded build
+(15,587 jobs; 8.3 GiB combined peak). Proof-integrity, default proof limits,
+three-approved-axiom, generated PLAN and whitespace checks pass.
+
+S3 is implemented at the pinned supplier boundary. S4/R4 still own exposure,
+publication, halo/global locality and tensor composition; the remaining S5 and
+S6 work packages are unchanged. This completes S3, not the sharper end-to-end
+multiplication theorem, and does not change kappa. Earlier S3 checkpoints above
+record the historical progression and their then-open obligations.
