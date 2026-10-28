@@ -82,7 +82,7 @@ theorem generatedSingleFamilyComplex_spec (recovery : Bool) (hR : rpStates ≤ Q
       change (couplingCachePort recovery i).val = 246 at hv
       omega
     simp [S₁,hne]
-  obtain ⟨v₂,n,Zs,hu₂,hn₂,he₂,hgood⟩ := generatedClosedFamilyComplexBatch_spec (body := body)
+  obtain ⟨v₂,n,Zs,hu₂,hn₂,he₂,hgood,_htrace⟩ := generatedClosedFamilyComplexBatch_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
     [F] (by intro G hG i; rcases List.mem_singleton.mp hG with rfl; exact hF i) v S₁ tail
     (by change LengthKeyReady _ _ _ _ _ _ _ _ _ _ _ (embStk familyCouplingSourceReg S₁)

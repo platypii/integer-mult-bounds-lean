@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactorFamilyLifecycleStock
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyFactorBatchSetup
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedCouplingFamilyComplexBatch
 
@@ -14,6 +16,8 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
+
+open IntegerMultBounds.MathlibTM2.Fast.Main
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 263 Q A U}
 
@@ -83,7 +87,12 @@ theorem generatedFactorFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates 
       (embStk familyBoundaryReg page).R 115 = List.replicate V tick ∧ (embStk familyBoundaryReg page).R 116 = List.replicate B.card tick ∧
       ((embStk familyBoundaryReg page).R 160).length = w ∧ ((embStk familyBoundaryReg page).R 190).length = W ∧ ((embStk familyBoundaryReg page).R 121).length = s ∧
       (embStk familyBoundaryReg page).R 239 = gatherControls A (originAdvances w 0 (boundaryScatterOrigins s B)++[0]) ∧
-      (embStk familyBoundaryReg page).R 206 = [] ∧ (embStk familyBoundaryReg page).R 217 = [] ∧ (embStk familyBoundaryReg page).R 184 = [] ∧ (embStk familyBoundaryReg page).R 223 = [] := by
+      (embStk familyBoundaryReg page).R 206 = [] ∧ (embStk familyBoundaryReg page).R 217 = [] ∧ (embStk familyBoundaryReg page).R 184 = [] ∧ (embStk familyBoundaryReg page).R 223 = [] ∧
+      ∀ C, mnProgPush (generatedFactorFamilyComplexBatch (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          (C+1)*generatedFactorFamilyComplexBatchStockCost A p u l s t a b target Fs.length)
+          depth (generatedFactorFamilyComplexBatch recovery hR hQ) (mk v S) n (mk v' S') := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let band := PhaseCellBand.width p u
@@ -156,7 +165,7 @@ theorem generatedFactorFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates 
   change page.R 115 = List.replicate V tick at hV
   change page.R 109 = _ at hcoords
   change page.R 239 = _ at hadv
-  obtain ⟨v₂,n₂,Zs,hu₂,hn₂,he₂,hfinal⟩ := generatedCouplingFamilyComplexBatch_spec (body := body)
+  obtain ⟨v₂,n₂,Zs,hu₂,hn₂,he₂,hfinal,htrace⟩ := generatedCouplingFamilyComplexBatch_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad columns hlen hformat hstage herror
     Fs hF v₁ page tail [] V hready₁
     ((hoff _ (Nat.le_trans (by decide : 240 ≤ 248) (couplingCachePort_ge recovery 0))).trans hguard)
@@ -187,6 +196,8 @@ theorem generatedFactorFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates 
     · exact hoffL i (by omega)
   refine ⟨v₂,page,n₁+n₂,columns,Zs,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hfinal,hoff,
     hlen,h132,hinp,hout,hLfull,hframe,hprivate,hstorage,hheaders,hperm,hsolve,hcoords,hV,hN,hsolve.ready.wn,hsolve.m2n,h121,hadv,
-    h206,hsolve.empty .dout (by simp [boundarySolveScratch]),h184,h223⟩
+    h206,hsolve.empty .dout (by simp [boundarySolveScratch]),h184,h223,?_⟩
+  intro C hp hb depth
+  exact mn_seq_exec_within (mn_bounded_exec_certify he₁ hn₁) htrace C hp hb depth
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

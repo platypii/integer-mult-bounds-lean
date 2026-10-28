@@ -15,6 +15,8 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
+open IntegerMultBounds.MathlibTM2.Fast.Main
+
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 263 Q A U}
 
 noncomputable def generatedClosedFamilyComplexBatch (recovery : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 263 Q A U :=
@@ -81,7 +83,14 @@ theorem generatedClosedFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates 
           (cstream A w (Zs.map (chirpLine s)).flatten++S.R 132))}) ∧
       List.Forall₂ (fun F Z => PhaseCellInterface.ErrorOn (haloVertices s a b)
         (pairedCellRead q w (cstream A w (chirpLine s Z)++S.R 132))
-          (fun i => (⟨x F i,y F i⟩ : ℂ)) (1/(2 : ℝ)^target)) Fs Zs := by
+          (fun i => (⟨x F i,y F i⟩ : ℂ)) (1/(2 : ℝ)^target)) Fs Zs ∧
+      ∀ C, mnProgPush (generatedClosedFamilyComplexBatch (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          (C+1)*generatedClosedFamilyComplexBatchStockCost A p u l s t a b target Fs.length)
+          depth (generatedClosedFamilyComplexBatch recovery hR hQ) (mk v S) n
+          (mk v' {S with R := (Function.update S.R 132
+            (cstream A w (Zs.map (chirpLine s)).flatten++S.R 132))}) := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let band := PhaseCellBand.width p u
@@ -94,7 +103,7 @@ theorem generatedClosedFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates 
   have hwpos : 1 ≤ w := by dsimp [w,executionWidth]; omega
   intro Fs hF v S tail hready hguard hwords hrowsKey hfamilyFresh hleft ha hb hclean hnew hcount hfresh h137 x y hx hy
   obtain ⟨v₁,page,n₁,columns,Zs,hu₁,hn₁,he₁,herror,hoff,hlen,h132,hinp,hout,hL,hframe,hprivate,hstorage,hheaders,hperm,
-    hsolve,hcoords,hV,hN,hw,hW,hs,hadv,h206,h217,h184,h223⟩ := generatedFactorFamilyComplexBatch_spec (body := body)
+    hsolve,hcoords,hV,hN,hw,hW,hs,hadv,h206,h217,h184,h223,htrace⟩ := generatedFactorFamilyComplexBatch_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad Fs hF v S tail
     hready hguard hwords hrowsKey hfamilyFresh hleft ha hb hclean hnew hcount hfresh x y hx hy
   let result := cstream A w (Zs.map (chirpLine s)).flatten
@@ -216,7 +225,7 @@ theorem generatedClosedFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates 
     · exact hoff i (by omega)
   have hfinal := familyFactorBatchReleaseResult_restore S S₁ (Fs.length*s) result h240
     hinp hout hL hunchanged hOwned
-  refine ⟨v₂,n₁+n₂,Zs,hu₂.trans hu₁,?_,(Exec.seq he₁ he₂).cast rfl (congrArg (mk v₂) hfinal),?_⟩
+  refine ⟨v₂,n₁+n₂,Zs,hu₂.trans hu₁,?_,(Exec.seq he₁ he₂).cast rfl (congrArg (mk v₂) hfinal),?_,?_⟩
   · exact Nat.add_le_add hn₁ hrelease
   · apply List.Forall₂.imp _ herror
     intro F Z hZ i hi
@@ -226,5 +235,9 @@ theorem generatedClosedFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates 
     simpa only [pairedCellRead,
       cstream_word w (chirpLine s Z) (S.R 132) i.val (by simpa [chirpLine] using i.val_lt),
       cstream_word w (chirpLine s Z) (page.R 132) i.val (by simpa [chirpLine] using i.val_lt)] using hh
+  · intro C hp hb depth
+    have ht := mn_seq_exec_within htrace (mn_bounded_exec_certify he₂ hrelease) C hp hb depth
+    rw [hfinal] at ht
+    exact ht
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -1,5 +1,8 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.StackLifecycleResources
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyLifecycleStock
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyComplexBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedFamilySetup
 public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
@@ -17,6 +20,8 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
+
+open IntegerMultBounds.MathlibTM2.Fast.Main
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 263 Q A U}
 
@@ -88,7 +93,14 @@ theorem generatedFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates ≤ Q)
           (cstream A w (Zs.map (chirpLine s)).flatten++S.R 132))}) ∧
       List.Forall₂ (fun F Z => PhaseCellInterface.ErrorOn (haloVertices s a b)
         (pairedCellRead q w (cstream A w (chirpLine s Z)++S.R 132))
-          (fun i => (⟨x F i,y F i⟩ : ℂ)) (1/(2 : ℝ)^target)) Fs Zs := by
+          (fun i => (⟨x F i,y F i⟩ : ℂ)) (1/(2 : ℝ)^target)) Fs Zs ∧
+      ∀ C, mnProgPush (generatedFamilyComplexBatch (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          (C+1)*generatedFamilyComplexBatchStockCost A p u l s t a b target V Fs.length)
+          depth (generatedFamilyComplexBatch recovery hR hQ) (mk v S) n
+          (mk v' {S with R := (Function.update S.R 132
+            (cstream A w (Zs.map (chirpLine s)).flatten++S.R 132))}) := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let band := PhaseCellBand.width p u
@@ -133,7 +145,7 @@ theorem generatedFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates ≤ Q)
     intro i hi
     rw [hframe i (by intro h; subst i; norm_num at hi)]
     exact hclean i hi
-  obtain ⟨v₂,n₂,Zs,hu₂,hn₂,he₂,herror,_htrace⟩ := familyComplexBatch_spec (body := body)
+  obtain ⟨v₂,n₂,Zs,hu₂,hn₂,he₂,herror,htrace⟩ := familyComplexBatch_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
     columns hlen hformat hstage htable Fs hF v₁ S₁ tail coordinateTail pageTail [] V
     (by rw [hnative]; exact hready) (by rw [hlegacy]; exact hcache)
@@ -166,10 +178,16 @@ theorem generatedFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates ≤ Q)
     funext i
     by_cases hi132 : i = 132 <;> by_cases hi260 : i = 260 <;>
       simp [S₂,S₁,hi132,hi260,h260]
+  have he₃' := he₃
+  rw [hclock] at he₃'
   refine ⟨v₃,n₁+(n₂+(2*family.length+2)),Zs,hu₃.trans (hu₂.trans hu₁),?_,
-    (Exec.seq he₁' (Exec.seq he₂ he₃)).cast ?_ (congrArg (mk v₃) hfinal),?_⟩
+    (Exec.seq he₁' (Exec.seq he₂ he₃)).cast ?_ (congrArg (mk v₃) hfinal),?_,?_⟩
   · exact (Nat.add_le_add hn₁ (Nat.add_le_add_right hn₂ _)).trans_eq (Nat.add_assoc _ _ _).symm
   · rw [hclock]
   · simpa only [hlow 132 (by decide)] using herror
+  · intro C hp hb depth
+    have ht := mn_lifecycle_exec_within he₁' hn₁ htrace he₃' le_rfl C hp hb depth
+    rw [hfinal] at ht
+    exact ht
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

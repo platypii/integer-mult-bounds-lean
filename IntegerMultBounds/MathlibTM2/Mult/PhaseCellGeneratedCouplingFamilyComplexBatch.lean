@@ -18,6 +18,8 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
+open IntegerMultBounds.MathlibTM2.Fast.Main
+
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 263 Q A U}
 
 noncomputable def generatedCouplingFamilyComplexBatch (recovery : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 263 Q A U :=
@@ -88,7 +90,14 @@ theorem generatedCouplingFamilyComplexBatch_spec (recovery : Bool) (hR : rpState
           (cstream A w (Zs.map (chirpLine s)).flatten++S.R 132))}) ∧
       List.Forall₂ (fun F Z => PhaseCellInterface.ErrorOn (haloVertices s a b)
         (pairedCellRead q w (cstream A w (chirpLine s Z)++S.R 132))
-          (fun i => (⟨x F i,y F i⟩ : ℂ)) (1/(2 : ℝ)^target)) Fs Zs := by
+          (fun i => (⟨x F i,y F i⟩ : ℂ)) (1/(2 : ℝ)^target)) Fs Zs ∧
+      ∀ C, mnProgPush (generatedCouplingFamilyComplexBatch (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          (C+1)*generatedCouplingFamilyComplexBatchStockCost A p u l s t a b target V Fs.length)
+          depth (generatedCouplingFamilyComplexBatch recovery hR hQ) (mk v S) n
+          (mk v' {S with R := (Function.update S.R 132
+            (cstream A w (Zs.map (chirpLine s)).flatten++S.R 132))}) := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let band := PhaseCellBand.width p u
@@ -147,7 +156,7 @@ theorem generatedCouplingFamilyComplexBatch_spec (recovery : Bool) (hR : rpState
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
     rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
       rw [hlow _ (by decide)] <;> exact hclean _ (by simp)
-  obtain ⟨v₂,n₂,Zs,hu₂,hn₂,he₂,hgood⟩ := generatedFamilyComplexBatch_spec (body := body)
+  obtain ⟨v₂,n₂,Zs,hu₂,hn₂,he₂,hgood,htrace⟩ := generatedFamilyComplexBatch_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
     columns hlen hformat hstage htable Fs hF v₁ C tail coordinateTail (S.R (familyCouplingCachePort recovery 1)) V
     (by rw [hproj]; exact hready) hcacheC hfamilyC
@@ -189,11 +198,18 @@ theorem generatedCouplingFamilyComplexBatch_spec (recovery : Bool) (hR : rpState
     (S.R (familyCouplingCachePort recovery 1)) v₂ U hreadyU
     (by simpa [U,hlow 141 (by decide)] using ha) (by simpa [U,hlow 142 (by decide)] using hb)
     (by simpa only [hwq] using hcacheU)
-  refine ⟨v₃,n₁+(n₂+n₃),Zs,hu₃.trans (hu₂.trans hu₁),?_,(Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl ?_,?_⟩
-  · exact (Nat.add_le_add hn₁ (Nat.add_le_add hn₂ hn₃)).trans_eq (Nat.add_assoc _ _ _).symm
-  · apply congrArg (mk v₃)
-    exact familyCouplingCache_restore_output recovery S _ _ _ _
+  have hrestore : {U with R := (familyCouplingCacheDataR recovery []
+      (S.R (familyCouplingCachePort recovery 1)) [] [] U.R)} =
+      {S with R := Function.update S.R 132 (cstream A w (Zs.map (chirpLine s)).flatten++S.R 132)} :=
+    familyCouplingCache_restore_output recovery S _ _ _ _
       (cstream A w (Zs.map (chirpLine s)).flatten) hguard hwords hrowsKey
+  refine ⟨v₃,n₁+(n₂+n₃),Zs,hu₃.trans (hu₂.trans hu₁),?_,
+    (Exec.seq he₁ (Exec.seq he₂ he₃)).cast rfl (congrArg (mk v₃) hrestore),?_,?_⟩
+  · exact (Nat.add_le_add hn₁ (Nat.add_le_add hn₂ hn₃)).trans_eq (Nat.add_assoc _ _ _).symm
   · simpa only [hlow 132 (by decide)] using hgood
+  · intro c hp hb depth
+    have ht := mn_lifecycle_exec_within he₁ hn₁ htrace he₃ hn₃ c hp hb depth
+    rw [hrestore] at ht
+    exact ht
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
