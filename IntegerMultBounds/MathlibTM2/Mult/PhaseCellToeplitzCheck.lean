@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellEmitHaloRunMask
+
 import IntegerMultBounds.MathlibTM2.Host.EmitRun
 import IntegerMultBounds.NLogN.PhaseCellHaloRunMask
 
@@ -3203,7 +3205,16 @@ run_cmd do
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloRunIntervals_ordered,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloRunIntervals_contains,
       `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloRunMask_eq,
-      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloRunIntervals_length_le ] do
+      `IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloRunIntervals_length_le,
+      `IntegerMultBounds.MathlibTM2.Host.symbolCost_eq_sum_list,
+      `IntegerMultBounds.MathlibTM2.Host.eachSym_cost_loop,
+      `IntegerMultBounds.MathlibTM2.Host.eachSym_cost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitRunPacket_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitFlagRunPacket_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitRunPackets_pushBound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitRunPackets_certify,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitRunPackets_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.emitHaloRunMask_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

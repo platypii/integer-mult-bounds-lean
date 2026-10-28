@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2265 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2269 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14673,3 +14673,39 @@ all eight new/revised Lean modules pass individual guarded checks, with the
 largest at 3,057 MiB. All 2,726 previous audit names remain, with 27 additional
 facts checked against the standard axiom allowlist. Proof-integrity,
 plan-status and whitespace checks pass.
+
+### S3 checkpoint: fixed runtime consumer for halo mask runs
+
+`emitRunPacket` consumes a width-counted binary packet from the actual stream,
+emits its constant-symbol run into a reversed buffer, and restores owned
+scratch in at most `8*n+19*W+16` steps. `emitFlagRunPacket` selects the run symbol
+from the physical flag saved by the counted loop. `emitRunPackets` is one fixed
+program for arbitrary runtime run lists: it consumes the count packets, emits
+runs in order, restores the flag stream, and changes only the output stream.
+Its bound is `10*sum(lengths)+(19*W+22)*numberOfRuns+6`.
+
+`Host.StreamCost` generalizes the existing counted-loop argument to sum varying
+iteration budgets. This avoids multiplying the largest run length by the
+number of intervals. `emitRunPackets_certify` applies the shared structural
+push certificate to the very same execution, bounding every intermediate
+store and outstanding call depth by initial volume plus twice execution time.
+
+`emitHaloRunMask_exec` instantiates the fixed consumer with the ordered halo
+runs and proves its output exactly equals the original `haloInteriorAt` mask.
+The bound is `10*s+(19*W+22)*(2*(t-s+1)+1)+6`; each run count fits whenever
+`s < 2^W`, derived from the run-length sum, without an additional readiness
+assumption for individual packets.
+
+The packet stream and physical flags remain explicit preconditions of this
+consumer theorem. They are not free inputs to the final caller: the next work
+must generate them from the ordinary scalar headers using the existing
+per-phase interval arithmetic, compose producer and consumer, and replace the
+current per-coordinate coupling/publication/recovery backends. The existing
+halo descriptor scan already computes origin/length pairs once per phase and
+should be reused. Selected setup accounting, amortization and whole-caller
+compiled-machine storage remain open. S3 stays partial; kappa is unchanged.
+
+Validation: the 15,160-job affected-caller/standard-axiom audit build passes.
+The four new modules and audit pass individual guarded checks (largest
+3,056 MiB); all 2,753 previous audit names remain and nine new facts are
+covered. Proof-integrity, plan-status and whitespace checks pass.
