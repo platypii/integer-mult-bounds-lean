@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2320 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2325 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15132,3 +15132,33 @@ Validation: all 15,231 affected audit-build jobs pass (3.4 GiB combined peak).
 All eight new modules and the audit pass individual guarded checks below 4 GiB.
 All 2,878 prior audit names remain and 39 new facts, including the placement
 lemmas, are covered. Proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: closed linear RHS in the family workspace
+
+`installCouplingHeaders_from_lengths_exec` gives the existing header installer
+its needed frame contract: source lengths and its two scratch ports suffice;
+retained coordinate pages and boundary counters may remain occupied.
+`closedGeneratedBoundaryRhs_exec` installs those scalar headers, executes the
+complete generated mask/scan/fold pipeline, and releases all headers. Only the
+owned canonical RHS output changes.
+
+`familyGeneratedBoundaryRhs_exec` embeds this closed component in the 263-port
+family workspace and transfers its output onto factor RHS port 206. The exact
+poststate preserves every other caller stack and the arbitrary existing factor
+suffix. Both transfer ports are released. The transfer costs at most
+`4*s*(2*q+8)+4`, without repeatedly reading indexed source words.
+`familyGeneratedBoundaryRhs_selected_fast_le` includes installation, generation,
+folding, transfer and release in a uniform `O(t*p)` bound when scalar precision
+and header lengths satisfy the selected bounds.
+
+The production `familyBoundaryRhs` entry point still selects the earlier gather.
+Next: derive the new component's frame premises from `LengthKeyReady` and the
+family's retained layout, replace that entry point, and propagate its new cost
+through the actual family caller and remaining-control theorem. Shared setup
+amortization and whole-caller compiled-machine storage also remain open.
+S3 stays partial; kappa is unchanged.
+
+Validation: all 15,236 affected audit-build jobs pass (3.5 GiB combined peak).
+All five new modules and the audit pass individual guarded checks below 4 GiB.
+All 2,917 prior audit names remain and nine new facts are covered. New-file
+proof-integrity and whitespace checks pass.

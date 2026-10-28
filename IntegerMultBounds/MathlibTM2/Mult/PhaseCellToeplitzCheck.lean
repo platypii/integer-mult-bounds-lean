@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyGeneratedBoundaryRhs
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBoundaryRhs
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRhsMaskSelection
@@ -3395,7 +3397,16 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMaskReg_low,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryRhsMask_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedBoundaryRhs_exec,
-      `IntegerMultBounds.MathlibTM2.Cost.generatedBoundaryRhs_selected_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.generatedBoundaryRhs_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Host.embOvr_overwrite,
+      `IntegerMultBounds.MathlibTM2.Host.embStk_update_right,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installCouplingHeaders_from_lengths_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingHeadersR_update_output,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.boundaryRhsHeaderReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedGeneratedBoundaryRhs_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyGeneratedRhsReg_injective,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyGeneratedBoundaryRhs_exec,
+      `IntegerMultBounds.MathlibTM2.Cost.familyGeneratedBoundaryRhs_selected_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
