@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareOriginWidening
+public import IntegerMultBounds.MathlibTM2.Host.RunContract
 
 /-! Generate the numerical-width counter, widen geometry packets and erase the counter. -/
 
@@ -36,34 +37,42 @@ theorem widenGeometryOrigins_exec (P q w t u band : ℕ) (hband : band ≤ P)
           (xs.flatMap (binSyms (weightWorkspaceWidth P q w t u))++tail))}) := by
   let V := haloGeometryWidth t band w
   let W := weightWorkspaceWidth P q w t u
-  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := prepareOriginWidening_exec (body := body) P q w t u V
-    v S hP hq hw ht hu hV (by
-      intro k hk; apply hfresh k
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk; rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp)
   let S₁ : Stacks 117 A := {S with R := Function.update S.R 19 (List.replicate W tick)}
-  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := widenOriginPackets_exec (body := body) V W
-    (haloGeometryWidth_le_weightWorkspaceWidth hband) xs hfit v₁ S₁ tail
-    (by simpa [S₁] using hV) (by simp [S₁])
-    (by simpa [S₁] using hcount) (by simpa [S₁] using hsrc) (by
-      intro k hk
-      have hk19 : k ≠ (19 : Fin 117) := by
-        simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-        rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
-      simpa [S₁,hk19] using hfresh k (by
-        simp only [List.mem_cons,List.not_mem_nil,or_false] at hk; rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp))
   let S₂ : Stacks 117 A := {S₁ with R := Function.update S₁.R 109 (xs.flatMap (binSyms W)++tail)}
-  obtain ⟨v₃,hu₃,he₃⟩ := uclear_exec (body := body) 19 v₂ S₂
-  refine ⟨v₃,n₁+(n₂+(2*W+2)),hu₃.trans (hu₂.trans hu₁),?_,
-    (Exec.seq he₁ (Exec.seq he₂ he₃)).cast ?_ ?_⟩
-  · dsimp only [widenGeometryOriginsCost]
-    dsimp only [V,W] at *
-    omega
-  · simp [S₂,S₁]
-  · apply congrArg (mk v₃)
+  let S₃ : Stacks 117 A := {S with R := Function.update S.R 109 (xs.flatMap (binSyms W)++tail)}
+  have prepare : Runs body prepareOriginWidening S S₁
+      (weightWidthCost P q w t u+4*V+2*W+6) := by
+    intro v₀
+    exact prepareOriginWidening_exec (body := body) P q w t u V v₀ S hP hq hw ht hu hV (by
+      intro k hk; apply hfresh k
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp)
+  have widen : Runs body widenOriginPackets S₁ S₂ (xs.length*(10*W+10*V+23)+6) := by
+    intro v₀
+    exact widenOriginPackets_exec (body := body) V W
+      (haloGeometryWidth_le_weightWorkspaceWidth hband) xs hfit v₀ S₁ tail
+      (by simpa [S₁] using hV) (by simp [S₁])
+      (by simpa [S₁] using hcount) (by simpa [S₁] using hsrc) (by
+        intro k hk
+        have hk19 : k ≠ (19 : Fin 117) := by
+          simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+          rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+        simpa [S₁,hk19] using hfresh k (by
+          simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+          rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp))
+  have erase : Runs body (uclear 19) S₂ S₃ (2*W+2) := by
+    apply Runs.of_exact
+    intro v₀
+    obtain ⟨v₁,hu₁,he₁⟩ := uclear_exec (body := body) 19 v₀ S₂
+    refine ⟨v₁,hu₁,he₁.cast (by simp [S₂,S₁]) ?_⟩
+    apply congrArg (mk v₁)
     refine Stacks.ext rfl rfl rfl ?_
     funext k
     by_cases hk19 : k = 19
-    · subst k; simp [S₂,S₁,hfresh 19 (by simp)]
-    simp [S₂,S₁,hk19,W,Function.update_apply]
+    · subst k; simp [S₃,S₂,S₁,hfresh 19 (by simp)]
+    simp [S₃,S₂,S₁,hk19,Function.update_apply]
+  exact ((prepare.seq (widen.seq erase)).mono (by
+    dsimp only [widenGeometryOriginsCost,V,W]
+    omega)) v
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

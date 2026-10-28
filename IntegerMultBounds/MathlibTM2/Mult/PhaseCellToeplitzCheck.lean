@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryHaloGatherControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCompleteGeometryHaloGather
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareGeometryHaloClassControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloAdvanceWidth
@@ -3145,7 +3146,13 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.selectedHaloGeometryWidth_le_weightWorkspaceWidth,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareOriginWidening_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.widenGeometryOrigins_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completeGeometryHaloGather_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completeGeometryHaloGather_exec,
+      `IntegerMultBounds.MathlibTM2.Host.Runs.of_exact,
+      `IntegerMultBounds.MathlibTM2.Host.Runs.of_frame,
+      `IntegerMultBounds.MathlibTM2.Host.Runs.seq,
+      `IntegerMultBounds.MathlibTM2.Host.Runs.mono,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completed_preparedGeometryHaloClassR,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateGeometryHaloGatherControls_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

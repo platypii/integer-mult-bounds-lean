@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2258 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2260 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14520,3 +14520,38 @@ execution proofs and discharge their selected instances in one place. Retain
 verified numerical work; avoid a wholesale rewrite or an abstract contract that
 merely assumes the missing time/storage conclusions. Judge the refactor by a
 shorter complete caller proof and fewer outstanding S3 endpoint obligations.
+
+### S3 checkpoint: composable exact execution contracts and generated gather pipeline
+
+`Host.Runs` packages an exact stack transformation uniformly in the initial
+host state, with user-state preservation and a time bound. Its `seq` rule
+composes effects and adds costs; `of_exact` and `of_frame` adapt the existing
+primitive and framed execution theorems, and `mono` applies a final allowance.
+The contract imports only the host stream foundation, without numerical data.
+
+The existing widening and gather-finishing proofs now compose `Runs` contracts
+for their constituent stages. Their public execution signatures and actual
+programs are unchanged; intermediate step-count witnesses, user-state chains
+and whole-program `Exec.seq` bookkeeping are handled by the generic rule.
+Width fits and exact stack effects remain explicit mathematical obligations.
+This is a time/execution contract, not a live-storage certificate.
+
+`generateGeometryHaloGatherControls_exec` composes generated geometry-width
+origin/count preparation with the complete advance/widen/release stage for a
+nonempty class. `completed_preparedGeometryHaloClassR` proves that the resulting
+stack effect is the existing numerical origin/count/gather-control interface.
+No geometry header, arithmetic readiness or origin page is supplied externally.
+This closes the generated nonempty control pipeline; the complete inverse has
+not yet selected it.
+
+Next: close the empty/nonempty class selection and install the geometry path in
+the cached caller, then replace the remaining control allowance. Setup
+multiplicities/amortization and the execution-wide live-storage invariant remain
+required S3 endpoint obligations. The contract refactor does not discharge them
+by assumption. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,147 standard-axiom audit jobs pass (3.5 GiB combined peak
+RSS), preserving every earlier entry and adding six. Both new modules, both
+revised modules and the audit pass individual guarded checks below the 4 GiB
+module budget. Proof-integrity, audit-coverage, plan-status and whitespace
+checks pass.
