@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilyRhsFast
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedInteriorFast
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellNumericalSetupPolynomial
@@ -3321,7 +3323,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.selectedNumericalSetupSum_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyHaloControlCost_selected_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorControls_fast_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorPair_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorPair_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.couplingPublicationControls_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedCouplingPublicationControls_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexControlRemainingCost_rhs_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyControls_rhs_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyLine_rhs_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

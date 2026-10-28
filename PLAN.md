@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2304 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2307 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15025,3 +15025,37 @@ largest peak of 3,325 MiB. All 2,838 prior audit names are retained and eleven
 new theorems are covered. Proof-integrity, plan-status and whitespace checks
 pass. The selected setup composition checks structurally without expanding
 the six concrete numerical cost terms.
+
+### S3 checkpoint: family-line controls reduced to boundary RHS gathering
+
+`selectedCouplingPublicationControls_fast_le` prices the actual coupling
+readiness, publication, three mask backends, header copies and cleanup by
+`O(t*p)` eventually. Scalar counter construction is charged as a fixed
+polynomial and absorbed by the selected axis; it is not assumed free.
+
+`familyComplexControlRemainingCost_rhs_le` cancels the explicit boundary and
+coupling kernel ledgers and separates the remaining costs into the two real
+components' interior controls, coupling/publication controls, linear tape
+movement, and two boundary RHS gathers. `selectedFamilyControls_rhs_fast_le`
+instantiates all those bounds at the actual first/recovery precision and leaves
+only `2*boundaryRhsPrepareCost + C*t*p`.
+
+`selectedFamilyLine_rhs_fast_le` combines that result with all previously priced
+kernels: the generated complex family-line geometry ledger is eventually at
+most twice the actual boundary RHS gather cost plus
+`C*(t+(t-s)*band^2)*p^(129/128)`. Shared family construction remains outside this
+per-line ledger and still needs its own amortization.
+
+The remaining gather is a genuine algorithmic obstacle: `boundaryRhsWord` loads
+each folded coordinate and restores/rescans the ambient RHS for every boundary
+row, yielding an `N*s*w` allowance. Replace this with ordered boundary selection
+in one scan followed by the existing linear fold, preserving the numerical
+solver's folded order. Bounding the old gather by the desired allowance would
+not close S3. Whole-caller compiled-machine storage and shared setup
+multiplicities/amortization also remain open. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,217 affected audit-build jobs pass (3.5 GiB combined peak).
+The three new cost modules and audit pass individual guarded checks below
+4 GiB; the new modules peak below 3,025 MiB. All 2,849 prior audit names remain
+and five new facts are covered. Proof-integrity, plan-status and whitespace
+checks pass.
