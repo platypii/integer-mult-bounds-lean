@@ -38,16 +38,22 @@ theorem inverseCallerWordWidth_poly {p u l target s t Z : ℕ}
     nlinarith only [hp,hu,hband,hroom,hsquare,hZpow,hZ]
   exact (Nat.size_le.mpr Nat.lt_two_pow_self).trans hwork
 
+theorem inverseMasterValues_cuts_poly {p u l target s t a b Z : ℕ} [NeZero s]
+    (hZ : 1 ≤ Z) (hp : p ≤ Z) (hu : u ≤ Z) (hl : l ≤ Z) (htarget : target ≤ Z)
+    (hs : s ≤ Z) (ht : t ≤ Z) (ha : a ≤ s) (hb : b ≤ s) (hband : PhaseCellBand.width p u ≤ Z) :
+    ∀ i, inverseMasterValues p u l target s t a b i ≤ 32768*Z := by
+  have hN : (haloBoundary s t (PhaseCellBand.width p u) a b).card ≤ Z :=
+    (show (haloBoundary s t (PhaseCellBand.width p u) a b).card ≤ s by
+      simpa using (haloBoundary s t (PhaseCellBand.width p u) a b).card_le_univ).trans hs
+  have hE := inverseExecutionExponent_poly hZ hp hl htarget hN hband
+  intro i
+  fin_cases i <;> simp [inverseMasterValues] <;> omega
+
 theorem inverseMasterValues_poly {p u l target s t Z : ℕ} [NeZero s]
     (hZ : 1 ≤ Z) (hp : p ≤ Z) (hu : u ≤ Z) (hl : l ≤ Z) (htarget : target ≤ Z)
     (hs : s ≤ Z) (ht : t ≤ Z) (hband : PhaseCellBand.width p u ≤ Z) :
     ∀ i, inverseMasterValues p u l target s t 0 s i ≤ 32768*Z := by
-  have hN : (haloBoundary s t (PhaseCellBand.width p u) 0 s).card ≤ Z :=
-    (show (haloBoundary s t (PhaseCellBand.width p u) 0 s).card ≤ s by
-      simpa using (haloBoundary s t (PhaseCellBand.width p u) 0 s).card_le_univ).trans hs
-  have hE := inverseExecutionExponent_poly hZ hp hl htarget hN hband
-  intro i
-  fin_cases i <;> simp [inverseMasterValues] <;> omega
+  exact inverseMasterValues_cuts_poly hZ hp hu hl htarget hs ht (Nat.zero_le s) le_rfl hband
 
 theorem inverseHeaderCosts_poly {atoms W H : ℕ} (values : Fin 10 → ℕ)
     (hH : 1 ≤ H) (ha : atoms ≤ H) (hW : W ≤ H) (hv : ∀ i, values i ≤ H) :
@@ -72,6 +78,34 @@ theorem inverseHeaderCosts_poly {atoms W H : ℕ} (values : Fin 10 → ℕ)
   unfold inverseMasterCopyCost inverseReleaseCost
   nlinarith only [hcopy,hvalues,hprod,hpow,hH]
 
+theorem inverseCallerHeaders_cuts_poly {p u l target s t a b Z : ℕ} [NeZero s]
+    (hZ : 1 ≤ Z) (hp : p ≤ Z) (hu : u ≤ Z) (hl : l ≤ Z) (htarget : target ≤ Z)
+    (hs : s ≤ Z) (ht : t ≤ Z) (ha : a ≤ s) (hb : b ≤ s) (hband : PhaseCellBand.width p u ≤ Z) :
+    let W := inverseCallerWordWidth p u l target s t
+    inverseScalarAtoms p s t u a b*tblC W 0+
+      inverseMasterCopyCost W (inverseMasterValues p u l target s t a b)+
+      inverseReleaseCost W (inverseMasterValues p u l target s t a b) ≤
+        20000*(100000*Z^2)^3 := by
+  dsimp only
+  have hN : (haloBoundary s t (PhaseCellBand.width p u) a b).card ≤ Z :=
+    (show (haloBoundary s t (PhaseCellBand.width p u) a b).card ≤ s by
+      simpa using (haloBoundary s t (PhaseCellBand.width p u) a b).card_le_univ).trans hs
+  have h₁ : Nat.size (8*p) ≤ 8*p := Nat.size_le.mpr Nat.lt_two_pow_self
+  have h₂ : Nat.size (haloBoundary s t (PhaseCellBand.width p u) a b).card ≤
+      (haloBoundary s t (PhaseCellBand.width p u) a b).card := Nat.size_le.mpr Nat.lt_two_pow_self
+  have h₃ : Nat.size (2*PhaseCellBand.width p u+1) ≤ 2*PhaseCellBand.width p u+1 :=
+    Nat.size_le.mpr Nat.lt_two_pow_self
+  have hatoms : inverseScalarAtoms p s t u a b ≤ 200*Z := by
+    dsimp only [inverseScalarAtoms,inversePrecisionAtoms]
+    omega
+  have hpow : Z ≤ Z^2 := Nat.le_self_pow (by decide) Z
+  apply inverseHeaderCosts_poly _ (by nlinarith only [hZ,hpow])
+    (hatoms.trans (by nlinarith only [hpow]))
+    (inverseCallerWordWidth_poly hZ hp hu hl htarget hs ht hband)
+  intro i
+  exact (inverseMasterValues_cuts_poly hZ hp hu hl htarget hs ht ha hb hband i).trans
+    (by nlinarith only [hpow])
+
 theorem inverseCallerHeaders_poly {p u l target s t Z : ℕ} [NeZero s]
     (hZ : 1 ≤ Z) (hp : p ≤ Z) (hu : u ≤ Z) (hl : l ≤ Z) (htarget : target ≤ Z)
     (hs : s ≤ Z) (ht : t ≤ Z) (hband : PhaseCellBand.width p u ≤ Z) :
@@ -80,24 +114,6 @@ theorem inverseCallerHeaders_poly {p u l target s t Z : ℕ} [NeZero s]
       inverseMasterCopyCost W (inverseMasterValues p u l target s t 0 s)+
       inverseReleaseCost W (inverseMasterValues p u l target s t 0 s) ≤
         20000*(100000*Z^2)^3 := by
-  dsimp only
-  have hN : (haloBoundary s t (PhaseCellBand.width p u) 0 s).card ≤ Z :=
-    (show (haloBoundary s t (PhaseCellBand.width p u) 0 s).card ≤ s by
-      simpa using (haloBoundary s t (PhaseCellBand.width p u) 0 s).card_le_univ).trans hs
-  have h₁ : Nat.size (8*p) ≤ 8*p := Nat.size_le.mpr Nat.lt_two_pow_self
-  have h₂ : Nat.size (haloBoundary s t (PhaseCellBand.width p u) 0 s).card ≤
-      (haloBoundary s t (PhaseCellBand.width p u) 0 s).card := Nat.size_le.mpr Nat.lt_two_pow_self
-  have h₃ : Nat.size (2*PhaseCellBand.width p u+1) ≤ 2*PhaseCellBand.width p u+1 :=
-    Nat.size_le.mpr Nat.lt_two_pow_self
-  have hatoms : inverseScalarAtoms p s t u 0 s ≤ 200*Z := by
-    dsimp only [inverseScalarAtoms,inversePrecisionAtoms]
-    omega
-  have hpow : Z ≤ Z^2 := Nat.le_self_pow (by decide) Z
-  apply inverseHeaderCosts_poly _ (by nlinarith only [hZ,hpow])
-    (hatoms.trans (by nlinarith only [hpow]))
-    (inverseCallerWordWidth_poly hZ hp hu hl htarget hs ht hband)
-  intro i
-  exact (inverseMasterValues_poly hZ hp hu hl htarget hs ht hband i).trans
-    (by nlinarith only [hpow])
+  exact inverseCallerHeaders_cuts_poly hZ hp hu hl htarget hs ht (Nat.zero_le s) le_rfl hband
 
 end IntegerMultBounds.MathlibTM2.Cost

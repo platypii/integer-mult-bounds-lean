@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2383 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2386 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15816,3 +15816,39 @@ combined peak). All five new modules and the audit pass individual guarded
 checks; peak RSS is 3,590 MiB. All 3,060 prior audit names remain, with four
 new execution facts covered. New-file proof-integrity, plan-status and
 whitespace checks pass.
+
+
+### S3 checkpoint: derived raw batches have complete-key time and compiled stock bounds
+
+`inverseCallerWordWidth_fits_cuts` proves that the existing geometry-derived
+scalar width fits any boundary cuts. The singleton sizing theorem is now its
+specialization. `familyInverseBatchCaller_derived_spec` removes the three room
+premises from the raw batch entry: the caller supplies ordinary geometry and
+precision scalars, the actual batch/count and blank workspace, with no computed
+readiness, supplied factor page or precision-fit certificate.
+
+The header polynomial proof now handles arbitrary cuts, with the full-line
+lemmas retained as specializations. `selectedFamilyAllKeysHeaders_scaled_volume_le`
+prices every admissible complete key's scalar installation and release together
+below `T`, for any fixed scaling. `selectedRawFamilyKeyBatches_fast_le` therefore
+bounds the sum of actual raw batch costs over distinct keys by `2*T` plus
+`sum_keys N*D*t*(1+band^2/d)*p^(129/128)`. Both scalar headers and numerical setup
+are charged once per complete key, with no minimum replica count.
+
+`selectedRawFamilyBatch_compiled_volume_le` transfers the raw caller's same-trace
+resource certificate to every compiled configuration, including entry and halt.
+Its bound is `initialStock + D*N*s*w + 1 + T`: derived scalar headers, shared
+setup, the live batch, scratch and return depth are included. The proof combines
+three scaled volume bounds structurally, without expanding concrete programs or
+raising proof limits.
+
+Next: connect these actual raw entries and costs to the executed distinct-key
+driver, then discharge the remaining full S3 interface gates. External exposure,
+publication and global layout restoration remain the S4/R4 handoff. S3 stays
+partial; kappa is unchanged.
+
+Validation: the expanded audit passes all 15,301 affected build jobs (3.5 GiB
+combined peak). Both generalized modules, all three new modules and the audit
+pass individual guarded checks; peak RSS is 3,331 MiB. All 3,064 prior audit
+facts remain and nine new theorems are covered. Changed-file proof-integrity,
+plan-status and whitespace checks pass.

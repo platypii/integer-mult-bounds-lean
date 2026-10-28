@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedRawBatchCompiled
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyInverseBatchCaller
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedRawCallerFrame
@@ -3587,7 +3589,16 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyBatchHeaders_install_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyBatchHeaders_release_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseBatchCoreCall_spec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseBatchCaller_spec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseBatchCaller_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseCallerWordWidth_fits_cuts,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseBatchCaller_derived_spec,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseMasterValues_cuts_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.inverseCallerHeaders_cuts_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedRawHeaderCost_cuts_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyAllKeysHeaders_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyDistinctKeysHeaders_volume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedRawFamilyKeyBatches_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedRawFamilyBatch_compiled_volume_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
