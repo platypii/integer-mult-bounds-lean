@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2334 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2337 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15282,4 +15282,32 @@ whole-caller compiled-machine storage. S3 stays partial; kappa is unchanged.
 Validation: all 15,245 affected audit-build jobs pass (3.5 GiB combined peak).
 Both new modules and the audit pass individual guarded checks; peak RSS is
 3,314 MiB. All 2,940 prior audit names remain and six new facts are covered.
+New-file proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: coupling-cache construction has a proved setup price
+
+`couplingCoefficientPageRowCost_poly` bounds both branches of the actual row
+supplier, including table arithmetic, packet consumption, coefficient formatting
+and row transfer, by `2000000*Z^4`. A generic finite-sum bound prices the counted
+row loop. `buildMarkedRowCoefficientPacketCost_zero_poly` prices ordinary-header
+loading and the executed initial packet generator.
+`buildCouplingPageCacheCost_poly` combines those with count generation, complete
+page transfer and cleanup in `4000000*t*Z^4`, keeping its two generated masks
+explicit until their existing selected bounds apply.
+
+`selectedCouplingKeySetup_poly_le` includes the masks and scalar-header
+installation/release. It proves a uniform `C*t*p^4` cost for the complete
+coupling-cache setup at selected numerical and bandwidth bounds.
+`selectedFamilySetup_factor_le` instantiates that price at the actual
+boundary/recovery precision and reaches the whole family setup ledger:
+only `constructedBoundaryFactorCostBound` remains outside `C*t^2*p^4`.
+
+Next: price computed Schur columns and boundary-factor construction, then prove
+actual reuse-key multiplicities and amortizing replica counts. Simultaneous
+whole-caller compiled-machine storage also remains required. S3 stays partial;
+kappa is unchanged.
+
+Validation: all 15,248 affected audit-build jobs pass (3.5 GiB combined peak).
+All three new modules and the audit pass individual guarded checks; peak RSS is
+3,314 MiB. All 2,946 prior audit names remain and six new facts are covered.
 New-file proof-integrity, plan-status and whitespace checks pass.
