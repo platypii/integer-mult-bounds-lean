@@ -133,7 +133,7 @@ theorem generatedFamilyComplexBatch_spec (recovery : Bool) (hR : rpStates ≤ Q)
     intro i hi
     rw [hframe i (by intro h; subst i; norm_num at hi)]
     exact hclean i hi
-  obtain ⟨v₂,n₂,Zs,hu₂,hn₂,he₂,herror⟩ := familyComplexBatch_spec (body := body)
+  obtain ⟨v₂,n₂,Zs,hu₂,hn₂,he₂,herror,_htrace⟩ := familyComplexBatch_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
     columns hlen hformat hstage htable Fs hF v₁ S₁ tail coordinateTail pageTail [] V
     (by rw [hnative]; exact hready) (by rw [hlegacy]; exact hcache)

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2362 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2365 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15640,3 +15640,36 @@ combined peak). Both new modules, both changed loop/batch modules and the audit
 pass individual guarded checks; peak RSS is 3,621 MiB. All 3,029 prior audit
 names remain and two new facts are covered. Changed-file proof-integrity,
 plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: the live repeated-batch wrapper includes initialization and finish
+
+`familyComplexBatch_certify` composes the actual clock generator, count copier,
+certified family loop and finish execution. Its structural proof keeps concrete
+phase programs opaque and uses their push bounds separately; no proof limit is
+raised. `familyComplexBatch_spec` now produces this certificate alongside its
+existing executed time, numerical accuracy and exact restoration results.
+The unchanged program definition lives in its own small module so the resource
+composition proof can be checked separately from the numerical specification.
+
+`familyComplexBatchStockCost_le` splits the complete wrapper allowance into at
+most nine output-stream volumes plus three single-step allowances. The selected
+single-step construction bound absorbs the latter into `T` after the fixed
+machine push constant is charged. `selectedFamilyBatch_compiled_volume_le`
+therefore transfers the produced certificate to every compiled wrapper
+configuration, including entry and final return: stock is bounded by
+`initialStock + D*replicas*s*w + 1 + T`, for one machine-dependent natural constant
+`D`. Initial stock includes retained pages, borrowed streams and spectators;
+scratch is not multiplied by the replica count.
+
+Next: propagate this wrapper certificate through generated weight/coupling setup
+and release and the factor-page lifecycle. Executed distinct-key grouping and
+external exposure/publication/restoration handoffs remain required.
+S3 stays partial; kappa is unchanged.
+
+Validation: the selected wrapper target passes all 15,100 build jobs; the
+expanded audit passes all 15,278 affected jobs (12.8 GiB combined peak). All
+three new modules, all three changed runtime modules and the audit pass individual
+guarded checks; peak RSS is 3,624 MiB. All 3,031 prior audit names remain and
+three new facts are covered. The relocated program is unchanged. Changed-file
+proof-integrity, plan-status and whitespace checks pass.

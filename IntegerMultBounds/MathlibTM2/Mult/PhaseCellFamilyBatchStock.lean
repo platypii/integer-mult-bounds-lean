@@ -85,6 +85,20 @@ theorem familyComplexBatch_stock_le (v v' : HS 263 Q A U) (S R : Stacks 263 A) (
   change mnSize (mk v S₄) ≤ _
   omega
 
+/-- Clock generation, count copying, retained output, finish and one body scratch bill. -/
+def familyComplexBatchStockCost (s w replicas stepCost : ℕ) : ℕ :=
+  (s*(4*w+9)+4)+(4*replicas+4)+replicas*s*w+
+    (4*(replicas*s*w)+2*(s*w)+6)+stepCost
+
+theorem familyComplexBatchStockCost_le (s w N K : ℕ) (hs : 1 ≤ s) (hw : 1 ≤ w)
+    (hK : 8*(s*w)+8 ≤ K) :
+    familyComplexBatchStockCost s w N K ≤ 9*N*s*w+3*K := by
+  have hsw : s ≤ s*w := Nat.le_mul_of_pos_right s hw
+  have hN : N ≤ N*s*w := (Nat.le_mul_of_pos_right N hs).trans
+    (Nat.le_mul_of_pos_right (N*s) hw)
+  unfold familyComplexBatchStockCost
+  nlinarith only [hK,hsw,hN]
+
 noncomputable def familyComplexBatchStepCost (A p u l s t a b target : ℕ) [NeZero s] : ℕ :=
   let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2
     (IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry.haloBoundary s t
