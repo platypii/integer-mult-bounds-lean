@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2243 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2247 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14376,3 +14376,29 @@ modules, both revised coupling modules and the audit pass individual guarded
 checks below the 4 GiB module budget. The complete selected ordinary-scalar
 caller rebuild also passes. Proof-integrity, audit-coverage, plan-status and
 whitespace checks pass.
+
+### S3 checkpoint: all inverse kernels in the selected complete caller bound
+
+`PhaseCellFamilyCouplingFast` now prices all four coupling passes at the same
+selected working precision as the interior and boundary solves. The exact
+natural-number ledger split removes the four coupling arithmetic bills only
+after proving they are present; their header, masking and one-time scalar
+counter controls remain explicit. Together with both interior components and
+both prepared boundary solves, this yields the complete kernel allowance.
+
+`familyKernelVolume_le` derives the actual geometric work bound
+`200*(t+(t-s)*band^2)` from the halo cardinality and active coupling-row counts.
+It does not assume a density estimate or identify boundary rank with dimension.
+`PhaseCellFamilyKernelBatchFast` carries this bound through the generated batch
+and ordinary-scalar caller. `familyInverseCaller_selected_kernel_spec` attaches
+it to the actual complete execution, output frame and physical error theorem,
+with the ring log and scalar width derived from the input parameters.
+
+Remaining: bound the explicit control and tape work, match setup multiplicities
+and boundary density to the final fast envelope, and prove simultaneous live
+storage throughout the complete execution. S3 stays partial; kappa is unchanged.
+
+Validation: the expanded standard-axiom audit passes all 15,134 jobs (3.4 GiB
+combined peak RSS), preserving all prior entries and adding eight. All four new
+modules and the audit pass individual guarded checks below the 4 GiB module
+budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.

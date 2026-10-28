@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyKernelCaller
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellRetainedCouplingPass
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyBatchFast
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyInteriorFast
@@ -3108,7 +3109,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.retainedPageSpatialCouplingRowStep_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.couplingCounterBank_ovr,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runGeneratedRetainedPageCouplingRows_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runRetainedPageCouplingRows_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.runRetainedPageCouplingRows_exec,
+      `IntegerMultBounds.MathlibTM2.Cost.familyCouplingLine_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexNonBoundaryRemainingCost_coupling_split,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexGeometry_selected_kernel_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyKernelVolume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexGeometry_selected_gap_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyComplexBatch_selected_kernel_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_kernel_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_kernel_spec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
