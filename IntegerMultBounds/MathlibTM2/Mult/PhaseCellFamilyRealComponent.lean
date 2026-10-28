@@ -29,7 +29,7 @@ noncomputable def familyRealComponentCost (A p u l s t a b target V : ℕ) [NeZe
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   familyRealInteriorResidualCost A p l s t u (initialSchurTarget p u bits 2) 2 a b+
-    boundaryRhsPrepareCost V w N s+preparedResidualSolveCost q w N (12*PhaseCellBand.width p u+1)+
+    familyGeneratedBoundaryRhsCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+preparedResidualSolveCost q w N (12*PhaseCellBand.width p u+1)+
     retireCountedLineCost s w+sharedPageBoundaryAmbientCost N w s+
     familyRecoveryToleranceCost A p l s t u bits 2 a b+sharedPageRetireResidualCost s w+retireCountedLineCost N w
 
@@ -202,14 +202,14 @@ theorem familyRealComponent_spec (recovery : Bool) (hR : rpStates ≤ Q) (hQ : S
   refine ⟨v₄,n₁+(n₂+(n₃+n₄)),Y,hu₄.trans (hu₃.trans (hu₂.trans hu₁)),?_,
     (Exec.seq he₁ (Exec.seq he₂ (Exec.seq he₃' he₄))).cast rfl ?_,?_⟩
   · have h₁ : n₁ ≤ familyRealInteriorResidualCost A p l s t u (initialSchurTarget p u bits 2) 2 a b+
-      boundaryRhsPrepareCost V w B.card s+preparedResidualSolveCost q w B.card W := hn₁
+      familyGeneratedBoundaryRhsCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+preparedResidualSolveCost q w B.card W := hn₁
     have h₂ : n₂ ≤ retireCountedLineCost s w := hn₂
     have h₃ : n₃ ≤ sharedPageBoundaryAmbientCost B.card w s+familyRecoveryToleranceCost A p l s t u bits 2 a b+
       sharedPageRetireResidualCost s w := hn₃
     have h₄ : n₄ ≤ retireCountedLineCost B.card w := hn₄
     dsimp only [familyRealComponentCost]
     change n₁+(n₂+(n₃+n₄)) ≤ familyRealInteriorResidualCost A p l s t u (initialSchurTarget p u bits 2) 2 a b+
-      boundaryRhsPrepareCost V w B.card s+preparedResidualSolveCost q w B.card W+retireCountedLineCost s w+
+      familyGeneratedBoundaryRhsCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+preparedResidualSolveCost q w B.card W+retireCountedLineCost s w+
       sharedPageBoundaryAmbientCost B.card w s+familyRecoveryToleranceCost A p l s t u bits 2 a b+
       sharedPageRetireResidualCost s w+retireCountedLineCost B.card w
     omega

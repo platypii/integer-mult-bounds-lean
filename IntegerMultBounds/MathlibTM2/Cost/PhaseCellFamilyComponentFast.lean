@@ -38,7 +38,7 @@ noncomputable def familyRealComponentRemainingCost (p u l s t a b target V : ℕ
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   familyRealResidualRemainingCost p l s t u (initialSchurTarget p u bits 2) 2 a b+
-    boundaryRhsPrepareCost V w N s+preparedResidualSolveCost q w N (12*PhaseCellBand.width p u+1)+
+    familyGeneratedBoundaryRhsCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+preparedResidualSolveCost q w N (12*PhaseCellBand.width p u+1)+
     retireCountedLineCost s w+sharedPageBoundaryAmbientCost N w s+
     familyRecoveryRemainingCost p l s t u bits 2 a b+sharedPageRetireResidualCost s w+retireCountedLineCost N w
 

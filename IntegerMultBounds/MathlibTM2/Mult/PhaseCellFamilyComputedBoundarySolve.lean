@@ -72,7 +72,7 @@ theorem familyComputedBoundarySolve_spec (recovery : Bool) (hR : rpStates ≤ Q)
           (cstream A w (chirpLine s D)++S.R 132)) 224 (cstream A w solution++S.R 224))}
       v'.user = v.user ∧
       n ≤ familyRealInteriorResidualCost A p l s t u (initialSchurTarget p u bits 2) 2 a b+
-        boundaryRhsPrepareCost V w B.card s+preparedResidualSolveCost q w B.card W ∧
+        familyGeneratedBoundaryRhsCost (2^15*p) q s t u band a b+preparedResidualSolveCost q w B.card W ∧
       Exec body (familyComputedBoundarySolve recovery hR hQ) (mk v S) n (mk v' S') ∧
       solution.length = B.card ∧ (∀ z ∈ solution, Fits w z) ∧
       LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
@@ -102,6 +102,7 @@ theorem familyComputedBoundarySolve_spec (recovery : Bool) (hR : rpStates ≤ Q)
     (body := body) (target := bits) (rhsExp := 2) recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
     F hF v S tail pageTail familyTail (hclean _ (by simp)) (hclean _ (by simp)) (hclean _ (by simp)) ha hb hready hcache hfamily hfamilyFresh
     V hsV coordinateTail hN hV hw hcoordinates (hmul 0) (hclean _ (by simp)) (hclean _ (by simp)) hblank
+    (by intro r; exact hleft ⟨r.val,by omega⟩)
   let rhs := (List.range B.card).map (fun j => C (bFoldAt s B j))
   have hrhs : rhs.length = B.card := by simp [rhs]
   have hbound : ∀ z ∈ rhs, |gv q z.re| ≤ (2 : ℝ)^couplingRowExponent 2 (stableInteriorExponent p 2)

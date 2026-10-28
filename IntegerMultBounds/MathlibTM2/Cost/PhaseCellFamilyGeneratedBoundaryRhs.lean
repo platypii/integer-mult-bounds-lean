@@ -15,7 +15,7 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2.Mult
 
 theorem familyGeneratedBoundaryRhs_selected_fast_le (cP cq : ℕ) :
     ∃ C : ℕ, ∀ (n : ℕ) (h : Sizes.Big n) (i : Fin (Sizes.d n)) (P q u band a b : ℕ),
-      P ≤ cP*Sizes.p n → q ≤ cq*Sizes.p n → u ≤ Sizes.t n i →
+      P ≤ cP*Sizes.p n → q ≤ cq*Sizes.p n → u ≤ Sizes.p n →
       band ≤ Sizes.s n i → a ≤ Sizes.s n i → b ≤ Sizes.s n i →
       familyGeneratedBoundaryRhsCost P q (Sizes.s n i) (Sizes.t n i) u band a b ≤
         C*Sizes.t n i*Sizes.p n := by
@@ -35,7 +35,7 @@ theorem familyGeneratedBoundaryRhs_selected_fast_le (cP cq : ℕ) :
   have hP' : P ≤ cP*(t*p) := hP.trans (Nat.mul_le_mul_left cP hpt)
   have hq' : q ≤ cq*(t*p) := hq.trans (Nat.mul_le_mul_left cq hpt)
   have hs' : s ≤ t*p := hst.trans htp
-  have hu' : u ≤ t*p := hu.trans htp
+  have hu' : u ≤ t*p := hu.trans hpt
   have hb' : band ≤ t*p := hband.trans hs'
   have ha' : a ≤ t*p := ha.trans hs'
   have hbb' : b ≤ t*p := hb.trans hs'

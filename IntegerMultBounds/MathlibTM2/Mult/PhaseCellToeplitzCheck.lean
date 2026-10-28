@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilyFast
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyGeneratedBoundaryRhs
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBoundaryRhs
@@ -3406,7 +3408,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.closedGeneratedBoundaryRhs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyGeneratedRhsReg_injective,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyGeneratedBoundaryRhs_exec,
-      `IntegerMultBounds.MathlibTM2.Cost.familyGeneratedBoundaryRhs_selected_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.familyGeneratedBoundaryRhs_selected_fast_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyCouplingSourceReg_identity,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyGeneratedBoundaryRhs_ready_exec,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBoundaryRhs_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyLine_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

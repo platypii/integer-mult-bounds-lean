@@ -23,7 +23,7 @@ theorem familyComplexControlRemainingCost_rhs_le (p u l s t a b target : ℕ) [N
     let q := executionPrecision p l j 2
     let w := executionWidth p l j 2
     familyComplexControlRemainingCost p u l s t a b target ≤
-      2*boundaryRhsPrepareCost (publicationGeometryWidth t (PhaseCellBand.width p u)) w N s+
+      2*familyGeneratedBoundaryRhsCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+
       2*(familyHaloControlCost p l s t u j 2 a b+familyHaloControlCost p l s t u k e a b)+
       4*retainedCouplingControlCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+
       2*publishHaloCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+
@@ -76,9 +76,10 @@ theorem selectedFamilyControls_rhs_fast_le (ct : ℕ) :
       let l := haloInverseRingLog s t
       let N := (haloBoundary s t (PhaseCellBand.width p u) a b).card
       let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
+      let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
       let w := executionWidth p l (initialSchurTarget p u bits 2) 2
       familyComplexControlRemainingCost p u l s t a b target ≤
-        2*boundaryRhsPrepareCost (publicationGeometryWidth t (PhaseCellBand.width p u)) w N s+C*t*p := by
+        2*familyGeneratedBoundaryRhsCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+C*t*p := by
   let cw := 1032+8*ct
   obtain ⟨C,hC⟩ := selectedInteriorControls_fast_le ct
   obtain ⟨K,hK⟩ := selectedCouplingPublicationControls_fast_le cw
@@ -111,7 +112,7 @@ theorem selectedFamilyControls_rhs_fast_le (ct : ℕ) :
   have htail : 10000*(s+1)*(w+1) ≤ 10000*(cw+1)*t*p := by nlinarith only [hvolume]
   have hcost := familyComplexControlRemainingCost_rhs_le p u l s t a b target
   change familyComplexControlRemainingCost p u l s t a b target ≤
-    2*boundaryRhsPrepareCost (publicationGeometryWidth t (PhaseCellBand.width p u)) w N s+
+    2*familyGeneratedBoundaryRhsCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+
       2*(familyHaloControlCost p l s t u j 2 a b+familyHaloControlCost p l s t u k e a b)+
       4*retainedCouplingControlCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+
       2*publishHaloCost (2^15*p) q s t u (PhaseCellBand.width p u) a b+

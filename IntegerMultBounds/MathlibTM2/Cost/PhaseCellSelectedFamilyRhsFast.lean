@@ -24,9 +24,10 @@ theorem selectedFamilyLine_rhs_fast_le (ct : ℕ) :
       let band := PhaseCellBand.width p u
       let N := (haloBoundary s t band a b).card
       let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
+      let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
       let w := executionWidth p l (initialSchurTarget p u bits 2) 2
       (generatedFamilyComplexGeometryLineCost p u l s t a b target : ℝ) ≤
-        2*(boundaryRhsPrepareCost (publicationGeometryWidth t band) w N s : ℝ)+
+        2*(familyGeneratedBoundaryRhsCost (2^15*p) q s t u band a b : ℝ)+
           C*((t+(t-s)*band^2 : ℕ) : ℝ)*(p : ℝ)^(129/128 : ℝ) := by
   obtain ⟨K,hK,hkernel⟩ := familyComplexGeometry_selected_gap_fast_le ct 2
   obtain ⟨D,hD⟩ := selectedFamilyControls_rhs_fast_le ct
@@ -41,6 +42,7 @@ theorem selectedFamilyLine_rhs_fast_le (ct : ℕ) :
   let band := PhaseCellBand.width p u
   let N := (haloBoundary s t band a b).card
   let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 N
+  let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   let volume := t+(t-s)*band^2
   have hp : 1 ≤ p := by have := h.thirteen_le_p; dsimp only [p]; omega
@@ -61,7 +63,7 @@ theorem selectedFamilyLine_rhs_fast_le (ct : ℕ) :
   have hk := hkernel p u target s t a b hp hst hband hθ htarget hgeometry
   have hc := hn h i u target a b hu htarget hband ha hb
   have hcR : (familyComplexControlRemainingCost p u l s t a b target : ℝ) ≤
-      2*(boundaryRhsPrepareCost (publicationGeometryWidth t band) w N s : ℝ)+(D : ℝ)*(t : ℝ)*(p : ℝ) := by
+      2*(familyGeneratedBoundaryRhsCost (2^15*p) q s t u band a b : ℝ)+(D : ℝ)*(t : ℝ)*(p : ℝ) := by
     exact_mod_cast hc
   have hpR : (1 : ℝ) ≤ p := by exact_mod_cast hp
   have hpPow : (p : ℝ) ≤ (p : ℝ)^(129/128 : ℝ) :=
@@ -72,11 +74,20 @@ theorem selectedFamilyLine_rhs_fast_le (ct : ℕ) :
     (mul_le_mul_of_nonneg_left hvolume (Nat.cast_nonneg D))
     (Real.rpow_nonneg (Nat.cast_nonneg p) (129/128 : ℝ))
   change (generatedFamilyComplexGeometryLineCost p u l s t a b target : ℝ) ≤
-    2*(boundaryRhsPrepareCost (publicationGeometryWidth t band) w N s : ℝ)+
+    2*(familyGeneratedBoundaryRhsCost (2^15*p) q s t u band a b : ℝ)+
       (K+(D : ℝ))*(volume : ℝ)*(p : ℝ)^(129/128 : ℝ)
   change (generatedFamilyComplexGeometryLineCost p u l s t a b target : ℝ) ≤
     (familyComplexControlRemainingCost p u l s t a b target : ℝ)+
       K*(volume : ℝ)*(p : ℝ)^(129/128 : ℝ) at hk
-  nlinarith only [hk,hcR,hlinear,hscaled]
+  calc
+    _ ≤ (familyComplexControlRemainingCost p u l s t a b target : ℝ)+
+        K*(volume : ℝ)*(p : ℝ)^(129/128 : ℝ) := hk
+    _ ≤ (2*(familyGeneratedBoundaryRhsCost (2^15*p) q s t u band a b : ℝ)+
+        (D : ℝ)*(t : ℝ)*(p : ℝ))+K*(volume : ℝ)*(p : ℝ)^(129/128 : ℝ) :=
+      add_le_add hcR le_rfl
+    _ ≤ (2*(familyGeneratedBoundaryRhsCost (2^15*p) q s t u band a b : ℝ)+
+        (D : ℝ)*(volume : ℝ)*(p : ℝ)^(129/128 : ℝ))+K*(volume : ℝ)*(p : ℝ)^(129/128 : ℝ) :=
+      add_le_add (add_le_add le_rfl (hlinear.trans hscaled)) le_rfl
+    _ = _ := by ring
 
 end IntegerMultBounds.MathlibTM2.Cost

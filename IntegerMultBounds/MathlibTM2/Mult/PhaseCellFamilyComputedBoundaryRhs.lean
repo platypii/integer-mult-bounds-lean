@@ -49,7 +49,8 @@ theorem familyComputedBoundaryRhs_spec (recovery : Bool) (hR : rpStates ≤ Q) (
     (hcoordinates : S.R 109 = cstream A V ((bFoldOrder s (haloBoundary s t (PhaseCellBand.width p u) a b)).map
       (fun k : ZMod s => (⟨(k.val : ℤ),0⟩ : GaussianInt)))++coordinateTail)
     (h0 : S.R 0 = []) (h106 : S.R 106 = []) (h139 : S.R 139 = [])
-    (hblank : ∀ r : Fin 263, 1 ≤ r.val → r.val < 7 → S.R r = []) :
+    (hblank : ∀ r : Fin 263, 1 ≤ r.val → r.val < 7 → S.R r = [])
+    (hleft : ∀ r : Fin 148, S.L (familyGeneratedRhsReg r) = []) :
     let q := executionPrecision p l (initialSchurTarget p u target rhsExp) rhsExp
     let w := executionWidth p l (initialSchurTarget p u target rhsExp) rhsExp
     let band := PhaseCellBand.width p u
@@ -64,7 +65,7 @@ theorem familyComputedBoundaryRhs_spec (recovery : Bool) (hR : rpStates ≤ Q) (
         (cstream A w ((List.range boundary.card).map (fun j => C (bFoldAt s boundary j)))++S.R 206))}
       (∀ c, SchurDominance.Solves (realMatrix s t p u) I (R c) c) ∧
       v'.user = v.user ∧ n ≤ familyRealInteriorResidualCost A p l s t u (initialSchurTarget p u target rhsExp) rhsExp a b+
-        boundaryRhsPrepareCost V w boundary.card s ∧
+        familyGeneratedBoundaryRhsCost (2^15*p) q s t u band a b ∧
       Exec body (familyComputedBoundaryRhs recovery hR hQ) (mk v S) n (mk v' S') ∧
       (∀ i, (C i).im = 0) ∧
       (∀ i, ‖value q (C i)‖ ≤ (2 : ℝ)^couplingRowExponent rhsExp (stableInteriorExponent p rhsExp)
@@ -86,19 +87,18 @@ theorem familyComputedBoundaryRhs_spec (recovery : Bool) (hR : rpStates ≤ Q) (
   let input := cstream A w (chirpLine s C)++S.R 110
   let output := cstream A w (chirpLine s D)++S.R 132
   let S₁ : Stacks 263 A := {S with R := Function.update (Function.update S.R 110 input) 132 output}
-  have hz : ∀ r : Fin 263, 1 ≤ r.val → r.val < 7 → S₁.R r = [] := by
-    intro r hr1 hr7
-    have h110 : r ≠ 110 := by intro he; subst r; simp at hr7
-    have h132 : r ≠ 132 := by intro he; subst r; simp at hr7
-    simpa [S₁,h110,h132] using hblank r hr1 hr7
-  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := familyBoundaryRhs_exec (body := body) boundary V w
-    (Nat.le_trans (by decide : 4 ≤ 96) hA) hsV C C (by intro i hi; rfl) coordinateTail (S.R 110) v₁ S₁
-    (by simpa [S₁] using hN) (by simpa [S₁] using hV) (by simpa [S₁] using hw)
-    (by simpa [S₁] using hcoordinates) (by rfl)
-    (by simpa [S₁] using h0) (by simpa [S₁] using h106) (by simpa [S₁] using h139) hz
+  have hwq : w = 2*q+8 := by dsimp [w,q,executionWidth,executionPrecision]; omega
+  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := familyBoundaryRhs_exec (body := body)
+    (2^15*p) (executionStagePrecision p l (initialSchurTarget p u target rhsExp) rhsExp+1)
+    q l u band a b hst has hbs (Nat.le_trans (by decide : 4 ≤ 96) hA) C (S.R 110) v₁ S₁
+    (by change cstream A w _++_ = _; rw [hwq])
+    hready' (by simpa [S₁] using haMaster) (by simpa [S₁] using hbMaster)
+    (by simpa [S₁] using hN) (by simpa [S₁] using h138)
+    (by simpa [S₁] using h139) (by simpa [S₁] using h143) hleft
   refine ⟨v₂,n₁+n₂,D,C,R,hRsolve,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,
     (Exec.seq he₁ he₂).cast rfl ?_,hreal,hmag,herr,?_,?_⟩
   · apply congrArg (mk v₂)
+    simp only [← hwq,bFoldOrder,List.map_map,Function.comp_def]
     rfl
   · exact hread
   · change LengthKeyReady _ _ _ _ _ _ _ _ _ _ _
