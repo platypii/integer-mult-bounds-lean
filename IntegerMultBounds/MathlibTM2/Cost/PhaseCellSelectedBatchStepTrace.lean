@@ -24,16 +24,17 @@ theorem familyComplexBatchStepCost_line_le (A p u l s t a b target : ℕ) [NeZer
   simp only [Nat.mul_assoc]
   omega
 
-theorem selectedFamilyBatchStepCost_scaled_volume_le (ct scale : ℕ) :
-    ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
+theorem selectedFamilyBatchStepCost_poly_le (ct : ℕ) :
+    ∃ C : ℕ, ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
       ∀ [NeZero (Sizes.s n i)], ∀ A u target a b : ℕ,
       u ≤ Sizes.p n → target ≤ ct*Sizes.p n →
       PhaseCellBand.width (Sizes.p n) u ≤ Sizes.s n i → a ≤ Sizes.s n i → b ≤ Sizes.s n i →
-      scale*familyComplexBatchStepCost A (Sizes.p n) u
+      familyComplexBatchStepCost A (Sizes.p n) u
         (haloInverseRingLog (Sizes.s n i) (Sizes.t n i))
-        (Sizes.s n i) (Sizes.t n i) a b target ≤ Sizes.T n := by
+        (Sizes.s n i) (Sizes.t n i) a b target ≤ C*Sizes.t n i^3*Sizes.p n^2 := by
   obtain ⟨C,hC,hline⟩ := selectedFamilyLine_fast_le ct
-  filter_upwards [hline,selectedAxisPolynomial_le_volume (scale*⌈2*C⌉₊) 2 3] with n hl hv
+  refine ⟨⌈2*C⌉₊,?_⟩
+  filter_upwards [hline] with n hl
   intro h i _ A u target a b hu htarget hband ha hb
   let p := Sizes.p n
   let s := Sizes.s n i
@@ -66,7 +67,21 @@ theorem selectedFamilyBatchStepCost_scaled_volume_le (ct scale : ℕ) :
       _ ≤ _ := mul_le_mul_of_nonneg_right
         (mul_le_mul_of_nonneg_right (Nat.le_ceil (2*C)) (by positivity)) (by positivity)
   have hnat : cost ≤ ⌈2*C⌉₊*t^3*p^2 := by exact_mod_cast hpoly
-  exact (Nat.mul_le_mul_left scale hnat).trans (by convert hv i using 1 <;> ring)
+  exact hnat
+
+theorem selectedFamilyBatchStepCost_scaled_volume_le (ct scale : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
+      ∀ [NeZero (Sizes.s n i)], ∀ A u target a b : ℕ,
+      u ≤ Sizes.p n → target ≤ ct*Sizes.p n →
+      PhaseCellBand.width (Sizes.p n) u ≤ Sizes.s n i → a ≤ Sizes.s n i → b ≤ Sizes.s n i →
+      scale*familyComplexBatchStepCost A (Sizes.p n) u
+        (haloInverseRingLog (Sizes.s n i) (Sizes.t n i))
+        (Sizes.s n i) (Sizes.t n i) a b target ≤ Sizes.T n := by
+  obtain ⟨C,hcost⟩ := selectedFamilyBatchStepCost_poly_le ct
+  filter_upwards [hcost,selectedAxisPolynomial_le_volume (scale*C) 2 3] with n hc hv
+  intro h i _ A u target a b hu htarget hband ha hb
+  exact (Nat.mul_le_mul_left scale (hc h i A u target a b hu htarget hband ha hb)).trans
+    (by convert hv i using 1 <;> ring)
 
 theorem selectedFamilyBatchStep_trace_volume_le {Q A : ℕ} {P U : Type} [Fintype P]
     (body : P → Pr P 263 Q A U) (ct : ℕ) (recovery : Bool)

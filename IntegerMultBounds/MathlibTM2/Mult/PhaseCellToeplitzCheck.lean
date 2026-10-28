@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCompiledFamilyDispatch
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedFamilyDispatch
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyDispatchOutputStock
@@ -3651,7 +3653,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorListLoop_exec_trace,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyDispatchLoop_exec_trace,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyDispatch_exec_trace,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedFamilyDispatch_spec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedFamilyDispatch_spec,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatchStepCost_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyAllKeysStep_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyDispatchHeaderCost_width_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyDispatchInput_stock_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyDispatchInput_stock_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyDispatchStock_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.familyDispatchInput_restore_le_stock,
+      `IntegerMultBounds.MathlibTM2.Cost.familyDispatch_stock_ledger_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyDispatchStockLedger_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedFamilyDispatch_compiled_spec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

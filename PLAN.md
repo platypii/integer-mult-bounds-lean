@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2412 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2416 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. The cached caller executes geometry-width origin classification and advance controls for both empty and nonempty classes, converting origins to the numerical packet format. Their tighter price now reaches the retained interior ledger; selected-size bounds pay repeated cell controls and phase-table work in `O(t*p)`. The production boundary RHS now uses generated masks, one linear record scan and canonical folding; its complete header/setup/transfer/release bill is uniformly `O(t*p)`. `selectedFamilyLine_fast_le` bounds the actual generated family line by `C*(t+(t-s)*band²)*p^(129/128)` without a gather remainder. All admissible selected setup keys together cost at most one whole-box volume per axis; `selectedFamilyKeyBatches_fast_le` composes actual batch costs over any distinct-key subfamily with explicit replica counts. The complete 263-register generated lifecycle now has a compiled stock bound `initialStock + D*replicas*s*w + 1 + T`, including all setup and release. The raw 303-register caller now exports a transported stock certificate, including scalar-header installation and release. The derived raw-header allowance is now priced and the compiled caller is bounded in its actual native/left frame and borrowed-tail/output-prefix lengths. The actual ordered descriptor dispatcher now executes the advertised batches, restoring its tape, counter and private workspace. For a record list with distinct complete keys, `selectedFamilyDispatch_spec` combines fast time, uniform errors and an execution-wide stock certificate for the same output witness. Pricing the aggregate stock as box volume plus linear batch stock, the compiled-dispatch bridge and the final S3 interface audit remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. The cached caller executes geometry-width origin classification and advance controls for both empty and nonempty classes, converting origins to the numerical packet format. Their tighter price now reaches the retained interior ledger; selected-size bounds pay repeated cell controls and phase-table work in `O(t*p)`. The production boundary RHS now uses generated masks, one linear record scan and canonical folding; its complete header/setup/transfer/release bill is uniformly `O(t*p)`. `selectedFamilyLine_fast_le` bounds the actual generated family line by `C*(t+(t-s)*band²)*p^(129/128)` without a gather remainder. All admissible selected setup keys together cost at most one whole-box volume per axis; `selectedFamilyKeyBatches_fast_le` composes actual batch costs over any distinct-key subfamily with explicit replica counts. The complete 263-register generated lifecycle now has a compiled stock bound `initialStock + D*replicas*s*w + 1 + T`, including all setup and release. The raw 303-register caller now exports a transported stock certificate, including scalar-header installation and release. The derived raw-header allowance is now priced and the compiled caller is bounded in its actual native/left frame and borrowed-tail/output-prefix lengths. The actual ordered descriptor dispatcher now executes the advertised batches, restoring its tape, counter and private workspace. For a record list with distinct complete keys, `selectedFamilyDispatch_spec` combines fast time, uniform errors and an execution-wide stock certificate for the same output witness. `selectedFamilyDispatch_compiled_spec` now bounds every compiled configuration by initial stock plus a fixed multiple of encoded batch size, one entry unit and box volume, for that same numerical execution. The completion audit found that the production `SolveSpec`/normalized `B₀` handoff still needs connection: the existing full-interface bridge uses reference `pcSolve`, while the production caller proves encoded-RHS error. S3 remains open for that handoff and its scaling/rounding execution obligations. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -16037,3 +16037,55 @@ combined peak). All eight new modules, the three consolidated time-only modules
 and the audit pass individual guarded checks, each below 3,328 MiB peak RSS.
 All 3,104 prior audit facts remain, with nine new key-cost and trace facts
 covered. Changed-file proof-integrity, plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: complete-key compiled stock is paid; the production full-solver handoff remains
+
+`selectedFamilyBatchStepCost_poly_le` factors the one-step polynomial estimate
+out of the previous volume proof. `selectedFamilyAllKeysStep_scaled_volume_le`
+then prices one scratch allowance for every admissible complete key together.
+The original single-key scaled theorem is now a corollary of this shared bound.
+
+`familyDispatchInput_stock_le` decomposes a ready record's complete physical
+allowance into scalar headers, shared setup, one scratch bill and linear live
+batch stock. `selectedFamilyDispatchStockLedger_scaled_volume_le` sums those
+actual allowances over distinct keys, including descriptor movement and final
+counter/tape restoration. Any fixed scaling is bounded by `T` plus a fixed
+multiple of the total encoded batch size; no replica lower bound is required.
+
+`selectedFamilyDispatch_compiled_spec` constructs the numerical dispatcher with
+its fast-time and uniform-error guarantees, exact original-frame restoration,
+and a `ReachWithin` certificate for every compiled configuration through entry
+and halt. Its stock bound is
+`initialStock + E*sum_records (replicas*s*wordWidth) + 1 + T`, where `E` is fixed
+by the program/procedure push bound. It transports the same output and execution
+witness; no independent execution or workspace assumption is supplied.
+
+Completion audit against the pinned shared interface:
+
+* Ambient/cut geometry, generated numerical setup, both real components, source
+  restoration, complete-key physical time and simultaneous compiled stock now
+  have production execution theorems on the ordered private-buffer ABI.
+* S4/R4 owns external exposure, publication, locality comparison and global layout
+  restoration; those remain external handoffs under the unchanged contract.
+* The full real-solver endpoint is still incomplete. `SolveSpec` and
+  `SolveSpec.full_error` are defined in `Mult/PhaseCellInterface`; the checked
+  implementation of `SolveSpec A univ univ (1/2) X e` found by this audit is
+  `pcSolve_spec` in `Mult/PhaseCellReferenceSpec`. `FastB0.phase_resampB₀_spec`
+  in `Mult/PhaseCellB0Line` still instantiates `concrete_resampB₀_specX` with
+  reference `pcSolve`. The production dispatcher instead proves errors for
+  encoded Gaussian right-hand sides through `FamilyDispatchProduced`.
+* Consequently the executed solver still needs its full `SolveSpec`/normalized
+  `B₀` handoff, including the input representation, selected error/smallness
+  hypotheses and the associated scaling/final-rounding execution. The reference
+  theorem alone does not discharge those production obligations.
+
+Next: connect that production numerical endpoint and its normalized line-map
+execution to the existing generic interface, preserving the proved fast costs
+and stock. S3 remains partial; kappa is unchanged.
+
+Validation: the expanded audit passes all 15,330 affected build jobs (12.9 GiB
+combined peak). All four new modules, the generalized step-bound module and the
+audit pass individual guarded checks, each below 3,327 MiB peak RSS. All 3,113
+prior audit facts remain and ten new stock/compiled facts are covered.
+Changed-file proof-integrity, plan-status and whitespace checks pass.
