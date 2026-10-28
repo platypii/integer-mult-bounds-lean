@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2340 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2343 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15342,4 +15342,35 @@ whole-caller compiled-machine storage. S3 stays partial; kappa is unchanged.
 Validation: all 15,251 affected audit-build jobs pass (3.5 GiB combined peak).
 All three new modules and the audit pass individual guarded checks; peak RSS is
 3,316 MiB. All 2,952 prior audit names remain and 13 new facts are covered.
+New-file proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: numerical factor preparation has a proved setup price
+
+`bandFacStepCost_poly` and `bandAxisPrepCost_poly` are structural numerical
+preparation bounds parameterized by the multiplication supplier's cubic price.
+They include every Newton step, forward-update row, transpose step, organization
+pass and generated setup/control charge. No arithmetic execution is supplied.
+
+`boundaryFactorDimensionsCost_poly` prices the numerical dimension headers;
+`boundaryFactorSetupCost_poly` includes actual multiplier preparation, Newton
+counter construction and reciprocal seed generation.
+`boundaryFactorPreparationCost_poly` combines these with band arithmetic using
+the real `ssMulConst` multiplication bound and a derived envelope for the actual
+Newton iteration count. The proof keeps the large supplier constant symbolic
+and preserves all existing proof limits.
+
+`selectedBoundaryFactorPreparation_poly_le` applies that complete numerical bill
+at the actual selected precision and boundary dimensions, with a conservative
+`C*t^6` setup price. `selectedFamilySetup_table_le` reaches the whole family setup
+ledger: only `constructedBoundaryTableCostBound` remains explicit outside
+`C*t^6*p^4`. Earlier tighter component separations remain available.
+
+Next: price the computed Schur-column/table construction, then prove actual
+reuse-key multiplicities and amortizing replica counts. Simultaneous
+whole-caller compiled-machine storage remains required. S3 stays partial;
+kappa is unchanged.
+
+Validation: all 15,254 affected audit-build jobs pass (3.5 GiB combined peak).
+All three new modules and the audit pass individual guarded checks; peak RSS is
+3,316 MiB. All 2,965 prior audit names remain and seven new facts are covered.
 New-file proof-integrity, plan-status and whitespace checks pass.

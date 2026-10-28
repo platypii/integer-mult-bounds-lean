@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBoundaryFactorPreparation
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFactorPage
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilySetupFactor
@@ -3457,7 +3459,14 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.factorWindowCost_poly,
       `IntegerMultBounds.MathlibTM2.Cost.factorPageCost_poly,
       `IntegerMultBounds.MathlibTM2.Cost.selectedGeneratedFactorPage_poly_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_factorArithmetic_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_factorArithmetic_le,
+      `IntegerMultBounds.MathlibTM2.Cost.bandFacStepCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.bandAxisPrepCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.boundaryFactorDimensionsCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.boundaryFactorSetupCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.boundaryFactorPreparationCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedBoundaryFactorPreparation_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_table_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
