@@ -52,7 +52,7 @@ noncomputable def output (p l t : ℕ) (r : FamilyDispatchInput s A) (Zs : List 
 
 end FamilyDispatchInput
 
-structure FamilyDispatchReady {s A : ℕ} [NeZero s] (p l t : ℕ) (d : ℝ)
+structure FamilyDispatchFrame {s A : ℕ} [NeZero s] (p l t : ℕ) (d : ℝ)
     (r : FamilyDispatchInput s A) : Prop where
   uPositive : 1 ≤ r.u
   width : 8*p ≤ 2^r.u
@@ -61,7 +61,6 @@ structure FamilyDispatchReady {s A : ℕ} [NeZero s] (p l t : ℕ) (d : ℝ)
   a : r.a ≤ s
   b : r.b ≤ s
   padding : 2*((s/(t-s)+1)-2*PhaseCellBand.width p r.u) ≤ 2^l+1
-  inputBound : ∀ F ∈ r.inputs, ∀ i, ‖value (r.precision p l t) (F i)‖ ≤ (2 : ℝ)^2
   outputBlank : r.words 132 = []
   scalarWidth : r.scalarWidth.length = inverseCallerWordWidth p r.u l r.target s t
   scalars : tblHolds familyInverseScalarReg r.rawBank
@@ -70,6 +69,11 @@ structure FamilyDispatchReady {s A : ℕ} [NeZero s] (p l t : ℕ) (d : ℝ)
   blank : ∀ i, i ≠ 110 → i ≠ 132 → i ≠ 246 → r.words (familyInverseCoreReg i) = []
   source : r.words 110 = cstream A (r.width p l t) (r.inputs.map (chirpLine s)).flatten
   count : (r.words (familyInverseCoreReg 246)).length = r.inputs.length
+
+structure FamilyDispatchReady {s A : ℕ} [NeZero s] (p l t : ℕ) (d : ℝ)
+    (r : FamilyDispatchInput s A) : Prop extends FamilyDispatchFrame p l t d r where
+  inputBound : ∀ F ∈ r.inputs, ∀ i, ‖value (r.precision p l t) (F i)‖ ≤ (2 : ℝ)^2
+
 
 def FamilyDispatchApprox {s A : ℕ} [NeZero s] (p l t : ℕ) (r : FamilyDispatchInput s A)
     (x y : (ZMod s → GaussianInt) → ZMod s → ℝ) (Zs : List (ZMod s → GaussianInt)) : Prop :=

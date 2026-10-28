@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCompiledGridFamilyDispatch
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellInputShiftCost
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInputShiftSolve
@@ -3853,7 +3855,23 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.inputShiftBatchCost_le_callerCost,
       `IntegerMultBounds.MathlibTM2.Cost.inputShiftBatchCost_le_callerStock,
       `IntegerMultBounds.MathlibTM2.Cost.gridFamilyInverseBatchCost_le_callerCost,
-      `IntegerMultBounds.MathlibTM2.Cost.gridFamilyInverseBatchStockCost_le_callerStock ] do
+      `IntegerMultBounds.MathlibTM2.Cost.gridFamilyInverseBatchStockCost_le_callerStock,
+      `IntegerMultBounds.MathlibTM2.Cost.gridDispatchInput_cost_le,
+      `IntegerMultBounds.MathlibTM2.Cost.gridDispatchInput_stock_le,
+      `IntegerMultBounds.MathlibTM2.Cost.gridDispatch_time_ledger_le,
+      `IntegerMultBounds.MathlibTM2.Cost.gridDispatch_stock_ledger_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedGridDispatchLedger_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedGridDispatchStockLedger_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedGridFamilyDispatch_compiled_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorSolverCall_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorSolverLoop_exec_trace,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorSolverSchedule_exec_trace,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorSolverStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.gridDispatchInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.value_norm_mono_precision,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.GridDispatchReady.raw,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.gridFamilyDispatch_exec_trace,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.selectedGridFamilyDispatch_spec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

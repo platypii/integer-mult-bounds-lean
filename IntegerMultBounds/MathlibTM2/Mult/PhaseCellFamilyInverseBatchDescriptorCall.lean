@@ -18,9 +18,6 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
-def descriptorReadyBank (work : Fin 303 → Fin T) (words : Fin 303 → List (Fin (A+4)))
-    (S : Stacks T A) : Stacks 303 A := {embStk work S with R := words}
-
 noncomputable def familyInverseBatchDescriptorCall (work : Fin 303 → Fin T)
     (src saved count tmp spare : Fin T) (recovery : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P T Q A U :=
   .seq (takePlacedDescriptorBank work src saved count tmp spare)
