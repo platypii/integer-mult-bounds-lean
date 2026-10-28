@@ -26,9 +26,7 @@ def probedHaloGatherR (A P q s t u band a b L : ℕ) (R : Fin 117 → List (Fin 
     haloOriginAndGatherControlsR A (weightWorkspaceWidth P q (2*q+8) t u) s t band a b L (2*q+8) R else R
 
 def probeAndGatherHaloControlsCost (P q s t u band a b L : ℕ) : ℕ :=
-  generateHaloClassControlsCost P q s t u band a b L+
-    (if 0 < (haloLengthGroup s t band a b L).length then
-      preparedHaloAdvanceCost (weightWorkspaceWidth P q (2*q+8) t u) s t band a b L (2*q+8) else 0)+3
+  probeGeometryHaloGatherCost P q s t u band a b L
 
 theorem probeAndGatherHaloControls_exec (P q s t u band a b L : ℕ)
     (hP : 13 ≤ P) (hs : 0 < s) (hst : s < t) (hu : 1 ≤ u)
@@ -43,9 +41,8 @@ theorem probeAndGatherHaloControls_exec (P q s t u band a b L : ℕ)
     ∃ v' m, v'.user = v.user ∧ v'.flag = decide (0 < (haloLengthGroup s t band a b L).length) ∧ m ≤ probeAndGatherHaloControlsCost P q s t u band a b L ∧
       Exec body probeAndGatherHaloControls (mk v S) m
         (mk v' { S with R := probedHaloGatherR A P q s t u band a b L S.R }) := by
-  obtain ⟨v',n,hu',hflag,hn,he⟩ := probeGeometryHaloGather_exec (body := body) P q s t u band a b L
-    hs hst hband has hbs hL hLs hA v S hPSrc hq hsSrc htSrc huSrc hbSrc haSrc hbEndSrc hLSrc hblank hfresh
-  refine ⟨v',n,hu',hflag,hn.trans (probeGeometryHaloGatherCost_le_legacy hP q s t u band a b L),?_⟩
-  simpa only [probeAndGatherHaloControls,probedHaloGatherR,probedGeometryHaloGatherR] using he
+  simpa only [probeAndGatherHaloControls,probeAndGatherHaloControlsCost,probedHaloGatherR,probedGeometryHaloGatherR] using
+    probeGeometryHaloGather_exec (body := body) P q s t u band a b L
+      hs hst hband has hbs hL hLs hA v S hPSrc hq hsSrc htSrc huSrc hbSrc haSrc hbEndSrc hLSrc hblank hfresh
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

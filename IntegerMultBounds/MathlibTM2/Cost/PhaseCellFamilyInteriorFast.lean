@@ -24,7 +24,7 @@ def familyHaloControlCost (p l s t u target rhsExp a b : ℕ) : ℕ :=
   initializeHaloLengthKeysBound P N q l s t u band a b+
     ((haloLengthCandidates s t band a b).map (fun L =>
       cachedHaloClassSharedCost p l L s t u target rhsExp a b)).sum+
-    (t-s+1)*(3*tblC V V+49*V+49)+2*(V+w)+207
+    (t-s+1)*(haloControlCellCost P q w t u+12*V+13)+2*(V+w)+207
 
 theorem familyHaloInteriorGeometryCost_eq (p l s t u target rhsExp a b : ℕ) :
     familyHaloInteriorGeometryCost p l s t u target rhsExp a b =

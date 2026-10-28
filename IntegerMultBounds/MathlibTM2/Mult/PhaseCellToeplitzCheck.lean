@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellGeometryControlSizing
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryHaloGatherCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryHaloGatherControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCompleteGeometryHaloGather
@@ -3162,7 +3163,17 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblC_width_gap,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloClassCost_geometry_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloAdvanceCost_geometry_le,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.probeGeometryHaloGatherCost_le_legacy ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.probeGeometryHaloGatherCost_le_legacy,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPrecision_le_dimension_cube,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedAxisLog_sq_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedAxisBits_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedHaloGeometryWidth_sq_le,
+      `IntegerMultBounds.MathlibTM2.Cost.haloControlCellCost_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedHaloControlCells_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedWeightWorkspaceWidth_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedHaloControlCells_fast_le,
+      `IntegerMultBounds.MathlibTM2.Cost.geometryTableCost_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedHaloPhaseTables_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

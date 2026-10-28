@@ -38,7 +38,7 @@ def haloInteriorCostBound (p l s t u target rhsExp a b : ℕ) : ℕ :=
   initializeHaloLengthKeysBound P N q l s t u band a b+
     ((haloLengthCandidates s t band a b).map (fun L => haloClassSharedCost p l L s t u target rhsExp a b)).sum+
     (haloInterior s t band a b).card*batchCoordinateCost p l t u target rhsExp+
-    (t-s+1)*naturalClassCellCost p l t u target rhsExp+2+(2*(V+w)+5)
+    (t-s+1)*haloClassCellCost p l t u target rhsExp+2+(2*(V+w)+5)
 
 theorem haloLengthKeyLoopCost_le {s t : ℕ} [NeZero s] (hst : s < t) (p l u target rhsExp a b : ℕ) :
     let band := PhaseCellBand.width p u
@@ -47,13 +47,13 @@ theorem haloLengthKeyLoopCost_le {s t : ℕ} [NeZero s] (hst : s < t) (p l u tar
     haloLengthKeyLoopCost p l s t u target rhsExp V a b (haloLengthKeys s t band a b)+1 ≤
       ((haloLengthCandidates s t band a b).map (fun L => haloClassSharedCost p l L s t u target rhsExp a b)).sum+
         (haloInterior s t band a b).card*batchCoordinateCost p l t u target rhsExp+
-        (t-s+1)*naturalClassCellCost p l t u target rhsExp+2 := by
+        (t-s+1)*haloClassCellCost p l t u target rhsExp+2 := by
   dsimp only
   have hc := List.sum_le_sum (l := haloLengthKeys s t (PhaseCellBand.width p u) a b)
     (fun L _ => haloClassCost_le p l L s t u target rhsExp a b)
   have hs := haloLengthKeys_cost_le hst (PhaseCellBand.width p u) a b
     (fun L => haloClassSharedCost p l L s t u target rhsExp a b)
-    (batchCoordinateCost p l t u target rhsExp) (naturalClassCellCost p l t u target rhsExp)
+    (batchCoordinateCost p l t u target rhsExp) (haloClassCellCost p l t u target rhsExp)
   dsimp only [haloLengthKeyLoopCost]
   omega
 

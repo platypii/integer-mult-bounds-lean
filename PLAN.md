@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2262 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2264 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. The cached caller now executes geometry-width origin classification and advance controls for both empty and nonempty classes, converting origins to the unchanged numerical packet format; the legacy caller cost ledger remains an upper bound. All inverse kernels now satisfy the selected `t*(1+band²/d)*p^(129/128)` allowance, with density proved from the actual axis bounds and setup/control bills still explicit. Bounding those remaining bills and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. The cached caller executes geometry-width origin classification and advance controls for both empty and nonempty classes, converting origins to the numerical packet format. Their tighter price now reaches the retained interior ledger; selected-size bounds pay repeated cell controls and phase-table work in `O(t*p)`. Per-coordinate mask generation and the other remaining control/setup/storage bills are still explicit. All inverse kernels now satisfy the selected `t*(1+band²/d)*p^(129/128)` allowance, with density proved from the actual axis bounds and setup/control bills still explicit. Bounding those remaining bills and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -14593,3 +14593,47 @@ ordinary-scalar inverse, kernel caller and density caller. Every prior audit
 entry is retained and nine are added. Both new modules, all eight revised
 modules and the audit pass individual guarded checks below the 4 GiB module
 budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: tighter geometry ledger and selected phase-control bounds
+
+`probeAndGatherHaloControlsCost` now uses the new controller's actual allowance.
+The halo class ledgers separate shared work, numerical arithmetic and the
+repeated control bill
+`haloControlCellCost = 3*tblC(G,G)+47*G+10*V+59`, where `G` is geometry width
+and `V` is numerical workspace width. Cached origin handling adds `12*V+13`.
+The shared scan bill and advance setup also use `G`. The retained-family
+interior's `familyHaloControlCost` and its arithmetic/control split now carry
+these charges through the existing execution bound. The unrelated natural-cell
+controller retains its earlier pricing; halo pricing has its own cell ledger.
+
+`PhaseCellGeometryControlSizing` proves from the actual selected sizes that
+`p ≤ 48*d³`, `ell² ≤ 16*d*p`, and a data width `w ≤ cw*p` gives
+`(G+1)² ≤ 16*(size(cw)+13)²*d*p`. The selected numerical workspace is linear
+in `p` when `q ≤ w` and `u ≤ p`. These facts and the already proved axis density
+pay the repeated cached cell-control bill in `O(t*p)` uniformly in input size.
+`selectedHaloPhaseTables_fast_le` also prices the six candidate scans and
+per-cell advance table work in `O(t*p)`. No extra density or squared-width
+hypothesis is supplied to these selected bounds.
+
+The generic axis-density facts now live in the narrow `PhaseCellAxisDensity`
+module and are reused by both inverse-kernel density and controller sizing.
+Their names, statements and audit coverage are preserved.
+
+Remaining: combine shared/header/setup terms with the repeated-control bounds
+at the actual first/recovery working widths. The resource audit also identifies
+`couplingSourceMaskHostCost = (29*s+3)*tblC(V,1)+64*V+2*s+68`: it still pays
+quadratic geometry arithmetic per coordinate. The phase-density argument does
+not close that bill. A shared ordered-interval mask generator should instead
+pay endpoint arithmetic per phase and emit mask symbols linearly; coupling,
+publication and recovery masks should use that one construction. Generated
+setup multiplicities/amortization and simultaneous whole-execution live
+storage remain required. S3 stays partial; kappa is unchanged.
+
+Validation: the full affected-caller/standard-axiom audit rebuild passes all
+15,151 jobs (30.8 GiB combined peak RSS), including the complete selected
+ordinary-scalar inverse and density-bound caller at the revised prices. All
+prior audit entries remain and ten selected-sizing facts are added. Both new
+modules, all six revised modules and the audit pass individual guarded checks
+below the 4 GiB module budget. The extracted axis-density module checks below
+1 GiB. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.

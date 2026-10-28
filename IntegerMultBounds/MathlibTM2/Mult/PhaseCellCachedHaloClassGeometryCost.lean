@@ -22,7 +22,7 @@ def cachedHaloClassSharedCost (p l L s t u target rhsExp a b : ℕ) : ℕ :=
   let band := PhaseCellBand.width p u
   let V := weightWorkspaceWidth P q w t u
   installHaloGroupHeadersCost P N q l s t u band a b L+
-    haloOriginControlsSharedCost P q s t u band a b L+advanceControlsSharedCost V s w+
+    haloOriginControlsSharedCost P q s t u band a b L+advanceControlsSharedCost (haloGeometryWidth t w) s w+
     (2*(P+N+q+l+s+t+u+band+3*L+a+b)+28)+
     (142*s*w+rawNaturalGatherCost q s+2*(a+b)+5+70)+discardBatchOriginsCost P q t u 0+cachedClosedBatchCost p l 0 L s t u target rhsExp+7+
     (6*L+19*V+17)
@@ -32,7 +32,7 @@ def cachedHaloClassCellCost (p l t u target rhsExp : ℕ) : ℕ :=
   let q := executionPrecision p l target rhsExp
   let w := executionWidth p l target rhsExp
   let V := weightWorkspaceWidth P q w t u
-  cachedBatchCellCost p l target rhsExp+3*tblC V V+49*V+49
+  cachedBatchCellCost p l target rhsExp+haloControlCellCost P q w t u+12*V+13
 
 theorem cachedHaloClassCost_le (p l L s t u target rhsExp a b : ℕ) :
     let V := weightWorkspaceWidth (2^15*p) (executionPrecision p l target rhsExp)
@@ -48,16 +48,18 @@ theorem cachedHaloClassCost_le (p l L s t u target rhsExp a b : ℕ) :
   rw [cachedConditionalHaloClassCost]
   by_cases hB : 0 < (haloLengthGroup s t (PhaseCellBand.width p u) a b L).length
   · simp only [conditionalHaloGroupPreparationCost,probeAndGatherHaloControlsCost,
-      generateHaloClassControlsCost,prepareHaloClassControlsCost,preparedHaloClassCost,preparedHaloAdvanceCost,
+      probeGeometryHaloGatherCost,prepareGeometryHaloClassControlsCost,completeGeometryHaloGatherCost,
+      widenGeometryOriginsCost,preparedHaloClassCost,preparedHaloAdvanceCost,
       cachedProtectedControlledHaloClassCost,cachedBatchFromOriginsCost,discardBatchOriginsCost,hB,ite_eq_left,cachedHaloClassSharedCost,
-      haloOriginControlsSharedCost,advanceControlsSharedCost,cachedHaloClassCellCost]
+      haloOriginControlsSharedCost,advanceControlsSharedCost,cachedHaloClassCellCost,haloControlCellCost]
     rw [cachedClosedBatchCost_eq]
     simp only [hw]
     ring_nf
     omega
   · have hz : (haloLengthGroup s t (PhaseCellBand.width p u) a b L).length = 0 := by omega
     simp only [conditionalHaloGroupPreparationCost,probeAndGatherHaloControlsCost,
-      generateHaloClassControlsCost,prepareHaloClassControlsCost,preparedHaloClassCost,
+      probeGeometryHaloGatherCost,prepareGeometryHaloClassControlsCost,completeGeometryHaloGatherCost,
+      widenGeometryOriginsCost,preparedHaloClassCost,preparedHaloAdvanceCost,
       cachedHaloClassSharedCost,haloOriginControlsSharedCost,advanceControlsSharedCost,
       cachedHaloClassCellCost,discardBatchOriginsCost,hz,Nat.zero_mul,Nat.add_zero,Nat.lt_irrefl,↓reduceIte]
     simp only [hw]
