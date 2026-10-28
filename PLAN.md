@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2350 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2353 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15437,3 +15437,30 @@ Validation: all 15,261 affected audit-build jobs pass (3.5 GiB combined peak).
 All five changed/new modules and the audit pass individual guarded checks;
 peak RSS is 3,315 MiB. All 2,979 prior audit names remain and nine new facts
 are covered. Changed-file proof-integrity, plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: full shared setup has a uniform polynomial price
+
+The uncached interior constructor now reuses the cached arithmetic ledger through
+`haloInteriorCostBound_cached_le`. The comparison charges the actual per-class
+weight initialization and per-coordinate/cell weight generation explicitly.
+`haloInteriorCostBound_weights_poly` bounds this extra work structurally over the
+actual length candidates, without expanding concrete execution certificates.
+
+`selectedInteriorConstruction_poly_le` instantiates that comparison at the Schur
+constructor's precision and proves its whole interior cost is at most `C*t*p^4`.
+`selectedFamilySetup_poly_le` composes it with the column and factor preparation
+bounds: the entire generated shared setup is at most `C*t^6*p^4`, with no unpriced
+construction term. `selectedFamilyBatch_poly_fast_le` bounds the actual executed
+batch by that single setup bill plus
+`replicas*D*t*(1+band^2/d)*p^(129/128)`.
+
+Next: derive actual reuse-key multiplicities and amortizing replica counts;
+a polynomial setup bound alone does not establish that amortization. Simultaneous
+whole-caller compiled-machine storage also remains required. S3 stays partial;
+kappa is unchanged.
+
+Validation: all 15,264 affected audit-build jobs pass (3.5 GiB combined peak).
+All three new modules and the audit pass individual guarded checks; peak RSS
+is 3,316 MiB. All 2,988 prior audit names remain and eight new facts are covered.
+Changed-file proof-integrity, plan-status and whitespace checks pass.

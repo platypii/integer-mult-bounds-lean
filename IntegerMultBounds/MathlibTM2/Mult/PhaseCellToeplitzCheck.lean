@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedInteriorConstruction
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSchurColumn
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSchurTableFormatting
@@ -3486,7 +3488,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.retainedIndexedColumnCost_controls_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedIndexedSchurColumn_interior_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_interiorConstruction_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedLiftedCoefficientWidth_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedLiftedCoefficientWidth_le,
+      `IntegerMultBounds.MathlibTM2.Cost.sizedClosedBatchBound_zero_cached_le,
+      `IntegerMultBounds.MathlibTM2.Cost.haloClassSharedCost_cached_le,
+      `IntegerMultBounds.MathlibTM2.Cost.haloInteriorCostBound_cached_le,
+      `IntegerMultBounds.MathlibTM2.Cost.haloInteriorCostBound_weights_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorConstruction_weights_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorConstruction_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatch_poly_fast_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
