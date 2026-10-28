@@ -19,7 +19,7 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 144 Q A U}
 def outerCouplingSourceMask (boundary : Bool) : Pr P₀ 144 Q A U := embProg groupReg Empty.elim (closedCouplingSourceMask (P₀ := Empty) boundary)
 
 theorem outerCouplingSourceMask_exec (boundary : Bool) {P q w s t u band a b : ℕ} [NeZero s]
-    (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s)
+    (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hbandS : band ≤ s) (hA : 4 ≤ A)
     (raw : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
     (hready : CouplingReady P q w s t u band a b raw (embStk groupReg S)) :
     ∃ v' n, v'.user = v.user ∧ n ≤ closedCouplingSourceMaskCost s t band a b ∧
@@ -27,7 +27,7 @@ theorem outerCouplingSourceMask_exec (boundary : Bool) {P q w s t u band a b : �
         (mk v' {S with R := Function.update S.R 109 (couplingSourceMaskSymbols boundary A s t band a b)}) := by
   obtain ⟨v₁,n,hu₁,hn,he₁⟩ := closedCouplingSourceMask_exec boundary (body := fun p : Empty => nomatch p)
     (s := s) (t := t) (band := band) (a := a) (b := b)
-    hst haS hbS (embDn groupReg v) (embStk groupReg S)
+    hst haS hbS hA (embDn groupReg v) (embStk groupReg S)
     hready.axis hready.period hready.bandwidth hready.lower hready.upper (hready.fresh 115 (by simp))
     (hready.fresh 106 (by simp)) (hready.fresh 108 (by simp))
     (fun r hr => hready.low r (by omega))

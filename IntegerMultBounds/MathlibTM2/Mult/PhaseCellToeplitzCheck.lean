@@ -3236,7 +3236,19 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunMaskFromHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedHaloRunMask_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedHaloRunMaskCost_le,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedHaloRunMaskCost_halo_le ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedHaloRunMaskCost_halo_le,
+      `IntegerMultBounds.MathlibTM2.Host.windowWord_length,
+      `IntegerMultBounds.MathlibTM2.Host.windowWord_map_range,
+      `IntegerMultBounds.MathlibTM2.Host.windowStep_fx,
+      `IntegerMultBounds.MathlibTM2.Host.windowStep_frame,
+      `IntegerMultBounds.MathlibTM2.Host.windowStep_fold,
+      `IntegerMultBounds.MathlibTM2.Host.windowScan_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowMask_pushBound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowMask_certify,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.windowMask_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedHaloRunMaskCost_le_sharp,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedCouplingRunMaskCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedCouplingRunMask_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

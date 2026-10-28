@@ -32,7 +32,7 @@ theorem prepareMaskedCouplingSource_exec {P q w s t u band a b : ℕ} [NeZero s]
           if j ∈ (if boundary then haloBoundary s t band a b else haloInterior s t band a b)
           then C j else 0))++S.R 141)}) := by
   obtain ⟨v₁,m₁,hu₁,hm₁,he₁⟩ := outerCouplingSourceMask_exec (body := body) boundary
-    hst haS hbS hbandS (cstream A w (chirpLine s C)++tail) v S hready
+    hst haS hbS hbandS hA (cstream A w (chirpLine s C)++tail) v S hready
   let S₁ : Stacks 144 A := {S with R := Function.update S.R 109 (couplingSourceMaskSymbols boundary A s t band a b)}
   have hs : (S.R 97).length = s := hready.axis
   have hw : (S.R 94).length = w := hready.width

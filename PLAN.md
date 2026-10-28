@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2279 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2282 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14783,4 +14783,47 @@ Validation: the full affected-caller/standard-axiom audit rebuild passes all
 combined peak RSS, 4.2 minutes). All twelve new/revised modules pass individual
 guarded checks, with a largest peak below 3,060 MiB. All 2,774 prior audit names
 remain and eight new facts are added. Proof-integrity, plan-status and
+whitespace checks pass.
+
+### S3 checkpoint: shared linear window filter and coupling backend
+
+`Host.WindowStream` proves one structural counter-based filter over an arbitrary
+stream. Two decreasing unary counters determine whether each symbol lies in
+`[a,b)`; the program applies one symbol map inside and another outside. The
+prefix fold proof preserves an arbitrary borrowed suffix, and
+`windowWord_map_range` identifies the result with coordinate-wise window
+selection. This also handles reversed/empty windows without a separate case
+program. `windowScan_exec` reuses `scanR` and costs `4*s+4` steps.
+
+`windowMask` copies its two ordinary unary bounds, filters exactly `s` symbols,
+restores the scan header and all scratch, and publishes the result in
+`4*(a+b)+6*s+14` steps. `windowMask_certify` derives an execution-wide stack
+bound for the same execution from the shared structural push certificate.
+The symbol-map form supports both clipping and filling windows, which the
+recovery guard will also need.
+
+Both actual `closedCouplingSourceMask` branches now use the interval pipeline.
+The interior selects the halo-interior symbols directly; the boundary selects
+the complement and clips it to `[a,b)` with the native window filter. The new
+cost is `closedHaloRunMaskCost+windowMaskCost`, so quadratic geometry work is
+per phase and the additional filtering is linear. A sharper `3600` coarse
+bound for the common run pipeline leaves enough allowance to preserve the
+existing `4000` coupling compatibility bound after adding the window pass.
+The already available alphabet-size hypothesis is threaded through the outer
+coupling wrapper; exact output symbols and caller stack effects are preserved.
+
+Remaining: install the recovery guard using the common interval producer and
+window operations. Its exterior predicate includes both the expanded-halo
+complement and ambient nonwrapping guards; the shifted/clipped window bounds
+must be computed once from ordinary scalars. Publication and coupling are
+installed; recovery still uses per-coordinate geometry. Selected bounds for
+the full mask ledger, shared/header/setup accounting, setup amortization and
+simultaneous whole-caller compiled-machine storage remain open. S3 stays
+partial; kappa is unchanged.
+
+Validation: the full affected-caller/standard-axiom audit rebuild passes all
+15,174 jobs, including the selected retained-family inverse caller (30.8 GiB
+combined peak RSS, 5.8 minutes). All eight new/revised modules pass individual
+guarded checks, with a largest peak below 3,061 MiB. All 2,782 prior audit names
+remain and twelve new facts are added. Proof-integrity, plan-status and
 whitespace checks pass.

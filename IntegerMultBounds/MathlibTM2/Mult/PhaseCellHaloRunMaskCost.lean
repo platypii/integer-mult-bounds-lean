@@ -9,9 +9,9 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 
 open IntegerMultBounds.MathlibTM2.Fast.TableVM IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
-theorem closedHaloRunMaskCost_le (s t band a b : ℕ) :
+theorem closedHaloRunMaskCost_le_sharp (s t band a b : ℕ) :
     closedHaloRunMaskCost s t band a b ≤
-      4000*(s+t+band+a+b+1)*(publicationGeometryWidth t band+4)^2 := by
+      3600*(s+t+band+a+b+1)*(publicationGeometryWidth t band+4)^2 := by
   let W := publicationGeometryWidth t band
   let H := s+t+band+a+b+1
   let N := t-s+1
@@ -55,8 +55,14 @@ theorem closedHaloRunMaskCost_le (s t band a b : ℕ) :
       haloRunEmissionWidth,setHaloRunEmissionWidthCost,generatePublicationWidthCost,tblC,W,N,R,D]
     ring
   rw [heq]
-  change _ ≤ 4000*H*D
+  change _ ≤ 3600*H*D
   nlinarith only [hlinear,htable,hload,hpairs,houtput,hscan,hgeometry]
+
+theorem closedHaloRunMaskCost_le (s t band a b : ℕ) :
+    closedHaloRunMaskCost s t band a b ≤
+      4000*(s+t+band+a+b+1)*(publicationGeometryWidth t band+4)^2 :=
+  (closedHaloRunMaskCost_le_sharp s t band a b).trans
+    (Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (by decide : 3600 ≤ 4000)))
 
 theorem closedHaloRunMaskCost_halo_le {s t band a b : ℕ}
     (hst : s ≤ t) (hband : band ≤ s) (ha : a ≤ s) (hb : b ≤ s) :
