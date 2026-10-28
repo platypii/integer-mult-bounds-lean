@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2332 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2334 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15254,4 +15254,32 @@ S3 stays partial; kappa is unchanged.
 Validation: all 15,243 affected audit-build jobs pass (3.5 GiB combined peak).
 All three new modules and the audit pass individual guarded checks; peak RSS is
 3,314 MiB. All 2,935 prior audit names remain and five new facts are covered.
+New-file proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: shared setup reduced to factor and coupling construction
+
+`sharedPagePublicationSetupCost_poly` bounds the actual coordinate unfolding and
+advance generation, retaining their quadratic axis-volume charge.
+`boundaryPermanentSizeBound_poly` prices the retained factor bank's numerical
+headers and pages. `retirePackedBandTableCost_poly` prices every counted table
+retirement row; `placedFactorBatchReleaseCostBound_zero_poly` includes the full
+owned-bank release and its simultaneous retained-volume bound.
+`couplingKeyReleaseCost_poly` uses the actual generated coefficient-page length
+to include page retirement, count/guard cleanup and scalar-header release.
+
+`selectedFamilySetup_construction_le` applies these prices at the actual inverse
+precision, together with the numerical weight-family price. It bounds the whole
+executed family setup by just `constructedBoundaryFactorCostBound`,
+`couplingKeySetupCost`, and `C*t^2*p^4`. Publication, transfers, numerical family
+generation and every final setup cleanup are included in that polynomial term.
+No factor or coefficient construction bill is treated as supplied or free, and
+no quadratic setup work is silently assigned the repeated line bound.
+
+Next: bound those two remaining numerical construction bills, prove the actual
+reuse-key multiplicities and amortizing replica counts, and certify simultaneous
+whole-caller compiled-machine storage. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,245 affected audit-build jobs pass (3.5 GiB combined peak).
+Both new modules and the audit pass individual guarded checks; peak RSS is
+3,314 MiB. All 2,940 prior audit names remain and six new facts are covered.
 New-file proof-integrity, plan-status and whitespace checks pass.
