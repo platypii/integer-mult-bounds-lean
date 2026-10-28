@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCoefficientLoad
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCoefficientLoadLinear
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCoefficientWidth
 
 /-! # Prepare the numerical table input from owned unary geometry headers
@@ -23,10 +23,10 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 def geometryHeaderPorts : List (Fin 117) := [97, 98, 99, 100, 115]
 
 def prepareCoefficientHeaders : Pr P₀ 117 Q A U :=
-  .seq initializeCoefficientBank (.seq loadCoefficientHeaders (clearWords geometryHeaderPorts))
+  .seq initializeCoefficientBank (.seq loadCoefficientHeadersLinear (clearWords geometryHeaderPorts))
 
 def prepareCoefficientHeadersCost (P s t u band L V W : ℕ) : ℕ :=
-  (292 * V + 4 * W + 393) + coefficientHeadersCost P s t u band L V +
+  (292 * V + 4 * W + 393) + coefficientHeadersLinearCost P s t u band L V +
     (2 * (s + t + u + band + V) + 11)
 
 /-- A concrete loader supplies every table precondition and preserves all
@@ -36,7 +36,8 @@ theorem prepareCoefficientHeaders_exec (P s t u band L V W : ℕ)
     (hP : (S.R 114).length = P) (hs : (S.R 97).length = s) (ht : (S.R 98).length = t)
     (hu : (S.R 99).length = u) (hb : (S.R 100).length = band) (hL : (S.R 102).length = L)
     (hV : (S.R 115).length = V) (hW : (S.R 94).length = W) (hz : S.R 106 = [])
-    (hblank : ∀ r, S.R (coefficientReg r) = []) :
+    (hblank : ∀ r, S.R (coefficientReg r) = [])
+    (hfit : ∀ x ∈ [P,s,t,u,band,L], Nat.size x ≤ V) :
     ∃ v' S' m, v'.user = v.user ∧ m ≤ prepareCoefficientHeadersCost P s t u band L V W ∧
       Exec body prepareCoefficientHeaders (mk v S) m (mk v' S') ∧
       tblHolds coefficientReg S' (tblRho V (List.replicate V tick) (List.replicate W tick)
@@ -51,8 +52,8 @@ theorem prepareCoefficientHeaders_exec (P s t u band L V W : ℕ)
     have hr := coefficientReg_range r
     rw [he] at hk
     omega
-  obtain ⟨v₂, S₂, m₂, hu₂, hm₂, he₂, hholds₂, hframe₂⟩ := loadCoefficientHeaders_exec (body := body)
-    P s t u band L V W v₁ S₁
+  obtain ⟨v₂, S₂, m₂, hu₂, hm₂, he₂, hholds₂, hframe₂⟩ := loadCoefficientHeadersLinear_exec (body := body)
+    P s t u band L V W hfit v₁ S₁
     (by rw [hoff₁ 114 (by decide)]; exact hP) (by rw [hoff₁ 97 (by decide)]; exact hs)
     (by rw [hoff₁ 98 (by decide)]; exact ht) (by rw [hoff₁ 99 (by decide)]; exact hu)
     (by rw [hoff₁ 100 (by decide)]; exact hb) (by rw [hoff₁ 102 (by decide)]; exact hL) hholds₁

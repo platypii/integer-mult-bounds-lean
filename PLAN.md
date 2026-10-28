@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2296 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2300 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14956,3 +14956,36 @@ Validation: all 15,189 affected audit-build jobs pass (3.5 GiB combined peak).
 The new module and audit pass individual guarded checks at 2,962 and 3,062 MiB
 peak respectively. All 2,826 prior audit names remain, with three new theorems
 covered. Proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: linear unary-header conversion for numerical setup
+
+The numerical coefficient loader previously charged every source-header symbol
+at the large construction word width. That left an axis-length times quadratic
+precision term, which a bound on dimension-independent construction alone could
+not absorb. The actual generator now uses a halving-based loader.
+
+`Host.unaryBinary` reuses the verified halving loop to generate the minimal
+binary word while retaining arbitrary unary input symbols. `unaryBinaryWidth`
+pads once, restores all scratch registers, and costs at most `21*n+12*W+28`.
+`tbl_load_linear_runs` adapts this structural execution to arbitrary table layouts.
+The six actual coefficient headers load in
+`21*(P+s+t+u+band+L)+84*V+181` steps. The header generator derives every fit from
+its existing workspace-width theorem; no new caller hypothesis is required.
+
+`PhaseCellNumericalSetupPolynomial` bounds scalar readiness and the complete
+executed numerical generator by fixed polynomials in a common scalar budget.
+Its header-generator bound separates `100*(s+t+band)` from the polynomial
+construction term. This supplies the decomposition needed for selected setup
+amortization without retaining an axis-length times large-width factor.
+
+Remaining: instantiate and absorb the numerical polynomial at selected sizes,
+combine the full zero-cell batch setup sum, finish the other caller controls
+and shared setup multiplicities/amortization, and prove simultaneous whole-caller
+compiled-machine storage. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,210 affected build jobs pass, including the complete selected
+family inverse caller and standard-axiom audit (31.9 GiB combined peak, seven
+minutes). All six new/modified implementation and cost modules plus the audit
+pass individual guarded checks below 4 GiB. All 2,829 prior audit names remain
+and nine new theorems are covered. Proof-integrity, plan-status and whitespace
+checks pass.

@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellNumericalSetupPolynomial
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellInteriorControlRemainder
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedInteriorInitialization
@@ -3297,7 +3299,16 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorSetupControls_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.cachedHaloClassSharedCost_native_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyHaloControlCost_native_fast_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorNativeControls_fast_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedInteriorNativeControls_fast_le,
+      `IntegerMultBounds.MathlibTM2.Host.reverse_msbBits_symbols,
+      `IntegerMultBounds.MathlibTM2.Host.unaryBinary_exec,
+      `IntegerMultBounds.MathlibTM2.Host.unaryBinaryWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Fast.TableVM.tbl_load_linear_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadCoefficientListLinear_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.loadCoefficientHeadersLinear_exec,
+      `IntegerMultBounds.MathlibTM2.Cost.scalarPrepareCost_le,
+      `IntegerMultBounds.MathlibTM2.Cost.numericalGeneratorSetupCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.headerGeneratorSetupCost_poly ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

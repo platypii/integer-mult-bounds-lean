@@ -79,6 +79,7 @@ theorem headerGeneratorSetup_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     have h115 : coefficientReg r ≠ (115 : Fin 117) := by intro he; have hv := congrArg Fin.val he; omega
     rw [hoff₂ _ h94 h115]
     exact hcore _ (by omega)
+  obtain ⟨_,hPf,hsf,htf,huf,hbf,hLf,_⟩ := coefficientWorkspaceWidth_bound P W s t u band L hst
   obtain ⟨v₃, S₃, m₃, hu₃, hm₃, he₃, hholds, hin, hout, hleft, hframe⟩ := prepareCoefficientHeaders_exec (body := body)
     P s t u band L V W v₂ S₂
     (by rw [hoff₂ 114 (by decide) (by decide)]; exact hprecision)
@@ -88,7 +89,11 @@ theorem headerGeneratorSetup_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (by rw [hoff₂ 100 (by decide) (by decide)]; exact hband)
     (by rw [hoff₂ 102 (by decide) (by decide)]; exact hrows)
     (by simp [S₂]) (by simp [S₂, S₁, setupWidthBank, W])
-    (by rw [hoff₂ 106 (by decide) (by decide)]; exact hfresh 106 (by simp)) htableBlank
+    (by rw [hoff₂ 106 (by decide) (by decide)]; exact hfresh 106 (by simp)) htableBlank (by
+      intro x hx
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hx
+      rcases hx with rfl | rfl | rfl | rfl | rfl | rfl
+      all_goals apply Nat.size_le.mpr; assumption)
   have hbase (k : Fin 117) (hk : 63 ≤ k.val) : S₃.R k = (unaryGeometryBase S P q M).R k := by
     rw [hframe k hk]
     by_cases hg : k ∈ geometryHeaderPorts
