@@ -25,21 +25,20 @@ def preparedHaloAdvanceCost (V s t band a b L w : ℕ) : ℕ :=
   (32*V+41) + (w*(4*V+10)+6*V+10) +
     ((haloLengthGroup s t band a b L).length*(3*tblC V V+29*V+30)+8*s*w+11) + (38*V+39)
 
-theorem preparedHaloAdvanceControls_exec (P q w s t u band a b L : ℕ)
-    (hst : s ≤ t) (hgroup : 0 < (haloLengthGroup s t band a b L).length)
+theorem preparedHaloAdvanceControls_bounds_exec (V w s t band a b L : ℕ)
+    (hwV : w < 2^V) (hsW : s < 2^V) (hsV : s*w < 2^V)
+    (hgroup : 0 < (haloLengthGroup s t band a b L).length)
     (v : HS 117 Q A U) (S : Stacks 117 A) (suffix : List (Fin (A+4)))
-    (hV : (S.R 115).length = weightWorkspaceWidth P q w t u) (hw : (S.R 94).length = w)
-    (hsrc : S.R 109 = haloOriginPackets A (weightWorkspaceWidth P q w t u) s t band a b L ++ suffix)
+    (hV : (S.R 115).length = V) (hw : (S.R 94).length = w)
+    (hsrc : S.R 109 = haloOriginPackets A (V) s t band a b L ++ suffix)
     (hcount : S.R 116 = List.replicate (haloLengthGroup s t band a b L).length tick)
     (hblank : ∀ k : Fin 117, k.val < 19 → S.R k = [])
     (hfresh : ∀ k ∈ [(88 : Fin 117), 89, 90, 106], S.R k = []) :
     ∃ v' S' n, v'.user = v.user ∧
-      n ≤ preparedHaloAdvanceCost (weightWorkspaceWidth P q w t u) s t band a b L w ∧
+      n ≤ preparedHaloAdvanceCost (V) s t band a b L w ∧
       Exec body preparedNaturalAdvanceControls (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
       S'.R = Function.update S.R 91 (haloGatherControls A s t band a b L w ++ S.R 91) := by
-  let V := weightWorkspaceWidth P q w t u
-  obtain ⟨hwV, hsV⟩ := weightWorkspaceWidth_symbolVolume P q w s t u hst
   have hB := hgroup
   have hL : 0 < L := ((mem_haloLengthGroup s t band a b L _).mp
     (haloGroupPhase_mem s t band a b L ⟨0, hB⟩)).2.1
@@ -51,7 +50,6 @@ theorem preparedHaloAdvanceControls_exec (P q w s t u band a b L : ℕ)
     have hlt : haloStart s t band a phase < s := by
       dsimp only [haloLength] at he
       omega
-    have hsW : s < 2^V := (coefficientWorkspaceWidth_bound P (w+q+2) s t u 0 t hst).2.2.1
     exact hlt.trans hsW
   have hunits : ∀ origin ∈ haloOrigins s t band a b L, origin*w < 2^V := by
     intro origin ho
@@ -109,7 +107,6 @@ theorem preparedHaloAdvanceControls_exec (P q w s t u band a b L : ℕ)
   · have hvol := haloOriginAdvances_volume s t band a b L w
     simp only [haloOrigins_length] at hn₃
     unfold preparedHaloAdvanceCost
-    dsimp only [V] at *
     nlinarith only [hn₂, hn₃, hn₄, hvol]
   · funext k
     by_cases hk91 : k = 91
@@ -118,5 +115,24 @@ theorem preparedHaloAdvanceControls_exec (P q w s t u band a b L : ℕ)
     by_cases hk : k.val < 19
     · simp [S₄, hk, hk91, hblank k hk]
     simp [S₄, hk, hk91, hoff₃ k (by omega) hk91]
+
+theorem preparedHaloAdvanceControls_exec (P q w s t u band a b L : ℕ)
+    (hst : s ≤ t) (hgroup : 0 < (haloLengthGroup s t band a b L).length)
+    (v : HS 117 Q A U) (S : Stacks 117 A) (suffix : List (Fin (A+4)))
+    (hV : (S.R 115).length = weightWorkspaceWidth P q w t u) (hw : (S.R 94).length = w)
+    (hsrc : S.R 109 = haloOriginPackets A (weightWorkspaceWidth P q w t u) s t band a b L ++ suffix)
+    (hcount : S.R 116 = List.replicate (haloLengthGroup s t band a b L).length tick)
+    (hblank : ∀ k : Fin 117, k.val < 19 → S.R k = [])
+    (hfresh : ∀ k ∈ [(88 : Fin 117), 89, 90, 106], S.R k = []) :
+    ∃ v' S' n, v'.user = v.user ∧
+      n ≤ preparedHaloAdvanceCost (weightWorkspaceWidth P q w t u) s t band a b L w ∧
+      Exec body preparedNaturalAdvanceControls (mk v S) n (mk v' S') ∧
+      S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
+      S'.R = Function.update S.R 91 (haloGatherControls A s t band a b L w ++ S.R 91) := by
+  have hvolume := weightWorkspaceWidth_symbolVolume P q w s t u hst
+  have hsW := (coefficientWorkspaceWidth_bound P (w+q+2) s t u 0 t hst).2.2.1
+  exact preparedHaloAdvanceControls_bounds_exec (body := body)
+    (weightWorkspaceWidth P q w t u) w s t band a b L hvolume.1 hsW hvolume.2
+    hgroup v S suffix hV hw hsrc hcount hblank hfresh
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

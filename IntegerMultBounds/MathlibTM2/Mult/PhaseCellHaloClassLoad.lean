@@ -57,20 +57,20 @@ def preparedHaloClass : Pr P₀ 117 Q A U :=
 def preparedHaloClassCost (s t band a b L V : ℕ) : ℕ :=
   (104*V+137)+haloClassHeadersCost s t band a b L V+((36*(t-s+1)+9)*tblC V V+(haloLengthGroup s t band a b L).length*(8*V+6)+6)+(62*V+63)
 
-theorem preparedHaloClass_exec (P q w s t u band a b L : ℕ)
-    (hP : 13 ≤ P) (hs : 0 < s) (hst : s < t) (hu : 1 ≤ u) (hband : band ≤ s) (has : a ≤ s) (hbs : b ≤ s) (hL : 0 < L) (hLs : L ≤ s) (hA : 4 ≤ A)
+theorem preparedHaloClass_width_exec (V s t band a b L : ℕ)
+    (hwide : 8*(t+1)^2+2*band+8 < 2^V)
+    (hs : 0 < s) (hst : s < t) (hband : band ≤ s) (has : a ≤ s) (hbs : b ≤ s) (hL : 0 < L) (hLs : L ≤ s) (hA : 4 ≤ A)
     (v : HS 117 Q A U) (S : Stacks 117 A)
     (hsSrc : (S.R 97).length = s) (htSrc : (S.R 98).length = t) (hbSrc : (S.R 100).length = band)
     (haSrc : (S.R 111).length = a) (hbEndSrc : (S.R 113).length = b) (hLSrc : (S.R 102).length = L)
-    (hV : (S.R 115).length = weightWorkspaceWidth P q w t u) (h104 : S.R 104 = []) (h106 : S.R 106 = []) (h116 : S.R 116 = [])
+    (hV : (S.R 115).length = V) (h104 : S.R 104 = []) (h106 : S.R 106 = []) (h116 : S.R 116 = [])
     (hblank : ∀ k : Fin 117, k.val < 31 → S.R k = []) :
     ∃ v' S' n, v'.user = v.user ∧
-      n ≤ preparedHaloClassCost s t band a b L (weightWorkspaceWidth P q w t u) ∧
+      n ≤ preparedHaloClassCost s t band a b L (V) ∧
       Exec body preparedHaloClass (mk v S) n (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
-      S'.R = Function.update (Function.update S.R 109 (haloOriginPackets A (weightWorkspaceWidth P q w t u) s t band a b L ++ S.R 109))
+      S'.R = Function.update (Function.update S.R 109 (haloOriginPackets A (V) s t band a b L ++ S.R 109))
         116 (List.replicate (haloLengthGroup s t band a b L).length tick) := by
-  let V := weightWorkspaceWidth P q w t u
   obtain ⟨v₁, hu₁, he₁, hh₁⟩ := initializeOriginBank_exec (body := body) V v S hV h106
     (fun r => hblank _ (originReg_range r))
   let S₁ : Stacks 117 A := { S with R := chirpBankLoadR originReg (fun _ => 106) V V (fun _ => 0) S.R }
@@ -92,7 +92,6 @@ theorem preparedHaloClass_exec (P q w s t u band a b L : ℕ)
     (by rw [hoff₁ 102 (by decide)]; exact hLSrc) hh₁
   have hoff₂ (k : Fin 117) (hk : 31 ≤ k.val) : S₂.R k = S.R k :=
     (hf₂.2.2.2 k (hhigh k hk)).trans (hoff₁ k hk)
-  obtain ⟨hwide, _⟩ := weightWorkspaceWidth_control (q := q) (w := w) hP hs hst hu hband
   obtain ⟨v₃, S₃, n₃, st₃, hu₃, hn₃, he₃, hout₃, hcount₃, hh₃, hb₃, hi₃, ho₃, hl₃, hf₃⟩ :=
     haloClassController_exec (body := body) hs hst hband has hbs hL hLs hwide hA v₂ S₂ hh₂
       (by rw [hoff₂ 104 (by decide)]; exact h104)
@@ -106,15 +105,32 @@ theorem preparedHaloClass_exec (P q w s t u band a b L : ℕ)
     Exec.seq he₁ (Exec.seq he₂ (Exec.seq he₃ he₄)), hi₃.trans hf₂.1,
     ho₃.trans hf₂.2.1, hl₃.trans hf₂.2.2.1, ?_⟩
   · unfold preparedHaloClassCost
-    dsimp only [V] at *
     omega
   · funext k
     by_cases hk109 : k = 109
-    · subst k; simpa [S₄, hoff₂ 109 (by decide), V] using hout₃
+    · subst k; simpa [S₄, hoff₂ 109 (by decide)] using hout₃
     by_cases hk116 : k = 116
     · subst k; simpa [S₄] using hcount₃
     by_cases hk : k.val < 31
     · simp [S₄, hk, hk109, hblank k hk,hk116]
     simp [S₄, hk, hk109,hk116, hoff₃ k (by omega) hk109 hk116]
+
+theorem preparedHaloClass_exec (P q w s t u band a b L : ℕ)
+    (hP : 13 ≤ P) (hs : 0 < s) (hst : s < t) (hu : 1 ≤ u) (hband : band ≤ s) (has : a ≤ s) (hbs : b ≤ s) (hL : 0 < L) (hLs : L ≤ s) (hA : 4 ≤ A)
+    (v : HS 117 Q A U) (S : Stacks 117 A)
+    (hsSrc : (S.R 97).length = s) (htSrc : (S.R 98).length = t) (hbSrc : (S.R 100).length = band)
+    (haSrc : (S.R 111).length = a) (hbEndSrc : (S.R 113).length = b) (hLSrc : (S.R 102).length = L)
+    (hV : (S.R 115).length = weightWorkspaceWidth P q w t u) (h104 : S.R 104 = []) (h106 : S.R 106 = []) (h116 : S.R 116 = [])
+    (hblank : ∀ k : Fin 117, k.val < 31 → S.R k = []) :
+    ∃ v' S' n, v'.user = v.user ∧
+      n ≤ preparedHaloClassCost s t band a b L (weightWorkspaceWidth P q w t u) ∧
+      Exec body preparedHaloClass (mk v S) n (mk v' S') ∧
+      S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
+      S'.R = Function.update (Function.update S.R 109 (haloOriginPackets A (weightWorkspaceWidth P q w t u) s t band a b L ++ S.R 109))
+        116 (List.replicate (haloLengthGroup s t band a b L).length tick) := by
+  obtain ⟨hwide, _⟩ := weightWorkspaceWidth_control (q := q) (w := w) hP hs hst hu hband
+  exact preparedHaloClass_width_exec (body := body) (weightWorkspaceWidth P q w t u)
+    s t band a b L hwide hs hst hband has hbs hL hLs hA v S
+    hsSrc htSrc hbSrc haSrc hbEndSrc hLSrc hV h104 h106 h116 hblank
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

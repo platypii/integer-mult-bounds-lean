@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2249 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2252 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14430,3 +14430,44 @@ Validation: the expanded standard-axiom audit passes all 15,136 jobs (3.4 GiB
 combined peak RSS), preserving all prior entries and adding six. Both new
 modules and the audit pass individual guarded checks below the 4 GiB module
 budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.
+
+### S3 checkpoint: geometry-width origin generation and advancement
+
+The remaining halo ledger charges `(36*(t-s+1)+9)*tblC V V` for origin
+classification and a quadratic table allowance per emitted advance, with `V`
+currently the coefficient workspace width. Density alone does not establish
+that those charges fit the intended fast envelope. Geometry arithmetic must
+use geometry bits rather than coefficient precision.
+
+`preparedHaloClass_width_exec` now proves origin/count generation for an
+arbitrary width satisfying the actual phase-arithmetic room inequality.
+`preparedHaloAdvanceControls_bounds_exec` similarly needs only room for the
+coordinate, data-word width and their product. Both proofs retain the actual
+programs, ordered packets, owned count, source restoration and exact scratch
+release. The earlier coefficient-width interfaces are corollaries, preserving
+all existing callers.
+
+`haloAdvanceWidth` is at most `size(s)+size(w)`. The joint `haloControlWidth`
+also covers origin arithmetic and is bounded by
+`max (2*size(t+1)+5) (size(s)+size(w))` when `band ≤ t`.
+`haloGeometryWidth = 2*(size(t)+size(band))+7+size(w)` covers both controllers.
+`generateHaloGeometryWidth_exec` constructs this header from ordinary unary
+`t`, band and data-word-width sources, restores them and releases its scratch.
+`prepareGeometryHaloClassControls_exec` composes runtime data-word sizing,
+this geometry-width generator and origin/count generation from ordinary
+headers; it supplies no precomputed geometry-width or readiness premise.
+
+This is a generated control-prefix milestone. The complete inverse still uses
+its earlier coefficient-width control path. Next, integrate the geometry-width
+origin/advance path while reconciling the numerical batch's existing origin
+packet width, then replace the corresponding caller ledger charges. Remaining
+control/tape bills, setup multiplicities/amortization and simultaneous live
+storage remain open. S3 stays partial; kappa is unchanged.
+
+Validation: the generalized contracts pass the full 15,137-job affected-caller
+rebuild (30.7 GiB combined peak RSS). With the generated prefix included, the
+expanded standard-axiom audit passes all 15,139 jobs (3.5 GiB combined peak RSS),
+preserving all prior entries and adding eleven. All three new modules, both
+revised modules and the audit pass individual guarded checks below the 4 GiB
+module budget. Proof-integrity, audit-coverage, plan-status and whitespace
+checks pass.

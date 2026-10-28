@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareGeometryHaloClassControls
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloAdvanceWidth
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyDensityCaller
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellFamilyKernelCaller
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellRetainedCouplingPass
@@ -3124,7 +3126,18 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.selectedAxisGapVolume_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_density_fast_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyComplexBatch_selected_density_fast_le,
-      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_density_spec ] do
+      `IntegerMultBounds.MathlibTM2.Cost.familyInverseCaller_selected_density_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloAdvanceControls_bounds_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloClass_width_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloAdvanceWidth_bounds,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloAdvanceWidth_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloControlWidth_bounds,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloControlWidth_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloAdvanceControls_compact_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloClass_compact_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloControlWidth_le_geometryWidth,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateHaloGeometryWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareGeometryHaloClassControls_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
