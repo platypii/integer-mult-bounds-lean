@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2337 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2340 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15310,4 +15310,36 @@ kappa is unchanged.
 Validation: all 15,248 affected audit-build jobs pass (3.5 GiB combined peak).
 All three new modules and the audit pass individual guarded checks; peak RSS is
 3,314 MiB. All 2,946 prior audit names remain and six new facts are covered.
+New-file proof-integrity, plan-status and whitespace checks pass.
+
+### S3 checkpoint: packed addressing and factor-page assembly have proved prices
+
+`packedBandWordCount_le_rows` is a structural bound on arbitrary packed blocks.
+`packedSizeStepCost_le` and `packedSizeSumCost_poly` price the executed counted
+suffix scans used to compute packed addresses. `rankedBoundaryEntryCost_poly`
+includes address generation, resident word lookup and restoration;
+`factorWordCost_poly` also includes rank/band choices and generated zero padding.
+
+Generic finite-sum bounds then price factor rows, sliding steps, the complete
+input loop and the initial factor window. `factorPageCost_poly` covers the
+actual page assembler without expanding concrete table data.
+`selectedGeneratedFactorPage_poly_le` instantiates its dimensions and precision
+from the actual selected boundary caller, including generated band headers and
+release. The resulting `C*t^5` setup price is deliberately coarse; no address scan
+is assigned the fast repeated-line rate.
+
+`selectedFamilySetup_factorArithmetic_le` reaches the full executed family setup
+ledger. Only computed Schur-table construction, numerical factor setup and the
+band factor-arithmetic preparation remain explicit; the other construction,
+assembly, publication and cleanup work is covered by `C*t^5*p^4`.
+The original `C*t^2*p^4` reduction with the whole factor-construction bill explicit
+remains available as a tighter alternative where that separation is useful.
+
+Next: bound those remaining numerical construction terms, prove actual reuse-key
+multiplicities and amortizing replica counts, and certify simultaneous
+whole-caller compiled-machine storage. S3 stays partial; kappa is unchanged.
+
+Validation: all 15,251 affected audit-build jobs pass (3.5 GiB combined peak).
+All three new modules and the audit pass individual guarded checks; peak RSS is
+3,316 MiB. All 2,952 prior audit names remain and 13 new facts are covered.
 New-file proof-integrity, plan-status and whitespace checks pass.

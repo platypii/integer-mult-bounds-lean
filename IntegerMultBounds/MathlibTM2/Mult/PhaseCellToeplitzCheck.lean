@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFactorPage
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilySetupFactor
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFamilySetupControls
@@ -3442,7 +3444,20 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.buildMarkedRowCoefficientPacketCost_zero_poly,
       `IntegerMultBounds.MathlibTM2.Cost.buildCouplingPageCacheCost_poly,
       `IntegerMultBounds.MathlibTM2.Cost.selectedCouplingKeySetup_poly_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_factor_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_factor_le,
+      `IntegerMultBounds.MathlibTM2.Cost.packedBandWordCount_le_rows,
+      `IntegerMultBounds.MathlibTM2.Cost.packedSizeStepCost_le,
+      `IntegerMultBounds.MathlibTM2.Cost.packedSizeSumCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.rankedBoundaryEntryCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.factorWordCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.factorRowLoopCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.factorRowCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.factorSlidingStepCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.factorInputsCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.factorWindowCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.factorPageCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedGeneratedFactorPage_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilySetup_factorArithmetic_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
