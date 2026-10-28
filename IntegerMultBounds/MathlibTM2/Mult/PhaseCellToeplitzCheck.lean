@@ -3228,7 +3228,15 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runPairStream_length,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runPairStream_counts_real_bits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runPairStream_flags_real_bits,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunHost_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunHost_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunPreparedCode_do,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunReleasedController_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.setHaloRunEmissionWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunsFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRunMaskFromHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedHaloRunMask_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedHaloRunMaskCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.closedHaloRunMaskCost_halo_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

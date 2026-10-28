@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2273 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2279 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -14743,3 +14743,44 @@ jobs. All five new modules and the audit pass individual guarded checks,
 with a largest peak of 3,060 MiB. All 2,762 prior audit names remain and twelve
 additional facts are checked. Proof-integrity, plan-status and whitespace
 checks pass.
+
+### S3 checkpoint: generated interval pipeline selected by publication
+
+The interval producer and consumer now form a closed executable pipeline.
+`haloRunPreparedCode` derives the phase denominator, unit constant, phase count
+and zero cursor from raw scalar table values. `haloRunReleasedController`
+publishes metadata and releases its table bank. `haloRunsFromHeaders` loads the
+five ordinary retained scalar headers, selects a full-word count emission or
+one-bit flag emission, executes the producer and restores its entire bank.
+Neither arithmetic readiness nor run metadata is supplied to this theorem.
+
+`haloRunMaskFromHeaders` composes the count producer, flag producer, fixed run
+consumer and flag cleanup. Its exact result is the halo-interior mask with
+arbitrary chosen off/on symbols, preserving the borrowed output suffix and all
+other stacks. The consumer's flag register is now 108: the existing mask ABI
+already guarantees that register is empty, while register 116 is caller-owned
+and must be preserved. `closedHaloRunMask` generates its geometry-width word
+from ordinary headers and releases it at the end, leaving only the mask output.
+
+`closedPublicationMask` now executes this actual interval pipeline. Its cost
+is the new ledger: two `(40*(t-s+1)+13)` phase table passes, linear header
+loading, metadata publication, linear run emission and cleanup. In particular,
+quadratic geometry work is charged per phase rather than per output coordinate.
+The existing coarse `4000*(s+t+band+a+b+1)*(W+4)^2` compatibility bound is proved
+for the new cost; the exact ledger retains the finer split for selected-size
+accounting. Publication carries the already available `4 ≤ A` alphabet bound
+through its outer wrapper. Its selected caller still receives the same mask
+symbols and exact stack effects.
+
+Remaining: replace coupling and recovery mask backends, derive the selected
+bounds for the full new mask ledger, finish shared/header/setup accounting and
+setup amortization, and prove simultaneous whole-caller compiled-machine
+storage. The publication backend is installed; the other mask backends still
+use their earlier per-coordinate code. S3 stays partial; kappa is unchanged.
+
+Validation: the full affected-caller/standard-axiom audit rebuild passes all
+15,171 jobs, including the selected retained-family inverse caller (30.8 GiB
+combined peak RSS, 4.2 minutes). All twelve new/revised modules pass individual
+guarded checks, with a largest peak below 3,060 MiB. All 2,774 prior audit names
+remain and eight new facts are added. Proof-integrity, plan-status and
+whitespace checks pass.

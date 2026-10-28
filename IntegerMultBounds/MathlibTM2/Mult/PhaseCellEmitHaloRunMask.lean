@@ -19,7 +19,7 @@ theorem emitHaloRunMask_exec {s t : ℕ} [NeZero s] (hst : s < t)
     (W band a b : ℕ) (hb : b ≤ s) (hsW : s < 2^W) (off on : Fin (A+4))
     (v : HS 117 Q A U) (S : Stacks 117 A) (tail : List (Fin (A+4)))
     (hW : (S.R 115).length = W)
-    (hflags : S.R 116 = (IntervalRunMask.runs 0 s (haloRunIntervals s t band a b)).map
+    (hflags : S.R 108 = (IntervalRunMask.runs 0 s (haloRunIntervals s t band a b)).map
       (fun r => bitSymbol r.1))
     (hsrc : S.R 109 = (IntervalRunMask.runs 0 s (haloRunIntervals s t band a b)).flatMap
       (fun r => binSyms W r.2)++tail)

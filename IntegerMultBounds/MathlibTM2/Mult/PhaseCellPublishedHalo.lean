@@ -54,7 +54,7 @@ theorem publishHalo_exec {P N q l s t u band a b : ℕ} [NeZero s]
     rw [hoff 109 (by decide)]
     exact hready.blank 109 (by decide) (by decide) (by decide)
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := outerPublicationMask_exec (body := body)
-    hst has hbs hband input v₀ S₀ hcoupling
+    hst has hbs hband hA input v₀ S₀ hcoupling
   let S₁ : Stacks 144 A := {S₀ with R := Function.update S₀.R 109 (publicationMaskSymbols A s t band a b)}
   have hs : (S.R 121).length = s := by
     simpa [groupHeaderValue] using hready.masters (121,97) (by simp [groupHeaderCopies])
