@@ -4,7 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyBatchStock
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyComplexBatchNumerics
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedPageComplexBatchReady
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedLoop
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedLoopTrace
 
 /-! Execute a complex input through both real solves on one retained factor page, restoring every borrowed tape. -/
 
@@ -13,7 +13,7 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
@@ -87,7 +87,15 @@ theorem familyComplexBatchLoop_spec (recovery : Bool) (hR : rpStates ≤ Q) (hQ 
             242 (cstream A w (Zs.map (chirpLine s)).flatten).reverse) 240 [])}) ∧
       List.Forall₂ (fun F Z => PhaseCellInterface.ErrorOn (haloVertices s a b)
         (pairedCellRead q w (cstream A w (chirpLine s Z)++S.R 132))
-          (fun i => (⟨x F i,y F i⟩ : ℂ)) (1/(2 : ℝ)^target)) Fs Zs := by
+          (fun i => (⟨x F i,y F i⟩ : ℂ)) (1/(2 : ℝ)^target)) Fs Zs ∧
+      ∀ C, mnProgPush (familyComplexBatchStep (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+Fs.length*s*w+depth+
+          (C+1)*(originalComponentInputsCost q s+familyBoundaryPairCost A p u l s t a b target V+(8*(s*w)+8)))
+          depth (countedLoop 240 (familyComplexBatchStep recovery hR hQ)) (mk v S) n
+          (mk v' {S with R := (Function.update (Function.update (Function.update (Function.update S.R
+            110 tail) 241 (cstream A w (Fs.map (chirpLine s)).flatten).reverse)
+              242 (cstream A w (Zs.map (chirpLine s)).flatten).reverse) 240 [])}) := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 B.card
@@ -231,12 +239,22 @@ theorem familyComplexBatchLoop_spec (recovery : Bool) (hR : rpStates ≤ Q) (hQ 
     · exact hready.source
     · simpa [words] using h241
     · simpa [words] using h242
-  obtain ⟨v',S',n,hu',hn,he,h240,hi,ho,hl,hf,hsource,hsaved,Zs,houtputs,hgood⟩ :=
-    countedLoop_exec (body := body) 240 (familyComplexBatchStep recovery hR hQ) Fs.length
+  have hstock : ∀ j ≤ Fs.length, ∀ R, Inv j R → (R.R 240).length ≤ Fs.length →
+      ∀ vi : HS 263 Q A U, mnSize (mk vi R) ≤ mnSize (mk v S)+Fs.length*s*w := by
+    intro j hj R ⟨hi,ho,hl,hf,hsource,hsaved,Zs,houtputs,hgood⟩ hc vi
+    have hlen := hgood.length_eq
+    have hZs : Zs.length ≤ Fs.length := by rw [← hlen,List.length_take]; exact Nat.min_le_right _ _
+    exact familyComplexBatchPrefix_stock_le v vi S R w j Fs Zs tail hj hZs hi ho hl hf
+      hready.source h241 h242 hsource hsaved houtputs (by rw [hcount]; exact hc)
+  obtain ⟨v',S',n,hu',hn,he,h240,hI,ht⟩ :=
+    countedLoop_exec_trace (body := body) 240 (familyComplexBatchStep recovery hR hQ) Fs.length
       (originalComponentInputsCost q s+familyBoundaryPairCost A p u l s t a b target V+(8*(s*w)+8))
-      Inv hstable hstep v S hcount hInv
-  refine ⟨v',n,Zs,hu',hn,he.cast rfl ?_,?_⟩
-  · apply congrArg (mk v')
+      (mnSize (mk v S)+Fs.length*s*w) Inv hstable
+      (fun j hj vi R hI _ => hstep j hj vi R hI) hstock v S hcount hInv
+  obtain ⟨hi,ho,hl,hf,hsource,hsaved,Zs,houtputs,hgood⟩ := hI
+  have hresult : S' = {S with R := (Function.update (Function.update (Function.update (Function.update S.R
+      110 tail) 241 (cstream A w (Fs.map (chirpLine s)).flatten).reverse)
+        242 (cstream A w (Zs.map (chirpLine s)).flatten).reverse) 240 [])} := by
     refine Stacks.ext hi ho hl ?_
     funext k
     by_cases h110 : k = 110
@@ -248,7 +266,13 @@ theorem familyComplexBatchLoop_spec (recovery : Bool) (hR : rpStates ≤ Q) (hQ 
     by_cases h240' : k = 240
     · subst k; simpa using h240
     simpa [h110,h241',h242',h240'] using hf k (by simp [changed,h110,h241',h242',h240'])
+  refine ⟨v',n,Zs,hu',?_,he.cast rfl (congrArg (mk v') hresult),?_,?_⟩
+  · simpa only [Finset.sum_const,Finset.card_range,smul_eq_mul] using hn
   · change List.Forall₂ Good Fs Zs
     simpa only [List.take_length] using hgood
+  · intro C hp hb depth
+    have hw := ht C hp hb depth
+    rw [hresult] at hw
+    exact hw
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

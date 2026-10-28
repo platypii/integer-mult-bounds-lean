@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2360 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2362 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -15606,3 +15606,37 @@ combined peak). Both new modules, both changed step/loop modules and the audit
 pass individual guarded checks; peak RSS is 3,320 MiB. All 3,021 prior audit
 names remain and eight new facts are covered. The relocated definition is
 unchanged. Changed-file proof-integrity, plan-status and whitespace checks pass.
+
+
+### S3 checkpoint: the counted family loop has one scratch allowance
+
+`countedLoop_exec_trace` strengthens the structural counted-loop execution rule
+with a trace certificate. It uses a uniform bound on iteration-boundary stock
+and the body cost, charges the actual nested procedure push constant and return
+depth, and retains the original time/restoration conclusions. The resource bound
+contains one body scratch allowance, independent of the number of iterations.
+
+`familyComplexBatchLoop_spec` now constructs that certificate alongside its
+existing numerical accuracy, exact restoration and counted execution results.
+The existing source/saved/output invariant supplies the boundary-stock bound
+`initialStock + replicas*s*w`; retained pages and spectators are included in
+initial stock. Its repeated complex-batch caller consumes the enriched result.
+
+`selectedFamilyBatchLoop_compiled_volume_le` specializes the produced loop
+certificate and applies the compiler bridge, including entry and final return.
+For the selected geometry width, every compiled loop configuration is bounded
+by `initialStock + outputStock + 1 + T`. The output-stock term is explicit and
+scratch is not multiplied by the replica count. The certificate premise is the
+one proved by the loop specification, not a supplied arithmetic execution oracle.
+
+Next: compose loop initialization/finish and the generated setup/release phases
+into the complete live lifecycle stock theorem. Executed distinct-key grouping
+and external exposure/publication/restoration handoffs remain required.
+S3 stays partial; kappa is unchanged.
+
+Validation: the affected loop/caller regression build passes all 15,098 jobs
+(10.6 GiB combined peak); the expanded audit passes all 15,275 jobs (10.4 GiB
+combined peak). Both new modules, both changed loop/batch modules and the audit
+pass individual guarded checks; peak RSS is 3,621 MiB. All 3,029 prior audit
+names remain and two new facts are covered. Changed-file proof-integrity,
+plan-status and whitespace checks pass.

@@ -131,7 +131,7 @@ theorem familyComplexBatch_spec (recovery : Bool) (hR : rpStates ≤ Q) (hQ : SS
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
     rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
       simpa [S₂,S₁] using hclean _ (by simp)
-  obtain ⟨v₃,n₃,Zs,hu₃,hn₃,he₃,hgood⟩ := familyComplexBatchLoop_spec (body := body)
+  obtain ⟨v₃,n₃,Zs,hu₃,hn₃,he₃,hgood,_htrace⟩ := familyComplexBatchLoop_spec (body := body)
     recovery hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad columns hlen hformat hstage htable
     Fs hF v₂ S₂ tail coordinateTail pageTail familyTail V
     (by rw [hnative]; exact hready) hcache₂

@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBatchLoopCompiled
+
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedBatchStepTrace
 
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSetupCompiled
@@ -3539,7 +3541,9 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyComplexBatchPrefix_stock_le,
       `IntegerMultBounds.MathlibTM2.Cost.familyComplexBatchStepCost_line_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatchStepCost_scaled_volume_le,
-      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatchStep_trace_volume_le ] do
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatchStep_trace_volume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedLoop_exec_trace,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatchLoop_compiled_volume_le ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
