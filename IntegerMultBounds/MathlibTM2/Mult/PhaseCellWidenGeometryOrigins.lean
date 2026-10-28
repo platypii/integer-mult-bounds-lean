@@ -17,25 +17,25 @@ variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 def widenGeometryOrigins : Pr P₀ 117 Q A U :=
   .seq prepareOriginWidening (.seq widenOriginPackets (uclear 19))
 
-def widenGeometryOriginsCost (P q w t u band B : ℕ) : ℕ :=
-  let V := haloGeometryWidth t band w
+def widenGeometryOriginsCost (P q w t u B : ℕ) : ℕ :=
+  let V := haloGeometryWidth t w
   let W := weightWorkspaceWidth P q w t u
   weightWidthCost P q w t u+4*V+4*W+B*(10*W+10*V+23)+14
 
-theorem widenGeometryOrigins_exec (P q w t u band : ℕ) (hband : band ≤ P)
-    (xs : List ℕ) (hfit : ∀ x ∈ xs, x < 2^haloGeometryWidth t band w)
+theorem widenGeometryOrigins_exec (P q w t u : ℕ)
+    (xs : List ℕ) (hfit : ∀ x ∈ xs, x < 2^haloGeometryWidth t w)
     (v : HS 117 Q A U) (S : Stacks 117 A) (tail : List (Fin (A+4)))
     (hP : (S.R 114).length = P) (hq : (S.R 112).length = q)
     (hw : (S.R 94).length = w) (ht : (S.R 98).length = t) (hu : (S.R 99).length = u)
-    (hV : (S.R 115).length = haloGeometryWidth t band w)
+    (hV : (S.R 115).length = haloGeometryWidth t w)
     (hcount : (S.R 116).length = xs.length)
-    (hsrc : S.R 109 = xs.flatMap (binSyms (haloGeometryWidth t band w))++tail)
+    (hsrc : S.R 109 = xs.flatMap (binSyms (haloGeometryWidth t w))++tail)
     (hfresh : ∀ k ∈ [(0 : Fin 117),1,2,3,4,19,20,21,22,23,24,104,25,26,27], S.R k = []) :
-    ∃ v' n, v'.user = v.user ∧ n ≤ widenGeometryOriginsCost P q w t u band xs.length ∧
+    ∃ v' n, v'.user = v.user ∧ n ≤ widenGeometryOriginsCost P q w t u xs.length ∧
       Exec body widenGeometryOrigins (mk v S) n
         (mk v' {S with R := (Function.update S.R 109
           (xs.flatMap (binSyms (weightWorkspaceWidth P q w t u))++tail))}) := by
-  let V := haloGeometryWidth t band w
+  let V := haloGeometryWidth t w
   let W := weightWorkspaceWidth P q w t u
   let S₁ : Stacks 117 A := {S with R := Function.update S.R 19 (List.replicate W tick)}
   let S₂ : Stacks 117 A := {S₁ with R := Function.update S₁.R 109 (xs.flatMap (binSyms W)++tail)}
@@ -50,7 +50,7 @@ theorem widenGeometryOrigins_exec (P q w t u band : ℕ) (hband : band ≤ P)
   have widen : Runs body widenOriginPackets S₁ S₂ (xs.length*(10*W+10*V+23)+6) := by
     intro v₀
     exact widenOriginPackets_exec (body := body) V W
-      (haloGeometryWidth_le_weightWorkspaceWidth hband) xs hfit v₀ S₁ tail
+      (haloGeometryWidth_le_weightWorkspaceWidth P q w t u) xs hfit v₀ S₁ tail
       (by simpa [S₁] using hV) (by simp [S₁])
       (by simpa [S₁] using hcount) (by simpa [S₁] using hsrc) (by
         intro k hk

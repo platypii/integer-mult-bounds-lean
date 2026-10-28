@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryHaloGatherCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryHaloGatherControls
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCompleteGeometryHaloGather
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareGeometryHaloClassControls
@@ -3152,7 +3153,16 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Host.Runs.seq,
       `IntegerMultBounds.MathlibTM2.Host.Runs.mono,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completed_preparedGeometryHaloClassR,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateGeometryHaloGatherControls_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateGeometryHaloGatherControls_exec,
+      `IntegerMultBounds.MathlibTM2.Host.Runs.branch,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloGeometryWidth_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.completeGeometryHaloGather_prepared_runs,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseEmptyGeometryHaloOrigins_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.probeGeometryHaloGather_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.tblC_width_gap,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloClassCost_geometry_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloAdvanceCost_geometry_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.probeGeometryHaloGatherCost_le_legacy ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

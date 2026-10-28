@@ -52,5 +52,31 @@ theorem mono {p : Pr P T Q A U} {S S' : Stacks T A} {c d : ℕ}
   obtain ⟨v',n,hu,hn,he⟩ := h v
   exact ⟨v',n,hu,hn.trans hcd,he⟩
 
+/-- Select a contract by inspecting a physical count register. -/
+theorem branch {p q : Pr P T Q A U} {S Syes Sno : Stacks T A} {c d : ℕ} (count : Fin T)
+    (hp : (S.R count).head?.isSome = true → Runs body p S Syes c)
+    (hq : (S.R count).head?.isSome = false → Runs body q S Sno d) :
+    Runs body (.seq (.act (peekR count)) (.cond (·.flag) p q)) S
+      (if (S.R count).head?.isSome then Syes else Sno)
+      ((if (S.R count).head?.isSome then c else d)+2) := by
+  intro v
+  have hpeek := Exec.act (body := body) (peekR count) (mk v S)
+  rw [peekR_run] at hpeek
+  cases hb : (S.R count).head?.isSome with
+  | false =>
+    obtain ⟨v',n,hu,hn,he⟩ := hq hb {v with flag := false}
+    refine ⟨v',1+(n+1),hu,?_,?_⟩
+    · simp only [hb,Bool.false_eq_true,↓reduceIte]; omega
+    · simp only [hb,Bool.false_eq_true,↓reduceIte]
+      rw [hb] at hpeek
+      exact Exec.seq hpeek (Exec.cond_false rfl he)
+  | true =>
+    obtain ⟨v',n,hu,hn,he⟩ := hp hb {v with flag := true}
+    refine ⟨v',1+(n+1),hu,?_,?_⟩
+    · simp only [hb,↓reduceIte]; omega
+    · simp only [hb,↓reduceIte]
+      rw [hb] at hpeek
+      exact Exec.seq hpeek (Exec.cond_true rfl he)
+
 end Runs
 end IntegerMultBounds.MathlibTM2.Host

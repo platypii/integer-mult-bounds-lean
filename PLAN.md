@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2260 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2262 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3889,7 +3889,7 @@ remain available for the S2–S3 callers.
 | --- | --- | --- | --- |
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
-| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. All inverse kernels now satisfy the selected `t*(1+band²/d)*p^(129/128)` allowance, with density proved from the actual axis bounds and setup/control bills still explicit. Bounding those remaining bills and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
+| S3 fast inverse map | 🟡 | `familyInverseCaller_spec` executes the retained-family inverse in a fixed 303-register workspace from ordinary binary scalars and one encoded complex line, with a derived scalar word width. It generates the Schur/factor/publication data, coupling page and complete interior weight family, reuses them across both real components and recovery passes, releases them, and restores every stack except the output prefix. Uniform coordinate error is at most `2^-target`. `generatedClosedFamilyComplexBatch_spec` extends this to a counted complex batch with one shared setup/release bill. `familyInverseCaller_geometry_spec` prices the executed caller by actual interior volume, clipped cell count and cached arithmetic, with coefficient generation outside the replica term. The coupling pass now generates scalar readiness once per pass, retaining counters through active and skipped rows; its arithmetic and page/source movement have fast active-volume bounds. The cached caller now executes geometry-width origin classification and advance controls for both empty and nonempty classes, converting origins to the unchanged numerical packet format; the legacy caller cost ledger remains an upper bound. All inverse kernels now satisfy the selected `t*(1+band²/d)*p^(129/128)` allowance, with density proved from the actual axis bounds and setup/control bills still explicit. Bounding those remaining bills and simultaneous whole-execution live storage remain open. The shared S3–S5 interface and kappa are unchanged. | Re-estimate after resource audit |
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
@@ -14555,3 +14555,41 @@ RSS), preserving every earlier entry and adding six. Both new modules, both
 revised modules and the audit pass individual guarded checks below the 4 GiB
 module budget. Proof-integrity, audit-coverage, plan-status and whitespace
 checks pass.
+
+
+### S3 checkpoint: geometry controls selected by the cached caller
+
+The geometry counter is now `2*size(t)+size(w)+7`. Because the actual band is
+at most `s < t`, origin arithmetic needs no separately counted band bits.
+`haloGeometryWidth_fits` proves its actual arithmetic room; the width fits the
+numerical coefficient workspace for every `P,q,w,t,u`, removing the former
+`band ≤ P` premise. Its runtime generator reads only `t` and data-word-width
+sources and costs at most `38*t+19*w+26`.
+
+`Runs.branch` composes contracts selected by a physical count register.
+`completeGeometryHaloGather_prepared_runs` shares the nonempty finishing proof
+between generated and conditional callers. `probeGeometryHaloGather_exec`
+generates origins once, uses that same count to choose the continuation, erases
+owned headers on the empty branch, converts packets and emits gather controls
+on the nonempty branch, and publishes the correct final count flag. Both
+branches preserve the previous numerical interface and scratch restoration.
+
+The generic width-gap cost lemmas prove the new controller fits the old caller
+allowance. `probeAndGatherHaloControls` now selects this implementation behind
+its existing execution theorem. Consequently the cached interior and complete
+retained-family inverse execute geometry-width classification and advancement;
+this is no longer a disconnected alternative controller. The previous
+coefficient-width implementation can be restored from commit `3aae59ce`.
+
+The old caller ledger remains a valid upper bound. Next, propagate the tighter
+controller bill into the selected fast allowance and bound the other remaining
+control/tape work. Generated setup multiplicities/amortization and simultaneous
+whole-execution live storage remain required endpoint obligations. S3 stays
+partial; kappa is unchanged.
+
+Validation: the full affected-caller/standard-axiom audit rebuild passes all
+15,149 jobs (30.8 GiB combined peak RSS), including the complete selected
+ordinary-scalar inverse, kernel caller and density caller. Every prior audit
+entry is retained and nine are added. Both new modules, all eight revised
+modules and the audit pass individual guarded checks below the 4 GiB module
+budget. Proof-integrity, audit-coverage, plan-status and whitespace checks pass.

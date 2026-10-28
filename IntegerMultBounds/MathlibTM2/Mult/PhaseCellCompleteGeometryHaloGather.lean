@@ -20,17 +20,17 @@ def completeGeometryHaloGather : Pr P₀ 117 Q A U :=
   .seq preparedNaturalAdvanceControls (.seq widenGeometryOrigins (clearWords [94,115]))
 
 def completeGeometryHaloGatherCost (P q w s t u band a b L : ℕ) : ℕ :=
-  let V := haloGeometryWidth t band w
+  let V := haloGeometryWidth t w
   preparedHaloAdvanceCost V s t band a b L w+
-    widenGeometryOriginsCost P q w t u band (haloLengthGroup s t band a b L).length+2*(w+V)+5
+    widenGeometryOriginsCost P q w t u (haloLengthGroup s t band a b L).length+2*(w+V)+5
 
 theorem completeGeometryHaloGather_exec (P q w s t u band a b L : ℕ)
-    (hst : s ≤ t) (hband : band ≤ P) (hgroup : 0 < (haloLengthGroup s t band a b L).length)
+    (hst : s ≤ t) (hband : band ≤ t) (hgroup : 0 < (haloLengthGroup s t band a b L).length)
     (v : HS 117 Q A U) (S : Stacks 117 A) (suffix : List (Fin (A+4)))
     (hP : (S.R 114).length = P) (hq : (S.R 112).length = q)
     (hw : (S.R 94).length = w) (ht : (S.R 98).length = t) (hu : (S.R 99).length = u)
-    (hV : (S.R 115).length = haloGeometryWidth t band w)
-    (hsrc : S.R 109 = haloOriginPackets A (haloGeometryWidth t band w) s t band a b L++suffix)
+    (hV : (S.R 115).length = haloGeometryWidth t w)
+    (hsrc : S.R 109 = haloOriginPackets A (haloGeometryWidth t w) s t band a b L++suffix)
     (hcount : S.R 116 = List.replicate (haloLengthGroup s t band a b L).length tick)
     (hblank : ∀ k : Fin 117, k.val < 31 → S.R k = [])
     (hfresh : ∀ k ∈ [(88 : Fin 117),89,90,104,106], S.R k = []) :
@@ -38,9 +38,9 @@ theorem completeGeometryHaloGather_exec (P q w s t u band a b L : ℕ)
       Exec body completeGeometryHaloGather (mk v S) n
         (mk v' {S with R := (Function.update (completedHaloGatherR A s t band a b L w S.R) 109
           (haloOriginPackets A (weightWorkspaceWidth P q w t u) s t band a b L++suffix))}) := by
-  let V := haloGeometryWidth t band w
+  let V := haloGeometryWidth t w
   let W := weightWorkspaceWidth P q w t u
-  have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ 2) (haloControlWidth_le_geometryWidth (band := band) (w := w) hst)
+  have hpow := Nat.pow_le_pow_right (by decide : 1 ≤ 2) (haloControlWidth_le_geometryWidth (band := band) (w := w) hst hband)
   obtain ⟨_,hwV,hsV,hvolume⟩ := haloControlWidth_bounds s t band w
   let S₁ : Stacks 117 A := {S with R := Function.update S.R 91 (haloGatherControls A s t band a b L w++S.R 91)}
   let S₂ : Stacks 117 A := {S₁ with R := (Function.update S₁.R 109
@@ -60,9 +60,9 @@ theorem completeGeometryHaloGather_exec (P q w s t u band a b L : ℕ)
     have hfit := haloOrigins_fit s t band a b L x hx
     exact (by omega : x ≤ s).trans_lt (hsV.trans_le hpow)
   have widen : Runs body widenGeometryOrigins S₁ S₂
-      (widenGeometryOriginsCost P q w t u band (haloOrigins s t band a b L).length) := by
+      (widenGeometryOriginsCost P q w t u (haloOrigins s t band a b L).length) := by
     intro v₀
-    exact widenGeometryOrigins_exec (body := body) P q w t u band hband
+    exact widenGeometryOrigins_exec (body := body) P q w t u
       (haloOrigins s t band a b L) hfits v₀ S₁ suffix
       (by simpa [S₁] using hP) (by simpa [S₁] using hq) (by simpa [S₁] using hw)
       (by simpa [S₁] using ht) (by simpa [S₁] using hu) (by simpa [S₁] using hV)
