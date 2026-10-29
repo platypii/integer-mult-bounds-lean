@@ -114,7 +114,7 @@ theorem constructedResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     (embTab componentReg (embTab groupReg body))))
   let nativeBody := embTab preparedBoundaryCoreReg coreBody
   let outerBody := embTab preparedBoundaryBatchCoreReg nativeBody
-  obtain ⟨v₁,T₁,n₁,columns,hu₁,hn₁,he₁,hlen,hformat,hcolumns,hstage,hsolve,hbo,hhf,hdf,h206,h224,h225',hleft',hmul,hmaster,h223,h184,h220,h221,herror⟩ :=
+  obtain ⟨v₁,T₁,n₁,columns,hu₁,hn₁,he₁,_hinputFrame,_houtputFrame,_hrawTable,_hstock,hlen,hformat,hcolumns,hstage,hsolve,hbo,hhf,hdf,h206,h224,h225',hleft',hmul,hmaster,h223,h184,h220,h221,herror,_hruntime⟩ :=
     preparedBoundaryFactory_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
       (embDn preparedBoundaryBatchCoreReg v) T tail h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -135,7 +135,7 @@ theorem constructedResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     ((congrArg (fun R : Stacks 226 A => R.R 223) hproj).trans h223)
     ((congrArg (fun R : Stacks 226 A => R.R 184) hproj).trans h184)
     ((congrArg (fun R : Stacks 226 A => R.R 220) hproj).trans h220)
-    ((congrArg (fun R : Stacks 226 A => R.R 221) hproj).trans h221) h206' h225'' 
+    ((congrArg (fun R : Stacks 226 A => R.R 221) hproj).trans h221) h206' h225''
     ((hprivate 227 (by decide)).trans h227) ((hprivate 228 (by decide)).trans h228)
     ((hprivate 230 (by decide)).trans h230) ((hprivate 231 (by decide)).trans h231)
     ((hprivate 232 (by decide)).trans h232) ((hprivate 233 (by decide)).trans h233)
