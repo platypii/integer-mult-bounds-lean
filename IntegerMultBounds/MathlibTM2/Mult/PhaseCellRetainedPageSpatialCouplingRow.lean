@@ -30,7 +30,7 @@ def retainedPageSpatialCouplingRowCost (w band : ℕ) : ℕ :=
   copyCountedLineCost (2*band+1) w+
     prepareCountedCouplingInputsCost band w+retainedCouplingRowCost (2*band+1) w
 
-theorem retainedPageSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u band a b i : ℕ} [NeZero s]
+theorem retainedPageSpatialCouplingRow_prefix_exec (hQ : SS.states ≤ Q) {P q w s t u band a b i : ℕ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
     (_hst : s < t) (hi : i < s)
     (C : ZMod s → GaussianInt) (tail pageTail raw : List (Fin (A+4)))
@@ -38,9 +38,7 @@ theorem retainedPageSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u 
     (hready : RetainedCouplingReady P q w s t u band a b raw (embStk groupReg S))
     (hrows : (S.R 140).length = 2*band+1)
     (hpage : S.R 138 = cstream A w (spatialCouplingCoefficientWords P q s t u band i)++pageTail)
-    (hsrc : S.R 141 = cstream A w ((cyclicPaddedLine (fun j : ZMod s =>
-      if j ∈ (if boundary then haloBoundary s t band a b else haloInterior s t band a b)
-      then C j else 0) band).drop i)++tail)
+    (hsrc : S.R 141 = cstream A w (spatialCouplingInputWords boundary t band a b i C)++tail)
     (rhs : GaussianInt) (rhsTail : List (Fin (A+4))) (hrhs : S.R 93 = csyms A w rhs++rhsTail)
     (hxs : ∀ x ∈ couplingInputWords boundary t band a b i C, Fits w x)
     (has : ∀ z ∈ couplingCoefficientWords P q s t u band i, Fits w z ∧ z.im = 0) :
@@ -56,18 +54,10 @@ theorem retainedPageSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u 
     (hready.fresh 109 (by simp)) (hready.fresh 104 (by simp)) (hready.fresh 105 (by simp))
   let S₁ : Stacks 144 A := {S with R := Function.update S.R 111 (cstream A w as++S.R 111)}
   let e := couplingViewReg 92 141
-  let F := fun j : ZMod s => if j ∈
-    (if boundary then haloBoundary s t band a b else haloInterior s t band a b) then C j else 0
-  let source := cyclicPaddedLine F band
-  let rest := cstream A w ((source.drop i).drop (2*band+1))++tail
-  have hwindow : xs = (source.drop i).take (2*band+1) :=
-    spatialCouplingInputWords_window boundary t band a b i C hi
+  let rest := tail
   have hprefix : (embStk e S₁).R 92 = cstream A w xs++rest := by
     change S₁.R 141 = _
-    simp only [S₁,Function.update_of_ne (by decide : (141 : Fin 144) ≠ 111)]
-    rw [hsrc,hwindow]
-    dsimp only [rest,source,F]
-    rw [← List.append_assoc,← cstream_append,List.take_append_drop]
+    simpa only [S₁,Function.update_of_ne (by decide : (141 : Fin 144) ≠ 111)] using hsrc
   have hxslen : xs.length = 2*band+1 := by simp [xs,spatialCouplingInputWords]
   have haslen : as.length = 2*band+1 := by simp [as]
   obtain ⟨v₂,m₂,hu₂,hm₂,he₂⟩ := prepareCountedCouplingInputs_exec
@@ -143,5 +133,36 @@ theorem retainedPageSpatialCouplingRowCost_eq (w band : ℕ) :
     retainedCouplingRowCost]
   ring
 
+
+theorem retainedPageSpatialCouplingRow_exec (hQ : SS.states ≤ Q) {P q w s t u band a b i : ℕ} [NeZero s]
+    (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
+    (_hst : s < t) (hi : i < s)
+    (C : ZMod s → GaussianInt) (tail pageTail raw : List (Fin (A+4)))
+    (v : HS 144 Q A U) (S : Stacks 144 A)
+    (hready : RetainedCouplingReady P q w s t u band a b raw (embStk groupReg S))
+    (hrows : (S.R 140).length = 2*band+1)
+    (hpage : S.R 138 = cstream A w (spatialCouplingCoefficientWords P q s t u band i)++pageTail)
+    (hsrc : S.R 141 = cstream A w ((cyclicPaddedLine (fun j : ZMod s =>
+      if j ∈ (if boundary then haloBoundary s t band a b else haloInterior s t band a b)
+      then C j else 0) band).drop i)++tail)
+    (rhs : GaussianInt) (rhsTail : List (Fin (A+4))) (hrhs : S.R 93 = csyms A w rhs++rhsTail)
+    (hxs : ∀ x ∈ couplingInputWords boundary t band a b i C, Fits w x)
+    (has : ∀ z ∈ couplingCoefficientWords P q s t u band i, Fits w z ∧ z.im = 0) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ retainedPageSpatialCouplingRowCost w band ∧
+      Exec body (retainedPageSpatialCouplingRow hQ) (mk v S) m
+        (mk v' {S with R := (Function.update S.R 113
+          (csyms A w (couplingRowWord P q t u band a b i boundary C rhs)++S.R 113))}) := by
+  let F := fun j : ZMod s => if j ∈
+    (if boundary then haloBoundary s t band a b else haloInterior s t band a b) then C j else 0
+  let source := cyclicPaddedLine F band
+  let rest := cstream A w ((source.drop i).drop (2*band+1))++tail
+  have hwindow : spatialCouplingInputWords boundary t band a b i C = (source.drop i).take (2*band+1) :=
+    spatialCouplingInputWords_window boundary t band a b i C hi
+  have hp : S.R 141 = cstream A w (spatialCouplingInputWords boundary t band a b i C)++rest := by
+    rw [hsrc,hwindow]
+    dsimp only [rest,source,F]
+    rw [← List.append_assoc,← cstream_append,List.take_append_drop]
+  exact retainedPageSpatialCouplingRow_prefix_exec (body := body) hQ boundary hA hw5 hqw _hst hi
+    C rest pageTail raw v S hready hrows hpage hp rhs rhsTail hrhs hxs has
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

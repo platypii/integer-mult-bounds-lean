@@ -30,6 +30,17 @@ theorem haloGroupRowCode_do {A W w s t band a b L phase : ℕ} (st : TblSt 16 A)
       ((hf 3 (by simp)).trans hL') hl ha ((hf 12 (by simp)).trans hz)).mono
       (fun st'' ⟨hv, hout⟩ => ⟨by rw [hout, hacc], fun k hk => by rw [hv]; exact hf k hk⟩) le_rfl)
 
+/-- Selection and emission commute for any phase list; no scan bound is built in. -/
+theorem haloGroupRows_filter (A w s t band a b L : ℕ) (hL : 0 < L) (xs : List ℕ) :
+    xs.flatMap (fun phase => if haloLength s t band a b phase = L then
+      tblPairs A w (haloStart s t band a phase) 0 else []) =
+      (xs.filter (fun phase => decide (0 < L ∧ haloLength s t band a b phase = L))).flatMap
+        (fun phase => tblPairs A w (haloStart s t band a phase) 0) := by
+  induction xs with
+  | nil => rfl
+  | cons phase xs ih =>
+    by_cases hh : haloLength s t band a b phase = L <;> simp [hh,hL,ih]
+
 def haloGroupCode : TblCode 16 := tblFor 4 15 haloGroupRowCode
 
 theorem haloGroupCode_do {A W w s t band a b L : ℕ} (st : TblSt 16 A)
@@ -78,10 +89,7 @@ theorem haloGroupCode_do {A W w s t band a b L : ℕ} (st : TblSt 16 A)
   have hfilter (xs : List ℕ) : xs.flatMap F =
       (xs.filter (fun phase => decide (0 < L ∧ haloLength s t band a b phase = L))).flatMap
         (fun phase => tblPairs A w (haloStart s t band a phase) 0) := by
-    induction xs with
-    | nil => rfl
-    | cons phase xs ih =>
-      by_cases hh : haloLength s t band a b phase = L <;> simp [F, hh, hL, ih]
+    simpa only [F] using haloGroupRows_filter A w s t band a b L hL xs
   exact hc.mono (fun st' hh => by simpa [hfilter, haloLengthGroup] using hh) (by omega)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

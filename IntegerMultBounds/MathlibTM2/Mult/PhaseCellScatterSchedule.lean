@@ -81,4 +81,21 @@ theorem scatterRows_absolute_off (L : ℕ) (ps : List ℕ) (E X : List α)
   rw [windowGaps_offset L 0 ps (fun _ _ => Nat.zero_le _) hdisjoint n hn',Nat.sub_zero]
   exact hoff n hn'
 
+/-- A scatter leaves every slice disjoint from its destination windows intact. -/
+theorem scatterRows_slice_off (L : ℕ) (ps : List ℕ) (E X : List α)
+    (hdisjoint : ps.Pairwise (fun p q => p+L ≤ q))
+    (hfit : ∀ p ∈ ps, p+L ≤ E.length) (hx : ps.length*L ≤ X.length)
+    (j w : ℕ) (hoff : ∀ n (hn : n < ps.length), j+w ≤ ps[n] ∨ ps[n]+L ≤ j) :
+    ((scatterRows L E X (windowGaps L 0 ps)).drop j).take w = (E.drop j).take w := by
+  apply List.ext_getElem?
+  intro i
+  by_cases hi : i < w
+  · simp only [List.getElem?_take,hi,↓reduceIte,List.getElem?_drop]
+    apply scatterRows_absolute_off L ps E X hdisjoint hfit hx
+    intro n hn
+    rcases hoff n hn with h | h
+    · left; omega
+    · right; omega
+  · simp [List.getElem?_take,hi]
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

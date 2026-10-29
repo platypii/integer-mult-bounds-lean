@@ -19,8 +19,8 @@ def generatedKeyRuntimeR {A : ℕ} (R : Regs 144 A) (V w K : ℕ)
     94 (List.replicate w tick)) 115 (List.replicate V tick)) 87 keys)
     86 (List.replicate K tick)
 
-def initializedKeyRuntimeR {A : ℕ} (R : Regs 144 A) (V w K : ℕ)
-    (keys : List (Fin (A+4))) : Regs 144 A :=
+def initializedKeyRuntimeR {T A : ℕ} [NeZero T] (R : Regs T A) (V w K : ℕ)
+    (keys : List (Fin (A+4))) : Regs T A :=
   Function.update (Function.update (Function.update (Function.update R
     125 (List.replicate V tick)) 126 (keys++R 126)) 127 (List.replicate K tick))
     130 (List.replicate w tick)

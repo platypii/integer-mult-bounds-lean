@@ -18,6 +18,28 @@ def couplingInputWords {s : ℕ} [NeZero s] (boundary : Bool) (t band a b i : �
     let j : ZMod s := (i : ZMod s)+(δ : ZMod s)
     if j ∈ T then C j else 0)
 
+/-- Masking preserves any word property that also holds for zero. -/
+theorem couplingInputWords_property {s : ℕ} [NeZero s] (boundary : Bool) (t band a b i : ℕ)
+    (C : ZMod s → GaussianInt) (P : GaussianInt → Prop) (hzero : P 0)
+    (hC : ∀ j ∈ (if boundary then haloBoundary s t band a b else haloInterior s t band a b), P (C j)) :
+    ∀ z ∈ couplingInputWords boundary t band a b i C, P z := by
+  intro z hz
+  obtain ⟨δ,_,rfl⟩ := List.mem_map.mp hz
+  let T := if boundary then haloBoundary s t band a b else haloInterior s t band a b
+  let j : ZMod s := (i : ZMod s)+(δ : ZMod s)
+  change P (if j ∈ T then C j else 0)
+  by_cases hj : j ∈ T
+  · simpa only [if_pos hj] using hC j hj
+  · simpa only [if_neg hj] using hzero
+
+theorem couplingInputWords_fits {s : ℕ} [NeZero s] (boundary : Bool) (t band a b i w : ℕ)
+    (C : ZMod s → GaussianInt) (hC : ∀ j, Fast.Fits w (C j)) :
+    ∀ z ∈ couplingInputWords boundary t band a b i C, Fast.Fits w z := by
+  apply couplingInputWords_property boundary t band a b i C (Fast.Fits w)
+  · constructor <;> simpa using (pow_pos (by decide : (0 : ℤ) < 2) (w-1))
+  · intro j _
+    exact hC j
+
 theorem couplingInputWords_split {s : ℕ} [NeZero s] (boundary : Bool) (t band a b i : ℕ)
     (C : ZMod s → GaussianInt) :
     couplingInputWords boundary t band a b i C =

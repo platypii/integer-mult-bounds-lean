@@ -25,6 +25,187 @@ noncomputable def retainedPageSpatialCouplingRowLoop (hQ : SS.states ≤ Q) : Pr
 def retainedPageSpatialGuardedLoopCost (boundary : Bool) (q w s t band a b N : ℕ) : ℕ :=
   (Finset.range N).sum (fun j => retainedPageSpatialGuardedStepCost (couplingSkipAt boundary s t band a b j) q w band+3)+2
 
+def retainedPageSpatialIntervalLoopCost (boundary : Bool) (q w s t band a b origin N : ℕ) : ℕ :=
+  (Finset.range N).sum (fun j => retainedPageSpatialGuardedStepCost
+    (couplingSkipAt boundary s t band a b (origin+j)) q w band+3)+2
+
+theorem retainedPageSpatialCouplingRowLoop_interval_exec (hQ : SS.states ≤ Q) {P q w s t u band a b origin : ℕ} [NeZero s]
+    (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
+    (hst : s < t)
+    (C : ZMod s → GaussianInt) (source rhs : List GaussianInt)
+    (hlen : rhs.length ≤ source.length)
+    (hwindow : ∀ j < rhs.length, (source.drop j).take (2*band+1) = spatialCouplingInputWords boundary t band a b (origin+j) C) (hfit : origin+rhs.length ≤ s)
+    (tail pageTail maskTail rhsTail raw : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
+    (hready : RetainedCouplingReady P q w s t u band a b raw (embStk groupReg S))
+    (hsource : S.R 141 = cstream A w source++tail)
+    (hrows : (S.R 140).length = 2*band+1)
+    (hpage : S.R 138 = cstream A w (couplingCoefficientPageInterval P q s t u band a b origin rhs.length)++pageTail)
+    (hmask : S.R 136 = ((couplingGuardSymbols boundary A s t band a b).drop origin).take rhs.length++maskTail)
+    (hrhs : S.R 93 = cstream A w rhs++rhsTail)
+    (hcount : (S.R 143).length = rhs.length)
+    (hxs : ∀ j < rhs.length, ∀ x ∈ couplingInputWords boundary t band a b (origin+j) C, Fits w x)
+    (has : ∀ j < rhs.length, ∀ z ∈ couplingCoefficientWords P q s t u band (origin+j), Fits w z ∧ z.im = 0) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ retainedPageSpatialIntervalLoopCost boundary q w s t band a b origin rhs.length ∧
+      Exec (body) (retainedPageSpatialCouplingRowLoop hQ) (mk v S) m
+        (mk v' {S with R := (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update S.R 136 maskTail) 138 pageTail) 137
+          ((cstream A w (couplingCoefficientPageInterval P q s t u band a b origin rhs.length)).reverse++S.R 137))
+          93 rhsTail) 107 (List.replicate rhs.length tick++S.R 107))
+          113 (cstream A w (guardedCouplingRowWords P q t u band a b boundary C origin rhs).reverse++S.R 113)) 143 [])
+          141 (cstream A w (source.drop rhs.length)++tail))
+          142 ((cstream A w (source.take rhs.length)).reverse++S.R 142))}) := by
+  let ys := guardedCouplingRowWords P q t u band a b boundary C origin rhs
+  let guards := ((couplingGuardSymbols boundary A s t band a b).drop origin).take rhs.length
+  have hguards : guards.length = rhs.length := by simp [guards]; omega
+  let Inv : ℕ → Stacks 144 A → Prop := fun j B =>
+    B.inp = S.inp ∧ B.out = S.out ∧ B.L = S.L ∧
+    (∀ k : Fin 144, k ≠ 93 → k ≠ 107 → k ≠ 113 → k ≠ 143 → k ≠ 141 → k ≠ 142 → k ≠ 138 → k ≠ 137 → k ≠ 136 → B.R k = S.R k) ∧
+    B.R 93 = cstream A w (rhs.drop j)++rhsTail ∧
+    B.R 107 = List.replicate j tick++S.R 107 ∧
+    B.R 113 = cstream A w (ys.take j).reverse++S.R 113 ∧
+    B.R 141 = cstream A w (source.drop j)++tail ∧
+    B.R 142 = (cstream A w (source.take j)).reverse++S.R 142 ∧
+    B.R 138 = cstream A w (couplingCoefficientPageSuffix P q s t u band a b (origin+j) (origin+rhs.length))++pageTail ∧
+    B.R 137 = (cstream A w (couplingCoefficientPageInterval P q s t u band a b origin j)).reverse++S.R 137 ∧
+    B.R 136 = guards.drop j++maskTail
+  have hstable : ∀ j B cs, Inv j B → Inv j {B with R := Function.update B.R 143 cs} := by
+    intro j B cs h
+    rcases h with ⟨hi,ho,hl,hf,hr,hj,hy,hsrc,hsaved,hpageB,hpageSavedB,hmaskB⟩
+    exact ⟨hi,ho,hl,by intro k h93 h107 h113 h143 h141 h142 h138 h137 h136; simpa [h143] using hf k h93 h107 h113 h143 h141 h142 h138 h137 h136,
+      by simpa using hr,by simpa using hj,by simpa using hy,by simpa using hsrc,by simpa using hsaved,by simpa using hpageB,by simpa using hpageSavedB,by simpa using hmaskB⟩
+  have hstep : ∀ j < rhs.length, ∀ (vi : HS 144 Q A U) B, Inv j B →
+      ∃ v' B' m, v'.user = vi.user ∧ m ≤ retainedPageSpatialGuardedStepCost (couplingSkipAt boundary s t band a b (origin+j)) q w band ∧
+        Exec (body) (retainedPageSpatialCouplingRowStep hQ) (mk vi B) m (mk v' B') ∧
+        B'.R 143 = B.R 143 ∧ Inv (j+1) B' := by
+    intro j hj vi B h
+    rcases h with ⟨hiB,hoB,hlB,hf,hr,hjB,hyB,hsrcB,hsavedB,hpageB,hpageSavedB,hmaskB⟩
+    have hreadyB : RetainedCouplingReady P q w s t u band a b raw (embStk groupReg B) := by
+      apply hready.of_frame
+      · change B.L ∘ groupReg = S.L ∘ groupReg
+        rw [hlB]
+      · intro k h93 h107 h113
+        apply hf (groupReg k)
+        · exact groupReg_injective.ne h93
+        · exact groupReg_injective.ne h107
+        · exact groupReg_injective.ne h113
+        · exact groupReg_off 143 (by decide) k
+        · exact groupReg_off 141 (by decide) k
+        · exact groupReg_off 142 (by decide) k
+        · exact groupReg_off 138 (by decide) k
+        · exact groupReg_off 137 (by decide) k
+        · exact groupReg_off 136 (by decide) k
+    have hrhsB : B.R 93 = csyms A w rhs[j]++(cstream A w (rhs.drop (j+1))++rhsTail) := by
+      rw [hr,List.drop_eq_getElem_cons hj,cstream_cons,List.append_assoc]
+    have hjg : j < guards.length := by omega
+    have hguardj : guards[j] = pairSym A (couplingSkipAt boundary s t band a b (origin+j)) (couplingSkipAt boundary s t band a b (origin+j)) := by
+      simp [guards,couplingGuardSymbols,Nat.add_assoc,Nat.add_comm,Nat.add_left_comm]
+    have hmaskj : B.R 136 = pairSym A (couplingSkipAt boundary s t band a b (origin+j)) (couplingSkipAt boundary s t band a b (origin+j))::
+        (guards.drop (j+1)++maskTail) := by
+      rw [hmaskB,List.drop_eq_getElem_cons hjg,hguardj,List.cons_append]
+    have hrowsB : (B.R 140).length = 2*band+1 := by
+      rw [hf 140 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]
+      exact hrows
+    let nextPage := cstream A w (couplingCoefficientPageSuffix P q s t u band a b (origin+(j+1)) (origin+rhs.length))++pageTail
+    have hpagej : B.R 138 = cstream A w (if couplingSkipAt boundary s t band a b (origin+j) then []
+        else spatialCouplingCoefficientWords P q s t u band (origin+j))++nextPage := by
+      rw [hpageB,couplingCoefficientPageSuffix_step P q s t u band a b (origin+j) (origin+rhs.length) (by omega)]
+      simp [nextPage,cstream_append,List.append_assoc,couplingCoefficientPageChunk,couplingSkipAt,Nat.add_assoc]
+      rfl
+    obtain ⟨v',m,hu,hm,he⟩ := retainedPageSpatialCouplingRowStep_list_exec (body := body)
+      hQ boundary (couplingSkipAt boundary s t band a b (origin+j)) hA hw5 hqw hst (by omega) C source j (by omega) (hwindow j hj) tail nextPage
+      (guards.drop (j+1)++maskTail) raw vi B hmaskj
+      rfl hreadyB hrowsB hpagej hsrcB
+      rhs[j] (cstream A w (rhs.drop (j+1))++rhsTail) hrhsB (hxs j hj) (has j hj)
+    let z := guardedCouplingRowWord P q t u band a b (origin+j) boundary C rhs[j]
+    have hsourceLen : j < source.length := by omega
+    let B' : Stacks 144 A := {B with R := (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update B.R 136 (guards.drop (j+1)++maskTail)) 138 nextPage) 137
+      ((cstream A w (couplingCoefficientPageChunk P q s t u band a b (origin+j))).reverse++B.R 137))
+      113 (csyms A w z++B.R 113)) 93 (cstream A w (rhs.drop (j+1))++rhsTail))
+      141 (cstream A w (source.drop (j+1))++tail))
+      142 ((csyms A w (source[j]'hsourceLen)).reverse++B.R 142)) 107 (tick::B.R 107))}
+    have hylen : j < ys.length := by simpa [ys] using hj
+    have hyget : ys[j] = z := by simpa [ys,z] using guardedCouplingRowWords_getElem P q t u band a b origin boundary C rhs j hj
+    have hnext : cstream A w (ys.take (j+1)).reverse = csyms A w z++cstream A w (ys.take j).reverse := by
+      rw [List.take_succ_eq_append_getElem hylen,List.reverse_append,List.reverse_singleton,
+        cstream_append,cstream_cons,cstream_nil,List.append_nil,hyget]
+    have hsnext : (cstream A w (source.take (j+1))).reverse =
+        (csyms A w (source[j]'hsourceLen)).reverse ++
+          (cstream A w (source.take j)).reverse := by
+      rw [List.take_succ_eq_append_getElem hsourceLen,cstream_append,List.reverse_append,
+        cstream_cons,cstream_nil,List.append_nil]
+    refine ⟨v',B',m,hu,hm,by convert he using 1; rfl,by simp [B'],hiB,hoB,hlB,?_,by simp [B'],?_,?_,?_,?_,?_,?_,?_⟩
+    · intro k h93 h107 h113 h143 h141 h142 h138 h137 h136
+      simpa [B',h93,h107,h113,h141,h142,h138,h137,h136] using hf k h93 h107 h113 h143 h141 h142 h138 h137 h136
+    · simp [B',hjB,List.replicate_succ]
+    · simp [B',hyB,hnext,List.append_assoc]
+    · simp [B']
+    · simp [B',hsavedB,hsnext,List.append_assoc]
+    · simp [B',nextPage]
+    · simp [B',hpageSavedB,couplingCoefficientPageInterval_succ,cstream_append,List.reverse_append,List.append_assoc]
+    · simp [B']
+  have hInv : Inv 0 S := by
+    exact ⟨rfl,rfl,rfl,by intros; rfl,by simpa using hrhs,by simp,by simp,by simpa [] using hsource,by simp,by simpa [couplingCoefficientPageSuffix_interval] using hpage,by simp,by simpa [guards] using hmask⟩
+  obtain ⟨v',S',m,hu,hm,he,h143,hI⟩ := countedLoop_exec_costs (body := body)
+    143 (retainedPageSpatialCouplingRowStep hQ) rhs.length
+    (fun j => retainedPageSpatialGuardedStepCost (couplingSkipAt boundary s t band a b (origin+j)) q w band) Inv hstable hstep v S hcount hInv
+  rcases hI with ⟨hi',ho',hl',hf,hr',hj',hy',hsrc',hsaved',hpage',hpageSaved',hmask'⟩
+  refine ⟨v',m,hu,hm,he.cast rfl ?_⟩
+  apply congrArg (mk v')
+  refine Stacks.ext hi' ho' hl' ?_
+  funext k
+  by_cases h93 : k = 93
+  · subst k; simpa using hr'
+  by_cases h107 : k = 107
+  · subst k; simpa using hj'
+  by_cases h113 : k = 113
+  · subst k
+    have hlen : ys.length = rhs.length := by simp [ys]
+    rw [← hlen,List.take_length] at hy'
+    simpa [ys] using hy'
+  by_cases h143' : k = 143
+  · subst k; simpa using h143
+  by_cases h141 : k = 141
+  · subst k; simpa [] using hsrc'
+  by_cases h142 : k = 142
+  · subst k; simpa [] using hsaved'
+  by_cases h138 : k = 138
+  · subst k; simpa using hpage'
+  by_cases h137 : k = 137
+  · subst k; simpa using hpageSaved'
+  by_cases h136 : k = 136
+  · subst k; simpa [← hguards] using hmask'
+  simpa [h93,h107,h113,h143',h141,h142,h138,h137,h136] using hf k h93 h107 h113 h143' h141 h142 h138 h137 h136
+
+theorem retainedPageSpatialCouplingRowLoop_list_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
+    (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
+    (hst : s < t)
+    (C : ZMod s → GaussianInt) (source rhs : List GaussianInt)
+    (hlen : rhs.length ≤ source.length)
+    (hwindow : ∀ j < rhs.length, (source.drop j).take (2*band+1) = spatialCouplingInputWords boundary t band a b j C) (hrows : rhs.length ≤ s)
+    (tail pageTail maskTail rhsTail raw : List (Fin (A+4))) (v : HS 144 Q A U) (S : Stacks 144 A)
+    (hready : RetainedCouplingReady P q w s t u band a b raw (embStk groupReg S))
+    (hsource : S.R 141 = cstream A w source++tail)
+    (hrows : (S.R 140).length = 2*band+1)
+    (hpage : S.R 138 = cstream A w (couplingCoefficientPage P q s t u band a b rhs.length)++pageTail)
+    (hmask : S.R 136 = (couplingGuardSymbols boundary A s t band a b).take rhs.length++maskTail)
+    (hindex : S.R 107 = []) (hrhs : S.R 93 = cstream A w rhs++rhsTail)
+    (hcount : (S.R 143).length = rhs.length)
+    (hxs : ∀ j < rhs.length, ∀ x ∈ couplingInputWords boundary t band a b j C, Fits w x)
+    (has : ∀ j < rhs.length, ∀ z ∈ couplingCoefficientWords P q s t u band j, Fits w z ∧ z.im = 0) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ retainedPageSpatialGuardedLoopCost boundary q w s t band a b rhs.length ∧
+      Exec (body) (retainedPageSpatialCouplingRowLoop hQ) (mk v S) m
+        (mk v' {S with R := (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update S.R 136 maskTail) 138 pageTail) 137
+          ((cstream A w (couplingCoefficientPage P q s t u band a b rhs.length)).reverse++S.R 137))
+          93 rhsTail) 107 (List.replicate rhs.length tick++S.R 107))
+          113 (cstream A w (guardedCouplingRowWords P q t u band a b boundary C 0 rhs).reverse++S.R 113)) 143 [])
+          141 (cstream A w (source.drop rhs.length)++tail))
+          142 ((cstream A w (source.take rhs.length)).reverse++S.R 142))}) := by
+  simpa [retainedPageSpatialIntervalLoopCost,retainedPageSpatialGuardedLoopCost,
+    couplingCoefficientPageInterval,couplingCoefficientPage] using
+    retainedPageSpatialCouplingRowLoop_interval_exec (body := body) (origin := 0)
+      hQ boundary hA hw5 hqw hst C source rhs hlen (by simpa using hwindow) (by omega)
+      tail pageTail maskTail rhsTail raw v S hready hsource (by assumption) (by simpa [couplingCoefficientPageInterval,couplingCoefficientPage] using hpage)
+      (by simpa using hmask) hrhs hcount (by simpa using hxs) (by simpa using has)
+
 theorem retainedPageSpatialCouplingRowLoop_exec (hQ : SS.states ≤ Q) {P q w s t u band a b : ℕ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
     (hst : s < t)
@@ -55,132 +236,10 @@ theorem retainedPageSpatialCouplingRowLoop_exec (hQ : SS.states ≤ Q) {P q w s 
             then C j else 0) band).take rhs.length)).reverse++S.R 142))}) := by
   let F := fun j : ZMod s => if j ∈
     (if boundary then haloBoundary s t band a b else haloInterior s t band a b) then C j else 0
-  let source := cyclicPaddedLine F band
-  let ys := guardedCouplingRowWords P q t u band a b boundary C 0 rhs
-  let guards := (couplingGuardSymbols boundary A s t band a b).take rhs.length
-  have hguards : guards.length = rhs.length := by simp [guards]; omega
-  let Inv : ℕ → Stacks 144 A → Prop := fun j B =>
-    B.inp = S.inp ∧ B.out = S.out ∧ B.L = S.L ∧
-    (∀ k : Fin 144, k ≠ 93 → k ≠ 107 → k ≠ 113 → k ≠ 143 → k ≠ 141 → k ≠ 142 → k ≠ 138 → k ≠ 137 → k ≠ 136 → B.R k = S.R k) ∧
-    B.R 93 = cstream A w (rhs.drop j)++rhsTail ∧
-    B.R 107 = List.replicate j tick++S.R 107 ∧
-    B.R 113 = cstream A w (ys.take j).reverse++S.R 113 ∧
-    B.R 141 = cstream A w (source.drop j)++tail ∧
-    B.R 142 = (cstream A w (source.take j)).reverse++S.R 142 ∧
-    B.R 138 = cstream A w (couplingCoefficientPageSuffix P q s t u band a b j rhs.length)++pageTail ∧
-    B.R 137 = (cstream A w (couplingCoefficientPage P q s t u band a b j)).reverse++S.R 137 ∧
-    B.R 136 = guards.drop j++maskTail
-  have hstable : ∀ j B cs, Inv j B → Inv j {B with R := Function.update B.R 143 cs} := by
-    intro j B cs h
-    rcases h with ⟨hi,ho,hl,hf,hr,hj,hy,hsrc,hsaved,hpageB,hpageSavedB,hmaskB⟩
-    exact ⟨hi,ho,hl,by intro k h93 h107 h113 h143 h141 h142 h138 h137 h136; simpa [h143] using hf k h93 h107 h113 h143 h141 h142 h138 h137 h136,
-      by simpa using hr,by simpa using hj,by simpa using hy,by simpa using hsrc,by simpa using hsaved,by simpa using hpageB,by simpa using hpageSavedB,by simpa using hmaskB⟩
-  have hstep : ∀ j < rhs.length, ∀ (vi : HS 144 Q A U) B, Inv j B →
-      ∃ v' B' m, v'.user = vi.user ∧ m ≤ retainedPageSpatialGuardedStepCost (couplingSkipAt boundary s t band a b j) q w band ∧
-        Exec (body) (retainedPageSpatialCouplingRowStep hQ) (mk vi B) m (mk v' B') ∧
-        B'.R 143 = B.R 143 ∧ Inv (j+1) B' := by
-    intro j hj vi B h
-    rcases h with ⟨hiB,hoB,hlB,hf,hr,hjB,hyB,hsrcB,hsavedB,hpageB,hpageSavedB,hmaskB⟩
-    have hreadyB : RetainedCouplingReady P q w s t u band a b raw (embStk groupReg B) := by
-      apply hready.of_frame
-      · change B.L ∘ groupReg = S.L ∘ groupReg
-        rw [hlB]
-      · intro k h93 h107 h113
-        apply hf (groupReg k)
-        · exact groupReg_injective.ne h93
-        · exact groupReg_injective.ne h107
-        · exact groupReg_injective.ne h113
-        · exact groupReg_off 143 (by decide) k
-        · exact groupReg_off 141 (by decide) k
-        · exact groupReg_off 142 (by decide) k
-        · exact groupReg_off 138 (by decide) k
-        · exact groupReg_off 137 (by decide) k
-        · exact groupReg_off 136 (by decide) k
-    have hindexB : (B.R 107).length = j := by simp [hjB,hindex]
-    have hrhsB : B.R 93 = csyms A w rhs[j]++(cstream A w (rhs.drop (j+1))++rhsTail) := by
-      rw [hr,List.drop_eq_getElem_cons hj,cstream_cons,List.append_assoc]
-    have hjg : j < guards.length := by omega
-    have hguardj : guards[j] = pairSym A (couplingSkipAt boundary s t band a b j) (couplingSkipAt boundary s t band a b j) := by
-      simp [guards,couplingGuardSymbols]
-    have hmaskj : B.R 136 = pairSym A (couplingSkipAt boundary s t band a b j) (couplingSkipAt boundary s t band a b j)::
-        (guards.drop (j+1)++maskTail) := by
-      rw [hmaskB,List.drop_eq_getElem_cons hjg,hguardj,List.cons_append]
-    have hrowsB : (B.R 140).length = 2*band+1 := by
-      rw [hf 140 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]
-      exact hrows
-    let nextPage := cstream A w (couplingCoefficientPageSuffix P q s t u band a b (j+1) rhs.length)++pageTail
-    have hpagej : B.R 138 = cstream A w (if couplingSkipAt boundary s t band a b j then []
-        else spatialCouplingCoefficientWords P q s t u band j)++nextPage := by
-      rw [hpageB,couplingCoefficientPageSuffix_step P q s t u band a b j rhs.length hj]
-      simp [nextPage,cstream_append,List.append_assoc,couplingCoefficientPageChunk,couplingSkipAt]
-      rfl
-    obtain ⟨v',m,hu,hm,he⟩ := retainedPageSpatialCouplingRowStep_exec (body := body)
-      hQ boundary (couplingSkipAt boundary s t band a b j) hA hw5 hqw hst (by omega) C tail nextPage
-      (guards.drop (j+1)++maskTail) raw vi B hmaskj
-      rfl hreadyB hrowsB hpagej hsrcB
-      rhs[j] (cstream A w (rhs.drop (j+1))++rhsTail) hrhsB (hxs j hj) (has j hj)
-    let z := guardedCouplingRowWord P q t u band a b j boundary C rhs[j]
-    let B' : Stacks 144 A := {B with R := (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update (Function.update B.R 136 (guards.drop (j+1)++maskTail)) 138 nextPage) 137
-      ((cstream A w (couplingCoefficientPageChunk P q s t u band a b j)).reverse++B.R 137))
-      113 (csyms A w z++B.R 113)) 93 (cstream A w (rhs.drop (j+1))++rhsTail))
-      141 (cstream A w (source.drop (j+1))++tail))
-      142 ((csyms A w (F ((j : ZMod s)-(band : ZMod s)))).reverse++B.R 142)) 107 (tick::B.R 107))}
-    have hylen : j < ys.length := by simpa [ys] using hj
-    have hyget : ys[j] = z := by simpa [ys,z] using guardedCouplingRowWords_getElem P q t u band a b 0 boundary C rhs j hj
-    have hnext : cstream A w (ys.take (j+1)).reverse = csyms A w z++cstream A w (ys.take j).reverse := by
-      rw [List.take_succ_eq_append_getElem hylen,List.reverse_append,List.reverse_singleton,
-        cstream_append,cstream_cons,cstream_nil,List.append_nil,hyget]
-    have hsourceLen : j < source.length := by
-      simp only [source,cyclicPaddedLine,List.length_map,List.length_range]
-      omega
-    have hsourceGet : source[j] = F ((j : ZMod s)-(band : ZMod s)) := by
-      simp [source,cyclicPaddedLine]
-    have hsnext : (cstream A w (source.take (j+1))).reverse =
-        (csyms A w (F ((j : ZMod s)-(band : ZMod s)))).reverse ++
-          (cstream A w (source.take j)).reverse := by
-      rw [List.take_succ_eq_append_getElem hsourceLen,cstream_append,List.reverse_append,
-        cstream_cons,cstream_nil,List.append_nil,hsourceGet]
-    refine ⟨v',B',m,hu,hm,by convert he using 1; rfl,by simp [B'],hiB,hoB,hlB,?_,by simp [B'],?_,?_,?_,?_,?_,?_,?_⟩
-    · intro k h93 h107 h113 h143 h141 h142 h138 h137 h136
-      simpa [B',h93,h107,h113,h141,h142,h138,h137,h136] using hf k h93 h107 h113 h143 h141 h142 h138 h137 h136
-    · simp [B',hjB,List.replicate_succ]
-    · simp [B',hyB,hnext,List.append_assoc]
-    · simp [B']
-    · simp [B',hsavedB,hsnext,List.append_assoc]
-    · simp [B',nextPage]
-    · simp [B',hpageSavedB,couplingCoefficientPage_succ,cstream_append,List.reverse_append,List.append_assoc]
-    · simp [B']
-  have hInv : Inv 0 S := by
-    exact ⟨rfl,rfl,rfl,by intros; rfl,by simpa using hrhs,by simp,by simp,by simpa [source,F] using hsource,by simp,by simpa using hpage,by simp,by simpa [guards] using hmask⟩
-  obtain ⟨v',S',m,hu,hm,he,h143,hI⟩ := countedLoop_exec_costs (body := body)
-    143 (retainedPageSpatialCouplingRowStep hQ) rhs.length
-    (fun j => retainedPageSpatialGuardedStepCost (couplingSkipAt boundary s t band a b j) q w band) Inv hstable hstep v S hcount hInv
-  rcases hI with ⟨hi',ho',hl',hf,hr',hj',hy',hsrc',hsaved',hpage',hpageSaved',hmask'⟩
-  refine ⟨v',m,hu,hm,he.cast rfl ?_⟩
-  apply congrArg (mk v')
-  refine Stacks.ext hi' ho' hl' ?_
-  funext k
-  by_cases h93 : k = 93
-  · subst k; simpa using hr'
-  by_cases h107 : k = 107
-  · subst k; simpa using hj'
-  by_cases h113 : k = 113
-  · subst k
-    have hlen : ys.length = rhs.length := by simp [ys]
-    rw [← hlen,List.take_length] at hy'
-    simpa [ys] using hy'
-  by_cases h143' : k = 143
-  · subst k; simpa using h143
-  by_cases h141 : k = 141
-  · subst k; simpa [source,F] using hsrc'
-  by_cases h142 : k = 142
-  · subst k; simpa [source,F] using hsaved'
-  by_cases h138 : k = 138
-  · subst k; simpa using hpage'
-  by_cases h137 : k = 137
-  · subst k; simpa using hpageSaved'
-  by_cases h136 : k = 136
-  · subst k; simpa [← hguards] using hmask'
-  simpa [h93,h107,h113,h143',h141,h142,h138,h137,h136] using hf k h93 h107 h113 h143' h141 h142 h138 h137 h136
+  apply retainedPageSpatialCouplingRowLoop_list_exec (body := body) hQ boundary hA hw5 hqw hst C
+    (cyclicPaddedLine F band) rhs (by simp [cyclicPaddedLine]; omega)
+    (by intro j hj; exact (spatialCouplingInputWords_window boundary t band a b j C (by omega)).symm)
+    (by assumption) tail pageTail maskTail rhsTail raw v S hready hsource
+    (by assumption) hpage hmask hindex hrhs hcount hxs has
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

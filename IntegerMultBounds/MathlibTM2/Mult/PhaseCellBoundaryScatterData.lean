@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundarySolutionField
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellEncodedScatter
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellScatterSchedule
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryScatterData
 
 /-! Sparse publication of ascending boundary words into a zero ambient line. -/
 
@@ -34,51 +35,10 @@ theorem boundary_scatter_field (s : ℕ) [NeZero s] (B : Finset (ZMod s))
     (G : ZMod s → GaussianInt) (hoff : ∀ i ∉ B, G i = 0) :
     scatterRows 1 (List.replicate s 0) ((bOrder s B).map G)
       (boundaryScatterGaps s B 1) = chirpLine s G := by
-  let ps := boundaryScatterOrigins s B
-  let E : List GaussianInt := List.replicate s 0
-  let X := (bOrder s B).map G
-  have hdis := boundaryScatterOrigins_disjoint s B
-  have hfit : ∀ p ∈ ps, p+1 ≤ E.length := by simpa [E] using boundaryScatterOrigins_fit s B
-  have hx : ps.length*1 ≤ X.length := by simp [ps,boundaryScatterOrigins,X]
-  have hf := windowGaps_fits 1 0 ps E (fun _ _ => Nat.zero_le _) hdis hfit
-  have hlen := length_scatterRows 1 E X (windowGaps 1 0 ps) (by simpa using hf) (by simpa using hx)
-  simp only [boundaryScatterGaps,Nat.mul_one]
-  rw [show (fun i : ℕ => i) = id from rfl,List.map_id]
-  change scatterRows 1 E X (windowGaps 1 0 ps) = chirpLine s G
-  apply List.ext_getElem (by simpa [E] using hlen)
-  intro i hi hj
-  have hiS : i < s := by simpa [E,hlen] using hi
-  have hival : (i : ZMod s).val = i := by simp [ZMod.val_natCast,Nat.mod_eq_of_lt hiS]
-  have htarget : (chirpLine s G)[i] = G (i : ZMod s) := by simp [chirpLine]
-  rw [htarget]
-  by_cases hiB : (i : ZMod s) ∈ B
-  · have hm : (i : ZMod s) ∈ bOrder s B := by
-      simpa only [← List.mem_toFinset,bOrder_toFinset] using hiB
-    obtain ⟨n,hn,hcoord⟩ := List.getElem_of_mem hm
-    have hnps : n < ps.length := by simpa [ps,boundaryScatterOrigins] using hn
-    have hnX : n < X.length := by simpa [X] using hn
-    have hp : ps[n] = i := by simp [ps,boundaryScatterOrigins,hcoord,hival]
-    have hw := scatterRows_absolute 1 ps E X hdis hfit hx n hnps
-    rw [hp,Nat.mul_one,List.take_one_drop_eq_of_lt_length hi,
-      List.take_one_drop_eq_of_lt_length hnX] at hw
-    have he := congrArg (fun l : List GaussianInt => l.headD 0) hw
-    simpa [X,hcoord] using he
-  · have ho : ∀ n (hn : n < ps.length), i < ps[n] ∨ ps[n]+1 ≤ i := by
-      intro n hn
-      have hnB : n < (bOrder s B).length := by simpa [ps,boundaryScatterOrigins] using hn
-      have hm : (bOrder s B)[n] ∈ B := by
-        have h := List.mem_toFinset.mpr (List.getElem_mem hnB)
-        simpa only [bOrder_toFinset] using h
-      have hne : ps[n] ≠ i := by
-        intro he
-        have hval : (bOrder s B)[n].val = (i : ZMod s).val := by
-          simpa [ps,boundaryScatterOrigins,hival] using he
-        exact hiB ((ZMod.val_injective s hval) ▸ hm)
-      omega
-    have he := scatterRows_absolute_off 1 ps E X hdis hfit hx i ho
-    rw [List.getElem?_eq_getElem hi,List.getElem?_eq_getElem (by simpa [E] using hiS)] at he
-    have he' := Option.some.inj he
-    simpa [E,hoff _ hiB] using he'
+  have hh := packedBoundary_scatter_field B 0 s (by omega)
+    (fun i _ => ⟨Nat.zero_le _,by simpa using i.val_lt⟩) G hoff
+  simpa [boundaryScatterGaps,boundaryScatterOrigins,packedBoundaryOrigins,Function.comp_def,
+    packedInterval,List.take_of_length_le (show (chirpLine s G).length ≤ s by simp)] using hh
 
 theorem boundaryScatterGaps_scale (s : ℕ) [NeZero s] (B : Finset (ZMod s)) (w : ℕ) :
     boundaryScatterGaps s B w = (windowGaps 1 0 (boundaryScatterOrigins s B)).map (fun d => d*w) := by

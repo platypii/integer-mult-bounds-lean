@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingCoefficientPageData
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingCoefficientPageInterval
 
 /-! Structural suffixes align the sparse page cursor with ambient coordinates. -/
 
@@ -11,6 +11,22 @@ open IntegerMultBounds
 
 def couplingCoefficientPageSuffix (P q s t u band a b i N : ℕ) : List GaussianInt :=
   (List.range (N-i)).flatMap (fun j => couplingCoefficientPageChunk P q s t u band a b (i+j))
+
+theorem couplingCoefficientPageSuffix_interval (P q s t u band a b origin N : ℕ) :
+    couplingCoefficientPageSuffix P q s t u band a b origin (origin+N) =
+      couplingCoefficientPageInterval P q s t u band a b origin N := by
+  simp only [couplingCoefficientPageSuffix,couplingCoefficientPageInterval,Nat.add_sub_cancel_left]
+
+/-- Page ownership after `j` rows consists of one saved prefix and one unread suffix. -/
+theorem couplingCoefficientPageInterval_split (P q s t u band a b origin N j : ℕ) (hj : j ≤ N) :
+    couplingCoefficientPageInterval P q s t u band a b origin N =
+      couplingCoefficientPageInterval P q s t u band a b origin j ++
+        couplingCoefficientPageSuffix P q s t u band a b (origin+j) (origin+N) := by
+  have he : origin+N = (origin+j)+(N-j) := by omega
+  rw [he,couplingCoefficientPageSuffix_interval]
+  have hn : N = j+(N-j) := by omega
+  conv_lhs => rw [hn]
+  exact couplingCoefficientPageInterval_add P q s t u band a b origin j (N-j)
 
 @[simp] theorem couplingCoefficientPageSuffix_zero (P q s t u band a b N : ℕ) :
     couplingCoefficientPageSuffix P q s t u band a b 0 N = couplingCoefficientPage P q s t u band a b N := by
