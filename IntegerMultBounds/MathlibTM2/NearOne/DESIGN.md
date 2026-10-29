@@ -74,6 +74,2020 @@ approved axioms. S4's exposure/publication, halo/global locality and tensor
 composition, remaining S5/S6 work and kappa are unchanged. Implementation
 checkpoints below are historical; the current S3 acceptance is recorded here.
 
+### S4 implementation checkpoint (2026-10-28)
+
+The new `NLogN/SchurLocality` proves decay through supported neighborhoods;
+`PhaseCellHaloLayers`, `PhaseCellLocalityPrecision`, and `PhaseCellLocality`
+instantiate it for the actual rounded matrix. Depth
+`16*p*(target+p+4)` gives absolute locality error at most `2^-target` for
+RHS bounded by one, without an ambient-size factor.
+`PhaseCellCoreWindows` generates disjoint quotient-owned cores and padded
+interval halos, using the full principal system when padding crosses the
+period seam. `PhaseCellCoreDescriptors` supplies bounded interval endpoints
+with exact principal-set agreement. `PhaseCellCoreWindowCost` bounds fallback
+indices by three when radius ≤ core width, and total halo volume by `9*s`
+when also core width ≤ s. `Mult/PhaseCellGeneratedWindows` assembles these
+into a global real `SolveSpec`, conditional only on the local arithmetic
+solver contracts and the stated matrix regime. This is numerical assembly,
+not an executed S4 machine.
+
+Integration must address the existing `FamilyDispatchFrame.source` contract:
+its payload is an ambient `chirpLine s` per input even for interval descriptors.
+The new geometric volume bound does not price repeated full-source loading.
+Descriptor execution now uses a shared `descriptorEnumeration_do` theorem for
+core intervals, halo endpoints and filtered group origins. The core-origin host
+computes its loop count from numeric headers and emits the ordered origin
+packets with a step bound and preserved external stacks. `PhaseCellCoreGatherExec`
+instantiates the existing restoring ordered gather; its controls remain a caller
+obligation. `PhaseCellCorePublication` executes individual core copies, including
+their source-prefix traversal cost. These are components, not a fused schedule.
+Paid packed input/output, complete-key reuse, tensor composition, simultaneous
+stock, selected sizing, and the fused R4 schedule remain open. S4 is not complete
+and kappa is unchanged.
+
+Packed-storage progress: `PhaseCellPackedInterval` proves length, ambient
+indexing, slicing, encoded-word equality and unchanged error bounds for a
+physical halo slice. `coreGather_packed` identifies the ordered gather's output
+with those slices. `publishPackedCore_exec` crops a packed halo in
+`6*radius*wordWidth + 10*coreLength*wordWidth + 16` steps, restoring its source
+and all other stacks. `PhaseCellPackedComponentInputs` reuses the existing
+component splitter by embedding its count register into a private register;
+it prepares both components in `20*L*w+9*L+20` steps while preserving the
+ambient-period header. This does not yet refactor the S3 solver: its boundary
+gather/scatter addresses, retained original-input operations, full output
+assembly and downstream time/stock bounds still use ambient-length storage.
+
+`PhaseCellSparseScatter` now proves sparse publication once over arbitrary
+lists. `PhaseCellPackedBoundaryScatterData` translates boundary offsets by the
+halo origin while retaining `bOrder` and ambient field values; the existing
+full-line `boundary_scatter_field` is a specialization of this proof.
+`packedBoundaryScatter_exec` runs the unchanged scatter machine into a packed
+halo in at most `35*L*w+6` steps, with arbitrary borrowed source/output suffixes
+and exact restoration of other stacks. Its control tape and zero halo buffer
+are explicit preconditions. Generating those resources and integrating this
+primitive into the retained S3 recovery lifecycle remain to be done.
+
+The packed recovery movement components now include binary bank initialization
+(`40*V+41` steps), ambient-origin scanning started at the halo origin, bank
+release, and the existing advance-to-gap converter. `packedPublicationProgram_exec`
+composes these from actual metadata and coordinate packets.
+`controlledPackedBoundaryPublish_exec` combines conversion, generation of a
+halo-sized zero buffer, scattering, and local control cleanup in `89*L*w+41`
+steps. The halo length is held in private register 222, preserving the ambient
+header. Joining origin generation to this publisher and replacing the retained
+S3 recovery lifecycle remain open; these component theorems do not establish
+the S4 tensor machine, stock bound, setup count or fused R4 schedule.
+
+### S4 implementation plan: close the packed execution boundary first
+
+The proof should follow the manuscript construction recorded in
+`plan/D-sharper-bound.md`, M7b: local principal solves, owned-core cropping,
+shared factor pages, and bulk tensor exposure. The local source records core
+length about `p^8` and halo radius about `p^3`; these are sizing targets, not yet
+proved hypotheses for the selected machine. Keep geometry symbolic until the
+cost and precision inequalities determine the concrete sizes.
+
+The existing locality and generated-window results supply the mathematical
+spine. The next work should connect one complete executed group before adding
+more descriptor variants. In particular, a theorem assuming an efficient packed
+solver or an R4 execution oracle is an intermediate lemma, not S4 acceptance.
+
+| Order | Deliverable | Reuse and decisive acceptance check |
+| --- | --- | --- |
+| 1 | Packed halo input/output for S3 | Factor the current dispatcher's loading and storage interface from its arithmetic proof. Retain ambient coordinates for coefficients and cuts, but store only halo words. Prove agreement with the existing principal solve by restriction and index transport. An interval call must neither load nor return `s` words merely because its ambient period is `s`. |
+| 2 | One executed generated group | Connect generated origin packets to `originAdvanceControls_exec`, then `orderedGather_exec`, the packed S3 call, and an ordered core publisher. Include count/header generation, width scaling, suffixes, empty groups, cleanup and step bounds. The theorem must return the same outputs that its accuracy theorem describes. |
+| 3 | Complete schedule with actual setup reuse | Instantiate the generic group theorem for the at-most-two regular halo lengths and at-most-three full-system seam fallbacks. Length groups organize movement only. Partition arithmetic calls by the existing complete setup key; prove coverage, order and the number of setups rather than assuming all equal-length halos share factors. |
+| 4 | Tensor accuracy and support | Feed the normalized complex one-axis result and its unit-ball guarantee into `TensorApproxD`/`TensorApproxV` and `ResamplingPermutedNumeric`. Use their additive composition, with no window-count or tensor-volume multiplier. Prove reserved-coordinate and suffix preservation for the actual executed schedule. |
+| 5 | R4 fusion and final ledger | Execute the layout transitions, retaining the exposed representation across compatible axes. Restore the required layout at the phase boundary. Sum setup/solve/release and movement costs; bound simultaneous live storage; instantiate selected sizes and precision. Combine S2 and S3 at their existing supplier interfaces. |
+
+Use only a few abstractions, each justified by a repeated proof obligation:
+
+* **Packed interval view:** an origin, length, ambient coordinate embedding and
+  a word-slice relation. Prove indexing, crop and restriction laws once. Never
+  replace the ambient matrix by a new short-period matrix: that changes aliases
+  and coefficients.
+* **Ordered schedule:** descriptors with disjoint owned cores, covering all
+  published coordinates, and ordered source intervals. Separate overlapping
+  read halos from disjoint write ownership. Use list induction and existing
+  window/gather lemmas, not one theorem per window.
+* **Restored group execution:** one composition theorem parameterized by the
+  solver's executed contract. Its invariant records the remaining descriptors,
+  published prefix, borrowed suffix, retained setup and scratch state. Instantiate
+  it with the real packed S3 theorem before declaring the group complete.
+* **Complete setup-key equivalence:** reuse the production key and its equality
+  laws. Movement classes and setup classes are distinct partitions; price any
+  required reordering explicitly.
+* **Cost and live-storage ledger:** add sequential time, take maxima of scratch
+  peaks, and include retained factor pages and gathered buffers in every live
+  state. Keep exact symbolic bounds until the final sizing theorem.
+
+For fast implementation, first inspect every `chirpLine s` dependency in the S3
+loader, arithmetic consumer and output publisher. Change the narrowest common
+boundary that admits packed storage; preserve the existing full-line endpoint
+as an instance. Do not duplicate the 303-register arithmetic proof. Generalize
+the origin-to-controls preparation over an ordered origin list instead of
+copying the halo-specific controller proof into another geometry-specific file.
+If packed loading requires deeper arithmetic changes, resolve those before
+expanding controller machinery.
+
+Validate each abstraction with its first real consumer immediately. Use one
+generic frame theorem for arbitrary untouched stacks and instantiate register
+maps last. Keep arithmetic semantics and lightweight controller checks in
+separate import closures. Check changed files with `check-lean-safe.py`, aiming
+below 4 GiB, then build the affected endpoints with `build-lean-guarded.py`.
+Use default proof limits and the existing axiom audit. Concrete finite checks
+should concern small register maps only; prove schedule facts structurally.
+
+S4 acceptance requires a concrete machine theorem combining execution,
+normalized accuracy, tensor support, restoration, selected time and stock for
+the same returned output. No unpaid ambient scans, externally supplied control
+tapes, assumed setup counts or assumed R4 fusion may remain. S5/S6 obligations
+stay explicit; completing a component does not change kappa.
+
+### S4 local ribbon lifecycle checkpoint (2026-10-28)
+
+`prepareMaskedGatheredRibbon_exec` generates the local word count from the
+retained binary row count and unary bandwidth, constructs the masked spatial
+source from a gathered raw ribbon, and releases its counter. It changes only
+the source prefix on register 141. `releaseCouplingRibbon_exec` regenerates the
+word and symbol counts, releases exactly that prefix and restores all scratch;
+the borrowed suffix is arbitrary. Its bound is
+`12*((N+2*band)*w) + 17*N + 26*band + 11*V + 24`.
+The release specializes the existing generic prefix-release machinery rather
+than adding another erasure loop.
+
+These endpoints bracket `generatedRestoredPackedCouplingInterval_exec`, which
+restores the ribbon, coefficient page and cursors after the interval arithmetic.
+`gatheredCouplingInterval_exec` now composes all three into one actual caller.
+Its exact postcondition changes only the consumed RHS prefix and the returned
+reversed coupling results. The raw gathered ribbon, masked-source suffix,
+coefficient page, row index and all temporary counters/scratch are restored.
+Readiness supplies the low-bank and native scratch invariants; the caller does
+not receive additional blank-bank certificates. Its step bound adds the three
+proved execution costs. Binary geometry metadata, the gathered raw ribbon and
+the retained interval coefficient page are still caller inputs.
+
+Complete packed inverse integration and the full S4 schedule remain open. The
+expanded `PhaseCellCouplingIntervalCheck` audits the composed caller and its
+three endpoints as well as interval coefficient setup.
+
+The local coupling feed now has an executed endpoint:
+`feedPackedCouplingResult_exec` generates `N` from the retained binary header,
+copies the reversed result into natural word order on register 110, releases
+the reversed intermediate on 113 and restores all temporary counters. It reuses
+`reverseWords_coeffs_exec` and `releaseFromDimensions_exec`, preserving bits
+within each word and arbitrary source/destination suffixes. Its cost is at most
+`28*N*w + 36*N + 11*V + 26`; the ambient-period header is preserved.
+`gatheredFeedCouplingInterval_exec` composes it with the complete gathered
+coupling lifecycle. The final state changes only RHS consumption on 93 and the
+natural-order result prefix on 110, matching the next solver's source port.
+The complete retained inverse must still adopt this local endpoint and replace
+its other ambient-length loading/publication operations. The interval audit
+includes both feed endpoints.
+
+`CouplingIntervalMetadata` now gives the local feed caller one physical
+binary geometry contract. A canonical value function describes ambient
+sizes, bandwidth, cuts, origin, interval end, padded end and row count on the
+existing ports. Its guard and ribbon projection lemmas instantiate the two
+bank loaders, and the common geometric bounds prove every loaded value fits.
+`gatheredFeedCouplingInterval_exec` consumes this contract directly: callers
+no longer supply two arbitrary value maps, duplicated scalar equalities,
+per-bank bounds, width proofs or a separate binary row-count equation.
+This is an interface consolidation, not metadata generation; the physical
+encoded words are still required and their production remains to be composed.
+
+`completeCouplingIntervalMetadata_exec` now generates the derived binary
+fields from the seven retained base fields (ambient sizes, bandwidth, cuts,
+origin and row count). It computes doubled bandwidth, interval end, padded end
+and encoded zero using the existing restoring binary primitives, in exactly
+`36*V + 36` steps, with scratch restored. Its result proves
+`CouplingIntervalMetadata` for the same physical state.
+`completedGatheredFeedCouplingInterval_exec` composes that setup directly with
+the gathered packed coupling/feed lifecycle. Derived metadata remains retained
+in its postcondition; its setup cost is included. Base-field production, eventual
+metadata release, coefficient-page setup/reuse and complete inverse integration
+remain open. Neither this endpoint nor the earlier feed completes S4.
+
+`binaryHeaderBank_exec` proves retained unary-to-binary conversion once over
+an arbitrary assignment list, with distinct destinations and disjoint source and
+destination banks. It restores every source and scratch register and sums the
+actual conversion bills. `prepareSharedCouplingMetadata_exec` instantiates it
+for the five shared geometry fields `s,t,band,a,b` from native retained headers.
+Its exact frame changes only ports `145,146,147,149,151`, and its cost is at most
+`(s+t+band+a+b)*(4*V+10) + 20*V + 41`. The generic conversion check peaks near
+1.4 GiB; the actual shared geometry instantiation peaks near 2.1 GiB.
+This setup belongs outside the local interval traversal. Dynamic origin and row
+count must still be loaded from binary descriptor packets: regenerating unary
+origins for every halo would introduce an unproved repeated ambient charge.
+The grouped caller must compose this setup, descriptor loading, derived metadata
+completion and eventual release, while proving the intended setup reuse.
+
+`loadCouplingIntervalDescriptor_exec` now consumes two width-`V` binary
+words (origin, row count) from port 159 into 155 and 165, preserving the packet
+suffix and shared geometry. Its exact cost is `12*V+12`.
+`releaseCouplingIntervalDescriptor_exec` clears all six dynamic metadata words
+in `12*V+13` steps. `descriptorCouplingInterval_exec` composes loading, derived
+metadata completion, gathered coupling/feed and release into a single interval
+step. Its final frame changes only the descriptor suffix on 159, RHS suffix on
+93 and natural-order result prefix on 110; all dynamic metadata ports are blank
+again, while shared geometry and the coefficient page survive. The caller no
+longer supplies binary origin/count words directly on working ports. Generated
+packet-stream connection, shared setup scope, page setup/reuse, full packed
+inverse, tensor execution and the selected resource bounds remain open.
+
+`coreHaloPacketCode_do` reuses the existing halo selector and structural
+descriptor enumeration to emit origin/length pairs for the analytic halos,
+including the same full-system seam fallback. Its generated form computes the
+core count from `s` and core width. `tablePacketHost_list_exec` generalizes the
+existing one-field packet host to an arbitrary list; the original theorem is
+now the singleton specialization with its unchanged cost and statement.
+`generatedCoreHaloPacketHost_exec` places this host on the 168-register bank and
+publishes actual binary packets to port 159, exactly the descriptor loader's
+input port. Low table workspace is cleared and all external stacks/suffixes
+are preserved. For `K = (s+width-1)/width`, its bill is at most
+`(17*K+9)*tblC V V + (4*K+62)*V + 65`. The code and physical-host checks peak
+near 1.9 and 2.0 GiB respectively. The initial table bank still requires executed
+loading; grouping/filtering packets to match reusable arithmetic keys and the
+full traversal remain open.
+
+`preparedCoreHaloPackets_exec` closes the packet controller's initialized-bank
+precondition. It reuses `chirpBankLoad_exec` with the shared binary ambient size
+on 145, selected core width on 150 and halo radius on 152, plus the unary binary
+width on 163. Unused table variables read an empty zero source on 154 and are
+padded by the loader. Loading costs exactly `110*V+137`; packet generation and
+complete table release follow in the same executed program. The exact final
+state changes only the packet prefix on 159. All geometry inputs, borrowed
+suffixes, native solver stacks and temporary table slots are restored. Its
+single-file check peaks near 2.0 GiB. Producing the selected core/radius scalars,
+matching movement groups to complete setup keys and executing the full grouped
+solver still remain open.
+
+`PhaseCellCoreSetupGroups` now partitions generated cores by their ambient
+halo endpoint pairs. It proves coverage, unique group membership, no repeated
+indices within a group and an exact additive ledger identity over the fibres.
+Non-full endpoint keys contain at most one core; repeated full-system requests
+share the full-system key. Every non-full arithmetic group lies in the matching
+movement-length class, without identifying distinct arithmetic keys.
+`Cost/PhaseCellCoreSetupKeys` maps the endpoints into the existing complete
+`SelectedFamilyKey` with fixed `u` and target. Its key equality is exactly
+endpoint equality, and the distinct generated setup family inherits the existing
+scaled whole-box setup allowance. These are mathematical grouping and accounting
+facts: executing each key once, routing its replicas and paying physical
+reordering remain scheduler obligations.
+
+`gatherPackedCellInputs_exec` supplies a bounded interior RHS gather on the
+168-register bank. It generates the local row counter from binary port 165,
+copies only the `N`-word packed halo, performs one ordered sweep through all
+selected cell windows, and releases the copy, counter and owned controls.
+Only the RHS prefix on 110 and consumed controls on 91 change; the original
+packed source/suffix and ambient period header are preserved. For `K` windows
+of length `L`, its bill is bounded by
+`K*(14*L*w+27) + 32*N*w + 17*N + 11*V + 6*L*w + 9*L + 60`.
+`packedInterval_eq_cellSourceRows` identifies these local slices with the
+existing arithmetic input rows at the same ambient origins. The existing
+advance controller already accepts a starting origin;
+`packedGatherControls_eq` proves that starting it at the halo origin produces
+the local controls directly from absolute-origin packets. Thus no packet
+rewriting or separate local coordinate generator is required. Actual controller
+initialization/composition and replacement of the complete interior caller's
+ambient input/output bank contracts remain open. The bounded gather and its
+bridges check at about 2.1 GiB with default proof limits.
+
+`restoredLocalAdvanceControls_exec` now loads, runs and releases the existing
+absolute-origin advance controller with the halo origin as its retained start.
+Its bound is `K*(3*tblC V V+29*V+30)+8*N*w+78*V+91`, charging the local span
+rather than the ambient starting offset. `placedLocalAdvanceControls_exec`
+places binary width/origin/zero inputs on 153/155/154 and the width master on
+163, preserving the gather's unary width on 94. It restores absolute-origin
+packets, batch count, metadata and all table scratch.
+`controlledPackedCellInputs_exec` composes this actual controller with the
+bounded gather. Its exact postcondition changes only the gathered RHS prefix
+on 110: the owned controls are generated and consumed within the call, not
+supplied. Checks peak near 2.1 GiB. Encoded word-width/origin/zero metadata and
+absolute-origin packets are still inputs; their surrounding setup must be
+joined to the complete local interior solver before S4 acceptance.
+
+`preparedPackedCellInputs_exec` generates the binary width field on 153 from
+the retained unary width and releases it after the controlled gather, adding
+`w*(4*V+10)+6*V+10` steps. `rawPackedCellInputs_exec` also generates and releases
+the unary width from the ordinary fraction header on 112, adding `8*q+2*w+11`
+steps. The final frame changes only the gathered RHS prefix on 110; both width
+representations and all temporary controls are gone before arithmetic.
+`packedCellRows_eq_sourceRows` and `packedCellOrigin_packets` identify the
+resulting cell rows and retained absolute origins with the unchanged closed
+batch arithmetic interface. The bridges are structural list reindexing proofs;
+no new scalar arithmetic implementation or short-period matrix is introduced.
+All three modules check near 2.1 GiB. The actual closed-batch execution still
+needs to be composed with this input frame, followed by packed publication,
+complete local inverse composition and grouped resource accounting.
+
+`packedCellInputBank_exec` now proves the exact native-bank handoff from the
+executed local gather to `batchInputBank`. Blank native registers follow from
+the supplied bank itself, and the retained absolute-origin packets match its
+existing origin format. `packedCellBatch_sized_exec` composes that preparation
+with the unchanged `closedBatch_sized_exec` through the injective register
+embedding. Its execution returns the actual `releasedCellBank`, compact cell
+outputs and the existing per-cell `CellRun.Valid` certificates for those same
+outputs; the input preparation and complete arithmetic setup/run/release costs
+are summed. All stacks outside the native 117-register bank are preserved.
+Both new endpoints check near 2.1 GiB. This establishes an executed packed cell
+batch, not the complete local inverse: cell geometry/global accuracy,
+local publication, retained setup reuse across replicas and full inverse/tensor
+composition still need to be joined.
+
+`cachedPackedCellBatch_spec` now connects local packed gathering to the
+existing `cachedBatchFromOrigins_spec` numerical supplier. The actual cached
+call preserves the origin-dependent weight page on 117, its count and cache
+scratch, and all external metadata. The same physical returned output has the
+existing per-coordinate/core error `2^-target`, bounded encoded-stream length
+and exact native cleanup. Preparation and cached arithmetic bills are both
+charged. This uses the original ambient matrix and explicit cell geometry
+hypotheses; the geometry still needs instantiation for the generated cells.
+The retained page is a weight cache, not a claim that every inverse factor is
+cached. Its generation/release, remaining factor setup reuse across replicas,
+packed publication and complete grouped inverse composition remain open.
+The cached numerical endpoint checks near 2.1 GiB with default proof limits.
+
+`packedCellScatter_exec` publishes arbitrary disjoint local cell windows
+with exact source/output suffix restoration in at most `35*N*w+6` steps.
+`packedCellScatter_word` identifies each published word with the corresponding
+compact arithmetic word. `packedCellPublish_exec` generates its window counter
+from the existing protected dimensions and releases that counter and the owned
+publication controls. Its bound is `54*N*w+15`; it changes only the consumed
+solution prefix, local output and released controls. Both proofs reuse the
+existing scatter machine and structural window lemmas. They check near 2.0 GiB.
+Publication controls and the local destination buffer are still caller inputs;
+their generation and composition with the executed cached cell batch remain
+open, as do the complete local inverse and S4/R4 execution/ledger gates.
+
+`packedCellPublicationControls_exec` now derives arbitrary disjoint local
+publication gaps from the existing gather-advance stream, preserving that stream,
+its borrowed suffix and the batch count. It reuses `publicationControls_exec`
+and the structural advance/window identities, with bound
+`12*N*w+21*K+21`. `packedCellPublicationFromDimensions_exec` generates the
+window counter from native cell length 102 and word width 94, puts controls on
+protected register 140 and releases all temporary counters. Its accumulator is
+95, disjoint from the live width, and its full bound is
+`12*N*w+21*K+6*L*w+9*L+27`. Both check near 2.1 GiB; the combined execution
+axiom audit passes. The generated controls must still be inserted before input
+gather consumes its advances, retained through arithmetic and joined to the
+publisher. Local destination allocation, complete halo inverse composition and
+the grouped/tensor/R4 resource gates remain open.
+
+`publishingPackedCellBatchPublish_sized_exec` now closes the executed interior
+cell gather–solve–publish chain. The origin packet controller runs once; its
+advance stream supplies both protected publication controls and the local RHS
+sweep. Unary/binary word widths and all temporary gather controls are generated
+and released. `publishingPackedCellInputBank_exec` identifies the resulting
+native bank with the unchanged arithmetic input contract. The closed arithmetic
+batch runs under its existing proof and preserves the publication controls
+outside its bank. Finally the packed publisher consumes the actual compact
+solution words and writes exactly their local scatter into register 132,
+restoring the solution suffix and clearing publication controls. The same
+execution retains per-cell `CellRun.Valid` certificates for those words.
+
+The ledger is the existing `packedCellGroupInputCost` plus
+`12*N*w+21*K+6*L*w+9*L+27` for publication-control preparation, the existing
+`sizedClosedBatchCost`, and `54*N*w+15` for publication. Each new module checks
+between 2.0 and 2.1 GiB, and the combined execution/axiom audit passes. The local
+destination buffer and protected dimensions 128/130 are still caller inputs;
+the selected cell geometry must still be instantiated. This is an interior cell
+batch, not the complete halo inverse: boundary solve, residual/recovery
+composition, retained factor reuse across replicas, grouped traversal, tensor
+support/error, fused R4 layouts and final time/live-stock gates remain open.
+
+`PackedCellOutputSpec` now states accuracy directly on the local destination
+buffer, keeping local storage offsets separate from original ambient cell
+geometry. `packedCellScatter_word_append` proves that a borrowed destination
+suffix cannot affect an owned cell word. `packedPublishedCell_accuracy` reuses
+`publishedCell_accuracy` to transport the existing requested error to that word,
+without a cell-count multiplier. The actual
+`publishingPackedCellBatchPublish_sized_exec` endpoint now returns this contract
+for its physical register 132, alongside execution and the exact scatter state.
+
+`preparePackedCellDestination_exec` generates retained dimensions 128/130 from
+the native cell length and precision, decodes only the local length, copies the
+local input prefix once into 132 and releases its counter. Its cost is
+`16*N*w+17*N+11*V+8*q+4*L+37` for `w=2*q+8`.
+`generatedPackedCellBatchPublish_sized_exec` composes that prelude with the
+complete interior cell gather–solve–publish chain. The destination payload and
+protected dimensions are no longer supplied; an arbitrary initial 132 tail is
+preserved. The native arithmetic bank, binary local geometry and origin packets
+remain inputs, and the returned local buffer has `PackedCellOutputSpec`.
+These modules check near 2.0–2.1 GiB and the combined axiom audit passes. The
+owned RHS prefix retained by the arithmetic bank has not been erased by this
+publisher. Instantiating cell geometry and composing boundary solve,
+residual/coupling/recovery, group reuse, tensor/R4 execution and the final ledgers
+remain necessary for S4 acceptance.
+
+The executed cell endpoints now expose their state for subsequent phases.
+`publishingPackedCellBatch_sized_exec` preserves every external left stack,
+including the publication-control port. After publication,
+`publishingPackedCellBatchPublish_sized_exec` returns the exact native
+`releasedCellBank` with the solution suffix restored and the gathered RHS plus
+borrowed local source retained. Every external stack except destination 132 is
+restored, including the initially blank publication controls. The generated
+caller transports that native contract, preserves all external stacks except
+its retained dimensions 128/130 and destination 132, and identifies both retained
+dimension words exactly. No arithmetic proof is reopened for these frame laws.
+
+`packedCellGaps_scale` and `packedCellScatter_cstream` specialize the existing
+structural encoding/scatter laws. The generated endpoint now identifies its
+physical destination as the encoding of a scatter on Gaussian words, followed
+by its original suffix. Its numerical contract and this word-list contract
+concern the same returned buffer. Updated modules check near 2.1 GiB and the
+combined axiom audit passes. The next concrete payload boundary is coupling:
+`gatherCouplingRibbons_exec` still takes an ambient `cyclicPaddedLine`; the local
+halo route needs a padded local result ribbon with the existing halo mask,
+then composition with the retained-page interval and boundary/recovery stages.
+Full halo inverse, setup reuse/group traversal, tensor/R4 and final ledger gates
+remain open.
+
+`localFeedCouplingInterval_exec` now executes coupling directly from a packed
+local result on register 132. The local-length decoder runs once; structural
+`zeroPadLocalPrefix_exec` copies the local payload between generated zero bands
+and restores its source. The existing mask producer runs on that payload,
+retained spatial arithmetic consumes the masked ribbon, and both unmasked and
+masked ribbons are released. The existing result feeder reverses the returned
+rows into natural order and releases its intermediate. The final state changes
+only consumed RHS 93 and the natural-order result prefix on 110; the source
+result, raw-ribbon suffix, coefficient page and shared metadata are restored.
+All stages, including padding, count generation and release, are charged.
+
+The mathematical bridge is `maskedLine_localCouplingRibbon`. It keeps the
+original ambient matrix and requires `origin=a`, `b=a+N` and `N+band≤s`.
+`localRibbon_active_index` proves symbolically that an active cyclic stencil
+coordinate lies in the unwrapped local payload under that separation condition.
+The periodic/seam branch still needs its existing cyclic-padding route and an
+executed branch selection; this local lemma does not cover it.
+`buildMaskedGatheredRibbon_data_exec` factors the shared execution proof over
+payload lists and their masked result, and the existing raw-ribbon theorem is
+its specialization. The local caller uses the same actual mask/arithmetic
+machines rather than assuming a mask or coupling execution oracle.
+
+The padding constructor costs `16*N*w+21*N+14*band*w+13*band+11*V+46`;
+its temporary unmasked ribbon release costs at most
+`12*((N+2*band)*w)+11*(N+2*band)+14`. Mask generation, retained interval
+arithmetic, masked-ribbon release and feeding retain their explicit existing
+bills. New single-file checks peak between 1.9 and 2.2 GiB. The local result's
+Gaussian-word scatter still needs to be identified with the packed ambient
+field used by this coupling contract. Coefficient-page/shared-header generation,
+boundary solve and recovery composition, actual setup reuse/group traversal,
+tensor/R4 execution and selected time/live-stock gates remain open.
+
+`packedField` supplies the semantic ambient view of a local Gaussian-word
+list, with zero outside its advertised interval. `packedInterval_packedField`
+recovers exactly that list when the interval fits; `packedField_property`
+transfers word bounds structurally, including the exterior zero.
+`packedField_read` identifies represented field values with the local tape
+reader without constructing an ambient tape.
+
+`generatedPackedCellBatchPublish_sized_exec` now constructs this field for the
+actual Gaussian-word scatter, proves that it still has local length `N`, and
+returns register 132 as `cstream (packedInterval origin N D)` plus the original
+suffix. `publishedOutputWords_norm`, the original RHS bound and
+`scatterRows_mem` give the global bound
+`‖value q (D k)‖ ≤ 2^interiorOutputExponent`; the existing width theorem then
+proves every `D k` fits its physical word. The native bank/frame and executed
+accuracy guarantees remain part of this same endpoint.
+
+`packedCellOutputSpec_field_at` transports the actual buffer's numerical
+contract to `value q (D (lo n+i))` using one shared local/ambient coordinate-read
+lemma. `couplingInputWords_property` factors the masked-input property proof;
+its representability specialization lets `localFeedCouplingInterval_exec`
+consume the field-level `Fits` fact directly, instead of separate per-row
+operand-fit hypotheses. These close the local-result payload and
+representability boundary. Single-file checks peak near 2.0–2.1 GiB and the
+combined execution/axiom audit passes. Coupling scalar/header installation, actual stage
+composition, complete cell geometry/group traversal, seam dispatch,
+boundary/recovery, retained setup reuse, tensor/R4 and final resource gates
+remain open.
+
+`preparedSharedLocalFeedCouplingInterval_exec` now joins actual scalar-counter
+setup to local coupling and counter release. A static injective register view
+reads the retained master headers (117/119/121–124/141–142 and width 130), while
+the released native bank supplies private arithmetic space. The existing
+coupling execution theorem is transported through this view with no added
+machine steps. `sharedCouplingHeaders_ready` derives its ordinary readiness
+from the actual `releasedCellBank`, master-header lengths and their empty left
+stacks. This avoids reinstalling ambient `s` and `t` unary copies for each
+coupling call; retained masters still need their one-time construction at the
+appropriate shared setup boundary.
+
+`sharedCouplingCounters_exec` executes the existing counter producer through
+that same view. Its cost is `prepareCost q w+6*q+4*band+10`; final counter release
+costs `2*(w+q+topN w)+7`. The complete prepared coupling theorem restores every
+stack except consumed RHS 93 and the natural-order result prefix on 110, so it
+requires no supplied multiplication counters. The register map is a small flat
+involution; composing nested equivalence values caused elaboration blowup and
+was replaced by this simpler function and injectivity proof, with default proof
+limits unchanged.
+
+The local interval row-loop proof also no longer requires an initial unary
+index of length `origin`. Its only use was an unused intermediate fact; actual
+row semantics already come from binary guards and the retained coefficient
+page. The generic loop and restoration wrappers now accept any initial index
+tail, increment it structurally and restore it exactly. Consequently the local
+and shared local callers can start with the empty 107 stack returned by the
+cell stage. Legacy outer wrappers retain their stronger interface where needed.
+The prepared shared endpoint checks near 2.1 GiB and the combined execution/
+axiom audit passes.
+
+The next concrete composition must generate/preserve the local RHS prefix for
+residual coupling, construct the retained page/row-width frame, and join the
+cell result, this prepared coupling call, boundary solve and recovery. Shared
+master generation and factor reuse must be placed in the actual group schedule.
+Seam selection, complete geometry, tensor/R4 and final time/live-stock gates
+remain open; this endpoint does not complete the halo inverse.
+
+`residualReadyPackedCellBatch_sized_exec` now composes a paid local RHS
+preservation pass, the executed cell gather–solve–publish chain, and regeneration
+of the retained page's `2*band+1` row-width header. The returned 93 stack contains
+the original local RHS prefix plus its original suffix; 132 contains the bounded
+packed ambient result field; 140 contains the row-width header. The same state
+has the exact released native-bank contract and `CouplingReady` through the
+shared master view. Master facts are transported through the actual frame
+instead of reinstalling ordinary headers. Cell output accuracy and integer-word
+bounds describe this same execution.
+
+`preservePackedRhs_exec` copies only `N*w` source symbols and restores every
+scratch stack, at cost `16*N*w+17*N+11*V+8*q+2*w+36`. The row-width regeneration
+costs `4*band+5` and preserves the shared band master. Both calls reuse the
+existing unary/header and counted-prefix machines. The combined endpoint checks
+near 2.1 GiB and the combined execution/axiom audit passes. Retained master construction, coefficient-page content/count and
+binary geometry remain shared-setup obligations. Only the advertised equal-
+length cell windows receive this batch's accuracy guarantee; complete halo
+interior coverage still requires the actual length-key traversal. The composed residual endpoint below feeds the preserved RHS, result field,
+row-width frame and readiness into prepared shared local coupling. Boundary/recovery,
+seam dispatch, group reuse, tensor/R4 and final resource gates remain open.
+
+`packedCellResidual_sized_exec` now executes the packed cell stage followed
+by prepared shared local residual coupling (`boundary=false`). The published
+bounded field, saved original RHS, regenerated row-width frame and readiness
+are supplied by the same preceding execution. Shared metadata and retained page
+facts are transported through its frame; coefficient-word representability and
+realness follow from the existing selected coefficient bounds and executed word
+width, rather than per-row supplied fit hypotheses.
+
+The returned 110 tape is the natural-order encoded guarded residual interval,
+then the retained gathered-cell RHS and original local source/suffix. The saved
+RHS copy on 93 has been consumed back to its original suffix. The theorem also
+returns the exact released native bank, preserves the result field on 132 and
+all shared page/master/metadata stacks, and retains the physical cell accuracy
+contract. `residualReadyPackedCellBatchCost` and
+`preparedSharedLocalFeedCouplingIntervalCost` name the two ledgers; the combined
+bound is their sum. The endpoint checks near 2.1 GiB and the combined axiom audit
+passes with default proof limits.
+
+This composition assumes the retained coefficient page and canonical binary
+geometry from shared setup, and keeps `N+band≤s` explicit. Complete interior
+coverage across actual length groups must still be instantiated before claiming
+a halo-wide numerical residual bound. The next payload boundary is ordered
+boundary RHS extraction/folding from this local residual prefix, followed by the
+executed boundary solve and recovery. Shared setup/factor reuse, seam dispatch,
+complete group traversal, tensor/R4 and final resource gates remain open.
+
+`PhaseCellPackedBoundarySelection` now proves that a supported boundary can be
+selected directly from a packed interval without changing `bOrder` or
+`bFoldOrder`. A generic filter/crop lemma removes only unselected prefixes and
+suffixes; no geometry cases or finite certificates are needed.
+`packedBoundaryRhsOrderedGather_exec` instantiates the existing masked gather
+with local length `N`, costs at most `N*(16*w+10)+16`, and restores the source,
+mask and scratch while prepending the ordered boundary values. The existing
+boundary fold therefore applies unchanged. The module checks near 2.1 GiB.
+This endpoint still assumes the supplied membership mask: generating that mask
+from shared binary geometry and composing extraction with the actual residual,
+boundary solve and recovery remain open.
+
+`generatedPackedBoundaryRhs_exec` now composes local geometry-mask generation
+with packed boundary extraction. `couplingSourceIntervalMaskCode` reuses the
+existing membership row under the interval table loop, at `29*N+2` table steps.
+The host publishes one pair symbol per local coordinate and releases the table
+bank. `packedBoundaryRhsMask_flags` identifies its real-bit flags with the packed
+boundary selector. The composed 117-stack program reads the packed source on
+110, retains its generated mask on 109 for reuse, and prepends ordered boundary
+RHS words on 93, preserving source, width, input/output and left stacks while
+releasing table registers 0–31. Its cost includes the table interpreter and the
+local gather; it assumes a loaded table bank, binary word bounds, and boundary
+containment in the packed interval. Connecting that loaded bank and placement
+to shared residual metadata, then executing fold/solve/recovery, remains open.
+The composed endpoint checks near 2.1 GiB with default proof limits.
+
+`metadataPackedBoundaryRhs_exec` now generates the boundary mask and extracts
+ordered boundary RHS words directly from `CouplingIntervalMetadata`, with no
+supplied table-bank interpretation or mask. The shared structural
+`binaryIntervalStreamHost_exec` loads retained binary words, runs any interval
+table program and restores every stack except its emitted stream. Boundary mask
+generation specializes it, then embeds into 168 stacks with mask output 167.
+Its placement reads the boundary width from canonical port 147 (`band`), rather
+than recovery's port 148 (`2*band`). The composed extractor reads packed residual
+110 using retained width 130, emits ordered values on 93, retains its mask on
+167, and restores all other stacks exactly. Its explicit cost includes binary
+loading, table execution/release and the local gather. It checks near 2.1 GiB.
+The source interval, boundary containment, blank table workspace and blank mask
+port remain hypotheses to discharge from the preceding residual execution;
+fold/solve/recovery, complete coverage and the final S4 gates remain open.
+
+`packedCellBoundaryRhs_sized_exec` now composes the actual packed cell stage,
+residual coupling, metadata-driven mask generation and boundary extraction.
+No new containment or workspace assumptions are imposed: boundary containment
+follows from `haloBoundary` being a subset of the halo interval; blank table
+stacks follow from the returned released native bank; mask port 167 and binary
+geometry follow from the high-register frame; width 130 follows from generated
+cell dimensions. The theorem identifies selected guarded rows with ordinary
+`couplingRowField` residual rows on the boundary using the existing guard
+soundness theorem. The resulting ordered boundary RHS is on 93 above its
+original suffix, the reusable mask is on 167, the packed residual remains on
+110 and the cell field/accuracy contract remain on 132. All other shared
+registers retain their earlier frame. `metadataPackedBoundaryRhsCost` names the
+additional fully paid local extraction ledger. The endpoint checks near
+2.2 GiB with default proof limits. Boundary fold/solve/recovery, complete halo
+coverage and group traversal, shared coefficient/factor setup, seam dispatch,
+tensor/R4 and final resource gates remain open.
+
+`Host.countSelectors_exec` supplies a reusable structural counter over an
+arbitrary selector tape and Bool predicate. Its scan restores the tape, prepends
+one unary tick per selected symbol and preserves all other stacks, at cost at
+most `7*length+4`. `packedBoundaryFlags_count` uses the filter/crop support lemma
+to identify the packed flag count with the actual boundary cardinality;
+`packedBoundaryMask_count` transports this through the generated pair-symbol
+format. `packedBoundaryCount_exec` therefore produces the fold count on 116
+from retained mask 167, using only scratch 0 and restoring both mask and scratch,
+at cost `7*N+4`. This removes the need to supply a boundary count as external
+data. The counter builds near 2.0 GiB and its boundary specialization checks near
+2.1 GiB. Its count still needs composing with the existing fold counter
+generator and prefix isolation: the current extracted RHS on 93 retains its
+borrowed suffix, whereas the existing physical fold expects an isolated line.
+The final inverse and S4 acceptance gates remain open.
+
+`preparePackedBoundaryFold_exec` now composes mask-derived counting, natural-
+order prefix isolation and the existing fold counter generator. The generic
+`moveCountedLine_exec` reuses counted transfer and reversal, moves only the
+owned prefix in natural order, leaves an arbitrary borrowed source suffix and
+restores every clock/reversal scratch stack. Its cost is `n*(12*w+9)+12`.
+`packedBoundaryFoldCounters_exec` uses a flat injective placement of the unchanged
+117-stack counter generator, reading retained width 130. Together they leave
+the borrowed suffix on 93, isolate the ordered RHS on 143, produce boundary
+count 116 and controls 0 (floor half-count), 2 (parity) and 3 (first-half bytes),
+and preserve all other stacks, including both left banks and the reusable mask.
+`preparePackedBoundaryFoldCost` sums mask scan, prefix move and counter setup.
+The composed endpoint checks near 2.1 GiB. It still needs joining to the preceding
+cell-to-boundary execution and to the actual fold; the existing numerical fold's
+global empty-left-bank premise must be localized or framed to preserve retained
+master stacks. No new boundary solve, recovery or S4 acceptance claim is made.
+
+`closedPackedBoundaryRhsFold_exec` now executes the complete packed numerical
+RHS fold. It derives the boundary count from mask 167, isolates the ordered
+prefix from 93, generates the existing fold controls, runs the unchanged fold,
+publishes solver-order words on 143 and releases every temporary control.
+Only count 116, source 93 (now its original borrowed suffix) and result 143
+change; the mask, width, metadata, cell field and every left stack are preserved.
+Its paid cost is `preparePackedBoundaryFoldCost N n w+70*(n+1)*(w+1)+71`.
+The endpoint checks near 2.2 GiB with default limits.
+
+The supporting `Host.StackFrame` proves a structural frame rule for call-free
+programs: stacks outside a declared footprint may be replaced arbitrarily while
+preserving the exact local state and step count. The fold's footprint contains
+no left stack. `framedBoundaryRhsFold_exec` therefore reuses the existing fold
+proof with arbitrary left-bank contents; no retained-master emptiness premise
+is needed. `packedBoundaryRhsFold_exec` embeds this unchanged execution using a
+flat width placement (94 ↔ 130), preserving all spectators. Joining the closed
+fold to the cell-to-boundary endpoint and the boundary solver remains open,
+along with recovery and the full S4 coverage/setup/seam/tensor/resource gates.
+
+`packedCellFoldedBoundaryRhs_sized_exec` now joins the closed numerical fold to
+the actual cell-to-boundary machine. It introduces no new workspace or
+cardinality hypotheses. Empty low stacks and initial count 116 follow from the
+returned native released bank, destination 143 follows from the shared high
+frame and initial freshness, and boundary containment follows from halo
+membership. The same execution now leaves ordinary residual rows in canonical
+`bFoldOrder` on 143, their generated cardinality on 116, the original borrowed
+suffix on 93, the reusable mask on 167, the residual interval on 110 and the cell
+field/accuracy contract on 132. `countedReleasedCellBank` records the exact
+native projection with the newly owned boundary count. Every other retained
+master/page has its prior frame; the ledger adds `closedPackedBoundaryRhsFoldCost`.
+The endpoint checks near 2.2 GiB with default limits.
+
+The next numerical handoff is the existing normalized/unscaled prepared boundary
+solve, not an unnormalized triangular pass: its RHS magnitude and working
+precision contracts must be established for the actual selected residual.
+Complete interior coverage/stability, compatible shared factor setup and
+physical RHS handoff remain open before claiming that solve composition.
+Recovery, group traversal/reuse, seam dispatch, tensor/R4 and final S4 resource
+gates also remain open.
+
+`haloCellInterval_spec` now derives the interval solver's full geometric
+contract from membership in the generated positive clipped phase cells:
+positive length, ambient fit, selected interior membership, unchanged phase and
+maximality. It reuses `haloInterior_phase_iff` and does not split into endpoint
+or seam cases. `packedHaloCell_error` instantiates the actual packed output
+contract with this generated geometry. `haloInterior_error_of_cells` then uses
+`haloCells_cover` to assemble pointwise cell errors into the same uniform halo
+interior error; there is no multiplier for the number of cells.
+`haloInterior_stable_norm_of_cells` reuses the existing diagonal-dominance
+stability lemma to obtain the precision-independent real-output bound.
+
+`haloResidual_normalization_bound_of_cells` connects these facts to the existing
+boundary normalization budget. For the real projection of the ordinary computed
+residual, the stable interior bound and existing coefficient/count bounds imply
+both the normalization kernel's `2^(q/2)` component bounds and the normalized
+solver input's half-unit component bounds. The theorem keeps complete per-cell
+accuracy and compatibility with the boundary working precision explicit. Those
+conditions still need instantiating across the actual executed length groups;
+this is not a claim that the current single equal-length batch covers the halo.
+Physical real projection/RHS transfer, shared factor preparation and the executed
+normalized/unscaled boundary solve also remain open. The normalization bridge
+checks near 3.1 GiB with default proof limits; full S4 acceptance is still open.
+
+`haloPackedOffsets` now expresses each generated clipped length group as
+local offsets from the halo origin. Fit, ordered disjointness and ambient-origin
+identity reuse the existing halo gather/scatter schedule. `packedHaloGroups_cover`
+transports the generated key/group coverage to the exact finite batch indices
+and local cell coordinates accepted by packed execution. Distinct length groups
+have disjoint windows; `haloGroup_scatter_preserves` uses the generic scatter
+outside-window theorem to preserve every coordinate of a different group.
+There are no new endpoint cases or finite certificates.
+
+`haloInterior_error_of_packed_outputs` now derives complete halo interior error
+from the per-group `PackedCellOutputSpec` contracts on one final packed buffer,
+using common working precision and exact generated offsets. The corresponding
+stable-norm theorem feeds the existing residual normalization language without
+an error factor for the number of keys or cells. These results still require
+the runtime traversal to establish and preserve all per-group contracts on that
+same final buffer; the present single-group execution does not itself establish
+that family. The new scatter preservation lemma supplies the cross-group
+publication invariant needed for this traversal. The geometry bridge
+`haloCellInterval_spec` was reduced to a specialization of the pre-existing
+`halo_solver_geometry`, removing its duplicated proof. The packed group and
+accuracy modules check near 2.1 GiB. Runtime group traversal, shared setup/reuse,
+precision handoff, boundary solve/recovery and the final S4 gates remain open.
+
+`reusablePackedCellBatchPublish_sized_exec` now publishes into an existing
+caller-owned packed destination and restores the original local source for a
+subsequent length group. It retains the actual batch count on owned stack 129
+before the unchanged gather/solve/publish chain consumes its native controls.
+The generic `retireProductLine_exec` then derives the total record count from
+retained batch size and cell length, removes only the owned gathered-cell RHS
+prefix on 110, and restores all product/count/trash scratch. Stack 129 is also
+retired. The final native projection is `releasedCellBank [] borrowed outTail`;
+the high-register frame restores everything except the published destination
+132, and the new cell's accuracy/validity contracts are preserved. No new
+destination buffer is allocated. `reusablePackedCellBatchPublishCost` includes
+count retention, the full original stage setup/publication cost, source-prefix
+retirement and count cleanup. The endpoint checks near 2.2 GiB.
+
+The runtime group traversal still needs to reinstall each next group's native
+input headers and retune its retained cell-length dimension, while transporting
+previous groups' accuracy through disjoint publication. This stage deliberately
+pays the existing full arithmetic setup; shared factor/setup reuse is not yet
+claimed. Complete traversal, normalization/solve/recovery and the final S4 gates
+remain open.
+
+`retunedPackedCellBatchPublish_sized_exec` removes the requirement that retained
+publication dimension 128 already equal the next group's length. The generic
+`replaceUnary_exec` clears an owned unary destination, copies a retained source
+and restores its temporary stack. Applied to native cell-length header 102, it
+sets 128 to the new `L`, at exact cost `2*oldLength+4*L+6`, and then runs the
+verified reusable publisher. Width 130 and destination 132 are reused; the local
+source is restored for the next group, and the new length and cell accuracy
+contract are returned. Apart from dimension 128 and output 132, the previous
+high-register frame is retained. The endpoint checks near 2.2 GiB.
+
+The next group's native input bank is still a precondition. The existing
+retained-header copier and generated halo class/origin controls supply the
+patterns for reconstructing it, but their placement, packet-width compatibility,
+shared setup costs and complete runtime key traversal have not yet been joined
+to this stage. This checkpoint does not claim shared arithmetic setup reuse or
+completion of the S4 numerical and resource gates.
+
+`metadataHaloClass_inputBank_exec` now executes generation of the missing
+origin packets and batch count from retained canonical binary geometry and the
+selected positive length word on 157. `releasedHaloClass_exec` factors the
+existing halo controller's run/release law; `binaryHaloClass_exec` supplies its
+loaded table using the shared binary bank loader. The 168-stack placement reads
+s/t/band/a/b from 145/146/147/149/151, zero from 154 and width from 163, preserving
+all those sources and the selected length. Its injectivity uses a small left-
+inverse proof rather than a Cartesian register split, which exceeded default
+heartbeats. No limits were raised.
+
+The generated packets equal the ambient origins represented by `haloPackedOffsets`
+at the same `weightWorkspaceWidth` as the batch. The controller prepends them to
+native 109's FFT-exponent suffix and emits the actual group cardinality on 116.
+From an ordinary `naturalGroupInputBank`, the theorem derives blank workspace
+and proves the resulting exact `batchInputBank`, preserving the borrowed RHS,
+result suffix, input/output and all other stacks. `Host.embStk_updateR` factors
+the structural projection/update law used in this ABI proof. The metadata and
+native-bank endpoints check near 2.2 GiB.
+
+This control generation avoids unary copies of ambient geometry. The production
+controller now uses the local phase scan described below. Installing ordinary
+scalar headers from shared setup, loading/traversing the actual key stream,
+preserving all prior group accuracy, and joining the publishing stage remain open. No selected-time bound or
+shared arithmetic setup reuse is claimed; the full S4 gates remain open.
+
+The local halo scan now has a checked host interface. `haloPhaseRangeCode`
+computes the binary endpoints in eight table instructions; `localHaloGroupCode`
+scans `haloPhaseCount` rows and emits exactly the existing length group in the
+same order. `haloPhaseCount_scaled_le` bounds the scan by the halo span, and
+`haloPhaseCount_le_length` gives the simpler span-plus-two bound when
+`t-s ≤ s`. The generic `countedOriginHost_exec` publishes and counts any table
+program with this emission contract; both the ambient and local scans instantiate
+it. The local host costs `(36*haloPhaseCount+2)*tblC` plus the unchanged packet
+publication cost. `localHaloClassCode` composes six initialization instructions,
+eight endpoint instructions and the local loop, with table cost
+`36*haloPhaseCount+16`. The production released, binary, metadata and native-bank
+controllers now use this program; their packet order and exact final stack
+contracts are unchanged. Their proofs require the valid halo interval `a ≤ b`,
+already present at the native-bank endpoint. Release and binary-load costs remain
+explicit. The legacy ambient controller remains available for existing callers.
+
+The shared publication buffer now has a checked processed-key invariant.
+`scatterRows_slice_off` lifts the structural off-window law to arbitrary slices.
+`haloGroup_scatter_word_preserves` scales the cross-class geometry by the actual
+word width and includes the borrowed output suffix. Consequently
+`packedHaloGroupOutputSpec_scatter` preserves another class's full accuracy
+contract, and `packedHaloGroupOutputs_scatter` extends the contracts for a list
+of processed lengths by the newly published length. No numerical error is added:
+the old words are identical. This matches the scatter expression returned by
+`reusablePackedCellBatchPublish_sized_exec`. The invariant checks near 2.1 GiB.
+Instantiating it along an executed key traversal, with common precision and
+installed headers, remains open.
+
+The packed runtime now reuses the existing retained-header installer rather than
+assuming its ordinary parameter bank has already been supplied.
+`packedGroupHeaders_exec` embeds `installGroupHeaders` unchanged and reuses
+`copiedGroup_project` to obtain `naturalGroupInputBank` for an arbitrary borrowed
+local source. It preserves every register at or above 117. `packedHaloGroupInput`
+then executes the binary-metadata local controller, yielding exactly the actual
+`batchInputBank` with generated halo offsets and count, while retaining those
+high registers. Its explicit cost is the existing header-install cost plus
+`binaryHaloClassCost`; it checks near 2.1 GiB. This supplies the next-group input
+handoff from retained scalar masters and binary selected length. Consuming the
+key stream, maintaining selected length in both banks, and joining successive
+publishing executions remain open; the older counted-key traversal provides the
+structural loop pattern, but uses an ambient output and cannot be substituted
+for the packed traversal.
+
+`packedLengthKey` now consumes a key packet from 126 using retained width 125,
+replaces the old unary selected length on 128, and retains the same binary word
+on 157 for the metadata controller. Its exact result changes only these three
+registers; conversion scratch 134--136 is restored. The cost explicitly includes
+clearing the two old length headers. The generic `takeBinaryUnaryKey_exec`
+factors the existing prefix-consumption and binary-to-unary proof; the original
+`takeUnaryKey_exec` reuses it and clears the retained word. No second conversion
+or reconstruction of the binary key is needed. The key step checks structurally
+and supplies both representations required by `packedHaloGroupInput_exec`.
+Joining this step to the retained-header input and publishing stages in the
+counted traversal remains open.
+
+`keyedPackedHaloInput_exec` now composes packet consumption, both selected-length
+headers, retained scalar installation, local origin generation and count generation.
+It assumes no installed ordinary native input bank and retains the queue suffix
+and all high registers except the selected-length headers and queue itself.
+`keyedPackedHaloPublish_sized_exec` joins this actual input stage to the reusable
+publisher. For a nonempty class it executes from the generated key through the
+cell solve, shared-buffer scatter and borrowed-source cleanup, returning the
+physical output accuracy/validity contracts and exact released native bank.
+The whole cost includes old-header disposal, decoding, header copies, local
+scan, the full uncached numerical batch and publication cleanup. It checks near
+2.2 GiB. The candidate keys can include classes with no halo cells, so a runtime
+empty-count branch is still required before this nonempty execution theorem can
+be iterated over the generated list. The counted traversal, shared setup reuse,
+and full S4 resource gates remain open.
+
+The keyed publication now covers empty candidate classes too.
+`emptyPackedHaloGroup_exec` releases precisely the copied native scalar headers
+using the existing structural `clearWords` executor. The empty exit restores the
+same released native bank and leaves every high register unchanged, including
+the packed publication buffer. `conditionalPackedHaloPublish_sized_exec` tests
+the generated count on 116 once and chooses this exit or the existing reusable
+numerical publisher. Both branches return the identical scatter, accuracy,
+validity and borrowed-source contracts; the empty contracts are vacuous and its
+scatter is the identity. The branch adds two steps and charges the exact empty
+header cleanup rather than a numerical setup. `keyedPackedHaloPublish_sized_exec`
+now uses this conditional continuation and has no nonempty-class hypothesis.
+The composed keyed stage checks near 2.2 GiB; counted iteration and shared
+numerical setup reuse remain open.
+
+The actual counted packed-key traversal is now checked.
+`PackedHaloReady` packages the released native bank, retained scalar/geometry
+masters, source, word width, bounded selected-length headers, publication prefix
+and fresh scratch. `of_publication` restores this invariant from the existing
+native-bank and high-frame contracts; `update_count` isolates the loop-owned
+count on 127. `packedHaloReady_publish` executes the total keyed publisher,
+restores readiness, and extends the complete processed-key accuracy contracts
+using the structural cross-class scatter theorem. `packedHaloKeyLoop_exec`
+then uses ordinary list induction to verify the fixed count-controlled loop:
+each iteration pops 127, consumes one packet from 126, publishes and cleans the
+class, and tests the remaining count. The final queue is exactly the borrowed
+suffix, the count is empty, and all processed classes retain their contracts on
+one common-precision packed buffer. No key-count factor enters the error bound,
+and even repeated keys are permitted by this invariant. The explicit time bound
+is the sum of `packedHaloKeyCost+3` plus one terminal test. Modules check/build
+below 2.7 GiB. Connecting generated-key initialization and initial readiness,
+projecting the final full-halo numerical contract, shared numerical setup reuse,
+seam dispatch and the full S4 resource gates remain open.
+
+`runGeneratedPackedHaloKeys_exec` now specializes the executed counted loop to
+`haloLengthKeys`. It derives positive lengths, the ambient size bound, common
+FFT padding and binary fit from the existing candidate geometry, initializes the
+loop flag from its actual count, and returns all generated groups' accuracy
+contracts on the final buffer. `haloInterior_error_of_packed_reads` combines
+these contracts with the existing exact coverage and solver geometry to prove
+the uniform full-interior error bound directly for `packedIntervalRead` of that
+physical output. It needs no separately supplied ambient Gaussian output field
+or ambient-sized tape. `packedCellOrigin_local_index` factors the generic
+coordinate-to-local-word address calculation; this structural abstraction
+avoids a default-heartbeat timeout elaborating a concrete halo offset expression.
+The generated execution module checks near 2.2 GiB. The generated packet queue
+and initial reusable state are still hypotheses: the retained-header key
+initializer must be embedded and connected. Shared numerical setup reuse,
+residual/boundary solve/recovery composition, seam dispatch and the final S4
+resource gates remain open.
+
+The packed interior now has an initialized executed endpoint.
+`initializePackedHaloKeys_exec` embeds the existing `initializeHaloLengthKeys`
+program without duplicating candidate selection or deduplication. Its exact
+four-register result establishes `PackedHaloReady`, generates the key/count
+prefix and retains the binary and numerical word widths. The pure
+`initializedKeyRuntimeR` update law is now polymorphic in the register-bank size,
+so both embeddings use the same state description. `solvePackedHaloInterior_exec`
+composes initialization with `runGeneratedPackedHaloKeys_exec` and proves uniform
+whole-interior accuracy directly on the final physical local buffer. It starts
+from retained scalar parameters, unary endpoints, canonical binary geometry,
+a released native bank, a caller-owned local publication prefix and fresh owned
+scratch. No generated queue or loop-readiness hypothesis remains. The borrowed
+queue suffix is restored and the loop count is empty; the returned readiness
+retains the runtime widths and last selected-length headers for subsequent work.
+Both new modules check near 2.2 GiB. Rewriting the workspace-width equality
+before the word-width equality keeps the composition structural and avoids
+expanding concrete generated-key expressions under default heartbeat limits.
+The numerical batches still pay full uncached setup. Connecting the interior to
+local residual construction, normalized boundary solve and recovery, establishing
+shared numerical setup multiplicity, seam dispatch and final S4 time/live-stock
+bounds remain open.
+
+The executed interior now also preserves its encoded magnitude representation.
+`packedCellScatter_range` is the generic aligned-scatter preservation law for
+`EncodedRange`; the per-key, counted-loop, generated-key and initialized-solver
+contracts propagate the existing `interiorOutputExponent` bound from the initial
+publication prefix. `encodedRange_packedField` turns any bounded encoded local
+prefix of the correct length into a supported ambient Gaussian field, its exact
+local stream representation, global magnitude bound and `Fits` contract.
+`solvePackedHaloInterior_field_exec` applies this to the actual final executed
+buffer and returns uniform whole-interior field accuracy. It checks near 2.2 GiB.
+The normalization proof is factored through `haloResidual_normalization_bound`,
+which takes whole-interior `ErrorOn` directly; the older per-cell statement is
+now a thin specialization. Thus the completed grouped execution supplies the
+semantic field/error contract needed by normalization without assuming accuracy
+for unexecuted cells. Precision compatibility with the boundary solver remains
+an explicit hypothesis of normalization. For machine composition, the key
+initializer needs 138 empty, while coupling retains its coefficient page there:
+page generation/retention must therefore follow key initialization. That executed
+handoff, the residual/boundary/recovery composition, setup reuse and final S4
+resource gates remain open.
+
+The completed packed interior state now supplies coefficient setup in the
+shared-header view. `PackedHaloReady.coupling` reuses
+`sharedCouplingHeaders_ready` and reads retained dimensions in place, with no
+new scalar-header copies. `couplingIntervalMetadata_shared` transports the
+canonical geometry through that same static view. The executed
+`sharedCouplingCoefficientInterval` copies the retained lower endpoint once into
+the temporary origin-index port, runs the existing binary-length guarded
+coefficient-page generator through the shared permutation, and clears that
+index. Its exact final state retains the page on 138, its actual count on 139,
+and row width on 140; other stacks, including the published interior on 132,
+are unchanged. `PackedHaloReady.coefficient_exec` instantiates this operation
+from the solver's returned invariant and caller-owned endpoints/left frames,
+requiring only fresh page-count/interval-count ports and the existing fit bounds.
+The page setup is now an executable continuation rather than a supplied page
+hypothesis; it checks near 2.2 GiB. Composing it with the initialized interior
+execution and the RHS-preservation/coupling continuation remains open, as do
+boundary normalization/solve/recovery, setup multiplicity and final S4 resources.
+
+`packedHaloInteriorCoefficients_exec` now composes the actual full-halo interior
+execution with coefficient-page generation, including the local RHS copy needed
+by residual coupling. `preservePackedRhsFrom` generalizes the existing structural
+RHS-preservation program to read a retained precision header directly; the native
+112 version is a specialization. The composed program reads 119, preserves the
+local RHS prefix on 93, initializes and executes all interior groups, then
+generates the page after initializer scratch has been released. The result has
+the fitted physical interior field and uniform error, the actual coefficient
+page/count/row-width, canonical binary geometry, and shared-header
+`CouplingReady`. The original I/O streams and borrowed queue suffix are retained.
+The temporary RHS-copy counters and width are released with their explicit cost.
+The generic `sharedCouplingPage_core` proves that retaining the page leaves the
+shared arithmetic view unchanged. The per-key, loop, generated and initialized
+interior interfaces now explicitly retain the proven 93/input/output restoration
+facts; previously those facts were available inside execution proofs but omitted
+from the loop contracts. The composed module checks near 2.2 GiB. Executing the
+residual continuation from this state, then gathering/normalizing boundary data,
+boundary solve/recovery, shared setup multiplicity and final S4 resource gates
+remain open.
+
+The complete grouped halo now has an executed local residual endpoint.
+`packedHaloResidual_exec` composes RHS preservation, generated key initialization,
+all interior classes, coefficient-page generation and
+`preparedSharedLocalFeedCouplingInterval false`. It derives the coefficient-word
+fit and reality contracts from the selected coefficient bounds, uses the actual
+generated page/counts, restores the borrowed RHS suffix on 93 and prepends the
+owned residual interval to the original local source on 110. The result retains
+the physical fitted interior field, its whole-interior error, canonical geometry,
+the numerical word width, the empty boundary-work port and the exact released
+native bank. The page-only state has a generic native-bank projection law in
+addition to the shared arithmetic-view law. The explicit cost sums the three
+executed stages, with the interior preparation factored as
+`packedHaloInteriorCoefficientsCost`. This still uses the nonseam assumption
+`b-a+band ≤ s`. The residual module checks near 2.2 GiB.
+`haloResidual_guarded_normalization_bound` now transports the stable
+normalization contract to the exact guarded residual on every halo boundary
+coordinate, where the existing guarded-row equality proves it is the ordinary
+residual. It checks near 3.1 GiB and retains the explicit dominance and boundary
+precision-compatibility hypotheses. The executed boundary gather/fold and
+normalization/solve/recovery compositions, shared setup multiplicity, seam route
+and final S4 time/live-stock bounds remain open.
+
+The complete grouped execution now reaches solver-order boundary RHS data.
+`packedBoundaryData_exec` is the shared structural composition of canonical
+metadata selection, local residual gathering and the existing closed fold. It
+restores the borrowed RHS suffix and changes only the retained selection mask,
+actual boundary count and folded output. `packedHaloBoundaryData_exec` composes
+that operation with the full generated interior/residual execution and proves
+its boundary support from the existing halo-vertex geometry. Guarded residual
+words are rewritten to ordinary coupling words exactly on `bFoldOrder` using
+`bFoldOrder_toFinset` and the existing guarded-row equality. The final 143 is the
+actual ordinary residual in solver order, 116 is the actual boundary cardinality,
+and 167 is the reusable mask. The exact native bank is shared through
+`PhaseCellCountedReleasedCellBank`, extracted from the older single-batch wrapper
+to avoid importing that unrelated pipeline. The retained coefficient page,
+page count and row width are now explicit in both residual and folded-boundary
+contracts, so recovery can reuse the generated setup. The full-halo module
+checks near 2.2 GiB. The numerical boundary normalization/solve/unscale and
+recovery still need composition at compatible precision; shared setup accounting,
+seam dispatch and final S4 time/live-stock gates remain open.
+
+The actual folded RHS now also has an executed real projection.
+`packedHaloRealBoundaryData_exec` composes the complete halo pipeline with
+`mapOwnedLine`, a generic two-reversal map of an owned line. It changes only
+143 during projection, uses released scratch 0, and pays exactly four times the
+symbol count plus four. The resulting real words satisfy both the input
+magnitude bound and the normalized half-unit bound, by the whole-interior error
+contract rather than a new per-cell certificate. Dominance and compatibility
+with boundary working precision remain explicit. This module checks near
+3.1 GiB.
+
+`packedBoundaryFactorReg` places the existing factor workspace in 242 registers,
+leaves geometry 154--167 and coefficient row width 140 outside its image, and
+maps the kernel RHS directly to the emitted line 143. Its injectivity follows
+from a structural left inverse. `packedBoundaryNormalize_exec` transports the
+existing generated normalization kernel through this placement: only 143
+changes, the original cost is retained, and no RHS transfer is required. The
+kernel readiness and clean-workspace assumptions are still supplied explicitly;
+they have not yet been derived from an executed factor supplier. Composition
+with the full halo producer, solve/unscale, recovery, setup reuse, seam dispatch
+and final S4 time/live-stock bounds remain open.
+
+The placed complete numerical kernel now checks as well.
+`packedPreparedResidualSolve_exec` reuses the existing normalize/solve/unscale
+proof under the same flat injection, consumes the actual RHS on 143 and appends
+the unscaled solution on 238. A generic two-write embedding lemma transports its
+exact output frame without expanding the intermediate state. The projected
+post-state and `packedPreparedResidualSolve_ready` retain factor pages and solve
+headers for another RHS. `haloResidual_norm_bound` isolates the whole-interior
+stability argument without any boundary precision assumption;
+`packedHaloResidualSolve_exec` uses it to derive the kernel's coarse component
+bound for the actual real coupling rows in `bFoldOrder`, rather than accepting
+an arbitrary bounded RHS. Factor format, StageInv, factor streams and readiness
+are still premises. The full producer-to-consumer handoff and executed factor
+supplier remain open, alongside recovery, common precision instantiation,
+shared setup accounting, seam dispatch and final S4 time/live-stock bounds.
+
+The factor supplier now executes in the packed layout as well.
+`packedBoundaryFactory_spec` transports the existing complete constructed
+Schur/factor factory through `packedBoundaryFactorReg`, returning computed
+columns, their accuracy and format, StageInv, actual factor streams and solve
+readiness. Its off-image frame retains the high geometry bank 154--167 and coefficient
+row-width port. This factory runs before the halo RHS producer: its input
+freshness includes the future RHS slot, so it cannot simply be inserted after
+RHS construction.
+
+`packedHaloRuntimeReg` places the entire 168-register producer in the low bank
+of the same 242-register machine. `placedPackedHaloRealBoundaryData_exec`
+retains the complete producer contract and proves that all registers at least
+168 are unchanged. `packedBoundaryFactorState_of_high_frame` identifies the
+resulting numerical state as exactly the old factor state with RHS replaced;
+`packedBoundarySolveReady_halo` therefore preserves solve readiness across any
+such halo execution, without rechecking its individual stages. Remaining
+handoff work includes generating the producer's released native input from the
+factory post-state, preserving/deriving its left-workspace conditions, and
+instantiating common precision. These are not yet a composed factory/halo/solve
+execution. Recovery, shared setup multiplicity, seam dispatch and final S4
+resource bounds also remain open.
+
+The prepared factory now retains its native arithmetic contract in the public
+result, together with the actual coordinate-page and header lengths. The
+proof reuses `boundaryRecoveryReady_of_frame`; the two existing batch callers
+continue to use the original numerical result. The packed factory transports
+the strengthened contract unchanged.
+
+`releasePackedBoundaryRuntime_exec` erases only coordinate page 109 and headers
+115/116, with exact cost `2*(N*V+V+N)+7`. Its generic native-bank theorem derives
+the producer's exact `releasedCellBank` from the preserved arithmetic readiness
+and clean low left stacks. Its factor-state theorem proves the cleanup leaves
+every factor role unchanged. `packedBoundaryFactoryRelease_spec` composes the
+executed factory and this cleanup, returning the exact released native bank,
+computed columns, factor streams, solve readiness and existing off-image frame.
+This closes the native-register cleanup step but is not yet the complete halo
+handoff: factory table output on 132 still prefixes the caller's publication
+buffer. A promising direct placement is the unused high register 220 (the
+ordinary placement moved old 206 to 143); routing only the factory's table output
+there would protect the publication buffer without copying it. Retained master
+and endpoint frames and the producer's left-workspace contract must also be
+carried through the full composition. Common precision, recovery, setup reuse,
+seam handling and final S4 resource bounds remain open.
+
+The factory table routing is now executed and checked.
+`packedBoundaryTableRouting` is the static permutation of 132 and the unused
+register 220; it adds no copy operations. The generic placement excludes 220,
+so routing the whole existing factory/cleanup program preserves the original
+publication buffer on 132 exactly. `routedPackedBoundaryFactoryRelease_spec`
+retains the complete computed numerical and released-native contracts, with
+solve readiness and clean left stacks stated in the actual solver view.
+The routing fixes every numerical factor role and every native register;
+`packedBoundaryTableRouting_left` handles the table port's left stack using its
+preserved initial value. The existing factory frame for legacy headers and
+endpoints is now exported through factory, cleanup and routing, instead of
+being discarded at each wrapper.
+
+The next geometry handoff must generate canonical metadata after the factory:
+its freshness requirements on 147 and 151 conflict with preinstalled encoded
+geometry on those same ports. The high geometry bank 154--167 can remain
+reserved throughout. The existing binary-header bank and retained
+`sharedCouplingReg` view can generate the low metadata from master s/t/band and
+endpoint headers, followed by `completeCouplingIntervalMetadata`; neither needs
+an ambient data scan. The complete factory/geometry/halo/solve composition,
+common precision, post-halo left-workspace proof, recovery, setup reuse, seams
+and final S4 bounds remain open.
+
+The post-factory metadata initializer now also executes.
+`prepareRetainedCouplingMetadata_exec` instantiates the existing structural
+`binaryHeaderBank` checker on sources 121/122/124 and endpoints 141/142, producing
+the same five binary geometry fields directly from retained unary headers.
+Sources, scratch and the native bank are unchanged. The interval wrapper
+`prepareRetainedCouplingIntervalMetadata_exec` composes that conversion with the
+existing binary completion program, using descriptor origin/count on 155/165.
+It returns canonical `CouplingIntervalMetadata` with cost at most
+`(s+t+band+a+b)*(4*V+10)+56*V+77`. Its explicit output changes only the nine
+metadata destinations, and `retainedCouplingIntervalMetadataR_off` is the shared
+frame for all other ports, including the publication buffer and native source.
+The remaining work is to compose this initializer in the 242-register factory
+and halo execution, then close precision and post-halo left-stack readiness
+before the solve/recovery and global resource gates.
+
+The factory and geometry stages now have a single executed composition.
+`placedRetainedCouplingIntervalMetadata_exec` lifts geometry generation into the
+242-register machine and exports a complete frame outside its nine destination
+ports. It preserves all left stacks; generic native-bank and factor-state
+lemmas use the same frame. `routedPackedBoundaryFactory_header_frame` condenses
+the factory's legacy, reserved-bank and publication frames into one retained
+header rule for 117--167, excluding only the newly installed RHS port 143.
+
+`packedBoundaryFactoryGeometry_spec` executes the routed factor factory,
+coordinate-page cleanup and canonical metadata generation in sequence. It
+obtains s/t/band from the factory's actual retained master invariant, transports
+endpoint and descriptor seeds through the shared frame, and obtains scratch
+blankness from the exact released native bank. The result contains computed
+columns and their accuracy/format, StageInv, actual factors, solve readiness,
+canonical metadata, the released native input and the original publication
+buffer. The only geometry inputs still supplied are the binary width,
+origin/count seeds, initial destination freshness and the existing fit bound;
+there is no readiness assumption on an intermediate factory state. Remaining
+work is its full halo/solve composition at a proved common precision, the
+post-halo left-workspace contract, recovery, shared setup accounting, seams and
+final S4 resource bounds.
+
+The shared working format now has an explicit arithmetic witness.
+`executionSizing_of_allowance` proves generically that conserving
+`target+rhsExp` preserves precision, stage precision and word width. Let
+`T = initialSchurTarget p u (boundaryTableBits p target rhsExp rowCount) 2`.
+`boundaryHaloTarget = T+2-rhsExp` conserves that allowance between raw halo input
+and the normalized boundary setup. Its sizing theorem proves all three format
+equalities; its accuracy theorem proves it is at least
+`initialSchurTarget p u target rhsExp`. Thus the format compatibility required by
+the existing halo/residual consumer can be instantiated from a chosen target,
+rather than remaining an arbitrary equality premise. This witness still needs
+to be used in the full factory/geometry/halo/solve composition; it does not by
+itself close post-halo left-stack readiness, recovery or the global S4 bounds.
+
+The complete factory-to-boundary numerical execution now checks.
+`packedHaloBoundarySetup_exec` composes factory generation, coordinate cleanup,
+geometry and the full grouped halo residual pipeline. It selects
+`boundaryHaloTarget`, derives format compatibility and transports masters,
+endpoints and freshness through one retained-header frame. It returns the
+actual fitted interior field, its error contract, solver-order real residual,
+computed columns/factors, coefficient page and exact borrowed RHS queue.
+The factory/geometry contract now also preserves caller register 93 explicitly.
+
+Left-stack restoration is now a proved invariant rather than a missing premise.
+`packedCell_left_eq` combines the arbitrary native prefix with its high-bank
+frame. Publication, empty/nonempty class dispatch and keyed input/publication
+now export full left equality; the arbitrary-key induction carries it through
+the complete generated interior run. Coefficient generation, residual feed,
+boundary gather/fold and real projection all change only right stacks, so the
+same invariant reaches the placed producer. `embOvr_left_of_eq` transports that
+invariant through the shared bank embedding. No cleanup instructions or costs
+were added. `PackedBoundarySolveWorkspace` packages the resulting clean left
+bank, multiplier scratch, precision and retired normalization/unscale controls.
+Its swap port is required fresh in the initial caller bank.
+
+`packedHaloBoundarySolve_exec` then composes the existing retained-factor
+normalization/solve/unscale kernel with that generated setup and actual RHS.
+The result clears 143, appends the unscaled computed boundary solution on 238,
+preserves the caller's original 238 suffix and 93, and retains the interior
+publication, original source suffix, coefficient page and canonical geometry.
+It also retains solve readiness for factor reuse. Its boundary output is the
+existing `bandSolveVec` of the generated factors and normalized actual residual;
+this is an execution theorem, not yet the final accuracy/recovery theorem.
+Remaining S4 gates include semantic boundary-error composition, recovery/core
+publication, setup multiplicity and cache reuse, seam dispatch, ownership and
+release of the routed raw table on 220, and final time/live-stock/tensor bounds.
+The factory's input/output stream frame must also be carried into the final
+public composition; the underlying constructed factory already proves it.
+
+The full-boundary checkpoint passed the combined execution/axiom audit and
+23 sequential guarded checks covering the changed left-frame and composition
+modules. The largest measured module was `PhaseCellPackedHaloBoundarySetup` at
+3286.2 MiB; `PhaseCellPackedHaloBoundarySolve` used 3230.7 MiB. All remain below
+the 4 GiB per-module CI target. These checks establish the execution and
+workspace contracts above, not the remaining semantic/recovery/resource gates.
+
+The executed boundary output now has its semantic error bound.
+`haloResidual_error_bound` proves that the actual real projected residual
+approximates the exact Schur RHS using only whole-interior accuracy. The exact
+interior solver may be chosen from dominance; `solves_unique` identifies it
+with the principal solution used by the executed interior proof. Its explicit
+error is `haloResidualError`, bounded by `3/2^cellTarget` at the execution format.
+
+The boundary error proof now separates residual and matrix budgets.
+`boundary_unscaled_solve_target_of_rhs_budget` reuses the existing unscaled
+numerical estimate and applies `boundary_perturbation_target` with zero RHS
+error to pay matrix quantization. The remaining residual contribution is
+exactly `32*p*delta`. `boundaryHaloTarget_residual_budget` absorbs that term
+in `1/2^(target+1)` from the selected target's existing initial-Schur accuracy.
+This works for arbitrary RHS exponent: it does not require the interior error
+to meet the stronger matrix-bit target. The original `3/2^target` total error
+and stable solution magnitude are retained.
+
+`haloBoundary_solution_accuracy` joins these estimates to the generated factor
+format, StageInv and actual matrix error. It returns the unscaled solution's
+length, word fits, error on every folded boundary coordinate and stable
+magnitude. The exact interior inverse is constructed mathematically from
+dominance. The factory's already-proved matrix error is now carried through
+`packedHaloBoundarySetup_exec`, and `packedHaloBoundarySolve_exec` applies the
+accuracy theorem to its actual computed list. `boundaryFoldedRead_error` then
+states the same accuracy for decoding the emitted tape on 238, including its
+arbitrary retained suffix; this is a physical output observation, not only an
+integer-list property.
+
+The recovery field bridge is local as well. `packedBoundary_scatter_solution`
+identifies inverse folding, real projection and sparse scatter with the packed
+zero-extended boundary field. Its packed reader and error lemmas transport the
+same solution accuracy over the halo interval without an ambient scan. The
+runtime inverse-fold/scatter placement and the second packed interior pass
+still need composition. Recovery/core publication, caller stream frames, setup
+reuse, seam dispatch, raw-table ownership and final S4 tensor/time/stock gates
+remain open.
+
+The boundary-accuracy checkpoint passed the combined execution/axiom audit and
+six sequential guarded checks for the residual estimate, split error budget,
+solution accuracy, packed/folded readers and two executed endpoints. Peak RSS
+was 3287.8 MiB for setup and 3234.0 MiB for the complete solve; every checked
+module remained below the 4 GiB CI target. Whitespace validation passed.
+
+The recovery handoff now has an executed owned-prefix isolation step.
+`packedBoundarySolutionInput_exec` moves exactly the counted boundary solution
+from port 238 to inverse-fold input 231, restores the caller suffix on 238,
+and preserves every other stack, including retained factors and coefficients.
+It reuses `moveCountedLine_exec`; its time is `N*(12*w+9)+12`, independent of
+the borrowed suffix length. The five workspace ports must still be discharged
+from the boundary-solve endpoint when composing recovery. The new module passed
+a guarded check at 1932.1 MiB. Inverse-fold placement and the second interior
+pass remain open.
+
+The packed recovery inverse fold is now executed as well.
+`packedBoundaryUnfoldReg` extends the existing factor placement by four fresh
+ports for inverse-fold counters and output; its injectivity follows by composing
+register permutations with the established factor injection. The arithmetic
+kernel is reused unchanged. `packedBoundaryRealUnfold_exec` consumes the exact
+solution on 231 and emits real boundary values in natural order on 245, while
+its exact final-state equation preserves all other data. The composed
+`packedBoundarySolutionUnfold_exec` first isolates the owned prefix on 238 and
+then inverse folds, preserving the arbitrary caller suffix on 238. It adds only
+the existing counted-move cost to the established inverse-fold/projection cost.
+The composed module passed a guarded check at 3201.0 MiB. The combined
+execution/axiom audit also passed (4.8 GiB aggregate guarded-build peak). Discharging its
+workspace premises from the full solve endpoint, generating and executing the
+local scatter, and composing the second interior pass remain open.
+
+The boundary solver now exports the workspace needed by recovery instead of
+hiding it behind its final-state construction. `PackedBoundarySolveWorkspace.publish`
+proves that the publication update preserves the complete numerical workspace;
+`packedHaloBoundarySolve_exec` returns this fact. Both the setup and solve
+endpoints now also return the generated boundary-count tape on 116. The
+`packedBoundaryRecovery_clean` and `packedBoundaryRecovery_width` lemmas obtain
+the old-bank recovery scratch and word width directly from the retained
+workspace and solve readiness. The numerical solver count lives on 206 and is
+separate from the generated count on 116; recovery uses the latter.
+
+The composed inverse-fold handoff now borrows fresh ports 246 and 247 for its
+counting controls, avoiding extra caller-header emptiness assumptions on 240
+and 241. Its left-bank premise is restricted to the placed 224-register view,
+rather than requiring the entire surrounding bank to be blank. Fresh-bank
+extension and placement still need to be joined to the full solver endpoint;
+local scatter and the second interior recovery pass remain open.
+
+This handoff-contract checkpoint passed the combined execution/axiom audit and
+four sequential guarded file checks. Peak RSS was 3087.9 MiB for workspace,
+3200.8 MiB for inverse folding, 3286.4 MiB for setup and 3236.1 MiB for the
+complete solver. The aggregate guarded-build peak was 3.5 GiB; whitespace
+validation passed.
+
+The fresh-bank inverse-fold bridge is now proved from the solver's actual
+postconditions. `packedBoundaryRecoveryUnfold_exec` derives the placed left-bank
+and multiplier conditions, all old-bank scratch emptiness and word width from
+`PackedBoundarySolveWorkspace` and `BoundarySolveReady`; it takes the generated
+116 count and actual 238 stream returned by the solver. Its only additional
+workspace hypotheses concern the six freshly allocated ports. A structural
+three-case swap lemma transports blank left stacks through each placement
+permutation without enumerating register combinations.
+
+`Host.extendStacks` provides a generic blank extension with an exact old-bank
+projection and fresh-port lemma. `packedBoundaryRecoveryUnfold_extended_exec`
+uses it to eliminate the fresh-bank hypotheses as well. The endpoint consumes
+the actual owned boundary prefix, restores the arbitrary suffix on 238, and
+produces the natural-order real boundary stream on 245 with the established
+counted-move plus inverse-fold cost. The bridge passed a guarded check at
+3193.0 MiB; the extension module checked at 1386.5 MiB. Local destination
+retirement, generated scatter controls and scatter, then the second interior
+recovery pass remain open. The existing binary local-length metadata on 165
+can generate one unary local-row count for retirement and sparse publication;
+no ambient-length scan is needed for that handoff. The combined execution/axiom
+audit passed with 3.4 GiB aggregate peak; whitespace validation passed.
+
+Local recovery-buffer retirement and sparse replacement are now executed.
+`packedRecoveryDestination_exec` converts the retained binary local length on
+165 once, retires exactly `N*w` owned symbols from 132, preserves the borrowed
+tail, and leaves `N` ticks on 246. Its exact frame retains the inverse-folded
+boundary words on 245 and all coefficient/factor data. Its cost is
+`6*N+11*V+6+retireCountedLineCost N w`, independent of the caller tail.
+
+`packedRecoveryPublishReg` reuses the inverse-fold placement, moving only the
+local row-count role to 246 through one permutation. The existing controlled
+sparse publisher executes unchanged in this placement. The composed
+`packedRecoveryBoundaryBuffer_exec` replaces the retired first-pass interior
+buffer by `cstream (packedInterval a N G)++tail`, consumes the natural-order
+boundary input on 245, and retains the generated local row count. It adds
+`89*N*w+41` to retirement cost and frames every other stack. The destination
+module checked at 1937.1 MiB and the publication/composition module at
+3194.8 MiB. The combined execution/axiom audit passed with a 3.4 GiB
+aggregate build peak; whitespace validation passed.
+
+This endpoint still assumes an origin-advance stream on 143, which its frame
+restores; generating and releasing that stream is not yet composed. An
+alternative is to reuse the already-generated boundary selector mask on 167
+and develop a generic record-spread counterpart to `gatherRecords`, avoiding
+origin packets altogether. Existing `Host.spread` is restricted to Boolean
+source symbols, whereas boundary words contain paired complex symbols, so it
+cannot be used directly. Both approaches must preserve local storage and avoid
+an ambient scan. Full inverse-fold/buffer composition and the second interior
+recovery pass remain open.
+
+Recovery publication now uses the retained boundary mask directly; this
+supersedes the preceding advance-control buffer implementation, whose new
+placement and conditional publication wrapper have been removed. The generic
+`Host.spreadRecordStep_exec` has one contract for both branches: transfer one
+selected arbitrary-symbol record, or emit one fixed zero record. The new
+`Host.spreadRecords_exec` composes those steps through `eachSym`, restores the
+record mask and every temporary, consumes only the selected source prefix,
+and emits all local records in natural order. Its proof is structural over the
+record stream; no coordinate packets or finite certificates are introduced.
+Its bound is `N*(6*w+10)+6`.
+
+`maskedPackedBoundaryPublish_exec` instantiates this language for paired complex
+words and the existing boundary selector. It reuses
+`packedBoundaryRhs_select_ordered` and `packedBoundaryRhsMask_flags`, the same
+selection semantics as RHS extraction. Zero extension supplies every false-mask
+record. `packedRecoveryBoundaryBuffer_exec` now retires the old interior prefix
+and runs this mask-based publisher; it has no advance-stream hypothesis. The
+setup and full solver endpoints now export their actual retained 167 mask.
+The generic record proof checked at 1968.3 MiB, the mask publisher at 2069.7 MiB,
+and the complete buffer at 2069.0 MiB. Six final sequential guarded checks
+also passed, including strengthened setup (3290.1 MiB) and solver (3239.8 MiB).
+The combined execution/axiom audit and whitespace checks passed. Full inverse-fold/buffer composition,
+recovery RHS construction and the second interior pass remain open.
+
+The inverse fold and mask-based buffer replacement now form one executed
+program. `packedBoundaryRecoveryField_exec` starts from the boundary solver's
+retained workspace, actual folded solution and local metadata. It restores the
+solution's borrowed suffix on 238 and replaces the owned first-interior prefix
+on 132 by the packed zero-extended `boundarySolutionField`, preserving the
+output suffix. Its exact final state changes only 238, 132 and the generated
+local row count on 246. All other words, factors, coefficients and metadata
+are framed. No scatter-control or intermediate readiness stream is assumed.
+Its cost sums the established counted move, inverse fold, retirement and
+record-spread bounds.
+
+`packedRecoveryRhsInput_exec` reuses that same local row count to retire the
+old residual prefix on 110, expose the retained original local RHS, and copy
+only its owned prefix to 93 for recovery coupling. It releases the obsolete
+boundary count on 116, selector mask on 167 and private row count on 246.
+All scratch restores, all borrowed tails survive, and the exact frame retains
+the newly published boundary field and factor/coefficient page. The boundary
+setup and solve endpoints now also export their already-proved low native
+scratch emptiness (all 117 old-bank ports except 93, 110 and 116), so subsequent
+coupling readiness can be derived from execution rather than assumed.
+
+The combined execution/axiom audit passed (7.1 GiB aggregate guarded-build
+peak). Four sequential guarded checks passed: field composition 3199.0 MiB,
+RHS input 1939.0 MiB, setup 3294.6 MiB and complete solve 3242.0 MiB. Whitespace
+validation passed. Full field/RHS-input composition, retained header/scratch readiness for
+recovery coupling, recovery RHS accuracy and the second packed interior pass
+remain open, along with the broader S4 integration/resource gates.
+
+The full local recovery-input handoff is now one executed program.
+`packedBoundaryRecoveryInputs_exec` composes inverse folding, mask-based local
+boundary publication, old residual retirement and original-RHS preservation.
+It derives the shared count, width, mask length and scratch facts from the
+first stage's exact final state. Its final state retains the packed boundary
+field on 132, exposes the original RHS on 110, copies the owned RHS prefix to
+93, restores the borrowed solution suffix on 238, and clears 116 and 167.
+The private row count on 246 restores to its original blank state. Every other
+register, including factors, coefficients and retained metadata, is framed.
+
+`CouplingMasterHeaders` names the nine retained unary headers shared by both
+coupling passes. Its frame lemma transports them without copying headers, and
+its `ready` lemma derives `CouplingReady` from those headers and the released
+native scratch bank. The boundary setup and complete solve now return this
+header record and emptiness of 127, 135, 158 and 166. Port 135's emptiness was
+already proved by the interior/coefficient endpoint; it is now carried through
+residual, boundary selection, real projection and placement rather than
+attempting to infer it from the high frame, whose page exceptions include 135.
+No runtime cleanup or extra numerical setup was introduced for these facts.
+
+The combined execution/axiom audit passed (5.8 GiB aggregate peak). Eight
+sequential guarded checks passed for the two new interfaces and the six
+strengthened execution endpoints, with maximum RSS 3314.1 MiB for setup and
+3244.6 MiB for the complete solve. Whitespace validation passed.
+
+Executing recovery coupling with the retained page, proving its recovery-RHS
+accuracy at the common format, and the second interior pass remain open.
+The fresh-bank embedding of the full solver and the broader S4 assembly,
+seam/setup-reuse and resource gates also remain open.
+
+The actual second coupling pass now executes in the packed recovery bank.
+`packedRecoveryCoupling_exec` places the existing
+`preparedSharedLocalFeedCouplingInterval true` kernel in the low 168 registers
+of the 248-register machine. It derives `CouplingReady` from the retained
+`CouplingMasterHeaders`, the boundary workspace's left-bank facts and the
+released native scratch. The coefficient page and all headers are read in
+place. The exact final state restores the borrowed RHS tail on 93 and emits
+the local guarded recovery RHS on 110 above its retained source suffix; every
+other stack, including the factor page, is framed.
+
+`packedBoundaryRecoveryRhs_exec` joins this pass to the complete inverse-fold,
+boundary-publication and RHS-input program. Its boundary field is the actual
+`boundarySolutionField` of the computed folded list. It derives the second
+pass's workspace, native scratch, header, geometry and high scratch conditions
+from the first stage's exact final state; no intermediate ready state or
+control stream is assumed. Word fits come from the boundary solution's proved
+fits. The final state changes only the owned solution suffix on 238, local
+boundary field on 132, recovery RHS on 110, and released 116/167 controls;
+93 restores to the caller's original contents. Costs are the sum of the
+already-proved local handoff and retained-page coupling costs.
+
+The placed coupling checked at 3202.7 MiB and the complete recovery-RHS endpoint
+at 3219.1 MiB. The combined execution/axiom audit passed with a 3.5 GiB
+aggregate guarded-build peak; whitespace validation passed. Recovery numerical
+error/magnitude budgets at the selected common
+format, the second packed interior solve and final field accuracy remain open.
+The full solver's fresh-bank embedding, seam/setup reuse and final S4
+assembly/time/live-storage gates also remain open.
+
+The common-format recovery numerical bridge is now proved for arbitrary RHS
+exponents. `boundaryHaloRecoveryTarget p target rowCount` simplifies to
+`target + 3*Nat.size (8*p) + Nat.size rowCount + 10`: the larger recovery RHS
+exponent cancels against the retained source allowance. Its allowance and
+sizing lemmas prove exact equality of precision, stage headers and word width
+with the normalized boundary setup. Existing normalization guards pay both
+recovery word fit and coupling roundoff; `boundaryHaloRecovery_error_budget`
+reuses the established recovery budget with the two guarded boundary bits.
+
+`haloRecoveryRhs_spec` applies the existing guarded-row estimate once to the
+actual `boundarySolutionField`, obtaining global RHS magnitude, word fits and
+error against the exact Schur recovery RHS. `haloRecovery_interior_error`
+transports any accurate interior solve through the existing Schur stability
+lemma, independently of its cell schedule. Finally,
+`haloRecovery_boundary_format_spec` chooses the exact interior solution from
+dominance and proves that a second solve at the selected target, combined with
+the retained boundary words, meets `2^-target` on the full halo. This is the
+mathematical contract needed by the second executed packed pass, not an
+assumed numerical inverse or an ambient publication program.
+
+The precision/budget module checked at 3083.7 MiB, generic recovery accuracy at
+3189.7 MiB and combined boundary-format accuracy at 3184.9 MiB. The combined
+execution/axiom audit passed at 3.4 GiB aggregate peak; whitespace validation
+passed. Runtime second
+interior execution and preservation of boundary entries remain open. The
+existing initializer requires fresh 125/130/138/140 and zero selected-length
+master 128. A static second-pass placement can map these five roles to the
+blank recovery ports 242/244/245/246/243, respectively, while retaining the
+original key header, word width and coefficient page. This permits reuse of
+`solvePackedHaloInterior_field_exec` without clearing the original pages or
+assuming the old selected length is zero. The original 118 stage and 120 level
+masters and the remaining high fresh ports must be carried through the solver
+endpoint for that placement, in addition to the coupling-header record.
+
+The second packed interior solver now has an executed placement beside all
+retained pages. `packedRecoveryInteriorReg` composes six register swaps with
+the ordinary 168-register inclusion: 125→242, 128→243, 130→244, 138→245,
+140→246 and 157→247. Thus the old key width, selected length, word width,
+coefficient page, row-width header and selected-length binary word remain
+owned and unchanged. The new 128 and 157 roles start blank, so no zero-length
+assumption or cleanup of the previous class selection is needed. Injectivity,
+low-bank identity and avoidance of retained ports/factor registers are proved
+structurally from the permutation.
+
+`packedRecoveryInterior_field_exec` embeds the existing
+`solvePackedHaloInterior_field_exec` unchanged, returning the actual local
+output prefix, fitted field, interior error and caller stream frames. It also
+returns explicit preservation of the old retained ports and the entire
+168–241 numerical bank. The execution module checked at 2170.3 MiB before the
+last frame additions.
+
+`PackedRecoveryInteriorReady` packages precisely the existing initializer's
+input interface. `packedRecoveryInteriorReady_of_retained` derives it from
+retained coupling headers, native scratch, metadata, stage/level masters and
+six blank fresh ports. The boundary setup and complete solve now export the
+118 stage and 120 level masters and the remaining high fresh ports. Repeated
+permutation reduction initially exhausted default heartbeats in the bridge;
+factoring fixed-register and six relocated-role equalities removed that cost
+without changing proof limits. The bridge checked at 3216.5 MiB and placement
+at 1402.3 MiB.
+
+The final placed execution checked at 2171.0 MiB, strengthened setup at
+3335.8 MiB and complete solve at 3248.1 MiB. The combined execution/axiom
+audit passed with a 5.2 GiB aggregate peak; whitespace validation passed.
+
+Full recovery-RHS/second-pass composition, the boundary-field initial encoded
+range and preservation of boundary words across all cell publications still
+need closure. The existing numerical recovery theorem then applies to its
+interior accuracy. Full solver embedding, seam/setup reuse and final S4
+assembly/time/live-storage gates remain open.
+
+Boundary words now have an exact frame through every packed interior solve.
+`haloPackedOffsets_interior` identifies every generated cell window as a subset
+of the halo interior. `haloGroup_scatter_off_interior_word` combines that fact
+with the existing generic scatter-slice frame, preserving each complete word
+outside the interior, including boundary words, for arbitrary publication data.
+
+`PackedHaloWordFrame` packages this property with reflexivity and transitivity.
+The key publication endpoint supplies it once; the arbitrary-key loop composes
+it structurally, and generated-key execution, initialization, field decoding
+and the placed recovery solver now export it. No runtime program or cost
+changed. `PackedHaloWordFrame.read` transports the frame to actual decoded local
+reads, and `.error` combines final interior accuracy with the initial boundary
+accuracy directly on the final buffer. Thus boundary preservation no longer
+needs a guessed off-interior decoded field or another publication program.
+
+`haloRecovery_boundary_range` proves that the retained packed boundary field
+already meets the second interior solver's initial encoded-range contract:
+its stable boundary magnitude is below the recovery RHS exponent and hence
+the interior output exponent. No normalization or buffer rewrite is needed.
+The frame module checked at 2095.9 MiB and the encoded-range/numerical interface
+at 3191.2 MiB. Nine sequential guarded checks passed across the strengthened
+execution chain; maximum RSS was 3336.8 MiB for setup, 3248.2 MiB for the full
+boundary solve and 2171.7 MiB for the placed second interior solver. The combined
+execution/axiom audit passed (3.4 GiB aggregate peak); whitespace validation
+passed. Full recovery-RHS/second-pass execution composition and final
+physical-read accuracy remain to be joined, followed by the full solver
+embedding and the broader S4 seam/setup-reuse, assembly and resource gates.
+
+The recovery RHS and second interior solver now have an execution composition
+lemma. `packedRecoveryRhsState` names the exact five-port RHS poststate, and
+`packedRecoveryInteriorReady_after_rhs` derives the relocated initializer's
+entire input record from the original retained state and that exact frame.
+Headers, native scratch, metadata and fresh ports are transported once.
+
+`packedRecoveryFinish_exec` consumes the already-verified
+`packedBoundaryRecoveryRhs` execution and runs the placed second interior solve,
+with time bounded by the supplied RHS execution time plus the existing interior
+cost. It returns the final local encoded field, fits and magnitude, interior
+accuracy, boundary-word frame, caller stream/left-bank frames, restored solution
+suffix on 238 and preservation of retained pages/factors. The coefficient count
+on 139 is now also carried through the placed interior endpoint. This is an
+execution composition interface; instantiating it with the actual boundary
+solver's solution and the selected common-format numerical theorem is still
+required for the final complete halo caller.
+
+`packedRecovery_read_error` transfers the numerical theorem's merged
+interior/boundary field error to actual reads of the final local buffer. It uses
+fitted-word decoding on interior coordinates and the exact word frame on the
+remaining halo coordinates. No off-interior value of the newly decoded field
+is assumed. The physical-read lemma checked at 3185.8 MiB, RHS-state readiness
+at 3221.1 MiB and composed execution at 3217.9 MiB. The strengthened placed
+interior checked at 2181.7 MiB. The combined execution/axiom audit passed at
+3.4 GiB aggregate peak; whitespace validation passed. The complete halo caller,
+full solver embedding and broader S4 assembly/seam/setup-reuse/resource gates
+remain open.
+
+`packedBoundaryRecovery_spec` now closes the local recovery caller from the
+actual folded boundary solution and retained factor state. It runs the RHS
+producer, obtains the exact interior comparison solution from dominance, runs
+the second solve at the shared format, and proves the final error bound on
+physical reads of port 132. It preserves caller streams, left banks, retained
+coefficient pages/counts and factors, and restores the solution suffix. Its
+cost is the sum of the existing input, coupling and interior costs.
+
+The complete recovery theorem passed its guarded check at 3248.8 MiB. The
+combined execution/axiom audit, including this theorem, passed (14921 build
+jobs, 3.5 GiB aggregate peak). This starts at the solved boundary state: the
+original setup-to-recovery composition, full S4 assembly, seams, setup reuse,
+release and final time/live-storage gates remain open.
+
+`packedHaloSolve_spec` now composes the original local setup interface with
+both interior passes, the folded boundary solve and recovery. It chooses the
+first interior comparison solution from dominance and obtains the boundary
+solution's accuracy from the executed boundary endpoint; neither is a caller
+oracle. It returns actual final packed reads within `2^(-target)` of the exact
+halo solution, a fitted output field, restored ports 93/238 and the sum of all
+existing setup/solve/recovery execution costs. Coefficient fits are derived
+from the existing numerical bounds. The caller still takes the established
+initial workspace/header and encoded-buffer contracts.
+
+`Host.exec_extendStacks` factors the 242-to-248 handoff generically: an arbitrary
+program executes in an extended blank bank with identical time and exactly the
+extended poststate. `eq_extendStacks` reconstructs that state from its view and
+fresh-bank frame. This avoids separate concrete transport proofs for all six
+recovery registers. The extension module checked at 1389.1 MiB; the complete
+local caller checked at 3249.4 MiB. The combined axiom audit passed (14922 jobs,
+3.5 GiB aggregate peak), with only the approved axioms. Whitespace validation
+passed.
+
+This closes the local nonseam execution/accuracy composition, not S4. The full
+caller input/output stream frames, owned-page/factor release, generated core
+publication and tensor assembly, seam fallback dispatch, complete-key setup
+reuse, and uniform final time/live-storage bounds remain open.
+
+The local caller now preserves both caller streams explicitly. The existing
+`constructedBoundaryFactor_spec` stream equalities are carried through the
+prepared/placed factories, runtime release, geometry preparation and complete
+boundary solve. The first interior pass supplies its stream frame through the
+native-bank projection, and recovery composes it with its own frame. No runtime
+code or cost changes were needed for this contract strengthening. Existing
+constructed batch callers were updated for the stronger supplier result.
+Nine sequential guarded checks passed across the affected downstream modules;
+maximum RSS was 3334.6 MiB for setup. The prepared supplier checked at 3257.6 MiB.
+
+`packedRecoveryRelease` reuses the existing coefficient-page disposer through
+an injective placement that reads the retained word-width header on 130.
+It consumes exactly the coefficient page on 138 and its metadata on 139/140,
+restoring all disposal scratch. Recovery exports the required native scratch
+facts from the second solver's actual ready state. `packedHaloSolve` now runs
+this disposer after recovery and includes its cost; `packedHaloSolve_spec`
+returns empty 138/139/140 together with the same fitted final buffer and
+physical-read accuracy. This releases the owned coefficient page, not the
+retained factor bank or remaining setup table.
+
+The placed release checked at 2086.7 MiB, strengthened recovery at 3248.9 MiB,
+and the complete caller including release at 3258.7 MiB. The combined axiom
+audit passed (14927 jobs, 3.5 GiB aggregate peak); whitespace validation passed.
+The remaining gates are factor/setup-table release and full scratch lifecycle,
+generated core publication and tensor assembly, seam dispatch, complete-key
+setup reuse, and uniform final time/live-storage bounds. S4 remains open.
+
+The routed raw table now has an exact ownership relation through every local
+solver wrapper. `preparedBoundaryFactory_spec` obtains it from the construction's
+legacy-bank frame; packed placement, runtime release, routing, geometry and
+both boundary endpoints preserve it. Thus port 220 contains exactly the generated
+`bandTableWords` prefix followed by the caller's original port-220 suffix.
+No blank-table assumption is introduced.
+
+`packedTableRelease` places the existing structural `retirePackedBandTable`
+program in the recovery bank. It reads the retained factor dimensions (204,
+206 and 174), retires ragged columns in reverse order, and restores native
+scratch. Its proof reuses the existing retirement execution theorem through
+an injective register permutation, with identical time. The local caller now
+runs this retirement after coefficient-page release, returns `F.R 220 = S.R 220`,
+and charges `retirePackedBandTableCost` in `packedHaloSolveCost`. Output reads,
+fitting and caller stream preservation continue to hold for the same final
+state. Retained factors provide the dimensions; the caller supplies neither a
+packed-size certificate nor external disposal controls.
+
+The placed table retirement checked at 2055.0 MiB and the complete caller at
+3275.6 MiB. The combined execution/axiom audit passed (14931 jobs, 3.5 GiB
+aggregate peak). Nine sequential guarded checks of the strengthened downstream
+modules also passed; maximum RSS was 3334.6 MiB for setup. Whitespace
+validation passed. Factor-bank cleanup and its volume bound remain separate,
+as do generated scheduling, seams, complete-key setup reuse, tensor assembly
+and uniform final time/live-storage bounds. S4 remains open.
+
+`BoundaryFactorStock` now packages the per-register bound needed to dispose of
+the owned factor bank. `boundaryFactorStock_of_bounds` derives it from the
+existing permanent-data and unfolding-header bounds, using the structural
+factor-register coverage lemma. The live RHS port is excluded. The prepared
+factory obtains these bounds from `constructedBoundaryFactor_spec`; all placed
+factory, geometry, setup and boundary-solve wrappers now carry the stock fact.
+`packedBoundaryFactorStock_of_high_frame` transports it across halo execution
+once, rather than reproving every factor-page case.
+
+`packedFactorOwnedIndices` selects the fresh high factor registers, excluding
+the live RHS. Their injective placement avoids the raw table and both borrowed
+source/result suffix ports. `packedFactorRelease_exec` applies the existing
+`clearWords` execution theorem, with a list-induction sum bound for its cost.
+The caller derives its stock premise from the constructed boundary result and
+recovery's exact frame; no size certificate is supplied externally.
+
+`packedHaloSolve` now runs coefficient-page disposal, raw-table retirement and
+factor-bank disposal after recovery. Its final theorem returns an empty owned
+factor bank in addition to restored port 220, empty coefficient-page metadata,
+caller stream frames, the fitted output and physical-read accuracy. The
+symbolic cost includes all three disposals. The full caller checked at
+3284.0 MiB; the factor disposer initially checked at 3099.6 MiB. The combined
+axiom audit passed (14933 jobs, 5.7 GiB aggregate peak). Thirteen sequential
+guarded checks of the changed modules also passed, with maximum RSS 3342.9 MiB
+for setup. The final factor-disposer check used 3097.7 MiB. Whitespace
+validation passed.
+
+This closes paid factor disposal for the self-contained local nonseam call.
+It does not establish reuse across RHS calls or restore every low/new-bank
+runtime header. Those contracts, the generated core schedule, seam fallback,
+normalized complex/tensor assembly, complete-key setup reuse and uniform
+selected time/live-storage bounds remain open. S4 remains open.
+
+`preparedPackedSlice_exec` now generates the two symbol-count controls from
+borrowed word-count and word-width headers, executes the existing restoring
+packed slice, and releases the generated counts. Its exact state changes only
+the destination prefix. The cost bound is
+`offset*(12*w+9)+count*(16*w+9)+29`; it contains no ambient-prefix traversal.
+The generic proof handles arbitrary intervals, headers, source/destination
+suffixes, zero lengths and register placements.
+
+`preparedCorePublication_exec` is its first geometry consumer. It publishes
+`ownedCoreWords`, and transports the input halo's actual physical-read error
+to the actual published core prefix. Both readers decode the same words, so
+this step needs neither another fit premise nor another rounding allowance.
+The core error remains the halo error, with no cell-count factor.
+
+`packedHaloSolve_spec` now exports the retained word-width and the two native
+scratch facts needed for publication. `packedHaloPublication_exec` embeds an
+actual execution of `packedHaloSolve` in a 256-register bank beside eight
+publication registers and runs the prepared core publisher on its returned
+buffer. It proves the exact published prefix, preservation of the local halo
+source, preservation of all other added registers and accuracy on the actual
+published core reads. Its premise is an execution of the concrete local solver,
+with the source/error/width facts returned by that solver; it is an execution
+composition theorem, not a generated group theorem.
+
+The prepared slice checked at 2080.4 MiB, owned-core specialization at
+2041.5 MiB, strengthened local solver at 3288.2 MiB and execution composition at
+3227.4 MiB. The combined axiom audit passed (14938 jobs, 3.4 GiB aggregate
+peak); whitespace validation passed. Connecting generated descriptor/header preparation, the restoring
+gather, repeated calls and ordered core publication remains open. The current
+self-contained solver also does not supply complete-key setup reuse. Runtime
+restoration, seam dispatch, normalized complex/tensor composition and selected
+global time/live-storage bounds remain open; S4 remains open.
+
+`PackedHaloInput` now packages the existing 54 geometry, numerical-format and
+physical-workspace preconditions of the local solver. It adds no execution
+premise or intermediate numerical oracle. `PackedHaloInput.run` instantiates
+the concrete solver once from that record, returning the fields needed by
+subsequent local callers. This avoids repeating the full register-level
+hypothesis list in every composition proof.
+
+`packedHaloCore_spec` now executes setup, both interior passes, boundary solve,
+all proved page disposals and owned-core publication from this input contract.
+It invokes the solver itself, so an intermediate execution is no longer a
+caller premise. It returns the published core prefix and its actual-read
+accuracy, fitting, user/caller-stream preservation, publication-header frames
+and the sum of the local solve and generated-count publication costs.
+
+The publication composition now returns equality of the entire embedded solved
+bank. The publisher modifies only its new destination, so all local solver
+postconditions can be transported through one view equality. Explicit shared
+precision/width aliases and a separate input runner keep elaboration below
+default limits; no heartbeat or recursion setting was raised.
+
+The input contract checked at 3216.9 MiB, solver adapter at 3216.7 MiB,
+strengthened publication frame at 3228.0 MiB and the direct core caller at
+3231.5 MiB. The combined execution/axiom audit passed (14941 jobs, 3.5 GiB
+aggregate peak); whitespace validation passed. This is a concrete local
+nonseam real core call from the existing initial workspace contract. Generated
+descriptor/header construction and gathering into that contract, repeated-call
+runtime restoration, the complete group schedule, seam dispatch, complete-key
+setup reuse, normalized complex/tensor composition and selected global
+time/live-storage bounds remain open. S4 remains open.
+
+Recovery now exports ownership of the remaining source prefix on 110:
+a recovery-RHS block of `(b-a)*w` symbols, followed by the original local RHS
+and its borrowed suffix. The fact comes from the second interior solver's
+actual native-bank projection. The local solver, shared input runner and
+core publication caller retain it, together with the word width and released
+104/105/109 scratch. Publication's whole-bank view transports all these facts
+without another numerical argument.
+
+`haloBufferRelease_exec` generates the halo row count from the borrowed core
+length and radius headers, then reuses `retireCountedLine` three times: once
+for the local solution on 132 and twice for the RHS prefixes on 110. It clears
+its generated counter on 255. Its exact poststate changes only 132 and 110 to
+their borrowed suffixes; published cores, other stacks and original header
+symbols are preserved. Its cost is local in core length, radius and word width,
+including count generation and disposal. No scaled counter tape is assumed.
+
+`packedHaloCoreRelease_spec` invokes the concrete setup-to-core caller and then
+this disposal program. It returns the actual published core and its uniform
+accuracy, fitting, stream/header frames, restored output/RHS suffixes and an
+empty temporary halo counter. All runtime costs through this buffer lifecycle
+are included. It does not restore every low/new-bank setup header or establish
+factor reuse between calls.
+
+The strengthened recovery checked at 3251.6 MiB, cleanup at 1945.2 MiB,
+cleanup-ready core caller at 3234.3 MiB and complete core/buffer-disposal caller
+at 3235.0 MiB. The combined execution/axiom audit passed (14943 jobs, 3.5 GiB
+aggregate peak). The strengthened local solver and input adapter also passed
+guarded checks at 3290.3 and 3223.7 MiB, respectively; whitespace validation
+passed. Generated gathering/initialization, complete repeated-call
+restoration and scheduling, seam dispatch, complete-key setup reuse, normalized
+complex/tensor composition and selected global time/live-storage bounds remain
+open. S4 remains open.
+
+The input contract now separates `PackedHaloFrame` (the 51 setup, geometry and
+source facts) from the three output-buffer facts in `PackedHaloInput`.
+`packedBoundaryFactoryView_update_output` proves that the physical local output
+lies outside the routed factory view. `PackedHaloFrame.update_output` therefore
+preserves the setup contract during allocation, and `.with_output` combines
+that frame with a proved length and encoded range. Existing solver callers
+retain their inherited input-field API.
+
+`allocateZeroLine_exec` reuses unary dimension multiplication and constant-symbol
+copying to allocate exactly `N*w` zero symbols over an arbitrary output suffix,
+restoring its controls. `encodedRange_zero_words` supplies the numerical range
+for every precision/exponent. `prepareHaloBuffer_exec` obtains `w = 2*q+8` from
+the retained precision header and `N = coreLength+2*radius` from the borrowed
+publication headers, allocates this output and clears all private dimensions.
+Its exact frame changes only port 132; every preparation cost is included.
+
+`prepareHaloBuffer_input` derives precision and native scratch from the setup
+frame, aligns the original and normalized working widths via the shared-format
+identity, and proves that the actual allocated poststate satisfies
+`PackedHaloInput`. `Host.extendStacks_updateR` transports this allocation across
+workspace extension once. No preallocated output, range certificate or scaled
+allocation counter is supplied by the caller.
+
+`preparedHaloCore_spec` now runs allocation, the concrete core solver,
+publication and owned-page/buffer disposal from `PackedHaloFrame`. It returns
+the published core and actual-read accuracy, fitting, caller streams, the
+original output suffix on 132, the RHS suffix on 110, and publication-header
+frames. Its total bound includes allocation. This begins with the existing
+setup/source frame and core/radius masters; generated gathering and initial
+header construction are still separate obligations.
+
+The frame transport checked at 3220.1 MiB, zero allocator at 1954.3 MiB,
+allocation program at 1940.1 MiB, executed input initializer at 3236.0 MiB and
+combined initialized core caller at 3242.6 MiB. The combined execution/axiom
+audit passed (14948 jobs, 3.5 GiB aggregate peak). Workspace extension and the
+refactored input/runner modules also passed guarded checks at 1389.9, 3216.0
+and 3218.8 MiB, respectively; whitespace validation passed. Complete repeated-call
+restoration, generated grouping/gathering/header execution, seam dispatch,
+complete-key setup reuse, normalized complex/tensor composition and selected
+global time/live-storage bounds remain open. S4 remains open.
+
+### Generated core counted origins (2026-10-29)
+
+`countedOriginListHost_exec` now factors the executed origin publisher over an
+arbitrary list emitted by a verified table program. It scans fixed-width words
+to derive the unary count, publishes their binary real coordinates, preserves
+the borrowed output suffix and off-bank frame, and retains the bound
+`steps*tblC W V + origins.length*(8*V+6)+6`. The halo length-group host is a
+specialization of this same proof.
+
+`generatedCoreCountedHost_exec` instantiates it with `generatedCoreGatherCode`:
+the machine computes the core count from ambient size and core width, filters
+fitting halos by movement length, and emits the coordinate origins and their
+owned count. Neither the origin list nor its count is an input. This is a
+movement interface, not numerical setup reuse. Converting these origins to
+restoring-gather controls, constructing the full local solver frame, restoring
+the runtime bank across calls, setup reuse, seams, tensor composition and the
+uniform resource bounds remain open. S4 remains open.
+
+Verification: the new generic and core modules checked at 1980.2 MiB and
+1955.7 MiB peak RSS. The coupling-interval build passed 14,952 jobs and its
+approved-axiom audit (10.9 GiB aggregate peak); `git diff --check` passed.
+
+### Executed generated core sweep (2026-10-29)
+
+`preparedOriginAdvanceControls_exec` now prepares and releases the advance table
+for an arbitrary ordered origin list. It restores every register except the
+control destination, including the binary origins, their unary count, borrowed
+width headers and conversion scratch. Its movement bound uses the structural
+`originAdvances_sum_le` lemma, so total emitted movement is at most one ambient
+line. The halo converter is a specialization of this proof.
+
+`preparedCoreAdvanceControls_exec` instantiates that interface with the core
+geometry and proves the exact `windowAdvances` controls used by the restoring
+gather. `generatedCoreControls_exec` then composes the actual core enumeration,
+counted publication, origin-table release and advance conversion. It assumes
+native scalar table headers, not an origin list or count.
+
+`generatedCoreGather_exec` connects that program to `coreGather_exec`: the
+machine emits the concatenated fitting halo slices on register 108, preserving
+the ambient source on 110 and all other caller data outside the released table
+and the owned origin/count/control streams. For packed ambient input,
+`coreGather_packed` identifies these slices with the packed local intervals.
+The cost is the generated-control cost plus the existing one-sweep gather bound;
+there is no per-halo ambient traversal. Empty groups remain a separate branch.
+
+Constructing the native table from retained binary geometry, routing the gathered
+words into the real solver frame, repeated-call restoration, complete setup-key
+reuse, seam dispatch, tensor composition and uniform time/live-storage bounds
+remain open. S4 remains open.
+
+Verification: the generic converter, core converter, generated controls and
+generated gather checked at 2089.1, 2065.3, 2082.3 and 2082.4 MiB peak RSS.
+The coupling-interval build passed 14,957 jobs and its approved-axiom audit
+(10.4 GiB aggregate peak); `git diff --check` passed.
+
+### Initialized core sweep from retained geometry (2026-10-29)
+
+`preparedCoreGather_exec` loads the real core controller table from retained
+binary ambient size (145), core width (150), radius (152), halo length (165),
+empty zero source (154), and unary binary-word width (163). It embeds the
+previous generated sweep into the 168-register bank and restores the entire
+controller table to its initial blank contents. The loader cost is
+`112*V+137`; all retained geometry and the ambient source restore exactly.
+
+`prepareCoreGatherHeaders_exec` copies the unary workspace-width header and
+decodes the retained binary halo length using the existing structural
+`toUnary_exec_linear` proof. `initializedCoreGather_exec` composes that header
+construction, table loading, origin enumeration, movement conversion and the
+restoring gather, then retires both temporary unary headers. Its only changed
+registers are the gathered batch (108), generated controls (91), binary origins
+(109) and emitted count (116); all left stacks, retained headers, ambient input
+and unrelated caller data restore. The complete explicit cost is
+`initializedCoreGatherCost`.
+
+`initializedCoreGather_packed_exec` identifies the executed batch with the
+concatenation of packed fitting halo intervals of the ambient Gaussian line.
+Neither initialized table state, origin/control streams, a supplied group count,
+nor the temporary unary halo-length/workspace-width headers are input oracles.
+The scalar word-width counter and retained binary geometry are still inputs.
+
+Routing this batch into the actual local solver frame and consuming its owned
+origin/count/control streams remain next integration steps. Repeated-call solver
+restoration, complete setup-key reuse, seams/full-system fallback, tensor
+composition and final uniform time/live-storage bounds remain open. S4 remains
+open.
+
+Verification: the loader/sweep, unary-header constructor and initialized packed
+sweep checked at 2108.9, 1929.7 and 2098.8 MiB peak RSS. The coupling-interval
+build passed 14,960 jobs and its approved-axiom audit (3.4 GiB aggregate peak);
+`git diff --check` passed.
+
+### Executed queued halo attachment (2026-10-29)
+
+`PackedHaloSetup` separates numerical/header readiness from the local RHS
+prefix. `PackedHaloFrame` adds the actual source equation; its previous
+`hready` interface follows from these two facts. Source replacement transports
+the setup structurally through the existing injective register embeddings, and
+output initialization preserves this split contract.
+
+`takeCountedLine_exec` consumes one packed line from an arbitrary queue using
+retained row and word-width counters. It preserves symbol order, appends the
+line before the borrowed destination suffix, restores all scratch/count ports,
+and pays `rows*(12*wordWidth+9)+12`.
+
+`attachQueuedHalo_exec` derives both counters from retained binary halo length
+and precision, consumes the next halo from queue 256 into source 110, and
+retires every temporary control. `attachQueuedHalo_frame` derives precision and
+scratch readiness from `PackedHaloSetup`, proves the transferred words have the
+required physical length, and constructs the actual solver frame. The ambient
+source stays as the borrowed suffix, so the existing local solver's buffer
+release can restore it without a separate source copy. The unconsumed queue and
+all unrelated registers are preserved.
+
+This establishes an executed queue-to-frame bridge. Composing it with the real
+local core execution, connecting generated gathering to this queue placement,
+full repeated-call runtime restoration, complete setup-key reuse, seams,
+tensor composition and uniform final resource bounds remain open. S4 remains
+open.
+
+Verification: the source-independent input, source transport and executed
+queue-to-frame bridge checked at 3222.3, 3225.5 and 3232.0 MiB peak RSS. Explicit
+builds of every accumulated changed Lean module passed: 15,135 jobs for the
+foundational dependency closure and 15,443 jobs for the remaining modules,
+including the approved core-setup, packed-coupling and coupling-interval axiom
+audits. The guarded aggregate peaks were 37.3 and 35.0 GiB. New-file trailing
+whitespace was removed before committing; staged whitespace checks passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
