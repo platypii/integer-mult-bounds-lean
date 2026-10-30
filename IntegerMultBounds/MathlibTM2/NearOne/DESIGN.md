@@ -397,11 +397,28 @@ for disposal, `8*V+6` for reassembly, and normalization of the additional two
 `V`-symbol planes. The router checks near 2.96 GiB, and its separate
 `PhaseCellPackedReplicaKeyRouterCheck` audits the entire composition. The paired
 layout and zip laws are structural over arbitrary symbolic dimensions. The
-symbol counter, binary interchange headers, private-bank placement and balanced
-dyadic dimensions are still initial conditions. Generating them, padding
-nondyadic movement groups, proving the selected routing/peak-stock bounds, and
-connecting the router to the generated gather and numerical key batches remain
-open. The data module checks near 0.82 GiB and the execution module near
+binary interchange headers, private-bank placement and balanced dyadic dimensions
+are still initial conditions.
+
+`PhaseCellCountedPackedReplicaKeyRouter` removes the supplied symbol-counter
+assumption. It scans the actual owned pair payload once with `ucopy`, routes it
+through the complete codec/interchange lifecycle and restores the initially
+blank counter. The counter is outside the placed interchange bank, so the bank's
+normalization volume is unchanged; preparation adds exactly `4*V+4` steps.
+Only the payload changes in the resulting register file. The endpoint checks
+near 2.94 GiB with default proof limits.
+
+`PhaseCellCanonicalUnaryHeader` reuses the existing halving-based `unaryBinary`
+converter, adds the tape machine's separator and proves the emitted
+`binBits (Nat.size n) n` have value `n` and are canonical, including zero. Its
+structural binary-recursion lemmas identify the converter output with `Nat.bits`.
+The program preserves the borrowed unary dimension and restores scratch in at
+most `21*n+11` steps. This is one actual header-field generator, not a premise
+asserting that some chosen bits are canonical. It checks near 1.93 GiB and has a
+separate `PhaseCellReplicaKeyHeadersCheck` axiom audit. Composing the five header
+fields with routing, padding nondyadic movement groups, proving the selected
+routing/peak-stock bounds, and connecting the router to the generated gather and
+numerical key batches remain open. The data module checks near 0.82 GiB and the execution module near
 2.52 GiB. A separate `PhaseCellReplicaKeyInterchangeCheck` audits this supplier
 without joining its import closure to the numerical coupling audit.
 
