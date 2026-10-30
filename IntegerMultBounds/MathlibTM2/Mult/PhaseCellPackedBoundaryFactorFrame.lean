@@ -72,4 +72,14 @@ theorem PackedBoundaryFactorPages.of_solution_frame {A : ℕ}
   · rw [he]; simpa using h.upper
   · rw [he]; simpa using h.reciprocal
 
+theorem PackedBoundaryFactorPages.publish {A : ℕ} {bo hf df : List (Fin (A+4))}
+    {S : Stacks 242 A} (h : PackedBoundaryFactorPages bo hf df S)
+    (output : List (Fin (A+4))) :
+    PackedBoundaryFactorPages bo hf df
+      {S with R := Function.update (Function.update S.R 143 []) 238 (output++S.R 238)} := by
+  apply h.of_solution_frame
+  intro k hk hne
+  have h143 : k ≠ 143 := by intro he; subst k; omega
+  simp [h143,hne]
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

@@ -107,6 +107,9 @@ theorem packedHaloBoundarySolveUsing_exec (freshGeometry : Bool) (hR : rpStates 
         (1/(8*(p : ℝ))-(B.card : ℝ)*(1/(2 : ℝ)^bits)) (2+(B.card : ℝ)*(1/(2 : ℝ)^bits)) ∧
       BoundarySolveReady (boundaryFactorState (embStk preparedBoundaryCoreReg
         (embStk packedBoundaryFactorReg F))) q w W B.card ∧
+      PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
+        (cstream A w (Uc.map colC).flatten)
+        (cstream A w (rcs.map fun z => (⟨z,0⟩ : GaussianInt))) F ∧
       F.R 143 = [] ∧ F.R 238 = cstream A w ys++S.R 238 ∧ F.R 93 = S.R 93 ∧
       F.R 132 = cstream A w (packedInterval a (b-a) D)++outputTail ∧
       F.R 110 = cstream A w (packedInterval a (b-a)
@@ -168,6 +171,7 @@ theorem packedHaloBoundarySolveUsing_exec (freshGeometry : Bool) (hR : rpStates 
   let F : Stacks 242 A := {S₁ with R := (Function.update (Function.update S₁.R 143 []) 238 (output++S₁.R 238))}
   have hbankFinal := (PackedPreparedBank.mk hsolve hwork).publish output
   have hreadyFinal := hbankFinal.ready
+  have hpagesFinal := (PackedBoundaryFactorPages.mk hbo hhf hdf).publish output
   have hmetaFinal : CouplingIntervalMetadata V s t (PhaseCellBand.width p u) a b a (b-a)
       (embStk packedHaloRuntimeReg F) := by
     constructor
@@ -211,7 +215,7 @@ theorem packedHaloBoundarySolveUsing_exec (freshGeometry : Bool) (hR : rpStates 
         show i.val ≠ 140 by omega,show i.val ≠ 143 by omega,
         show i.val ≠ 206 from fun he => hn (Fin.ext he),show ¬ i.val < 154 by omega,
         show i.val+14 ≠ 143 by omega,show i.val+14 ≠ 238 by omega]),
-    hlen,hformat,hcolumns,hstage,hreadyFinal,?_,?_,?_,?_,?_,?_,?_,?_,hmetaFinal,hbankFinal.workspace,(by simpa [F] using hboundaryCount),(by simpa [F] using hboundaryMask),?_,hcouplingFinal,(by simpa [F] using hstageMaster),(by simpa [F] using hlevelMaster),?_,hDnorm,hDfits,haccuracy,hformatSol.1,hformatSol.2.1,?_⟩
+    hlen,hformat,hcolumns,hstage,hreadyFinal,hpagesFinal,?_,?_,?_,?_,?_,?_,?_,?_,hmetaFinal,hbankFinal.workspace,(by simpa [F] using hboundaryCount),(by simpa [F] using hboundaryMask),?_,hcouplingFinal,(by simpa [F] using hstageMaster),(by simpa [F] using hlevelMaster),?_,hDnorm,hDfits,haccuracy,hformatSol.1,hformatSol.2.1,?_⟩
   · simp [F]
   · simp [F,output,ys,rows,h238]
     rfl
@@ -317,6 +321,9 @@ theorem packedHaloBoundarySolve_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
         (1/(8*(p : ℝ))-(B.card : ℝ)*(1/(2 : ℝ)^bits)) (2+(B.card : ℝ)*(1/(2 : ℝ)^bits)) ∧
       BoundarySolveReady (boundaryFactorState (embStk preparedBoundaryCoreReg
         (embStk packedBoundaryFactorReg F))) q w W B.card ∧
+      PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
+        (cstream A w (Uc.map colC).flatten)
+        (cstream A w (rcs.map fun z => (⟨z,0⟩ : GaussianInt))) F ∧
       F.R 143 = [] ∧ F.R 238 = cstream A w ys++S.R 238 ∧ F.R 93 = S.R 93 ∧
       F.R 132 = cstream A w (packedInterval a (b-a) D)++outputTail ∧
       F.R 110 = cstream A w (packedInterval a (b-a)

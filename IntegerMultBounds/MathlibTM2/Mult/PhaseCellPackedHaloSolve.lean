@@ -142,7 +142,7 @@ theorem packedHaloSolveUsing_spec (freshGeometry : Bool) (hR : rpStates ≤ Q) (
     (haloInterior s t band a b) (1/(8*(p : ℝ))) (by positivity)
     (SchurDominance.dominates_mono _ Finset.univ _ _ (Finset.subset_univ _) hdom)
     (fun i => (value (executionPrecision p l (boundaryHaloTarget p u targetB rhsExp B.card) rhsExp) (C i)).re)
-  obtain ⟨v₁,F₁,n₁,columns,D₁,hu₁,hn₁,he₁,hinputFrame,houtputFrame,hrawTable,hstock,hlen,hformat,hcolumns,hstage,hsolve,h143,hsolution,h93,
+  obtain ⟨v₁,F₁,n₁,columns,D₁,hu₁,hn₁,he₁,hinputFrame,houtputFrame,hrawTable,hstock,hlen,hformat,hcolumns,hstage,hsolve,hfactorPages,h143,hsolution,h93,
     houtput₁,hsource,hpage,hcount,hrows,hmeta,hwork,hboundaryCount,hmask,hnative,hheaders,
     hstageMaster,hlevel,hclean,hDnorm,hDfits,herror,hylen,hyfits,hsemantic⟩ :=
     packedHaloBoundarySolveUsing_exec (body := body) freshGeometry hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
