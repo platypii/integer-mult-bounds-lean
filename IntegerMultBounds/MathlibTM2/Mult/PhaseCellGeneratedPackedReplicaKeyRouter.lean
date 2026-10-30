@@ -2,7 +2,8 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedPackedReplicaKeyRouter
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyHeaders
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyRoutingBill
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBankVolume
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyRoutingCost
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -51,17 +52,12 @@ theorem generatedPackedReplicaKeyRouter_exec {t₀ T Q K : ℕ} {U P : Type}
     (hblank : ∀ i ∈ [ι (reg re),ι (reg im),tmp,saved,reRev,imRev], S.R i = [])
     (hother : ∀ i, i ≠ re → i ≠ im → (∀ k, hd k ≠ i) →
       ∀ s ∈ S.R (ι (reg i)), s ≠ blank ∧ s.val < prime+4) :
-    let dst := fun k => ι (reg (hd k))
-    let R := canonicalHeaderListR (fun i => (S.R i).length) (replicaKeyHeaderFields dims dst) S.R
-    let hs := replicaKeyHeaderBits W h d
     ∃ v' m, v'.user = v.user ∧
-      m ≤ (21*(W+h+d+2)+56) +
-        packedReplicaKeyRoutingCost T t₀ W h d (∑ j, (R (ι j)).length) hs +
-        (2*((List.ofFn fun k => (separator::(hs k).map (bitSymbol (a := prime+K)))).map List.length).sum+11) ∧
+      m ≤ generatedPackedReplicaKeyRoutingCost T t₀ W h d (∑ j, (S.R (ι j)).length) ∧
       Exec body (generatedPackedReplicaKeyRouter hd re im hi hQre hQim ι hι hT dims a half par bits cnt work src tmp saved count reRev imRev)
         (mk v S) m (mk v' {S with L := fun _ => [], R := (Function.update S.R src
           (keyReplicaWords (fun r k b => pairSym (prime+K) (realBits r k b) (imagBits r k b))))}) := by
-  dsimp only
+  dsimp only [generatedPackedReplicaKeyRoutingCost]
   let dst := fun k => ι (reg (hd k))
   have hdst : Function.Injective dst := fun i j he => hi (BinaryInterchangeRun.slot_injective (hι he))
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁,hheaders,hoff,hv,hc⟩ := replicaKeyHeaders_exec
@@ -99,6 +95,19 @@ theorem generatedPackedReplicaKeyRouter_exec {t₀ T Q K : ℕ} {U P : Type}
       · exact hother i hire hiim hheads x hx
       · intro k he
         exact hheads k (BinaryInterchangeRun.slot_injective (hι he)))
+  have hstock : (∑ j, (M.R (ι j)).length) =
+      (∑ j, (S.R (ι j)).length)+replicaKeyHeaderVolume W h d := by
+    have hh := bank_volume_of_frame (fun k => reg (hd k))
+      (fun i j he => hi (BinaryInterchangeRun.slot_injective he))
+      (fun j => S.R (ι j)) (fun j => M.R (ι j))
+      (fun k => separator::(replicaKeyHeaderBits W h d k).map (bitSymbol (a := prime+K)))
+      hhdr hheaders (by
+        intro j hj
+        apply hframe
+        intro k he
+        exact hj k (hι he))
+    simpa only [List.length_cons,List.length_map,replicaKeyHeaderVolume,List.sum_ofFn] using hh
+  rw [hstock] at hn₂
   let payload := keyReplicaWords (fun r k b => pairSym (prime+K) (realBits r k b) (imagBits r k b))
   let F : Stacks T (prime+K) := {M with L := fun _ => [], R := Function.update M.R src payload}
   have hsrcOff (k : Fin 5) : dst k ≠ src := hheadOff k src (by simp)
@@ -106,9 +115,8 @@ theorem generatedPackedReplicaKeyRouter_exec {t₀ T Q K : ℕ} {U P : Type}
     rw [show F.R (dst k) = M.R (dst k) from Function.update_of_ne (hsrcOff k) _ _]
     exact hheaders k
   obtain ⟨v₃,hu₃,he₃⟩ := clearWords_exec (body := body) (List.ofFn dst) (List.nodup_ofFn_ofInjective hdst) v₂ F
-  have hcost : ((List.ofFn dst).map (fun i => (F.R i).length)).sum =
-      ((List.ofFn fun k => (separator::(replicaKeyHeaderBits W h d k).map (bitSymbol (a := prime+K)))).map List.length).sum := by
-    simp only [List.map_ofFn,Function.comp_def,hfinalHeader]
+  have hcost : ((List.ofFn dst).map (fun i => (F.R i).length)).sum = replicaKeyHeaderVolume W h d := by
+    simp only [List.map_ofFn,Function.comp_def,hfinalHeader,List.length_cons,List.length_map,replicaKeyHeaderVolume]
   have hlength : (List.ofFn dst).length = 5 := List.length_ofFn
   refine ⟨v₃,n₁+n₂+(2*((List.ofFn dst).map (fun i => (F.R i).length)).sum+2*(List.ofFn dst).length+1),
     hu₃.trans (hu₂.trans hu₁),?_,?_⟩

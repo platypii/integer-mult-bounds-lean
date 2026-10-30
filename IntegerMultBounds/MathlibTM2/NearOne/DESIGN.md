@@ -439,7 +439,14 @@ headers, the actual counted packed router and structural header erasure. It
 starts with blank headers and derives values/canonicity from borrowed unary
 dimensions; only the packed payload changes at the endpoint. Its bill charges
 header generation, the router's actual intermediate bank volume (including
-the generated headers), and erasure of all five actual header words. It checks
+the generated headers), and erasure of all five actual header words. `PhaseCellBankVolume.bank_volume_of_frame`
+now proves the bank increase exactly once for arbitrary distinct slots. The
+executed endpoint uses `generatedPackedReplicaKeyRoutingCost`, measured from
+the initial bank stock, rather than an intermediate register file. Its uniform
+bound includes `14*replicaKeyHeaderVolume` (twelve normalization passes plus two
+erasure passes), `21*(W+h+d+2)` for conversion, and the original compact-volume
+interchange bound, with fixed overhead explicit. The expanded axiom audit
+checks both this bound and the generic volume identity. It checks
 near 2.94 GiB with default limits. This closes the generated-header lifecycle
 for balanced dyadic routing. Padding nondyadic movement groups, proving the selected
 routing/peak-stock bounds, and connecting the router to the generated gather and

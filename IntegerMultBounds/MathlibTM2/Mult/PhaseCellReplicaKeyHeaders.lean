@@ -15,6 +15,10 @@ def replicaKeyHeaderFields {T : ℕ} (src dst : Fin 5 → Fin T) : List (Fin T �
 def replicaKeyHeaderBits (W h d : ℕ) (i : Fin 5) : List Bool :=
   binBits (Nat.size (swapValues 1 1 W h d i)) (swapValues 1 1 W h d i)
 
+/-- Total physical length of the five generated binary headers, separators included. -/
+def replicaKeyHeaderVolume (W h d : ℕ) : ℕ :=
+  (List.ofFn fun k : Fin 5 => (replicaKeyHeaderBits W h d k).length+1).sum
+
 def replicaKeyHeaders {T Q A : ℕ} {P U : Type} (src dst : Fin 5 → Fin T)
     (a half par bits cnt saved : Fin T) : Pr P T Q A U :=
   canonicalHeaderList a half par bits cnt saved (replicaKeyHeaderFields src dst)
