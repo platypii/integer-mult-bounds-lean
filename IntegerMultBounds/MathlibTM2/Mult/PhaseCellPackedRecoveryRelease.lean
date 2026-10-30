@@ -2,6 +2,8 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseCouplingCoefficientPage
 public import IntegerMultBounds.MathlibTM2.Host.EmbedUpdate
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundarySolveWorkspace
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryRecoveryUnfold
 
 /-! Reuse the coefficient-page disposer with recovery's retained word-width header. -/
 
@@ -27,6 +29,34 @@ def packedRecoveryRelease : Pr P 248 Q A U :=
 
 def packedRecoveryReleaseCost (N rows w : ℕ) : ℕ :=
   releaseCouplingCoefficientPageCost N rows w
+
+/-- Disposing of the per-input coefficient page preserves the shared numerical
+bank. Its three owned headers are outside every factor and arithmetic role. -/
+theorem packedRecoveryRelease_preparedBank {q w W N : ℕ} (S : Stacks 248 A)
+    (tail : List (Fin (A+4)))
+    (h : PackedPreparedBank q w W N (embStk packedBoundaryRecoveryBase S)) :
+    PackedPreparedBank q w W N (embStk packedBoundaryRecoveryBase
+      {S with R := Function.update (Function.update (Function.update S.R 138 tail) 139 []) 140 []}) := by
+  apply h.of_recovery_frame
+  · rfl
+  · intro i
+    have hi := i.isLt
+    have hm := h.workspace.mul i
+    simpa [embStk,packedBoundaryRecoveryBase,preparedBoundaryCoreReg,
+      packedBoundaryFactorReg,boundaryFactorMulReg,Fin.ext_iff,
+      show i.val ≠ 140 by omega,show i.val ≠ 143 by omega,
+      show i.val ≠ 206 by omega,show i.val < 154 by omega,
+      show i.val ≠ 138 by omega,show i.val ≠ 139 by omega] using hm
+  · rfl
+  · intro k hk hne
+    have h138 : packedBoundaryRecoveryBase k ≠ 138 := by
+      intro he; have hv := congrArg Fin.val he; change k.val = 138 at hv; omega
+    have h139 : packedBoundaryRecoveryBase k ≠ 139 := by
+      intro he; have hv := congrArg Fin.val he; change k.val = 139 at hv; omega
+    have h140 : packedBoundaryRecoveryBase k ≠ 140 := by
+      intro he; have hv := congrArg Fin.val he; change k.val = 140 at hv; omega
+    simp only [embStk,Function.comp_def,Function.update_of_ne h138,
+      Function.update_of_ne h139,Function.update_of_ne h140]
 
 theorem packedRecoveryRelease_exec (w rows : ℕ) (xs : List GaussianInt)
     (tail : List (Fin (A+4))) (v : HS 248 Q A U) (S : Stacks 248 A)
