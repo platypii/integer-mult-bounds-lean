@@ -112,6 +112,31 @@ theorem PackedHaloInputTrace.split {X : Type}
       obtain ⟨M,hprefix,hsuffix⟩ := ih ht
       exact ⟨M,.cons hx hprefix,hsuffix⟩
 
+/-- Thread a suffix-indexed readiness predicate along a physical trace.
+The transition premise must come from execution; numerical accuracy alone does
+not establish readiness of intermediate stores. -/
+theorem PackedHaloInputTrace.ready {X : Type}
+    {Result : X → Stacks 248 A → Stacks 248 A → Prop}
+    (Ready : List X → Stacks 248 A → Prop)
+    (hstep : ∀ x xs S F, Result x S F → Ready (x::xs) S → Ready xs F)
+    {xs ys : List X} {S F : Stacks 248 A}
+    (h : PackedHaloInputTrace Result xs S F) (hready : Ready (xs++ys) S) :
+    Ready ys F := by
+  induction h with
+  | nil => exact hready
+  | cons hx ht ih => exact ih (hstep _ _ _ _ hx hready)
+
+theorem PackedHaloInputTrace.ready_prefix {X : Type}
+    {Result : X → Stacks 248 A → Stacks 248 A → Prop}
+    (Ready : List X → Stacks 248 A → Prop)
+    (hstep : ∀ x xs S F, Result x S F → Ready (x::xs) S → Ready xs F)
+    (xs ys : List X) {S F : Stacks 248 A}
+    (h : PackedHaloInputTrace Result (xs++ys) S F) (hready : Ready (xs++ys) S) :
+    ∃ M, PackedHaloInputTrace Result xs S M ∧ Ready ys M ∧
+      PackedHaloInputTrace Result ys M F := by
+  obtain ⟨M,hprefix,hsuffix⟩ := h.split xs ys
+  exact ⟨M,hprefix,hprefix.ready Ready hstep hready,hsuffix⟩
+
 /-- Any observation restored by each numerical input is restored by the batch.
 Use a tuple observation to carry the host frame and retained registers together. -/
 theorem PackedHaloInputTrace.frame {X Y : Type}
