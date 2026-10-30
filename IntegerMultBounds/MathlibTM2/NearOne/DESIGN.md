@@ -2372,6 +2372,30 @@ Verification: guarded checks peaked at 1967.7 MiB for the generic sweep bound
 and 2119.7 MiB for its concrete placement. The 14,976-job integration build
 and approved-axiom audit passed.
 
+### Structural binary translation for retained halo endpoints (2026-10-29)
+
+`translateBinaryWords_exec` proves one structural execution theorem over an
+arbitrary list of distinct binary words, with a shared encoded displacement.
+The existing binary adder updates each target once, preserves the displacement
+and restores the three shared scratch stacks. Nonoverflow bounds discharge the
+modular arithmetic, and a structural `writeRight` list describes the exact
+poststate. Its exact time is `count*(8*V+8)+1`.
+
+`translateHaloEndpoints_exec` instantiates that language for physical words
+149,151,156,164 on the generated-core ABI. Given the movement `y-x` on 104, it
+translates the old lower/upper/interval-end/extended-end words to the new ones in
+exactly `32*V+33` steps. All other stacks, including the already installed origin
+155 and retained ambient geometry, stay unchanged. This avoids rebuilding unary
+ambient dimensions and avoids four independent arithmetic proofs.
+
+The displacement must still be computed from retained old/new origins and
+cleared after this operation. That composition, the full metadata invariant,
+next-call workspace readiness, setup reuse and the full generated loop remain
+open along with the other global S4 obligations.
+Verification: guarded checks peaked at 1404.0 MiB for the generic translator
+and 1395.8 MiB for the endpoint instance. The 14,978-job integration build
+and approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
