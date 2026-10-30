@@ -97,7 +97,9 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
       (∀ k : Fin 248, 242 ≤ k.val → F.L k = [] ∧ F.R k = []) ∧
       PackedHaloRetainedHeaders (2^15*p) (executionStagePrecision p l target rhsExp+1)
         q l s t u band a b V 0 (embStk packedRecoveryRuntimeReg F) ∧
-      F.R 127 = [] ∧ F.R 143 = [] ∧ F.R 158 = [] ∧ F.R 167 = [] := by
+      F.R 127 = [] ∧ F.R 143 = [] ∧ F.R 158 = [] ∧ F.R 167 = [] ∧
+      (∀ k ∈ ([129,131,133,134,135,136,153,166] : List (Fin 248)), F.R k = []) ∧
+      F.R 125 = [] ∧ F.R 128 = [] := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages hboundary y hy hcoeff
   let band := PhaseCellBand.width p u
@@ -106,7 +108,7 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   let W := 12*band+1
-  obtain ⟨v₁,F,n₁,D,hu₁,hn₁,he₁,hout,herror,hbank₁,hrelease,hnative₁,hprivate₁,hfactorCarry,hheadersFinal,h127Recovery,h143Recovery,h158Recovery,h167Recovery⟩ :=
+  obtain ⟨v₁,F,n₁,D,hu₁,hn₁,he₁,hout,herror,hbank₁,hrelease,hnative₁,hprivate₁,hfactorCarry,hheadersFinal,h127Recovery,h143Recovery,h158Recovery,h167Recovery,hscratchRecovery,h125Recovery,h128Recovery⟩ :=
     packedHaloPreparedRecovery_exec (body := body) (body' := body') hbody hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail
       v S hnative hmasters ha hb' hmeta h157 houtput hE hfresh haLt hfitV h139 h143 hleft
@@ -119,7 +121,7 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
   change n₁ ≤ packedHaloPreparedBoundaryCost p u l target boundaryTarget rhsExp s t a b V+
     packedBoundaryRecoveryCost p u l finalTarget rhsExp s t a b V q w at hn₁
   have h132 := packedPreparedInputReleased_frame F tail 132 (by decide)
-  refine ⟨v₂,packedPreparedInputReleased F tail,n₁+n₂,D,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,?_,hbank₂,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,packedPreparedInputReleased F tail,n₁+n₂,D,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,?_,hbank₂,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · have hn := Nat.add_le_add hn₁ hn₂
     dsimp only [packedHaloPreparedInputCost]
     rw [← hboundary]
@@ -162,5 +164,13 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
   · rw [packedPreparedInputReleased_frame F tail 143 (by decide)]; exact h143Recovery
   · rw [packedPreparedInputReleased_frame F tail 158 (by decide)]; exact h158Recovery
   · rw [packedPreparedInputReleased_frame F tail 167 (by decide)]; exact h167Recovery
+  · intro k hk
+    have hnot : k ∉ ([110,130,138,139,140] : List (Fin 248)) := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+    rw [packedPreparedInputReleased_frame F tail k hnot]
+    exact hscratchRecovery k hk
+  · rw [packedPreparedInputReleased_frame F tail 125 (by decide)]; exact h125Recovery
+  · rw [packedPreparedInputReleased_frame F tail 128 (by decide)]; exact h128Recovery
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

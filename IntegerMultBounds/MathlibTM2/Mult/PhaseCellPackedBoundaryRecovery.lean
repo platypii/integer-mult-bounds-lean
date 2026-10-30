@@ -105,7 +105,8 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       (∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k) ∧
       (∀ bo hf df, PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase S) →
         PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) ∧
-      F.R 127 = [] ∧ F.R 143 = [] ∧ F.R 158 = [] ∧ F.R 167 = [] := by
+      F.R 127 = [] ∧ F.R 143 = [] ∧ F.R 158 = [] ∧ F.R 167 = [] ∧
+      (∀ k ∈ ([129,131,133,134,135,136,153,166] : List (Fin 248)), F.R k = []) := by
   let band := PhaseCellBand.width p u
   let B := haloBoundary s t band a b
   let solveTarget := boundaryRecoveryTarget p target
@@ -182,7 +183,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
   have hprefix : embStk packedBoundaryRecoveryBase (releasedPackedRecoveryHeaders F) =
       embStk packedBoundaryRecoveryBase F := releasedPackedRecoveryHeaders_prefix F
   refine ⟨v₃,releasedPackedRecoveryHeaders F,n+n₃,D,hu₃.trans hu₂,?_,
-    Exec.seq he₂ he₃,?_,?_,?_,hi,ho,?_,hDfits,?_,?_,?_,hleft,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+    Exec.seq he₂ he₃,?_,?_,?_,hi,ho,?_,hDfits,?_,?_,?_,hleft,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · exact Nat.add_le_add (hn₂.trans (Nat.add_le_add_right hn₁ _)) hn₃
   · exact (releasedPackedRecoveryHeaders_low F 93 (by decide)).trans h93
   · exact (releasedPackedRecoveryHeaders_low F 139 (by decide)).trans h139'
@@ -234,5 +235,40 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
   · rw [releasedPackedRecoveryHeaders_low F 143 (by decide)]; exact h143Final.trans h143
   · rw [releasedPackedRecoveryHeaders_low F 158 (by decide)]; exact h158Final.trans (hclean 158 (by decide))
   · rw [releasedPackedRecoveryHeaders_low F 167 (by decide)]; exact h167Final
+  · intro k hk
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · rw [releasedPackedRecoveryHeaders_low F 129 (by decide)]
+      have hh := hrdy.fresh 129 (by decide)
+      simpa [embStk,Function.comp_def,packedRecoveryInteriorReg,packedRecoveryInteriorPerm,
+        Equiv.swap_apply_def] using hh
+    · rw [releasedPackedRecoveryHeaders_low F 131 (by decide)]
+      have hh := hrdy.fresh 131 (by decide)
+      simpa [embStk,Function.comp_def,packedRecoveryInteriorReg,packedRecoveryInteriorPerm,
+        Equiv.swap_apply_def] using hh
+    · rw [releasedPackedRecoveryHeaders_low F 133 (by decide)]
+      have hh := hrdy.fresh 133 (by decide)
+      simpa [embStk,Function.comp_def,packedRecoveryInteriorReg,packedRecoveryInteriorPerm,
+        Equiv.swap_apply_def] using hh
+    · rw [releasedPackedRecoveryHeaders_low F 134 (by decide)]
+      have hh := hrdy.fresh 134 (by decide)
+      simpa [embStk,Function.comp_def,packedRecoveryInteriorReg,packedRecoveryInteriorPerm,
+        Equiv.swap_apply_def] using hh
+    · rw [releasedPackedRecoveryHeaders_low F 135 (by decide)]
+      have hh := hrdy.fresh 135 (by decide)
+      simpa [embStk,Function.comp_def,packedRecoveryInteriorReg,packedRecoveryInteriorPerm,
+        Equiv.swap_apply_def] using hh
+    · rw [releasedPackedRecoveryHeaders_low F 136 (by decide)]
+      have hh := hrdy.fresh 136 (by decide)
+      simpa [embStk,Function.comp_def,packedRecoveryInteriorReg,packedRecoveryInteriorPerm,
+        Equiv.swap_apply_def] using hh
+    · rw [releasedPackedRecoveryHeaders_low F 153 (by decide)]
+      have hh := hrdy.fresh 153 (by decide)
+      simpa [embStk,Function.comp_def,packedRecoveryInteriorReg,packedRecoveryInteriorPerm,
+        Equiv.swap_apply_def] using hh
+    · rw [releasedPackedRecoveryHeaders_low F 166 (by decide)]
+      have hh := hrdy.fresh 166 (by decide)
+      simpa [embStk,Function.comp_def,packedRecoveryInteriorReg,packedRecoveryInteriorPerm,
+        Equiv.swap_apply_def] using hh
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

@@ -54,6 +54,15 @@ def PackedHaloProducedData {A : ℕ} (p l s t u target rhsExp a b V q w : ℕ) [
   (embStk packedHaloRuntimeReg F).L = (embStk packedHaloRuntimeReg S).L ∧
   (embStk packedHaloRuntimeReg F).R 125 = [] ∧ (embStk packedHaloRuntimeReg F).R 128 = [] )
 
+theorem PackedHaloProducedData.keys {A p l s t u target rhsExp a b V q w : ℕ}
+    [NeZero s] {C D : ZMod s → GaussianInt} {x : ZMod s → ℝ}
+    {tail outputTail : List (Fin (A+4))} {S F : Stacks 242 A}
+    (h : PackedHaloProducedData p l s t u target rhsExp a b V q w C D x tail outputTail S F) :
+    F.R 125 = [] ∧ F.R 128 = [] := by
+  rcases h with ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
+    hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleft,hkeys⟩
+  simpa [embStk,packedHaloRuntimeReg] using hkeys
+
 /-- Per-input buffers consumed by packed boundary recovery. -/
 structure PackedHaloRecoveryBuffers {A : ℕ} (p s t u a b q w : ℕ) [NeZero s]
     (C D : ZMod s → GaussianInt) (tail outputTail : List (Fin (A+4))) (F : Stacks 242 A) : Prop where
