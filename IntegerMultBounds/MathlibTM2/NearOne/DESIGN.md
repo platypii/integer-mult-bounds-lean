@@ -5846,6 +5846,30 @@ bank remains an initial premise; its installation, scalar disposal and sequencin
 with the packed numerical/complex/normalized batch remain open, as do selected
 resource bounds and global schedule execution. S4 is incomplete.
 
+### S4 restored scalar setup/normalize/publish/release execution (2026-10-30)
+
+`PhaseCellReleaseRoundScalars.releaseRoundScalars_exec` runs the concrete scalar
+erasure program and restores the exact initial encoded scalar bank, while
+retaining a published source update. Its frame proof distinguishes membership
+in the arbitrary scalar register map structurally; it does not enumerate the
+machine bank. The erasure charge is `17*tblC B 0`.
+`PhaseCellPreparedNormalizePackedBatch.preparedNormalizePackedBatch_exec` now
+sequences actual scalar preparation, counted local rounding/common publication
+and that erasure. The initial scalar bank contains the eight ordinary inverse
+inputs and zero private variables. Rounding parameters, their fits and the
+intermediate normalization state are execution results, not caller premises.
+The final bank equals the original bank with only the local output prefix
+updated; all scalar values, accumulator, borrowed dimensions, scratch and later
+key suffix restore. The same returned field list has the proved common-width
+normalized accuracy and unchanged replica count.
+The bill charges scalar setup and release once per key plus the existing local
+batch normalization bill. In particular, the boundary-count setup pass is not
+multiplied by replica count. The scalar axiom audit passes, and the composed
+module checks near 3.2 GiB under default proof limits. Installation of the initial
+ordinary scalar bank and retained core/input-row dimensions still need execution
+at the concrete numerical/complex caller. That integration, selected time/stock
+and the full global schedule remain open. S4 is incomplete.
+
 ### S4 local normalization preserves later keys (2026-10-30)
 
 `PhaseCellPackedRoundAccuracy.packedIntervalRead_finalRound` identifies the

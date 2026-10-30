@@ -1,11 +1,13 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareRoundScalars
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedNormalizePackedBatch
 
 /-! Audit scalar-only preparation and its agreement with the packed solver. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.releaseRoundScalars_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.preparedNormalizePackedBatch_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.prepareRoundScalars_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedRound_precision,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedRound_dimensions,
