@@ -3,12 +3,17 @@ module
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedWorkspace
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedPublication
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPackedInteriorCost
-import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPackedPreparedCost
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedPreparedCost
 
 /-! Audit selected resource comparisons for the actual packed caller. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Cost.PackedHaloPassEnvelope.of_bounds,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPackedHaloPassEnvelope,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPackedPreparedPassEnvelopes,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPackedPreparedInputCost_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPackedPreparedInputCost_scaled_volume_le,
       `IntegerMultBounds.MathlibTM2.Cost.packedBoundaryDataCost_poly,
       `IntegerMultBounds.MathlibTM2.Cost.packedHaloInputTapeCost_poly,
       `IntegerMultBounds.MathlibTM2.Cost.packedHaloPreparedInputCost_le_stages,
