@@ -212,29 +212,22 @@ theorem packedHaloBoundarySetupUsing_exec (freshGeometry : Bool) (hR : rpStates 
   · exact hpages.upper
   · exact hpages.reciprocal
 
-  · refine ⟨?_,?_,?_,?_,?_,?_,?_,?_⟩
-    · intro i
-      exact (congrFun hleftFinal _).trans (hleft' i)
+  · apply (hbankCarry _ _ _ _ ⟨hsolve,?_⟩).workspace
+    constructor
+    · exact hleft'
     · intro i
       have hi := i.isLt
-      have hh := congrArg (fun N : Stacks 117 A => N.R ⟨i.val,by omega⟩) hproj
-      simpa [embStk,packedHaloRuntimeReg,packedCellCoreReg,countedReleasedCellBank,releasedCellBank,
-        preparedBoundaryCoreReg,packedBoundaryFactorReg,boundaryFactorMulReg,Fin.ext_iff,
-        show i.val ≠ 93 by omega,show i.val ≠ 110 by omega,show i.val ≠ 116 by omega,
-        show i.val ≠ 140 by omega,show i.val ≠ 143 by omega,show i.val ≠ 206 by omega,
-        show i.val < 154 by omega] using hh
-    · have h119 : F.R 119 = S₁.R 119 := (hframe 119 (by decide) (by decide) (by decide)).2
-      simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def,h119] using hmaster
-    · have hh := (hhigh 237 (by decide)).2
-      simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def,hh] using h223
-    · have hh := (hhigh 198 (by decide)).2
-      simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def,hh] using h184
-    · have hh := (hhigh 234 (by decide)).2
-      simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def,hh] using h220
-    · have hh := (hhigh 235 (by decide)).2
-      simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def,hh] using h221
-    · have hh := (hhigh 239 (by decide)).2
-      simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def,hh,h239] using h225
+      simpa [embStk,preparedBoundaryCoreReg,packedBoundaryFactorReg,packedBoundaryTableRouting,
+        Equiv.swap_apply_def,boundaryFactorMulReg,Fin.ext_iff,
+        show i.val ≠ 140 by omega,show i.val ≠ 143 by omega,
+        show i.val ≠ 206 by omega,show i.val < 154 by omega,
+        show i.val ≠ 220 by omega,show i.val ≠ 241 by omega,show i.val ≠ 132 by omega] using hmul i
+    · simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def] using hmaster
+    · simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def] using h223
+    · simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def] using h184
+    · simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def] using h220
+    · simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def] using h221
+    · simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def,h239] using h225
 
   · simpa [embStk,packedHaloRuntimeReg] using hcount
   · simpa [embStk,packedHaloRuntimeReg] using hmask
