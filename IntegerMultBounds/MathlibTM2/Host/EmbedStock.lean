@@ -78,6 +78,32 @@ theorem embOvr_stock_le (he : Function.Injective e)
     mnSize (mk w B)+mnSize (mk v S) at hbalance
   omega
 
+/-- A projected stock bound applies to a physical bank with the same
+spectator stacks; callers need not manufacture an overwrite expression. -/
+theorem projected_stock_le (he : Function.Injective e)
+    (w : HS T' Q A U) (F B : Stacks T' A) (budget : ℕ)
+    (hframe : ∀ j, (∀ i, e i ≠ j) → F.L j = B.L j ∧ F.R j = B.R j)
+    (hstock : mnSize (mk (embDn e w) (embStk e F)) ≤
+      mnSize (mk (embDn e w) (embStk e B))+budget) :
+    mnSize (mk w F) ≤ mnSize (mk w B)+budget := by
+  classical
+  have hrestore : embOvr e (embStk e F).get B = F := by
+    refine Stacks.ext rfl rfl ?_ ?_
+    · funext j
+      by_cases hj : ∃ i, e i = j
+      · obtain ⟨i,rfl⟩ := hj
+        exact embExt_apply he _ _ i
+      · exact (embOvr_off (embStk e F).get B (by simpa using hj)).1.trans
+          (hframe j (by simpa using hj)).1.symm
+    · funext j
+      by_cases hj : ∃ i, e i = j
+      · obtain ⟨i,rfl⟩ := hj
+        exact embExt_apply he _ _ i
+      · exact (embOvr_off (embStk e F).get B (by simpa using hj)).2.trans
+          (hframe j (by simpa using hj)).2.symm
+  have hs := embOvr_stock_le e he (embDn e w) w (embStk e F) B budget hstock
+  simpa only [hrestore] using hs
+
 /-- An isolated loop counter may shrink before placing the next solver bank.
 Its storage is already paid by the surrounding initial state. -/
 theorem embOvr_stock_le_shrinking_counter (he : Function.Injective e)
