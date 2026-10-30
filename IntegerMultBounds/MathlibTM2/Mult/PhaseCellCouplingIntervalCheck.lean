@@ -428,6 +428,7 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.embStk_haloHeaderR,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.extendStacks_haloHeaderR,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareHaloHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCoreDimensions_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.gatheredHaloCore_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedOriginListHost_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedCoreCountedHost_exec,

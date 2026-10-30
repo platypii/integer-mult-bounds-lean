@@ -2226,6 +2226,31 @@ execution checked at 1956.5 and 3276.2 MiB peak RSS. The coupling-interval
 integration build passed 14,971 jobs and its approved-axiom audit (3.5 GiB
 aggregate peak); whitespace checks passed.
 
+### Executed shared group dimensions (2026-10-29)
+
+`prepareCoreDimensions_exec` constructs the unary radius and core-length
+masters from retained binary radius and halo length. It decodes each binary
+header once, then removes the two radius margins from the decoded halo count,
+restoring all scratch and both binary sources. The cost is
+`6*L+18*radius+22*V+24`.
+
+`gatheredHaloCore_spec` now executes this preparation once after generation and
+before coordinate initialization. It obtains `L = coreLength + 2*radius` from
+the generated group's membership specification. Registers 249/250 are supplied
+blank, not as initialized unary inputs; the executed output retains their exact
+tick streams after the real local solve. These shared dimensions are available
+for later group entries without reconstruction. The borrowed source,
+publication accuracy and synchronized remaining queues are unchanged.
+
+The repeated-call runtime invariant, monotone coordinate updates, full setup-key
+reuse, seams/full-system fallback, complex/tensor composition and final uniform
+bounds remain open. S4 remains open.
+
+Verification: the shared-dimension constructor and composed core execution
+checked at 1944.2 and 3290.9 MiB peak RSS. The coupling-interval integration
+build passed 14,972 jobs and its approved-axiom audit (3.5 GiB aggregate peak);
+whitespace checks passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
