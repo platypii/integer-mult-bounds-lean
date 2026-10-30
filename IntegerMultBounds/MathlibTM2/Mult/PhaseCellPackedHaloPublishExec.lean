@@ -23,11 +23,11 @@ def packedCoreBatchPublicationCost (N radius core w : ℕ) : ℕ :=
     (2*(radius*w+core*w+(core+2*radius))+7)
 
 /-- Cropping, control construction and archive retirement fit the stored halo
-volume, including the zero-replica control overhead. -/
+volume plus one, including empty halos and zero-replica control overhead. -/
 theorem packedCoreBatchPublicationCost_le_volume (N radius core w : ℕ)
-    (hw : 1 ≤ w) (hhalo : 1 ≤ core+2*radius) :
+    (hw : 1 ≤ w) :
     packedCoreBatchPublicationCost N radius core w ≤
-      100*(N+1)*((core+2*radius)*w) := by
+      100*(N+1)*((core+2*radius)*w+1) := by
   let H := core+2*radius
   have hH : H ≤ H*w := Nat.le_mul_of_pos_right H hw
   have hr : radius ≤ H := by dsimp only [H]; omega
@@ -38,16 +38,13 @@ theorem packedCoreBatchPublicationCost_le_volume (N radius core w : ℕ)
     unfold packedCoreArchiveStepCost retireCountedLineCost
     nlinarith only [hrw,hcw,hH]
   have hn := Nat.mul_le_mul_left N hs
-  have hv : 1 ≤ H*w := Nat.mul_pos hhalo hw
-  have hN : N ≤ N*(H*w) := Nat.le_mul_of_pos_right N hv
   unfold packedCoreBatchPublicationCost packedCoreArchiveControlsCost
-  change _ ≤ 100*(N+1)*(H*w)
-  nlinarith only [hn,hrw,hcw,hH,hv,hN]
+  change _ ≤ 100*(N+1)*(H*w+1)
+  nlinarith only [hn,hrw,hcw,hH,hr,hc]
 
 /-- The actual core publisher's intermediate storage is bounded by halo volume. -/
 theorem packedCorePublication_within_stock {Q A : ℕ} {P U : Type}
-    {body : P → Pr P 263 Q A U} (N radius core w : ℕ) (hw : 1 ≤ w)
-    (hhalo : 1 ≤ core+2*radius) :
+    {body : P → Pr P 263 Q A U} (N radius core w : ℕ) (hw : 1 ≤ w) :
     let pub : Pr P 263 Q A U :=
       packedCoreArchiveFromDimensions 249 250 251 248 254 255 132 253 257 258 259 256 252 260 261 262
     ∀ {v vf : HS 263 Q A U} {S F : Stacks 263 A} {n c : ℕ},
@@ -56,11 +53,11 @@ theorem packedCorePublication_within_stock {Q A : ℕ} {P U : Type}
       (∀ f, IntegerMultBounds.MathlibTM2.Fast.Main.mnProgPush (body f) ≤ c) → ∀ depth,
       ExecWithin body (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
         IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v S)+depth+
-          (c+1)*(100*(N+1)*((core+2*radius)*w))) depth pub (mk v S) n (mk vf F) := by
+          (c+1)*(100*(N+1)*((core+2*radius)*w+1))) depth pub (mk v S) n (mk vf F) := by
   intro pub v vf S F n c he hn hp hb depth
   apply IntegerMultBounds.MathlibTM2.Fast.Main.mn_exec_within he hp hb depth
   have hc := Nat.mul_le_mul_left (c+1)
-    (hn.trans (packedCoreBatchPublicationCost_le_volume N radius core w hw hhalo))
+    (hn.trans (packedCoreBatchPublicationCost_le_volume N radius core w hw))
   exact Nat.add_le_add_left hc _
 
 noncomputable def packedHaloPublishedBatch (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 263 Q A U :=
@@ -73,7 +70,7 @@ variable {body : P → Pr P 249 Q A U} {bodyLarge : P → Pr P 263 Q A U}
 persistent archive charge and the solver's shared workspace allowance. -/
 theorem packedHaloPublishedBatch_compose_within_stock
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (N radius core w : ℕ)
-    (hw : 1 ≤ w) (hhalo : 1 ≤ core+2*radius)
+    (hw : 1 ≤ w)
     {v vm vf : HS 263 Q A U} {S M F : Stacks 263 A}
     {n₁ n₂ persistent work c depth : ℕ}
     (hclosed : ExecWithin bodyLarge (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
@@ -89,11 +86,11 @@ theorem packedHaloPublishedBatch_compose_within_stock
     (hb : ∀ f, IntegerMultBounds.MathlibTM2.Fast.Main.mnProgPush (bodyLarge f) ≤ c) :
     ExecWithin bodyLarge (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
       IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v S)+persistent+depth+
-        (c+1)*(work+100*(N+1)*((core+2*radius)*w)))
+        (c+1)*(work+100*(N+1)*((core+2*radius)*w+1)))
       depth (packedHaloPublishedBatch hR hQ) (mk v S) (n₁+n₂) (mk vf F) := by
   simpa only [packedHaloPublishedBatch] using
     (IntegerMultBounds.MathlibTM2.Fast.Main.mn_release_exec_within_stock hclosed hpub
-      (hn.trans (packedCoreBatchPublicationCost_le_volume N radius core w hw hhalo)) hp hb)
+      (hn.trans (packedCoreBatchPublicationCost_le_volume N radius core w hw)) hp hb)
 
 /-- Lift a closed solver's stock certificate beside the publisher's retained
 headers and destination archive. Spectator storage is included once. -/
@@ -153,7 +150,7 @@ theorem packedHaloClosedBatch_publish_exec
           (cstream A w (ownedCoreWords coreWidth k D)++Sbig.R 253) i).re) x.2 e) inputs Ds ∧
       (∀ i : Fin 249, i ≠ 132 → F.R (packedHaloPublishedReg i) = H.R i) ∧
       (∀ i : Fin 263, 249 ≤ i.val → i ≠ 253 → F.R i = Sbig.R i) ∧
-      (∀ persistent work c depth : ℕ, 1 ≤ w → 1 ≤ coreLength s coreWidth k+2*radius →
+      (∀ persistent work c depth : ℕ, 1 ≤ w →
         ExecWithin body (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
           IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk vi S₀)+depth+
             (persistent+(c+1)*work))
@@ -164,7 +161,7 @@ theorem packedHaloClosedBatch_publish_exec
         (∀ f, IntegerMultBounds.MathlibTM2.Fast.Main.mnProgPush (bodyLarge f) ≤ c) →
         ExecWithin bodyLarge (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
           IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v Sbig)+persistent+depth+
-            (c+1)*(work+100*(inputs.length+1)*((coreLength s coreWidth k+2*radius)*w)))
+            (c+1)*(work+100*(inputs.length+1)*((coreLength s coreWidth k+2*radius)*w+1)))
           depth (packedHaloPublishedBatch hR hQ) (mk v Sbig) n (mk v' F)) := by
   have hlen : coreStart coreWidth k+coreLength s coreWidth k+radius-(coreStart coreWidth k-radius) =
       coreLength s coreWidth k+2*radius := by omega
@@ -211,7 +208,7 @@ theorem packedHaloClosedBatch_publish_exec
   · intro i hi h253'
     rw [hpubFrame i (by intro he; have hh := congrArg Fin.val he; change i.val = 132 at hh; omega) h253']
     exact hexternal i hi
-  · intro persistent work c depth hw hhalo ht hp hb
+  · intro persistent work c depth hw ht hp hb
     obtain ⟨v',F',hv',hu',ht',hproj',hframe'⟩ :=
       packedHaloClosedBatch_lift_within_stock hbody hR hQ ht v Sbig hv hview
     have hout := (ht'.toExec.unique he₂).2
@@ -223,6 +220,6 @@ theorem packedHaloClosedBatch_publish_exec
       rw [hout] at ht'
       exact ht'.mono (by intro d z hz; omega)
     exact packedHaloPublishedBatch_compose_within_stock hR hQ inputs.length radius
-      (coreLength s coreWidth k) w hw hhalo ht'' he₃ hn₂' hp hb
+      (coreLength s coreWidth k) w hw ht'' he₃ hn₂' hp hb
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -125,7 +125,7 @@ theorem packedHaloCountedPublishedBatch_exec
     have hinj : Function.Injective packedHaloPublishedReg := by
       intro i j he; exact Fin.ext (congrArg (fun i : Fin 263 => i.val) he)
     simpa only [Tbig,T₀,hbigview,show packedHaloPublishedReg 248 = 248 from rfl] using embStk_updateR hinj Sbig 248 (List.replicate inputs.length tick)
-  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,harchive,hsrc,htable,hcounter,hfactors,hexternal,Ds,hdst,hgood⟩ :=
+  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,harchive,hsrc,htable,hcounter,hfactors,hexternal,Ds,hdst,hgood,hpublishedStock⟩ :=
     packedHaloPublishedBatch_exec hbody hbody' hbody'' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail v₁ Tbig T₀ S hview₁ (by simp [T₀]) h109 h115 h116 hfactoryLeft hready
       haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank
