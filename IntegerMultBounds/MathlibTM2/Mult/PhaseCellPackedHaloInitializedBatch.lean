@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.StackLifecycleResources
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryFactoryBetween
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloNumericalBatch
 
@@ -7,7 +8,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloNumericalBatc
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Node
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry IntegerMultBounds.MathlibTM2.Fast.TableVM
@@ -128,7 +129,16 @@ theorem packedHaloInitializedBatch_exec
           (mk (embDn packedHaloBatchReg v') (embStk packedHaloBatchReg F)) ≤
         IntegerMultBounds.MathlibTM2.Fast.Main.mnSize
           (mk (embDn packedHaloBatchReg v) (extendStacks (by decide : 242 ≤ 248) M))+
-            inputs.length*((b-a)*w)+V := by
+            inputs.length*((b-a)*w)+V ∧
+        ∀ c, mnProgPush (packedHaloInitializedBatch (P := P) (U := U) (A := A) hR hQ) ≤ c →
+          (∀ f, mnProgPush (body'' f) ≤ c) → ∀ depth,
+          ExecWithin body'' (fun d z => mnSize z+d ≤ mnSize (mk v S₀)+
+            (inputs.length*((b-a)*w)+V)+depth+(c+1)*
+              (constructedBoundaryFactorCost p u l s t a b boundaryTarget rhsExp+
+                (2*(B.card*publicationGeometryWidth t band+publicationGeometryWidth t band+B.card)+7)+
+                ((s+t+band+a+b)*(4*V+10)+56*V+77)+
+                (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)))
+            depth (packedHaloInitializedBatch hR hQ) (mk v S₀) n (mk v' F) := by
   dsimp only
   intro hy hcoeff
   obtain ⟨hq,hstage,hw⟩ := boundaryHaloTarget_sizing p u l boundaryTarget rhsExp
@@ -164,7 +174,7 @@ theorem packedHaloInitializedBatch_exec
   have hraw₂ : (embStk packedHaloBatchReg F).R 220 = _ :=
     (hsetup 220 (by decide) (by decide)).trans hraw
   refine ⟨v₂,F,n₁+n₂,hu₂.trans (hu₁'.trans hu₁),Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁' he₂,hcounter,?_,hsrc₂,hbetween₂,columns,hcolumns.length,hraw₂,hstock₂,M,hout,?_,?_⟩
+    Exec.seq he₁' he₂,hcounter,?_,hsrc₂,hbetween₂,columns,hcolumns.length,hraw₂,hstock₂,M,hout,?_,?_,?_⟩
   · rw [hview₁] at hlength
     simpa [extendStacks,hout] using hlength
   · simpa only [hview₁] using htrace
@@ -172,5 +182,14 @@ theorem packedHaloInitializedBatch_exec
   · have hs := hbatchFrame.2.1
     rw [hview₁] at hs
     simpa only [IntegerMultBounds.MathlibTM2.Fast.Main.mnSize,mk] using hs
+
+  · intro c hp hb depth
+    change max (mnProgPush (packedHaloBatchSetup hR hQ)) (mnProgPush (packedHaloBatch hR hQ)) ≤ c at hp
+    obtain ⟨hpSetup,hpLoop⟩ := max_le_iff.mp hp
+    have hpStep : mnProgPush (packedHaloBatchStep (P := P) (U := U) (A := A) hR hQ) ≤ c := by
+      simpa [packedHaloBatch,countedLoop,countedLoopBody,mnProgPush,mnActPush,peekR] using hpLoop
+    apply mn_setup_exec_within_stock he₁' hn₁ hpSetup hb
+    have ht := hbatchFrame.2.2.2.2 c hpStep hb depth
+    simpa only [Nat.add_assoc] using ht
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
