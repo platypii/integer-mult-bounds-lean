@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryAccuracy
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedPackedHaloRealBoundaryData
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloResidualSolve
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBoundaryWorkspace
@@ -21,8 +23,8 @@ variable {Q A : ℕ} {P U : Type} {body : P → Pr P 242 Q A U}
 
 theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {l s t p u target rhsExp a b V boundaryTarget : ℕ} [NeZero s] {α d : ℝ}
-    (hp : 2 ≤ p) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
-    (hθ : 0 < (t : ℝ)/s-1) (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
+    (hp : 2 ≤ p) (hα : 0 < α) (hwidth : 8*p ≤ 2^u) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
+    (hθ : 1/(4*(p : ℝ)) ≤ (t : ℝ)/s-1) (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
     (hpad : 2*((s/(t-s)+1)-2*PhaseCellBand.width p u) ≤ 2^l+1)
     (C : ZMod s → GaussianInt)
     (hC : ∀ k, ‖value (executionPrecision p l target rhsExp) (C k)‖ ≤ (2 : ℝ)^rhsExp)
@@ -65,6 +67,10 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
     let W := 12*PhaseCellBand.width p u+1
     ∀ columns : List (ZMod s → GaussianInt),
     PreparedBoundaryColumns A p bits q w W B columns →
+    target = boundaryHaloTarget p u boundaryTarget rhsExp B.card →
+    (∀ i ∈ B, ∀ j ∈ B, |bandBoundaryTable B W (computedBoundaryTable A q w B columns) i j-
+      (SchurDominance.run (realMatrix s t p u) (haloVertices s a b)
+        (haloInterior s t band a b).toList).1 i j| ≤ 1/(2 : ℝ)^bits) →
     PackedPreparedBank q w W B.card S →
     let AZ := factorRankIntegerMatrix B W columns
     let K := factorNewtonSteps p q
@@ -80,8 +86,9 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       let Z := cstream A w (packedInterval a (b-a)
         (guardedCouplingRowField (2^15*p) q t u band a b false D C))
       let folded := cstream A w rows
-      let output := cstream A w ((bandSolveVec q W Lc Uc rcs
+      let ys := ((bandSolveVec q W Lc Uc rcs
         (rows.map (normalizeBoundaryWord q (q/2-1)))).map (unscaleBoundaryWord q))
+      let output := cstream A w ys
       let F := {T with R := Function.update (Function.update T.R 143 []) 238 (output++T.R 238)}
       v'.user = v.user ∧
       m ≤ packedHaloRealBoundaryDataCost p l s t u target rhsExp a b V+
@@ -115,11 +122,17 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
         (cstream A w (Uc.map colC).flatten)
         (cstream A w (rcs.map fun z => (⟨z,0⟩ : GaussianInt))) F ∧
       F.L = S.L ∧
-      (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) := by
+      (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) ∧
+      (ys.length = B.card ∧ (∀ z ∈ ys, Fits w z) ∧
+        ∀ y : ZMod s → ℝ, SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) y
+          (fun k => (value q (C k)).re) →
+          ∀ i < B.card, ‖value q (ys.getD i 0)-(y (bFoldAt s B i) : ℂ)‖ ≤ 3/(2 : ℝ)^boundaryTarget ∧
+            ‖value q (ys.getD i 0)‖ ≤ (2 : ℝ)^stableInteriorExponent p rhsExp) := by
   dsimp only
-  intro columns hcolumns hbank hpages
+  intro columns hcolumns hcell htable hbank hpages
+  have hθpos : 0 < (t : ℝ)/s-1 := lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ
   obtain ⟨v₁,T,n₁,D,hu₁,hn₁,he₁,hdata,hhigh,hleftFinal,hbankCarry,hpagesCarry⟩ :=
-    placedPackedHaloRealBoundaryData_exec (body := body) hR hQ hA (by omega) hst hu hαu hθ hgap
+    placedPackedHaloRealBoundaryData_exec (body := body) hR hQ hA (by omega) hst hu hαu hθpos hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail v S
       hnative hmasters ha hb' hmeta h157 houtput hE hfresh haLt hfitV h139 h143 hleft
       hsep h158 h167 hrange hdom hq x hx
@@ -140,15 +153,27 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
   rw [hq,hw] at hproduced
   obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := packedHaloResidualSolve_exec (body := body) hQ hA
     p u l boundaryTarget rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b)
-    (12*PhaseCellBand.width p u+1) columns hp a b target hst hαu hθ hgap hbudget hdom
+    (12*PhaseCellBand.width p u+1) columns hp a b target hst hαu hθpos hgap hbudget hdom
     hcolumns C D x hC' hx' haccuracy v₁ T (hbankCarry _ _ _ _ hbank) hfold
     (hpagesCarry _ _ _ hpages)
-  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_⟩
+  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_,?_⟩
   · exact (hbankCarry _ _ _ _ hbank).publish _
   · exact (hpagesCarry _ _ _ hpages).publish _
   · intro k hk hne
     have h143 : k ≠ 143 := by intro he; subst k; omega
     simpa only [Function.update_of_ne h143,Function.update_of_ne hne]
       using (hhigh k hk).2
+  · have hsemantic (y : ZMod s → ℝ)
+        (hy : SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) y
+          (fun k => (value (executionPrecision p l (initialSchurTarget p u
+            (boundaryTableBits p boundaryTarget rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) 2) 2) (C k)).re)) :=
+      preparedBoundary_solution_accuracy A p u l boundaryTarget rhsExp a b
+        (12*PhaseCellBand.width p u+1) columns (by omega) hp hst hα hwidth hαu hθ hgap hbudget hdom
+        hcolumns htable C D x y hC' hx' (by simpa only [hcell] using haccuracy) hy
+    obtain ⟨y,hy⟩ := SchurDominance.solves_exists (realMatrix s t p u) (haloVertices s a b)
+      (1/(8*(p : ℝ))) (by positivity)
+      (SchurDominance.dominates_mono _ Finset.univ _ _ (Finset.subset_univ _) hdom)
+      (fun k => (value _ (C k)).re)
+    exact ⟨(hsemantic y hy).1,(hsemantic y hy).2.1,fun y hy => (hsemantic y hy).2.2⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
