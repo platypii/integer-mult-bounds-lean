@@ -5,12 +5,18 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBatchTrace
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBatchStock
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloStepStock
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyBatchCost
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyNormalizedBatch
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedWorkspaceCost
 
 /-! Audit the actual protected numerical supplier independently of routing. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloGeometryWorkspace_affine,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedKeyNormalizedWorkspace_affine,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedKeyInputReplicaCost_le_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedKeyWorkspaceReplicaCost_le_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedKeyWorkspaceReplicaCost_le_volume_native,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedKeyNormalizedWorkspace_le_setup_add_volume,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloPublishedBatch_compose_within_stock,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedCorePublication_within_stock,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedCoreBatchPublicationCost_le_volume,
