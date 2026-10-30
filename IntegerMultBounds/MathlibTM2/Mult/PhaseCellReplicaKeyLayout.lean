@@ -20,6 +20,23 @@ def replicaKeyWords {α : Type*} {N K W : ℕ} (f : Fin N → Fin K → Fin W �
 def keyReplicaWords {α : Type*} {N K W : ℕ} (f : Fin N → Fin K → Fin W → α) : List α :=
   replicaKeyWords (fun k r b => f r k b)
 
+theorem replicaKeyWords_map {α β : Type*} {N K W : ℕ}
+    (g : α → β) (f : Fin N → Fin K → Fin W → α) :
+    (replicaKeyWords f).map g = replicaKeyWords (fun r k b => g (f r k b)) := by
+  simp [replicaKeyWords,List.map_ofFn,Function.comp_def]
+
+theorem keyReplicaWords_map {α β : Type*} {N K W : ℕ}
+    (g : α → β) (f : Fin N → Fin K → Fin W → α) :
+    (keyReplicaWords f).map g = keyReplicaWords (fun r k b => g (f r k b)) :=
+  replicaKeyWords_map g (fun k r b => f r k b)
+
+/-- Supply the finite-array view required by the existing tape interchange. -/
+theorem replicaKeyWords_array {α : Type*} {N K W : ℕ}
+    (f : Fin N → Fin K → Fin W → α) (V : ℕ) (hV : V = N*(K*W)) :
+    ∃ x : Fin V → α, List.ofFn x = replicaKeyWords f := by
+  subst V
+  exact ⟨_,rfl⟩
+
 theorem replicaKeyWords_getElem? {α : Type*} {N K W : ℕ}
     (f : Fin N → Fin K → Fin W → α) (r : Fin N) (k : Fin K) (b : Fin W) :
     (replicaKeyWords f)[(r.val*K+k.val)*W+b.val]? = some (f r k b) := by

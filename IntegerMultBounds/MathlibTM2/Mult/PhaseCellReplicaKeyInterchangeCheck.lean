@@ -9,7 +9,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyWords_getElem?,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.keyReplicaWords_blocks,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyWords_swap,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyInterchange_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyInterchange_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyBitInterchange_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
