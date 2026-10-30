@@ -73,7 +73,8 @@ theorem solvePackedHaloInterior_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
         EncodedRange A (executionWidth p l target rhsExp) (executionPrecision p l target rhsExp)
           (interiorOutputExponent p l target rhsExp) E') ∧
       PackedHaloWordFrame s t (PhaseCellBand.width p u) a b (executionWidth p l target rhsExp)
-        (S.R 132) (F.R 132) ∧ F.L = S.L := by
+        (S.R 132) (F.R 132) ∧ F.L = S.L ∧
+      (F.R 128).length ≤ ((s/(t-s)+1)-2*PhaseCellBand.width p u) := by
   have hw : executionWidth p l target rhsExp = 2*executionPrecision p l target rhsExp+8 := by
     simp only [executionWidth,executionPrecision]
     omega
@@ -88,16 +89,20 @@ theorem solvePackedHaloInterior_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
   let B : Stacks 168 A := {S with R := (initializedKeyRuntimeR S.R V (executionWidth p l target rhsExp)
     (haloLengthKeys s t (PhaseCellBand.width p u) a b).length
     (haloPositiveLengthPackets A V s t (PhaseCellBand.width p u) a b))}
-  obtain ⟨v₂,F,m₂,E',hu₂,hm₂,he₂,h93,hi,ho,hrdy,hqueue,hzero,hframe,haccuracy,herror,hrange,hwords,hleftAll⟩ :=
+  obtain ⟨v₂,F,m₂,E',hu₂,hm₂,he₂,h93,hi,ho,hrdy,hqueue,hzero,hframe,haccuracy,herror,hrange,hwords,hleftAll,hlength⟩ :=
     runGeneratedPackedHaloKeys_exec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hpad C hC
       hab hb hband hwide hVeq hwV hcoords hunits tail (S.R 126) E outputTail v₁ B hready₁
       (by simp [B,initializedKeyRuntimeR,haloPositiveLengthPackets])
       (by simp [B,initializedKeyRuntimeR]) x hx
   refine ⟨v₂,F,m₁+m₂,E',hu₂.trans hu₁,by omega,Exec.seq he₁ he₂,
-    by simpa [B,initializedKeyRuntimeR] using h93,hi,ho,hrdy,hqueue,hzero,?_,haccuracy,herror,hrange,(by simpa [B,initializedKeyRuntimeR] using hwords),hleftAll⟩
-  intro k hk hn125 hn130 hn126 hn127 hn128 hn157 hn132
-  obtain ⟨hl,hr⟩ := hframe k hk hn126 hn127 hn128 hn157 hn132
-  exact ⟨hl,by simpa only [B,initializedKeyRuntimeR,Function.update_of_ne hn125,
-    Function.update_of_ne hn126,Function.update_of_ne hn127,Function.update_of_ne hn130] using hr⟩
+    by simpa [B,initializedKeyRuntimeR] using h93,hi,ho,hrdy,hqueue,hzero,?_,haccuracy,herror,hrange,(by simpa [B,initializedKeyRuntimeR] using hwords),hleftAll,?_⟩
+  · intro k hk hn125 hn130 hn126 hn127 hn128 hn157 hn132
+    obtain ⟨hl,hr⟩ := hframe k hk hn126 hn127 hn128 hn157 hn132
+    exact ⟨hl,by simpa only [B,initializedKeyRuntimeR,Function.update_of_ne hn125,
+      Function.update_of_ne hn126,Function.update_of_ne hn127,Function.update_of_ne hn130] using hr⟩
+  · have h128 : S.R 128 = [] := by
+      have hh := hmasters (128,102) (by decide)
+      simpa [packedHeaderReg,groupHeaderValue] using hh
+    simpa [B,initializedKeyRuntimeR,h128] using hlength
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

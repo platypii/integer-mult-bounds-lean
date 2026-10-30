@@ -34,7 +34,7 @@ def packedHaloInteriorCoefficientsCost (p l s t u target rhsExp a b V : ℕ) : �
         packedHaloKeyLoopCost p l s t u target rhsExp a b V (haloLengthKeys s t (PhaseCellBand.width p u) a b)+1+
         sharedCouplingCoefficientIntervalCost (2^15*p) (executionPrecision p l target rhsExp)
           (executionWidth p l target rhsExp) s t u (PhaseCellBand.width p u) a b V)+
-        (2*(V+s)+5)
+        (2*(V+((s/(t-s)+1)-2*PhaseCellBand.width p u))+5)
 
 theorem packedHaloInteriorCoefficients_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {l s t p u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
@@ -145,7 +145,7 @@ theorem packedHaloInteriorCoefficients_exec (hR : rpStates ≤ Q) (hQ : SS.state
         simp only [couplingIntervalPorts,List.mem_cons,List.not_mem_nil,or_false] at hk
         rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
       simpa [B,hn] using hmeta.encoded k hk
-  obtain ⟨v₁,F,m₁,E',D,hu₁,hm₁,he₁,h93,hi,ho,hrdy,hout,hDnorm,hDfits,hqueue,hzero,hframeB,herror,hwords,hleftAll⟩ :=
+  obtain ⟨v₁,F,m₁,E',D,hu₁,hm₁,he₁,h93,hi,ho,hrdy,hout,hDnorm,hDfits,hqueue,hzero,hframeB,herror,hwords,hleftAll,hlength⟩ :=
     solvePackedHaloInterior_field_exec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hpad C hC
       hab hb hband (by omega) hVeq hwV hcoords hunits tail E outputTail v₀ B hnativeB hmastersB
       (by simpa [B] using ha) (by simpa [B] using hb') hmetadataB (by simpa [B] using h157)
@@ -185,9 +185,9 @@ theorem packedHaloInteriorCoefficients_exec (hR : rpStates ≤ Q) (hQ : SS.state
   let xs := couplingCoefficientPageInterval (2^15*p) (executionPrecision p l target rhsExp)
     s t u (PhaseCellBand.width p u) a b a (b-a)
   let H := sharedCouplingPageState (PhaseCellBand.width p u) (executionWidth p l target rhsExp) xs F
-  obtain ⟨v₃,m₃,hu₃,hm₃,he₃⟩ := releasePackedHaloKeys_exec (body := body) V s v₂ H
+  obtain ⟨v₃,m₃,hu₃,hm₃,he₃⟩ := releasePackedHaloKeys_exec (body := body) V ((s/(t-s)+1)-2*PhaseCellBand.width p u) v₂ H
     (by simpa [H,sharedCouplingPageState] using hrdy.keyWidth)
-    (by simpa [H,sharedCouplingPageState] using hrdy.unaryLengthBound)
+    (by simpa [H,sharedCouplingPageState] using hlength)
   let G := releasedPackedHaloKeys H
   have hcoupling : CouplingReady (2^15*p) (executionPrecision p l target rhsExp) (executionWidth p l target rhsExp)
       s t u (PhaseCellBand.width p u) a b

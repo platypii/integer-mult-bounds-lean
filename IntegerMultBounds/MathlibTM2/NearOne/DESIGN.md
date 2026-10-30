@@ -190,8 +190,9 @@ restoration facts. This does not reset the separate packed-input headers or
 consume the retained residual/source buffers.
 The actual `packedBoundaryRecovery` program now follows recovery with
 `releasePackedRecoveryHeaders`, clearing private ports 242, 243, 244 and 247.
-Its bound `2*(2*V+s+w)+9` is derived from the returned `PackedHaloReady` width
-and length bounds and included in `packedBoundaryRecoveryCost`. The solver
+Its bound `2*(2*V+cellBound+w)+9`, where
+`cellBound = (s/(t-s)+1)-2*band`, uses the actual generated loop
+length bound and is included in `packedBoundaryRecoveryCost`. The solver
 uses this composed program. The endpoint proves those ports empty and retains
 the numerical workspace and factor readiness. The interior frame proves port
 245 stays empty, and interior readiness proves port 246 is already empty.
@@ -199,15 +200,23 @@ Together with left-tape restoration, the composed recovery endpoint now proves
 all six private ports 242--247 empty on both sides. No additional erasure cost
 is needed for 245 or 246. Reset of the separate first-pass runtime remains open.
 The first-pass `packedHaloInteriorCoefficients` now clears its selected-key
-headers 125 and 128 after coefficient generation. The bound `2*(V+s)+5` comes
-from the actual interior `PackedHaloReady` and is included in the existing
-first-pass cost. Structural view equalities preserve the coupling and native
+headers 125 and 128 after coefficient generation. The bound
+`2*(V+cellBound)+5` comes from the actual interior execution and is included
+in the existing first-pass cost. Structural view equalities preserve the coupling and native
 banks, so the downstream numerical proof is reused. Word width 130 remains
 available for coupling and output disposal; a complete next-input contract
 still needs its later reset and the retained buffer lifecycle.
 The empty-key facts now pass through the actual residual, boundary-data and
 placement proofs into the boundary setup/solve scratch contract. They are
 conclusions about the executed output, not additional next-call assumptions.
+The generic key loop preserves any bound covering the initial unary header and
+all its keys. Each executed key step proves its final unary length equals that
+key; list induction then supplies the bound for the actual final tape.
+Generated keys satisfy `cellBound`, and initialization supplies an empty unary
+header. This removes the loose ambient `s` charge from both new cleanup bounds.
+The existing `phaseGap_cellLength_le` bounds `cellBound` by `4*p+1` under the
+numerical ABI's gap assumption. Other per-input costs and the complete batch
+ledger remain to be connected; this refinement does not establish that ledger.
 
 The proof should follow the manuscript construction recorded in
 `plan/D-sharper-bound.md`, M7b: local principal solves, owned-core cropping,

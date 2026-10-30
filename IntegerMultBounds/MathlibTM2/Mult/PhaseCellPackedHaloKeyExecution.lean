@@ -73,7 +73,7 @@ theorem packedHaloReady_publish (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
         EncodedRange A (executionWidth p l target rhsExp) (executionPrecision p l target rhsExp)
           (interiorOutputExponent p l target rhsExp) E') ∧
       PackedHaloWordFrame s t (PhaseCellBand.width p u) a b (executionWidth p l target rhsExp)
-        (S.R 132) (F.R 132) ∧ F.L = S.L := by
+        (S.R 132) (F.R 132) ∧ F.L = S.L ∧ (F.R 128).length = L := by
   have hsource : S.R 110 = cstream A (executionWidth p l target rhsExp) (packedInterval a (b-a) C)++tail := by
     simpa [embStk,packedCellCoreReg,releasedCellBank] using
       congrArg (fun B : Stacks 117 A => B.R 110) hready.native
@@ -126,7 +126,7 @@ theorem packedHaloReady_publish (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
   have hall := packedHaloGroupOutputs_scatter C done E ys outputTail hready.length hys
     (by simpa only [← hready.output] using hold) (by simpa only [E',w,offsets] using hacc')
   refine ⟨v',F,m,E',hu',?_,he,h93,congrArg (fun B : Stacks 117 A => B.inp) hproj,
-    congrArg (fun B : Stacks 117 A => B.out) hproj,hrdy,h126,hframe,?_,?_,?_,hleftAll⟩
+    congrArg (fun B : Stacks 117 A => B.out) hproj,hrdy,h126,hframe,?_,?_,?_,hleftAll,by simp [h128]⟩
   · have hb128 := hready.unaryLengthBound
     have hb157 := hready.binaryLengthBound
     dsimp only [packedHaloKeyCost]

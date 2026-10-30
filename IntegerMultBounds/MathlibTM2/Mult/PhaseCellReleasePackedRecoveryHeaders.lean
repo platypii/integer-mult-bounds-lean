@@ -41,12 +41,13 @@ theorem releasePackedRecoveryHeaders_exec
     {input E outputTail : List (Fin (A+4))}
     (v : HS 248 Q A U) (S : Stacks 248 A)
     (h : PackedHaloReady precision stage q l s t u band a b V w input E outputTail
-      (embStk packedRecoveryInteriorReg S)) :
-    ∃ v' n, v'.user = v.user ∧ n ≤ 2*(2*V+s+w)+9 ∧
+      (embStk packedRecoveryInteriorReg S))
+    (lengthBound : ℕ) (hbound : (S.R 243).length ≤ lengthBound) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ 2*(2*V+lengthBound+w)+9 ∧
       Exec body releasePackedRecoveryHeaders (mk v S) n
         (mk v' (releasedPackedRecoveryHeaders S)) := by
   have h242 : (S.R 242).length = V := h.keyWidth
-  have h243 : (S.R 243).length ≤ s := h.unaryLengthBound
+  have h243 : (S.R 243).length ≤ lengthBound := hbound
   have h244 : (S.R 244).length = w := h.wordWidth
   have h247 : (S.R 247).length ≤ V := h.binaryLengthBound
   obtain ⟨v',hu,he⟩ := clearWords_exec (body := body) packedRecoveryHeaderPorts (by decide) v S

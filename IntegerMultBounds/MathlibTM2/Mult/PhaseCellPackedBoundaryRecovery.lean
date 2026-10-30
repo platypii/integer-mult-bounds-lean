@@ -31,7 +31,7 @@ def packedBoundaryRecoveryCost (p u l target rhsExp s t a b V q w : ℕ) [NeZero
     (initializeHaloLengthKeysCost (2^15*p) (executionStagePrecision p l k e+1)
       (executionPrecision p l k e) l s t u band a b+
       packedHaloKeyLoopCost p l s t u k e a b V (haloLengthKeys s t band a b)+1)+
-    (2*(2*V+s+w)+9)
+    (2*(2*V+((s/(t-s)+1)-2*band)+w)+9)
 
 theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p u l target rhsExp s t a b V q w W : ℕ} [NeZero s] {α d : ℝ}
@@ -142,7 +142,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     simpa only [packedRecoveryRhsState,Y,R,B,band] using he₁
   have hrange := haloRecovery_boundary_range A p u l k rhsExp q w a (b-a) B solution
     (fun i hi => (hsolution i hi).2)
-  obtain ⟨v₂,F,n,E',D,hu₂,hn₂,he₂,h93,h139',h238,hi,ho,hrdy,hout,hDnorm,hDfits,herror,hframe,hleft,hretained,h245,h246,hfactors⟩ :=
+  obtain ⟨v₂,F,n,E',D,hu₂,hn₂,he₂,h93,h139',h238,hi,ho,hrdy,hout,hDnorm,hDfits,herror,hframe,hleft,hretained,h245,h246,hlength,hfactors⟩ :=
     packedRecoveryFinish_exec (body := body) hR hQ hA hp0 hst hu hαu hθ0 hgap hbudget hpad hq' hw'
       Y R C hnorm hab hb hband (by omega) (by simpa only [hq'] using hVeq)
       (by simpa only [← hw'] using hwV) hcoords (by simpa only [← hw'] using hunits)
@@ -190,7 +190,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       (haloBoundary s t (PhaseCellBand.width p u) a b).card := by
     rw [hfactor]
     exact hready.update_vk _
-  obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := releasePackedRecoveryHeaders_exec (body := body) v₂ F hrdy
+  obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := releasePackedRecoveryHeaders_exec (body := body) v₂ F hrdy _ hlength
   have hprefix : embStk packedBoundaryRecoveryBase (releasedPackedRecoveryHeaders F) =
       embStk packedBoundaryRecoveryBase F := releasedPackedRecoveryHeaders_prefix F
   refine ⟨v₃,releasedPackedRecoveryHeaders F,n+n₃,D,hu₃.trans hu₂,?_,

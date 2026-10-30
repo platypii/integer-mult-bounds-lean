@@ -66,7 +66,8 @@ theorem runGeneratedPackedHaloKeys_exec (hR : rpStates ≤ Q) (hQ : SS.states �
         EncodedRange A (executionWidth p l target rhsExp) (executionPrecision p l target rhsExp)
           (interiorOutputExponent p l target rhsExp) E') ∧
       PackedHaloWordFrame s t (PhaseCellBand.width p u) a b (executionWidth p l target rhsExp)
-        (S.R 132) (F.R 132) ∧ F.L = S.L := by
+        (S.R 132) (F.R 132) ∧ F.L = S.L ∧
+      (F.R 128).length ≤ max (S.R 128).length ((s/(t-s)+1)-2*PhaseCellBand.width p u) := by
   let keys := haloLengthKeys s t (PhaseCellBand.width p u) a b
   have hbounds : ∀ L ∈ keys, 0 < L ∧ L ≤ s ∧ L+L ≤ 2^l+1 ∧ L < 2^V := by
     intro L hL
@@ -82,7 +83,7 @@ theorem runGeneratedPackedHaloKeys_exec (hR : rpStates ≤ Q) (hQ : SS.states �
   let v₀ : HS 168 Q A U := {v with flag := (S.R 127).head?.isSome}
   have hpeek : Exec body (.act (peekR 127)) (mk v S) 1 (mk v₀ S) := by
     simpa only [peekR_run,v₀] using Exec.act (body := body) (peekR 127) (mk v S)
-  obtain ⟨v',F,m,E',hu',hm,he,h93,hi,ho,hrdy,hqueue,hzero,hframe,haccuracy,hrange,hwords,hleftAll⟩ := packedHaloKeyLoop_exec (body := body)
+  obtain ⟨v',F,m,E',hu',hm,he,h93,hi,ho,hrdy,hqueue,hzero,hframe,haccuracy,hrange,hwords,hleftAll,hlength⟩ := packedHaloKeyLoop_exec (body := body)
     hR hQ hA hp hst hu hαu hθ hgap hbudget keys hbounds C hC hab hb hband hwide hVeq hwV hcoords hunits
     tail suffix E outputTail [] v₀ S hready hkeys hcount
     (by
@@ -94,7 +95,12 @@ theorem runGeneratedPackedHaloKeys_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       (haloPackedOffsets s t (PhaseCellBand.width p u) a b M)
       (packedCellOrigin (s := s) a (haloPackedOffsets s t (PhaseCellBand.width p u) a b M))
       (fun _ => C) (F.R 132) := by simpa using haccuracy
-  exact ⟨v',F,1+m,E',hu',by dsimp only [keys] at hm; omega,Exec.seq hpeek he,h93,hi,ho,hrdy,hqueue,hzero,hframe,hall,
-    haloInterior_error_of_packed_reads hst hab hb C (F.R 132) hall x hx,hrange,hwords,hleftAll⟩
+  refine ⟨v',F,1+m,E',hu',by dsimp only [keys] at hm; omega,Exec.seq hpeek he,h93,hi,ho,hrdy,hqueue,hzero,hframe,hall,
+    haloInterior_error_of_packed_reads hst hab hb C (F.R 132) hall x hx,hrange,hwords,hleftAll,?_⟩
+  apply hlength _ (le_max_left _ _)
+  intro L hL
+  have hc : L ∈ haloLengthCandidates s t (PhaseCellBand.width p u) a b :=
+    List.mem_dedup.mp (List.mem_filter.mp hL).1
+  exact (haloLengthCandidates_uniform hst (PhaseCellBand.width p u) a b hc).trans (le_max_right _ _)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

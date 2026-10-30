@@ -66,8 +66,9 @@ theorem solvePackedHaloInterior_field_exec (hR : rpStates ≤ Q) (hQ : SS.states
       PhaseCellInterface.ErrorOn (haloInterior s t (PhaseCellBand.width p u) a b)
         (fun k => (value (executionPrecision p l target rhsExp) (D k)).re) x (1/(2 : ℝ)^target) ∧
       PackedHaloWordFrame s t (PhaseCellBand.width p u) a b (executionWidth p l target rhsExp)
-        (S.R 132) (F.R 132) ∧ F.L = S.L := by
-  obtain ⟨v',F,m,E',hu',hm,he,h93,hi,ho,hrdy,hqueue,hzero,hframe,haccuracy,herror,hrange',hwords,hleftAll⟩ :=
+        (S.R 132) (F.R 132) ∧ F.L = S.L ∧
+      (F.R 128).length ≤ ((s/(t-s)+1)-2*PhaseCellBand.width p u) := by
+  obtain ⟨v',F,m,E',hu',hm,he,h93,hi,ho,hrdy,hqueue,hzero,hframe,haccuracy,herror,hrange',hwords,hleftAll,hlength⟩ :=
     solvePackedHaloInterior_exec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hpad C hC
       hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail v S hnative hmasters ha hb'
       hmeta h157 houtput hE hfresh x hx
@@ -77,6 +78,6 @@ theorem solvePackedHaloInterior_field_exec (hR : rpStates ≤ Q) (hQ : SS.states
   have hout : F.R 132 = cstream A (executionWidth p l target rhsExp) (packedInterval a (b-a) D)++outputTail :=
     hrdy.output.trans (congrArg (fun xs => xs++outputTail) hE')
   exact ⟨v',F,m,E',D,hu',hm,he,h93,hi,ho,hrdy,hout,hDnorm,hDfits,hqueue,hzero,hframe,
-    haloInterior_error_of_packed_outputs hst (by omega) hab hb C D hDfits (F.R 132) outputTail hout haccuracy x hx,hwords,hleftAll⟩
+    haloInterior_error_of_packed_outputs hst (by omega) hab hb C D hDfits (F.R 132) outputTail hout haccuracy x hx,hwords,hleftAll,hlength⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

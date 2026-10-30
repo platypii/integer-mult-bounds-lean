@@ -68,12 +68,14 @@ theorem packedHaloKeyLoop_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
         EncodedRange A (executionWidth p l target rhsExp) (executionPrecision p l target rhsExp)
           (interiorOutputExponent p l target rhsExp) E') ∧
       PackedHaloWordFrame s t (PhaseCellBand.width p u) a b (executionWidth p l target rhsExp)
-        (S.R 132) (F.R 132) ∧ F.L = S.L := by
+        (S.R 132) (F.R 132) ∧ F.L = S.L ∧
+      (∀ bound, (S.R 128).length ≤ bound → (∀ L ∈ keys, L ≤ bound) →
+        (F.R 128).length ≤ bound) := by
   induction keys generalizing v S E done with
   | nil =>
     have he := Exec.loop_false (body := body) (p := packedHaloKeyStep hR hQ) (s := mk v S)
       (by change v.flag = false; simpa using hflag)
-    refine ⟨v,S,1,E,rfl,by simp [packedHaloKeyLoopCost],he,rfl,rfl,rfl,hready,?_,?_,?_,?_,?_,?_,rfl⟩
+    refine ⟨v,S,1,E,rfl,by simp [packedHaloKeyLoopCost],he,rfl,rfl,rfl,hready,?_,?_,?_,?_,?_,?_,rfl,fun _ h _ => h⟩
     · simpa using hkeys
     · simpa using hcount
     · intros; exact ⟨rfl,rfl⟩
@@ -86,7 +88,7 @@ theorem packedHaloKeyLoop_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     have hpop : Exec body (.act (.pop (.rt 127) (fun v _ => v) .done)) (mk v S) 1 (mk v S₀) := by
       have hp := Exec.act (body := body) (.pop (.rt 127) (fun v _ => v) .done) (mk v S)
       simpa [Action.run,update_rt,hcount,List.replicate_succ,S₀] using hp
-    obtain ⟨v₁,F₁,m₁,E₁,hu₁,hm₁,he₁,h93₁,hi₁,ho₁,hready₁,hkeys₁,hframe₁,hall₁,hrange₁,hwords₁,hleft₁⟩ := packedHaloReady_publish (body := body)
+    obtain ⟨v₁,F₁,m₁,E₁,hu₁,hm₁,he₁,h93₁,hi₁,ho₁,hready₁,hkeys₁,hframe₁,hall₁,hrange₁,hwords₁,hleft₁,hlength₁⟩ := packedHaloReady_publish (body := body)
       hR hQ hA hp hst hu hαu hθ hgap hbudget hL hLs hpad C hC hab hb hband hkey hwide
       hVeq hwV hcoords hunits tail (keys.flatMap (binSyms V)++suffix) E outputTail done v S₀
       (hready.update_count _) (by simpa [S₀,List.flatMap_cons,List.append_assoc] using hkeys)
@@ -96,10 +98,10 @@ theorem packedHaloKeyLoop_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
     let v₁' : HS 168 Q A U := {v₁ with flag := (F₁.R 127).head?.isSome}
     have hpeek : Exec body (.act (peekR 127)) (mk v₁ F₁) 1 (mk v₁' F₁) := by
       simpa only [peekR_run,v₁'] using Exec.act (body := body) (peekR 127) (mk v₁ F₁)
-    obtain ⟨v₂,F₂,m₂,E₂,hu₂,hm₂,he₂,h93₂,hi₂,ho₂,hready₂,hkeys₂,hcount₂,hframe₂,hall₂,hrange₂,hwords₂,hleft₂⟩ :=
+    obtain ⟨v₂,F₂,m₂,E₂,hu₂,hm₂,he₂,h93₂,hi₂,ho₂,hready₂,hkeys₂,hcount₂,hframe₂,hall₂,hrange₂,hwords₂,hleft₂,hlength₂⟩ :=
       ih (fun M hM => hbounds M (by simp [hM])) E₁ (L::done) v₁' F₁ hready₁ hkeys₁ hc₁
         (by cases keys <;> simp [v₁',hc₁,List.replicate_succ]) hall₁
-    refine ⟨v₂,F₂,m₁+m₂+3,E₂,hu₂.trans hu₁,?_,?_,h93₂.trans h93₁,hi₂.trans hi₁,ho₂.trans ho₁,hready₂,hkeys₂,hcount₂,?_,?_,?_,?_,hleft₂.trans hleft₁⟩
+    refine ⟨v₂,F₂,m₁+m₂+3,E₂,hu₂.trans hu₁,?_,?_,h93₂.trans h93₁,hi₂.trans hi₁,ho₂.trans ho₁,hready₂,hkeys₂,hcount₂,?_,?_,?_,?_,hleft₂.trans hleft₁,?_⟩
     · simp only [packedHaloKeyLoopCost,List.map_cons,List.sum_cons] at hm₂ ⊢
       omega
     · have hstep := Exec.seq hpop (Exec.seq he₁ hpeek)
@@ -117,5 +119,11 @@ theorem packedHaloKeyLoop_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA 
       · exact Or.inr (Or.inr hd)
     · exact fun h => hrange₂ (hrange₁ h)
     · simpa only [S₀,Function.update_of_ne (by decide : (132 : Fin 168) ≠ 127)] using hwords₂.trans hwords₁
+    · intro bound _ hbound
+      apply hlength₂ bound
+      · rw [hlength₁]
+        exact hbound L (by simp)
+      · intro M hM
+        exact hbound M (by simp [hM])
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
