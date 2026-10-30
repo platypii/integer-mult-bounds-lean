@@ -24,6 +24,19 @@ def coreIndices (s width : ℕ) : List ℕ := List.range ((s+width-1)/width)
 def ownedCore (s width k : ℕ) [NeZero s] : Finset (ZMod s) :=
   haloVertices s (coreStart width k) (coreStart width k+coreLength s width k)
 
+/-- Every scheduled core starts within the ambient line. Empty schedules need
+no positivity assumption on the width. -/
+theorem coreStart_lt_of_mem {s width k : ℕ} (hk : k ∈ coreIndices s width) :
+    coreStart width k < s := by
+  have hk' : k < (s+width-1)/width := List.mem_range.mp hk
+  by_cases hw : width = 0
+  · simp [hw] at hk'
+  · have hm := Nat.mul_le_mul_right width (Nat.succ_le_of_lt hk')
+    have hd := Nat.div_mul_le_self (s+width-1) width
+    simp only [Nat.succ_mul] at hm
+    dsimp only [coreStart]
+    omega
+
 /-- Membership is exactly quotient ownership, including the clipped last core. -/
 theorem mem_ownedCore (width k : ℕ) (hw : 0 < width) (i : ZMod s) :
     i ∈ ownedCore s width k ↔ i.val/width = k := by

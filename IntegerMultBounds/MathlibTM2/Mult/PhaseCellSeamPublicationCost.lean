@@ -21,8 +21,7 @@ theorem publishOwnedCore_cost_le (s width k W : ℕ) (hstart : coreStart width k
 
 /-- The complete exceptional slice bill is at most three ambient traversals.
 This charges actual generated indices, including the clipped final core. -/
-theorem seamPublication_cost_le (s width radius W : ℕ) (hr : radius ≤ width)
-    (hstarts : ∀ k ∈ coreIndices s width, coreStart width k ≤ s) :
+theorem seamPublication_cost_le (s width radius W : ℕ) (hr : radius ≤ width) :
     let seams := ((coreIndices s width).toFinset).filter (fun k =>
       ¬ (radius ≤ coreStart width k ∧ coreStart width k+coreLength s width k+radius ≤ s))
     (∑ k ∈ seams, (6*(coreStart width k*W)+10*(coreLength s width k*W)+16)) ≤
@@ -36,7 +35,7 @@ theorem seamPublication_cost_le (s width radius W : ℕ) (hr : radius ≤ width)
       seams.card*(10*(s*W)+16) := by
     calc
       _ ≤ ∑ _k ∈ seams, (10*(s*W)+16) := Finset.sum_le_sum (fun k hk =>
-        publishOwnedCore_cost_le s width k W (hstarts k (List.mem_toFinset.mp (Finset.mem_filter.mp hk).1)))
+        publishOwnedCore_cost_le s width k W (Nat.le_of_lt (coreStart_lt_of_mem (List.mem_toFinset.mp (Finset.mem_filter.mp hk).1))))
       _ = _ := by simp
   have hm := Nat.mul_le_mul_right (10*(s*W)+16) hc
   omega
