@@ -3,12 +3,22 @@ module
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedWorkspace
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedPublication
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPackedInteriorCost
-import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedPreparedCost
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedGeometryWorkspace
 
 /-! Audit selected resource comparisons for the actual packed caller. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Cost.packedFactorReleaseCost_le,
+      `IntegerMultBounds.MathlibTM2.Cost.packedHaloFinalReleaseCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.packedHaloSetupReleaseCost_poly,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedConstructedBoundaryFactorCost_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPackedHaloSetupReleaseCost_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPackedHaloSetupReleaseCost_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.packedHaloGeometryWorkspace_zero_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPackedHaloGeometryWorkspace_zero_poly_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPackedHaloGeometryWorkspace_zero_scaled_volume_le,
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPackedHaloGeometryWorkspace_scaled_volume_add_replicas_le,
       `IntegerMultBounds.MathlibTM2.Cost.PackedHaloPassEnvelope.of_bounds,
       `IntegerMultBounds.MathlibTM2.Cost.selectedPackedHaloPassEnvelope,
       `IntegerMultBounds.MathlibTM2.Cost.selectedPackedPreparedPassEnvelopes,
