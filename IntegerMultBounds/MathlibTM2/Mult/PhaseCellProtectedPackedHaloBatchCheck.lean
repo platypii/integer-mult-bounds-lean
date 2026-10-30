@@ -1,0 +1,12 @@
+module
+
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedPackedHaloBatch
+
+/-! Audit the actual protected numerical supplier independently of routing. -/
+open Lean in
+run_cmd do
+  let name := `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.protectedPackedHaloGeometryPublishedBatch_exec
+  for ax in ← collectAxioms name do
+    unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
+      throwError "{name} depends on unapproved axiom {ax}"
+  logInfo "Protected packed numerical batch axiom audit passed."

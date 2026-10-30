@@ -5647,3 +5647,24 @@ packed execution preserves both stacks on all external ports with no added
 steps. Actual factor/batch execution must still be instantiated against that
 view; the native 251 dimension also needs outer disposal after use. Complex
 assembly, output normalization, key padding and global S4 gates remain open.
+
+### S4 actual protected factor/reuse/publication execution (2026-10-30)
+
+`PhaseCellProtectedPackedHaloBatch.protectedPackedHaloGeometryPublishedBatch_exec`
+now instantiates the concrete 263-register geometry/factor/published-batch
+execution theorem inside the 276-register protected layout. Its premises are
+that supplier's actual geometry, native bank readiness, precision, dominance,
+input bounds and solution facts, plus procedure-table embedding equalities;
+there is no solver execution premise or fabricated postcondition.
+The resulting execution includes the native factor construction, reuse over
+all replicas, numerical batch, release and owned-core publication. The native
+step bound is unchanged. Both stacks on every register 263--275, including the
+remaining-key queue and retained headers, are preserved. The conclusion exposes
+the physical output on 253 as the ordered encoded core stream, exact replica
+count preservation (`Ds.length = inputs.length`), and `List.Forall₂` core
+accuracy. Native source consumption, owned factor cleanup and the supplier's
+other restored fields remain explicit through its projected final bank.
+This closes the protected concrete solve supplier, but does not yet compose
+input conversion with its native readiness or prove the global tile machine.
+Complex real/imaginary assembly, local output normalization, count disposal,
+key padding, scheduling and total S4 resource gates remain open.
