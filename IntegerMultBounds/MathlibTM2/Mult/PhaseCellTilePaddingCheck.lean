@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCount
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCountRemoval
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedReplicaPadding
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRemoveDummyReplicas
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPaddedReplicaTile
@@ -7,6 +9,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPaddedReplicaTile
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaCount_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaCountRemoval_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedReplicaPadding_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.removeDummyPrefix_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.removeDummyPrefix_cost_le,

@@ -5470,3 +5470,22 @@ Its use for output erasure requires returned rows with the same common packet
 length; interfaces changing row lengths must generate the corresponding output
 count instead. Capturing the count does not yet compose numerical execution or
 close the full tile lifecycle, key padding, scheduling or global S4 bounds.
+
+### S4 counts across halo/core length changes (2026-10-30)
+
+The fixed-key published batch returns owned cores, which may be shorter than
+input halos. An input-symbol count therefore cannot automatically serve as an
+output-symbol count. `PhaseCellReplicaCount.replicaCount_exec` derives N from
+the actual replica-major source: generate row width K*W from retained key and
+packet widths, scan whole rows with the existing restoring `countWords`, then
+clear the generated width. Only the fresh retained replica counter changes;
+source, header symbols and scratch restore. Its bill is
+`K*(4W+9)+N*(6KW+6)+2KW+10`.
+`PhaseCellReplicaCountRemoval.replicaCountRemoval_exec` generates the real
+output-symbol count N*outputRowWidth, removes arbitrary computed dummy packets,
+then clears the generated count. Only the output source changes. The bill is
+`10*dummySymbols+14*realSymbols+9*N+20`. Both programs use structural existing
+count/product/erasure proofs. This permits halo-to-core row shrinkage without
+identifying incompatible packet lengths. The outer lifecycle must still place
+and preserve the replica counter, generate output row dimensions and compose
+these programs with actual numerical batches and inverse routing. S4 remains open.
