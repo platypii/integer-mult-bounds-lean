@@ -19,9 +19,20 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 242 Q A U} {body' : P → Pr P 248 Q A U}
 
+/-- One packed input with an already constructed factor bank and retained
+geometry. The caller owns initialization, publication and final page release. -/
+noncomputable def packedHaloPreparedInput (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 248 Q A U :=
+  .seq (embProg packedBoundaryRecoveryBase id
+    (.seq (placedPackedHaloRealBoundaryData hR hQ) (packedPreparedResidualSolve hQ)))
+    (.seq (packedBoundaryRecovery hR hQ) packedRecoveryRelease)
+
+/-- Retained tables and factors are released once, after the input batch. -/
+noncomputable def packedHaloFinalRelease : Pr P 248 Q A U :=
+  .seq packedTableRelease packedFactorRelease
+
 noncomputable def packedHaloSolveUsing (freshGeometry : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 248 Q A U :=
   .seq (embProg packedBoundaryRecoveryBase id (packedHaloBoundarySolveUsing freshGeometry hR hQ))
-    (.seq (packedBoundaryRecovery hR hQ) (.seq packedRecoveryRelease (.seq packedTableRelease packedFactorRelease)))
+    (.seq (packedBoundaryRecovery hR hQ) (.seq packedRecoveryRelease packedHaloFinalRelease))
 
 noncomputable def packedHaloSolveUsingCost (freshGeometry : Bool) (p u l target rhsExp s t a b V : ℕ) [NeZero s] : ℕ :=
   let band := PhaseCellBand.width p u
