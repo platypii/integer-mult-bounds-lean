@@ -269,10 +269,25 @@ Disposal preserves the actual output archive.
 certificates to any contained owned core with arbitrary publication suffixes.
 `publishPackedCore_accurate_exec` joins that fact to the actual restoring packed
 slice program: its exact destination prefix has the same error bound and the
-cost traverses only halo padding and core words. It still requires generated
-slice controls and a source cursor. Iterating publication over the reversed
-output archive, retiring consumed halos, and restoring the required output
-order remain to be executed.
+cost traverses only halo padding and core words.
+
+`PhaseCellPackedCoreArchiveStep` now composes that restoring crop with
+`retireCountedLine`: it removes exactly the consumed halo, preserves borrowed
+controls and restores every temporary. `PhaseCellPackedCoreArchiveLoop` iterates
+this actual program with a structural consumed/remaining-list invariant. Its
+endpoint consumes the entire halo prefix, exposes the original source suffix,
+empties its loop counter and preserves every stack except source, destination
+and counter. `PhaseCellPackedCoreArchiveAccuracy` instantiates it on the reversed
+solver archive: prepending the extracted cores restores forward input order
+without another reversal pass. `List.Forall₂` transports each halo's decoded
+error to its corresponding published core. The charged time is
+`N*(6*radius*w+10*coreLength*w+16+retireCountedLineCost haloLength w+3)+2`.
+The loop still assumes supplied unary padding/core/halo/width controls and a
+replica counter. Generating those controls and composing this cursor with the
+closed numerical batch remain required; full-line seam publication and the
+global schedule remain separate obligations. The loop checks near 2.07 GiB
+with default proof limits; broad contextual simplification was replaced by
+direct register inequalities to stay within those limits.
 The closed-batch endpoint checks near 3.24 GiB with default proof limits. This is a local
 fixed-key lifecycle theorem; it does not provide a peak-live-stock bound or the
 full generated S4 schedule.

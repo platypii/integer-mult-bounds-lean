@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCoreAccuracy
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCoreArchiveAccuracy
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloClosedBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloNumericalBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedFactoryRouting
@@ -296,6 +296,9 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.PackedHaloInputTrace.packed_outputs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedCore_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishPackedCore_accurate_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedCoreArchiveStep_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedCoreArchiveLoop_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedCoreArchiveLoop_accurate_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedPreparedBank.of_recovery_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedPreparedBank.publish,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedPreparedResidualSolve_bank_exec,
