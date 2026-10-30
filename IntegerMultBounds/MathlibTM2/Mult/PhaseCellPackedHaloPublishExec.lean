@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.StackExecutionUnique
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloClosedBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCoreArchiveFromDimensions
 
@@ -151,7 +152,20 @@ theorem packedHaloClosedBatch_publish_exec
         (fun i => (packedIntervalRead q w (coreStart coreWidth k)
           (cstream A w (ownedCoreWords coreWidth k D)++Sbig.R 253) i).re) x.2 e) inputs Ds ∧
       (∀ i : Fin 249, i ≠ 132 → F.R (packedHaloPublishedReg i) = H.R i) ∧
-      (∀ i : Fin 263, 249 ≤ i.val → i ≠ 253 → F.R i = Sbig.R i) := by
+      (∀ i : Fin 263, 249 ≤ i.val → i ≠ 253 → F.R i = Sbig.R i) ∧
+      (∀ persistent work c depth : ℕ, 1 ≤ w → 1 ≤ coreLength s coreWidth k+2*radius →
+        ExecWithin body (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
+          IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk vi S₀)+depth+
+            (persistent+(c+1)*work))
+          depth (packedHaloClosedBatch hR hQ) (mk vi S₀) n₁ (mk vf H) →
+        IntegerMultBounds.MathlibTM2.Fast.Main.mnProgPush
+          (packedCoreArchiveFromDimensions (P := P) (U := U) (Q := Q) (A := A)
+            (249 : Fin 263) 250 251 248 254 255 132 253 257 258 259 256 252 260 261 262) ≤ c →
+        (∀ f, IntegerMultBounds.MathlibTM2.Fast.Main.mnProgPush (bodyLarge f) ≤ c) →
+        ExecWithin bodyLarge (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
+          IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v Sbig)+persistent+depth+
+            (c+1)*(work+100*(inputs.length+1)*((coreLength s coreWidth k+2*radius)*w)))
+          depth (packedHaloPublishedBatch hR hQ) (mk v Sbig) n (mk v' F)) := by
   have hlen : coreStart coreWidth k+coreLength s coreWidth k+radius-(coreStart coreWidth k-radius) =
       coreLength s coreWidth k+2*radius := by omega
   rw [haEq,hbEq,hlen] at houtputs hgood
@@ -187,7 +201,7 @@ theorem packedHaloClosedBatch_publish_exec
   have hn₂' : n₂ ≤ packedCoreBatchPublicationCost inputs.length radius (coreLength s coreWidth k) w := by
     simpa only [packedCoreBatchPublicationCost,hDs] using hn₂
   refine ⟨v₃,F,n₁+n₂,hu₃.trans hu₂,Nat.add_le_add_left hn₂' _,Exec.seq he₂ he₃,
-    harchive,by simpa only [h253] using hdst,by simpa only [h253] using hcoreGood,?_,?_⟩
+    harchive,by simpa only [h253] using hdst,by simpa only [h253] using hcoreGood,?_,?_,?_⟩
   · intro i h132
     have hi := i.isLt
     rw [hpubFrame _ (by
@@ -197,5 +211,18 @@ theorem packedHaloClosedBatch_publish_exec
   · intro i hi h253'
     rw [hpubFrame i (by intro he; have hh := congrArg Fin.val he; change i.val = 132 at hh; omega) h253']
     exact hexternal i hi
+  · intro persistent work c depth hw hhalo ht hp hb
+    obtain ⟨v',F',hv',hu',ht',hproj',hframe'⟩ :=
+      packedHaloClosedBatch_lift_within_stock hbody hR hQ ht v Sbig hv hview
+    have hout := (ht'.toExec.unique he₂).2
+    have ht'' : ExecWithin bodyLarge
+        (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
+          IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v Sbig)+persistent+depth+(c+1)*work)
+        depth (embProg packedHaloPublishedReg id (packedHaloClosedBatch hR hQ))
+        (mk v Sbig) n₁ (mk v₂ M) := by
+      rw [hout] at ht'
+      exact ht'.mono (by intro d z hz; omega)
+    exact packedHaloPublishedBatch_compose_within_stock hR hQ inputs.length radius
+      (coreLength s coreWidth k) w hw hhalo ht'' he₃ hn₂' hp hb
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

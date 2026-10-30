@@ -110,7 +110,7 @@ theorem packedHaloPublishedBatch_exec
       hband has hbs hpad inputs tail (embDn packedHaloPublishedReg v) S₀ S hview hcount h109 h115 h116 hfactoryLeft hready
       haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank
       h239 h157 hscratch hab haLt hsep hwide hVeq hwV hcoords hunits hC hdom hcell hboundary hy hcoeff
-  obtain ⟨v₂,F,n,hu₂,hn,he,harchive,hdst,hcoreGood,hkeep,hexternal⟩ :=
+  obtain ⟨v₂,F,n,hu₂,hn,he,harchive,hdst,hcoreGood,hkeep,hexternal,hpublicationStock⟩ :=
     packedHaloClosedBatch_publish_exec hbody'' hR hQ q w a b coreWidth k radius haEq hbEq hleft hright
       inputs Ds (1/(2 : ℝ)^finalTarget) (S.R 132) he₁ hcounter houtputs hgood v Sbig rfl hbigview
       hRdim hLdim hNdim hwdim hpublicationClean
