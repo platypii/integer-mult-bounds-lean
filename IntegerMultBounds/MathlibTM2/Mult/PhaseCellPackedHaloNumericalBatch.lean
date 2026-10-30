@@ -110,7 +110,9 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
     (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
       (embStk packedBoundaryRecoveryBase T).R k =
         (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg S)).R k) ∧
-    T.L = (embStk packedHaloBatchReg S).L ∧ T.inp = S.inp ∧ T.out = S.out
+    T.L = (embStk packedHaloBatchReg S).L ∧ T.inp = S.inp ∧ T.out = S.out ∧
+    (∀ k : Fin 168, k ∈ haloAuxiliaryPorts → T.R (packedRecoveryRuntimeReg k) =
+      (embStk packedHaloBatchReg S).R (packedRecoveryRuntimeReg k))
   obtain ⟨vf,F,n,hu',hn,he,hcounter,hready,htrace⟩ := packedHaloBatch_list_exec
     hbody' hR hQ
     (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)
@@ -120,7 +122,7 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
         (fun i => (packedIntervalRead q w a (F.R 132) i).re) x.2 (1/(2 : ℝ)^finalTarget))
     (by
       intro x xs vi T hready
-      obtain ⟨hmem,hsource,hbetween,hpages,hsetup,hleft,hinput,houtput⟩ := hready
+      obtain ⟨hmem,hsource,hbetween,hpages,hsetup,hleft,hinput,houtput,hauxiliary⟩ := hready
       have hx : x ∈ inputs := hmem x (by simp)
       have hsrc : T.R 110 = encode x++((xs.map encode).flatten++tail) := by
         simpa only [List.map_cons,List.flatten_cons,List.append_assoc] using hsource
@@ -129,12 +131,12 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
           hbudget hpad x.1 (hC x hx) hab hb hband hwide hVeq hwV hcoords hunits
           ((xs.map encode).flatten++tail) vi T hsrc haLt hfitV hsep hdom hq
           hbetween columns hcolumns hcell htable hpages hboundary x.2 (hy x hx) hcoeff
-      refine ⟨vf,G,m,hu',hm,he,⟨?_,hsrc',hbetween',hpages' _ _ _ hpages,?_,hleft'.trans hleft,hinput'.trans hinput,houtput'.trans houtput⟩,D,hout,herr⟩
+      refine ⟨vf,G,m,hu',hm,he,⟨?_,hsrc',hbetween',hpages' _ _ _ hpages,?_,hleft'.trans hleft,hinput'.trans hinput,houtput'.trans houtput,fun k hk => (hauxiliary' k hk).trans (hauxiliary k hk)⟩,D,hout,herr⟩
       · intro z hz
         exact hmem z (by simp only [List.mem_cons]; exact Or.inr hz)
       · intro k hk hne
         exact (hsetup' k hk hne).trans (hsetup k hk hne))
-    inputs v S hcount ⟨(by intro x hx; exact hx),hsource,hbetween,hpages,(by intros; rfl),rfl,rfl,rfl⟩
+    inputs v S hcount ⟨(by intro x hx; exact hx),hsource,hbetween,hpages,(by intros; rfl),rfl,rfl,rfl,(by intros; rfl)⟩
   have hlength := htrace.output_length (L := (b-a)*w) (by
     intro x T G hresult
     obtain ⟨D,hout,herror⟩ := hresult
