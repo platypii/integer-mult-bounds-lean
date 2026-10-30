@@ -415,8 +415,13 @@ structural binary-recursion lemmas identify the converter output with `Nat.bits`
 The program preserves the borrowed unary dimension and restores scratch in at
 most `21*n+11` steps. This is one actual header-field generator, not a premise
 asserting that some chosen bits are canonical. It checks near 1.93 GiB and has a
-separate `PhaseCellReplicaKeyHeadersCheck` axiom audit. Composing the five header
-fields with routing, padding nondyadic movement groups, proving the selected
+separate `PhaseCellReplicaKeyHeadersCheck` axiom audit. `PhaseCellCanonicalHeaderList` now composes field generation structurally over
+an arbitrary destination-distinct list, with a summed execution bill and exact
+frame. `PhaseCellReplicaKeyHeaders` instantiates it for all five interchange
+fields, permitting the two constant-one fields to share a source. It preserves
+borrowed unary dimensions and restores scratch, with cost at most
+`21*(W+h+d+2)+56`. Composing these generated headers with routing and cleanup,
+padding nondyadic movement groups, proving the selected
 routing/peak-stock bounds, and connecting the router to the generated gather and
 numerical key batches remain open. The data module checks near 0.82 GiB and the execution module near
 2.52 GiB. A separate `PhaseCellReplicaKeyInterchangeCheck` audits this supplier
