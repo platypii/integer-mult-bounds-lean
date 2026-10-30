@@ -408,6 +408,20 @@ normalization volume is unchanged; preparation adds exactly `4*V+4` steps.
 Only the payload changes in the resulting register file. The endpoint checks
 near 2.94 GiB with default proof limits.
 
+`PhaseCellReplicaKeyRoutingBill` names the actual counted-router bill used by
+its execution theorem. Its structural normalization is
+`2*(T+12*swapT t₀+5)*swapCost + 12*stock + 50*V + 4*T + 12*swapT t₀ + 54`,
+where `V = 2^h*(2^d*W)` and `stock` is the initial placed-bank volume.
+`PhaseCellReplicaKeyRoutingCost` applies the existing uniform interchange bound
+to generated canonical header bits. Thus, for balanced exponents, the full
+router costs a constant times `V*max(1,h,d)^tau`, with the explicit register
+and normalization overhead above. Header generation/erasure is separate. This
+bridge retains the balance hypotheses; it does not justify padding an arbitrary
+rectangle up to a square. Unbalanced/nondyadic scheduling and simultaneous
+peak-stock bounds still require proof. The expanded router axiom audit passes;
+the guarded build peaks near 3.2 GiB.
+
+
 `PhaseCellCanonicalUnaryHeader` reuses the existing halving-based `unaryBinary`
 converter, adds the tape machine's separator and proves the emitted
 `binBits (Nat.size n) n` have value `n` and are canonical, including zero. Its

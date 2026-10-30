@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedReplicaKeyRouter
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyRoutingBill
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -41,14 +42,12 @@ theorem countedPackedReplicaKeyRouter_exec {t₀ T Q K : ℕ} {U P : Type}
     (hblank : ∀ i ∈ [ι (reg re),ι (reg im),tmp,saved,reRev,imRev], S.R i = [])
     (hother : ∀ i, i ≠ re → i ≠ im → (∀ k, hd k ≠ i) →
       ∀ s ∈ S.R (ι (reg i)), s ≠ blank ∧ s.val < prime+4) :
-    let V := 2^h*(2^d*W)
     ∃ v' m, v'.user = v.user ∧
-      m ≤ (4*V+4)+((12*V+12)+2*((T+12*swapT t₀+5)*swapCost 1 1 W h d hs+
-        6*((∑ j, (S.R (ι j)).length)+2*V)+2*T+6*swapT t₀+15)+(2*V+2)+(8*V+6)) ∧
+      m ≤ packedReplicaKeyRoutingCost T t₀ W h d (∑ j, (S.R (ι j)).length) hs ∧
       Exec body (countedPackedReplicaKeyRouter hd re im hi hQre hQim ι hι hT src tmp saved count reRev imRev) (mk v S) m
         (mk v' {S with L := fun _ => [], R := (Function.update S.R src
           (keyReplicaWords (fun r k b => pairSym (prime+K) (realBits r k b) (imagBits r k b))))}) := by
-  dsimp only
+  dsimp only [packedReplicaKeyRoutingCost]
   let V := 2^h*(2^d*W)
   have hr := hreg
   regs_ne hr
