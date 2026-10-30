@@ -43,6 +43,25 @@ theorem packedCoreBatchPublicationCost_le_volume (N radius core w : ℕ)
   change _ ≤ 100*(N+1)*(H*w)
   nlinarith only [hn,hrw,hcw,hH,hv,hN]
 
+/-- The actual core publisher's intermediate storage is bounded by halo volume. -/
+theorem packedCorePublication_within_stock {Q A : ℕ} {P U : Type}
+    {body : P → Pr P 263 Q A U} (N radius core w : ℕ) (hw : 1 ≤ w)
+    (hhalo : 1 ≤ core+2*radius) :
+    let pub : Pr P 263 Q A U :=
+      packedCoreArchiveFromDimensions 249 250 251 248 254 255 132 253 257 258 259 256 252 260 261 262
+    ∀ {v vf : HS 263 Q A U} {S F : Stacks 263 A} {n c : ℕ},
+      Exec body pub (mk v S) n (mk vf F) → n ≤ packedCoreBatchPublicationCost N radius core w →
+      IntegerMultBounds.MathlibTM2.Fast.Main.mnProgPush pub ≤ c →
+      (∀ f, IntegerMultBounds.MathlibTM2.Fast.Main.mnProgPush (body f) ≤ c) → ∀ depth,
+      ExecWithin body (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
+        IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v S)+depth+
+          (c+1)*(100*(N+1)*((core+2*radius)*w))) depth pub (mk v S) n (mk vf F) := by
+  intro pub v vf S F n c he hn hp hb depth
+  apply IntegerMultBounds.MathlibTM2.Fast.Main.mn_exec_within he hp hb depth
+  have hc := Nat.mul_le_mul_left (c+1)
+    (hn.trans (packedCoreBatchPublicationCost_le_volume N radius core w hw hhalo))
+  exact Nat.add_le_add_left hc _
+
 noncomputable def packedHaloPublishedBatch (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 263 Q A U :=
   .seq (embProg packedHaloPublishedReg id (packedHaloClosedBatch hR hQ))
     (packedCoreArchiveFromDimensions 249 250 251 248 254 255 132 253 257 258 259 256 252 260 261 262)
