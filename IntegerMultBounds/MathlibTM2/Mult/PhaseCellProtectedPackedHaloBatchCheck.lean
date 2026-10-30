@@ -9,6 +9,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyNormalizedBatch
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedHaloRetainedHeaders.length_eq,
       `IntegerMultBounds.MathlibTM2.Host.hostFrameStock_congr,
       `IntegerMultBounds.MathlibTM2.Host.mnSize_mk_le_allowance,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.PackedHaloInputTrace.stock_le_cursor,

@@ -77,6 +77,29 @@ structure PackedHaloRetainedHeaders {A : ℕ} (P stage q l s t u band a b V w : 
   stage : (S.R 118).length = stage
   level : (S.R 120).length = l
 
+/-- Equal ready parameters give equal retained-header stock, even when the
+unary symbols themselves differ. Geometry words agree by their encoding. -/
+theorem PackedHaloRetainedHeaders.length_eq
+    {A P stage q l s t u band a b V w : ℕ} {S F : Stacks 168 A}
+    (h : PackedHaloRetainedHeaders P stage q l s t u band a b V w S)
+    (h' : PackedHaloRetainedHeaders P stage q l s t u band a b V w F)
+    (k : Fin 168) (hk : k ∈ haloRetainedHeaderPorts) :
+    (F.R k).length = (S.R k).length := by
+  rcases List.mem_append.mp hk with hk | hk
+  · have hm := h.masters
+    have hm' := h'.masters
+    rcases hm with ⟨hP,hq,hs,ht,hu,hband,ha,hb,hw⟩
+    rcases hm' with ⟨hP',hq',hs',ht',hu',hband',ha',hb',hw'⟩
+    have hstage := h.stage
+    have hstage' := h'.stage
+    have hl := h.level
+    have hl' := h'.level
+    have hV := h.geometry.width
+    have hV' := h'.geometry.width
+    simp only [List.mem_append,couplingMasterPorts,List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with (rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl) | (rfl | rfl | rfl) <;> omega
+  · rw [h'.geometry.encoded k hk,h.geometry.encoded k hk]
+
 theorem PackedHaloRetainedHeaders.of_frame {A P stage q l s t u band a b V w : ℕ}
     {S F : Stacks 168 A} (h : PackedHaloRetainedHeaders P stage q l s t u band a b V w S)
     (hframe : ∀ k ∈ haloRetainedHeaderPorts, F.R k = S.R k) :
