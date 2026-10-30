@@ -156,7 +156,7 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
     rw [hcell,hstages] at hh
     change (F₁.R 118).length = _
     simpa only [hboundary] using hh
-  obtain ⟨v₂,F,n₂,D,hu₂,hn₂,he₂,h93,h139',h238,hi,ho,hout,hfits,herror,hsource,hnative₂,hleft₂,hretained,hwork₂,hready₂,hprivate₂,hfactors,hpages₂,h127Recovery,h143Recovery,h158Recovery,h167Recovery,hscratchRecovery⟩ :=
+  obtain ⟨v₂,F,n₂,D,hu₂,hn₂,he₂,h93,h139',h238,hi,ho,hout,hfits,herror,hsource,hnative₂,hleft₂,hretained,hwork₂,hready₂,hprivate₂,hfactors,hpages₂,h127Recovery,h143Recovery,h158Recovery,h167Recovery,hscratchRecovery,hqueueRecovery⟩ :=
     packedBoundaryRecovery_buffers_spec (body := body') (q := q) (w := w) (W := W) hR hQ hA hp hu hwidth hα hst hαu hθ hgap hbudget hdom
       hab hb hband hsep hpad (by simp only [q,bits,B,band,hboundary]) (by simp only [w,bits,B,band,hboundary]) C ys y
       (by simpa only [hq] using hC) haccuracy.1 haccuracy.2.1

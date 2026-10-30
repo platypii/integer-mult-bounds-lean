@@ -229,7 +229,7 @@ theorem packedHaloSolveUsing_spec (freshGeometry : Bool) (hR : rpStates ≤ Q) (
       (lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ) hgap hbudget z hz
     exact ⟨fits_of_value_power hwcoef z hh.1,hh.2⟩
   have hs := hsemantic x hx'
-  obtain ⟨v₃,F,n₂,D,hu₃,hn₂,he₃,h93',h139',h238,hin,hout,houtput',hfits,haccuracy,hbuffers,hnativeRecovery,hleft',hretained,hworkRecovery,hreadyRecovery,hprivateHeaders,hfactors,hpagesRecovery,h127Recovery,h143Recovery,h158Recovery,h167Recovery,hscratchRecovery⟩ :=
+  obtain ⟨v₃,F,n₂,D,hu₃,hn₂,he₃,h93',h139',h238,hin,hout,houtput',hfits,haccuracy,hbuffers,hnativeRecovery,hleft',hretained,hworkRecovery,hreadyRecovery,hprivateHeaders,hfactors,hpagesRecovery,h127Recovery,h143Recovery,h158Recovery,h167Recovery,hscratchRecovery,hqueueRecovery⟩ :=
     packedBoundaryRecovery_buffers_spec (body := body') hR hQ hA hp hu hwidth hα hst hαu hθ hgap hbudget hdom
       hab hbs hband hsep hpad rfl rfl C _ x hC' hylen hyfits hs.1 hx' D₁
       (S.R 238) outputTail tail v₂ G
