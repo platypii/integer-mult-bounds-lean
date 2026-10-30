@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloPreparedBoundaryExtended
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBoundarySolve
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryRecovery
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryRelease
@@ -24,7 +26,7 @@ variable {Q A : ℕ} {P U : Type} {body : P → Pr P 242 Q A U} {body' : P → P
 geometry. The caller owns initialization, publication and final page release. -/
 noncomputable def packedHaloPreparedInput (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 248 Q A U :=
   .seq (embProg packedBoundaryRecoveryBase id
-    (.seq (placedPackedHaloRealBoundaryData hR hQ) (packedPreparedResidualSolve hQ)))
+    (packedHaloPreparedBoundary hR hQ))
     (.seq (packedBoundaryRecovery hR hQ) packedPreparedInputRelease)
 
 /-- Retained tables and factors are released once, after the input batch. -/

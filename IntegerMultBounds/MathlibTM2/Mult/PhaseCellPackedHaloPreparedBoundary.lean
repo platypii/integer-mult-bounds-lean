@@ -21,6 +21,9 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 242 Q A U}
 
+noncomputable def packedHaloPreparedBoundary (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 242 Q A U :=
+  .seq (placedPackedHaloRealBoundaryData hR hQ) (packedPreparedResidualSolve hQ)
+
 theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {l s t p u target rhsExp a b V boundaryTarget : ℕ} [NeZero s] {α d : ℝ}
     (hp : 2 ≤ p) (hα : 0 < α) (hwidth : 8*p ≤ 2^u) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
@@ -93,7 +96,7 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       v'.user = v.user ∧
       m ≤ packedHaloRealBoundaryDataCost p l s t u target rhsExp a b V+
         preparedResidualSolveCost q w B.card W ∧
-      Exec body (.seq (placedPackedHaloRealBoundaryData hR hQ) (packedPreparedResidualSolve hQ))
+      Exec body (packedHaloPreparedBoundary hR hQ)
         (mk v S) m (mk v' F) ∧
       PackedPreparedBank q w W B.card F ∧
       (
