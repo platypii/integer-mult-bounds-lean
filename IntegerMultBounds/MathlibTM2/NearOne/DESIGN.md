@@ -5710,3 +5710,26 @@ This closes the repeated-readiness proof interface for the numerical call.
 Sequencing input and the actual batch still requires instantiating these records
 and remaining publication/workspace facts at the input's final state. Complex
 assembly, output conversion and the global S4 gates remain open.
+
+### S4 sequenced local input and concrete real batch (2026-10-30)
+
+`PhaseCellPackedKeyRealBatch.packedKeyRealBatch_exec` now executes the full
+sequence of counted local input preparation and the concrete protected
+geometry/factor/reuse/release/core-publication batch. It starts with unit p-grid
+halo fields in the external key queue, initial setup/view records and the stated
+workspace/publication geometry. The input stage establishes the shifted-field
+source ABI, per-input magnitude bounds and native replica count. View transport
+and `PackedHaloSetup` supply the actual numerical call's readiness; there is no
+execution callback or assumed intermediate numerical result.
+The native result is tied to actual input precision/width via
+`boundaryHaloTarget_sizing`, with width `2q+8`. The conclusion gives ordered
+physical core outputs on 253, exact output replica count and the real-core
+accuracy relation. It also preserves the later-key queue, restores archive 132
+and table 220, clears factor-owned registers, and exposes native 248/252 cleanup
+and the retained owned 251 count. The bill is the sum of `packedKeyInputCost`,
+publication-count initialization and `packedHaloBatchCostFromSetup`. All external
+fields restore except queue 263 advancing to its untouched suffix.
+This closes actual input-to-real-core sequencing for one complete key. Complex
+assembly must reuse the same key factors across real/imaginary RHS replicas;
+output normalization, owned-count disposal, full tile/key/global scheduling and
+uniform simultaneous resource bounds remain open. S4 is incomplete.
