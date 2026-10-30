@@ -60,9 +60,9 @@ theorem packedHaloBatch_exec {body : P → Pr P 248 Q A U} {body' : P → Pr P 2
     (hInv : Inv 0 (embStk packedHaloBatchReg S)) :
     ∃ v' F n, v'.user = v.user ∧ n ≤ packedHaloBatchCost N cost ∧
       Exec body' (packedHaloBatch hR hQ) (mk v S) n (mk v' F) ∧
-      F.R 248 = [] ∧ Inv N (embStk packedHaloBatchReg F) := by
+      F.R 248 = [] ∧ Inv N (embStk packedHaloBatchReg F) ∧ F.L 248 = S.L 248 := by
   apply countedLoop_exec 248 (packedHaloBatchStep hR hQ) N cost
-    (fun j S => Inv j (embStk packedHaloBatchReg S)) ?_ ?_ v S hcount hInv
+    (fun j T => Inv j (embStk packedHaloBatchReg T) ∧ T.L 248 = S.L 248) ?_ ?_ v S hcount ⟨hInv,rfl⟩
   · intro j S xs hI
     have hview : embStk packedHaloBatchReg {S with R := Function.update S.R 248 xs} =
         embStk packedHaloBatchReg S := by
@@ -75,10 +75,10 @@ theorem packedHaloBatch_exec {body : P → Pr P 248 Q A U} {body' : P → Pr P 2
     rw [hview]; exact hI
   · intro j hj v S hI
     obtain ⟨v₁,F,n,hu,hn,he,hnext⟩ := hstep j hj (embDn packedHaloBatchReg v)
-      (embStk packedHaloBatchReg S) hI
+      (embStk packedHaloBatchReg S) hI.1
     obtain ⟨v₂,F₂,hu₂,he₂,hview,hleft,hcounter⟩ := packedHaloBatchStep_exec hbody hR hQ he v S rfl rfl
     refine ⟨v₂,F₂,n,hu₂.trans hu,hn,he₂,hcounter,?_⟩
-    rw [hview]; exact hnext
+    exact ⟨by rw [hview]; exact hnext,hleft.trans hI.2⟩
 
 /-- Certificates retain the physical state at which each input was solved.
 Later output prefixes therefore cannot invalidate an earlier accuracy claim. -/
@@ -233,11 +233,11 @@ theorem packedHaloBatch_list_exec {X : Type}
       (∀ done suffix, xs = done++suffix → ∃ M,
         PackedHaloInputTrace Result done (embStk packedHaloBatchReg S) M ∧
         (∃ remaining, Ready remaining M ∧ remaining.length ≤ xs.length) ∧
-        PackedHaloInputTrace Result suffix M (embStk packedHaloBatchReg F)) := by
+        PackedHaloInputTrace Result suffix M (embStk packedHaloBatchReg F)) ∧ F.L 248 = S.L 248 := by
   let Inv := fun j T => ∃ done todo : List X,
     xs = done++todo ∧ done.length = j ∧ Ready todo T ∧
       PackedHaloInputTrace (fun x S F => Result x S F ∧ ∃ todo, Ready todo F ∧ todo.length ≤ xs.length) done (embStk packedHaloBatchReg S) T
-  obtain ⟨v',F,n,hu,hn,he,hcounter,hI⟩ := packedHaloBatch_exec hbody hR hQ
+  obtain ⟨v',F,n,hu,hn,he,hcounter,hI,hleft⟩ := packedHaloBatch_exec hbody hR hQ
     xs.length cost Inv (by
       intro j hj vi T hI
       obtain ⟨done,todo,hxs,hlen,hready,htrace⟩ := hI
@@ -264,7 +264,7 @@ theorem packedHaloBatch_list_exec {X : Type}
   subst todo
   simp only [List.append_nil] at hxs
   subst done
-  refine ⟨v',F,n,hu,hn,he,hcounter,hr,htrace.mono (fun _ _ _ h => h.1),htrace,?_⟩
+  refine ⟨v',F,n,hu,hn,he,hcounter,hr,htrace.mono (fun _ _ _ h => h.1),htrace,?_,hleft⟩
   intro done suffix hsplit
   have hfull := htrace
   rw [hsplit] at hfull
