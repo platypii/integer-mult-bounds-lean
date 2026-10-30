@@ -3,12 +3,13 @@ module
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedWorkspace
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedPublication
 import IntegerMultBounds.MathlibTM2.Cost.PhaseCellPackedInteriorCost
-import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedNormalizedWorkspace
+import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPackedNormalizedTrace
 
 /-! Audit selected resource comparisons for the actual packed caller. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Cost.selectedPackedNormalizedBatch_trace_volume_le,
       `IntegerMultBounds.MathlibTM2.Cost.preparedNormalizePackedBatchCost_zero_poly,
       `IntegerMultBounds.MathlibTM2.Cost.packedKeyNormalizedWorkspace_zero_le_geometry,
       `IntegerMultBounds.MathlibTM2.Cost.selectedPackedNormalizedWorkspace_zero_poly_le,
