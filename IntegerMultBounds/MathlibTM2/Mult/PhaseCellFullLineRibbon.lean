@@ -119,20 +119,23 @@ def prepareFullLineRibbon {Q A : ℕ} {P U : Type} : Pr P 168 Q A U :=
 theorem prepareFullLineRibbon_exec {Q A s precision q t u a b : ℕ} [NeZero s] {P U : Type}
     {body : P → Pr P 168 Q A U} (F : ZMod s → GaussianInt) (band w : ℕ) (hb : band ≤ s)
     (v : HS 168 Q A U) (S : Stacks 168 A)
-    (hs : (S.R 97).length = s) (hband : (S.R 100).length = band) (hw : (S.R 94).length = w)
     (hsrc : S.R 141 = cstream A w (chirpLine s F))
-    (hclean : ∀ k ∈ ([107,108,109,115,116,104,105,106,160] : List (Fin 168)), S.R k = [])
+    (hclean : ∀ k ∈ ([107,160] : List (Fin 168)), S.R k = [])
     (raw : List (Fin (A+4)))
     (hready : RetainedCouplingReady precision q w s t u band a b raw
       (embStk groupReg (embStk intervalPageReg S))) :
     ∃ v' n, v'.user = v.user ∧ n ≤ padCouplingSourceCost s band w+4*((s+2*band)*w)+4 ∧
       Exec body prepareFullLineRibbon (mk v S) n
         (mk v' {S with R := (Function.update (Function.update S.R 141 [])
-          160 (cstream A w (rawCouplingRibbon band 0 s F)))}) := by
+          160 (cstream A w (rawCouplingRibbon band 0 s F)))}) ∧
+      RetainedCouplingReady precision q w s t u band a b raw
+        (embStk groupReg (embStk intervalPageReg
+          {S with R := (Function.update (Function.update S.R 141 [])
+            160 (cstream A w (rawCouplingRibbon band 0 s F)))})) := by
   obtain ⟨v₁,n,hu₁,hn,he₁⟩ := padCouplingSource_fullRibbon168_exec (body := body) F band w hb [] v S
-    hs hband hw (by simpa using hsrc) (hclean 107 (by simp)) (hclean 108 (by simp))
-    (hclean 109 (by simp)) (hclean 115 (by simp)) (hclean 116 (by simp))
-    (hclean 104 (by simp)) (hclean 105 (by simp)) (hclean 106 (by simp))
+    hready.axis hready.bandwidth hready.width (by simpa using hsrc) (hclean 107 (by simp)) (hready.fresh 108 (by simp))
+    (hready.fresh 109 (by simp)) (hready.fresh 115 (by simp)) (hready.fresh 116 (by simp))
+    (hready.fresh 104 (by simp)) (hready.fresh 105 (by simp)) (hready.fresh 106 (by simp))
   let B : Stacks 168 A := {S with R := Function.update S.R 141 (cstream A w (rawCouplingRibbon band 0 s F))}
   have hreadyB : RetainedCouplingReady precision q w s t u band a b raw
       (embStk groupReg (embStk intervalPageReg B)) := by
@@ -143,13 +146,14 @@ theorem prepareFullLineRibbon_exec {Q A s precision q t u a b : ℕ} [NeZero s] 
       simp [B,embStk,groupReg,intervalPageReg,Fin.ext_iff,show k.val ≠ 141 by omega]
     rw [heq]
     exact hready
-  obtain ⟨v₂,hu₂,he₂,_⟩ := moveFullLineRibbon_exec (body := body) F band w v₁ B
+  obtain ⟨v₂,hu₂,he₂,hreadyFinal⟩ := moveFullLineRibbon_exec (body := body) F band w v₁ B
     (by simp [B,rawCouplingRibbon_fullLine]) (by simpa [B] using hclean 107 (by simp))
     (by simpa [B] using hclean 160 (by simp)) raw hreadyB
-  refine ⟨v₂,n+(4*((s+2*band)*w)+4),hu₂.trans hu₁,by omega,?_⟩
-  have he₁' : Exec body (embProg (Fin.castLE (by decide : 144 ≤ 168)) Empty.elim
-      (padCouplingSource (P := Empty))) (mk v S) n (mk v₁ B) := by simpa [B] using he₁
-  simpa only [prepareFullLineRibbon,B,Function.update_idem] using Exec.seq he₁' he₂
+  refine ⟨v₂,n+(4*((s+2*band)*w)+4),hu₂.trans hu₁,by omega,?_,?_⟩
+  · have he₁' : Exec body (embProg (Fin.castLE (by decide : 144 ≤ 168)) Empty.elim
+        (padCouplingSource (P := Empty))) (mk v S) n (mk v₁ B) := by simpa [B] using he₁
+    simpa only [prepareFullLineRibbon,B,Function.update_idem] using Exec.seq he₁' he₂
+  · simpa only [B,Function.update_idem] using hreadyFinal
 
 end ScalarPlacement
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
