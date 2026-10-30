@@ -48,4 +48,28 @@ theorem PackedHaloInputTrace.stock_le_cursor {Q A : ℕ} {U X : Type}
         · simpa [ho,hc] using hother i ho hc)
   simpa [Finset.sum_add_distrib,Nat.add_assoc] using hb
 
+/-- Concrete between-input readiness discharges the register stock comparison.
+The retained factor bank and spectator stacks are counted in the initial state. -/
+theorem PackedHaloInputTrace.ready_stock_le {Q A : ℕ} {U X : Type}
+    {Result : X → Stacks 248 A → Stacks 248 A → Prop} {L : ℕ}
+    (hresult : ∀ x S F, Result x S F → (F.R 132).length = L+(S.R 132).length)
+    {xs : List X} {S F : Stacks 248 A} (htrace : PackedHaloInputTrace Result xs S F)
+    {P stage q l s t u band a b V w W boundaryCount : ℕ}
+    (h : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount S)
+    (h' : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount F)
+    (hi : F.inp = S.inp) (ho : F.out = S.out) (hl : F.L = S.L)
+    (h93 : F.R 93 = S.R 93)
+    (haux : ∀ k : Fin 168, k ∈ haloAuxiliaryPorts →
+      F.R (packedRecoveryRuntimeReg k) = S.R (packedRecoveryRuntimeReg k))
+    (hhigh : ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → F.R k = S.R k)
+    (hqueue : (F.R 110).length ≤ (S.R 110).length)
+    (v vf : HS 248 Q A U) :
+    mnSize (mk vf F) ≤ mnSize (mk v S)+xs.length*L+V := by
+  apply htrace.stock_le_cursor hresult v vf V
+    (hostFrameStock_congr hi ho hl).le h'.binaryLength
+  intro k h132 h157
+  by_cases h110 : k = 110
+  · subst k; exact hqueue
+  · exact (h.right_length_eq h' h93 haux hhigh k h110 h132 h157).le
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
