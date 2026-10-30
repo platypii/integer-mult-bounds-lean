@@ -219,8 +219,21 @@ pages and empties the loop counter. Its output archive grows by exactly
 `N*(b-a)*w` symbols. This archive length is not a bound on intermediate live
 storage. Initialization, final disposal and publication are outside this program.
 
-Still required: connect the initial factory execution to the between-input
-invariant and close the selected time and peak-storage ledgers. Output publication/cursor management,
+`PhaseCellPackedBoundaryFactoryBetween.packedBoundaryFactoryGeometry_between_exec`
+now derives the initial between-input invariant from the actual fresh-geometry
+factory execution. Its column/stage certificate, table error and factor-page
+meanings are outputs of the supplier theorem. The reusable workspace follows
+from its returned solve readiness and native/high scratch restoration; retained
+headers follow from the factory frame and canonical metadata generation. Only
+initial scratch emptiness is assumed, with the six added recovery ports supplied
+by a blank extension. The arbitrary source queue and publication buffer are
+preserved. The factory and numerical batch still need to be joined into one
+execution, including body embeddings, counter preparation and final disposal.
+This bridge uses the fresh-geometry factory; it does not repair the separate
+retained-geometry factory entry.
+
+Still required: compose initialization with the batch and close the selected
+time and peak-storage ledgers. Output publication/cursor management,
 setup-cost matching, peak storage, seams and tensor/R4 execution
 remain open. The original single-input solver still initializes and releases
 factors per call. The retained-factory placement correction above also remains
