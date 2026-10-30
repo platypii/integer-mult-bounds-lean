@@ -709,7 +709,10 @@ and private bank. Its stock certificate charges retained output volume plus
 the **maximum** job scratch allowance, with separate tape/clock restoration
 overhead. `dispatchedDescriptorState_stock` proves that moving a consumed
 descriptor to its saved tape preserves volume; only the output increases stock
-at a job boundary. The generic loop proves this peak bound and the older summed
+at a job boundary. `PackedNormalizedJob.output_length` identifies that increase
+exactly as replica count times owned-core length times word width. The concrete
+schedule charges the sum of these input dimensions, independent of the unknown
+numerical output values. The generic loop proves this peak bound and the older summed
 bound for the same execution, so no second interpreter or numerical proof is
 needed. This removes the repeated scratch charge, but does not yet prove the
 selected global bound: output volume, maximum scratch and restoration overhead

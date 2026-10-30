@@ -106,5 +106,23 @@ noncomputable def stepStock (work : Fin 325 → Fin T) (hR : rpStates ≤ Q) (hQ
 noncomputable def output (r : PackedNormalizedJob A s) (word : List (Fin (A+4))) : Prop :=
   PackedNormalizedOutput r.p r.W r.targetOut r.coreWidth r.k r.localityTarget r.Fs r.Y word
 
+/-- Published symbols are determined by replica count, owned core and word width. -/
+def outputVolume (r : PackedNormalizedJob A s) : ℕ :=
+  r.Fs.length * coreLength s r.coreWidth r.k * r.W
+
+theorem output_length (r : PackedNormalizedJob A s) {word : List (Fin (A+4))}
+    (h : r.output word) : word.length = r.outputVolume := by
+  obtain ⟨Gs,hGs,rfl,_⟩ := h
+  simp only [List.length_flatten,List.map_map,Function.comp_def,length_cstream,ownedCoreWords_length,
+    List.map_const',List.sum_replicate,hGs,outputVolume,nsmul_eq_mul,Nat.cast_id,Nat.mul_assoc]
+
+theorem outputs_length {records : List (PackedNormalizedJob A s)}
+    {outputs : List (List (Fin (A+4)))} (h : List.Forall₂ output records outputs) :
+    outputs.flatten.length = (records.map outputVolume).sum := by
+  induction h with
+  | nil => rfl
+  | cons h _ ih => simp only [List.flatten_cons,List.length_append,List.map_cons,List.sum_cons,
+      output_length _ h,ih]
+
 end PackedNormalizedJob
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
