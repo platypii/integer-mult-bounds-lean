@@ -87,7 +87,14 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
         inputs (embStk packedHaloBatchReg S) (embStk packedHaloBatchReg F) ∧
       (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
         (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg F)).R k =
-          (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg S)).R k) := by
+          (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg S)).R k) ∧
+      (embStk packedHaloBatchReg F).L = (embStk packedHaloBatchReg S).L ∧
+      (embStk packedHaloBatchReg F).inp = S.inp ∧ (embStk packedHaloBatchReg F).out = S.out ∧
+      (∀ k : Fin 168, k ∈ haloAuxiliaryPorts →
+        (embStk packedHaloBatchReg F).R (packedRecoveryRuntimeReg k) =
+          (embStk packedHaloBatchReg S).R (packedRecoveryRuntimeReg k)) ∧
+      (embStk packedHaloBatchReg F).R 93 = S.R 93 ∧
+      (embStk packedHaloBatchReg F).R 238 = S.R 238 := by
   dsimp only
   intro hbetween columns hcolumns hcell htable hpages hboundary hy hcoeff
   let band := PhaseCellBand.width p u
@@ -142,6 +149,6 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
     obtain ⟨D,hout,herror⟩ := hresult
     rw [hout,List.length_append,length_cstream,packedInterval_length D (by omega)])
   exact ⟨vf,F,n,hu',hn,he,hcounter,hlength,by simpa only [List.map_nil,List.flatten_nil,List.nil_append] using hready.2.1,
-    hready.2.2.1,hready.2.2.2.1,htrace,hready.2.2.2.2.1⟩
+    hready.2.2.1,hready.2.2.2.1,htrace,hready.2.2.2.2.1,hready.2.2.2.2.2⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

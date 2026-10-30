@@ -146,7 +146,7 @@ theorem packedHaloInitializedBatch_exec
   have hproject : embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg S₁) = M := by
     rw [hview₁]; exact embStk_extendStacks (by decide) M
   rw [←hproject] at hpages₁
-  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hcounter,hlength,hsrc₂,hbetween₂,hpages₂,htrace,hsetup₂⟩ :=
+  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hcounter,hlength,hsrc₂,hbetween₂,hpages₂,htrace,hsetup₂,hbatchFrame⟩ :=
     packedHaloNumericalBatch_exec hbody hbody' hR hQ hA hp hα hwidth hst hu hαu hθ hgap hbudget hpad
       inputs hC hab hbs hband hwide hVeq hwV hcoords hunits tail v₁ S₁
       (by rw [hcount₁]; exact hcount) hsource₁ haLt hfitV hsep hdom hq
