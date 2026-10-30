@@ -38,6 +38,24 @@ theorem mn_seq_exec_within {body : P → Prog P Γ σ} {p q : Prog P Γ σ}
   · intro d z hz
     nlinarith only [hz,hsize]
 
+/-- Compose bounded setup with a live phase while charging persistent data
+once, outside the per-step workspace multiplier. -/
+theorem mn_setup_exec_within_stock {body : P → Prog P Γ σ} {p q : Prog P Γ σ}
+    {s t u : Store Γ σ} {m n setup persistent scratch C depth : ℕ}
+    (he : Exec body p s m t) (hm : m ≤ setup)
+    (hp : mnProgPush p ≤ C) (hb : ∀ f, mnProgPush (body f) ≤ C)
+    (hq : ExecWithin body (fun d z => mnSize z+d ≤ mnSize t+persistent+depth+(C+1)*scratch)
+      depth q t n u) :
+    ExecWithin body (fun d z => mnSize z+d ≤ mnSize s+persistent+depth+(C+1)*(setup+scratch))
+      depth (.seq p q) s (m+n) u := by
+  have hsetup := mn_bounded_exec_certify he hm C hp hb depth
+  have hfinal := hsetup.final
+  refine .seq (hsetup.mono ?_) (hq.mono ?_)
+  · intro d z hz
+    nlinarith only [hz]
+  · intro d z hz
+    nlinarith only [hz,hfinal]
+
 /-- Setup, live work and release share one stock budget. No middle-phase time
 bound is substituted for its already proved resource certificate. -/
 theorem mn_lifecycle_exec_within {body : P → Prog P Γ σ} {p q r : Prog P Γ σ}
