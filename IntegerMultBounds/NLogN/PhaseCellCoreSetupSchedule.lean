@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.NLogN.PhaseCellCoreSetupGroups
+public import IntegerMultBounds.NLogN.PhaseCellCoreVolume
 public import Mathlib.Data.List.Nodup
 
 /-! A deterministic endpoint-key schedule, with each owned core visited once. -/
@@ -45,5 +46,28 @@ theorem coreSetupOrder_perm (s width band n : ℕ) :
     (coreSetupOrder s width band n).Perm (coreIndices s width) := by
   apply (List.perm_ext_iff_of_nodup (coreSetupOrder_nodup ..) (coreIndices_nodup ..)).mpr
   exact fun k => mem_coreSetupOrder s width band n k
+
+/-- Reordering into distinct setup groups preserves every additive work ledger. -/
+theorem coreSetupKeyList_sum {M : Type*} [AddCommMonoid M]
+    (s width band n : ℕ) (charge : ℕ → M) :
+    ((coreSetupKeyList s width band n).map (fun key =>
+      ((coreSetupGroup s width band n key).map charge).sum)).sum =
+        ((coreIndices s width).map charge).sum := by
+  have h := ((coreSetupOrder_perm s width band n).map charge).sum_eq
+  have hsum (keys : List (ℕ × ℕ)) :
+      (keys.flatMap (fun key => (coreSetupGroup s width band n key).map charge)).sum =
+      (keys.map (fun key => ((coreSetupGroup s width band n key).map charge).sum)).sum := by
+    induction keys with
+    | nil => simp
+    | cons key keys ih => simp only [List.flatMap_cons,List.sum_append,List.map_cons,List.sum_cons,ih]
+  simpa only [coreSetupOrder,List.map_flatMap,hsum] using h
+
+/-- The ordered setup schedule publishes exactly one ambient line per replica,
+including seam groups and the clipped final core. -/
+theorem coreSetupKeyList_outputVolume (s width band n replicas W : ℕ) (hw : 0 < width) :
+    ((coreSetupKeyList s width band n).map (fun key =>
+      ((coreSetupGroup s width band n key).map
+        (fun k => replicas*coreLength s width k*W)).sum)).sum = replicas*s*W := by
+  rw [coreSetupKeyList_sum,coreOutputVolume_sum s width replicas W hw]
 
 end IntegerMultBounds.NLogN.PhaseCellMatrix
