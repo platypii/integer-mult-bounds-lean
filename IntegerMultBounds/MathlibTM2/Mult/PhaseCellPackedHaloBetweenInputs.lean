@@ -17,6 +17,24 @@ structure PackedHaloBetweenInputs {A : ℕ}
   binaryLength : (S.R 157).length ≤ V
   privateBank : ∀ k : Fin 248, 242 ≤ k.val → S.L k = [] ∧ S.R k = []
 
+/-- Retained header lengths are fixed throughout a batch at one numerical key. -/
+theorem PackedHaloBetweenInputs.header_length_eq
+    {A P stage q l s t u band a b V w W boundaryCount : ℕ} {S F : Stacks 248 A}
+    (h : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount S)
+    (h' : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount F)
+    (k : Fin 168) (hk : k ∈ haloRetainedHeaderPorts) :
+    (F.R (packedRecoveryRuntimeReg k)).length = (S.R (packedRecoveryRuntimeReg k)).length :=
+  h.headers.length_eq h'.headers k hk
+
+/-- Restored native arithmetic registers contribute no prefix-dependent stock. -/
+theorem PackedHaloBetweenInputs.native_length_eq
+    {A P stage q l s t u band a b V w W boundaryCount : ℕ} {S F : Stacks 248 A}
+    (h : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount S)
+    (h' : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount F)
+    (k : Fin 117) (h93 : k ≠ 93) (h110 : k ≠ 110) :
+    (F.R ⟨k.val,by omega⟩).length = (S.R ⟨k.val,by omega⟩).length := by
+  rw [h.native k h93 h110,h'.native k h93 h110]
+
 /-- Output allocation changes no between-input invariant. -/
 theorem PackedHaloBetweenInputs.update_output
     {A P stage q l s t u band a b V w W boundaryCount : ℕ} {S : Stacks 248 A}
