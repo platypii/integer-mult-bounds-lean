@@ -176,11 +176,21 @@ next borrowed suffix in the native input-bank format. The continuation cost is
 `packedRecoveryReleaseCost + packedInputAdvanceCost + 2*w+3`.
 Recovery already disposes of the boundary mask; no second mask erasure is needed.
 
-These are executable components, not a repeated-input acceptance theorem.
-Still required: extract packed RHS production and boundary solution correctness
-from the factory wrapper, compose the full prepared-input contract, derive all
-second-call preconditions from the first call's actual state, and execute two
-inputs with a single initialization. Output publication/cursor management,
+`packedHaloPreparedBoundary_exec` now composes actual RHS production with the
+prepared boundary solve, including accuracy of its exact computed solution.
+Its lifted endpoint constructs the interior principal-system solution and
+provides fresh recovery workspace. `packedHaloPreparedRecovery_exec` composes
+that prefix with recovery. `packedHaloPreparedInput_exec` then executes the
+complete prepared program through per-input release, proves the actual final
+halo error, returns the numerical bank, exposes the borrowed source suffix and
+clears owned headers 130 and 138--140. Its cost is the shared prepared-input
+ledger, including advancement/reset, with setup and final factor disposal
+outside the call. Numerical matrix, coefficient-fit and input conditions remain
+explicit hypotheses.
+
+This is a one-input prepared execution theorem, not a repeated-input acceptance
+theorem. Still required: derive every second-call precondition from the first
+call's actual state and execute two inputs with a single initialization. Output publication/cursor management,
 list iteration, setup-cost matching, peak storage, seams and tensor/R4 execution
 remain open. The original single-input solver still initializes and releases
 factors per call. The retained-factory placement correction above also remains
