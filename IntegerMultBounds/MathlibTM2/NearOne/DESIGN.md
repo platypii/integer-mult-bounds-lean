@@ -205,15 +205,23 @@ counter isolated on port 248, outside the 248-port numerical bank. Its structura
 list theorem consumes arbitrary input lists and retains a relational certificate
 for every call, including its intermediate physical states. This permits earlier
 output accuracy certificates to survive subsequent output prepending. The exact
-control charge is `N*(perInput+3)+2`, including the empty batch. The theorem still
-requires the concrete numerical step and queue invariant to be instantiated;
-it does not establish an initialized numerical batch or a live-storage bound.
-The module checks at about 3.2 GiB with default proof limits.
+control charge is `N*(perInput+3)+2`, including the empty batch.
+
+`PhaseCellPackedHaloNumericalBatch.packedHaloNumericalBatch_exec` now instantiates
+that theorem with `packedHaloNextInput_exec`, not a numerical execution callback.
+An arbitrary list of RHS/exact-solution pairs supplies the numerical input bounds
+and solve equations. The queue invariant contains the unconsumed encoded RHSs,
+the between-input bank and the actual shared factor-page meanings. Each step
+consumes one RHS and derives the next bank and factor meanings from execution.
+The endpoint consumes the whole source prefix, retains a physical output/error
+certificate for every input, restores the reusable bank, preserves the factor
+pages and empties the loop counter. Its output archive grows by exactly
+`N*(b-a)*w` symbols. This archive length is not a bound on intermediate live
+storage. Initialization, final disposal and publication are outside this program.
 
 Still required: connect the initial factory execution to the between-input
-invariant, instantiate the list theorem with the numerical replica/component transition,
-and close the selected time and peak-storage ledgers. Output publication/cursor management,
-list iteration, setup-cost matching, peak storage, seams and tensor/R4 execution
+invariant and close the selected time and peak-storage ledgers. Output publication/cursor management,
+setup-cost matching, peak storage, seams and tensor/R4 execution
 remain open. The original single-input solver still initializes and releases
 factors per call. The retained-factory placement correction above also remains
 open; the prepared body itself excludes that factory path.
