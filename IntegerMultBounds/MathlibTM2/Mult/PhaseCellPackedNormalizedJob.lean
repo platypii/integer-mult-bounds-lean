@@ -69,6 +69,13 @@ theorem haloLength (r : PackedNormalizedJob A s) :
   have hl := r.hleft
   omega
 
+/-- The separated-boundary numerical solver accepts only proper intervals.
+In particular, its parameter contract cannot instantiate a full-line fallback. -/
+theorem haloLength_lt (r : PackedNormalizedJob A s) : r.b-r.a < s := by
+  have hs := r.bounds.hsep
+  have hb := PhaseCellBand.width_pos r.p r.u
+  omega
+
 def emptyHost : Stacks 242 A := ⟨[],[],fun _ => [],fun _ => []⟩
 
 noncomputable def words (r : PackedNormalizedJob A s) : Fin 325 → List (Fin (A+4)) :=

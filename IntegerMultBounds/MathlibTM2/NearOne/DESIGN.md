@@ -720,15 +720,15 @@ must all fit together. Constructing the selected jobs, executable seam coverage,
 setup multiplicities and the total fast-time inequality remain open before
 R4/layout/tensor integration.
 
-The seam execution route now reuses `PackedNormalizedJob.fullLine`: choose the
-full ambient line as one owned core and use zero crop margin. The constructor
-derives its geometry and generated-halo equality from the ordinary full-interval
-numerical bounds. It is a job for the existing restoring schedule, with no new
-solver or execution premise. `output_fullLine` gives accuracy at every ambient
-coordinate and output volume exactly `replicas*s*W`. One such returned line can
-supply all exceptional cores. Selecting those cores in the final output order,
-constructing the selected full-interval bounds and paying for the full-line call
-are still required; this is not yet complete executable seam assembly.
+The attempted full-line packed-job fallback was removed: its
+`PackedHaloParameterBounds.hsep` requires `b-a+band ≤ s`, while the selected band
+is positive. Thus no such full-line job exists; `PackedNormalizedJob.haloLength_lt`
+records this restriction explicitly. Restore commit `78c346d0` contains the
+removed constructor and output wrapper. The generated mathematical full-system
+fallback remains valid, but executable seam handling requires a numerical path
+supporting the periodic cut (or a proved cyclic transport to a proper interval).
+The existing slice publication and its exceptional traversal bound remain usable
+once an actual seam solver supplies their source. S4 seam execution is open.
 
 | Order | Deliverable | Reuse and decisive acceptance check |
 | --- | --- | --- |
