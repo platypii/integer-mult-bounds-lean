@@ -40,6 +40,7 @@ theorem attachQueuedHalo_frame {p l s t u target rhsExp a b V : ℕ} [NeZero s] 
     let S' : Stacks 242 A := {S with R := Function.update S.R 110 (xs++S.R 110)}
     ∃ v' F n, v'.user = v.user ∧ n ≤ attachQueuedHaloCost V q (b-a) ∧
       Exec body attachQueuedHalo (mk v M) n (mk v' F) ∧
+      F = {M with R := (Function.update (Function.update M.R 256 tail) 110 (xs++M.R 110))} ∧
       PackedHaloFrame (p := p) (l := l) (t := t) (u := u) (target := target)
         (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C (S.R 110) S' ∧
       embStk queuedHaloBaseReg F = S' ∧ F.R 256 = tail ∧
@@ -98,7 +99,7 @@ theorem attachQueuedHalo_frame {p l s t u target rhsExp a b V : ℕ} [NeZero s] 
       · exact hfresh 259 (by simp)
       · exact hfresh 260 (by simp))
   let F : Stacks 264 A := {M with R := (Function.update (Function.update M.R 256 tail) 110 (xs++M.R 110))}
-  refine ⟨v₁,F,n,hu,hn,he,hsetup.with_source (S.R 110),?_,?_,?_⟩
+  refine ⟨v₁,F,n,hu,hn,he,rfl,hsetup.with_source (S.R 110),?_,?_,?_⟩
   · change embStk queuedHaloBaseReg
       {{M with R := Function.update M.R 256 tail} with R := (Function.update
         (Function.update M.R 256 tail) 110 (xs++M.R 110))} = _

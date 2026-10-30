@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellQueuedHaloCore
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellQueuedHaloFrame
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInitializedCoreGather
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedCoreGather
@@ -415,6 +416,7 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.takeCountedLine_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.attachQueuedHalo_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.attachQueuedHalo_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.queuedHaloCore_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedOriginListHost_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedCoreCountedHost_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedOriginHost_exec,

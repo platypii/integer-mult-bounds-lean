@@ -2088,6 +2088,30 @@ including the approved core-setup, packed-coupling and coupling-interval axiom
 audits. The guarded aggregate peaks were 37.3 and 35.0 GiB. New-file trailing
 whitespace was removed before committing; staged whitespace checks passed.
 
+### Concrete queued core execution (2026-10-29)
+
+`queuedHaloCore_spec` now composes the executed queued-halo attachment with
+`preparedHaloCore_spec`, including output allocation, both interior passes,
+boundary solve/recovery, publication and local buffer/factor disposal. It
+consumes exactly the first packed halo from queue 256, publishes the owned core
+on 248 with the existing physical-read error bound, restores the borrowed
+ambient source on 110 and output suffix on 132, and preserves the remaining
+queue and every added header outside the published output and consumed queue.
+The radius/core publication headers and added attachment counters restore. Its time
+bound is the sum of attachment and concrete local-core costs; no local-solver
+execution callback is assumed.
+
+The caller still establishes the source-independent numerical/header setup and
+the halo's binary coordinate fields. Connecting the generated group to queue
+placement and repeated setup/header construction, restoring the complete low
+runtime bank across calls, complete setup-key reuse, seams/full-system fallback,
+complex/tensor composition and final uniform bounds remain open. S4 remains
+open.
+
+Verification: `queuedHaloCore_spec` checked at 3246.7 MiB peak RSS. The
+coupling-interval integration build passed 14,965 jobs and its approved-axiom
+audit (5.1 GiB aggregate peak); whitespace checks passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
