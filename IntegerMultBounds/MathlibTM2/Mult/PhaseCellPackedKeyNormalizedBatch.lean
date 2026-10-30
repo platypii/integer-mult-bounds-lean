@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyComplexBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizeNativeBatch
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedComponentLocality
 
 /-! One actual local numerical call, normalization, publication and dimension cleanup. -/
 @[expose] public section
@@ -46,7 +47,7 @@ theorem packedKeyNormalizedBatch_exec
     (q W : ℕ) (hpq : p+1 ≤ q) (hW : 2*q+8 ≤ W)
     (hqSizing : q = executionPrecision p l target rhsExp)
     (Fs : List (ZMod s → GaussianInt)) (hF : ∀ F ∈ Fs, ∀ i, ‖value p (F i)‖ ≤ 1)
-    (y : (ZMod s → GaussianInt) → ZMod s → ℝ) (C : ZMod s → GaussianInt)
+    (C : ZMod s → GaussianInt)
     (tail : List (Fin (A+4))) (v : HS T Q A U)
     (M : Stacks 276 A) (B : Stacks 263 A) (S₀ : Stacks 249 A) (S : Stacks 242 A)
     (hviews : PackedKeyBankViews M B S₀ S)
@@ -69,8 +70,6 @@ theorem packedKeyNormalizedBatch_exec
     (h249 : B.R 249 = []) (h250 : B.R 250 = [])
     (hpublicationClean : ∀ i ∈ ([254,255,256,257,258,259,260,261,262] : List (Fin 263)), B.R i = [])
     (hradiusWord : B.R 252 = binSyms V radius)
-    (hy : ∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) (y F)
-      (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re))
     (hcoeff : ∀ j < b-a, ∀ z ∈ couplingCoefficientWords (2^15*p) q s t u (PhaseCellBand.width p u) (a+j),
       Fits (2*q+8) z ∧ z.im = 0) 
     (targetOut : ℕ) (hfinal : finalTarget = targetOut+1) (hrhs : rhsExp = 2)
@@ -94,7 +93,12 @@ theorem packedKeyNormalizedBatch_exec
     (hwidth : H₀.R (rg .wr) = wl) (hbankBlank : ∀ r : TblR 25, r ≠ .wr → H₀.R (rg r) = [])
     (hparameters : H₀.R headerSrc = (inverseParameterWords p u l targetOut s t a b).flatMap
       (fun r => binSyms Bcore r.2)++headerTail)
-    (hheaders : ∀ i, H₀.R (ports i) = []) :
+    (hheaders : ∀ i, H₀.R (ports i) = [])
+    (localityTarget : ℕ)
+    (hhalo : haloVertices s a b = (PhaseCellInterface.generatedWindow s coreWidth p u localityTarget k).halo)
+    (Y : (ZMod s → GaussianInt) → ZMod s → ℝ)
+    (hY : ∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u) Finset.univ (Y F)
+      (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re)) :
     let L := coreLength s coreWidth k
     let j := inverseNormalizationShift p
     ∃ v' H n, ∃ Gs : List (ZMod s → GaussianInt), v'.user = v.user ∧ Gs.length = Fs.length ∧
@@ -109,11 +113,12 @@ theorem packedKeyNormalizedBatch_exec
       H.R (Fin.castLE hT 253) = (Gs.map (fun D => cstream A W (ownedCoreWords coreWidth k D))).flatten++M.R 253 ∧
       H.R headerSrc = headerTail ∧ H.R (Fin.castLE hT 278) = [] ∧ H.R (Fin.castLE hT 279) = [] ∧
       (∀ r, r ≠ TblR.wr → H.R (rg r) = []) ∧ H.R (rg .wr) = wl ∧
-      List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
+      List.Forall₂ (fun F D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
         (packedIntervalRead p W (coreStart coreWidth k)
-          (cstream A W (ownedCoreWords coreWidth k D)++M.R 253)) z
-        (2/(2 : ℝ)^p+(1/(2 : ℝ)^targetOut)/(2 : ℝ)^j))
-        ((Fs.map (componentSolution y)).map (fun z i => ((2 : ℂ)^j)⁻¹*z i)) Gs := by
+          (cstream A W (ownedCoreWords coreWidth k D)++M.R 253))
+        (fun i => ((2 : ℂ)^j)⁻¹*componentSolution Y F i)
+        ((2/(2 : ℝ)^p+(1/(2 : ℝ)^targetOut)/(2 : ℝ)^j)+
+          (1/(2 : ℝ)^localityTarget+1/(2 : ℝ)^localityTarget)/(2 : ℝ)^j)) Fs Gs := by
   dsimp only
   let L := coreLength s coreWidth k
   have hinj : Function.Injective (Fin.castLE hT) := by
@@ -125,6 +130,17 @@ theorem packedKeyNormalizedBatch_exec
     change j.val = i.val at hv
     have := j.isLt
     omega
+  have hpR : (0 : ℝ) < p := by exact_mod_cast (show 0 < p by have := hsetup.hp; omega)
+  have hdomLocal := SchurDominance.dominates_mono (realMatrix s t p u) Finset.univ
+    (haloVertices s a b) (1/(8*(p : ℝ))) (Finset.subset_univ _) hsetup.hdom
+  have hexists (F : ZMod s → GaussianInt) : ∃ x, SchurDominance.Solves (realMatrix s t p u)
+      (haloVertices s a b) x (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re) :=
+    SchurDominance.solves_exists _ _ (1/(8*(p : ℝ))) (by positivity) hdomLocal _
+  let y := fun F => Classical.choose (hexists F)
+  have hy : ∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u)
+      (haloVertices s a b) (y F) (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re) := by
+    intro F _
+    exact Classical.choose_spec (hexists F)
   obtain ⟨v₁,H₁,n₁,Ds,hu₁,hDs,hn₁,he₁,houtput,hrep,h251,h276,hrows,hinputWidth,hcore,hframe,hmag,hgood⟩ :=
     packedKeyComplexBatch_exec hbody hbody' hbody'' bodyProtected hbodyProtected bodyComplex hbodyComplex
       bodyFinal hbodyFinal hR hQ hA Bcore hsCore q W hpq hW hqSizing Fs hF y C tail
@@ -230,6 +246,11 @@ theorem packedKeyNormalizedBatch_exec
     have hr279 := hoff (rg .wr) (hrgHigh .wr) 279
     simpa [H₃,Ne.symm hr253,Ne.symm hr278,Ne.symm hr279,hsepHeader .wr] using
       (hext _ (hrgHigh .wr)).trans hwidth
-  · simpa only [ownedCoreWords,packedInterval,L] using haccuracy
+  · apply normalizedPackedComponents_generated_accuracy hsetup.hst hsetup.hα
+      coreWidth p u localityTarget k q (inverseNormalizationShift p) W hsetup.hp hpq
+      hsetup.hwidth hsetup.hαu hsetup.hθ hsetup.hgap hsetup.hbudget Fs hF y Y
+      (by intro F hmem; rw [←hhalo]; exact hy F hmem) hY Gs (M.R 253)
+      (2/(2 : ℝ)^p+(1/(2 : ℝ)^targetOut)/(2 : ℝ)^inverseNormalizationShift p)
+    simpa only [ownedCoreWords,packedInterval,L] using haccuracy
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
