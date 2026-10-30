@@ -5393,3 +5393,17 @@ and changing only the owned payload. The narrowing adapter also uses an
 initially blank zero control; no initialized generated counter is supplied.
 Placement, numerical signed fits, fixed-point scaling and composition with the
 actual tile batches remain open; these interfaces alone do not complete S4.
+
+`PhaseCellCommonWidthInput.commonWidthInput_exec` composes generated narrowing
+with the existing generated numerical input-scale batch. It starts with W-bit
+complex packets, retained W/w unary headers and the ordinary borrowed binary
+inverse scalar bank; it ends with exactly the w-bit stream of `2^d*z`, where
+`E=inverseExecutionExponent ...`, `w=8E+8`, and `d=4E-p-1`. All controls and the
+scalar bank restore, and only source 110 changes. Width setup, cropping, scalar
+header generation, scaling and cleanup are included in the composed bill.
+`commonWidthInput_value_fits` proves the output has value `value p z / 2` at
+precision `4E` and fits w signed bits, using the unit input bound.
+This is the actual width/scale handoff, not execution of the numerical solver.
+The common W and key-specific w retained headers still need outer generation;
+key-batch placement, output normalization/widening and complete tile composition
+remain open.
