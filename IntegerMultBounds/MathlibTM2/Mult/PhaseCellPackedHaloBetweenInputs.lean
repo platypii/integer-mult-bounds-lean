@@ -35,6 +35,34 @@ theorem PackedHaloBetweenInputs.native_length_eq
     (F.R ⟨k.val,by omega⟩).length = (S.R ⟨k.val,by omega⟩).length := by
   rw [h.native k h93 h110,h'.native k h93 h110]
 
+/-- All low-bank stock outside the queue, archive and binary cursor is fixed. -/
+theorem PackedHaloBetweenInputs.low_length_eq
+    {A P stage q l s t u band a b V w W boundaryCount : ℕ} {S F : Stacks 248 A}
+    (h : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount S)
+    (h' : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount F)
+    (h93 : F.R 93 = S.R 93)
+    (haux : ∀ k : Fin 168, k ∈ haloAuxiliaryPorts →
+      F.R (packedRecoveryRuntimeReg k) = S.R (packedRecoveryRuntimeReg k))
+    (k : Fin 168) (h110 : k ≠ 110) (h132 : k ≠ 132) (h157 : k ≠ 157) :
+    (F.R (packedRecoveryRuntimeReg k)).length = (S.R (packedRecoveryRuntimeReg k)).length := by
+  rcases haloLowRegister_cases k with hn | hh | hs | ho | hc | ha
+  · by_cases hk93 : k = 93
+    · subst k; exact congrArg List.length h93
+    · let j : Fin 117 := ⟨k.val,hn⟩
+      have hj93 : j ≠ 93 := by
+        intro he; apply hk93; exact Fin.ext (congrArg (fun i : Fin 117 => i.val) he)
+      have hj110 : j ≠ 110 := by
+        intro he; apply h110; exact Fin.ext (congrArg (fun i : Fin 117 => i.val) he)
+      exact h.native_length_eq h' j hj93 hj110
+  · exact h.header_length_eq h' k hh
+  · have hs' : packedRecoveryRuntimeReg k ∈
+        ([125,127,128,129,130,131,133,134,135,136,138,139,140,143,153,158,166,167] : List (Fin 248)) := by
+      simpa [Fin.ext_iff,packedRecoveryRuntimeReg] using hs
+    rw [h.scratch _ hs',h'.scratch _ hs']
+  · exact False.elim (h132 ho)
+  · exact False.elim (h157 hc)
+  · exact congrArg List.length (haux k ha)
+
 /-- Output allocation changes no between-input invariant. -/
 theorem PackedHaloBetweenInputs.update_output
     {A P stage q l s t u band a b V w W boundaryCount : ℕ} {S : Stacks 248 A}
@@ -46,7 +74,7 @@ theorem PackedHaloBetweenInputs.update_output
   · intro i hi93 hi110
     have hi := i.isLt
     have h132 : (⟨i.val,by omega⟩ : Fin 248) ≠ 132 := by
-      intro he; have hv := congrArg Fin.val he; change i.val = 132 at hv; omega
+      intro he; have hv := congrArg (fun i : Fin 248 => i.val) he; change i.val = 132 at hv; omega
     simpa only [Function.update_of_ne h132] using h.native i hi93 hi110
   · intro k hk
     have h132 : k ≠ 132 := by
