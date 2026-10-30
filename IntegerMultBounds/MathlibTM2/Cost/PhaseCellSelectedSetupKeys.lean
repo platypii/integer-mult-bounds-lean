@@ -118,6 +118,36 @@ theorem selectedFamilyDistinctKeyCharges_scaled_volume_le (ct scale C a b : ℕ)
     Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) (fun _ _ _ => Nat.zero_le _)
   exact (Nat.mul_le_mul_left scale hs).trans (hn h i charge hcharge)
 
+/-- Transfer a uniform setup polynomial to an executed list with one record
+per complete key. The list may carry data not determined by that key. -/
+theorem selectedKeyedListCharges_scaled_volume_le (ct scale C a b : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
+      ∀ {β : Type} (records : List β) (key : β → SelectedFamilyKey n i ct) (charge : β → ℕ),
+      (records.map key).Nodup →
+      (∀ r ∈ records, charge r ≤ C*Sizes.t n i^a*Sizes.p n^b) →
+      scale*(records.map charge).sum ≤ Sizes.T n := by
+  filter_upwards [selectedAxisPolynomial_le_volume (scale*(2*(ct+1)*C)) (b+2) (a+2)] with n hn
+  intro h i β records key charge hkeys hcharge
+  have hlen : records.length ≤ Fintype.card (SelectedFamilyKey n i ct) := by
+    simpa only [List.length_map] using hkeys.length_le_card
+  have hsum : (records.map charge).sum ≤ records.length*(C*Sizes.t n i^a*Sizes.p n^b) := by
+    clear hkeys hlen
+    induction records with
+    | nil => simp
+    | cons r records ih =>
+      have hr := hcharge r (by simp)
+      have ht := ih (fun x hx => hcharge x (by simp [hx]))
+      simp only [List.map_cons,List.sum_cons,List.length_cons,Nat.add_mul,Nat.one_mul]
+      omega
+  have hc := hlen.trans (selectedFamilyKey_card_le n h i ct)
+  have hs := Nat.mul_le_mul_left scale (hsum.trans (Nat.mul_le_mul_right _ hc))
+  have he : scale*((2*(ct+1)*Sizes.t n i^2*Sizes.p n^2)*(C*Sizes.t n i^a*Sizes.p n^b)) =
+      (scale*(2*(ct+1)*C))*Sizes.t n i^(a+2)*Sizes.p n^(b+2) := by
+    simp only [pow_add]
+    ring
+  rw [he] at hs
+  exact hs.trans (hn i)
+
 theorem selectedFamilyAllKeysSetup_scaled_volume_le (ct scale : ℕ) :
     ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
       ∀ [NeZero (Sizes.s n i)], ∀ A : ℕ,
