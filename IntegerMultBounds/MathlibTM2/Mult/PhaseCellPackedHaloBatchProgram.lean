@@ -97,6 +97,21 @@ theorem PackedHaloInputTrace.append {X : Type}
   | nil => exact h'
   | cons hx _ ih => exact .cons hx (ih h')
 
+/-- Split a batch trace at an arbitrary input prefix, retaining its physical
+boundary state rather than reconstructing that state from numerical outputs. -/
+theorem PackedHaloInputTrace.split {X : Type}
+    {Result : X → Stacks 248 A → Stacks 248 A → Prop}
+    (xs ys : List X) {S F : Stacks 248 A}
+    (h : PackedHaloInputTrace Result (xs++ys) S F) :
+    ∃ M, PackedHaloInputTrace Result xs S M ∧ PackedHaloInputTrace Result ys M F := by
+  induction xs generalizing S with
+  | nil => exact ⟨S,.nil S,h⟩
+  | cons x xs ih =>
+    cases h with
+    | cons hx ht =>
+      obtain ⟨M,hprefix,hsuffix⟩ := ih ht
+      exact ⟨M,.cons hx hprefix,hsuffix⟩
+
 /-- Any observation restored by each numerical input is restored by the batch.
 Use a tuple observation to carry the host frame and retained registers together. -/
 theorem PackedHaloInputTrace.frame {X Y : Type}
@@ -121,6 +136,19 @@ theorem PackedHaloInputTrace.output_length {X : Type}
     rw [ih,hresult _ _ _ hx]
     simp only [List.length_cons,Nat.add_mul,Nat.one_mul]
     omega
+
+/-- Every completed-input prefix fits in the final persistent archive budget. -/
+theorem PackedHaloInputTrace.prefix_archive_le {X : Type}
+    {Result : X → Stacks 248 A → Stacks 248 A → Prop} {L : ℕ}
+    (hresult : ∀ x S F, Result x S F → (F.R 132).length = L+(S.R 132).length)
+    (xs ys : List X) {S F : Stacks 248 A}
+    (h : PackedHaloInputTrace Result (xs++ys) S F) :
+    ∃ M, PackedHaloInputTrace Result xs S M ∧ PackedHaloInputTrace Result ys M F ∧
+      (M.R 132).length ≤ (F.R 132).length := by
+  obtain ⟨M,hprefix,hsuffix⟩ := h.split xs ys
+  refine ⟨M,hprefix,hsuffix,?_⟩
+  have hlen := hsuffix.output_length hresult
+  omega
 
 /-- Execute an arbitrary input list with one fixed counted program. `Ready`
 tracks the unconsumed queue and shared setup; `Result` retains each numerical
