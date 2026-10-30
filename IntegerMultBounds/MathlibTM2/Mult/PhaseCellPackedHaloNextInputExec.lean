@@ -93,7 +93,7 @@ theorem packedHaloNextInput_exec (hbody : ∀ f, body' f = embProg packedBoundar
       (∀ bo hf df, PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase S) →
         PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) ∧
       (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
-        (embStk packedBoundaryRecoveryBase F).R k = (embStk packedBoundaryRecoveryBase S).R k) := by
+        (embStk packedBoundaryRecoveryBase F).R k = (embStk packedBoundaryRecoveryBase S).R k) ∧ F.L = S.L := by
   dsimp only
   intro hbetween columns hcolumns hcell htable hpages hboundary y hy hcoeff
   let band := PhaseCellBand.width p u
@@ -157,7 +157,7 @@ theorem packedHaloNextInput_exec (hbody : ∀ f, body' f = embProg packedBoundar
       (by rw [hw]; exact packedFreshOutput_range _ _ _ _ _) hdom hq
       columns hcolumns hcell htable hbetween₁.bank hpages₁' hboundary y hy hcoeff
   rw [← hbetween₁.eq_extend] at he₂
-  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,hsrc,hbetween₂,?_,?_⟩
+  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,hsrc,hbetween₂,?_,?_,?_⟩
   · intro bo hf df hpages₀
     apply hpages₂
     apply hpages₀.of_solution_frame
@@ -174,5 +174,8 @@ theorem packedHaloNextInput_exec (hbody : ∀ f, body' f = embProg packedBoundar
       change k.val = 132 at hh
       omega
     exact Function.update_of_ne h132 _ _
+
+  · rw [hleft₂]
+    rw [← hbetween₁.eq_extend]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
