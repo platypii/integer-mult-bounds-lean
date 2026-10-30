@@ -25,6 +25,7 @@ theorem periodicNativeCounters_exec {Q A precision q w s t u band a b W N : ℕ}
       Exec body (embProg e Empty.elim couplingReadiness) (mk v S) n (mk v' G) ∧
       RetainedCouplingReady precision q w s t u band a b raw (embStk e G) ∧
       PackedPreparedBank q w W N G ∧
+      G.R 93 = S.R 93 ∧
       (∀ k : Fin 242, 96 ≤ k.val → G.R k = S.R k) ∧
       ∀ bo hf df, PackedBoundaryFactorPages bo hf df S → PackedBoundaryFactorPages bo hf df G := by
   dsimp only
@@ -60,13 +61,17 @@ theorem periodicNativeCounters_exec {Q A precision q w s t u band a b W N : ℕ}
             have hi := i.isLt
             change i.val = k.val at hv
             omega)).2
-  refine ⟨v₂,n,hu₂.trans hu₁,hn,he₂,?_,?_,?_,?_⟩
+  refine ⟨v₂,n,hu₂.trans hu₁,hn,he₂,?_,?_,?_,?_,?_⟩
   · rw [embStk_ovr hinj]
     exact hr
   · apply hbank.of_runtime_frame (F := G) (embOvr_right_left S _)
     · intro k hk; exact hframe k (Or.inl hk)
     · exact hframe 119 (Or.inr (by decide))
     · intro k hk _; exact hframe k (Or.inr (by omega))
+  · change G.R 93 = S.R 93
+    have hh := embOvr_get hinj ({T with R := counterR q w T.R} : Stacks 117 A).get S (.rt 93)
+    change G.R 93 = (counterR q w T.R 93).map id at hh
+    simpa [counterR,cr,OutputPlacement.code,T,embStk,e] using hh
   · intro k hk; exact hframe k (Or.inr hk)
   · intro bo hf df hpages
     exact hpages.of_solution_frame (fun k hk _ => hframe k (Or.inr (by omega)))

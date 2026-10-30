@@ -25,6 +25,18 @@ private theorem periodicGeometryDerived_range (k : Fin 242) (hk : k ∈ periodic
   simp only [periodicGeometryDerived,List.mem_cons,List.not_mem_nil,or_false] at hk
   rcases hk with rfl | rfl | rfl | rfl <;> decide
 
+theorem periodicGeometrySeed_core {A : ℕ} (S : Stacks 242 A) :
+    embStk (Fin.castLE (by decide : 117 ≤ 242)) (periodicGeometrySeed S) =
+      embStk (Fin.castLE (by decide : 117 ≤ 242)) S := by
+  refine Stacks.ext rfl rfl rfl ?_
+  funext i
+  apply periodicGeometrySeed_frame
+  intro hm
+  have hr := periodicGeometryDerived_range _ hm
+  have hi := i.isLt
+  change 148 ≤ i.val ∧ i.val < 168 at hr
+  omega
+
 theorem periodicGeometrySeed_bank {A q w W N : ℕ} {S : Stacks 242 A}
     (h : PackedPreparedBank q w W N S) : PackedPreparedBank q w W N (periodicGeometrySeed S) := by
   apply h.of_runtime_frame (F := periodicGeometrySeed S) rfl

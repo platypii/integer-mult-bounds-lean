@@ -12,6 +12,15 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.MathlibTM2.Mult.ShortConv ScalarPlacement
 
+/-- Exact native-header and scalar-counter endpoint, independent of the data page. -/
+def periodicRuntimeBank {A : ℕ} (precision q s t u band : ℕ) (S : Stacks 242 A) : Stacks 242 A :=
+  let e : Fin 144 → Fin 242 := Fin.castLE (by decide)
+  let T := embStk e S
+  let H := embOvr e ({T with R := couplingHeadersR precision q s t u band 0 s T.R} : Stacks 144 A).get S
+  let c : Fin 117 → Fin 242 := Fin.castLE (by decide)
+  let K := embStk c H
+  embOvr c ({K with R := counterR q (2*q+8) K.R} : Stacks 117 A).get H
+
 theorem periodicRuntimeReady_exec {Q A precision stage q l s t u band V W N : ℕ}
     {P U : Type} {body : P → Pr P 242 Q A U}
     (xs : List GaussianInt) (v : HS 242 Q A U) (S : Stacks 242 A)
@@ -19,11 +28,8 @@ theorem periodicRuntimeReady_exec {Q A precision stage q l s t u band V W N : �
       (extendStacks (by decide) S)) :
     let e : Fin 144 → Fin 242 := Fin.castLE (by decide)
     let B := periodicCouplingPageBank band (2*q+8) xs (periodicCouplingWidthBank q S)
-    let T := embStk e B
-    let H := embOvr e ({T with R := couplingHeadersR precision q s t u band 0 s T.R} : Stacks 144 A).get B
     let c : Fin 117 → Fin 242 := Fin.castLE (by decide)
-    let K := embStk c H
-    let G := embOvr c ({K with R := counterR q (2*q+8) K.R} : Stacks 117 A).get H
+    let G := periodicRuntimeBank precision q s t u band B
     ∃ v' n, v'.user = v.user ∧
       n ≤ installCouplingHeadersCost precision q s t u band 0 s+
         (prepareCost q (2*q+8)+6*q+4*band+10) ∧
@@ -31,7 +37,7 @@ theorem periodicRuntimeReady_exec {Q A precision stage q l s t u band V W N : �
         (embProg c Empty.elim couplingReadiness)) (mk v B) n (mk v' G) ∧
       RetainedCouplingReady precision q (2*q+8) s t u band 0 s (S.R 110) (embStk c G) ∧
       PackedPreparedBank q (2*q+8) W N G ∧
-      G.R 107 = [] ∧ G.R 141 = [] ∧
+      G.R 93 = S.R 93 ∧ G.R 107 = [] ∧ G.R 141 = [] ∧
       (∀ k : Fin 242, 117 ≤ k.val → G.R k = B.R k) ∧
       ∀ bo hf df, PackedBoundaryFactorPages bo hf df S → PackedBoundaryFactorPages bo hf df G := by
   dsimp only
@@ -129,10 +135,16 @@ theorem periodicRuntimeReady_exec {Q A precision stage q l s t u band V W N : �
     have hpagesB := periodicCouplingPageBank_factorPages (band := band) (w := 2*q+8) (xs := xs)
       (periodicCouplingWidth_factorPages (q := q) hpages)
     exact hpagesB.of_solution_frame (fun k hk _ => hframe k (Or.inr (Or.inr (by omega))))
-  obtain ⟨v₃,n,hu₃,hn,he₃,hr,hbank₃,hcounterFrame,hpages₃⟩ := periodicNativeCounters_exec (body := body)
+  obtain ⟨v₃,n,hu₃,hn,he₃,hr,hbank₃,h93Counter,hcounterFrame,hpages₃⟩ := periodicNativeCounters_exec (body := body)
     (by omega) (by omega) (S.R 110) v₂ G hreadyG hbankG
   refine ⟨v₃,installCouplingHeadersCost precision q s t u band 0 s+n,
-    hu₃.trans (hu₂.trans hu₁),Nat.add_le_add_left hn _,Exec.seq he₂ he₃,hr,hbank₃,?_,?_,?_,?_⟩
+    hu₃.trans (hu₂.trans hu₁),Nat.add_le_add_left hn _,Exec.seq he₂ he₃,hr,hbank₃,?_,?_,?_,?_,?_⟩
+  · have hh := embOvr_get hinj
+      ({T with R := couplingHeadersR precision q s t u band 0 s T.R} : Stacks 144 A).get B (.rt 93)
+    change G.R 93 = (couplingHeadersR precision q s t u band 0 s T.R 93).map id at hh
+    rw [List.map_id,couplingHeadersR_off precision q s t u band 0 s T.R 93 (by decide)] at hh
+    have h93B : B.R 93 = S.R 93 := by simp [B,periodicCouplingPageBank,periodicCouplingWidthBank]
+    exact h93Counter.trans (hh.trans h93B)
   · have hh : S.R 107 = [] := h.native 107 (by decide) (by decide)
     have hB : B.R 107 = [] := by simpa [B,periodicCouplingPageBank,periodicCouplingWidthBank] using hh
     exact (hcounterFrame 107 (by decide)).trans ((hframe 107 (Or.inr (Or.inl rfl))).trans hB)
