@@ -29,7 +29,7 @@ theorem haloLowRegister_cases (k : Fin 168) :
   omega
 
 def packedRecoveryRetainedPorts : List (Fin 248) :=
-  [125,128,130,138,140,157]++haloRetainedHeaderPorts.map (Fin.castLE (by decide))
+  [125,128,130,138,140,157,137,144,150,152,159,160,161,162]++haloRetainedHeaderPorts.map (Fin.castLE (by decide))
 
 def packedRecoveryRetainedSafe (k : Fin 248) : Prop :=
   117 ≤ k.val ∧ k.val < 168 ∧ k ≠ 132 ∧ k ≠ 167 ∧
