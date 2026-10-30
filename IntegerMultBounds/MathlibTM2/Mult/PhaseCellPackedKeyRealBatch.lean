@@ -64,6 +64,7 @@ theorem packedKeyRealBatch_exec
       n ≤ (packedKeyInputCost p q W Fs.length (b-a)+(4*Fs.length+4))+
         packedHaloBatchCostFromSetup p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius Fs.length ∧
       Exec bodyProtected (packedKeyRealBatch hR hQ) (mk v M) n (mk v' G) ∧
+      G.inp = M.inp ∧ G.out = M.out ∧
       G.R 263 = tail ∧ G.R 110 = [] ∧
       G.R 132 = S.R 132 ∧ G.R 220 = S.R 220 ∧ G.R 248 = [] ∧ G.R 252 = [] ∧
       G.R 251 = List.replicate Fs.length tick ∧
@@ -120,7 +121,7 @@ theorem packedKeyRealBatch_exec
     have hh := hqn
     dsimp [executionPrecision] at hh
     omega
-  obtain ⟨v₂,F,G,n₂,hu₂,hn₂,he₂,hproj,hexternal,harchive,hsrc,htable,hcounter,hwidthClear,hfactors,hframe,Ds,houtput,hDs,hgood,hprotectedStock⟩ :=
+  obtain ⟨v₂,F,G,n₂,hu₂,hn₂,he₂,hinput,houtputFrame,hproj,hexternal,harchive,hsrc,htable,hcounter,hwidthClear,hfactors,hframe,Ds,houtput,hDs,hgood,hprotectedStock⟩ :=
     packedHaloBatch_from_setup_exec hbody hbody' hbody'' bodyProtected hbodyProtected hR hQ hA
       inputs C [] v₁ M₁ B₁ T₁ S₁ hviews₁
       (by simpa [T₁] using hcounterBlank) hsetup₁
@@ -162,7 +163,7 @@ theorem packedKeyRealBatch_exec
     simp [B₁]
   have houtput' := houtput
   simp only [hwn,hqn] at houtput' hgood
-  refine ⟨v₂,G,n₁+n₂,Ds,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,h110.trans hsrc,?_,?_,?_,?_,h251,?_,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,G,n₁+n₂,Ds,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,hinput,houtputFrame,?_,h110.trans hsrc,?_,?_,?_,?_,h251,?_,?_,?_,?_,?_,?_⟩
   · simpa only [inputs,List.length_map] using Nat.add_le_add hn₁ hn₂
   · simpa [M₁] using hqueue
   · exact (hread 132).trans (by simpa [S₁] using harchive)

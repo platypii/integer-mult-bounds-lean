@@ -90,6 +90,7 @@ theorem packedHaloPublishedBatch_exec
           (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)+
         (retirePackedBandTableCost B.card W w+packedFactorReleaseCost (boundaryFactorStockBound q w band B.card))+packedCoreBatchPublicationCost inputs.length radius (coreLength s coreWidth k) w ∧
       Exec bodyLarge (packedHaloPublishedBatch hR hQ) (mk v Sbig) n (mk v' F) ∧
+      F.inp = Sbig.inp ∧ F.out = Sbig.out ∧
       F.R 132 = S.R 132 ∧ F.R 110 = tail ∧ F.R 220 = S.R 220 ∧ F.R 248 = [] ∧
       (∀ i ∈ packedFactorOwnedRegs, F.R (Fin.castLE (by decide) i) = []) ∧
       (∀ i : Fin 263, 249 ≤ i.val → i ≠ 253 → F.R i = Sbig.R i) ∧
@@ -117,16 +118,18 @@ theorem packedHaloPublishedBatch_exec
   let bits := boundaryTableBits p boundaryTarget rhsExp B.card
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-  obtain ⟨v₁,H,n₁,hu₁,hn₁,he₁,hcounter,hlength,hsrc,htable,hfactors,Ds,houtputs,hgood,hclosedStock⟩ :=
+  obtain ⟨v₁,H,n₁,hu₁,hn₁,he₁,hinput,houtput,hcounter,hlength,hsrc,htable,hfactors,Ds,houtputs,hgood,hclosedStock⟩ :=
     packedHaloClosedBatch_exec hbody hbody' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail (embDn packedHaloPublishedReg v) S₀ S hview hcount h109 h115 h116 hfactoryLeft hready
       haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank
       h239 h157 hscratch hab haLt hsep hwide hVeq hwV hcoords hunits hC hdom hcell hboundary hy hcoeff
-  obtain ⟨v₂,F,n,hu₂,hn,he,harchive,hdst,hcoreGood,hkeep,hexternal,hpublicationStock⟩ :=
+  obtain ⟨v₂,F,n,hu₂,hn,he,hpubInput,hpubOutput,harchive,hdst,hcoreGood,hkeep,hexternal,hpublicationStock⟩ :=
     packedHaloClosedBatch_publish_exec hbody'' hR hQ q w a b coreWidth k radius haEq hbEq hleft hright
       inputs Ds (1/(2 : ℝ)^finalTarget) (S.R 132) he₁ hcounter houtputs hgood v Sbig rfl hbigview
       hRdim hLdim hNdim hwdim hpublicationClean
-  refine ⟨v₂,F,n,hu₂.trans hu₁,hn.trans (Nat.add_le_add_right hn₁ _),he,harchive,?_,?_,?_,?_,hexternal,Ds,hdst,hcoreGood,?_⟩
+  refine ⟨v₂,F,n,hu₂.trans hu₁,hn.trans (Nat.add_le_add_right hn₁ _),he,
+    hpubInput.trans (hinput.trans (congrArg (fun B : Stacks 249 A => B.inp) hbigview).symm),
+    hpubOutput.trans (houtput.trans (congrArg (fun B : Stacks 249 A => B.out) hbigview).symm),harchive,?_,?_,?_,?_,hexternal,Ds,hdst,hcoreGood,?_⟩
   · exact (hkeep 110 (by decide)).trans hsrc
   · exact (hkeep 220 (by decide)).trans htable
   · exact (hkeep 248 (by decide)).trans hcounter

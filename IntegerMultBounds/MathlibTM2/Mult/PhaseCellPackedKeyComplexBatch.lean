@@ -106,6 +106,7 @@ theorem packedKeyComplexBatch_exec
         (Fs.length*(16*(L*(2*q+8))+19)+22) ∧
       Exec bodyFinal (packedKeyComplexBatch hR hQ)
         (mk v (complexBatchInputBank M Bcore L)) n (mk v' H) ∧
+      H.inp = M.inp ∧ H.out = M.out ∧
       H.R 253 = (Gs.map (fun D => cstream A (2*q+8) (ownedCoreWords coreWidth k D))).flatten++M.R 253 ∧
       H.R 264 = M.R 264 ∧ H.R 251 = [] ∧ H.R 276 = [] ∧ H.R 278 = List.replicate L tick ∧ H.R 279 = List.replicate (L*(2*q+8)) tick ∧
       H.R 277 = binSyms Bcore L ∧
@@ -153,7 +154,7 @@ theorem packedKeyComplexBatch_exec
         278 (List.replicate L tick)) 279 (List.replicate (L*(2*q+8)) tick)) (complexBatchReg i) = _
       simp only [Function.update_apply,h279,h278,h277,ite_false]
       simp [complexBatchReg,extendStacks]
-  obtain ⟨v₁,H₁,G,n₁,Ds,hu₁,hn₁,he₁,hproj,hholdL,hholdR,hqueue,hsrc,h132,h220,h248,h252,
+  obtain ⟨v₁,H₁,G,n₁,Ds,hu₁,hn₁,he₁,hinput,houtputFrame,hproj,hholdL,hholdR,hqueue,hsrc,h132,h220,h248,h252,
     h251,hfactors,houtput,hDs,hgood,hframe,hcomplexRealStock⟩ := packedKeyComplexRealBatch_exec
     hbody hbody' hbody'' bodyProtected hbodyProtected bodyComplex hbodyComplex hR hQ hA
     q W hpq hW hqSizing Fs hF y C tail (embDn complexBatchReg v₀) M B S₀ S hviews hsetup
@@ -220,7 +221,9 @@ theorem packedKeyComplexBatch_exec
       (mk v₂ S₂) n₃ (mk v₃ S₃) := by simpa only [List.length_map] using he₃
   refine ⟨v₃,S₃,n₀+n₁+n₃,Gs,
     hu₃.trans (hu₂.trans (hu₁.trans hu₀)),?_,?_,
-    (Exec.seq he₀ (Exec.seq he₂ he₃')).cast (by omega) rfl,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+    (Exec.seq he₀ (Exec.seq he₂ he₃')).cast (by omega) rfl,
+    (congrArg (fun B : Stacks 277 A => B.inp) hproj₂).trans hinput,
+    (congrArg (fun B : Stacks 277 A => B.out) hproj₂).trans houtputFrame,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · simpa only [List.length_map] using hlen
   · simp only [complexComponentFields_length] at hn₁
     simp only [List.length_map] at hn₃

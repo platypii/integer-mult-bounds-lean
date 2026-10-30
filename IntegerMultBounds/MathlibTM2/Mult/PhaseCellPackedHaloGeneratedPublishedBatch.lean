@@ -94,6 +94,7 @@ theorem packedHaloGeneratedPublishedBatch_exec
           (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)+
         (retirePackedBandTableCost B.card W w+packedFactorReleaseCost (boundaryFactorStockBound q w band B.card))+packedCoreBatchPublicationCost inputs.length radius (coreLength s coreWidth k) w))+(2*w+2) ∧
       Exec bodyLarge (packedHaloGeneratedPublishedBatch hR hQ) (mk v Sbig) n (mk v' F) ∧
+      F.inp = Sbig.inp ∧ F.out = Sbig.out ∧
       F.R 132 = S.R 132 ∧ F.R 110 = tail ∧ F.R 220 = S.R 220 ∧ F.R 248 = [] ∧
       (∀ i ∈ packedFactorOwnedRegs, F.R (Fin.castLE (by decide) i) = []) ∧
       (∀ i : Fin 263, 249 ≤ i.val → i ≠ 253 → F.R i = Sbig.R i) ∧
@@ -150,7 +151,7 @@ theorem packedHaloGeneratedPublishedBatch_exec
       change i.val = 252 at hh
       omega)]
     exact hbigview
-  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,harchive,hsrc,htable,hcounter,hfactors,hexternal,Ds,hdst,hgood,hcountedStock⟩ :=
+  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hinput,houtput,harchive,hsrc,htable,hcounter,hfactors,hexternal,Ds,hdst,hgood,hcountedStock⟩ :=
     packedHaloCountedPublishedBatch_exec hbody hbody' hbody'' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail v₁ Tbig S₀ S hview hcounterBlank h109 h115 h116 hfactoryLeft hready
       haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank
@@ -171,7 +172,7 @@ theorem packedHaloGeneratedPublishedBatch_exec
   rw [hwidthF] at he₃
   let G : Stacks 263 A := {F with R := Function.update F.R 252 []}
   refine ⟨v₃,G,((8*q+9)+n₂)+(2*w+2),hu₃.trans (hu₂.trans hu₁),
-    Nat.add_le_add_right (Nat.add_le_add_left hn₂ _) _,Exec.seq (Exec.seq he₁' he₂) he₃,?_,?_,?_,?_,?_,?_,Ds,?_,?_,?_⟩
+    Nat.add_le_add_right (Nat.add_le_add_left hn₂ _) _,Exec.seq (Exec.seq he₁' he₂) he₃,hinput,houtput,?_,?_,?_,?_,?_,?_,Ds,?_,?_,?_⟩
   · exact harchive
   · exact hsrc
   · exact htable

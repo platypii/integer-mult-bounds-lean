@@ -109,6 +109,7 @@ theorem packedHaloInitializedBatch_exec
         packedHaloBatchCost inputs.length
           (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V) ∧
       Exec body'' (packedHaloInitializedBatch hR hQ) (mk v S₀) n (mk v' F) ∧
+      F.inp = S₀.inp ∧ F.out = S₀.out ∧
       F.R 248 = [] ∧
       ((embStk packedHaloBatchReg F).R 132).length = inputs.length*((b-a)*w)+(S.R 132).length ∧
       (embStk packedHaloBatchReg F).R 110 = tail ∧
@@ -144,7 +145,7 @@ theorem packedHaloInitializedBatch_exec
   obtain ⟨hq,hstage,hw⟩ := boundaryHaloTarget_sizing p u l boundaryTarget rhsExp
     (haloBoundary s t (PhaseCellBand.width p u) a b).card
   rw [←hcell] at hq hstage hw
-  obtain ⟨vf,M,n₁,columns,hu₁,hn₁,he₁,hsrc,hout,hcolumns,htable,hpages,hbetween,hraw,hstock⟩ :=
+  obtain ⟨vf,M,n₁,columns,hu₁,hn₁,he₁,hinputFrame,houtputFrame,hsrc,hout,hcolumns,htable,hpages,hbetween,hraw,hstock⟩ :=
     packedBoundaryFactoryGeometry_between_exec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad (embDn packedBoundaryRecoveryBase (embDn packedHaloBatchReg v)) S
       ((inputs.map (fun x => cstream A (executionWidth p l target rhsExp) (packedInterval a (b-a) x.1))).flatten++tail)
@@ -166,6 +167,14 @@ theorem packedHaloInitializedBatch_exec
       inputs hC hab hbs hband hwide hVeq hwV hcoords hunits tail v₁ S₁
       (by rw [hcount₁]; exact hcount) hsource₁ haLt hfitV hsep hdom hq
       hbetween₁ columns hcolumns hcell htable hpages₁ hboundary hy hcoeff
+  have hinput : F.inp = S₀.inp := by
+    have h₁ := congrArg (fun B : Stacks 248 A => B.inp) hview₁
+    have h₀ := congrArg (fun B : Stacks 248 A => B.inp) hview
+    exact hbatchFrame.1.2.1.trans (h₁.trans (hinputFrame.trans h₀.symm))
+  have houtput : F.out = S₀.out := by
+    have h₁ := congrArg (fun B : Stacks 248 A => B.out) hview₁
+    have h₀ := congrArg (fun B : Stacks 248 A => B.out) hview
+    exact hbatchFrame.1.2.2.1.trans (h₁.trans (houtputFrame.trans h₀.symm))
   have hsetup : ∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
       (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg F)).R k = M.R k := by
     intro k hk hne
@@ -174,7 +183,7 @@ theorem packedHaloInitializedBatch_exec
   have hraw₂ : (embStk packedHaloBatchReg F).R 220 = _ :=
     (hsetup 220 (by decide) (by decide)).trans hraw
   refine ⟨v₂,F,n₁+n₂,hu₂.trans (hu₁'.trans hu₁),Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁' he₂,hcounter,?_,hsrc₂,hbetween₂,columns,hcolumns.length,hraw₂,hstock₂,M,hout,?_,?_,?_⟩
+    Exec.seq he₁' he₂,hinput,houtput,hcounter,?_,hsrc₂,hbetween₂,columns,hcolumns.length,hraw₂,hstock₂,M,hout,?_,?_,?_⟩
   · rw [hview₁] at hlength
     simpa [extendStacks,hout] using hlength
   · simpa only [hview₁] using htrace

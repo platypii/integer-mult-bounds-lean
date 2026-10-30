@@ -82,6 +82,7 @@ theorem packedHaloClosedBatch_exec
           (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)+
         (retirePackedBandTableCost B.card W w+packedFactorReleaseCost (boundaryFactorStockBound q w band B.card)) ∧
       Exec body'' (packedHaloClosedBatch hR hQ) (mk v S₀) n (mk v' F) ∧
+      F.inp = S₀.inp ∧ F.out = S₀.out ∧
       F.R 248 = [] ∧
       ((embStk packedHaloBatchReg F).R 132).length = inputs.length*((b-a)*w)+(S.R 132).length ∧
       (embStk packedHaloBatchReg F).R 110 = tail ∧
@@ -111,7 +112,7 @@ theorem packedHaloClosedBatch_exec
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   let W := 12*band+1
-  obtain ⟨v₁,H,n₁,hu₁,hn₁,he₁,hcounter,hlength,hsrc,hbetween,columns,hlen,htable,hstock,M,hout,htrace,hnumericalStock,hinitializedStock⟩ :=
+  obtain ⟨v₁,H,n₁,hu₁,hn₁,he₁,hinput,houtput,hcounter,hlength,hsrc,hbetween,columns,hlen,htable,hstock,M,hout,htrace,hnumericalStock,hinitializedStock⟩ :=
     packedHaloInitializedBatch_exec hbody hbody' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail v S₀ S hview hcount h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank
@@ -140,7 +141,9 @@ theorem packedHaloClosedBatch_exec
     omega)
   obtain ⟨Ds,houtputs,hgood⟩ := htrace.packed_outputs q w a b hab hbs (1/(2 : ℝ)^finalTarget)
   refine ⟨v₃,F,n₁+n₂,(hu₃.trans hu₂).trans hu₁,Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁ he₃,hc.2.trans hcounter,?_,?_,?_,?_,Ds,?_,hgood,?_⟩
+    Exec.seq he₁ he₃,?_,?_,hc.2.trans hcounter,?_,?_,?_,?_,Ds,?_,hgood,?_⟩
+  · exact (congrArg (fun B : Stacks 248 A => B.inp) hviewF).trans hinput
+  · exact (congrArg (fun B : Stacks 248 A => B.out) hviewF).trans houtput
   · rw [h132]; exact hlength
   · rw [hviewF,hkeep 110 (by decide)]; exact hsrc
   · rw [hviewF,packedFactorReleased_off J 220 (by

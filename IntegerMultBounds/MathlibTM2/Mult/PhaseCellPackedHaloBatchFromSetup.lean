@@ -81,6 +81,7 @@ theorem packedHaloBatch_from_setup_exec
       n ≤ packedHaloBatchCostFromSetup p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius inputs.length ∧
       Exec bodyProtected (embProg packedKeySolverReg id (packedHaloGeometryPublishedBatch hR hQ))
         (mk v Sprotected) n (mk v' G) ∧
+      G.inp = Sprotected.inp ∧ G.out = Sprotected.out ∧
       embStk packedKeySolverReg G = F ∧
       (∀ j : Fin 276, 263 ≤ j.val → G.L j = Sprotected.L j ∧ G.R j = Sprotected.R j) ∧
       F.R 132 = S.R 132 ∧ F.R 110 = tail ∧ F.R 220 = S.R 220 ∧ F.R 248 = [] ∧ F.R 252 = [] ∧

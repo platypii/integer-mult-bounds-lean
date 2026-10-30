@@ -93,6 +93,7 @@ theorem packedHaloCountedPublishedBatch_exec
           (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)+
         (retirePackedBandTableCost B.card W w+packedFactorReleaseCost (boundaryFactorStockBound q w band B.card))+packedCoreBatchPublicationCost inputs.length radius (coreLength s coreWidth k) w) ∧
       Exec bodyLarge (packedHaloCountedPublishedBatch hR hQ) (mk v Sbig) n (mk v' F) ∧
+      F.inp = Sbig.inp ∧ F.out = Sbig.out ∧
       F.R 132 = S.R 132 ∧ F.R 110 = tail ∧ F.R 220 = S.R 220 ∧ F.R 248 = [] ∧
       (∀ i ∈ packedFactorOwnedRegs, F.R (Fin.castLE (by decide) i) = []) ∧
       (∀ i : Fin 263, 249 ≤ i.val → i ≠ 253 → F.R i = Sbig.R i) ∧
@@ -137,7 +138,7 @@ theorem packedHaloCountedPublishedBatch_exec
     have hinj : Function.Injective packedHaloPublishedReg := by
       intro i j he; exact Fin.ext (congrArg (fun i : Fin 263 => i.val) he)
     simpa only [Tbig,T₀,hbigview,show packedHaloPublishedReg 248 = 248 from rfl] using embStk_updateR hinj Sbig 248 (List.replicate inputs.length tick)
-  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,harchive,hsrc,htable,hcounter,hfactors,hexternal,Ds,hdst,hgood,hpublishedStock⟩ :=
+  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hinput,houtput,harchive,hsrc,htable,hcounter,hfactors,hexternal,Ds,hdst,hgood,hpublishedStock⟩ :=
     packedHaloPublishedBatch_exec hbody hbody' hbody'' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail v₁ Tbig T₀ S hview₁ (by simp [T₀]) h109 h115 h116 hfactoryLeft hready
       haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank
@@ -152,7 +153,7 @@ theorem packedHaloCountedPublishedBatch_exec
         simpa only [Tbig,Function.update_of_ne hi248] using hpublicationClean i hi)
       (by simpa [Tbig] using hwdim) hy hcoeff
   refine ⟨v₂,F,(4*inputs.length+4)+n₂,hu₂.trans hu₁,Nat.add_le_add_left hn₂ _,
-    Exec.seq he₁' he₂,harchive,hsrc,htable,hcounter,hfactors,?_,Ds,?_,?_,?_⟩
+    Exec.seq he₁' he₂,hinput,houtput,harchive,hsrc,htable,hcounter,hfactors,?_,Ds,?_,?_,?_⟩
   · intro i hi h253
     have hi248 : i ≠ 248 := by intro he; have hh := congrArg Fin.val he; change i.val = 248 at hh; omega
     exact (hexternal i hi h253).trans (Function.update_of_ne hi248 _ _)

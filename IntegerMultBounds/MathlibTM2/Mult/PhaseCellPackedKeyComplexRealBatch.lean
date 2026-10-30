@@ -140,6 +140,7 @@ theorem packedKeyComplexRealBatch_exec
         packedHaloBatchCostFromSetup p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius (complexComponentFields Fs).length) ∧
       Exec bodyComplex (packedKeyComplexRealBatch hR hQ)
         (mk v (extendStacks (by decide : 276 ≤ 277) M)) n (mk v' H) ∧
+      H.inp = M.inp ∧ H.out = M.out ∧
       embStk packedKeyComplexReg H = G ∧
       H.L 276 = [] ∧ H.R 276 = List.replicate Fs.length tick ∧
       G.R 263 = tail ∧ G.R 110 = [] ∧
@@ -179,7 +180,7 @@ theorem packedKeyComplexRealBatch_exec
     have h263 : i ≠ 263 := by intro he; subst i; simp at hi
     have h264 : i ≠ 264 := by intro he; subst i; simp at hi
     simpa [M₁,h263,h264] using hblank i hi
-  obtain ⟨v₂,G,n₂,Ds,hu₂,hn₂,he₂,hrest⟩ := packedKeyRealBatch_exec
+  obtain ⟨v₂,G,n₂,Ds,hu₂,hn₂,he₂,hinput,houtputFrame,hrest⟩ := packedKeyRealBatch_exec
     hbody hbody' hbody'' bodyProtected hbodyProtected hR hQ hA q W hpq hW hqSizing
     (complexComponentFields Fs) (complexComponentFields_norm_le p Fs hF) y C tail
     (embDn packedKeyComplexReg v₁) M₁ B S₀ S hviews₁ hsetup
@@ -194,7 +195,9 @@ theorem packedKeyComplexRealBatch_exec
     packedKeyComplexReg_injective hbodyComplex he₂ v₁ rfl H₁ hview₁
   have hhold := hoff 276 packedKeyComplexReg_off
   refine ⟨v₃,H₃,G,n₁+n₂,Ds,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁ he₃,hview₃,hhold.1.trans hL₁,hhold.2.trans hR₁,
+    Exec.seq he₁ he₃,
+    (congrArg (fun B : Stacks 276 A => B.inp) hview₃).trans hinput,
+    (congrArg (fun B : Stacks 276 A => B.out) hview₃).trans houtputFrame,hview₃,hhold.1.trans hL₁,hhold.2.trans hR₁,
     hsrc,h110,harchive,htable,hcounter,hwidth,hcount,hfactors,houtput,hDs,hgood,hframe,?_⟩
   intro c hpLarge hbLarge depth
   have hpParts := hpLarge

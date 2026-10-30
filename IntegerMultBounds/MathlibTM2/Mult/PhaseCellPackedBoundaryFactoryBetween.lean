@@ -54,6 +54,7 @@ theorem packedBoundaryFactoryGeometry_between_exec (hR : rpStates ≤ Q) (hQ : S
         (2*(B.card*publicationGeometryWidth t band+publicationGeometryWidth t band+B.card)+7)+
         ((s+t+band+a+b)*(4*V+10)+56*V+77) ∧
       Exec body (packedBoundaryFactoryGeometry hR hQ) (mk v S) n (mk v' F) ∧
+      F.inp = S.inp ∧ F.out = S.out ∧
       F.R 110 = tail ∧ F.R 132 = S.R 132 ∧
       PreparedBoundaryColumns A p bits q w W B columns ∧
       (∀ i ∈ B, ∀ j ∈ B, |bandBoundaryTable B W (computedBoundaryTable A q w B columns) i j-
@@ -132,7 +133,7 @@ theorem packedBoundaryFactoryGeometry_between_exec (hR : rpStates ≤ Q) (hQ : S
       have hi := i.isLt
       simp [embStk,packedRecoveryRuntimeReg,packedHaloRuntimeReg,extendStacks,
         show i.val < 242 by omega]
-  refine ⟨v',F,n,columns,hu',hn,he,hsrc,hbuffer,⟨hlen,hformat,hstage⟩,herror,⟨hbo,hhf,hdf⟩,?_,hraw,hstock⟩
+  refine ⟨v',F,n,columns,hu',hn,he,hinp,hout,hsrc,hbuffer,⟨hlen,hformat,hstage⟩,herror,⟨hbo,hhf,hdf⟩,?_,hraw,hstock⟩
   constructor
   · simpa only [packedBoundaryRecoveryBase,embStk_extendStacks] using hbank
   · constructor

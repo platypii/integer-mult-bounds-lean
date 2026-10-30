@@ -115,6 +115,7 @@ theorem packedKeyNormalizedBatch_exec
       n ≤ packedKeyNormalizedBatchCost Bcore p q W u l s t a b V boundaryTarget finalTarget rhsExp
         targetOut coreWidth k radius Fs.length ∧
       Exec bodyOuter (packedKeyNormalizedBatch hT hR hQ rg ports headerSrc) (mk v H₀) n (mk v' H) ∧
+      H.inp = H₀.inp ∧ H.out = H₀.out ∧
       H.R (Fin.castLE hT 253) = (Gs.map (fun D => cstream A W (ownedCoreWords coreWidth k D))).flatten++M.R 253 ∧
       H.R headerSrc = headerTail ∧ H.R (Fin.castLE hT 278) = [] ∧ H.R (Fin.castLE hT 279) = [] ∧
       (∀ r, r ≠ TblR.wr → H.R (rg r) = []) ∧ H.R (rg .wr) = wl ∧
@@ -152,7 +153,7 @@ theorem packedKeyNormalizedBatch_exec
       (haloVertices s a b) (y F) (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re) := by
     intro F _
     exact Classical.choose_spec (hexists F)
-  obtain ⟨v₁,H₁,n₁,Ds,hu₁,hDs,hn₁,he₁,houtput,hrep,h251,h276,hrows,hinputWidth,hcore,hframe,hmag,hgood,hcomplexStock⟩ :=
+  obtain ⟨v₁,H₁,n₁,Ds,hu₁,hDs,hn₁,he₁,hinput,houtputFrame,houtput,hrep,h251,h276,hrows,hinputWidth,hcore,hframe,hmag,hgood,hcomplexStock⟩ :=
     packedKeyComplexBatch_exec hbody hbody' hbody'' bodyProtected hbodyProtected bodyComplex hbodyComplex
       bodyFinal hbodyFinal hR hQ hA Bcore hsCore q W hpq hW hqSizing Fs hF y C tail
       (embDn (Fin.castLE hT) v) M B S₀ S hviews hsetup hq hpHeader hcommon hreplicas hpacket hsource
@@ -235,12 +236,16 @@ theorem packedKeyNormalizedBatch_exec
     (by simp [H₃,Function.update_of_ne (hheaderOff 279),hread 279,hinputWidth,L])
   refine ⟨v₄,_,n₁+n₃+(2*L*((2*q+8)+1)+4),Gs,
     hu₄.trans (hu₃.trans (hu₂.trans hu₁)),hlen.trans hDs,?_,
-    (Exec.seq he₂ (Exec.seq he₃' he₄)).cast (by omega) rfl,?_,?_,?_,?_,?_,?_,?_,?_⟩
+    (Exec.seq he₂ (Exec.seq he₃' he₄)).cast (by omega) rfl,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · unfold packedKeyNormalizedBatchCost packedKeyRealBatchCost
     dsimp only
     rw [hDs] at hn₃
     dsimp only [L] at hn₃ ⊢
     omega
+  · exact (congrArg (fun B : Stacks 280 A => B.inp) hproj).trans
+      (hinput.trans (congrArg (fun B : Stacks 280 A => B.inp) hview₀).symm)
+  · exact (congrArg (fun B : Stacks 280 A => B.out) hproj).trans
+      (houtputFrame.trans (congrArg (fun B : Stacks 280 A => B.out) hview₀).symm)
   · simp [H₃,ownedCoreWords,packedInterval,L]
   · have h278 := hheaderOff 278
     have h279 := hheaderOff 279

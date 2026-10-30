@@ -96,6 +96,7 @@ theorem protectedPackedHaloGeometryPublishedBatch_exec
         (retirePackedBandTableCost B.card W w+packedFactorReleaseCost (boundaryFactorStockBound q w band B.card))+packedCoreBatchPublicationCost inputs.length radius (coreLength s coreWidth k) w))+(2*w+2))+(2*(radius+coreLength s coreWidth k)+5) ∧
       Exec bodyProtected (embProg packedKeySolverReg id (packedHaloGeometryPublishedBatch hR hQ))
         (mk v Sprotected) n (mk v' G) ∧
+      G.inp = Sprotected.inp ∧ G.out = Sprotected.out ∧
       embStk packedKeySolverReg G = F ∧
       (∀ j : Fin 276, 263 ≤ j.val → G.L j = Sprotected.L j ∧ G.R j = Sprotected.R j) ∧
       F.R 132 = S.R 132 ∧ F.R 110 = tail ∧ F.R 220 = S.R 220 ∧ F.R 248 = [] ∧ F.R 252 = [] ∧
@@ -116,7 +117,7 @@ theorem protectedPackedHaloGeometryPublishedBatch_exec
             depth (embProg packedKeySolverReg id (packedHaloGeometryPublishedBatch hR hQ)) (mk v Sprotected) n (mk v' G) := by
   dsimp only
   intro hradiusWord hy hcoeff
-  obtain ⟨v₁,F,n,hu₁,hn,he,harchive,hsrc,htable,hcounter,hwidthClear,hfactors,hframe,Ds,houtput,hgood,hgeometryStock⟩ :=
+  obtain ⟨v₁,F,n,hu₁,hn,he,hinput,houtputFrame,harchive,hsrc,htable,hcounter,hwidthClear,hfactors,hframe,Ds,houtput,hgood,hgeometryStock⟩ :=
     packedHaloGeometryPublishedBatch_exec hbody hbody' hbody'' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail (embDn packedKeySolverReg v) Sbig S₀ S hview hcounterBlank
       h109 h115 h116 hfactoryLeft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -130,7 +131,11 @@ theorem protectedPackedHaloGeometryPublishedBatch_exec
     congrArg (fun B : Stacks 263 A => B.R 253) hprotectedView
   rw [←hstart253] at houtput hgood
   rw [←h253] at houtput
-  refine ⟨v₂,F,G,n,hu₂.trans hu₁,hn,he₂,hproj,hexternal,harchive,hsrc,htable,hcounter,hwidthClear,
+  refine ⟨v₂,F,G,n,hu₂.trans hu₁,hn,he₂,
+    (congrArg (fun B : Stacks 263 A => B.inp) hproj).trans
+      (hinput.trans (congrArg (fun B : Stacks 263 A => B.inp) hprotectedView).symm),
+    (congrArg (fun B : Stacks 263 A => B.out) hproj).trans
+      (houtputFrame.trans (congrArg (fun B : Stacks 263 A => B.out) hprotectedView).symm),hproj,hexternal,harchive,hsrc,htable,hcounter,hwidthClear,
     hfactors,hframe,Ds,houtput,hgood.length_eq.symm,hgood,?_⟩
 
   intro c hpLarge hbLarge depth

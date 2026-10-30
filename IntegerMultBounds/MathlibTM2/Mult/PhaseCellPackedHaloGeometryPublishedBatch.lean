@@ -112,6 +112,7 @@ theorem packedHaloGeometryPublishedBatch_exec
           (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)+
         (retirePackedBandTableCost B.card W w+packedFactorReleaseCost (boundaryFactorStockBound q w band B.card))+packedCoreBatchPublicationCost inputs.length radius (coreLength s coreWidth k) w))+(2*w+2))+(2*(radius+coreLength s coreWidth k)+5) ∧
       Exec bodyLarge (packedHaloGeometryPublishedBatch hR hQ) (mk v Sbig) n (mk v' F) ∧
+      F.inp = Sbig.inp ∧ F.out = Sbig.out ∧
       F.R 132 = S.R 132 ∧ F.R 110 = tail ∧ F.R 220 = S.R 220 ∧ F.R 248 = [] ∧ F.R 252 = [] ∧
       (∀ i ∈ packedFactorOwnedRegs, F.R (Fin.castLE (by decide) i) = []) ∧
       (∀ i : Fin 263, 249 ≤ i.val → i ≠ 252 → i ≠ 253 → F.R i = Sbig.R i) ∧
@@ -172,7 +173,7 @@ theorem packedHaloGeometryPublishedBatch_exec
     have hS₁ : embStk packedHaloPublishedReg S₁ = embStk packedHaloPublishedReg Sbig :=
       embStk_updateR_off Sbig 249 (List.replicate radius tick) (hoff 249 (by decide))
     exact hT.trans (hM.trans (hS₁.trans hbigview))
-  obtain ⟨v₃,F,n₃,hu₃,hn₃,he₃,harchive,hsrc,htable,hcounter,hfactors,hexternal,Ds,hdst,hgood,hgeneratedStock⟩ :=
+  obtain ⟨v₃,F,n₃,hu₃,hn₃,he₃,hinput,houtput,harchive,hsrc,htable,hcounter,hfactors,hexternal,Ds,hdst,hgood,hgeneratedStock⟩ :=
     packedHaloGeneratedPublishedBatch_exec hbody hbody' hbody'' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail v₂ Tbig S₀ S hview hcounterBlank h109 h115 h116 hfactoryLeft hready
       haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank
@@ -201,7 +202,7 @@ theorem packedHaloGeometryPublishedBatch_exec
   refine ⟨v₄,G,((n₁+(2*V+2))+n₃)+(2*(radius+coreLength s coreWidth k)+5),
     hu₄.trans (hu₃.trans (hu₂.trans hu₁)),
     Nat.add_le_add_right (Nat.add_le_add (Nat.add_le_add_right hn₁ _) hn₃) _,
-    Exec.seq (Exec.seq (Exec.seq he₁ he₂) he₃) he₄,?_,?_,?_,?_,?_,?_,?_,Ds,?_,?_,?_⟩
+    Exec.seq (Exec.seq (Exec.seq he₁ he₂) he₃) he₄,hinput,houtput,?_,?_,?_,?_,?_,?_,?_,Ds,?_,?_,?_⟩
   · exact harchive
   · exact hsrc
   · exact htable

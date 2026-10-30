@@ -143,6 +143,7 @@ theorem packedHaloClosedBatch_publish_exec
     (hclean : ∀ i ∈ ([254,255,256,257,258,259,260,261,262] : List (Fin 263)), Sbig.R i = []) :
     ∃ v' F n, v'.user = vf.user ∧ n ≤ n₁+packedCoreBatchPublicationCost inputs.length radius (coreLength s coreWidth k) w ∧
       Exec bodyLarge (packedHaloPublishedBatch hR hQ) (mk v Sbig) n (mk v' F) ∧
+      F.inp = H.inp ∧ F.out = H.out ∧
       F.R 132 = savedArchive ∧
       F.R 253 = (Ds.map (fun D => cstream A w (ownedCoreWords coreWidth k D))).flatten++Sbig.R 253 ∧
       List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
@@ -198,7 +199,8 @@ theorem packedHaloClosedBatch_publish_exec
   have hn₂' : n₂ ≤ packedCoreBatchPublicationCost inputs.length radius (coreLength s coreWidth k) w := by
     simpa only [packedCoreBatchPublicationCost,hDs] using hn₂
   refine ⟨v₃,F,n₁+n₂,hu₃.trans hu₂,Nat.add_le_add_left hn₂' _,Exec.seq he₂ he₃,
-    harchive,by simpa only [h253] using hdst,by simpa only [h253] using hcoreGood,?_,?_,?_⟩
+    hi.trans (congrArg (fun B : Stacks 249 A => B.inp) hproj),
+    ho.trans (congrArg (fun B : Stacks 249 A => B.out) hproj),harchive,by simpa only [h253] using hdst,by simpa only [h253] using hcoreGood,?_,?_,?_⟩
   · intro i h132
     have hi := i.isLt
     rw [hpubFrame _ (by
