@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedPackedGeneratedChunkTile
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPaddedCountedChunkTile
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -217,6 +217,24 @@ theorem countedPackedGeneratedChunkTileCost_uniform :
   intro T t₀ d W stock c ps bs rs hW hp hb hshape
   have hh := hbound T t₀ d W stock c ps bs rs hW hp hb hshape
   dsimp only [countedPackedGeneratedChunkTileCost]
+  push_cast at hh ⊢
+  nlinarith only [hh]
+
+/-- A short final replica tile is padded and routed within the same uniform
+bound, with one additional linear pass over the full tile capacity. -/
+theorem paddedCountedChunkTileCost_uniform :
+    ∃ C : ℝ, 0 < C ∧ ∀ (T t₀ d W stock c : ℕ)
+      (ps bs : List (Fin T)) (rs : List (ChunkInterchangeStage T)),
+      0 < W → ps.length ≤ c → bs.length ≤ c →
+      (rs.map (fun r => (r.outerCount,r.blockWidth))) = replicaChunkSwaps (2^d) W c →
+      (paddedCountedChunkTileCost T t₀ d W c stock ps bs rs : ℝ) ≤
+        C*(T+12*swapT t₀+5)*c*((2^d)^c*(2^d)*W)*((max 1 d : ℕ) : ℝ)^Parameters.tau+
+        2000*(c+1)*(3*((2^d)^c*(2^d)*W)+stock+T+swapT t₀+1)+55*((2^d)^c*(2^d)*W)+44 := by
+  obtain ⟨C,hC,hbound⟩ := countedPackedGeneratedChunkTileCost_uniform
+  refine ⟨C,hC,?_⟩
+  intro T t₀ d W stock c ps bs rs hW hp hb hshape
+  have hh := hbound T t₀ d W stock c ps bs rs hW hp hb hshape
+  dsimp only [paddedCountedChunkTileCost]
   push_cast at hh ⊢
   nlinarith only [hh]
 

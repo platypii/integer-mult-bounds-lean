@@ -574,13 +574,38 @@ Equal halo lengths do not alone establish one encoded word width: the packed
 local numerical batch derives precision and width from the complete key's
 boundary cardinality. Connecting uniform-width movement tiles to those
 batches still needs an executed, priced format/precision handoff.
-Final-tile padding, selected key/capacity bounds, gather/numerical-batch
-integration and global movement/stock ledgers remain open. The 8,216-job
-integration build and all three routing/header axiom audits pass. Single-file
-peaks are 2942.1 MiB for the counted tile, 1391.2 MiB for the shared counter
-wrapper, 2938.6 MiB for the original counted router and 2966.7 MiB for the
-cost module. All use unchanged default proof limits. The earlier codec,
-wiring and dimension-bank checks also stay below 3 GiB.
+`PhaseCellOwnedPrefixPadding` now reuses the short-convolution padding
+counter generator to prepend dummy symbols to an owned compact payload.
+It generates the total exponent `(c+1)*d`, derives missing symbols from
+the actual source length, emits the constant prefix and clears all generated
+controls. The old payload is scanned restoratively and retains its order.
+`PhaseCellPaddedReplicaTile.generatedReplicaTilePadding_exec` applies this
+actual program to a short pair-encoded tile with `2^d` keys, padding its
+replica count to `(2^d)^c` in at most `29*V+20` steps. Only the source
+changes. The output supplies genuine padded bit-plane arrays internally,
+and dropping the whole dummy-replica prefix mathematically recovers the
+original payload. `PhaseCellTilePaddingData` proves these shape/order facts
+structurally, with a generic finite-array view shared by the bit interchange
+interface. No prepared padding counter or encoding certificate is supplied.
+`PhaseCellPaddedCountedChunkTile` now composes actual padding with the
+counted packed router. It reuses header scratch `a` as the temporary total
+exponent, `count` as the missing-symbol counter, and the codec work tapes
+during padding. The owned pair source is outside the placed interchange
+bank, so padding leaves the original bank-stock bill unchanged. All padded
+arrays and later readiness are derived from the executed producer. Only
+the source changes at the endpoint, and a retained suffix identity records
+the original real replicas in the padded replica-major view.
+`paddedCountedChunkTileCost_uniform` adds only `29*V+20` to the complete
+counted routing bill. This handles partial replica tiles when the key count
+is `2^d`; it does not yet pad nondyadic key rows or execute removal of dummy
+replicas after inverse routing. Nondyadic key padding, executed dummy removal,
+selected key/capacity bounds, gather/numerical-batch integration and global
+movement/stock ledgers remain open. The 8,220-job integration build and
+padding, packed-routing and interchange axiom audits pass. Single-file
+peaks are 2947.5 MiB for the padded router, 2973.0 MiB for its cost module,
+1945.7 MiB for the generated padding program and 1931.2 MiB for its paired
+producer contract. The pure padding data checks at 807.0 MiB and the shared
+bit-array interface at 2513.4 MiB. All use unchanged default proof limits.
 Still required: prove regular-key cardinality and tile-capacity bounds, execute
 final-tile padding, match the packed factory bill to the
 selected setup supplier, and handle small exceptional movement classes

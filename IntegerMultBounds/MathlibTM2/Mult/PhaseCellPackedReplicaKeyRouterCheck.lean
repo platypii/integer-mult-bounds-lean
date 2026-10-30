@@ -20,7 +20,9 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedGeneratedChunkTileCost_uniform,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.withPayloadCounter_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedPackedGeneratedChunkTile_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedPackedGeneratedChunkTileCost_uniform ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedPackedGeneratedChunkTileCost_uniform,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.paddedCountedChunkTile_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.paddedCountedChunkTileCost_uniform ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
