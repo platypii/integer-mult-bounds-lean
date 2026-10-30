@@ -124,7 +124,7 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
     T.L = (embStk packedHaloBatchReg S).L ∧ T.inp = S.inp ∧ T.out = S.out ∧
     (∀ k : Fin 168, k ∈ haloAuxiliaryPorts → T.R (packedRecoveryRuntimeReg k) =
       (embStk packedHaloBatchReg S).R (packedRecoveryRuntimeReg k)) ∧ T.R 93 = S.R 93 ∧ T.R 238 = S.R 238
-  obtain ⟨vf,F,n,hu',hn,he,hcounter,hready,htrace,hreadyTrace⟩ := packedHaloBatch_list_exec
+  obtain ⟨vf,F,n,hu',hn,he,hcounter,hready,htrace,hreadyTrace,hprefixReady⟩ := packedHaloBatch_list_exec
     hbody' hR hQ
     (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)
     Ready (fun x S F => ∃ D : ZMod s → GaussianInt,

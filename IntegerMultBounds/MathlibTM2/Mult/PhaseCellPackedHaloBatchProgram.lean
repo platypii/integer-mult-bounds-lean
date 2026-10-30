@@ -229,7 +229,11 @@ theorem packedHaloBatch_list_exec {X : Type}
       PackedHaloInputTrace Result xs (embStk packedHaloBatchReg S)
         (embStk packedHaloBatchReg F) ∧
       PackedHaloInputTrace (fun x S F => Result x S F ∧ ∃ todo, Ready todo F ∧ todo.length ≤ xs.length)
-        xs (embStk packedHaloBatchReg S) (embStk packedHaloBatchReg F) := by
+        xs (embStk packedHaloBatchReg S) (embStk packedHaloBatchReg F) ∧
+      (∀ done suffix, xs = done++suffix → ∃ M,
+        PackedHaloInputTrace Result done (embStk packedHaloBatchReg S) M ∧
+        (∃ remaining, Ready remaining M ∧ remaining.length ≤ xs.length) ∧
+        PackedHaloInputTrace Result suffix M (embStk packedHaloBatchReg F)) := by
   let Inv := fun j T => ∃ done todo : List X,
     xs = done++todo ∧ done.length = j ∧ Ready todo T ∧
       PackedHaloInputTrace (fun x S F => Result x S F ∧ ∃ todo, Ready todo F ∧ todo.length ≤ xs.length) done (embStk packedHaloBatchReg S) T
@@ -260,6 +264,13 @@ theorem packedHaloBatch_list_exec {X : Type}
   subst todo
   simp only [List.append_nil] at hxs
   subst done
-  exact ⟨v',F,n,hu,hn,he,hcounter,hr,htrace.mono (fun _ _ _ h => h.1),htrace⟩
+  refine ⟨v',F,n,hu,hn,he,hcounter,hr,htrace.mono (fun _ _ _ h => h.1),htrace,?_⟩
+  intro done suffix hsplit
+  have hfull := htrace
+  rw [hsplit] at hfull
+  obtain ⟨M,hprefix,hreadyM,hsuffix⟩ := hfull.prefix_boundary
+    (fun T => ∃ remaining, Ready remaining T ∧ remaining.length ≤ xs.length)
+    (fun _ _ _ h => by simpa only [← hsplit] using h.2) done suffix ⟨xs,hready,le_rfl⟩
+  exact ⟨M,hprefix.mono (fun _ _ _ h => h.1),hreadyM,hsuffix.mono (fun _ _ _ h => h.1)⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
