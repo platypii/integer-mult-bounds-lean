@@ -40,6 +40,19 @@ theorem packedFactorOwnedReg_bounds (i : Fin 224) (hi : i ∈ packedFactorOwnedI
     show ¬ i.val < 154 by omega]
   omega
 
+/-- The unchanged setup bank retains the supplier's disposal bound. -/
+theorem packedBoundaryFactorStock_of_solution_frame {A D : ℕ} {S F : Stacks 242 A}
+    (hstock : BoundaryFactorStock (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg S)) D)
+    (hframe : ∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) :
+    BoundaryFactorStock (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg F)) D := by
+  apply hstock.of_frame
+  intro i hi h206
+  have hb := packedFactorOwnedReg_bounds i (by simp [packedFactorOwnedIndices,hi,h206])
+  let k := packedBoundaryFactorReg (preparedBoundaryCoreReg i)
+  have hk : 168 ≤ k.val ∧ k.val < 238 := by
+    simpa only [packedFactorOwnedReg,Fin.val_castLE] using And.intro hb.1 hb.2.1
+  exact hframe k hk.1 (by intro he; have hh := congrArg Fin.val he; change k.val = 238 at hh; omega)
+
 def packedFactorOwnedRegs : List (Fin 248) := packedFactorOwnedIndices.map packedFactorOwnedReg
 
 theorem packedFactorOwnedRegs_nodup : packedFactorOwnedRegs.Nodup := by

@@ -96,15 +96,17 @@ theorem packedHaloPreparedInput_between_exec (hbody : ∀ f, body' f = embProg p
       PackedHaloBetweenInputs (2^15*p) (executionStagePrecision p l target rhsExp+1)
         q l s t u band a b V w W B.card F ∧
       (∀ bo hf df, PackedBoundaryFactorPages bo hf df S →
-        PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) := by
+        PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) ∧
+      (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
+        (embStk packedBoundaryRecoveryBase F).R k = S.R k) := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages hboundary y hy hcoeff
-  obtain ⟨v',F,n,D,hu,hn,he,hout,herror,hbank',hsource,h130,h138,h139',h140,hnative',hpages',hprivate',hheaders',h127,h143',h158',h167',hscratch,h125,h128,h157'⟩ :=
+  obtain ⟨v',F,n,D,hu,hn,he,hout,herror,hbank',hsource,h130,h138,h139',h140,hnative',hpages',hprivate',hheaders',h127,h143',h158',h167',hscratch,h125,h128,h157',hsetup'⟩ :=
     packedHaloPreparedInput_exec (body := body) (body' := body') hbody hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail
       v S hnative hmasters ha hb' hmeta h157 houtput hE hfresh haLt hfitV h139 h143 hleft
       hsep h158 h167 hrange hdom hq columns hcolumns hcell htable hbank hpages hboundary y hy hcoeff
-  refine ⟨v',F,n,D,hu,hn,he,hout,herror,hsource,⟨hbank',hheaders',hnative',?_,h157',hprivate'⟩,hpages'⟩
+  refine ⟨v',F,n,D,hu,hn,he,hout,herror,hsource,⟨hbank',hheaders',hnative',?_,h157',hprivate'⟩,hpages',hsetup'⟩
   intro k hk
   simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
   rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl

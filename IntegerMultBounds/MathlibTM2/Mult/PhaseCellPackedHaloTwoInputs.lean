@@ -103,12 +103,12 @@ theorem packedHaloTwoInputs_exec (hbody : ∀ f, body' f = embProg packedBoundar
         q l s t u band a b V w W B.card F := by
   dsimp only
   intro hbetween columns hcolumns hcell htable hpages hboundary y y₂ hy hy₂ hcoeff
-  obtain ⟨v₁,F₁,n₁,D₁,hu₁,hn₁,he₁,hout₁,herror₁,hsource₁,hbetween₁,hpages₁⟩ :=
+  obtain ⟨v₁,F₁,n₁,D₁,hu₁,hn₁,he₁,hout₁,herror₁,hsource₁,hbetween₁,hpages₁,hsetup₁⟩ :=
     packedHaloNextInput_exec (body := body) (body' := body') hbody hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits
       (cstream A (executionWidth p l target rhsExp) (packedInterval a (b-a) C₂)++tail)
       v S hsource haLt hfitV hsep hdom hq hbetween columns hcolumns hcell htable hpages hboundary y hy hcoeff
-  obtain ⟨v₂,F₂,n₂,D₂,hu₂,hn₂,he₂,hout₂,herror₂,hsource₂,hbetween₂,hpages₂⟩ :=
+  obtain ⟨v₂,F₂,n₂,D₂,hu₂,hn₂,he₂,hout₂,herror₂,hsource₂,hbetween₂,hpages₂,hsetup₂⟩ :=
     packedHaloNextInput_exec (body := body) (body' := body') hbody hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C₂ hC₂ hab hb hband hwide hVeq hwV hcoords hunits tail
       v₁ F₁ hsource₁ haLt hfitV hsep hdom hq hbetween₁ columns hcolumns hcell htable

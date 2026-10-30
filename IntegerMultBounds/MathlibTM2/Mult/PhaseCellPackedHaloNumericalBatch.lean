@@ -84,7 +84,10 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
         F.R 132 = cstream A w (packedInterval a (b-a) D)++S.R 132 ∧
         PhaseCellInterface.ErrorOn (haloVertices s a b)
           (fun i => (packedIntervalRead q w a (F.R 132) i).re) x.2 (1/(2 : ℝ)^finalTarget))
-        inputs (embStk packedHaloBatchReg S) (embStk packedHaloBatchReg F) := by
+        inputs (embStk packedHaloBatchReg S) (embStk packedHaloBatchReg F) ∧
+      (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
+        (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg F)).R k =
+          (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg S)).R k) := by
   dsimp only
   intro hbetween columns hcolumns hcell htable hpages hboundary hy hcoeff
   let band := PhaseCellBand.width p u
@@ -103,7 +106,10 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
   let Ready := fun (xs : List ((ZMod s → GaussianInt) × (ZMod s → ℝ))) (T : Stacks 248 A) =>
     (∀ x ∈ xs, x ∈ inputs) ∧ T.R 110 = (xs.map encode).flatten++tail ∧
     PackedHaloBetweenInputs (2^15*p) (executionStagePrecision p l target rhsExp+1)
-      q l s t u band a b V w W B.card T ∧ pages T
+      q l s t u band a b V w W B.card T ∧ pages T ∧
+    (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
+      (embStk packedBoundaryRecoveryBase T).R k =
+        (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg S)).R k)
   obtain ⟨vf,F,n,hu',hn,he,hcounter,hready,htrace⟩ := packedHaloBatch_list_exec
     hbody' hR hQ
     (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)
@@ -113,24 +119,26 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
         (fun i => (packedIntervalRead q w a (F.R 132) i).re) x.2 (1/(2 : ℝ)^finalTarget))
     (by
       intro x xs vi T hready
-      obtain ⟨hmem,hsource,hbetween,hpages⟩ := hready
+      obtain ⟨hmem,hsource,hbetween,hpages,hsetup⟩ := hready
       have hx : x ∈ inputs := hmem x (by simp)
       have hsrc : T.R 110 = encode x++((xs.map encode).flatten++tail) := by
         simpa only [List.map_cons,List.flatten_cons,List.append_assoc] using hsource
-      obtain ⟨vf,G,m,D,hu',hm,he,hout,herr,hsrc',hbetween',hpages'⟩ :=
+      obtain ⟨vf,G,m,D,hu',hm,he,hout,herr,hsrc',hbetween',hpages',hsetup'⟩ :=
         packedHaloNextInput_exec (body := body) (body' := body') hbody hR hQ hA hp hα hwidth hst hu hαu hθ hgap
           hbudget hpad x.1 (hC x hx) hab hb hband hwide hVeq hwV hcoords hunits
           ((xs.map encode).flatten++tail) vi T hsrc haLt hfitV hsep hdom hq
           hbetween columns hcolumns hcell htable hpages hboundary x.2 (hy x hx) hcoeff
-      refine ⟨vf,G,m,hu',hm,he,⟨?_,hsrc',hbetween',hpages' _ _ _ hpages⟩,D,hout,herr⟩
-      intro z hz
-      exact hmem z (by simp only [List.mem_cons]; exact Or.inr hz))
-    inputs v S hcount ⟨(by intro x hx; exact hx),hsource,hbetween,hpages⟩
+      refine ⟨vf,G,m,hu',hm,he,⟨?_,hsrc',hbetween',hpages' _ _ _ hpages,?_⟩,D,hout,herr⟩
+      · intro z hz
+        exact hmem z (by simp only [List.mem_cons]; exact Or.inr hz)
+      · intro k hk hne
+        exact (hsetup' k hk hne).trans (hsetup k hk hne))
+    inputs v S hcount ⟨(by intro x hx; exact hx),hsource,hbetween,hpages,(by intros; rfl)⟩
   have hlength := htrace.output_length (L := (b-a)*w) (by
     intro x T G hresult
     obtain ⟨D,hout,herror⟩ := hresult
     rw [hout,List.length_append,length_cstream,packedInterval_length D (by omega)])
   exact ⟨vf,F,n,hu',hn,he,hcounter,hlength,by simpa only [List.map_nil,List.flatten_nil,List.nil_append] using hready.2.1,
-    hready.2.2.1,hready.2.2.2,htrace⟩
+    hready.2.2.1,hready.2.2.2.1,htrace,hready.2.2.2.2⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

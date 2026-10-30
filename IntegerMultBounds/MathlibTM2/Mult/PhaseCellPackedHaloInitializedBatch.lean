@@ -113,6 +113,11 @@ theorem packedHaloInitializedBatch_exec
       (embStk packedHaloBatchReg F).R 110 = tail ∧
       PackedHaloBetweenInputs (2^15*p) (executionStagePrecision p l target rhsExp+1)
         q l s t u band a b V w W B.card (embStk packedHaloBatchReg F) ∧
+      ∃ columns : List (ZMod s → GaussianInt), columns.length = B.card ∧
+        (embStk packedHaloBatchReg F).R 220 = bandTableWords A w B W columns 0++S.R 220 ∧
+        BoundaryFactorStock (embStk preparedBoundaryCoreReg
+          (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg F))))
+          (boundaryFactorStockBound q w band B.card) ∧
       ∃ M : Stacks 242 A, M.R 132 = S.R 132 ∧
         PackedHaloInputTrace (fun x S F => ∃ D : ZMod s → GaussianInt,
           F.R 132 = cstream A w (packedInterval a (b-a) D)++S.R 132 ∧
@@ -124,7 +129,7 @@ theorem packedHaloInitializedBatch_exec
   obtain ⟨hq,hstage,hw⟩ := boundaryHaloTarget_sizing p u l boundaryTarget rhsExp
     (haloBoundary s t (PhaseCellBand.width p u) a b).card
   rw [←hcell] at hq hstage hw
-  obtain ⟨vf,M,n₁,columns,hu₁,hn₁,he₁,hsrc,hout,hcolumns,htable,hpages,hbetween⟩ :=
+  obtain ⟨vf,M,n₁,columns,hu₁,hn₁,he₁,hsrc,hout,hcolumns,htable,hpages,hbetween,hraw,hstock⟩ :=
     packedBoundaryFactoryGeometry_between_exec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad (embDn packedBoundaryRecoveryBase (embDn packedHaloBatchReg v)) S
       ((inputs.map (fun x => cstream A (executionWidth p l target rhsExp) (packedInterval a (b-a) x.1))).flatten++tail)
@@ -141,13 +146,20 @@ theorem packedHaloInitializedBatch_exec
   have hproject : embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg S₁) = M := by
     rw [hview₁]; exact embStk_extendStacks (by decide) M
   rw [←hproject] at hpages₁
-  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hcounter,hlength,hsrc₂,hbetween₂,hpages₂,htrace⟩ :=
+  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hcounter,hlength,hsrc₂,hbetween₂,hpages₂,htrace,hsetup₂⟩ :=
     packedHaloNumericalBatch_exec hbody hbody' hR hQ hA hp hα hwidth hst hu hαu hθ hgap hbudget hpad
       inputs hC hab hbs hband hwide hVeq hwV hcoords hunits tail v₁ S₁
       (by rw [hcount₁]; exact hcount) hsource₁ haLt hfitV hsep hdom hq
       hbetween₁ columns hcolumns hcell htable hpages₁ hboundary hy hcoeff
+  have hsetup : ∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
+      (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg F)).R k = M.R k := by
+    intro k hk hne
+    rw [hsetup₂ k hk hne,hproject]
+  have hstock₂ := packedBoundaryFactorStock_of_solution_frame hstock hsetup
+  have hraw₂ : (embStk packedHaloBatchReg F).R 220 = _ :=
+    (hsetup 220 (by decide) (by decide)).trans hraw
   refine ⟨v₂,F,n₁+n₂,hu₂.trans (hu₁'.trans hu₁),Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁' he₂,hcounter,?_,hsrc₂,hbetween₂,M,hout,?_⟩
+    Exec.seq he₁' he₂,hcounter,?_,hsrc₂,hbetween₂,columns,hcolumns.length,hraw₂,hstock₂,M,hout,?_⟩
   · rw [hview₁] at hlength
     simpa [extendStacks,hout] using hlength
   · simpa only [hview₁] using htrace
