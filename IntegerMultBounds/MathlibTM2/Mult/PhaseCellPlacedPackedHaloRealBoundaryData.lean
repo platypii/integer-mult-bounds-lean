@@ -55,6 +55,24 @@ def PackedHaloProducedData {A : ℕ} (p l s t u target rhsExp a b V q w : ℕ) [
   (embStk packedHaloRuntimeReg F).R 125 = [] ∧ (embStk packedHaloRuntimeReg F).R 128 = [] ∧
   ((embStk packedHaloRuntimeReg F).R 157).length ≤ V )
 
+/-- RHS production preserves the auxiliary low registers needed by batch stock. -/
+theorem PackedHaloProducedData.auxiliary_frame {A p l s t u target rhsExp a b V q w : ℕ}
+    [NeZero s] {C D : ZMod s → GaussianInt} {x : ZMod s → ℝ}
+    {tail outputTail : List (Fin (A+4))} {S F : Stacks 242 A}
+    (h : PackedHaloProducedData p l s t u target rhsExp a b V q w C D x tail outputTail S F)
+    (k : Fin 168) (hk : k ∈ ([126,137,144,150,152,159,160,161,162] : List (Fin 168))) :
+    (embStk packedHaloRuntimeReg F).R k = (embStk packedHaloRuntimeReg S).R k := by
+  rcases h with ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
+    hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleft,hkeys⟩
+  by_cases h126 : k = 126
+  · subst k
+    exact hqueue
+  · have hs : 117 ≤ k.val ∧ k ∉ packedHaloInteriorPagePorts ∧ k ≠ 167 := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff] at hk h126
+      simp only [packedHaloInteriorPagePorts,List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff]
+      omega
+    exact (hframe k hs.1 hs.2.1 hs.2.2).2
+
 theorem PackedHaloProducedData.keys {A p l s t u target rhsExp a b V q w : ℕ}
     [NeZero s] {C D : ZMod s → GaussianInt} {x : ZMod s → ℝ}
     {tail outputTail : List (Fin (A+4))} {S F : Stacks 242 A}
