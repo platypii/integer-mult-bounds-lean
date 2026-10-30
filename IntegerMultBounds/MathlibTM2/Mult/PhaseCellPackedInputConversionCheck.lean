@@ -1,11 +1,17 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyInputCounted
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyPlacement
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedPackedInput
 
 /-! Audit the local packed entry separately from ambient inverse callers. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedKeyInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedKeyInputCounted_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedKeyInput_native_view,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedKeySolver_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedScalePackets_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedInputConversion_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedInputShiftHeader_exec,

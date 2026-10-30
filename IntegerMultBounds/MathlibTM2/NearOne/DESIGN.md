@@ -5623,3 +5623,27 @@ initialized shift or remaining-width counter. Numerical word-width generation
 can reuse `generateWordWidth` from the retained q header. Actual packed-bank
 placement, factor/batch execution, complex assembly, output conversion and the
 remaining global S4 gates still require composition.
+
+### S4 concrete packed-bank input placement (2026-10-30)
+
+`PhaseCellPackedKeyInput.packedKeyInput_exec` runs beside the actual packed
+263-register numerical bank in a 276-register file. Queue 263, current batch
+replica count 264, common coefficient width 265, input precision 266 and packet
+width 267 are external. It isolates one key's local prefix into native source
+110, generates native word width from retained precision 119, generates and
+executes the local width/scale conversion, then clears generated width work.
+The explicit final state changes only source 110 and queue 263. Every other
+native setup/metadata register and external scratch restores. The bill is
+`packedKeyInputCost`, including extraction, width/shift generation, conversion
+and disposal; no ambient full-line caller is invoked.
+`packedKeyInputCounted_exec` additionally copies the current batch replica count
+to initially blank native publication counter 251, at cost `4*N+4`. This N is
+all replicas processed by the current key, including dummy replicas in a padded
+tile. The real-replica count used for final erasure must remain separately
+protected by the outer tile placement.
+`PhaseCellPackedKeyPlacement` embeds the 263-register solver in the low bank.
+The input's native-bank view changes only RHS 110, and lifting any proved native
+packed execution preserves both stacks on all external ports with no added
+steps. Actual factor/batch execution must still be instantiated against that
+view; the native 251 dimension also needs outer disposal after use. Complex
+assembly, output normalization, key padding and global S4 gates remain open.
