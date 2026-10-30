@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellNormalizationCost
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedDispatchInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundDimensionSelection
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorSchedule
 
 /-! Reuse raw complete-key ledgers through fixed-factor normalized step bounds. -/
