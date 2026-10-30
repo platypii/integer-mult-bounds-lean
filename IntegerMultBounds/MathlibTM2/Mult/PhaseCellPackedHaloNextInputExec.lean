@@ -122,7 +122,7 @@ theorem packedHaloNextInput_exec (hbody : ∀ f, body' f = embProg packedBoundar
     have h132 : packedBoundaryRecoveryBase k ≠ 132 := by
       intro he; have hv := congrArg Fin.val he; change k.val = 132 at hv; omega
     exact Function.update_of_ne h132 _ _
-  obtain ⟨v₂,F,n₂,D,hu₂,hn₂,he₂,hout,herror,hsrc,hbetween₂,hpages₂,hsetup₂⟩ :=
+  obtain ⟨v₂,F,n₂,D,hu₂,hn₂,he₂,hout,herror,hsrc,hbetween₂,hpages₂,hsetup₂,hleft₂⟩ :=
     packedHaloPreparedInput_between_exec (body := body) (body' := body') hbody hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail
       (cstream A w (List.replicate (b-a) 0)) (S.R 132) v₁ (embStk packedBoundaryRecoveryBase S₁)
