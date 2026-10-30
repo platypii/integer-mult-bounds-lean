@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingMasterHeaders
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryFactoryGeometry
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFactoryGeometryMode
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedPackedHaloRealBoundaryData
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryHaloPrecision
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundarySolveWorkspace
@@ -23,7 +23,11 @@ variable {Q A : ℕ} {P U : Type} {body : P → Pr P 242 Q A U}
 noncomputable def packedHaloBoundarySetup (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 242 Q A U :=
   .seq (packedBoundaryFactoryGeometry hR hQ) (placedPackedHaloRealBoundaryData hR hQ)
 
-theorem packedHaloBoundarySetup_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+noncomputable def packedHaloBoundarySetupUsing (freshGeometry : Bool)
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 242 Q A U :=
+  .seq (packedBoundaryFactoryGeometryUsing freshGeometry hR hQ) (placedPackedHaloRealBoundaryData hR hQ)
+
+theorem packedHaloBoundarySetupUsing_exec (freshGeometry : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
     (hp : 2 ≤ p) (hwidth : 8*p ≤ 2^u) (hα : 0 < α) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
     (hθ : 1/(4*(p : ℝ)) ≤ (t : ℝ)/s-1) (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
@@ -47,7 +51,10 @@ theorem packedHaloBoundarySetup_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     (hV : (S.R 163).length = V)
     (h155 : S.R 155 = binSyms V a) (h165 : S.R 165 = binSyms V (b-a))
     (hfitV : a+((b-a)+2*PhaseCellBand.width p u)+s < 2^V)
-    (hgeometryBlank : ∀ k ∈ [(145 : Fin 242),146,147,148,149,151,154,156,164], S.R k = [])
+    (hgeometry : if freshGeometry then
+      (∀ k ∈ [(145 : Fin 242),146,147,148,149,151,154,156,164], S.R k = [])
+      else CouplingIntervalMetadata V s t (PhaseCellBand.width p u) a b a (b-a)
+        (embStk packedHaloRuntimeReg S))
     (h239 : S.R 239 = [])
     (hab : a ≤ b) (haLt : a < s) (hsep : b-a+PhaseCellBand.width p u ≤ s)
     (hwide : 8*(t+1)^2+4*PhaseCellBand.width p u+8 < 2^V)
@@ -80,9 +87,9 @@ theorem packedHaloBoundarySetup_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
       v'.user = v.user ∧
       m ≤ constructedBoundaryFactorCost p u l s t a b target rhsExp+
         (2*(B.card*publicationGeometryWidth t band+publicationGeometryWidth t band+B.card)+7)+
-        ((s+t+band+a+b)*(4*V+10)+56*V+77)+
+        (if freshGeometry then (s+t+band+a+b)*(4*V+10)+56*V+77 else 0)+
         packedHaloRealBoundaryDataCost p l s t u j rhsExp a b V ∧
-      Exec body (packedHaloBoundarySetup hR hQ) (mk v S) m (mk v' F) ∧
+      Exec body (packedHaloBoundarySetupUsing freshGeometry hR hQ) (mk v S) m (mk v' F) ∧
       F.inp = S.inp ∧ F.out = S.out ∧
       F.R 220 = bandTableWords A w B W columns 0++S.R 220 ∧
       BoundaryFactorStock (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg F)) (boundaryFactorStockBound q w band B.card) ∧
@@ -129,10 +136,10 @@ theorem packedHaloBoundarySetup_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
   obtain ⟨hq,hstage,hw⟩ := boundaryHaloTarget_sizing p u l target rhsExp B.card
   obtain ⟨v₁,S₁,n₁,columns,hu₁,hn₁,he₁,hinputFrame,houtputFrame,hrawTable,hstock,hlen,hformat,hcolumns,hstageInv,hsolve,hbo,hhf,hdf,
     hvk,h224,h225,hleft',hmul,hmaster,h223,h184,h220,h221,herrorTable,hnative,hmeta,hbuffer,h93,hheader⟩ :=
-    packedBoundaryFactoryGeometry_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
+    packedBoundaryFactoryGeometryUsing_spec (body := body) freshGeometry hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad v S (cstream A (executionWidth p l j rhsExp) (packedInterval a (b-a) C)++tail)
       h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
-      h132left hV h155 h165 hfitV hgeometryBlank
+      h132left hV h155 h165 hfitV hgeometry
   have hcarry (k : Fin 168) (hk : 117 ≤ k.val) (h143k : k ≠ 143)
       (hnot : packedHaloRuntimeReg k ∉ packedBoundaryGeometryPorts) :
       (embStk packedHaloRuntimeReg S₁).R k = (embStk packedHaloRuntimeReg S).R k := by
@@ -281,5 +288,111 @@ theorem packedHaloBoundarySetup_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
     · exact ((hframe 166 (by decide) (by decide) (by decide)).2).trans (hfresh' 166 (by decide))
   · have hh := (hhigh 238 (by decide)).2
     simpa [embStk,packedBoundaryFactorReg,packedBoundaryTableRouting,Equiv.swap_apply_def,hh] using h224
+
+theorem packedHaloBoundarySetup_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    {p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
+    (hp : 2 ≤ p) (hwidth : 8*p ≤ 2^u) (hα : 0 < α) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
+    (hθ : 1/(4*(p : ℝ)) ≤ (t : ℝ)/s-1) (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
+    (hband : PhaseCellBand.width p u ≤ s) (has : a ≤ s) (hbs : b ≤ s)
+    (hpad : 2*((s/(t-s)+1)-2*PhaseCellBand.width p u) ≤ 2^l+1)
+    (C : ZMod s → GaussianInt) (tail E outputTail : List (Fin (A+4)))
+    (v : HS 242 Q A U) (S : Stacks 242 A)
+    (h109 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 109 = []) (h115 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 115 = []) (h116 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 116 = [])
+    (hleft : ∀ i : Fin 224, (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).L (preparedBoundaryCoreReg i) = [])
+    (hready : LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u
+      (boundaryTableBits p target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) 2) 2+1)
+      (executionPrecision p l (initialSchurTarget p u
+        (boundaryTableBits p target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) 2) 2)
+      l s t u (PhaseCellBand.width p u) 0 0 (cstream A (executionWidth p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp) (packedInterval a (b-a) C)++tail)
+      (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg
+        (embStk boundaryFactorLegacyReg (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S))))))))
+    (haMaster : ((embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 141).length = a) (hbMaster : ((embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 142).length = b)
+    (h0 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 0 = []) (h139 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 139 = []) (h127 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 127 = []) (h138 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 138 = [])
+    (h143 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 143 = []) (h147 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 147 = []) (h151 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 151 = []) (h153 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 153 = [])
+    (h152 : (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R 152 = []) (hnew : ∀ i : Fin 224, 154 ≤ i.val → (embStk packedBoundaryFactorReg (embStk packedBoundaryTableRouting S)).R (preparedBoundaryCoreReg i) = []) (h132left : S.L 132 = [])
+    (hV : (S.R 163).length = V)
+    (h155 : S.R 155 = binSyms V a) (h165 : S.R 165 = binSyms V (b-a))
+    (hfitV : a+((b-a)+2*PhaseCellBand.width p u)+s < 2^V)
+    (hgeometryBlank : ∀ k ∈ [(145 : Fin 242),146,147,148,149,151,154,156,164], S.R k = [])
+    (h239 : S.R 239 = [])
+    (hab : a ≤ b) (haLt : a < s) (hsep : b-a+PhaseCellBand.width p u ≤ s)
+    (hwide : 8*(t+1)^2+4*PhaseCellBand.width p u+8 < 2^V)
+    (hVeq : V = weightWorkspaceWidth (2^15*p) (executionPrecision p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp) (2*(executionPrecision p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp)+8) t u)
+    (hwV : (executionWidth p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp) < 2^V) (hcoords : b < 2^V) (hunits : b*(executionWidth p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp) < 2^V)
+    (hC : ∀ k, ‖value (executionPrecision p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp) (C k)‖ ≤ (2 : ℝ)^rhsExp)
+    (h157 : (S.R 157).length ≤ V) (h158 : S.R 158 = []) (h167 : S.R 167 = [])
+    (houtput : S.R 132 = E++outputTail) (hE : E.length = (b-a)*(executionWidth p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp))
+    (hfresh : ∀ k ∈ [(125 : Fin 168),127,130,133,138,129,131,134,135,136,140,153,166],
+      (embStk packedHaloRuntimeReg S).R k = [])
+    (hrange : EncodedRange A (executionWidth p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp) (executionPrecision p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp)
+      (interiorOutputExponent p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp) E)
+    (hdom : SchurDominance.DominatesOn (realMatrix s t p u) Finset.univ (1/(8*(p : ℝ))))
+    (x : ZMod s → ℝ)
+    (hx : SchurDominance.Solves (realMatrix s t p u) (haloInterior s t (PhaseCellBand.width p u) a b) x
+      (fun k => (value (executionPrecision p l (boundaryHaloTarget p u target rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp) (C k)).re)) :
+    let band := PhaseCellBand.width p u
+    let B := haloBoundary s t band a b
+    let j := boundaryHaloTarget p u target rhsExp B.card
+    let bits := boundaryTableBits p target rhsExp B.card
+    let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+    let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+    let W := 12*band+1
+    let K := factorNewtonSteps p q
+    ∃ v' F m, ∃ columns : List (ZMod s → GaussianInt), ∃ D : ZMod s → GaussianInt,
+      let σ := boundaryFactorState (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg F))
+      let AZ := factorRankIntegerMatrix B W columns
+      let rows := (bFoldOrder s B).map (fun i => realPartWord
+        (couplingRowField (2^15*p) q t u band a b false D C i))
+      v'.user = v.user ∧
+      m ≤ constructedBoundaryFactorCost p u l s t a b target rhsExp+
+        (2*(B.card*publicationGeometryWidth t band+publicationGeometryWidth t band+B.card)+7)+
+        ((s+t+band+a+b)*(4*V+10)+56*V+77)+
+        packedHaloRealBoundaryDataCost p l s t u j rhsExp a b V ∧
+      Exec body (packedHaloBoundarySetup hR hQ) (mk v S) m (mk v' F) ∧
+      F.inp = S.inp ∧ F.out = S.out ∧
+      F.R 220 = bandTableWords A w B W columns 0++S.R 220 ∧
+      BoundaryFactorStock (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg F)) (boundaryFactorStockBound q w band B.card) ∧
+      columns.length = B.card ∧ ColumnFamilyFormat w columns ∧
+      ColumnFamilyAccurate A q w B
+        (SchurDominance.run (realMatrix s t p u) (haloVertices s a b) (haloInterior s t band a b).toList).1
+        (1/(2 : ℝ)^bits) columns ∧
+      SchurDominance.StageInv (factorRankMatrix A q w B W columns) (Finset.range B.card)
+        (1/(8*(p : ℝ))-(B.card : ℝ)*(1/(2 : ℝ)^bits)) (2+(B.card : ℝ)*(1/(2 : ℝ)^bits)) ∧
+      BoundarySolveReady σ q w W B.card ∧
+      σ .bo = cstream A w ((naturalLineLc q K W B.card AZ).map colC).flatten ∧
+      σ .hf = cstream A w ((naturalLineUc q K W B.card AZ).map colC).flatten ∧
+      σ .df = cstream A w ((naturalLineRcs q K W B.card AZ).map fun z => (⟨z,0⟩ : GaussianInt)) ∧
+      F.R 93 = S.R 93 ∧ F.R 143 = cstream A w rows ∧
+      F.R 132 = cstream A w (packedInterval a (b-a) D)++outputTail ∧
+      F.R 110 = cstream A w (packedInterval a (b-a)
+        (guardedCouplingRowField (2^15*p) q t u band a b false D C))++
+          (cstream A w (packedInterval a (b-a) C)++tail) ∧
+      F.R 138 = cstream A w (couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a)) ∧
+      F.R 139 = List.replicate (couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a)).length tick ∧
+      F.R 140 = List.replicate (2*band+1) tick ∧
+      CouplingIntervalMetadata V s t band a b a (b-a) (embStk packedHaloRuntimeReg F) ∧
+      (∀ k, ‖value q (D k)‖ ≤ (2 : ℝ)^interiorOutputExponent p l j rhsExp) ∧
+      (∀ k, Fits w (D k)) ∧
+      PhaseCellInterface.ErrorOn (haloInterior s t band a b)
+        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^j) ∧
+      (∀ z ∈ rows,
+        (|gv q z.re| ≤ (2 : ℝ)^(q/2) ∧ |gv q z.im| ≤ (2 : ℝ)^(q/2)) ∧
+        (|gv q (normalizeBoundaryWord q (q/2-1) z).re| ≤ 1/2 ∧
+          |gv q (normalizeBoundaryWord q (q/2-1) z).im| ≤ 1/2)) ∧
+      PackedBoundarySolveWorkspace q F ∧ F.R 116 = List.replicate B.card tick ∧
+      F.R 167 = couplingSourceIntervalMaskSymbols true A s t band a b a (b-a) ∧
+      (∀ i : Fin 117, i ≠ 93 → i ≠ 110 → i ≠ 116 → F.R ⟨i.val,by omega⟩ = []) ∧
+      CouplingMasterHeaders (2^15*p) q w s t u band a b (embStk packedHaloRuntimeReg F) ∧
+      (F.R 118).length = executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1 ∧
+      (F.R 120).length = l ∧
+      (∀ k ∈ ([127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧ F.R 238 = S.R 238 ∧
+      ∀ i ∈ B, ∀ k ∈ B, |bandBoundaryTable B W (computedBoundaryTable A q w B columns) i k-
+        (SchurDominance.run (realMatrix s t p u) (haloVertices s a b)
+          (haloInterior s t band a b).toList).1 i k| ≤ 1/(2 : ℝ)^bits := by
+  exact packedHaloBoundarySetupUsing_exec (body := body) true
+    hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
+    C tail E outputTail v S h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138
+    h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank h239
+    hab haLt hsep hwide hVeq hwV hcoords hunits hC h157 h158 h167 houtput hE hfresh hrange hdom x hx
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -2463,6 +2463,27 @@ other global S4 obligations.
 Verification: the retained factory module checked at 3203.5 MiB peak RSS.
 The 14,981-job integration build and approved-axiom audit passed.
 
+### Shared boundary-setup proof for fresh and retained geometry (2026-10-29)
+
+`packedBoundaryFactoryGeometryUsing_spec` gives both geometry entries one
+execution interface, with a conditional blank-bank/retained-metadata premise
+and the corresponding initialization charge. Its two branches instantiate the
+existing closed factory theorems; neither supplies a numerical callback.
+`packedHaloBoundarySetupUsing_exec` now proves the complete factor/RHS setup
+once over that interface. Retained mode executes the factor supplier directly,
+then the same real boundary-data producer, preserving all numerical accuracy,
+stock, workspace and header guarantees while omitting geometry initialization.
+
+The original `packedHaloBoundarySetup_exec` is a short proof specializing this
+shared theorem to fresh geometry, so existing callers retain their interface.
+The existing RHS/accuracy proof is not duplicated. Closed boundary-solve/recovery
+interfaces must still expose the retained mode. Other workspace restoration,
+complete factor/setup reuse, the generated loop and remaining S4 obligations
+remain open; retained geometry alone does not imply factor reuse.
+Verification: guarded checks peaked at 3207.5 MiB for the factory-mode interface
+and 3351.3 MiB for shared boundary setup. The 14,982-job integration build
+and approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
