@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyFieldsInput
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyInputCounted
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyPlacement
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedPackedInput
@@ -8,6 +9,11 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedPackedInput
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedInterval_map,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedBatch_shift_source,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedBatch_shift_bound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedHaloSetup.packed_key_input,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedKeyFieldsInput_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedKeyInput_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedKeyInputCounted_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedKeyInput_native_view,

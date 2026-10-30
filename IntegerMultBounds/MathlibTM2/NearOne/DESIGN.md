@@ -5668,3 +5668,25 @@ This closes the protected concrete solve supplier, but does not yet compose
 input conversion with its native readiness or prove the global tile machine.
 Complex real/imaginary assembly, local output normalization, count disposal,
 key padding, scheduling and total S4 resource gates remain open.
+
+### S4 executed local input establishes field readiness (2026-10-30)
+
+`PhaseCellPackedBatchInputData` proves pointwise conversion commutes with local
+interval storage and ordered batch flattening. The converted flat source is
+exactly the packed numerical supplier's per-replica encoding of fields
+`2^(q-p-1)*F`. Local batch size is `replicaCount*(b-a)`, and unit p-grid fields
+automatically satisfy every nonnegative RHS-exponent bound after conversion.
+`PhaseCellPackedKeySetupFrame` projects the input stage's queue/source/count
+updates into the native 242-register factory bank. Only source 110 changes in
+that view. The existing `PackedHaloSetup.update_source` theorem transports all
+setup fields once; native publication counter 251 and external queue 263 cannot
+alter factory metadata.
+`packedKeyFieldsInput_exec` joins these laws to the actual counted input program.
+Starting from setup readiness and a common-width local field batch, it produces
+the exact shifted-field RHS ABI, preserves `PackedHaloSetup`, derives all
+per-replica RHS magnitude bounds, and supplies the native publication count.
+The remaining-key suffix stays external; it is not a borrowed suffix on native
+RHS 110. Its bill is the checked local input bill, with no ambient volume term.
+The concrete solver call still needs the other native view/geometry premises
+instantiated after this stage. Complex assembly, output conversion, tile/global
+execution and resource bounds remain open.
