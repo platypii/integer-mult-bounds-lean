@@ -5381,3 +5381,15 @@ and scratch and change only the source stream. Narrowing changes representation
 width, not fixed-point precision: the separate existing input scale conversion
 is still required. The signed-fit hypotheses, generated conversion counters,
 placement and composition with actual numerical batches remain integration gates.
+
+`PhaseCellPacketWidthControls` closes the supplied difference-counter premise.
+A shared `withWidthDifference` program copies the retained external width,
+subtracts the retained numerical width, runs the actual adapter and clears the
+generated difference. Its exact setup/disposal overhead is
+`4W+4w+2*(W-w)+10`, preserving the original width-header symbols.
+`generatedNarrowPackets_exec` and `generatedWidenPackets_exec` instantiate this
+wrapper with the concrete word passes, restoring all original controls and work
+and changing only the owned payload. The narrowing adapter also uses an
+initially blank zero control; no initialized generated counter is supplied.
+Placement, numerical signed fits, fixed-point scaling and composition with the
+actual tile batches remain open; these interfaces alone do not complete S4.
