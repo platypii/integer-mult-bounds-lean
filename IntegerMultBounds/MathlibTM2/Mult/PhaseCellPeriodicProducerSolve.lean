@@ -74,6 +74,9 @@ theorem periodicProducerSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     let F := embOvr e (ScalarPlacement.periodicBoundaryResult (embStk e S) V s t band a b w
       (ScalarPlacement.guardedCouplingRowField (2^15*p) q t u band a b false C R)
       (couplingRowField (2^15*p) q t u band a b false C R) rhsTail).get S
+    let G := {F with R := (Function.update (Function.update F.R 143 []) 238
+          (cstream A w ((bandSolveVec q W Lc Uc rcs (rhs.map (normalizeBoundaryWord q (q/2-1)))).map
+            (unscaleBoundaryWord q))++F.R 238))}
     PeriodicProducerInput p q w t u band a b V C R pageTail rhsTail raw (embStk e S) →
     PackedPreparedBank q w W B.card S →
     PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
@@ -83,9 +86,10 @@ theorem periodicProducerSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
       Exec body (.seq (embProg e Empty.elim (.seq (.seq (.seq ScalarPlacement.prepareFullLineRibbon
         (ScalarPlacement.completedGatheredFeedCouplingInterval hQ false)) (uclear 160)) packedBoundaryData))
         (packedPreparedResidualSolve hQ)) (mk v S) n
-        (mk v' {F with R := (Function.update (Function.update F.R 143 []) 238
-          (cstream A w ((bandSolveVec q W Lc Uc rcs (rhs.map (normalizeBoundaryWord q (q/2-1)))).map
-            (unscaleBoundaryWord q))++F.R 238))}) := by
+        (mk v' G) ∧ PackedPreparedBank q w W B.card G ∧
+      PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
+        (cstream A w (Uc.map colC).flatten)
+        (cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt))) G := by
   dsimp only
   intro hcolumns hcount hR hC v S rhsTail pageTail raw hin hbank hpages
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := periodicResidualAndBoundaryData242_exec (body := body) hQ hA
@@ -96,6 +100,8 @@ theorem periodicProducerSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     hin.h158 hin.h135 hin.h167 hin.hwidth
   obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := periodicPackedResidualSolve_exec (body := body) hQ hA p u l target 2 B W
     columns hp V t band a b C R hBset hst hαu hθ hgap hbudget hcolumns hcount hR hC v₁ S rhsTail hbank hpages
-  exact ⟨v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂⟩
+  refine ⟨v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,?_⟩
+  · exact (periodicBoundaryResult_preparedBank S V t band a b _ _ rhsTail hbank).publish _
+  · exact (periodicBoundaryResult_factorPages S V t band a b _ _ _ rhsTail _ _ _ hpages).publish _
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
