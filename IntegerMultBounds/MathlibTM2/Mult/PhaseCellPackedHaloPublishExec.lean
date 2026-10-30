@@ -68,6 +68,32 @@ noncomputable def packedHaloPublishedBatch (hR : rpStates ≤ Q) (hQ : SS.states
 
 variable {body : P → Pr P 249 Q A U} {bodyLarge : P → Pr P 263 Q A U}
 
+/-- Compose the actual lifted solver and publisher while retaining one
+persistent archive charge and the solver's shared workspace allowance. -/
+theorem packedHaloPublishedBatch_compose_within_stock
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (N radius core w : ℕ)
+    (hw : 1 ≤ w) (hhalo : 1 ≤ core+2*radius)
+    {v vm vf : HS 263 Q A U} {S M F : Stacks 263 A}
+    {n₁ n₂ persistent work c depth : ℕ}
+    (hclosed : ExecWithin bodyLarge (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
+      IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v S)+persistent+depth+(c+1)*work)
+      depth (embProg packedHaloPublishedReg id (packedHaloClosedBatch hR hQ)) (mk v S) n₁ (mk vm M))
+    (hpub : Exec bodyLarge
+      (packedCoreArchiveFromDimensions 249 250 251 248 254 255 132 253 257 258 259 256 252 260 261 262)
+      (mk vm M) n₂ (mk vf F))
+    (hn : n₂ ≤ packedCoreBatchPublicationCost N radius core w)
+    (hp : IntegerMultBounds.MathlibTM2.Fast.Main.mnProgPush
+      (packedCoreArchiveFromDimensions (P := P) (U := U) (Q := Q) (A := A)
+        (249 : Fin 263) 250 251 248 254 255 132 253 257 258 259 256 252 260 261 262) ≤ c)
+    (hb : ∀ f, IntegerMultBounds.MathlibTM2.Fast.Main.mnProgPush (bodyLarge f) ≤ c) :
+    ExecWithin bodyLarge (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
+      IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v S)+persistent+depth+
+        (c+1)*(work+100*(N+1)*((core+2*radius)*w)))
+      depth (packedHaloPublishedBatch hR hQ) (mk v S) (n₁+n₂) (mk vf F) := by
+  simpa only [packedHaloPublishedBatch] using
+    (IntegerMultBounds.MathlibTM2.Fast.Main.mn_release_exec_within_stock hclosed hpub
+      (hn.trans (packedCoreBatchPublicationCost_le_volume N radius core w hw hhalo)) hp hb)
+
 /-- Lift a closed solver's stock certificate beside the publisher's retained
 headers and destination archive. Spectator storage is included once. -/
 theorem packedHaloClosedBatch_lift_within_stock

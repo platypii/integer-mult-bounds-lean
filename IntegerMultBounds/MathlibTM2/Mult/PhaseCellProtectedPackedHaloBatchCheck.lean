@@ -11,6 +11,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyNormalizedBatch
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloPublishedBatch_compose_within_stock,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedCorePublication_within_stock,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedCoreBatchPublicationCost_le_volume,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloClosedBatch_lift_within_stock,
