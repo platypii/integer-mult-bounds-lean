@@ -188,6 +188,13 @@ left tapes, native multiplier scratch, precision, and the high temporary bank
 are ready again. A shared frame lemma derives this from recovery's actual
 restoration facts. This does not reset the separate packed-input headers or
 consume the retained residual/source buffers.
+The actual `packedBoundaryRecovery` program now follows recovery with
+`releasePackedRecoveryHeaders`, clearing private ports 242, 243, 244 and 247.
+Its bound `2*(2*V+s+w)+9` is derived from the returned `PackedHaloReady` width
+and length bounds and included in `packedBoundaryRecoveryCost`. The solver
+uses this composed program. The endpoint proves those ports empty and retains
+the numerical workspace and factor readiness; this is not yet a complete
+reset of the first-pass runtime or of all six private recovery ports.
 
 The proof should follow the manuscript construction recorded in
 `plan/D-sharper-bound.md`, M7b: local principal solves, owned-core cropping,

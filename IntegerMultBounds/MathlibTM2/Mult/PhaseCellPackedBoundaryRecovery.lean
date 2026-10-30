@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryFinish
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryReadAccuracy
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloRecoveryBoundaryFormat
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleasePackedRecoveryHeaders
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryFactorFrame
 
 /-! Complete local recovery from the actual folded boundary solution. Numerical
@@ -17,6 +18,9 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 248 Q A U}
 
+noncomputable def packedBoundaryRecovery (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 248 Q A U :=
+  .seq (packedRecoveryFinish hR hQ) releasePackedRecoveryHeaders
+
 def packedBoundaryRecoveryCost (p u l target rhsExp s t a b V q w : ℕ) [NeZero s] : ℕ :=
   let band := PhaseCellBand.width p u
   let n := (haloBoundary s t band a b).card
@@ -26,7 +30,8 @@ def packedBoundaryRecoveryCost (p u l target rhsExp s t a b V q w : ℕ) [NeZero
     preparedSharedLocalFeedCouplingIntervalCost true (2^15*p) q w s t u band a b a (b-a) V+
     (initializeHaloLengthKeysCost (2^15*p) (executionStagePrecision p l k e+1)
       (executionPrecision p l k e) l s t u band a b+
-      packedHaloKeyLoopCost p l s t u k e a b V (haloLengthKeys s t band a b)+1)
+      packedHaloKeyLoopCost p l s t u k e a b V (haloLengthKeys s t band a b)+1)+
+    (2*(2*V+s+w)+9)
 
 theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p u l target rhsExp s t a b V q w W : ℕ} [NeZero s] {α d : ℝ}
@@ -84,7 +89,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     (hgeometry : CouplingIntervalMetadata V s t (PhaseCellBand.width p u) a b a (b-a) (embStk packedRecoveryRuntimeReg S)) :
     ∃ v' F n, ∃ D : ZMod s → GaussianInt, v'.user = v.user ∧
       n ≤ packedBoundaryRecoveryCost p u l target rhsExp s t a b V q w ∧
-      Exec body (packedRecoveryFinish hR hQ) (mk v S) n (mk v' F) ∧
+      Exec body (packedBoundaryRecovery hR hQ) (mk v S) n (mk v' F) ∧
       F.R 93 = S.R 93 ∧ F.R 139 = S.R 139 ∧ F.R 238 = solutionTail ∧ F.inp = S.inp ∧ F.out = S.out ∧
       F.R 132 = cstream A w (packedInterval a (b-a) D)++outputTail ∧ (∀ i, Fits w (D i)) ∧
       PhaseCellInterface.ErrorOn (haloVertices s a b) (fun i => (packedIntervalRead q w a (F.R 132) i).re) x (1/(2 : ℝ)^target) ∧
@@ -96,6 +101,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       BoundarySolveReady (boundaryFactorState (embStk preparedBoundaryCoreReg
         (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase F)))) q w W
         (haloBoundary s t (PhaseCellBand.width p u) a b).card ∧
+      (∀ k ∈ packedRecoveryHeaderPorts, F.R k = []) ∧
       ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k := by
   let band := PhaseCellBand.width p u
   let B := haloBoundary s t band a b
@@ -184,7 +190,16 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       (haloBoundary s t (PhaseCellBand.width p u) a b).card := by
     rw [hfactor]
     exact hready.update_vk _
-  refine ⟨v₂,F,n,D,hu₂,hn₂.trans (Nat.add_le_add_right hn₁ _),he₂,h93,h139',h238,hi,ho,hout,hDfits,?_,?_,?_,hleft,hretained,hworkFinal,hreadyFinal,hfactors⟩
+  obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := releasePackedRecoveryHeaders_exec (body := body) v₂ F hrdy
+  have hprefix : embStk packedBoundaryRecoveryBase (releasedPackedRecoveryHeaders F) =
+      embStk packedBoundaryRecoveryBase F := releasedPackedRecoveryHeaders_prefix F
+  refine ⟨v₃,releasedPackedRecoveryHeaders F,n+n₃,D,hu₃.trans hu₂,?_,
+    Exec.seq he₂ he₃,?_,?_,?_,hi,ho,?_,hDfits,?_,?_,?_,hleft,?_,?_,?_,?_,?_⟩
+  · exact Nat.add_le_add (hn₂.trans (Nat.add_le_add_right hn₁ _)) hn₃
+  · exact (releasedPackedRecoveryHeaders_low F 93 (by decide)).trans h93
+  · exact (releasedPackedRecoveryHeaders_low F 139 (by decide)).trans h139'
+  · exact (releasedPackedRecoveryHeaders_low F 238 (by decide)).trans h238
+  · exact (releasedPackedRecoveryHeaders_low F 132 (by decide)).trans hout
   · exact packedRecovery_read_error (by omega) (by omega) hab hb Y D
       (boundarySolutionField_fits w B solution hlen hfits) hDfits outputTail (F.R 132) hout hframe x _
       (by simpa only [← hq,Y,B,band] using haccept D (by simpa only [hq] using herror))
@@ -194,8 +209,22 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     · have hh := congrArg (fun G : Stacks 117 A => G.R 110) hrdy.native
       simp only [embStk,Function.comp_def] at hh
       rw [packedRecoveryInteriorReg_low (packedCellCoreReg 110) (by decide)] at hh
-      simpa [packedCellCoreReg,releasedCellBank] using hh
+      simpa [packedCellCoreReg,releasedCellBank,releasedPackedRecoveryHeaders,packedRecoveryHeaderPorts] using hh
 
-  · exact hnativeFinal
+  · intro i hi93 hi110
+    rw [releasedPackedRecoveryHeaders_low F _ (by have := i.isLt; change i.val < 242; omega)]
+    exact hnativeFinal i hi93 hi110
+  · intro k hk
+    rw [releasedPackedRecoveryHeaders_low F k (by
+      have hs : k.val < 168 := (packedRecoveryRetainedPorts_safe k hk).2.1
+      omega)]
+    exact hretained k hk
+  · rw [hprefix]; exact hworkFinal
+  · rw [hprefix]; exact hreadyFinal
+  · intro k hk
+    simp only [releasedPackedRecoveryHeaders,if_pos hk]
+  · intro k hk hk' hne
+    rw [releasedPackedRecoveryHeaders_low F k hk']
+    exact hfactors k hk hk' hne
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

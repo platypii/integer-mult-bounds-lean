@@ -21,7 +21,7 @@ variable {Q A : ℕ} {P U : Type} {body : P → Pr P 242 Q A U} {body' : P → P
 
 noncomputable def packedHaloSolveUsing (freshGeometry : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 248 Q A U :=
   .seq (embProg packedBoundaryRecoveryBase id (packedHaloBoundarySolveUsing freshGeometry hR hQ))
-    (.seq (packedRecoveryFinish hR hQ) (.seq packedRecoveryRelease (.seq packedTableRelease packedFactorRelease)))
+    (.seq (packedBoundaryRecovery hR hQ) (.seq packedRecoveryRelease (.seq packedTableRelease packedFactorRelease)))
 
 noncomputable def packedHaloSolveUsingCost (freshGeometry : Bool) (p u l target rhsExp s t a b V : ℕ) [NeZero s] : ℕ :=
   let band := PhaseCellBand.width p u
@@ -167,7 +167,7 @@ theorem packedHaloSolveUsing_spec (freshGeometry : Bool) (hR : rpStates ≤ Q) (
       (lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ) hgap hbudget z hz
     exact ⟨fits_of_value_power hwcoef z hh.1,hh.2⟩
   have hs := hsemantic x hx'
-  obtain ⟨v₃,F,n₂,D,hu₃,hn₂,he₃,h93',h139',h238,hin,hout,houtput',hfits,haccuracy,hbuffers,hnativeRecovery,hleft',hretained,hworkRecovery,hreadyRecovery,hfactors⟩ :=
+  obtain ⟨v₃,F,n₂,D,hu₃,hn₂,he₃,h93',h139',h238,hin,hout,houtput',hfits,haccuracy,hbuffers,hnativeRecovery,hleft',hretained,hworkRecovery,hreadyRecovery,hprivateHeaders,hfactors⟩ :=
     packedBoundaryRecovery_spec (body := body') hR hQ hA hp hu hwidth hα hst hαu hθ hgap hbudget hdom
       hab hbs hband hsep hpad rfl rfl C _ x hC' hylen hyfits hs.1 hx' (S.R 238)
       (cstream A w (packedInterval a (b-a) D₁)) outputTail

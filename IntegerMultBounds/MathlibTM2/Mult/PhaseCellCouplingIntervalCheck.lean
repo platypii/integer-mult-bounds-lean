@@ -171,6 +171,7 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloSolve_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedRecoveryInteriorReady_after_rhs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedBoundaryRecovery_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releasePackedRecoveryHeaders_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedRecoveryFinish_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedRecovery_read_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloRecovery_boundary_range,
