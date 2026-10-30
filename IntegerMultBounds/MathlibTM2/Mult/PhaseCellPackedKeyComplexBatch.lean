@@ -41,6 +41,17 @@ noncomputable def packedKeyComplexBatch (hR : rpStates ≤ Q) (hQ : SS.states �
     (.seq (embProg complexBatchReg id (packedKeyComplexRealBatch hR hQ))
       (packedComplexBatchFinish 276 264 251 279 269 253 270 271 272))
 
+/-- Workspace for the complex caller, with a single numerical scratch charge. -/
+noncomputable def packedKeyComplexWorkspace
+    (Bcore p q W u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius N : ℕ)
+    [NeZero s] : ℕ :=
+  let L := coreLength s coreWidth k
+  (preparePackedCoreRowsCost Bcore q L+
+              ((N*(26*((b-a)*W)+17)+34)+
+                ((packedKeyInputCost p q W (2*N) (b-a)+(4*(2*N)+4))+
+                  packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius (2*N)))+
+              (N*(16*(L*(2*q+8))+19)+22))
+
 theorem packedKeyComplexBatch_exec
     (hbody : ∀ f, body' f = embProg packedBoundaryRecoveryBase id (body f))
     (hbody' : ∀ f, body'' f = embProg packedHaloBatchReg id (body' f))
@@ -108,11 +119,7 @@ theorem packedKeyComplexBatch_exec
         (∀ f, mnProgPush (bodyFinal f) ≤ c) → ∀ depth,
         ExecWithin bodyFinal (fun d z => mnSize z+d ≤ mnSize (mk v (complexBatchInputBank M Bcore L))+
           ((2*Fs.length)*((b-a)*(2*q+8))+V)+depth+(c+1)*
-            (preparePackedCoreRowsCost Bcore q L+
-              ((Fs.length*(26*((b-a)*W)+17)+34)+
-                ((packedKeyInputCost p q W (2*Fs.length) (b-a)+(4*(2*Fs.length)+4))+
-                  packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius (2*Fs.length)))+
-              (Fs.length*(16*(L*(2*q+8))+19)+22)))
+            packedKeyComplexWorkspace Bcore p q W u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius Fs.length)
           depth (packedKeyComplexBatch hR hQ) (mk v (complexBatchInputBank M Bcore L)) n (mk v' H) := by
   dsimp only
   let L := coreLength s coreWidth k
@@ -281,6 +288,6 @@ theorem packedKeyComplexBatch_exec
         (mk v₀ S₁) n₁ (mk v₂ S₂) := ht'.mono (by intro d z hz; omega)
     have htFinish := mn_release_exec_within_stock htLarge he₃' hn₃ hpFinish hbLarge
     have htSetup := mn_setup_exec_within_stock he₀ hn₀ hpSetup hbLarge htFinish
-    simpa only [packedKeyComplexBatch,persistent,work,complexComponentFields_length,List.length_map,Nat.add_assoc,L] using htSetup
+    simpa only [packedKeyComplexBatch,packedKeyComplexWorkspace,persistent,work,complexComponentFields_length,List.length_map,Nat.add_assoc,L] using htSetup
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

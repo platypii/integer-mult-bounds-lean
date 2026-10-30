@@ -11,6 +11,7 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Fast.TableVM
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
@@ -29,6 +30,15 @@ noncomputable def packedKeyNormalizedBatch (hT : 280 ≤ T) (hR : rpStates ≤ Q
       (Fin.castLE hT 270) (Fin.castLE hT 271) (Fin.castLE hT 272)
       (Fin.castLE hT 273) (Fin.castLE hT 274) (Fin.castLE hT 275))
       (releasePackedCoreRows (Fin.castLE hT 278) (Fin.castLE hT 279)))
+
+/-- Shared numerical workspace plus the linear normalization and cleanup bill. -/
+noncomputable def packedKeyNormalizedWorkspace
+    (B p q W u l s t a b V boundaryTarget finalTarget rhsExp targetOut coreWidth k radius N : ℕ)
+    [NeZero s] : ℕ :=
+  let L := coreLength s coreWidth k
+  packedKeyComplexWorkspace B p q W u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius N+
+    (preparedNormalizePackedBatchCost B p u l targetOut s t a b W N L+214*B+217)+
+    (2*L*((2*q+8)+1)+4)
 
 theorem packedKeyNormalizedBatch_exec
     (hbody : ∀ f, body' f = embProg packedBoundaryRecoveryBase id (body f))
@@ -113,7 +123,13 @@ theorem packedKeyNormalizedBatch_exec
           (cstream A W (ownedCoreWords coreWidth k D)++M.R 253))
         (fun i => ((2 : ℂ)^j)⁻¹*componentSolution Y F i)
         ((2/(2 : ℝ)^p+(1/(2 : ℝ)^targetOut)/(2 : ℝ)^j)+
-          (1/(2 : ℝ)^localityTarget+1/(2 : ℝ)^localityTarget)/(2 : ℝ)^j)) Fs Gs := by
+          (1/(2 : ℝ)^localityTarget+1/(2 : ℝ)^localityTarget)/(2 : ℝ)^j)) Fs Gs ∧
+      ∀ c, mnProgPush (packedKeyNormalizedBatch (P := P) (U := U) (A := A) hT hR hQ rg ports headerSrc) ≤ c →
+        (∀ f, mnProgPush (bodyOuter f) ≤ c) → ∀ depth,
+        ExecWithin bodyOuter (fun d z => mnSize z+d ≤ mnSize (mk v H₀)+
+          ((2*Fs.length)*((b-a)*(2*q+8))+V)+depth+(c+1)*
+            packedKeyNormalizedWorkspace Bcore p q W u l s t a b V boundaryTarget finalTarget rhsExp targetOut coreWidth k radius Fs.length)
+          depth (packedKeyNormalizedBatch hT hR hQ rg ports headerSrc) (mk v H₀) n (mk v' H) := by
   dsimp only
   let L := coreLength s coreWidth k
   have hinj : Function.Injective (Fin.castLE hT) := by
@@ -219,7 +235,7 @@ theorem packedKeyNormalizedBatch_exec
     (by simp [H₃,Function.update_of_ne (hheaderOff 279),hread 279,hinputWidth,L])
   refine ⟨v₄,_,n₁+n₃+(2*L*((2*q+8)+1)+4),Gs,
     hu₄.trans (hu₃.trans (hu₂.trans hu₁)),hlen.trans hDs,?_,
-    (Exec.seq he₂ (Exec.seq he₃' he₄)).cast (by omega) rfl,?_,?_,?_,?_,?_,?_,?_⟩
+    (Exec.seq he₂ (Exec.seq he₃' he₄)).cast (by omega) rfl,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · unfold packedKeyNormalizedBatchCost packedKeyRealBatchCost
     dsimp only
     rw [hDs] at hn₃
@@ -249,5 +265,35 @@ theorem packedKeyNormalizedBatch_exec
       (by intro F hmem; rw [←hhalo]; exact hy F hmem) hY Gs (M.R 253)
       (2/(2 : ℝ)^p+(1/(2 : ℝ)^targetOut)/(2 : ℝ)^inverseNormalizationShift p)
     simpa only [ownedCoreWords,packedInterval,L] using haccuracy
+
+  · intro c hpLarge hbLarge depth
+    have hpParts := hpLarge
+    simp only [packedKeyNormalizedBatch,mnProgPush,embProg_push] at hpParts
+    have hpInner := Nat.le_trans (Nat.le_max_left _ _) hpParts
+    have hpNormalize := Nat.le_trans (Nat.le_max_left _ _) (Nat.le_trans (Nat.le_max_right _ _) hpParts)
+    have hpRelease := Nat.le_trans (Nat.le_max_right _ _) (Nat.le_trans (Nat.le_max_right _ _) hpParts)
+    have hbSmall : ∀ f, mnProgPush (bodyFinal f) ≤ c := by
+      intro f
+      simpa only [hbodyOuter f,embProg_push] using hbLarge f
+    have ht := hcomplexStock c hpInner hbSmall depth
+    let persistent := (2*Fs.length)*((b-a)*(2*q+8))+V
+    let work := packedKeyComplexWorkspace Bcore p q W u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius Fs.length
+    have htSmall : ExecWithin bodyFinal (fun d z => mnSize z+d ≤
+        mnSize (mk (embDn (Fin.castLE hT) v) (complexBatchInputBank M Bcore L))+depth+(persistent+(c+1)*work))
+        depth (packedKeyComplexBatch hR hQ)
+        (mk (embDn (Fin.castLE hT) v) (complexBatchInputBank M Bcore L)) n₁ (mk v₁ H₁) :=
+      ht.mono (by intro d z hz; simpa only [persistent,work,L,Nat.add_assoc,Nat.add_left_comm,Nat.add_comm] using hz)
+    obtain ⟨v',F',hv',hu',ht',hproj',hframe'⟩ := exec_emb_within_stock (Fin.castLE hT)
+      hinj hbodyOuter htSmall v rfl H₀ hview₀
+    have hout := (ht'.toExec.unique he₂).2
+    rw [hout] at ht'
+    have htLarge : ExecWithin bodyOuter (fun d z => mnSize z+d ≤
+        mnSize (mk v H₀)+persistent+depth+(c+1)*work)
+        depth (embProg (Fin.castLE hT) id (packedKeyComplexBatch hR hQ))
+        (mk v H₀) n₁ (mk v₂ H₂) := ht'.mono (by intro d z hz; omega)
+    have htNormalize := mn_release_exec_within_stock htLarge he₃' hn₃ hpNormalize hbLarge
+    have htRelease := mn_release_exec_within_stock htNormalize he₄ (Nat.le_refl _) hpRelease hbLarge
+    simpa only [packedKeyNormalizedBatch,packedKeyNormalizedWorkspace,persistent,work,hDs,Nat.add_assoc,L] using
+      htRelease.seq_assoc
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
