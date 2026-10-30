@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyNormalizedBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseCallerWorkspace
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorSolverCall
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorBankStep
 
 /-! A concrete local bank for the normalized packed solver: 280 numerical
 registers, the existing forty scalar roles, four ports and one parameter tape. -/
@@ -103,5 +103,46 @@ theorem packedNormalizedDescriptorCall_exec
           (mk v' (embOvr work F.get (placedDescriptorState work words src saved rest S))) := by
   exact descriptorSolverCall_exec_bank work hwork src saved count tmp spare hreg hsep words rest
     (packedNormalizedLocalBatch hR hQ) time stock post v S hblank hsource hcount htmp hspare hsolve
+
+/-- One ordinary descriptor packet, the concrete normalized kernel, and complete
+private-register cleanup. Output register 253 is the kernel's published core. -/
+noncomputable def packedNormalizedDescriptorStep
+    (work : Fin 325 → Fin T) (src saved count tmp spare result : Fin T)
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P T Q A U :=
+  descriptorBankStep work src saved count tmp spare result 253
+    (packedNormalizedLocalBatch (P := Empty) hR hQ)
+
+
+/-- Placement transports the kernel certificate; it does not construct readiness. -/
+theorem packedNormalizedDescriptorStep_exec
+    (work : Fin 325 → Fin T) (hwork : Function.Injective work)
+    (src saved count tmp spare result : Fin T) (hreg : [src,saved,count,tmp,spare].Nodup)
+    (hsep : ∀ i, work i ∉ [src,saved,count,tmp,spare])
+    (hresult : ∀ i, work i ≠ result) (hrt : result ≠ tmp)
+    (words : Fin 325 → List (Fin (A+4))) (rest : List (Fin (A+4)))
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (time stock cleanup : ℕ) (post : Stacks 325 A → Prop)
+    (v : HS T Q A U) (S : Stacks T A)
+    (hblank : ∀ i, S.R (work i) = [])
+    (hsource : S.R src = descriptorBankTape (placedDescriptorFields work words)++rest)
+    (hcount : S.R count = []) (htmp : S.R tmp = []) (hspare : S.R spare = [])
+    (hsolve : ∀ vi : HS 325 Q A U, ∃ vf F n, vf.user = vi.user ∧ n ≤ time ∧
+      Exec (fun f : Empty => nomatch f) (packedNormalizedLocalBatch (P := Empty) (U := U) (A := A) hR hQ) (mk vi (descriptorReadyBank work words S)) n (mk vf F) ∧ post F ∧
+      ∀ C, mnProgPush (packedNormalizedLocalBatch (P := Empty) (U := U) (A := A) hR hQ) ≤ C → ∀ depth,
+        ExecWithin (fun f : Empty => nomatch f)
+          (fun d z => mnSize z+d ≤ mnSize (mk vi (descriptorReadyBank work words S))+depth+(C+1)*stock)
+          depth (packedNormalizedLocalBatch (P := Empty) (U := U) (A := A) hR hQ) (mk vi (descriptorReadyBank work words S)) n (mk vf F))
+    (hcleanup : ∀ F, post F → descriptorBankCleanupCost (253 : Fin 325) F ≤ cleanup) :
+    ∃ v' F n, v'.user = v.user ∧ n ≤ takeDescriptorBankCost (placedDescriptorFields work words)+time+cleanup ∧
+      Exec body (packedNormalizedDescriptorStep work src saved count tmp spare result hR hQ) (mk v S) n
+        (mk v' (finishedDescriptorBankState work 253 result F (placedDescriptorState work words src saved rest S))) ∧ post F ∧
+      ∀ C, mnProgPush (packedNormalizedDescriptorStep (P := P) (U := U) (A := A) work src saved count tmp spare result hR hQ) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          (C+1)*(takeDescriptorBankCost (placedDescriptorFields work words)+stock+cleanup)) depth
+          (packedNormalizedDescriptorStep work src saved count tmp spare result hR hQ) (mk v S) n
+          (mk v' (finishedDescriptorBankState work 253 result F (placedDescriptorState work words src saved rest S))) := by
+  exact descriptorBankStep_exec work hwork src saved count tmp spare result hreg hsep hresult hrt
+    words rest 253 (packedNormalizedLocalBatch hR hQ) time stock cleanup post v S
+    hblank hsource hcount htmp hspare hsolve hcleanup
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
