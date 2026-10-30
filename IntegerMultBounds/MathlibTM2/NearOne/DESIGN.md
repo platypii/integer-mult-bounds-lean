@@ -2293,6 +2293,26 @@ before establishing readiness for the next core; this is not yet a group loop.
 The integration build passed 14,973 jobs and its approved-axiom audit; the
 guarded recovery check peaked at 3247.3 MiB.
 
+### Native scratch through the closed generated core (2026-10-29)
+
+`PackedHaloNativeClean` names the native right-scratch invariant, retaining only
+width register 93 and borrowed source register 110. The closed solver transports
+recovery's arbitrary-register proof through coefficient, table and factor
+retirement. The publication, buffer-retirement, prepared, queued and gathered
+core specifications now return the same invariant on their native prefix views.
+Placed calls reuse their existing exact projection equalities; buffer retirement
+only changes output 132 and the exempt source 110. No executable operation or
+charged cost changes.
+
+Thus the generated first-core output now exposes both native scratch and the
+retained numeric/geometry headers. This still does not establish the next
+`PackedHaloSetup`: runtime workspace roles, coordinate advancement, geometry
+updates and complete setup-key reuse remain to be composed. The generated group
+loop and the other global S4 obligations remain open.
+Verification: the 14,973-job integration build and approved-axiom audit passed.
+Guarded single-file checks peaked at 3309.1 MiB for the solver and
+3288.7 MiB for the gathered core.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,

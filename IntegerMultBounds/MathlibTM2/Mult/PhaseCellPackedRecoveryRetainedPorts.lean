@@ -66,6 +66,10 @@ theorem packedRecoveryRetained_frame {A : ℕ} (F S : Stacks 248 A) (H : Stacks 
     exact ⟨(congrArg F.L hfix).symm.trans ((hpL.trans hf.1).trans (congrArg S.L hfix)),
       (congrArg F.R hfix).symm.trans ((hpR.trans hf.2).trans (congrArg S.R hfix))⟩
 
+/-- Native scratch available between calls; width and borrowed source are retained. -/
+def PackedHaloNativeClean {A : ℕ} (S : Stacks 168 A) : Prop :=
+  ∀ i : Fin 117, i ≠ 93 → i ≠ 110 → S.R (Fin.castLE (by decide) i) = []
+
 structure PackedHaloRetainedHeaders {A : ℕ} (P stage q l s t u band a b V w : ℕ)
     (S : Stacks 168 A) : Prop where
   masters : CouplingMasterHeaders P q w s t u band a b S

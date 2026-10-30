@@ -38,6 +38,7 @@ theorem PackedHaloInput.run (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
       (∀ i, Fits w (D i)) ∧
       PhaseCellInterface.ErrorOn (haloVertices s a b)
         (fun i => (packedIntervalRead q w a (F.R 132) i).re) x (1/(2 : ℝ)^target) ∧
+      PackedHaloNativeClean (embStk packedRecoveryRuntimeReg F) ∧
       PackedHaloRetainedHeaders (2^15*p)
         (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
         q l s t u (PhaseCellBand.width p u) a b V w (embStk packedRecoveryRuntimeReg F) ∧
@@ -45,7 +46,7 @@ theorem PackedHaloInput.run (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
         F.R 110 = residual++(cstream A w (packedInterval a (b-a) C)++tail) := by
   dsimp only
   obtain ⟨v₁,F₁,m,D,hu₁,hm,he,hin,hout,h93,h238,h138,h139,h140,h220,hfactor,hwidth,h104,h105,h109,
-    hsource,hfits,herror,hretainedHeaders,hbuffers⟩ := packedHaloSolve_spec (body := body) (body' := body')
+    hsource,hfits,herror,hnativeClean,hretainedHeaders,hbuffers⟩ := packedHaloSolve_spec (body := body) (body' := body')
     (p := p) (l := l) (s := s) (t := t) (u := u) (target := target) (rhsExp := rhsExp)
     (a := a) (b := b) (V := V) (α := α) (d := d) hR hQ hA hbody
     hinput.hp hinput.hwidth hinput.hα hinput.hst hinput.hu hinput.hαu hinput.hθ hinput.hgap hinput.hbudget
@@ -56,6 +57,6 @@ theorem PackedHaloInput.run (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
     hinput.hgeometryBlank hinput.h239 hinput.hab hinput.haLt hinput.hsep hinput.hwide hinput.hVeq
     hinput.hwV hinput.hcoords hinput.hunits hinput.hC hinput.h157 hinput.h158 hinput.h167
     hinput.houtput hinput.hE hinput.hfresh hinput.hrange hinput.hdom x hx
-  exact ⟨v₁,F₁,m,D,hu₁,hm,he,hin,hout,hwidth,h104,h105,h109,hsource,hfits,herror,hretainedHeaders,hbuffers⟩
+  exact ⟨v₁,F₁,m,D,hu₁,hm,he,hin,hout,hwidth,h104,h105,h109,hsource,hfits,herror,hnativeClean,hretainedHeaders,hbuffers⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

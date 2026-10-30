@@ -102,6 +102,7 @@ theorem packedHaloSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 
       (∀ i, Fits w (D i)) ∧
       PhaseCellInterface.ErrorOn (haloVertices s a b)
         (fun i => (packedIntervalRead q w a (F.R 132) i).re) x (1/(2 : ℝ)^target) ∧
+      PackedHaloNativeClean (embStk packedRecoveryRuntimeReg F) ∧
       PackedHaloRetainedHeaders (2^15*p)
         (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
         q l s t u band a b V w (embStk packedRecoveryRuntimeReg F) ∧
@@ -310,7 +311,7 @@ theorem packedHaloSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 
   refine ⟨v₆,K,n₁+(n₂+(n₃+(n₄+n₅))),D,
     hu₆.trans (hu₅.trans (hu₄.trans (hu₃.trans (hu₂.trans hu₁)))),?_,
     Exec.seq he₂ (Exec.seq he₃ (Exec.seq he₄ (Exec.seq he₅ he₆))),
-    hin.trans hinputFrame,hout.trans houtputFrame,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,hfits,?_,hretainedHeaders,?_⟩
+    hin.trans hinputFrame,hout.trans houtputFrame,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,hfits,?_,?_,hretainedHeaders,?_⟩
   · exact (Nat.add_le_add hn₁ (Nat.add_le_add hn₂ (Nat.add_le_add hn₃ (Nat.add_le_add hn₄ hn₅)))).trans (by
       dsimp only [packedHaloSolveCost,page,band,B,bits,q,w,targetB]
       omega)
@@ -328,6 +329,40 @@ theorem packedHaloSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 
   · rw [hkeep 109 (by decide)]; simpa [J,H] using hreleaseScratch 109 (by decide)
   · rw [hkeep 132 (by decide)]; simpa [J,H] using houtput'
   · simpa only [hkeep 132 (by decide),show J.R 132 = F.R 132 by simp [J,H]] using haccuracy
+
+
+  · intro i hi93 hi110
+    let j : Fin 248 := ⟨i.val,by have hi := i.isLt; omega⟩
+    have hj : j.val < 117 := i.isLt
+    have h138 : j ≠ 138 := by
+      intro he
+      have hv := congrArg (fun k : Fin 248 => k.val) he
+      change i.val = 138 at hv
+      have hi := i.isLt
+      omega
+    have h139 : j ≠ 139 := by
+      intro he
+      have hv := congrArg (fun k : Fin 248 => k.val) he
+      change i.val = 139 at hv
+      have hi := i.isLt
+      omega
+    have h140 : j ≠ 140 := by
+      intro he
+      have hv := congrArg (fun k : Fin 248 => k.val) he
+      change i.val = 140 at hv
+      have hi := i.isLt
+      omega
+    have h220 : j ≠ 220 := by
+      intro he
+      have hv := congrArg (fun k : Fin 248 => k.val) he
+      change i.val = 220 at hv
+      have hi := i.isLt
+      omega
+    change K.R j = []
+    rw [hkeep j (Or.inl (by omega))]
+    simp only [J,H,Function.update_of_ne h220,Function.update_of_ne h138,
+      Function.update_of_ne h139,Function.update_of_ne h140]
+    exact hnativeRecovery i hi93 hi110
 
   · obtain ⟨residual,hlen,hs⟩ := hbuffers
     refine ⟨residual,hlen,?_⟩

@@ -68,6 +68,7 @@ theorem queuedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
       (∀ i, Fits w (D i)) ∧
       PhaseCellInterface.ErrorOn (ownedCore s width k)
         (fun i => (packedIntervalRead q w (coreStart width k) (F.R 248) i).re) x (1/(2 : ℝ)^target) ∧
+      PackedHaloNativeClean (embStk (Fin.castLE (by decide : 168 ≤ 264)) F) ∧
       PackedHaloRetainedHeaders (2^15*p)
         (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
         q l s t u (PhaseCellBand.width p u) a b V w
@@ -113,7 +114,7 @@ theorem queuedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
   have hread₀ (i : Fin 256) (hi110 : i ≠ 110) : (embStk queuedHaloCoreReg M₀).R i = M.R (queuedHaloCoreReg i) :=
     hoff₀ _ (by intro he; apply hi110; apply Fin.ext; exact congrArg (fun k : Fin 264 => k.val) he)
       (by intro he; have hv := congrArg (fun k : Fin 264 => k.val) he; have hi := i.isLt; change i.val = 256 at hv; omega)
-  obtain ⟨vi,Fi,n₁,D,hui,hn₁,hei,hin,hout,hpublished,h132,hsource,h255,hfits,herror,hretainedHeaders,hframe₁⟩ :=
+  obtain ⟨vi,Fi,n₁,D,hui,hn₁,hei,hin,hout,hpublished,h132,hsource,h255,hfits,herror,hnativeClean,hretainedHeaders,hframe₁⟩ :=
     preparedHaloCore_spec (body := body) (body' := body₁) (body'' := body₂)
       hR hQ hA hbody hbody₁ C (S.R 110) S' hframe width k radius ha hb hleft
       (embDn queuedHaloCoreReg v₀) (embStk queuedHaloCoreReg M₀) hview₀
@@ -140,7 +141,7 @@ theorem queuedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
   have hreg255 : queuedHaloCoreReg 255 = 255 := by decide
   refine ⟨v₁,F,n₀+n₁,D,hu₁.trans (hui.trans hu₀),?_,Exec.seq he₀ he₁,
     (congrArg (fun D : Stacks 256 A => D.inp) hview₁).trans hin,
-    (congrArg (fun D : Stacks 256 A => D.out) hview₁).trans hout,?_,?_,?_,?_,?_,hfits,?_,?_,?_⟩
+    (congrArg (fun D : Stacks 256 A => D.out) hview₁).trans hout,?_,?_,?_,?_,?_,hfits,?_,?_,?_,?_⟩
   · have hh := Nat.add_le_add hn₀ hn₁
     simpa only [Nat.add_assoc] using hh
   · rw [←hreg248,hread₁,hpublished,hread₀ 248 (by decide),hreg248]
@@ -152,6 +153,11 @@ theorem queuedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
   · have hh : F.R 248 = Fi.R 248 := by simpa only [hreg248] using hread₁ 248
     rw [hh]
     exact herror
+  · have hv : embStk (Fin.castLE (by decide : 168 ≤ 264)) F =
+        embStk (Fin.castLE (by decide : 168 ≤ 256)) Fi :=
+      congrArg (embStk (Fin.castLE (by decide : 168 ≤ 256))) hview₁
+    rw [hv]
+    exact hnativeClean
   · have hv : embStk (Fin.castLE (by decide : 168 ≤ 264)) F =
         embStk (Fin.castLE (by decide : 168 ≤ 256)) Fi :=
       congrArg (embStk (Fin.castLE (by decide : 168 ≤ 256))) hview₁
