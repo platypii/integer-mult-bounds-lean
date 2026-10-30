@@ -5580,3 +5580,22 @@ port 15 for this conversion stage; it must be placed outside live solver work
 before invoking the full numerical lifecycle. This is a composed input stage,
 not execution of factor setup or the numerical solve. Remaining S4 gates include
 solver placement/composition, key padding, bulk scheduling and total resources.
+
+### S4 protect the routed queue through the native solver (2026-10-30)
+
+`PhaseCellKeyBatchPlacement.keyBatchInputReg` embeds the input stage into 306
+registers, moving only queue 15, replica count 16 and common width 11 to physical
+303, 304 and 305. The embedding is proved injective structurally; numerical source
+110 and the scalar bank retain their native positions.
+`protectedKeyBatchInput_exec` lifts the actual isolate/narrow/scale program with
+exactly the same bill. Its explicit final state updates only queue 303 to the
+untouched suffix and source 110 to the normalized batch. All other physical
+registers, including the retained count/width and the native low-bank background,
+restore. No input-stage execution callback is supplied.
+The ordinary solver embedding `keyBatchSolverReg` uses registers 0--302.
+`keyBatchSolver_exec` specializes the existing embedding simulation: any proved
+native solver execution lifts at the same step count and preserves both stacks
+of every retained high register. This is a structural frame lemma, not a solver
+execution oracle or a complete key lifecycle. The actual numerical/factor batch
+must still be instantiated against this low-bank view, followed by protected
+output normalization, accumulation and tile/global S4 composition.
