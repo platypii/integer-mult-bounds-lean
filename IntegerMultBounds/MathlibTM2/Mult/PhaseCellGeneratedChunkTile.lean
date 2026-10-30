@@ -25,6 +25,18 @@ noncomputable def generatedChunkTileCost (T t₀ d W stock : ℕ)
       ((2*unaryPowerChainVolume (2^d) W bs.length+2*bs.length+1)+
         (2*unaryPowerChainVolume (2^d) 1 ps.length+2*ps.length+1)))
 
+theorem generatedChunkTileCost_mono {T t₀ d W stock stock' : ℕ}
+    (ps bs : List (Fin T)) (rs : List (ChunkInterchangeStage T)) (hstock : stock ≤ stock') :
+    generatedChunkTileCost T t₀ d W stock ps bs rs ≤ generatedChunkTileCost T t₀ d W stock' ps bs rs := by
+  have hh : (rs.map (fun r => generatedChunkInterchangeCost T t₀ r.outerCount r.blockWidth d stock)).sum ≤
+      (rs.map (fun r => generatedChunkInterchangeCost T t₀ r.outerCount r.blockWidth d stock')).sum := by
+    apply List.sum_le_sum
+    intro r hr
+    dsimp only [generatedChunkInterchangeCost]
+    omega
+  dsimp only [generatedChunkTileCost]
+  exact Nat.add_le_add_left (Nat.add_le_add_right (Nat.add_le_add_right hh 1) _) _
+
 /-- Generate both dimension banks, execute every chunk stage with derived
 readiness, and dispose of both banks. Only the bit payload changes. -/
 theorem generatedChunkTile_exec {t₀ T Q K c : ℕ} {U P : Type}
@@ -90,7 +102,7 @@ theorem generatedChunkTile_exec {t₀ T Q K c : ℕ} {U P : Type}
     (wiredChunkStages_bank_values d W one width exponent ps bs hps hbs hsep prefixes suffixes
       hprefixes hsuffixes (hprotected exponent (by simp)) S.R hone hwidth hexponent)
     (by intro k; rw [hbank]; exact hhdr k)
-    (by intro i hi; rw [hframe i (hprotected i (by simp only [List.mem_cons,List.not_mem_nil,or_false] at hi ⊢; tauto))]; exact hgenBlank i hi)
+    (by intro i hi; rw [hframe i (hprotected i (List.mem_append_left [exponent] hi))]; exact hgenBlank i hi)
     (by rw [hbank]; exact hsrc)
     (by intro i hip hheads s hs; rw [hbank] at hs; exact hother i hip hheads s hs)
   rw [hstock] at hn₂

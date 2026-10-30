@@ -544,8 +544,34 @@ bounds every stage's prefix/suffix/exponent by `V`, charges both complete
 dimension-bank lifecycles linearly, and sums the existing equal-width
 interchange bound by structural induction. No additional key-count factor
 occurs. It uses the existing default proof limits and checks at 2952.2 MiB.
-Full packed-codec integration, tile padding and global movement/stock
-ledgers remain open. The 8,211-job guarded routing/header build and all three
+`PhaseCellGeneratedChunkPlanes` composes two actual generated tile routes,
+reusing the restored dimension/header/private registers between planes. The
+second route's readiness and unchanged placed-bank volume are derived from
+the first route's exact frame and bit-format output. Its bill is twice the
+same initial-stock tile bill.
+`PhaseCellPackedRouterCodec` factors restoring encoding, old-payload disposal
+and counted reassembly into one generic composition lemma, consumed by both
+the original balanced packed router and the new tiled router. Concrete
+production endpoints discharge its routing premise with actual programs;
+neither exposes an execution callback. This removes the duplicated codec
+proof. `PhaseCellPackedGeneratedChunkTile` now executes the full packed pair
+tile lifecycle with `(2^d)^c` replicas and `2^d` keys. Its bill includes
+`12*V+12` for encoding, twice the complete generated tile bill at initial
+placed stock plus `2*V`, `2*V+2` for old-payload disposal and `8*V+6` for
+reassembly. Only the packed payload and disposable symbol counter change;
+all dimension banks, headers and codec scratch restore. The counter is still
+an initial `V`-symbol word. `packedGeneratedChunkTileCost_uniform` preserves
+the same routing exponent and charges the extra codec work linearly.
+Tile counter generation, final-tile padding, selected key/capacity bounds,
+gather/numerical-batch integration and global movement/stock ledgers remain
+open. The 8,214-job integration build and all three routing/header axiom
+audits pass. Single-file peaks are 2948.7 MiB for the packed tile, 2931.9 MiB
+for the two-plane lifecycle, 2965.7 MiB for the cost module, 1954.2 MiB for
+the shared codec and 2935.5 MiB for the refactored original packed router.
+A profiled propositional search in scratch-list membership was replaced by
+direct append membership; the enclosing bit-tile and two-plane proofs now
+check in about 2.2 seconds each under unchanged default limits.
+ The 8,211-job guarded routing/header build and all three
 axiom audits pass. The enclosing tile
 checks at 2938.5 MiB; the 8,178-job guarded build and expanded interchange
 axiom audit pass. The wiring

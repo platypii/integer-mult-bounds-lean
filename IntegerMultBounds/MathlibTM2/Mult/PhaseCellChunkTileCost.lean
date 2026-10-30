@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedChunkTile
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedGeneratedChunkTile
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -182,5 +182,24 @@ theorem generatedChunkTileCost_uniform :
   have hm := mul_le_mul_of_nonneg_left hs (show (0 : ℝ) ≤ T+12*swapT t₀+5 by positivity)
   push_cast at hl hm ⊢
   nlinarith only [hl,hm]
+
+/-- Encoding, both actual tile routes, old-payload disposal and reassembly keep
+the same uniform routing exponent; all additional codec passes are linear. -/
+theorem packedGeneratedChunkTileCost_uniform :
+    ∃ C : ℝ, 0 < C ∧ ∀ (T t₀ d W stock c : ℕ)
+      (ps bs : List (Fin T)) (rs : List (ChunkInterchangeStage T)),
+      0 < W → ps.length ≤ c → bs.length ≤ c →
+      (rs.map (fun r => (r.outerCount,r.blockWidth))) = replicaChunkSwaps (2^d) W c →
+      (packedGeneratedChunkTileCost T t₀ d W c stock ps bs rs : ℝ) ≤
+        C*(T+12*swapT t₀+5)*c*((2^d)^c*(2^d)*W)*((max 1 d : ℕ) : ℝ)^Parameters.tau+
+        2000*(c+1)*(3*((2^d)^c*(2^d)*W)+stock+T+swapT t₀+1)+22*((2^d)^c*(2^d)*W)+20 := by
+  obtain ⟨C,hC,hbound⟩ := generatedChunkTileCost_uniform
+  refine ⟨2*C,by positivity,?_⟩
+  intro T t₀ d W stock c ps bs rs hW hp hb hshape
+  have hh := hbound T t₀ d W (stock+2*((2^d)^c*(2^d)*W)) c ps bs rs hW hp hb hshape
+  dsimp only [packedGeneratedChunkTileCost]
+  simp only [Nat.mul_assoc] at hh ⊢
+  push_cast at hh ⊢
+  nlinarith only [hh]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
