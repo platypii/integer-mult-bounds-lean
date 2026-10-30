@@ -63,6 +63,31 @@ theorem PackedHaloBetweenInputs.low_length_eq
   · exact False.elim (h157 hc)
   · exact congrArg List.length (haux k ha)
 
+/-- The retained numerical bank and blank private ports complete the low-bank
+comparison; only the input queue, output archive and cursor can change stock. -/
+theorem PackedHaloBetweenInputs.right_length_eq
+    {A P stage q l s t u band a b V w W boundaryCount : ℕ} {S F : Stacks 248 A}
+    (h : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount S)
+    (h' : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount F)
+    (h93 : F.R 93 = S.R 93)
+    (haux : ∀ k : Fin 168, k ∈ haloAuxiliaryPorts →
+      F.R (packedRecoveryRuntimeReg k) = S.R (packedRecoveryRuntimeReg k))
+    (hhigh : ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → F.R k = S.R k)
+    (k : Fin 248) (h110 : k ≠ 110) (h132 : k ≠ 132) (h157 : k ≠ 157) :
+    (F.R k).length = (S.R k).length := by
+  by_cases hlo : k.val < 168
+  · let j : Fin 168 := ⟨k.val,hlo⟩
+    have hne (n : Fin 168) (hn : k.val ≠ n.val) : j ≠ n := by
+      intro he
+      exact hn (congrArg (fun i : Fin 168 => i.val) he)
+    have hv110 : k.val ≠ 110 := fun he => h110 (Fin.ext he)
+    have hv132 : k.val ≠ 132 := fun he => h132 (Fin.ext he)
+    have hv157 : k.val ≠ 157 := fun he => h157 (Fin.ext he)
+    exact h.low_length_eq h' h93 haux j (hne 110 hv110) (hne 132 hv132) (hne 157 hv157)
+  · by_cases hprivate : 242 ≤ k.val
+    · rw [(h.privateBank k hprivate).2,(h'.privateBank k hprivate).2]
+    · exact congrArg List.length (hhigh k (by omega) (by omega))
+
 /-- Output allocation changes no between-input invariant. -/
 theorem PackedHaloBetweenInputs.update_output
     {A P stage q l s t u band a b V w W boundaryCount : ℕ} {S : Stacks 248 A}
