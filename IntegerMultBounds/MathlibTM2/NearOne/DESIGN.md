@@ -200,8 +200,18 @@ contains both computed halos above its original borrowed suffix. No factory or
 final factor disposal occurs inside those calls. The time bound includes both
 output allocations and both complete prepared-input charges.
 
+`PhaseCellPackedHaloBatchProgram` supplies one fixed counted program with its
+counter isolated on port 248, outside the 248-port numerical bank. Its structural
+list theorem consumes arbitrary input lists and retains a relational certificate
+for every call, including its intermediate physical states. This permits earlier
+output accuracy certificates to survive subsequent output prepending. The exact
+control charge is `N*(perInput+3)+2`, including the empty batch. The theorem still
+requires the concrete numerical step and queue invariant to be instantiated;
+it does not establish an initialized numerical batch or a live-storage bound.
+The module checks at about 3.2 GiB with default proof limits.
+
 Still required: connect the initial factory execution to the between-input
-invariant, generalize the executed transition over the replica/component list,
+invariant, instantiate the list theorem with the numerical replica/component transition,
 and close the selected time and peak-storage ledgers. Output publication/cursor management,
 list iteration, setup-cost matching, peak storage, seams and tensor/R4 execution
 remain open. The original single-input solver still initializes and releases
