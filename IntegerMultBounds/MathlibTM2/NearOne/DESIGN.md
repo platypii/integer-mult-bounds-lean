@@ -5752,3 +5752,21 @@ ports, without ambient line scans or finite payload enumeration.
 numerical supplier. Invocation of the real batch on these fields, output
 pairing/normalization and owned-counter disposal still require composition;
 this input preparation does not complete a complex key or S4.
+
+### S4 exact setup/repeated-work split for the packed key (2026-10-30)
+
+`PhaseCellPackedKeyBatchCost` decomposes the actual bill returned by
+`packedKeyRealBatch_exec`, including conversion and native count initialization,
+as its zero-replica accounting constant plus N times a named per-RHS cost.
+Conversion, core publication and the protected numerical batch each have a
+structural affine identity. `packedHaloBatchCostFromSetup_zero` identifies the
+numerical constant with the existing `packedHaloSetupReleaseCost true` supplier
+plus explicit header/core-publication controls. Thus the factor construction,
+geometry and final release are outside the repeated-RHS charge.
+`packedKeyRealBatchCost_two_components` proves a 2N real batch doubles only
+the per-RHS charge. This is an exact accounting identity, not yet a selected
+asymptotic bound: the setup constant must still be connected to the selected
+key/tile allowance, and repeated work to the local-volume arithmetic bound.
+The extended protected-batch axiom audit passes; the cost module checks at
+about 3.2 GiB under default proof limits. Global time and simultaneous stock
+are still open, as are complex output assembly and full schedule execution.

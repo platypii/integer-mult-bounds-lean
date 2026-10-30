@@ -1,11 +1,14 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyRealBatch
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyBatchCost
 
 /-! Audit the actual protected numerical supplier independently of routing. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBatchCostFromSetup_zero,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedKeyRealBatchCost_affine,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedKeyRealBatchCost_two_components,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedKeyRealBatch_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedKeyBankViews.input_update,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedKeyBankViews.factory_view,
