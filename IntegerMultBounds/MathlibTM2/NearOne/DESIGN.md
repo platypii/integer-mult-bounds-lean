@@ -2159,18 +2159,37 @@ native-bank preservation are proved through the composition; no gathered
 source or local execution callback is assumed.
 
 The caller still establishes the first halo's source-independent numerical
-setup and local coordinate headers. The original generated origin stream and
-full group count remain on 257/261: they have not yet advanced past the solved
-first halo. Consuming those cursors, generating successive local geometry,
-complete low-runtime restoration for repeated calls, full setup-key reuse,
-seams/full-system fallback, complex/tensor composition and final uniform bounds
-remain open. This is a generated batch connected to its first real local call,
-not a completed group loop. S4 remains open.
+setup and local coordinate headers. The generated RHS, origin stream and count
+on 256/257/261 now all advance to the remaining indices `ks`. Generating
+successive local geometry, complete low-runtime restoration for repeated calls,
+full setup-key reuse, seams/full-system fallback, complex/tensor composition and
+final uniform bounds remain open. This is a generated batch connected to its
+first real local call, not a completed group loop. S4 remains open.
 
 Verification: the protected gather contract and composed generated-core
 execution checked at 2067.8 and 3250.1 MiB peak RSS. The coupling-interval
 integration build passed 14,970 jobs and its approved-axiom audit (3.5 GiB
 aggregate peak); whitespace checks passed.
+
+### Synchronized generated group cursors (2026-10-29)
+
+`advanceGroupCursor_exec` is a generic five-register proof: consume one
+fixed-width binary origin word and one tick of its unary count, restoring both
+scratch stacks and all other state, in exactly `6*V+7` steps. It reuses the
+structural counted-prefix disposal proof.
+
+`gatheredHaloCore_spec` executes this advancement between protected gathering
+and the first concrete solver call. Scratch ports 269/270 lie outside the solver
+bank. The remaining RHS windows, binary origins and unary count are now all
+indexed by `ks`, including when `ks` is empty. The borrowed source, published
+core accuracy, high-header frame and other previous guarantees are retained.
+This closes cursor alignment; local-header construction and the complete
+runtime invariant for repeated calls remain open, along with the other S4 gates.
+
+Verification: the generic cursor step and cursor-aligned gathered-core theorem
+checked at 1931.9 and 3252.7 MiB peak RSS. The coupling-interval integration
+build passed 14,971 jobs and its approved-axiom audit (3.5 GiB aggregate peak);
+whitespace checks passed.
 
 ### Geometry, cuts and boundary order
 
