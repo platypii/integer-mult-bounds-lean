@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedFullLineCoupling
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryData
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGuardedBoundaryFold
 
 /-! Feed the executed periodic residual endpoint to boundary selection and folding. -/
 @[expose] public section
@@ -47,5 +48,30 @@ theorem periodicBoundaryData_exec {Q A V s t band a b precision q w u : ℕ} [Ne
   · have hh := hready.fresh 116 (by simp)
     simpa [fullLineCouplingResult,completedCouplingIntervalR,embStk,groupReg,intervalPageReg] using hh
   · simpa [fullLineCouplingResult,completedCouplingIntervalR] using h143
+
+/-- Boundary folding of the actual periodic residual supplies the numerical
+solver's coupling RHS without changing the execution or its time bound. -/
+theorem periodicResidualBoundaryData_exec {Q A V s t band a b precision q w u : ℕ} [NeZero s] {P U : Type}
+    {body : P → Pr P 168 Q A U} (v : HS 168 Q A U) (S : Stacks 168 A)
+    (C B : ZMod s → GaussianInt) (rhsTail raw : List (Fin (A+4)))
+    (hready : RetainedCouplingReady precision q w s t u band a b raw
+      (embStk groupReg (embStk intervalPageReg S)))
+    (hV : (S.R 163).length = V)
+    (hbase : ∀ k ∈ [(145 : Fin 168),146,147,149,151,155,165],
+      S.R k = binSyms V (couplingIntervalValue s t band a b 0 s k))
+    (hst : s < t) (haS : a ≤ s) (hbS : b ≤ s) (hA : 4 ≤ A)
+    (hwide : 8*(t+1)^2+2*band+8 < 2^V) (hfitV : (s+2*band)+s < 2^V)
+    (hwidth : (S.R 130).length = w) (h167 : S.R 167 = []) (h143 : S.R 143 = []) :
+    let R := fullLineCouplingResult S V band s (cstream A w (packedInterval 0 s (guardedCouplingRowField precision q t u band a b false C B))) rhsTail
+    ∃ v' n, v'.user = v.user ∧ n ≤ packedBoundaryDataCost V s (haloBoundary s t band a b).card w ∧
+      Exec body packedBoundaryData (mk v R) n
+        (mk v' {R with R := (Function.update (Function.update (Function.update R.R
+          167 (couplingSourceIntervalMaskSymbols true A s t band a b 0 s))
+          116 (List.replicate (haloBoundary s t band a b).card tick))
+          143 (cstream A w ((bFoldOrder s (haloBoundary s t band a b)).map (couplingRowField precision q t u band a b false C B))))}) := by
+  have he := periodicBoundaryData_exec (body := body) v S
+    (guardedCouplingRowField precision q t u band a b false C B) rhsTail raw
+    hready hV hbase hst haS hbS hA hwide hfitV hwidth h167 h143
+  simpa only [guardedCouplingRowField_boundaryFold precision q u band a b hst hbS C B] using he
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
