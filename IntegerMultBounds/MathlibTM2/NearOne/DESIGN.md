@@ -5842,3 +5842,22 @@ The independent `PhaseCellPackedRoundCheck` audits the reader, error and actual
 execution proofs. Both modules check below 3.2 GiB with default proof limits.
 Common-width publication, generated caller dimensions, numerical/complex/rounding
 sequencing and the global selected execution/time/stock gates remain open.
+
+### S4 counted packed normalization returns its own accuracy (2026-10-30)
+
+`PhaseCellRoundPackedKey.roundPackedKey_exec` generates the local normalization
+prefix count from retained replica and packet-width headers, executes rounding,
+and clears that owned count. All dimension symbols, scalar state and scratch
+restore. Its bill separates fixed scalar/header work, N times packet-count work,
+and coefficient-wise rounding; it contains no later-key suffix or ambient scan.
+`PhaseCellRoundPackedBatch.roundPackedBatch_exec` instantiates this actual program
+on the packed field list, derives the coefficient count from the local interval,
+and identifies the emitted rounded fields using `packedBatch_round_source`.
+The same conclusion supplies their ordered normalized accuracy and unchanged
+replica count. Neither the transformed output nor the normalized certificate is
+an input premise. This uses the generic generated rounding pass directly,
+without the ambient 303-register inverse caller.
+The extended local rounding audit passes; both new modules check below 3.2 GiB
+under default proof limits. Scalar-bank initialization, common-width publication,
+sequencing with the concrete numerical/complex batch and global selected
+execution/time/stock gates remain open. S4 is incomplete.
