@@ -226,6 +226,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBoundarySetup_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedBoundaryFactoryGeometryUsing_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBoundarySetupUsing_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBoundarySolveUsing_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloSolveUsing_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBoundarySolve_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.executionSizing_of_allowance,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryHaloTarget_accuracy,

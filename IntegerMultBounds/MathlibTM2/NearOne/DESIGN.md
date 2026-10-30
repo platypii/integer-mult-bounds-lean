@@ -2484,6 +2484,29 @@ Verification: guarded checks peaked at 3207.5 MiB for the factory-mode interface
 and 3351.3 MiB for shared boundary setup. The 14,982-job integration build
 and approved-axiom audit passed.
 
+### Retained geometry through the closed local solver (2026-10-29)
+
+`packedHaloBoundarySolveUsing_exec` now carries the fresh/retained geometry mode
+through the actual prepared residual solve, using the shared setup theorem.
+`packedHaloSolveUsing_spec` carries it through boundary solution, interior
+recovery and all coefficient/table/factor releases. Retained mode accepts the
+already translated interval metadata instead of blank geometry slots, skips
+geometry initialization, and returns the same physical-read accuracy, retained
+headers, native cleanliness, buffer and owned-page guarantees. The residual,
+accuracy and recovery proofs are shared across both modes.
+
+`packedHaloSolveUsingCost` records the mode-dependent charge once. The original
+programs, cost function and theorem interfaces specialize the shared definitions
+to fresh geometry, preserving existing callers. Retained mode removes the
+ambient/unary geometry-initialization term; it still constructs and releases
+fresh factors. Publication/queue interfaces still need the retained mode and the
+remaining workspace invariants before successive calls can be composed.
+Complete setup-key/factor reuse, the full group loop and other global S4
+obligations remain open.
+Verification: guarded checks peaked at 3270.0 MiB for boundary solve and
+3313.6 MiB for the closed solver. The 14,982-job integration build and
+approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
