@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Host.EmbedInvariant
+public import IntegerMultBounds.MathlibTM2.Host.EmbedUpdate
 public import IntegerMultBounds.MathlibTM2.StackResources
 
 /-! Register placement replaces the selected stock and preserves spectator stock. -/
@@ -75,6 +76,24 @@ theorem embOvr_stock_le (he : Function.Injective e)
   have hbalance := embOvr_stock e he S.get B
   change mnSize (mk w (embOvr e S.get B))+mnSize (mk (embDn e w) (embStk e B)) =
     mnSize (mk w B)+mnSize (mk v S) at hbalance
+  omega
+
+/-- An isolated loop counter may shrink before placing the next solver bank.
+Its storage is already paid by the surrounding initial state. -/
+theorem embOvr_stock_le_shrinking_counter (he : Function.Injective e)
+    (v : HS T Q A U) (w : HS T' Q A U) (S : Stacks T A) (B : Stacks T' A)
+    (count : Fin T') (hoff : ∀ i, e i ≠ count) (xs : List (Fin (A+4)))
+    (hcount : xs.length ≤ (B.R count).length) (budget : ℕ)
+    (hstock : mnSize (mk v S) ≤ mnSize (mk (embDn e w) (embStk e B))+budget) :
+    mnSize (mk w (embOvr e S.get {B with R := Function.update B.R count xs})) ≤
+      mnSize (mk w B)+budget := by
+  have hp := embStk_updateR_off B count xs hoff
+  have hb := embOvr_stock_le e he v w S
+    {B with R := Function.update B.R count xs} budget (by simpa only [hp] using hstock)
+  have hc := mn_size_update (mk w B) w (.rt count) xs
+  have hbalance : mnSize (mk w {B with R := Function.update B.R count xs})+(B.R count).length =
+      mnSize (mk w B)+xs.length := by
+    simpa only [mk,update_rt,get_rt] using hc
   omega
 
 theorem embAct_push (a : Act T Q A U) : mnActPush (embAct e a) = mnActPush a := by
