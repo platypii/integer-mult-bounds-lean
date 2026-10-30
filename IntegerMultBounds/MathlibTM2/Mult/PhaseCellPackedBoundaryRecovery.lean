@@ -101,7 +101,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       BoundarySolveReady (boundaryFactorState (embStk preparedBoundaryCoreReg
         (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase F)))) q w W
         (haloBoundary s t (PhaseCellBand.width p u) a b).card ∧
-      (∀ k ∈ packedRecoveryHeaderPorts, F.R k = []) ∧
+      (∀ k : Fin 248, 242 ≤ k.val → F.L k = [] ∧ F.R k = []) ∧
       ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k := by
   let band := PhaseCellBand.width p u
   let B := haloBoundary s t band a b
@@ -142,7 +142,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     simpa only [packedRecoveryRhsState,Y,R,B,band] using he₁
   have hrange := haloRecovery_boundary_range A p u l k rhsExp q w a (b-a) B solution
     (fun i hi => (hsolution i hi).2)
-  obtain ⟨v₂,F,n,E',D,hu₂,hn₂,he₂,h93,h139',h238,hi,ho,hrdy,hout,hDnorm,hDfits,herror,hframe,hleft,hretained,hfactors⟩ :=
+  obtain ⟨v₂,F,n,E',D,hu₂,hn₂,he₂,h93,h139',h238,hi,ho,hrdy,hout,hDnorm,hDfits,herror,hframe,hleft,hretained,h245,h246,hfactors⟩ :=
     packedRecoveryFinish_exec (body := body) hR hQ hA hp0 hst hu hαu hθ0 hgap hbudget hpad hq' hw'
       Y R C hnorm hab hb hband (by omega) (by simpa only [hq'] using hVeq)
       (by simpa only [← hw'] using hwV) hcoords (by simpa only [← hw'] using hunits)
@@ -222,7 +222,16 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
   · rw [hprefix]; exact hworkFinal
   · rw [hprefix]; exact hreadyFinal
   · intro k hk
-    simp only [releasedPackedRecoveryHeaders,if_pos hk]
+    refine ⟨(congrFun hleft k).trans (hfreshL k hk),?_⟩
+    have hi := k.isLt
+    by_cases h245k : k = 245
+    · subst k; simpa [releasedPackedRecoveryHeaders,packedRecoveryHeaderPorts] using h245
+    by_cases h246k : k = 246
+    · subst k; simpa [releasedPackedRecoveryHeaders,packedRecoveryHeaderPorts] using h246
+    have hm : k ∈ packedRecoveryHeaderPorts := by
+      simp only [packedRecoveryHeaderPorts,List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff] at h245k h246k ⊢
+      omega
+    simp only [releasedPackedRecoveryHeaders,if_pos hm]
   · intro k hk hk' hne
     rw [releasedPackedRecoveryHeaders_low F k hk']
     exact hfactors k hk hk' hne

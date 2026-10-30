@@ -70,6 +70,7 @@ theorem packedRecoveryInterior_field_exec (hR : rpStates ≤ Q) (hQ : SS.states 
         (S.R 132) (F.R 132) ∧ F.L = S.L ∧
       (∀ k : Fin 248, (∀ i, packedRecoveryInteriorReg i ≠ k) → F.L k = S.L k ∧ F.R k = S.R k) ∧
       (∀ k ∈ packedRecoveryRetainedPorts, F.L k = S.L k ∧ F.R k = S.R k) ∧
+      F.R 245 = [] ∧ F.R 246 = [] ∧
       ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → F.L k = S.L k ∧ F.R k = S.R k := by
   let T := embStk packedRecoveryInteriorReg S
   obtain ⟨v₁,H,n,E',D,hu₁,hn,he,h93,hi,ho,hready,houtput',hDnorm,hDfits,hqueue,hzero,hframe,herror,hwords,hleft⟩ :=
@@ -82,7 +83,7 @@ theorem packedRecoveryInterior_field_exec (hR : rpStates ≤ Q) (hQ : SS.states 
   have hproj : embStk packedRecoveryInteriorReg F = H :=
     embStk_ovr packedRecoveryInteriorReg_injective H S
   refine ⟨v₂,F,n,E',D,hu₂.trans hu₁,hn,he₂,?_,?_,hi,ho,?_,?_,hDnorm,hDfits,herror,?_,
-    embOvr_left_of_eq S H hleft,?_,?_,?_⟩
+    embOvr_left_of_eq S H hleft,?_,?_,?_,?_,?_⟩
   · exact (congrArg (fun B : Stacks 168 A => B.R 93) hproj).trans h93
   · exact (congrArg (fun B : Stacks 168 A => B.R 139) hproj).trans
       (hframe 139 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)).2
@@ -97,6 +98,11 @@ theorem packedRecoveryInterior_field_exec (hR : rpStates ≤ Q) (hQ : SS.states 
   · intro k hk
     exact packedRecoveryRetained_frame F S H hproj
       (fun j hj => embOvr_off H.get S hj) hframe k hk
+  · exact (congrArg (fun B : Stacks 168 A => B.R 138) hproj).trans
+      ((hframe 138 (by decide) (by decide) (by decide) (by decide) (by decide)
+        (by decide) (by decide) (by decide)).2.trans (hfresh 138 (by decide)))
+  · exact (congrArg (fun B : Stacks 168 A => B.R 140) hproj).trans
+      (hready.fresh 140 (by decide))
   · intro k hk hk'
     exact embOvr_off H.get S (fun i => packedRecoveryInteriorReg_avoids_factors i k hk hk')
 

@@ -193,8 +193,11 @@ The actual `packedBoundaryRecovery` program now follows recovery with
 Its bound `2*(2*V+s+w)+9` is derived from the returned `PackedHaloReady` width
 and length bounds and included in `packedBoundaryRecoveryCost`. The solver
 uses this composed program. The endpoint proves those ports empty and retains
-the numerical workspace and factor readiness; this is not yet a complete
-reset of the first-pass runtime or of all six private recovery ports.
+the numerical workspace and factor readiness. The interior frame proves port
+245 stays empty, and interior readiness proves port 246 is already empty.
+Together with left-tape restoration, the composed recovery endpoint now proves
+all six private ports 242--247 empty on both sides. No additional erasure cost
+is needed for 245 or 246. Reset of the separate first-pass runtime remains open.
 
 The proof should follow the manuscript construction recorded in
 `plan/D-sharper-bound.md`, M7b: local principal solves, owned-core cropping,
