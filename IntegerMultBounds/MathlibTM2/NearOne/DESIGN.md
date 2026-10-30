@@ -5407,3 +5407,15 @@ This is the actual width/scale handoff, not execution of the numerical solver.
 The common W and key-specific w retained headers still need outer generation;
 key-batch placement, output normalization/widening and complete tile composition
 remain open.
+
+`PhaseCellCommonWidthOutput.commonWidthOutput_exec` supplies the reverse format
+handoff: the actual generated inverse rounding batch emits `2p+13`-bit words,
+then the generated signed widening pass returns them at common width W. It
+derives the signed fits needed for widening from the decoded magnitude bound
+`norm(value (4E) (symZ (8E+8) z)) <= 8*2^(p+8)`, using the existing rounding
+bound. No independent output fit or execution oracle is assumed. The total bill
+includes rounding plus width setup, widening and disposal. Only source 132
+changes, with original scalar state, retained width headers and scratch restored.
+The numerical solver still must supply this decoded magnitude bound at the
+actual output port; full tile/key placement and complete numerical composition,
+inverse packed routing, dummy removal and the global S4 gates remain open.
