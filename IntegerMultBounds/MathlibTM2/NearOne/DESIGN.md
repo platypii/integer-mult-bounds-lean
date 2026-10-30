@@ -5456,3 +5456,17 @@ The routing count is consumed, the borrowed real-length header is preserved,
 and all other right stacks restore. The retained real-length header must still
 be generated/preserved by the outer tile lifecycle. Key padding, numerical batch
 placement/composition, bulk gathering and global S4 resource gates remain open.
+
+`PhaseCellRetainedReplicaPadding.retainedReplicaPadding_exec` now generates the
+borrowed real-symbol count needed by the return path. Before padding, it scans
+the actual owned source with `ucopy` into a fresh retained register, then runs
+the existing generated replica padding. The returned paired arrays and exact
+real suffix come from the executed padding theorem. Only the source and the
+owned retained counter change, all scratch restores, and the combined cost is
+at most `33*tileVolume+24`. The counter contains exactly `N*keyCount*packetWidth`
+ticks and needs no supplied length witness beyond the input packet layout.
+It must be kept outside routing/numerical scratch by the outer placement.
+Its use for output erasure requires returned rows with the same common packet
+length; interfaces changing row lengths must generate the corresponding output
+count instead. Capturing the count does not yet compose numerical execution or
+close the full tile lifecycle, key padding, scheduling or global S4 bounds.
