@@ -1,7 +1,7 @@
 module
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyInterchange
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaChunkLayout
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseChunkTile
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellChunkTileCost
 
 /-! Keep the bulk-routing audit separate from the numerical coupling closure. -/
@@ -25,6 +25,12 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.chunkInterchangeLoop_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.wiredChunkStages_shape,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.wiredChunkStages_bank_values,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.swapList_involution,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runReplicaChunkSwaps_reverse_cancel,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runReplicaChunkSwaps_inverse_words,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkTileUsing_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkTile_inverse_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkTileCost_reverse,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkTile_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkTileCost_linear_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkTileCost_uniform ] do

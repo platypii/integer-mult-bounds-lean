@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedChunkInterchange
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaChunkLayout
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaChunkInverse
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -35,6 +35,13 @@ theorem chunkStageBits_words {T : ℕ} (d W c : ℕ) (rs : List (ChunkInterchang
     chunkStageBits d rs (replicaKeyWords f) = keyReplicaWords f := by
   rw [chunkStageBits_eq,hshape]
   exact runReplicaChunkSwaps_words (2^d) W c false f
+
+theorem chunkStageBits_reverse_words {T : ℕ} (d W c : ℕ) (rs : List (ChunkInterchangeStage T))
+    (hshape : (rs.map fun r => (r.outerCount,r.blockWidth)) = replicaChunkSwaps (2^d) W c)
+    (f : Fin ((2^d)^c) → Fin (2^d) → Fin W → Bool) :
+    chunkStageBits d rs.reverse (keyReplicaWords f) = replicaKeyWords f := by
+  rw [chunkStageBits_eq,List.map_reverse,hshape]
+  exact runReplicaChunkSwaps_inverse_words (2^d) W c false f
 
 /-- The structural schedule supplies the positivity and common-volume premises
 of every machine stage; these are not separate per-stage certificates. -/

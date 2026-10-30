@@ -5348,3 +5348,25 @@ remaining runtime-cell ABI/parameter composition, repeated/batched page assembly
 execution-wide peak and uniform cost matching, gathering/scheduling, halo cuts
 and complex/boundary/coupling/recovery/full-line composition remain open.
 S3 is incomplete and the proved multiplication saving is unchanged.
+
+### S4 reverse tile routing (2026-10-30)
+
+`PhaseCellReplicaChunkInverse` proves equal-chunk swap involution and cancellation
+of an arbitrary volume-preserving schedule by its reverse. Instantiating the
+canonical schedule restores replica-major order for arbitrary computed payloads;
+symbol order inside each packet is retained. `generatedChunkTileUsing_exec`
+shares the actual dimension-bank generation, stage execution, frame and disposal
+proof between forward and reversed schedules. `generatedChunkTile_inverse_exec`
+executes the reversed schedule with the same exact bill as forward routing.
+The routing audit checks these endpoints, and the forward packed/padding audits
+pass after the refactor. Packed inverse composition and executed dummy removal
+remain open.
+
+The next integration gate is a common external packet format: the numerical
+input shift converts scale at fixed word width, whereas routed packets must
+cross between a common width and key-dependent numerical widths. Its actual
+conversion, restoration and linear bill must be proved before identifying these
+interfaces. Then close one tile through numerical batches, inverse routing and
+count-based dummy removal, before extending the global scheduler. Tile capacity,
+setup amortization, complete bulk gathering, tensor/R4 composition and total
+simultaneous stock remain required; S4 is incomplete.
