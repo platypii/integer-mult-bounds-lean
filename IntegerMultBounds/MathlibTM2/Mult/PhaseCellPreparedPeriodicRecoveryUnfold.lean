@@ -65,7 +65,8 @@ theorem preparedPeriodicRecoveryUnfold_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
           (packedPreparedResidualSolve hQ)))) packedBoundarySolutionUnfold)
         (mk v (extendStacks (by decide : 242 ≤ 248) S)) n
         (mk v' {H with R := (Function.update (Function.update (Function.update H.R 238 (F.R 238)) 231 [])
-          245 (cstream A w ((bOrder s B).map (boundarySolutionField B solution))))}) := by
+          245 (cstream A w ((bOrder s B).map (boundarySolutionField B solution))))}) ∧
+      PackedPreparedBank q w W B.card G := by
   dsimp only
   intro hcolumns hcount hR hC v S rhsTail hbetween hband hwide hfitV hsource hrhs h160 hpages
   let bits := boundaryTableBits p target 2 B.card
@@ -106,6 +107,6 @@ theorem preparedPeriodicRecoveryUnfold_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
   obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := preparedBoundaryRecoveryUnfold_exec (body := body) (by omega)
     q w W B solution hlen (F.R 238) v₂ G hbank (by simp [G])
     (by simpa [G] using hcountF) (by simp [G])
-  exact ⟨v₃,n₁+n₃,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hn₁ hn₃,Exec.seq he₂ he₃⟩
+  exact ⟨v₃,n₁+n₃,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hn₁ hn₃,Exec.seq he₂ he₃,hbank⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
