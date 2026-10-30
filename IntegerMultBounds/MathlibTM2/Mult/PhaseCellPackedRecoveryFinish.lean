@@ -73,14 +73,15 @@ theorem packedRecoveryFinish_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
       (∀ k ∈ packedRecoveryRetainedPorts, F.R k = S.R k) ∧
       F.R 245 = [] ∧ F.R 246 = [] ∧
       (F.R 243).length ≤ ((s/(t-s)+1)-2*PhaseCellBand.width p u) ∧
-      ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k := by
+      (∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k) ∧
+      F.R 127 = [] ∧ F.R 143 = S.R 143 ∧ F.R 158 = S.R 158 ∧ F.R 167 = [] := by
   let H := packedRecoveryRhsState w a b Y R C solutionTail outputTail rhsTail S
   have hinit := packedRecoveryInteriorReady_after_rhs hab hb Y R C solutionTail outputTail rhsTail S
     hwork hheaders hstage hlevel hnative hmeta hclean hfresh
   have hread93 : (embStk packedRecoveryInteriorReg H).R 93 = H.R 93 :=
     congrArg H.R (packedRecoveryInteriorReg_fixed 93 (by decide))
   obtain ⟨v₂,F,n₂,E',D,hu₂,hn₂,he₂,h93,h139,hi,ho,hready,houtput,hDnorm,hDfits,herror,hwords,hleft,
-    hoff,hretained,h245,h246,hlength,hfactors⟩ := packedRecoveryInterior_field_exec (body := body) hR hQ hA hp hst hu
+    hoff,hretained,h245,h246,hlength,hfactors,h127,hsmall⟩ := packedRecoveryInterior_field_exec (body := body) hR hQ hA hp hst hu
     hαu hθ hgap hbudget hpad R (by simpa only [← hq] using hnorm) hab hb hband hwide hVeq
     hwV hcoords hunits (cstream A w (packedInterval a (b-a) C)++rhsTail)
     (cstream A w (packedInterval a (b-a) Y)) outputTail v₁ H
@@ -88,7 +89,7 @@ theorem packedRecoveryFinish_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     hinit.lower hinit.upper hinit.metadata hinit.binaryLengthBound hinit.output
     (by simpa only [← hw] using hinit.length) hinit.fresh
     (by simpa only [← hq,← hw] using hrange) xI (by simpa only [← hq] using hxI)
-  refine ⟨v₂,F,n₁+n₂,E',D,hu₂.trans huser,by omega,Exec.seq he₁ he₂,h93,h139,?_,hi,ho,?_,?_,?_,?_,?_,?_,hleft,?_,h245,h246,hlength,?_⟩
+  refine ⟨v₂,F,n₁+n₂,E',D,hu₂.trans huser,by omega,Exec.seq he₁ he₂,h93,h139,?_,hi,ho,?_,?_,?_,?_,?_,?_,hleft,?_,h245,h246,hlength,?_,h127,?_,?_,?_⟩
   · simpa [H,packedRecoveryRhsState] using (hfactors 238 (by decide) (by decide)).2
   · simpa only [← hq,← hw] using hready
   · simpa only [← hw] using houtput
@@ -111,5 +112,8 @@ theorem packedRecoveryFinish_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
     simpa [H,packedRecoveryRhsState,Function.update_apply,Fin.ext_iff,hv238,
       show k.val ≠ 132 by omega,show k.val ≠ 110 by omega,
       show k.val ≠ 116 by omega,show k.val ≠ 167 by omega] using hh
+  · simpa [H,packedRecoveryRhsState] using hsmall 143 (by decide)
+  · simpa [H,packedRecoveryRhsState] using hsmall 158 (by decide)
+  · simpa [H,packedRecoveryRhsState] using hsmall 167 (by decide)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

@@ -98,7 +98,8 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
       (∀ bo hf df, PackedBoundaryFactorPages bo hf df S →
         PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) ∧
       PackedHaloRetainedHeaders (2^15*p) (executionStagePrecision p l target rhsExp+1)
-        q l s t u band a b V w (embStk packedRecoveryRuntimeReg F) := by
+        q l s t u band a b V w (embStk packedRecoveryRuntimeReg F) ∧
+      F.R 127 = [] ∧ F.R 143 = [] ∧ F.R 158 = [] ∧ F.R 167 = [] := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages hboundary y hy hcoeff
   let band := PhaseCellBand.width p u
@@ -150,7 +151,7 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
     rw [hcell,hstages] at hh
     change (F₁.R 118).length = _
     simpa only [hboundary] using hh
-  obtain ⟨v₂,F,n₂,D,hu₂,hn₂,he₂,h93,h139',h238,hi,ho,hout,hfits,herror,hsource,hnative₂,hleft₂,hretained,hwork₂,hready₂,hprivate₂,hfactors,hpages₂⟩ :=
+  obtain ⟨v₂,F,n₂,D,hu₂,hn₂,he₂,h93,h139',h238,hi,ho,hout,hfits,herror,hsource,hnative₂,hleft₂,hretained,hwork₂,hready₂,hprivate₂,hfactors,hpages₂,h127Recovery,h143Recovery,h158Recovery,h167Recovery⟩ :=
     packedBoundaryRecovery_buffers_spec (body := body') (q := q) (w := w) (W := W) hR hQ hA hp hu hwidth hα hst hαu hθ hgap hbudget hdom
       hab hb hband hsep hpad (by simp only [q,bits,B,band,hboundary]) (by simp only [w,bits,B,band,hboundary]) C ys y
       (by simpa only [hq] using hC) haccuracy.1 haccuracy.2.1
@@ -183,7 +184,7 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
       hcoeff hwide hfitV (by simpa only [hq] using hVeq)
       (by simpa only [hw] using hwV) hcoords (by simpa only [hw] using hunits)
       (by rw [hruntime]; exact hgeometryFinal)
-  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,⟨hready₂,hwork₂⟩,?_,hnative₂,hprivate₂,?_,?_⟩
+  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,⟨hready₂,hwork₂⟩,?_,hnative₂,hprivate₂,?_,?_,h127Recovery,h143Recovery,h158Recovery,h167Recovery⟩
   · constructor
     · simp only [length_cstream,packedInterval_length C (by omega : a+(b-a) ≤ s)]
     · exact hsource

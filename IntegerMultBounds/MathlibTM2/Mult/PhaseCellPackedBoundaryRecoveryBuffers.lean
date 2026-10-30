@@ -95,7 +95,8 @@ theorem packedBoundaryRecovery_buffers_spec (hR : rpStates ≤ Q) (hQ : SS.state
       (∀ k : Fin 248, 242 ≤ k.val → F.L k = [] ∧ F.R k = []) ∧
       (∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k) ∧
       (∀ bo hf df, PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase S) →
-        PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) := by
+        PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) ∧
+      F.R 127 = [] ∧ F.R 143 = [] ∧ F.R 158 = [] ∧ F.R 167 = [] := by
   have hlocal : a+(b-a) ≤ s := by omega
   exact packedBoundaryRecovery_spec hR hQ hA hp hu hwidth hα hst hαu hθ hgap hbudget hdom
     hab hb hband hsep hpad hq hw C solution x hC hlen hfits hsolution hx solutionTail
