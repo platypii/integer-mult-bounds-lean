@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedReplicaKeyRouter
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyRoutingBill
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedPayload
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -16,7 +17,7 @@ noncomputable def countedPackedReplicaKeyRouter {t₀ T Q K : ℕ} {U P : Type}
     (hQre : swapStates hd re hi ≤ Q) (hQim : swapStates hd im hi ≤ Q)
     (ι : Fin (swapT t₀) → Fin T) (hι : Function.Injective ι) (hT : swapT t₀ ≤ T)
     (src tmp saved count reRev imRev : Fin T) : Pr P T Q (prime+K) U :=
-  .seq (ucopy src count saved) (packedReplicaKeyRouter hd re im hi hQre hQim ι hι hT src tmp saved count reRev imRev)
+  withPayloadCounter src count saved (packedReplicaKeyRouter hd re im hi hQre hQim ι hι hT src tmp saved count reRev imRev)
 
 /-- Count the actual payload, route it, and restore the disposable counter.
 The counter is outside the placed bank, so it adds no normalization volume. -/
@@ -52,40 +53,31 @@ theorem countedPackedReplicaKeyRouter_exec {t₀ T Q K : ℕ} {U P : Type}
   have hr := hreg
   regs_ne hr
   have hsrcLen : (S.R src).length = V := by simp [hsrc,replicaKeyWords,V]
-  obtain ⟨v₁,hu₁,he₁⟩ := ucopy_exec (body := body) ‹src ≠ count› ‹src ≠ saved› ‹saved ≠ count›.symm v S
-    (hblank saved (by simp))
-  let M : Stacks T (prime+K) := {S with R := Function.update S.R count (List.replicate V tick)}
-  have he₁' : Exec body (ucopy src count saved) (mk v S) (4*V+4) (mk v₁ M) := by
-    simpa only [hsrcLen,hcount,List.append_nil] using he₁
+  let M := payloadCountedState S count V
   have hbank (j : Fin (swapT t₀)) : M.R (ι j) = S.R (ι j) := Function.update_of_ne (hcountOff j) _ _
+  have hvolume : ∑ j, (M.R (ι j)).length = ∑ j, (S.R (ι j)).length := by
+    apply Finset.sum_congr rfl
+    intro j hj
+    rw [hbank]
+  refine withPayloadCounter_exec src count saved (by regs_nodup) V _
+    (packedReplicaKeyRouter hd re im hi hQre hQim ι hι hT src tmp saved count reRev imRev) _
+    v S hsrcLen hcount (hblank saved (by simp)) ?_
+  intro u
   obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := packedReplicaKeyRouter_exec body hA hd re im hi hne hreHead himHead hQre hQim ι hι hT
-    src tmp saved count reRev imRev hreg W h d hs hhd hdh hv hc hW realBits imagBits v₁ M hL
+    src tmp saved count reRev imRev hreg W h d hs hhd hdh hv hc hW realBits imagBits u M hL
     (by intro j hj; rw [hbank]; exact hpriv j hj)
     (by intro k; rw [hbank]; exact hhdr k)
-    (by simpa only [M,Function.update_of_ne ‹src ≠ count›] using hsrc)
-    (by simp [M,V])
+    (by simpa only [M,payloadCountedState,Function.update_of_ne ‹src ≠ count›] using hsrc)
+    (by simp [M,payloadCountedState,V])
     (by
       intro i hi
       have hic : i ≠ count := by
         simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
         rcases hi with rfl | rfl | rfl | rfl | rfl | rfl
         all_goals first | assumption | (apply Ne.symm; assumption)
-      simpa only [M,Function.update_of_ne hic] using hblank i hi)
+      simpa only [M,payloadCountedState,Function.update_of_ne hic] using hblank i hi)
     (by intro i hire hiim hheads x hx; rw [hbank] at hx; exact hother i hire hiim hheads x hx)
-  have hvolume : ∑ j, (M.R (ι j)).length = ∑ j, (S.R (ι j)).length := by
-    apply Finset.sum_congr rfl
-    intro j hj
-    rw [hbank]
   rw [hvolume] at hn₂
-  refine ⟨v₂,(4*V+4)+n₂,hu₂.trans hu₁,Nat.add_le_add_left hn₂ _,(Exec.seq he₁' he₂).cast rfl ?_⟩
-  apply congrArg (mk v₂)
-  refine Stacks.ext rfl rfl rfl ?_
-  funext i
-  by_cases hic : i = count
-  · subst i
-    simp [M,‹src ≠ count›.symm,hcount]
-  by_cases his : i = src
-  · subst i; simp [M,hic]
-  · simp [M,hic,his]
+  exact ⟨v₂,n₂,hu₂,hn₂,he₂⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

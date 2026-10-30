@@ -559,30 +559,30 @@ tile lifecycle with `(2^d)^c` replicas and `2^d` keys. Its bill includes
 `12*V+12` for encoding, twice the complete generated tile bill at initial
 placed stock plus `2*V`, `2*V+2` for old-payload disposal and `8*V+6` for
 reassembly. Only the packed payload and disposable symbol counter change;
-all dimension banks, headers and codec scratch restore. The counter is still
-an initial `V`-symbol word. `packedGeneratedChunkTileCost_uniform` preserves
-the same routing exponent and charges the extra codec work linearly.
-Tile counter generation, final-tile padding, selected key/capacity bounds,
-gather/numerical-batch integration and global movement/stock ledgers remain
-open. The 8,214-job integration build and all three routing/header axiom
-audits pass. Single-file peaks are 2948.7 MiB for the packed tile, 2931.9 MiB
-for the two-plane lifecycle, 2965.7 MiB for the cost module, 1954.2 MiB for
-the shared codec and 2935.5 MiB for the refactored original packed router.
-A profiled propositional search in scratch-list membership was replaced by
-direct append membership; the enclosing bit-tile and two-plane proofs now
-check in about 2.2 seconds each under unchanged default limits.
- The 8,211-job guarded routing/header build and all three
-axiom audits pass. The enclosing tile
-checks at 2938.5 MiB; the 8,178-job guarded build and expanded interchange
-axiom audit pass. The wiring
-module checks at 2929.7 MiB and the paired bank at 1930.9 MiB. The
-8,178-job guarded build and both expanded dimension/interchange axiom audits
-pass.
- The
-8,174-job guarded build and expanded axiom audit pass; single-file checks
-peak at 2936.9 MiB for the loop and 2511.7 MiB for the bit-data module.
-Still required: prove regular-key cardinality and tile-capacity bounds, execute the
-chunk swaps and final-tile padding, match the packed factory bill to the
+all dimension banks, headers and codec scratch restore.
+`PhaseCellCountedPayload` now factors counter allocation/disposal around an
+actual counter-consuming body. Both the original balanced packed router and
+`PhaseCellCountedPackedGeneratedChunkTile` instantiate it with their actual
+router proofs; neither exposes a body-execution premise. The tiled endpoint
+starts with an empty counter, counts its actual packed payload in `4*V+4`
+steps, runs the complete packed tile and restores the counter. Only the
+packed payload changes. The counter lies outside the placed bank and the
+borrowed/generated dimension masters, so the original bank-stock bill is
+unchanged. `countedPackedGeneratedChunkTileCost_uniform` keeps the routing
+exponent and accounts for the extra restoring scan linearly.
+Equal halo lengths do not alone establish one encoded word width: the packed
+local numerical batch derives precision and width from the complete key's
+boundary cardinality. Connecting uniform-width movement tiles to those
+batches still needs an executed, priced format/precision handoff.
+Final-tile padding, selected key/capacity bounds, gather/numerical-batch
+integration and global movement/stock ledgers remain open. The 8,216-job
+integration build and all three routing/header axiom audits pass. Single-file
+peaks are 2942.1 MiB for the counted tile, 1391.2 MiB for the shared counter
+wrapper, 2938.6 MiB for the original counted router and 2966.7 MiB for the
+cost module. All use unchanged default proof limits. The earlier codec,
+wiring and dimension-bank checks also stay below 3 GiB.
+Still required: prove regular-key cardinality and tile-capacity bounds, execute
+final-tile padding, match the packed factory bill to the
 selected setup supplier, and handle small exceptional movement classes
 separately. No arbitrary-rectangle execution or final resource bound follows
 from these cost lemmas alone. Guarded single-file checks peak at 3261.0 MiB
