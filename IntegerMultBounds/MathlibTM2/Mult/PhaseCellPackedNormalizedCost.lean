@@ -77,6 +77,19 @@ theorem packedHaloPreparedInputCost_le_normalizedReplicaCost
   dsimp only
   omega
 
+/-- Include fresh-output allocation in the live numerical iteration budget. -/
+theorem packedHaloBatchStepCost_le_normalizedReplicaCost
+    (p q W u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius : ℕ) [NeZero s] :
+    let w := executionWidth p l (initialSchurTarget p u
+      (boundaryTableBits p boundaryTarget rhsExp
+        (haloBoundary s t (PhaseCellBand.width p u) a b).card) 2) 2
+    packedFreshOutputCost V (b-a) w+
+      packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V ≤
+      packedKeyNormalizedReplicaCost p q W u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius := by
+  unfold packedKeyNormalizedReplicaCost packedKeyRealBatchReplicaCost packedHaloBatchReplicaCost
+  dsimp only
+  omega
+
 /-- At the computed native precision, every setup is paid once per key,
 including for both complex components and the final normalization pass. -/
 theorem packedKeyNormalizedBatchCost_affine
