@@ -5561,3 +5561,22 @@ use the existing padded tile bill and caller frame. Dummy numerical inputs
 therefore have genuine zero coefficients. This closes short-tile coefficient
 padding and routing semantics, but not the executed numerical batches, key
 padding, bulk scheduling or global S4 time/stock/tensor gates.
+
+### S4 isolate a key before numerical conversion (2026-10-30)
+
+The common-width normalizer owns its entire source stream. Applying it directly
+to a routed queue would convert later key batches at the current key's widths.
+`PhaseCellTakeKeyBatch` avoids that: generate the total N*packetWidth prefix
+count from retained dimensions, take that prefix in order and clear the count.
+The remaining queue suffix and all dimensions/scratch restore. Its complete
+bill is `N*(12*packetWidth+9)+12`; the coefficient specialization places exactly
+one key's coefficient stream on an initially blank numerical source.
+`PhaseCellKeyBatchInput.keyBatchInput_exec` composes extraction with actual
+common-width narrowing and generated numerical scale conversion. It preserves
+the untouched later-key suffix and borrowed scalar bank, restores scratch, and
+produces the precise normalized coefficient stream on native source 110. All
+extraction and normalization costs are included. The queue is temporarily on
+port 15 for this conversion stage; it must be placed outside live solver work
+before invoking the full numerical lifecycle. This is a composed input stage,
+not execution of factor setup or the numerical solve. Remaining S4 gates include
+solver placement/composition, key padding, bulk scheduling and total resources.
