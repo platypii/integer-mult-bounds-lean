@@ -27,6 +27,17 @@ theorem mnSize_mk_stock {T Q A : ℕ} {U : Type} (v : HS T Q A U) (S : Stacks T 
   change _+hostFrameStock S = mnSize (mk v S) at hsum
   omega
 
+/-- Register-wise allowances are summed once at an iteration boundary. -/
+theorem mnSize_mk_le_allowance {T Q A : ℕ} {U : Type}
+    (v vf : HS T Q A U) (S F : Stacks T A) (allowance : Fin T → ℕ)
+    (hframe : hostFrameStock F ≤ hostFrameStock S)
+    (hregister : ∀ i, (F.R i).length ≤ (S.R i).length+allowance i) :
+    mnSize (mk vf F) ≤ mnSize (mk v S)+(∑ i, allowance i) := by
+  have hs := Finset.sum_le_sum (s := Finset.univ) (fun i _ => hregister i)
+  rw [Finset.sum_add_distrib] at hs
+  rw [mnSize_mk_stock,mnSize_mk_stock]
+  omega
+
 /-- A growing output archive is the only additional boundary stock when all
 other right stacks shrink or retain their lengths and the host frame is restored. -/
 theorem mnSize_mk_le_archive {T Q A : ℕ} {U : Type}
