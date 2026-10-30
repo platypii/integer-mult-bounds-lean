@@ -157,7 +157,7 @@ theorem placedPackedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.sta
       PackedHaloProducedData p l s t u target rhsExp a b V q w C D x tail outputTail S F ∧
       (∀ k : Fin 242, 168 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧ F.L = S.L ∧
       (∀ q w W N, PackedPreparedBank q w W N S → PackedPreparedBank q w W N F) ∧
-      (∀ bo hf df, PackedBoundaryFactorPages bo hf df S → PackedBoundaryFactorPages bo hf df F) := by
+      (∀ bo hf df, PackedBoundaryFactorPages bo hf df S → PackedBoundaryFactorPages bo hf df F) ∧ F.inp = S.inp ∧ F.out = S.out := by
   dsimp only [PackedHaloProducedData]
   obtain ⟨v₁,T₁,m,D,hu₁,hm,he,hrest⟩ := packedHaloRealBoundaryData_exec
     (body := fun p : Empty => nomatch p) hR hQ hA hp hst hu hαu hθ hgap hbudget hpad C hC
@@ -172,7 +172,7 @@ theorem placedPackedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.sta
     embStk_ovr packedHaloRuntimeReg_injective T₁ S
   rcases hrest with ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
     hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleftAll,hkeys⟩
-  refine ⟨v₂,F,m,D,hu₂.trans hu₁,hm,he₂,?_,?_,embOvr_left_of_eq S T₁ hleftAll,?_,?_⟩
+  refine ⟨v₂,F,m,D,hu₂.trans hu₁,hm,he₂,?_,?_,embOvr_left_of_eq S T₁ hleftAll,?_,?_,?_,?_⟩
   · rw [hproj]
     exact ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
       hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleftAll,hkeys⟩
@@ -195,5 +195,10 @@ theorem placedPackedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.sta
       exact (packedHaloRuntime_high_frame S T₁ k hk).2
   · intro bo hf df hpages
     exact hpages.of_solution_frame (fun k hk _ => (packedHaloRuntime_high_frame S T₁ k hk).2)
+
+  · change T₁.inp = _
+    exact congrArg Stacks.inp hbank
+  · change T₁.out = _
+    exact congrArg Stacks.out hbank
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
