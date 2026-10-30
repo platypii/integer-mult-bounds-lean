@@ -27,4 +27,25 @@ theorem mnSize_mk_stock {T Q A : ℕ} {U : Type} (v : HS T Q A U) (S : Stacks T 
   change _+hostFrameStock S = mnSize (mk v S) at hsum
   omega
 
+/-- A growing output archive is the only additional boundary stock when all
+other right stacks shrink or retain their lengths and the host frame is restored. -/
+theorem mnSize_mk_le_archive {T Q A : ℕ} {U : Type}
+    (v vf : HS T Q A U) (S F : Stacks T A) (archive : Fin T) (growth : ℕ)
+    (hframe : hostFrameStock F ≤ hostFrameStock S)
+    (harchive : (F.R archive).length ≤ (S.R archive).length+growth)
+    (hother : ∀ i, i ≠ archive → (F.R i).length ≤ (S.R i).length) :
+    mnSize (mk vf F) ≤ mnSize (mk v S)+growth := by
+  classical
+  have hs : (∑ i, (F.R i).length) ≤ ∑ i, ((S.R i).length+if i = archive then growth else 0) := by
+    apply Finset.sum_le_sum
+    intro i _
+    by_cases hi : i = archive
+    · subst i
+      simpa using harchive
+    · simpa [hi] using hother i hi
+  simp only [Finset.sum_add_distrib] at hs
+  simp at hs
+  rw [mnSize_mk_stock,mnSize_mk_stock]
+  omega
+
 end IntegerMultBounds.MathlibTM2.Host

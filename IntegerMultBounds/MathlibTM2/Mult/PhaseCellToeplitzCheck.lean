@@ -3662,6 +3662,7 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Host.exec_emb_ovr_within_stock,
       `IntegerMultBounds.MathlibTM2.Stack.Exec.unique,
       `IntegerMultBounds.MathlibTM2.Host.mnSize_mk_stock,
+      `IntegerMultBounds.MathlibTM2.Host.mnSize_mk_le_archive,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyInverseCaller_initial_stock_le,
       `IntegerMultBounds.MathlibTM2.Cost.inverseExecutionExponent_poly,
       `IntegerMultBounds.MathlibTM2.Cost.inverseCallerWordWidth_poly,
