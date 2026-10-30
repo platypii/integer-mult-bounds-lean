@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCoefficientChunkTile
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCoefficientInverseChunkTile
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNumericalReplicaReturn
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCountedReplicaReturn
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRealReplicaReturn
@@ -10,6 +12,12 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedPackedReplicaKeyRoute
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyWords_encode,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.keyReplicaWords_encode,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cstream_replicaKeyWords,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cstream_keyReplicaWords,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientChunkTile_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.coefficientInverseChunkTile_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.pairedWords_replica_view,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cstream_keyReplica_view,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.cstream_keyBatches_view,

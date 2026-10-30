@@ -5522,3 +5522,23 @@ plus generated output-count dummy erasure. Its bill and frame are inherited
 from the checked counted return program. It does not execute the numerical
 solver: outer placement and composition with factor setup, numerical batches,
 format normalization, key padding and global S4 bounds remain required.
+
+### S4 coefficient-level packet routing (2026-10-30)
+
+`PhaseCellPacketEncoding` proves structurally that any fixed-width encoding
+commutes with replica/key packet layouts. It factors a packet's coefficient and
+bit indices through `finProdFinEquiv`, rather than checking concrete indices.
+`PhaseCellCoefficientPackets` instantiates the law with complex coefficient bits:
+`cstream` of a coefficient array is exactly the paired packet word of its real
+and imaginary bit arrays, in either replica-major or key-major order. No signed
+fit is required for encoding.
+`coefficientChunkTile_exec` now states the actual generated counted forward route
+as `cstream w (replicaKeyWords f)` to `cstream w (keyReplicaWords f)`, where each
+packet contains L coefficients and has symbol width L*w. Its source-derived
+counter restores. `coefficientInverseChunkTile_exec` states the reversed route
+as the opposite exact coefficient-stream transformation, with the existing
+owned codec count consumed. Both are thin specializations of checked programs
+and inherit their bills and frames. This makes the numerical meaning of routed
+packets explicit rather than leaving only existential Boolean views. Short-tile
+coefficient padding, actual numerical batch composition and global S4 gates
+remain open.
