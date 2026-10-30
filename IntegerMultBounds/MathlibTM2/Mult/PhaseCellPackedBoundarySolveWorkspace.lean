@@ -68,6 +68,22 @@ theorem PackedPreparedBank.of_recovery_frame {A q w W N : ℕ} {S F : Stacks 242
     exact h.ready.update_vk _
   · exact h.workspace.of_recovery_frame hleft hmul hprecision hhigh
 
+/-- A low runtime call can reuse the prepared factor bank when its physical
+frame preserves multiplier scratch, precision and the high factor workspace. -/
+theorem PackedPreparedBank.of_runtime_frame {A q w W N : ℕ} {S F : Stacks 242 A}
+    (h : PackedPreparedBank q w W N S) (hleft : F.L = S.L)
+    (hlow : ∀ k : Fin 242, k.val < 64 → F.R k = S.R k)
+    (hprecision : F.R 119 = S.R 119)
+    (hhigh : ∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) :
+    PackedPreparedBank q w W N F := by
+  apply h.of_recovery_frame hleft ?_ hprecision hhigh
+  intro i
+  rw [hlow _ i.isLt]
+  have hi := i.isLt
+  simpa [embStk,preparedBoundaryCoreReg,packedBoundaryFactorReg,boundaryFactorMulReg,
+    Fin.ext_iff,show i.val ≠ 140 by omega,show i.val ≠ 143 by omega,
+    show i.val ≠ 206 by omega,show i.val < 154 by omega] using h.workspace.mul i
+
 /-- Publishing a solved RHS preserves the numerical workspace. -/
 theorem PackedBoundarySolveWorkspace.publish {A q : ℕ} {S : Stacks 242 A}
     (h : PackedBoundarySolveWorkspace q S) (output : List (Fin (A+4))) :
