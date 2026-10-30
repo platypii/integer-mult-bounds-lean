@@ -5542,3 +5542,22 @@ and inherit their bills and frames. This makes the numerical meaning of routed
 packets explicit rather than leaving only existential Boolean views. Short-tile
 coefficient padding, actual numerical batch composition and global S4 gates
 remain open.
+
+### S4 short tiles retain numerical coefficient semantics (2026-10-30)
+
+`PhaseCellCoefficientPaddingData` proves that zero coefficient prefix padding
+commutes with `cstream` encoding. Its rectangular witness contains whole zero
+replicas before the original coefficients, and dropping those coefficient rows
+recovers the exact original array. `coefficientReplicaPadding_exec` identifies
+that coefficient stream with the existing executed symbol padding, with the
+same `29*tileVolume+20` bill and restored controls.
+`PhaseCellPaddedCoefficientChunkTile.paddedCoefficientChunkTile_exec` composes
+this with the actual generated counted forward route. The input is an actual
+short coefficient tile, and the output is `cstream w (keyReplicaWords g)` for
+the derived zero-padded coefficient array g. Both the exact zero-padding law
+and original coefficient suffix are retained in the conclusion. No Boolean
+encoding certificate is a caller premise, and setup/counting/routing/cleanup
+use the existing padded tile bill and caller frame. Dummy numerical inputs
+therefore have genuine zero coefficients. This closes short-tile coefficient
+padding and routing semantics, but not the executed numerical batches, key
+padding, bulk scheduling or global S4 time/stock/tensor gates.
