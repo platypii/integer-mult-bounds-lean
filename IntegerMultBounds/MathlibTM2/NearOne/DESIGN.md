@@ -344,6 +344,30 @@ dimensions. The endpoint checks near 3.27 GiB with unchanged limits. Replica
 count 251 remains borrowed from the outer schedule. Port 252 is an owned input
 and returns blank; all other external ports except destination 253 are restored.
 
+Bulk-routing audit: `rawReplicaGather` scans the complete ambient replica batch
+for one fixed origin. Its bill includes `12*((N+1)*s*w)` in the restoring gather,
+in addition to copying/cleanup of the ambient batch. Calling it separately for
+every complete halo key would repeat that scan once per key. Do not connect that
+schedule to the selected S4 bound. The intended route is to gather equal-length
+halos once per movement class and regroup their compact blocks across replicas
+before executing the fixed-key numerical batches.
+
+`PhaseCellReplicaKeyLayout` proves this regrouping structurally over arbitrary
+replica/key/block dimensions and arbitrary payload symbols. The existing
+`swapList 1 N 1 K W` permutation changes replica-major blocks into key-major
+blocks, preserving both replica order and every symbol within a halo. Its block
+identity identifies the output as one contiguous complete replica batch per key,
+without merging distinct equal-length numerical keys.
+`PhaseCellReplicaKeyInterchange` instantiates the already proved
+`placedSwapProg_exec` tape machine on this layout, retaining its exact step
+bound and spectator-register guarantees. It requires dyadic replica/key counts
+with balanced exponents, a bit-encoding relation, canonical binary headers and
+the existing private-bank conditions. It does not yet encode packed Gaussian
+symbols, pad nondyadic groups, generate those headers or establish the selected
+routing bound. The data module checks near 0.82 GiB and the execution module near
+2.52 GiB. A separate `PhaseCellReplicaKeyInterchangeCheck` audits this supplier
+without joining its import closure to the numerical coupling audit.
+
 The outer generated schedule still must supply this binary radius word and the
 replica count for a complete setup key. The existing generated core-group count
 counts windows, not replicas, and cannot be substituted for that count. Full-line
