@@ -188,9 +188,21 @@ ledger, including advancement/reset, with setup and final factor disposal
 outside the call. Numerical matrix, coefficient-fit and input conditions remain
 explicit hypotheses.
 
-This is a one-input prepared execution theorem, not a repeated-input acceptance
-theorem. Still required: derive every second-call precondition from the first
-call's actual state and execute two inputs with a single initialization. Output publication/cursor management,
+`PackedHaloBetweenInputs` now packages the returned bank, fixed headers,
+restored native and temporary scratch, binary-length bound and blank private
+workspace. Its next-input lemmas derive the producer's physical preconditions.
+`packedHaloNextInput_exec` allocates a bounded zero output prefix above completed
+outputs and executes a complete input while preserving this invariant and all
+factor-page meanings. `packedHaloTwoInputs_exec` composes two actual calls over
+one retained setup: second-call readiness is derived from the first call, both
+halo error bounds are retained, the source advances twice, and the final output
+contains both computed halos above its original borrowed suffix. No factory or
+final factor disposal occurs inside those calls. The time bound includes both
+output allocations and both complete prepared-input charges.
+
+Still required: connect the initial factory execution to the between-input
+invariant, generalize the executed transition over the replica/component list,
+and close the selected time and peak-storage ledgers. Output publication/cursor management,
 list iteration, setup-cost matching, peak storage, seams and tensor/R4 execution
 remain open. The original single-input solver still initializes and releases
 factors per call. The retained-factory placement correction above also remains

@@ -18,6 +18,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloPublication
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloPreparedBoundary
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloPreparedRecovery
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloPreparedInput
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloTwoInputs
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloSolve
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryRecovery
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryFinish
@@ -280,6 +281,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloPreparedBoundary_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloPreparedRecovery_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloPreparedInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloNextInput_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloTwoInputs_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedPreparedBank.of_recovery_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedPreparedBank.publish,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedPreparedResidualSolve_bank_exec,
