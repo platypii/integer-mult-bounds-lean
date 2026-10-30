@@ -14,6 +14,22 @@ def hostFrameStock {T A : ℕ} (S : Stacks T A) : ℕ :=
   ∑ k ∈ (Finset.univ.map (⟨HK.rt,fun _ _ h => HK.rt.inj h⟩ : Fin T ↪ HK T))ᶜ,
     (S.get k).length
 
+theorem hostFrameStock_congr {T A : ℕ} {S F : Stacks T A}
+    (hi : F.inp = S.inp) (ho : F.out = S.out) (hl : F.L = S.L) :
+    hostFrameStock F = hostFrameStock S := by
+  unfold hostFrameStock
+  apply Finset.sum_congr rfl
+  intro k hk
+  cases k with
+  | inp => simpa only [Stacks.get] using congrArg List.length hi
+  | out => simpa only [Stacks.get] using congrArg List.length ho
+  | lt i => simp only [Stacks.get,hl]
+  | rt i =>
+    have hm : HK.rt i ∈ Finset.univ.map
+        (⟨HK.rt,fun _ _ h => HK.rt.inj h⟩ : Fin T ↪ HK T) :=
+      Finset.mem_map.mpr ⟨i,Finset.mem_univ _,rfl⟩
+    exact False.elim ((Finset.mem_compl.mp hk) hm)
+
 theorem mnSize_mk_stock {T Q A : ℕ} {U : Type} (v : HS T Q A U) (S : Stacks T A) :
     mnSize (mk v S) = hostFrameStock S+∑ i, (S.R i).length := by
   have hright : ∑ k ∈ Finset.univ.map (⟨HK.rt,fun _ _ h => HK.rt.inj h⟩ : Fin T ↪ HK T),
