@@ -183,6 +183,11 @@ except the replaceable RHS. The existing solver consumes this returned
 readiness for the final table-release dimensions. This establishes factor
 readiness after recovery; native/header reset and the next packed input
 producer's full contract are still needed for a repeated-input loop.
+Recovery also returns `PackedBoundarySolveWorkspace` on that same output:
+left tapes, native multiplier scratch, precision, and the high temporary bank
+are ready again. A shared frame lemma derives this from recovery's actual
+restoration facts. This does not reset the separate packed-input headers or
+consume the retained residual/source buffers.
 
 The proof should follow the manuscript construction recorded in
 `plan/D-sharper-bound.md`, M7b: local principal solves, owned-core cropping,

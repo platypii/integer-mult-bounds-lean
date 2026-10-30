@@ -263,6 +263,7 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedBoundaryFactory_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedBoundaryFactorState_of_high_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedBoundaryFactorState_of_solution_frame,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedBoundarySolveWorkspace.of_recovery_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedBoundarySolveReady_of_high_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedBoundarySolveReady_halo,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.placedPackedHaloRealBoundaryData_exec,

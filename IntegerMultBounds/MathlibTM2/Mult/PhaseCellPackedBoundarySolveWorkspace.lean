@@ -20,6 +20,33 @@ structure PackedBoundarySolveWorkspace {A : ℕ} (q : ℕ) (S : Stacks 242 A) : 
   padding : (embStk packedBoundaryFactorReg S).R 221 = []
   swap : (embStk packedBoundaryFactorReg S).R 225 = []
 
+/-- Recovery restores native arithmetic scratch and preserves the retained
+precision and high workspace. Its consumed solution buffer is irrelevant. -/
+theorem PackedBoundarySolveWorkspace.of_recovery_frame {A q : ℕ} {S F : Stacks 242 A}
+    (h : PackedBoundarySolveWorkspace q S) (hleft : F.L = S.L)
+    (hmul : ∀ i : Fin 64, F.R ⟨i.val,by omega⟩ = [])
+    (hprecision : F.R 119 = S.R 119)
+    (hhigh : ∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) :
+    PackedBoundarySolveWorkspace q F := by
+  constructor
+  · intro i
+    change F.L _ = []
+    rw [hleft]
+    exact h.left i
+  · intro i
+    have hi := i.isLt
+    simpa [embStk,preparedBoundaryCoreReg,packedBoundaryFactorReg,boundaryFactorMulReg,
+      Fin.ext_iff,show i.val ≠ 140 by omega,show i.val ≠ 143 by omega,
+      show i.val ≠ 206 by omega,show i.val < 154 by omega] using hmul i
+  · change (F.R 119).length = q
+    rw [hprecision]
+    exact h.precision
+  · exact (hhigh 237 (by decide) (by decide)).trans h.exponent
+  · exact (hhigh 198 (by decide) (by decide)).trans h.scalar
+  · exact (hhigh 234 (by decide) (by decide)).trans h.table
+  · exact (hhigh 235 (by decide) (by decide)).trans h.padding
+  · exact (hhigh 239 (by decide) (by decide)).trans h.swap
+
 /-- Publishing a solved RHS preserves the numerical workspace. -/
 theorem PackedBoundarySolveWorkspace.publish {A q : ℕ} {S : Stacks 242 A}
     (h : PackedBoundarySolveWorkspace q S) (output : List (Fin (A+4))) :

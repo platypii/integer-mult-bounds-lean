@@ -92,6 +92,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
         F.R 110 = residual++(cstream A w (packedInterval a (b-a) C)++rhsTail)) ∧
       (∀ i : Fin 117, i ≠ 93 → i ≠ 110 → F.R ⟨i.val,by omega⟩ = []) ∧
       F.L = S.L ∧ (∀ k ∈ packedRecoveryRetainedPorts, F.R k = S.R k) ∧
+      PackedBoundarySolveWorkspace q (embStk packedBoundaryRecoveryBase F) ∧
       BoundarySolveReady (boundaryFactorState (embStk preparedBoundaryCoreReg
         (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase F)))) q w W
         (haloBoundary s t (PhaseCellBand.width p u) a b).card ∧
@@ -142,6 +143,31 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       solutionTail outputTail rhsTail v v₁ S n₁ hu₁ hex hwork hheaders
       (hstage.trans (congrArg (fun n => n+1) hstages)) hlevel hnative hgeometry hclean hfreshR hrange xI
       (by simpa only [← hq,R,Y,B,band] using hxI)
+  have hnativeFinal : ∀ i : Fin 117, i ≠ 93 → i ≠ 110 →
+      F.R ⟨i.val,by omega⟩ = [] := by
+    intro i hi93 hi110
+    have hh := congrArg (fun G : Stacks 117 A => G.R i) hrdy.native
+    have hlow := packedRecoveryInteriorReg_low (packedCellCoreReg i)
+      (by change i.val < 117; exact i.isLt)
+    simp only [embStk,Function.comp_def] at hh
+    rw [hlow] at hh
+    simpa [packedCellCoreReg,releasedCellBank,
+      show i.val ≠ 93 from fun h => hi93 (Fin.ext h),
+      show i.val ≠ 110 from fun h => hi110 (Fin.ext h)] using hh
+  have hworkFinal : PackedBoundarySolveWorkspace q (embStk packedBoundaryRecoveryBase F) := by
+    apply hwork.of_recovery_frame
+    · funext i
+      exact congrFun hleft (packedBoundaryRecoveryBase i)
+    · intro i
+      have hi := i.isLt
+      exact hnativeFinal ⟨i.val,by omega⟩
+        (by intro he; have hh := congrArg Fin.val he; change i.val = 93 at hh; omega)
+        (by intro he; have hh := congrArg Fin.val he; change i.val = 110 at hh; omega)
+    · exact hretained 119 (by decide)
+    · intro k hk hne
+      exact hfactors (packedBoundaryRecoveryBase k) hk k.isLt (by
+        intro he
+        exact hne (Fin.ext (congrArg (fun i : Fin 248 => i.val) he)))
   have hfactor : boundaryFactorState (embStk preparedBoundaryCoreReg
       (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase F))) =
       Function.update (boundaryFactorState (embStk preparedBoundaryCoreReg
@@ -158,7 +184,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       (haloBoundary s t (PhaseCellBand.width p u) a b).card := by
     rw [hfactor]
     exact hready.update_vk _
-  refine ⟨v₂,F,n,D,hu₂,hn₂.trans (Nat.add_le_add_right hn₁ _),he₂,h93,h139',h238,hi,ho,hout,hDfits,?_,?_,?_,hleft,hretained,hreadyFinal,hfactors⟩
+  refine ⟨v₂,F,n,D,hu₂,hn₂.trans (Nat.add_le_add_right hn₁ _),he₂,h93,h139',h238,hi,ho,hout,hDfits,?_,?_,?_,hleft,hretained,hworkFinal,hreadyFinal,hfactors⟩
   · exact packedRecovery_read_error (by omega) (by omega) hab hb Y D
       (boundarySolutionField_fits w B solution hlen hfits) hDfits outputTail (F.R 132) hout hframe x _
       (by simpa only [← hq,Y,B,band] using haccept D (by simpa only [hq] using herror))
@@ -170,14 +196,6 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       rw [packedRecoveryInteriorReg_low (packedCellCoreReg 110) (by decide)] at hh
       simpa [packedCellCoreReg,releasedCellBank] using hh
 
-  · intro i hi93 hi110
-    have hh := congrArg (fun G : Stacks 117 A => G.R i) hrdy.native
-    have hlow := packedRecoveryInteriorReg_low (packedCellCoreReg i)
-      (by change i.val < 117; exact i.isLt)
-    simp only [embStk,Function.comp_def] at hh
-    rw [hlow] at hh
-    simpa [packedCellCoreReg,releasedCellBank,
-      show i.val ≠ 93 from fun h => hi93 (Fin.ext h),
-      show i.val ≠ 110 from fun h => hi110 (Fin.ext h)] using hh
+  · exact hnativeFinal
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
