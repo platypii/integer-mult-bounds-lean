@@ -205,6 +205,9 @@ first-pass cost. Structural view equalities preserve the coupling and native
 banks, so the downstream numerical proof is reused. Word width 130 remains
 available for coupling and output disposal; a complete next-input contract
 still needs its later reset and the retained buffer lifecycle.
+The empty-key facts now pass through the actual residual, boundary-data and
+placement proofs into the boundary setup/solve scratch contract. They are
+conclusions about the executed output, not additional next-call assumptions.
 
 The proof should follow the manuscript construction recorded in
 `plan/D-sharper-bound.md`, M7b: local principal solves, owned-core cropping,

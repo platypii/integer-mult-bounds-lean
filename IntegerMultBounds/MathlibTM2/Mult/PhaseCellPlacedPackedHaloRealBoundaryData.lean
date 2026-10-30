@@ -87,7 +87,8 @@ theorem placedPackedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.sta
         (|gv q z.re| ≤ (2 : ℝ)^(q/2) ∧ |gv q z.im| ≤ (2 : ℝ)^(q/2)) ∧
         (|gv q (normalizeBoundaryWord q (q/2-1) z).re| ≤ 1/2 ∧
           |gv q (normalizeBoundaryWord q (q/2-1) z).im| ≤ 1/2)) ∧
-      (embStk packedHaloRuntimeReg F).L = (embStk packedHaloRuntimeReg S).L ) ∧
+      (embStk packedHaloRuntimeReg F).L = (embStk packedHaloRuntimeReg S).L ∧
+      (embStk packedHaloRuntimeReg F).R 125 = [] ∧ (embStk packedHaloRuntimeReg F).R 128 = [] ) ∧
       (∀ k : Fin 242, 168 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧ F.L = S.L := by
   dsimp only
   obtain ⟨v₁,T₁,m,D,hu₁,hm,he,hrest⟩ := packedHaloRealBoundaryData_exec
@@ -102,11 +103,11 @@ theorem placedPackedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.sta
   have hproj : embStk packedHaloRuntimeReg F = T₁ :=
     embStk_ovr packedHaloRuntimeReg_injective T₁ S
   rcases hrest with ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
-    hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleftAll⟩
+    hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleftAll,hkeys⟩
   refine ⟨v₂,F,m,D,hu₂.trans hu₁,hm,he₂,?_,?_,embOvr_left_of_eq S T₁ hleftAll⟩
   · rw [hproj]
     exact ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
-      hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleftAll⟩
+      hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleftAll,hkeys⟩
   · exact packedHaloRuntime_high_frame S T₁
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

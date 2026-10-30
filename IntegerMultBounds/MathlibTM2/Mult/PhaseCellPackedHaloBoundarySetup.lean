@@ -126,7 +126,7 @@ theorem packedHaloBoundarySetupUsing_exec (freshGeometry : Bool) (hR : rpStates 
       CouplingMasterHeaders (2^15*p) q w s t u band a b (embStk packedHaloRuntimeReg F) ∧
       (F.R 118).length = executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1 ∧
       (F.R 120).length = l ∧
-      (∀ k ∈ ([127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧ F.R 238 = S.R 238 ∧
+      (∀ k ∈ ([125,128,127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧ F.R 238 = S.R 238 ∧
       ∀ i ∈ B, ∀ k ∈ B, |bandBoundaryTable B W (computedBoundaryTable A q w B columns) i k-
         (SchurDominance.run (realMatrix s t p u) (haloVertices s a b)
           (haloInterior s t band a b).toList).1 i k| ≤ 1/(2 : ℝ)^bits := by
@@ -197,7 +197,7 @@ theorem packedHaloBoundarySetupUsing_exec (freshGeometry : Bool) (hR : rpStates 
     hrange hdom hq x hx
   rw [hq,hw] at hdata
   rcases hdata with ⟨h93',hfold,hcount,hmask,hsource,houtput',hproj,hDnorm,hDfits,hword,
-    hpage,hpageCount,hrow,hgeometry,hqueue,hzero,h135,hframe,haccuracy,hbound,hleftView⟩
+    hpage,hpageCount,hrow,hgeometry,hqueue,hzero,h135,hframe,haccuracy,hbound,hleftView,hkeys⟩
   have hinp : F.inp = S₁.inp := congrArg (fun G : Stacks 117 A => G.inp) hproj
   have hout : F.out = S₁.out := congrArg (fun G : Stacks 117 A => G.out) hproj
   have hfactor := packedBoundaryFactorState_of_high_frame S₁ F (fun k hk => (hhigh k hk).2)
@@ -272,7 +272,9 @@ theorem packedHaloBoundarySetupUsing_exec (freshGeometry : Bool) (hR : rpStates 
     simpa [packedHeaderReg,groupHeaderValue] using hmasters (120,109) (by decide)
   · intro k hk
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact hkeys.1
+    · exact hkeys.2
     · exact hzero
     · exact ((hframe 129 (by decide) (by decide) (by decide)).2).trans (hfresh' 129 (by decide))
     · exact ((hframe 131 (by decide) (by decide) (by decide)).2).trans (hfresh' 131 (by decide))
@@ -385,7 +387,7 @@ theorem packedHaloBoundarySetup_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
       CouplingMasterHeaders (2^15*p) q w s t u band a b (embStk packedHaloRuntimeReg F) ∧
       (F.R 118).length = executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1 ∧
       (F.R 120).length = l ∧
-      (∀ k ∈ ([127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧ F.R 238 = S.R 238 ∧
+      (∀ k ∈ ([125,128,127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧ F.R 238 = S.R 238 ∧
       ∀ i ∈ B, ∀ k ∈ B, |bandBoundaryTable B W (computedBoundaryTable A q w B columns) i k-
         (SchurDominance.run (realMatrix s t p u) (haloVertices s a b)
           (haloInterior s t band a b).toList).1 i k| ≤ 1/(2 : ℝ)^bits := by

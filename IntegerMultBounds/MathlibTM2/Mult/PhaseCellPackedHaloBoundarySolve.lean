@@ -122,7 +122,7 @@ theorem packedHaloBoundarySolveUsing_exec (freshGeometry : Bool) (hR : rpStates 
       CouplingMasterHeaders (2^15*p) q w s t u band a b (embStk packedHaloRuntimeReg F) ∧
       (F.R 118).length = executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1 ∧
       (F.R 120).length = l ∧
-      (∀ k ∈ ([127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧
+      (∀ k ∈ ([125,128,127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧
       (∀ k, ‖value q (D k)‖ ≤ (2 : ℝ)^interiorOutputExponent p l j rhsExp) ∧
       (∀ k, Fits w (D k)) ∧
       PhaseCellInterface.ErrorOn (haloInterior s t band a b)
@@ -230,7 +230,7 @@ theorem packedHaloBoundarySolveUsing_exec (freshGeometry : Bool) (hR : rpStates 
   · intro k hk
     have hn : k ≠ 143 ∧ k ≠ 238 := by
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
     simpa [F,Function.update_of_ne hn.1,Function.update_of_ne hn.2] using hcouplingScratch k hk
 
   · intro y hy
@@ -332,7 +332,7 @@ theorem packedHaloBoundarySolve_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q
       CouplingMasterHeaders (2^15*p) q w s t u band a b (embStk packedHaloRuntimeReg F) ∧
       (F.R 118).length = executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1 ∧
       (F.R 120).length = l ∧
-      (∀ k ∈ ([127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧
+      (∀ k ∈ ([125,128,127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧
       (∀ k, ‖value q (D k)‖ ≤ (2 : ℝ)^interiorOutputExponent p l j rhsExp) ∧
       (∀ k, Fits w (D k)) ∧
       PhaseCellInterface.ErrorOn (haloInterior s t band a b)

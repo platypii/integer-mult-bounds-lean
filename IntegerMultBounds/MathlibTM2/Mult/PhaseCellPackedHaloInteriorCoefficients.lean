@@ -92,7 +92,7 @@ theorem packedHaloInteriorCoefficients_exec (hR : rpStates ≤ Q) (hQ : SS.state
       G.R 126 = S.R 126 ∧ G.R 127 = [] ∧
       (∀ k : Fin 168, 117 ≤ k.val → k ∉ packedHaloInteriorPagePorts → G.L k = S.L k ∧ G.R k = S.R k) ∧
       PhaseCellInterface.ErrorOn (haloInterior s t (PhaseCellBand.width p u) a b)
-        (fun k => (value (executionPrecision p l target rhsExp) (D k)).re) x (1/(2 : ℝ)^target) ∧ G.L = S.L := by
+        (fun k => (value (executionPrecision p l target rhsExp) (D k)).re) x (1/(2 : ℝ)^target) ∧ G.L = S.L ∧ G.R 125 = [] ∧ G.R 128 = [] := by
   let rhs := cstream A (executionWidth p l target rhsExp) (packedInterval a (b-a) C)
   have hfit : a+(b-a) ≤ s := by omega
   have hqmaster : (S.R 119).length = executionPrecision p l target rhsExp := by
@@ -208,7 +208,7 @@ theorem packedHaloInteriorCoefficients_exec (hR : rpStates ≤ Q) (hQ : SS.state
       simpa [G,H,releasedPackedHaloKeys,sharedCouplingPageState,hn 135 (by decide),hn 138 (by decide),hn 139 (by decide),
         hn 140 (by decide),hn 143 (by decide),hn 125 (by decide),hn 128 (by decide)] using hrdy.metadata.encoded k hk
   refine ⟨v₃,G,m₀+(m₁+(m₂+m₃)),D,hu₃.trans (hu₂.trans (hu₁.trans hu₀)),by dsimp only [packedHaloInteriorCoefficientsCost]; omega,Exec.seq he₀ (Exec.seq he₁ (Exec.seq he₂ he₃)),?_,hi,ho,?_,hDnorm,hDfits,
-    ?_,hcoupling,hmetadata,?_,?_,?_,?_,?_,?_,?_,?_,herror,hleftAll⟩
+    ?_,hcoupling,hmetadata,?_,?_,?_,?_,?_,?_,?_,?_,herror,hleftAll,by simp [G,releasedPackedHaloKeys]⟩
   · simpa [G,H,releasedPackedHaloKeys,sharedCouplingPageState,B,rhs] using h93
   · simpa [G,H,releasedPackedHaloKeys,sharedCouplingPageState] using hout
   · change embStk packedCellCoreReg (releasedPackedHaloKeys H) = _

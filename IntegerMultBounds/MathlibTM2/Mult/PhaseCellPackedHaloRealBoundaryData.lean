@@ -100,9 +100,9 @@ theorem packedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       (∀ z ∈ rows,
         (|gv q z.re| ≤ (2 : ℝ)^(q/2) ∧ |gv q z.im| ≤ (2 : ℝ)^(q/2)) ∧
         (|gv q (normalizeBoundaryWord q (q/2-1) z).re| ≤ 1/2 ∧
-          |gv q (normalizeBoundaryWord q (q/2-1) z).im| ≤ 1/2)) ∧ F.L = S.L := by
+          |gv q (normalizeBoundaryWord q (q/2-1) z).im| ≤ 1/2)) ∧ F.L = S.L ∧ F.R 125 = [] ∧ F.R 128 = [] := by
   dsimp only
-  obtain ⟨v₁,G,m₁,D,hu₁,hm₁,he₁,h93,hfold,h116,hmask,h110,h132,hproj,hDnorm,hDfits,hw,hpage,hcount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hleftAll⟩ :=
+  obtain ⟨v₁,G,m₁,D,hu₁,hm₁,he₁,h93,hfold,h116,hmask,h110,h132,hproj,hDnorm,hDfits,hw,hpage,hcount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hleftAll,hkeys⟩ :=
     packedHaloBoundaryData_exec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hpad C hC
       hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail v S hnative hmasters ha hb'
       hmeta h157 houtput hE hfresh haLt hfitV h139 h143 hleft hsep h158 h167 hrange x hx
@@ -138,7 +138,7 @@ theorem packedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.states �
         rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
       simpa [F,hn] using hgeometry.encoded k hk
   refine ⟨v₂,F,m₁+(4*B.card*w+4),D,hu₂.trans hu₁,?_,Exec.seq he₁ he₂',?_,?_,?_,?_,?_,?_,?_,
-    hDnorm,hDfits,?_,?_,?_,?_,hgeometryF,?_,?_,?_,?_,herror,?_,hleftAll⟩
+    hDnorm,hDfits,?_,?_,?_,?_,hgeometryF,?_,?_,?_,?_,herror,?_,hleftAll,by simpa [F] using hkeys⟩
   · dsimp only [packedHaloRealBoundaryDataCost,B,band,w]
     omega
   · simpa [F] using h93

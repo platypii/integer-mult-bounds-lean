@@ -86,9 +86,9 @@ theorem packedHaloResidual_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
       F.R 143 = [] ∧ F.R 126 = S.R 126 ∧ F.R 127 = [] ∧ F.R 135 = [] ∧
       (∀ k : Fin 168, 117 ≤ k.val → k ∉ packedHaloInteriorPagePorts → F.L k = S.L k ∧ F.R k = S.R k) ∧
       PhaseCellInterface.ErrorOn (haloInterior s t (PhaseCellBand.width p u) a b)
-        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) ∧ F.L = S.L := by
+        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) ∧ F.L = S.L ∧ F.R 125 = [] ∧ F.R 128 = [] := by
   dsimp only
-  obtain ⟨v₁,G,m₁,D,hu₁,hm₁,he₁,h93,hi,ho,houtput,hDnorm,hDfits,hnativeG,hready,hgeometry,hpage,hcount,hrows,h143G,h135G,hqueue,hzero,hframe,herror,hleftAll⟩ :=
+  obtain ⟨v₁,G,m₁,D,hu₁,hm₁,he₁,h93,hi,ho,houtput,hDnorm,hDfits,hnativeG,hready,hgeometry,hpage,hcount,hrows,h143G,h135G,hqueue,hzero,hframe,herror,hleftAll,hkeys⟩ :=
     packedHaloInteriorCoefficients_exec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hpad C hC
       hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail v S hnative hmasters ha hb'
       hmeta h157 houtput hE hfresh haLt hfitV h139 h143 hleft hrange x hx
@@ -140,7 +140,7 @@ theorem packedHaloResidual_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
         simp only [couplingIntervalPorts,List.mem_cons,List.not_mem_nil,or_false] at hk
         rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
       simpa [F,hn.1,hn.2] using hgeometry.encoded k hk
-  refine ⟨v₂,F,m₁+m₂,D,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,?_,?_,hproj,hDnorm,hDfits,?_,?_,?_,?_,hgeometryF,?_,?_,?_,?_,?_,herror,hleftAll⟩
+  refine ⟨v₂,F,m₁+m₂,D,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,?_,?_,hproj,hDnorm,hDfits,?_,?_,?_,?_,hgeometryF,?_,?_,?_,?_,?_,herror,hleftAll,by simpa [F] using hkeys⟩
   · dsimp only [packedHaloResidualCost]
     dsimp only [q,w,band] at hm₂
     omega
