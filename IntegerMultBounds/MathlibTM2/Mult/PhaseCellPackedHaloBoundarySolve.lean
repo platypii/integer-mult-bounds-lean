@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryAccuracy
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBoundarySetup
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloResidualSolve
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloBoundarySolutionAccuracy
@@ -194,8 +196,8 @@ theorem packedHaloBoundarySolveUsing_exec (freshGeometry : Bool) (hR : rpStates 
   have hsemantic (y : ZMod s → ℝ)
       (hy : SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) y
         (fun k => (value q (C k)).re)) :=
-    haloBoundary_solution_accuracy A p u l target rhsExp a b W columns (by omega)
-      hp hst hα hwidth hαu hθ hgap hbudget hdom hlen hformat hstage htable C D x y hC' hx' haccuracy hy
+    preparedBoundary_solution_accuracy A p u l target rhsExp a b W columns (by omega)
+      hp hst hα hwidth hαu hθ hgap hbudget hdom ⟨hlen,hformat,hstage⟩ htable C D x y hC' hx' haccuracy hy
   have hpR : (0 : ℝ) < p := by exact_mod_cast (by omega : 0 < p)
   obtain ⟨y,hy⟩ := SchurDominance.solves_exists (realMatrix s t p u) (haloVertices s a b)
     (1/(8*(p : ℝ))) (by positivity)
