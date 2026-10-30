@@ -50,6 +50,19 @@ theorem packedPreparedInputReleased_empty {A : ℕ} (S : Stacks 248 A)
   · exact if_pos hi
   · simp [hi]
 
+/-- The full per-input release preserves the meanings of all retained factors. -/
+theorem packedPreparedInputReleased_factorPages {A : ℕ} (S : Stacks 248 A)
+    (tail bo hf df : List (Fin (A+4)))
+    (h : PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase S)) :
+    PackedBoundaryFactorPages bo hf df
+      (embStk packedBoundaryRecoveryBase (packedPreparedInputReleased S tail)) := by
+  apply h.of_solution_frame
+  intro k hk hne
+  apply packedPreparedInputReleased_frame
+  have hval : 168 ≤ (packedBoundaryRecoveryBase k).val := hk
+  simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff]
+  omega
+
 theorem packedPreparedInputRelease_exec (V N w q W boundaryCount rows : ℕ)
     (hNV : N < 2^V) (xs : List GaussianInt)
     (residual input tail : List (Fin (A+4)))
@@ -67,7 +80,10 @@ theorem packedPreparedInputRelease_exec (V N w q W boundaryCount rows : ℕ)
       Exec body packedPreparedInputRelease (mk v S) n
         (mk v' (packedPreparedInputReleased S tail)) ∧
       PackedPreparedBank q w W boundaryCount
-        (embStk packedBoundaryRecoveryBase (packedPreparedInputReleased S tail)) := by
+        (embStk packedBoundaryRecoveryBase (packedPreparedInputReleased S tail)) ∧
+      (∀ bo hf df, PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase S) →
+        PackedBoundaryFactorPages bo hf df
+          (embStk packedBoundaryRecoveryBase (packedPreparedInputReleased S tail))) := by
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := packedRecoveryRelease_exec w rows xs [] v S
     hcount hrows hwidth (by simpa using hpage)
     (hclean 109 (by decide)) (hclean 104 (by decide)) (hclean 105 (by decide))
@@ -84,7 +100,8 @@ theorem packedPreparedInputRelease_exec (V N w q W boundaryCount rows : ℕ)
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
       rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl
       all_goals simpa [S₁] using hclean _ (by decide)) hbank₁
-  exact ⟨v₂,n₁+n₂,hu₂.trans hu₁,by omega,Exec.seq he₁ he₂,hbank₂⟩
+  exact ⟨v₂,n₁+n₂,hu₂.trans hu₁,by omega,Exec.seq he₁ he₂,hbank₂,fun bo hf df hpages =>
+    packedPreparedInputReleased_factorPages S tail bo hf df hpages⟩
 
 /-- The completed input exposes the next borrowed source in precisely the
 native-bank format required by the packed halo producer. -/
