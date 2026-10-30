@@ -48,9 +48,7 @@ theorem packedHaloPreparedBoundary_extended_exec (hbody : ∀ f, body' f = embPr
     (hq : executionPrecision p l target rhsExp = executionPrecision p l
       (initialSchurTarget p u (boundaryTableBits p boundaryTarget rhsExp
         (haloBoundary s t (PhaseCellBand.width p u) a b).card) 2) 2)
-    (x : ZMod s → ℝ)
-    (hx : SchurDominance.Solves (realMatrix s t p u) (haloInterior s t (PhaseCellBand.width p u) a b) x
-      (fun k => (value (executionPrecision p l target rhsExp) (C k)).re)) :
+ :
     let band := PhaseCellBand.width p u
     let B := haloBoundary s t band a b
     let bits := boundaryTableBits p boundaryTarget rhsExp B.card
@@ -72,6 +70,9 @@ theorem packedHaloPreparedBoundary_extended_exec (hbody : ∀ f, body' f = embPr
     PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
       (cstream A w (Uc.map colC).flatten)
       (cstream A w (rcs.map fun z => (⟨z,0⟩ : GaussianInt))) S →
+    ∃ x : ZMod s → ℝ,
+      SchurDominance.Solves (realMatrix s t p u) (haloInterior s t band a b) x
+        (fun k => (value (executionPrecision p l target rhsExp) (C k)).re) ∧
     ∃ v', ∃ T : Stacks 242 A, ∃ m, ∃ D : ZMod s → GaussianInt,
       let rows := (bFoldOrder s B).map (fun i => realPartWord
         (couplingRowField (2^15*p) q t u (PhaseCellBand.width p u) a b false D C i))
@@ -131,6 +132,10 @@ theorem packedHaloPreparedBoundary_extended_exec (hbody : ∀ f, body' f = embPr
         (extendStacks (by decide) F).L k = [] ∧ (extendStacks (by decide) F).R k = []) := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages
+  obtain ⟨x,hx⟩ := SchurDominance.solves_exists (realMatrix s t p u)
+    (haloInterior s t (PhaseCellBand.width p u) a b) (1/(8*(p : ℝ))) (by positivity)
+    (SchurDominance.dominates_mono _ Finset.univ _ _ (Finset.subset_univ _) hdom)
+    (fun k => (value (executionPrecision p l target rhsExp) (C k)).re)
   obtain ⟨v₁,T,n,D,hu,hn,he,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel,hnativeFinal,hcleanFinal,hgeometryFinal,hsolutionTail⟩ :=
     packedHaloPreparedBoundary_exec (body := body) hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail
@@ -138,7 +143,7 @@ theorem packedHaloPreparedBoundary_extended_exec (hbody : ∀ f, body' f = embPr
       haLt hfitV h139 h143 hleft hsep h158 h167 hrange hdom hq x hx
       columns hcolumns hcell htable hbank hpages
   obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_extendStacks (by decide : 242 ≤ 248) hbody he v rfl
-  exact ⟨v₂,T,n,D,hu₂.trans hu,hn,he₂,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel,hnativeFinal,hcleanFinal,hgeometryFinal,hsolutionTail,
+  exact ⟨x,hx,v₂,T,n,D,hu₂.trans hu,hn,he₂,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel,hnativeFinal,hcleanFinal,hgeometryFinal,hsolutionTail,
     fun k hk => extendStacks_fresh (by decide) _ k hk⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
