@@ -88,6 +88,14 @@ theorem PackedBoundarySolveWorkspace.publish {A q : ℕ} {S : Stacks 242 A}
   · exact h.padding
   · exact h.swap
 
+/-- The boundary solve publishes its solution while retaining a complete bank
+for recovery and the next input. -/
+theorem PackedPreparedBank.publish {A q w W N : ℕ} {S : Stacks 242 A}
+    (h : PackedPreparedBank q w W N S) (output : List (Fin (A+4))) :
+    PackedPreparedBank q w W N
+      {S with R := Function.update (Function.update S.R 143 []) 238 (output++S.R 238)} := by
+  exact ⟨packedPreparedResidualSolve_ready S output h.ready,h.workspace.publish output⟩
+
 /-- The retained numerical state supplies every old-bank temporary used by
 boundary recovery. The remaining inverse-fold counters live in fresh ports. -/
 theorem packedBoundaryRecovery_clean {A q w W N : ℕ} {S : Stacks 242 A}

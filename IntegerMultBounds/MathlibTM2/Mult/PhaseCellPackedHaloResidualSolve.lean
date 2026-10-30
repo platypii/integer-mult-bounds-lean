@@ -47,24 +47,21 @@ theorem packedHaloResidualSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     ∀ (v : HS 242 Q A U) (S : Stacks 242 A),
     let T := embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg S)
     let σ := boundaryFactorState T
-    (∀ i, T.L i = []) → (∀ i : Fin 64, T.R (boundaryFactorMulReg i) = []) →
-    BoundarySolveReady σ q w W B.card →
+    PackedPreparedBank q w W B.card S →
     σ .vk = cstream A w b →
     σ .bo = cstream A w (Lc.map colC).flatten →
     σ .hf = cstream A w (Uc.map colC).flatten →
     σ .df = cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt)) →
-    ((embStk packedBoundaryFactorReg S).R 119).length = q → (embStk packedBoundaryFactorReg S).R 223 = [] → (embStk packedBoundaryFactorReg S).R 184 = [] →
-    (embStk packedBoundaryFactorReg S).R 220 = [] → (embStk packedBoundaryFactorReg S).R 221 = [] → (embStk packedBoundaryFactorReg S).R 225 = [] →
     ∃ v' n, v'.user = v.user ∧ n ≤ preparedResidualSolveCost q w B.card W ∧
       Exec body (packedPreparedResidualSolve hQ) (mk v S) n
         (mk v' {S with R := (Function.update (Function.update S.R 143 []) 238
           (cstream A w ((bandSolveVec q W Lc Uc rcs (b.map (normalizeBoundaryWord q (q/2-1)))).map
             (unscaleBoundaryWord q))++S.R 238))}) := by
   dsimp only
-  intro hformat hstage C D x hC hx herror v S hleft hmul hready hvk hbo hhf hdf hmaster h223 h184 h220 h221 h225
+  intro hformat hstage C D x hC hx herror v S hbank hvk hbo hhf hdf
   apply packedPreparedResidualSolve_bank_exec (body := body) hQ hA p u l target rhsExp B W columns hp hlen
     hformat hstage _ (by simp only [List.length_map,bFoldOrder_length]) ?_
-    v S ⟨hready,⟨hleft,hmul,hmaster,h223,h184,h220,h221,h225⟩⟩ hvk hbo hhf hdf
+    v S hbank hvk hbo hhf hdf
   intro z hz
   obtain ⟨i,hi,rfl⟩ := List.mem_map.mp hz
   have hn := haloResidual_norm_bound (by omega : 0 < p) hst hαu hθ hgap hbudget

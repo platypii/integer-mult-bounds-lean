@@ -158,8 +158,7 @@ theorem packedHaloBoundarySolveUsing_exec (freshGeometry : Bool) (hR : rpStates 
   have hθpos : 0 < (t : ℝ)/s-1 := lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ
   obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := packedHaloResidualSolve_exec (body := body) hQ hA
     p u l target rhsExp B W columns hp hlen a b j hst hαu hθpos hgap hbudget hdom
-    hformat hstage C D x hC' hx' haccuracy v₁ S₁ hwork.left hwork.mul hsolve hfold hbo hhf hdf
-    hwork.precision hwork.exponent hwork.scalar hwork.table hwork.padding hwork.swap
+    hformat hstage C D x hC' hx' haccuracy v₁ S₁ ⟨hsolve,hwork⟩ hfold hbo hhf hdf
   let AZ := factorRankIntegerMatrix B W columns
   let rows := (bFoldOrder s B).map (fun i => realPartWord
     (couplingRowField (2^15*p) q t u (PhaseCellBand.width p u) a b false D C i))
@@ -167,7 +166,8 @@ theorem packedHaloBoundarySolveUsing_exec (freshGeometry : Bool) (hR : rpStates 
     (naturalLineRcs q K W B.card AZ) (rows.map (normalizeBoundaryWord q (q/2-1)))).map (unscaleBoundaryWord q)
   let output := cstream A w ys
   let F : Stacks 242 A := {S₁ with R := (Function.update (Function.update S₁.R 143 []) 238 (output++S₁.R 238))}
-  have hreadyFinal := packedPreparedResidualSolve_ready S₁ output hsolve
+  have hbankFinal := (PackedPreparedBank.mk hsolve hwork).publish output
+  have hreadyFinal := hbankFinal.ready
   have hmetaFinal : CouplingIntervalMetadata V s t (PhaseCellBand.width p u) a b a (b-a)
       (embStk packedHaloRuntimeReg F) := by
     constructor
@@ -211,7 +211,7 @@ theorem packedHaloBoundarySolveUsing_exec (freshGeometry : Bool) (hR : rpStates 
         show i.val ≠ 140 by omega,show i.val ≠ 143 by omega,
         show i.val ≠ 206 from fun he => hn (Fin.ext he),show ¬ i.val < 154 by omega,
         show i.val+14 ≠ 143 by omega,show i.val+14 ≠ 238 by omega]),
-    hlen,hformat,hcolumns,hstage,hreadyFinal,?_,?_,?_,?_,?_,?_,?_,?_,hmetaFinal,hwork.publish output,(by simpa [F] using hboundaryCount),(by simpa [F] using hboundaryMask),?_,hcouplingFinal,(by simpa [F] using hstageMaster),(by simpa [F] using hlevelMaster),?_,hDnorm,hDfits,haccuracy,hformatSol.1,hformatSol.2.1,?_⟩
+    hlen,hformat,hcolumns,hstage,hreadyFinal,?_,?_,?_,?_,?_,?_,?_,?_,hmetaFinal,hbankFinal.workspace,(by simpa [F] using hboundaryCount),(by simpa [F] using hboundaryMask),?_,hcouplingFinal,(by simpa [F] using hstageMaster),(by simpa [F] using hlevelMaster),?_,hDnorm,hDfits,haccuracy,hformatSol.1,hformatSol.2.1,?_⟩
   · simp [F]
   · simp [F,output,ys,rows,h238]
     rfl
