@@ -239,12 +239,31 @@ factory, then runs the counted batch. Its bound charges setup once plus the
 counted per-input costs. It consumes the source queue, retains all per-input
 accuracy certificates and proves the exact output archive length above the
 caller's original suffix. The initial counter is still supplied, and final
-factor/table disposal and publication are not part of this program. In
-particular, the raw table and per-register factor stock must be transported
-through the batch before the existing disposal theorems can be composed.
+factor/table disposal and publication are not part of this program.
 
-Still required: counter preparation, final disposal, publication and the selected
-time and peak-storage ledgers. Output publication/cursor management,
+The executed one-input contracts now expose a structural frame for physical
+ports 168--241 except solution port 238. The numerical batch composes this frame
+in its queue invariant. The initialized batch therefore retains the actual raw
+table and the factory's per-register factor stock, in addition to the three
+numerical factor-page meanings. `packedBoundaryFactorStock_of_solution_frame`
+transports that stock without rechecking concrete factor data.
+
+`PhaseCellPackedHaloFinalRelease.packedHaloFinalRelease_between_exec` derives
+release dimensions and blank scratch from the returned between-input invariant,
+erases the raw table above its borrowed suffix, and clears the owned factor
+registers using the retained stock bound. `PhaseCellPackedHaloClosedBatch` then
+composes the actual factory, arbitrary counted numerical batch and final disposal.
+Its execution theorem charges each shared setup/disposal once, restores the raw
+table suffix, empties every owned factor register and the replica counter,
+consumes the RHS queue and preserves the exact output archive length and all
+per-input accuracy certificates. The final output archive equals that at the
+end of the certified numerical trace; disposal does not alter those outputs.
+The endpoint checks near 3.24 GiB with default proof limits. This is a local
+fixed-key lifecycle theorem; it does not provide a peak-live-stock bound or the
+full generated S4 schedule.
+
+Still required: counter preparation, publication and the selected time and
+peak-storage ledgers. Output publication/cursor management,
 setup-cost matching, peak storage, seams and tensor/R4 execution
 remain open. The original single-input solver still initializes and releases
 factors per call. The retained-factory placement correction above also remains
