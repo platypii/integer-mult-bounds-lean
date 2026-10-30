@@ -12,9 +12,37 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry ScalarPlacement
 
+/-- Geometry supplied to setup: a fresh bank or a retained interval bank. -/
+def PackedHaloGeometryInput {A : ℕ} (freshGeometry : Bool) (V s t band a b : ℕ)
+    (S : Stacks 242 A) : Prop :=
+  if freshGeometry then
+    (∀ k ∈ [(145 : Fin 242),146,147,148,149,151,154,156,164], S.R k = [])
+  else CouplingIntervalMetadata V s t band a b a (b-a) (embStk packedHaloRuntimeReg S)
+
+theorem PackedHaloGeometryInput.of_frame {A V s t band a b : ℕ} {freshGeometry : Bool}
+    {S F : Stacks 242 A} (h : PackedHaloGeometryInput freshGeometry V s t band a b S)
+    (hframe : ∀ k : Fin 242, 145 ≤ k.val → k.val < 168 → F.R k = S.R k) :
+    PackedHaloGeometryInput freshGeometry V s t band a b F := by
+  cases freshGeometry with
+  | true =>
+    intro k hk
+    have hs : 145 ≤ k.val ∧ k.val < 168 := by
+      have hc : ([(145 : Fin 242),146,147,148,149,151,154,156,164]).all
+          (fun i => decide (145 ≤ i.val ∧ i.val < 168)) = true := by decide
+      simpa only [decide_eq_true_eq] using List.all_eq_true.mp hc k hk
+    exact (hframe k hs.1 hs.2).trans (h k hk)
+  | false =>
+    apply CouplingIntervalMetadata.of_frame h
+    · exact hframe 163 (by decide) (by decide)
+    · intro k hk
+      have hs : 145 ≤ k.val := by
+        have hc : couplingIntervalPorts.all (fun i => decide (145 ≤ i.val)) = true := by decide
+        simpa only [decide_eq_true_eq] using List.all_eq_true.mp hc k hk
+      exact hframe (packedHaloRuntimeReg k) hs k.isLt
+
 structure PackedHaloSetup {A p l s t u target rhsExp a b V : ℕ} [NeZero s]
     (α d : ℝ) (C : ZMod s → GaussianInt)
-    (S : Stacks 242 A) : Prop where
+    (S : Stacks 242 A) (freshGeometry : Bool := true) : Prop where
   hp : 2 ≤ p
   hwidth : 8*p ≤ 2^u
   hα : 0 < α
@@ -56,7 +84,7 @@ structure PackedHaloSetup {A p l s t u target rhsExp a b V : ℕ} [NeZero s]
   h155 : S.R 155 = binSyms V a
   h165 : S.R 165 = binSyms V (b-a)
   hfitV : a+((b-a)+2*PhaseCellBand.width p u)+s < 2^V
-  hgeometryBlank : ∀ k ∈ [(145 : Fin 242),146,147,148,149,151,154,156,164], S.R k = []
+  hgeometry : PackedHaloGeometryInput freshGeometry V s t (PhaseCellBand.width p u) a b S
   h239 : S.R 239 = []
   hab : a ≤ b
   haLt : a < s
@@ -74,20 +102,26 @@ structure PackedHaloSetup {A p l s t u target rhsExp a b V : ℕ} [NeZero s]
     (embStk packedHaloRuntimeReg S).R k = []
   hdom : SchurDominance.DominatesOn (realMatrix s t p u) Finset.univ (1/(8*(p : ℝ)))
 
+theorem PackedHaloSetup.hgeometryBlank {A p l s t u target rhsExp a b V : ℕ} [NeZero s]
+    {α d : ℝ} {C : ZMod s → GaussianInt} {S : Stacks 242 A}
+    (h : PackedHaloSetup (p := p) (l := l) (t := t) (u := u) (target := target)
+      (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C S) :
+    ∀ k ∈ [(145 : Fin 242),146,147,148,149,151,154,156,164], S.R k = [] := h.hgeometry
+
 /-- A setup becomes a solver frame once the actual local RHS is attached. -/
 structure PackedHaloFrame {A p l s t u target rhsExp a b V : ℕ} [NeZero s]
     (α d : ℝ) (C : ZMod s → GaussianInt) (tail : List (Fin (A+4)))
-    (S : Stacks 242 A) : Prop extends
+    (S : Stacks 242 A) (freshGeometry : Bool := true) : Prop extends
       PackedHaloSetup (p := p) (l := l) (t := t) (u := u) (target := target)
-        (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C S where
+        (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C S freshGeometry where
   hsource : S.R 110 = cstream A (executionWidth p l
     (boundaryHaloTarget p u (boundaryRecoveryTarget p target) rhsExp
       (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp)
     (packedInterval a (b-a) C)++tail
 
-theorem PackedHaloFrame.hready {A p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
+theorem PackedHaloFrame.hready {freshGeometry : Bool} {A p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
     {C : ZMod s → GaussianInt} {tail : List (Fin (A+4))} {S : Stacks 242 A}
-    (h : PackedHaloFrame (p := p) (l := l) (t := t) (u := u) (target := target)
+    (h : PackedHaloFrame (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
       (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C tail S) :
  LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u
     (boundaryTableBits p (boundaryRecoveryTarget p target) rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) 2) 2+1)
@@ -100,9 +134,9 @@ theorem PackedHaloFrame.hready {A p l s t u target rhsExp a b V : ℕ} [NeZero s
 
 structure PackedHaloInput {A p l s t u target rhsExp a b V : ℕ} [NeZero s]
     (α d : ℝ) (C : ZMod s → GaussianInt) (tail E outputTail : List (Fin (A+4)))
-    (S : Stacks 242 A) : Prop extends
+    (S : Stacks 242 A) (freshGeometry : Bool := true) : Prop extends
       PackedHaloFrame (p := p) (l := l) (t := t) (u := u) (target := target)
-        (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C tail S where
+        (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C tail S freshGeometry where
   houtput : S.R 132 = E++outputTail
   hE : E.length = (b-a)*(executionWidth p l (boundaryHaloTarget p u (boundaryRecoveryTarget p target) rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp)
   hrange : EncodedRange A (executionWidth p l (boundaryHaloTarget p u (boundaryRecoveryTarget p target) rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp) (executionPrecision p l (boundaryHaloTarget p u (boundaryRecoveryTarget p target) rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp)

@@ -2507,6 +2507,29 @@ Verification: guarded checks peaked at 3270.0 MiB for boundary solve and
 3313.6 MiB for the closed solver. The 14,982-job integration build and
 approved-axiom audit passed.
 
+### Shared call records and frame rules for both geometry modes (2026-10-29)
+
+`PackedHaloSetup`, `PackedHaloFrame` and `PackedHaloInput` now carry an optional
+geometry mode, defaulting to the original fresh entry. All numerical/workspace
+fields remain shared; only `PackedHaloGeometryInput` distinguishes a blank bank
+from retained metadata. Its structural frame rule transports either form using
+one physical geometry-bank frame. Source attachment and output allocation now
+preserve both modes through the existing setup/frame constructors.
+
+`PackedHaloInput.runUsing` executes the corresponding closed solver directly
+from that record. The original `run` specializes it to fresh mode. The records
+still contain ordinary mathematical/input/workspace facts, with no assumed
+numerical intermediate or execution callback. This supplies the shared proof
+language needed for retained publication and queued-call interfaces without
+copying the setup record or its transport proofs.
+
+Publication/queue mode propagation, remaining next-call workspace restoration,
+complete setup-key/factor reuse, the generated loop and the remaining global
+S4 obligations remain open.
+Verification: guarded checks for the four changed contract/frame modules peaked
+at 3223.0, 3224.5, 3228.0 and 3225.8 MiB respectively. The 14,982-job
+integration build and approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,

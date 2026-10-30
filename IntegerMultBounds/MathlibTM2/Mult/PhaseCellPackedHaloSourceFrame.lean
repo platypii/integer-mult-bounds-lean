@@ -38,11 +38,11 @@ theorem packedHaloFactoryView_update_source {A : ℕ} (S : Stacks 242 A) (xs : L
   rw [he] at h
   simpa only [reg, embStk, Function.comp_def] using h
 
-theorem PackedHaloSetup.update_source {A p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
+theorem PackedHaloSetup.update_source {freshGeometry : Bool} {A p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
     {C : ZMod s → GaussianInt} {S : Stacks 242 A}
-    (h : PackedHaloSetup (p := p) (l := l) (t := t) (u := u) (target := target)
+    (h : PackedHaloSetup (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
       (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C S) (xs : List (Fin (A+4))) :
-    PackedHaloSetup (p := p) (l := l) (t := t) (u := u) (target := target)
+    PackedHaloSetup (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
       (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C {S with R := Function.update S.R 110 xs} := by
   constructor
   · exact h.hp
@@ -89,11 +89,13 @@ theorem PackedHaloSetup.update_source {A p l s t u target rhsExp a b V : ℕ} [N
   · simpa only [Function.update_of_ne (by decide : (155 : Fin 242) ≠ 110)] using h.h155
   · simpa only [Function.update_of_ne (by decide : (165 : Fin 242) ≠ 110)] using h.h165
   · exact h.hfitV
-  · intro i hi
-    have hn : i ≠ 110 := by
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
-      rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
-    simpa only [Function.update_of_ne hn] using h.hgeometryBlank i hi
+  · apply h.hgeometry.of_frame
+    intro k hk _
+    have hn : k ≠ 110 := by
+      intro he
+      subst k
+      norm_num at hk
+    exact Function.update_of_ne hn _ _
   · simpa only [Function.update_of_ne (by decide : (239 : Fin 242) ≠ 110)] using h.h239
   · exact h.hab
   · exact h.haLt
@@ -114,11 +116,11 @@ theorem PackedHaloSetup.update_source {A p l s t u target rhsExp a b V : ℕ} [N
     simpa only [embStk,Function.comp_apply,Function.update_of_ne hn] using h.hfresh i hi
   · exact h.hdom
 
-theorem PackedHaloSetup.with_source {A p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
+theorem PackedHaloSetup.with_source {freshGeometry : Bool} {A p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
     {C : ZMod s → GaussianInt} {S : Stacks 242 A}
-    (h : PackedHaloSetup (p := p) (l := l) (t := t) (u := u) (target := target)
+    (h : PackedHaloSetup (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
       (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C S) (tail : List (Fin (A+4))) :
-    PackedHaloFrame (p := p) (l := l) (t := t) (u := u) (target := target)
+    PackedHaloFrame (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
       (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C tail
       {S with R := (Function.update S.R 110
         (cstream A (executionWidth p l
