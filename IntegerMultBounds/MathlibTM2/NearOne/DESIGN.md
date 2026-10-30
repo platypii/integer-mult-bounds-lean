@@ -293,10 +293,30 @@ destination, preserves borrowed dimensions and carries `List.Forall₂` core
 accuracy. Cleanup costs `2*(radius*w+coreLength*w+coreLength+2*radius)+7`.
 This program checks near 2.12 GiB with default proof limits. The contract accepts
 the exact reversed archive and error relation returned by the closed numerical
-batch. Their combined execution still needs the register embedding and borrowed
-dimension handoff; deriving these dimensions from generated core geometry,
-preparing the numerical batch's own initial counter, full-line seam publication
-and the global schedule remain separate obligations. The loop checks near 2.07 GiB
+batch.
+
+`PhaseCellPackedHaloPublishExec` provides the structural handoff: it embeds the
+249-port closed solver into a 263-port bank, preserves the external publication
+dimensions, derives the publisher's input archive and blank counter from the
+executed solver, and runs generated publication plus control cleanup. Geometric
+endpoint transport is proved here with arbitrary `q,w`; rewriting endpoints in
+the expanded numerical format exhausted the default heartbeat budget. The
+abstract transport and its numerical consumer each build in about 2.6 seconds
+with unchanged limits.
+
+`PhaseCellPackedHaloPublishedBatch.packedHaloPublishedBatch_exec` instantiates
+this handoff with the actual closed factor/solve/dispose theorem. One program
+now executes shared setup, arbitrary real replicas, final factor/table disposal,
+control generation, forward core publication and control erasure. The original
+halo archive suffix is restored on 132, the source queue advances on 110, the
+raw-table suffix is restored on 220, owned factors and counter are empty, and
+all external publication ports except destination 253 are restored. The exact
+forward core stream and per-input `List.Forall₂` accuracy describe the actual
+final destination. External ports 249--252 borrow radius, core length, replica
+count and word width; no intermediate solver-state readiness is assumed.
+Deriving those dimensions from generated core geometry, preparing the numerical
+batch's own initial counter, full-line seam publication and the global schedule
+remain separate obligations. The loop checks near 2.07 GiB
 with default proof limits; broad contextual simplification was replaced by
 direct register inequalities to stay within those limits.
 The closed-batch endpoint checks near 3.24 GiB with default proof limits. This is a local
