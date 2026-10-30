@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedPreparedResidualSolve
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundarySolveWorkspace
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloResidualNormalization
 public import IntegerMultBounds.NLogN.PhaseCellBoundaryFold
 
@@ -62,9 +62,9 @@ theorem packedHaloResidualSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
             (unscaleBoundaryWord q))++S.R 238))}) := by
   dsimp only
   intro hformat hstage C D x hC hx herror v S hleft hmul hready hvk hbo hhf hdf hmaster h223 h184 h220 h221 h225
-  apply packedPreparedResidualSolve_exec (body := body) hQ hA p u l target rhsExp B W columns hp hlen
+  apply packedPreparedResidualSolve_bank_exec (body := body) hQ hA p u l target rhsExp B W columns hp hlen
     hformat hstage _ (by simp only [List.length_map,bFoldOrder_length]) ?_
-    v S hleft hmul hready hvk hbo hhf hdf hmaster h223 h184 h220 h221 h225
+    v S ⟨hready,⟨hleft,hmul,hmaster,h223,h184,h220,h221,h225⟩⟩ hvk hbo hhf hdf
   intro z hz
   obtain ⟨i,hi,rfl⟩ := List.mem_map.mp hz
   have hn := haloResidual_norm_bound (by omega : 0 < p) hst hαu hθ hgap hbudget

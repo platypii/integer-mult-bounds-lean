@@ -114,4 +114,52 @@ theorem packedBoundaryRecovery_width {A q w W N : ℕ} {S : Stacks 242 A}
     (S.R 174).length = w :=
   hready.ready.wn
 
+open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Stack
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.NLogN
+  IntegerMultBounds.NLogN.SchurDominance IntegerMultBounds.NLogN.PhaseCellMatrix
+  IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
+
+variable {A Q : ℕ} {P U : Type} {body : P → Pr P 242 Q A U}
+
+/-- Run the existing boundary kernel directly from the reusable bank contract. -/
+theorem packedPreparedResidualSolve_bank_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    (p u l target rhsExp : ℕ) {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (W : ℕ)
+    (columns : List (ZMod s → GaussianInt)) (hp : 2 ≤ p) (hlen : columns.length = B.card) :
+    let bits := boundaryTableBits p target rhsExp B.card
+    let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+    let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+    let K := factorNewtonSteps p q
+    let AZ := factorRankIntegerMatrix B W columns
+    let Lc := naturalLineLc q K W B.card AZ
+    let Uc := naturalLineUc q K W B.card AZ
+    let rcs := naturalLineRcs q K W B.card AZ
+    ColumnFamilyFormat w columns →
+    StageInv (factorRankMatrix A q w B W columns) (Finset.range B.card)
+      (1/(8*(p : ℝ))-(B.card : ℝ)*(1/(2 : ℝ)^bits))
+      (2+(B.card : ℝ)*(1/(2 : ℝ)^bits)) →
+    ∀ (b : List GaussianInt), b.length = B.card →
+    (∀ x ∈ b, |gv q x.re| ≤ (2 : ℝ)^couplingRowExponent rhsExp
+      (stableInteriorExponent p rhsExp) (8*p+1) (couplingCountExponent p u) ∧
+      |gv q x.im| ≤ (2 : ℝ)^couplingRowExponent rhsExp
+      (stableInteriorExponent p rhsExp) (8*p+1) (couplingCountExponent p u)) →
+    ∀ (v : HS 242 Q A U) (S : Stacks 242 A),
+    let T := embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg S)
+    let σ := boundaryFactorState T
+    PackedPreparedBank q w W B.card S →
+    σ .vk = cstream A w b →
+    σ .bo = cstream A w (Lc.map colC).flatten →
+    σ .hf = cstream A w (Uc.map colC).flatten →
+    σ .df = cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt)) →
+    ∃ v' n, v'.user = v.user ∧ n ≤ preparedResidualSolveCost q w B.card W ∧
+      Exec body (packedPreparedResidualSolve hQ) (mk v S) n
+        (mk v' {S with R := (Function.update (Function.update S.R 143 []) 238
+          (cstream A w ((bandSolveVec q W Lc Uc rcs (b.map (normalizeBoundaryWord q (q/2-1)))).map
+            (unscaleBoundaryWord q))++S.R 238))}) := by
+  dsimp only
+  intro hformat hstage b hb hbound v S hbank hvk hbo hhf hdf
+  exact packedPreparedResidualSolve_exec hQ hA p u l target rhsExp B W columns hp hlen
+    hformat hstage b hb hbound v S hbank.workspace.left hbank.workspace.mul
+    hbank.ready hvk hbo hhf hdf hbank.workspace.precision hbank.workspace.exponent
+    hbank.workspace.scalar hbank.workspace.table hbank.workspace.padding hbank.workspace.swap
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
