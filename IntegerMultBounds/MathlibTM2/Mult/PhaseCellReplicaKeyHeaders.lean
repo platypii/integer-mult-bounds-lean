@@ -19,6 +19,19 @@ def interchangeHeaderBits (outerCount middleCount blockWidth h d : ℕ) (i : Fin
 def interchangeHeaderVolume (outerCount middleCount blockWidth h d : ℕ) : ℕ :=
   (List.ofFn fun k : Fin 5 => (interchangeHeaderBits outerCount middleCount blockWidth h d k).length+1).sum
 
+theorem interchangeHeaderVolume_le (outerCount middleCount blockWidth h d : ℕ) :
+    interchangeHeaderVolume outerCount middleCount blockWidth h d ≤
+      outerCount+middleCount+blockWidth+h+d+5 := by
+  have hs (n : ℕ) : Nat.size n ≤ n := Nat.size_le.mpr Nat.lt_two_pow_self
+  have h₁ := hs outerCount
+  have h₂ := hs middleCount
+  have h₃ := hs blockWidth
+  have h₄ := hs h
+  have h₅ := hs d
+  simp only [interchangeHeaderVolume,interchangeHeaderBits,length_binBits]
+  simp [List.ofFn_succ,swapValues]
+  omega
+
 def replicaKeyHeaderBits (W h d : ℕ) : Fin 5 → List Bool := interchangeHeaderBits 1 1 W h d
 
 /-- Total physical length of the five generated binary headers, separators included. -/

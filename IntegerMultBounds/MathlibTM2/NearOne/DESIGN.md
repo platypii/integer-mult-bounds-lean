@@ -534,8 +534,19 @@ The explicit bill includes both chains, every generated-header machine stage
 and both bank releases, measured from the original placed-bank stock.
 `unaryPowerChainR_update_off` and its paired-bank specialization transport
 cleanup across the routed payload update, avoiding a second cleanup proof.
-The uniform sum-of-stage cost bound, full packed-codec integration, tile
-padding and global movement/stock ledgers remain open. The enclosing tile
+`PhaseCellChunkTileCost.generatedChunkTileCost_uniform` now bounds that
+same executed bill uniformly. With `V=(2^d)^c*2^d*W`, it is at most
+`C*(T+12*swapT t₀+5)*c*V*max(1,d)^tau` plus
+`1000*(c+1)*(V+stock+T+swapT t₀+1)`. Here `stock` is the original
+placed-bank volume and the two generated chains have length at most `c`.
+The proof bounds actual canonical-header lengths by their dimension values,
+bounds every stage's prefix/suffix/exponent by `V`, charges both complete
+dimension-bank lifecycles linearly, and sums the existing equal-width
+interchange bound by structural induction. No additional key-count factor
+occurs. It uses the existing default proof limits and checks at 2952.2 MiB.
+Full packed-codec integration, tile padding and global movement/stock
+ledgers remain open. The 8,211-job guarded routing/header build and all three
+axiom audits pass. The enclosing tile
 checks at 2938.5 MiB; the 8,178-job guarded build and expanded interchange
 axiom audit pass. The wiring
 module checks at 2929.7 MiB and the paired bank at 1930.9 MiB. The
