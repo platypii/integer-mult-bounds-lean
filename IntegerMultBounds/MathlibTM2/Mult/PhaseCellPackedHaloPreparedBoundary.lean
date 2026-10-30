@@ -133,7 +133,9 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
           ∀ i < B.card, ‖value q (ys.getD i 0)-(y (bFoldAt s B i) : ℂ)‖ ≤ 3/(2 : ℝ)^boundaryTarget ∧
             ‖value q (ys.getD i 0)‖ ≤ (2 : ℝ)^stableInteriorExponent p rhsExp) ∧
       CouplingMasterHeaders (2^15*p) q w s t u band a b (embStk packedHaloRuntimeReg F) ∧
-      (F.R 118).length = executionStagePrecision p l target rhsExp+1 ∧ (F.R 120).length = l := by
+      (F.R 118).length = executionStagePrecision p l target rhsExp+1 ∧ (F.R 120).length = l ∧
+      (∀ i : Fin 117, i ≠ 93 → i ≠ 110 → i ≠ 116 → F.R ⟨i.val,by omega⟩ = []) ∧
+      (∀ k ∈ ([127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages
   have hθpos : 0 < (t : ℝ)/s-1 := lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ
@@ -162,7 +164,7 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
     (12*PhaseCellBand.width p u+1) columns hp a b target hst hαu hθpos hgap hbudget hdom
     hcolumns C D x hC' hx' haccuracy v₁ T (hbankCarry _ _ _ _ hbank) hfold
     (hpagesCarry _ _ _ hpages)
-  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_,?_,?_,?_,?_,?_,?_⟩
   · exact (hbankCarry _ _ _ _ hbank).publish _
   · exact (hpagesCarry _ _ _ hpages).publish _
   · intro k hk hne
@@ -214,5 +216,45 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
   · change ((embStk packedHaloRuntimeReg T).R 120).length = _
     rw [(hframe 120 (by decide) (by decide) (by decide)).2]
     simpa [packedHeaderReg,groupHeaderValue] using hmasters (120,109) (by decide)
+  · intro i hi93 hi110 hi116
+    have hi := i.isLt
+    have hh := congrArg (fun G : Stacks 117 A => G.R i) hproj
+    simpa [embStk,packedHaloRuntimeReg,packedCellCoreReg,countedReleasedCellBank,releasedCellBank,
+      Function.update_apply,Fin.ext_iff,
+      show i.val ≠ 93 from fun he => hi93 (Fin.ext he),
+      show i.val ≠ 110 from fun he => hi110 (Fin.ext he),
+      show i.val ≠ 116 from fun he => hi116 (Fin.ext he),
+      show i.val ≠ 143 by omega,show i.val ≠ 238 by omega] using hh
+  · intro k hk
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · change (embStk packedHaloRuntimeReg T).R 127 = []
+      exact hzero
+    · change (embStk packedHaloRuntimeReg T).R 129 = []
+      rw [(hframe 129 (by decide) (by decide) (by decide)).2]
+      exact hfresh 129 (by decide)
+    · change (embStk packedHaloRuntimeReg T).R 131 = []
+      rw [(hframe 131 (by decide) (by decide) (by decide)).2]
+      exact hfresh 131 (by decide)
+    · change (embStk packedHaloRuntimeReg T).R 133 = []
+      rw [(hframe 133 (by decide) (by decide) (by decide)).2]
+      exact hfresh 133 (by decide)
+    · change (embStk packedHaloRuntimeReg T).R 134 = []
+      rw [(hframe 134 (by decide) (by decide) (by decide)).2]
+      exact hfresh 134 (by decide)
+    · change (embStk packedHaloRuntimeReg T).R 135 = []
+      exact h135
+    · change (embStk packedHaloRuntimeReg T).R 136 = []
+      rw [(hframe 136 (by decide) (by decide) (by decide)).2]
+      exact hfresh 136 (by decide)
+    · change (embStk packedHaloRuntimeReg T).R 153 = []
+      rw [(hframe 153 (by decide) (by decide) (by decide)).2]
+      exact hfresh 153 (by decide)
+    · change (embStk packedHaloRuntimeReg T).R 158 = []
+      rw [(hframe 158 (by decide) (by decide) (by decide)).2]
+      exact h158
+    · change (embStk packedHaloRuntimeReg T).R 166 = []
+      rw [(hframe 166 (by decide) (by decide) (by decide)).2]
+      exact hfresh 166 (by decide)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
