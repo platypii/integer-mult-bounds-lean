@@ -28,6 +28,22 @@ theorem packedNormalizedFactoryInput_words {A : ℕ} (H : Stacks 242 A)
     (packedNormalizedFactoryInput H B V p u l targetOut s t a b coreWidth k radius W Fs).R =
       packedNormalizedFactoryPacketWords H B V p u l targetOut s t a b coreWidth k radius W Fs := rfl
 
+/-- The packet contains private data only; the ambient host tapes are not serialized. -/
+theorem packedNormalizedFactoryPacketWords_host {A : ℕ} (H H' : Stacks 242 A)
+    (B V p u l targetOut s t a b coreWidth k radius W : ℕ) [NeZero s]
+    (Fs : List (ZMod s → GaussianInt)) :
+    packedNormalizedFactoryPacketWords H B V p u l targetOut s t a b coreWidth k radius W Fs =
+      packedNormalizedFactoryPacketWords H' B V p u l targetOut s t a b coreWidth k radius W Fs := rfl
+
+/-- Changing the host tapes preserves the entire private input bank. -/
+theorem packedNormalizedFactoryInput_host {A : ℕ} (H H' : Stacks 242 A)
+    (B V p u l targetOut s t a b coreWidth k radius W : ℕ) [NeZero s]
+    (Fs : List (ZMod s → GaussianInt)) :
+    packedNormalizedFactoryInput H B V p u l targetOut s t a b coreWidth k radius W Fs =
+      {packedNormalizedFactoryInput H' B V p u l targetOut s t a b coreWidth k radius W Fs with
+        inp := H.inp, out := H.out} := by
+  refine Stacks.ext rfl rfl rfl rfl
+
 /-- Loading the complete ordinary packet supplies exactly the bank used by the
 execution theorem. All private left stacks are initially empty. -/
 theorem descriptorReadyBank_factoryInput {A T : ℕ} (work : Fin 325 → Fin T)
@@ -49,6 +65,15 @@ theorem descriptorReadyBank_factoryInput {A T : ℕ} (work : Fin 325 → Fin T)
     (List.replicate B Node.tick)
     ((inverseParameterWords p u l targetOut s t a b).flatMap (fun r => binSyms B r.2))
     hinp hout (packedKeyDescriptorInput_left S V radius p W Fs.length ((b-a)*W) source hSleft) hleft
+
+theorem packedNormalizedFactoryInput_left {A : ℕ} (Hbase : Stacks 242 A)
+    (B V p u l targetOut s t a b coreWidth k radius W : ℕ) [NeZero s]
+    (Fs : List (ZMod s → GaussianInt)) (i : Fin 325) :
+    (packedNormalizedFactoryInput Hbase B V p u l targetOut s t a b coreWidth k radius W Fs).L i = [] := by
+  let parent : Stacks 325 A := ⟨Hbase.inp,Hbase.out,fun _ => [],fun _ => []⟩
+  have hv := descriptorReadyBank_factoryInput (id : Fin 325 → Fin 325) Hbase parent
+    B V p u l targetOut s t a b coreWidth k radius W Fs rfl rfl (by intro i; rfl)
+  exact (congrArg (fun S : Stacks 325 A => S.L i) hv).symm
 
 theorem packedNormalizedFactory_exec {Q A p l s t u targetOut a b V : ℕ} {U : Type} [NeZero s]
     {α gap : ℝ} {C : ZMod s → GaussianInt} (Hbase : Stacks 242 A)

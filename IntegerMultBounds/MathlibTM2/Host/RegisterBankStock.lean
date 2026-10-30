@@ -15,6 +15,10 @@ variable {T Q A : ℕ} {U : Type}
 def registerBankStock (S : Stacks T A) : ℕ :=
   ∑ i, ((S.L i).length + (S.R i).length)
 
+theorem registerBankStock_eq_right_sum (S : Stacks T A) (hleft : ∀ i, S.L i = []) :
+    registerBankStock S = ∑ i, (S.R i).length := by
+  simp only [registerBankStock, hleft, List.length_nil, Nat.zero_add]
+
 theorem mnSize_mk_registerBankStock (v : HS T Q A U) (S : Stacks T A) :
     mnSize (mk v S) = S.inp.length + S.out.length + registerBankStock S := by
   let e : HK T ≃ Option (Option (Fin T ⊕ Fin T)) := {
