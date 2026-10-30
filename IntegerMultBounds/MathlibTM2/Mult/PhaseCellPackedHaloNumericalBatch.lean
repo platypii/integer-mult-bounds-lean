@@ -124,7 +124,7 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
       have hx : x ∈ inputs := hmem x (by simp)
       have hsrc : T.R 110 = encode x++((xs.map encode).flatten++tail) := by
         simpa only [List.map_cons,List.flatten_cons,List.append_assoc] using hsource
-      obtain ⟨vf,G,m,D,hu',hm,he,hout,herr,hsrc',hbetween',hpages',hsetup',hleft'⟩ :=
+      obtain ⟨vf,G,m,D,hu',hm,he,hout,herr,hsrc',hbetween',hpages',hsetup',hleft',hinput',houtput'⟩ :=
         packedHaloNextInput_exec (body := body) (body' := body') hbody hR hQ hA hp hα hwidth hst hu hαu hθ hgap
           hbudget hpad x.1 (hC x hx) hab hb hband hwide hVeq hwV hcoords hunits
           ((xs.map encode).flatten++tail) vi T hsrc haLt hfitV hsep hdom hq

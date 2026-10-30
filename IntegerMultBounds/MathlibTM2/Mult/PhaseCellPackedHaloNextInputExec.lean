@@ -93,7 +93,7 @@ theorem packedHaloNextInput_exec (hbody : ∀ f, body' f = embProg packedBoundar
       (∀ bo hf df, PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase S) →
         PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) ∧
       (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
-        (embStk packedBoundaryRecoveryBase F).R k = (embStk packedBoundaryRecoveryBase S).R k) ∧ F.L = S.L := by
+        (embStk packedBoundaryRecoveryBase F).R k = (embStk packedBoundaryRecoveryBase S).R k) ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out := by
   dsimp only
   intro hbetween columns hcolumns hcell htable hpages hboundary y hy hcoeff
   let band := PhaseCellBand.width p u
@@ -122,7 +122,7 @@ theorem packedHaloNextInput_exec (hbody : ∀ f, body' f = embProg packedBoundar
     have h132 : packedBoundaryRecoveryBase k ≠ 132 := by
       intro he; have hv := congrArg Fin.val he; change k.val = 132 at hv; omega
     exact Function.update_of_ne h132 _ _
-  obtain ⟨v₂,F,n₂,D,hu₂,hn₂,he₂,hout,herror,hsrc,hbetween₂,hpages₂,hsetup₂,hleft₂⟩ :=
+  obtain ⟨v₂,F,n₂,D,hu₂,hn₂,he₂,hout,herror,hsrc,hbetween₂,hpages₂,hsetup₂,hleft₂,hinput₂,houtput₂⟩ :=
     packedHaloPreparedInput_between_exec (body := body) (body' := body') hbody hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail
       (cstream A w (List.replicate (b-a) 0)) (S.R 132) v₁ (embStk packedBoundaryRecoveryBase S₁)
@@ -157,7 +157,7 @@ theorem packedHaloNextInput_exec (hbody : ∀ f, body' f = embProg packedBoundar
       (by rw [hw]; exact packedFreshOutput_range _ _ _ _ _) hdom hq
       columns hcolumns hcell htable hbetween₁.bank hpages₁' hboundary y hy hcoeff
   rw [← hbetween₁.eq_extend] at he₂
-  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,hsrc,hbetween₂,?_,?_,?_⟩
+  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,hsrc,hbetween₂,?_,?_,?_,?_,?_⟩
   · intro bo hf df hpages₀
     apply hpages₂
     apply hpages₀.of_solution_frame
@@ -177,5 +177,8 @@ theorem packedHaloNextInput_exec (hbody : ∀ f, body' f = embProg packedBoundar
 
   · rw [hleft₂]
     rw [← hbetween₁.eq_extend]
+
+  · exact hinput₂
+  · exact houtput₂
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
