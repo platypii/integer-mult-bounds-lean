@@ -2530,6 +2530,31 @@ Verification: guarded checks for the four changed contract/frame modules peaked
 at 3223.0, 3224.5, 3228.0 and 3225.8 MiB respectively. The 14,982-job
 integration build and approved-axiom audit passed.
 
+### Retained geometry through publication and queued core execution (2026-10-29)
+
+`packedHaloPublicationUsing_exec`, `packedHaloCoreUsing_spec` and
+`packedHaloCoreReleaseUsing_spec` now share publication, physical-read error
+restriction and owned-buffer retirement across geometry modes. The actual
+retained-mode solver runs from `PackedHaloInput`, publishes only the owned core
+and restores the borrowed source/output suffixes. Native cleanliness and retained
+numeric/geometry headers reach the released output in both modes.
+
+The zero-allocation and queue-attachment frame theorems are mode-polymorphic.
+`preparedHaloCoreUsing_spec` and `queuedHaloCoreUsing_spec` compose them with the
+closed publication/release path. The latter consumes an actual queued packed
+RHS and returns the remaining queue with the original source restored. The old
+program/theorem names specialize the shared path to fresh geometry, and costs
+use `packedHaloSolveUsingCost`; numerical, publication and frame proofs are not
+duplicated.
+
+This establishes the queued retained-mode call from its ordinary setup record;
+it does not construct that record from a preceding call's complete workspace.
+That restoration, complete setup-key/factor reuse, generated group iteration and
+remaining global S4 obligations remain open.
+Verification: all seven changed call/frame modules passed guarded checks, with
+peaks from 3230.3 to 3251.9 MiB. The 14,982-job integration build and
+approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,

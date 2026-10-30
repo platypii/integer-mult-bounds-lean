@@ -21,9 +21,9 @@ theorem queuedHaloBaseReg_injective : Function.Injective queuedHaloBaseReg := by
   intro i j he
   exact Fin.ext (congrArg (fun k : Fin 264 => k.val) he)
 
-theorem attachQueuedHalo_frame {p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
+theorem attachQueuedHalo_frame {freshGeometry : Bool} {p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
     (C : ZMod s → GaussianInt) (S : Stacks 242 A)
-    (hsetup : PackedHaloSetup (p := p) (l := l) (t := t) (u := u) (target := target)
+    (hsetup : PackedHaloSetup (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
       (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C S)
     (v : HS 264 Q A U) (M : Stacks 264 A)
     (hview : embStk queuedHaloBaseReg M = S) (tail : List (Fin (A+4)))
@@ -41,7 +41,7 @@ theorem attachQueuedHalo_frame {p l s t u target rhsExp a b V : ℕ} [NeZero s] 
     ∃ v' F n, v'.user = v.user ∧ n ≤ attachQueuedHaloCost V q (b-a) ∧
       Exec body attachQueuedHalo (mk v M) n (mk v' F) ∧
       F = {M with R := (Function.update (Function.update M.R 256 tail) 110 (xs++M.R 110))} ∧
-      PackedHaloFrame (p := p) (l := l) (t := t) (u := u) (target := target)
+      PackedHaloFrame (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
         (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C (S.R 110) S' ∧
       embStk queuedHaloBaseReg F = S' ∧ F.R 256 = tail ∧
       ∀ i, i ≠ 110 → i ≠ 256 → F.R i = M.R i := by

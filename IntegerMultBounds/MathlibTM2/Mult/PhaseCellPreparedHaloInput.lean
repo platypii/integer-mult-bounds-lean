@@ -17,9 +17,9 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 256 Q A U}
 
-theorem prepareHaloBuffer_input {p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
+theorem prepareHaloBuffer_input {freshGeometry : Bool} {p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
     (C : ZMod s → GaussianInt) (tail : List (Fin (A+4))) (S : Stacks 242 A)
-    (hframe : PackedHaloFrame (p := p) (l := l) (t := t) (u := u) (target := target)
+    (hframe : PackedHaloFrame (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
       (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C tail S)
     (width k radius : ℕ) (ha : a = coreStart width k-radius)
     (hb : b = coreStart width k+coreLength s width k+radius)
@@ -35,7 +35,7 @@ theorem prepareHaloBuffer_input {p l s t u target rhsExp a b V : ℕ} [NeZero s]
     let S' : Stacks 242 A := {S with R := Function.update S.R 132 (E++S.R 132)}
     ∃ v' F n, v'.user = v.user ∧ n ≤ prepareHaloBufferCost q (coreLength s width k) radius ∧
       Exec body prepareHaloBuffer (mk v M) n (mk v' F) ∧
-      PackedHaloInput (p := p) (l := l) (t := t) (u := u) (target := target)
+      PackedHaloInput (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
         (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C tail E (S.R 132) S' ∧
       embStk packedHaloPublicationReg F = extendStacks (by decide) S' ∧
       ∀ i : Fin 256, 248 ≤ i.val → F.R i = M.R i := by
@@ -85,7 +85,7 @@ theorem prepareHaloBuffer_input {p l s t u target rhsExp a b V : ℕ} [NeZero s]
         dsimp only [q,executionPrecision,executionWidth]; omega
       _ = _ := (boundaryHaloTarget_sizing p u l (boundaryRecoveryTarget p target) rhsExp B.card).2.2.symm
   dsimp only [B] at hww
-  have hinput : PackedHaloInput (p := p) (l := l) (t := t) (u := u) (target := target)
+  have hinput : PackedHaloInput (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
       (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C tail E (S.R 132) S' := by
     apply hframe.with_output E
     · simp only [E,length_cstream,List.length_replicate,hN,hww]

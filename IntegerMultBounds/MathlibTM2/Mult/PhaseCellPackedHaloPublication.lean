@@ -21,10 +21,13 @@ def packedHaloPublicationReg : Fin 248 → Fin 256 := Fin.castLE (by decide)
 def packedCorePublication : Pr P 256 Q A U :=
   preparedPackedSlice 249 250 130 132 248 251 252 253 254 104 105
 
-noncomputable def packedHaloPublication (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 256 Q A U :=
-  .seq (embProg packedHaloPublicationReg id (packedHaloSolve hR hQ)) packedCorePublication
+noncomputable def packedHaloPublicationUsing (freshGeometry : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 256 Q A U :=
+  .seq (embProg packedHaloPublicationReg id (packedHaloSolveUsing freshGeometry hR hQ)) packedCorePublication
 
-theorem packedHaloPublication_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+noncomputable def packedHaloPublication (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 256 Q A U :=
+  packedHaloPublicationUsing true hR hQ
+
+theorem packedHaloPublicationUsing_exec (freshGeometry : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     (hbody : ∀ f, body' f = embProg packedHaloPublicationReg id (body f))
     {s : ℕ} [NeZero s] (q w width k radius : ℕ)
     (D : ZMod s → GaussianInt) (x : ZMod s → ℝ) (ε : ℝ)
@@ -33,7 +36,7 @@ theorem packedHaloPublication_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     (tail : List (Fin (A+4))) (v : HS 256 Q A U) (S : Stacks 256 A)
     (v₁ : HS 248 Q A U) (F₁ : Stacks 248 A) (m : ℕ)
     (hu₁ : v₁.user = v.user)
-    (he₁ : Exec body (packedHaloSolve hR hQ)
+    (he₁ : Exec body (packedHaloSolveUsing freshGeometry hR hQ)
       (mk (embDn packedHaloPublicationReg v) (embStk packedHaloPublicationReg S)) m (mk v₁ F₁))
     (hwidth : (F₁.R 130).length = w) (h104 : F₁.R 104 = []) (h105 : F₁.R 105 = [])
     (hsrc : F₁.R 132 = cstream A w
@@ -44,7 +47,7 @@ theorem packedHaloPublication_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     (hoffset : (S.R 249).length = radius) (hrows : (S.R 250).length = coreLength s width k)
     (hfresh : ∀ i ∈ ([251,252,253,254] : List (Fin 256)), S.R i = []) :
     ∃ v' F n, v'.user = v.user ∧ n ≤ m+preparedPackedSliceCost radius (coreLength s width k) w ∧
-      Exec body' (packedHaloPublication hR hQ) (mk v S) n (mk v' F) ∧
+      Exec body' (packedHaloPublicationUsing freshGeometry hR hQ) (mk v S) n (mk v' F) ∧
       F.R 248 = cstream A w (ownedCoreWords width k D)++S.R 248 ∧ embStk packedHaloPublicationReg F = F₁ ∧
       PhaseCellInterface.ErrorOn (ownedCore s width k)
         (fun i => (packedIntervalRead q w (coreStart width k) (F.R 248) i).re) x ε ∧
@@ -97,5 +100,34 @@ theorem packedHaloPublication_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
   · simpa [F] using haccuracy
   · intro i hi hn
     simpa only [F,Function.update_of_ne hn] using hnew i hi
+
+theorem packedHaloPublication_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (hbody : ∀ f, body' f = embProg packedHaloPublicationReg id (body f))
+    {s : ℕ} [NeZero s] (q w width k radius : ℕ)
+    (D : ZMod s → GaussianInt) (x : ZMod s → ℝ) (ε : ℝ)
+    (hleft : radius ≤ coreStart width k)
+    (hright : coreStart width k+coreLength s width k+radius ≤ s)
+    (tail : List (Fin (A+4))) (v : HS 256 Q A U) (S : Stacks 256 A)
+    (v₁ : HS 248 Q A U) (F₁ : Stacks 248 A) (m : ℕ)
+    (hu₁ : v₁.user = v.user)
+    (he₁ : Exec body (packedHaloSolve hR hQ)
+      (mk (embDn packedHaloPublicationReg v) (embStk packedHaloPublicationReg S)) m (mk v₁ F₁))
+    (hwidth : (F₁.R 130).length = w) (h104 : F₁.R 104 = []) (h105 : F₁.R 105 = [])
+    (hsrc : F₁.R 132 = cstream A w
+      (packedInterval (coreStart width k-radius) (coreLength s width k+2*radius) D)++tail)
+    (herror : PhaseCellInterface.ErrorOn
+      (haloVertices s (coreStart width k-radius) (coreStart width k+coreLength s width k+radius))
+      (fun i => (packedIntervalRead q w (coreStart width k-radius) (F₁.R 132) i).re) x ε)
+    (hoffset : (S.R 249).length = radius) (hrows : (S.R 250).length = coreLength s width k)
+    (hfresh : ∀ i ∈ ([251,252,253,254] : List (Fin 256)), S.R i = []) :
+    ∃ v' F n, v'.user = v.user ∧ n ≤ m+preparedPackedSliceCost radius (coreLength s width k) w ∧
+      Exec body' (packedHaloPublication hR hQ) (mk v S) n (mk v' F) ∧
+      F.R 248 = cstream A w (ownedCoreWords width k D)++S.R 248 ∧ embStk packedHaloPublicationReg F = F₁ ∧
+      PhaseCellInterface.ErrorOn (ownedCore s width k)
+        (fun i => (packedIntervalRead q w (coreStart width k) (F.R 248) i).re) x ε ∧
+      ∀ i : Fin 256, 248 ≤ i.val → i ≠ 248 → F.R i = S.R i := by
+  exact packedHaloPublicationUsing_exec (body := body) (body' := body') true
+    hR hQ hbody q w width k radius D x ε hleft hright tail v S v₁ F₁ m hu₁ he₁
+    hwidth h104 h105 hsrc herror hoffset hrows hfresh
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

@@ -24,16 +24,19 @@ theorem queuedHaloCoreReg_injective : Function.Injective queuedHaloCoreReg := by
   intro i j he
   exact Fin.ext (congrArg (fun k : Fin 264 => k.val) he)
 
-noncomputable def queuedHaloCore (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 264 Q A U :=
-  .seq attachQueuedHalo (embProg queuedHaloCoreReg id (preparedHaloCore hR hQ))
+noncomputable def queuedHaloCoreUsing (freshGeometry : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 264 Q A U :=
+  .seq attachQueuedHalo (embProg queuedHaloCoreReg id (preparedHaloCoreUsing freshGeometry hR hQ))
 
-theorem queuedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+noncomputable def queuedHaloCore (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 264 Q A U :=
+  queuedHaloCoreUsing true hR hQ
+
+theorem queuedHaloCoreUsing_spec (freshGeometry : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (hbody : ∀ f, body₁ f = embProg packedBoundaryRecoveryBase id (body f))
     (hbody₁ : ∀ f, body₂ f = embProg packedHaloPublicationReg id (body₁ f))
     (hbody₂ : ∀ f, body₃ f = embProg queuedHaloCoreReg id (body₂ f))
     {p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
     (C : ZMod s → GaussianInt) (S : Stacks 242 A)
-    (hsetup : PackedHaloSetup (p := p) (l := l) (t := t) (u := u) (target := target)
+    (hsetup : PackedHaloSetup (freshGeometry := freshGeometry) (p := p) (l := l) (t := t) (u := u) (target := target)
       (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C S)
     (width k radius : ℕ) (ha : a = coreStart width k-radius)
     (hb : b = coreStart width k+coreLength s width k+radius) (hleft : radius ≤ coreStart width k)
@@ -58,10 +61,10 @@ theorem queuedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
     ∃ v' F n, ∃ D : ZMod s → GaussianInt,
       v'.user = v.user ∧
       n ≤ attachQueuedHaloCost V q (b-a)+prepareHaloBufferCost q (coreLength s width k) radius+
-        packedHaloSolveCost p u l target rhsExp s t a b V+
+        packedHaloSolveUsingCost freshGeometry p u l target rhsExp s t a b V+
         preparedPackedSliceCost radius (coreLength s width k) w+
         haloBufferReleaseCost (coreLength s width k) radius w ∧
-      Exec body₃ (queuedHaloCore hR hQ) (mk v M) n (mk v' F) ∧
+      Exec body₃ (queuedHaloCoreUsing freshGeometry hR hQ) (mk v M) n (mk v' F) ∧
       F.inp = S.inp ∧ F.out = S.out ∧
       F.R 248 = cstream A w (ownedCoreWords width k D)++M.R 248 ∧
       F.R 132 = S.R 132 ∧ F.R 110 = S.R 110 ∧ F.R 255 = [] ∧ F.R 256 = tail ∧
@@ -115,8 +118,8 @@ theorem queuedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
     hoff₀ _ (by intro he; apply hi110; apply Fin.ext; exact congrArg (fun k : Fin 264 => k.val) he)
       (by intro he; have hv := congrArg (fun k : Fin 264 => k.val) he; have hi := i.isLt; change i.val = 256 at hv; omega)
   obtain ⟨vi,Fi,n₁,D,hui,hn₁,hei,hin,hout,hpublished,h132,hsource,h255,hfits,herror,hnativeClean,hretainedHeaders,hframe₁⟩ :=
-    preparedHaloCore_spec (body := body) (body' := body₁) (body'' := body₂)
-      hR hQ hA hbody hbody₁ C (S.R 110) S' hframe width k radius ha hb hleft
+    preparedHaloCoreUsing_spec (body := body) (body' := body₁) (body'' := body₂)
+      freshGeometry hR hQ hA hbody hbody₁ C (S.R 110) S' hframe width k radius ha hb hleft
       (embDn queuedHaloCoreReg v₀) (embStk queuedHaloCoreReg M₀) hview₀
       (by rw [hread₀ 249 (by decide)]; exact hoffset)
       (by rw [hread₀ 250 (by decide)]; exact hrows)
@@ -181,5 +184,56 @@ theorem queuedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
       exact (hframe₁ j hi hj248).trans (hread₀ j hj110)
     · exact (hhigh i (by omega)).trans
         (hoff₀ i (by intro he; subst i; norm_num at hi) hi256)
+
+theorem queuedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    (hbody : ∀ f, body₁ f = embProg packedBoundaryRecoveryBase id (body f))
+    (hbody₁ : ∀ f, body₂ f = embProg packedHaloPublicationReg id (body₁ f))
+    (hbody₂ : ∀ f, body₃ f = embProg queuedHaloCoreReg id (body₂ f))
+    {p l s t u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
+    (C : ZMod s → GaussianInt) (S : Stacks 242 A)
+    (hsetup : PackedHaloSetup (p := p) (l := l) (t := t) (u := u) (target := target)
+      (rhsExp := rhsExp) (a := a) (b := b) (V := V) α d C S)
+    (width k radius : ℕ) (ha : a = coreStart width k-radius)
+    (hb : b = coreStart width k+coreLength s width k+radius) (hleft : radius ≤ coreStart width k)
+    (v : HS 264 Q A U) (M : Stacks 264 A)
+    (hview : embStk packedHaloPublicationReg (embStk queuedHaloCoreReg M) = extendStacks (by decide) S)
+    (hoffset : (M.R 249).length = radius) (hrows : (M.R 250).length = coreLength s width k)
+    (tail : List (Fin (A+4)))
+    (hqueue : M.R 256 = cstream A (executionWidth p l
+      (boundaryHaloTarget p u (boundaryRecoveryTarget p target) rhsExp
+        (haloBoundary s t (PhaseCellBand.width p u) a b).card) rhsExp)
+      (packedInterval a (b-a) C)++tail)
+    (hfresh : ∀ i ∈ [(251 : Fin 264),252,253,254,255,258,259,260], M.R i = [])
+    (x : ZMod s → ℝ)
+    (hx : let B := haloBoundary s t (PhaseCellBand.width p u) a b
+      let j := boundaryHaloTarget p u (boundaryRecoveryTarget p target) rhsExp B.card
+      SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x
+        (fun i => (value (executionPrecision p l j rhsExp) (C i)).re)) :
+    let B := haloBoundary s t (PhaseCellBand.width p u) a b
+    let bits := boundaryTableBits p (boundaryRecoveryTarget p target) rhsExp B.card
+    let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+    let w := 2*q+8
+    ∃ v' F n, ∃ D : ZMod s → GaussianInt,
+      v'.user = v.user ∧
+      n ≤ attachQueuedHaloCost V q (b-a)+prepareHaloBufferCost q (coreLength s width k) radius+
+        packedHaloSolveCost p u l target rhsExp s t a b V+
+        preparedPackedSliceCost radius (coreLength s width k) w+
+        haloBufferReleaseCost (coreLength s width k) radius w ∧
+      Exec body₃ (queuedHaloCore hR hQ) (mk v M) n (mk v' F) ∧
+      F.inp = S.inp ∧ F.out = S.out ∧
+      F.R 248 = cstream A w (ownedCoreWords width k D)++M.R 248 ∧
+      F.R 132 = S.R 132 ∧ F.R 110 = S.R 110 ∧ F.R 255 = [] ∧ F.R 256 = tail ∧
+      (∀ i, Fits w (D i)) ∧
+      PhaseCellInterface.ErrorOn (ownedCore s width k)
+        (fun i => (packedIntervalRead q w (coreStart width k) (F.R 248) i).re) x (1/(2 : ℝ)^target) ∧
+      PackedHaloNativeClean (embStk (Fin.castLE (by decide : 168 ≤ 264)) F) ∧
+      PackedHaloRetainedHeaders (2^15*p)
+        (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+        q l s t u (PhaseCellBand.width p u) a b V w
+        (embStk (Fin.castLE (by decide : 168 ≤ 264)) F) ∧
+      ∀ i : Fin 264, 248 ≤ i.val → i ≠ 248 → i ≠ 256 → F.R i = M.R i := by
+  exact queuedHaloCoreUsing_spec (body := body) (body₁ := body₁) (body₂ := body₂) (body₃ := body₃) true
+    hR hQ hA hbody hbody₁ hbody₂ C S hsetup width k radius ha hb hleft
+    v M hview hoffset hrows tail hqueue hfresh x hx
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
