@@ -21,6 +21,16 @@ theorem couplingCoefficientWords_bounds {s t u p q band i : ℕ} {α d : ℝ}
   obtain ⟨δ,_,rfl⟩ := List.mem_map.mp hz
   exact ⟨selected_coefficient_norm _ _ hp hs hst hαu hθ hgap hbudget,rfl⟩
 
+/-- Generated coefficient fits follow uniformly from the analytic bounds. -/
+theorem couplingCoefficientWords_fits {s t u p q band i w : ℕ} {α d : ℝ}
+    (hp : 0 < p) (hs : 0 < s) (hst : s < t) (hαu : α^2 = (u : ℝ))
+    (hθ : 0 < (t : ℝ)/s-1) (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1))
+    (hbudget : α^2*d ≤ p) (hw : q+(8*p+1)+2 ≤ w) :
+    ∀ z ∈ couplingCoefficientWords (2^15*p) q s t u band i, Fits w z ∧ z.im = 0 := by
+  intro z hz
+  have h := couplingCoefficientWords_bounds hp hs hst hαu hθ hgap hbudget z hz
+  exact ⟨fits_of_value_power hw z h.1,h.2⟩
+
 theorem couplingCoefficientWords_decode {A w s t u p q band i : ℕ} {α d : ℝ}
     (hA : 96 ≤ A) (hw : q+(8*p+1)+2 ≤ w)
     (hp : 0 < p) (hs : 0 < s) (hst : s < t) (hαu : α^2 = (u : ℝ))
