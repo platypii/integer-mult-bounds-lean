@@ -2,6 +2,8 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryRelease
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedInputFinish
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCellInputBank
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBoundaryWorkspace
 
 /-! The executed post-recovery continuation of a prepared packed input. -/
 
@@ -62,5 +64,36 @@ theorem packedPreparedInputRelease_exec (V N w q W boundaryCount rows : ℕ)
         simp only [List.mem_cons,List.not_mem_nil,or_false] at hi; rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
       simpa [S₁,h138,h139,h140] using hclean i hmem) hbank₁
   exact ⟨v₂,n₁+n₂,hu₂.trans hu₁,by omega,Exec.seq he₁ he₂,hbank₂⟩
+
+/-- The completed input exposes the next borrowed source in precisely the
+native-bank format required by the packed halo producer. -/
+theorem packedPreparedInputReleased_native {A : ℕ} (S : Stacks 248 A)
+    (tail : List (Fin (A+4)))
+    (hleft : ∀ i : Fin 117, S.L ⟨i.val,by omega⟩ = [])
+    (hnative : ∀ i : Fin 117, i ≠ 93 → i ≠ 110 → S.R ⟨i.val,by omega⟩ = []) :
+    embStk ScalarPlacement.packedCellCoreReg
+      (embStk packedHaloRuntimeReg
+        (embStk packedBoundaryRecoveryBase (packedPreparedInputReleased S tail))) =
+      ScalarPlacement.releasedCellBank [] tail (S.R 93) S.inp S.out := by
+  refine Stacks.ext rfl rfl ?_ ?_
+  · funext i
+    exact hleft i
+  · funext i
+    have hi := i.isLt
+    by_cases h93 : i = 93
+    · subst i
+      simp [embStk,ScalarPlacement.packedCellCoreReg,packedHaloRuntimeReg,
+        packedBoundaryRecoveryBase,packedPreparedInputReleased,packedInputFinished,ScalarPlacement.releasedCellBank]
+    by_cases h110 : i = 110
+    · subst i
+      simp [embStk,ScalarPlacement.packedCellCoreReg,packedHaloRuntimeReg,
+        packedBoundaryRecoveryBase,packedPreparedInputReleased,packedInputFinished,ScalarPlacement.releasedCellBank]
+    have h93v : i.val ≠ 93 := fun he => h93 (Fin.ext he)
+    have h110v : i.val ≠ 110 := fun he => h110 (Fin.ext he)
+    simpa [embStk,ScalarPlacement.packedCellCoreReg,packedHaloRuntimeReg,
+      packedBoundaryRecoveryBase,packedPreparedInputReleased,packedInputFinished,ScalarPlacement.releasedCellBank,
+      Fin.ext_iff,h93v,h110v,show i.val ≠ 130 by omega,
+      show i.val ≠ 138 by omega,show i.val ≠ 139 by omega,show i.val ≠ 140 by omega]
+      using hnative i h93 h110
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
