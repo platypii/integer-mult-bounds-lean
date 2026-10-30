@@ -1,11 +1,14 @@
 module
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinishComponentBatch
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComponentSolutionMagnitude
 
 /-! Audit local complex output assembly independently of the numerical solver. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentSolution_stable_bound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentSolution_round_magnitude,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.finishComponentBatch_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentSolution_targets,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentSolution_norm_le,

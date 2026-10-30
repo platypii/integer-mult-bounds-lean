@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyComplexRealBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCoreRows
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComponentSolutionMagnitude
 
 /-! Execute complex local inputs through the shared real solver and complex output assembly. -/
 @[expose] public section
@@ -98,6 +99,7 @@ theorem packedKeyComplexBatch_exec
       H.R 264 = M.R 264 ∧ H.R 251 = [] ∧ H.R 276 = [] ∧ H.R 278 = List.replicate L tick ∧ H.R 279 = List.replicate (L*(2*q+8)) tick ∧
       H.R 277 = binSyms Bcore L ∧
       (∀ j : Fin 276, 265 ≤ j.val → H.R (Fin.castLE (by decide : 276 ≤ 280) j) = M.R j) ∧
+      (∀ z ∈ Zs, ∀ i ∈ ownedCore s coreWidth k, ‖z i‖ ≤ 4*(2 : ℝ)^(p+8)) ∧
       List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
         (packedIntervalRead q (2*q+8) (coreStart coreWidth k)
           (cstream A (2*q+8) (ownedCoreWords coreWidth k D)++M.R 253)) z
@@ -201,7 +203,7 @@ theorem packedKeyComplexBatch_exec
       (mk v₂ S₂) n₃ (mk v₃ S₃) := by simpa only [List.length_map] using he₃
   refine ⟨v₃,S₃,n₀+n₁+n₃,Gs,
     hu₃.trans (hu₂.trans (hu₁.trans hu₀)),?_,?_,
-    (Exec.seq he₀ (Exec.seq he₂ he₃')).cast (by omega) rfl,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+    (Exec.seq he₀ (Exec.seq he₂ he₃')).cast (by omega) rfl,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · simpa only [List.length_map] using hlen
   · simp only [complexComponentFields_length] at hn₁
     simp only [List.length_map] at hn₃
@@ -228,6 +230,17 @@ theorem packedKeyComplexBatch_exec
       omega
     simpa [S₃,Function.update_apply,hne 253 (by decide),hne 264 (by decide),
       hne 251 (by decide),hne 276 (by decide)] using hraw
+  · intro z hz i hi
+    obtain ⟨F,hmem,rfl⟩ := List.mem_map.mp hz
+    apply componentSolution_round_magnitude
+    have hdom := SchurDominance.dominates_mono (realMatrix s t p u) Finset.univ
+      (haloVertices s a b) (1/(8*(p : ℝ))) (Finset.subset_univ _) hsetup.hdom
+    apply componentSolution_stable_bound p q (by have := hsetup.hp; omega) hpq
+      (realMatrix s t p u) (haloVertices s a b) hdom Fs hF y hy F hmem i
+    apply (mem_haloVertices _ _ i).mpr
+    have hi' := hactive i hi
+    dsimp only [L] at hi'
+    constructor <;> omega
   · simpa only [List.length_map,ownedCoreWords,packedInterval,L] using haccuracy
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
