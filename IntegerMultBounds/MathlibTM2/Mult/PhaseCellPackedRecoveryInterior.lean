@@ -73,7 +73,7 @@ theorem packedRecoveryInterior_field_exec (hR : rpStates ≤ Q) (hQ : SS.states 
       F.R 245 = [] ∧ F.R 246 = [] ∧
       (F.R 243).length ≤ ((s/(t-s)+1)-2*PhaseCellBand.width p u) ∧
       (∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → F.L k = S.L k ∧ F.R k = S.R k) ∧
-      F.R 127 = [] ∧ (∀ k ∈ ([143,158,167] : List (Fin 248)), F.R k = S.R k) := by
+      F.R 127 = [] ∧ (∀ k ∈ ([143,158,167] : List (Fin 248)), F.R k = S.R k) ∧ F.R 126 = S.R 126 := by
   let T := embStk packedRecoveryInteriorReg S
   obtain ⟨v₁,H,n,E',D,hu₁,hn,he,h93,hi,ho,hready,houtput',hDnorm,hDfits,hqueue,hzero,hframe,herror,hwords,hleft,hlength⟩ :=
     solvePackedHaloInterior_field_exec (body := fun p : Empty => nomatch p) hR hQ hA hp hst hu hαu hθ hgap hbudget
@@ -85,7 +85,7 @@ theorem packedRecoveryInterior_field_exec (hR : rpStates ≤ Q) (hQ : SS.states 
   have hproj : embStk packedRecoveryInteriorReg F = H :=
     embStk_ovr packedRecoveryInteriorReg_injective H S
   refine ⟨v₂,F,n,E',D,hu₂.trans hu₁,hn,he₂,?_,?_,hi,ho,?_,?_,hDnorm,hDfits,herror,?_,
-    embOvr_left_of_eq S H hleft,?_,?_,?_,?_,?_,?_,?_,?_⟩
+    embOvr_left_of_eq S H hleft,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · exact (congrArg (fun B : Stacks 168 A => B.R 93) hproj).trans h93
   · exact (congrArg (fun B : Stacks 168 A => B.R 139) hproj).trans
       (hframe 139 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)).2
@@ -126,5 +126,9 @@ theorem packedRecoveryInterior_field_exec (hR : rpStates ≤ Q) (hQ : SS.states 
       simp only [embStk,Function.comp_def,packedRecoveryInteriorReg_fixed 167 (by decide)] at hh
       exact hh.trans (hframe 167 (by decide) (by decide) (by decide) (by decide)
         (by decide) (by decide) (by decide) (by decide)).2
+
+  · have hh := congrArg (fun B : Stacks 168 A => B.R 126) hproj
+    simp only [embStk,Function.comp_def,packedRecoveryInteriorReg_fixed 126 (by decide)] at hh
+    exact hh.trans hqueue
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

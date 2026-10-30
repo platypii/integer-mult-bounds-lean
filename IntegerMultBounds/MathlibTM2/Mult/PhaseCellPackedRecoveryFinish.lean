@@ -81,7 +81,7 @@ theorem packedRecoveryFinish_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
   have hread93 : (embStk packedRecoveryInteriorReg H).R 93 = H.R 93 :=
     congrArg H.R (packedRecoveryInteriorReg_fixed 93 (by decide))
   obtain ⟨v₂,F,n₂,E',D,hu₂,hn₂,he₂,h93,h139,hi,ho,hready,houtput,hDnorm,hDfits,herror,hwords,hleft,
-    hoff,hretained,h245,h246,hlength,hfactors,h127,hsmall⟩ := packedRecoveryInterior_field_exec (body := body) hR hQ hA hp hst hu
+    hoff,hretained,h245,h246,hlength,hfactors,h127,hsmall,hqueue⟩ := packedRecoveryInterior_field_exec (body := body) hR hQ hA hp hst hu
     hαu hθ hgap hbudget hpad R (by simpa only [← hq] using hnorm) hab hb hband hwide hVeq
     hwV hcoords hunits (cstream A w (packedInterval a (b-a) C)++rhsTail)
     (cstream A w (packedInterval a (b-a) Y)) outputTail v₁ H
