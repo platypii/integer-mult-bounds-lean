@@ -5843,6 +5843,25 @@ need generation at the concrete numerical/complex caller; that integration,
 selected resource bounds and the complete global schedule remain open.
 S4 is incomplete.
 
+### S4 generate core-row controls from a binary length (2026-10-30)
+
+`PhaseCellPackedCoreRows.preparePackedCoreRows_exec` executes binary-to-unary
+core-length conversion, native word-width generation, row-width multiplication
+and temporary width disposal. Starting with a borrowed B-bit core length and
+native precision header q, it generates exactly L and `L*(2q+8)` in two fresh
+owned headers. It restores the binary length, actual precision symbols and all
+scratch; no initialized unary row, word-width or product witness is supplied.
+The bill is `12*q+L*(8*q+47)+11*B+37`, independent of replica count and ambient
+line length. `prepareOwnedCoreRows_exec` instantiates this producer for generated
+owned cores, deriving binary representability from the ambient period bound.
+Thus these dimensions concern the output core, independently of halo length.
+`releasePackedCoreRows_exec` clears both owned headers in `2*L*(w+1)+4` steps.
+The extended narrow scalar-input audit checks generation, owned-core sizing and
+disposal; the module checks below 2 GiB under default proof limits.
+These producers still need sequencing with ordinary normalization at the actual
+numerical/complex caller. Core-word/parameter-packet generation, that integration,
+selected resource bounds and the global S4 schedule remain open.
+
 ### S4 normalization scalar setup independent of numerical placement (2026-10-30)
 
 `PhaseCellPrepareRoundScalars.prepareRoundScalars_exec` executes the existing

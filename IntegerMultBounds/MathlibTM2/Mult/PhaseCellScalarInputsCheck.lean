@@ -2,11 +2,15 @@ module
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInstallInverseParameters
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseScalarBank
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCoreRows
 
 /-! Audit allocation, ordinary input loading and disposal without numerical imports. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparePackedCoreRows_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareOwnedCoreRows_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releasePackedCoreRows_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.zeroWordBank_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.initializeScalarBank_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.installScalarInputs_exec,
