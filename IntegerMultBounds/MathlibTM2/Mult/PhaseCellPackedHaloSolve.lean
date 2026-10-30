@@ -156,7 +156,7 @@ theorem packedHaloSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 
       (lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ) hgap hbudget z hz
     exact ⟨fits_of_value_power hwcoef z hh.1,hh.2⟩
   have hs := hsemantic x hx'
-  obtain ⟨v₃,F,n₂,D,hu₃,hn₂,he₃,h93',h139',h238,hin,hout,houtput',hfits,haccuracy,hbuffers,hreleaseScratch,hleft',hretained,hfactors⟩ :=
+  obtain ⟨v₃,F,n₂,D,hu₃,hn₂,he₃,h93',h139',h238,hin,hout,houtput',hfits,haccuracy,hbuffers,hnativeRecovery,hleft',hretained,hfactors⟩ :=
     packedBoundaryRecovery_spec (body := body') hR hQ hA hp hu hwidth hα hst hαu hθ hgap hbudget hdom
       hab hbs hband hsep hpad rfl rfl C _ x hC' hylen hyfits hs.1 hx' (S.R 238)
       (cstream A w (packedInterval a (b-a) D₁)) outputTail
@@ -193,6 +193,19 @@ theorem packedHaloSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 
       (by simpa only [hw] using hwV) hcoords (by simpa only [hw] using hunits)
       (by rw [hruntime]; exact hmeta)
   let page := couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a)
+  have hreleaseScratch : ∀ i ∈ ([104,105,106,107,108,109,111,112] : List (Fin 248)),
+      F.R i = [] := by
+    intro i hi
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+    rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact hnativeRecovery 104 (by decide) (by decide)
+    · exact hnativeRecovery 105 (by decide) (by decide)
+    · exact hnativeRecovery 106 (by decide) (by decide)
+    · exact hnativeRecovery 107 (by decide) (by decide)
+    · exact hnativeRecovery 108 (by decide) (by decide)
+    · exact hnativeRecovery 109 (by decide) (by decide)
+    · exact hnativeRecovery 111 (by decide) (by decide)
+    · exact hnativeRecovery 112 (by decide) (by decide)
   have hcount' : (F.R 139).length = page.length := by
     rw [h139']
     simpa [G,extendStacks,page,q,bits,B,band,targetB] using congrArg List.length hcount

@@ -89,7 +89,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       PhaseCellInterface.ErrorOn (haloVertices s a b) (fun i => (packedIntervalRead q w a (F.R 132) i).re) x (1/(2 : ℝ)^target) ∧
       (∃ residual : List (Fin (A+4)), residual.length = (b-a)*w ∧
         F.R 110 = residual++(cstream A w (packedInterval a (b-a) C)++rhsTail)) ∧
-      (∀ k ∈ ([104,105,106,107,108,109,111,112] : List (Fin 248)), F.R k = []) ∧
+      (∀ i : Fin 117, i ≠ 93 → i ≠ 110 → F.R ⟨i.val,by omega⟩ = []) ∧
       F.L = S.L ∧ (∀ k ∈ packedRecoveryRetainedPorts, F.R k = S.R k) ∧
       ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k := by
   let band := PhaseCellBand.width p u
@@ -150,26 +150,14 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       rw [packedRecoveryInteriorReg_low (packedCellCoreReg 110) (by decide)] at hh
       simpa [packedCellCoreReg,releasedCellBank] using hh
 
-  · have hblank (i : Fin 117) (hi93 : i ≠ 93) (hi110 : i ≠ 110) :
-        F.R ⟨i.val,by omega⟩ = [] := by
-      have hh := congrArg (fun G : Stacks 117 A => G.R i) hrdy.native
-      have hlow := packedRecoveryInteriorReg_low (packedCellCoreReg i)
-        (by change i.val < 117; exact i.isLt)
-      simp only [embStk,Function.comp_def] at hh
-      rw [hlow] at hh
-      simpa [packedCellCoreReg,releasedCellBank,
-        show i.val ≠ 93 from fun h => hi93 (Fin.ext h),
-        show i.val ≠ 110 from fun h => hi110 (Fin.ext h)] using hh
-    intro k hk
-    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-    · exact hblank 104 (by decide) (by decide)
-    · exact hblank 105 (by decide) (by decide)
-    · exact hblank 106 (by decide) (by decide)
-    · exact hblank 107 (by decide) (by decide)
-    · exact hblank 108 (by decide) (by decide)
-    · exact hblank 109 (by decide) (by decide)
-    · exact hblank 111 (by decide) (by decide)
-    · exact hblank 112 (by decide) (by decide)
+  · intro i hi93 hi110
+    have hh := congrArg (fun G : Stacks 117 A => G.R i) hrdy.native
+    have hlow := packedRecoveryInteriorReg_low (packedCellCoreReg i)
+      (by change i.val < 117; exact i.isLt)
+    simp only [embStk,Function.comp_def] at hh
+    rw [hlow] at hh
+    simpa [packedCellCoreReg,releasedCellBank,
+      show i.val ≠ 93 from fun h => hi93 (Fin.ext h),
+      show i.val ≠ 110 from fun h => hi110 (Fin.ext h)] using hh
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

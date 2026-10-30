@@ -2279,6 +2279,20 @@ audit. Guarded single-file checks peaked at 2130.5 MiB for the shared frame,
 2186.2 MiB for recovery, 3294.8 MiB for the solver and 3286.6 MiB for the
 gathered core, all below the 4 GiB module budget.
 
+### Native scratch restoration after boundary recovery (2026-10-29)
+
+`packedBoundaryRecovery_spec` now exposes the structural native postcondition:
+every right register below 117 is empty except width register 93 and source
+register 110. This includes the consumed iteration register 116. The proof
+projects the existing `PackedHaloReady.native` equality once for an arbitrary
+register, rather than reducing it to eight selected release slots. The solver's
+release interface derives those eight slots from this stronger postcondition.
+The executed program and its costs are unchanged. Transporting the full native
+invariant through disposal, publication and buffer retirement remains necessary
+before establishing readiness for the next core; this is not yet a group loop.
+The integration build passed 14,973 jobs and its approved-axiom audit; the
+guarded recovery check peaked at 3247.3 MiB.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
