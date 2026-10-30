@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBatchProgram
 public import IntegerMultBounds.MathlibTM2.Host.StackStock
+public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
 
 /-! Persistent archive storage at a prefix of the actual numerical batch. -/
 @[expose] public section
@@ -9,6 +10,27 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.MathlibTM2.Fast.Main
+
+/-- Concrete stock lift beside the batch's isolated unary counter. -/
+theorem packedHaloBatch_projected_stock_le {Q A : ℕ} {U : Type}
+    (v : HS 249 Q A U) (S F : Stacks 249 A) (budget : ℕ)
+    (hleft : F.L 248 = S.L 248) (hcount : (F.R 248).length ≤ (S.R 248).length)
+    (hstock : mnSize (mk (embDn packedHaloBatchReg v) (embStk packedHaloBatchReg F)) ≤
+      mnSize (mk (embDn packedHaloBatchReg v) (embStk packedHaloBatchReg S))+budget) :
+    mnSize (mk v F) ≤ mnSize (mk v S)+budget := by
+  apply projected_stock_le_shrinking_counter packedHaloBatchReg
+    (fun i j he => Fin.ext (congrArg (fun k : Fin 249 => k.val) he)) v F S 248
+    (fun i he => by have hv := congrArg Fin.val he; have hi := i.isLt; change i.val = 248 at hv; omega)
+    budget ?_ hcount hstock
+  intro j hj
+  have hj248 : j = 248 := by
+    have hge : 248 ≤ j.val := by
+      by_contra hn
+      have hlt : j.val < 248 := by omega
+      exact hj ⟨j.val,hlt⟩ (Fin.ext rfl)
+    exact Fin.ext (by have := j.isLt; change j.val = 248; omega)
+  subst j
+  exact ⟨hleft,fun hn => False.elim (hn rfl)⟩
 
 /-- The physical queue for an unprocessed suffix never exceeds the initial
 queue. No fixed packet width or numerical property is needed for this fact. -/
