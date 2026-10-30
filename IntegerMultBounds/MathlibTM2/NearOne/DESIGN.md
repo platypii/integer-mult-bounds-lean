@@ -2158,8 +2158,10 @@ remaining generated halo windows on 256. Geometry/working-format matching and
 native-bank preservation are proved through the composition; no gathered
 source or local execution callback is assumed.
 
-The caller still establishes the first halo's source-independent numerical
-setup and local coordinate headers. The generated RHS, origin stream and count
+The caller establishes the source-independent numerical/header frame with its
+three owned coordinate slots canonically overlaid, and supplies those slots
+blank. The executed program now constructs the first local coordinate headers.
+The generated RHS, origin stream and count
 on 256/257/261 now all advance to the remaining indices `ks`. Generating
 successive local geometry, complete low-runtime restoration for repeated calls,
 full setup-key reuse, seams/full-system fallback, complex/tensor composition and
@@ -2172,6 +2174,8 @@ integration build passed 14,970 jobs and its approved-axiom audit (3.5 GiB
 aggregate peak); whitespace checks passed.
 
 ### Synchronized generated group cursors (2026-10-29)
+
+This discard-only step was superseded by the first-halo header constructor below.
 
 `advanceGroupCursor_exec` is a generic five-register proof: consume one
 fixed-width binary origin word and one tick of its unary count, restoring both
@@ -2190,6 +2194,37 @@ Verification: the generic cursor step and cursor-aligned gathered-core theorem
 checked at 1931.9 and 3252.7 MiB peak RSS. The coupling-interval integration
 build passed 14,971 jobs and its approved-axiom audit (3.5 GiB aggregate peak);
 whitespace checks passed.
+
+### Executed first-halo coordinate headers (2026-10-29)
+
+`prepareHaloHeaders_exec` reuses `takeBinaryUnaryKey_exec`, unary copy and the
+structural binary-to-unary decoder. Starting with blank owned slots, it consumes
+the generated origin word, retains that binary origin, constructs unary lower
+and upper coordinate masters from the origin and retained binary halo length,
+and advances the unary group count. All scratch stacks and borrowed headers
+restore. The bound is `10*a+6*L+28*V+23`.
+
+`haloHeaderBank` describes the input frame with only these three owned slots
+canonically overlaid. Readiness on that view does not require their values in
+the incoming physical bank: the constructor establishes the exact view by
+execution. Generic embedding/extension laws for `haloHeaderR` transport the
+three writes without repeating numerical readiness proofs.
+
+`gatheredHaloCore_spec` now runs this construction between generation/gathering
+and the first concrete solve. Binary origin 155 and unary coordinate masters
+141/142 are no longer supplied initialized by the caller. RHS, origin and count
+queues remain synchronized on the remaining indices after publication. This is
+first-entry initialization, paid once per group; subsequent cores must advance
+retained masters monotonically rather than rebuild unary absolute coordinates.
+The repeated-call runtime, successive geometry, setup reuse, seams, complex and
+tensor composition, and uniform final bounds remain open. S4 remains open.
+
+The superseded discard-only cursor helper can be restored from `86c84f13`.
+
+Verification: the header constructor/transport module and composed first-core
+execution checked at 1956.5 and 3276.2 MiB peak RSS. The coupling-interval
+integration build passed 14,971 jobs and its approved-axiom audit (3.5 GiB
+aggregate peak); whitespace checks passed.
 
 ### Geometry, cuts and boundary order
 
