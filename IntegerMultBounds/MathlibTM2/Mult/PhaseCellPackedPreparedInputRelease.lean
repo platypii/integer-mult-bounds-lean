@@ -23,6 +23,33 @@ def packedPreparedInputReleased {A : ℕ} (S : Stacks 248 A)
   packedInputFinished
     {S with R := Function.update (Function.update (Function.update S.R 138 []) 139 []) 140 []} tail
 
+/-- All release effects are confined to the consumed source and four owned
+headers. This statement is independent of numerical data and input length. -/
+theorem packedPreparedInputReleased_right {A : ℕ} (S : Stacks 248 A)
+    (tail : List (Fin (A+4))) (i : Fin 248) :
+    (packedPreparedInputReleased S tail).R i =
+      if i = 110 then tail else if i ∈ ([130,138,139,140] : List (Fin 248)) then [] else S.R i := by
+  by_cases h110 : i = 110 <;> by_cases h130 : i = 130 <;>
+    by_cases h138 : i = 138 <;> by_cases h139 : i = 139 <;> by_cases h140 : i = 140 <;>
+    simp [packedPreparedInputReleased,packedInputFinished,h110,h130,h138,h139,h140]
+
+theorem packedPreparedInputReleased_frame {A : ℕ} (S : Stacks 248 A)
+    (tail : List (Fin (A+4))) (i : Fin 248)
+    (hi : i ∉ ([110,130,138,139,140] : List (Fin 248))) :
+    (packedPreparedInputReleased S tail).R i = S.R i := by
+  rw [packedPreparedInputReleased_right]
+  simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hi
+  simp [hi.1,hi.2.1,hi.2.2.1,hi.2.2.2.1,hi.2.2.2.2]
+
+theorem packedPreparedInputReleased_empty {A : ℕ} (S : Stacks 248 A)
+    (tail : List (Fin (A+4))) (i : Fin 248) (h110 : i ≠ 110)
+    (hi : i ∈ ([130,138,139,140] : List (Fin 248)) ∨ S.R i = []) :
+    (packedPreparedInputReleased S tail).R i = [] := by
+  rw [packedPreparedInputReleased_right,if_neg h110]
+  rcases hi with hi | hi
+  · exact if_pos hi
+  · simp [hi]
+
 theorem packedPreparedInputRelease_exec (V N w q W boundaryCount rows : ℕ)
     (hNV : N < 2^V) (xs : List GaussianInt)
     (residual input tail : List (Fin (A+4)))
@@ -54,15 +81,9 @@ theorem packedPreparedInputRelease_exec (V N w q W boundaryCount rows : ℕ)
     (by simpa [S₁] using hwidth) (by simpa [S₁] using hsrc)
     (by
       intro i hi
-      have hmem : i ∈ ([0,1,2,104,105,109,246,247,242,243] : List (Fin 248)) := by
-        simp only [List.mem_cons,List.not_mem_nil,or_false] at hi ⊢; tauto
-      have h138 : i ≠ 138 := by
-        simp only [List.mem_cons,List.not_mem_nil,or_false] at hi; rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
-      have h139 : i ≠ 139 := by
-        simp only [List.mem_cons,List.not_mem_nil,or_false] at hi; rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
-      have h140 : i ≠ 140 := by
-        simp only [List.mem_cons,List.not_mem_nil,or_false] at hi; rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
-      simpa [S₁,h138,h139,h140] using hclean i hmem) hbank₁
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+      all_goals simpa [S₁] using hclean _ (by decide)) hbank₁
   exact ⟨v₂,n₁+n₂,hu₂.trans hu₁,by omega,Exec.seq he₁ he₂,hbank₂⟩
 
 /-- The completed input exposes the next borrowed source in precisely the
