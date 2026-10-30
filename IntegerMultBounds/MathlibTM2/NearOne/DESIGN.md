@@ -314,19 +314,33 @@ all external publication ports except destination 253 are restored. The exact
 forward core stream and per-input `List.Forall₂` accuracy describe the actual
 final destination. External ports 249--252 borrow radius, core length, replica
 count and word width; no intermediate solver-state readiness is assumed.
-Deriving those dimensions from generated core geometry, preparing the numerical
-batch's own initial counter, full-line seam publication and the global schedule
-remain separate obligations. The loop checks near 2.07 GiB
+`PhaseCellPackedHaloCountedPublishedBatch` now starts with the solver counter
+blank and copies the retained replica count on 251 into 248 before setup.
+The actual counter preparation costs `4*N+4`; the replica dimension remains
+available for the generated publisher and the solver counter returns blank.
+
+`PhaseCellPackedHaloGeneratedPublishedBatch` additionally reconstructs the
+publication word-width header on 252 using the existing `generateWordWidth`
+program. Its input precision on 119 is derived from the initial factory master's
+contract and the two physical views, rather than supplied independently. The
+identity `w=2*q+8` follows from the existing execution sizing definitions. The
+program charges `8*q+9` for generation and `2*w+2` for final width erasure.
+It starts with width 252 blank and restores it after ordered publication; all
+other external publication controls/dimensions are restored as before. Both new
+endpoints check below 3.25 GiB with unchanged proof limits.
+
+Deriving the borrowed radius/core-length/replica dimensions from the generated
+geometry and outer schedule, full-line seam publication, normalized complex and
+tensor/R4 composition, and the selected time/live-stock ledgers remain open. The loop checks near 2.07 GiB
 with default proof limits; broad contextual simplification was replaced by
 direct register inequalities to stay within those limits.
 The closed-batch endpoint checks near 3.24 GiB with default proof limits. This is a local
 fixed-key lifecycle theorem; it does not provide a peak-live-stock bound or the
 full generated S4 schedule.
 
-Still required: counter preparation, publication and the selected time and
-peak-storage ledgers. Output publication/cursor management,
-setup-cost matching, peak storage, seams and tensor/R4 execution
-remain open. The original single-input solver still initializes and releases
+Still required: generated geometry and replica-dimension handoff, outer
+publication/coverage, setup-cost matching, peak storage, seams and tensor/R4
+execution, with the selected global time and live-storage bounds. The original single-input solver still initializes and releases
 factors per call. The retained-factory placement correction above also remains
 open; the prepared body itself excludes that factory path.
 
