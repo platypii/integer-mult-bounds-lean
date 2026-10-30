@@ -160,8 +160,9 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     simpa [packedCellCoreReg,releasedCellBank,
       show i.val ≠ 93 from fun h => hi93 (Fin.ext h),
       show i.val ≠ 110 from fun h => hi110 (Fin.ext h)] using hh
-  have hworkFinal : PackedBoundarySolveWorkspace q (embStk packedBoundaryRecoveryBase F) := by
-    apply hwork.of_recovery_frame
+  have hbankFinal : PackedPreparedBank q w W B.card
+      (embStk packedBoundaryRecoveryBase F) := by
+    apply (PackedPreparedBank.mk hready hwork).of_recovery_frame
     · funext i
       exact congrFun hleft (packedBoundaryRecoveryBase i)
     · intro i
@@ -174,22 +175,6 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       exact hfactors (packedBoundaryRecoveryBase k) hk k.isLt (by
         intro he
         exact hne (Fin.ext (congrArg (fun i : Fin 248 => i.val) he)))
-  have hfactor : boundaryFactorState (embStk preparedBoundaryCoreReg
-      (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase F))) =
-      Function.update (boundaryFactorState (embStk preparedBoundaryCoreReg
-        (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase S))))
-        .vk (F.R 143) := by
-    apply packedBoundaryFactorState_of_solution_frame
-    intro k hk hne
-    exact hfactors (packedBoundaryRecoveryBase k) hk k.isLt (by
-      intro he
-      apply hne
-      exact Fin.ext (congrArg (fun i : Fin 248 => i.val) he))
-  have hreadyFinal : BoundarySolveReady (boundaryFactorState (embStk preparedBoundaryCoreReg
-      (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase F)))) q w W
-      (haloBoundary s t (PhaseCellBand.width p u) a b).card := by
-    rw [hfactor]
-    exact hready.update_vk _
   obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := releasePackedRecoveryHeaders_exec (body := body) v₂ F hrdy _ hlength
   have hprefix : embStk packedBoundaryRecoveryBase (releasedPackedRecoveryHeaders F) =
       embStk packedBoundaryRecoveryBase F := releasedPackedRecoveryHeaders_prefix F
@@ -219,8 +204,8 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       have hs : k.val < 168 := (packedRecoveryRetainedPorts_safe k hk).2.1
       omega)]
     exact hretained k hk
-  · rw [hprefix]; exact hworkFinal
-  · rw [hprefix]; exact hreadyFinal
+  · rw [hprefix]; exact hbankFinal.workspace
+  · rw [hprefix]; exact hbankFinal.ready
   · intro k hk
     refine ⟨(congrFun hleft k).trans (hfreshL k hk),?_⟩
     have hi := k.isLt
