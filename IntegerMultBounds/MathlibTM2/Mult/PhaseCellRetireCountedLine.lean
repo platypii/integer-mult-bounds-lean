@@ -67,4 +67,35 @@ theorem retireCountedLine_exec (rows width src count trash tmp : Fin T)
     funext i
     by_cases hsrc : i = src <;> by_cases hcountIdx : i = count <;> simp [S₂,S₁,hsrc,hcountIdx,hcount,hsrcCount,hsrcCount.symm]
 
+/-- Retire the recovery residual and its retained original input, leaving the
+next input (or an arbitrary borrowed suffix) at the source head. -/
+theorem retireCountedLine_pair_exec (rows width src count trash tmp : Fin T)
+    (hreg : [rows,width,src,count,trash,tmp].Nodup) (s w : ℕ)
+    (residual input tail : List (Fin (A+4)))
+    (hresidual : residual.length = s*w) (hinput : input.length = s*w)
+    (v : HS T Q A U) (S : Stacks T A)
+    (hs : (S.R rows).length = s) (hw : (S.R width).length = w)
+    (hsource : S.R src = residual++(input++tail))
+    (hcount : S.R count = []) (htrash : S.R trash = []) (htmp : S.R tmp = []) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ 2*retireCountedLineCost s w ∧
+      Exec body (.seq (retireCountedLine rows width src count trash tmp)
+        (retireCountedLine rows width src count trash tmp)) (mk v S) n
+        (mk v' {S with R := Function.update S.R src tail}) := by
+  have hne : rows ≠ src ∧ width ≠ src ∧ count ≠ src ∧ trash ≠ src ∧ tmp ≠ src := by
+    simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,not_false_eq_true,not_or] at hreg
+    tauto
+  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := retireCountedLine_exec rows width src count trash tmp
+    hreg s w residual (input++tail) hresidual v S hs hw hsource hcount htrash htmp
+  let S₁ : Stacks T A := {S with R := Function.update S.R src (input++tail)}
+  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := retireCountedLine_exec (body := body)
+    rows width src count trash tmp hreg s w input tail hinput v₁ S₁
+    (by simpa [S₁,hne.1] using hs)
+    (by simpa [S₁,hne.2.1] using hw) (by simp [S₁])
+    (by simpa [S₁,hne.2.2.1] using hcount)
+    (by simpa [S₁,hne.2.2.2.1] using htrash)
+    (by simpa [S₁,hne.2.2.2.2] using htmp)
+  refine ⟨v₂,n₁+n₂,hu₂.trans hu₁,by omega,(Exec.seq he₁ he₂).cast rfl ?_⟩
+  apply congrArg (mk v₂)
+  simp [S₁]
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
