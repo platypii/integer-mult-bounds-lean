@@ -454,6 +454,30 @@ numerical key batches remain open. The data module checks near 0.82 GiB and the 
 2.52 GiB. A separate `PhaseCellReplicaKeyInterchangeCheck` audits this supplier
 without joining its import closure to the numerical coupling audit.
 
+Replica tiling cost bridge: `PhaseCellSelectedSetupKeys` now exposes its
+existing all-key polynomial bound `C*t^8*p^6` as a reusable theorem, and the
+one-time whole-box bound consumes it. `PhaseCellTiledSetupKeys` separately
+charges repeated setup per replica tile: eventually any capacity `B ≥ t^9`
+pays all scaled selected-key setup costs for one tile, and
+`ceil(N/B)*setup ≤ N+T`. The generic lemma only needs `setup ≤ B`; it pays
+the final partial tile by one extra setup. This is an alternative ledger to
+the once-per-key schedule, not permission to reuse its old multiplicity claim.
+Padding the final tile adds at most one tile of traffic, and the selected
+whole-box bound absorbs that additive overhead when the actual tile volume
+is polynomial in one axis and precision.
+
+A candidate executed schedule can choose tile capacity as a fixed power of
+the padded regular-key count, split its replica address into equal-width
+chunks, and move the key address past those chunks using balanced interchanges.
+This avoids padding the whole tensor replica dimension to a square. Still
+required: prove regular-key cardinality and tile-capacity bounds, execute the
+chunk swaps and final-tile padding, match the packed factory bill to the
+selected setup supplier, and handle small exceptional movement classes
+separately. No arbitrary-rectangle execution or final resource bound follows
+from these cost lemmas alone. Guarded single-file checks peak at 3261.0 MiB
+for the tiled ledger and 3274.6 MiB for the refactored selected-key ledger;
+the 15,121-job build and expanded core-setup axiom audit pass.
+
 The outer generated schedule still must supply this binary radius word and the
 replica count for a complete setup key. The existing generated core-group count
 counts windows, not replicas, and cannot be substituted for that count. Full-line
