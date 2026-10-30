@@ -1,11 +1,17 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedNormalizedFactoryExec
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedNormalizedFactoryDescriptorStep
 
 /-! Audit native readiness established by the concrete ordinary header bank. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Host.mnSize_mk_registerBankStock,
+      `IntegerMultBounds.MathlibTM2.Host.registerBankStock_le_of_mnSize,
+      `IntegerMultBounds.MathlibTM2.Host.registerBankStock_le_of_execWithin,
+      `IntegerMultBounds.MathlibTM2.Host.execWithin_absorb_persistent,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorBankCleanupCost_le_stock,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedNormalizedFactoryDescriptorStep_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedNormalizedFactory_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedNormalizedFactoryInput_words,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorReadyBank_factoryInput,
