@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorBank
-public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
+public import IntegerMultBounds.MathlibTM2.Mult.ClearRegisterBank
 
 /-! Collect a batch output in order and clear its private bank for the next key. -/
 
@@ -60,5 +60,44 @@ theorem finishDescriptorBank_exec (ports : List (Fin T)) (hports : ports.Nodup)
         · subst k
           simp [S₂,S₁,movedR,htmp,hkr,hblank]
         · simp [S₂,S₁,movedR,hk,hkr,hkt,hko]
+
+/-- Collect the output and restore both sides of every private register. -/
+def finishDescriptorBankBoth (ports : List (Fin T)) (output result tmp : Fin T) : Pr P T Q A U :=
+  .seq (finishDescriptorBank ports output result tmp) (clearRegisters ports)
+
+theorem finishDescriptorBankBoth_exec (ports : List (Fin T)) (hports : ports.Nodup)
+    (output result tmp : Fin T) (houtput : output ∈ ports) (hresult : result ∉ ports)
+    (htmp : tmp ∉ ports) (hrt : result ≠ tmp)
+    (v : HS T Q A U) (S : Stacks T A) (hblank : S.R tmp = []) :
+    ∃ v' n, v'.user = v.user ∧
+      n ≤ 4 * (S.R output).length +
+        2 * (ports.map (fun k => (S.R k).length)).sum +
+        4 * (ports.map (fun k => (S.L k).length)).sum + 6 * ports.length + 6 ∧
+      Exec body (finishDescriptorBankBoth ports output result tmp) (mk v S) n
+        (mk v' {S with
+          L := fun k => if k ∈ ports then [] else S.L k
+          R := fun k => if k ∈ ports then [] else
+            if k = result then S.R output ++ S.R result else S.R k}) := by
+  obtain ⟨v₁, n, hu₁, hn, he₁⟩ := finishDescriptorBank_exec (body := body)
+    ports hports output result tmp houtput hresult htmp hrt v S hblank
+  let S₁ : Stacks T A := {S with
+    R := fun k => if k ∈ ports then [] else
+      if k = result then S.R output ++ S.R result else S.R k}
+  obtain ⟨v₂, hu₂, he₂⟩ := clearRegisters_exec (body := body) ports hports v₁ S₁
+  have hsum : (ports.map fun k => 4 * (S₁.L k).length + 2 * (S₁.R k).length).sum =
+      4 * (ports.map fun k => (S.L k).length).sum := by
+    trans (ports.map fun k => 4 * (S.L k).length).sum
+    · congr 1
+      apply List.map_congr_left
+      intro k hk
+      simp [S₁, hk]
+    · exact List.sum_map_mul_left ports (fun k => (S.L k).length) 4
+  refine ⟨v₂, _, hu₂.trans hu₁, ?_, (Exec.seq he₁ he₂).cast rfl ?_⟩
+  · rw [hsum]
+    omega
+  · apply congrArg (mk v₂)
+    refine Stacks.ext rfl rfl rfl ?_
+    funext k
+    by_cases hk : k ∈ ports <;> simp [S₁, hk]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
