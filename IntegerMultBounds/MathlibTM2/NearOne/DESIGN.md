@@ -5437,3 +5437,22 @@ reversed stage list, while its bound is the same forward packed tile cost.
 No numerical execution or factor reuse is assumed by this routing theorem.
 Executed dummy removal, key padding, key-batch placement and numerical composition,
 total setup amortization, bulk gathering and global S4 resource gates remain open.
+
+### S4 real-replica return (2026-10-30)
+
+`PhaseCellRemoveDummyPrefix` executes position-based erasure after computation:
+it copies the current payload length, subtracts a borrowed retained real-symbol
+count, drops exactly the difference and clears its generated counter. Dummy
+symbols are arbitrary, so numerical dummy results need not be zero. All original
+counter symbols and scratch restore, and only the source changes. Exact cost is
+`10*dummyLength+8*realLength+14`, at most `10*paddedLength+14`.
+`removeDummyReplicas_exec` derives the remaining rectangular array from the
+actual suffix length after removing `(capacity-realReplicas)*keyCount*wordWidth`
+symbols; no output encoding witness is supplied.
+`PhaseCellPackedRealReplicaReturn.packedRealReplicaReturn_exec` composes actual
+packed inverse routing with that erasure. It returns the computed real-replica
+suffix in order, with the forward packed routing bill plus `10*tileVolume+14`.
+The routing count is consumed, the borrowed real-length header is preserved,
+and all other right stacks restore. The retained real-length header must still
+be generated/preserved by the outer tile lifecycle. Key padding, numerical batch
+placement/composition, bulk gathering and global S4 resource gates remain open.

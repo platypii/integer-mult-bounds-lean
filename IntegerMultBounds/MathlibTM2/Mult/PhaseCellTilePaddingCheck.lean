@@ -1,10 +1,14 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRemoveDummyReplicas
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPaddedReplicaTile
 
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.removeDummyPrefix_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.removeDummyPrefix_cost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.removeDummyReplicas_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ownedPrefixPadding_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedTilePrefixPadding_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedTilePrefixPaddingCost_le,
