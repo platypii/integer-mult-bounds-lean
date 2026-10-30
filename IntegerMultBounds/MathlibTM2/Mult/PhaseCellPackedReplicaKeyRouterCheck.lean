@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedInverseChunkTile
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyRoutingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellChunkTileCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedPackedReplicaKeyRouter
@@ -7,6 +8,10 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedPackedReplicaKeyRoute
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.chunkStageBits_length,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkPlanesUsing_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkPlanes_inverse_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedGeneratedChunkTile_inverse_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyPlanesInterchange_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedReplicaKeyRouter_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedPackedReplicaKeyRouter_exec,

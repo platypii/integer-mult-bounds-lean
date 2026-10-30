@@ -5419,3 +5419,21 @@ changes, with original scalar state, retained width headers and scratch restored
 The numerical solver still must supply this decoded magnitude bound at the
 actual output port; full tile/key placement and complete numerical composition,
 inverse packed routing, dummy removal and the global S4 gates remain open.
+
+### S4 packed return routing (2026-10-30)
+
+`generatedChunkPlanesUsing_exec` now shares the two-plane bank lifecycle and
+frame/stock argument over arbitrary payload lists and any stage list drawn from
+the generated schedule. The forward public theorem is a thin specialization.
+`generatedChunkPlanes_inverse_exec` specializes the same proof to reversed
+stages and key-major input, preserving the forward bill. The structural
+`chunkStageBits_length` lemma supplies common-volume preservation.
+`PhaseCellPackedInverseChunkTile.packedGeneratedChunkTile_inverse_exec` closes
+the packed return path with the existing codec: key-major paired Boolean words
+are decoded, both planes execute reversed generated stages, and replica-major
+paired words are reassembled. Source and owned count are the only changed right
+stacks; all other bank/control stacks restore. The actual program uses the
+reversed stage list, while its bound is the same forward packed tile cost.
+No numerical execution or factor reuse is assumed by this routing theorem.
+Executed dummy removal, key padding, key-batch placement and numerical composition,
+total setup amortization, bulk gathering and global S4 resource gates remain open.

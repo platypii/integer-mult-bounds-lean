@@ -27,6 +27,16 @@ theorem chunkStageBits_eq {T : ℕ} (d : ℕ) (rs : List (ChunkInterchangeStage 
   | nil => rfl
   | cons r rs ih => exact ih _
 
+theorem chunkStageBits_length {T : ℕ} (d : ℕ) (rs : List (ChunkInterchangeStage T))
+    (V : ℕ) (hvolume : ∀ r ∈ rs,
+      V = BinaryAdjacentWidthInterchange.volume r.outerCount (2^d) 1 (2^d) r.blockWidth)
+    (xs : List Bool) (hlen : xs.length = V) : (chunkStageBits d rs xs).length = V := by
+  rw [chunkStageBits_eq]
+  apply runReplicaChunkSwaps_length (2^d) false _ V _ xs hlen
+  intro r hr
+  obtain ⟨s,hs,rfl⟩ := List.mem_map.mp hr
+  simpa only [BinaryAdjacentWidthInterchange.volume,Nat.mul_one] using (hvolume s hs).symm
+
 /-- The actual loop's payload description agrees with the complete-key layout
 when its stage shapes follow the structural chunk schedule. -/
 theorem chunkStageBits_words {T : ℕ} (d W c : ℕ) (rs : List (ChunkInterchangeStage T))
