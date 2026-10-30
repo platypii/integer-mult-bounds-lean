@@ -5733,3 +5733,22 @@ This closes actual input-to-real-core sequencing for one complete key. Complex
 assembly must reuse the same key factors across real/imaginary RHS replicas;
 output normalization, owned-count disposal, full tile/key/global scheduling and
 uniform simultaneous resource bounds remain open. S4 is incomplete.
+
+### S4 one ordered component batch per complete key (2026-10-30)
+
+`PhaseCellExpandComplexFields.expandComplexFields_exec` executes expansion of
+the current key's local complex packets into all real RHS packets followed by
+all imaginary RHS packets, in original replica order. It generates the prefix
+symbol count from retained replica/packet dimensions, preserves the later-key
+suffix, and restores conversion scratch. The active replica header becomes
+2N while a fresh owned header retains N for output pairing and restoration of
+the original header symbols. Its bill is `N*(26*(L*W)+17)+34`.
+`complexComponentFields` describes those actual ordered fields;
+`packedBatch_components` identifies their packed source and
+`complexComponentFields_norm_le` supplies the unchanged unit-input bound.
+The proofs are structural in the coefficient/field lists and arbitrary register
+ports, without ambient line scans or finite payload enumeration.
+`PhaseCellPackedComplexInputCheck` audits this controller separately from the
+numerical supplier. Invocation of the real batch on these fields, output
+pairing/normalization and owned-counter disposal still require composition;
+this input preparation does not complete a complex key or S4.
