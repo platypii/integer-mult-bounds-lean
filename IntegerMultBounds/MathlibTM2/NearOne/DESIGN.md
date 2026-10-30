@@ -2396,6 +2396,29 @@ Verification: guarded checks peaked at 1404.0 MiB for the generic translator
 and 1395.8 MiB for the endpoint instance. The 14,978-job integration build
 and approved-axiom audit passed.
 
+### Executed advancement restores complete interval metadata (2026-10-29)
+
+`refreshHaloEndpoints_exec` now computes the movement from the installed origin
+155 and retained old lower endpoint 149, runs the structural four-word
+translation and clears the displacement word 104. Its exact cost is `42*V+43`;
+its exact poststate changes only the four coordinate-dependent geometry words.
+
+`advanceHaloMetadata_exec` composes the real origin-queue/header step with this
+refresh. It starts with ordinary retained interval metadata, a next-origin
+packet, the group count and native/high scratch readiness. It consumes the
+packet/count, advances both unary endpoints and all translated binary endpoint
+words, and returns the complete `CouplingIntervalMetadata` record for the new
+interval. Ambient dimensions, band and local length are retained. The cost is
+`advanceHaloHeadersCost V (y-x)+42*V+43`, so unary work still depends only on
+movement. `advancedHaloMetadata_geometry` isolates the fixed-layout metadata
+proof from execution and numerical solver state.
+
+Next-call workspace readiness, complete setup-key/factor reuse, the generated
+core loop and remaining global S4 obligations are still open.
+Verification: guarded single-file checks peaked at 1401.3 MiB for endpoint
+refresh and 2123.9 MiB for complete metadata advancement. The 14,980-job
+integration build and approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
