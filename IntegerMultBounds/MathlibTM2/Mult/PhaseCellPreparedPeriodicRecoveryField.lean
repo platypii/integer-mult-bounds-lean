@@ -73,7 +73,9 @@ theorem preparedPeriodicRecoveryField_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A
       Exec body (preparedPeriodicRecoveryField hQ) (mk v (extendStacks (by decide : 242 ≤ 248) S)) n
         (mk v' {U with R := (Function.update (Function.update (Function.update U.R
           246 (List.replicate s tick)) 245 []) 132
-          (cstream A w (packedInterval 0 s (boundarySolutionField B solution))))}) := by
+          (cstream A w (packedInterval 0 s (boundarySolutionField B solution))))}) ∧
+      PeriodicProducerInput p q w t u band 0 s V C R [] rhsTail (S.R 110)
+        (embStk (Fin.castLE (by decide : 168 ≤ 242)) T) := by
   dsimp only
   intro hcolumns hcount hR hC v S rhsTail hbetween hband hwide hfitV hsource hrhs h160 hpages
   let bits := boundaryTableBits p target 2 B.card
@@ -95,7 +97,7 @@ theorem preparedPeriodicRecoveryField_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A
   let H := extendStacks (by decide : 242 ≤ 248) G
   let U : Stacks 248 A := {H with R := (Function.update (Function.update (Function.update H.R 238 (F.R 238))
     231 []) 245 (cstream A w ((bOrder s B).map (boundarySolutionField B solution))))}
-  obtain ⟨v₁,n₁,hu₁,hn₁,he₁,hbank⟩ := preparedPeriodicRecoveryUnfold_exec (body := body)
+  obtain ⟨v₁,n₁,hu₁,hn₁,he₁,hbank,hreadyT⟩ := preparedPeriodicRecoveryUnfold_exec (body := body)
     hQ hA p u l target B W columns hp stage V t band C R hBset hst hαu hθ hgap hbudget
     hcolumns hcount hR hC v S rhsTail hbetween hband hwide hfitV hsource hrhs h160 hpages
   change PackedPreparedBank q w W B.card G at hbank
@@ -156,7 +158,7 @@ theorem preparedPeriodicRecoveryField_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A
       intro i hi
       exact boundarySolutionField_off B solution i (by simpa only [hBset] using hi)) v₁ U hN hw
     (by simp [U,hBset]) hmask hclean
-  refine ⟨v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,(Exec.seq he₁ he₂).cast rfl ?_⟩
+  refine ⟨v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,(Exec.seq he₁ he₂).cast rfl ?_,hreadyT⟩
   apply congrArg (mk v₂)
   simp only [harchive,List.append_nil]
   rfl

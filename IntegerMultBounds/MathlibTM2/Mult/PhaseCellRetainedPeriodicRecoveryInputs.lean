@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedPeriodicRecover
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPeriodicRetainedRhs
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPeriodicRawFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryRhsInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPeriodicRecoveryInputBank
 
 /-! Retain the RHS, execute the periodic boundary solve and publication, then
 restore the original RHS for recovery and release the consumed count and mask. -/
@@ -49,9 +50,6 @@ theorem retainedPeriodicRecoveryInputs_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
       (couplingRowField (2^15*p) q t u band 0 s false C R) rhsTail).get T
     let solution := (bandSolveVec q W Lc Uc rcs (rhs.map (normalizeBoundaryWord q (q/2-1)))).map
       (unscaleBoundaryWord q)
-    let G := {F with R := (Function.update (Function.update F.R 143 []) 238
-      (cstream A w solution++F.R 238))}
-    let H := extendStacks (by decide : 242 ≤ 248) G
     PackedHaloBetweenInputs (2^15*p) stage q l s t u band 0 s V w W B.card (extendStacks (by decide) S) →
     band ≤ s →
     8*(t+1)^2+4*band+8 < 2^V →
@@ -62,20 +60,20 @@ theorem retainedPeriodicRecoveryInputs_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
     PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
       (cstream A w (Uc.map colC).flatten)
       (cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt))) S →
-    let U := {H with R := (Function.update (Function.update (Function.update H.R 238 (F.R 238)) 231 [])
-      245 (cstream A w ((bOrder s B).map (boundarySolutionField B solution))))}
-    let Z := {U with R := (Function.update (Function.update (Function.update U.R
-      246 (List.replicate s tick)) 245 []) 132
-      (cstream A w (packedInterval 0 s (boundarySolutionField B solution))))}
-    let D := {Z with R := (Function.update (Function.update (Function.update
-      (Function.update (Function.update Z.R 110 (cstream A w (packedInterval 0 s R)++S.R 110))
-        93 (cstream A w (packedInterval 0 s R)++Z.R 93)) 116 []) 167 []) 246 [])}
+    let D := periodicRecoveryInputBank F (cstream A w (packedInterval 0 s R))
+      (cstream A w (packedInterval 0 s R)++S.R 110)
+      (cstream A w (packedInterval 0 s (boundarySolutionField B solution)))
     ∃ v' n, v'.user = v.user ∧ n ≤ copyCountedLineCost s w+(((periodicProducerPreparationCost p q s t u band V+
         (periodicProducerCost p q w s t u band 0 s V+preparedResidualSolveCost q w B.card W))+
         (moveCountedLineCost B.card w+(generatedBoundaryUnfoldCost B.card w+B.card*(12*w+9)+12)))+
         ((6*s+11*V+6)+(s*(6*w+10)+6))+packedRecoveryRhsInputCost s B.card w) ∧
       Exec body (retainedPeriodicRecoveryInputs hQ) (mk v (extendStacks (by decide : 242 ≤ 248) S)) n
-        (mk v' D) ∧ D.R 110 = cstream A w (packedInterval 0 s R)++S.R 110 := by
+        (mk v' D) ∧ RetainedCouplingReady (2^15*p) q w s t u band 0 s
+          (cstream A w (packedInterval 0 s R)++S.R 110)
+          (embStk (Fin.castLE (by decide : 117 ≤ 248)) D) ∧
+      PeriodicProducerInput p q w t u band 0 s V C R [] rhsTail
+        (cstream A w (packedInterval 0 s R)++S.R 110)
+        (embStk (Fin.castLE (by decide : 168 ≤ 242)) T) := by
   dsimp only
   intro hcolumns hcount hR hC v S rhsTail hbetween hband hwide hfitV hsource hrhs h160 hpages
   let bits := boundaryTableBits p target 2 B.card
@@ -107,7 +105,7 @@ theorem retainedPeriodicRecoveryInputs_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
     (embDn (Fin.castLE (by decide : 242 ≤ 248)) v) S hbetween hrhs
   obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_extendStacks (body' := body) (ι := Empty.elim)
     (by decide : 242 ≤ 248) (fun f => nomatch f) he₁ v rfl
-  obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := preparedPeriodicRecoveryField_exec (body := body)
+  obtain ⟨v₃,n₃,hu₃,hn₃,he₃,hinT⟩ := preparedPeriodicRecoveryField_exec (body := body)
     hQ hA p u l target B W columns hp stage V t band C R hBset hst hαu hθ hgap hbudget
     hcolumns hcount hR hC v₂ S₀ rhsTail hbetween₀ hband hwide hfitV
     (by simpa [S₀] using hsource) (by simpa [S₀] using hrhs) (by simpa [S₀] using h160)
@@ -158,8 +156,19 @@ theorem retainedPeriodicRecoveryInputs_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
     words (S.R 110) (by simp [packedInterval]) hlen v₃ Z
     (by simp [Z]) hwidth (by rw [hcountZ]; simp)
     (by rw [hmaskZ]; exact couplingSourceIntervalMaskSymbols_length _ _ _ _ _ _ _ _ _) hqueue hclean
+  have hfinal := periodicRecoveryInputBank_eq F s (cstream A w solution)
+    (cstream A w ((bOrder s B).map (boundarySolutionField B solution)))
+    (cstream A w (packedInterval 0 s (boundarySolutionField B solution))) words (words++S.R 110)
   refine ⟨v₄,n₁+(n₃+n₄),hu₄.trans (hu₃.trans (hu₂.trans hu₁)),
-    Nat.add_le_add hn₁ (Nat.add_le_add hn₃ hn₄),Exec.seq he₂ (Exec.seq he₃ he₄),?_⟩
-  simp
+    Nat.add_le_add hn₁ (Nat.add_le_add hn₃ hn₄),
+    (Exec.seq he₂ (Exec.seq he₃ he₄)).cast rfl (congrArg (mk v₄) hfinal),?_,hinT⟩
+  change RetainedCouplingReady (2^15*p) q w s t u band 0 s (words++S.R 110)
+    (embStk (Fin.castLE (by decide : 117 ≤ 248))
+      (periodicRecoveryInputBank F words (words++S.R 110)
+        (cstream A w (packedInterval 0 s (boundarySolutionField B solution)))))
+  exact periodicRecoveryInputBank_ready T V
+    (guardedCouplingRowField (2^15*p) q t u band 0 s false C R)
+    (couplingRowField (2^15*p) q t u band 0 s false C R) rhsTail words (words++S.R 110)
+    (cstream A w (packedInterval 0 s (boundarySolutionField B solution))) (S₀.R 110) hinT.hready
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

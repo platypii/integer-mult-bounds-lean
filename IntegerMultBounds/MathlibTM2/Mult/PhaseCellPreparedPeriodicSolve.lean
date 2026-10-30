@@ -59,7 +59,9 @@ theorem preparedPeriodicSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
         (mk v' G) ∧ PackedPreparedBank q w W B.card G ∧
       PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
         (cstream A w (Uc.map colC).flatten)
-        (cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt))) G := by
+        (cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt))) G ∧
+      PeriodicProducerInput p q w t u band 0 s V C R [] rhsTail (S.R 110)
+        (embStk (Fin.castLE (by decide : 168 ≤ 242)) T) := by
   dsimp only
   intro hcolumns hcount hR hC v S rhsTail hbetween hband hwide hfitV hsource hrhs h160 hpages
   let bits := boundaryTableBits p target 2 B.card
@@ -75,6 +77,6 @@ theorem preparedPeriodicSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     hQ hA p u l target B W columns hp V t band 0 s C R hBset hst hαu hθ hgap hbudget
     hcolumns hcount hR hC v₁ (periodicPreparedProducerBank p q s t u band S) rhsTail [] (S.R 110)
     hin hbankT (hpagesT _ _ _ hpages)
-  exact ⟨v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hbankG,hpagesG⟩
+  exact ⟨v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hbankG,hpagesG,hin⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

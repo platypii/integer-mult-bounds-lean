@@ -66,7 +66,9 @@ theorem preparedPeriodicRecoveryUnfold_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
         (mk v (extendStacks (by decide : 242 ≤ 248) S)) n
         (mk v' {H with R := (Function.update (Function.update (Function.update H.R 238 (F.R 238)) 231 [])
           245 (cstream A w ((bOrder s B).map (boundarySolutionField B solution))))}) ∧
-      PackedPreparedBank q w W B.card G := by
+      PackedPreparedBank q w W B.card G ∧
+      PeriodicProducerInput p q w t u band 0 s V C R [] rhsTail (S.R 110)
+        (embStk (Fin.castLE (by decide : 168 ≤ 242)) T) := by
   dsimp only
   intro hcolumns hcount hR hC v S rhsTail hbetween hband hwide hfitV hsource hrhs h160 hpages
   let bits := boundaryTableBits p target 2 B.card
@@ -84,7 +86,7 @@ theorem preparedPeriodicRecoveryUnfold_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
     (couplingRowField (2^15*p) q t u band 0 s false C R) rhsTail).get T
   let G : Stacks 242 A := {F with R := (Function.update (Function.update F.R 143 []) 238
     (cstream A w solution++F.R 238))}
-  obtain ⟨v₁,n₁,hu₁,hn₁,he₁,hbank,_⟩ := preparedPeriodicSolve_exec
+  obtain ⟨v₁,n₁,hu₁,hn₁,he₁,hbank,_,hreadyT⟩ := preparedPeriodicSolve_exec
     (body := fun f : Empty => nomatch f) hQ hA p u l target B W columns hp stage V t band C R
     hBset hst hαu hθ hgap hbudget hcolumns hcount hR hC
     (embDn (Fin.castLE (by decide : 242 ≤ 248)) v) S rhsTail hbetween hband hwide hfitV hsource hrhs h160 hpages
@@ -107,6 +109,6 @@ theorem preparedPeriodicRecoveryUnfold_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
   obtain ⟨v₃,n₃,hu₃,hn₃,he₃⟩ := preparedBoundaryRecoveryUnfold_exec (body := body) (by omega)
     q w W B solution hlen (F.R 238) v₂ G hbank (by simp [G])
     (by simpa [G] using hcountF) (by simp [G])
-  exact ⟨v₃,n₁+n₃,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hn₁ hn₃,Exec.seq he₂ he₃,hbank⟩
+  exact ⟨v₃,n₁+n₃,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hn₁ hn₃,Exec.seq he₂ he₃,hbank,hreadyT⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
