@@ -160,6 +160,22 @@ the S4 tensor machine, stock bound, setup count or fused R4 schedule.
 
 ### S4 implementation plan: close the packed execution boundary first
 
+Scheduling clarification from the complete-key audit (2026-10-29):
+`selectedCoreSetupKey_eq_iff` identifies complete production keys with endpoint
+pairs when numerical parameters are fixed. `coreSetupGroup_eq_singleton` proves
+that each non-full key contains exactly one generated core. Consequently the
+factor-reuse loop must run input replicas (and both real components) at a fixed
+halo before releasing its setup; advancing to the next regular halo changes
+the key. Equal halo lengths justify shared movement, not shared factors.
+The existing `selectedCoreSetupKeys_scaled_volume_le` pays setup over all
+distinct keys, but does not yet bound the new packed executable's setup by that
+supplier charge. Establish that cost bridge and a fixed-key repeated-call
+contract before expanding the origin-advance loop. The existing
+`sharedComplexClosedBatchCost_affine` and shared-page batch lifecycle are the
+reuse templates; their ambient-sized loading still needs packed adaptation.
+The current `packedHaloSolveUsing` constructs and releases factors per call,
+including in retained-geometry mode, so it is not this reusable batch body.
+
 The proof should follow the manuscript construction recorded in
 `plan/D-sharper-bound.md`, M7b: local principal solves, owned-core cropping,
 shared factor pages, and bulk tensor exposure. The local source records core

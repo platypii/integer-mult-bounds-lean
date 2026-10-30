@@ -9,6 +9,7 @@ run_cmd do
   for name in #[
       `IntegerMultBounds.NLogN.PhaseCellMatrix.coreSetupGroup_sum,
       `IntegerMultBounds.NLogN.PhaseCellMatrix.coreSetupGroup_subsingleton,
+      `IntegerMultBounds.NLogN.PhaseCellMatrix.coreSetupGroup_eq_singleton,
       `IntegerMultBounds.NLogN.PhaseCellMatrix.coreSetupGroup_in_movement,
       `IntegerMultBounds.MathlibTM2.Cost.selectedCoreSetupKey_eq_iff,
       `IntegerMultBounds.MathlibTM2.Cost.selectedCoreSetupKeys_scaled_volume_le ] do

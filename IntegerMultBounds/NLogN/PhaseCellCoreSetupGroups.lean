@@ -67,6 +67,31 @@ theorem coreSetupGroup_subsingleton (s width band n : ℕ) (hw : 0 < width)
   exact coreHaloEndpoints_injective_of_ne_full s width i j band n hw
     (by rw [hi']; exact hne) (hi'.trans hj'.symm)
 
+/-- A regular core's arithmetic group contains exactly that core. Reuse within
+this group is across input replicas, not across neighboring equal-length halos. -/
+theorem coreSetupGroup_eq_singleton (s width band n k : ℕ) (hw : 0 < width)
+    (hk : k ∈ coreIndices s width)
+    (hne : coreHaloEndpoints s width k band n ≠ (0,s)) :
+    coreSetupGroup s width band n (coreHaloEndpoints s width k band n) = [k] := by
+  let key := coreHaloEndpoints s width k band n
+  have hmem : k ∈ coreSetupGroup s width band n key :=
+    (mem_coreSetupGroup _ _ _ _ _ _).mpr ⟨hk,rfl⟩
+  have huniq := coreSetupGroup_subsingleton s width band n hw key hne
+  have hnodup := coreSetupGroup_nodup s width band n key
+  cases he : coreSetupGroup s width band n key with
+  | nil => simp [he] at hmem
+  | cons i rest =>
+    have hi : i = k := huniq i (by simp [he]) k hmem
+    subst i
+    have hrest : rest = [] := by
+      cases rest with
+      | nil => rfl
+      | cons j rest =>
+        have hj : j = k := huniq j (by simp [he]) k hmem
+        subst j
+        simp [he] at hnodup
+    simpa only [hrest] using he
+
 /-- Arithmetic regrouping does not duplicate the per-core solve or publication
 bill. This is a ledger identity; physical reordering is a separate tape cost. -/
 theorem coreSetupGroup_sum {M : Type*} [AddCommMonoid M]
