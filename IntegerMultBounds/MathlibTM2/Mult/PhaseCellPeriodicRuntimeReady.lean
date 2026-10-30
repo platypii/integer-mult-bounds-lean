@@ -31,6 +31,8 @@ theorem periodicRuntimeReady_exec {Q A precision stage q l s t u band V W N : �
         (embProg c Empty.elim couplingReadiness)) (mk v B) n (mk v' G) ∧
       RetainedCouplingReady precision q (2*q+8) s t u band 0 s (S.R 110) (embStk c G) ∧
       PackedPreparedBank q (2*q+8) W N G ∧
+      G.R 107 = [] ∧ G.R 141 = [] ∧
+      (∀ k : Fin 242, 117 ≤ k.val → G.R k = B.R k) ∧
       ∀ bo hf df, PackedBoundaryFactorPages bo hf df S → PackedBoundaryFactorPages bo hf df G := by
   dsimp only
   let e : Fin 144 → Fin 242 := Fin.castLE (by decide)
@@ -87,12 +89,12 @@ theorem periodicRuntimeReady_exec {Q A precision stage q l s t u band V W N : �
     rw [show embStk e G = {T with R := couplingHeadersR precision q s t u band 0 s T.R} from
       embStk_ovr hinj _ B]
     exact hready
-  have hframe (k : Fin 242) (hk : k.val < 64 ∨ k = 119 ∨ 168 ≤ k.val) : G.R k = B.R k := by
+  have hframe (k : Fin 242) (hk : k.val < 64 ∨ k = 107 ∨ 117 ≤ k.val) : G.R k = B.R k := by
     by_cases hlo : k.val < 144
     · let i : Fin 144 := ⟨k.val,hlo⟩
       have hei : e i = k := Fin.ext rfl
       have hnot : i ∉ [(114 : Fin 144),112,97,98,99,100,101,103,94] := by
-        have hn : k.val < 64 ∨ k.val = 119 ∨ 168 ≤ k.val := by
+        have hn : k.val < 64 ∨ k.val = 107 ∨ 117 ≤ k.val := by
           rcases hk with hk | hk | hk
           · exact Or.inl hk
           · exact Or.inr (Or.inl (congrArg Fin.val hk))
@@ -120,18 +122,27 @@ theorem periodicRuntimeReady_exec {Q A precision stage q l s t u band V W N : �
   have hbankG : PackedPreparedBank q (2*q+8) W N G := by
     apply hbankB.of_runtime_frame (F := G) (embOvr_right_left B _)
     · intro k hk; exact hframe k (Or.inl hk)
-    · exact hframe 119 (Or.inr (Or.inl rfl))
-    · intro k hk _; exact hframe k (Or.inr (Or.inr hk))
+    · exact hframe 119 (Or.inr (Or.inr (by decide)))
+    · intro k hk _; exact hframe k (Or.inr (Or.inr (by omega)))
   have hpagesG : ∀ bo hf df, PackedBoundaryFactorPages bo hf df S → PackedBoundaryFactorPages bo hf df G := by
     intro bo hf df hpages
     have hpagesB := periodicCouplingPageBank_factorPages (band := band) (w := 2*q+8) (xs := xs)
       (periodicCouplingWidth_factorPages (q := q) hpages)
-    exact hpagesB.of_solution_frame (fun k hk _ => hframe k (Or.inr (Or.inr hk)))
-  obtain ⟨v₃,n,hu₃,hn,he₃,hr,hbank₃,hpages₃⟩ := periodicNativeCounters_exec (body := body)
+    exact hpagesB.of_solution_frame (fun k hk _ => hframe k (Or.inr (Or.inr (by omega))))
+  obtain ⟨v₃,n,hu₃,hn,he₃,hr,hbank₃,hcounterFrame,hpages₃⟩ := periodicNativeCounters_exec (body := body)
     (by omega) (by omega) (S.R 110) v₂ G hreadyG hbankG
   refine ⟨v₃,installCouplingHeadersCost precision q s t u band 0 s+n,
-    hu₃.trans (hu₂.trans hu₁),Nat.add_le_add_left hn _,Exec.seq he₂ he₃,hr,hbank₃,?_⟩
-  intro bo hf df hpages
-  exact hpages₃ bo hf df (hpagesG bo hf df hpages)
+    hu₃.trans (hu₂.trans hu₁),Nat.add_le_add_left hn _,Exec.seq he₂ he₃,hr,hbank₃,?_,?_,?_,?_⟩
+  · have hh : S.R 107 = [] := h.native 107 (by decide) (by decide)
+    have hB : B.R 107 = [] := by simpa [B,periodicCouplingPageBank,periodicCouplingWidthBank] using hh
+    exact (hcounterFrame 107 (by decide)).trans ((hframe 107 (Or.inr (Or.inl rfl))).trans hB)
+  · have hB : B.R 141 = [] := List.eq_nil_of_length_eq_zero (by
+      simpa [B,periodicCouplingPageBank,periodicCouplingWidthBank,embStk,packedRecoveryRuntimeReg,extendStacks]
+        using h.headers.masters.lower)
+    exact (hcounterFrame 141 (by decide)).trans ((hframe 141 (Or.inr (Or.inr (by decide)))).trans hB)
+  · intro k hk
+    exact (hcounterFrame k (by omega)).trans (hframe k (Or.inr (Or.inr hk)))
+  · intro bo hf df hpages
+    exact hpages₃ bo hf df (hpagesG bo hf df hpages)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
