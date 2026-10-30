@@ -282,10 +282,21 @@ solver archive: prepending the extracted cores restores forward input order
 without another reversal pass. `List.Forall₂` transports each halo's decoded
 error to its corresponding published core. The charged time is
 `N*(6*radius*w+10*coreLength*w+16+retireCountedLineCost haloLength w+3)+2`.
-The loop still assumes supplied unary padding/core/halo/width controls and a
-replica counter. Generating those controls and composing this cursor with the
-closed numerical batch remain required; full-line seam publication and the
-global schedule remain separate obligations. The loop checks near 2.07 GiB
+`PhaseCellPackedCoreArchiveControls` now generates the padding/core symbol
+counts, halo row count and disposable replica counter from borrowed unary
+radius/core/word-width/replica dimensions. It reuses unary products, constant
+multiplication and copying; the charge is `(radius+coreLength)*(4*w+13)+4*N+20`.
+`PhaseCellPackedCoreArchiveFromDimensions` composes this generator, the actual
+accurate archive loop and erasure of its three retained slice controls. Its
+endpoint restores all stacks except the consumed halo source and forward core
+destination, preserves borrowed dimensions and carries `List.Forall₂` core
+accuracy. Cleanup costs `2*(radius*w+coreLength*w+coreLength+2*radius)+7`.
+This program checks near 2.12 GiB with default proof limits. The contract accepts
+the exact reversed archive and error relation returned by the closed numerical
+batch. Their combined execution still needs the register embedding and borrowed
+dimension handoff; deriving these dimensions from generated core geometry,
+preparing the numerical batch's own initial counter, full-line seam publication
+and the global schedule remain separate obligations. The loop checks near 2.07 GiB
 with default proof limits; broad contextual simplification was replaced by
 direct register inequalities to stay within those limits.
 The closed-batch endpoint checks near 3.24 GiB with default proof limits. This is a local
