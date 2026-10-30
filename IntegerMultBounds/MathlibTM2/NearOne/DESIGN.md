@@ -434,8 +434,14 @@ an arbitrary destination-distinct list, with a summed execution bill and exact
 frame. `PhaseCellReplicaKeyHeaders` instantiates it for all five interchange
 fields, permitting the two constant-one fields to share a source. It preserves
 borrowed unary dimensions and restores scratch, with cost at most
-`21*(W+h+d+2)+56`. Composing these generated headers with routing and cleanup,
-padding nondyadic movement groups, proving the selected
+`21*(W+h+d+2)+56`. `PhaseCellGeneratedPackedReplicaKeyRouter` now composes all five generated
+headers, the actual counted packed router and structural header erasure. It
+starts with blank headers and derives values/canonicity from borrowed unary
+dimensions; only the packed payload changes at the endpoint. Its bill charges
+header generation, the router's actual intermediate bank volume (including
+the generated headers), and erasure of all five actual header words. It checks
+near 2.94 GiB with default limits. This closes the generated-header lifecycle
+for balanced dyadic routing. Padding nondyadic movement groups, proving the selected
 routing/peak-stock bounds, and connecting the router to the generated gather and
 numerical key batches remain open. The data module checks near 0.82 GiB and the execution module near
 2.52 GiB. A separate `PhaseCellReplicaKeyInterchangeCheck` audits this supplier
