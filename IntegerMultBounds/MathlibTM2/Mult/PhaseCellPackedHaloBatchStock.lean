@@ -21,6 +21,24 @@ theorem packedHaloQueue_length_le {A X : Type} (encode : X → List A)
   simp only [List.length_append]
   omega
 
+/-- Fixed-width packet queues are bounded by their remaining input count. -/
+theorem packedHaloQueue_length {A X : Type} (encode : X → List A) (L : ℕ)
+    (hencode : ∀ x, (encode x).length = L) (xs : List X) (tail : List A) :
+    ((xs.map encode).flatten++tail).length = xs.length*L+tail.length := by
+  induction xs with
+  | nil => simp
+  | cons x xs ih =>
+    simp only [List.map_cons,List.flatten_cons,List.length_append,List.length_cons,
+      hencode,Nat.add_mul,Nat.one_mul] at *
+    omega
+
+theorem packedHaloQueue_length_le_of_count {A X : Type} (encode : X → List A) (L : ℕ)
+    (hencode : ∀ x, (encode x).length = L) (xs todo : List X) (tail : List A)
+    (hcount : todo.length ≤ xs.length) :
+    ((todo.map encode).flatten++tail).length ≤ ((xs.map encode).flatten++tail).length := by
+  rw [packedHaloQueue_length encode L hencode,packedHaloQueue_length encode L hencode]
+  exact Nat.add_le_add_right (Nat.mul_le_mul_right L hcount) _
+
 theorem PackedHaloInputTrace.stock_le {Q A : ℕ} {U X : Type}
     {Result : X → Stacks 248 A → Stacks 248 A → Prop} {L : ℕ}
     (hresult : ∀ x S F, Result x S F → (F.R 132).length = L+(S.R 132).length)
