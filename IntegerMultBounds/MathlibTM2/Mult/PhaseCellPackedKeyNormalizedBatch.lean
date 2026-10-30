@@ -136,7 +136,7 @@ theorem packedKeyNormalizedBatch_exec
       (haloVertices s a b) (y F) (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re) := by
     intro F _
     exact Classical.choose_spec (hexists F)
-  obtain ⟨v₁,H₁,n₁,Ds,hu₁,hDs,hn₁,he₁,houtput,hrep,h251,h276,hrows,hinputWidth,hcore,hframe,hmag,hgood⟩ :=
+  obtain ⟨v₁,H₁,n₁,Ds,hu₁,hDs,hn₁,he₁,houtput,hrep,h251,h276,hrows,hinputWidth,hcore,hframe,hmag,hgood,hcomplexStock⟩ :=
     packedKeyComplexBatch_exec hbody hbody' hbody'' bodyProtected hbodyProtected bodyComplex hbodyComplex
       bodyFinal hbodyFinal hR hQ hA Bcore hsCore q W hpq hW hqSizing Fs hF y C tail
       (embDn (Fin.castLE hT) v) M B S₀ S hviews hsetup hq hpHeader hcommon hreplicas hpacket hsource

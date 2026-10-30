@@ -9,7 +9,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComponentSolutionMagnit
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Node
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
@@ -103,7 +103,17 @@ theorem packedKeyComplexBatch_exec
       List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
         (packedIntervalRead q (2*q+8) (coreStart coreWidth k)
           (cstream A (2*q+8) (ownedCoreWords coreWidth k D)++M.R 253)) z
-        (1/(2 : ℝ)^finalTarget+1/(2 : ℝ)^finalTarget)) Zs Gs := by
+        (1/(2 : ℝ)^finalTarget+1/(2 : ℝ)^finalTarget)) Zs Gs ∧
+      ∀ c, mnProgPush (packedKeyComplexBatch (P := P) (U := U) (A := A) hR hQ) ≤ c →
+        (∀ f, mnProgPush (bodyFinal f) ≤ c) → ∀ depth,
+        ExecWithin bodyFinal (fun d z => mnSize z+d ≤ mnSize (mk v (complexBatchInputBank M Bcore L))+
+          ((2*Fs.length)*((b-a)*(2*q+8))+V)+depth+(c+1)*
+            (preparePackedCoreRowsCost Bcore q L+
+              ((Fs.length*(26*((b-a)*W)+17)+34)+
+                ((packedKeyInputCost p q W (2*Fs.length) (b-a)+(4*(2*Fs.length)+4))+
+                  packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius (2*Fs.length)))+
+              (Fs.length*(16*(L*(2*q+8))+19)+22)))
+          depth (packedKeyComplexBatch hR hQ) (mk v (complexBatchInputBank M Bcore L)) n (mk v' H) := by
   dsimp only
   let L := coreLength s coreWidth k
   let S₀big := complexBatchInputBank M Bcore L
@@ -203,7 +213,7 @@ theorem packedKeyComplexBatch_exec
       (mk v₂ S₂) n₃ (mk v₃ S₃) := by simpa only [List.length_map] using he₃
   refine ⟨v₃,S₃,n₀+n₁+n₃,Gs,
     hu₃.trans (hu₂.trans (hu₁.trans hu₀)),?_,?_,
-    (Exec.seq he₀ (Exec.seq he₂ he₃')).cast (by omega) rfl,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+    (Exec.seq he₀ (Exec.seq he₂ he₃')).cast (by omega) rfl,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · simpa only [List.length_map] using hlen
   · simp only [complexComponentFields_length] at hn₁
     simp only [List.length_map] at hn₃
@@ -242,5 +252,35 @@ theorem packedKeyComplexBatch_exec
     dsimp only [L] at hi'
     constructor <;> omega
   · simpa only [List.length_map,ownedCoreWords,packedInterval,L] using haccuracy
+  · intro c hpLarge hbLarge depth
+    have hpParts := hpLarge
+    simp only [packedKeyComplexBatch,mnProgPush,embProg_push] at hpParts
+    have hpSetup := Nat.le_trans (Nat.le_max_left _ _) hpParts
+    have hpInner := Nat.le_trans (Nat.le_max_left _ _) (Nat.le_trans (Nat.le_max_right _ _) hpParts)
+    have hpFinish := Nat.le_trans (Nat.le_max_right _ _) (Nat.le_trans (Nat.le_max_right _ _) hpParts)
+    have hbSmall : ∀ f, mnProgPush (bodyComplex f) ≤ c := by
+      intro f
+      simpa only [hbodyFinal f,embProg_push] using hbLarge f
+    have ht := hcomplexRealStock c hpInner hbSmall depth
+    let persistent := (complexComponentFields Fs).length*((b-a)*(2*q+8))+V
+    let work := (Fs.length*(26*((b-a)*W)+17)+34)+
+      ((packedKeyInputCost p q W (complexComponentFields Fs).length (b-a)+(4*(complexComponentFields Fs).length+4))+
+        packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius (complexComponentFields Fs).length)
+    have htSmall : ExecWithin bodyComplex (fun d z => mnSize z+d ≤
+        mnSize (mk (embDn complexBatchReg v₀) (extendStacks (by decide : 276 ≤ 277) M))+depth+(persistent+(c+1)*work))
+        depth (packedKeyComplexRealBatch hR hQ)
+        (mk (embDn complexBatchReg v₀) (extendStacks (by decide : 276 ≤ 277) M)) n₁ (mk v₁ H₁) :=
+      ht.mono (by intro d z hz; dsimp only [persistent,work]; omega)
+    obtain ⟨v',F',hv',hu',ht',hproj',hframe'⟩ := exec_emb_within_stock complexBatchReg
+      complexBatchReg_injective hbodyFinal htSmall v₀ rfl S₁ hview₁
+    have hout := (ht'.toExec.unique he₂).2
+    rw [hout] at ht'
+    have htLarge : ExecWithin bodyFinal (fun d z => mnSize z+d ≤
+        mnSize (mk v₀ S₁)+persistent+depth+(c+1)*work)
+        depth (embProg complexBatchReg id (packedKeyComplexRealBatch hR hQ))
+        (mk v₀ S₁) n₁ (mk v₂ S₂) := ht'.mono (by intro d z hz; omega)
+    have htFinish := mn_release_exec_within_stock htLarge he₃' hn₃ hpFinish hbLarge
+    have htSetup := mn_setup_exec_within_stock he₀ hn₀ hpSetup hbLarge htFinish
+    simpa only [packedKeyComplexBatch,persistent,work,complexComponentFields_length,List.length_map,Nat.add_assoc,L] using htSetup
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
