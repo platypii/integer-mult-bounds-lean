@@ -2349,6 +2349,29 @@ and the remaining global S4 obligations are still open.
 Verification: the guarded module check passed without warnings at 1961.2 MiB
 peak RSS. The 14,975-job integration build and approved-axiom audit passed.
 
+### Generated-core placement and amortized coordinate movement (2026-10-29)
+
+`advanceQueuedHaloHeaders` specializes the generic packet/header step to the
+272-register generated-core ABI: width 163, origin queue 257, retained origin
+155, endpoint masters 141/142 and group count 261. It borrows native scratch
+104/105 and high scratch 269--271, restoring them all; no new register bank is
+allocated. Its theorem consumes the native-clean invariant already returned by
+`gatheredHaloCore_spec`. The explicit poststate has a five-slot frame theorem,
+transports `CouplingMasterHeaders` from `[x,x+L]` to `[y,y+L]` and preserves
+native cleanliness. Arbitrary endpoint symbols and queue suffixes remain valid.
+
+`haloHeaderSweepCost_le` proves the structural ordered-list bound
+`12*(s-x)+count*(46*V+37)`. Thus only packet-width work is charged per origin;
+unary work is charged once to total forward movement. The proof applies to
+arbitrary ordered origins and instantiates generated geometry last.
+
+Interval metadata still needs its translated binary endpoint words before the
+next solver call. The full group loop, next-call workspace readiness, complete
+setup reuse and all remaining global S4 obligations remain open.
+Verification: guarded checks peaked at 1967.7 MiB for the generic sweep bound
+and 2119.7 MiB for its concrete placement. The 14,976-job integration build
+and approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,

@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAdvanceHaloHeaders
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAdvanceQueuedHaloHeaders
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGatheredHaloCore
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProtectedCoreGather
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellQueuedHaloCore
@@ -432,6 +432,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.prepareCoreDimensions_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advanceHaloMasters_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advanceHaloHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.haloHeaderSweepCost_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advanceQueuedHaloHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advancedQueuedHaloHeaders_masters,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.advancedQueuedHaloHeaders_native,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedRecoveryRetained_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedHaloRetainedHeaders.of_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.gatheredHaloCore_spec,

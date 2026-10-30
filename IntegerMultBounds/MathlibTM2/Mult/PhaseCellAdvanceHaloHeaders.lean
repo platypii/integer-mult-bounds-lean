@@ -115,4 +115,27 @@ theorem advanceHaloHeaders_exec {width src word next delta a b count work saved 
       simp [M,K,J,H,hc,hw,hs,ha,hb,hfresh next (by simp)]
     simp [M,K,J,H,hc,hw,hs,ha,hb,hn]
 
+
+/-- Cost of following an ordered sequence of generated origins. -/
+def haloHeaderSweepCost (V x : ℕ) : List ℕ → ℕ
+  | [] => 0
+  | y::ys => advanceHaloHeadersCost V (y-x)+haloHeaderSweepCost V y ys
+
+/-- Unary movement telescopes; only binary packet work is paid per origin. -/
+theorem haloHeaderSweepCost_le (V s x : ℕ) (ys : List ℕ)
+    (hordered : (x::ys).Pairwise (· ≤ ·)) (hx : x ≤ s)
+    (hfit : ∀ y ∈ ys, y ≤ s) :
+    haloHeaderSweepCost V x ys ≤ 12*(s-x)+ys.length*(46*V+37) := by
+  induction ys generalizing x with
+  | nil => simp [haloHeaderSweepCost]
+  | cons y ys ih =>
+    have hxy : x ≤ y := (List.pairwise_cons.mp hordered).1 y (by simp)
+    have hy : y ≤ s := hfit y (by simp)
+    have htail := ih y (List.pairwise_cons.mp hordered).2 hy
+      (fun z hz => hfit z (by simp only [List.mem_cons]; exact Or.inr hz))
+    simp only [haloHeaderSweepCost,List.length_cons,Nat.succ_mul] at *
+    unfold advanceHaloHeadersCost
+    have htel : 12*(y-x)+12*(s-y) = 12*(s-x) := by omega
+    omega
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
