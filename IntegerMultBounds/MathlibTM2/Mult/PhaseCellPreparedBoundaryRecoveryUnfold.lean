@@ -24,16 +24,7 @@ theorem preparedBoundaryRecoveryUnfold_exec {Q A s : ℕ} [NeZero s] {P U : Type
         (mk v' {F with R := (Function.update (Function.update (Function.update F.R
           238 tail) 231 []) 245
           (cstream A w ((bOrder s B).map (boundarySolutionField B solution))))}) := by
-  apply packedBoundaryRecoveryUnfold_exec (body := body) hA q w W B solution hlen tail v
-    (extendStacks (by decide) S)
-  · simpa [packedBoundaryRecoveryBase] using hbank.workspace
-  · simpa [packedBoundaryRecoveryBase] using hbank.ready
-  · simpa [extendStacks] using h143
-  · simpa [extendStacks] using hcount
-  · simpa [extendStacks] using hsrc
-  · intro i hi
-    exact (extendStacks_fresh (by decide) S i hi).1
-  · intro i hi
-    exact (extendStacks_fresh (by decide) S i hi).2
+  exact packedBoundaryRecoveryUnfold_extended_exec (body := body) hA q w W B solution hlen tail v S
+    hbank.workspace hbank.ready h143 hcount hsrc
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
