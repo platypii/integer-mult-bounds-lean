@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedNormalizedJob
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedJobTimeLedger
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorSolverSchedule
 
 /-! A fixed restoring descriptor schedule executes mathematically certified
@@ -68,7 +68,9 @@ theorem packedNormalizedJobSchedule_exec
     (hclock : (S.R clock).length = records.length) (hsaved : S.R saved = []) (hsavedClock : S.R savedClock = []) :
     let step := packedNormalizedDescriptorStep (P := P) (U := U) (A := A) work src saved count tmp spare result hR hQ
     ∃ v' n outputs, v'.user = v.user ∧
-      n ≤ (records.map (fun r => r.stepTime (U := U) work hR hQ+3)).sum+6*records.length+
+      n ≤ (records.map (fun r => takeDescriptorBankCost (placedDescriptorFields work r.words)+
+        r.setupTime+r.cleanup (U := U) hR hQ+3)).sum+
+        (records.map (fun r => r.Fs.length*r.replicaTime)).sum+6*records.length+
         2*(descriptorScheduleTape work PackedNormalizedJob.words records).length+10 ∧
       Exec body (descriptorSolverSchedule src saved tmp clock savedClock step) (mk v S) n
         (mk v' {S with R := Function.update S.R result (outputs.reverse.flatten++S.R result)}) ∧
@@ -97,6 +99,7 @@ theorem packedNormalizedJobSchedule_exec
       exact packedNormalizedJob_step_exec (body := body) r hR hQ hA work hwork
         src saved count tmp spare result hreg' hsep' vi Si tail hb hl hs hc ht hp)
     rest hblank hleft hscratch hsource hclock hsaved hsavedClock
+  rw [PackedNormalizedJob.scheduleTime_eq (U := U) work hR hQ records] at hn
   refine ⟨v',n,outputs,hu,hn,he,hgood,?_⟩
   intro C hp hb depth
   simpa only [PackedNormalizedJob.outputs_length hgood] using (ht C hp hb depth).2
