@@ -500,7 +500,19 @@ costs measured against that same stock, plus one terminating step.
 `chunkStages_shape_ready` derives every stage's positivity/common-volume
 premises once from the structural chunk schedule. Borrowed dimension masters
 for all stages are still initial inputs: generating/allocating/erasing those
-masters and connecting the loop to the packed codec remain open. The
+masters and connecting the loop to the packed codec remain open.
+`PhaseCellUnaryPowerChain` now executes the reusable dimension-bank primitive:
+from borrowed unary lengths `K,n`, a structural destination list receives
+`n*K, n*K^2, ...`. Each product reuses `unaryProduct`; both borrowed masters
+and scratch restore. The exact register-file result has a pointwise power
+lemma and an off-bank frame. Generation costs
+`4*generatedVolume + (9*K+4)*chainLength + 1`; for `K ≥ 1`, volume is at most
+`chainLength*n*K^chainLength`. Structural `clearWords` cleanup restores the
+initial bank and costs `2*generatedVolume+2*chainLength+1`. Prefix powers use
+seed one; suffix widths use the borrowed word width. This supplies generation
+and release primitives, not yet the wiring/allocation of the complete stage
+master bank or its composition around the chunk loop. The primitive checks
+at 1975.1 MiB; its narrow 3,970-job build and generation/release axiom audit pass. The
 8,174-job guarded build and expanded axiom audit pass; single-file checks
 peak at 2936.9 MiB for the loop and 2511.7 MiB for the bit-data module.
 Still required: prove regular-key cardinality and tile-capacity bounds, execute the
