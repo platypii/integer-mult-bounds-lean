@@ -1,7 +1,7 @@
 module
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCoreArchiveFromDimensions
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloGeneratedPublishedBatch
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloGeometryPublishedBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloNumericalBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedFactoryRouting
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedFactoryGeometry
@@ -297,6 +297,7 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloPublishedBatch_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloCountedPublishedBatch_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloGeneratedPublishedBatch_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloGeometryPublishedBatch_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.PackedHaloInputTrace.packed_outputs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedCore_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishPackedCore_accurate_exec,

@@ -329,9 +329,26 @@ It starts with width 252 blank and restores it after ordered publication; all
 other external publication controls/dimensions are restored as before. Both new
 endpoints check below 3.25 GiB with unchanged proof limits.
 
-Deriving the borrowed radius/core-length/replica dimensions from the generated
-geometry and outer schedule, full-line seam publication, normalized complex and
-tensor/R4 composition, and the selected time/live-stock ledgers remain open. The loop checks near 2.07 GiB
+`PhaseCellPackedHaloGeometryPublishedBatch` reuses the existing
+`prepareCoreDimensions` program to derive unary radius/core-length masters from
+an owned binary radius word on 252 and the retained binary halo length on 165.
+The latter word is transported from the original factory-entry state through
+both views. Regular-core geometry proves that its length is exactly
+`coreLength+2*radius`, so both conversion bounds follow from the existing binary
+coordinate bound; no independent unary dimensions are assumed. The radius word
+is erased before port 252 is reused for generated publication word width. After
+the complete solve/publish program, the two generated dimensions are also erased.
+The additional charges are `prepareCoreDimensionsCost V haloLength radius`,
+`2*V+2` for the owned binary word and `2*(radius+coreLength)+5` for the unary
+dimensions. The endpoint checks near 3.27 GiB with unchanged limits. Replica
+count 251 remains borrowed from the outer schedule. Port 252 is an owned input
+and returns blank; all other external ports except destination 253 are restored.
+
+The outer generated schedule still must supply this binary radius word and the
+replica count for a complete setup key. The existing generated core-group count
+counts windows, not replicas, and cannot be substituted for that count. Full-line
+seam publication, normalized complex and tensor/R4 composition, and the selected
+time/live-stock ledgers remain open. The loop checks near 2.07 GiB
 with default proof limits; broad contextual simplification was replaced by
 direct register inequalities to stay within those limits.
 The closed-batch endpoint checks near 3.24 GiB with default proof limits. This is a local
