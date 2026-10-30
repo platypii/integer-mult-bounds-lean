@@ -35,6 +35,21 @@ def fullLineCouplingResult {A : ℕ} (S : Stacks 168 A) (V band s : ℕ)
     (fullLineCouplingResult S V band s residual rhsTail).R 160 = [] := by
   simp [fullLineCouplingResult]
 
+/-- Periodic source disposal leaves the completed geometry ready for boundary selection. -/
+theorem fullLineCouplingResult_metadata {A V s t band a b : ℕ} (S : Stacks 168 A)
+    (residual rhsTail : List (Fin (A+4))) (hV : (S.R 163).length = V)
+    (hbase : ∀ k ∈ [(145 : Fin 168),146,147,149,151,155,165],
+      S.R k = binSyms V (couplingIntervalValue s t band a b 0 s k)) :
+    CouplingIntervalMetadata V s t band a b 0 s (fullLineCouplingResult S V band s residual rhsTail) := by
+  constructor
+  · simpa [fullLineCouplingResult,completedCouplingIntervalR] using hV
+  · intro k hk
+    simp only [couplingIntervalPorts,List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    all_goals first
+    | (simp [fullLineCouplingResult,completedCouplingIntervalR,couplingIntervalValue]; done)
+    | simpa [fullLineCouplingResult,completedCouplingIntervalR] using hbase _ (by simp)
+
 theorem preparedFullLineCoupling_exec (hQ : SS.states ≤ Q) {p q w inputExp s t u band a b : ℕ} {α d : ℝ} [NeZero s]
     (boundary : Bool) (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
     (hst : s < t)
@@ -71,7 +86,9 @@ theorem preparedFullLineCoupling_exec (hQ : SS.states ≤ Q) {p q w inputExp s t
           transferCountedLineCost (couplingCoefficientPageInterval (2^15*p) q s t u band a b 0 s).length w))))) + (28*s*w+36*s+11*V+26)))) ∧
       Exec body (.seq (.seq prepareFullLineRibbon (completedGatheredFeedCouplingInterval hQ boundary)) (uclear 160)) (mk v S) m
         (mk v' (fullLineCouplingResult S V band s
-          (cstream A w (packedInterval 0 s (guardedCouplingRowField (2^15*p) q t u band a b boundary C B))) rhsTail)) := by
+          (cstream A w (packedInterval 0 s (guardedCouplingRowField (2^15*p) q t u band a b boundary C B))) rhsTail)) ∧
+      CouplingIntervalMetadata V s t band a b 0 s (fullLineCouplingResult S V band s
+        (cstream A w (packedInterval 0 s (guardedCouplingRowField (2^15*p) q t u band a b boundary C B))) rhsTail) := by
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁,hr⟩ := prepareFullLineRibbon_exec (body := body) C band w hbandS v S
     hsource hclean raw hready
   let K := fullLineRibbonBank C band w S
@@ -100,7 +117,7 @@ theorem preparedFullLineCoupling_exec (hQ : SS.states ≤ Q) {p q w inputExp s t
   have hlen : (G.R 160).length = (s+2*band)*w := by
     simp [G,fullLineRibbonBank,completedCouplingIntervalR,length_cstream,rawCouplingRibbon_fullLine,
       IntegerMultBounds.NLogN.PhaseCellMatrix.cyclicPaddedLine]
-  refine ⟨v₃,(n₁+n₂)+(2*(G.R 160).length+2),hu₃.trans (hu₂.trans hu₁),?_,?_⟩
+  refine ⟨v₃,(n₁+n₂)+(2*(G.R 160).length+2),hu₃.trans (hu₂.trans hu₁),?_,?_,?_⟩
   · rw [hlen]
     omega
   · have he : Exec body (.seq prepareFullLineRibbon (completedGatheredFeedCouplingInterval hQ boundary))
@@ -112,5 +129,6 @@ theorem preparedFullLineCoupling_exec (hQ : SS.states ≤ Q) {p q w inputExp s t
     funext k
     simp only [G,fullLineCouplingResult,fullLineRibbonBank,completedCouplingIntervalR,Function.update_apply]
     split_ifs <;> subst_vars <;> rfl
+  · exact fullLineCouplingResult_metadata S _ _ hV hbase
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
