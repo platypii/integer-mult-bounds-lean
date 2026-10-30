@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedPreparedReleaseReady
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloPreparedBoundaryExtended
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryRecoveryBuffers
 
@@ -87,7 +89,10 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
       F.R 132 = cstream A w (packedInterval a (b-a) D)++outputTail ∧
       PhaseCellInterface.ErrorOn (haloVertices s a b)
         (fun i => (packedIntervalRead q w a (F.R 132) i).re) y (1/(2 : ℝ)^finalTarget) ∧
-      PackedPreparedBank q w W B.card (embStk packedBoundaryRecoveryBase F) := by
+      PackedPreparedBank q w W B.card (embStk packedBoundaryRecoveryBase F) ∧
+      PackedPreparedReleaseReady V (b-a) w (2*band+1)
+        (couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a))
+        (cstream A w (packedInterval a (b-a) C)) tail F := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages hboundary y hy hcoeff
   let band := PhaseCellBand.width p u
@@ -172,6 +177,38 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
       hcoeff hwide hfitV (by simpa only [hq] using hVeq)
       (by simpa only [hw] using hwV) hcoords (by simpa only [hw] using hunits)
       (by rw [hruntime]; exact hgeometryFinal)
-  exact ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,⟨hready₂,hwork₂⟩⟩
+  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,⟨hready₂,hwork₂⟩,?_⟩
+  constructor
+  · simp only [length_cstream,packedInterval_length C (by omega : a+(b-a) ≤ s)]
+  · exact hsource
+  · rw [hretained 165 (by decide)]
+    change (embStk packedHaloRuntimeReg F₁).R 165 = _
+    exact hgeometryFinal.count
+  · exact hready₂.ready.wn
+  · rw [hretained 130 (by decide)]
+    simpa [G,extendStacks] using hbuffers.width
+  · rw [h139']
+    change ((embStk packedBoundaryRecoveryBase G).R 139).length = _
+    rw [show embStk packedBoundaryRecoveryBase G = F₁ by simp [G,packedBoundaryRecoveryBase]]
+    simpa only [List.length_replicate] using congrArg List.length hbuffers.pageCount
+  · rw [hretained 140 (by decide)]
+    change ((embStk packedBoundaryRecoveryBase G).R 140).length = _
+    rw [show embStk packedBoundaryRecoveryBase G = F₁ by simp [G,packedBoundaryRecoveryBase]]
+    rw [hbuffers.rowCount]; simp
+  · rw [hretained 138 (by decide)]
+    exact hbuffers.page
+  · intro i hi
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+    rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact hnative₂ 0 (by decide) (by decide)
+    · exact hnative₂ 1 (by decide) (by decide)
+    · exact hnative₂ 2 (by decide) (by decide)
+    · exact hnative₂ 104 (by decide) (by decide)
+    · exact hnative₂ 105 (by decide) (by decide)
+    · exact hnative₂ 109 (by decide) (by decide)
+    · exact (hprivate₂ 246 (by decide)).2
+    · exact (hprivate₂ 247 (by decide)).2
+    · exact (hprivate₂ 242 (by decide)).2
+    · exact (hprivate₂ 243 (by decide)).2
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
