@@ -56,6 +56,24 @@ theorem mn_setup_exec_within_stock {body : P → Prog P Γ σ} {p q : Prog P Γ 
   · intro d z hz
     nlinarith only [hz,hfinal]
 
+/-- Append bounded release work to a live certificate while retaining the
+single persistent-data charge. -/
+theorem mn_release_exec_within_stock {body : P → Prog P Γ σ} {p q : Prog P Γ σ}
+    {s t u : Store Γ σ} {m n work persistent release C depth : ℕ}
+    (hwork : ExecWithin body (fun d z => mnSize z+d ≤ mnSize s+persistent+depth+(C+1)*work)
+      depth p s m t)
+    (he : Exec body q t n u) (hn : n ≤ release)
+    (hq : mnProgPush q ≤ C) (hb : ∀ f, mnProgPush (body f) ≤ C) :
+    ExecWithin body (fun d z => mnSize z+d ≤ mnSize s+persistent+depth+(C+1)*(work+release))
+      depth (.seq p q) s (m+n) u := by
+  have hfinal := hwork.final
+  refine .seq (hwork.mono ?_) ?_
+  · intro d z hz
+    nlinarith only [hz]
+  · apply mn_exec_within he hq hb depth
+    have hm := Nat.mul_le_mul_left (C+1) hn
+    nlinarith only [hfinal,hm]
+
 /-- Setup, live work and release share one stock budget. No middle-phase time
 bound is substituted for its already proved resource certificate. -/
 theorem mn_lifecycle_exec_within {body : P → Prog P Γ σ} {p q r : Prog P Γ σ}
