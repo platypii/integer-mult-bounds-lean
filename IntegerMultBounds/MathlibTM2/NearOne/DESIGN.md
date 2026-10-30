@@ -2332,6 +2332,23 @@ setup reuse and the remaining global S4 obligations.
 Verification: the guarded single-file check peaked at 1407.8 MiB. The
 14,974-job integration build and approved-axiom audit passed.
 
+### Consume ordered origins while advancing coordinate headers (2026-10-29)
+
+`advanceHaloHeaders` now takes the next fixed-width binary origin from its
+queue, advances both retained unary endpoint stacks using `advanceHaloMasters`,
+replaces the old retained binary origin and consumes one unary group-count tick.
+Its generic poststate changes exactly those five registers and restores every
+temporary stack, preserving arbitrary queue/count suffixes and endpoint contents.
+The bound is `12*(next-old)+46*V+37`; absolute unary origins are never rebuilt.
+Two uses of the existing `takePrefix` preserve the binary packet order.
+
+This is the executable cursor/header step for successive generated cores. It
+still needs placement into the gathered-core ABI and propagation of the updated
+interval metadata. Next-call setup readiness, factor/setup reuse, the full loop
+and the remaining global S4 obligations are still open.
+Verification: the guarded module check passed without warnings at 1961.2 MiB
+peak RSS. The 14,975-job integration build and approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
