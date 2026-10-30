@@ -5,6 +5,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPeriodicRetainedRhs
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPeriodicRawFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryRhsInput
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPeriodicRecoveryInputBank
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryMagnitude
 
 /-! Retain the RHS, execute the periodic boundary solve and publication, then
 restore the original RHS for recovery and release the consumed count and mask. -/
@@ -73,7 +74,8 @@ theorem retainedPeriodicRecoveryInputs_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
           (embStk (Fin.castLE (by decide : 117 ≤ 248)) D) ∧
       PeriodicProducerInput p q w t u band 0 s V C R [] rhsTail
         (cstream A w (packedInterval 0 s R)++S.R 110)
-        (embStk (Fin.castLE (by decide : 168 ≤ 242)) T) := by
+        (embStk (Fin.castLE (by decide : 168 ≤ 242)) T) ∧
+      ∀ i, ‖value q (boundarySolutionField B solution i)‖ ≤ (2 : ℝ)^(q+6) := by
   dsimp only
   intro hcolumns hcount hR hC v S rhsTail hbetween hband hwide hfitV hsource hrhs h160 hpages
   let bits := boundaryTableBits p target 2 B.card
@@ -161,14 +163,19 @@ theorem retainedPeriodicRecoveryInputs_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ 
     (cstream A w (packedInterval 0 s (boundarySolutionField B solution))) words (words++S.R 110)
   refine ⟨v₄,n₁+(n₃+n₄),hu₄.trans (hu₃.trans (hu₂.trans hu₁)),
     Nat.add_le_add hn₁ (Nat.add_le_add hn₃ hn₄),
-    (Exec.seq he₂ (Exec.seq he₃ he₄)).cast rfl (congrArg (mk v₄) hfinal),?_,hinT⟩
-  change RetainedCouplingReady (2^15*p) q w s t u band 0 s (words++S.R 110)
-    (embStk (Fin.castLE (by decide : 117 ≤ 248))
-      (periodicRecoveryInputBank F words (words++S.R 110)
-        (cstream A w (packedInterval 0 s (boundarySolutionField B solution)))))
-  exact periodicRecoveryInputBank_ready T V
-    (guardedCouplingRowField (2^15*p) q t u band 0 s false C R)
-    (couplingRowField (2^15*p) q t u band 0 s false C R) rhsTail words (words++S.R 110)
-    (cstream A w (packedInterval 0 s (boundarySolutionField B solution))) (S₀.R 110) hinT.hready
+    (Exec.seq he₂ (Exec.seq he₃ he₄)).cast rfl (congrArg (mk v₄) hfinal),?_,hinT,?_⟩
+  · change RetainedCouplingReady (2^15*p) q w s t u band 0 s (words++S.R 110)
+      (embStk (Fin.castLE (by decide : 117 ≤ 248))
+        (periodicRecoveryInputBank F words (words++S.R 110)
+          (cstream A w (packedInterval 0 s (boundarySolutionField B solution)))))
+    exact periodicRecoveryInputBank_ready T V
+      (guardedCouplingRowField (2^15*p) q t u band 0 s false C R)
+      (couplingRowField (2^15*p) q t u band 0 s false C R) rhsTail words (words++S.R 110)
+      (cstream A w (packedInterval 0 s (boundarySolutionField B solution))) (S₀.R 110) hinT.hready
+  · apply boundarySolutionField_allocated_magnitude A p u l target 2 B W columns hp (by omega)
+      hcolumns rhs (by simp [rhs,bFoldOrder_length])
+    dsimp only [rhs,q,bits]
+    rw [hBset] at hR hC ⊢
+    exact couplingRowField_boundaryFold_bounds (by omega) hst hαu hθ hgap hbudget C R hcount hR hC
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
