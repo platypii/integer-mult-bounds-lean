@@ -94,4 +94,36 @@ theorem loadBinaryHeaders_exec {rg : TblR n → Fin T} (hrg : Function.Injective
     intro k hks hk
     exact (hf₂ k hks hk).trans (hf₁ k hks hk)
 
+theorem loadedBinaryState_val_off (rs : List (Fin n × ℕ)) (st : TblSt n A) (i : Fin n)
+    (hoff : ∀ r ∈ rs, r.1 ≠ i) : (loadedBinaryState rs st).val i = st.val i := by
+  induction rs generalizing st with
+  | nil => rfl
+  | cons r rs ih =>
+    change (loadedBinaryState rs ⟨Function.update st.val r.1 r.2,st.acc⟩).val i = st.val i
+    rw [ih _ (by intro r hr; exact hoff r (List.mem_cons_of_mem _ hr))]
+    exact Function.update_of_ne (hoff r (by simp)).symm _ _
+
+/-- Distinct header assignments retain the value just loaded at every key. -/
+theorem loadedBinaryState_val_of_mem (rs : List (Fin n × ℕ)) (hnd : (rs.map Prod.fst).Nodup)
+    (st : TblSt n A) (i : Fin n) (x : ℕ) (hmem : (i,x) ∈ rs) :
+    (loadedBinaryState rs st).val i = x := by
+  induction rs generalizing st with
+  | nil => simp at hmem
+  | cons r rs ih =>
+    have hd := List.nodup_cons.mp hnd
+    rcases List.mem_cons.mp hmem with hr | hmem
+    · subst r
+      change (loadedBinaryState rs ⟨Function.update st.val i x,st.acc⟩).val i = x
+      rw [loadedBinaryState_val_off rs _ i (by
+        intro r hr he
+        exact hd.1 (List.mem_map.mpr ⟨r,hr,he⟩))]
+      exact Function.update_self ..
+    · exact ih hd.2 _ hmem
+
+theorem loadedBinaryState_acc (rs : List (Fin n × ℕ)) (st : TblSt n A) :
+    (loadedBinaryState rs st).acc = st.acc := by
+  induction rs generalizing st with
+  | nil => rfl
+  | cons r rs ih => exact ih _
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

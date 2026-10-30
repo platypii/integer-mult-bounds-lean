@@ -5870,6 +5870,31 @@ ordinary scalar bank and retained core/input-row dimensions still need execution
 at the concrete numerical/complex caller. That integration, selected time/stock
 and the full global schedule remain open. S4 is incomplete.
 
+### S4 ordinary scalar inputs start from blank variable words (2026-10-30)
+
+`PhaseCellZeroWordBank.zeroWordBank_exec` initializes an arbitrary distinct word
+list structurally from a borrowed width. `PhaseCellInitializeScalarBank` applies
+it to the table variables, establishing the zero table view from blank physical
+stacks, then uses the existing binary-header loader to consume actual parameter
+words. The initial encoded table view is no longer a premise for this installer.
+Generic `loadedBinaryState` lookup/frame/accumulator laws connect those executed
+assignments to their values without enumerating payloads or machine registers.
+
+`PhaseCellInstallInverseParameters.installInverseParameters_exec` consumes the
+eight ordinary p/u/log/target/period/endpoint words and establishes their exact
+scalar values, zero private variables, empty accumulator and fits. The actual
+parameter packet's suffix and all non-table stacks except that source restore.
+Its bill is `164*B+166`. `PhaseCellReleaseScalarBank.releaseScalarBank_exec` erases
+the allocated variable words after the scalar values have been restored; the
+borrowed width and non-table stacks remain intact. For 25 variables its bill is
+`50*B+51`. Both charges are once per key, independent of replica count.
+The independent scalar-input audit covers allocation, loading, state semantics
+and disposal with a narrow import closure. Checked modules remain below 2 GiB
+under default proof limits. Sequencing this installation/disposal around the
+prepared packed normalizer, generating its parameter packet and retained row
+dimensions at the numerical/complex caller, and the selected/global S4 gates
+remain open. S4 is incomplete.
+
 ### S4 local normalization preserves later keys (2026-10-30)
 
 `PhaseCellPackedRoundAccuracy.packedIntervalRead_finalRound` identifies the
