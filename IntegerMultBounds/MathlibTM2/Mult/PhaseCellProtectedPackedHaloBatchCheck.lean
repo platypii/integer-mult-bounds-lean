@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBatchTrace
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBatchStock
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloStepStock
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyBatchCost
@@ -9,6 +10,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyNormalizedBatch
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBatch_exec_trace,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBatch_projected_stock_le,
       `IntegerMultBounds.MathlibTM2.Host.projected_stock_le_shrinking_counter,
       `IntegerMultBounds.MathlibTM2.Host.projected_stock_le,
