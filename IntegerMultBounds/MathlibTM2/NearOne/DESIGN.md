@@ -256,9 +256,24 @@ composes the actual factory, arbitrary counted numerical batch and final disposa
 Its execution theorem charges each shared setup/disposal once, restores the raw
 table suffix, empties every owned factor register and the replica counter,
 consumes the RHS queue and preserves the exact output archive length and all
-per-input accuracy certificates. The final output archive equals that at the
-end of the certified numerical trace; disposal does not alter those outputs.
-The endpoint checks near 3.24 GiB with default proof limits. This is a local
+per-input accuracy certificates. The endpoint now exposes an ordered list of actual numerical outputs,
+with `List.Forall₂` relating each input to its halo error certificate. The physical
+archive is exactly the reverse list of encoded halo blocks above the original
+suffix; word order inside each block is preserved. The structural
+`PackedHaloInputTrace.outputs` theorem proves this once for arbitrary result
+relations. Its packed specialization removes archived suffixes from each error
+statement using equality of the decoded words, with no representability premise.
+Disposal preserves the actual output archive.
+
+`PhaseCellPackedCoreAccuracy.packedCore_error` transports these decoded halo
+certificates to any contained owned core with arbitrary publication suffixes.
+`publishPackedCore_accurate_exec` joins that fact to the actual restoring packed
+slice program: its exact destination prefix has the same error bound and the
+cost traverses only halo padding and core words. It still requires generated
+slice controls and a source cursor. Iterating publication over the reversed
+output archive, retiring consumed halos, and restoring the required output
+order remain to be executed.
+The closed-batch endpoint checks near 3.24 GiB with default proof limits. This is a local
 fixed-key lifecycle theorem; it does not provide a peak-live-stock bound or the
 full generated S4 schedule.
 
