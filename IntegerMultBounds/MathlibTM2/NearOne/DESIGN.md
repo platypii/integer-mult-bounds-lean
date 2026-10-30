@@ -730,6 +730,19 @@ supporting the periodic cut (or a proved cyclic transport to a proper interval).
 The existing slice publication and its exceptional traversal bound remain usable
 once an actual seam solver supplies their source. S4 seam execution is open.
 
+The concrete dependency audit reaches
+`PhaseCellPackedHaloResidual.preparedSharedLocalFeedCouplingInterval_exec`:
+`hsep` is passed into actual residual row generation, not used only for crop
+metadata. The same restriction occurs in boundary setup and packed solve
+accuracy. Removing it from the job record alone cannot yield a full-system
+execution. Also, `PhaseCellMatrix.matrix` evaluates coefficient entries at
+`j.val` and `j.val+k`; cyclic translation is not an available matrix symmetry.
+A shifted-window approach must transport the actual rounded coefficient matrix,
+its cell partition and period cuts, as well as RHS and publication coordinates.
+The next seam implementation must therefore start at coupling-row execution and
+its periodic-cut semantics, before adding further job or schedule interfaces.
+
+
 | Order | Deliverable | Reuse and decisive acceptance check |
 | --- | --- | --- |
 | 1 | Packed halo input/output for S3 | Factor the current dispatcher's loading and storage interface from its arithmetic proof. Retain ambient coordinates for coefficients and cuts, but store only halo words. Prove agreement with the existing principal solve by restriction and index transport. An interval call must neither load nor return `s` words merely because its ambient period is `s`. |
