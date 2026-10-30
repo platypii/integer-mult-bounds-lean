@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingMasterHeaders
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedBoundaryAccuracy
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedPackedHaloRealBoundaryData
@@ -130,7 +131,9 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
         ∀ y : ZMod s → ℝ, SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) y
           (fun k => (value q (C k)).re) →
           ∀ i < B.card, ‖value q (ys.getD i 0)-(y (bFoldAt s B i) : ℂ)‖ ≤ 3/(2 : ℝ)^boundaryTarget ∧
-            ‖value q (ys.getD i 0)‖ ≤ (2 : ℝ)^stableInteriorExponent p rhsExp) := by
+            ‖value q (ys.getD i 0)‖ ≤ (2 : ℝ)^stableInteriorExponent p rhsExp) ∧
+      CouplingMasterHeaders (2^15*p) q w s t u band a b (embStk packedHaloRuntimeReg F) ∧
+      (F.R 118).length = executionStagePrecision p l target rhsExp+1 ∧ (F.R 120).length = l := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages
   have hθpos : 0 < (t : ℝ)/s-1 := lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ
@@ -159,7 +162,7 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
     (12*PhaseCellBand.width p u+1) columns hp a b target hst hαu hθpos hgap hbudget hdom
     hcolumns C D x hC' hx' haccuracy v₁ T (hbankCarry _ _ _ _ hbank) hfold
     (hpagesCarry _ _ _ hpages)
-  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_,?_⟩
+  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_,?_,?_,?_,?_⟩
   · exact (hbankCarry _ _ _ _ hbank).publish _
   · exact (hpagesCarry _ _ _ hpages).publish _
   · intro k hk hne
@@ -178,5 +181,38 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       (SchurDominance.dominates_mono _ Finset.univ _ _ (Finset.subset_univ _) hdom)
       (fun k => (value _ (C k)).re)
     exact ⟨(hsemantic y hy).1,(hsemantic y hy).2.1,fun y hy => (hsemantic y hy).2.2⟩
+  · constructor
+    · change ((embStk packedHaloRuntimeReg T).R 117).length = 2^15*p
+      rw [(hframe 117 (by decide) (by decide) (by decide)).2]
+      simpa [packedHeaderReg,groupHeaderValue,hq] using hmasters (117,114) (by decide)
+    · change ((embStk packedHaloRuntimeReg T).R 119).length = _
+      rw [(hframe 119 (by decide) (by decide) (by decide)).2]
+      simpa [packedHeaderReg,groupHeaderValue,hq] using hmasters (119,112) (by decide)
+    · change ((embStk packedHaloRuntimeReg T).R 121).length = s
+      rw [(hframe 121 (by decide) (by decide) (by decide)).2]
+      simpa [packedHeaderReg,groupHeaderValue,hq] using hmasters (121,97) (by decide)
+    · change ((embStk packedHaloRuntimeReg T).R 122).length = t
+      rw [(hframe 122 (by decide) (by decide) (by decide)).2]
+      simpa [packedHeaderReg,groupHeaderValue,hq] using hmasters (122,98) (by decide)
+    · change ((embStk packedHaloRuntimeReg T).R 123).length = u
+      rw [(hframe 123 (by decide) (by decide) (by decide)).2]
+      simpa [packedHeaderReg,groupHeaderValue,hq] using hmasters (123,99) (by decide)
+    · change ((embStk packedHaloRuntimeReg T).R 124).length = PhaseCellBand.width p u
+      rw [(hframe 124 (by decide) (by decide) (by decide)).2]
+      simpa [packedHeaderReg,groupHeaderValue,hq] using hmasters (124,100) (by decide)
+    · change ((embStk packedHaloRuntimeReg T).R 141).length = _
+      rw [(hframe 141 (by decide) (by decide) (by decide)).2]
+      exact ha
+    · change ((embStk packedHaloRuntimeReg T).R 142).length = _
+      rw [(hframe 142 (by decide) (by decide) (by decide)).2]
+      exact hb'
+    · change ((embStk packedHaloRuntimeReg T).R 130).length = _
+      simpa only [hw] using hword
+  · change ((embStk packedHaloRuntimeReg T).R 118).length = _
+    rw [(hframe 118 (by decide) (by decide) (by decide)).2]
+    simpa [packedHeaderReg,groupHeaderValue] using hmasters (118,101) (by decide)
+  · change ((embStk packedHaloRuntimeReg T).R 120).length = _
+    rw [(hframe 120 (by decide) (by decide) (by decide)).2]
+    simpa [packedHeaderReg,groupHeaderValue] using hmasters (120,109) (by decide)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

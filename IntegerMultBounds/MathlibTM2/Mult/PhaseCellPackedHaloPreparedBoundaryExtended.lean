@@ -121,18 +121,20 @@ theorem packedHaloPreparedBoundary_extended_exec (hbody : ∀ f, body' f = embPr
           (fun k => (value q (C k)).re) →
           ∀ i < B.card, ‖value q (ys.getD i 0)-(y (bFoldAt s B i) : ℂ)‖ ≤ 3/(2 : ℝ)^boundaryTarget ∧
             ‖value q (ys.getD i 0)‖ ≤ (2 : ℝ)^stableInteriorExponent p rhsExp) ∧
+      CouplingMasterHeaders (2^15*p) q w s t u band a b (embStk packedHaloRuntimeReg F) ∧
+      (F.R 118).length = executionStagePrecision p l target rhsExp+1 ∧ (F.R 120).length = l ∧
       (∀ k : Fin 248, 242 ≤ k.val →
         (extendStacks (by decide) F).L k = [] ∧ (extendStacks (by decide) F).R k = []) := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages
-  obtain ⟨v₁,T,n,D,hu,hn,he,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy⟩ :=
+  obtain ⟨v₁,T,n,D,hu,hn,he,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel⟩ :=
     packedHaloPreparedBoundary_exec (body := body) hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail
       (embDn packedBoundaryRecoveryBase v) S hnative hmasters ha hb' hmeta h157 houtput hE hfresh
       haLt hfitV h139 h143 hleft hsep h158 h167 hrange hdom hq x hx
       columns hcolumns hcell htable hbank hpages
   obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_extendStacks (by decide : 242 ≤ 248) hbody he v rfl
-  exact ⟨v₂,T,n,D,hu₂.trans hu,hn,he₂,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,
+  exact ⟨v₂,T,n,D,hu₂.trans hu,hn,he₂,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel,
     fun k hk => extendStacks_fresh (by decide) _ k hk⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
