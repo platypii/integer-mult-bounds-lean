@@ -15,6 +15,19 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
 def haloRetainedHeaderPorts : List (Fin 168) :=
   couplingMasterPorts++[118,120,163]++couplingIntervalPorts
 
+/-- Auxiliary low registers whose frame must be supplied separately from
+native scratch, retained headers, the archive and the bounded binary cursor. -/
+def haloAuxiliaryPorts : List (Fin 168) := [126,137,144,150,152,159,160,161,162]
+
+theorem haloLowRegister_cases (k : Fin 168) :
+    k.val < 117 ∨ k ∈ haloRetainedHeaderPorts ∨
+      k ∈ ([125,127,128,129,130,131,133,134,135,136,138,139,140,143,153,158,166,167] : List (Fin 168)) ∨
+      k = 132 ∨ k = 157 ∨ k ∈ haloAuxiliaryPorts := by
+  have hk := k.isLt
+  simp only [haloRetainedHeaderPorts,couplingMasterPorts,couplingIntervalPorts,haloAuxiliaryPorts,
+    List.mem_append,List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff]
+  omega
+
 def packedRecoveryRetainedPorts : List (Fin 248) :=
   [125,128,130,138,140,157]++haloRetainedHeaderPorts.map (Fin.castLE (by decide))
 
