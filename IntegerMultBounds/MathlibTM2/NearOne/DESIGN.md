@@ -5919,3 +5919,26 @@ Publication/count modules check near 2.1 GiB, width generation near 1.4 GiB and
 the accuracy module near 3.1 GiB, with default proof limits. Sequencing the
 numerical/complex/normalization/publication stages, scalar-bank initialization,
 selected resource bounds and the complete schedule remain open. S4 is incomplete.
+
+### S4 executed normalization through the common router format (2026-10-30)
+
+`PhaseCellPublishRoundedBatch.publishRoundedBatch_exec` instantiates generated
+common-width publication on the actual rounded field list. It derives every
+signed fit from the original decoded certificate, target norm bound and interval
+coverage, then proves normalized accuracy at the common width. No fit or
+common-width accuracy certificate is supplied by the caller.
+`PhaseCellNormalizePackedBatch.normalizePackedBatch_exec` sequences actual
+counted rounding and this publication, reusing cleared rounding ports for the
+publication word width, row width and width difference. It consumes the original
+numerical packet stream and returns the same ordered normalized fields at W,
+with their unchanged replica count and explicit scaled/rounded error bound.
+The source's later-key suffix, borrowed precision/width/replica/core-row/input-row
+dimensions, scalar bank and scratch restore. All private counts and widths are
+generated and erased. The bill is exactly the sum of the existing counted-round
+and generated-publication bounds, without an ambient or suffix-length term.
+Both new modules check below 3.2 GiB with default proof limits; the extended
+local-rounding audit covers the composed execution and its accuracy.
+The initial rounding scalar bank and borrowed core/input-row dimensions still
+need generation at the concrete numerical/complex caller. Connecting that caller
+to this normalized operation, selected resource bounds and the global schedule
+remain open. S4 is incomplete.
