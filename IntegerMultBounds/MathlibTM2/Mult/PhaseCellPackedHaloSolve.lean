@@ -68,8 +68,7 @@ noncomputable def packedHaloPreparedInputCost (p u l target rhsExp s t a b V : â
     (boundaryTableBits p targetB rhsExp B.card) 2) 2
   let w := executionWidth p l (initialSchurTarget p u
     (boundaryTableBits p targetB rhsExp B.card) 2) 2
-  packedHaloRealBoundaryDataCost p l s t u j rhsExp a b V+
-    preparedResidualSolveCost q w B.card (12*band+1)+
+  packedHaloPreparedBoundaryCost p u l j targetB rhsExp s t a b V+
     packedBoundaryRecoveryCost p u l target rhsExp s t a b V q w+
     packedRecoveryReleaseCost
       (couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a)).length (2*band+1) w+
@@ -103,7 +102,7 @@ theorem packedHaloPreparedInputCost_accounting (freshGeometry : Bool)
       packedHaloSetupReleaseCost freshGeometry p u l target rhsExp s t a b V =
     packedHaloSolveUsingCost freshGeometry p u l target rhsExp s t a b V+
       packedInputAdvanceCost V (b-a) w+(2*w+3) := by
-  dsimp only [packedHaloPreparedInputCost,packedHaloSetupReleaseCost,packedHaloSolveUsingCost]
+  dsimp only [packedHaloPreparedInputCost,packedHaloPreparedBoundaryCost,packedHaloSetupReleaseCost,packedHaloSolveUsingCost]
   omega
 
 /-- The original first-entry program initializes geometry. -/

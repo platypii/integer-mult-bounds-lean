@@ -25,6 +25,17 @@ variable {Q A : ℕ} {P U : Type} {body : P → Pr P 242 Q A U}
 noncomputable def packedHaloPreparedBoundary (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 242 Q A U :=
   .seq (placedPackedHaloRealBoundaryData hR hQ) (packedPreparedResidualSolve hQ)
 
+/-- Actual RHS-production and prepared boundary-solve charge. -/
+noncomputable def packedHaloPreparedBoundaryCost
+    (p u l target boundaryTarget rhsExp s t a b V : ℕ) [NeZero s] : ℕ :=
+  let band := PhaseCellBand.width p u
+  let B := haloBoundary s t band a b
+  let bits := boundaryTableBits p boundaryTarget rhsExp B.card
+  let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+  let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+  packedHaloRealBoundaryDataCost p l s t u target rhsExp a b V+
+    preparedResidualSolveCost q w B.card (12*band+1)
+
 theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {l s t p u target rhsExp a b V boundaryTarget : ℕ} [NeZero s] {α d : ℝ}
     (hp : 2 ≤ p) (hα : 0 < α) (hwidth : 8*p ≤ 2^u) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))
@@ -92,8 +103,7 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       let output := cstream A w ys
       let F := {T with R := Function.update (Function.update T.R 143 []) 238 (output++T.R 238)}
       v'.user = v.user ∧
-      m ≤ packedHaloRealBoundaryDataCost p l s t u target rhsExp a b V+
-        preparedResidualSolveCost q w B.card W ∧
+      m ≤ packedHaloPreparedBoundaryCost p u l target boundaryTarget rhsExp s t a b V ∧
       Exec body (packedHaloPreparedBoundary hR hQ)
         (mk v S) m (mk v' F) ∧
       PackedPreparedBank q w W B.card F ∧

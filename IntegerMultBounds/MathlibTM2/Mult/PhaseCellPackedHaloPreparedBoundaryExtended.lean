@@ -81,8 +81,7 @@ theorem packedHaloPreparedBoundary_extended_exec (hbody : ∀ f, body' f = embPr
       let output := cstream A w ys
       let F := {T with R := Function.update (Function.update T.R 143 []) 238 (output++T.R 238)}
       v'.user = v.user ∧
-      m ≤ packedHaloRealBoundaryDataCost p l s t u target rhsExp a b V+
-        preparedResidualSolveCost q w B.card W ∧
+      m ≤ packedHaloPreparedBoundaryCost p u l target boundaryTarget rhsExp s t a b V ∧
       Exec body' (embProg packedBoundaryRecoveryBase id
         (packedHaloPreparedBoundary hR hQ))
         (mk v (extendStacks (by decide) S)) m (mk v' (extendStacks (by decide) F)) ∧
