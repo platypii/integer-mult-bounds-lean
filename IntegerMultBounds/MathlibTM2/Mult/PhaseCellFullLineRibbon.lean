@@ -38,6 +38,36 @@ theorem padCouplingSource_fullRibbon_exec {s : ℕ} [NeZero s] (F : ZMod s → G
     padCouplingSource_exec (body := body) F band w hb tail v S hs hband hw hsrc
       h107 h108 h109 h115 h116 h104 h105 h106
 
+set_option autoImplicit false in
+theorem padCouplingSource_fullRibbon168_exec {s Q A : ℕ} {P U : Type}
+    {body : P → Pr P 168 Q A U} [NeZero s] (F : ZMod s → GaussianInt)
+    (band w : ℕ) (hb : band ≤ s) (tail : List (Fin (A+4)))
+    (v : HS 168 Q A U) (S : Stacks 168 A)
+    (hs : (S.R 97).length = s) (hband : (S.R 100).length = band) (hw : (S.R 94).length = w)
+    (hsrc : S.R 141 = cstream A w (chirpLine s F)++tail)
+    (h107 : S.R 107 = []) (h108 : S.R 108 = []) (h109 : S.R 109 = [])
+    (h115 : S.R 115 = []) (h116 : S.R 116 = [])
+    (h104 : S.R 104 = []) (h105 : S.R 105 = []) (h106 : S.R 106 = []) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ padCouplingSourceCost s band w ∧
+      Exec body (embProg (Fin.castLE (by decide : 144 ≤ 168)) Empty.elim
+        (padCouplingSource (P := Empty))) (mk v S) m
+        (mk v' {S with R := Function.update S.R 141 (cstream A w (rawCouplingRibbon band 0 s F)++tail)}) := by
+  let e : Fin 144 → Fin 168 := Fin.castLE (by decide)
+  have hinj : Function.Injective e := by intro i j h; apply Fin.ext; exact congrArg (fun k : Fin 168 => k.val) h
+  obtain ⟨vi,n,hu,hn,he⟩ := padCouplingSource_fullRibbon_exec
+    (body := fun f : Empty => nomatch f) F band w hb tail (embDn e v) (embStk e S)
+    hs hband hw hsrc h107 h108 h109 h115 h116 h104 h105 h106
+  obtain ⟨v',hv,hu',he'⟩ := exec_emb_ovr (body' := body) (ι := Empty.elim)
+    hinj (fun f => nomatch f) he v rfl S rfl
+  refine ⟨v',n,hu'.trans hu,hn,?_⟩
+  have hf : embOvr e ({embStk e S with R := (Function.update (embStk e S).R 141
+      (cstream A w (rawCouplingRibbon band 0 s F)++tail))} : Stacks 144 A).get S =
+      {S with R := Function.update S.R 141 (cstream A w (rawCouplingRibbon band 0 s F)++tail)} := by
+    rw [embOvr_updR hinj,embOvr_stk]
+    rfl
+  rw [hf] at he'
+  exact he'
+
 /-- Two transfers preserve ribbon order while freeing the masked-output port. -/
 theorem moveFullLineRibbon_exec {Q A s precision q t u a b : ℕ} [NeZero s] {P U : Type}
     {body : P → Pr P 168 Q A U} (F : ZMod s → GaussianInt) (band w : ℕ)
