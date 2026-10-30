@@ -113,7 +113,7 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   let W := 12*band+1
-  obtain ⟨xI,hxI,v₁,T,n₁,D₁,hu₁,hn₁,he₁,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel,hnativeFinal,hcleanFinal,hgeometryFinal,hsolutionTail,hbuffers,hprivate⟩ :=
+  obtain ⟨xI,hxI,v₁,T,n₁,D₁,hu₁,hn₁,he₁,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel,hnativeFinal,hcleanFinal,hgeometryFinal,hsolutionTail,hbuffers,hprivate,hinputFinal,houtputFinal⟩ :=
     packedHaloPreparedBoundary_extended_exec (body := body) (body' := body') hbody hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail
       v S hnative hmasters ha hb' hmeta h157 houtput hE hfresh haLt hfitV h139 h143 hleft

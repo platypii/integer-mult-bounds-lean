@@ -124,7 +124,8 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       (∀ k ∈ ([127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧
       CouplingIntervalMetadata V s t band a b a (b-a) (embStk packedHaloRuntimeReg F) ∧
       T.R 238 = S.R 238 ∧
-      PackedHaloRecoveryBuffers p s t u a b q w C D tail outputTail F := by
+      PackedHaloRecoveryBuffers p s t u a b q w C D tail outputTail F ∧
+      F.inp = S.inp ∧ F.out = S.out := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages
   have hθpos : 0 < (t : ℝ)/s-1 := lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ
@@ -153,7 +154,7 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
     (12*PhaseCellBand.width p u+1) columns hp a b target hst hαu hθpos hgap hbudget hdom
     hcolumns C D x hC' hx' haccuracy v₁ T (hbankCarry _ _ _ _ hbank) hfold
     (hpagesCarry _ _ _ hpages)
-  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · exact (hbankCarry _ _ _ _ hbank).publish _
   · exact (hpagesCarry _ _ _ hpages).publish _
   · intro k hk hne
@@ -252,5 +253,8 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> rfl
   · exact (hhigh 238 (by decide)).2
   · exact hproduced.recoveryBuffers _
+
+  · exact hinputCarry
+  · exact houtputCarry
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
