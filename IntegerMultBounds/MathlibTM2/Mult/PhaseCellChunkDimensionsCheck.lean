@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellUnaryPowerChain
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellChunkDimensionBank
 
 open Lean in
 run_cmd do
@@ -10,7 +10,10 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unaryPowerChainR_get,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unaryPowerChainCost_eq,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unaryPowerChainCost_le,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unaryPowerChainVolume_le ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.unaryPowerChainVolume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.chunkDimensionBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseChunkDimensionBank_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.chunkDimensionBank_lengths ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

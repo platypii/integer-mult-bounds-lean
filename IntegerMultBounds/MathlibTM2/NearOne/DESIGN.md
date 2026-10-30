@@ -512,7 +512,22 @@ initial bank and costs `2*generatedVolume+2*chainLength+1`. Prefix powers use
 seed one; suffix widths use the borrowed word width. This supplies generation
 and release primitives, not yet the wiring/allocation of the complete stage
 master bank or its composition around the chunk loop. The primitive checks
-at 1975.1 MiB; its narrow 3,970-job build and generation/release axiom audit pass. The
+at 1975.1 MiB; its narrow 3,970-job build and generation/release axiom audit pass.
+`PhaseCellChunkDimensionBank` now composes two actual chains from the borrowed
+one/width seeds, with exact combined frame and reverse-order release.
+`chunkDimensionBank_lengths` includes the borrowed seeds as power zero.
+`PhaseCellChunkStageWiring` reads the prefix column in reverse and the suffix
+column forward, sharing one exponent master for both exchanged fields. Its
+stage list has exactly the structural chunk schedule.
+`wiredChunkStages_bank_values` derives all five fields of every stage from the
+actual generated register file and the original one/width/exponent lengths;
+there is no premise supplying any generated power. This establishes wiring
+and paired bank generation/release, while the enclosing setup/loop/cleanup
+execution theorem and full packed-codec integration remain open. The wiring
+module checks at 2929.7 MiB and the paired bank at 1930.9 MiB. The
+8,178-job guarded build and both expanded dimension/interchange axiom audits
+pass.
+ The
 8,174-job guarded build and expanded axiom audit pass; single-file checks
 peak at 2936.9 MiB for the loop and 2511.7 MiB for the bit-data module.
 Still required: prove regular-key cardinality and tile-capacity bounds, execute the

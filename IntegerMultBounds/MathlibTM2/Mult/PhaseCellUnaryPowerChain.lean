@@ -80,6 +80,21 @@ theorem unaryPowerChainR_get (K n : ℕ) (ds : List (Fin T)) (hnd : ds.Nodup)
         ih (n*K) hnd (Function.update R dst (List.replicate (n*K) tick)) i hi'
 
 
+/-- Include the borrowed seed as power zero when reading a generated bank. -/
+theorem unaryPowerChainR_seed_length (K n : ℕ) (seed : Fin T) (ds : List (Fin T))
+    (hnd : ds.Nodup) (hseed : seed ∉ ds) (R : Regs T A) (hlen : (R seed).length = n)
+    (i : ℕ) (hi : i < (seed::ds).length) :
+    (unaryPowerChainR K n ds R (seed::ds)[i]).length = n*K^i := by
+  cases i with
+  | zero =>
+    rw [List.getElem_cons_zero,unaryPowerChainR_off K n ds R seed (by
+      intro j hj he; exact hseed (he ▸ hj)),hlen]
+    simp
+  | succ i =>
+    have hi' : i < ds.length := by simpa using hi
+    rw [List.getElem_cons_succ,unaryPowerChainR_get K n ds hnd R i hi',List.length_replicate]
+
+
 theorem unaryPowerChainR_volume (K n : ℕ) (ds : List (Fin T)) (hnd : ds.Nodup)
     (R : Regs T A) :
     (ds.map (fun dst => (unaryPowerChainR K n ds R dst).length)).sum =
