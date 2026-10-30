@@ -5861,3 +5861,17 @@ The extended local rounding audit passes; both new modules check below 3.2 GiB
 under default proof limits. Scalar-bank initialization, common-width publication,
 sequencing with the concrete numerical/complex batch and global selected
 execution/time/stock gates remain open. S4 is incomplete.
+
+### S4 shared owned-prefix transformation (2026-10-30)
+
+`PhaseCellTransformPrefix.transformPrefix_exec` proves isolation, a restoring
+local transformation and prefix return once over arbitrary symbol lists. Its
+routing charge is `6*inputLength+4*outputLength+10`, independent of the borrowed
+suffix. `isolatedPrefixState` names the intermediate bank with the suffix parked
+on the source and the owned prefix on private work. The local transformation
+must have an actual execution preserving every other stack; the concrete
+rounding and widening programs instantiate this generic proof.
+`PhaseCellRoundPackedPrefix` now uses this language instead of repeating the
+transfer/move/final-frame argument. Its external program, statement and bill
+are unchanged up to unfolding. The shared proof checks near 1.9 GiB and the
+rounding instance near 3.1 GiB with default proof limits.
