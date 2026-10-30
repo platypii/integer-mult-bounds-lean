@@ -6,6 +6,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyBatchCost
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedKeyBankViews.external_update,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBatchCostFromSetup_zero,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedKeyRealBatchCost_affine,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedKeyRealBatchCost_two_components,

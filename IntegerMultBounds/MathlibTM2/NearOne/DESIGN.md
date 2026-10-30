@@ -5862,6 +5862,30 @@ These producers still need sequencing with ordinary normalization at the actual
 numerical/complex caller. Core-word/parameter-packet generation, that integration,
 selected resource bounds and the global S4 schedule remain open.
 
+### S4 native component certificates determine the complex solution (2026-10-30)
+
+`PhaseCellPackedComponentSolutions.componentSolution` constructs the complex
+target from the same real solution map used by both halves of the numerical
+batch. `componentSolution_targets` identifies its component target list with
+the executed real/imaginary input order. `packedComponentSolutions_certificate`
+consumes the exact shifted-input/scalar-target Forall₂ contract returned by the
+native real supplier; no target-order or separately split certificate is supplied.
+`assemblePackedComponentSolutions_exec` feeds that native certificate to actual
+local output pairing and returns the accuracy of those same paired fields.
+`componentSolution_solves` proves the two original shifted complex RHS equations
+on the same active vertices and ambient matrix. The norm comparison and
+`component_error_bit` make the component magnitude/error charges explicit; one
+extra real target bit pays complex assembly exactly once.
+
+`PackedKeyBankViews.external_update` transports all native setup views through
+arbitrary external queue/count writes, without revisiting lower bank registers.
+This supplies the view preservation needed by the complex input producer.
+The complex-output and protected numerical audits pass; the component bridge
+checks near 3.1 GiB and the bank-view module near 3.2 GiB under default proof
+limits. Actual sequencing of component expansion, native factor batch, pairing
+and ordinary normalization remains open, along with control-packet generation,
+selected resource bounds and the full S4 schedule. S4 is incomplete.
+
 ### S4 normalization scalar setup independent of numerical placement (2026-10-30)
 
 `PhaseCellPrepareRoundScalars.prepareRoundScalars_exec` executes the existing

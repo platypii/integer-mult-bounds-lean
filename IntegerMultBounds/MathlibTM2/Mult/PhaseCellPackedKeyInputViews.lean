@@ -70,6 +70,15 @@ structure PackedKeyBankViews {A : ℕ} (M : Stacks 276 A) (B : Stacks 263 A)
   publicationView : embStk packedHaloPublishedReg B = S₀
   batchView : embStk packedHaloBatchReg S₀ = extendStacks (by decide) S
 
+/-- External queue/count writes preserve all native setup views. -/
+theorem PackedKeyBankViews.external_update {A : ℕ} {M : Stacks 276 A} {B : Stacks 263 A}
+    {S₀ : Stacks 249 A} {S : Stacks 242 A} (h : PackedKeyBankViews M B S₀ S)
+    (i : Fin 276) (hi : 263 ≤ i.val) (xs : List (Fin (A+4))) :
+    PackedKeyBankViews {M with R := Function.update M.R i xs} B S₀ S := by
+  refine ⟨?_,h.publicationView,h.batchView⟩
+  rw [embStk_updateR_off M i xs (packedKeySolverReg_off i hi)]
+  exact h.protectedView
+
 /-- Transport every native view through the input stage in one structural step. -/
 theorem PackedKeyBankViews.input_update {A : ℕ} {M : Stacks 276 A} {B : Stacks 263 A}
     {S₀ : Stacks 249 A} {S : Stacks 242 A} (h : PackedKeyBankViews M B S₀ S)
