@@ -89,10 +89,7 @@ theorem buildMaskedGatheredRibbon_exec {P U : Type} {Q A V s t band a b origin N
         (mk v' {S with R := (Function.update S.R 141
           (cstream A w (couplingSourceInterval boundary t band a b origin N C)++S.R 141))})
  := by
-  have hxs : (rawCouplingRibbon band origin N C).length = N+2*band := by
-    simp only [rawCouplingRibbon,IntegerMultBounds.NLogN.PhaseCellMatrix.cyclicPaddedLine,
-      List.length_take,List.length_drop,List.length_map,List.length_range]
-    rw [Nat.min_eq_left (by omega)]
+  have hxs := rawCouplingRibbon_length band origin N C hfit
   exact buildMaskedGatheredRibbon_data_exec (body := body) boundary value hs ht hband ha hb hindex hcount
     hst haS hbS hbandS hfit hfitV hwide hbound v S hV hmeta hblank
     (rawCouplingRibbon band origin N C) (couplingSourceInterval boundary t band a b origin N C)

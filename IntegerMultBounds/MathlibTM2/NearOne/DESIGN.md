@@ -741,6 +741,16 @@ A shifted-window approach must transport the actual rounded coefficient matrix,
 its cell partition and period cuts, as well as RHS and publication coordinates.
 The next seam implementation must therefore start at coupling-row execution and
 its periodic-cut semantics, before adding further job or schedule interfaces.
+The subsequent source audit found the existing general alternative:
+`completedGatheredFeedCouplingInterval_exec` consumes an actual cyclic
+`rawCouplingRibbon` and has no `N+band ≤ s` premise. Its masking proof preserves
+wrapped coefficients. `rawCouplingRibbon_length` now supplies the shared length
+fact used by `buildMaskedGatheredRibbon_exec`. The seam residual should reuse
+this gathered path; the remaining integration must generate and refresh its
+cyclic source from the current numerical iterate and carry it through boundary
+setup/solve. This does not yet remove the separated-interval contract from the
+current packed job executor.
+
 
 
 | Order | Deliverable | Reuse and decisive acceptance check |

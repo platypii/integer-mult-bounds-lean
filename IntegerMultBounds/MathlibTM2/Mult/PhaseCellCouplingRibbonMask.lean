@@ -14,6 +14,14 @@ def rawCouplingRibbon {s : ℕ} [NeZero s] (band origin N : ℕ)
     (C : ZMod s → GaussianInt) : List GaussianInt :=
   ((cyclicPaddedLine C band).drop origin).take (N+2*band)
 
+/-- Cyclic ribbons retain both wrapped margins, including on a full line. -/
+theorem rawCouplingRibbon_length {s : ℕ} [NeZero s] (band origin N : ℕ)
+    (C : ZMod s → GaussianInt) (hfit : origin+N ≤ s) :
+    (rawCouplingRibbon band origin N C).length = N+2*band := by
+  simp only [rawCouplingRibbon,cyclicPaddedLine,List.length_take,List.length_drop,
+    List.length_map,List.length_range]
+  rw [Nat.min_eq_left (by omega)]
+
 def couplingRibbonFlags {s : ℕ} [NeZero s] (boundary : Bool) (t band a b origin N : ℕ) : List Bool :=
   let T := if boundary then haloBoundary s t band a b else haloInterior s t band a b
   ((cyclicPaddedLine (fun j : ZMod s => decide (j ∈ T)) band).drop origin).take (N+2*band)
