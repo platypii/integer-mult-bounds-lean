@@ -122,6 +122,31 @@ theorem embOvr_stock_le_shrinking_counter (he : Function.Injective e)
     simpa only [mk,update_rt,get_rt] using hc
   omega
 
+/-- Lift a projected boundary bound to a physical state whose isolated counter
+has shrunk. All other spectator stacks are retained exactly. -/
+theorem projected_stock_le_shrinking_counter (he : Function.Injective e)
+    (w : HS T' Q A U) (F B : Stacks T' A) (count : Fin T')
+    (hoff : ∀ i, e i ≠ count) (budget : ℕ)
+    (hframe : ∀ j, (∀ i, e i ≠ j) →
+      F.L j = B.L j ∧ (j ≠ count → F.R j = B.R j))
+    (hcount : (F.R count).length ≤ (B.R count).length)
+    (hstock : mnSize (mk (embDn e w) (embStk e F)) ≤
+      mnSize (mk (embDn e w) (embStk e B))+budget) :
+    mnSize (mk w F) ≤ mnSize (mk w B)+budget := by
+  let B' : Stacks T' A := {B with R := Function.update B.R count (F.R count)}
+  have hp : embStk e B' = embStk e B := embStk_updateR_off B count (F.R count) hoff
+  have hs := projected_stock_le e he w F B' budget (by
+    intro j hj
+    refine ⟨(hframe j hj).1,?_⟩
+    by_cases hc : j = count
+    · subst j; simp [B']
+    · simpa only [B',Function.update_of_ne hc] using (hframe j hj).2 hc)
+    (by simpa only [hp] using hstock)
+  have hbalance : mnSize (mk w B')+(B.R count).length =
+      mnSize (mk w B)+(F.R count).length := by
+    simpa only [B',mk,update_rt,get_rt] using mn_size_update (mk w B) w (.rt count) (F.R count)
+  omega
+
 theorem embAct_push (a : Act T Q A U) : mnActPush (embAct e a) = mnActPush a := by
   induction a <;> simp_all [embAct,mnActPush]
 
