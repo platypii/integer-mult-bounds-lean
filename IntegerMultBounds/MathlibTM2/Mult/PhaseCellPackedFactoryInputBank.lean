@@ -92,6 +92,47 @@ theorem packedFactoryInputBank_left (H : Stacks 242 A) (P N q l s t u band a b V
   simp only [packedFactoryInputBank, embOvr, Stacks.get, masterHeaderBank, embExt]
   split <;> rfl
 
+/-- A sparse bank has no other live words beyond its headers and geometry. -/
+theorem packedFactoryInputBank_blank (H : Stacks 242 A) (P N q l s t u band a b V : ℕ)
+    (k : Fin 242)
+    (hheaders : ∀ i, packedFactoryNativeReg (inverseMasterCorePort i) ≠ k)
+    (h155 : k ≠ 155) (h165 : k ≠ 165) (h163 : k ≠ 163) :
+    (packedFactoryInputBank H P N q l s t u band a b V).R k = [] := by
+  classical
+  by_cases hk : ∃ i, packedFactoryNativeReg i = k
+  · obtain ⟨i, rfl⟩ := hk
+    have hv := congrArg (fun S : Stacks 224 A => S.R i)
+      (packedFactoryInputBank_native H P N q l s t u band a b V)
+    have hm (j : Fin 10) : inverseMasterCorePort j ≠ i := by
+      intro he
+      exact hheaders j (congrArg packedFactoryNativeReg he)
+    exact hv.trans (by
+      rw [masterHeaderBank_off (masterHeaderValues P N q l s t u band a b) [] i hm]
+      simp)
+  · have hoff : ∀ i, packedFactoryNativeReg i ≠ k := by
+      intro i hi; exact hk ⟨i, hi⟩
+    have hf := (embOvr_off (e := packedFactoryNativeReg)
+      ({masterHeaderBank (A := A) (masterHeaderValues P N q l s t u band a b) [] with
+        inp := H.inp, out := H.out}.get)
+      {H with L := fun _ => [], R := fun j => if j = 155 then binSyms V a else
+        if j = 165 then binSyms V (b-a) else if j = 163 then List.replicate V Node.tick else []}
+      hoff).2
+    simpa only [packedFactoryInputBank, h155, h165, h163, ite_false] using hf
+
+def packedFactoryLivePorts : List (Fin 242) :=
+  [117,118,119,120,121,122,123,124,141,142,155,165,163]
+
+theorem packedFactoryInputBank_blank_of_not_mem (H : Stacks 242 A)
+    (P N q l s t u band a b V : ℕ) (k : Fin 242) (hk : k ∉ packedFactoryLivePorts) :
+    (packedFactoryInputBank H P N q l s t u band a b V).R k = [] := by
+  have hm (i : Fin 10) : packedFactoryNativeReg (inverseMasterCorePort i) ∈ packedFactoryLivePorts := by
+    fin_cases i <;> decide
+  apply packedFactoryInputBank_blank H P N q l s t u band a b V k
+  · intro i he; exact hk (he ▸ hm i)
+  · intro he; subst k; exact hk (by decide)
+  · intro he; subst k; exact hk (by decide)
+  · intro he; subst k; exact hk (by decide)
+
 /-- The exact packed native view is ready from its constructed words. -/
 theorem packedFactoryInputBank_ready (H : Stacks 242 A) (P N q l s t u band a b V : ℕ) :
     LengthKeyReady P N q l s t u band 0 0 []
