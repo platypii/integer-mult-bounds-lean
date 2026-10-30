@@ -100,7 +100,7 @@ theorem packedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       (∀ z ∈ rows,
         (|gv q z.re| ≤ (2 : ℝ)^(q/2) ∧ |gv q z.im| ≤ (2 : ℝ)^(q/2)) ∧
         (|gv q (normalizeBoundaryWord q (q/2-1) z).re| ≤ 1/2 ∧
-          |gv q (normalizeBoundaryWord q (q/2-1) z).im| ≤ 1/2)) ∧ F.L = S.L ∧ F.R 125 = [] ∧ F.R 128 = [] := by
+          |gv q (normalizeBoundaryWord q (q/2-1) z).im| ≤ 1/2)) ∧ F.L = S.L ∧ F.R 125 = [] ∧ F.R 128 = [] ∧ (F.R 157).length ≤ V := by
   dsimp only
   obtain ⟨v₁,G,m₁,D,hu₁,hm₁,he₁,h93,hfold,h116,hmask,h110,h132,hproj,hDnorm,hDfits,hw,hpage,hcount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hleftAll,hkeys⟩ :=
     packedHaloBoundaryData_exec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hpad C hC

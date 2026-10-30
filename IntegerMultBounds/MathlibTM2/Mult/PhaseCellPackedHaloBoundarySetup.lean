@@ -268,7 +268,7 @@ theorem packedHaloBoundarySetupUsing_exec (freshGeometry : Bool) (hR : rpStates 
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
     rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
     · exact hkeys.1
-    · exact hkeys.2
+    · exact hkeys.2.1
     · exact hzero
     · exact ((hframe 129 (by decide) (by decide) (by decide)).2).trans (hfresh' 129 (by decide))
     · exact ((hframe 131 (by decide) (by decide) (by decide)).2).trans (hfresh' 131 (by decide))

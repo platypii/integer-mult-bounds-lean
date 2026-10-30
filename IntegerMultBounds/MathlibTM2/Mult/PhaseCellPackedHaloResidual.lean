@@ -86,7 +86,7 @@ theorem packedHaloResidual_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
       F.R 143 = [] ∧ F.R 126 = S.R 126 ∧ F.R 127 = [] ∧ F.R 135 = [] ∧
       (∀ k : Fin 168, 117 ≤ k.val → k ∉ packedHaloInteriorPagePorts → F.L k = S.L k ∧ F.R k = S.R k) ∧
       PhaseCellInterface.ErrorOn (haloInterior s t (PhaseCellBand.width p u) a b)
-        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) ∧ F.L = S.L ∧ F.R 125 = [] ∧ F.R 128 = [] := by
+        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) ∧ F.L = S.L ∧ F.R 125 = [] ∧ F.R 128 = [] ∧ (F.R 157).length ≤ V := by
   dsimp only
   obtain ⟨v₁,G,m₁,D,hu₁,hm₁,he₁,h93,hi,ho,houtput,hDnorm,hDfits,hnativeG,hready,hgeometry,hpage,hcount,hrows,h143G,h135G,hqueue,hzero,hframe,herror,hleftAll,hkeys⟩ :=
     packedHaloInteriorCoefficients_exec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hpad C hC

@@ -52,7 +52,8 @@ def PackedHaloProducedData {A : ℕ} (p l s t u target rhsExp a b V q w : ℕ) [
     (|gv q (normalizeBoundaryWord q (q/2-1) z).re| ≤ 1/2 ∧
       |gv q (normalizeBoundaryWord q (q/2-1) z).im| ≤ 1/2)) ∧
   (embStk packedHaloRuntimeReg F).L = (embStk packedHaloRuntimeReg S).L ∧
-  (embStk packedHaloRuntimeReg F).R 125 = [] ∧ (embStk packedHaloRuntimeReg F).R 128 = [] )
+  (embStk packedHaloRuntimeReg F).R 125 = [] ∧ (embStk packedHaloRuntimeReg F).R 128 = [] ∧
+  ((embStk packedHaloRuntimeReg F).R 157).length ≤ V )
 
 theorem PackedHaloProducedData.keys {A p l s t u target rhsExp a b V q w : ℕ}
     [NeZero s] {C D : ZMod s → GaussianInt} {x : ZMod s → ℝ}
@@ -61,7 +62,17 @@ theorem PackedHaloProducedData.keys {A p l s t u target rhsExp a b V q w : ℕ}
     F.R 125 = [] ∧ F.R 128 = [] := by
   rcases h with ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
     hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleft,hkeys⟩
-  simpa [embStk,packedHaloRuntimeReg] using hkeys
+  simpa [embStk,packedHaloRuntimeReg] using (show (embStk packedHaloRuntimeReg F).R 125 = [] ∧
+    (embStk packedHaloRuntimeReg F).R 128 = [] from ⟨hkeys.1,hkeys.2.1⟩)
+
+theorem PackedHaloProducedData.binaryLengthBound {A p l s t u target rhsExp a b V q w : ℕ}
+    [NeZero s] {C D : ZMod s → GaussianInt} {x : ZMod s → ℝ}
+    {tail outputTail : List (Fin (A+4))} {S F : Stacks 242 A}
+    (h : PackedHaloProducedData p l s t u target rhsExp a b V q w C D x tail outputTail S F) :
+    (F.R 157).length ≤ V := by
+  rcases h with ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
+    hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleft,hkeys⟩
+  simpa [embStk,packedHaloRuntimeReg] using hkeys.2.2
 
 /-- Per-input buffers consumed by packed boundary recovery. -/
 structure PackedHaloRecoveryBuffers {A : ℕ} (p s t u a b q w : ℕ) [NeZero s]

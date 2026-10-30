@@ -89,7 +89,7 @@ theorem packedHaloBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       CouplingIntervalMetadata V s t band a b a (b-a) F ∧ F.R 126 = S.R 126 ∧ F.R 127 = [] ∧ F.R 135 = [] ∧
       (∀ k : Fin 168, 117 ≤ k.val → k ∉ packedHaloInteriorPagePorts → k ≠ 167 → F.L k = S.L k ∧ F.R k = S.R k) ∧
       PhaseCellInterface.ErrorOn (haloInterior s t band a b)
-        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) ∧ F.L = S.L ∧ F.R 125 = [] ∧ F.R 128 = [] := by
+        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) ∧ F.L = S.L ∧ F.R 125 = [] ∧ F.R 128 = [] ∧ (F.R 157).length ≤ V := by
   dsimp only
   obtain ⟨v₁,G,m₁,D,hu₁,hm₁,he₁,h93,h110,h132,hproj,hDnorm,hDfits,hw,hpage,hcount,hrows,hgeometry,h143,hqueue,hzero,h135,hframe,herror,hleftAll,hkeys⟩ :=
     packedHaloResidual_exec (body := body) hR hQ hA hp hst hu hαu hθ hgap hbudget hpad C hC

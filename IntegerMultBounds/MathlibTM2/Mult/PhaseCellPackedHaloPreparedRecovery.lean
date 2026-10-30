@@ -101,7 +101,7 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
         q l s t u band a b V w (embStk packedRecoveryRuntimeReg F) ∧
       F.R 127 = [] ∧ F.R 143 = [] ∧ F.R 158 = [] ∧ F.R 167 = [] ∧
       (∀ k ∈ ([129,131,133,134,135,136,153,166] : List (Fin 248)), F.R k = []) ∧
-      F.R 125 = [] ∧ F.R 128 = [] := by
+      F.R 125 = [] ∧ F.R 128 = [] ∧ (F.R 157).length ≤ V := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages hboundary y hy hcoeff
   let band := PhaseCellBand.width p u
@@ -186,7 +186,7 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
       hcoeff hwide hfitV (by simpa only [hq] using hVeq)
       (by simpa only [hw] using hwV) hcoords (by simpa only [hw] using hunits)
       (by rw [hruntime]; exact hgeometryFinal)
-  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,⟨hready₂,hwork₂⟩,?_,hnative₂,hprivate₂,?_,?_,h127Recovery,h143Recovery,h158Recovery,h167Recovery,hscratchRecovery,?_,?_⟩
+  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,⟨hready₂,hwork₂⟩,?_,hnative₂,hprivate₂,?_,?_,h127Recovery,h143Recovery,h158Recovery,h167Recovery,hscratchRecovery,?_,?_,?_⟩
   · constructor
     · simp only [length_cstream,packedInterval_length C (by omega : a+(b-a) ≤ s)]
     · exact hsource
@@ -243,5 +243,8 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
   · rw [hretained 128 (by decide)]
     change F₁.R 128 = []
     simpa [F₁] using hdata.keys.2
+  · rw [hretained 157 (by decide)]
+    change (F₁.R 157).length ≤ V
+    simpa [F₁] using hdata.binaryLengthBound
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
