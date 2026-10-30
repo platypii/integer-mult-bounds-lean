@@ -5370,3 +5370,14 @@ interfaces. Then close one tile through numerical batches, inverse routing and
 count-based dummy removal, before extending the global scheduler. Tile capacity,
 setup amortization, complete bulk gathering, tensor/R4 composition and total
 simultaneous stock remain required; S4 is incomplete.
+
+`PhaseCellPacketWidth` now specializes the existing structural word passes to
+both sides of that width interface. `narrowPackets_exec` crops W-bit complex
+coefficient streams to w≤W bits with no unsignedness assumption, retaining the
+same Gaussian integer encoding at cost N*(4W+2w+14)+4.
+`widenPackets_exec` sign-extends an arbitrary list of numerical results satisfying
+`TopFitsZ w` to W≥w bits at cost N*(6W+10)+4. Both programs restore all controls
+and scratch and change only the source stream. Narrowing changes representation
+width, not fixed-point precision: the separate existing input scale conversion
+is still required. The signed-fit hypotheses, generated conversion counters,
+placement and composition with actual numerical batches remain integration gates.
