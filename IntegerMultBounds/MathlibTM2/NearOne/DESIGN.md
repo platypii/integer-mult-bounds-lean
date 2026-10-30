@@ -469,8 +469,16 @@ is polynomial in one axis and precision.
 A candidate executed schedule can choose tile capacity as a fixed power of
 the padded regular-key count, split its replica address into equal-width
 chunks, and move the key address past those chunks using balanced interchanges.
-This avoids padding the whole tensor replica dimension to a square. Still
-required: prove regular-key cardinality and tile-capacity bounds, execute the
+This avoids padding the whole tensor replica dimension to a square.
+`PhaseCellReplicaChunkLayout` now proves this list schedule structurally:
+`replicaKey_swap_factor` moves the key past the last replica chunk and then
+the prefix, and `runReplicaChunkSwaps_words` iterates that factorization for
+`K^c` replicas and `K` keys. The schedule has exactly `c` equal-width swaps,
+positive prefix/suffix dimensions when `K,W` are positive, and summed stage
+volume exactly `c*(K^c*K*W)`. It preserves the complete-key/replica/block
+order of the existing router. No concrete permutation certificate is used;
+the module checks near 0.92 GiB. This is a layout theorem, not execution of
+the varying headers and machine stages. Still required: prove regular-key cardinality and tile-capacity bounds, execute the
 chunk swaps and final-tile padding, match the packed factory bill to the
 selected setup supplier, and handle small exceptional movement classes
 separately. No arbitrary-rectangle execution or final resource bound follows

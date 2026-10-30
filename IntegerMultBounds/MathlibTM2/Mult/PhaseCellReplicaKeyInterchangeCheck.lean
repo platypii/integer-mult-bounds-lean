@@ -1,6 +1,7 @@
 module
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyInterchange
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaChunkLayout
 
 /-! Keep the bulk-routing audit separate from the numerical coupling closure. -/
 open Lean in
@@ -10,7 +11,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.keyReplicaWords_blocks,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyWords_swap,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyInterchange_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyBitInterchange_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyBitInterchange_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKey_swap_factor,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.runReplicaChunkSwaps_words,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaChunkSwaps_volume,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaChunkSwaps_positive ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"
