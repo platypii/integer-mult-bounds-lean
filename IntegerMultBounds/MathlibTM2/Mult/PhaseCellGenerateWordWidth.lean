@@ -16,11 +16,16 @@ variable {T Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ T Q A U}
 def generateWordWidth (precision width tmp : Fin T) : Pr P₀ T Q A U :=
   .seq (ucopy precision width tmp) (.seq (ucopy precision width tmp) (.act (pushN width (fun _ => tick) 8 .done)))
 
-theorem generateWordWidth_exec {precision width tmp : Fin T}
-    (hreg : [precision,width,tmp].Nodup) (q : ℕ) (v : HS T Q A U) (S : Stacks T A)
+/-- Double a borrowed unary dimension and add a fixed program constant. -/
+def generateDoubleWidth (offset : ℕ) (precision width tmp : Fin T) : Pr P₀ T Q A U :=
+  .seq (ucopy precision width tmp)
+    (.seq (ucopy precision width tmp) (.act (pushN width (fun _ => tick) offset .done)))
+
+theorem generateDoubleWidth_exec {precision width tmp : Fin T}
+    (hreg : [precision,width,tmp].Nodup) (q offset : ℕ) (v : HS T Q A U) (S : Stacks T A)
     (hq : (S.R precision).length = q) (hwidth : S.R width = []) (htmp : S.R tmp = []) :
-    ∃ v', v'.user = v.user ∧ Exec body (generateWordWidth precision width tmp) (mk v S) (8*q+9)
-      (mk v' {S with R := Function.update S.R width (List.replicate (2*q+8) tick)}) := by
+    ∃ v', v'.user = v.user ∧ Exec body (generateDoubleWidth offset precision width tmp) (mk v S) (8*q+9)
+      (mk v' {S with R := Function.update S.R width (List.replicate (2*q+offset) tick)}) := by
   have hpw : precision ≠ width := by intro h; subst width; simp at hreg
   have hpt : precision ≠ tmp := by intro h; subst tmp; simp at hreg
   have hwt : width ≠ tmp := by intro h; subst tmp; simp at hreg
@@ -34,12 +39,20 @@ theorem generateWordWidth_exec {precision width tmp : Fin T}
   let S₂ : Stacks T A := {S with R := Function.update S.R width (List.replicate (q+q) tick)}
   have he₂' : Exec body (ucopy precision width tmp) (mk v₁ S₁) (4*q+4) (mk v₂ S₂) := by
     simpa [S₂,S₁,hpw,hq,← List.replicate_append_replicate] using he₂
-  have he₃ := Exec.act (body := body) (pushN width (fun _ => tick) 8 .done) (mk v₂ S₂)
+  have he₃ := Exec.act (body := body) (pushN width (fun _ => tick) offset .done) (mk v₂ S₂)
   refine ⟨v₂,hu₂.trans hu₁,(Exec.seq he₁' (Exec.seq he₂' he₃)).cast (by omega) ?_⟩
   rw [pushN_run]
   simp only [S₂,Action.run,Function.update_self,Function.update_idem]
   rw [List.replicate_append_replicate]
-  have hn : 8+(q+q) = 2*q+8 := by omega
+  have hn : offset+(q+q) = 2*q+offset := by omega
   rw [hn]
+
+theorem generateWordWidth_exec {precision width tmp : Fin T}
+    (hreg : [precision,width,tmp].Nodup) (q : ℕ) (v : HS T Q A U) (S : Stacks T A)
+    (hq : (S.R precision).length = q) (hwidth : S.R width = []) (htmp : S.R tmp = []) :
+    ∃ v', v'.user = v.user ∧ Exec body (generateWordWidth precision width tmp) (mk v S) (8*q+9)
+      (mk v' {S with R := Function.update S.R width (List.replicate (2*q+8) tick)}) := by
+  simpa only [generateDoubleWidth,generateWordWidth] using
+    generateDoubleWidth_exec (body := body) hreg q 8 v S hq hwidth htmp
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

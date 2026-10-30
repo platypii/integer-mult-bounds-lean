@@ -2,11 +2,17 @@ module
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundPackedBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWidenPackedPrefix
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublishRoundedKey
 
 /-! Audit local rounding without importing the ambient numerical caller. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generateDoubleWidth_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.publishRoundedKey_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.widenPackedKey_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedFinalRoundInterval_fits,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedFinalRoundBatch_fits,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.transformPrefix_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.widenPackedPrefix_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedIntervalRead_finalRound,

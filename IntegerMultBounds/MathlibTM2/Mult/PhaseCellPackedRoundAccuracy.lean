@@ -45,13 +45,7 @@ theorem packedFinalRound_accuracy {A s : ℕ} [NeZero s] (hA : 4 ≤ A)
         (cstream A k (packedInterval a L (fun i => finalRoundWord w q p j (D i)))++tail))
       (fun i => ((2 : ℂ)^j)⁻¹*z i) (2/(2 : ℝ)^p+e/(2 : ℝ)^j) := by
   intro i hi
-  have hnorm := norm_le_norm_sub_add
-    (packedIntervalRead q w a (cstream A w (packedInterval a L D)++oldTail) i) (z i)
-  have hpow : (1 : ℝ) ≤ 2^E := one_le_pow₀ (by norm_num)
-  have hD : ‖packedIntervalRead q w a (cstream A w (packedInterval a L D)++oldTail) i‖ ≤ 8*(2 : ℝ)^E := by
-    have herr := herror i hi
-    have htarget := hz i hi
-    linarith
+  have hD := computed_solution_norm_of_error E _ (z i) e he (hz i hi) (herror i hi)
   rw [packedIntervalRead_finalRound hA p q j w k E a L hp hw hk D tail oldTail hfit i
     (hactive i hi).1 (hactive i hi).2 hD]
   exact scaleRound_error p j _ _ e (herror i hi)
@@ -78,5 +72,51 @@ theorem packedFinalRoundBatch_accuracy {A s : ℕ} [NeZero s] (hA : 4 ≤ A)
     exact .cons (packedFinalRound_accuracy hA p q j w k E a L hp hw hk D active hfit hactive
       z e he (hz z (by simp)) oldTail tail herror)
       (ih (by intro z hzmem; exact hz z (List.mem_cons_of_mem _ hzmem)))
+
+/-- Accuracy on the whole published interval supplies every strict signed fit
+needed by common-width publication, including the word at either endpoint. -/
+theorem packedFinalRoundInterval_fits {A s : ℕ} [NeZero s] (hA : 4 ≤ A)
+    (p q j w k E a L : ℕ) (hp : p ≤ q) (hw : 1 ≤ w) (hk : p+E+5 ≤ k)
+    (D : ZMod s → GaussianInt) (active : Finset (ZMod s)) (hfit : a+L ≤ s)
+    (hcover : ∀ i : ZMod s, a ≤ i.val → i.val < a+L → i ∈ active)
+    (z : ZMod s → ℂ) (e : ℝ) (he : e ≤ 1)
+    (hz : ∀ i ∈ active, ‖z i‖ ≤ 4*(2 : ℝ)^E) (oldTail : List (Fin (A+4)))
+    (herror : PhaseCellInterface.ErrorOn active
+      (packedIntervalRead q w a (cstream A w (packedInterval a L D)++oldTail)) z e) :
+    ∀ x ∈ (packedInterval a L D).map (finalRoundWord w q p j), Fits k x := by
+  intro x hx
+  obtain ⟨d,hd,rfl⟩ := List.mem_map.mp hx
+  obtain ⟨i,hi,rfl⟩ := List.mem_iff_getElem.mp hd
+  have hiL : i < L := by simpa only [packedInterval_length D hfit] using hi
+  rw [packedInterval_get D hfit hiL]
+  let c : ZMod s := ((a+i : ℕ) : ZMod s)
+  have hc : c.val = a+i := by
+    change (((a+i : ℕ) : ZMod s).val) = a+i
+    rw [ZMod.val_natCast,Nat.mod_eq_of_lt (show a+i < s by omega)]
+  have hmem : c ∈ active := hcover c (by omega) (by omega)
+  have hread := packedIntervalRead_decode q w a L D oldTail hfit c (by omega) (by omega)
+  rw [decodeWord_csyms_symZ hA hw] at hread
+  have hnorm := computed_solution_norm_of_error E _ (z c) e he (hz c hmem) (herror c hmem)
+  rw [hread] at hnorm
+  exact finalRound_fits q p j E k hp hk (symZ w (D c)) hnorm
+
+theorem packedFinalRoundBatch_fits {A s : ℕ} [NeZero s] (hA : 4 ≤ A)
+    (p q j w k E a L : ℕ) (hp : p ≤ q) (hw : 1 ≤ w) (hk : p+E+5 ≤ k)
+    (active : Finset (ZMod s)) (hfit : a+L ≤ s)
+    (hcover : ∀ i : ZMod s, a ≤ i.val → i.val < a+L → i ∈ active)
+    (Zs : List (ZMod s → ℂ)) (Ds : List (ZMod s → GaussianInt)) (e : ℝ) (he : e ≤ 1)
+    (hz : ∀ z ∈ Zs, ∀ i ∈ active, ‖z i‖ ≤ 4*(2 : ℝ)^E) (oldTail : List (Fin (A+4)))
+    (hgood : List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn active
+      (packedIntervalRead q w a (cstream A w (packedInterval a L D)++oldTail)) z e) Zs Ds) :
+    ∀ x ∈ ((Ds.map (packedInterval a L)).flatten).map (finalRoundWord w q p j), Fits k x := by
+  induction hgood with
+  | nil => simp
+  | @cons z D Zs Ds herror hgood ih =>
+    intro x hx
+    simp only [List.map_cons,List.flatten_cons,List.map_append,List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact packedFinalRoundInterval_fits hA p q j w k E a L hp hw hk D active hfit hcover
+        z e he (hz z (by simp)) oldTail herror x hx
+    · exact ih (by intro z hzmem; exact hz z (List.mem_cons_of_mem _ hzmem)) x hx
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

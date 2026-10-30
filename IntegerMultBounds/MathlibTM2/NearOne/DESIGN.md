@@ -5893,3 +5893,29 @@ widening execution. Widening checks near 2.1 GiB; the affected rounding/batch
 endpoints rebuild and audit successfully. Generating the common-publication
 caller headers and sequencing it with rounding/numerical execution remain open,
 along with selected time/stock and the global schedule. S4 is incomplete.
+
+### S4 generated common-width publication dimensions and fits (2026-10-30)
+
+`PhaseCellWidenPackedKey` generates and clears the total prefix count from
+retained replica/row-width dimensions. `PhaseCellPublishRoundedKey` additionally
+generates the rounded width `2p+13` and narrow core-row width from retained p and
+the core row count. Its actual execution publishes the same coefficient list
+at common width W and clears all three private dimensions and scratch. No narrow
+width, row width or total symbol count is supplied in its initial state; all
+borrowed dimensions and later-key symbols restore. The complete cost includes
+width generation, both unary products, sign extension and every erasure.
+The existing `generateWordWidth_exec` now instantiates a shared
+`generateDoubleWidth_exec` with offset 8; rounded publication uses offset 13.
+The old word-width statement/program and numerical caller are preserved.
+
+`packedFinalRoundInterval_fits` and `packedFinalRoundBatch_fits` derive every
+strict signed fit for the actual rounded interval/batch from decoded accuracy,
+target norm bounds and interval coverage. These supply the representability
+needed for sign extension; arbitrary original integer representatives need not
+fit. `computed_solution_norm_of_error` shares the magnitude argument with the
+existing dyadic-error and normalized-accuracy proofs.
+The extended audit includes generated dimensions, publication and derived fits.
+Publication/count modules check near 2.1 GiB, width generation near 1.4 GiB and
+the accuracy module near 3.1 GiB, with default proof limits. Sequencing the
+numerical/complex/normalization/publication stages, scalar-bank initialization,
+selected resource bounds and the complete schedule remain open. S4 is incomplete.

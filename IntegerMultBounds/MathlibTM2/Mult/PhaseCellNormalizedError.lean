@@ -8,14 +8,19 @@ public import IntegerMultBounds.NLogN.Approx
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds.NLogN
 
+theorem computed_solution_norm_of_error (E : ℕ) (y x : ℂ) (e : ℝ)
+    (he : e ≤ 1) (hx : ‖x‖ ≤ 4*(2 : ℝ)^E) (herror : ‖y-x‖ ≤ e) :
+    ‖y‖ ≤ 8*(2 : ℝ)^E := by
+  have hpow : (1 : ℝ) ≤ 2^E := one_le_pow₀ (by norm_num)
+  have ht := norm_le_norm_sub_add y x
+  linarith
+
 theorem computed_solution_norm (target E : ℕ) (y x : ℂ)
     (hx : ‖x‖ ≤ 4*(2 : ℝ)^E) (he : ‖y-x‖ ≤ 1/(2 : ℝ)^target) :
     ‖y‖ ≤ 8*(2 : ℝ)^E := by
-  have hpow : (1 : ℝ) ≤ 2^E := one_le_pow₀ (by norm_num)
   have herr : 1/(2 : ℝ)^target ≤ 1 := by
     exact (div_le_one (by positivity)).mpr (one_le_pow₀ (by norm_num))
-  have ht := norm_le_norm_sub_add y x
-  linarith
+  exact computed_solution_norm_of_error E y x _ herr hx he
 
 theorem scaleRound_error (p j : ℕ) (y x : ℂ) (e : ℝ) (he : ‖y-x‖ ≤ e) :
     ‖rhoC p (((2 : ℂ)^j)⁻¹*y)-((2 : ℂ)^j)⁻¹*x‖ ≤ 2/(2 : ℝ)^p+e/(2 : ℝ)^j := by
