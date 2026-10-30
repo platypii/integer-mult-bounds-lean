@@ -21,6 +21,28 @@ def packedCoreBatchPublicationCost (N radius core w : ℕ) : ℕ :=
     (N*(packedCoreArchiveStepCost radius core (core+2*radius) w+3)+2)+
     (2*(radius*w+core*w+(core+2*radius))+7)
 
+/-- Cropping, control construction and archive retirement fit the stored halo
+volume, including the zero-replica control overhead. -/
+theorem packedCoreBatchPublicationCost_le_volume (N radius core w : ℕ)
+    (hw : 1 ≤ w) (hhalo : 1 ≤ core+2*radius) :
+    packedCoreBatchPublicationCost N radius core w ≤
+      100*(N+1)*((core+2*radius)*w) := by
+  let H := core+2*radius
+  have hH : H ≤ H*w := Nat.le_mul_of_pos_right H hw
+  have hr : radius ≤ H := by dsimp only [H]; omega
+  have hc : core ≤ H := by dsimp only [H]; omega
+  have hrw := Nat.mul_le_mul_right w hr
+  have hcw := Nat.mul_le_mul_right w hc
+  have hs : packedCoreArchiveStepCost radius core H w ≤ 37*(H*w)+28 := by
+    unfold packedCoreArchiveStepCost retireCountedLineCost
+    nlinarith only [hrw,hcw,hH]
+  have hn := Nat.mul_le_mul_left N hs
+  have hv : 1 ≤ H*w := Nat.mul_pos hhalo hw
+  have hN : N ≤ N*(H*w) := Nat.le_mul_of_pos_right N hv
+  unfold packedCoreBatchPublicationCost packedCoreArchiveControlsCost
+  change _ ≤ 100*(N+1)*(H*w)
+  nlinarith only [hn,hrw,hcw,hH,hv,hN]
+
 noncomputable def packedHaloPublishedBatch (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 263 Q A U :=
   .seq (embProg packedHaloPublishedReg id (packedHaloClosedBatch hR hQ))
     (packedCoreArchiveFromDimensions 249 250 251 248 254 255 132 253 257 258 259 256 252 260 261 262)
