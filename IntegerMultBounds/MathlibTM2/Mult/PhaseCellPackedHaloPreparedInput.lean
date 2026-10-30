@@ -90,7 +90,11 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
       PhaseCellInterface.ErrorOn (haloVertices s a b)
         (fun i => (packedIntervalRead q w a (F.R 132) i).re) y (1/(2 : ℝ)^finalTarget) ∧
       PackedPreparedBank q w W B.card (embStk packedBoundaryRecoveryBase F) ∧
-      F.R 110 = tail ∧ F.R 130 = [] ∧ F.R 138 = [] ∧ F.R 139 = [] ∧ F.R 140 = [] := by
+      F.R 110 = tail ∧ F.R 130 = [] ∧ F.R 138 = [] ∧ F.R 139 = [] ∧ F.R 140 = [] ∧
+      (∀ i : Fin 117, i ≠ 93 → i ≠ 110 → F.R ⟨i.val,by omega⟩ = []) ∧
+      (∀ bo hf df, PackedBoundaryFactorPages bo hf df S →
+        PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) ∧
+      (∀ k : Fin 248, 242 ≤ k.val → F.L k = [] ∧ F.R k = []) := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages hboundary y hy hcoeff
   let band := PhaseCellBand.width p u
@@ -99,7 +103,7 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   let W := 12*band+1
-  obtain ⟨v₁,F,n₁,D,hu₁,hn₁,he₁,hout,herror,hbank₁,hrelease⟩ :=
+  obtain ⟨v₁,F,n₁,D,hu₁,hn₁,he₁,hout,herror,hbank₁,hrelease,hnative₁,hprivate₁,hfactorCarry⟩ :=
     packedHaloPreparedRecovery_exec (body := body) (body' := body') hbody hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail
       v S hnative hmasters ha hb' hmeta h157 houtput hE hfresh haLt hfitV h139 h143 hleft
@@ -112,7 +116,7 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
   change n₁ ≤ packedHaloPreparedBoundaryCost p u l target boundaryTarget rhsExp s t a b V+
     packedBoundaryRecoveryCost p u l finalTarget rhsExp s t a b V q w at hn₁
   have h132 := packedPreparedInputReleased_frame F tail 132 (by decide)
-  refine ⟨v₂,packedPreparedInputReleased F tail,n₁+n₂,D,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,?_,hbank₂,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,packedPreparedInputReleased F tail,n₁+n₂,D,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,?_,hbank₂,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · have hn := Nat.add_le_add hn₁ hn₂
     dsimp only [packedHaloPreparedInputCost]
     rw [← hboundary]
@@ -122,6 +126,25 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
     omega
   · rw [h132]; exact hout
   · simpa only [h132] using herror
-  all_goals simp [packedPreparedInputReleased,packedInputFinished]
+  · simp [packedPreparedInputReleased,packedInputFinished]
+  · simp [packedPreparedInputReleased,packedInputFinished]
+  · simp [packedPreparedInputReleased,packedInputFinished]
+  · simp [packedPreparedInputReleased,packedInputFinished]
+  · simp [packedPreparedInputReleased,packedInputFinished]
+  · intro i hi93 hi110
+    have hi := i.isLt
+    have h110 : i.val ≠ 110 := fun he => hi110 (Fin.ext he)
+    rw [packedPreparedInputReleased_right]
+    simp only [Fin.ext_iff]
+    simp [h110,show i.val ≠ 130 by omega,show i.val ≠ 138 by omega,
+      show i.val ≠ 139 by omega,show i.val ≠ 140 by omega,hnative₁ i hi93 hi110]
+  · intro bo hf df hpages₀
+    exact hpages₂ bo hf df (hfactorCarry bo hf df hpages₀)
+  · intro k hk
+    refine ⟨(hprivate₁ k hk).1,?_⟩
+    rw [packedPreparedInputReleased_frame F tail k (by
+      simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff]
+      omega)]
+    exact (hprivate₁ k hk).2
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
