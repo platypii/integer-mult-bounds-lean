@@ -146,7 +146,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     simpa only [packedRecoveryRhsState,Y,R,B,band] using he₁
   have hrange := haloRecovery_boundary_range A p u l k rhsExp q w a (b-a) B solution
     (fun i hi => (hsolution i hi).2)
-  obtain ⟨v₂,F,n,E',D,hu₂,hn₂,he₂,h93,h139',h238,hi,ho,hrdy,hout,hDnorm,hDfits,herror,hframe,hleft,hretained,h245,h246,hlength,hfactors,h127,h143Final,h158Final,h167Final⟩ :=
+  obtain ⟨v₂,F,n,E',D,hu₂,hn₂,he₂,h93,h139',h238,hi,ho,hrdy,hout,hDnorm,hDfits,herror,hframe,hleft,hretained,h245,h246,hlength,hfactors,h127,h143Final,h158Final,h167Final,hqueueFinal⟩ :=
     packedRecoveryFinish_exec (body := body) hR hQ hA hp0 hst hu hαu hθ0 hgap hbudget hpad hq' hw'
       Y R C hnorm hab hb hband (by omega) (by simpa only [hq'] using hVeq)
       (by simpa only [← hw'] using hwV) hcoords (by simpa only [← hw'] using hunits)
