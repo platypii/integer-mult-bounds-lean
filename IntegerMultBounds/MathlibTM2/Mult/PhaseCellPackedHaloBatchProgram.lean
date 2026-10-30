@@ -97,6 +97,18 @@ theorem PackedHaloInputTrace.append {X : Type}
   | nil => exact h'
   | cons hx _ ih => exact .cons hx (ih h')
 
+/-- Any observation restored by each numerical input is restored by the batch.
+Use a tuple observation to carry the host frame and retained registers together. -/
+theorem PackedHaloInputTrace.frame {X Y : Type}
+    {Result : X → Stacks 248 A → Stacks 248 A → Prop}
+    (observe : Stacks 248 A → Y)
+    (hresult : ∀ x S F, Result x S F → observe F = observe S)
+    {xs : List X} {S F : Stacks 248 A} (h : PackedHaloInputTrace Result xs S F) :
+    observe F = observe S := by
+  induction h with
+  | nil => rfl
+  | cons hx _ ih => exact ih.trans (hresult _ _ _ hx)
+
 /-- Account for the persistent output archive separately from temporary scratch. -/
 theorem PackedHaloInputTrace.output_length {X : Type}
     {Result : X → Stacks 248 A → Stacks 248 A → Prop} {L : ℕ}
