@@ -102,7 +102,9 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
         (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase F)))) q w W
         (haloBoundary s t (PhaseCellBand.width p u) a b).card ∧
       (∀ k : Fin 248, 242 ≤ k.val → F.L k = [] ∧ F.R k = []) ∧
-      ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k := by
+      (∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k) ∧
+      (∀ bo hf df, PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase S) →
+        PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) := by
   let band := PhaseCellBand.width p u
   let B := haloBoundary s t band a b
   let solveTarget := boundaryRecoveryTarget p target
@@ -179,7 +181,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
   have hprefix : embStk packedBoundaryRecoveryBase (releasedPackedRecoveryHeaders F) =
       embStk packedBoundaryRecoveryBase F := releasedPackedRecoveryHeaders_prefix F
   refine ⟨v₃,releasedPackedRecoveryHeaders F,n+n₃,D,hu₃.trans hu₂,?_,
-    Exec.seq he₂ he₃,?_,?_,?_,hi,ho,?_,hDfits,?_,?_,?_,hleft,?_,?_,?_,?_,?_⟩
+    Exec.seq he₂ he₃,?_,?_,?_,hi,ho,?_,hDfits,?_,?_,?_,hleft,?_,?_,?_,?_,?_,?_⟩
   · exact Nat.add_le_add (hn₂.trans (Nat.add_le_add_right hn₁ _)) hn₃
   · exact (releasedPackedRecoveryHeaders_low F 93 (by decide)).trans h93
   · exact (releasedPackedRecoveryHeaders_low F 139 (by decide)).trans h139'
@@ -220,5 +222,12 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
   · intro k hk hk' hne
     rw [releasedPackedRecoveryHeaders_low F k hk']
     exact hfactors k hk hk' hne
+  · intro bo hf df hpages
+    rw [hprefix]
+    apply hpages.of_solution_frame
+    intro k hk hne
+    exact hfactors (packedBoundaryRecoveryBase k) hk k.isLt (by
+      intro he
+      exact hne (Fin.ext (congrArg (fun i : Fin 248 => i.val) he)))
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
