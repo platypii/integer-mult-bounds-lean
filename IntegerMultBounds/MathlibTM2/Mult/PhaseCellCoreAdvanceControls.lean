@@ -34,6 +34,24 @@ theorem originAdvances_coreControls (A s width radius L w : ℕ)
   | nil => simp [he] at hn
   | cons a as => simp [coreGatherControls, he, originAdvances, originAdvances_window]
 
+theorem coreOriginAdvances_volume (s width radius L w : ℕ) :
+    (originAdvances w 0 (coreGatherOrigins s width radius L 1)).sum ≤ s*w := by
+  have ho : (0::coreGatherOrigins s width radius L 1).Pairwise (· ≤ ·) :=
+    List.pairwise_cons.mpr ⟨by simp, coreGatherOrigins_ordered s width radius L 1⟩
+  simpa using originAdvances_sum_le w 0 s (coreGatherOrigins s width radius L 1) ho (by omega)
+    (fun origin horigin => by have hh := coreGatherOrigins_fit s width radius L 1 origin horigin; omega)
+
+theorem coreGatherControls_length_le (A s width radius L w : ℕ)
+    (hgroup : 0 < (coreGatherIndices s width radius L).length) :
+    (coreGatherControls A s width radius L w).length ≤
+      s*w+(coreGatherIndices s width radius L).length+1 := by
+  rw [←originAdvances_coreControls A s width radius L w hgroup]
+  simp only [length_gatherControls,List.sum_append,List.sum_singleton,Nat.add_zero,
+    List.length_append,List.length_singleton,originAdvances_length,coreGatherOrigins,List.length_map]
+  have hh := coreOriginAdvances_volume s width radius L w
+  simpa only [coreGatherOrigins,Nat.add_assoc] using Nat.add_le_add_right hh
+    ((coreGatherIndices s width radius L).length+1)
+
 variable {Q A : ℕ} {U P : Type} {body : P → Pr P 117 Q A U}
 
 /-- The binary origins emitted by the core controller suffice to build the

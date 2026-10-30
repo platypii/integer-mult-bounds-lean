@@ -2112,6 +2112,37 @@ Verification: `queuedHaloCore_spec` checked at 3246.7 MiB peak RSS. The
 coupling-interval integration build passed 14,965 jobs and its approved-axiom
 audit (5.1 GiB aggregate peak); whitespace checks passed.
 
+### Protected direct queue gathering (2026-10-29)
+
+`queuedCoreGather_spec` places the initialized core sweep through any injective
+register map. The generic `writeRight`/`embOvr_writeRight_view` law transports
+its finite output writes structurally. The spent movement-control stream is
+retired, leaving exactly the batch, origin stream and generated count as output
+writes. `coreGatherControls_length_le` pays that retirement with at most one
+ambient line's movement and one delimiter per origin; it introduces no ambient
+traversal per halo.
+
+`protectedCoreGather_spec` instantiates the shared execution proof with an
+injective placement built from swaps. The batch is generated directly on queue
+256, origins on 257 and the group count on 261. Retained ambient/core/radius
+geometry uses external ports 264/265/266, the empty binary zero source uses 268,
+and the temporary word width uses 267. Word width is generated from retained
+precision rather than assumed on a native scratch register. Both temporary
+word width and spent movement controls return blank, all external geometry
+sources restore, and every native solver register below 256 restores exactly.
+There is no second copy of the gathered batch into the solver queue.
+
+This removes the gather/solver register conflict. Composing the protected sweep
+with concrete queued calls, consuming origin/count streams and constructing
+successive local geometry, complete low-runtime restoration between calls,
+complete setup-key reuse, seams/full-system fallback, complex/tensor composition
+and final uniform time/live-storage bounds remain open. S4 remains open.
+
+Verification: right-write transport, core movement/control bounds, generic
+queue placement and protected gathering checked at 1388.8, 2063.4, 2084.9 and
+2100.7 MiB peak RSS. The coupling-interval integration build passed 14,968 jobs
+and its approved-axiom audit (3.4 GiB aggregate peak); whitespace checks passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
