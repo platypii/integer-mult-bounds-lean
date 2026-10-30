@@ -3,13 +3,14 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyRealBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedComponentSolutions
 public import IntegerMultBounds.MathlibTM2.Host.ExtendStacks
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExpandComplexStock
 
 /-! Execute component expansion and the actual shared-factor packed numerical batch. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Node
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
@@ -51,6 +52,11 @@ theorem packedKeyComplexExpand_exec (bodyComplex : P → Pr P 277 Q A U)
     ∃ v' n G, v'.user = v.user ∧ n ≤ Fs.length*(26*(L*W)+17)+34 ∧
       Exec bodyComplex (expandComplexKeyCounted 264 267 269 263 270 271 272 276)
         (mk v (extendStacks (by decide : 276 ≤ 277) M)) n (mk v' G) ∧
+      (∀ depth, ExecWithin bodyComplex
+        (fun d z => mnSize z+d ≤ mnSize (mk v (extendStacks (by decide : 276 ≤ 277) M))+
+          depth+2*(Fs.length*(26*(L*W)+17)+34)) depth
+        (expandComplexKeyCounted 264 267 269 263 270 271 272 276)
+        (mk v (extendStacks (by decide : 276 ≤ 277) M)) n (mk v' G)) ∧
       embStk packedKeyComplexReg G = M₁ ∧
       G.L 276 = [] ∧ G.R 276 = List.replicate Fs.length tick := by
   dsimp only
@@ -67,7 +73,9 @@ theorem packedKeyComplexExpand_exec (bodyComplex : P → Pr P 277 Q A U)
     (by simpa [T₀,extendStacks] using hblank 271 (by simp))
     (by simpa [T₀,extendStacks] using hblank 272 (by simp))
     (by simp [T₀,extendStacks])
-  refine ⟨v',n,_,hu,hn,he,?_,?_,?_⟩
+  refine ⟨v',n,_,hu,hn,he,?_,?_,?_,?_⟩
+  · intro depth
+    exact expandComplexKeyCounted_within_stock he hn depth
   · refine Stacks.ext rfl rfl ?_ ?_
     · funext i
       simp [embStk,packedKeyComplexReg,T₀,extendStacks,i.isLt]
@@ -151,7 +159,7 @@ theorem packedKeyComplexRealBatch_exec
   let M₁ : Stacks 276 A := {M with R := (Function.update (Function.update M.R 263 queue)
     264 (List.replicate Fs.length tick++M.R 264))}
   have hfit : a+(b-a) ≤ s := by have := hsetup.hab; have := hsetup.hbs; omega
-  obtain ⟨v₁,n₁,H₁,hu₁,hn₁,he₁,hview₁,hL₁,hR₁⟩ := packedKeyComplexExpand_exec
+  obtain ⟨v₁,n₁,H₁,hu₁,hn₁,he₁,hstock₁,hview₁,hL₁,hR₁⟩ := packedKeyComplexExpand_exec
     bodyComplex (by omega) a (b-a) W hfit Fs tail v M hreplicas hpacket hsource
     (by intro i hi; exact hblank i (by simp only [List.mem_cons] at hi ⊢; tauto))
   have hviews₁ : PackedKeyBankViews M₁ B S₀ S :=
