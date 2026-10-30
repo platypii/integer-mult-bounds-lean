@@ -3642,6 +3642,7 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Cost.familyComplexBatchStepCost_line_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatchStepCost_scaled_volume_le,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatchStep_trace_volume_le,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedLoop_exec_within,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedLoop_exec_trace,
       `IntegerMultBounds.MathlibTM2.Cost.selectedFamilyBatchLoop_compiled_volume_le,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.familyComplexBatch_certify,
