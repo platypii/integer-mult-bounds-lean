@@ -155,19 +155,19 @@ theorem packedPreparedResidualSolve_bank_exec (hQ : SS.states ≤ Q) (hA : 96 �
     let σ := boundaryFactorState T
     PackedPreparedBank q w W B.card S →
     σ .vk = cstream A w b →
-    σ .bo = cstream A w (Lc.map colC).flatten →
-    σ .hf = cstream A w (Uc.map colC).flatten →
-    σ .df = cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt)) →
+    PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
+      (cstream A w (Uc.map colC).flatten)
+      (cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt))) S →
     ∃ v' n, v'.user = v.user ∧ n ≤ preparedResidualSolveCost q w B.card W ∧
       Exec body (packedPreparedResidualSolve hQ) (mk v S) n
         (mk v' {S with R := (Function.update (Function.update S.R 143 []) 238
           (cstream A w ((bandSolveVec q W Lc Uc rcs (b.map (normalizeBoundaryWord q (q/2-1)))).map
             (unscaleBoundaryWord q))++S.R 238))}) := by
   dsimp only
-  intro hformat hstage b hb hbound v S hbank hvk hbo hhf hdf
+  intro hformat hstage b hb hbound v S hbank hvk hpages
   exact packedPreparedResidualSolve_exec hQ hA p u l target rhsExp B W columns hp hlen
     hformat hstage b hb hbound v S hbank.workspace.left hbank.workspace.mul
-    hbank.ready hvk hbo hhf hdf hbank.workspace.precision hbank.workspace.exponent
+    hbank.ready hvk hpages.lower hpages.upper hpages.reciprocal hbank.workspace.precision hbank.workspace.exponent
     hbank.workspace.scalar hbank.workspace.table hbank.workspace.padding hbank.workspace.swap
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

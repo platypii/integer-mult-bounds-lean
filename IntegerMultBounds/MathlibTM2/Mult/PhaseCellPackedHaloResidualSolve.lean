@@ -49,19 +49,19 @@ theorem packedHaloResidualSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     let σ := boundaryFactorState T
     PackedPreparedBank q w W B.card S →
     σ .vk = cstream A w b →
-    σ .bo = cstream A w (Lc.map colC).flatten →
-    σ .hf = cstream A w (Uc.map colC).flatten →
-    σ .df = cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt)) →
+    PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
+      (cstream A w (Uc.map colC).flatten)
+      (cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt))) S →
     ∃ v' n, v'.user = v.user ∧ n ≤ preparedResidualSolveCost q w B.card W ∧
       Exec body (packedPreparedResidualSolve hQ) (mk v S) n
         (mk v' {S with R := (Function.update (Function.update S.R 143 []) 238
           (cstream A w ((bandSolveVec q W Lc Uc rcs (b.map (normalizeBoundaryWord q (q/2-1)))).map
             (unscaleBoundaryWord q))++S.R 238))}) := by
   dsimp only
-  intro hformat hstage C D x hC hx herror v S hbank hvk hbo hhf hdf
+  intro hformat hstage C D x hC hx herror v S hbank hvk hpages
   apply packedPreparedResidualSolve_bank_exec (body := body) hQ hA p u l target rhsExp B W columns hp hlen
     hformat hstage _ (by simp only [List.length_map,bFoldOrder_length]) ?_
-    v S hbank hvk hbo hhf hdf
+    v S hbank hvk hpages
   intro z hz
   obtain ⟨i,hi,rfl⟩ := List.mem_map.mp hz
   have hn := haloResidual_norm_bound (by omega : 0 < p) hst hαu hθ hgap hbudget
