@@ -2313,6 +2313,25 @@ Verification: the 14,973-job integration build and approved-axiom audit passed.
 Guarded single-file checks peaked at 3309.1 MiB for the solver and
 3288.7 MiB for the gathered core.
 
+### Binary-difference advancement of retained masters (2026-10-29)
+
+`advanceHaloMasters` subtracts the retained binary origin from the next binary
+origin, converts the difference twice and prepends those ticks to the two unary
+coordinate masters. It then clears its difference word. Its generic execution
+theorem preserves every other stack, including both input words and arbitrary
+endpoint suffixes, and restores all four scratch stacks. The charged bound is
+`12*(next-old)+32*V+22`; it never scans the existing unary coordinates.
+`advanceUnaryPair` factors the shared conversion proof over arbitrary registers.
+
+Ordered generated origins justify nonnegative movement; the sum of the decoded
+differences can therefore be charged to total movement rather than the sum of
+absolute origins. The new primitive does not yet consume the next generated
+origin packet, install that binary origin or update the remaining interval
+metadata. Those bridges and the full group loop remain open, as do complete
+setup reuse and the remaining global S4 obligations.
+Verification: the guarded single-file check peaked at 1407.8 MiB. The
+14,974-job integration build and approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
