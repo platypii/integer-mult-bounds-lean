@@ -10,6 +10,17 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.MathlibTM2.Fast.Main
 
+/-- The physical queue for an unprocessed suffix never exceeds the initial
+queue. No fixed packet width or numerical property is needed for this fact. -/
+theorem packedHaloQueue_length_le {A X : Type} (encode : X → List A)
+    (done todo : List X) (tail initial current : List A)
+    (hinit : initial = ((done++todo).map encode).flatten++tail)
+    (hcurrent : current = (todo.map encode).flatten++tail) :
+    current.length ≤ initial.length := by
+  rw [hinit,hcurrent,List.map_append,List.flatten_append]
+  simp only [List.length_append]
+  omega
+
 theorem PackedHaloInputTrace.stock_le {Q A : ℕ} {U X : Type}
     {Result : X → Stacks 248 A → Stacks 248 A → Prop} {L : ℕ}
     (hresult : ∀ x S F, Result x S F → (F.R 132).length = L+(S.R 132).length)
@@ -62,14 +73,16 @@ theorem PackedHaloInputTrace.ready_stock_le {Q A : ℕ} {U X : Type}
     (haux : ∀ k : Fin 168, k ∈ haloAuxiliaryPorts →
       F.R (packedRecoveryRuntimeReg k) = S.R (packedRecoveryRuntimeReg k))
     (hhigh : ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → F.R k = S.R k)
-    (hqueue : (F.R 110).length ≤ (S.R 110).length)
+    (encode : X → List (Fin (A+4))) (todo : List X) (tail : List (Fin (A+4)))
+    (hsource : S.R 110 = ((xs++todo).map encode).flatten++tail)
+    (hqueue : F.R 110 = (todo.map encode).flatten++tail)
     (v vf : HS 248 Q A U) :
     mnSize (mk vf F) ≤ mnSize (mk v S)+xs.length*L+V := by
   apply htrace.stock_le_cursor hresult v vf V
     (hostFrameStock_congr hi ho hl).le h'.binaryLength
   intro k h132 h157
   by_cases h110 : k = 110
-  · subst k; exact hqueue
+  · subst k; exact packedHaloQueue_length_le encode xs todo tail _ _ hsource hqueue
   · exact (h.right_length_eq h' h93 haux hhigh k h110 h132 h157).le
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
