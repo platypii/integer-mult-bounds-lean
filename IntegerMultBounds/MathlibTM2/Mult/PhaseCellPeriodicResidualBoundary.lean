@@ -19,6 +19,24 @@ def periodicBoundaryResult {A s : ℕ} [NeZero s] (S : Stacks 168 A) (V s' t ban
     116 (List.replicate (haloBoundary s t band a b).card tick))
     143 (cstream A w ((bFoldOrder s (haloBoundary s t band a b)).map E)))}
 
+/-- The boundary solver receives its actual count and folded RHS together. -/
+theorem periodicBoundaryResult_data {A s : ℕ} [NeZero s] (S : Stacks 168 A)
+    (V s' t band a b w : ℕ) (D E : ZMod s → GaussianInt) (rhsTail : List (Fin (A+4))) :
+    let R := periodicBoundaryResult S V s' t band a b w D E rhsTail
+    (R.R 116).length = (haloBoundary s t band a b).card ∧
+      R.R 143 = cstream A w ((bFoldOrder s (haloBoundary s t band a b)).map E) := by
+  simp [periodicBoundaryResult]
+
+/-- Every tape outside the explicit residual/metadata footprint is preserved. -/
+theorem periodicBoundaryResult_frame {A s : ℕ} [NeZero s] (S : Stacks 168 A)
+    (V s' t band a b w : ℕ) (D E : ZMod s → GaussianInt) (rhsTail : List (Fin (A+4)))
+    (k : Fin 168) (hk : k ∉ ([93,110,116,141,143,148,154,156,160,164,167] : List (Fin 168))) :
+    (periodicBoundaryResult S V s' t band a b w D E rhsTail).R k = S.R k := by
+  simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hk
+  rcases hk with ⟨h93,h110,h116,h141,h143,h148,h154,h156,h160,h164,h167⟩
+  simp [periodicBoundaryResult,fullLineCouplingResult,completedCouplingIntervalR,
+    h93,h110,h116,h141,h143,h148,h154,h156,h160,h164,h167]
+
 theorem periodicResidualAndBoundaryData_exec (hQ : SS.states ≤ Q) {p q w inputExp s t u band a b : ℕ} {α d : ℝ} [NeZero s]
     (hA : 96 ≤ A) (hw5 : 5 ≤ w) (hqw : q+4 ≤ w)
     (hst : s < t)
