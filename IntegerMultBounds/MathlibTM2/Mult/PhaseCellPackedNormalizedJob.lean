@@ -61,6 +61,14 @@ structure PackedNormalizedJob (A s : ℕ) [NeZero s] where
 namespace PackedNormalizedJob
 variable {A s Q T : ℕ} [NeZero s] {U : Type}
 
+/-- The constructed packet stores precisely its core and both margins. -/
+theorem haloLength (r : PackedNormalizedJob A s) :
+    r.b-r.a = coreLength s r.coreWidth r.k+2*r.radius := by
+  have ha := r.haEq
+  have hb := r.hbEq
+  have hl := r.hleft
+  omega
+
 def emptyHost : Stacks 242 A := ⟨[],[],fun _ => [],fun _ => []⟩
 
 noncomputable def words (r : PackedNormalizedJob A s) : Fin 325 → List (Fin (A+4)) :=

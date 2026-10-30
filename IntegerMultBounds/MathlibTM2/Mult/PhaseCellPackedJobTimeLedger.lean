@@ -11,6 +11,15 @@ open IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
   IntegerMultBounds.MathlibTM2.Host IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
 variable {A s : ℕ} [NeZero s]
 
+/-- Packet precision agrees with the canonical selected inverse precision. -/
+theorem precision_eq (r : PackedNormalizedJob A s) :
+    r.q = 4*inverseExecutionExponent r.p r.l r.targetOut
+      (haloBoundary s r.t (PhaseCellBand.width r.p r.u) r.a r.b).card (PhaseCellBand.width r.p r.u) := by
+  rw [r.hqSizing,(boundaryHaloTarget_sizing r.p r.u r.l
+    (boundaryRecoveryTarget r.p (r.targetOut+1)) 2
+    (haloBoundary s r.t (PhaseCellBand.width r.p r.u) r.a r.b).card).1]
+  rw [executionPrecision,← inverseExecutionExponent_eq]
+
 noncomputable def setupTime (r : PackedNormalizedJob A s) : ℕ :=
   packedKeyNormalizedBatchCost r.Bcore r.p r.q r.W r.u r.l s r.t r.a r.b r.V
     (boundaryRecoveryTarget r.p (r.targetOut+1)) (r.targetOut+1) 2 r.targetOut r.coreWidth r.k r.radius 0
@@ -26,10 +35,7 @@ theorem kernelTime_affine (r : PackedNormalizedJob A s) :
       r.Fs.length*packedKeyNormalizedReplicaCost r.p r.q r.W r.u r.l s r.t r.a r.b r.V
         (boundaryRecoveryTarget r.p (r.targetOut+1)) (r.targetOut+1) 2 r.coreWidth r.k r.radius := by
   apply packedKeyNormalizedBatchCost_affine
-  rw [r.hqSizing,(boundaryHaloTarget_sizing r.p r.u r.l
-    (boundaryRecoveryTarget r.p (r.targetOut+1)) 2
-    (haloBoundary s r.t (PhaseCellBand.width r.p r.u) r.a r.b).card).1]
-  rw [executionPrecision,← inverseExecutionExponent_eq]
+  exact r.precision_eq
 
 /-- The schedule ledger keeps packet loading and cleanup explicit. Only the
 numerical setup is independent of the replica count. -/
