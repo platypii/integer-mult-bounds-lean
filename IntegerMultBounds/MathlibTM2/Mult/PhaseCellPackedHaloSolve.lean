@@ -5,8 +5,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryRecovery
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryRelease
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedTableRelease
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedFactorRelease
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellResetPackedInputWidth
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedInputAdvance
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedInputFinish
 
 /-! The local nonseam halo solver: original input, boundary solve, recovery and owned-page release. -/
 
@@ -27,7 +26,7 @@ noncomputable def packedHaloPreparedInput (hR : rpStates ≤ Q) (hQ : SS.states 
   .seq (embProg packedBoundaryRecoveryBase id
     (.seq (placedPackedHaloRealBoundaryData hR hQ) (packedPreparedResidualSolve hQ)))
     (.seq (packedBoundaryRecovery hR hQ)
-      (.seq packedRecoveryRelease (.seq packedInputAdvance resetPackedInputWidth)))
+      (.seq packedRecoveryRelease packedInputFinish))
 
 /-- Retained tables and factors are released once, after the input batch. -/
 noncomputable def packedHaloFinalRelease : Pr P 248 Q A U :=
