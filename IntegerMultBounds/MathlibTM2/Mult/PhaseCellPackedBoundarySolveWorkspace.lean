@@ -129,10 +129,19 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Fast IntegerMultBoun
 
 variable {A Q : ℕ} {P U : Type} {body : P → Pr P 242 Q A U}
 
+/-- Input-independent numerical certificate for one computed Schur system. -/
+structure PreparedBoundaryColumns (A p bits q w W : ℕ) {s : ℕ} [NeZero s]
+    (B : Finset (ZMod s)) (columns : List (ZMod s → GaussianInt)) : Prop where
+  length : columns.length = B.card
+  format : ColumnFamilyFormat w columns
+  stage : StageInv (factorRankMatrix A q w B W columns) (Finset.range B.card)
+    (1/(8*(p : ℝ))-(B.card : ℝ)*(1/(2 : ℝ)^bits))
+    (2+(B.card : ℝ)*(1/(2 : ℝ)^bits))
+
 /-- Run the existing boundary kernel directly from the reusable bank contract. -/
 theorem packedPreparedResidualSolve_bank_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (p u l target rhsExp : ℕ) {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (W : ℕ)
-    (columns : List (ZMod s → GaussianInt)) (hp : 2 ≤ p) (hlen : columns.length = B.card) :
+    (columns : List (ZMod s → GaussianInt)) (hp : 2 ≤ p) :
     let bits := boundaryTableBits p target rhsExp B.card
     let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
@@ -141,10 +150,7 @@ theorem packedPreparedResidualSolve_bank_exec (hQ : SS.states ≤ Q) (hA : 96 �
     let Lc := naturalLineLc q K W B.card AZ
     let Uc := naturalLineUc q K W B.card AZ
     let rcs := naturalLineRcs q K W B.card AZ
-    ColumnFamilyFormat w columns →
-    StageInv (factorRankMatrix A q w B W columns) (Finset.range B.card)
-      (1/(8*(p : ℝ))-(B.card : ℝ)*(1/(2 : ℝ)^bits))
-      (2+(B.card : ℝ)*(1/(2 : ℝ)^bits)) →
+    PreparedBoundaryColumns A p bits q w W B columns →
     ∀ (b : List GaussianInt), b.length = B.card →
     (∀ x ∈ b, |gv q x.re| ≤ (2 : ℝ)^couplingRowExponent rhsExp
       (stableInteriorExponent p rhsExp) (8*p+1) (couplingCountExponent p u) ∧
@@ -164,9 +170,9 @@ theorem packedPreparedResidualSolve_bank_exec (hQ : SS.states ≤ Q) (hA : 96 �
           (cstream A w ((bandSolveVec q W Lc Uc rcs (b.map (normalizeBoundaryWord q (q/2-1)))).map
             (unscaleBoundaryWord q))++S.R 238))}) := by
   dsimp only
-  intro hformat hstage b hb hbound v S hbank hvk hpages
-  exact packedPreparedResidualSolve_exec hQ hA p u l target rhsExp B W columns hp hlen
-    hformat hstage b hb hbound v S hbank.workspace.left hbank.workspace.mul
+  intro hcolumns b hb hbound v S hbank hvk hpages
+  exact packedPreparedResidualSolve_exec hQ hA p u l target rhsExp B W columns hp hcolumns.length
+    hcolumns.format hcolumns.stage b hb hbound v S hbank.workspace.left hbank.workspace.mul
     hbank.ready hvk hpages.lower hpages.upper hpages.reciprocal hbank.workspace.precision hbank.workspace.exponent
     hbank.workspace.scalar hbank.workspace.table hbank.workspace.padding hbank.workspace.swap
 

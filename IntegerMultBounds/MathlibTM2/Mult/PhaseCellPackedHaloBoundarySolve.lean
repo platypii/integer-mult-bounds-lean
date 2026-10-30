@@ -160,8 +160,8 @@ theorem packedHaloBoundarySolveUsing_exec (freshGeometry : Bool) (hR : rpStates 
     simpa only [hq] using hx
   have hθpos : 0 < (t : ℝ)/s-1 := lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ
   obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := packedHaloResidualSolve_exec (body := body) hQ hA
-    p u l target rhsExp B W columns hp hlen a b j hst hαu hθpos hgap hbudget hdom
-    hformat hstage C D x hC' hx' haccuracy v₁ S₁ ⟨hsolve,hwork⟩ hfold ⟨hbo,hhf,hdf⟩
+    p u l target rhsExp B W columns hp a b j hst hαu hθpos hgap hbudget hdom
+    ⟨hlen,hformat,hstage⟩ C D x hC' hx' haccuracy v₁ S₁ ⟨hsolve,hwork⟩ hfold ⟨hbo,hhf,hdf⟩
   let AZ := factorRankIntegerMatrix B W columns
   let rows := (bFoldOrder s B).map (fun i => realPartWord
     (couplingRowField (2^15*p) q t u (PhaseCellBand.width p u) a b false D C i))

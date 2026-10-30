@@ -19,7 +19,7 @@ variable {Q A : ℕ} {P U : Type} {body : P → Pr P 242 Q A U}
 
 theorem packedHaloResidualSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (p u l target rhsExp : ℕ) {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (W : ℕ)
-    (columns : List (ZMod s → GaussianInt)) (hp : 2 ≤ p) (hlen : columns.length = B.card)
+    (columns : List (ZMod s → GaussianInt)) (hp : 2 ≤ p)
     (a b cellTarget : ℕ) {t : ℕ} {α d : ℝ}
     (hst : s < t) (hαu : α^2 = (u : ℝ)) (hθ : 0 < (t : ℝ)/s-1)
     (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
@@ -32,10 +32,7 @@ theorem packedHaloResidualSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     let Lc := naturalLineLc q K W B.card AZ
     let Uc := naturalLineUc q K W B.card AZ
     let rcs := naturalLineRcs q K W B.card AZ
-    ColumnFamilyFormat w columns →
-    StageInv (factorRankMatrix A q w B W columns) (Finset.range B.card)
-      (1/(8*(p : ℝ))-(B.card : ℝ)*(1/(2 : ℝ)^bits))
-      (2+(B.card : ℝ)*(1/(2 : ℝ)^bits)) →
+    PreparedBoundaryColumns A p bits q w W B columns →
     ∀ (C D : ZMod s → GaussianInt) (x : ZMod s → ℝ),
     (∀ i, ‖value q (C i)‖ ≤ (2 : ℝ)^rhsExp) →
     Solves (realMatrix s t p u) (haloInterior s t (PhaseCellBand.width p u) a b) x
@@ -58,9 +55,9 @@ theorem packedHaloResidualSolve_exec (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
           (cstream A w ((bandSolveVec q W Lc Uc rcs (b.map (normalizeBoundaryWord q (q/2-1)))).map
             (unscaleBoundaryWord q))++S.R 238))}) := by
   dsimp only
-  intro hformat hstage C D x hC hx herror v S hbank hvk hpages
-  apply packedPreparedResidualSolve_bank_exec (body := body) hQ hA p u l target rhsExp B W columns hp hlen
-    hformat hstage _ (by simp only [List.length_map,bFoldOrder_length]) ?_
+  intro hcolumns C D x hC hx herror v S hbank hvk hpages
+  apply packedPreparedResidualSolve_bank_exec (body := body) hQ hA p u l target rhsExp B W columns hp
+    hcolumns _ (by simp only [List.length_map,bFoldOrder_length]) ?_
     v S hbank hvk hpages
   intro z hz
   obtain ⟨i,hi,rfl⟩ := List.mem_map.mp hz
