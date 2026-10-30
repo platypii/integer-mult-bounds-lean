@@ -105,7 +105,7 @@ theorem packedHaloPublishedBatch_exec
   let bits := boundaryTableBits p boundaryTarget rhsExp B.card
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-  obtain ⟨v₁,H,n₁,hu₁,hn₁,he₁,hcounter,hlength,hsrc,htable,hfactors,Ds,houtputs,hgood⟩ :=
+  obtain ⟨v₁,H,n₁,hu₁,hn₁,he₁,hcounter,hlength,hsrc,htable,hfactors,Ds,houtputs,hgood,hclosedStock⟩ :=
     packedHaloClosedBatch_exec hbody hbody' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail (embDn packedHaloPublishedReg v) S₀ S hview hcount h109 h115 h116 hfactoryLeft hready
       haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank

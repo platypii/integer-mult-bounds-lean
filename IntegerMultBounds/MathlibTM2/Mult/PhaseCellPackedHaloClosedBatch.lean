@@ -8,7 +8,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloFinalRelease
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Node
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry IntegerMultBounds.MathlibTM2.Fast.TableVM
@@ -92,7 +92,17 @@ theorem packedHaloClosedBatch_exec
           (Ds.reverse.map (fun D => cstream A w (packedInterval a (b-a) D))).flatten++S.R 132 ∧
         List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (haloVertices s a b)
           (fun i => (packedIntervalRead q w a (cstream A w (packedInterval a (b-a) D)) i).re)
-          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds := by
+          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds ∧
+        ∀ c, mnProgPush (packedHaloClosedBatch (P := P) (U := U) (A := A) hR hQ) ≤ c →
+          (∀ f, mnProgPush (body'' f) ≤ c) → ∀ depth,
+          ExecWithin body'' (fun d z => mnSize z+d ≤ mnSize (mk v S₀)+
+            (inputs.length*((b-a)*w)+V)+depth+(c+1)*
+              (constructedBoundaryFactorCost p u l s t a b boundaryTarget rhsExp+
+                (2*(B.card*publicationGeometryWidth t band+publicationGeometryWidth t band+B.card)+7)+
+                ((s+t+band+a+b)*(4*V+10)+56*V+77)+
+                (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)+
+                (retirePackedBandTableCost B.card W w+packedFactorReleaseCost (boundaryFactorStockBound q w band B.card))))
+            depth (packedHaloClosedBatch hR hQ) (mk v S₀) n (mk v' F) := by
   dsimp only
   intro hy hcoeff
   let band := PhaseCellBand.width p u
@@ -130,7 +140,7 @@ theorem packedHaloClosedBatch_exec
     omega)
   obtain ⟨Ds,houtputs,hgood⟩ := htrace.packed_outputs q w a b hab hbs (1/(2 : ℝ)^finalTarget)
   refine ⟨v₃,F,n₁+n₂,(hu₃.trans hu₂).trans hu₁,Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁ he₃,hc.2.trans hcounter,?_,?_,?_,?_,Ds,?_,hgood⟩
+    Exec.seq he₁ he₃,hc.2.trans hcounter,?_,?_,?_,?_,Ds,?_,hgood,?_⟩
   · rw [h132]; exact hlength
   · rw [hviewF,hkeep 110 (by decide)]; exact hsrc
   · rw [hviewF,packedFactorReleased_off J 220 (by
@@ -141,5 +151,13 @@ theorem packedHaloClosedBatch_exec
     simp only [packedFactorReleased,ite_eq_left hk]
   · rw [h132]
     simpa [extendStacks,hout] using houtputs
+
+  · intro c hp hb depth
+    change max (mnProgPush (packedHaloInitializedBatch hR hQ))
+      (mnProgPush (embProg packedHaloBatchReg id packedHaloFinalRelease)) ≤ c at hp
+    obtain ⟨hpInit,hpRelease⟩ := max_le_iff.mp hp
+    have ht := mn_release_exec_within_stock (hinitializedStock c hpInit hb depth)
+      he₃ hn₂ hpRelease hb
+    simpa only [show (fun f : P => f) = id from rfl,packedHaloClosedBatch,B,band,q,w,bits,W,Nat.add_assoc] using ht
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
