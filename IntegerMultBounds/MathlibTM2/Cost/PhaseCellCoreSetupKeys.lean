@@ -43,12 +43,10 @@ theorem selectedCoreSetupKeys_scaled_volume_le (ct scale : ℕ) :
       ∀ (u : Fin (Sizes.p N+1)) (target : Fin (ct*Sizes.p N+1)) (width band depth : ℕ),
       scale*(∑ key ∈ selectedCoreSetupKeys N i ct u target width band depth,
         selectedFamilyKeySetupCost N i ct A key) ≤ Sizes.T N := by
-  filter_upwards [selectedFamilyAllKeysSetup_scaled_volume_le ct scale] with N hn
+  obtain ⟨C,hcost⟩ := selectedFamilyKeySetupCost_poly_le ct
+  filter_upwards [hcost,selectedFamilyDistinctKeyCharges_scaled_volume_le ct scale C 6 4] with N hc hn
   intro h i _ A u target width band depth
-  have hs : (∑ key ∈ selectedCoreSetupKeys N i ct u target width band depth,
-      selectedFamilyKeySetupCost N i ct A key) ≤
-      ∑ key : SelectedFamilyKey N i ct, selectedFamilyKeySetupCost N i ct A key :=
-    Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) (fun _ _ _ => Nat.zero_le _)
-  exact (Nat.mul_le_mul_left scale hs).trans (hn h i A)
+  exact hn h i (selectedFamilyKeySetupCost N i ct A) (hc h i A)
+    (selectedCoreSetupKeys N i ct u target width band depth)
 
 end IntegerMultBounds.MathlibTM2.Cost

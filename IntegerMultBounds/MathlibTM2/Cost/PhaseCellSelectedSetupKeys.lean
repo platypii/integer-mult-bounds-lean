@@ -104,6 +104,20 @@ theorem selectedFamilyKeyCharges_scaled_volume_le (ct scale C a b : ℕ) :
   rw [he] at hs
   exact hs.trans (hn i)
 
+/-- Selected distinct-key subfamilies inherit the same global allowance for
+any proved polynomial setup charge. -/
+theorem selectedFamilyDistinctKeyCharges_scaled_volume_le (ct scale C a b : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
+      ∀ charge : SelectedFamilyKey n i ct → ℕ,
+      (∀ key, charge key ≤ C*Sizes.t n i^a*Sizes.p n^b) →
+      ∀ keys : Finset (SelectedFamilyKey n i ct),
+      scale*(∑ key ∈ keys, charge key) ≤ Sizes.T n := by
+  filter_upwards [selectedFamilyKeyCharges_scaled_volume_le ct scale C a b] with n hn
+  intro h i charge hcharge keys
+  have hs : (∑ key ∈ keys, charge key) ≤ ∑ key, charge key :=
+    Finset.sum_le_sum_of_subset_of_nonneg (Finset.subset_univ _) (fun _ _ _ => Nat.zero_le _)
+  exact (Nat.mul_le_mul_left scale hs).trans (hn h i charge hcharge)
+
 theorem selectedFamilyAllKeysSetup_scaled_volume_le (ct scale : ℕ) :
     ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
       ∀ [NeZero (Sizes.s n i)], ∀ A : ℕ,
