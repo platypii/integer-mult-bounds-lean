@@ -137,7 +137,7 @@ theorem packedKeyComplexBatch_exec
       simp only [Function.update_apply,h279,h278,h277,ite_false]
       simp [complexBatchReg,extendStacks]
   obtain ⟨v₁,H₁,G,n₁,Ds,hu₁,hn₁,he₁,hproj,hholdL,hholdR,hqueue,hsrc,h132,h220,h248,h252,
-    h251,hfactors,houtput,hDs,hgood,hframe⟩ := packedKeyComplexRealBatch_exec
+    h251,hfactors,houtput,hDs,hgood,hframe,hcomplexRealStock⟩ := packedKeyComplexRealBatch_exec
     hbody hbody' hbody'' bodyProtected hbodyProtected bodyComplex hbodyComplex hR hQ hA
     q W hpq hW hqSizing Fs hF y C tail (embDn complexBatchReg v₀) M B S₀ S hviews hsetup
     hq hpHeader hcommon hreplicas hpacket hsource hblank hcountBlank hcounterBlank hscratch hcell hboundary

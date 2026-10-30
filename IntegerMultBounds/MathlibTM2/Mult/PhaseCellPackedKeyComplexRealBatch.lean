@@ -152,8 +152,18 @@ theorem packedKeyComplexRealBatch_exec
         (fun i => (packedIntervalRead q (2*q+8) (coreStart coreWidth k)
           (cstream A (2*q+8) (ownedCoreWords coreWidth k D)++M₁.R 253) i).re)
         x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds ∧
-      ∀ j : Fin 276, 263 ≤ j.val → G.L j = M₁.L j ∧
-        G.R j = if j = 263 then tail else M₁.R j := by
+      (∀ j : Fin 276, 263 ≤ j.val → G.L j = M₁.L j ∧
+        G.R j = if j = 263 then tail else M₁.R j) ∧
+      ∀ c, mnProgPush (packedKeyComplexRealBatch (P := P) (U := U) (A := A) hR hQ) ≤ c →
+        (∀ f, mnProgPush (bodyComplex f) ≤ c) → ∀ depth,
+        ExecWithin bodyComplex (fun d z => mnSize z+d ≤
+          mnSize (mk v (extendStacks (by decide : 276 ≤ 277) M))+
+          ((complexComponentFields Fs).length*((b-a)*(2*q+8))+V)+depth+(c+1)*
+            ((Fs.length*(26*((b-a)*W)+17)+34)+
+              ((packedKeyInputCost p q W (complexComponentFields Fs).length (b-a)+(4*(complexComponentFields Fs).length+4))+
+                packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius (complexComponentFields Fs).length)))
+          depth (packedKeyComplexRealBatch hR hQ)
+          (mk v (extendStacks (by decide : 276 ≤ 277) M)) n (mk v' H) := by
   dsimp only
   let queue := cstream A W (((complexComponentFields Fs).map (packedInterval a (b-a))).flatten)++tail
   let M₁ : Stacks 276 A := {M with R := (Function.update (Function.update M.R 263 queue)
@@ -180,14 +190,36 @@ theorem packedKeyComplexRealBatch_exec
     (by simpa [M₁] using hcountBlank) hcounterBlank hscratch hcell hboundary
     coreWidth k radius haEq hbEq hleft hright h249 h250 hpublicationClean hradiusWord hy hcoeff
   obtain ⟨hsrc,h110,harchive,htable,hcounter,hwidth,hcount,hfactors,houtput,hDs,hgood,hframe,hrealStock⟩ := hrest
-  have hrest' := And.intro hsrc (And.intro h110 (And.intro harchive (And.intro htable
-    (And.intro hcounter (And.intro hwidth (And.intro hcount (And.intro hfactors
-      (And.intro houtput (And.intro hDs (And.intro hgood hframe))))))))))
   obtain ⟨v₃,H₃,he₃,hv₃,hu₃,hview₃,hoff⟩ := exec_emb
     packedKeyComplexReg_injective hbodyComplex he₂ v₁ rfl H₁ hview₁
   have hhold := hoff 276 packedKeyComplexReg_off
   refine ⟨v₃,H₃,G,n₁+n₂,Ds,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hn₁ hn₂,
-    ?_,hview₃,hhold.1.trans hL₁,hhold.2.trans hR₁,hrest'⟩
-  exact Exec.seq he₁ he₃
+    Exec.seq he₁ he₃,hview₃,hhold.1.trans hL₁,hhold.2.trans hR₁,
+    hsrc,h110,harchive,htable,hcounter,hwidth,hcount,hfactors,houtput,hDs,hgood,hframe,?_⟩
+  intro c hpLarge hbLarge depth
+  have hpParts := hpLarge
+  simp only [packedKeyComplexRealBatch,mnProgPush,embProg_push] at hpParts
+  have hbSmall : ∀ f, mnProgPush (bodyProtected f) ≤ c := by
+    intro f
+    simpa only [hbodyComplex f,embProg_push] using hbLarge f
+  have ht := hrealStock c (Nat.le_trans (Nat.le_max_right _ _) hpParts) hbSmall depth
+  let persistent := (complexComponentFields Fs).length*((b-a)*(2*q+8))+V
+  let work := (packedKeyInputCost p q W (complexComponentFields Fs).length (b-a)+(4*(complexComponentFields Fs).length+4))+
+    packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius (complexComponentFields Fs).length
+  have htSmall : ExecWithin bodyProtected (fun d z => mnSize z+d ≤
+      mnSize (mk (embDn packedKeyComplexReg v₁) M₁)+depth+(persistent+(c+1)*work))
+      depth (packedKeyRealBatch hR hQ) (mk (embDn packedKeyComplexReg v₁) M₁) n₂ (mk v₂ G) :=
+    ht.mono (by intro d z hz; dsimp only [persistent,work]; omega)
+  obtain ⟨v',H',hv',hu',ht',hproj',hframe'⟩ := exec_emb_within_stock
+    packedKeyComplexReg packedKeyComplexReg_injective hbodyComplex htSmall v₁ rfl H₁ hview₁
+  have hout := (ht'.toExec.unique he₃).2
+  rw [hout] at ht'
+  have htLarge : ExecWithin bodyComplex (fun d z => mnSize z+d ≤
+      mnSize (mk v₁ H₁)+persistent+depth+(c+1)*work)
+      depth (embProg packedKeyComplexReg id (packedKeyRealBatch hR hQ))
+      (mk v₁ H₁) n₂ (mk v₃ H₃) :=
+    ht'.mono (by intro d z hz; omega)
+  simpa only [packedKeyComplexRealBatch,persistent,work] using
+    (mn_setup_exec_within_stock he₁ hn₁ (Nat.le_trans (Nat.le_max_left _ _) hpParts) hbLarge htLarge)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
