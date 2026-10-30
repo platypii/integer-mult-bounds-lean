@@ -27,6 +27,26 @@ noncomputable def packedHaloPublishedBatch (hR : rpStates ≤ Q) (hQ : SS.states
 
 variable {body : P → Pr P 249 Q A U} {bodyLarge : P → Pr P 263 Q A U}
 
+/-- Lift a closed solver's stock certificate beside the publisher's retained
+headers and destination archive. Spectator storage is included once. -/
+theorem packedHaloClosedBatch_lift_within_stock
+    (hbody : ∀ f, bodyLarge f = embProg packedHaloPublishedReg id (body f))
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    {vi vf : HS 249 Q A U} {S H : Stacks 249 A} {n depth budget : ℕ}
+    (ht : ExecWithin body (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
+      IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk vi S)+depth+budget)
+      depth (packedHaloClosedBatch hR hQ) (mk vi S) n (mk vf H))
+    (v : HS 263 Q A U) (B : Stacks 263 A)
+    (hv : embDn packedHaloPublishedReg v = vi) (hview : embStk packedHaloPublishedReg B = S) :
+    ∃ v' F, embDn packedHaloPublishedReg v' = vf ∧ v'.user = vf.user ∧
+      ExecWithin bodyLarge (fun d z => IntegerMultBounds.MathlibTM2.Fast.Main.mnSize z+d ≤
+        IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v B)+depth+budget)
+        depth (embProg packedHaloPublishedReg id (packedHaloClosedBatch hR hQ)) (mk v B) n (mk v' F) ∧
+      embStk packedHaloPublishedReg F = H ∧
+      (∀ j, (∀ i, packedHaloPublishedReg i ≠ j) → F.L j = B.L j ∧ F.R j = B.R j) := by
+  exact exec_emb_within_stock packedHaloPublishedReg
+    (fun i j he => Fin.ext (congrArg (fun k : Fin 263 => k.val) he)) hbody ht v hv B hview
+
 /-- Structural execution handoff from a closed solver to its publisher. Numerical
 setup parameters stay outside this register/queue composition proof. -/
 theorem packedHaloClosedBatch_publish_exec
