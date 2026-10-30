@@ -5770,3 +5770,31 @@ key/tile allowance, and repeated work to the local-volume arithmetic bound.
 The extended protected-batch axiom audit passes; the cost module checks at
 about 3.2 GiB under default proof limits. Global time and simultaneous stock
 are still open, as are complex output assembly and full schedule execution.
+
+### S4 local complex output pairing and owned-count release (2026-10-30)
+
+`PhaseCellPairComplexPrefix` pairs consecutive real and imaginary coefficient
+batches in place, preserving the later-key suffix and restoring all private
+buffers. `PhaseCellPairComplexKey` generates its symbol count from retained N
+and the output-core row width; input halos and output cores need not have equal
+lengths. Its bill is `N*(16*rowWidth+9)+14`. `releaseComplexCounts_exec` restores
+the original replica-header symbols and clears the owned N and native 2N
+counters in `10*N+8` steps, preserving all other stacks.
+`PhaseCellPairPackedBatches.pairPackedBatchHalves_exec` consumes a single list of
+2N numerical outputs, splits that actual list at N, and emits exactly N paired
+local packets. The source and destination identities preserve replica order
+and ambient field coordinates. Structural list laws connect flat coefficient
+pairing with packet/field pairing; no output decomposition witness is supplied.
+
+`PhaseCellPackedPairAccuracy` proves component identities for decoded words
+without a Fits premise, including fixed-width reduction. This matches the
+actual real numerical supplier, whose error contract concerns decoded packets
+rather than representability of its arbitrary integer field representatives.
+`pairedComponentFields_accuracy` combines the two scalar errors once per
+replica, without a packet-length or replica-count multiplier. The independent
+`PhaseCellPackedComplexOutputCheck` audits execution, count release, data order
+and accuracy. Checked modules remain below 3.1 GiB with default proof limits.
+These are the output-side contracts for one complex key. They still need
+sequencing with component input and the actual numerical call, precision/common
+format normalization and full tile/schedule execution. Selected time and peak
+stock remain open; S4 is incomplete.
