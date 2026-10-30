@@ -5599,3 +5599,27 @@ of every retained high register. This is a structural frame lemma, not a solver
 execution oracle or a complete key lifecycle. The actual numerical/factor batch
 must still be instantiated against this low-bank view, followed by protected
 output normalization, accumulation and tile/global S4 composition.
+
+### S4 use the packed numerical entry, not the ambient caller (2026-10-30)
+
+Inspection of `gridFamilyInverseBatch_spec` confirms that the 303-register
+normalized caller still consumes an ambient `chirpLine s` per replica. Its
+conversion/placement lemmas are checked adapters, but composing that caller
+would not establish S4's local-volume bound. The actual S4 numerical supplier
+remains the packed 263-register published batch. Do not use the ambient caller
+to discharge the packed solve gate.
+`PhaseCellPackedInputConversion` now supplies the required local conversion over
+an arbitrary tape bank. Generated narrowing and numerator shifting operate only
+on the isolated coefficient stream; the remaining-width counter is generated
+and cleared. `PhaseCellPackedInputShiftHeader` computes `d=q-p-1` from retained
+unary numerical/input precisions with exact cost `4q+4p+9`. Its value/fit lemma
+proves that the shifted p-grid input is half its original value at precision q
+and fits the packed native width `2q+8`.
+`preparedPackedInput_exec` composes generated shift setup, local narrowing,
+scaling and shift disposal, restoring all headers and scratch and changing only
+the local source. The full cost is `4q+4p+9 + packedInputConversionCost W (2q+8)
+(q-p-1) coefficientCount + 2*(q-p-1)+2`. It needs no scalar table, ambient source,
+initialized shift or remaining-width counter. Numerical word-width generation
+can reuse `generateWordWidth` from the retained q header. Actual packed-bank
+placement, factor/batch execution, complex assembly, output conversion and the
+remaining global S4 gates still require composition.
