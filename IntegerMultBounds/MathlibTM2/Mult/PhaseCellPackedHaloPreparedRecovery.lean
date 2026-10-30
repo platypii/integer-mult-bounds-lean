@@ -104,7 +104,8 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
       F.R 125 = [] ∧ F.R 128 = [] ∧ (F.R 157).length ≤ V ∧
       (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
         (embStk packedBoundaryRecoveryBase F).R k = S.R k) ∧
-      F.L = (extendStacks (by decide : 242 ≤ 248) S).L ∧ F.inp = S.inp ∧ F.out = S.out := by
+      F.L = (extendStacks (by decide : 242 ≤ 248) S).L ∧ F.inp = S.inp ∧ F.out = S.out ∧
+      (∀ k : Fin 168, k ∈ haloAuxiliaryPorts → F.R (packedRecoveryRuntimeReg k) = S.R (packedHaloRuntimeReg k)) := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages hboundary y hy hcoeff
   let band := PhaseCellBand.width p u
@@ -189,7 +190,7 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
       hcoeff hwide hfitV (by simpa only [hq] using hVeq)
       (by simpa only [hw] using hwV) hcoords (by simpa only [hw] using hunits)
       (by rw [hruntime]; exact hgeometryFinal)
-  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,⟨hready₂,hwork₂⟩,?_,hnative₂,hprivate₂,?_,?_,h127Recovery,h143Recovery,h158Recovery,h167Recovery,hscratchRecovery,?_,?_,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,⟨hready₂,hwork₂⟩,?_,hnative₂,hprivate₂,?_,?_,h127Recovery,h143Recovery,h158Recovery,h167Recovery,hscratchRecovery,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · constructor
     · simp only [length_cstream,packedInterval_length C (by omega : a+(b-a) ≤ s)]
     · exact hsource
@@ -266,5 +267,21 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
 
   · exact hi.trans hinputFinal
   · exact ho.trans houtputFinal
+
+  · intro k hk
+    have hprior : G.R (packedRecoveryRuntimeReg k) = S.R (packedHaloRuntimeReg k) := by
+      have hlt : k.val < 242 := by have := k.isLt; omega
+      simpa only [G,extendStacks,packedRecoveryRuntimeReg,packedHaloRuntimeReg,
+        dite_eq_left hlt] using hauxiliaryFinal k hk
+    apply Eq.trans _ hprior
+    by_cases h126 : k = 126
+    · subst k
+      exact hqueueRecovery
+    · apply hretained
+      apply List.mem_append_left
+      change packedRecoveryRuntimeReg k ∈ ([125,128,130,138,140,157,137,144,150,152,159,160,161,162] : List (Fin 248))
+      simp only [haloAuxiliaryPorts,List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff] at hk h126
+      simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff,packedRecoveryRuntimeReg]
+      omega
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
