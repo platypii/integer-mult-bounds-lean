@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseRoundView
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareRoundScalars
 
 /-! Execute rounding preparation in the fixed inverse workspace, preserving its core. -/
 
@@ -37,29 +38,12 @@ theorem prepareInverseRound_exec {W p u l target s t a b : ℕ} [NeZero s]
       z.acc = st.acc ∧ (∀ i, z.val i < 2^W) ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
       (∀ i, S'.R (familyInverseCoreReg i) = S.R (familyInverseCoreReg i)) := by
-  dsimp only
-  have hc := tblPrepareInverseRound_do (e := 0) st h0 h1 h2 h3 h4 h5 h6 h7 hst haS hbS hbandS
-    hbandRoom hgeometryRoom hprecisionRoom hfit
-  obtain ⟨z,⟨hkeep,hq,hw,hmag,hshift,h15,h16,h17,hacc,hfitZ⟩,hrun⟩ :=
-    hc.host (body := body) familyInverseScalarReg_injective wl [] hwl rfl (Nat.zero_le W) hfit
-  obtain ⟨v',S',n,hu,hn,he,hh,hframe⟩ := hrun v S hS
-  refine ⟨v',S',n,z,hu,?_,he,hh,?_,?_,hkeep,hacc,hfitZ,
-    hframe.1,hframe.2.1,hframe.2.2.1,?_⟩
-  · simpa only [List.length_nil] using hn
-  · exact tblHolds_restrict inverseRoundVariables familyInverseScalarReg W wl [] z S' hh
-  · funext i
-    fin_cases i
-    · exact hw
-    · exact hq
-    · exact (hkeep 0).trans h0
-    · exact hshift
-    · exact hmag
-    · exact h15
-    · exact h16
-    · exact h17
-  · intro i
-    apply hframe.2.2.2
-    intro r
-    exact familyInverseScalarReg_core r i
+  obtain ⟨v',S',n,z,hu,hn,he,hh,hview,hval,hkeep,hacc,hfitZ,hin,hout,hL,hframe⟩ :=
+    prepareRoundScalars_exec (body := body) familyInverseScalarReg familyInverseScalarReg_injective
+      wl hwl st h0 h1 h2 h3 h4 h5 h6 h7 hst haS hbS hbandS
+      hbandRoom hgeometryRoom hprecisionRoom hfit v S hS
+  refine ⟨v',S',n,z,hu,hn,he,hh,hview,hval,hkeep,hacc,hfitZ,hin,hout,hL,?_⟩
+  intro i
+  exact hframe _ (fun r => familyInverseScalarReg_core r i)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

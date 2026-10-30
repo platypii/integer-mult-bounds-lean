@@ -5819,6 +5819,33 @@ invocation, output-row header generation and this finish still need sequencing;
 normalization/common formatting, selected time/stock and full schedule execution
 remain open. S4 is incomplete.
 
+### S4 normalization scalar setup independent of numerical placement (2026-10-30)
+
+`PhaseCellPrepareRoundScalars.prepareRoundScalars_exec` executes the existing
+inverse scalar program on an arbitrary injective scalar-bank placement. Starting
+with the eight ordinary p/u/log/target/period/endpoint inputs, it computes the
+rounding view `[wordWidth, precision, p, shift, p+8, 0, 0, 0]`, preserves those
+ordinary inputs and the accumulator, and returns fits and the full frame outside
+the scalar bank. The bank view is the same `inverseRoundVariables` used by the
+legacy caller. `prepareInverseRound_exec` now instantiates this generic execution;
+its old statement and core-preservation guarantee are unchanged.
+`packedRound_precision` identifies the generated precision with the actual packed
+boundary-halo precision at real target `target+1`; `packedRound_dimensions` proves
+the corresponding packed normalization inequalities. Thus the scalar computation
+does not silently select a different numerical precision.
+
+Pure shift/size lemmas now live in `PhaseCellRoundDimensions`, and the scalar
+selection program imports that module directly. The existing dispatcher-specific
+dimension theorem remains in `PhaseCellRoundDimensionSelection`; public names are
+preserved. The eight-variable view also has its own small module. Scalar setup
+includes a boundary-count pass, charged once per complete key outside replicas.
+The new scalar axiom audit and legacy execution build pass. Single-file checks
+use about 3.1 GiB for generic setup, 3.2 GiB for its legacy instance and 2.1 GiB
+for pure dimensions, under default proof limits. The ordinary encoded scalar
+bank remains an initial premise; its installation, scalar disposal and sequencing
+with the packed numerical/complex/normalized batch remain open, as do selected
+resource bounds and global schedule execution. S4 is incomplete.
+
 ### S4 local normalization preserves later keys (2026-10-30)
 
 `PhaseCellPackedRoundAccuracy.packedIntervalRead_finalRound` identifies the

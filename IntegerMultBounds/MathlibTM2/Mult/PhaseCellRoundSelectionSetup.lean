@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellParameterArithmetic
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundDimensionSelection
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundDimensions
 
 /-! Compute the selected logarithmic shift and magnitude exponent inside inverse scalar scratch. -/
 

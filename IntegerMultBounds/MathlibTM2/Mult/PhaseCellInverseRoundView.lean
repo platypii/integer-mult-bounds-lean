@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Fast.TableView
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseRoundVariables
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareInverseRound
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyInverseCallerWorkspace
 
@@ -9,12 +9,6 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFamilyInverseCallerWork
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds.MathlibTM2.Fast.TableVM
-
-def inverseRoundVariables : Fin 8 → Fin 25 := ![20,18,0,14,8,15,16,17]
-
-theorem inverseRoundVariables_injective : Function.Injective inverseRoundVariables := by
-  intro i j he
-  fin_cases i <;> fin_cases j <;> simp_all [inverseRoundVariables]
 
 def inverseRoundScalarReg : TblR 8 → Fin 303 :=
   familyInverseScalarReg ∘ TblR.rename inverseRoundVariables
