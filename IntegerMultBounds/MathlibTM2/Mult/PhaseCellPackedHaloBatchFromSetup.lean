@@ -13,6 +13,7 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry IntegerMultBounds.MathlibTM2.Fast.TableVM
@@ -71,6 +72,7 @@ theorem packedHaloBatch_from_setup_exec
     let bits := boundaryTableBits p boundaryTarget rhsExp B.card
     let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+    let W := 12*band+1
     Sbig.R 252 = binSyms V radius →
     (∀ x ∈ inputs, SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) x.2
       (fun k => (value q (x.1 k)).re)) →
@@ -90,7 +92,13 @@ theorem packedHaloBatch_from_setup_exec
         List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
           (fun i => (packedIntervalRead q w (coreStart coreWidth k)
             (cstream A w (ownedCoreWords coreWidth k D)++Sprotected.R 253) i).re)
-          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds := by
+          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds ∧
+        ∀ c, mnProgPush (embProg packedKeySolverReg id (packedHaloGeometryPublishedBatch (P := P) (U := U) (A := A) hR hQ)) ≤ c →
+          (∀ f, mnProgPush (bodyProtected f) ≤ c) → ∀ depth,
+          ExecWithin bodyProtected (fun d z => mnSize z+d ≤ mnSize (mk v Sprotected)+
+            (inputs.length*((b-a)*w)+V)+depth+(c+1)*
+              packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius inputs.length)
+            depth (embProg packedKeySolverReg id (packedHaloGeometryPublishedBatch hR hQ)) (mk v Sprotected) n (mk v' G) := by
   dsimp only
   intro hradiusWord hy hcoeff
   exact protectedPackedHaloGeometryPublishedBatch_exec hbody hbody' hbody'' bodyProtected hbodyProtected

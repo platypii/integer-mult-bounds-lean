@@ -112,7 +112,7 @@ theorem packedKeyRealBatch_exec
     have hh := hqn
     dsimp [executionPrecision] at hh
     omega
-  obtain ⟨v₂,F,G,n₂,hu₂,hn₂,he₂,hproj,hexternal,harchive,hsrc,htable,hcounter,hwidthClear,hfactors,hframe,Ds,houtput,hDs,hgood⟩ :=
+  obtain ⟨v₂,F,G,n₂,hu₂,hn₂,he₂,hproj,hexternal,harchive,hsrc,htable,hcounter,hwidthClear,hfactors,hframe,Ds,houtput,hDs,hgood,hprotectedStock⟩ :=
     packedHaloBatch_from_setup_exec hbody hbody' hbody'' bodyProtected hbodyProtected hR hQ hA
       inputs C [] v₁ M₁ B₁ T₁ S₁ hviews₁
       (by simpa [T₁] using hcounterBlank) hsetup₁

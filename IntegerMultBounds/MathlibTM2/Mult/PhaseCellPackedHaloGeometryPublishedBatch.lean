@@ -10,6 +10,7 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry IntegerMultBounds.MathlibTM2.Fast.TableVM
@@ -19,6 +20,23 @@ variable {Q A : ℕ} {P U : Type}
 noncomputable def packedHaloGeometryPublishedBatch (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 263 Q A U :=
   .seq (.seq (.seq (prepareCoreDimensions 252 165 249 250 254 255 259) (uclear 252))
     (packedHaloGeneratedPublishedBatch hR hQ)) (clearWords [249,250])
+
+/-- Shared workspace for one geometry-prepared batch. Numerical scratch is
+paid once; retained archives are charged separately. -/
+noncomputable def packedHaloGeometryWorkspace
+    (p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius count : ℕ) [NeZero s] : ℕ :=
+  let band := PhaseCellBand.width p u
+  let B := haloBoundary s t band a b
+  let bits := boundaryTableBits p boundaryTarget rhsExp B.card
+  let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+  let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+  let W := 12*band+1
+  ((prepareCoreDimensionsCost V (coreLength s coreWidth k+2*radius) radius+(2*V+2))+((8*q+9)+((4*count+4)+(constructedBoundaryFactorCost p u l s t a b boundaryTarget rhsExp+
+                (2*(B.card*publicationGeometryWidth t band+publicationGeometryWidth t band+B.card)+7)+
+                ((s+t+band+a+b)*(4*V+10)+56*V+77)+
+                (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)+
+                (retirePackedBandTableCost B.card W w+packedFactorReleaseCost (boundaryFactorStockBound q w band B.card))+
+                100*(count+1)*((coreLength s coreWidth k+2*radius)*w+1)))+(2*w+2))+(2*(radius+coreLength s coreWidth k)+5))
 
 variable {body : P → Pr P 242 Q A U} {body' : P → Pr P 248 Q A U}
   {body'' : P → Pr P 249 Q A U} {bodyLarge : P → Pr P 263 Q A U}
@@ -102,7 +120,13 @@ theorem packedHaloGeometryPublishedBatch_exec
         List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
           (fun i => (packedIntervalRead q w (coreStart coreWidth k)
             (cstream A w (ownedCoreWords coreWidth k D)++Sbig.R 253) i).re)
-          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds := by
+          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds ∧
+        ∀ c, mnProgPush (packedHaloGeometryPublishedBatch (P := P) (U := U) (A := A) hR hQ) ≤ c →
+          (∀ f, mnProgPush (bodyLarge f) ≤ c) → ∀ depth,
+          ExecWithin bodyLarge (fun d z => mnSize z+d ≤ mnSize (mk v Sbig)+
+            (inputs.length*((b-a)*w)+V)+depth+(c+1)*
+              packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius inputs.length)
+            depth (packedHaloGeometryPublishedBatch hR hQ) (mk v Sbig) n (mk v' F) := by
   dsimp only
   intro hradiusWord hy hcoeff
   have hlen : b-a = coreLength s coreWidth k+2*radius := by omega
@@ -177,7 +201,7 @@ theorem packedHaloGeometryPublishedBatch_exec
   refine ⟨v₄,G,((n₁+(2*V+2))+n₃)+(2*(radius+coreLength s coreWidth k)+5),
     hu₄.trans (hu₃.trans (hu₂.trans hu₁)),
     Nat.add_le_add_right (Nat.add_le_add (Nat.add_le_add_right hn₁ _) hn₃) _,
-    Exec.seq (Exec.seq (Exec.seq he₁ he₂) he₃) he₄,?_,?_,?_,?_,?_,?_,?_,Ds,?_,?_⟩
+    Exec.seq (Exec.seq (Exec.seq he₁ he₂) he₃) he₄,?_,?_,?_,?_,?_,?_,?_,Ds,?_,?_,?_⟩
   · exact harchive
   · exact hsrc
   · exact htable
@@ -200,5 +224,16 @@ theorem packedHaloGeometryPublishedBatch_exec
       Function.update_of_ne h249'] using hexternal i hi h253
   · simpa [G,Tbig,M] using hdst
   · simpa [Tbig,M] using hgood
+  · intro c hpLarge hbLarge depth
+    have hpParts := hpLarge
+    simp only [packedHaloGeometryPublishedBatch,mnProgPush] at hpParts
+    have hpSetup := Nat.le_trans (Nat.le_max_left _ _) (Nat.le_trans (Nat.le_max_left _ _) hpParts)
+    have hpGenerated := Nat.le_trans (Nat.le_max_right _ _) (Nat.le_trans (Nat.le_max_left _ _) hpParts)
+    have hpRelease := Nat.le_trans (Nat.le_max_right _ _) hpParts
+    have ht := hgeneratedStock c hpGenerated hbLarge depth
+    have htSetup := mn_setup_exec_within_stock (Exec.seq he₁ he₂)
+      (Nat.add_le_add_right hn₁ _) hpSetup hbLarge ht
+    simpa only [packedHaloGeometryPublishedBatch,packedHaloGeometryWorkspace] using
+      (mn_release_exec_within_stock htSetup he₄ (Nat.le_refl _) hpRelease hbLarge)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

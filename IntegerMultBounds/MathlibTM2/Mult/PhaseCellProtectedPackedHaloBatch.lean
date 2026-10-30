@@ -11,6 +11,7 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry IntegerMultBounds.MathlibTM2.Fast.TableVM
@@ -106,10 +107,16 @@ theorem protectedPackedHaloGeometryPublishedBatch_exec
         List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
           (fun i => (packedIntervalRead q w (coreStart coreWidth k)
             (cstream A w (ownedCoreWords coreWidth k D)++Sprotected.R 253) i).re)
-          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds := by
+          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds ∧
+        ∀ c, mnProgPush (embProg packedKeySolverReg id (packedHaloGeometryPublishedBatch (P := P) (U := U) (A := A) hR hQ)) ≤ c →
+          (∀ f, mnProgPush (bodyProtected f) ≤ c) → ∀ depth,
+          ExecWithin bodyProtected (fun d z => mnSize z+d ≤ mnSize (mk v Sprotected)+
+            (inputs.length*((b-a)*w)+V)+depth+(c+1)*
+              packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius inputs.length)
+            depth (embProg packedKeySolverReg id (packedHaloGeometryPublishedBatch hR hQ)) (mk v Sprotected) n (mk v' G) := by
   dsimp only
   intro hradiusWord hy hcoeff
-  obtain ⟨v₁,F,n,hu₁,hn,he,harchive,hsrc,htable,hcounter,hwidthClear,hfactors,hframe,Ds,houtput,hgood⟩ :=
+  obtain ⟨v₁,F,n,hu₁,hn,he,harchive,hsrc,htable,hcounter,hwidthClear,hfactors,hframe,Ds,houtput,hgood,hgeometryStock⟩ :=
     packedHaloGeometryPublishedBatch_exec hbody hbody' hbody'' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail (embDn packedKeySolverReg v) Sbig S₀ S hview hcounterBlank
       h109 h115 h116 hfactoryLeft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew
@@ -123,7 +130,28 @@ theorem protectedPackedHaloGeometryPublishedBatch_exec
     congrArg (fun B : Stacks 263 A => B.R 253) hprotectedView
   rw [←hstart253] at houtput hgood
   rw [←h253] at houtput
-  exact ⟨v₂,F,G,n,hu₂.trans hu₁,hn,he₂,hproj,hexternal,harchive,hsrc,htable,hcounter,hwidthClear,
-    hfactors,hframe,Ds,houtput,hgood.length_eq.symm,hgood⟩
+  refine ⟨v₂,F,G,n,hu₂.trans hu₁,hn,he₂,hproj,hexternal,harchive,hsrc,htable,hcounter,hwidthClear,
+    hfactors,hframe,Ds,houtput,hgood.length_eq.symm,hgood,?_⟩
+
+  intro c hpLarge hbLarge depth
+  have hpSmall : mnProgPush (packedHaloGeometryPublishedBatch (P := P) (U := U) (A := A) hR hQ) ≤ c := by
+    simpa only [embProg_push] using hpLarge
+  have hbSmall : ∀ f, mnProgPush (bodyLarge f) ≤ c := by
+    intro f
+    simpa only [hbodyProtected f,embProg_push] using hbLarge f
+  have ht := hgeometryStock c hpSmall hbSmall depth
+  let budget := (inputs.length*((b-a)*(executionWidth p l (initialSchurTarget p u
+    (boundaryTableBits p boundaryTarget rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b).card) 2) 2))+V)+
+    (c+1)*packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius inputs.length
+  have htSmall : ExecWithin bodyLarge (fun d z => mnSize z+d ≤
+      mnSize (mk (embDn packedKeySolverReg v) Sbig)+depth+budget)
+      depth (packedHaloGeometryPublishedBatch hR hQ) (mk (embDn packedKeySolverReg v) Sbig) n (mk v₁ F) :=
+    ht.mono (by intro d z hz; dsimp only [budget]; omega)
+  obtain ⟨v',G',hv',hu',ht',hproj',hframe'⟩ :=
+    exec_emb_within_stock packedKeySolverReg packedKeySolverReg_injective hbodyProtected htSmall
+      v rfl Sprotected hprotectedView
+  have hout := (ht'.toExec.unique he₂).2
+  rw [hout] at ht'
+  exact ht'.mono (by intro d z hz; dsimp only [budget] at hz; omega)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
