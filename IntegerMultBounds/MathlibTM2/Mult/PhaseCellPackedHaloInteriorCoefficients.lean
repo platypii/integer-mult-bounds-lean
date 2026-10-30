@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreservePackedRhs
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleasePackedHaloKeys
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolvePackedHaloInteriorField
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSharedCouplingCoefficientInterval
@@ -21,7 +22,7 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 168 Q A U}
 
 noncomputable def packedHaloInteriorCoefficients (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 168 Q A U :=
-  .seq (preservePackedRhsFrom 119) (.seq (solvePackedHaloInterior hR hQ) sharedCouplingCoefficientInterval)
+  .seq (preservePackedRhsFrom 119) (.seq (solvePackedHaloInterior hR hQ) (.seq sharedCouplingCoefficientInterval releasePackedHaloKeys))
 
 def packedHaloInteriorPagePorts : List (Fin 168) := [125,126,127,128,130,132,135,138,139,140,143,157]
 
@@ -32,7 +33,8 @@ def packedHaloInteriorCoefficientsCost (p l s t u target rhsExp a b V : ℕ) : �
         (executionPrecision p l target rhsExp) l s t u (PhaseCellBand.width p u) a b+
         packedHaloKeyLoopCost p l s t u target rhsExp a b V (haloLengthKeys s t (PhaseCellBand.width p u) a b)+1+
         sharedCouplingCoefficientIntervalCost (2^15*p) (executionPrecision p l target rhsExp)
-          (executionWidth p l target rhsExp) s t u (PhaseCellBand.width p u) a b V)
+          (executionWidth p l target rhsExp) s t u (PhaseCellBand.width p u) a b V)+
+        (2*(V+s)+5)
 
 theorem packedHaloInteriorCoefficients_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {l s t p u target rhsExp a b V : ℕ} [NeZero s] {α d : ℝ}
@@ -182,48 +184,54 @@ theorem packedHaloInteriorCoefficients_exec (hR : rpStates ≤ Q) (hQ : SS.state
     (by rw [hpass 143 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]; exact h143)
   let xs := couplingCoefficientPageInterval (2^15*p) (executionPrecision p l target rhsExp)
     s t u (PhaseCellBand.width p u) a b a (b-a)
-  let G := sharedCouplingPageState (PhaseCellBand.width p u) (executionWidth p l target rhsExp) xs F
+  let H := sharedCouplingPageState (PhaseCellBand.width p u) (executionWidth p l target rhsExp) xs F
+  obtain ⟨v₃,m₃,hu₃,hm₃,he₃⟩ := releasePackedHaloKeys_exec (body := body) V s v₂ H
+    (by simpa [H,sharedCouplingPageState] using hrdy.keyWidth)
+    (by simpa [H,sharedCouplingPageState] using hrdy.unaryLengthBound)
+  let G := releasedPackedHaloKeys H
   have hcoupling : CouplingReady (2^15*p) (executionPrecision p l target rhsExp) (executionWidth p l target rhsExp)
       s t u (PhaseCellBand.width p u) a b
       (cstream A (executionWidth p l target rhsExp) (packedInterval a (b-a) C)++tail)
       (embStk sharedCouplingCoreReg G) := by
-    rw [show embStk sharedCouplingCoreReg G = embStk sharedCouplingCoreReg F from sharedCouplingPage_core _ _ _ _]
+    rw [show embStk sharedCouplingCoreReg G = embStk sharedCouplingCoreReg H from releasedPackedHaloKeys_core H,
+      show embStk sharedCouplingCoreReg H = embStk sharedCouplingCoreReg F from sharedCouplingPage_core _ _ _ _]
     exact hrdy.coupling haF hbF hleftF
   have hmetadata : CouplingIntervalMetadata V s t (PhaseCellBand.width p u) a b a (b-a) G := by
     constructor
-    · simpa [G,sharedCouplingPageState] using hrdy.metadata.width
+    · simpa [G,H,releasedPackedHaloKeys,sharedCouplingPageState] using hrdy.metadata.width
     · intro k hk
       have hn (j : Fin 168) (hj : j.val < 145) : k ≠ j := by
         have hhigh : 145 ≤ k.val := by
           simp only [couplingIntervalPorts,List.mem_cons,List.not_mem_nil,or_false] at hk
           rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
         intro he; have hv := congrArg (fun k : Fin 168 => k.val) he; omega
-      simpa [G,sharedCouplingPageState,hn 135 (by decide),hn 138 (by decide),hn 139 (by decide),
-        hn 140 (by decide),hn 143 (by decide)] using hrdy.metadata.encoded k hk
-  refine ⟨v₂,G,m₀+(m₁+m₂),D,hu₂.trans (hu₁.trans hu₀),by dsimp only [packedHaloInteriorCoefficientsCost]; omega,Exec.seq he₀ (Exec.seq he₁ he₂),?_,hi,ho,?_,hDnorm,hDfits,
+      simpa [G,H,releasedPackedHaloKeys,sharedCouplingPageState,hn 135 (by decide),hn 138 (by decide),hn 139 (by decide),
+        hn 140 (by decide),hn 143 (by decide),hn 125 (by decide),hn 128 (by decide)] using hrdy.metadata.encoded k hk
+  refine ⟨v₃,G,m₀+(m₁+(m₂+m₃)),D,hu₃.trans (hu₂.trans (hu₁.trans hu₀)),by dsimp only [packedHaloInteriorCoefficientsCost]; omega,Exec.seq he₀ (Exec.seq he₁ (Exec.seq he₂ he₃)),?_,hi,ho,?_,hDnorm,hDfits,
     ?_,hcoupling,hmetadata,?_,?_,?_,?_,?_,?_,?_,?_,herror,hleftAll⟩
-  · simpa [G,sharedCouplingPageState,B,rhs] using h93
-  · simpa [G,sharedCouplingPageState] using hout
-  · change embStk packedCellCoreReg (sharedCouplingPageState _ _ _ F) = _
-    rw [sharedCouplingPage_native]
-    simpa [G,sharedCouplingPageState] using hrdy.native
+  · simpa [G,H,releasedPackedHaloKeys,sharedCouplingPageState,B,rhs] using h93
+  · simpa [G,H,releasedPackedHaloKeys,sharedCouplingPageState] using hout
+  · change embStk packedCellCoreReg (releasedPackedHaloKeys H) = _
+    rw [releasedPackedHaloKeys_native,show H = sharedCouplingPageState _ _ _ F from rfl,sharedCouplingPage_native]
+    simpa [G,H,releasedPackedHaloKeys,sharedCouplingPageState] using hrdy.native
   · have h138F : F.R 138 = [] := by
       rw [hpass 138 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide)]
       exact hfresh 138 (by simp)
-    simp [G,sharedCouplingPageState,xs,h138F]
-  · simp [G,sharedCouplingPageState,xs]
-  · simp [G,sharedCouplingPageState]
-  · simp [G,sharedCouplingPageState]
-  · simp [G,sharedCouplingPageState]
-  · simpa [G,sharedCouplingPageState] using hqueue'
-  · simpa [G,sharedCouplingPageState] using hzero
+    simp [G,H,releasedPackedHaloKeys,sharedCouplingPageState,xs,h138F]
+  · simp [G,H,releasedPackedHaloKeys,sharedCouplingPageState,xs]
+  · simp [G,H,releasedPackedHaloKeys,sharedCouplingPageState]
+  · simp [G,H,releasedPackedHaloKeys,sharedCouplingPageState]
+  · simp [G,H,releasedPackedHaloKeys,sharedCouplingPageState]
+  · simpa [G,H,releasedPackedHaloKeys,sharedCouplingPageState] using hqueue'
+  · simpa [G,H,releasedPackedHaloKeys,sharedCouplingPageState] using hzero
   · intro k hk hnot
     have hn (j : Fin 168) (hj : j ∈ packedHaloInteriorPagePorts) : k ≠ j := by
       intro he; subst k; exact hnot hj
     obtain ⟨hl,hr⟩ := hframe k hk (hn 125 (by decide)) (hn 130 (by decide)) (hn 126 (by decide))
       (hn 127 (by decide)) (hn 128 (by decide)) (hn 157 (by decide)) (hn 132 (by decide))
-    exact ⟨hl,by simpa only [G,sharedCouplingPageState,Function.update_of_ne (hn 143 (by decide)),
+    exact ⟨hl,by simpa only [G,H,releasedPackedHaloKeys,sharedCouplingPageState,Function.update_of_ne (hn 143 (by decide)),
       Function.update_of_ne (hn 139 (by decide)),Function.update_of_ne (hn 138 (by decide)),
-      Function.update_of_ne (hn 135 (by decide)),Function.update_of_ne (hn 140 (by decide))] using hr⟩
+      Function.update_of_ne (hn 135 (by decide)),Function.update_of_ne (hn 140 (by decide)),
+      Function.update_of_ne (hn 125 (by decide)),Function.update_of_ne (hn 128 (by decide))] using hr⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

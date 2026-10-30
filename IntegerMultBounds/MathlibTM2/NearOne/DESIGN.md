@@ -198,6 +198,13 @@ the numerical workspace and factor readiness. The interior frame proves port
 Together with left-tape restoration, the composed recovery endpoint now proves
 all six private ports 242--247 empty on both sides. No additional erasure cost
 is needed for 245 or 246. Reset of the separate first-pass runtime remains open.
+The first-pass `packedHaloInteriorCoefficients` now clears its selected-key
+headers 125 and 128 after coefficient generation. The bound `2*(V+s)+5` comes
+from the actual interior `PackedHaloReady` and is included in the existing
+first-pass cost. Structural view equalities preserve the coupling and native
+banks, so the downstream numerical proof is reused. Word width 130 remains
+available for coupling and output disposal; a complete next-input contract
+still needs its later reset and the retained buffer lifecycle.
 
 The proof should follow the manuscript construction recorded in
 `plan/D-sharper-bound.md`, M7b: local principal solves, owned-core cropping,
