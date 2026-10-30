@@ -5505,3 +5505,20 @@ This closes the return path's dependency on input halo-symbol length. The outer
 numerical lifecycle must still preserve the replica count through factor reuse,
 place the output at this ABI, and supply actual result planes. Key padding,
 bulk scheduling, numerical composition and global resource bounds remain open.
+
+### S4 numerical streams enter return routing (2026-10-30)
+
+The fixed-key archive publication theorem already returns core batches in input
+order (`List.Forall₂`), despite reversed accumulation in the numerical loop.
+`PhaseCellNumericalRoutingData` derives genuine paired Boolean arrays from the
+actual coefficient stream using the existing pair round-trip law and structural
+array views. `cstream_keyBatches_view` matches publication's nested shape: K
+ordered batches, N rows per batch, L coefficients per row, at coefficient width w
+produce key-major packets of width L*w. No unsignedness, numerical fits or
+externally supplied plane witness is needed for this encoding step.
+`PhaseCellNumericalReplicaReturn.numericalReplicaReturn_exec` accepts an actual
+`cstream`, derives its planes internally, and executes packed inverse routing
+plus generated output-count dummy erasure. Its bill and frame are inherited
+from the checked counted return program. It does not execute the numerical
+solver: outer placement and composition with factor setup, numerical batches,
+format normalization, key padding and global S4 bounds remain required.
