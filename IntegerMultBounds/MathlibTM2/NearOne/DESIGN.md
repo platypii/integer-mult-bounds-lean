@@ -5798,3 +5798,23 @@ These are the output-side contracts for one complex key. They still need
 sequencing with component input and the actual numerical call, precision/common
 format normalization and full tile/schedule execution. Selected time and peak
 stock remain open; S4 is incomplete.
+
+### S4 executed complex finish consumes one scalar certificate (2026-10-30)
+
+`PhaseCellPackedComplexBatchAssembly.packedBatchHalves_accuracy` splits the
+single ordered scalar accuracy certificate at the original replica count and
+derives the complex certificate for those same output halves. The caller does
+not supply separate component certificates, a decomposition, or a complex
+accuracy witness. `packedComplexBatchAssembly_exec` ties that certificate to
+the actual executed pairing output and derives its N-packet count.
+`packedComplexBatchFinish_exec` then sequences this assembly with owned-count
+release and exact replica-header restoration. The complete output-side bill is
+`N*(16*(L*w)+19)+22`; the returned fields, emitted packets and complex accuracy
+refer to the same paired list. Other stacks restore and the borrowed output
+suffix remains intact. The extended output axiom audit passes, and the module
+checks at about 3.0 GiB under default proof limits.
+This closes the restored output operation given the actual real batch output
+and its ordered scalar certificate. Component input, concrete numerical
+invocation, output-row header generation and this finish still need sequencing;
+normalization/common formatting, selected time/stock and full schedule execution
+remain open. S4 is incomplete.
