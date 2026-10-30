@@ -65,6 +65,18 @@ theorem embOvr_stock (he : Function.Injective e)
         exact hk ⟨.rt i,congrArg HK.rt hi⟩)
   simpa only [hproj] using h
 
+/-- A boundary-stock allowance for a placed bank includes every spectator
+stack exactly once through the surrounding initial state. -/
+theorem embOvr_stock_le (he : Function.Injective e)
+    (v : HS T Q A U) (w : HS T' Q A U) (S : Stacks T A) (B : Stacks T' A)
+    (budget : ℕ)
+    (hstock : mnSize (mk v S) ≤ mnSize (mk (embDn e w) (embStk e B))+budget) :
+    mnSize (mk w (embOvr e S.get B)) ≤ mnSize (mk w B)+budget := by
+  have hbalance := embOvr_stock e he S.get B
+  change mnSize (mk w (embOvr e S.get B))+mnSize (mk (embDn e w) (embStk e B)) =
+    mnSize (mk w B)+mnSize (mk v S) at hbalance
+  omega
+
 theorem embAct_push (a : Act T Q A U) : mnActPush (embAct e a) = mnActPush a := by
   induction a <;> simp_all [embAct,mnActPush]
 
