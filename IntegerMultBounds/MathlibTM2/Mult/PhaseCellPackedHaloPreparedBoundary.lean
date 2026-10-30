@@ -57,7 +57,8 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
     (x : ZMod s → ℝ)
     (hx : SchurDominance.Solves (realMatrix s t p u) (haloInterior s t (PhaseCellBand.width p u) a b) x
       (fun k => (value (executionPrecision p l target rhsExp) (C k)).re)) :
-    let B := haloBoundary s t (PhaseCellBand.width p u) a b
+    let band := PhaseCellBand.width p u
+    let B := haloBoundary s t band a b
     let bits := boundaryTableBits p boundaryTarget rhsExp B.card
     let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
     let w := executionWidth p l (initialSchurTarget p u bits 2) 2
@@ -76,6 +77,9 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
     ∃ v', ∃ T : Stacks 242 A, ∃ m, ∃ D : ZMod s → GaussianInt,
       let rows := (bFoldOrder s B).map (fun i => realPartWord
         (couplingRowField (2^15*p) q t u (PhaseCellBand.width p u) a b false D C i))
+      let Z := cstream A w (packedInterval a (b-a)
+        (guardedCouplingRowField (2^15*p) q t u band a b false D C))
+      let folded := cstream A w rows
       let output := cstream A w ((bandSolveVec q W Lc Uc rcs
         (rows.map (normalizeBoundaryWord q (q/2-1)))).map (unscaleBoundaryWord q))
       let F := {T with R := Function.update (Function.update T.R 143 []) 238 (output++T.R 238)}
@@ -84,7 +88,34 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
         preparedResidualSolveCost q w B.card W ∧
       Exec body (.seq (placedPackedHaloRealBoundaryData hR hQ) (packedPreparedResidualSolve hQ))
         (mk v S) m (mk v' F) ∧
-      PackedPreparedBank q w W B.card F := by
+      PackedPreparedBank q w W B.card F ∧
+      (
+      (embStk packedHaloRuntimeReg T).R 93 = (embStk packedHaloRuntimeReg S).R 93 ∧ (embStk packedHaloRuntimeReg T).R 143 = folded ∧ (embStk packedHaloRuntimeReg T).R 116 = List.replicate B.card tick ∧
+      (embStk packedHaloRuntimeReg T).R 167 = couplingSourceIntervalMaskSymbols true A s t band a b a (b-a) ∧
+      (embStk packedHaloRuntimeReg T).R 110 = Z++(cstream A w (packedInterval a (b-a) C)++tail) ∧
+      (embStk packedHaloRuntimeReg T).R 132 = cstream A w (packedInterval a (b-a) D)++outputTail ∧
+      embStk packedCellCoreReg (embStk packedHaloRuntimeReg T) = countedReleasedCellBank B.card Z
+        (cstream A w (packedInterval a (b-a) C)++tail) ((embStk packedHaloRuntimeReg S).R 93) (embStk packedHaloRuntimeReg S).inp (embStk packedHaloRuntimeReg S).out ∧
+      (∀ k, ‖value q (D k)‖ ≤ (2 : ℝ)^interiorOutputExponent p l target rhsExp) ∧
+      (∀ k, Fits w (D k)) ∧ ((embStk packedHaloRuntimeReg T).R 130).length = w ∧
+      (embStk packedHaloRuntimeReg T).R 138 = cstream A w (couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a)) ∧
+      (embStk packedHaloRuntimeReg T).R 139 = List.replicate (couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a)).length tick ∧
+      (embStk packedHaloRuntimeReg T).R 140 = List.replicate (2*band+1) tick ∧
+      CouplingIntervalMetadata V s t band a b a (b-a) (embStk packedHaloRuntimeReg T) ∧ (embStk packedHaloRuntimeReg T).R 126 = (embStk packedHaloRuntimeReg S).R 126 ∧ (embStk packedHaloRuntimeReg T).R 127 = [] ∧ (embStk packedHaloRuntimeReg T).R 135 = [] ∧
+      (∀ k : Fin 168, 117 ≤ k.val → k ∉ packedHaloInteriorPagePorts → k ≠ 167 → (embStk packedHaloRuntimeReg T).L k = (embStk packedHaloRuntimeReg S).L k ∧ (embStk packedHaloRuntimeReg T).R k = (embStk packedHaloRuntimeReg S).R k) ∧
+      PhaseCellInterface.ErrorOn (haloInterior s t band a b)
+        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) ∧
+      (∀ z ∈ rows,
+        (|gv q z.re| ≤ (2 : ℝ)^(q/2) ∧ |gv q z.im| ≤ (2 : ℝ)^(q/2)) ∧
+        (|gv q (normalizeBoundaryWord q (q/2-1) z).re| ≤ 1/2 ∧
+          |gv q (normalizeBoundaryWord q (q/2-1) z).im| ≤ 1/2)) ∧
+      (embStk packedHaloRuntimeReg T).L = (embStk packedHaloRuntimeReg S).L ∧
+      (embStk packedHaloRuntimeReg T).R 125 = [] ∧ (embStk packedHaloRuntimeReg T).R 128 = [] ) ∧
+      PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
+        (cstream A w (Uc.map colC).flatten)
+        (cstream A w (rcs.map fun z => (⟨z,0⟩ : GaussianInt))) F ∧
+      F.L = S.L ∧
+      (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) := by
   dsimp only
   intro columns hcolumns hbank hpages
   obtain ⟨v₁,T,n₁,D,hu₁,hn₁,he₁,hdata,hhigh,hleftFinal,hbankCarry,hpagesCarry⟩ :=
@@ -92,6 +123,7 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail v S
       hnative hmasters ha hb' hmeta h157 houtput hE hfresh haLt hfitV h139 h143 hleft
       hsep h158 h167 hrange hdom hq x hx
+  have hproduced := hdata
   rcases hdata with ⟨h93,hfold,hcount,hmask,hsource,houtput',hproj,hDnorm,hDfits,hword,
     hpage,hpageCount,hrow,hgeometry,hqueue,hzero,h135,hframe,haccuracy,hbound,hleftView,hkeys⟩
   have hC' := hC
@@ -105,12 +137,18 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
     omega
   rw [hq] at hC' hx' haccuracy hfold
   rw [hw] at hfold
+  rw [hq,hw] at hproduced
   obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := packedHaloResidualSolve_exec (body := body) hQ hA
     p u l boundaryTarget rhsExp (haloBoundary s t (PhaseCellBand.width p u) a b)
     (12*PhaseCellBand.width p u+1) columns hp a b target hst hαu hθ hgap hbudget hdom
     hcolumns C D x hC' hx' haccuracy v₁ T (hbankCarry _ _ _ _ hbank) hfold
     (hpagesCarry _ _ _ hpages)
-  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_⟩
-  exact (hbankCarry _ _ _ _ hbank).publish _
+  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_⟩
+  · exact (hbankCarry _ _ _ _ hbank).publish _
+  · exact (hpagesCarry _ _ _ hpages).publish _
+  · intro k hk hne
+    have h143 : k ≠ 143 := by intro he; subst k; omega
+    simpa only [Function.update_of_ne h143,Function.update_of_ne hne]
+      using (hhigh k hk).2
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
