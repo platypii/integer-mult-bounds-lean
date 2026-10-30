@@ -101,7 +101,7 @@ theorem packedHaloClosedBatch_exec
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   let W := 12*band+1
-  obtain ⟨v₁,H,n₁,hu₁,hn₁,he₁,hcounter,hlength,hsrc,hbetween,columns,hlen,htable,hstock,M,hout,htrace⟩ :=
+  obtain ⟨v₁,H,n₁,hu₁,hn₁,he₁,hcounter,hlength,hsrc,hbetween,columns,hlen,htable,hstock,M,hout,htrace,hnumericalStock⟩ :=
     packedHaloInitializedBatch_exec hbody hbody' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail v S₀ S hview hcount h109 h115 h116 hleft hready haMaster hbMaster
       h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank

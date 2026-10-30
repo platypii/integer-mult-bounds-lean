@@ -123,7 +123,12 @@ theorem packedHaloInitializedBatch_exec
           F.R 132 = cstream A w (packedInterval a (b-a) D)++S.R 132 ∧
           PhaseCellInterface.ErrorOn (haloVertices s a b)
             (fun i => (packedIntervalRead q w a (F.R 132) i).re) x.2 (1/(2 : ℝ)^finalTarget))
-          inputs (extendStacks (by decide) M) (embStk packedHaloBatchReg F) := by
+          inputs (extendStacks (by decide) M) (embStk packedHaloBatchReg F) ∧
+        IntegerMultBounds.MathlibTM2.Fast.Main.mnSize
+          (mk (embDn packedHaloBatchReg v') (embStk packedHaloBatchReg F)) ≤
+        IntegerMultBounds.MathlibTM2.Fast.Main.mnSize
+          (mk (embDn packedHaloBatchReg v) (extendStacks (by decide : 242 ≤ 248) M))+
+            inputs.length*((b-a)*w)+V := by
   dsimp only
   intro hy hcoeff
   obtain ⟨hq,hstage,hw⟩ := boundaryHaloTarget_sizing p u l boundaryTarget rhsExp
@@ -159,9 +164,13 @@ theorem packedHaloInitializedBatch_exec
   have hraw₂ : (embStk packedHaloBatchReg F).R 220 = _ :=
     (hsetup 220 (by decide) (by decide)).trans hraw
   refine ⟨v₂,F,n₁+n₂,hu₂.trans (hu₁'.trans hu₁),Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁' he₂,hcounter,?_,hsrc₂,hbetween₂,columns,hcolumns.length,hraw₂,hstock₂,M,hout,?_⟩
+    Exec.seq he₁' he₂,hcounter,?_,hsrc₂,hbetween₂,columns,hcolumns.length,hraw₂,hstock₂,M,hout,?_,?_⟩
   · rw [hview₁] at hlength
     simpa [extendStacks,hout] using hlength
   · simpa only [hview₁] using htrace
+
+  · have hs := hbatchFrame.2.1
+    rw [hview₁] at hs
+    simpa only [IntegerMultBounds.MathlibTM2.Fast.Main.mnSize,mk] using hs
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
