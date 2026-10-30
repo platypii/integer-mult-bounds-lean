@@ -57,6 +57,16 @@ theorem packedKeyPublicationInput_view (S : Stacks 242 A) (V radius : ℕ) :
     rw [Function.update_of_ne hne]
     simp [packedHaloPublishedReg, extendStacks]
 
+theorem packedKeyPublicationInput_native (S : Stacks 242 A) (V radius : ℕ) (i : Fin 242) :
+    (packedKeyPublicationInput S V radius).R (Fin.castLE (by decide : 242 ≤ 263) i) = S.R i := by
+  have hne : Fin.castLE (by decide : 242 ≤ 263) i ≠ (252 : Fin 263) := by
+    intro h
+    have hv := congrArg Fin.val h
+    have := i.isLt
+    change i.val = 252 at hv
+    omega
+  simp [packedKeyPublicationInput, hne, extendStacks, i.isLt]
+
 theorem packedKeyPublicationInput_radius (S : Stacks 242 A) (V radius : ℕ) :
     (packedKeyPublicationInput S V radius).R 252 = binSyms V radius := by
   simp [packedKeyPublicationInput]

@@ -81,6 +81,12 @@ theorem packedFactoryInputBank_headers (H : Stacks 242 A) (P N q l s t u band a 
     (packedFactoryInputBank_native H P N q l s t u band a b V)
   exact hv.trans (masterHeaderBank_headers _ [] i)
 
+theorem packedFactoryInputBank_precision (H : Stacks 242 A) (P N q l s t u band a b V : ℕ) :
+    ((packedFactoryInputBank H P N q l s t u band a b V).R 119).length = q := by
+  have hh := congrArg List.length (packedFactoryInputBank_headers H P N q l s t u band a b V 2)
+  dsimp [inverseMasterCorePort, masterHeaderValues, packedFactoryNativeReg] at hh
+  simpa [packedBoundaryTableRouting, packedBoundaryFactorReg, preparedBoundaryCoreReg, Equiv.swap_apply_def] using hh
+
 theorem packedFactoryInputBank_source (H : Stacks 242 A) (P N q l s t u band a b V : ℕ) :
     (packedFactoryInputBank H P N q l s t u band a b V).R 110 = [] := by
   have hv := congrArg (fun S : Stacks 224 A => S.R 110)
