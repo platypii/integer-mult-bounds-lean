@@ -15,8 +15,8 @@ variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 def publicationGeometryWidth (t band : ℕ) : ℕ := 2*(Nat.size t+Nat.size band)+7
 
-theorem publicationGeometryWidth_fits (t band : ℕ) :
-    8*(t+1)^2+2*band+8 < 2^(publicationGeometryWidth t band) := by
+theorem publicationGeometryWidth_coupling_fits (t band : ℕ) :
+    8*(t+1)^2+4*band+8 < 2^(publicationGeometryWidth t band) := by
   let R := Nat.size t+Nat.size band
   let N := 2^R
   have hN : 1 ≤ N := Nat.one_le_two_pow
@@ -25,7 +25,7 @@ theorem publicationGeometryWidth_fits (t band : ℕ) :
   have hbN : band ≤ N := (Nat.lt_size_self band).le.trans
     (Nat.pow_le_pow_right (by decide) (show Nat.size band ≤ R by dsimp [R]; omega))
   have hsq : (t+1)^2 ≤ (2*N)^2 := Nat.pow_le_pow_left (by omega) 2
-  have hsmall : 8*(t+1)^2+2*band+8 ≤ 64*N^2 := by nlinarith only [hsq,hbN,hN]
+  have hsmall : 8*(t+1)^2+4*band+8 ≤ 64*N^2 := by nlinarith only [hsq,hbN,hN]
   have hpoly : 64*N^2 = 2^(2*R+6) := by
     dsimp only [N]
     rw [← pow_mul,show R*2 = 2*R by omega,pow_add]
@@ -35,6 +35,11 @@ theorem publicationGeometryWidth_fits (t band : ℕ) :
   rw [hpoly]
   apply Nat.pow_lt_pow_right (by decide)
   dsimp [publicationGeometryWidth,R]
+  omega
+
+theorem publicationGeometryWidth_fits (t band : ℕ) :
+    8*(t+1)^2+2*band+8 < 2^(publicationGeometryWidth t band) := by
+  have h := publicationGeometryWidth_coupling_fits t band
   omega
 
 def generatePublicationWidth : Pr P₀ 117 Q A U :=
