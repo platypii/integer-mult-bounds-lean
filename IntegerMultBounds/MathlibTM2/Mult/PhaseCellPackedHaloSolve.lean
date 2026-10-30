@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryRecoveryBuffers
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloPreparedBoundaryExtended
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBoundarySolve
@@ -182,21 +184,16 @@ theorem packedHaloSolveUsing_spec (freshGeometry : Bool) (hR : rpStates ≤ Q) (
     exact ⟨fits_of_value_power hwcoef z hh.1,hh.2⟩
   have hs := hsemantic x hx'
   obtain ⟨v₃,F,n₂,D,hu₃,hn₂,he₃,h93',h139',h238,hin,hout,houtput',hfits,haccuracy,hbuffers,hnativeRecovery,hleft',hretained,hworkRecovery,hreadyRecovery,hprivateHeaders,hfactors,hpagesRecovery⟩ :=
-    packedBoundaryRecovery_spec (body := body') hR hQ hA hp hu hwidth hα hst hαu hθ hgap hbudget hdom
-      hab hbs hband hsep hpad rfl rfl C _ x hC' hylen hyfits hs.1 hx' (S.R 238)
-      (cstream A w (packedInterval a (b-a) D₁)) outputTail
-      (cstream A w (packedInterval a (b-a)
-        (guardedCouplingRowField (2^15*p) q t u band a b false D₁ C))) tail
-      (by simp only [length_cstream,packedInterval_length _ hlocal]; rfl) (by simp only [length_cstream,packedInterval_length _ hlocal]; rfl)
-      v₂ G (by simpa [G,packedBoundaryRecoveryBase] using hwork)
-      (by simpa [G,packedBoundaryRecoveryBase] using hsolve)
+    packedBoundaryRecovery_buffers_spec (body := body') hR hQ hA hp hu hwidth hα hst hαu hθ hgap hbudget hdom
+      hab hbs hband hsep hpad rfl rfl C _ x hC' hylen hyfits hs.1 hx' D₁
+      (S.R 238) outputTail tail v₂ G
+      (by simpa [G,packedBoundaryRecoveryBase] using (PackedPreparedBank.mk hsolve hwork))
+      (by simpa [G,packedBoundaryRecoveryBase] using
+        (show PackedHaloRecoveryBuffers p s t u a b q w C D₁ tail outputTail F₁ from
+          ⟨hsource,houtput₁,hpage,hcount,hrows,hboundaryCount,hmask,hheaders.width⟩))
       (by simpa [G,extendStacks] using h143)
-      (by simpa [G,extendStacks] using hboundaryCount)
       (by simpa [G,extendStacks] using hsolution)
       (by change (embStk packedRecoveryRuntimeReg G).R 165 = _; rw [hruntime]; exact hmeta.count)
-      (by simpa [G,extendStacks] using hmask)
-      (by simpa [G,extendStacks] using houtput₁)
-      (by simpa [G,extendStacks] using hsource)
       (fun i hi => (extendStacks_fresh (by decide) F₁ i hi).1)
       (fun i hi => (extendStacks_fresh (by decide) F₁ i hi).2)
       (by rw [hruntime]; exact hheaders)
@@ -211,9 +208,6 @@ theorem packedHaloSolveUsing_spec (freshGeometry : Bool) (hR : rpStates ≤ Q) (
         simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
         rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
           simpa [G,extendStacks] using hclean _ (by decide))
-      (by simpa [G,extendStacks] using congrArg List.length hrows)
-      (by simpa [G,extendStacks] using hpage)
-      (by simpa [G,extendStacks] using congrArg List.length hcount)
       hcoeff hwide hfitV (by simpa only [hq] using hVeq)
       (by simpa only [hw] using hwV) hcoords (by simpa only [hw] using hunits)
       (by rw [hruntime]; exact hmeta)
