@@ -104,4 +104,24 @@ theorem exec_emb_ovr_within_stock {P P' : Type} {ι : P → P'}
   have hwf' : embDn e wf = v₁ := hwf
   exact ⟨wf,hwf',by rw [← hwf']; rfl,ht⟩
 
+/-- Stock-aware counterpart of `exec_emb`: keep the projected final bank and
+external frame alongside the simultaneous stock certificate. The allowance is
+relative to the whole initial bank, so spectator storage is counted once. -/
+theorem exec_emb_within_stock {P P' : Type} {ι : P → P'}
+    {body : P → Pr P T Q A U} {body' : P' → Pr P' T' Q A U}
+    (he : Function.Injective e) (hbody : ∀ f, body' (ι f) = embProg e ι (body f))
+    {p : Pr P T Q A U} {v v₁ : HS T Q A U} {S S₁ : Stacks T A}
+    {steps depth budget : ℕ}
+    (hex : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+budget)
+      depth p (mk v S) steps (mk v₁ S₁))
+    (w : HS T' Q A U) (hw : embDn e w = v) (B : Stacks T' A) (hB : embStk e B = S) :
+    ∃ w' G, embDn e w' = v₁ ∧ w'.user = v₁.user ∧
+      ExecWithin body' (fun d z => mnSize z+d ≤ mnSize (mk w B)+depth+budget)
+        depth (embProg e ι p) (mk w B) steps (mk w' G) ∧
+      embStk e G = S₁ ∧
+      ∀ j, (∀ i, e i ≠ j) → G.L j = B.L j ∧ G.R j = B.R j := by
+  obtain ⟨w',hw',hu,ht⟩ := exec_emb_ovr_within_stock e he hbody hex w hw B hB
+  exact ⟨w',embOvr e S₁.get B,hw',hu,ht,embStk_ovr he S₁ B,
+    fun j hj => embOvr_off S₁.get B hj⟩
+
 end IntegerMultBounds.MathlibTM2.Host
