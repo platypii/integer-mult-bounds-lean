@@ -362,9 +362,27 @@ without merging distinct equal-length numerical keys.
 `placedSwapProg_exec` tape machine on this layout, retaining its exact step
 bound and spectator-register guarantees. It requires dyadic replica/key counts
 with balanced exponents, a bit-encoding relation, canonical binary headers and
-the existing private-bank conditions. It does not yet encode packed Gaussian
-symbols, pad nondyadic groups, generate those headers or establish the selected
-routing bound. The data module checks near 0.82 GiB and the execution module near
+the existing private-bank conditions. `replicaKeyBitInterchange_exec` now derives its finite-array/encoding witness
+internally for genuine bit planes, using a generic array-view lemma; no extra
+encoding equality is needed from that caller. Padding nondyadic groups,
+generating the interchange headers and establishing the selected routing bound
+remain open.
+
+Packed symbols have two bits, not an arbitrary alphabet-sized payload.
+`PhaseCellPairBitPlanes.copyPairBitPlanes_exec` reuses restoring mapped copies
+to emit their real and imaginary bit planes in order, preserving the source,
+borrowed destination suffixes and scratch, in `12*N+12` steps.
+`PhaseCellJoinBitPlanes.joinBitPlanes_exec` reuses mapped moves and the existing
+counted `pairComponents` program to consume two equal-length routed bit planes
+and reassemble pair symbols in order in at most `8*N+6` steps. Its reversal
+passes cancel the pairing program's reverse accumulation. The symbol counter
+is consumed and both temporary planes return blank.
+`PhaseCellPairBitPlaneData` proves exact round-trip recovery for every actual
+`cstream`, without a representability premise, and identifies both bit-plane
+layouts with the corresponding replica/key bit arrays. These programs and data
+laws still need to be composed with two actual interchanges, including disposal
+of the preserved old pair stream and generation of the symbol counter. They do
+not yet constitute a closed packed-symbol router. The data module checks near 0.82 GiB and the execution module near
 2.52 GiB. A separate `PhaseCellReplicaKeyInterchangeCheck` audits this supplier
 without joining its import closure to the numerical coupling audit.
 
