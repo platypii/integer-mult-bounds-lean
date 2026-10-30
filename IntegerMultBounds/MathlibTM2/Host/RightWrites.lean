@@ -15,6 +15,18 @@ def writeRight (writes : List (Fin T × List (Fin (A+4)))) (S : Stacks T A) : St
   | [] => S
   | (i,xs)::writes => writeRight writes {S with R := Function.update S.R i xs}
 
+
+/-- Writes to other right stacks preserve a spectator stack. -/
+theorem writeRight_R_off (writes : List (Fin T × List (Fin (A+4))))
+    (S : Stacks T A) (k : Fin T) (hk : ∀ w ∈ writes, w.1 ≠ k) :
+    (writeRight writes S).R k = S.R k := by
+  induction writes generalizing S with
+  | nil => rfl
+  | cons w writes ih =>
+    obtain ⟨i,xs⟩ := w
+    rw [writeRight,ih _ (fun w hw => hk w (List.mem_cons_of_mem _ hw))]
+    exact Function.update_of_ne (hk (i,xs) (by simp)).symm _ _
+
 theorem embOvr_writeRight {e : Fin T → Fin T'} (he : Function.Injective e)
     (writes : List (Fin T × List (Fin (A+4)))) (B : Stacks T A) (S : Stacks T' A) :
     embOvr e (writeRight writes B).get S =

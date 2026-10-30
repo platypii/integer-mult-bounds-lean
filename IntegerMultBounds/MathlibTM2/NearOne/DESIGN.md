@@ -2419,6 +2419,28 @@ Verification: guarded single-file checks peaked at 1401.3 MiB for endpoint
 refresh and 2123.9 MiB for complete metadata advancement. The 14,980-job
 integration build and approved-axiom audit passed.
 
+### Reusable postcondition for executed halo metadata advancement (2026-10-29)
+
+The structural right-write language now has `writeRight_R_off`, a generic
+spectator-stack rule. `advancedHaloMetadata_frame` uses it to expose the nine
+owned coordinate/cursor slots of the complete advancement; all other right
+stacks retain their contents. The native scratch proof uses this frame for an
+arbitrary low register, without enumerating numerical states.
+
+`advancedHaloMetadata_headers` transports the complete retained-header record:
+precision, stage, level, numeric masters and binary interval geometry, with the
+new lower/upper coordinates. `advanceHaloMetadata_spec` now returns that record,
+native cleanliness, restored high scratch and the exact final state from the
+actual execution. This gives subsequent composition one reusable contract.
+The program and charged cost are unchanged.
+
+This does not restore the solver's remaining workspace protocol or resolve its
+fresh-geometry setup assumption. Those invariants, complete setup reuse, the
+full generated loop and remaining global S4 obligations are still open.
+Verification: guarded checks peaked at 1386.4 MiB for the write-frame helper
+and 2133.7 MiB for the complete metadata contract. The 14,980-job integration
+build and approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
