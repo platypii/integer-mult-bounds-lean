@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingExecutionWidth
+
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreservePackedRhs
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloInteriorCoefficients
@@ -100,8 +102,7 @@ theorem packedHaloResidual_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA
   have hw5 : 5 ≤ w := by dsimp [w,executionWidth]; omega
   have hqw : q+4 ≤ w := by dsimp [q,w,executionPrecision,executionWidth]; omega
   have hwcoef : q+(8*p+1)+2 ≤ w := by
-    dsimp [q,w,executionPrecision,executionWidth,executionExponent,inputExponent,sourceExponent]
-    omega
+    exact execution_couplingCoefficient_width p l target rhsExp
   have has : ∀ j < b-a, ∀ z ∈ couplingCoefficientWords (2^15*p) q s t u band (a+j), Fits w z ∧ z.im = 0 := by
     intro j _ z hz
     have hh := couplingCoefficientWords_bounds hp (NeZero.pos s) hst hαu hθ hgap hbudget z hz
