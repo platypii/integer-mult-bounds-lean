@@ -97,6 +97,16 @@ theorem PackedHaloInputTrace.append {X : Type}
   | nil => exact h'
   | cons hx _ ih => exact .cons hx (ih h')
 
+/-- Forget auxiliary transition certificates without changing physical states. -/
+theorem PackedHaloInputTrace.mono {X : Type}
+    {Result Result' : X → Stacks 248 A → Stacks 248 A → Prop}
+    (hresult : ∀ x S F, Result x S F → Result' x S F)
+    {xs : List X} {S F : Stacks 248 A} (h : PackedHaloInputTrace Result xs S F) :
+    PackedHaloInputTrace Result' xs S F := by
+  induction h with
+  | nil => exact .nil _
+  | cons hx _ ih => exact .cons (hresult _ _ _ hx) ih
+
 /-- Split a batch trace at an arbitrary input prefix, retaining its physical
 boundary state rather than reconstructing that state from numerical outputs. -/
 theorem PackedHaloInputTrace.split {X : Type}
@@ -195,10 +205,12 @@ theorem packedHaloBatch_list_exec {X : Type}
       Exec body' (packedHaloBatch hR hQ) (mk v S) n (mk v' F) ∧
       F.R 248 = [] ∧ Ready [] (embStk packedHaloBatchReg F) ∧
       PackedHaloInputTrace Result xs (embStk packedHaloBatchReg S)
-        (embStk packedHaloBatchReg F) := by
+        (embStk packedHaloBatchReg F) ∧
+      PackedHaloInputTrace (fun x S F => Result x S F ∧ ∃ todo, Ready todo F ∧ todo.length ≤ xs.length)
+        xs (embStk packedHaloBatchReg S) (embStk packedHaloBatchReg F) := by
   let Inv := fun j T => ∃ done todo : List X,
     xs = done++todo ∧ done.length = j ∧ Ready todo T ∧
-      PackedHaloInputTrace Result done (embStk packedHaloBatchReg S) T
+      PackedHaloInputTrace (fun x S F => Result x S F ∧ ∃ todo, Ready todo F ∧ todo.length ≤ xs.length) done (embStk packedHaloBatchReg S) T
   obtain ⟨v',F,n,hu,hn,he,hcounter,hI⟩ := packedHaloBatch_exec hbody hR hQ
     xs.length cost Inv (by
       intro j hj vi T hI
@@ -210,7 +222,10 @@ theorem packedHaloBatch_list_exec {X : Type}
         refine ⟨vf,G,m,hu,hm,he,done++[x],todo,?_,?_,hr,?_⟩
         · simpa only [List.append_assoc,List.singleton_append] using hxs
         · simp only [List.length_append,List.length_singleton,hlen]
-        · exact htrace.append (.cons hresult (.nil G))) v S hcount
+        · exact htrace.append (.cons ⟨hresult,todo,hr,by
+            have hh := congrArg List.length hxs
+            simp only [List.length_append,List.length_cons] at hh
+            omega⟩ (.nil G))) v S hcount
     ⟨[],xs,rfl,rfl,hready,.nil _⟩
   obtain ⟨done,todo,hxs,hlen,hr,htrace⟩ := hI
   have hnil : todo = [] := by
@@ -223,6 +238,6 @@ theorem packedHaloBatch_list_exec {X : Type}
   subst todo
   simp only [List.append_nil] at hxs
   subst done
-  exact ⟨v',F,n,hu,hn,he,hcounter,hr,htrace⟩
+  exact ⟨v',F,n,hu,hn,he,hcounter,hr,htrace.mono (fun _ _ _ h => h.1),htrace⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
