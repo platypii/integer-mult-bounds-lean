@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBatchOutputs
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloInitializedBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloFinalRelease
 
@@ -86,13 +87,12 @@ theorem packedHaloClosedBatch_exec
       (embStk packedHaloBatchReg F).R 110 = tail ∧
       (embStk packedHaloBatchReg F).R 220 = S.R 220 ∧
       (∀ k ∈ packedFactorOwnedRegs, (embStk packedHaloBatchReg F).R k = []) ∧
-      ∃ M : Stacks 242 A, ∃ H : Stacks 248 A,
-        M.R 132 = S.R 132 ∧ H.R 132 = (embStk packedHaloBatchReg F).R 132 ∧
-        PackedHaloInputTrace (fun x S F => ∃ D : ZMod s → GaussianInt,
-          F.R 132 = cstream A w (packedInterval a (b-a) D)++S.R 132 ∧
-          PhaseCellInterface.ErrorOn (haloVertices s a b)
-            (fun i => (packedIntervalRead q w a (F.R 132) i).re) x.2 (1/(2 : ℝ)^finalTarget))
-          inputs (extendStacks (by decide) M) H := by
+      ∃ Ds : List (ZMod s → GaussianInt),
+        (embStk packedHaloBatchReg F).R 132 =
+          (Ds.reverse.map (fun D => cstream A w (packedInterval a (b-a) D))).flatten++S.R 132 ∧
+        List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (haloVertices s a b)
+          (fun i => (packedIntervalRead q w a (cstream A w (packedInterval a (b-a) D)) i).re)
+          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds := by
   dsimp only
   intro hy hcoeff
   let band := PhaseCellBand.width p u
@@ -128,8 +128,9 @@ theorem packedHaloClosedBatch_exec
     have hi := i.isLt
     change i.val = 248 at hh
     omega)
+  obtain ⟨Ds,houtputs,hgood⟩ := htrace.packed_outputs q w a b hab hbs (1/(2 : ℝ)^finalTarget)
   refine ⟨v₃,F,n₁+n₂,(hu₃.trans hu₂).trans hu₁,Nat.add_le_add hn₁ hn₂,
-    Exec.seq he₁ he₃,hc.2.trans hcounter,?_,?_,?_,?_,M,T,hout,h132.symm,htrace⟩
+    Exec.seq he₁ he₃,hc.2.trans hcounter,?_,?_,?_,?_,Ds,?_,hgood⟩
   · rw [h132]; exact hlength
   · rw [hviewF,hkeep 110 (by decide)]; exact hsrc
   · rw [hviewF,packedFactorReleased_off J 220 (by
@@ -138,5 +139,7 @@ theorem packedHaloClosedBatch_exec
   · intro k hk
     rw [hviewF]
     simp only [packedFactorReleased,ite_eq_left hk]
+  · rw [h132]
+    simpa [extendStacks,hout] using houtputs
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
