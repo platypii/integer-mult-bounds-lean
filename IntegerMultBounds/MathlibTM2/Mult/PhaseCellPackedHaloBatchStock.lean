@@ -79,6 +79,28 @@ theorem PackedHaloInputTrace.stock_le_cursor {Q A : ℕ} {U X : Type}
 
 /-- Concrete between-input readiness discharges the register stock comparison.
 The retained factor bank and spectator stacks are counted in the initial state. -/
+theorem PackedHaloInputTrace.ready_stock_le_of_queue {Q A : ℕ} {U X : Type}
+    {Result : X → Stacks 248 A → Stacks 248 A → Prop} {L : ℕ}
+    (hresult : ∀ x S F, Result x S F → (F.R 132).length = L+(S.R 132).length)
+    {xs : List X} {S F : Stacks 248 A} (htrace : PackedHaloInputTrace Result xs S F)
+    {P stage q l s t u band a b V w W boundaryCount : ℕ}
+    (h : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount S)
+    (h' : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount F)
+    (hi : F.inp = S.inp) (ho : F.out = S.out) (hl : F.L = S.L)
+    (h93 : F.R 93 = S.R 93)
+    (haux : ∀ k : Fin 168, k ∈ haloAuxiliaryPorts →
+      F.R (packedRecoveryRuntimeReg k) = S.R (packedRecoveryRuntimeReg k))
+    (hhigh : ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → F.R k = S.R k)
+    (hqueue : (F.R 110).length ≤ (S.R 110).length)
+    (v vf : HS 248 Q A U) :
+    mnSize (mk vf F) ≤ mnSize (mk v S)+xs.length*L+V := by
+  apply htrace.stock_le_cursor hresult v vf V
+    (hostFrameStock_congr hi ho hl).le h'.binaryLength
+  intro k h132 h157
+  by_cases h110 : k = 110
+  · subst k; exact hqueue
+  · exact (h.right_length_eq h' h93 haux hhigh k h110 h132 h157).le
+
 theorem PackedHaloInputTrace.ready_stock_le {Q A : ℕ} {U X : Type}
     {Result : X → Stacks 248 A → Stacks 248 A → Prop} {L : ℕ}
     (hresult : ∀ x S F, Result x S F → (F.R 132).length = L+(S.R 132).length)
@@ -96,11 +118,30 @@ theorem PackedHaloInputTrace.ready_stock_le {Q A : ℕ} {U X : Type}
     (hqueue : F.R 110 = (todo.map encode).flatten++tail)
     (v vf : HS 248 Q A U) :
     mnSize (mk vf F) ≤ mnSize (mk v S)+xs.length*L+V := by
-  apply htrace.stock_le_cursor hresult v vf V
-    (hostFrameStock_congr hi ho hl).le h'.binaryLength
-  intro k h132 h157
-  by_cases h110 : k = 110
-  · subst k; exact packedHaloQueue_length_le encode xs todo tail _ _ hsource hqueue
-  · exact (h.right_length_eq h' h93 haux hhigh k h110 h132 h157).le
+  apply htrace.ready_stock_le_of_queue hresult h h' hi ho hl h93 haux hhigh ?_ v vf
+  exact packedHaloQueue_length_le encode xs todo tail _ _ hsource hqueue
+
+theorem PackedHaloInputTrace.ready_stock_le_of_count {Q A : ℕ} {U X : Type}
+    {Result : X → Stacks 248 A → Stacks 248 A → Prop} {L : ℕ}
+    (hresult : ∀ x S F, Result x S F → (F.R 132).length = L+(S.R 132).length)
+    {xs : List X} {S F : Stacks 248 A} (htrace : PackedHaloInputTrace Result xs S F)
+    {P stage q l s t u band a b V w W boundaryCount : ℕ}
+    (h : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount S)
+    (h' : PackedHaloBetweenInputs P stage q l s t u band a b V w W boundaryCount F)
+    (hi : F.inp = S.inp) (ho : F.out = S.out) (hl : F.L = S.L)
+    (h93 : F.R 93 = S.R 93)
+    (haux : ∀ k : Fin 168, k ∈ haloAuxiliaryPorts →
+      F.R (packedRecoveryRuntimeReg k) = S.R (packedRecoveryRuntimeReg k))
+    (hhigh : ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → F.R k = S.R k)
+    (encode : X → List (Fin (A+4))) (packetLength : ℕ)
+    (hencode : ∀ x, (encode x).length = packetLength) (initial todo : List X)
+    (hcount : todo.length ≤ initial.length) (tail : List (Fin (A+4)))
+    (hsource : S.R 110 = (initial.map encode).flatten++tail)
+    (hqueue : F.R 110 = (todo.map encode).flatten++tail)
+    (v vf : HS 248 Q A U) :
+    mnSize (mk vf F) ≤ mnSize (mk v S)+xs.length*L+V := by
+  apply htrace.ready_stock_le_of_queue hresult h h' hi ho hl h93 haux hhigh ?_ v vf
+  rw [hsource,hqueue]
+  exact packedHaloQueue_length_le_of_count encode packetLength hencode initial todo tail hcount
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
