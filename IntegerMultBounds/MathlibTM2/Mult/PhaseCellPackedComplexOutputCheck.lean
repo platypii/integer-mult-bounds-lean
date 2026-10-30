@@ -1,5 +1,7 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedComplexStock
+
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFinishComponentBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComponentSolutionMagnitude
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedComponentLocality
@@ -8,6 +10,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedComponentLocality
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedComplexBatchFinish_pushBound,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedComplexBatchFinish_within_stock,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.componentSolution_error,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.normalizedPackedComponents_global_accuracy,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.normalizedPackedComponents_generated_accuracy,
