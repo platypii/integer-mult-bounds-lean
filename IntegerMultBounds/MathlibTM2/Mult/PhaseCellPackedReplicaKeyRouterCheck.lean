@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCountedReplicaReturn
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRealReplicaReturn
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyRoutingCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellChunkTileCost
@@ -8,6 +9,8 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedPackedReplicaKeyRoute
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.countedReplicaRemoval_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedCountedReplicaReturn_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedRealReplicaReturn_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.chunkStageBits_length,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkPlanesUsing_exec,

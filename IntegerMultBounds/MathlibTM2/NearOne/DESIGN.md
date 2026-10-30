@@ -5489,3 +5489,19 @@ count/product/erasure proofs. This permits halo-to-core row shrinkage without
 identifying incompatible packet lengths. The outer lifecycle must still place
 and preserve the replica counter, generate output row dimensions and compose
 these programs with actual numerical batches and inverse routing. S4 remains open.
+
+`PhaseCellCountedReplicaRemoval.countedReplicaRemoval_exec` now generates the
+output row width K*W and real-symbol count N*K*W from retained replica/key/width
+headers, derives the surviving rectangular array from the actual suffix, removes
+dummy rows and clears both generated counters. Its complete bound is
+`K*(4W+9)+14*capacity*K*W+9*N+2*K*W+26`; only the payload changes.
+`PhaseCellPackedCountedReplicaReturn.packedCountedReplicaReturn_exec` composes
+this with the executed packed inverse route. It requires the retained replica
+count N rather than a supplied real-symbol counter, uses current output packet
+width W, and restores the generated row/real counters and other scratch. The
+codec count is consumed, matching its owned input contract. Its bill includes
+the inverse packed route plus all output dimension generation and erasure.
+This closes the return path's dependency on input halo-symbol length. The outer
+numerical lifecycle must still preserve the replica count through factor reuse,
+place the output at this ABI, and supply actual result planes. Key padding,
+bulk scheduling, numerical composition and global resource bounds remain open.
