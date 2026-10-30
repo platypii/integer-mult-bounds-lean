@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedPreparedResidualSolve
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryFactorFrame
 
 /-! The reusable physical workspace needed by normalization, solve and unscale.
 Factor data and RHS semantics are supplied separately. -/
@@ -19,6 +20,13 @@ structure PackedBoundarySolveWorkspace {A : ℕ} (q : ℕ) (S : Stacks 242 A) : 
   table : (embStk packedBoundaryFactorReg S).R 220 = []
   padding : (embStk packedBoundaryFactorReg S).R 221 = []
   swap : (embStk packedBoundaryFactorReg S).R 225 = []
+
+/-- The numerical bank shared by successive packed inputs. Input encoding and
+output ownership are separate obligations of the batch cursor. -/
+structure PackedPreparedBank {A : ℕ} (q w W N : ℕ) (S : Stacks 242 A) : Prop where
+  ready : BoundarySolveReady (boundaryFactorState
+    (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg S))) q w W N
+  workspace : PackedBoundarySolveWorkspace q S
 
 /-- Recovery restores native arithmetic scratch and preserves the retained
 precision and high workspace. Its consumed solution buffer is irrelevant. -/
@@ -46,6 +54,19 @@ theorem PackedBoundarySolveWorkspace.of_recovery_frame {A q : ℕ} {S F : Stacks
   · exact (hhigh 234 (by decide) (by decide)).trans h.table
   · exact (hhigh 235 (by decide) (by decide)).trans h.padding
   · exact (hhigh 239 (by decide) (by decide)).trans h.swap
+
+/-- Recovery may consume the solution and replace the RHS while retaining the
+bank needed by the next input. -/
+theorem PackedPreparedBank.of_recovery_frame {A q w W N : ℕ} {S F : Stacks 242 A}
+    (h : PackedPreparedBank q w W N S) (hleft : F.L = S.L)
+    (hmul : ∀ i : Fin 64, F.R ⟨i.val,by omega⟩ = [])
+    (hprecision : F.R 119 = S.R 119)
+    (hhigh : ∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) :
+    PackedPreparedBank q w W N F := by
+  constructor
+  · rw [packedBoundaryFactorState_of_solution_frame S F hhigh]
+    exact h.ready.update_vk _
+  · exact h.workspace.of_recovery_frame hleft hmul hprecision hhigh
 
 /-- Publishing a solved RHS preserves the numerical workspace. -/
 theorem PackedBoundarySolveWorkspace.publish {A q : ℕ} {S : Stacks 242 A}
