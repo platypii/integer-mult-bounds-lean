@@ -5875,3 +5875,21 @@ rounding and widening programs instantiate this generic proof.
 transfer/move/final-frame argument. Its external program, statement and bill
 are unchanged up to unfolding. The shared proof checks near 1.9 GiB and the
 rounding instance near 3.1 GiB with default proof limits.
+
+### S4 common-width publication preserves the key suffix (2026-10-30)
+
+`PhaseCellWidenPackedPrefix.widenPackedPrefix_exec` instantiates the shared
+prefix transformation with the actual generated signed-width conversion. It
+emits the identical coefficient list at common width W, restores all retained
+width/count symbols and scratch, and preserves the later-key suffix. The width
+difference is generated and disposed by the existing conversion program.
+For n coefficients of width w, the complete bill is
+`4*W+4*w+2*(W-w)+24+n*(6*w+10*W+10)`, with no suffix-length term.
+The strict output Fits already derived by normalization suffices for its signed
+representability premise; the packed rounding accuracy theorem allows the final
+common width directly, so widening introduces no additional numerical error.
+The extended local rounding audit includes the shared transformation and actual
+widening execution. Widening checks near 2.1 GiB; the affected rounding/batch
+endpoints rebuild and audit successfully. Generating the common-publication
+caller headers and sequencing it with rounding/numerical execution remain open,
+along with selected time/stock and the global schedule. S4 is incomplete.
