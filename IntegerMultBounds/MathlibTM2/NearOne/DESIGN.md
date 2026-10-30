@@ -703,6 +703,20 @@ spine. The next work should connect one complete executed group before adding
 more descriptor variants. In particular, a theorem assuming an efficient packed
 solver or an R4 execution oracle is an intermediate lemma, not S4 acceptance.
 
+The concrete `packedNormalizedJobSchedule_exec` now executes a list of
+mathematically certified interior jobs and restores the descriptor tape, clock
+and private bank. Its stock certificate charges retained output volume plus
+the **maximum** job scratch allowance, with separate tape/clock restoration
+overhead. `dispatchedDescriptorState_stock` proves that moving a consumed
+descriptor to its saved tape preserves volume; only the output increases stock
+at a job boundary. The generic loop proves this peak bound and the older summed
+bound for the same execution, so no second interpreter or numerical proof is
+needed. This removes the repeated scratch charge, but does not yet prove the
+selected global bound: output volume, maximum scratch and restoration overhead
+must all fit together. Constructing the selected jobs, executable seam coverage,
+setup multiplicities and the total fast-time inequality remain open before
+R4/layout/tensor integration.
+
 | Order | Deliverable | Reuse and decisive acceptance check |
 | --- | --- | --- |
 | 1 | Packed halo input/output for S3 | Factor the current dispatcher's loading and storage interface from its arithmetic proof. Retain ambient coordinates for coefficients and cuts, but store only halo words. Prove agreement with the existing principal solve by restriction and index transport. An interval call must neither load nor return `s` words merely because its ambient period is `s`. |

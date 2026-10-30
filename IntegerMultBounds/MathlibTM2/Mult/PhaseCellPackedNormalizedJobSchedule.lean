@@ -52,7 +52,8 @@ theorem packedNormalizedJob_step_exec (r : PackedNormalizedJob A s)
   exact ⟨v',n,output,hu,hn,he,hp,ht⟩
 
 /-- A list of actual packed jobs restores its descriptor tape, clock, private
-bank and host frame, accumulating only certified result words. -/
+bank and host frame, accumulating only certified result words. Scratch stock is
+charged by its maximum over the jobs, not by the number of jobs. -/
 theorem packedNormalizedJobSchedule_exec
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (work : Fin 325 → Fin T) (hwork : Function.Injective work)
@@ -75,7 +76,7 @@ theorem packedNormalizedJobSchedule_exec
       ∀ C, mnProgPush (descriptorSolverSchedule src saved tmp clock savedClock step) ≤ C →
         (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
         ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
-          (C+1)*((records.map (fun r => r.stepStock (U := U) work hR hQ)).sum+6*records.length+
+          (C+1)*(outputs.flatten.length+(records.map (fun r => r.stepStock (U := U) work hR hQ)).foldr max 0+6*records.length+
             2*(descriptorScheduleTape work PackedNormalizedJob.words records).length+8)) depth
           (descriptorSolverSchedule src saved tmp clock savedClock step) (mk v S) n
           (mk v' {S with R := Function.update S.R result (outputs.reverse.flatten++S.R result)}) := by
@@ -86,7 +87,7 @@ theorem packedNormalizedJobSchedule_exec
     have hi := hsep i
     simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hi ⊢
     tauto
-  exact descriptorSolverSchedule_exec_trace_on (body := body) work hwork (id : Fin 325 → Fin 325)
+  obtain ⟨v',n,outputs,hu,hn,he,hgood,ht⟩ := descriptorSolverSchedule_exec_trace_with_peak_on (body := body) work hwork (id : Fin 325 → Fin 325)
     src saved count tmp spare result clock savedClock hreg hsep PackedNormalizedJob.words
     (packedNormalizedDescriptorStep work src saved count tmp spare result hR hQ)
     (fun r => r.stepTime (U := U) work hR hQ) (fun r => r.stepStock (U := U) work hR hQ)
@@ -96,5 +97,6 @@ theorem packedNormalizedJobSchedule_exec
       exact packedNormalizedJob_step_exec (body := body) r hR hQ hA work hwork
         src saved count tmp spare result hreg' hsep' vi Si tail hb hl hs hc ht hp)
     rest hblank hleft hscratch hsource hclock hsaved hsavedClock
+  exact ⟨v',n,outputs,hu,hn,he,hgood,fun C hp hb depth => (ht C hp hb depth).2⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

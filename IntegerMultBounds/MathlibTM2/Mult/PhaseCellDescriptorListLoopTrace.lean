@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorSchedule
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorScheduleStock
 public import IntegerMultBounds.MathlibTM2.StackLifecycleResources
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedDescriptorFinish
 
@@ -14,7 +14,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 variable {N T Q A : ℕ} {P U β : Type} {body : P → Pr P T Q A U}
 
-theorem descriptorListLoop_exec_trace (work : Fin N → Fin T)
+theorem descriptorListLoop_exec_trace_with_peak (work : Fin N → Fin T)
     (words : β → Fin N → List (Fin (A+4)))
     (src saved result clock : Fin T) (hreg : [src,saved,result,clock].Nodup)
     (fresh : List (Fin T)) (hsep : ∀ k ∈ fresh, k ∉ [src,saved,result,clock])
@@ -40,6 +40,10 @@ theorem descriptorListLoop_exec_trace (work : Fin N → Fin T)
       ∀ C, mnProgPush (countedLoop clock step) ≤ C → (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
         ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+(C+1)*(records.map stock).sum)
           depth (countedLoop clock step) (mk v S) n
+          (mk v' (descriptorLoopFinal work words records src saved result clock rest outputs S)) ∧
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          outputs.flatten.length+(C+1)*(records.map stock).foldr max 0)
+          depth (countedLoop clock step) (mk v S) n
           (mk v' (descriptorLoopFinal work words records src saved result clock rest outputs S)) := by
   have hr := hreg
   regs_ne hr
@@ -63,7 +67,11 @@ theorem descriptorListLoop_exec_trace (work : Fin N → Fin T)
         ∀ C, mnProgPush step ≤ C → (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
           ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+(C+1)*(records.map stock).sum)
             depth (.loop (·.flag) (countedLoopBody clock step)) (mk v S) n
-            (mk v' (descriptorLoopFinal work words records src saved result clock rest outputs S)) := by
+            (mk v' (descriptorLoopFinal work words records src saved result clock rest outputs S)) ∧
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          outputs.flatten.length+(C+1)*(records.map stock).foldr max 0)
+          depth (.loop (·.flag) (countedLoopBody clock step)) (mk v S) n
+          (mk v' (descriptorLoopFinal work words records src saved result clock rest outputs S)) := by
     intro records
     induction records with
     | nil =>
@@ -80,8 +88,9 @@ theorem descriptorListLoop_exec_trace (work : Fin N → Fin T)
         exact .loop_false (by simpa only [mk_var,hc0,List.head?_nil,Option.isSome_none] using hflag)
       · intro C hp hb depth
         rw [hfinal]
-        exact .loop_false (by simpa only [mk_var,hc0,List.head?_nil,Option.isSome_none] using hflag)
-          (by simp)
+        constructor <;>
+          exact .loop_false (by simpa only [mk_var,hc0,List.head?_nil,Option.isSome_none] using hflag)
+            (by simp)
     | cons r records ih =>
       intro hs vi Si tail hfresh hL hsource hc hflag
       cases hxs : Si.R clock with
@@ -119,7 +128,7 @@ theorem descriptorListLoop_exec_trace (work : Fin N → Fin T)
           simp only [descriptorLoopFinal,descriptorScheduleTape,List.flatMap_cons,List.reverse_append,
             List.reverse_cons,List.flatten_append,List.flatten_cons,List.flatten_nil,List.append_nil,
             S₁,dispatchedDescriptorState,S₀,Function.update_apply]
-          split_ifs <;> subst_vars <;> simp_all only [List.append_assoc,Ne.symm]
+          split_ifs <;> subst_vars <;> simp_all only [List.append_assoc]
         refine ⟨v₂,1+(n₁+1)+n₂+1,output::outputs,hu₂.trans hu₁,?_,?_,.cons hgood hgoods,?_⟩
         · simp only [List.map_cons,List.sum_cons]
           omega
@@ -151,7 +160,7 @@ theorem descriptorListLoop_exec_trace (work : Fin N → Fin T)
               (.loop (·.flag) (countedLoopBody clock step))
               (mk {v₁ with flag := (S₁.R clock).head?.isSome} S₁) n₂
               (mk v₂ (descriptorLoopFinal work words records src saved result clock tail outputs S₁)) := by
-            apply (ht₂ C hp hb depth).mono
+            apply (ht₂ C hp hb depth).1.mono
             intro d z hz
             change mnSize z+d ≤ mnSize (mk v₁ S₁)+depth+(C+1)*(records.map stock).sum at hz
             change mnSize z+d ≤ mnSize (mk vi Si)+depth+(C+1)*(stock r+(records.map stock).sum)
@@ -160,7 +169,44 @@ theorem descriptorListLoop_exec_trace (work : Fin N → Fin T)
             (by simpa only [mk_var,hxs,List.head?_cons,Option.isSome_some] using hflag)
             (.seq hpopBound (.seq hbodyBound hpeekBound)) htailBound
           rw [hfinal] at htOut
-          exact htOut
+          refine ⟨htOut, ?_⟩
+          have hsizeOutput : mnSize (mk v₁ S₁) = mnSize (mk vi S₀)+output.length := by
+            apply dispatchedDescriptorState_stock work (words r) src saved result
+              (by simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or] at hreg ⊢; tauto)
+            simpa only [S₀,Function.update_of_ne ‹src ≠ clock›,descriptorScheduleTape,
+              List.flatMap_cons,List.append_assoc] using hsource
+          let peak := max (stock r) ((records.map stock).foldr max 0)
+          let Bpeak := mnSize (mk vi Si)+depth+(output::outputs).flatten.length+(C+1)*peak
+          have hhead : (C+1)*stock r ≤ (C+1)*peak := Nat.mul_le_mul_left _ (Nat.le_max_left _ _)
+          have htail : (C+1)*(records.map stock).foldr max 0 ≤ (C+1)*peak :=
+            Nat.mul_le_mul_left _ (Nat.le_max_right _ _)
+          have hlength : (output::outputs).flatten.length = output.length+outputs.flatten.length := by simp
+          have hpPop := mn_native_exec_within hpop 0
+            (by simp [mnNativePushBound,mnActPush]) depth Bpeak (by dsimp [Bpeak]; omega)
+          have hpBody : ExecWithin body (fun d z => mnSize z+d ≤ Bpeak) depth step
+              (mk vi S₀) n₁ (mk v₁ S₁) := by
+            apply (ht₁ C hp hb depth).mono
+            intro d z hz
+            dsimp only [Bpeak]
+            omega
+          have hpPeek := mn_native_exec_within hpeek 0
+            (by simp [peekR,mnNativePushBound,mnActPush]) depth Bpeak (by
+              dsimp only [Bpeak]; omega)
+          have hpTail : ExecWithin body (fun d z => mnSize z+d ≤ Bpeak) depth
+              (.loop (·.flag) (countedLoopBody clock step))
+              (mk {v₁ with flag := (S₁.R clock).head?.isSome} S₁) n₂
+              (mk v₂ (descriptorLoopFinal work words records src saved result clock tail outputs S₁)) := by
+            apply (ht₂ C hp hb depth).2.mono
+            intro d z hz
+            change mnSize z+d ≤ mnSize (mk v₁ S₁)+depth+outputs.flatten.length+
+              (C+1)*(records.map stock).foldr max 0 at hz
+            dsimp only [Bpeak]
+            omega
+          have hpOut := ExecWithin.loop_true
+            (by simpa only [mk_var,hxs,List.head?_cons,Option.isSome_some] using hflag)
+            (.seq hpPop (.seq hpBody hpPeek)) hpTail
+          rw [hfinal] at hpOut
+          exact hpOut
   have hpeek := Exec.act (body := body) (peekR clock) (mk v S)
   rw [peekR_run] at hpeek
   obtain ⟨v',n,outputs,hu,hn,he,hgood,ht⟩ := hloop records hstep
@@ -172,6 +218,42 @@ theorem descriptorListLoop_exec_trace (work : Fin N → Fin T)
   have htPeek := mn_native_exec_within hpeek 0
     (by simp [peekR,mnNativePushBound,mnActPush]) depth
     (mnSize (mk v S)+depth+(C+1)*(records.map stock).sum) (by omega)
-  exact .seq htPeek (ht C hpStep hb depth)
+  refine ⟨.seq htPeek (ht C hpStep hb depth).1, ?_⟩
+  have htPeekPeak := mn_native_exec_within hpeek 0
+    (by simp [peekR,mnNativePushBound,mnActPush]) depth
+    (mnSize (mk v S)+depth+outputs.flatten.length+(C+1)*(records.map stock).foldr max 0) (by omega)
+  exact .seq htPeekPeak (ht C hpStep hb depth).2
+
+theorem descriptorListLoop_exec_trace (work : Fin N → Fin T)
+    (words : β → Fin N → List (Fin (A+4)))
+    (src saved result clock : Fin T) (hreg : [src,saved,result,clock].Nodup)
+    (fresh : List (Fin T)) (hsep : ∀ k ∈ fresh, k ∉ [src,saved,result,clock])
+    (L : Fin T → List (Fin (A+4))) (step : Pr P T Q A U) (cost stock : β → ℕ)
+    (good : β → List (Fin (A+4)) → Prop) (records : List β)
+    (hstep : ∀ r ∈ records, ∀ (v : HS T Q A U) S rest,
+      (∀ k ∈ fresh, S.R k = []) → S.L = L →
+      S.R src = descriptorBankTape (placedDescriptorFields work (words r))++rest →
+      ∃ v' n output, v'.user = v.user ∧ n ≤ cost r ∧
+        Exec body step (mk v S) n (mk v' (dispatchedDescriptorState work (words r) src saved result rest output S)) ∧
+        good r output ∧
+        ∀ C, mnProgPush step ≤ C → (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+          ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+(C+1)*stock r)
+            depth step (mk v S) n (mk v' (dispatchedDescriptorState work (words r) src saved result rest output S)))
+    (v : HS T Q A U) (S : Stacks T A) (rest : List (Fin (A+4)))
+    (hfresh : ∀ k ∈ fresh, S.R k = []) (hL : S.L = L)
+    (hsource : S.R src = descriptorScheduleTape work words records++rest)
+    (hclock : (S.R clock).length = records.length) :
+    ∃ v' n outputs, v'.user = v.user ∧ n ≤ (records.map (fun r => cost r+3)).sum+2 ∧
+      Exec body (countedLoop clock step) (mk v S) n
+        (mk v' (descriptorLoopFinal work words records src saved result clock rest outputs S)) ∧
+      List.Forall₂ good records outputs ∧
+      ∀ C, mnProgPush (countedLoop clock step) ≤ C → (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+(C+1)*(records.map stock).sum)
+          depth (countedLoop clock step) (mk v S) n
+          (mk v' (descriptorLoopFinal work words records src saved result clock rest outputs S)) := by
+  obtain ⟨v',n,outputs,hu,hn,he,hgood,ht⟩ := descriptorListLoop_exec_trace_with_peak
+    work words src saved result clock hreg fresh hsep L step cost stock good records hstep
+    v S rest hfresh hL hsource hclock
+  exact ⟨v',n,outputs,hu,hn,he,hgood,fun C hp hb depth => (ht C hp hb depth).1⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
