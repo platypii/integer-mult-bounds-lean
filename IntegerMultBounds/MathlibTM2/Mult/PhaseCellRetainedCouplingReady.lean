@@ -93,4 +93,22 @@ theorem RetainedCouplingReady.low (h : RetainedCouplingReady P q w s t u band a 
   have hi : mul i = k := Fin.ext rfl
   simpa only [hi] using (h.clean i).2
 
+/-- Retained scalar counters lie above the boundary selector's scratch bank.
+No counter erasure is needed for this handoff. -/
+theorem RetainedCouplingReady.boundaryScratch (h : RetainedCouplingReady P q w s t u band a b raw S)
+    (k : Fin 117) (hk : k.val < 77) : S.R k = [] := by
+  let roles : List CR := [.u0,.u1,.u2,.u3,.ma,.mb,.mc,.md,.sa,.sb,.sc,.sd,.p1]
+  have hcover : ∀ k : Fin 117, k.val < 77 → k.val < 64 ∨
+      roles.any (fun r => decide (cr r = k)) = true := by decide +kernel
+  rcases hcover k hk with hl | hr
+  · let i : Fin 64 := ⟨k.val,hl⟩
+    have hi : mul i = k := Fin.ext rfl
+    simpa only [hi] using (h.clean i).2
+  · obtain ⟨r,hr,he⟩ := List.any_eq_true.mp hr
+    have heq : cr r = k := of_decide_eq_true he
+    rw [← heq]
+    apply h.arithmetic
+    simp only [roles,List.mem_cons,List.not_mem_nil,or_false] at hr
+    rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
