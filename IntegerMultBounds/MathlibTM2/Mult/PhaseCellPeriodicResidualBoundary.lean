@@ -27,6 +27,13 @@ theorem periodicBoundaryResult_data {A s : ℕ} [NeZero s] (S : Stacks 168 A)
       R.R 143 = cstream A w ((bFoldOrder s (haloBoundary s t band a b)).map E) := by
   simp [periodicBoundaryResult]
 
+/-- The generated solve count agrees with the physical RHS stream size. -/
+theorem periodicBoundaryResult_rhsLength {A s : ℕ} [NeZero s] (S : Stacks 168 A)
+    (V s' t band a b w : ℕ) (D E : ZMod s → GaussianInt) (rhsTail : List (Fin (A+4))) :
+    let R := periodicBoundaryResult S V s' t band a b w D E rhsTail
+    (R.R 143).length = (R.R 116).length*w := by
+  simp [periodicBoundaryResult,length_cstream,bFoldOrder]
+
 /-- Every tape outside the explicit residual/metadata footprint is preserved. -/
 theorem periodicBoundaryResult_frame {A s : ℕ} [NeZero s] (S : Stacks 168 A)
     (V s' t band a b w : ℕ) (D E : ZMod s → GaussianInt) (rhsTail : List (Fin (A+4)))
