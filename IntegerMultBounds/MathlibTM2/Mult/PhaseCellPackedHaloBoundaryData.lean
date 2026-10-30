@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreservePackedRhs
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGuardedBoundaryFold
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloResidual
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryData
@@ -123,10 +124,7 @@ theorem packedHaloBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
     (cstream A w (packedInterval a (b-a) C)++tail) h110 h167G hw h116 h143
   have hfoldmap : (bFoldOrder s B).map (guardedCouplingRowField (2^15*p) q t u band a b false D C) =
       (bFoldOrder s B).map (couplingRowField (2^15*p) q t u band a b false D C) := by
-    apply List.map_congr_left
-    intro i hi
-    have hiB : i ∈ B := by rwa [← List.mem_toFinset,bFoldOrder_toFinset] at hi
-    exact guardedCouplingRowField_eq hst _ _ _ _ _ _ false hb D C i (Or.inr hiB)
+    exact guardedCouplingRowField_boundaryFold _ _ _ _ _ _ hst hb D C
   let F : Stacks 168 A := {G with R := (Function.update (Function.update (Function.update G.R
     167 (couplingSourceIntervalMaskSymbols true A s t band a b a (b-a)))
     116 (List.replicate B.card tick)) 143 folded)}
