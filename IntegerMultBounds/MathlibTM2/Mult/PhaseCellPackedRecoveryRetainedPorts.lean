@@ -85,12 +85,10 @@ theorem PackedHaloRetainedHeaders.of_frame {A P stage q l s t u band a b V w : �
   · apply h.masters.of_frame
     intro k hk
     exact hframe k (List.mem_append_left _ (List.mem_append_left _ hk))
-  · constructor
-    · rw [hframe 163 (by simp [haloRetainedHeaderPorts])]
-      exact h.geometry.width
+  · apply h.geometry.of_frame
+    · exact hframe 163 (by simp [haloRetainedHeaderPorts])
     · intro k hk
-      rw [hframe k (List.mem_append_right _ hk)]
-      exact h.geometry.encoded k hk
+      exact hframe k (List.mem_append_right _ hk)
   · rw [hframe 118 (by simp [haloRetainedHeaderPorts])]
     exact h.stage
   · rw [hframe 120 (by simp [haloRetainedHeaderPorts])]

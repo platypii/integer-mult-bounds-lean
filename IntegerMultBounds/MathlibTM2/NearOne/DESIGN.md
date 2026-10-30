@@ -2441,6 +2441,28 @@ Verification: guarded checks peaked at 1386.4 MiB for the write-frame helper
 and 2133.7 MiB for the complete metadata contract. The 14,980-job integration
 build and approved-axiom audit passed.
 
+### Factor-factory entry with retained geometry (2026-10-29)
+
+`routedPackedBoundaryFactoryRetainedGeometry_spec` runs the existing
+`routedPackedBoundaryFactoryRelease` with an already populated interval geometry
+bank. Its output includes the same numerical factor, stock, table, native and
+buffer guarantees as the initializing entry, and preserves the full geometry
+record using the factory's existing retained-header frame. It omits the
+geometry-initializer program and the charge
+`(s+t+band+a+b)*(4*V+10)+56*V+77`. No blank-geometry premise is required.
+
+`CouplingIntervalMetadata.of_frame` factors the geometry transport once and is
+also used by the retained-header record's frame rule. The retained factory entry
+reuses the original executed numerical theorem, rather than duplicating its
+construction or assuming a numerical execution callback.
+
+This entry still constructs fresh factors. Threading it through the boundary
+solve and closed-call interfaces, restoring other workspace roles, complete
+setup/factor reuse and the generated group loop remain open, along with the
+other global S4 obligations.
+Verification: the retained factory module checked at 3203.5 MiB peak RSS.
+The 14,981-job integration build and approved-axiom audit passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,

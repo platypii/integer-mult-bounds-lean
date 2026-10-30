@@ -25,6 +25,19 @@ structure CouplingIntervalMetadata {A : ℕ} (V s t band a b origin N : ℕ) (S 
   encoded : ∀ k ∈ couplingIntervalPorts,
     S.R k = binSyms V (couplingIntervalValue s t band a b origin N k)
 
+
+/-- Transport the geometry bank through an execution that preserves its ports. -/
+theorem CouplingIntervalMetadata.of_frame {A V s t band a b origin N : ℕ}
+    {S F : Stacks 168 A} (h : CouplingIntervalMetadata V s t band a b origin N S)
+    (hwidth : F.R 163 = S.R 163)
+    (hframe : ∀ k ∈ couplingIntervalPorts, F.R k = S.R k) :
+    CouplingIntervalMetadata V s t band a b origin N F := by
+  constructor
+  · rw [hwidth]; exact h.width
+  · intro k hk
+    rw [hframe k hk]
+    exact h.encoded k hk
+
 variable {A V s t band a b origin N : ℕ} {S : Stacks 168 A}
 
 theorem couplingIntervalValue_bound (hfit : origin+N ≤ s) (ha : a ≤ s) (hb : b ≤ s)
