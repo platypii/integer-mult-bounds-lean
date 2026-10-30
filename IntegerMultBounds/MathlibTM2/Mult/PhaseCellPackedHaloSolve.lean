@@ -58,6 +58,54 @@ noncomputable def packedHaloSolveUsingCost (freshGeometry : Bool) (p u l target 
       (couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a)).length (2*band+1) w+retirePackedBandTableCost B.card (12*band+1) w+
     packedFactorReleaseCost (boundaryFactorStockBound q w band B.card)
 
+/-- Sum of the executed per-input stages, including cursor advancement and reset. -/
+noncomputable def packedHaloPreparedInputCost (p u l target rhsExp s t a b V : ℕ) [NeZero s] : ℕ :=
+  let band := PhaseCellBand.width p u
+  let B := haloBoundary s t band a b
+  let targetB := boundaryRecoveryTarget p target
+  let j := boundaryHaloTarget p u targetB rhsExp B.card
+  let q := executionPrecision p l (initialSchurTarget p u
+    (boundaryTableBits p targetB rhsExp B.card) 2) 2
+  let w := executionWidth p l (initialSchurTarget p u
+    (boundaryTableBits p targetB rhsExp B.card) 2) 2
+  packedHaloRealBoundaryDataCost p l s t u j rhsExp a b V+
+    preparedResidualSolveCost q w B.card (12*band+1)+
+    packedBoundaryRecoveryCost p u l target rhsExp s t a b V q w+
+    packedRecoveryReleaseCost
+      (couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a)).length (2*band+1) w+
+    packedInputAdvanceCost V (b-a) w+(2*w+3)
+
+/-- Initialization and final disposal belong outside the replica loop. -/
+noncomputable def packedHaloSetupReleaseCost (freshGeometry : Bool)
+    (p u l target rhsExp s t a b V : ℕ) [NeZero s] : ℕ :=
+  let band := PhaseCellBand.width p u
+  let B := haloBoundary s t band a b
+  let targetB := boundaryRecoveryTarget p target
+  let q := executionPrecision p l (initialSchurTarget p u
+    (boundaryTableBits p targetB rhsExp B.card) 2) 2
+  let w := executionWidth p l (initialSchurTarget p u
+    (boundaryTableBits p targetB rhsExp B.card) 2) 2
+  constructedBoundaryFactorCost p u l s t a b targetB rhsExp+
+    (2*(B.card*publicationGeometryWidth t band+publicationGeometryWidth t band+B.card)+7)+
+    (if freshGeometry then (s+t+band+a+b)*(4*V+10)+56*V+77 else 0)+
+    retirePackedBandTableCost B.card (12*band+1) w+
+    packedFactorReleaseCost (boundaryFactorStockBound q w band B.card)
+
+/-- The prepared ledger removes setup and final disposal, and adds the actual
+input advancement/reset absent from the original one-input endpoint. -/
+theorem packedHaloPreparedInputCost_accounting (freshGeometry : Bool)
+    (p u l target rhsExp s t a b V : ℕ) [NeZero s] :
+    let band := PhaseCellBand.width p u
+    let B := haloBoundary s t band a b
+    let w := executionWidth p l (initialSchurTarget p u
+      (boundaryTableBits p (boundaryRecoveryTarget p target) rhsExp B.card) 2) 2
+    packedHaloPreparedInputCost p u l target rhsExp s t a b V+
+      packedHaloSetupReleaseCost freshGeometry p u l target rhsExp s t a b V =
+    packedHaloSolveUsingCost freshGeometry p u l target rhsExp s t a b V+
+      packedInputAdvanceCost V (b-a) w+(2*w+3) := by
+  dsimp only [packedHaloPreparedInputCost,packedHaloSetupReleaseCost,packedHaloSolveUsingCost]
+  omega
+
 /-- The original first-entry program initializes geometry. -/
 noncomputable def packedHaloSolve (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 248 Q A U :=
   packedHaloSolveUsing true hR hQ
