@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedFactoryRouting
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedFactoryGeometry
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAdvancedHaloMetadata
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAdvanceQueuedHaloHeaders
@@ -235,6 +236,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedHaloCoreReleaseUsing_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.preparedHaloCoreUsing_spec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.queuedHaloCoreUsing_spec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedFactoryRouting_scratch,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.retainedFactoryRouting_geometry_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBoundarySolve_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.executionSizing_of_allowance,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.boundaryHaloTarget_accuracy,

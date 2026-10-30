@@ -74,6 +74,26 @@ approved axioms. S4's exposure/publication, halo/global locality and tensor
 composition, remaining S5/S6 work and kappa are unchanged. Implementation
 checkpoints below are historical; the current S3 acceptance is recorded here.
 
+### Retained-mode placement correction (2026-10-29)
+
+The retained-mode interfaces below are not yet usable for positive workspace
+width. A guarded Lean diagnostic proved that the current
+`PackedHaloSetup (freshGeometry := false)` implies `V = 0`: its factory
+`LengthKeyReady.blank` on logical 115 requires physical 149 to be empty, while
+retained geometry makes it a `V`-bit word. The other factory arithmetic/work
+ports 147--151 also overlap the retained bank. The mode-propagation theorems
+remain conditional, but do not establish an executable positive-width call from
+real retained state. Earlier checkpoint wording about retained-mode execution
+must be read with this correction.
+
+`retainedFactoryRouting` moves the five conflicting factory ports 147--151 to
+scratch 158--162. Its checked geometry frame transports the existing factory
+frame through the permutation, including the formerly overlapping actual
+geometry slots. `protectRetainedFactory` is the generic placement and
+`retainedGeometryFactory` instantiates the existing numerical factory. This
+placement still needs to be threaded through the factory/setup input views and
+mode execution contracts. S4 remains open.
+
 ### S4 implementation checkpoint (2026-10-28)
 
 The new `NLogN/SchurLocality` proves decay through supported neighborhoods;
@@ -2554,6 +2574,24 @@ remaining global S4 obligations remain open.
 Verification: all seven changed call/frame modules passed guarded checks, with
 peaks from 3230.3 to 3251.9 MiB. The 14,982-job integration build and
 approved-axiom audit passed.
+
+### Checked protection of geometry from factory scratch (2026-10-29)
+
+The readiness audit exposed a physical alias in the unprotected factory entry.
+A guarded diagnostic proved the old retained setup forces zero word width.
+The protecting permutation now maps `[147,148,149,150,151]` to
+`[158,159,160,161,162]`. These destinations are outside the interval metadata
+bank. One closed placement check identifies the preimages of all geometry
+ports; a generic projection/frame argument proves that the existing factory
+header frame preserves actual retained geometry under the permutation.
+
+The protected factory program is defined, but its execution theorem and the
+readiness/mode interfaces still require integration. This corrects a substantive
+gap in the earlier retained-mode milestones rather than closing the successive
+call invariant. Complete setup reuse, iteration and global bounds remain open.
+Verification: the protecting-placement module checked at 3189.4 MiB peak RSS;
+the separate overlap diagnostic checked at 3186.1 MiB. The 14,983-job
+integration build and approved-axiom audit passed.
 
 ### Geometry, cuts and boundary order
 
