@@ -76,9 +76,6 @@ theorem packedHaloPreparedBoundary_extended_exec (hbody : ∀ f, body' f = embPr
     ∃ v', ∃ T : Stacks 242 A, ∃ m, ∃ D : ZMod s → GaussianInt,
       let rows := (bFoldOrder s B).map (fun i => realPartWord
         (couplingRowField (2^15*p) q t u (PhaseCellBand.width p u) a b false D C i))
-      let Z := cstream A w (packedInterval a (b-a)
-        (guardedCouplingRowField (2^15*p) q t u band a b false D C))
-      let folded := cstream A w rows
       let ys := ((bandSolveVec q W Lc Uc rcs
         (rows.map (normalizeBoundaryWord q (q/2-1)))).map (unscaleBoundaryWord q))
       let output := cstream A w ys
@@ -90,28 +87,7 @@ theorem packedHaloPreparedBoundary_extended_exec (hbody : ∀ f, body' f = embPr
         (packedHaloPreparedBoundary hR hQ))
         (mk v (extendStacks (by decide) S)) m (mk v' (extendStacks (by decide) F)) ∧
       PackedPreparedBank q w W B.card F ∧
-      (
-      (embStk packedHaloRuntimeReg T).R 93 = (embStk packedHaloRuntimeReg S).R 93 ∧ (embStk packedHaloRuntimeReg T).R 143 = folded ∧ (embStk packedHaloRuntimeReg T).R 116 = List.replicate B.card tick ∧
-      (embStk packedHaloRuntimeReg T).R 167 = couplingSourceIntervalMaskSymbols true A s t band a b a (b-a) ∧
-      (embStk packedHaloRuntimeReg T).R 110 = Z++(cstream A w (packedInterval a (b-a) C)++tail) ∧
-      (embStk packedHaloRuntimeReg T).R 132 = cstream A w (packedInterval a (b-a) D)++outputTail ∧
-      embStk packedCellCoreReg (embStk packedHaloRuntimeReg T) = countedReleasedCellBank B.card Z
-        (cstream A w (packedInterval a (b-a) C)++tail) ((embStk packedHaloRuntimeReg S).R 93) (embStk packedHaloRuntimeReg S).inp (embStk packedHaloRuntimeReg S).out ∧
-      (∀ k, ‖value q (D k)‖ ≤ (2 : ℝ)^interiorOutputExponent p l target rhsExp) ∧
-      (∀ k, Fits w (D k)) ∧ ((embStk packedHaloRuntimeReg T).R 130).length = w ∧
-      (embStk packedHaloRuntimeReg T).R 138 = cstream A w (couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a)) ∧
-      (embStk packedHaloRuntimeReg T).R 139 = List.replicate (couplingCoefficientPageInterval (2^15*p) q s t u band a b a (b-a)).length tick ∧
-      (embStk packedHaloRuntimeReg T).R 140 = List.replicate (2*band+1) tick ∧
-      CouplingIntervalMetadata V s t band a b a (b-a) (embStk packedHaloRuntimeReg T) ∧ (embStk packedHaloRuntimeReg T).R 126 = (embStk packedHaloRuntimeReg S).R 126 ∧ (embStk packedHaloRuntimeReg T).R 127 = [] ∧ (embStk packedHaloRuntimeReg T).R 135 = [] ∧
-      (∀ k : Fin 168, 117 ≤ k.val → k ∉ packedHaloInteriorPagePorts → k ≠ 167 → (embStk packedHaloRuntimeReg T).L k = (embStk packedHaloRuntimeReg S).L k ∧ (embStk packedHaloRuntimeReg T).R k = (embStk packedHaloRuntimeReg S).R k) ∧
-      PhaseCellInterface.ErrorOn (haloInterior s t band a b)
-        (fun k => (value q (D k)).re) x (1/(2 : ℝ)^target) ∧
-      (∀ z ∈ rows,
-        (|gv q z.re| ≤ (2 : ℝ)^(q/2) ∧ |gv q z.im| ≤ (2 : ℝ)^(q/2)) ∧
-        (|gv q (normalizeBoundaryWord q (q/2-1) z).re| ≤ 1/2 ∧
-          |gv q (normalizeBoundaryWord q (q/2-1) z).im| ≤ 1/2)) ∧
-      (embStk packedHaloRuntimeReg T).L = (embStk packedHaloRuntimeReg S).L ∧
-      (embStk packedHaloRuntimeReg T).R 125 = [] ∧ (embStk packedHaloRuntimeReg T).R 128 = [] ) ∧
+      PackedHaloProducedData p l s t u target rhsExp a b V q w C D x tail outputTail S T ∧
       PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
         (cstream A w (Uc.map colC).flatten)
         (cstream A w (rcs.map fun z => (⟨z,0⟩ : GaussianInt))) F ∧
