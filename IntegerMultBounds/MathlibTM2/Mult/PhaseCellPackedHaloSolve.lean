@@ -102,6 +102,9 @@ theorem packedHaloSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 
       (∀ i, Fits w (D i)) ∧
       PhaseCellInterface.ErrorOn (haloVertices s a b)
         (fun i => (packedIntervalRead q w a (F.R 132) i).re) x (1/(2 : ℝ)^target) ∧
+      PackedHaloRetainedHeaders (2^15*p)
+        (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+        q l s t u band a b V w (embStk packedRecoveryRuntimeReg F) ∧
       ∃ residual : List (Fin (A+4)), residual.length = (b-a)*w ∧
         F.R 110 = residual++(cstream A w (packedInterval a (b-a) C)++tail) := by
   dsimp only
@@ -261,10 +264,40 @@ theorem packedHaloSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 
     intro hm
     have hb := packedFactorOwnedRegs_bounds i hm
     rcases hi with hi | hi | rfl <;> omega
+  have hheaders₁ : PackedHaloRetainedHeaders (2^15*p)
+      (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+      q l s t u band a b V w (embStk packedHaloRuntimeReg F₁) :=
+    ⟨hheaders,hmeta,hstageMaster,hlevel⟩
+  have hretainedHeaders : PackedHaloRetainedHeaders (2^15*p)
+      (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+      q l s t u band a b V w (embStk packedRecoveryRuntimeReg K) := by
+    apply hheaders₁.of_frame
+    intro i hi
+    have hs := haloRetainedHeaderPorts_safe i hi
+    have h138 : packedRecoveryRuntimeReg i ≠ 138 := by
+      intro he; apply hs.2.2.1; apply Fin.ext; exact congrArg (fun k : Fin 248 => k.val) he
+    have h139 : packedRecoveryRuntimeReg i ≠ 139 := by
+      intro he; apply hs.2.2.2.1; apply Fin.ext; exact congrArg (fun k : Fin 248 => k.val) he
+    have h140 : packedRecoveryRuntimeReg i ≠ 140 := by
+      intro he; apply hs.2.2.2.2.1; apply Fin.ext; exact congrArg (fun k : Fin 248 => k.val) he
+    have h220 : packedRecoveryRuntimeReg i ≠ 220 := by
+      intro he
+      have hv := congrArg (fun k : Fin 248 => k.val) he
+      have hi := i.isLt
+      change i.val = 220 at hv
+      omega
+    change K.R (packedRecoveryRuntimeReg i) = F₁.R (packedHaloRuntimeReg i)
+    rw [hkeep _ (Or.inl i.isLt)]
+    simp only [J,H,Function.update_of_ne h220,Function.update_of_ne h138,
+      Function.update_of_ne h139,Function.update_of_ne h140]
+    have hr := hretained (packedRecoveryRuntimeReg i) (haloRetainedHeaderPorts_mem i hi)
+    exact hr.trans (by
+      simp [G,extendStacks,packedRecoveryRuntimeReg,packedHaloRuntimeReg,
+        show i.val < 242 by have hi := i.isLt; omega])
   refine ⟨v₆,K,n₁+(n₂+(n₃+(n₄+n₅))),D,
     hu₆.trans (hu₅.trans (hu₄.trans (hu₃.trans (hu₂.trans hu₁)))),?_,
     Exec.seq he₂ (Exec.seq he₃ (Exec.seq he₄ (Exec.seq he₅ he₆))),
-    hin.trans hinputFrame,hout.trans houtputFrame,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,hfits,?_,?_⟩
+    hin.trans hinputFrame,hout.trans houtputFrame,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,hfits,?_,hretainedHeaders,?_⟩
   · exact (Nat.add_le_add hn₁ (Nat.add_le_add hn₂ (Nat.add_le_add hn₃ (Nat.add_le_add hn₄ hn₅)))).trans (by
       dsimp only [packedHaloSolveCost,page,band,B,bits,q,w,targetB]
       omega)

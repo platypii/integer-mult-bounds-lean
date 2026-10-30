@@ -84,6 +84,10 @@ theorem gatheredHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
       (∀ i, Fits w (D i)) ∧
       PhaseCellInterface.ErrorOn (ownedCore s width k)
         (fun i => (packedIntervalRead q w (coreStart width k) (F.R 248) i).re) x (1/(2 : ℝ)^target) ∧
+      PackedHaloRetainedHeaders (2^15*p)
+        (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+        q l s t u (PhaseCellBand.width p u) a b V w
+        (embStk (Fin.castLE (by decide : 168 ≤ 272)) F) ∧
       ∀ i : Fin 272, 248 ≤ i.val → i ≠ 248 → i ≠ 249 → i ≠ 250 → i ≠ 256 → i ≠ 257 → i ≠ 261 → F.R i = M.R i := by
   dsimp only at hgather ⊢
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
@@ -229,7 +233,7 @@ theorem gatheredHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
       (by intro he; apply h256; apply Fin.ext; exact congrArg (fun k : Fin 272 => k.val) he)
       (by intro he; apply h257; apply Fin.ext; exact congrArg (fun k : Fin 272 => k.val) he)
       (by intro he; apply h261; apply Fin.ext; exact congrArg (fun k : Fin 272 => k.val) he)
-  obtain ⟨vi,Fi,n₁,D,hui,hn₁,hei,hin,hout,hpublished,h132,hsource,h255,hqueue₁,hfits,herror,hframe⟩ :=
+  obtain ⟨vi,Fi,n₁,D,hui,hn₁,hei,hin,hout,hpublished,h132,hsource,h255,hqueue₁,hfits,herror,hretainedHeaders,hframe⟩ :=
     queuedHaloCore_spec (body := body) (body₁ := body₁) (body₂ := body₂) (body₃ := body₃)
       hR hQ hA hbody hbody₁ hbody₂ C S' hsetup width k radius ha hb hleft
       (embDn gatheredHaloCoreReg vc) (embStk gatheredHaloCoreReg H) hviewH
@@ -253,7 +257,7 @@ theorem gatheredHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
   refine ⟨v₁,F,n₀+(nd+(nc+n₁)),D,hu₁.trans (hui.trans (huc.trans (hud.trans hu₀))),?_,
     Exec.seq he₀' (Exec.seq hed' (Exec.seq hec' he₁)),
     (congrArg (fun H : Stacks 264 A => H.inp) hview₁).trans hin,
-    (congrArg (fun H : Stacks 264 A => H.out) hview₁).trans hout,?_,?_,?_,?_,?_,?_,?_,?_,?_,hfits,?_,?_⟩
+    (congrArg (fun H : Stacks 264 A => H.out) hview₁).trans hout,?_,?_,?_,?_,?_,?_,?_,?_,?_,hfits,?_,?_,?_⟩
   · have hh := Nat.add_le_add hn₀ (Nat.add_le_add hnd' (Nat.add_le_add hnc hn₁))
     simpa only [Nat.add_assoc] using hh
   · rw [←hreg248,hreadF,hpublished,hreadH 248 (by decide) (by decide) (by decide) (by decide) (by decide) (by decide),hreg248]
@@ -274,6 +278,11 @@ theorem gatheredHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
   · have hh : F.R 248 = Fi.R 248 := by simpa only [hreg248] using hreadF 248
     rw [hh]
     exact herror
+  · have hv : embStk (Fin.castLE (by decide : 168 ≤ 272)) F =
+        embStk (Fin.castLE (by decide : 168 ≤ 264)) Fi :=
+      congrArg (embStk (Fin.castLE (by decide : 168 ≤ 264))) hview₁
+    rw [hv]
+    exact hretainedHeaders
   · intro i hi hi248 hi249 hi250 hi256 hi257 hi261
     by_cases hsmall : i.val < 264
     · let j : Fin 264 := ⟨i.val,hsmall⟩

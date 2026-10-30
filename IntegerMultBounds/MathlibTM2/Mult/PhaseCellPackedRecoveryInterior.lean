@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryRetainedPorts
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryInteriorPlacement
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSolvePackedHaloInteriorField
 
@@ -68,7 +69,7 @@ theorem packedRecoveryInterior_field_exec (hR : rpStates ≤ Q) (hQ : SS.states 
       PackedHaloWordFrame s t (PhaseCellBand.width p u) a b (executionWidth p l target rhsExp)
         (S.R 132) (F.R 132) ∧ F.L = S.L ∧
       (∀ k : Fin 248, (∀ i, packedRecoveryInteriorReg i ≠ k) → F.L k = S.L k ∧ F.R k = S.R k) ∧
-      (∀ k ∈ ([125,128,130,138,140,157] : List (Fin 248)), F.L k = S.L k ∧ F.R k = S.R k) ∧
+      (∀ k ∈ packedRecoveryRetainedPorts, F.L k = S.L k ∧ F.R k = S.R k) ∧
       ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → F.L k = S.L k ∧ F.R k = S.R k := by
   let T := embStk packedRecoveryInteriorReg S
   obtain ⟨v₁,H,n,E',D,hu₁,hn,he,h93,hi,ho,hready,houtput',hDnorm,hDfits,hqueue,hzero,hframe,herror,hwords,hleft⟩ :=
@@ -94,7 +95,8 @@ theorem packedRecoveryInterior_field_exec (hR : rpStates ≤ Q) (hQ : SS.states 
   · intro k hk
     exact embOvr_off H.get S hk
   · intro k hk
-    exact embOvr_off H.get S (fun i => packedRecoveryInteriorReg_avoids_retained i k hk)
+    exact packedRecoveryRetained_frame F S H hproj
+      (fun j hj => embOvr_off H.get S hj) hframe k hk
   · intro k hk hk'
     exact embOvr_off H.get S (fun i => packedRecoveryInteriorReg_avoids_factors i k hk hk')
 

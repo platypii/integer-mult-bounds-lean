@@ -2251,6 +2251,34 @@ checked at 1944.2 and 3290.9 MiB peak RSS. The coupling-interval integration
 build passed 14,972 jobs and its approved-axiom audit (3.5 GiB aggregate peak);
 whitespace checks passed.
 
+### Retained numeric and geometry headers after real calls (2026-10-29)
+
+The recovery frame now exposes the union of the existing numeric master ports,
+binary interval-geometry ports and private retained runtime roles. A small
+placement check verifies those physical ports once. The generic
+`packedRecoveryRetained_frame` transports the existing placed execution frame;
+its proof is isolated from numerical state to avoid elaborating the full solve
+while proving register equalities.
+
+`PackedHaloRetainedHeaders` packages the numeric masters, binary geometry,
+stage and level, with a structural frame rule. The record is now returned by
+the closed local solver and carried through publication, buffer retirement,
+queued execution and `gatheredHaloCore_spec`. In particular, the actual output
+still supplies the lower/upper coordinate-master lengths and binary origin,
+interval length and workspace width. The executable programs and charged costs
+are unchanged. This is the retained data needed for monotone coordinate updates
+and reusing already constructed ambient geometry.
+
+This does not yet restore the complete low/native runtime or establish the
+next local call's setup predicate. Those invariants, monotone updates, full
+setup-key reuse, seams/full-system fallback, complex/tensor composition and
+final uniform bounds remain open. S4 remains open.
+
+Verification: the integration build passed 14,973 jobs and its approved-axiom
+audit. Guarded single-file checks peaked at 2130.5 MiB for the shared frame,
+2186.2 MiB for recovery, 3294.8 MiB for the solver and 3286.6 MiB for the
+gathered core, all below the 4 GiB module budget.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,

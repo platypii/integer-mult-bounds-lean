@@ -90,7 +90,7 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       (∃ residual : List (Fin (A+4)), residual.length = (b-a)*w ∧
         F.R 110 = residual++(cstream A w (packedInterval a (b-a) C)++rhsTail)) ∧
       (∀ k ∈ ([104,105,106,107,108,109,111,112] : List (Fin 248)), F.R k = []) ∧
-      F.L = S.L ∧ (∀ k ∈ ([125,128,130,138,140,157] : List (Fin 248)), F.R k = S.R k) ∧
+      F.L = S.L ∧ (∀ k ∈ packedRecoveryRetainedPorts, F.R k = S.R k) ∧
       ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k := by
   let band := PhaseCellBand.width p u
   let B := haloBoundary s t band a b

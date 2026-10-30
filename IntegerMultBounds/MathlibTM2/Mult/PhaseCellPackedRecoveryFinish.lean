@@ -70,7 +70,7 @@ theorem packedRecoveryFinish_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
         (fun i => (value q (D i)).re) xI (1/(2 : ℝ)^target) ∧
       PackedHaloWordFrame s t (PhaseCellBand.width p u) a b w
         (cstream A w (packedInterval a (b-a) Y)++outputTail) (F.R 132) ∧ F.L = S.L ∧
-      (∀ k ∈ ([125,128,130,138,140,157] : List (Fin 248)), F.R k = S.R k) ∧
+      (∀ k ∈ packedRecoveryRetainedPorts, F.R k = S.R k) ∧
       ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k := by
   let H := packedRecoveryRhsState w a b Y R C solutionTail outputTail rhsTail S
   have hinit := packedRecoveryInteriorReady_after_rhs hab hb Y R C solutionTail outputTail rhsTail S
@@ -96,8 +96,13 @@ theorem packedRecoveryFinish_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (
   · simpa [← hw,H,packedRecoveryRhsState] using hwords
   · intro k hk
     have hh := (hretained k hk).2
-    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> simpa [H,packedRecoveryRhsState] using hh
+    have hs := packedRecoveryRetainedPorts_safe k hk
+    have h238 : k ≠ 238 := by intro he; have hh := hs.2.1; subst k; norm_num at hh
+    have h110 : k ≠ 110 := by intro he; have hh := hs.1; subst k; norm_num at hh
+    have h116 : k ≠ 116 := by intro he; have hh := hs.1; subst k; norm_num at hh
+    simpa only [H,packedRecoveryRhsState,Function.update_of_ne h238,
+      Function.update_of_ne hs.2.2.1,Function.update_of_ne h110,
+      Function.update_of_ne h116,Function.update_of_ne hs.2.2.2.1] using hh
   · intro k hk hk' h238
     have hh := (hfactors k hk hk').2
     have hv238 : k.val ≠ 238 := fun he => h238 (Fin.ext he)

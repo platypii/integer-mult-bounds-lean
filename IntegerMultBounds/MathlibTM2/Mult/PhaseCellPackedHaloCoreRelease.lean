@@ -55,12 +55,16 @@ theorem packedHaloCoreRelease_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
       (∀ i, Fits w (D i)) ∧
       PhaseCellInterface.ErrorOn (ownedCore s width k)
         (fun i => (packedIntervalRead q w (coreStart width k) (F.R 248) i).re) x (1/(2 : ℝ)^target) ∧
+      PackedHaloRetainedHeaders (2^15*p)
+        (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+        q l s t u (PhaseCellBand.width p u) a b V w
+        (embStk (Fin.castLE (by decide : 168 ≤ 256)) F) ∧
       ∀ i : Fin 256, 248 ≤ i.val → i ≠ 248 → F.R i = M.R i := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let bits := boundaryTableBits p (boundaryRecoveryTarget p target) rhsExp B.card
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-  obtain ⟨v₁,G,m,D,hu₁,hm,he₁,hin,hout,hpublished,hwidth,hclean,hsource,hbuffers,hfits,herror,hframe⟩ :=
+  obtain ⟨v₁,G,m,D,hu₁,hm,he₁,hin,hout,hpublished,hwidth,hclean,hsource,hbuffers,hfits,herror,hretainedHeaders,hframe⟩ :=
     packedHaloCore_spec (body := body) (body' := body') (body'' := body'')
       (p := p) (l := l) (s := s) (t := t) (u := u) (target := target) (rhsExp := rhsExp)
       (a := a) (b := b) (V := V) hR hQ hA hbody hbody' C tail E outputTail S hinput
@@ -84,12 +88,24 @@ theorem packedHaloCoreRelease_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) 
       · exact hclean 109 (by decide)
       · exact (hframe 255 (by decide) (by decide)).trans h255)
   let F : Stacks 256 A := {G with R := (Function.update (Function.update G.R 132 outputTail) 110 tail)}
-  refine ⟨v₂,F,m+n₂,D,hu₂.trans hu₁,Nat.add_le_add hm hn₂,Exec.seq he₁ he₂,hin,hout,?_,?_,?_,?_,hfits,?_,?_⟩
+  refine ⟨v₂,F,m+n₂,D,hu₂.trans hu₁,Nat.add_le_add hm hn₂,Exec.seq he₁ he₂,hin,hout,?_,?_,?_,?_,hfits,?_,?_,?_⟩
   · simpa [F] using hpublished
   · simp [F]
   · simp [F]
   · simpa [F] using (hframe 255 (by decide) (by decide)).trans h255
   · simpa only [show F.R 248 = G.R 248 by simp [F]] using herror
+  · apply hretainedHeaders.of_frame
+    intro i hi
+    have hs := haloRetainedHeaderPorts_safe i hi
+    have hn132 : Fin.castLE (by decide : 168 ≤ 256) i ≠ 132 := by
+      intro he; apply hs.2.1; apply Fin.ext; exact congrArg (fun k : Fin 256 => k.val) he
+    have hn110 : Fin.castLE (by decide : 168 ≤ 256) i ≠ 110 := by
+      intro he
+      have hv := congrArg (fun k : Fin 256 => k.val) he
+      change i.val = 110 at hv
+      have hh := hs.1
+      omega
+    simp only [embStk,Function.comp_apply,F,Function.update_of_ne hn110,Function.update_of_ne hn132]
   · intro i hi hn
     have hn132 : i ≠ 132 := by intro he; subst i; omega
     have hn110 : i ≠ 110 := by intro he; subst i; omega

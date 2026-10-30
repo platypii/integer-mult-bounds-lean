@@ -55,13 +55,17 @@ theorem packedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
       (∀ i, Fits w (D i)) ∧
       PhaseCellInterface.ErrorOn (ownedCore s width k)
         (fun i => (packedIntervalRead q w (coreStart width k) (F.R 248) i).re) x (1/(2 : ℝ)^target) ∧
+      PackedHaloRetainedHeaders (2^15*p)
+        (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+        q l s t u (PhaseCellBand.width p u) a b V w
+        (embStk (Fin.castLE (by decide : 168 ≤ 256)) F) ∧
       ∀ i : Fin 256, 248 ≤ i.val → i ≠ 248 → F.R i = M.R i := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
   let bits := boundaryTableBits p (boundaryRecoveryTarget p target) rhsExp B.card
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
-  obtain ⟨v₁,F₁,m,D,hu₁,hm,he,hin,hout,hwidth,h104,h105,h109,hsource,hfits,herror,hbuffers⟩ :=
+  obtain ⟨v₁,F₁,m,D,hu₁,hm,he,hin,hout,hwidth,h104,h105,h109,hsource,hfits,herror,hretainedHeaders,hbuffers⟩ :=
     hinput.run (body := body) (body' := body') hR hQ hA hbody
       (embDn packedHaloPublicationReg v) x hx
   have he' : Exec body' (packedHaloSolve hR hQ)
@@ -83,7 +87,7 @@ theorem packedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
   have hread110 : F.R 110 = F₁.R 110 := by
     simpa only [show packedHaloPublicationReg 110 = 110 by decide] using hread 110
   refine ⟨v₂,F,n,D,hu₂,hn.trans (Nat.add_le_add_right hm _),he₂,?_,?_,hpublished,?_,?_,
-    hread132.trans hsource,?_,hfits,haccuracy,hframe⟩
+    hread132.trans hsource,?_,hfits,haccuracy,?_,hframe⟩
   · have hh := congrArg (fun G : Stacks 248 A => G.inp) hfinal
     exact hh.trans hin
   · have hh := congrArg (fun G : Stacks 248 A => G.out) hfinal
@@ -99,5 +103,10 @@ theorem packedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 9
     · simpa only [show packedHaloPublicationReg 109 = 109 by decide] using (hread 109).trans h109
   · obtain ⟨residual,hlen,hs⟩ := hbuffers
     exact ⟨residual,hlen,hread110.trans hs⟩
+  · have hv : embStk (Fin.castLE (by decide : 168 ≤ 256)) F =
+        embStk packedRecoveryRuntimeReg F₁ :=
+      congrArg (embStk packedRecoveryRuntimeReg) hfinal
+    rw [hv]
+    exact hretainedHeaders
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

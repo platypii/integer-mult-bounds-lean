@@ -56,6 +56,10 @@ theorem preparedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
       (∀ i, Fits w (D i)) ∧
       PhaseCellInterface.ErrorOn (ownedCore s width k)
         (fun i => (packedIntervalRead q w (coreStart width k) (F.R 248) i).re) x (1/(2 : ℝ)^target) ∧
+      PackedHaloRetainedHeaders (2^15*p)
+        (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+        q l s t u (PhaseCellBand.width p u) a b V w
+        (embStk (Fin.castLE (by decide : 168 ≤ 256)) F) ∧
       ∀ i : Fin 256, 248 ≤ i.val → i ≠ 248 → F.R i = M.R i := by
   dsimp only
   let B := haloBoundary s t (PhaseCellBand.width p u) a b
@@ -66,7 +70,7 @@ theorem preparedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
   obtain ⟨v₀,M₀,n₀,hu₀,hn₀,he₀,hinput,hview₀,hframe₀⟩ := prepareHaloBuffer_input (body := body'')
     C tail S hframe width k radius ha hb hleft v M hview hoffset hrows (by
       intro i hi; exact hfresh i (by simp only [List.mem_cons,List.not_mem_nil,or_false] at hi ⊢; tauto))
-  obtain ⟨v₁,F,n₁,D,hu₁,hn₁,he₁,hin,hout,hpublished,houtput,hsource,h255,hfits,herror,hframe₁⟩ :=
+  obtain ⟨v₁,F,n₁,D,hu₁,hn₁,he₁,hin,hout,hpublished,houtput,hsource,h255,hfits,herror,hretainedHeaders,hframe₁⟩ :=
     packedHaloCoreRelease_spec (body := body) (body' := body') (body'' := body'')
       (p := p) (l := l) (s := s) (t := t) (u := u) (target := target) (rhsExp := rhsExp)
       (a := a) (b := b) (V := V) hR hQ hA hbody hbody' C tail E (S.R 132) S' hinput width k radius
@@ -82,8 +86,8 @@ theorem preparedHaloCore_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
   have hww : executionWidth p l (initialSchurTarget p u bits 2) 2 = 2*q+8 := by
     dsimp only [q,executionWidth,executionPrecision]; omega
   dsimp only [bits,B] at hww
-  simp only [hww] at hn₁ hpublished hfits herror
-  refine ⟨v₁,F,n₀+n₁,D,hu₁.trans hu₀,?_,Exec.seq he₀ he₁,hin,hout,?_,houtput,hsource,h255,hfits,herror,?_⟩
+  simp only [hww] at hn₁ hpublished hfits herror hretainedHeaders
+  refine ⟨v₁,F,n₀+n₁,D,hu₁.trans hu₀,?_,Exec.seq he₀ he₁,hin,hout,?_,houtput,hsource,h255,hfits,herror,hretainedHeaders,?_⟩
   · have hh := Nat.add_le_add hn₀ hn₁
     simpa only [Nat.add_assoc] using hh
   · rw [hpublished,hframe₀ 248 (by decide)]
