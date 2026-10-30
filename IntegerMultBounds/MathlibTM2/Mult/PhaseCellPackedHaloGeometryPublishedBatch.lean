@@ -148,7 +148,7 @@ theorem packedHaloGeometryPublishedBatch_exec
     have hS₁ : embStk packedHaloPublishedReg S₁ = embStk packedHaloPublishedReg Sbig :=
       embStk_updateR_off Sbig 249 (List.replicate radius tick) (hoff 249 (by decide))
     exact hT.trans (hM.trans (hS₁.trans hbigview))
-  obtain ⟨v₃,F,n₃,hu₃,hn₃,he₃,harchive,hsrc,htable,hcounter,hfactors,hexternal,Ds,hdst,hgood⟩ :=
+  obtain ⟨v₃,F,n₃,hu₃,hn₃,he₃,harchive,hsrc,htable,hcounter,hfactors,hexternal,Ds,hdst,hgood,hgeneratedStock⟩ :=
     packedHaloGeneratedPublishedBatch_exec hbody hbody' hbody'' hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad inputs tail v₂ Tbig S₀ S hview hcounterBlank h109 h115 h116 hfactoryLeft hready
       haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank

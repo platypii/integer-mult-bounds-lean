@@ -8,6 +8,7 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry IntegerMultBounds.MathlibTM2.Fast.TableVM
@@ -100,7 +101,18 @@ theorem packedHaloCountedPublishedBatch_exec
         List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
           (fun i => (packedIntervalRead q w (coreStart coreWidth k)
             (cstream A w (ownedCoreWords coreWidth k D)++Sbig.R 253) i).re)
-          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds := by
+          x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds ∧
+        ∀ c, mnProgPush (packedHaloCountedPublishedBatch (P := P) (U := U) (A := A) hR hQ) ≤ c →
+          (∀ f, mnProgPush (bodyLarge f) ≤ c) → ∀ depth,
+          ExecWithin bodyLarge (fun d z => mnSize z+d ≤ mnSize (mk v Sbig)+
+            (inputs.length*((b-a)*w)+V)+depth+(c+1)*
+              ((4*inputs.length+4)+(constructedBoundaryFactorCost p u l s t a b boundaryTarget rhsExp+
+                (2*(B.card*publicationGeometryWidth t band+publicationGeometryWidth t band+B.card)+7)+
+                ((s+t+band+a+b)*(4*V+10)+56*V+77)+
+                (packedFreshOutputCost V (b-a) w+packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V)+
+                (retirePackedBandTableCost B.card W w+packedFactorReleaseCost (boundaryFactorStockBound q w band B.card))+
+                100*(inputs.length+1)*((coreLength s coreWidth k+2*radius)*w+1))))
+            depth (packedHaloCountedPublishedBatch hR hQ) (mk v Sbig) n (mk v' F) := by
   dsimp only
   intro hwdim hy hcoeff
   have hcounterBig : Sbig.R 248 = [] := by
@@ -140,11 +152,18 @@ theorem packedHaloCountedPublishedBatch_exec
         simpa only [Tbig,Function.update_of_ne hi248] using hpublicationClean i hi)
       (by simpa [Tbig] using hwdim) hy hcoeff
   refine ⟨v₂,F,(4*inputs.length+4)+n₂,hu₂.trans hu₁,Nat.add_le_add_left hn₂ _,
-    Exec.seq he₁' he₂,harchive,hsrc,htable,hcounter,hfactors,?_,Ds,?_,?_⟩
+    Exec.seq he₁' he₂,harchive,hsrc,htable,hcounter,hfactors,?_,Ds,?_,?_,?_⟩
   · intro i hi h253
     have hi248 : i ≠ 248 := by intro he; have hh := congrArg Fin.val he; change i.val = 248 at hh; omega
     exact (hexternal i hi h253).trans (Function.update_of_ne hi248 _ _)
   · simpa [Tbig] using hdst
   · simpa [Tbig] using hgood
+  · intro c hpLarge hbLarge depth
+    have hpParts := hpLarge
+    simp only [packedHaloCountedPublishedBatch,mnProgPush] at hpParts
+    have ht := hpublishedStock c (Nat.le_trans (Nat.le_max_right _ _) hpParts) hbLarge depth
+    simpa only [packedHaloCountedPublishedBatch] using
+      (mn_setup_exec_within_stock he₁' (Nat.le_refl _) (Nat.le_trans (Nat.le_max_left _ _) hpParts)
+        hbLarge ht)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
