@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Host.ChunkSwap
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyLayout
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -10,8 +11,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 /-- The machine's finite-array view is derived from the actual bit list. -/
 theorem bitArray_of_length {V : ℕ} (xs : List Bool) (hlen : xs.length = V) :
     ∃ x : Fin V → Bool, List.ofFn x = xs := by
-  subst V
-  exact ⟨xs.get,List.ofFn_get xs⟩
+  exact listArray_of_length xs hlen
 
 /-- Full rectangular interchanges never use the default symbol. Thus routing
 encoded bits with machine blank is exactly encoding the routed Boolean list. -/

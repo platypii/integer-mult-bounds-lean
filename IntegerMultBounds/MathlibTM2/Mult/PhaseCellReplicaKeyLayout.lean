@@ -37,11 +37,37 @@ theorem zipWith_ofFn_same {α β γ : Type*} {n : ℕ} (op : α → β → γ)
   | zero => simp
   | succ n ih => simp only [List.ofFn_succ,List.zipWith_cons_cons,ih]
 
+theorem replicaKeyWords_zipWith {α β γ : Type*} {N K W : ℕ}
+    (op : α → β → γ) (f : Fin N → Fin K → Fin W → α) (g : Fin N → Fin K → Fin W → β) :
+    List.zipWith op (replicaKeyWords f) (replicaKeyWords g) =
+      replicaKeyWords (fun r k b => op (f r k b) (g r k b)) := by
+  simp only [replicaKeyWords,zipWith_ofFn_same]
+
 theorem keyReplicaWords_zipWith {α β γ : Type*} {N K W : ℕ}
     (op : α → β → γ) (f : Fin N → Fin K → Fin W → α) (g : Fin N → Fin K → Fin W → β) :
     List.zipWith op (keyReplicaWords f) (keyReplicaWords g) =
       keyReplicaWords (fun r k b => op (f r k b) (g r k b)) := by
   simp only [keyReplicaWords,replicaKeyWords,zipWith_ofFn_same]
+
+/-- Any correctly sized owned word has a finite-array view; no encoding
+certificate or concrete enumeration is needed. -/
+theorem listArray_of_length {α : Type*} {V : ℕ} (xs : List α) (hlen : xs.length = V) :
+    ∃ x : Fin V → α, List.ofFn x = xs := by
+  subst V
+  exact ⟨xs.get,List.ofFn_get xs⟩
+
+/-- Recover a rectangular view of an actual owned word, including padded tiles. -/
+theorem replicaKeyWords_of_length {α : Type*} {N K W : ℕ} (xs : List α)
+    (hlen : xs.length = N*(K*W)) :
+    ∃ f : Fin N → Fin K → Fin W → α, replicaKeyWords f = xs := by
+  obtain ⟨x,hx⟩ := listArray_of_length xs hlen
+  refine ⟨fun r k b => x (finProdFinEquiv (r,finProdFinEquiv (k,b))),?_⟩
+  rw [←hx]
+  unfold replicaKeyWords
+  apply congrArg List.ofFn
+  funext i
+  dsimp only
+  simp only [Prod.mk.eta,Equiv.apply_symm_apply]
 
 /-- Supply the finite-array view required by the existing tape interchange. -/
 theorem replicaKeyWords_array {α : Type*} {N K W : ℕ}
