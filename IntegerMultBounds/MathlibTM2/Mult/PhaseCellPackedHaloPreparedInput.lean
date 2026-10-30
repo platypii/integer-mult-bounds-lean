@@ -102,7 +102,8 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
       F.R 125 = [] ∧ F.R 128 = [] ∧ (F.R 157).length ≤ V ∧
       (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
         (embStk packedBoundaryRecoveryBase F).R k = S.R k) ∧
-      F.L = (extendStacks (by decide : 242 ≤ 248) S).L ∧ F.inp = S.inp ∧ F.out = S.out := by
+      F.L = (extendStacks (by decide : 242 ≤ 248) S).L ∧ F.inp = S.inp ∧ F.out = S.out ∧
+      (∀ k : Fin 168, k ∈ haloAuxiliaryPorts → F.R (packedRecoveryRuntimeReg k) = S.R (packedHaloRuntimeReg k)) := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages hboundary y hy hcoeff
   let band := PhaseCellBand.width p u
@@ -124,7 +125,7 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
   change n₁ ≤ packedHaloPreparedBoundaryCost p u l target boundaryTarget rhsExp s t a b V+
     packedBoundaryRecoveryCost p u l finalTarget rhsExp s t a b V q w at hn₁
   have h132 := packedPreparedInputReleased_frame F tail 132 (by decide)
-  refine ⟨v₂,packedPreparedInputReleased F tail,n₁+n₂,D,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,?_,hbank₂,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,packedPreparedInputReleased F tail,n₁+n₂,D,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,?_,hbank₂,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · have hn := Nat.add_le_add hn₁ hn₂
     dsimp only [packedHaloPreparedInputCost]
     rw [← hboundary]
@@ -189,5 +190,13 @@ theorem packedHaloPreparedInput_exec (hbody : ∀ f, body' f = embProg packedBou
 
   · exact hinputRecovery
   · exact houtputRecovery
+
+  · intro k hk
+    change (packedPreparedInputReleased F tail).R (packedRecoveryRuntimeReg k) = _
+    rw [packedPreparedInputReleased_frame F tail _ (by
+      simp only [haloAuxiliaryPorts,List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff] at hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff,packedRecoveryRuntimeReg]
+      omega)]
+    exact hauxiliaryRecovery k hk
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
