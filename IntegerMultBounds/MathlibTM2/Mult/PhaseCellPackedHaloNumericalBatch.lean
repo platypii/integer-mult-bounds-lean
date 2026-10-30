@@ -98,7 +98,16 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
       IntegerMultBounds.MathlibTM2.Fast.Main.mnSize
         (mk (embDn packedHaloBatchReg v') (embStk packedHaloBatchReg F)) ≤
       IntegerMultBounds.MathlibTM2.Fast.Main.mnSize
-        (mk (embDn packedHaloBatchReg v) (embStk packedHaloBatchReg S))+inputs.length*((b-a)*w)+V := by
+        (mk (embDn packedHaloBatchReg v) (embStk packedHaloBatchReg S))+inputs.length*((b-a)*w)+V ∧
+      (∀ done todo, inputs = done++todo → ∃ M : Stacks 248 A,
+        PackedHaloInputTrace (fun x S F => ∃ D : ZMod s → GaussianInt,
+        F.R 132 = cstream A w (packedInterval a (b-a) D)++S.R 132 ∧
+        PhaseCellInterface.ErrorOn (haloVertices s a b)
+          (fun i => (packedIntervalRead q w a (F.R 132) i).re) x.2 (1/(2 : ℝ)^finalTarget))
+        done (embStk packedHaloBatchReg S) M ∧
+        IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk (embDn packedHaloBatchReg v) M) ≤
+          IntegerMultBounds.MathlibTM2.Fast.Main.mnSize
+            (mk (embDn packedHaloBatchReg v) (embStk packedHaloBatchReg S))+inputs.length*((b-a)*w)+V) := by
   dsimp only
   intro hbetween columns hcolumns hcell htable hpages hboundary hy hcoeff
   let band := PhaseCellBand.width p u
@@ -167,7 +176,42 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
     encode [] tail (by simpa only [List.append_nil] using hsource)
     (by simpa only [List.map_nil,List.flatten_nil,List.nil_append] using hready.2.1)
     (embDn packedHaloBatchReg v) (embDn packedHaloBatchReg vf)
+  have hprefixStock : ∀ done todo, inputs = done++todo → ∃ M : Stacks 248 A,
+      PackedHaloInputTrace (fun x S F => ∃ D : ZMod s → GaussianInt,
+        F.R 132 = cstream A w (packedInterval a (b-a) D)++S.R 132 ∧
+        PhaseCellInterface.ErrorOn (haloVertices s a b)
+          (fun i => (packedIntervalRead q w a (F.R 132) i).re) x.2 (1/(2 : ℝ)^finalTarget))
+        done (embStk packedHaloBatchReg S) M ∧
+      IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk (embDn packedHaloBatchReg v) M) ≤
+        IntegerMultBounds.MathlibTM2.Fast.Main.mnSize
+          (mk (embDn packedHaloBatchReg v) (embStk packedHaloBatchReg S))+inputs.length*((b-a)*w)+V := by
+    intro done todo hsplit
+    obtain ⟨M,hpre,⟨remaining,hr,hcount⟩,hpost⟩ := hprefixReady done todo hsplit
+    have hf := hr.2.2.2.2.2
+    have hs := hpre.ready_stock_le_of_count (L := (b-a)*w) (by
+      intro x T G hresult
+      obtain ⟨D,hout,herror⟩ := hresult
+      rw [hout,List.length_append,length_cstream,packedInterval_length D (by omega)])
+      hbetween hr.2.2.1 hf.2.1 hf.2.2.1 hf.1 hf.2.2.2.2.1 hf.2.2.2.1 (by
+        intro k hk hk'
+        by_cases h238 : k = 238
+        · subst k; exact hf.2.2.2.2.2
+        · let j : Fin 242 := ⟨k.val,hk'⟩
+          exact hr.2.2.2.2.1 j hk (by
+            intro he; apply h238; exact Fin.ext (congrArg (fun i : Fin 242 => i.val) he)))
+      encode ((b-a)*executionWidth p l target rhsExp) (by
+        intro x
+        dsimp only [encode]
+        rw [length_cstream,packedInterval_length x.1 (by omega)])
+      inputs remaining hcount tail hsource hr.2.1
+      (embDn packedHaloBatchReg v) (embDn packedHaloBatchReg v)
+    have hlen : done.length ≤ inputs.length := by
+      have hh := congrArg List.length hsplit
+      simp only [List.length_append] at hh
+      omega
+    have hmul := Nat.mul_le_mul_right ((b-a)*w) hlen
+    exact ⟨M,hpre,by omega⟩
   exact ⟨vf,F,n,hu',hn,he,hcounter,hlength,by simpa only [List.map_nil,List.flatten_nil,List.nil_append] using hready.2.1,
-    hready.2.2.1,hready.2.2.2.1,htrace,hready.2.2.2.2.1,hready.2.2.2.2.2,hstock⟩
+    hready.2.2.1,hready.2.2.2.1,htrace,hready.2.2.2.2.1,hready.2.2.2.2.2,hstock,hprefixStock⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
