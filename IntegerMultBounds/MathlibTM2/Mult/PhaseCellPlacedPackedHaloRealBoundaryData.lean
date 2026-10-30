@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBoundaryWorkspace
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundarySolveWorkspace
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloRealBoundaryData
 public import IntegerMultBounds.MathlibTM2.Host.EmbedUpdate
 
@@ -89,7 +90,9 @@ theorem placedPackedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.sta
           |gv q (normalizeBoundaryWord q (q/2-1) z).im| ≤ 1/2)) ∧
       (embStk packedHaloRuntimeReg F).L = (embStk packedHaloRuntimeReg S).L ∧
       (embStk packedHaloRuntimeReg F).R 125 = [] ∧ (embStk packedHaloRuntimeReg F).R 128 = [] ) ∧
-      (∀ k : Fin 242, 168 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧ F.L = S.L := by
+      (∀ k : Fin 242, 168 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧ F.L = S.L ∧
+      (∀ q w W N, PackedPreparedBank q w W N S → PackedPreparedBank q w W N F) ∧
+      (∀ bo hf df, PackedBoundaryFactorPages bo hf df S → PackedBoundaryFactorPages bo hf df F) := by
   dsimp only
   obtain ⟨v₁,T₁,m,D,hu₁,hm,he,hrest⟩ := packedHaloRealBoundaryData_exec
     (body := fun p : Empty => nomatch p) hR hQ hA hp hst hu hαu hθ hgap hbudget hpad C hC
@@ -104,10 +107,28 @@ theorem placedPackedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.sta
     embStk_ovr packedHaloRuntimeReg_injective T₁ S
   rcases hrest with ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
     hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleftAll,hkeys⟩
-  refine ⟨v₂,F,m,D,hu₂.trans hu₁,hm,he₂,?_,?_,embOvr_left_of_eq S T₁ hleftAll⟩
+  refine ⟨v₂,F,m,D,hu₂.trans hu₁,hm,he₂,?_,?_,embOvr_left_of_eq S T₁ hleftAll,?_,?_⟩
   · rw [hproj]
     exact ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
       hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleftAll,hkeys⟩
   · exact packedHaloRuntime_high_frame S T₁
+
+  · intro q w W N hretained
+    apply hretained.of_recovery_frame
+    · exact embOvr_left_of_eq S T₁ hleftAll
+    · intro i
+      have hi := i.isLt
+      have hn := congrArg (fun G : Stacks 117 A => G.R ⟨i.val,by omega⟩) hbank
+      simpa [embStk,preparedBoundaryCoreReg,packedBoundaryFactorReg,boundaryFactorMulReg,
+        packedCellCoreReg,packedHaloRuntimeReg,countedReleasedCellBank,releasedCellBank,
+        Fin.ext_iff,show i.val ≠ 140 by omega,show i.val ≠ 143 by omega,
+        show i.val ≠ 206 by omega,show i.val < 154 by omega,
+        show i.val ≠ 93 by omega,show i.val ≠ 110 by omega,show i.val ≠ 116 by omega,
+        ← hproj] using hn
+    · exact (hframe 119 (by decide) (by decide) (by decide)).2
+    · intro k hk hne
+      exact (packedHaloRuntime_high_frame S T₁ k hk).2
+  · intro bo hf df hpages
+    exact hpages.of_solution_frame (fun k hk _ => (packedHaloRuntime_high_frame S T₁ k hk).2)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -176,7 +176,7 @@ theorem packedHaloBoundarySetupUsing_exec (freshGeometry : Bool) (hR : rpStates 
     · exact hleft' 123
     · exact hleft' 124
   have hθpos : 0 < (t : ℝ)/s-1 := lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ
-  obtain ⟨v₂,F,n₂,D,hu₂,hn₂,he₂,hdata,hhigh,hleftFinal⟩ := placedPackedHaloRealBoundaryData_exec
+  obtain ⟨v₂,F,n₂,D,hu₂,hn₂,he₂,hdata,hhigh,hleftFinal,hbankCarry,hpagesCarry⟩ := placedPackedHaloRealBoundaryData_exec
     (body := body) (target := j) (boundaryTarget := target) hR hQ hA (by omega) hst hu hαu hθpos hgap hbudget hpad
     C hC hab hbs hband hwide hVeq hwV hcoords hunits tail E outputTail v₁ S₁
     (by simpa [embStk,packedHaloRuntimeReg,packedBoundaryTableRouting,Equiv.swap_apply_def] using hnative)
@@ -201,8 +201,7 @@ theorem packedHaloBoundarySetupUsing_exec (freshGeometry : Bool) (hR : rpStates 
   have hinp : F.inp = S₁.inp := congrArg (fun G : Stacks 117 A => G.inp) hproj
   have hout : F.out = S₁.out := congrArg (fun G : Stacks 117 A => G.out) hproj
   have hfactor := packedBoundaryFactorState_of_high_frame S₁ F (fun k hk => (hhigh k hk).2)
-  have hpages := (PackedBoundaryFactorPages.mk hbo hhf hdf).of_solution_frame
-    (fun k hk _ => (hhigh k hk).2)
+  have hpages := hpagesCarry _ _ _ ⟨hbo,hhf,hdf⟩
   refine ⟨v₂,F,n₁+n₂,columns,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hinp.trans hinputFrame,hout.trans houtputFrame,
     (hhigh 220 (by decide)).2.trans hrawTable,
     packedBoundaryFactorStock_of_high_frame S₁ F (fun i hi => (hhigh i hi).2) hstock,
