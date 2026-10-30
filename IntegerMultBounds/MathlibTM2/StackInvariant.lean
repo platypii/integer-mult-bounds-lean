@@ -43,6 +43,15 @@ theorem toExec (h : ExecWithin body Inv d p s n t) : Exec body p s n t := by
   | loop_true hf _ _ hp hq => exact Exec.loop_true hf hp hq
   | call _ _ _ hp => exact Exec.call hp
 
+/-- Regroup sequential stages without changing their invariant or step count. -/
+theorem seq_assoc {q r : Prog P Γ σ}
+    (h : ExecWithin body Inv d (.seq (.seq p q) r) s n t) :
+    ExecWithin body Inv d (.seq p (.seq q r)) s n t := by
+  cases h with
+  | seq hpq hr =>
+    cases hpq with
+    | seq hp hq => simpa only [Nat.add_assoc] using ExecWithin.seq hp (ExecWithin.seq hq hr)
+
 theorem mono (h : ExecWithin body Inv d p s n t) (hIJ : ∀ d s, Inv d s → J d s) :
     ExecWithin body J d p s n t := by
   induction h with
