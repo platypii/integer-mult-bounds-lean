@@ -179,11 +179,15 @@ theorem packedKeyComplexRealBatch_exec
     (by simpa [M₁] using hpacket) (by simp [M₁,queue]) hblank₁
     (by simpa [M₁] using hcountBlank) hcounterBlank hscratch hcell hboundary
     coreWidth k radius haEq hbEq hleft hright h249 h250 hpublicationClean hradiusWord hy hcoeff
+  obtain ⟨hsrc,h110,harchive,htable,hcounter,hwidth,hcount,hfactors,houtput,hDs,hgood,hframe,hrealStock⟩ := hrest
+  have hrest' := And.intro hsrc (And.intro h110 (And.intro harchive (And.intro htable
+    (And.intro hcounter (And.intro hwidth (And.intro hcount (And.intro hfactors
+      (And.intro houtput (And.intro hDs (And.intro hgood hframe))))))))))
   obtain ⟨v₃,H₃,he₃,hv₃,hu₃,hview₃,hoff⟩ := exec_emb
     packedKeyComplexReg_injective hbodyComplex he₂ v₁ rfl H₁ hview₁
   have hhold := hoff 276 packedKeyComplexReg_off
   refine ⟨v₃,H₃,G,n₁+n₂,Ds,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hn₁ hn₂,
-    ?_,hview₃,hhold.1.trans hL₁,hhold.2.trans hR₁,hrest⟩
+    ?_,hview₃,hhold.1.trans hL₁,hhold.2.trans hR₁,hrest'⟩
   exact Exec.seq he₁ he₃
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

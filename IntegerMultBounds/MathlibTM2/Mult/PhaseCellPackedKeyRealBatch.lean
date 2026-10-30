@@ -9,6 +9,7 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
@@ -73,8 +74,15 @@ theorem packedKeyRealBatch_exec
         (fun i => (packedIntervalRead q (2*q+8) (coreStart coreWidth k)
           (cstream A (2*q+8) (ownedCoreWords coreWidth k D)++M.R 253) i).re)
         x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds ∧
-      ∀ j : Fin 276, 263 ≤ j.val → G.L j = M.L j ∧
-        G.R j = if j = 263 then tail else M.R j := by
+      (∀ j : Fin 276, 263 ≤ j.val → G.L j = M.L j ∧
+        G.R j = if j = 263 then tail else M.R j) ∧
+      ∀ c, mnProgPush (packedKeyRealBatch (P := P) (U := U) (A := A) hR hQ) ≤ c →
+        (∀ f, mnProgPush (bodyProtected f) ≤ c) → ∀ depth,
+        ExecWithin bodyProtected (fun d z => mnSize z+d ≤ mnSize (mk v M)+
+          (Fs.length*((b-a)*(2*q+8))+V)+depth+(c+1)*
+            ((packedKeyInputCost p q W Fs.length (b-a)+(4*Fs.length+4))+
+              packedHaloGeometryWorkspace p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius Fs.length))
+          depth (packedKeyRealBatch hR hQ) (mk v M) n (mk v' G) := by
   dsimp only
   let inputs := Fs.map (fun F => ((fun i => (2 : GaussianInt)^(q-p-1)*F i),y F))
   let rhs := (Fs.map (fun F => cstream A (2*q+8)
@@ -154,7 +162,7 @@ theorem packedKeyRealBatch_exec
     simp [B₁]
   have houtput' := houtput
   simp only [hwn,hqn] at houtput' hgood
-  refine ⟨v₂,G,n₁+n₂,Ds,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,h110.trans hsrc,?_,?_,?_,?_,h251,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,G,n₁+n₂,Ds,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,?_,h110.trans hsrc,?_,?_,?_,?_,h251,?_,?_,?_,?_,?_,?_⟩
   · simpa only [inputs,List.length_map] using Nat.add_le_add hn₁ hn₂
   · simpa [M₁] using hqueue
   · exact (hread 132).trans (by simpa [S₁] using harchive)
@@ -172,5 +180,13 @@ theorem packedKeyRealBatch_exec
     have h110 : j ≠ (110 : Fin 276) := by intro he; have hv := congrArg Fin.val he; omega
     have h251 : j ≠ (251 : Fin 276) := by intro he; have hv := congrArg Fin.val he; omega
     simpa [M₁,h110,h251,Function.update_apply] using hexternal j hj
+
+  · intro c hpLarge hbLarge depth
+    have hpParts := hpLarge
+    simp only [packedKeyRealBatch,mnProgPush] at hpParts
+    have ht := hprotectedStock c (Nat.le_trans (Nat.le_max_right _ _) hpParts) hbLarge depth
+    have ht' := mn_setup_exec_within_stock he₁ hn₁
+      (Nat.le_trans (Nat.le_max_left _ _) hpParts) hbLarge ht
+    simpa only [packedKeyRealBatch,inputs,List.length_map,hwn] using ht'
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
