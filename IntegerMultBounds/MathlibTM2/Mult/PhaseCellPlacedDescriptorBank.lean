@@ -12,8 +12,8 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 
 variable {N T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
-def descriptorReadyBank (work : Fin 303 → Fin T) (words : Fin 303 → List (Fin (A+4)))
-    (S : Stacks T A) : Stacks 303 A := {embStk work S with R := words}
+def descriptorReadyBank (work : Fin N → Fin T) (words : Fin N → List (Fin (A+4)))
+    (S : Stacks T A) : Stacks N A := {embStk work S with R := words}
 
 def placedDescriptorFields (work : Fin N → Fin T) (words : Fin N → List (Fin (A+4))) :=
   List.ofFn (fun i => (work i,words i))
