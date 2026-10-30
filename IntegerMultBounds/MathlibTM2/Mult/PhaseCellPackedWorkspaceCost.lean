@@ -9,6 +9,19 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
+/-- The shared workspace allowance already pays the zero-replica numerical
+execution, including factor construction and publication controls. -/
+theorem packedKeyNormalizedBatchCost_zero_le_workspace
+    (B p q W u l s t a b V boundaryTarget finalTarget rhsExp targetOut coreWidth k radius : ℕ)
+    [NeZero s] :
+    packedKeyNormalizedBatchCost B p q W u l s t a b V boundaryTarget finalTarget rhsExp targetOut coreWidth k radius 0 ≤
+      packedKeyNormalizedWorkspace B p q W u l s t a b V boundaryTarget finalTarget rhsExp targetOut coreWidth k radius 0 := by
+  simp only [packedKeyNormalizedBatchCost,packedKeyNormalizedWorkspace,packedKeyComplexWorkspace,
+    packedKeyRealBatchCost,packedHaloBatchCostFromSetup,packedHaloGeometryWorkspace,
+    packedHaloBatchCost,packedCoreBatchPublicationCost,packedCoreArchiveControlsCost,executionWidth,
+    Nat.mul_add,Nat.add_mul,Nat.zero_mul,Nat.mul_zero,Nat.add_zero,Nat.zero_add]
+  nlinarith
+
 theorem packedHaloGeometryWorkspace_affine
     (p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius N : ℕ) [NeZero s] :
     let band := PhaseCellBand.width p u
