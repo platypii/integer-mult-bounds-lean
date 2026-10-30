@@ -125,7 +125,8 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
       CouplingIntervalMetadata V s t band a b a (b-a) (embStk packedHaloRuntimeReg F) ∧
       T.R 238 = S.R 238 ∧
       PackedHaloRecoveryBuffers p s t u a b q w C D tail outputTail F ∧
-      F.inp = S.inp ∧ F.out = S.out := by
+      F.inp = S.inp ∧ F.out = S.out ∧
+      (∀ k : Fin 168, k ∈ ([126,137,144,150,152,159,160,161,162] : List (Fin 168)) → F.R (packedHaloRuntimeReg k) = S.R (packedHaloRuntimeReg k)) := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages
   have hθpos : 0 < (t : ℝ)/s-1 := lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ
@@ -154,7 +155,7 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
     (12*PhaseCellBand.width p u+1) columns hp a b target hst hαu hθpos hgap hbudget hdom
     hcolumns C D x hC' hx' haccuracy v₁ T (hbankCarry _ _ _ _ hbank) hfold
     (hpagesCarry _ _ _ hpages)
-  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+  refine ⟨v₂,T,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,?_,hproduced,?_,hleftFinal,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · exact (hbankCarry _ _ _ _ hbank).publish _
   · exact (hpagesCarry _ _ _ hpages).publish _
   · intro k hk hne
@@ -256,5 +257,15 @@ theorem packedHaloPreparedBoundary_exec (hR : rpStates ≤ Q) (hQ : SS.states �
 
   · exact hinputCarry
   · exact houtputCarry
+
+  · intro k hk
+    have hf := hproduced.auxiliary_frame k hk
+    have hne : packedHaloRuntimeReg k ≠ (143 : Fin 242) ∧ packedHaloRuntimeReg k ≠ (238 : Fin 242) := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff] at hk
+      constructor <;> intro he <;> have hv := congrArg Fin.val he
+      all_goals change k.val = _ at hv; omega
+    change (Function.update (Function.update T.R 143 []) 238 _) (packedHaloRuntimeReg k) = _
+    rw [Function.update_of_ne hne.2,Function.update_of_ne hne.1]
+    exact hf
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
