@@ -107,7 +107,9 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
         done (embStk packedHaloBatchReg S) M ∧
         IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk (embDn packedHaloBatchReg v) M) ≤
           IntegerMultBounds.MathlibTM2.Fast.Main.mnSize
-            (mk (embDn packedHaloBatchReg v) (embStk packedHaloBatchReg S))+inputs.length*((b-a)*w)+V) := by
+            (mk (embDn packedHaloBatchReg v) (embStk packedHaloBatchReg S))+inputs.length*((b-a)*w)+V) ∧
+      IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v' F) ≤
+        IntegerMultBounds.MathlibTM2.Fast.Main.mnSize (mk v S)+inputs.length*((b-a)*w)+V := by
   dsimp only
   intro hbetween columns hcolumns hcell htable hpages hboundary hy hcoeff
   let band := PhaseCellBand.width p u
@@ -211,7 +213,9 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
       omega
     have hmul := Nat.mul_le_mul_right ((b-a)*w) hlen
     exact ⟨M,hpre,by omega⟩
+  have hphysical := packedHaloBatch_projected_stock_le v S F (inputs.length*((b-a)*w)+V)
+    hcounterLeft (by rw [hcounter]; simp) (by simpa only [Main.mnSize,mk,Nat.add_assoc] using hstock)
   exact ⟨vf,F,n,hu',hn,he,hcounter,hlength,by simpa only [List.map_nil,List.flatten_nil,List.nil_append] using hready.2.1,
-    hready.2.2.1,hready.2.2.2.1,htrace,hready.2.2.2.2.1,hready.2.2.2.2.2,hstock,hprefixStock⟩
+    hready.2.2.1,hready.2.2.2.1,htrace,hready.2.2.2.2.1,hready.2.2.2.2.2,hstock,hprefixStock,by simpa only [Main.mnSize,mk,Nat.add_assoc] using hphysical⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
