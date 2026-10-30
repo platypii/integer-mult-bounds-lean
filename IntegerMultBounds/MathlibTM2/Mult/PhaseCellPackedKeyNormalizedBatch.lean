@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyComplexBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizeNativeBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedComponentLocality
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedNormalizedCost
 
 /-! One actual local numerical call, normalization, publication and dimension cleanup. -/
 @[expose] public section
@@ -99,16 +100,10 @@ theorem packedKeyNormalizedBatch_exec
     (Y : (ZMod s → GaussianInt) → ZMod s → ℝ)
     (hY : ∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u) Finset.univ (Y F)
       (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re)) :
-    let L := coreLength s coreWidth k
     let j := inverseNormalizationShift p
     ∃ v' H n, ∃ Gs : List (ZMod s → GaussianInt), v'.user = v.user ∧ Gs.length = Fs.length ∧
-      n ≤ (preparePackedCoreRowsCost Bcore q L+
-        (Fs.length*(26*((b-a)*W)+17)+34+
-          ((packedKeyInputCost p q W (2*Fs.length) (b-a)+(4*(2*Fs.length)+4))+
-          packedHaloBatchCostFromSetup p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius (2*Fs.length)))+
-        (Fs.length*(16*(L*(2*q+8))+19)+22))+
-        (preparedNormalizePackedBatchCost Bcore p u l targetOut s t a b W Fs.length L+214*Bcore+217)+
-        (2*L*((2*q+8)+1)+4) ∧
+      n ≤ packedKeyNormalizedBatchCost Bcore p q W u l s t a b V boundaryTarget finalTarget rhsExp
+        targetOut coreWidth k radius Fs.length ∧
       Exec bodyOuter (packedKeyNormalizedBatch hT hR hQ rg ports headerSrc) (mk v H₀) n (mk v' H) ∧
       H.R (Fin.castLE hT 253) = (Gs.map (fun D => cstream A W (ownedCoreWords coreWidth k D))).flatten++M.R 253 ∧
       H.R headerSrc = headerTail ∧ H.R (Fin.castLE hT 278) = [] ∧ H.R (Fin.castLE hT 279) = [] ∧
@@ -225,7 +220,9 @@ theorem packedKeyNormalizedBatch_exec
   refine ⟨v₄,_,n₁+n₃+(2*L*((2*q+8)+1)+4),Gs,
     hu₄.trans (hu₃.trans (hu₂.trans hu₁)),hlen.trans hDs,?_,
     (Exec.seq he₂ (Exec.seq he₃' he₄)).cast (by omega) rfl,?_,?_,?_,?_,?_,?_,?_⟩
-  · rw [hDs] at hn₃
+  · unfold packedKeyNormalizedBatchCost packedKeyRealBatchCost
+    dsimp only
+    rw [hDs] at hn₃
     dsimp only [L] at hn₃ ⊢
     omega
   · simp [H₃,ownedCoreWords,packedInterval,L]
