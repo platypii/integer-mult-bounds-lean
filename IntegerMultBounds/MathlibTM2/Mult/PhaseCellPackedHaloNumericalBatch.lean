@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBatchProgram
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloBatchStock
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
@@ -88,13 +88,17 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
       (∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 →
         (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg F)).R k =
           (embStk packedBoundaryRecoveryBase (embStk packedHaloBatchReg S)).R k) ∧
-      (embStk packedHaloBatchReg F).L = (embStk packedHaloBatchReg S).L ∧
+      ((embStk packedHaloBatchReg F).L = (embStk packedHaloBatchReg S).L ∧
       (embStk packedHaloBatchReg F).inp = S.inp ∧ (embStk packedHaloBatchReg F).out = S.out ∧
       (∀ k : Fin 168, k ∈ haloAuxiliaryPorts →
         (embStk packedHaloBatchReg F).R (packedRecoveryRuntimeReg k) =
           (embStk packedHaloBatchReg S).R (packedRecoveryRuntimeReg k)) ∧
       (embStk packedHaloBatchReg F).R 93 = S.R 93 ∧
-      (embStk packedHaloBatchReg F).R 238 = S.R 238 := by
+      (embStk packedHaloBatchReg F).R 238 = S.R 238) ∧
+      IntegerMultBounds.MathlibTM2.Fast.Main.mnSize
+        (mk (embDn packedHaloBatchReg v') (embStk packedHaloBatchReg F)) ≤
+      IntegerMultBounds.MathlibTM2.Fast.Main.mnSize
+        (mk (embDn packedHaloBatchReg v) (embStk packedHaloBatchReg S))+inputs.length*((b-a)*w)+V := by
   dsimp only
   intro hbetween columns hcolumns hcell htable hpages hboundary hy hcoeff
   let band := PhaseCellBand.width p u
@@ -148,7 +152,22 @@ theorem packedHaloNumericalBatch_exec (hbody : ∀ f, body' f = embProg packedBo
     intro x T G hresult
     obtain ⟨D,hout,herror⟩ := hresult
     rw [hout,List.length_append,length_cstream,packedInterval_length D (by omega)])
+  have hf := hready.2.2.2.2.2
+  have hstock := htrace.ready_stock_le (L := (b-a)*w) (by
+    intro x T G hresult
+    obtain ⟨D,hout,herror⟩ := hresult
+    rw [hout,List.length_append,length_cstream,packedInterval_length D (by omega)])
+    hbetween hready.2.2.1 hf.2.1 hf.2.2.1 hf.1 hf.2.2.2.2.1 hf.2.2.2.1 (by
+      intro k hk hk'
+      by_cases h238 : k = 238
+      · subst k; exact hf.2.2.2.2.2
+      · let j : Fin 242 := ⟨k.val,hk'⟩
+        exact hready.2.2.2.2.1 j hk (by
+          intro he; apply h238; exact Fin.ext (congrArg (fun i : Fin 242 => i.val) he)))
+    encode [] tail (by simpa only [List.append_nil] using hsource)
+    (by simpa only [List.map_nil,List.flatten_nil,List.nil_append] using hready.2.1)
+    (embDn packedHaloBatchReg v) (embDn packedHaloBatchReg vf)
   exact ⟨vf,F,n,hu',hn,he,hcounter,hlength,by simpa only [List.map_nil,List.flatten_nil,List.nil_append] using hready.2.1,
-    hready.2.2.1,hready.2.2.2.1,htrace,hready.2.2.2.2.1,hready.2.2.2.2.2⟩
+    hready.2.2.1,hready.2.2.2.1,htrace,hready.2.2.2.2.1,hready.2.2.2.2.2,hstock⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
