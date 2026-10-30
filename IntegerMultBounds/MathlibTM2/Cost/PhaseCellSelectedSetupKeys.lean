@@ -80,15 +80,38 @@ theorem selectedFamilyAllKeysSetup_poly_le (ct : ℕ) :
       Nat.mul_le_mul_right _ hcard
     _ = (2*(ct+1)*C)*Sizes.t n i^8*Sizes.p n^6 := by ring
 
+/-- Any actual setup charge with a uniform axis-polynomial bound can be
+summed over all complete keys. This does not identify different cost models. -/
+theorem selectedFamilyKeyCharges_scaled_volume_le (ct scale C a b : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
+      ∀ charge : SelectedFamilyKey n i ct → ℕ,
+      (∀ key, charge key ≤ C*Sizes.t n i^a*Sizes.p n^b) →
+      scale*(∑ key, charge key) ≤ Sizes.T n := by
+  filter_upwards [selectedAxisPolynomial_le_volume (scale*(2*(ct+1)*C)) (b+2) (a+2)] with n hn
+  intro h i charge hcharge
+  have hsum := Finset.sum_le_sum (s := Finset.univ) (fun key _ => hcharge key)
+  have hcard := selectedFamilyKey_card_le n h i ct
+  have hb : (∑ key, charge key) ≤
+      (2*(ct+1)*Sizes.t n i^2*Sizes.p n^2)*(C*Sizes.t n i^a*Sizes.p n^b) := by
+    have hh : (∑ key, charge key) ≤ Fintype.card (SelectedFamilyKey n i ct)*(C*Sizes.t n i^a*Sizes.p n^b) := by
+      simpa only [Finset.sum_const,Finset.card_univ,smul_eq_mul] using hsum
+    exact hh.trans (Nat.mul_le_mul_right _ hcard)
+  have hs := Nat.mul_le_mul_left scale hb
+  have he : scale*((2*(ct+1)*Sizes.t n i^2*Sizes.p n^2)*(C*Sizes.t n i^a*Sizes.p n^b)) =
+      (scale*(2*(ct+1)*C))*Sizes.t n i^(a+2)*Sizes.p n^(b+2) := by
+    simp only [pow_add]
+    ring
+  rw [he] at hs
+  exact hs.trans (hn i)
+
 theorem selectedFamilyAllKeysSetup_scaled_volume_le (ct scale : ℕ) :
     ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
       ∀ [NeZero (Sizes.s n i)], ∀ A : ℕ,
       scale*(∑ key : SelectedFamilyKey n i ct, selectedFamilyKeySetupCost n i ct A key) ≤ Sizes.T n := by
-  obtain ⟨C,hcost⟩ := selectedFamilyAllKeysSetup_poly_le ct
-  filter_upwards [hcost,selectedAxisPolynomial_le_volume (scale*C) 6 8] with n hc hv
+  obtain ⟨C,hcost⟩ := selectedFamilyKeySetupCost_poly_le ct
+  filter_upwards [hcost,selectedFamilyKeyCharges_scaled_volume_le ct scale C 6 4] with n hc hn
   intro h i _ A
-  exact (Nat.mul_le_mul_left scale (hc h i A)).trans
-    ((by convert hv i using 1 <;> ring) : scale*(C*Sizes.t n i^8*Sizes.p n^6) ≤ Sizes.T n)
+  exact hn h i (selectedFamilyKeySetupCost n i ct A) (hc h i A)
 
 theorem selectedFamilyAllKeysSetup_volume_le (ct : ℕ) :
     ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
