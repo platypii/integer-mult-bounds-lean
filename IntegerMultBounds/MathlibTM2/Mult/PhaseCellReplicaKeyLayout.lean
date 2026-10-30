@@ -30,6 +30,19 @@ theorem keyReplicaWords_map {α β : Type*} {N K W : ℕ}
     (keyReplicaWords f).map g = keyReplicaWords (fun r k b => g (f r k b)) :=
   replicaKeyWords_map g (fun k r b => f r k b)
 
+theorem zipWith_ofFn_same {α β γ : Type*} {n : ℕ} (op : α → β → γ)
+    (f : Fin n → α) (g : Fin n → β) :
+    List.zipWith op (List.ofFn f) (List.ofFn g) = List.ofFn (fun i => op (f i) (g i)) := by
+  induction n with
+  | zero => simp
+  | succ n ih => simp only [List.ofFn_succ,List.zipWith_cons_cons,ih]
+
+theorem keyReplicaWords_zipWith {α β γ : Type*} {N K W : ℕ}
+    (op : α → β → γ) (f : Fin N → Fin K → Fin W → α) (g : Fin N → Fin K → Fin W → β) :
+    List.zipWith op (keyReplicaWords f) (keyReplicaWords g) =
+      keyReplicaWords (fun r k b => op (f r k b) (g r k b)) := by
+  simp only [keyReplicaWords,replicaKeyWords,zipWith_ofFn_same]
+
 /-- Supply the finite-array view required by the existing tape interchange. -/
 theorem replicaKeyWords_array {α : Type*} {N K W : ℕ}
     (f : Fin N → Fin K → Fin W → α) (V : ℕ) (hV : V = N*(K*W)) :

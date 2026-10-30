@@ -379,10 +379,29 @@ passes cancel the pairing program's reverse accumulation. The symbol counter
 is consumed and both temporary planes return blank.
 `PhaseCellPairBitPlaneData` proves exact round-trip recovery for every actual
 `cstream`, without a representability premise, and identifies both bit-plane
-layouts with the corresponding replica/key bit arrays. These programs and data
-laws still need to be composed with two actual interchanges, including disposal
-of the preserved old pair stream and generation of the symbol counter. They do
-not yet constitute a closed packed-symbol router. The data module checks near 0.82 GiB and the execution module near
+layouts with the corresponding replica/key bit arrays.
+
+`PhaseCellReplicaKeyPlanes` composes two actual bit-plane interchanges sharing
+one header/private bank. The second run's readiness follows from the first
+run's frame and bit-format result. Its normalization volume is unchanged because
+permuting the first plane preserves its length. No second-run execution or
+readiness callback is supplied.
+
+`PhaseCellPackedReplicaKeyRouter` now composes the complete codec and routing
+lifecycle: restoring bit-plane encoding, both actual interchanges, erasure of
+the preserved original pair payload and counted reassembly in key-major order.
+Only the packed payload and disposable symbol counter change; the bit-plane
+and codec scratch registers return to their initial blank values. Besides the
+two interchange charges, the bound includes `12*V+12` for encoding, `2*V+2`
+for disposal, `8*V+6` for reassembly, and normalization of the additional two
+`V`-symbol planes. The router checks near 2.96 GiB, and its separate
+`PhaseCellPackedReplicaKeyRouterCheck` audits the entire composition. The paired
+layout and zip laws are structural over arbitrary symbolic dimensions. The
+symbol counter, binary interchange headers, private-bank placement and balanced
+dyadic dimensions are still initial conditions. Generating them, padding
+nondyadic movement groups, proving the selected routing/peak-stock bounds, and
+connecting the router to the generated gather and numerical key batches remain
+open. The data module checks near 0.82 GiB and the execution module near
 2.52 GiB. A separate `PhaseCellReplicaKeyInterchangeCheck` audits this supplier
 without joining its import closure to the numerical coupling audit.
 
