@@ -96,6 +96,51 @@ theorem finishEmbeddedDescriptorBank_exec
       · simp only [finishedDescriptorBankState, hk, ite_true]
       · simp only [finishedDescriptorBankState, hk, ite_false, (hoff k hk).2, hgetR, (hoff result hr).2]
 
+/-- After descriptor loading, cleanup restores the caller's original bank.
+Only the descriptor cursors and accumulated output remain changed. -/
+theorem finishedPlacedDescriptorBankState_eq
+    (work : Fin N → Fin T) (words : Fin N → List (Fin (A+4)))
+    (src saved result : Fin T) (output : Fin N) (rest : List (Fin (A+4)))
+    (F : Stacks N A) (S : Stacks T A)
+    (hinp : F.inp = S.inp) (hout : F.out = S.out)
+    (hleft : ∀ i, S.L (work i) = []) (hright : ∀ i, S.R (work i) = [])
+    (hreg : [src,saved,result].Nodup) (hsep : ∀ i, work i ∉ [src,saved,result]) :
+    finishedDescriptorBankState work output result F
+      (placedDescriptorState work words src saved rest S) =
+      dispatchedDescriptorState work words src saved result rest (F.R output) S := by
+  have hr := hreg
+  regs_ne hr
+  have hn (i : Fin N) : work i ≠ src ∧ work i ≠ saved ∧ work i ≠ result := by
+    simpa only [List.mem_cons, List.not_mem_nil, or_false, not_or] using hsep i
+  refine Stacks.ext hinp hout ?_ ?_
+  · funext k
+    change (if k ∈ List.ofFn work then [] else S.L k) = S.L k
+    by_cases hk : k ∈ List.ofFn work
+    · obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hk
+      rw [ite_eq_left (List.mem_ofFn.mpr ⟨i, rfl⟩), hleft i]
+    · rw [ite_eq_right hk]
+  · funext k
+    by_cases hk : k ∈ List.ofFn work
+    · obtain ⟨i, rfl⟩ := List.mem_ofFn.mp hk
+      simp only [finishedDescriptorBankState, List.mem_ofFn.mpr ⟨i, rfl⟩, ite_true,
+        dispatchedDescriptorState, Function.update_of_ne (hn i).1,
+        Function.update_of_ne (hn i).2.1, Function.update_of_ne (hn i).2.2, hright i]
+    · have hwork (i : Fin N) : work i ≠ k := by
+        intro he; exact hk (List.mem_ofFn.mpr ⟨i, he⟩)
+      have hf : (placedDescriptorState work words src saved rest S).R result = S.R result :=
+        placedDescriptorState_frame work words src saved rest S result
+          (fun i => (hn i).2.2) ‹src ≠ result›.symm ‹saved ≠ result›.symm
+      simp only [finishedDescriptorBankState, hk, ite_false, hf, dispatchedDescriptorState]
+      by_cases hkr : k = result
+      · subst k; simp
+      · rw [ite_eq_right hkr, Function.update_of_ne hkr]
+        by_cases hks : k = src
+        · subst k; simp [placedDescriptorState, ‹src ≠ saved›]
+        · by_cases hkv : k = saved
+          · subst k; simp [placedDescriptorState]
+          · rw [placedDescriptorState_frame work words src saved rest S k hwork hks hkv,
+              Function.update_of_ne hkv, Function.update_of_ne hks]
+
 def descriptorBankStep (work : Fin N → Fin T) (src saved count tmp spare result : Fin T)
     (output : Fin N) (solve : Pr Empty N Q A U) : Pr P T Q A U :=
   .seq (descriptorSolverCall work src saved count tmp spare solve)
@@ -151,5 +196,48 @@ theorem descriptorBankStep_exec
   have hn₂' := hn₂.trans (hcleanup F hp)
   exact ⟨v₂, F, n₁+n₂, hu₂.trans hu₁, Nat.add_le_add hn₁ hn₂',
     Exec.seq he₁ he₂, hp, mn_seq_exec_within ht (mn_bounded_exec_certify he₂ hn₂')⟩
+
+/-- A ready solver with a host-tape frame supplies the exact restoring-schedule endpoint. -/
+theorem descriptorBankStep_exec_restored
+    (work : Fin N → Fin T) (hwork : Function.Injective work)
+    (src saved count tmp spare result : Fin T) (hreg : [src,saved,count,tmp,spare].Nodup)
+    (hsep : ∀ i, work i ∉ [src,saved,count,tmp,spare])
+    (hresult : ∀ i, work i ≠ result) (hrt : result ≠ tmp)
+    (houter : [src,saved,result].Nodup)
+    (words : Fin N → List (Fin (A+4))) (rest : List (Fin (A+4)))
+    (output : Fin N) (solve : Pr Empty N Q A U) (time stock cleanup : ℕ)
+    (post : Stacks N A → Prop) (v : HS T Q A U) (S : Stacks T A)
+    (hblank : ∀ i, S.R (work i) = []) (hleft : ∀ i, S.L (work i) = [])
+    (hsource : S.R src = descriptorBankTape (placedDescriptorFields work words) ++ rest)
+    (hcount : S.R count = []) (htmp : S.R tmp = []) (hspare : S.R spare = [])
+    (hsolve : ∀ vi : HS N Q A U, ∃ vf F n, vf.user = vi.user ∧ n ≤ time ∧
+      Exec (fun f : Empty => nomatch f) solve (mk vi (descriptorReadyBank work words S)) n (mk vf F) ∧ post F ∧
+      ∀ C, mnProgPush solve ≤ C → ∀ depth,
+        ExecWithin (fun f : Empty => nomatch f)
+          (fun d z => mnSize z+d ≤ mnSize (mk vi (descriptorReadyBank work words S))+depth+(C+1)*stock)
+          depth solve (mk vi (descriptorReadyBank work words S)) n (mk vf F))
+    (hcleanup : ∀ F, post F → descriptorBankCleanupCost output F ≤ cleanup)
+    (hhost : ∀ F, post F → F.inp = S.inp ∧ F.out = S.out) :
+    ∃ v' F n, v'.user = v.user ∧
+      n ≤ takeDescriptorBankCost (placedDescriptorFields work words) + time + cleanup ∧
+      Exec body (descriptorBankStep work src saved count tmp spare result output solve) (mk v S) n
+        (mk v' (dispatchedDescriptorState work words src saved result rest (F.R output) S)) ∧ post F ∧
+      ∀ C, mnProgPush (descriptorBankStep (P := P) work src saved count tmp spare result output solve) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          (C+1)*(takeDescriptorBankCost (placedDescriptorFields work words)+stock+cleanup)) depth
+          (descriptorBankStep work src saved count tmp spare result output solve) (mk v S) n
+          (mk v' (dispatchedDescriptorState work words src saved result rest (F.R output) S)) := by
+  obtain ⟨v', F, n, hu, hn, he, hp, ht⟩ := descriptorBankStep_exec (body := body)
+    work hwork src saved count tmp spare result hreg hsep hresult hrt words rest output
+    solve time stock cleanup post v S hblank hsource hcount htmp hspare hsolve hcleanup
+  have hsep' (i : Fin N) : work i ∉ [src,saved,result] := by
+    have hi := hsep i
+    simp only [List.mem_cons, List.not_mem_nil, or_false, not_or] at hi ⊢
+    exact ⟨hi.1, hi.2.1, hresult i⟩
+  have hf := finishedPlacedDescriptorBankState_eq work words src saved result output rest F S
+    (hhost F hp).1 (hhost F hp).2 hleft hblank houter hsep'
+  rw [hf] at he ht
+  exact ⟨v', F, n, hu, hn, he, hp, ht⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

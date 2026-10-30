@@ -1,11 +1,17 @@
 module
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedNormalizedPlacement
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorSolverSchedule
 
 /-! Audit the concrete packed normalization bank and its descriptor handoff. -/
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.finishedPlacedDescriptorBankState_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorBankStep_exec_restored,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorListLoop_exec_trace,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorSolverLoop_exec_trace_on,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.descriptorSolverSchedule_exec_trace_on,
       `IntegerMultBounds.MathlibTM2.Mult.ShortConv.clearRegister_exec,
       `IntegerMultBounds.MathlibTM2.Mult.ShortConv.clearRegisters_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.finishDescriptorBankBoth_exec,
