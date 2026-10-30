@@ -10,10 +10,10 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
 
-variable {T Q A : ℕ} {P U β : Type} {body : P → Pr P T Q A U}
+variable {N T Q A : ℕ} {P U β : Type} {body : P → Pr P T Q A U}
 
-theorem descriptorListLoop_exec (work : Fin 303 → Fin T)
-    (words : β → Fin 303 → List (Fin (A+4)))
+theorem descriptorListLoop_exec (work : Fin N → Fin T)
+    (words : β → Fin N → List (Fin (A+4)))
     (src saved result clock : Fin T) (hreg : [src,saved,result,clock].Nodup)
     (fresh : List (Fin T)) (hsep : ∀ k ∈ fresh, k ∉ [src,saved,result,clock])
     (L : Fin T → List (Fin (A+4))) (step : Pr P T Q A U) (cost : β → ℕ)

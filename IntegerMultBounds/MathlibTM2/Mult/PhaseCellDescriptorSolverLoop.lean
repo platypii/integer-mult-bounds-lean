@@ -13,17 +13,17 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2 In
   IntegerMultBounds.MathlibTM2.Host IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Mult.ShortConv
 
-variable {T Q A : ℕ} {P U ρ : Type} {body : P → Pr P T Q A U}
+variable {N L T Q A : ℕ} {P U ρ : Type} {body : P → Pr P T Q A U}
 
-theorem descriptorSolverLoop_exec_trace (work : Fin 303 → Fin T) (_hwork : Function.Injective work)
+theorem descriptorSolverLoop_exec_trace_on (work : Fin N → Fin T) (_hwork : Function.Injective work) (left : Fin L → Fin N)
     (src saved count tmp spare result clock : Fin T)
     (hreg : [src,saved,count,tmp,spare,result,clock].Nodup)
     (hsep : ∀ i, work i ∉ [src,saved,count,tmp,spare,result,clock])
-    (words : ρ → Fin 303 → List (Fin (A+4))) (step : Pr P T Q A U)
+    (words : ρ → Fin N → List (Fin (A+4))) (step : Pr P T Q A U)
     (time stock : ρ → ℕ) (post : ρ → List (Fin (A+4)) → Prop)
     (records : List ρ) (v : HS T Q A U) (S : Stacks T A)
     (hstep : ∀ r ∈ records, ∀ (vi : HS T Q A U) (Si : Stacks T A) (tail : List (Fin (A+4))),
-      (∀ i, Si.R (work i) = []) → (∀ i, Si.L (work (familyInverseCoreReg i)) = []) →
+      (∀ i, Si.R (work i) = []) → (∀ i, Si.L (work (left i)) = []) →
       Si.R src = descriptorBankTape (placedDescriptorFields work (words r))++tail →
       Si.R count = [] → Si.R tmp = [] → Si.R spare = [] →
       ∃ vf n output, vf.user = vi.user ∧ n ≤ time r ∧
@@ -34,7 +34,7 @@ theorem descriptorSolverLoop_exec_trace (work : Fin 303 → Fin T) (_hwork : Fun
             depth step (mk vi Si) n
             (mk vf (dispatchedDescriptorState work (words r) src saved result tail output Si)))
     (rest : List (Fin (A+4)))
-    (hblank : ∀ i, S.R (work i) = []) (hleft : ∀ i, S.L (work (familyInverseCoreReg i)) = [])
+    (hblank : ∀ i, S.R (work i) = []) (hleft : ∀ i, S.L (work (left i)) = [])
     (hscratch : ∀ k ∈ [count,tmp,spare], S.R k = [])
     (hsource : S.R src = descriptorScheduleTape work words records++rest)
     (hclock : (S.R clock).length = records.length) :
@@ -51,7 +51,7 @@ theorem descriptorSolverLoop_exec_trace (work : Fin 303 → Fin T) (_hwork : Fun
     tauto
   have hr := hreg
   regs_ne hr
-  have hn (i : Fin 303) : work i ≠ src ∧ work i ≠ saved ∧ work i ≠ count ∧
+  have hn (i : Fin N) : work i ≠ src ∧ work i ≠ saved ∧ work i ≠ count ∧
       work i ≠ tmp ∧ work i ≠ spare ∧ work i ≠ result ∧ work i ≠ clock := by
     simpa only [List.mem_cons,List.not_mem_nil,or_false,not_or] using hsep i
   let fresh := List.ofFn work ++ [count,tmp,spare]
@@ -90,5 +90,41 @@ theorem descriptorSolverLoop_exec_trace (work : Fin 303 → Fin T) (_hwork : Fun
     · obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hk
       exact hblank i
     · exact hscratch k hk
+
+
+theorem descriptorSolverLoop_exec_trace (work : Fin 303 → Fin T) (_hwork : Function.Injective work)
+    (src saved count tmp spare result clock : Fin T)
+    (hreg : [src,saved,count,tmp,spare,result,clock].Nodup)
+    (hsep : ∀ i, work i ∉ [src,saved,count,tmp,spare,result,clock])
+    (words : ρ → Fin 303 → List (Fin (A+4))) (step : Pr P T Q A U)
+    (time stock : ρ → ℕ) (post : ρ → List (Fin (A+4)) → Prop)
+    (records : List ρ) (v : HS T Q A U) (S : Stacks T A)
+    (hstep : ∀ r ∈ records, ∀ (vi : HS T Q A U) (Si : Stacks T A) (tail : List (Fin (A+4))),
+      (∀ i, Si.R (work i) = []) → (∀ i, Si.L (work (familyInverseCoreReg i)) = []) →
+      Si.R src = descriptorBankTape (placedDescriptorFields work (words r))++tail →
+      Si.R count = [] → Si.R tmp = [] → Si.R spare = [] →
+      ∃ vf n output, vf.user = vi.user ∧ n ≤ time r ∧
+        Exec body step (mk vi Si) n
+          (mk vf (dispatchedDescriptorState work (words r) src saved result tail output Si)) ∧ post r output ∧
+        ∀ C, mnProgPush step ≤ C → (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+          ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk vi Si)+depth+(C+1)*stock r)
+            depth step (mk vi Si) n
+            (mk vf (dispatchedDescriptorState work (words r) src saved result tail output Si)))
+    (rest : List (Fin (A+4)))
+    (hblank : ∀ i, S.R (work i) = []) (hleft : ∀ i, S.L (work (familyInverseCoreReg i)) = [])
+    (hscratch : ∀ k ∈ [count,tmp,spare], S.R k = [])
+    (hsource : S.R src = descriptorScheduleTape work words records++rest)
+    (hclock : (S.R clock).length = records.length) :
+    ∃ v' n outputs, v'.user = v.user ∧ n ≤ (records.map (fun r => time r+3)).sum+2 ∧
+      Exec body (countedLoop clock step) (mk v S) n
+        (mk v' (descriptorLoopFinal work words records src saved result clock rest outputs S)) ∧
+      List.Forall₂ post records outputs ∧
+      ∀ C, mnProgPush (countedLoop clock step) ≤ C → (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+(C+1)*(records.map stock).sum)
+          depth (countedLoop clock step) (mk v S) n
+          (mk v' (descriptorLoopFinal work words records src saved result clock rest outputs S)) := by
+  exact descriptorSolverLoop_exec_trace_on work _hwork familyInverseCoreReg
+    src saved count tmp spare result clock hreg hsep words step time stock post records v S
+    hstep rest hblank hleft hscratch hsource hclock
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
