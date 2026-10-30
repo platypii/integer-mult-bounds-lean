@@ -54,6 +54,43 @@ def PackedHaloProducedData {A : ℕ} (p l s t u target rhsExp a b V q w : ℕ) [
   (embStk packedHaloRuntimeReg F).L = (embStk packedHaloRuntimeReg S).L ∧
   (embStk packedHaloRuntimeReg F).R 125 = [] ∧ (embStk packedHaloRuntimeReg F).R 128 = [] )
 
+/-- Per-input buffers consumed by packed boundary recovery. -/
+structure PackedHaloRecoveryBuffers {A : ℕ} (p s t u a b q w : ℕ) [NeZero s]
+    (C D : ZMod s → GaussianInt) (tail outputTail : List (Fin (A+4))) (F : Stacks 242 A) : Prop where
+  source : F.R 110 = cstream A w (packedInterval a (b-a)
+    (guardedCouplingRowField (2^15*p) q t u (PhaseCellBand.width p u) a b false D C))++
+      (cstream A w (packedInterval a (b-a) C)++tail)
+  interior : F.R 132 = cstream A w (packedInterval a (b-a) D)++outputTail
+  page : F.R 138 = cstream A w
+    (couplingCoefficientPageInterval (2^15*p) q s t u (PhaseCellBand.width p u) a b a (b-a))
+  pageCount : F.R 139 = List.replicate
+    (couplingCoefficientPageInterval (2^15*p) q s t u (PhaseCellBand.width p u) a b a (b-a)).length tick
+  rowCount : F.R 140 = List.replicate (2*PhaseCellBand.width p u+1) tick
+  boundaryCount : F.R 116 = List.replicate (haloBoundary s t (PhaseCellBand.width p u) a b).card tick
+  mask : F.R 167 = couplingSourceIntervalMaskSymbols true A s t (PhaseCellBand.width p u) a b a (b-a)
+  width : (F.R 130).length = w
+
+/-- Boundary solving changes only the folded RHS and solution stream, leaving
+all recovery buffers at their original packed addresses. -/
+theorem PackedHaloProducedData.recoveryBuffers {A p l s t u target rhsExp a b V q w : ℕ}
+    [NeZero s] {C D : ZMod s → GaussianInt} {x : ZMod s → ℝ}
+    {tail outputTail : List (Fin (A+4))} {S F : Stacks 242 A}
+    (h : PackedHaloProducedData p l s t u target rhsExp a b V q w C D x tail outputTail S F)
+    (output : List (Fin (A+4))) :
+    PackedHaloRecoveryBuffers p s t u a b q w C D tail outputTail
+      {F with R := Function.update (Function.update F.R 143 []) 238 (output++F.R 238)} := by
+  rcases h with ⟨h93,hfold,hcount,hmask,hsource,houtput,hbank,hDnorm,hDfits,hword,
+    hpage,hpageCount,hrows,hgeometry,hqueue,hzero,h135,hframe,herror,hbound,hleft,hkeys⟩
+  constructor
+  · simpa [embStk,packedHaloRuntimeReg] using hsource
+  · simpa [embStk,packedHaloRuntimeReg] using houtput
+  · simpa [embStk,packedHaloRuntimeReg] using hpage
+  · simpa [embStk,packedHaloRuntimeReg] using hpageCount
+  · simpa [embStk,packedHaloRuntimeReg] using hrows
+  · simpa [embStk,packedHaloRuntimeReg] using hcount
+  · simpa [embStk,packedHaloRuntimeReg] using hmask
+  · simpa [embStk,packedHaloRuntimeReg] using hword
+
 theorem placedPackedHaloRealBoundaryData_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {l s t p u target rhsExp a b V boundaryTarget : ℕ} [NeZero s] {α d : ℝ}
     (hp : 0 < p) (hst : s < t) (hu : 1 ≤ u) (hαu : α^2 = (u : ℝ))

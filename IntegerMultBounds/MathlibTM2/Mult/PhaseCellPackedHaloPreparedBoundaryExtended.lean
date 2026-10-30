@@ -104,6 +104,7 @@ theorem packedHaloPreparedBoundary_extended_exec (hbody : ∀ f, body' f = embPr
       (∀ k ∈ ([127,129,131,133,134,135,136,153,158,166] : List (Fin 242)), F.R k = []) ∧
       CouplingIntervalMetadata V s t band a b a (b-a) (embStk packedHaloRuntimeReg F) ∧
       T.R 238 = S.R 238 ∧
+      PackedHaloRecoveryBuffers p s t u a b q w C D tail outputTail F ∧
       (∀ k : Fin 248, 242 ≤ k.val →
         (extendStacks (by decide) F).L k = [] ∧ (extendStacks (by decide) F).R k = []) := by
   dsimp only
@@ -112,14 +113,14 @@ theorem packedHaloPreparedBoundary_extended_exec (hbody : ∀ f, body' f = embPr
     (haloInterior s t (PhaseCellBand.width p u) a b) (1/(8*(p : ℝ))) (by positivity)
     (SchurDominance.dominates_mono _ Finset.univ _ _ (Finset.subset_univ _) hdom)
     (fun k => (value (executionPrecision p l target rhsExp) (C k)).re)
-  obtain ⟨v₁,T,n,D,hu,hn,he,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel,hnativeFinal,hcleanFinal,hgeometryFinal,hsolutionTail⟩ :=
+  obtain ⟨v₁,T,n,D,hu,hn,he,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel,hnativeFinal,hcleanFinal,hgeometryFinal,hsolutionTail,hbuffers⟩ :=
     packedHaloPreparedBoundary_exec (body := body) hR hQ hA hp hα hwidth hst hu hαu hθ hgap
       hbudget hpad C hC hab hb hband hwide hVeq hwV hcoords hunits tail E outputTail
       (embDn packedBoundaryRecoveryBase v) S hnative hmasters ha hb' hmeta h157 houtput hE hfresh
       haLt hfitV h139 h143 hleft hsep h158 h167 hrange hdom hq x hx
       columns hcolumns hcell htable hbank hpages
   obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_extendStacks (by decide : 242 ≤ 248) hbody he v rfl
-  exact ⟨x,hx,v₂,T,n,D,hu₂.trans hu,hn,he₂,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel,hnativeFinal,hcleanFinal,hgeometryFinal,hsolutionTail,
+  exact ⟨x,hx,v₂,T,n,D,hu₂.trans hu,hn,he₂,hbankFinal,hdata,hpagesFinal,hleftFinal,hframe,haccuracy,hheaders,hstage,hlevel,hnativeFinal,hcleanFinal,hgeometryFinal,hsolutionTail,hbuffers,
     fun k hk => extendStacks_fresh (by decide) _ k hk⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
