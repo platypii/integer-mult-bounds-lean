@@ -201,15 +201,17 @@ theorem packedHaloBoundarySetupUsing_exec (freshGeometry : Bool) (hR : rpStates 
   have hinp : F.inp = S₁.inp := congrArg (fun G : Stacks 117 A => G.inp) hproj
   have hout : F.out = S₁.out := congrArg (fun G : Stacks 117 A => G.out) hproj
   have hfactor := packedBoundaryFactorState_of_high_frame S₁ F (fun k hk => (hhigh k hk).2)
+  have hpages := (PackedBoundaryFactorPages.mk hbo hhf hdf).of_solution_frame
+    (fun k hk _ => (hhigh k hk).2)
   refine ⟨v₂,F,n₁+n₂,columns,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hinp.trans hinputFrame,hout.trans houtputFrame,
     (hhigh 220 (by decide)).2.trans hrawTable,
     packedBoundaryFactorStock_of_high_frame S₁ F (fun i hi => (hhigh i hi).2) hstock,
     hlen,hformat,hcolumns,hstageInv,?_,?_,?_,?_,h93'.trans h93,hfold,houtput',hsource,hpage,hpageCount,
     hrow,hgeometry,hDnorm,hDfits,haccuracy,hbound,?_,?_,?_,?_,?_,?_,?_,?_,?_,herrorTable⟩
   · rw [hfactor]; exact hsolve.update_vk _
-  · rw [hfactor]; simpa using hbo
-  · rw [hfactor]; simpa using hhf
-  · rw [hfactor]; simpa using hdf
+  · exact hpages.lower
+  · exact hpages.upper
+  · exact hpages.reciprocal
 
   · refine ⟨?_,?_,?_,?_,?_,?_,?_,?_⟩
     · intro i

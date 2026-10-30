@@ -52,4 +52,24 @@ theorem packedBoundarySolveReady_of_high_frame {A q w W N : ℕ} (S F : Stacks 2
   rw [packedBoundaryFactorState_of_high_frame S F hframe]
   exact hready.update_vk _
 
+/-- Numerical meanings of the three immutable factor pages. The RHS and
+published solution are deliberately absent from this fixed-key contract. -/
+structure PackedBoundaryFactorPages {A : ℕ} (bo hf df : List (Fin (A+4)))
+    (S : Stacks 242 A) : Prop where
+  lower : boundaryFactorState (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg S)) .bo = bo
+  upper : boundaryFactorState (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg S)) .hf = hf
+  reciprocal : boundaryFactorState (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg S)) .df = df
+
+/-- A new RHS and a consumed solution do not change factor-page meanings. -/
+theorem PackedBoundaryFactorPages.of_solution_frame {A : ℕ}
+    {bo hf df : List (Fin (A+4))} {S F : Stacks 242 A}
+    (h : PackedBoundaryFactorPages bo hf df S)
+    (hframe : ∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) :
+    PackedBoundaryFactorPages bo hf df F := by
+  have he := packedBoundaryFactorState_of_solution_frame S F hframe
+  constructor
+  · rw [he]; simpa using h.lower
+  · rw [he]; simpa using h.upper
+  · rw [he]; simpa using h.reciprocal
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
