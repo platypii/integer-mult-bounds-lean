@@ -50,4 +50,38 @@ theorem releaseScalarBank_exec (rg : TblR n → Fin T) (hrg : Function.Injective
       exact hoff (.v j) he
     simp [F,hi]
 
+/-- A blank scalar bank and its outside frame determine the whole machine
+state. This avoids one register case per scalar variable or scratch port. -/
+theorem blankScalarBank_eq (rg : TblR n → Fin T) (S F : Stacks T A)
+    (hwidth : F.R (rg .wr) = S.R (rg .wr))
+    (hS : ∀ r : TblR n, r ≠ .wr → S.R (rg r) = [])
+    (hF : ∀ r : TblR n, r ≠ .wr → F.R (rg r) = [])
+    (hin : F.inp = S.inp) (hout : F.out = S.out) (hL : F.L = S.L)
+    (hframe : ∀ i, (∀ r, rg r ≠ i) → F.R i = S.R i) : F = S := by
+  refine Stacks.ext hin hout hL ?_
+  funext i
+  by_cases hi : ∃ r, rg r = i
+  · obtain ⟨r,rfl⟩ := hi
+    by_cases hr : r = .wr
+    · subst r; exact hwidth
+    · exact (hF r hr).trans (hS r hr).symm
+  · exact hframe i (by simpa using hi)
+
+/-- Execute disposal into a specified restored state. All premises describe
+the initial blank bank and the actual non-scalar frame, not a final execution. -/
+theorem releaseScalarBank_to_state_exec (rg : TblR n → Fin T) (hrg : Function.Injective rg)
+    (W : ℕ) (wl : List (Fin (A+4))) (st : TblSt n A) (hacc : st.acc = [])
+    (v : HS T Q A U) (F S : Stacks T A) (hF : tblHolds rg F (tblRho W wl [] st))
+    (hwidth : S.R (rg .wr) = wl) (hblank : ∀ r : TblR n, r ≠ .wr → S.R (rg r) = [])
+    (hin : F.inp = S.inp) (hout : F.out = S.out) (hL : F.L = S.L)
+    (hframe : ∀ i, (∀ r, rg r ≠ i) → F.R i = S.R i) :
+    ∃ v', v'.user = v.user ∧
+      Exec body (releaseScalarBank rg) (mk v F) (2*(n*W)+2*n+1) (mk v' S) := by
+  obtain ⟨v',G,hu,he,hw,hb,hi,ho,hl,hf⟩ := releaseScalarBank_exec (body := body) rg hrg W wl st hacc v F hF
+  have hG := blankScalarBank_eq rg S G (hw.trans hwidth.symm) hblank hb
+    (hi.trans hin) (ho.trans hout) (hl.trans hL) (by
+      intro i hoff
+      exact (hf i hoff).trans (hframe i hoff))
+  exact ⟨v',hu,he.cast rfl (congrArg (mk v') hG)⟩
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

@@ -5819,6 +5819,30 @@ invocation, output-row header generation and this finish still need sequencing;
 normalization/common formatting, selected time/stock and full schedule execution
 remain open. S4 is incomplete.
 
+### S4 ordinary packed normalization restores blank scalar storage (2026-10-30)
+
+`PhaseCellOrdinaryNormalizePackedBatch.ordinaryNormalizePackedBatch_exec` now
+executes parameter-word installation, prepared local normalization/common-width
+publication and allocated-variable disposal as one program. It starts with blank
+scalar-variable/scratch/accumulator stacks and a borrowed scalar-width word;
+there is no initial encoded scalar-bank or prepared-rounding-state premise.
+The exact final state is the initial state with only the parameter queue advanced
+to its borrowed suffix and the output prefix replaced by the normalized common
+packets. Every scalar slot returns to blank storage, the width word and external
+dimensions restore, and both the data suffix and parameter suffix are preserved.
+The same returned field list has the proved normalized accuracy and replica count.
+
+`blankScalarBank_eq` and `releaseScalarBank_to_state_exec` prove this restoration
+over an arbitrary scalar register map and its outside frame. The complete caller
+bill is the prepared-normalization bill plus `214*B+217`, accounting for actual
+allocation, eight-word loading and disposal once per key. The narrow scalar-input
+audit retains its small closure; the composed scalar audit checks the full caller.
+The caller checks below 3.2 GiB and the disposal/frame module below 2 GiB with
+default proof limits. The parameter packet and retained row dimensions still
+need generation at the concrete numerical/complex caller; that integration,
+selected resource bounds and the complete global schedule remain open.
+S4 is incomplete.
+
 ### S4 normalization scalar setup independent of numerical placement (2026-10-30)
 
 `PhaseCellPrepareRoundScalars.prepareRoundScalars_exec` executes the existing

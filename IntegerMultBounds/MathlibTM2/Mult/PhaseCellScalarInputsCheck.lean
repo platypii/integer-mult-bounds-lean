@@ -13,6 +13,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.installInverseParameters_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseParameterState_inputs,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.inverseParameterState_zero,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.blankScalarBank_eq,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseScalarBank_to_state_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.releaseScalarBank_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
