@@ -9,7 +9,8 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.binBits_size_canonical,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.canonicalUnaryHeader_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.canonicalHeaderList_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyHeaders_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaKeyHeaders_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.interchangeHeaders_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

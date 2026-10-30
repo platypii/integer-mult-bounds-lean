@@ -478,7 +478,20 @@ positive prefix/suffix dimensions when `K,W` are positive, and summed stage
 volume exactly `c*(K^c*K*W)`. It preserves the complete-key/replica/block
 order of the existing router. No concrete permutation certificate is used;
 the module checks near 0.92 GiB. This is a layout theorem, not execution of
-the varying headers and machine stages. Still required: prove regular-key cardinality and tile-capacity bounds, execute the
+the varying headers and machine stages.
+`interchangeHeaders_exec` now generalizes the same structural five-field
+generator to arbitrary prefix/middle/suffix dimensions; the previous
+`replicaKeyHeaders_exec` is its `P=G=1` specialization.
+`PhaseCellGeneratedChunkInterchange.generatedChunkInterchange_exec` executes
+one actual equal-width stage with arbitrary positive prefix multiplicity and
+suffix width. It generates canonical headers, invokes `placedSwapProg` and
+erases the headers, changing only the bit payload. Its initial-state bill
+includes exact header volume in bank normalization and erasure. The finite
+bit-array input is data, not an execution callback. Iterating stages still
+requires generated dimension updates and bit-format/readiness transport;
+the list schedule alone does not supply these. The new stage checks at
+2926.1 MiB; the 8,204-job routing/header integration build and all three
+expanded axiom audits pass. Still required: prove regular-key cardinality and tile-capacity bounds, execute the
 chunk swaps and final-tile padding, match the packed factory bill to the
 selected setup supplier, and handle small exceptional movement classes
 separately. No arbitrary-rectangle execution or final resource bound follows
