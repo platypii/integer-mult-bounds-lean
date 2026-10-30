@@ -82,4 +82,100 @@ theorem packedKeyComplexExpand_exec (bodyComplex : P → Pr P 277 Q A U)
   · simp [T₀,extendStacks]
   · simp
 
+theorem packedKeyComplexRealBatch_exec
+    (hbody : ∀ f, body' f = embProg packedBoundaryRecoveryBase id (body f))
+    (hbody' : ∀ f, body'' f = embProg packedHaloBatchReg id (body' f))
+    (hbody'' : ∀ f, bodyLarge f = embProg packedHaloPublishedReg id (body'' f))
+    (bodyProtected : P → Pr P 276 Q A U)
+    (hbodyProtected : ∀ f, bodyProtected f = embProg packedKeySolverReg id (bodyLarge f))
+    (bodyComplex : P → Pr P 277 Q A U)
+    (hbodyComplex : ∀ f, bodyComplex f = embProg packedKeyComplexReg id (bodyProtected f))
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    {p l s t u boundaryTarget target finalTarget rhsExp a b V : ℕ} [NeZero s] {α gap : ℝ}
+    (q W : ℕ) (hpq : p+1 ≤ q) (hW : 2*q+8 ≤ W)
+    (hqSizing : q = executionPrecision p l target rhsExp)
+    (Fs : List (ZMod s → GaussianInt)) (hF : ∀ F ∈ Fs, ∀ i, ‖value p (F i)‖ ≤ 1)
+    (y : (ZMod s → GaussianInt) → ZMod s → ℝ) (C : ZMod s → GaussianInt)
+    (tail : List (Fin (A+4))) (v : HS 277 Q A U)
+    (M : Stacks 276 A) (B : Stacks 263 A) (S₀ : Stacks 249 A) (S : Stacks 242 A)
+    (hviews : PackedKeyBankViews M B S₀ S)
+    (hsetup : PackedHaloSetup (p := p) (l := l) (t := t) (u := u) (target := finalTarget)
+      (rhsExp := rhsExp) (a := a) (b := b) (V := V) α gap C S)
+    (hq : (M.R 119).length = q) (hpHeader : (M.R 266).length = p)
+    (hcommon : (M.R 265).length = W) (hreplicas : (M.R 264).length = Fs.length)
+    (hpacket : (M.R 267).length = (b-a)*W)
+    (hsource : M.R 263 = cstream A W (Fs.map (packedInterval a (b-a))).flatten++tail)
+    (hblank : ∀ i ∈ ([110,268,269,270,271,272,273,274,275] : List (Fin 276)), M.R i = [])
+    (hcountBlank : M.R 251 = []) (hcounterBlank : S₀.R 248 = [])
+    (hscratch : ∀ i ∈ ([125,127,128,129,130,131,133,134,135,136,138,139,140,143,153,158,166,167] : List (Fin 242)), S.R i = [])
+    (hcell : target = boundaryHaloTarget p u boundaryTarget rhsExp
+      (haloBoundary s t (PhaseCellBand.width p u) a b).card)
+    (hboundary : boundaryTarget = boundaryRecoveryTarget p finalTarget)
+    (coreWidth k radius : ℕ) (haEq : a = coreStart coreWidth k-radius)
+    (hbEq : b = coreStart coreWidth k+coreLength s coreWidth k+radius)
+    (hleft : radius ≤ coreStart coreWidth k)
+    (hright : coreStart coreWidth k+coreLength s coreWidth k+radius ≤ s)
+    (h249 : B.R 249 = []) (h250 : B.R 250 = [])
+    (hpublicationClean : ∀ i ∈ ([254,255,256,257,258,259,260,261,262] : List (Fin 263)), B.R i = [])
+    (hradiusWord : B.R 252 = binSyms V radius)
+    (hy : ∀ F ∈ complexComponentFields Fs, SchurDominance.Solves (realMatrix s t p u) (haloVertices s a b) (y F)
+      (fun i => (value q ((2 : GaussianInt)^(q-p-1)*F i)).re))
+    (hcoeff : ∀ j < b-a, ∀ z ∈ couplingCoefficientWords (2^15*p) q s t u (PhaseCellBand.width p u) (a+j),
+      Fits (2*q+8) z ∧ z.im = 0) :
+    let queue := cstream A W (((complexComponentFields Fs).map (packedInterval a (b-a))).flatten)++tail
+    let M₁ : Stacks 276 A := {M with R := (Function.update (Function.update M.R 263 queue)
+      264 (List.replicate Fs.length tick++M.R 264))}
+    let inputs := (complexComponentFields Fs).map (fun F => ((fun i => (2 : GaussianInt)^(q-p-1)*F i),y F))
+    ∃ v' H G n, ∃ Ds : List (ZMod s → GaussianInt), v'.user = v.user ∧
+      n ≤ Fs.length*(26*((b-a)*W)+17)+34+
+        ((packedKeyInputCost p q W (complexComponentFields Fs).length (b-a)+(4*(complexComponentFields Fs).length+4))+
+        packedHaloBatchCostFromSetup p u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius (complexComponentFields Fs).length) ∧
+      Exec bodyComplex (packedKeyComplexRealBatch hR hQ)
+        (mk v (extendStacks (by decide : 276 ≤ 277) M)) n (mk v' H) ∧
+      embStk packedKeyComplexReg H = G ∧
+      H.L 276 = [] ∧ H.R 276 = List.replicate Fs.length tick ∧
+      G.R 263 = tail ∧ G.R 110 = [] ∧
+      G.R 132 = S.R 132 ∧ G.R 220 = S.R 220 ∧ G.R 248 = [] ∧ G.R 252 = [] ∧
+      G.R 251 = List.replicate (complexComponentFields Fs).length tick ∧
+      (∀ i ∈ packedFactorOwnedRegs, G.R (Fin.castLE (by decide : 248 ≤ 276) i) = []) ∧
+      G.R 253 = (Ds.map (fun D => cstream A (2*q+8) (ownedCoreWords coreWidth k D))).flatten++M₁.R 253 ∧
+      Ds.length = (complexComponentFields Fs).length ∧
+      List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
+        (fun i => (packedIntervalRead q (2*q+8) (coreStart coreWidth k)
+          (cstream A (2*q+8) (ownedCoreWords coreWidth k D)++M₁.R 253) i).re)
+        x.2 (1/(2 : ℝ)^finalTarget)) inputs Ds ∧
+      ∀ j : Fin 276, 263 ≤ j.val → G.L j = M₁.L j ∧
+        G.R j = if j = 263 then tail else M₁.R j := by
+  dsimp only
+  let queue := cstream A W (((complexComponentFields Fs).map (packedInterval a (b-a))).flatten)++tail
+  let M₁ : Stacks 276 A := {M with R := (Function.update (Function.update M.R 263 queue)
+    264 (List.replicate Fs.length tick++M.R 264))}
+  have hfit : a+(b-a) ≤ s := by have := hsetup.hab; have := hsetup.hbs; omega
+  obtain ⟨v₁,n₁,H₁,hu₁,hn₁,he₁,hview₁,hL₁,hR₁⟩ := packedKeyComplexExpand_exec
+    bodyComplex (by omega) a (b-a) W hfit Fs tail v M hreplicas hpacket hsource
+    (by intro i hi; exact hblank i (by simp only [List.mem_cons] at hi ⊢; tauto))
+  have hviews₁ : PackedKeyBankViews M₁ B S₀ S :=
+    (hviews.external_update 263 (by decide) queue).external_update 264 (by decide) _
+  have hblank₁ : ∀ i ∈ ([110,268,269,270,271,272,273,274,275] : List (Fin 276)), M₁.R i = [] := by
+    intro i hi
+    have h263 : i ≠ 263 := by intro he; subst i; simp at hi
+    have h264 : i ≠ 264 := by intro he; subst i; simp at hi
+    simpa [M₁,h263,h264] using hblank i hi
+  obtain ⟨v₂,G,n₂,Ds,hu₂,hn₂,he₂,hrest⟩ := packedKeyRealBatch_exec
+    hbody hbody' hbody'' bodyProtected hbodyProtected hR hQ hA q W hpq hW hqSizing
+    (complexComponentFields Fs) (complexComponentFields_norm_le p Fs hF) y C tail
+    (embDn packedKeyComplexReg v₁) M₁ B S₀ S hviews₁ hsetup
+    (by simpa [M₁] using hq) (by simpa [M₁] using hpHeader)
+    (by simpa [M₁] using hcommon)
+    (by simp [M₁,hreplicas,two_mul])
+    (by simpa [M₁] using hpacket) (by simp [M₁,queue]) hblank₁
+    (by simpa [M₁] using hcountBlank) hcounterBlank hscratch hcell hboundary
+    coreWidth k radius haEq hbEq hleft hright h249 h250 hpublicationClean hradiusWord hy hcoeff
+  obtain ⟨v₃,H₃,he₃,hv₃,hu₃,hview₃,hoff⟩ := exec_emb
+    packedKeyComplexReg_injective hbodyComplex he₂ v₁ rfl H₁ hview₁
+  have hhold := hoff 276 packedKeyComplexReg_off
+  refine ⟨v₃,H₃,G,n₁+n₂,Ds,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hn₁ hn₂,
+    ?_,hview₃,hhold.1.trans hL₁,hhold.2.trans hR₁,hrest⟩
+  exact Exec.seq he₁ he₃
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
