@@ -2,7 +2,7 @@ module
 
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyInterchange
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaChunkLayout
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedChunkInterchange
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellChunkInterchangeLoop
 
 /-! Keep the bulk-routing audit separate from the numerical coupling closure. -/
 open Lean in
@@ -18,7 +18,11 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaChunkSwaps_volume,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.replicaChunkSwaps_positive,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.interchangeHeaders_exec,
-      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkInterchange_exec ] do
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.generatedChunkInterchange_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.swapList_bitSymbols,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.chunkStageBits_words,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.chunkStages_shape_ready,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.chunkInterchangeLoop_exec ] do
     for ax in ← collectAxioms name do
       unless #[``propext, ``Quot.sound, ``Classical.choice].contains ax do
         throwError "{name} depends on unapproved axiom {ax}"

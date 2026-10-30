@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaKeyHeaders
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInterchangeBitData
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBankVolume
 public import IntegerMultBounds.MathlibTM2.Host.PlacedSwap
 public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
@@ -21,6 +22,13 @@ noncomputable def generatedChunkInterchange {t₀ T Q K : ℕ} {U P : Type}
     (.seq (placedSwapProg hd pay hi hQ ι hι hT)
       (clearWords (List.ofFn fun k => ι (reg (hd k)))))
 
+noncomputable def generatedChunkInterchangeCost (T t₀ outerCount blockWidth d stock : ℕ) : ℕ :=
+  let H := interchangeHeaderVolume outerCount 1 blockWidth d d
+  let hs := interchangeHeaderBits outerCount 1 blockWidth d d
+  (21*(outerCount+1+blockWidth+d+d)+56)+
+    ((T+12*swapT t₀+5)*swapCost outerCount 1 blockWidth d d hs+
+      6*(stock+H)+2*T+6*swapT t₀+15)+(2*H+11)
+
 /-- One actual equal-width chunk stage with generated and erased headers.
 The prefix multiplicity and trailing block width can vary between stages. -/
 theorem generatedChunkInterchange_exec {t₀ T Q K : ℕ} {U P : Type}
@@ -32,26 +40,24 @@ theorem generatedChunkInterchange_exec {t₀ T Q K : ℕ} {U P : Type}
     (hgen : ∀ k, [dims k,ι (reg (hd k)),a,half,par,bits,cnt,work].Nodup)
     (hdisjoint : ∀ k j, ι (reg (hd k)) ≠ dims j)
     (outerCount blockWidth d : ℕ) (houter : 0 < outerCount) (hblock : 0 < blockWidth)
-    (x : Fin (BinaryAdjacentWidthInterchange.volume outerCount (2^d) 1 (2^d) blockWidth) → Bool)
+    (xs : List Bool)
+    (hlen : xs.length = BinaryAdjacentWidthInterchange.volume outerCount (2^d) 1 (2^d) blockWidth)
     (v : HS T Q (prime+K) U) (S : Stacks T (prime+K))
     (hL : ∀ i, S.L i = [])
     (hpriv : ∀ j : Fin (swapT t₀), t₀ ≤ j.val → S.R (ι j) = [])
     (hdims : ∀ k, (S.R (dims k)).length = swapValues outerCount 1 blockWidth d d k)
     (hhdr : ∀ k, S.R (ι (reg (hd k))) = [])
     (hgenBlank : ∀ i ∈ [a,half,par,bits,cnt,work], S.R i = [])
-    (hsrc : S.R (ι (reg pay)) = List.ofFn (fun i => bitSymbol (x i)))
+    (hsrc : S.R (ι (reg pay)) = xs.map bitSymbol)
     (hother : ∀ i, i ≠ pay → (∀ k, hd k ≠ i) →
       ∀ s ∈ S.R (ι (reg i)), s ≠ blank ∧ s.val < prime+4) :
-    let H := interchangeHeaderVolume outerCount 1 blockWidth d d
-    let hs := interchangeHeaderBits outerCount 1 blockWidth d d
     ∃ v' n, v'.user = v.user ∧
-      n ≤ (21*(outerCount+1+blockWidth+d+d)+56)+
-        ((T+12*swapT t₀+5)*swapCost outerCount 1 blockWidth d d hs+
-          6*((∑ j, (S.R (ι j)).length)+H)+2*T+6*swapT t₀+15)+(2*H+11) ∧
+      n ≤ generatedChunkInterchangeCost T t₀ outerCount blockWidth d (∑ j, (S.R (ι j)).length) ∧
       Exec body (generatedChunkInterchange hd pay hi hQ ι hι hT dims a half par bits cnt work)
         (mk v S) n (mk v' {S with L := fun _ => [], R := (Function.update S.R (ι (reg pay))
-          (swapList outerCount (2^d) 1 (2^d) blockWidth blank (S.R (ι (reg pay)))))}) := by
-  dsimp only
+          ((swapList outerCount (2^d) 1 (2^d) blockWidth false xs).map bitSymbol))}) := by
+  dsimp only [generatedChunkInterchangeCost]
+  obtain ⟨x,hx⟩ := bitArray_of_length xs hlen
   let dst := fun k => ι (reg (hd k))
   have hdst : Function.Injective dst := fun i j he => hi (BinaryInterchangeRun.slot_injective (hι he))
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁,hheaders,hoff,hv,hc⟩ := interchangeHeaders_exec
@@ -75,7 +81,7 @@ theorem generatedChunkInterchange_exec {t₀ T Q K : ℕ} {U P : Type}
         change (hd k).val = j.val at hh
         have hk := (hd k).isLt
         omega)
-    hheaders (hsource.trans hsrc)
+    hheaders (by rw [hsource,hsrc,←hx,List.map_ofFn]; rfl)
     (by
       intro i hip hheads s hs
       rw [hframe] at hs
@@ -91,10 +97,10 @@ theorem generatedChunkInterchange_exec {t₀ T Q K : ℕ} {U P : Type}
       hhdr hheaders (by intro j hj; apply hframe; intro k he; exact hj k (hι he))
     simpa only [List.length_cons,List.length_map,interchangeHeaderVolume,List.sum_ofFn] using hh
   rw [hstock] at hn₂
-  let payload := swapList outerCount (2^d) 1 (2^d) blockWidth blank (S.R (ι (reg pay)))
+  let payload := (swapList outerCount (2^d) 1 (2^d) blockWidth false xs).map (bitSymbol (a := prime+K))
   let F : Stacks T (prime+K) := {M with L := fun _ => [], R := Function.update M.R (ι (reg pay)) payload}
   have he₂' : Exec body (placedSwapProg hd pay hi hQ ι hι hT) (mk v₁ M) n₂ (mk v₂ F) := by
-    simpa only [hsource] using he₂
+    simpa only [hsource,hsrc,swapList_bitSymbols xs hlen] using he₂
   have hfinalHeader (k : Fin 5) : F.R (dst k) = separator::(interchangeHeaderBits outerCount 1 blockWidth d d k).map bitSymbol := by
     rw [show F.R (dst k) = M.R (dst k) from Function.update_of_ne (hsrcOff k) _ _]
     exact hheaders k

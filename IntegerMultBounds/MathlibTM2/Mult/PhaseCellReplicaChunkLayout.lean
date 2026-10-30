@@ -95,6 +95,19 @@ theorem replicaChunkSwaps_length (K W c : ℕ) : (replicaChunkSwaps K W c).lengt
   | zero => rfl
   | succ c ih => simp only [replicaChunkSwaps,List.length_cons,ih]
 
+theorem replicaChunkSwaps_stage_volume (K W c : ℕ) :
+    ∀ r ∈ replicaChunkSwaps K W c, r.1*K*K*r.2 = K^c*K*W := by
+  induction c generalizing W with
+  | zero => simp [replicaChunkSwaps]
+  | succ c ih =>
+    intro r hr
+    rcases List.mem_cons.mp hr with he | hr
+    · subst r; simp only [pow_succ]
+    · have hh := ih (K*W) r hr
+      calc
+        _ = K^c*K*(K*W) := hh
+        _ = K^(c+1)*K*W := by rw [pow_succ]; ring
+
 /-- Every stage touches the original tile volume, including spectator fields. -/
 theorem replicaChunkSwaps_volume (K W c : ℕ) :
     ((replicaChunkSwaps K W c).map (fun r => r.1*K*K*r.2)).sum = c*(K^c*K*W) := by

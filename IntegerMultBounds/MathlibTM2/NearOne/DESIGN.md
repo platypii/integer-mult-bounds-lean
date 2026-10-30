@@ -486,12 +486,24 @@ generator to arbitrary prefix/middle/suffix dimensions; the previous
 one actual equal-width stage with arbitrary positive prefix multiplicity and
 suffix width. It generates canonical headers, invokes `placedSwapProg` and
 erases the headers, changing only the bit payload. Its initial-state bill
-includes exact header volume in bank normalization and erasure. The finite
-bit-array input is data, not an execution callback. Iterating stages still
-requires generated dimension updates and bit-format/readiness transport;
-the list schedule alone does not supply these. The new stage checks at
-2926.1 MiB; the 8,204-job routing/header integration build and all three
-expanded axiom audits pass. Still required: prove regular-key cardinality and tile-capacity bounds, execute the
+includes exact header volume in bank normalization and erasure. The stage accepts the actual Boolean payload list and derives its finite-array
+witness internally. `PhaseCellInterchangeBitData` proves exact bit-encoding
+commutation despite the different machine/default Boolean symbols; the full
+rectangle never reads a default. It also proves payload-length preservation.
+`PhaseCellChunkInterchangeLoop.chunkInterchangeLoop_exec` now executes an
+arbitrary structural list of these actual stages. Later calls receive their
+bit format, length, blank header/private bank, scratch and spectator frames
+from the preceding call; there are no stage execution/readiness callbacks.
+The initial placed-bank stock is invariant, so the loop bill sums actual stage
+costs measured against that same stock, plus one terminating step.
+`chunkStageBits_words` identifies its result with complete-key order, and
+`chunkStages_shape_ready` derives every stage's positivity/common-volume
+premises once from the structural chunk schedule. Borrowed dimension masters
+for all stages are still initial inputs: generating/allocating/erasing those
+masters and connecting the loop to the packed codec remain open. The
+8,174-job guarded build and expanded axiom audit pass; single-file checks
+peak at 2936.9 MiB for the loop and 2511.7 MiB for the bit-data module.
+Still required: prove regular-key cardinality and tile-capacity bounds, execute the
 chunk swaps and final-tile padding, match the packed factory bill to the
 selected setup supplier, and handle small exceptional movement classes
 separately. No arbitrary-rectangle execution or final resource bound follows
