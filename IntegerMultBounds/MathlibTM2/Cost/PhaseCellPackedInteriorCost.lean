@@ -68,8 +68,8 @@ theorem packedHaloInteriorCoefficientsCost_weights_poly {s t : ℕ} [NeZero s] (
     (hP : 2^15*p ≤ Z) (hN : executionStagePrecision p l target rhsExp+1 ≤ Z)
     (hq : executionPrecision p l target rhsExp ≤ Z) (hl : l ≤ Z) (hu : u ≤ Z)
     (hw : executionWidth p l target rhsExp ≤ Z) (hband : PhaseCellBand.width p u ≤ Z) (hV : V ≤ Z)
-    (hVeq : V = weightWorkspaceWidth (2^15*p) (executionPrecision p l target rhsExp)
-      (executionWidth p l target rhsExp) t u)
+    (hfamilyV : weightWorkspaceWidth (2^15*p) (executionPrecision p l target rhsExp)
+      (executionWidth p l target rhsExp) t u ≤ Z)
     (hlift : liftedCoefficientWidth (2^15*p) (executionPrecision p l target rhsExp)
       (executionWidth p l target rhsExp) s t u (PhaseCellBand.width p u) ≤ Z)
     (hkeys : ∀ L ∈ haloLengthCandidates s t (PhaseCellBand.width p u) a b, L ≤ Z)
@@ -79,7 +79,7 @@ theorem packedHaloInteriorCoefficientsCost_weights_poly {s t : ℕ} [NeZero s] (
       familyHaloInteriorGeometryCost p l s t u target rhsExp a b+22000000*t*Z^4 := by
   have hcoeff := packedHaloInteriorCoefficientsCost_geometry_le hst p l u target rhsExp a b V Z hb hZ hq hw hV hd
   have hscalar := haloInteriorCostBound_weights_poly p l u target rhsExp a b Z hst hZ hP hN hq hl hu hw
-    (by rw [←hVeq]; exact hV) hkeys
+    hfamilyV hkeys
   have ht : 1 ≤ t := by have := NeZero.pos s; omega
   have hcoupling := sharedCouplingCoefficientIntervalCost_poly ht hZ hst.le ha hb hP hq hw hu hband hV hlift
   nlinarith only [hcoeff,hscalar,hcoupling]
