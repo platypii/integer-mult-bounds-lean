@@ -227,12 +227,23 @@ from its returned solve readiness and native/high scratch restoration; retained
 headers follow from the factory frame and canonical metadata generation. Only
 initial scratch emptiness is assumed, with the six added recovery ports supplied
 by a blank extension. The arbitrary source queue and publication buffer are
-preserved. The factory and numerical batch still need to be joined into one
-execution, including body embeddings, counter preparation and final disposal.
-This bridge uses the fresh-geometry factory; it does not repair the separate
+preserved. This bridge uses the fresh-geometry factory; it does not repair the separate
 retained-geometry factory entry.
 
-Still required: compose initialization with the batch and close the selected
+`PhaseCellPackedHaloInitializedBatch.packedHaloInitializedBatch_exec` now joins
+that supplier to the arbitrary numerical batch in one executed program. A generic
+embedding lemma preserves the external replica counter while setup runs. The
+composed endpoint derives the common format from `boundaryHaloTarget_sizing`,
+obtains all numerical columns/factors and initial readiness from the actual
+factory, then runs the counted batch. Its bound charges setup once plus the
+counted per-input costs. It consumes the source queue, retains all per-input
+accuracy certificates and proves the exact output archive length above the
+caller's original suffix. The initial counter is still supplied, and final
+factor/table disposal and publication are not part of this program. In
+particular, the raw table and per-register factor stock must be transported
+through the batch before the existing disposal theorems can be composed.
+
+Still required: counter preparation, final disposal, publication and the selected
 time and peak-storage ledgers. Output publication/cursor management,
 setup-cost matching, peak storage, seams and tensor/R4 execution
 remain open. The original single-input solver still initializes and releases

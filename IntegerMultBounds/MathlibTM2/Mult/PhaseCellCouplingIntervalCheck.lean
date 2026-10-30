@@ -1,6 +1,6 @@
 module
 
-import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryFactoryBetween
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloInitializedBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloNumericalBatch
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedFactoryRouting
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedFactoryGeometry
@@ -289,6 +289,7 @@ run_cmd do
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBatch_list_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloNumericalBatch_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedBoundaryFactoryGeometry_between_exec,
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloInitializedBatch_exec,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedPreparedBank.of_recovery_frame,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.PackedPreparedBank.publish,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.packedPreparedResidualSolve_bank_exec,
