@@ -5690,3 +5690,23 @@ RHS 110. Its bill is the checked local input bill, with no ambient volume term.
 The concrete solver call still needs the other native view/geometry premises
 instantiated after this stage. Complex assembly, output conversion, tile/global
 execution and resource bounds remain open.
+
+### S4 shared readiness language at the concrete batch call (2026-10-30)
+
+`PhaseCellPackedKeyInputViews.PackedKeyBankViews` packages the protected/native,
+publication and extended factory/batch view equalities. `input_update` transports
+all three through the input stage's queue, RHS and publication-count writes in
+one structural step; `factory_view` identifies the same factory projection used
+by setup readiness. These laws use arbitrary states and words, with no concrete
+case enumeration over payloads or replicas.
+`PhaseCellPackedHaloBatchFromSetup.packedHaloBatch_from_setup_exec` invokes the
+actual protected numerical batch using the existing `PackedHaloSetup` record
+and this view record. Geometry, precision, factory readiness, dominance and
+related scalar premises are extracted from setup once. Only batch-source and
+per-input bounds, the batch workspace, and core-publication conditions remain
+separate. `packedHaloBatchCostFromSetup` names the existing exact supplier bound;
+its execution, ordered outputs, accuracy and external frame are unchanged.
+This closes the repeated-readiness proof interface for the numerical call.
+Sequencing input and the actual batch still requires instantiating these records
+and remaining publication/workspace facts at the input's final state. Complex
+assembly, output conversion and the global S4 gates remain open.
