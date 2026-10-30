@@ -1,5 +1,6 @@
 module
 
+import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedHaloStepStock
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyBatchCost
 import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyNormalizedBatch
 
@@ -7,6 +8,7 @@ import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedKeyNormalizedBatch
 open Lean in
 run_cmd do
   for name in #[
+      `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.packedHaloBatchStep_within_stock,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.normalizePackedBatchCost_affine,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.normalizePackedReplicaCost_le_volume,
       `IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.preparedNormalizePackedBatchCost_affine,
