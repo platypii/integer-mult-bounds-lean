@@ -158,6 +158,34 @@ header. Joining origin generation to this publisher and replacing the retained
 S3 recovery lifecycle remain open; these component theorems do not establish
 the S4 tensor machine, stock bound, setup count or fused R4 schedule.
 
+### Prepared packed input lifecycle checkpoint
+
+`packedHaloPreparedInput` separates the repeated input program from factory
+initialization and final factor/table release. It executes packed RHS production,
+the prepared residual solve, recovery, and `packedPreparedInputRelease`.
+`PackedPreparedBank` packages solve readiness and numerical workspace; the
+actual halo residual, solution publication and recovery proofs use this interface.
+The numerical factor values and column accuracy remain separate explicit facts.
+
+The post-recovery continuation has a complete execution theorem. It releases
+the per-input coefficient page, derives the halo row count from binary metadata,
+retires the residual and original-input prefixes on port 110, and clears the
+word-width header on 130. Its exact state preserves every other port except
+owned headers 138--140. It returns the retained numerical bank and exposes the
+next borrowed suffix in the native input-bank format. The continuation cost is
+`packedRecoveryReleaseCost + packedInputAdvanceCost + 2*w+3`.
+Recovery already disposes of the boundary mask; no second mask erasure is needed.
+
+These are executable components, not a repeated-input acceptance theorem.
+Still required: extract packed RHS production and boundary solution correctness
+from the factory wrapper, compose the full prepared-input contract, derive all
+second-call preconditions from the first call's actual state, and execute two
+inputs with a single initialization. Output publication/cursor management,
+list iteration, setup-cost matching, peak storage, seams and tensor/R4 execution
+remain open. The original single-input solver still initializes and releases
+factors per call. The retained-factory placement correction above also remains
+open; the prepared body itself excludes that factory path.
+
 ### S4 implementation plan: close the packed execution boundary first
 
 Scheduling clarification from the complete-key audit (2026-10-29):
