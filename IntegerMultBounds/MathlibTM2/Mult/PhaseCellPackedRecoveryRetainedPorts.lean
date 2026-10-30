@@ -94,4 +94,30 @@ theorem PackedHaloRetainedHeaders.of_frame {A P stage q l s t u band a b V w : �
   · rw [hframe 120 (by simp [haloRetainedHeaderPorts])]
     exact h.level
 
+/-- Resetting the per-input width preserves every other retained header. -/
+theorem PackedHaloRetainedHeaders.of_frame_except_width
+    {A P stage q l s t u band a b V w w' : ℕ} {S F : Stacks 168 A}
+    (h : PackedHaloRetainedHeaders P stage q l s t u band a b V w S)
+    (hwidth : (F.R 130).length = w')
+    (hframe : ∀ k ∈ haloRetainedHeaderPorts, k ≠ 130 → F.R k = S.R k) :
+    PackedHaloRetainedHeaders P stage q l s t u band a b V w' F := by
+  constructor
+  · constructor
+    · rw [hframe 117 (by decide) (by decide)]; exact h.masters.precision
+    · rw [hframe 119 (by decide) (by decide)]; exact h.masters.fraction
+    · rw [hframe 121 (by decide) (by decide)]; exact h.masters.axis
+    · rw [hframe 122 (by decide) (by decide)]; exact h.masters.period
+    · rw [hframe 123 (by decide) (by decide)]; exact h.masters.parameter
+    · rw [hframe 124 (by decide) (by decide)]; exact h.masters.bandwidth
+    · rw [hframe 141 (by decide) (by decide)]; exact h.masters.lower
+    · rw [hframe 142 (by decide) (by decide)]; exact h.masters.upper
+    · exact hwidth
+  · apply h.geometry.of_frame (hframe 163 (by decide) (by decide))
+    intro k hk
+    apply hframe k (List.mem_append_right _ hk)
+    simp only [couplingIntervalPorts,List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+  · rw [hframe 118 (by decide) (by decide)]; exact h.stage
+  · rw [hframe 120 (by decide) (by decide)]; exact h.level
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

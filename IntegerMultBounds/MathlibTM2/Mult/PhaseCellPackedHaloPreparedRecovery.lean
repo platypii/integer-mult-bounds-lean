@@ -96,7 +96,9 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
       (∀ i : Fin 117, i ≠ 93 → i ≠ 110 → F.R ⟨i.val,by omega⟩ = []) ∧
       (∀ k : Fin 248, 242 ≤ k.val → F.L k = [] ∧ F.R k = []) ∧
       (∀ bo hf df, PackedBoundaryFactorPages bo hf df S →
-        PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) := by
+        PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase F)) ∧
+      PackedHaloRetainedHeaders (2^15*p) (executionStagePrecision p l target rhsExp+1)
+        q l s t u band a b V w (embStk packedRecoveryRuntimeReg F) := by
   dsimp only
   intro columns hcolumns hcell htable hbank hpages hboundary y hy hcoeff
   let band := PhaseCellBand.width p u
@@ -181,7 +183,7 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
       hcoeff hwide hfitV (by simpa only [hq] using hVeq)
       (by simpa only [hw] using hwV) hcoords (by simpa only [hw] using hunits)
       (by rw [hruntime]; exact hgeometryFinal)
-  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,⟨hready₂,hwork₂⟩,?_,hnative₂,hprivate₂,?_⟩
+  refine ⟨v₂,F,n₁+n₂,D,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,Exec.seq he₁ he₂,hout,herror,⟨hready₂,hwork₂⟩,?_,hnative₂,hprivate₂,?_,?_⟩
   · constructor
     · simp only [length_cstream,packedInterval_length C (by omega : a+(b-a) ≤ s)]
     · exact hsource
@@ -220,5 +222,17 @@ theorem packedHaloPreparedRecovery_exec (hbody : ∀ f, body' f = embProg packed
     rw [show embStk packedBoundaryRecoveryBase G = F₁ by simp [G,packedBoundaryRecoveryBase]]
     apply hpages₀.of_solution_frame
     exact hframe
+  · have hheadersG : PackedHaloRetainedHeaders (2^15*p)
+        (executionStagePrecision p l target rhsExp+1) q l s t u band a b V w
+        (embStk packedRecoveryRuntimeReg G) := by
+      refine ⟨?_,?_,?_,?_⟩
+      · rw [hruntime]; exact hheaders
+      · rw [hruntime]; exact hgeometryFinal
+      · rw [hruntime]; exact hstage
+      · rw [hruntime]; exact hlevel
+    apply hheadersG.of_frame
+    intro k hk
+    exact hretained (Fin.castLE (by decide) k)
+      (List.mem_append_right _ (List.mem_map.mpr ⟨k,hk,rfl⟩))
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
