@@ -522,8 +522,22 @@ stage list has exactly the structural chunk schedule.
 `wiredChunkStages_bank_values` derives all five fields of every stage from the
 actual generated register file and the original one/width/exponent lengths;
 there is no premise supplying any generated power. This establishes wiring
-and paired bank generation/release, while the enclosing setup/loop/cleanup
-execution theorem and full packed-codec integration remain open. The wiring
+and paired bank generation/release.
+`PhaseCellGeneratedChunkTile.generatedChunkTile_exec` now composes both
+actual power-chain generators, the wired interchange loop, and reverse-order
+bank erasure. It starts with blank generated dimension banks and only the
+original base/one/width/exponent masters; all generated powers and later
+stage readiness are derived. The endpoint replaces only the bit payload by
+complete-key order. Generated dimension words are outside the placed bank,
+so their allocation does not increase repeated machine-normalization volume.
+The explicit bill includes both chains, every generated-header machine stage
+and both bank releases, measured from the original placed-bank stock.
+`unaryPowerChainR_update_off` and its paired-bank specialization transport
+cleanup across the routed payload update, avoiding a second cleanup proof.
+The uniform sum-of-stage cost bound, full packed-codec integration, tile
+padding and global movement/stock ledgers remain open. The enclosing tile
+checks at 2938.5 MiB; the 8,178-job guarded build and expanded interchange
+axiom audit pass. The wiring
 module checks at 2929.7 MiB and the paired bank at 1930.9 MiB. The
 8,178-job guarded build and both expanded dimension/interchange axiom audits
 pass.

@@ -61,6 +61,17 @@ theorem unaryPowerChainR_off (K n : ℕ) (ds : List (Fin T)) (R : Regs T A) (i :
     rw [unaryPowerChainR,ih _ _ (by intro j hj; exact hi j (by simp [hj]))]
     exact Function.update_of_ne (hi dst (by simp)).symm _ _
 
+theorem unaryPowerChainR_update_off (K n : ℕ) (ds : List (Fin T)) (R : Regs T A)
+    (i : Fin T) (word : List (Fin (A+4))) (hi : i ∉ ds) :
+    unaryPowerChainR K n ds (Function.update R i word) =
+      Function.update (unaryPowerChainR K n ds R) i word := by
+  induction ds generalizing n R with
+  | nil => rfl
+  | cons dst ds ih =>
+    have hne : i ≠ dst := by intro he; exact hi (by simp [he])
+    simp only [unaryPowerChainR]
+    rw [Function.update_comm hne,ih _ _ (by intro hh; exact hi (by simp [hh]))]
+
 theorem unaryPowerChainR_get (K n : ℕ) (ds : List (Fin T)) (hnd : ds.Nodup)
     (R : Regs T A) (i : ℕ) (hi : i < ds.length) :
     unaryPowerChainR K n ds R ds[i] = List.replicate (n*K^(i+1)) tick := by

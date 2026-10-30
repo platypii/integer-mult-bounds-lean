@@ -22,6 +22,15 @@ theorem chunkDimensionBankR_off (K W : ℕ) (ps bs : List (Fin T)) (R : Regs T A
   rw [chunkDimensionBankR,unaryPowerChainR_off K W bs _ i (by intro j hj he; exact hi.2 (he ▸ hj)),
     unaryPowerChainR_off K 1 ps R i (by intro j hj he; exact hi.1 (he ▸ hj))]
 
+theorem chunkDimensionBankR_update_off (K W : ℕ) (ps bs : List (Fin T)) (R : Regs T A)
+    (i : Fin T) (word : List (Fin (A+4))) (hi : i ∉ ps++bs) :
+    chunkDimensionBankR K W ps bs (Function.update R i word) =
+      Function.update (chunkDimensionBankR K W ps bs R) i word := by
+  simp only [List.mem_append,not_or] at hi
+  rw [chunkDimensionBankR,unaryPowerChainR_update_off K 1 ps R i word hi.1,
+    unaryPowerChainR_update_off K W bs _ i word hi.2]
+  rfl
+
 /-- The two generated columns supply the exact stage master lengths, including
 borrowed power-zero seeds. -/
 theorem chunkDimensionBank_lengths (K W : ℕ) (one width : Fin T) (ps bs : List (Fin T))
