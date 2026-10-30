@@ -67,6 +67,16 @@ noncomputable def packedKeyNormalizedReplicaCost
     (16*(coreLength s coreWidth k*(2*q+8))+19)+
     normalizePackedReplicaCost (2*q+8) p W (coreLength s coreWidth k)
 
+/-- The numerical body is paid by one complex replica. This also supplies
+its time-based scratch budget without multiplying workspace by the batch size. -/
+theorem packedHaloPreparedInputCost_le_normalizedReplicaCost
+    (p q W u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius : ℕ) [NeZero s] :
+    packedHaloPreparedInputCost p u l finalTarget rhsExp s t a b V ≤
+      packedKeyNormalizedReplicaCost p q W u l s t a b V boundaryTarget finalTarget rhsExp coreWidth k radius := by
+  unfold packedKeyNormalizedReplicaCost packedKeyRealBatchReplicaCost packedHaloBatchReplicaCost
+  dsimp only
+  omega
+
 /-- At the computed native precision, every setup is paid once per key,
 including for both complex components and the final normalization pass. -/
 theorem packedKeyNormalizedBatchCost_affine
