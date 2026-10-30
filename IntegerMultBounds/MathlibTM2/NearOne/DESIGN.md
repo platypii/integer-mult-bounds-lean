@@ -720,6 +720,16 @@ must all fit together. Constructing the selected jobs, executable seam coverage,
 setup multiplicities and the total fast-time inequality remain open before
 R4/layout/tensor integration.
 
+The seam execution route now reuses `PackedNormalizedJob.fullLine`: choose the
+full ambient line as one owned core and use zero crop margin. The constructor
+derives its geometry and generated-halo equality from the ordinary full-interval
+numerical bounds. It is a job for the existing restoring schedule, with no new
+solver or execution premise. `output_fullLine` gives accuracy at every ambient
+coordinate and output volume exactly `replicas*s*W`. One such returned line can
+supply all exceptional cores. Selecting those cores in the final output order,
+constructing the selected full-interval bounds and paying for the full-line call
+are still required; this is not yet complete executable seam assembly.
+
 | Order | Deliverable | Reuse and decisive acceptance check |
 | --- | --- | --- |
 | 1 | Packed halo input/output for S3 | Factor the current dispatcher's loading and storage interface from its arithmetic proof. Retain ambient coordinates for coefficients and cuts, but store only halo words. Prove agreement with the existing principal solve by restriction and index transport. An interval call must neither load nor return `s` words merely because its ambient period is `s`. |
