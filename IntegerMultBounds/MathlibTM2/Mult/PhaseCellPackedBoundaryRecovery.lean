@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryFinish
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryReadAccuracy
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloRecoveryBoundaryFormat
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBoundaryFactorFrame
 
 /-! Complete local recovery from the actual folded boundary solution. Numerical
 stability, physical execution and final tape reads meet at one shared format. -/
@@ -91,6 +92,9 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
         F.R 110 = residual++(cstream A w (packedInterval a (b-a) C)++rhsTail)) ∧
       (∀ i : Fin 117, i ≠ 93 → i ≠ 110 → F.R ⟨i.val,by omega⟩ = []) ∧
       F.L = S.L ∧ (∀ k ∈ packedRecoveryRetainedPorts, F.R k = S.R k) ∧
+      BoundarySolveReady (boundaryFactorState (embStk preparedBoundaryCoreReg
+        (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase F)))) q w W
+        (haloBoundary s t (PhaseCellBand.width p u) a b).card ∧
       ∀ k : Fin 248, 168 ≤ k.val → k.val < 242 → k ≠ 238 → F.R k = S.R k := by
   let band := PhaseCellBand.width p u
   let B := haloBoundary s t band a b
@@ -138,7 +142,23 @@ theorem packedBoundaryRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
       solutionTail outputTail rhsTail v v₁ S n₁ hu₁ hex hwork hheaders
       (hstage.trans (congrArg (fun n => n+1) hstages)) hlevel hnative hgeometry hclean hfreshR hrange xI
       (by simpa only [← hq,R,Y,B,band] using hxI)
-  refine ⟨v₂,F,n,D,hu₂,hn₂.trans (Nat.add_le_add_right hn₁ _),he₂,h93,h139',h238,hi,ho,hout,hDfits,?_,?_,?_,hleft,hretained,hfactors⟩
+  have hfactor : boundaryFactorState (embStk preparedBoundaryCoreReg
+      (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase F))) =
+      Function.update (boundaryFactorState (embStk preparedBoundaryCoreReg
+        (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase S))))
+        .vk (F.R 143) := by
+    apply packedBoundaryFactorState_of_solution_frame
+    intro k hk hne
+    exact hfactors (packedBoundaryRecoveryBase k) hk k.isLt (by
+      intro he
+      apply hne
+      exact Fin.ext (congrArg (fun i : Fin 248 => i.val) he))
+  have hreadyFinal : BoundarySolveReady (boundaryFactorState (embStk preparedBoundaryCoreReg
+      (embStk packedBoundaryFactorReg (embStk packedBoundaryRecoveryBase F)))) q w W
+      (haloBoundary s t (PhaseCellBand.width p u) a b).card := by
+    rw [hfactor]
+    exact hready.update_vk _
+  refine ⟨v₂,F,n,D,hu₂,hn₂.trans (Nat.add_le_add_right hn₁ _),he₂,h93,h139',h238,hi,ho,hout,hDfits,?_,?_,?_,hleft,hretained,hreadyFinal,hfactors⟩
   · exact packedRecovery_read_error (by omega) (by omega) hab hb Y D
       (boundarySolutionField_fits w B solution hlen hfits) hDfits outputTail (F.R 132) hout hframe x _
       (by simpa only [← hq,Y,B,band] using haccept D (by simpa only [hq] using herror))

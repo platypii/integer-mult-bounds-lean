@@ -176,6 +176,14 @@ reuse templates; their ambient-sized loading still needs packed adaptation.
 The current `packedHaloSolveUsing` constructs and releases factors per call,
 including in retained-geometry mode, so it is not this reusable batch body.
 
+The packed recovery endpoint now returns `BoundarySolveReady` for its actual
+final factor bank. The structural `packedBoundaryFactorState_of_solution_frame`
+allows the solution buffer 238 to change while preserving all factor roles
+except the replaceable RHS. The existing solver consumes this returned
+readiness for the final table-release dimensions. This establishes factor
+readiness after recovery; native/header reset and the next packed input
+producer's full contract are still needed for a repeated-input loop.
+
 The proof should follow the manuscript construction recorded in
 `plan/D-sharper-bound.md`, M7b: local principal solves, owned-core cropping,
 shared factor pages, and bulk tensor exposure. The local source records core

@@ -167,7 +167,7 @@ theorem packedHaloSolveUsing_spec (freshGeometry : Bool) (hR : rpStates ≤ Q) (
       (lt_of_lt_of_le (by positivity : 0 < 1/(4*(p : ℝ))) hθ) hgap hbudget z hz
     exact ⟨fits_of_value_power hwcoef z hh.1,hh.2⟩
   have hs := hsemantic x hx'
-  obtain ⟨v₃,F,n₂,D,hu₃,hn₂,he₃,h93',h139',h238,hin,hout,houtput',hfits,haccuracy,hbuffers,hnativeRecovery,hleft',hretained,hfactors⟩ :=
+  obtain ⟨v₃,F,n₂,D,hu₃,hn₂,he₃,h93',h139',h238,hin,hout,houtput',hfits,haccuracy,hbuffers,hnativeRecovery,hleft',hretained,hreadyRecovery,hfactors⟩ :=
     packedBoundaryRecovery_spec (body := body') hR hQ hA hp hu hwidth hα hst hαu hθ hgap hbudget hdom
       hab hbs hband hsep hpad rfl rfl C _ x hC' hylen hyfits hs.1 hx' (S.R 238)
       (cstream A w (packedInterval a (b-a) D₁)) outputTail
@@ -240,18 +240,9 @@ theorem packedHaloSolveUsing_spec (freshGeometry : Bool) (hR : rpStates ≤ Q) (
     have h140 : i ≠ 140 := by intro he; subst i; omega
     simpa only [H,Function.update_of_ne h138,Function.update_of_ne h139,Function.update_of_ne h140]
       using hfactors i hi hi' hn
-  have hW' : (H.R 204).length = 12*band+1 := by
-    rw [hfactorFrame 204 (by decide) (by decide) (by decide)]
-    simpa [G,extendStacks,embStk,boundaryFactorState,preparedBoundaryCoreReg,
-      packedBoundaryFactorReg,boundaryFactorReg] using hsolve.m2n
-  have hN' : (H.R 206).length = B.card := by
-    rw [hfactorFrame 206 (by decide) (by decide) (by decide)]
-    simpa [G,extendStacks,embStk,boundaryFactorState,preparedBoundaryCoreReg,
-      packedBoundaryFactorReg,boundaryFactorReg] using hsolve.sn
-  have hw' : (H.R 174).length = w := by
-    rw [hfactorFrame 174 (by decide) (by decide) (by decide)]
-    simpa [G,extendStacks,embStk,boundaryFactorState,preparedBoundaryCoreReg,
-      packedBoundaryFactorReg,boundaryFactorReg] using hsolve.ready.wn
+  have hW' : (H.R 204).length = 12*band+1 := hreadyRecovery.m2n
+  have hN' : (H.R 206).length = B.card := hreadyRecovery.sn
+  have hw' : (H.R 174).length = w := hreadyRecovery.ready.wn
   have htable' : H.R 220 = bandTableWords A w B (12*band+1) columns 0++S.R 220 := by
     rw [hfactorFrame 220 (by decide) (by decide) (by decide)]
     simpa [G,extendStacks] using hrawTable

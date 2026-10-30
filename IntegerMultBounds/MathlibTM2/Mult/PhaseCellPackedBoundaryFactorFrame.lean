@@ -15,8 +15,14 @@ theorem packedBoundaryFactorReg_high (r : RsbR) (hr : r ≠ .vk) :
     168 ≤ (packedBoundaryFactorReg (preparedBoundaryCoreReg (boundaryFactorReg r))).val := by
   cases r <;> first | decide | (exact False.elim (hr rfl)) | (rename_i c; cases c <;> decide)
 
-theorem packedBoundaryFactorState_of_high_frame {A : ℕ} (S F : Stacks 242 A)
-    (hframe : ∀ k : Fin 242, 168 ≤ k.val → F.R k = S.R k) :
+/-- The published solution is a separate buffer, not part of the reusable
+factor state. Recovery can consume it without invalidating the next solve. -/
+theorem packedBoundaryFactorReg_ne_solution (r : RsbR) :
+    packedBoundaryFactorReg (preparedBoundaryCoreReg (boundaryFactorReg r)) ≠ 238 := by
+  cases r <;> first | decide | (rename_i c; cases c <;> decide)
+
+theorem packedBoundaryFactorState_of_solution_frame {A : ℕ} (S F : Stacks 242 A)
+    (hframe : ∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) :
     boundaryFactorState (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg F)) =
       Function.update
         (boundaryFactorState (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg S)))
@@ -26,7 +32,15 @@ theorem packedBoundaryFactorState_of_high_frame {A : ℕ} (S F : Stacks 242 A)
   · subst r; simp [boundaryFactorState,embStk,preparedBoundaryCoreReg,
       packedBoundaryFactorReg,boundaryFactorReg]
   · rw [Function.update_of_ne hr]
-    exact hframe _ (packedBoundaryFactorReg_high r hr)
+    exact hframe _ (packedBoundaryFactorReg_high r hr) (packedBoundaryFactorReg_ne_solution r)
+
+theorem packedBoundaryFactorState_of_high_frame {A : ℕ} (S F : Stacks 242 A)
+    (hframe : ∀ k : Fin 242, 168 ≤ k.val → F.R k = S.R k) :
+    boundaryFactorState (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg F)) =
+      Function.update
+        (boundaryFactorState (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg S)))
+        .vk (F.R 143) := by
+  exact packedBoundaryFactorState_of_solution_frame S F (fun k hk _ => hframe k hk)
 
 /-- A halo execution need only preserve the high bank to retain solve readiness. -/
 theorem packedBoundarySolveReady_of_high_frame {A q w W N : ℕ} (S F : Stacks 242 A)
