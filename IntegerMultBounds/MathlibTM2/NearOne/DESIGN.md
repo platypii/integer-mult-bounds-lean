@@ -2143,6 +2143,35 @@ queue placement and protected gathering checked at 1388.8, 2063.4, 2084.9 and
 2100.7 MiB peak RSS. The coupling-interval integration build passed 14,968 jobs
 and its approved-axiom audit (3.4 GiB aggregate peak); whitespace checks passed.
 
+### Generated batch to concrete first-core execution (2026-10-29)
+
+`ProtectedCoreGatherInput` packages only scalar bounds, ordinary source/header
+contents and blank workspace facts; its `run` theorem invokes the existing
+executed gather rather than taking an execution premise.
+
+`gatheredHaloCore_spec` now composes protected generation and gathering with the
+actual queued solver/publication. For a generated fitting group whose first
+index is `k`, the physical batch on 256 supplies the first halo RHS. The machine
+solves and publishes core `k` on 248 with the existing physical-read error,
+restores the borrowed ambient source and output suffix, and leaves exactly the
+remaining generated halo windows on 256. Geometry/working-format matching and
+native-bank preservation are proved through the composition; no gathered
+source or local execution callback is assumed.
+
+The caller still establishes the first halo's source-independent numerical
+setup and local coordinate headers. The original generated origin stream and
+full group count remain on 257/261: they have not yet advanced past the solved
+first halo. Consuming those cursors, generating successive local geometry,
+complete low-runtime restoration for repeated calls, full setup-key reuse,
+seams/full-system fallback, complex/tensor composition and final uniform bounds
+remain open. This is a generated batch connected to its first real local call,
+not a completed group loop. S4 remains open.
+
+Verification: the protected gather contract and composed generated-core
+execution checked at 2067.8 and 3250.1 MiB peak RSS. The coupling-interval
+integration build passed 14,970 jobs and its approved-axiom audit (3.5 GiB
+aggregate peak); whitespace checks passed.
+
 ### Geometry, cuts and boundary order
 
 A descriptor contains ambient s,t, semantic p,u, ordered global halo coordinates,
