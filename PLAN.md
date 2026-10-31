@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3316 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3318 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19058,3 +19058,36 @@ origin generation and exposure with shared-counter setup, concrete readiness
 placement and the proved runtime loop, and derive uniform selected job costs.
 Selected analytic/class separation facts, whole publication, seam lifecycle
 and R4/tensor restoration remain open. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: a standalone fixed pass generates origins and loop count
+
+`preparedCoreOrigins_exec_within` loads ordinary retained binary geometry into
+the existing 16-value controller, executes `generatedCoreCountedHost`, and
+releases the entire table. It generates the exact ordered binary-origin queue
+and unary class count without reading or moving ambient coefficients. The
+program has no geometry values or job list as arguments. Its exact endpoint
+changes only the origin queue and count register; binary geometry, scalar
+width, scratch, input/output and left storage restore. Empty classes are
+supported without a positive-group premise.
+
+The proof reuses the existing loader, enumeration, packet conversion, counting
+and table-release traces. Existing structural `chirpBankLoad_native` and
+`clearWords_native_three` certificates are now public for reuse, rather than
+duplicating them. Time includes loading, enumeration, emission, counting and
+release; workspace uses the structural native bound of three times that bill.
+
+`PackedNormalizedJob.coreWidth_lt` and `originController_fits` derive controller
+room from a proper job and its actual scheduled-core membership. The common
+`Bcore` scalar width fits ambient size, core width, both margins and halo
+length, and is positive. A nonempty class can therefore use one of its jobs to
+supply controller room with no additional binary-width bank.
+
+Guarded checks peak at 2101.9 MiB (standalone physical origin pass) and
+3311.1 MiB (derived controller sizing). The combined target build passes
+(15678 jobs, 5.2 GiB combined peak). The scoped axiom audit passes for 336525
+declarations at 3394.3 MiB. Next place this fixed origin pass with the
+exposed payload stream, generate the shared batch counter, run the actual core
+loop, and retire class controls. Concrete readiness placement and uniform
+selected job costs, selected analytic/class separation facts, publication,
+seam lifecycle and R4/tensor restoration remain open. S4 remains incomplete;
+kappa is unchanged.

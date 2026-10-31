@@ -17,7 +17,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 open IntegerMultBounds.NLogN.PhaseCellMatrix
 variable {T Q A : ℕ} {P U : Type}
 
-private theorem clearWords_native_three (rs : List (Fin T)) :
+theorem clearWords_native_three (rs : List (Fin T)) :
     mnNativePushBound 3 (clearWords (P := P) (Q := Q) (A := A) (U := U) rs) := by
   induction rs with
   | nil => exact Nat.zero_le _
@@ -32,7 +32,7 @@ private theorem chirpBankCopies_native (width savedWidth savedSource buf : Fin T
   | cons r rs ih =>
     exact ⟨by simp [padCopy,padStep,moveR,moveStep,whileR,peekR,mnNativePushBound,mnActPush],ih⟩
 
-private theorem chirpBankLoad_native {n : ℕ} (rg : TblR n → Fin T)
+theorem chirpBankLoad_native {n : ℕ} (rg : TblR n → Fin T)
     (source : Fin n → Fin T) (width symbols : Fin T) :
     mnNativePushBound 3 (chirpBankLoad (P := P) (Q := Q) (A := A) (U := U) rg source width symbols) := by
   unfold chirpBankLoad
