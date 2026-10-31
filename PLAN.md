@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3235 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3237 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17924,3 +17924,34 @@ into the supplier input plan and compose its trace/cleanup with production.
 The selected bulk/seam schedule, complete-key setup reuse, grouped publication,
 R4/tensor layout restoration and final audits remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: an exposed supplier runs from ambient data and restores its payload
+
+`placedReplicaPayload_exec_within` places the restoring gather in any injective
+117-register view. Its empty procedure type removes any caller procedure-table
+compatibility assumption. The exact placed poststate changes only the owned
+payload word, with the same runtime and ambient-volume stock allowance.
+
+`SupplierInputPlan.exposedRun_exec` composes that physical gather, the complete
+generated supplier lifecycle and local payload erasure. The initial local
+payload is empty. Header readiness is checked on the state after installing
+the required payload; it does not assert the payload exists in the initial
+machine. The gather proves that state, so no prepared local-payload premise or
+execution callback is introduced. Ambient source, its borrowed suffix, ordinary
+headers, both private banks and all scratch are restored. The exact final
+machine state changes only the packed result.
+
+The same trace includes transport, setup, numerical production, descriptor
+retirement, source-bank erasure and payload erasure. Gathering adds its linear
+ambient-volume allowance; erasure adds no workspace. The theorem currently
+covers nonempty replica lists and positive local windows. The guard checks
+peak at 2048.0 MiB (placement) and 3387.3 MiB (complete exposed call). The
+guarded target build passes (15621 jobs, 3.5 GiB combined peak); the scoped
+axiom audit passes for 336018 declarations (3386.7 MiB).
+
+Next instantiate the selected bulk/seam supplier schedule and connect exposure
+across complete groups. Complete-key setup reuse, grouped publication,
+R4/tensor layout restoration and final audits remain open. Per-call ambient
+transport is proved here; the required whole-schedule exposure multiplicity
+and reuse bound is still an integration obligation. S4 is incomplete; kappa
+is unchanged.
