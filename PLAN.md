@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3333 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3335 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19292,3 +19292,26 @@ peak). The scoped axiom audit also passes. This discharges one concrete
 selected-class premise; ordinary placement,
 readiness, analytic coefficient/dominance facts and full class assembly remain
 open. S4 remains incomplete; publication, seam and tensor obligations remain.
+
+### S4 checkpoint: actual generated class jobs inherit selected body pricing
+
+`selectedPackedHaloWorkspaceWidth_le` derives the constructed job's workspace
+width from the existing common packet width and structural per-interval fit.
+`selectedDerivedCoreCosts_le_shared_add_linear` therefore needs canonical
+format identities rather than separately supplied linear width bounds.
+`selectedCoreClassJobs_costs` applies this directly to the actual indexed
+`coreClassJobs` constructor. Its overhead constant is chosen before all selected
+sizes, axes, class geometry, coefficients and RHS data. Numerical width
+identities are discharged definitionally; no per-core numerical estimate or
+concrete bank case split is introduced.
+
+The constructor's analytic hypotheses and ordinary setup readiness remain
+explicit. The producer time/workspace bills remain explicit too: the next
+integration step is to combine existing S3 producer pricing with the class's
+payload/replica uniformity and the fixed class execution theorem. This is not
+yet a selected end-to-end class execution or S4 completion. Publication,
+shared full-line seam execution and tensor/R4 restoration remain open.
+
+Guarded checks pass at 3376.4 MiB (derived job widths and body pricing) and
+3376.5 MiB (actual generated class jobs). The combined class-pricing/execution
+build and scoped axiom audit pass. Kappa is unchanged.
