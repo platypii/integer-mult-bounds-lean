@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3429 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3434 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20419,3 +20419,45 @@ full cell arithmetic trace, and lift to the actual cached interior boundary.
 The selected geometry/amortization, boundary/recovery/publication and tensor/
 R4 restoration remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 325012 declarations at 3130.8 MiB.
+
+### S4 checkpoint: complete cell arithmetic stock, including output publication
+
+`PhaseCellOutputNativeStock` certifies actual output rescaling, generated shift/
+complement headers and borrowed-page fetching structurally. These stages use
+native linear traffic, while the numerical weight pass reuses the shared
+pointwise reserve. `closedOutputWeights_exec_within` composes rescaling,
+normalization-descriptor preservation, actual weighting and descriptor
+restoration. `outputFromHeaders_exec_within` generates and retires all shift
+controls, and `preparedOutput_exec_within` fetches the output table from the
+retained page and releases its staging copy. Original time, normalized-error
+and exact endpoint guarantees persist through execution uniqueness, without
+another register-by-register final cleanup proof.
+
+`cellArithmetic_exec_within` now composes the complete ordinary-input weight/
+normalization/interior chain with actual output weighting/publication and final
+RHS retirement. Its `cellArithmeticWorkspace` is the sum of the certified
+input/interior and output allowances: shared numerical/setup reserves plus
+linear padded/encoded batch traffic. All initial data and spectators count
+once. No numerical execution/readiness/header-generation callback is supplied;
+the existing exact `cellArithmeticCost` and final physical frame are retained.
+The actual cached interior bank still needs this trace lifted through staging
+and publication into its existing caller.
+
+The closing resource contract now states only the execution, time and frame
+used by the cell caller. Its duplicate numerical-error conclusion is omitted;
+the original `closedInputInterior_exec` still supplies that correctness fact.
+Restore the broader stock conclusion from `a1505c4d` if a caller needs it.
+This simplification did not materially reduce that module's 4.04 GiB peak.
+
+Guarded checks pass at 2049.7 MiB (native output stages), 2073.0 MiB (rescale/
+weight/restore), 2065.0 MiB (generated controls), 2074.8 MiB (borrowed output
+page lifecycle), and 2092.1 MiB (complete cell arithmetic). The simplified
+closing input module passes at 4133.7 MiB with default limits. The compatibility
+build with actual cached interior/preparation callers passes (14225 jobs,
+4.7 GiB combined peak). No proof limits were raised.
+
+Next lift the arithmetic certificate through cell staging/result publication
+and the actual cached numerical caller, then close the complete S4 interior
+stock boundary. Selected geometry/amortization, boundary/recovery/seam lifecycle
+and tensor/R4 restoration remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 325043 declarations at 3131.4 MiB.

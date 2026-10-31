@@ -51,23 +51,19 @@ theorem closedInputInterior_exec_within (hR : rpStates ≤ Q) (hQ : SS.states �
           (reciprocalWeightWords q ((List.range M).flatMap D)) tail (csyms A w a++borrowed) inp out))+depth+
           normalizedInteriorWorkspace R K q l w M L cExp e) depth (closedInputInterior hR hQ)
         (mk v (inputSourceBank q l w M L 0 X Z ((List.range M).flatMap C)
-          (reciprocalWeightWords q ((List.range M).flatMap D)) tail tailX inp out)) m (mk v' SF) ∧
-      ∀ i : Fin (M * L),
-        ‖value q (decodeWord (((SF.R 93).drop (i.val * w)).take w)) -
-          (value q (pairNumerator q l M L X V i) - value q (pairNumerator q l M L Z V i)) * value q a‖ ≤
-            2 / (2 : ℝ) ^ q := by
+          (reciprocalWeightWords q ((List.range M).flatMap D)) tail tailX inp out)) m (mk v' SF) := by
   dsimp only
-  obtain ⟨vf,nf,huf,hnf,hef,herrf⟩ := closedInputInterior_exec (body := body)
+  obtain ⟨vf,nf,huf,hnf,hef,-⟩ := closedInputInterior_exec (body := body)
     hR hQ hA hquarter hw hq hpad X Z C D hlenX hlenZ hlenC hlenD hX hZ hC hD a ha har
     v tail borrowed inp out
   let V := fun n => weightedInputNumerators q cExp e (C n) (D n)
   let S := Fixed.startWithTails q l w (M + M) L L (rowBank M X Z) (rowBank M V V)
     tail (csyms A w a ++ borrowed) [] inp out
   let result := cstream A w ((branchDifference q l M L X Z V).map (fun x => tdivN q (x * a))) ++ tail
-  obtain ⟨v₁, m₁, hu₁, hm₁, he₁, herr⟩ := inputInteriorFromPrecision_exec_within (body := body)
+  obtain ⟨v₁, m₁, -, -, he₁, -⟩ := inputInteriorFromPrecision_exec_within (body := body)
     hR hQ hA hquarter hw hq hpad X Z C D hlenX hlenZ hlenC hlenD hX hZ hC hD a ha har
     v tail borrowed inp out R K hpushR hpushK depth
-  obtain ⟨v₂, hu₂, he₂⟩ := ScalarPlacement.releaseWeightCounters_exec (body := body)
+  obtain ⟨v₂, -, he₂⟩ := ScalarPlacement.releaseWeightCounters_exec (body := body)
     q w v₁ S result (fun r _ => canonical_cr_fresh q l w (M+M) L
       (rowBank M X Z) (rowBank M V V) tail (csyms A w a++borrowed) inp out r)
   have ht₂ := mn_native_exec_within he₂ 0 ScalarPlacement.releaseWeightCounters_native
@@ -75,7 +71,7 @@ theorem closedInputInterior_exec_within (hR : rpStates ≤ Q) (hQ : SS.states �
   have ht := mn_seq_within_add he₁ ht₂
   obtain ⟨heqn,heqF⟩ := ht.toExec.unique hef
   rw [heqn,heqF] at ht
-  refine ⟨vf,nf,huf,hnf,ht.mono ?_,herrf⟩
+  refine ⟨vf,nf,huf,hnf,ht.mono ?_⟩
   intro d z hz
   simp only [Nat.zero_mul,Nat.add_zero] at hz
   exact hz
