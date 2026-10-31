@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3220 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3221 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17686,3 +17686,29 @@ source exposure still remain before all 325 supplier words are generated.
 Full supplier batches, complete-key setup reuse, grouped publication,
 R4/tensor layout restoration and final audits remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: the outer normalized frame is generated around the numerical bank
+
+`generateNormalizedFrame_exec` extends an existing 276-register numerical bank
+with actual scalar-width copying, core-length conversion and generation of the
+eight normalization parameters. It proves that the resulting entire placed
+325-register view equals `packedNormalizedInputBank`, including all remaining
+blank workspace. The exact physical endpoint changes only scalar width, binary
+core length and the parameter queue; retained inputs and scratch are restored.
+Its assumptions are ordinary retained headers and a blank extension of the
+lower bank, rather than prepared outer binary metadata.
+
+The same execution takes at most
+`(L+p+u+l+target+s+t+a+b)*(4*B+10)+72*B+109` steps and has additional stock
+`10*(2*(4*B+4))`. A structural bank-update identity and generic embedding-update
+lemmas prove the full frame without enumerating registers. Direct list
+membership constructors replace expensive propositional search; all default
+proof limits remain unchanged.
+
+The guarded file check peaks at 3333.3 MiB. The guarded target build passes
+(15150 jobs, 3.5 GiB combined peak); the scoped axiom audit passes for 331999
+declarations (3312.6 MiB). The lower 242-to-276 publication/descriptor frame,
+packed source exposure and their composition with factory generation remain
+before the full supplier input is generated. Supplier batches, complete-key
+setup reuse, grouped publication, R4/tensor layout restoration and final audits
+also remain open. S4 is incomplete; kappa is unchanged.
