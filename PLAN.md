@@ -16674,3 +16674,25 @@ still need bounded certificates before the stage-2 leaf core and selected archiv
 transpose have their full space proof. The other S4 supplier/readiness,
 setup-reuse, tensor/layout and final audit obligations remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: ordered high-block join and separation have linear workspace
+
+The actual join and inverse-separation traces now have prefix-space certificates.
+Every trace bank has heads in `[0,1]`; the existing `trace_steps` contracts bound
+each real movement stage by one linear payload-volume budget. The shared
+`CountedLoopReuseAlphabet.loop_heads_linear` theorem includes canonical-count
+copying, countdown and cleanup without multiplying workspace by the digit count.
+Both directions reuse that theorem and the same normalized-bank facts.
+
+`RadixHighBlockJoinRun.boundary_contracts` and the inverse counterpart share the
+paid generated-header setup and exact cleanup with their existing endpoint/time
+proofs. The complete `*RunWithin` contracts compose those phases with the counted
+movement certificate, taking the maximum of their reserves. They retain original
+runtime bounds, arbitrary finite-alphabet payloads, exact output permutations,
+original headers, loop controls and genuine halt. `HoareWithin.of_time_unit_heads`
+packages the common normalized linear-phase argument.
+
+Shared-source movement placement and the ordered exchange/join/separate assembly
+still need to consume these local certificates. Padded and digit/width dispatch,
+the stage-2 leaf-core space certificate, archive stock and the other S4 obligations
+above remain open. S4 is incomplete; kappa is unchanged.

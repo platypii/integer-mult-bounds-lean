@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.Machine.CountedLoopReuseAlphabet
+public import IntegerMultBounds.GrowingCounterData
 public import IntegerMultBounds.Machine.CountedLoopAlphabetSpace
 public import IntegerMultBounds.Machine.RunInvariantComposition
 
@@ -146,6 +147,25 @@ theorem loop_heads (M : Program t q a) (bs : List Bool) (v : ℕ → Tapes t a) 
     max_le (by omega) (by omega)
   intro i
   have h := hh i
+  omega
+
+/-- Normalized boundary heads and a linear stage budget give one linear loop
+workspace, including the canonical count's preparation and cleanup. -/
+theorem loop_heads_linear (M : Program t q a) (bs : List Bool) (v : ℕ → Tapes t a) (C V : ℕ)
+    (hV : 0 < V) (hcount : Counter.value bs ≤ V) (cb : GrowingCounterData.Canonical bs)
+    (hbody : ∀ l < Counter.value bs, HoareTime M (· = v l) (· = v (l+1)) (C*V))
+    (hbanks : ∀ l ≤ Counter.value bs, ∀ j, 0 ≤ (v l).head j ∧ (v l).head j ≤ 1)
+    {c : Config (t+2) (7+(q+5)+4) a} {n : ℕ}
+    (hrun : Machine.run (program M) n ((bank (v 0) empty (binary bs) 1 1).start (program M)) = some c) :
+    ∀ j, -((C+20)*V : ℕ) ≤ c.head j ∧ c.head j ≤ ((C+20)*V : ℕ) := by
+  have hw := GrowingCounterData.canonical_width bs cb
+  have hl := Nat.log2_le_self (Counter.value bs)
+  have hlen : bs.length ≤ 2*V := by omega
+  have hb : C*V+4*bs.length+9 ≤ (C+20)*V := by nlinarith only [hlen,hV]
+  have hh := loop_heads M bs v (C*V) hbody 0 1 hbanks hrun
+  intro j
+  have hj := hh j
+  simp only [min_self,max_eq_right (show (1 : ℤ) ≤ (bs.length : ℤ)+1 by omega),zero_sub] at hj
   omega
 
 end IntegerMultBounds.Machine.CountedLoopReuseAlphabet

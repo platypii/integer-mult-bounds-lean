@@ -46,6 +46,16 @@ theorem of_time_heads (h : HoareTime M pre post B) (lo hi : ℤ)
   obtain ⟨n,c,hn,hr,hh,hp⟩ := h v hv
   exact ⟨n,hn,c,RunWithin.heads_of_run_le hr hn lo hi (hmargin v hv),hh,hp⟩
 
+/-- A linear phase starting with normalized heads in [0,1] fits a symmetric
+reserve that covers its transition budget and the initial unit offset. -/
+theorem of_time_unit_heads (h : HoareTime M pre post B) (K : ℕ) (hb : B+1 ≤ K)
+    (hheads : ∀ v, pre v → ∀ j, 0 ≤ v.head j ∧ v.head j ≤ 1) :
+    HoareWithin M pre post B (fun v => ∀ j, -(K : ℤ) ≤ v.head j ∧ v.head j ≤ K) := by
+  apply of_time_heads h (-(K : ℤ)) K
+  intro v hv j
+  have hh := hheads v hv j
+  omega
+
 /-- A known restored post-bank can bound a linear recovery phase. -/
 theorem of_time_post_heads (h : HoareTime M pre post B) (lo hi : ℤ)
     (hmargin : ∀ v, post v → ∀ j, lo+(2*B : ℕ) ≤ v.head j ∧ v.head j+(2*B : ℕ) ≤ hi) :

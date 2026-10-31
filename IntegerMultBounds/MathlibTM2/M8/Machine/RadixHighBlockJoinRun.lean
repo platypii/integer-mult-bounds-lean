@@ -39,20 +39,26 @@ private theorem grown_bits (N r : ℕ) : RadixHighBlockJoinSetup.grownBits (q :=
   · exact BoundedProductDescriptor.bits_canonical _ _
 
 omit [Net] in
-theorem joins (r P S E : ℕ) (source : ℤ → Fin (a+4)) (ss op oe rs : List Bool)
+/-- Physical setup and cleanup shared by endpoint and prefix-space proofs. -/
+theorem boundary_contracts (r P S E : ℕ) (source : ℤ → Fin (a+4)) (ss op oe rs : List Bool)
     (x : Fin (P*S*q^r*E) → Fin (a+4)) (hq : 2 ≤ q) (hP : 0 < P) (hS : 0 < S) (hE : 0 < E)
-    (hs : Counter.value ss = S) (cs : GrowingCounterData.Canonical ss)
     (hp : Counter.value op = P) (cp : GrowingCounterData.Canonical op)
     (he : Counter.value oe = E) (ce : GrowingCounterData.Canonical oe)
     (hr : Counter.value rs = r) (cr : GrowingCounterData.Canonical rs) :
-    HoareTime (program (q := q) (a := a))
-      (fun v => v = RadixHighBlockJoinInitialize.input
-        (RadixHighBlockJoinLoop.word source x) ss op oe
+    HoareTime (RadixHighBlockJoinInitialize.program (q := q) (a := a) false)
+      (· = RadixHighBlockJoinInitialize.input (RadixHighBlockJoinLoop.word source x) ss op oe
         (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs))
-      (fun v => v = RadixHighBlockJoinInitialize.input
+      (· = CountedLoopReuseAlphabet.bank (RadixHighBlockJoinLoop.firstBank P S E r source ss op oe x)
+        CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary rs) 1 1)
+      (RadixHighBlockJoinInitialize.coefficient q*(P*S*q^r*E)) ∧
+    HoareTime (RadixHighBlockJoinCleanup.program (q := q) (a := a))
+      (· = CountedLoopReuseAlphabet.bank
+        (RadixHighBlockJoinLoop.finalBank P S E r source ss op oe (RadixHighBlockJoinSemantics.join q r P S E x))
+        CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary rs) 1 1)
+      (· = RadixHighBlockJoinInitialize.input
         (RadixHighBlockJoinLoop.word source (RadixHighBlockJoinSemantics.join q r P S E x)) ss op oe
         (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs))
-      (coefficient q*(r+1)*(P*S*q^r*E)) := by
+      (RadixHighBlockJoinCleanup.coefficient q*(P*S*q^r*E)) := by
   have hi := RadixHighBlockJoinInitialize.initializes_volume (q := q) false
     (RadixHighBlockJoinLoop.word source x) ss op oe rs CountedLoopReuseAlphabet.empty 1
     P S E r hq hP hS hE hp he cp ce hr cr
@@ -68,7 +74,6 @@ theorem joins (r P S E : ℕ) (source : ℤ → Fin (a+4)) (ss op oe rs : List B
     (RadixHighBlockJoinLoop.word source x) ss op oe E r
     (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs)) _ at hi
   rw [hprep] at hi
-  have hl := RadixHighBlockJoinLoop.loop_hoare (q := q) r P S E source ss op oe rs x hq hP hS hE hs cs hr cr
   have hV : 0 < P*S*q^r*E := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos hP hS)
     (pow_pos (by omega : 0 < q) r)) hE
   have hPV : P*q^r ≤ P*S*q^r*E :=
@@ -84,6 +89,27 @@ theorem joins (r P S E : ℕ) (source : ℤ → Fin (a+4)) (ss op oe rs : List B
     (RecursiveChildQuotientsConstant.bits_canonical _)
     (by rw [RecursiveChildQuotientsConstant.bits_value]; exact hPV)
     (by rw [RecursiveChildQuotientsConstant.bits_value]; exact hEV)
+  exact ⟨hi,hc⟩
+
+omit [Net] in
+theorem joins (r P S E : ℕ) (source : ℤ → Fin (a+4)) (ss op oe rs : List Bool)
+    (x : Fin (P*S*q^r*E) → Fin (a+4)) (hq : 2 ≤ q) (hP : 0 < P) (hS : 0 < S) (hE : 0 < E)
+    (hs : Counter.value ss = S) (cs : GrowingCounterData.Canonical ss)
+    (hp : Counter.value op = P) (cp : GrowingCounterData.Canonical op)
+    (he : Counter.value oe = E) (ce : GrowingCounterData.Canonical oe)
+    (hr : Counter.value rs = r) (cr : GrowingCounterData.Canonical rs) :
+    HoareTime (program (q := q) (a := a))
+      (fun v => v = RadixHighBlockJoinInitialize.input
+        (RadixHighBlockJoinLoop.word source x) ss op oe
+        (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs))
+      (fun v => v = RadixHighBlockJoinInitialize.input
+        (RadixHighBlockJoinLoop.word source (RadixHighBlockJoinSemantics.join q r P S E x)) ss op oe
+        (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs))
+      (coefficient q*(r+1)*(P*S*q^r*E)) := by
+  obtain ⟨hi,hc⟩ := boundary_contracts r P S E source ss op oe rs x hq hP hS hE hp cp he ce hr cr
+  have hl := RadixHighBlockJoinLoop.loop_hoare (q := q) r P S E source ss op oe rs x hq hP hS hE hs cs hr cr
+  have hV : 0 < P*S*q^r*E := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos hP hS)
+    (pow_pos (by omega : 0 < q) r)) hE
   have h := (hi.seq hl).seq hc
   apply h.consequence (fun _ hh => hh) (fun _ hh => hh)
   have hiCost := Nat.mul_le_mul_right (P*S*q^r*E)

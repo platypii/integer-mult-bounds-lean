@@ -40,6 +40,58 @@ private theorem grown_bits (N r : ℕ) : RadixHighBlockJoinSetup.grownBits (q :=
   · exact BoundedProductDescriptor.bits_canonical _ _
 
 omit [Net] in
+/-- Physical inverse boundaries shared by endpoint and prefix-space proofs. -/
+theorem boundary_contracts (r P S E : ℕ) (source : ℤ → Fin (a+4)) (ss op oe rs : List Bool)
+    (x : Fin (P*q^r*(S*E)) → Fin (a+4)) (hq : 2 ≤ q) (hP : 0 < P) (hS : 0 < S) (hE : 0 < E)
+    (hp : Counter.value op = P) (cp : GrowingCounterData.Canonical op)
+    (he : Counter.value oe = E) (ce : GrowingCounterData.Canonical oe)
+    (hr : Counter.value rs = r) (cr : GrowingCounterData.Canonical rs) :
+    HoareTime (RadixHighBlockJoinInitialize.program (q := q) (a := a) true)
+      (· = RadixHighBlockJoinInitialize.input (RadixHighBlockJoinLoop.word source x) ss op oe
+        (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs))
+      (· = CountedLoopReuseAlphabet.bank (RadixHighBlockSeparateLoop.firstBank P S E r source ss op oe x)
+        CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary rs) 1 1)
+      (RadixHighBlockJoinInitialize.coefficient q*(P*S*q^r*E)) ∧
+    HoareTime (RadixHighBlockJoinCleanup.program (q := q) (a := a))
+      (· = CountedLoopReuseAlphabet.bank
+        (RadixHighBlockSeparateLoop.finalBank P S E r source ss op oe (RadixDigitMoveBlockRows.move x))
+        CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary rs) 1 1)
+      (· = RadixHighBlockJoinInitialize.input
+        (RadixHighBlockJoinLoop.word source (RadixDigitMoveBlockRows.move x)) ss op oe
+        (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs))
+      (RadixHighBlockJoinCleanup.coefficient q*(P*S*q^r*E)) := by
+  have hi := RadixHighBlockJoinInitialize.initializes_volume (q := q) true
+    (RadixHighBlockJoinLoop.word source x) ss op oe rs CountedLoopReuseAlphabet.empty 1
+    P S E r hq hP hS hE hp he cp ce hr cr
+  have hprep : RadixHighBlockJoinInitialize.prepared (q := q) true
+      (RadixHighBlockJoinLoop.word source x) ss op oe P r
+      (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs) =
+      CountedLoopReuseAlphabet.bank (RadixHighBlockSeparateLoop.firstBank P S E r source ss op oe x)
+        CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary rs) 1 1 := by
+    simp only [RadixHighBlockJoinInitialize.prepared,ite_true,
+      canonical_bits oe E he ce,grown_bits]
+    rfl
+  change HoareTime _ _ (fun v => v = RadixHighBlockJoinInitialize.prepared true
+    (RadixHighBlockJoinLoop.word source x) ss op oe P r
+    (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs)) _ at hi
+  rw [hprep] at hi
+  have hpow : 0 < q^r := pow_pos (by omega : 0 < q) r
+  have hV : 0 < P*S*q^r*E := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos hP hS) hpow) hE
+  have hPV : P ≤ P*S*q^r*E := (Nat.le_mul_of_pos_right P hS).trans
+    ((Nat.le_mul_of_pos_right (P*S) hpow).trans (Nat.le_mul_of_pos_right (P*S*q^r) hE))
+  have hEV : q^r*E ≤ P*S*q^r*E :=
+    Nat.mul_le_mul_right E (Nat.le_mul_of_pos_left (q^r) (Nat.mul_pos hP hS))
+  have hc := RadixHighBlockJoinCleanup.cleans_linear (q := q)
+    (RadixHighBlockJoinLoop.word source (RadixDigitMoveBlockRows.move x))
+    ss op oe (bits P) (bits (q^r*E))
+    (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs)
+    (P*S*q^r*E) hV (RecursiveChildQuotientsConstant.bits_canonical _)
+    (RecursiveChildQuotientsConstant.bits_canonical _)
+    (by rw [RecursiveChildQuotientsConstant.bits_value]; exact hPV)
+    (by rw [RecursiveChildQuotientsConstant.bits_value]; exact hEV)
+  exact ⟨hi,hc⟩
+
+omit [Net] in
 /-- The complete physical inverse restores the [P][S][q^rho][E] order,
 preserving arbitrary payload symbols, original headers, and the loop controls. -/
 theorem separates (r P S E : ℕ) (source : ℤ → Fin (a+4)) (ss op oe rs : List Bool)
@@ -56,37 +108,11 @@ theorem separates (r P S E : ℕ) (source : ℤ → Fin (a+4)) (ss op oe rs : Li
         (RadixHighBlockJoinLoop.word source (RadixDigitMoveBlockRows.move x)) ss op oe
         (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs))
       (coefficient q*(r+1)*(P*S*q^r*E)) := by
-  have hi := RadixHighBlockJoinInitialize.initializes_volume (q := q) true
-    (RadixHighBlockJoinLoop.word source x) ss op oe rs CountedLoopReuseAlphabet.empty 1
-    P S E r hq hP hS hE hp he cp ce hr cr
-  have hprep : RadixHighBlockJoinInitialize.prepared (q := q) true
-      (RadixHighBlockJoinLoop.word source x) ss op oe P r
-      (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs) =
-      CountedLoopReuseAlphabet.bank (RadixHighBlockSeparateLoop.firstBank P S E r source ss op oe x)
-        CountedLoopReuseAlphabet.empty (CountedLoopReuseAlphabet.binary rs) 1 1 := by
-    simp only [RadixHighBlockJoinInitialize.prepared,ite_true,
-      canonical_bits oe E he ce,grown_bits]
-    rfl
-  change HoareTime _ _ (fun v => v = RadixHighBlockJoinInitialize.prepared true
-    (RadixHighBlockJoinLoop.word source x) ss op oe P r
-    (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs)) _ at hi
-  rw [hprep] at hi
+  obtain ⟨hi,hc⟩ := boundary_contracts r P S E source ss op oe rs x hq hP hS hE hp cp he ce hr cr
   have hl := RadixHighBlockSeparateLoop.loop_hoare (q := q) r P S E source ss op oe rs x hq hP hS hE hs cs hr cr
   rw [RadixHighBlockSeparateSemantics.separate_eq_move] at hl
   have hpow : 0 < q^r := pow_pos (by omega : 0 < q) r
   have hV : 0 < P*S*q^r*E := Nat.mul_pos (Nat.mul_pos (Nat.mul_pos hP hS) hpow) hE
-  have hPV : P ≤ P*S*q^r*E := (Nat.le_mul_of_pos_right P hS).trans
-    ((Nat.le_mul_of_pos_right (P*S) hpow).trans (Nat.le_mul_of_pos_right (P*S*q^r) hE))
-  have hEV : q^r*E ≤ P*S*q^r*E :=
-    Nat.mul_le_mul_right E (Nat.le_mul_of_pos_left (q^r) (Nat.mul_pos hP hS))
-  have hc := RadixHighBlockJoinCleanup.cleans_linear (q := q)
-    (RadixHighBlockJoinLoop.word source (RadixDigitMoveBlockRows.move x))
-    ss op oe (bits P) (bits (q^r*E))
-    (RadixHighBlockJoinInitialize.controls CountedLoopReuseAlphabet.empty 1 rs)
-    (P*S*q^r*E) hV (RecursiveChildQuotientsConstant.bits_canonical _)
-    (RecursiveChildQuotientsConstant.bits_canonical _)
-    (by rw [RecursiveChildQuotientsConstant.bits_value]; exact hPV)
-    (by rw [RecursiveChildQuotientsConstant.bits_value]; exact hEV)
   have h := (hi.seq hl).seq hc
   apply h.consequence (fun _ hh => hh) (fun _ hh => hh)
   have hiCost := Nat.mul_le_mul_right (P*S*q^r*E)
