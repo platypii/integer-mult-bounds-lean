@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 2504 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3179 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -16534,3 +16534,26 @@ publication, halo/global locality and tensor composition; the remaining S5 and
 S6 work packages are unchanged. This completes S3, not the sharper end-to-end
 multiplication theorem, and does not change kappa. Earlier S3 checkpoints above
 record the historical progression and their then-open obligations.
+
+### S4 checkpoint: structural workspace composition for the recursive transpose
+
+`RunWithin` carries an actual finite run and a tape predicate at every prefix.
+Its composition and frame/controller simulations preserve one shared workspace
+allowance. `RevHalfSegmentWithin.seg_within` applies this language to actual node
+segment sites, including global padding and the physical controller join.
+
+`GraphFrameWithin` now composes preparation, repeated leaves, the node schedule,
+child entry/execution/recovery, finish and decoded return. Strong induction on
+frame size removes the child-execution premise. The geometric specialization
+`GraphFrameVolumeWithin.contract_volume_within` derives the child head margin
+from the existing child-volume equation, ordinary node-bank head offsets and a
+linear entry/recovery cost. The workspace allowance has no iteration, sibling or
+recursion-depth factor. A root-halt certificate covers every actually reachable
+prefix, independently of the separate runtime proof.
+
+This is the generic composition theorem, not yet the selected transpose's space
+certificate. Remaining: instantiate its local frame bounds and bank offsets,
+including the stage-1 leaf core, then connect the resulting bound to host stock
+and the archive transpose. S4 also still needs the generated supplier/readiness,
+setup-reuse, R4/tensor, layout-restoration and final execution/error/cost audit.
+S4 remains incomplete; kappa is unchanged.

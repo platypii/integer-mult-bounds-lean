@@ -36,6 +36,27 @@ theorem member_jump_within (pc target : PC pieces.length) (before after : Tapes 
   rw [hbank] at hj
   exact hj
 
+/-- Entering the root's halt block is a genuine halt of the full graph. -/
+theorem entry_halt (y : Tapes t a) :
+    step (program pieces capacity stack ht impl)
+      (entryConfig pieces capacity stack ht impl .halt y) = none := by
+  have hp : step (family pieces capacity stack ht impl (encoding pieces .halt))
+      ((raw y (tapeCount pieces capacity stack ht impl)).start
+        (family pieces capacity stack ht impl (encoding pieces .halt))) = none := by
+    unfold family states
+    rw [(encoding pieces).symm_apply_apply PC.halt]
+    simp only [SharedBankFamily.program,SharedBankFamily.uniform,SharedBankFamily.pad,
+      SharedBankFamily.padProgram]
+    dsimp only [block,SharedBankFamily.ofProgram]
+    simp [step,reindex,extend,skip]
+  have hn : ∀ st, next pieces capacity stack ht impl (encoding pieces .halt) st = none := by
+    unfold next states
+    rw [(encoding pieces).symm_apply_apply PC.halt]
+    intro st
+    rfl
+  exact FiniteFlow.halt (family pieces capacity stack ht impl) (next pieces capacity stack ht impl)
+    (encoding pieces .prepare) (encoding pieces .halt) _ hp (hn _)
+
 theorem block_jump_within_heads (pc target : PC pieces.length) (before after : Tapes t a) (B : ℕ)
     (h : HoareTime (block pieces capacity stack ht impl pc).program
       (· = raw before (block pieces capacity stack ht impl pc).tapes)
