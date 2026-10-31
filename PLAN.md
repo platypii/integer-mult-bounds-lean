@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3453 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3455 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20725,3 +20725,36 @@ padding/exceptional-cell accounting and aggregate this native envelope over
 core/halo geometry. Supplier generation, recovery/seams and tensor/R4
 restoration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327676 declarations at 3164.0 MiB.
+
+### S4 checkpoint: local padding accounts for all short halo cells together
+
+`PhaseCellHaloLocalPadding` removes the need to compare the common ring padding
+with every individual row. `haloPhaseCount_paddedVolume_le` combines the existing
+local phase-density bound with the ambient-gap ring sizing, proving
+`localPhaseCount * 2^ringLog ≤ 8*(b-a)+8*(s/(t-s)+1)` in the near-one regime.
+No lower bound on a clipped row length is needed.
+
+`haloLengthKeys_cell_count_local` counts the actual generated positive classes
+inside the local phase interval by a structural fiber-cardinality argument.
+`haloLengthKeys_paddedVolume_le` adds the exact interior-coordinate volume to
+the local padding allowance, including arbitrarily short endpoint classes.
+`haloLengthKeys_localTraffic_le` sums all classes and pays at most six local
+span scans using the existing six-key theorem. No exceptional-cell enumeration
+or false per-row padding-to-length assumption is introduced.
+
+`PhaseCellHaloGatheredStock.haloGatheredInteriorStock_le_local` applies this
+aggregation to the actual complete gathered-interior linear stock expression.
+Shared numerical/key/control/copied-page charges stay explicit; the repeated
+numerical traffic is bounded by local interior volume, halo span and one
+cell-length endpoint slack. This replaces the overly strong per-row padding
+hypothesis for total local accounting. It is an allowance aggregation, not yet
+an executed full halo-key schedule or its global tensor composition.
+
+Guarded checks pass at 1885.6 MiB (local padding and key traffic) and 3126.7 MiB
+(complete gathered-envelope aggregation). Compatibility with manuscript-scale
+geometry and existing gathered fast time passes (14442 jobs, 3.4 GiB combined
+peak). Next instantiate selected widths and sum these local bills over the
+core/halo schedule, retaining shared supplier/setup multiplicities. Supplier
+integration, recovery/seams and tensor/R4 restoration remain open.
+S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327700 declarations at 3164.8 MiB.
