@@ -5,6 +5,18 @@ public import IntegerMultBounds.Machine.RunWithinFrame
 
 /-! A bounded halting contract extends over a stationary complementary bank. -/
 @[expose] public section
+namespace IntegerMultBounds.Machine
+
+/-- Head equality is preserved structurally before concrete bank sizes are instantiated. -/
+theorem Tapes.append_head_congr {s u a : ℕ} (v w : Tapes s a) (extra extra' : Tapes u a)
+    (h : v.head = w.head) (he : extra.head = extra'.head) :
+    (v.append extra).head = (w.append extra').head := by
+  change (Fin.addCases (m := s) (n := u) v.head extra.head : Fin (s+u) → ℤ) =
+    (Fin.addCases (m := s) (n := u) w.head extra'.head : Fin (s+u) → ℤ)
+  rw [h,he]
+
+end IntegerMultBounds.Machine
+
 namespace IntegerMultBounds.Machine.HoareWithin
 variable {t s q a B : ℕ} {M : Program t q a}
 

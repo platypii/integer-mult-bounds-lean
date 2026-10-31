@@ -16652,3 +16652,25 @@ and high-prefix wrappers still need bounded certificates before the stage-2
 leaf core and selected archive transpose have their full space proof. S4 remains
 incomplete; the remaining supplier/readiness, setup-reuse, tensor/layout and final
 audit obligations above are unchanged.
+
+### S4 checkpoint: high-prefix exchange has bounded shared-source execution
+
+`ArbitraryWidthHighExchangeWithin.realizes_within` composes actual control
+initialization, the restored counted slice calls, and control cleanup with one
+linear-volume reserve. Canonical runtime-prefix headers bound setup by `33*V`
+and recovery by `20*V`; the reserve coefficient is the repeated-slice coefficient
+plus 40, independent of prefix length. The existing complete execution theorem
+supplies the original runtime bound, avoiding duplicate cost substitution.
+
+`HoareWithin.placed_heads_at` lifts the complete bounded run through the existing
+physical placement and replacement laws, preserving arbitrary stationary
+complementary tapes. `ArbitraryWidthHighExchangeSharedWithin.realizes_within`
+applies it to the caller's physically shared source tape and restores the exact
+private bank. Structural appended-head equality is shared by the slice, repeat
+and high-exchange proofs before concrete tape counts are instantiated.
+
+Ordered high-block join/separation, padded and digit/width dispatch wrappers
+still need bounded certificates before the stage-2 leaf core and selected archive
+transpose have their full space proof. The other S4 supplier/readiness,
+setup-reuse, tensor/layout and final audit obligations remain open. S4 is
+incomplete; kappa is unchanged.

@@ -32,9 +32,7 @@ private theorem counted_head_congr {s a : ℕ} (v w : Tapes s a)
     (clock descriptor : ℤ → Fin (a+4)) (p r : ℤ) (h : v.head = w.head) :
     (CountedLoopReuseAlphabet.bank v clock descriptor p r).head =
       (CountedLoopReuseAlphabet.bank w clock descriptor p r).head := by
-  change (Fin.addCases (m := s) (n := 2) v.head _ : Fin (s+2) → ℤ) =
-    (Fin.addCases (m := s) (n := 2) w.head _ : Fin (s+2) → ℤ)
-  rw [h]
+  exact Tapes.append_head_congr v w _ _ h rfl
 
 theorem repeat_within (depth : ℕ) (v : Descriptor) (hs : Fin 6 → List Bool)
     (ts bs as : List Bool) (t b a : ℕ) (hp : v.Positive) (hv : RecursiveDimensionBank.Headers v hs)

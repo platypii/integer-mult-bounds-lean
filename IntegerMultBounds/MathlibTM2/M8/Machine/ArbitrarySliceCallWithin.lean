@@ -58,14 +58,6 @@ theorem root_slice (depth : ℕ) (v : Descriptor) (t b : ℕ) (hfit : t+b ≤ v.
   simpa only [RootExecutionWithin.budget,RootExecution.rootBudget,RootExecution.rootOverhead,
     ArbitraryWidthPieces.slice_volume prime v t b hfit] using hn
 
-omit [Net] in
-private theorem append_head_congr {s u a : ℕ} (v w : Tapes s a) (extra extra' : Tapes u a)
-    (h : v.head = w.head) (he : extra.head = extra'.head) :
-    (v.append extra).head = (w.append extra').head := by
-  change (Fin.addCases (m := s) (n := u) v.head extra.head : Fin (s+u) → ℤ) =
-    (Fin.addCases (m := s) (n := u) w.head extra'.head : Fin (s+u) → ℤ)
-  rw [h,he]
-
 private theorem raw_data_head_eq {v v' : Descriptor} (n : ℕ)
     (x : Fin (volume prime v) → ZMod 2) (y : Fin (volume prime v') → ZMod 2)
     (hs : Fin 6 → List Bool) (f : ℤ → Fin (prime+4)) (p : ℤ)
@@ -76,6 +68,14 @@ private theorem raw_data_head_eq {v v' : Descriptor} (n : ℕ)
   rw [CallReady.source_roles,CallReady.source_roles]
   rfl
 
+/-- The padded root bank's heads are independent of the source array. -/
+theorem rootBank_head_eq {v v' : Descriptor}
+    (x : Fin (volume prime v) → ZMod 2) (y : Fin (volume prime v') → ZMod 2)
+    (hs : Fin 6 → List Bool) (f : ℤ → Fin (prime+4)) (p : ℤ)
+    (node scalar : Tapes 1 prime) (st : Tapes 2 prime) :
+    (rootBank (data x) hs f p node scalar st).head = (rootBank (data y) hs f p node scalar st).head :=
+  raw_data_head_eq rootCount x y hs f p node scalar st
+
 /-- Payload changes leave every parked root and frame head fixed. -/
 theorem bank_offset_head_eq {v v' : Descriptor}
     (x : Fin (volume prime v) → ZMod 2) (y : Fin (volume prime v') → ZMod 2)
@@ -84,7 +84,7 @@ theorem bank_offset_head_eq {v v' : Descriptor}
     (frame : Tapes 1 prime) :
     (bank (data x) hs ts bs f p node scalar st frame).head =
       (bank (data y) hs us cs f p node scalar st frame).head := by
-  exact append_head_congr (rootBank (data x) hs f p node scalar st)
+  exact Tapes.append_head_congr (rootBank (data x) hs f p node scalar st)
     (rootBank (data y) hs f p node scalar st) (SliceHeaderPlacement.tail ts bs frame)
     (SliceHeaderPlacement.tail us cs frame)
     (raw_data_head_eq rootCount x y hs f p node scalar st) rfl
