@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3291 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3292 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18663,5 +18663,30 @@ combined peak). The scoped axiom audit passes for 333404 declarations at
 3349.4 MiB. The fixed-bank per-call lifecycle still needs table/master
 retirement and generation of the remaining supplier readiness headers before
 selected batch composition. Concrete analytic-family instantiation,
+publication, seam lifecycle and R4/tensor restoration remain open. S4 is
+incomplete; kappa is unchanged.
+
+### S4 checkpoint: supplier master generation restores its entire scalar table
+
+`restoredSupplierMasters_exec` composes physical master generation with clearing
+the 25 binary value registers. The existing table contract proves that its
+width word is preserved and its accumulator, auxiliary words and scratch are
+already blank. The resulting frame restores every right register outside the
+ten exported master ports to its original contents, including ordinary scalar
+sources, table storage and setup scratch. Input/output and left stacks are
+preserved.
+
+The retirement bill is exactly `50*Bcore+51`; clearing has native push bound
+zero and uses the generation trace's existing reserve. The proof charges actual
+word lengths from the computed table once, independently of endpoint values.
+This makes the same temporary scalar bank reusable between supplier calls;
+exported masters remain available for the supplier and must be retired after
+that use.
+
+The guarded file check passes at 3347.6 MiB. The target build passes (15395 jobs,
+3.5 GiB combined peak). The scoped axiom audit passes for 333470 declarations at
+3349.9 MiB. Remaining fixed-bank setup includes the geometry-width, radius,
+publication and core-count headers, then master retirement around the actual
+supplier call. Concrete selected analytic facts, exposure/consumer composition,
 publication, seam lifecycle and R4/tensor restoration remain open. S4 is
 incomplete; kappa is unchanged.
