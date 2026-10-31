@@ -46,6 +46,25 @@ theorem simIter_native (M : Program T Q A) :
   exact ⟨by simp only [mnNativePushBound,peekScan_push,Nat.zero_le],
     hlist _,by simp [mnNativePushBound,stopFlag,mnActPush]⟩
 
+/-- The foreign simulator itself has constant native push per host step. -/
+theorem foreign_native (M : Program T Q A) :
+    mnNativePushBound 2 (foreign (P := P) (U := U) M) := by
+  exact ⟨by simp [mnNativePushBound,mnActPush],simIter_native M⟩
+
+/-- For a component whose runtime is already linear in its allowed storage,
+the native bound gives a stock trace without a separate machine invariant. -/
+theorem foreign_exec_within_time (M : Program T Q A) (body : P → Pr P T Q A U)
+    {pre post : TapePred T A} {k : ℕ} (h : HoareTime M pre post k)
+    (v : HS T Q A U) (S : Stacks T A) (w : Tapes T A) (hw : pre w)
+    (hrep : RepT w S.L S.R) (depth : ℕ) :
+    ∃ v' S' w', post w' ∧ RepT w' S'.L S'.R ∧ v'.user = v.user ∧
+      S'.inp = S.inp ∧ S'.out = S.out ∧ ∃ m ≤ k*(T+5)+6,
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+2*(k*(T+5)+6))
+        depth (foreign M) (mk v S) m (mk v' S') := by
+  obtain ⟨v',S',w',hp,hr,hu,hi,ho,_,m,hm,he⟩ := foreign_exec body M h v S w hw hrep
+  exact ⟨v',S',w',hp,hr,hu,hi,ho,m,hm,
+    mn_native_exec_within he 2 (foreign_native M) depth _ (by omega)⟩
+
 /-- A boundary invariant supplies the stock bound. Only the fixed cost of one
 simulated transition is added, rather than the cost of the complete run. -/
 theorem sim_loop_within (M : Program T Q A) (body : P → Pr P T Q A U)
