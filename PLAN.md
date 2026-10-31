@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3250 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3251 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18207,3 +18207,31 @@ Guarded checks peak at 1385.7 MiB (loop rule), 1387.3 MiB (archive balance) and
 2092.3 MiB (concrete body stock). The guarded target build, including the runtime
 replica loop, passes (9694 jobs, 2.7 GiB combined peak).
 The scoped axiom audit passes for 43159 declarations (2082.0 MiB peak).
+
+### S4 checkpoint: the actual replica loop shares one scratch reserve
+
+`IterStockSpec` extends the existing counted-iteration language with a
+nondecreasing boundary-stock contract. `scanP_within_final_stock` proves the
+restoring runtime scan's complete trace bound from that contract and a native
+push certificate. The counter's pop/push and final restoration preserve stock;
+the proof charges one iteration reserve above final retained stock, independent
+of the number of iterations.
+
+`replicaCoreGatherLoop_exec_within` instantiates this language with the actual
+advancing grouped gather. It preserves the exact restored poststate, output
+order and time bound of `replicaCoreGatherLoop_exec` (now a wrapper). Its added
+stock is precisely the total retained class payload volume
+`B*classSize*haloLength*wordWidth` plus
+`3*(replicaCoreGatherStepCost+2)`. Scratch is not multiplied by replica count.
+The source archive and counter restoration occur within the same trace, and
+empty replica lists remain covered. No execution callback is an input premise.
+
+The earlier unused `StackLoopFinalStock.lean` is removed; restore from 414d35b2.
+The scan-specific rule supplies the needed reusable abstraction directly.
+
+Guarded checks peak at 1404.3 MiB (scan language) and 2137.3 MiB (actual loop).
+The guarded target build passes (9698 jobs, 2.7 GiB combined peak). Physical
+transpose into supplier order, selected supplier consumption/publication,
+selected sizing bounds and R4/tensor composition remain open. S4 remains
+incomplete; kappa is unchanged.
+The scoped axiom audit passes for 43179 declarations (2082.7 MiB peak).
