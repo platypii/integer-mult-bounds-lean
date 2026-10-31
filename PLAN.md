@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3211 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3212 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17522,3 +17522,25 @@ Next compose prepare/execute/release and connect actual generated numerical
 banks and source exposure, followed by full supplier batches, complete-key
 setup reuse, grouped publication and R4/tensor layout restoration. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: packed producers own a complete live-bank descriptor lifecycle
+
+`PackedProducerPlan.fromLiveBank_exec` composes actual descriptor emission and
+clock generation, the existing certified numerical producer and header-driven
+descriptor/clock retirement. Ordinary producer readiness is derived at the
+first boundary; cleanup readiness follows from the exact returned frame. The
+final state changes only the owned result word: the caller's original queue,
+blank clock and every non-result register are restored.
+
+The same trace retains rectangular output lengths and `ExactRowOutput` for the
+actual returned rows. Its runtime is the existing single-record producer bill
+plus `20*tape.length+7`; stock is initial stock plus `31*tape.length+9` and the
+existing producer workspace allowance. Descriptor costs are linear setup and
+release; the numerical kernel keeps its independent stock certificate.
+
+The guarded file check peaks at 3383.4 MiB and the guarded target build passes
+(15583 jobs, 3.5 GiB combined peak). Numerical source words remain caller-owned
+live inputs at this interface. Their actual generation/exposure, full supplier
+batch composition, complete-key setup reuse, grouped publication and R4/tensor
+layout restoration remain before S4 can close. S4 is incomplete; kappa is
+unchanged.
