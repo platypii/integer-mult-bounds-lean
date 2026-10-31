@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3207 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3209 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17474,3 +17474,28 @@ readiness and complete-key setup reuse to the selected grouped/publication
 consumer, then close R4/tensor layout and the final S4 audits. The existing
 grouped and published-tensor interfaces still have separate physical setup and
 integration obligations. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: live register banks generate physical packed descriptors
+
+`emitDescriptorPacket_exec` constructs the ordinary unary length header and
+copies the live borrowed word into its packet, preserving that source and
+restoring both scratch words. `emitDescriptorBank_exec` lifts this construction
+over an arbitrary source-port list in the loader's exact field order. Its
+structural native certificate and tape-length cost bound give
+`emitDescriptorBank_exec_within` a linear serialized-volume allowance.
+
+`PackedProducerPlan.prepareDescriptor_exec` consumes that language for a real
+packed producer: it serializes the live descriptor bank, generates the runtime
+one-record clock and derives ordinary `Ready [r]` with the exact caller suffix.
+No serialized descriptor queue or prepared clock is an input premise. The
+numerical words still have to be generated in the borrowed source bank; this
+closes their physical serialization/readiness bridge, not numerical generation
+or the full multi-record schedule. Source values are read by the program and
+are not embedded as literal output data.
+
+Guarded checks peak at 3039.0 MiB (generic emission) and 3378.9 MiB (producer
+preparation). The guarded target build passes (15580 jobs, 3.5 GiB combined
+peak). Next connect generated numerical banks and source exposure to this
+preparation interface and compose full supplier batches, complete-key setup
+reuse, grouped publication and R4/tensor layout restoration. S4 is incomplete;
+kappa is unchanged.
