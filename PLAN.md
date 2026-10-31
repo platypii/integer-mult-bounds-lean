@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3338 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3341 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19346,3 +19346,22 @@ The actual class execution still needs uniform producer/body budgets and
 ordinary placement/readiness/analytic instantiation. Publication, the shared
 full-line seam lifecycle and tensor/R4 restoration remain open. S4 remains
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: structurally price actual singleton producer cleanup
+
+`PackedProducerCostLedger` proves the singleton schedule time and workspace
+identities over arbitrary cost functions first, and instantiates the actual
+producer last. This avoids simplification and definitional comparison of the
+compiled cleanup program. The fixed cleanup allowance is monotone in its
+actual program push bound, without evaluating that program.
+`singleton_costs_le_ready` combines the identities with actual descriptor
+installation volume and the existing data-linear job workspace/persistent/
+output bounds. It leaves numerical replica time explicit and charges the shared
+numerical workspace once. Full numerical input readiness suffices here; the
+selected body composition generates that readiness from ordinary setup inputs.
+
+The guarded producer-ledger check passes at 3429.9 MiB. The combined selected
+budget/execution build passes (15906 jobs, 8.3 GiB combined peak); the scoped
+axiom audit passes for 337685 declarations at 3425.1 MiB. Default proof limits
+are unchanged. Selected whole-body and class integration follow in the next
+chunk. S4 remains incomplete; kappa is unchanged.
