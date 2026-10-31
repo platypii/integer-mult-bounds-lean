@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3421 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3429 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20370,3 +20370,52 @@ incomplete; kappa is unchanged.
 The compatibility build passes with the full interior/scalar stock chain and
 actual cached interior/preparation callers (14212 jobs, 2.7 GiB combined peak).
 The scoped axiom audit passes for 324977 declarations at 3129.4 MiB.
+
+### S4 checkpoint: generated normalization through closed input/interior stock
+
+`PhaseCellWeightNativeStock` proves structural native push certificates for
+weight routing and combined-precision readiness; counter retirement has push
+bound zero. The generic `one_push_le_cmulBlock` derives the pointwise body's
+static bound from the scalar-block bound, so both numerical streams reuse the
+same dimension-independent constant rather than adding another caller budget.
+
+`runWeights_exec_within`, `applyWeights_exec_within` and
+`closedWeights_exec_within` now cover the actual aligned-weight lifecycle:
+generate all counters, route operand/table copies, execute the shared-reserve
+pointwise stream, publish and retire every owned counter. Original time,
+borrowed table suffix, exact physical frame and decoded normalized-product
+error guarantees persist. Explicit list-index witnesses keep error-statement
+elaboration under the default heartbeat limit.
+
+`closedWeightedInput_exec_within` discharges reciprocal-word reality/range and
+returns the legal S1 operand disk and input-stage error bound.
+`inputStage_exec_within` installs these computed rows and retires the owned
+weight table/normalization descriptor. `inputInterior_exec_within` composes the
+actual raw-input producer with the certified four-product/merge/scalar chain.
+`inputInteriorFromPrecision_exec_within` generates the normalization header
+from ordinary precision before that chain runs, and
+`closedInputInterior_exec_within` retires the final scalar counters. The initial
+bank contains raw RHS words and normalization zero, not prepared target rows,
+readiness or an execution callback. All original time/error/frame guarantees
+are retained; numerical reserves and shared preparation are independent of M,
+and repeated charges are linear encoded/native traffic. Default proof limits
+remain in force. Output weighting/publication is still separate.
+
+Removed the superseded, unused kernel-only `PhaseCellWeightedInputStock` adapter;
+restore it from `46615dc8` if a future caller needs that narrower interface.
+
+Guarded checks pass at 2034.4 MiB (native stages), 2063.5 MiB (weight routing),
+2048.0 MiB (readiness/application), 2039.0 MiB (counter retirement),
+2045.0 MiB (reciprocal input), 2061.3 MiB (actual row installation),
+2063.7 MiB (input/interior composition), 2064.8 MiB (normalization generation)
+and 4133.6 MiB (complete closing proof, about 4.04 GiB). The compatibility build
+with actual cached interior/preparation callers passes (14220 jobs, 4.8 GiB
+combined peak). The closing module remains slightly over 4 GiB despite
+factoring register freshness and reusing final correctness through execution
+uniqueness; no limits were raised.
+
+Next certify output weighting/header generation and publication, compose the
+full cell arithmetic trace, and lift to the actual cached interior boundary.
+The selected geometry/amortization, boundary/recovery/publication and tensor/
+R4 restoration remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 325012 declarations at 3130.8 MiB.
