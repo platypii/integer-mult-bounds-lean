@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3253 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3257 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18263,3 +18263,30 @@ composition remain open. S4 remains incomplete; kappa is unchanged.
 Guarded checks peak at 3051.2 MiB (inverse program) and 2075.7 MiB (row ABI).
 The guarded target build passes (13897 jobs, 4.1 GiB combined peak).
 The scoped axiom audit passes for 320497 declarations (3078.5 MiB peak).
+
+### S4 checkpoint: inverse archive transpose has a complete workspace trace
+
+`generatedChunkPlanes_inverse_exec_within` instantiates the existing arbitrary
+stage-list stock theorem on the reversed chunk schedule. The existing inverse
+word identity discharges its exact output; no concrete transpose cases or new
+routing implementation are introduced. The reserve remains the maximum stage
+reserve of that schedule.
+
+`packedGeneratedChunkTile_inverse_exec_within` composes the same bounded route
+with the existing packed codec certificate. The coefficient wrapper preserves
+that trace for Gaussian row data. `ArchiveTilePlan.inverse_exec_within` then
+adds actual payload-counter generation and cleanup under ordinary bank
+readiness, with the same exact restored result and time bill as `inverse_exec`.
+Its `inverseStockAllowance` counts counter setup, linear codec work, dimension
+masters and the shared router reserve. It introduces no execution callback as
+a final caller premise.
+
+This closes the inverse wrapper's uniform-workspace gap. Physical per-replica
+padding to router capacity, composition with the gathered source, selected
+supplier consumption/publication, selected sizing and R4/tensor composition
+remain open. S4 remains incomplete; kappa is unchanged.
+
+Guarded checks peak at 2948.6 MiB (inverse planes), 2977.7 MiB (packed inverse),
+2955.4 MiB (coefficient inverse) and 3072.5 MiB (plan lifecycle). The guarded
+target build passes (8702 jobs, 3.3 GiB combined peak).
+The scoped axiom audit passes for 318070 declarations (3067.5 MiB peak).
