@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3503 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3504 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21380,3 +21380,30 @@ remain open. S4 remains incomplete; kappa is unchanged.
 Compatibility with the retained-header installer, released-class resource bounds
 and global core local stock passes (15061 jobs, 25.8 GiB combined peak). The scoped
 axiom audit passes for 331700 declarations at 3268.8 MiB.
+
+### S4 checkpoint: a repeatable released-bank length-class operation
+
+`PhaseCellRepeatableGatheredReplicaClass` composes the actual retained-metadata
+reload with generated numerical setup/solve, independent accumulation and key
+retirement. Its entry and exit low numerical banks are both exactly
+`releasedCellBank [] borrowed tail ...`; cache suffix 117 survives and roles
+118--120 are empty. The entire gather bank, original packed RHS, input/output
+streams and accumulated accuracy on earlier disjoint cores survive. New class
+accuracy and the bounded encoded output are certified for the same execution.
+
+The composition adds the existing reload bill to released-class time and twice
+that native copying bill to workspace. It reuses both execution certificates
+and the additive stock composition rule; no numerical program is expanded and
+no new execution witness is assumed. High solver registers are preserved using
+the structural range of `Fin 117`, independently of the concrete header list.
+The theorem removes unused external input/output parameters in favor of the
+actual streams in the initial bank.
+
+Guarded checking passes at 2151.4 MiB. Compatibility with released-class resource
+bounds and global core local stock passes (14528 jobs, 2.8 GiB combined peak).
+The scoped axiom audit passes for 331712 declarations at 3269.1 MiB.
+Next generate the local/ambient origin-page pair from the actual local halo
+controller and connect class traversal. The current class theorem still takes
+retained masters and those pages as input; it does not close their construction
+or the all-class loop. Shared coupling/recovery, global scheduling, tensor/R4
+restoration and selected acceptance remain open. S4 is incomplete; kappa is unchanged.
