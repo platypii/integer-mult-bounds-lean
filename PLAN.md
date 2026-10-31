@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3457 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3458 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20789,3 +20789,36 @@ supplier/setup multiplicities, then connect the selected global schedule.
 Supplier execution integration, recovery/seams and tensor/R4 restoration remain
 open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327707 declarations at 3165.0 MiB.
+
+### S4 checkpoint: generated core halos have linear global local traffic
+
+`PhaseCellCoreLocalStock.haloVertices_card_eq` identifies descriptor interval
+span with halo cardinality when its upper endpoint fits the source line.
+`coreHaloEndpoints_span_volume_le` therefore transfers the existing nine-line
+halo overlap bound to the actual generated endpoint descriptors.
+
+`haloLocalNativeVolume` names the local padding/traffic envelope already used
+by the grouped numerical stock comparison. `coreHalo_localNativeVolume_le`
+proves its sum over every generated core, including seam fallbacks, is at most
+`163*s*w` when the core absorbs one cell-length endpoint slack.
+`coreHalo_groupedTraffic_le` lifts the bound to all actual halo length classes
+and RHS replicas: repeated traffic is at most `163*F*N*s*w` for the fixed program
+factor F. `selectedCoreHalo_localNativeVolume_le` discharges the width/guard/
+cell-slack hypotheses for the manuscript-scale p^8 candidate on selected axes.
+
+The key audit confirms that regular endpoint keys are distinct, even for equal
+movement lengths (`coreSetupGroup_eq_singleton`). Whole halo setup cannot be
+hoisted across neighboring windows on the basis of length equality. Existing
+distinct-key setup bounds must be paired with an executed scheduler realizing
+that multiplicity. The new theorem bounds repeated local traffic separately;
+it does not erase or multiply-share these setup charges.
+
+The complete guarded module check passes at 3152.4 MiB. Next combine selected
+global traffic with the distinct-key setup ledger and the actual supplier/key
+schedule. Supplier execution integration, recovery/seams and tensor/R4
+restoration remain open. S4 is incomplete; kappa is unchanged.
+The compatibility build with selected local stock and the distinct-key setup
+bounds passes (15276 jobs, 34.2 GiB combined peak, 9.5 minutes). The larger
+build refreshed stale boundary/family/setup dependencies; the memory guard and
+default proof limits remained active.
+The scoped axiom audit passes for 332583 declarations at 3300.7 MiB.
