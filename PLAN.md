@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3304 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3306 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18851,3 +18851,28 @@ origin controller and iterate this fixed body, including one shared batch-count
 counter. Concrete selected analytic facts, whole exposure/publication,
 seam lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa is
 unchanged.
+
+### S4 checkpoint: a fixed origin reader generates changing supplier endpoints
+
+`readSupplierEndpoints_exec_within` consumes one binary origin word from the
+ordered queue, converts it into a unary left endpoint, forms the right endpoint
+by copying the left endpoint and shared halo length, and erases the temporary
+binary word. Source width and halo counters restore, as do all conversion
+scratch registers. Its endpoint changes only the origin queue and two endpoint
+headers. The complete time bill is `19*wordWidth+10*origin+4*haloLength+22`, with
+one structural native workspace bound covering the entire trace.
+
+`readSupplierJobEndpoints_exec` installs those words at the actual supplier's
+parameter ports 6 and 7. The existing job interval-order fact identifies the
+second generated value with `job.b`; the queued word is `job.a`. This connects
+the existing generated ordered-origin representation to the eight ordinary
+scalar inputs accepted by numerical-header setup, without preinstalled unary
+endpoint words or a job-dependent program.
+
+Guarded checks peak at 1954.3 MiB (generic fixed reader) and 3299.3 MiB (actual
+job ports). The target build passes (15176 jobs, 3.5 GiB combined peak). The
+scoped axiom audit passes for 332325 declarations at 3321.2 MiB. Next compose
+reader, fixed routed supplier and endpoint retirement, then iterate over the
+computed origin queue with one shared batch counter and scratch reserve.
+Concrete selected analytic facts, whole exposure/publication, seam lifecycle
+and R4/tensor restoration remain open. S4 is incomplete; kappa is unchanged.
