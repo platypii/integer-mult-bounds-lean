@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3182 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3184 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17181,3 +17181,31 @@ placed-register marking/header shifts, normalization and unmarking, then actual
 archive-stock composition. Generated S4 supplier readiness, complete-key setup
 reuse, tensor/layout composition and final audits remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: physical placement preserves selected swap host stock
+
+`SwapMachineStock.runs_within` exposes the actual alphabet/state-adapted bounded
+contract separately from its host execution. Its fixed volume reserve and
+centered intervals are reusable before simulation; the existing direct foreign
+stock theorem now consumes that contract.
+
+`foreign_exec_frame_within` joins the existing represented endpoint, idle-tape
+frame and per-tape length estimates with the bounded stock trace. `Exec.unique`
+identifies both certificates with the same actual simulation and step count,
+so the established endpoint/frame proof is reused.
+
+`PlacedSwapMachineStock.exec_within` places the selected swap on an arbitrary
+injective physical register family. Initial active-bank equality and zero/one
+head bounds supply the placed contract. The resulting actual foreign execution
+retains exact represented transpose, the original simulation time allowance,
+idle-register frame and stock at most initial stock plus host tape count times
+the fixed linear binary-volume allowance. Initial spectator storage is counted
+once. No intermediate execution or stock premise is assumed.
+
+Guarded checks peak at 1390.3 MiB (frame transfer), 2568.5 MiB (direct swap
+regression) and 2563.1 MiB (placed swap); the guarded target build passes
+(6767 jobs). Next bound marking/header shifting and normalization/unmarking,
+then join their actual traces with the existing complete swap endpoint by
+execution uniqueness. Archive-stock composition, generated S4 supplier
+readiness, complete-key setup reuse, tensor/layout composition and final audits
+remain open. S4 is incomplete; kappa is unchanged.
