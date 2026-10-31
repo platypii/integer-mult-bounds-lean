@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3209 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3211 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17499,3 +17499,26 @@ peak). Next connect generated numerical banks and source exposure to this
 preparation interface and compose full supplier batches, complete-key setup
 reuse, grouped publication and R4/tensor layout restoration. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: generated descriptor prefixes have physical retirement
+
+`retireDescriptorPacket_exec` reads the actual unary length header, removes its
+payload and clears the temporary count. `retireDescriptorBank_exec` traverses
+an arbitrary field bank using only its fixed field count; payload lengths are
+read from the queue, not supplied as prepared counters. The complete caller
+suffix is preserved. Generic native certificates cover both retirement levels.
+
+`PackedProducerPlan.releaseDescriptor_exec` consumes this language after the
+producer restores its generated queue: it retires all 325 descriptor fields,
+clears the generated one-record clock and returns the exact following queue.
+Its linear runtime and intermediate stock allowances refer to that same actual
+execution. This supplies the cleanup half needed by the live-bank preparation
+bridge; numerical-bank generation and composition of the full supplier
+lifecycle still remain.
+
+Guarded checks peak at 3037.3 MiB (retirement language) and 3374.6 MiB (producer
+release). The guarded target build passes (15582 jobs, 3.5 GiB combined peak).
+Next compose prepare/execute/release and connect actual generated numerical
+banks and source exposure, followed by full supplier batches, complete-key
+setup reuse, grouped publication and R4/tensor layout restoration. S4 is
+incomplete; kappa is unchanged.
