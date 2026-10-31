@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3365 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3368 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19700,3 +19700,36 @@ boundary/residual/recovery and publication, release the retained cache, and
 prove the full driver stock/layout contracts. This is the executed interior
 replacement, not completion of the proper-core fast driver. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: one generated sweep gathers all cells from packed RHS replicas
+
+`packedReplicaStream_window` identifies a window of consecutive packed halos
+with its original ambient-coordinate RHS rows. `packedReplicaSymbolOrigins`
+orders all replica/cell pairs lexicographically, with proved fitting windows.
+`packedReplicaRows_eq_batch` identifies the resulting stream with the indexed
+replica-major numerical ABI. These are structural list/slice arguments; no
+ambient matrix is relabeled with a shorter period.
+
+`packedReplicaGather_exec` reuses the existing restoring ordered sweep once
+for all replicas and cell offsets. `generatedPackedReplicaGather_exec` precedes
+it with the existing generic binary-origin control generator, then retires the
+created sweep controls. Its fixed program starts from retained binary physical
+coordinates, a generated count and word width, and an exact packed source bank.
+Only the gathered destination prefix changes: source bank, coordinate packets,
+count, headers, all scratch, left stacks and streams restore. It scans packed
+volume N*span*w, rather than paying the ambient period per local window.
+
+The exact ledger separates `(N*B)*(3*tblC V V+29*V+14*L*w+57)` from
+`22*N*span*w` and scalar/row setup. The binary decoder term is explicitly paid;
+this is not yet its selected fast absorption. A final driver still must generate
+physical coordinate packets/counts, obtain the exact packed source prefix,
+bridge physical gather coordinates to the retained ambient numerical packets,
+and compose gathering with the prepared numerical batch. Repeating a full
+ambient scan per cell is not an admissible substitute. Complete boundary and
+recovery batching, publication, stock and tensor/R4 restoration remain open.
+
+Guarded checks pass at 2063.6 MiB (packed replica data/order), 2046.0 MiB
+(restoring sweep) and 2091.8 MiB (generated-control lifecycle). The combined
+build with the prepared numerical batch and existing exposed-core driver passes
+(15878 jobs, 2.8 GiB combined peak); the scoped axiom audit passes. S4 remains
+incomplete; kappa is unchanged.
