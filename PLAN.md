@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3449 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3450 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20630,3 +20630,37 @@ execution before building further lifecycle wrappers. Numerical key/page
 supplier integration, recovery/seams and tensor/R4 restoration remain open.
 S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 325100 declarations at 3134.6 MiB.
+
+### S4 checkpoint: manuscript-scale core geometry and guard amortization
+
+The quantitative review distinguishes numerical cells (already bounded by
+`4*p+1`) from the much larger exposure cores. The interior fast-cost hypothesis
+`2^l = O(p)` concerns the former, so it does not forbid the manuscript's p^8
+exposure cores. Existing shared setup bounds are amortized against selected
+ambient axes; they must not be silently charged anew for each core.
+
+`PhaseCellAmortizedCoreGeometry` keeps geometry symbolic in
+`selectedPolynomialCoreGeometry`: any positive polynomially bounded core wider
+than its guard eventually fits the selected source axes, and every generated
+halo length has the required separated-boundary room. The concrete candidate
+`amortizedCoreWidth ct p = (816*(ct+5)+18)*p^8` dominates the existing p^3 locality
+guard without changing its accuracy depth. `selectedAmortizedCoreGeometry`
+instantiates the generic result. `selectedAmortizedCoreHalo` reuses structural
+window lemmas to retain total halo volume at most nine line-volumes and at most
+three seam fallbacks.
+
+`coreSlots_le_two` and `coreGuardTraffic_amortized` quantify the missing gain:
+if width ≥ p^8 and radius ≤ H*p^3, then
+`coreCount * radius * p^5 ≤ 2*H*s`. This is a five-power guard-traffic saving,
+independent of line length, proved without enumerating windows.
+
+The geometry module passes its guarded check at 3143.4 MiB. Refreshing stale
+selected-geometry dependencies required a guarded build (14268 jobs, 30.1 GiB
+combined peak, below the 80 GiB guard); the final compatibility build with the
+actual gathered stock/fast callers passes (14433 jobs, 3.4 GiB combined peak).
+The candidate has not yet replaced the current selected machine's equal
+core/guard geometry. The complete cost/stock inequality, numerical key/page
+supplier integration, recovery/seams and tensor/R4 restoration remain open.
+Next connect these geometry bounds to the actual complete interior ledger,
+then select the concrete global schedule. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327637 declarations at 3163.3 MiB.
