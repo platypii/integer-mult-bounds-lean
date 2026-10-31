@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3349 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3354 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19510,4 +19510,21 @@ lifecycle to selected S3 fast costs and connect its retained output to physical
 seam cropping/publication and tensor/R4 layout restoration. The proper-core
 replica ambient-setup issue recorded above remains open; this checkpoint does
 not prove its fast bound or justify replacing the complete proper branch.
+S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: structural full-period packet and lifecycle accounting
+
+`mn_replace_bank_size` balances the old and new volumes of an arbitrary
+injectively placed bank; blank-bank filling is its specialization. The actual
+full-period input installer's stock bound now bounds the generated descriptor
+volume, paying its borrowed width seed once without enumerating 303 ports.
+`fullLineLifecycleCosts_le` bounds the complete restoring program's bills by
+the native S3 producer plus linear payload/replica traffic and one scalar setup
+charge. Preparation, descriptor retirement and bank cleanup are included.
+
+Guarded checks pass at 1384.4 MiB (bank replacement), 3311.9 MiB (packet
+volume) and 3376.3 MiB (lifecycle accounting). The combined selected/full-period
+and exposed-core build passes (15900 jobs, 3.5 GiB combined peak); the scoped
+axiom audit passes. Selected matching follows in the next chunk. The proper-core
+repeated ambient setup, publication and tensor/R4 restoration remain open.
 S4 remains incomplete; kappa is unchanged.
