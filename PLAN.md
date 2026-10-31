@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3361 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3365 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19647,4 +19647,27 @@ Guarded checks pass at 1981.5 MiB (dimension-based installation) and 2089.2 MiB
 (copied replica cache). The combined build with replica fast pricing and the
 existing exposed-core driver passes (15870 jobs, 2.8 GiB combined peak). The
 scoped audit passes for 337500 declarations at 3420.5 MiB. S4 is incomplete;
+kappa is unchanged.
+
+### S4 checkpoint: copied-page dimensions become the actual cached solver bank
+
+`prepareReplicaSolverDimensions_exec` generates N*B, restores the cell length
+L from its retained master, and retires the page-only cell count and runtime
+width. Its fixed program changes only owned dimensions and clears its product
+scratch; the explicit bill is linear in N*B, N, B*L, L, B and w.
+`prepareReplicaInteriorCache_exec` composes actual cache installation with this
+transition. Starting from `replicaInteriorCacheInputBank` (one B-cell numerical
+page, N replica-major RHS streams and ordinary unary metadata), it returns the
+exact existing `batchInputBank` for N*B cells, plus the installed cache and
+replay clock. The bank equality is structural in register placement, not an
+enumeration of numerical data. Cache suffix and the declared stream suffixes
+survive. This closes the mismatch between the copier's N pages of B*L rows
+and the numerical program's N*B cells of L rows.
+
+Guarded checks pass at 1950.0 MiB (dimension transition) and 2109.9 MiB (complete
+cache-to-solver preparation). The combined build with the numerical consumer,
+fast pricing and existing exposed-core driver passes (15875 jobs, 3.4 GiB
+combined peak). The numerical execution/cost composition follows in the next
+chunk. Raw multi-replica gathering, proper-core boundary/recovery integration,
+publication and tensor/R4 restoration remain open. S4 is incomplete;
 kappa is unchanged.
