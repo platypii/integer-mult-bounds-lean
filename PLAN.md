@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3280 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3281 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18539,3 +18539,28 @@ The selected mathematical job constructor and its parameter/precision bounds
 are still open, as are physical selected dimension setup, full exposure/consumer
 composition, publication, seam lifecycle and R4/tensor restoration. S4 remains
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: proper-core mathematical jobs have a derived constructor
+
+`PackedNormalizedJob.ofCore` constructs a proper-core job from existing packed
+factory bounds, a common packet-width allowance and the RHS norm bound. It
+chooses execution precision from the existing boundary sizing formula and
+`Bcore` from `inverseCallerWordWidth`; existing scalar-fit lemmas discharge all
+eight retained parameter fits and inverse-room fields. Coefficient word fits
+follow uniformly from the analytic coefficient bounds and execution precision.
+The reference solution is constructed using the existing dominant-system
+solvability theorem, rather than supplied as another caller premise.
+
+The packed interval separation itself rules out the full-period endpoint pair.
+Generated-window geometry then proves both endpoints, both margin fits and the
+locality halo identity. `ofCore_fields` exposes core width/index, radius, word
+width, replica list and locality target directly; the constructor avoids proof
+elimination around the record so these data fields reduce definitionally.
+No execution readiness or callbacks enter the mathematical constructor.
+
+The guarded file check passes at 3354.9 MiB. The target build passes (15369 jobs,
+3.5 GiB combined peak). The scoped axiom audit passes for 333209 declarations at
+3345.5 MiB. Selected packed factory bounds and the common packet-width bound
+still need to be derived for the concrete selected family, followed by physical
+header setup, exposure/consumer composition, publication, seam lifecycle and
+R4/tensor restoration. S4 remains incomplete; kappa is unchanged.
