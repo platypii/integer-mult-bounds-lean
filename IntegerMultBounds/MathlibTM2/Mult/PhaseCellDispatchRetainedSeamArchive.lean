@@ -1,10 +1,10 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedSeamArchive
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedSeamCrops
 
-/-! Execute one full-line descriptor batch and a certified seam crop.
-The returned full output and its certificate remain available for subsequent
-crops, while the replica clock and every crop control are restored. -/
+/-! Execute one full-line descriptor batch and a structural seam crop schedule.
+Numerical setup is paid once. The output, certificate and controls are retained.
+The former single-crop interface is available in commit a5e21ec8. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Stack
@@ -17,18 +17,20 @@ variable {T Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T Q A U}
 
 open IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 
-theorem dispatchRetainedSeamArchive_exec
+theorem dispatchRetainedSeamCrops_exec
     (work : Fin 303 → Fin T) (hwork : Function.Injective work)
     (src saved count tmp spare result clock savedClock : Fin T)
     (hreg : [src,saved,count,tmp,spare,result,clock,savedClock].Nodup)
     (hsep : ∀ i, work i ∉ [src,saved,count,tmp,spare,result,clock,savedClock])
-    (archiveClock archiveClockSave sourceSave skip rowSymbols dst savedSkip savedRow cropTmp rows wordWidth retireCount trash retireTmp : Fin T)
-    (harchive : [archiveClock,archiveClockSave,sourceSave,skip,rowSymbols,result,dst,savedSkip,savedRow,cropTmp,rows,wordWidth,retireCount,trash,retireTmp].Nodup)
+    (archiveClock archiveClockSave sourceSave dst savedSkip savedRow cropTmp rows wordWidth retireCount trash retireTmp : Fin T)
+    (skip rowSymbols : ℕ → Fin T) (ks : List ℕ)
+    (hcommon : [archiveClock,archiveClockSave,sourceSave,result,dst,savedSkip,savedRow,cropTmp,rows,wordWidth,retireCount,trash,retireTmp].Nodup)
+    (harchive : ∀ k ∈ ks, [archiveClock,archiveClockSave,sourceSave,skip k,rowSymbols k,result,dst,savedSkip,savedRow,cropTmp,rows,wordWidth,retireCount,trash,retireTmp].Nodup)
     (recovery : Bool) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     {p l t : ℕ} [NeZero t] {d : ℝ} (hp : 4 ≤ p) (hst : s < t)
     (hθ : 1/(4*(p : ℝ)) ≤ (t : ℝ)/s-1) (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1))
     (r : FamilyDispatchInput s A) (hr : GridDispatchReady p l t d r) (htarget : p+2 ≤ r.target)
-    (coreWidth k : ℕ) (hstart : coreStart coreWidth k ≤ s)
+    (coreWidth : ℕ) (hstart : ∀ k ∈ ks, coreStart coreWidth k ≤ s)
     (ha : r.a = 0) (hb : r.b = s)
     (X Y : (ZMod s → GaussianInt) → ZMod s → ℝ)
     (hX : ∀ F ∈ r.inputs, Solves (realMatrix s t p r.u) Finset.univ (X F)
@@ -43,29 +45,22 @@ theorem dispatchRetainedSeamArchive_exec
     (hsource : S.R src = descriptorScheduleTape work FamilyDispatchInput.words [r]++rest)
     (hclock : (S.R clock).length = 1) (hsaved : S.R saved = []) (hsavedClock : S.R savedClock = []) (hresult : S.R result = [])
     (harchiveClock : (S.R archiveClock).length = r.inputs.length)
-    (hskip : (S.R skip).length = coreStart coreWidth k*(2*p+13))
-    (hrowSymbols : (S.R rowSymbols).length = coreLength s coreWidth k*(2*p+13))
+    (hskip : ∀ k ∈ ks, (S.R (skip k)).length = coreStart coreWidth k*(2*p+13))
+    (hrowSymbols : ∀ k ∈ ks, (S.R (rowSymbols k)).length = coreLength s coreWidth k*(2*p+13))
     (hrows : (S.R rows).length = s) (hwordWidth : (S.R wordWidth).length = 2*p+13)
     (hclean : ∀ i ∈ [archiveClockSave,sourceSave,savedSkip,savedRow,cropTmp,retireCount,trash,retireTmp], S.R i = []) :
-    ∃ output : List (Fin (A+4)), ∃ coreRows : List (List GaussianInt), ∃ v' F n, v'.user = v.user ∧
+    ∃ output : List (Fin (A+4)), ∃ coreRows : List (List (List GaussianInt)), ∃ v' F n, v'.user = v.user ∧
       n ≤ r.gridCost p l t work+2*(descriptorScheduleTape work FamilyDispatchInput.words [r]).length+19+
-        (80*(r.inputs.length*s*(2*p+13))+14) ∧
+        (ks.length*(80*(r.inputs.length*s*(2*p+13))+14)+1) ∧
       Exec body (.seq (gridFamilyDispatch work src saved count tmp spare result clock savedClock recovery hR hQ)
-        (retainedSeamArchive archiveClock archiveClockSave sourceSave skip rowSymbols result dst savedSkip savedRow cropTmp rows wordWidth retireCount trash retireTmp))
+        (retainedSeamCrops archiveClock archiveClockSave sourceSave result dst savedSkip savedRow cropTmp rows wordWidth retireCount trash retireTmp skip rowSymbols ks))
         (mk v S) n (mk v' F) ∧
       F.R result = output ∧
       ExactCoreProduced p s (fun _ => 0) (fun _ => J) r output ∧
-      F.R dst = cstream A (2*p+13) coreRows.flatten++S.R dst ∧
+      F.R dst = (coreRows.reverse.map (fun rs => cstream A (2*p+13) rs.flatten)).flatten++S.R dst ∧
       F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
       (∀ i, i ≠ result → i ≠ dst → F.R i = S.R i) ∧
-      (∀ row ∈ coreRows, row.length = coreLength s coreWidth k) ∧
-      List.Forall₂ (fun input row =>
-        let out := packedIntervalRead p (2*p+13) (coreStart coreWidth k)
-          (cstream A (2*p+13) row)
-        (∀ i ∈ ownedCore s coreWidth k, ‖out i‖ ≤ 1) ∧
-        ErrorOn (ownedCore s coreWidth k) out
-          ((((2 : ℂ)^inverseNormalizationShift p)⁻¹ • J) ((1/2 : ℂ) • fun i => value p (input i)))
-          (3/(2 : ℝ)^p)) r.inputs.reverse coreRows := by
+      List.Forall₂ (SeamCropRows p coreWidth r (fun _ => J)) ks coreRows := by
   obtain ⟨v₁,n₁,outputs,hu₁,hn₁,he₁,ha,_⟩ := gridFamilyDispatch_exact_core_exec_trace (body := body)
     work hwork src saved count tmp spare result clock savedClock hreg hsep recovery hR hQ hA
     hp hst hθ hgap [r] (by simpa using hr) (fun _ => X) (fun _ => Y)
@@ -93,15 +88,23 @@ theorem dispatchRetainedSeamArchive_exec
   have hn₁' : n₁ ≤ r.gridCost p l t work+2*(descriptorScheduleTape work FamilyDispatchInput.words [r]).length+19 := by
     simp only [List.map_cons,List.map_nil,List.sum_cons,List.sum_nil,List.length_singleton] at hn₁
     omega
-  have hr' := harchive
+  have hr' := hcommon
   regs_ne hr'
   have hstable (i : Fin T) (hi : i ≠ result) : S₁.R i = S.R i := by simp [S₁,hi]
-  obtain ⟨coreRows,v₂,F,n₂,hu₂,hn₂,he₂,hd,hi,ho,hl,hframe,hrowLength,haccuracy⟩ := retainedSeamArchive_exec (body := body)
-    archiveClock archiveClockSave sourceSave skip rowSymbols result dst savedSkip savedRow cropTmp rows wordWidth retireCount trash retireTmp harchive
-    v₁ S₁ p coreWidth k r (fun _ => J) output hproduced hstart (by simp [S₁,hresult])
+  obtain ⟨coreRows,v₂,F,n₂,hu₂,hn₂,he₂,hd,hi,ho,hl,hframe,haccuracy⟩ := retainedSeamCrops_exec (body := body)
+    archiveClock archiveClockSave sourceSave result dst savedSkip savedRow cropTmp rows wordWidth retireCount trash retireTmp skip rowSymbols ks harchive
+    p coreWidth r (fun _ => J) output hproduced hstart v₁ S₁ (by simp [S₁,hresult])
     (by rw [hstable _ ‹archiveClock ≠ result›]; exact harchiveClock)
-    (by rw [hstable _ ‹skip ≠ result›]; exact hskip)
-    (by rw [hstable _ ‹rowSymbols ≠ result›]; exact hrowSymbols)
+    (by
+      intro k hk
+      have h := harchive k hk
+      regs_ne h
+      rw [hstable _ ‹skip k ≠ result›]; exact hskip k hk)
+    (by
+      intro k hk
+      have h := harchive k hk
+      regs_ne h
+      rw [hstable _ ‹rowSymbols k ≠ result›]; exact hrowSymbols k hk)
     (by rw [hstable _ ‹result ≠ rows›.symm]; exact hrows)
     (by rw [hstable _ ‹result ≠ wordWidth›.symm]; exact hwordWidth)
     (by
@@ -112,14 +115,7 @@ theorem dispatchRetainedSeamArchive_exec
         all_goals first | assumption | (apply Ne.symm; assumption)
       rw [hstable i hne]
       exact hclean i hi)
-  have hn₂' : n₂ ≤ 80*(r.inputs.length*s*(2*p+13))+14 := by
-    rw [ExactCoreProduced.full_output_length hproduced] at hn₂
-    exact hn₂.trans (retainedSeamArchiveCost_linear r.inputs.length s
-      (coreStart coreWidth k) (coreLength s coreWidth k) (2*p+13)
-      (Nat.pos_of_ne_zero (NeZero.ne s)) (by omega) hstart (by
-        unfold coreLength
-        exact (Nat.min_le_right _ _).trans (Nat.sub_le _ _)))
-  refine ⟨output,coreRows,v₂,F,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁' hn₂',Exec.seq he₁' he₂,?_,hproduced,?_,hi,ho,hl,?_,hrowLength,haccuracy⟩
+  refine ⟨output,coreRows,v₂,F,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁' hn₂,Exec.seq he₁' he₂,?_,hproduced,?_,hi,ho,hl,?_,haccuracy⟩
   · rw [hframe result ‹result ≠ dst›]
     simp [S₁,hresult]
   · simpa only [hstable _ ‹result ≠ dst›.symm] using hd
