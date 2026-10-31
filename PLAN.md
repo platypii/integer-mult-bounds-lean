@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3318 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3320 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19091,3 +19091,31 @@ loop, and retire class controls. Concrete readiness placement and uniform
 selected job costs, selected analytic/class separation facts, publication,
 seam lifecycle and R4/tensor restoration remain open. S4 remains incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: fixed class preparation generates all three runtime controls
+
+`placedCoreOrigins_exec_within` places the existing restoring origin/count pass
+at an arbitrary injective caller-bank embedding. The proof reuses the generic
+stock-preserving execution embedding and exact two-write transport, so all
+spectator storage remains paid once by the surrounding initial state. Only
+the placed origin queue and loop count change; the time and workspace bills
+are unchanged by placement.
+
+`prepareCoreClass_exec_within` composes placed origin/count generation with the
+actual supplier payload-counter generator. One fixed program establishes all
+three class controls from retained binary geometry and ordinary class headers,
+with an exact three-register endpoint. It explicitly transfers class readiness
+through origin generation and restores all input headers, source geometry,
+temporary banks and scratch. Initial payload and loop counters are blank;
+no prepared counter values or control-generation executions are premises.
+Time adds the two existing setup bills; workspace adds their three-times and
+two-times native reserves once per class.
+
+Guarded checks peak at 2070.8 MiB (placed origins) and 3381.1 MiB (complete class
+preparation). The combined target build passes (15683 jobs, 3.5 GiB combined
+peak). The scoped axiom audit passes for 336594 declarations at 3395.1 MiB.
+Next compose this preparation with the actual supplier traversal and
+retire both restored counters, then attach real payload exposure. Concrete
+readiness placement and uniform selected job costs, selected analytic/class
+separation facts, publication, seam lifecycle and R4/tensor restoration remain
+open. S4 remains incomplete; kappa is unchanged.
