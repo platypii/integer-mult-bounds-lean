@@ -70,6 +70,20 @@ theorem heads_of_run_le {B : ℕ} (hr : run M n c = some d) (hn : n ≤ B) (lo h
   have hb := hbank i
   omega
 
+/-- Recovery can be bounded from its known post-bank without decoding its input stacks. -/
+theorem heads_of_run_post_le {B : ℕ} (hr : run M n c = some d) (hn : n ≤ B) (lo hi : ℤ)
+    (hbank : ∀ i, lo+(2*B : ℕ) ≤ d.head i ∧ d.head i+(2*B : ℕ) ≤ hi) :
+    RunWithin M (fun v => ∀ i, lo ≤ v.head i ∧ v.head i ≤ hi) n c d := by
+  refine ⟨hr,?_⟩
+  intro m hm z hz i
+  have he := run_head_travel hr i
+  have hp := run_head_travel hz i
+  have hb := hbank i
+  change lo ≤ z.head i ∧ z.head i ≤ hi
+  change c.head i-(n : ℤ) ≤ d.head i ∧ d.head i ≤ c.head i+(n : ℤ) at he
+  change c.head i-(m : ℤ) ≤ z.head i ∧ z.head i ≤ c.head i+(m : ℤ) at hp
+  omega
+
 /-- Step simulations preserve all intermediate configurations, not just endpoints. -/
 theorem simulation {u r b : ℕ} {N : Program u r b} {G : TapePred u b}
     (f : Config t q a → Config u r b)

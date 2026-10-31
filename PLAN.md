@@ -16572,3 +16572,15 @@ and a shared head interval. Parked heads are independent of array contents.
 `InductionBaseWithin.run_within` supplies the depth-zero certificate from the
 existing linear-time execution. The recursive-depth case and high-width
 wrappers still need space certificates before the full leaf-core bound closes.
+
+The stage-1 physical-call proof now shares its chosen headers and entry/recovery
+contracts with the endpoint proof. `CallExecutionWithin.call_actual_within`
+composes bounded entry, child execution and recovery with the original runtime
+budget. Its child margin follows from actual head travel during entry;
+recovery uses the exact parent post-bank. `callReserve_shrink` proves that an
+at-least-halving row split absorbs this boundary reserve with one fixed recursive
+coefficient. `InductionWithin.calls` applies the bounded depth hypothesis through
+the existing canonical input/returned-bank identities, and `InductionWithin.base`
+uses that same coefficient at depth zero. These close the call adapter, not the
+recursive node assembly: node-bank offsets, bounded node composition, the full
+depth induction and the high-width wrappers remain open.

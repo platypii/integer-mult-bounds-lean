@@ -114,6 +114,61 @@ def dataBank (data : Data payloadCount v) : Tapes commonCount prime :=
     (SharedBank.empty 1 prime) (SharedBank.empty 0 prime) st
 
 include hp hv hw in
+/-- The chosen child headers and both physical boundary contracts are shared by
+endpoint/time and prefix-space proofs. -/
+theorem call_contracts (site : Site) (w : Wire) (i j : Fin Machine.width)
+    (hi : pieces[site] = .call w i j) (data : Data payloadCount v)
+    (out : Fin (volume prime v) → Fin 4) (hio : data io = fun _ => blank)
+    (hf : ∀ z, p ≤ z → f z = blank) :
+    ∃ ch, RecursiveDimensionBank.Headers (RecursiveInterchangeLayout.child prime 1 b v i j) ch ∧
+      HoareTime (block capacity widthSlot pcStack (implementation k) (.piece site)).program
+        (· = raw (dataBank hs f p node st data)
+          (block capacity widthSlot pcStack (implementation k) (.piece site)).tapes)
+        (· = raw (RecursiveCallProtocol.childBank
+          (RecursiveCallProtocol.entered (CallLayout.parked w) (wireSlot w) io (volume prime v)
+            (dataBank hs f p node st data)) ch
+          (node.append ((SharedBank.empty 1 prime).append (SharedBank.empty 0 prime)))
+          (RecursiveChildCallSetup.savedStacks hs st (returnCode capacity site)))
+          (block capacity widthSlot pcStack (implementation k) (.piece site)).tapes)
+        ((88*(CallLayout.parked w).length+51884+RecursiveRoleChildCallSetup.constant Machine.width k)*volume prime v) ∧
+      HoareTime (block capacity widthSlot pcStack (implementation k) (.recover site)).program
+        (· = raw (SharedPlacementAlphabet.setTape
+          (RecursiveCallProtocol.entered (CallLayout.parked w) (wireSlot w) io (volume prime v)
+            (dataBank hs f p node st data))
+          (RecursiveCallBank.role (u := 1+(1+0)) io).val (RecursiveShiftRoleBank.source out) 0)
+          (block capacity widthSlot pcStack (implementation k) (.recover site)).tapes)
+        (· = raw (dataBank hs f p node st (Function.update data (wireSlot w) out))
+          (block capacity widthSlot pcStack (implementation k) (.recover site)).tapes)
+        ((92*(CallLayout.parked w).length+51883)*volume prime v) := by
+  let aux := node.append ((SharedBank.empty 1 prime).append (SharedBank.empty 0 prime))
+  let entryBlock := RecursiveCallProtocol.enter (u := 1+(1+0))
+    (CallLayout.parked w) (wireSlot w) io
+    (CallLayout.active_ne_io w) i j (returnCode capacity site)
+  let returnBlock := RecursiveCallProtocol.recover (u := 1+(1+0))
+    (CallLayout.parked w) (wireSlot w) io
+    (CallLayout.active_ne_io w)
+  have hentryEq : block capacity widthSlot pcStack (implementation k) (.piece site) = entryBlock := by
+    simp only [block,hi,implementation,entryBlock]
+  have hreturnEq : block capacity widthSlot pcStack (implementation k) (.recover site) = returnBlock := by
+    simp only [block,hi,implementation,returnBlock]
+  obtain ⟨ch,hch,he⟩ := RecursiveCallProtocol.enters
+    (CallLayout.parked w) (CallLayout.parked_nodup w)
+    (wireSlot w) io
+    (CallLayout.active_ne_io w) (CallLayout.active_not_parked w)
+    (CallLayout.io_not_parked w) b v i j hw
+    (RecursiveRoleSerialization.roles data) hs f p aux st (returnCode capacity site) hv hp
+    (fun z _ => CallSemantics.roles_supported data z)
+    (CallSemantics.roles_supported data _)
+    (by
+      constructor
+      · rfl
+      · change RecursiveShiftRoleBank.source (data io) = _
+        rw [hio]
+        exact RecursiveRowsSerialization.source_blank v)
+  have hr := CallRecovery.recovers w data out hs f p aux st hv hp hf hio
+  exact ⟨ch,hch,by rw [hentryEq]; exact he,by rw [hreturnEq]; exact hr⟩
+
+include hp hv hw in
 /-- Concrete call entry and recovery require only an actual child graph trace.
 The generated child headers and saved return code are fed literally to that
 trace; its return endpoint is the entered parent bank with the I/O word changed.
@@ -145,39 +200,8 @@ theorem call_actual (site : Site) (w : Wire) (i j : Fin Machine.width)
         (entryConfig capacity (.piece site) (dataBank hs f p node st data)) =
         some (entryConfig capacity (successor site) (dataBank hs f p node st
           (Function.update data (wireSlot w) out))) := by
-  let aux := node.append ((SharedBank.empty 1 prime).append (SharedBank.empty 0 prime))
-  let entryBlock := RecursiveCallProtocol.enter (u := 1+(1+0))
-    (CallLayout.parked w) (wireSlot w) io
-    (CallLayout.active_ne_io w) i j (returnCode capacity site)
-  let returnBlock := RecursiveCallProtocol.recover (u := 1+(1+0))
-    (CallLayout.parked w) (wireSlot w) io
-    (CallLayout.active_ne_io w)
-  have hentryEq : block capacity widthSlot pcStack (implementation k) (.piece site) = entryBlock := by
-    simp only [block,hi,implementation,entryBlock]
-  have hreturnEq : block capacity widthSlot pcStack (implementation k) (.recover site) = returnBlock := by
-    simp only [block,hi,implementation,returnBlock]
-  obtain ⟨ch,hch,he⟩ := RecursiveCallProtocol.enters
-    (CallLayout.parked w) (CallLayout.parked_nodup w)
-    (wireSlot w) io
-    (CallLayout.active_ne_io w) (CallLayout.active_not_parked w)
-    (CallLayout.io_not_parked w) b v i j hw
-    (RecursiveRoleSerialization.roles data) hs f p aux st (returnCode capacity site) hv hp
-    (fun z _ => CallSemantics.roles_supported data z)
-    (CallSemantics.roles_supported data _)
-    (by
-      constructor
-      · rfl
-      · change RecursiveShiftRoleBank.source (data io) = _
-        rw [hio]
-        exact RecursiveRowsSerialization.source_blank v)
-  have hr := CallRecovery.recovers w data out hs f p aux st hv hp hf hio
-  have hc := childTrace ch hch
-  apply call_jump capacity site w i j hi _ _ _ _ _ C _
-  · rw [hentryEq]
-    exact he
-  · exact hc
-  · rw [hreturnEq]
-    exact hr
+  obtain ⟨ch,hch,he,hr⟩ := call_contracts capacity hw hp hs hv f p node st site w i j hi data out hio hf
+  exact call_jump capacity site w i j hi _ _ _ _ _ C _ he (childTrace ch hch) hr
 
 include hp hv in
 /-- Nonrecursive pieces run through their actual globally placed programs. The
