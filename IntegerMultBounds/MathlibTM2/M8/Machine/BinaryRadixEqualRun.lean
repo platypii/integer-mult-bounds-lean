@@ -67,7 +67,7 @@ private theorem five_hoare {t a s1 s2 s3 s4 s5 b1 b2 b3 b4 b5 : ℕ}
       (b1+1+b2+1+b3+1+b4+1+b5) := (((h1.seq h2).seq h3).seq h4).seq h5
 
 omit [Total.Capacity] in
-private theorem changed_root (u : ℕ) (hs : Fin 4 → List Bool) (s s' : ℤ → Fin (prime+4)) :
+theorem changed_root (u : ℕ) (hs : Fin 4 → List Bool) (s s' : ℤ → Fin (prime+4)) :
     setTape (BinaryRadixRootHeadersShared.output (prepared prime u s (fun _ => blank) hs)
       (preparedWords prime u hs)) source s' 0 =
     BinaryRadixRootHeadersShared.output (prepared prime u s' (fun _ => blank) hs)

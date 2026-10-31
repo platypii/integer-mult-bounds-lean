@@ -42,6 +42,17 @@ theorem comp {F : Tapes t a → Tapes u a} {G : Tapes u a → Tapes w a} {ℓ : 
       exact h.outside c k (fun i hi => hj i (congrArg ℓ' hi))
     · exact h'.outside (F c) j (fun k hk' => hk ⟨k, hk'⟩)
 
+/-- Padding preserves caller head equality without comparing concrete banks. -/
+theorem head_congr {F : Tapes t a → Tapes u a} {ℓ : Fin t → Fin u}
+    (h : Padded F ℓ) {v w : Tapes t a} (hh : v.head = w.head) :
+    (F v).head = (F w).head := by
+  funext j
+  by_cases hj : ∃ i, ℓ i = j
+  · obtain ⟨i,rfl⟩ := hj
+    rw [h.head,h.head,hh]
+  · rw [(h.outside v j (fun i hi => hj ⟨i,hi⟩)).1,
+      (h.outside w j (fun i hi => hj ⟨i,hi⟩)).1]
+
 /-- A pad carries the sparse header bank at `d` to the sparse header bank at the lifted slots. -/
 theorem headerBank_eq {F : Tapes t a → Tapes u a} {ℓ : Fin t → Fin u} (h : Padded F ℓ) {n : ℕ}
     (d : Fin n → Fin t) (hd : Function.Injective d) (bs : Fin n → List Bool) :

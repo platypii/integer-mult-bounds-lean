@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M8.Stage2Machine.Supplier
+public import IntegerMultBounds.Machine.HeadMargin
 public import IntegerMultBounds.MathlibTM2.M8.Stage2Machine.HighWithin
 public import IntegerMultBounds.MathlibTM2.M8.Machine.ArbitraryWidthOriginalTotalRunWithin
 public import IntegerMultBounds.MathlibTM2.M8.Machine.ArbitraryWidthHighBranchCompositionWithin
@@ -48,17 +49,6 @@ def branchCoefficient (k cutoff : ℕ) : ℕ := max (HighWithin.coefficient k cu
 def coefficient (k cutoff : ℕ) : ℕ :=
   max (RecursiveChildQuotientsConstant.cost bound+branchCoefficient k cutoff)
     (2*(2*(RecursiveChildQuotientsConstant.bits bound).length+4))
-
-omit [M8.Machine.Net] in
-private theorem margin_mono {B C : ℕ} {lo upper x : ℤ} (h : B ≤ C)
-    (hm : lo+(C : ℕ) ≤ x ∧ x+(C : ℕ) ≤ upper) :
-    lo+(B : ℕ) ≤ x ∧ x+(B : ℕ) ≤ upper := by omega
-
-omit [M8.Machine.Net] in
-private theorem margin_after {S B C : ℕ} {lo upper x y : ℤ} (h : S+B ≤ C)
-    (ht : x-(S : ℕ) ≤ y ∧ y ≤ x+(S : ℕ))
-    (hm : lo+(C : ℕ) ≤ x ∧ x+(C : ℕ) ≤ upper) :
-    lo+(B : ℕ) ≤ y ∧ y+(B : ℕ) ≤ upper := by omega
 
 omit [M8.Machine.Net] in
 private theorem constant_allowance (V n : ℕ) (hV : 0 < V) : V+n ≤ (1+n)*V := by
@@ -131,7 +121,7 @@ theorem runs (cutoff : ℕ)
   have hww := HoareWithin.of_time_heads hw lo upper (by
     rintro z rfl j
     change lo+_ ≤ (Supplier.input capacity caller).head j ∧ (Supplier.input capacity caller).head j+_ ≤ upper
-    exact margin_mono hwriteBudget (hmargin j))
+    exact HeadMargin.weaken hwriteBudget (hmargin j))
   have hprepared : ∀ j, lo+(branchCoefficient k cutoff*volume prime d : ℕ) ≤
       (outer (High.input capacity (caller.append (guardWith bound)))).head j ∧
       (outer (High.input capacity (caller.append (guardWith bound)))).head j+
@@ -142,7 +132,7 @@ theorem runs (cutoff : ℕ)
       (outer (High.input capacity (caller.append (guardWith bound)))).head j ∧
       (outer (High.input capacity (caller.append (guardWith bound)))).head j ≤
         (Supplier.input capacity caller).head j+(RecursiveChildQuotientsConstant.cost bound : ℕ) at ht
-    exact margin_after ((Nat.add_le_add_right hwrite _).trans hreserve) ht (hmargin j)
+    exact HeadMargin.after ((Nat.add_le_add_right hwrite _).trans hreserve) ht (hmargin j)
   have hhighReserve := Nat.mul_le_mul_right (volume prime d)
     (show HighWithin.coefficient k cutoff ≤ branchCoefficient k cutoff from le_max_left _ _)
   have hlowReserve := Nat.mul_le_mul_right (volume prime d)
@@ -204,7 +194,7 @@ theorem runs (cutoff : ℕ)
       (Supplier.input capacity (setTape caller source W 0)).head j+_ ≤ upper
     rw [hheads]
     have h := Nat.le_mul_of_pos_right (2*(RecursiveChildQuotientsConstant.bits bound).length+4) hVpos
-    exact margin_mono ((Nat.mul_le_mul_left 2 h).trans hcleanup) (hmargin j))
+    exact HeadMargin.weaken ((Nat.mul_le_mul_left 2 h).trans hcleanup) (hmargin j))
   have hselect := ArbitraryWidthHighBranch.cost_volume (RecursiveChildQuotientsConstant.bits bound) (hs 3)
     (RecursiveChildQuotientsConstant.bits_canonical bound) (hv.2 3) (volume prime d+bound)
     (Nat.add_pos_left hVpos _) (by rw [hrs]; exact Nat.le_add_left _ _)
@@ -219,9 +209,9 @@ theorem runs (cutoff : ℕ)
       (outer (High.input capacity (caller.append (guardWith bound)))).head j+
         (ArbitraryWidthHighBranch.cost (RecursiveChildQuotientsConstant.bits bound) (hs 3) : ℕ) ≤ upper := by
     intro j
-    exact margin_mono hselectTotal (hprepared j)
+    exact HeadMargin.weaken hselectTotal (hprepared j)
   have hzero : lo ≤ 0 ∧ 0 ≤ upper := by
-    have hm := margin_mono (Nat.zero_le _) (hprepared (flag capacity))
+    have hm := HeadMargin.weaken (Nat.zero_le _) (hprepared (flag capacity))
     rw [hfh] at hm
     omega
   have hP1 : (1 : ℝ) ≤ ((max 1 d.width : ℕ) : ℝ) ^ tau₂ HighCost.K :=
@@ -235,7 +225,7 @@ theorem runs (cutoff : ℕ)
         intro j
         have hm := hprepared (outerSlot j)
         rw [ol.head] at hm
-        exact margin_mono hhighReserve hm)
+        exact HeadMargin.weaken hhighReserve hm)
     rw [← hW, hout_set] at hhigh
     have hb := M8.Machine.ArbitraryWidthHighBranchCompositionWithin.runs_within (rho capacity)
       (Supplier.width capacity headers) (flag capacity) (rho_ne_width capacity headers) (rho_ne_flag capacity)
@@ -270,7 +260,7 @@ theorem runs (cutoff : ℕ)
         have hm := hprepared j
         change lo+_ ≤ (outer (High.input capacity (caller.append (guardWith bound)))).head j ∧
           (outer (High.input capacity (caller.append (guardWith bound)))).head j+_ ≤ upper
-        exact margin_mono hlowReserve hm)
+        exact HeadMargin.weaken hlowReserve hm)
     rw [← hW, ← il.set, hout_set] at hfb
     have hb := M8.Machine.ArbitraryWidthHighBranchCompositionWithin.runs_within (rho capacity)
       (Supplier.width capacity headers) (flag capacity) (rho_ne_width capacity headers) (rho_ne_flag capacity)

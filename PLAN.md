@@ -17055,3 +17055,27 @@ width dispatch still need their bounded certificates. The existing pure
 volume conversion. Generated S4 supplier readiness, complete-key setup reuse,
 tensor/layout composition and final audits also remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the complete equal-width binary radix wrapper is bounded
+
+`BinaryRadixEqualRunWithin.runs` includes physical binary-to-radix preparation,
+root-header generation, the sealed selected radix supplier, header erasure and
+binary crop/recovery. Every prefix fits a fixed allowance against original
+binary volume. `root_volume_bound` converts the supplier's allowance using the
+fixed prime-squared padding factor. Existing exact binary transpose endpoints,
+restored metadata and the original paid runtime budget are preserved.
+
+`Machine.HeadMargin` supplies generic reserve weakening and forward/backward
+travel transfer. Both the supplier and binary wrapper now use these small
+structural lemmas rather than normalize concrete initialization costs inside
+arithmetic tactics. `Padded.head_congr` transfers head equality through arbitrary
+blank padding before concrete tape counts are instantiated; binary recovery
+uses it for the exact restored output. The original `changed_root` endpoint
+identity is exposed and reused.
+
+Guarded checks peak at 1375.1 MiB (margin language), 1459.6 MiB (padded-bank
+language), 2571.8 MiB (supplier regression) and 2555.7 MiB (binary wrapper).
+The guarded target build passes (6714 jobs). Next carry the bounded binary
+wrapper through shared placement and rectangular-width dispatch to archive
+stock. Generated S4 supplier readiness, complete-key setup reuse, tensor/layout
+composition and final audits remain open. S4 is incomplete; kappa is unchanged.
