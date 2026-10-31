@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3242 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3243 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18081,3 +18081,25 @@ publication remain integration obligations. S4 remains incomplete.
 The guarded file check peaks at 2074.7 MiB; the guarded target build passes
 (9676 jobs, 2.7 GiB combined peak).
 The scoped axiom audit passes for 42889 declarations (2078.7 MiB peak).
+
+### S4 checkpoint: grouped exposure retires all generated controller storage
+
+`restoredCoreGather_exec` composes the actual generated class sweep with
+structural erasure of its control tape, binary origins and unary count. Its
+exact final state changes only payload register 108; ambient source, geometry,
+headers, host tapes, left stacks and all scratch return to their initial state.
+The origin destination is explicitly required empty initially, so cleanup
+cannot discard a borrowed suffix.
+
+The cleanup bill is at most `2*(s*w+classSize*(V+2)+1)+7`, derived from actual
+word lengths and the existing control-volume bound. No callback execution
+premise or per-core source scan is introduced. The payload archive also has a
+replica/core slot law, reusing uniform-row slicing to identify every original
+ambient interval before transposition.
+
+Guarded checks peak at 2083.2 MiB (restored sweep) and 2082.1 MiB (payload
+addressing); the guarded target build passes (9677 jobs, 2.7 GiB combined peak).
+The replica loop, uniform grouped-gather stock, physical transpose into supplier
+order, selected supplier consumption, publication and R4/tensor composition
+remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 42895 declarations (2079.0 MiB peak).

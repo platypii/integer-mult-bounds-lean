@@ -75,6 +75,32 @@ theorem coreGatherPayload_slot {s : ℕ} (width radius L : ℕ)
   rw [ht] at h
   simpa [coreGatherPayload,rows,List.flatMap_def] using h
 
+/-- Replica/core addresses in the exposure archive identify the original
+ambient interval, before the lossless rectangular transpose. -/
+theorem coreGatherPayload_replica_slot {s : ℕ} (width radius L : ℕ)
+    (Fs : List (ZMod s → GaussianInt)) (r : Fin Fs.length)
+    (i : Fin (coreGatherIndices s width radius L).length) :
+    ((coreGatherPayload width radius L Fs).drop
+      ((r.val*(coreGatherIndices s width radius L).length+i.val)*L)).take L =
+        packedInterval (coreStart width (coreGatherIndices s width radius L)[i.val]-radius) L Fs[r.val] := by
+  let M := (coreGatherIndices s width radius L).length
+  let rows := Fs.map (fun F => coreGatherPayload width radius L [F])
+  have hlen : ∀ row ∈ rows, row.length = M*L := by
+    intro row hr
+    obtain ⟨F,_,rfl⟩ := List.mem_map.mp hr
+    simp only [coreGatherPayload_length,List.length_singleton,Nat.one_mul,M]
+  have hr : r.val < rows.length := by simpa only [rows,List.length_map] using r.isLt
+  have hfit : i.val*L+L ≤ M*L := by
+    simpa only [Nat.succ_mul,M] using Nat.mul_le_mul_right L i.isLt
+  have h := flatten_uniform_window rows (M*L) (i.val*L) L r.val hlen hr hfit
+  rw [List.getD_eq_getElem _ _ hr] at h
+  have he : r.val*(M*L)+i.val*L = (r.val*M+i.val)*L := by ring
+  rw [he] at h
+  have hflat : rows.flatten = coreGatherPayload width radius L Fs := by
+    simp [rows,coreGatherPayload,List.flatMap_def]
+  rw [hflat] at h
+  simpa only [rows,List.getElem_map,coreGatherPayload_slot,M] using h
+
 variable {Q A : ℕ} {U P : Type} {body : P → Pr P 168 Q A U}
 
 /-- Actual generated controls and a restoring source sweep produce the packed
