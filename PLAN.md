@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3249 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3250 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18180,3 +18180,30 @@ composition remain open. S4 remains incomplete; kappa is unchanged.
 The guarded file check peaks at 2124.9 MiB; the guarded target build passes
 (9689 jobs, 2.7 GiB combined peak).
 The scoped axiom audit passes for 43113 declarations (2082.1 MiB peak).
+
+### S4 checkpoint: shared-reserve rule and exact replica-body growth
+
+`loop_within_final_stock` proves a generic reusable reserve rule: a native loop
+with invariant-preserving, nonshrinking completed iterations, each taking at
+most `cost` steps, has its entire trace bounded by final stock plus `c*cost`.
+The allowance is independent of iteration count. The proof is structural over
+the existing loop execution and uses the tail's monotonic stock to share scratch.
+
+`mn_archive_prefix_append_size` proves that transferring an ambient prefix to
+a reversed restoration archive preserves volume; only appended output changes
+stock. `replicaCoreGatherStep_boundary_size` specializes this to exact retained
+volume `classSize*haloLength*wordWidth` for the actual replica body. Its native
+certificate and `replicaCoreGatherStep_within` give one fixed three-push runtime
+reserve. The register-embedding certificate has been generalized into
+`Host.embProg_native`, replacing the former private fixed-bound proof.
+
+These establish the shared-reserve rule and its concrete body ingredients.
+The application to the runtime replica scan invariant is still open; no complete
+replica-loop workspace theorem is claimed. Physical transpose, selected supplier
+consumption/publication and R4/tensor composition also remain open. S4 remains
+incomplete; kappa is unchanged.
+
+Guarded checks peak at 1385.7 MiB (loop rule), 1387.3 MiB (archive balance) and
+2092.3 MiB (concrete body stock). The guarded target build, including the runtime
+replica loop, passes (9694 jobs, 2.7 GiB combined peak).
+The scoped axiom audit passes for 43159 declarations (2082.0 MiB peak).

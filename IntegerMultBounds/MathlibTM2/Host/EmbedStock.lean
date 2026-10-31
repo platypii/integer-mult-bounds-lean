@@ -154,6 +154,16 @@ theorem embProg_push {P P' : Type} (ι : P → P') (p : Pr P T Q A U) :
     mnProgPush (embProg e ι p) = mnProgPush p := by
   induction p <;> simp_all [embProg,mnProgPush,embAct_push]
 
+/-- Register placement preserves a call-free atomic push certificate. -/
+theorem embProg_native {P P' : Type} {c : ℕ} (ι : P → P') (p : Pr P T Q A U)
+    (h : mnNativePushBound c p) : mnNativePushBound c (embProg e ι p) := by
+  induction p with
+  | act a => simpa only [embProg,mnNativePushBound,embAct_push] using h
+  | seq p q hp hq => exact ⟨hp h.1,hq h.2⟩
+  | cond f p q hp hq => exact ⟨hp h.1,hq h.2⟩
+  | loop f p hp => exact hp h
+  | call f => exact False.elim h
+
 /-- Place a proved stock certificate over an arbitrary background, counting all
 spectator stacks in the big initial stock exactly once. -/
 theorem exec_emb_ovr_within_stock {P P' : Type} {ι : P → P'}

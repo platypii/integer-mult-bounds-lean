@@ -17,6 +17,10 @@ variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 def placedCoreGather (e : Fin 168 → Fin T) : Pr P T Q A U :=
   embProg e Empty.elim (restoredCoreGather (P := Empty))
 
+theorem placedCoreGather_native (e : Fin 168 → Fin T) :
+    mnNativePushBound 3 (placedCoreGather (P := P) (Q := Q) (A := A) (U := U) e) :=
+  embProg_native e Empty.elim _ restoredCoreGather_native
+
 theorem placedCoreGather_exec_within (e : Fin 168 → Fin T) (he : Function.Injective e) {V s width radius L w : ℕ}
     (hwidth : 0 < width) (hwide : s+width+2*radius < 2^V) (hLfit : L < 2^V)
     (hwV : w < 2^V) (hvol : s*w < 2^V) (hA : 4 ≤ A) (hVpos : 0 < V)

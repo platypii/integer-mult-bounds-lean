@@ -39,15 +39,6 @@ private theorem chirpBankLoad_native {n : ℕ} (rg : TblR n → Fin T)
   refine ⟨?_,?_,chirpBankCopies_native _ _ _ _ _⟩
   all_goals simp [ucopy,umulSym,scanR,drainR,popDo,whileR,keepIn,pushN,moveR,moveStep,peekR,mnNativePushBound,mnActPush]
 
-private theorem embProg_native {T' : ℕ} {P' : Type} (e : Fin T → Fin T') (ι : P → P')
-    (p : Pr P T Q A U) (h : mnNativePushBound 3 p) : mnNativePushBound 3 (embProg e ι p) := by
-  induction p with
-  | act a => simpa only [embProg,mnNativePushBound,embAct_push] using h
-  | seq p q hp hq => exact ⟨hp h.1,hq h.2⟩
-  | cond f p q hp hq => exact ⟨hp h.1,hq h.2⟩
-  | loop f p hp => exact hp h
-  | call f => exact False.elim h
-
 private theorem generatedCoreGather_native :
     mnNativePushBound 3 (generatedCoreGather (P := P) (Q := Q) (A := A) (U := U)) := by
   simp only [generatedCoreGather,generatedCoreControls,generatedCoreCountedHost,countedOriginHost,

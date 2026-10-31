@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCoreGather
+public import IntegerMultBounds.MathlibTM2.Host.ArchivePrefixStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTakeCopyPrefix
 
 /-! One replica iteration advances the ambient source once, gathers its whole
@@ -21,6 +22,40 @@ def replicaCoreGatherStep (e : Fin 168 → Fin T) (count source archive saved tm
 
 def replicaCoreGatherStepCost (V s width radius L w : ℕ) : ℕ :=
   16*(s*w)+16+restoredCoreGatherCost V s width radius L w
+
+theorem replicaCoreGatherStep_native (e : Fin 168 → Fin T) (count source archive saved tmp : Fin T) :
+    mnNativePushBound 3 (replicaCoreGatherStep (P := P) (Q := Q) (A := A) (U := U)
+      e count source archive saved tmp) := by
+  change mnNativePushBound 3 (.seq (takeCopyPrefix count source (e 110) archive saved tmp)
+    (.seq (placedCoreGather e) (uclear (e 110))))
+  refine ⟨?_,placedCoreGather_native e,?_⟩
+  all_goals simp [takeCopyPrefix,copyPrefix,copyR,copyStep,transfer,transferAct,
+    scanR,drainR,popDo,keepIn,moveR,moveStep,whileR,peekR,uclear,
+    mnNativePushBound,mnActPush]
+
+/-- Completed source movement preserves volume; only packed payload survives. -/
+theorem replicaCoreGatherStep_boundary_size (e : Fin 168 → Fin T) (source archive : Fin T)
+    (hreg : [source,archive,e 108].Nodup) {s : ℕ} (width radius L w : ℕ)
+    (C : ZMod s → GaussianInt) (v v' : HS T Q A U) (S : Stacks T A)
+    (tail : List (Fin (A+4))) (hsource : S.R source = cstream A w (chirpLine s C)++tail) :
+    mnSize (Host.mk v' {S with R := (Function.update (Function.update (Function.update S.R source tail)
+      archive ((cstream A w (chirpLine s C)).reverse++S.R archive)) (e 108)
+        (cstream A w (coreGatherPayload width radius L [C])++S.R (e 108)))}) =
+      mnSize (Host.mk v S)+(coreGatherIndices s width radius L).length*L*w := by
+  simpa only [length_cstream,coreGatherPayload_length,List.length_singleton,Nat.one_mul] using
+    mn_archive_prefix_append_size source archive (e 108) hreg v v' S
+      (cstream A w (chirpLine s C)) tail (cstream A w (coreGatherPayload width radius L [C])) hsource
+
+/-- The same actual body execution has one fixed native scratch reserve. -/
+theorem replicaCoreGatherStep_within (e : Fin 168 → Fin T) (count source archive saved tmp : Fin T)
+    {V s width radius L w n : ℕ}
+    {z z' : Store (HΓ (T := T) A) (HS T Q A U)}
+    (hex : Exec body (replicaCoreGatherStep e count source archive saved tmp) z n z')
+    (hn : n ≤ replicaCoreGatherStepCost V s width radius L w) (depth : ℕ) :
+    ExecWithin body (fun d u => mnSize u+d ≤ mnSize z+depth+
+      3*replicaCoreGatherStepCost V s width radius L w) depth
+      (replicaCoreGatherStep e count source archive saved tmp) z n z' :=
+  mn_native_exec_within hex 3 (replicaCoreGatherStep_native _ _ _ _ _ _) depth _ (by omega)
 
 theorem replicaCoreGatherStep_exec (e : Fin 168 → Fin T) (he : Function.Injective e) (count source archive saved tmp : Fin T)
     (hreg : [count,source,e 110,archive,saved,tmp].Nodup)
