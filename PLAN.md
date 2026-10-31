@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3274 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3278 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18486,3 +18486,30 @@ passes (15650 jobs, 5.0 GiB combined peak). The scoped axiom audit passes for
 call construction and dimension setup, selected bounds, publication, seam
 lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa is
 unchanged.
+
+### S4 checkpoint: ambient exposure returns only real supplier batches
+
+`retireDummyRows_exec_within` generates the dummy-prefix symbol count, physically
+drops that prefix with unary subtraction, and erases its counter. The exact
+postcondition changes only the source archive. `retireDummyBatches_exec_within`
+first generates batch width as `replicas*blockWidth` from retained dimensions,
+then runs that retirement and erases the generated width. Neither generated
+word is an initial caller premise.
+
+`retireRoutedGather_exec_within` specializes the physical trace using the
+router's uniform lengths and shifted real-slot certificates; its endpoint is
+exactly the concatenated real supplier payloads. `expose_real_gather_exec_within`
+composes the complete actual ambient gather, generated padding, inverse route
+and dummy retirement. It reuses the cleared row/padding counters as retirement
+workspace and preserves all other right registers, including the ambient source
+and retained dimensions. Physical replica order remains explicitly
+`Fs.reverse`. Time and stock include retirement and all generated-word cleanup.
+
+Guarded checks peak at 2082.1 MiB (row retirement), 2088.4 MiB (generated batch
+retirement), 2074.7 MiB (routed specialization), and 3117.5 MiB (whole real
+exposure). The target build passes (14070 jobs, 3.4 GiB combined peak). The
+scoped axiom audit passes for 321450 declarations at 3103.3 MiB. Next construct
+selected supplier calls whose payload list is this exact real stream and compose
+the already proved consuming batch. Selected dimension setup/bounds,
+publication, seam lifecycle and R4/tensor restoration remain open. S4 is
+incomplete; kappa is unchanged.
