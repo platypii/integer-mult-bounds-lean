@@ -16936,3 +16936,18 @@ the certificate through paid metadata initialization and the selected supplier
 wrappers to archive stock. Generated S4 supplier readiness, complete-key setup
 reuse, tensor/layout composition and final execution/error/cost audits remain
 open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the complete stage-2 high body has bounded workspace
+
+`HighBodyWithin.runs` composes actual shared exchange/join, the shared padded
+nine-phase core, and shared separation. One maximum of fixed coefficients pays
+all three phases against original volume; a pure factor-two padded-volume
+hypothesis supplies the middle allowance. Structural head congruence transfers
+the reserve between restored phase boundaries. The exact transpose, restored
+private banks and existing charged runtime are retained.
+
+The guarded file check peaks at 2546.5 MiB; the guarded target build succeeds
+(6679 jobs). Next specialize the chosen padding via `Params.volume_le`, then
+carry this certificate through paid initialization and selected supplier wrappers
+to archive stock. Generated supplier readiness, setup reuse, tensor/layout
+composition and final S4 audits remain open. S4 is incomplete; kappa is unchanged.
