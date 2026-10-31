@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3226 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3227 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17786,3 +17786,27 @@ factory generation and ambient payload exposure still have to precede this
 outer setup, followed by the supplier descriptor lifecycle, complete batches,
 complete-key setup reuse, grouped publication, R4/tensor layout restoration
 and final audits. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: ordinary retained headers generate the entire supplier bank
+
+`PublicationInputPlan.fromHeaders_exec` composes native factory master copying,
+binary geometry generation and all publication/descriptor/normalization input
+layers. Its initial private 325-register bank is blank. Its ordinary retained
+headers and live local payload generate the exact complete
+`packedNormalizedInputBank` around `packedFactoryInputBank`; no prepared native
+factory bank, binary geometry, outer metadata or parameter queue is assumed.
+
+The generic extension/frame theorem derives the outer blank workspace after
+factory generation. External retained words are reused directly by subsequent
+stages. The same actual execution carries the sum of all paid runtime and linear
+stock bills, preserves every right register outside the full private bank and
+leaves the entire left bank unchanged. This closes composition of the input
+bank generators; the local payload remains an exposure input.
+
+The guarded file check peaks at 3316.8 MiB; the guarded target build passes
+(15165 jobs, 3.5 GiB combined peak). The scoped axiom audit passes for 332113
+declarations (3314.7 MiB). Next instantiate the selected job's mathematical
+header values and connect this generated bank to the packed producer's existing
+descriptor lifecycle. Ambient payload exposure, complete supplier batches,
+complete-key setup reuse, grouped publication, R4/tensor layout restoration and
+final audits remain open. S4 is incomplete; kappa is unchanged.
