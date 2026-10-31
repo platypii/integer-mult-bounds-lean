@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3203 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3206 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17421,3 +17421,38 @@ producer pair with this archive pair and discharge the uniform selected stock
 substitution. Generated supplier readiness, complete-key setup reuse,
 tensor/layout composition and final S4 audits remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: actual packed production composes with bounded archive transposes
+
+`produce_transpose_pair_exec_within` composes the existing actual producer-pair
+stock trace with the actual conditional archive pair. Initial producer and
+archive readiness supply all intermediate frames, payloads and active flags.
+The exact two produced stream lengths determine the persistent handoff stock;
+temporary producer and archive reserves are combined by a maximum. The ordinary
+fixed-program/body push bound is retained from the producer stock interface.
+No intermediate execution or stock certificate is a caller premise. Exact row
+certificates, final packed outputs and the original paid runtime are retained.
+
+The prerequisite guarded producer target rebuild passes (15621 jobs, 40.6 GiB
+combined peak, 9.5 minutes). The complete new file check peaks at 3420.0 MiB;
+the guarded stock target build passes (15762 jobs, 3.5 GiB combined peak).
+
+### S4 checkpoint: archive workspace is uniformly linear in selected capacity
+
+`chunkStockAllowance_le` pays the maximum chronological stage reserve by the
+common rectangular volume with one sealed supplier coefficient. No number-of-
+stages factor is introduced. `ArchiveTilePlan.stockAllowance_le` also absorbs
+both dimension-bank generations: physical bank distinctness bounds their chain
+lengths by the fixed host tape count. Padding, counting and codec work are
+therefore linear in the same volume. The resulting coefficient depends only on
+the fixed host bank and selected supplier, not on the address-chunk count.
+
+`conditional_exec_within_volume` consumes the actual conditional trace with
+this uniform volume allowance. Empty classes have zero selected capacity and
+zero additional stock. Guarded checks peak at 2953.0 MiB (stage bound) and
+3076.2 MiB (complete archive bound and execution); the archive target build
+passes (8704 jobs, 3.3 GiB combined peak).
+
+Next consume the uniform bounds in selected produced/archive accounting and
+close generated supplier readiness, complete-key setup reuse, tensor/layout
+composition and final S4 audits. S4 is incomplete; kappa is unchanged.
