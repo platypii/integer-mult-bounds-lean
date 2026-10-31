@@ -53,16 +53,15 @@ theorem coreJobs_payloads (width radius L w : ℕ) (Fs : List (ZMod s → Gaussi
     (hk : ∀ i, (jobs i).k = (coreGatherIndices s width radius L)[i.val])
     (hword : ∀ i, (jobs i).W = w) (hFs : ∀ i, (jobs i).Fs = Fs) :
     (List.ofFn jobs).flatMap PackedNormalizedJob.inputPayload =
-      (List.ofFn fun i : Fin (coreGatherIndices s width radius L).length =>
-        (List.ofFn fun j => cstream A w (coreGatherRows width radius L Fs i j)).flatten).flatten := by
+      coreSupplierStream A width radius L w Fs := by
   have hp (i : Fin (coreGatherIndices s width radius L).length) :=
     (jobs i).inputPayload_coreGather width radius L w Fs (hwidth i) (hradius i)
       (by rw [hk i]; exact List.getElem_mem i.isLt) (hword i) (hFs i)
-  simp only [List.flatMap_def,List.map_ofFn,Function.comp_def]
+  simp only [coreSupplierStream,List.flatMap_def,List.map_ofFn,Function.comp_def]
   congr 1
   congr 1
   funext i
-  rw [hp,coreGatherRows_supplier,hk]
+  rw [hp,hk]
 
 /-- One shared counter is sufficient for every job in a movement class. -/
 theorem coreJobs_payload_length (width radius L w : ℕ) (Fs : List (ZMod s → GaussianInt))

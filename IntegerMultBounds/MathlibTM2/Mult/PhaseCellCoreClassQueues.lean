@@ -31,8 +31,7 @@ theorem coreClassJobs_queues (hp : 2 ≤ p) (hpacket : 8*p ≤ 2^u) (hα : 0 < �
     (List.ofFn jobs).flatMap (fun r => binSyms (A := A) V r.a) =
       (coreGatherIndices s width radius L).flatMap (fun k => binSyms V (coreStart width k-radius)) ∧
     (List.ofFn jobs).flatMap PackedNormalizedJob.inputPayload =
-      (List.ofFn fun i : Fin (coreGatherIndices s width radius L).length =>
-        (List.ofFn fun j => cstream A w (coreGatherRows width radius L Fs i j)).flatten).flatten ∧
+      coreSupplierStream A width radius L w Fs ∧
     ∀ i, (jobs i).inputPayload.length = Fs.length*L*w ∧
       coreLength s (jobs i).coreWidth (jobs i).k = L-2*radius ∧
       (jobs i).b-(jobs i).a = L ∧ (jobs i).a < 2^V := by

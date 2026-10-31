@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3321 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3322 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19151,3 +19151,38 @@ instantiate the generated class data/ordinary headers with concrete placement
 and uniform selected cost estimates. Selected analytic/class separation facts,
 publication, seam lifecycle and R4/tensor restoration remain open. S4 remains
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: actual ambient exposure feeds the complete fixed class solver
+
+`exposedCoreClassRun_exec` composes the actual restoring ambient gather,
+generated padding, inverse routing and dummy retirement with the complete
+fixed class preparation/supplier/retirement program. It transfers ordinary
+class, controller and kernel readiness through exposure's exact source-only
+frame. The supplier input view overrides the consumed archive, so that view
+is unchanged by archive installation. No exposure execution, prepared stream,
+per-job execution or post-exposure readiness is a caller premise.
+
+The theorem uses the physical `Fs.reverse` replica order explicitly. It
+preserves the numerical `Forall₂` row certificate and ends with only the result
+register changed: ambient lines and borrowed suffix, routed archive, origin
+suffix, both class counters, temporary banks and all other caller storage
+restore. The initial left bank is explicitly blank, matching the router's
+published left-bank endpoint. Time adds actual exposure and class lifecycle
+bills; workspace composes exposure allowance with once-per-class preparation
+and one shared supplier-body reserve.
+
+`coreSupplierStream` names the common contiguous real-batch representation.
+Exposure, generic job queues and derived class queues now share that interface.
+Naming it resolves a default recursion-depth failure from repeating its nested
+indexed expression in the combined theorem, without changing proof limits.
+`ArchiveTilePlan.realGatherProgram`, `realGatherTimeCost` and
+`realGatherStockAllowance` name the existing executable and unchanged resource
+bills for direct composition.
+
+The guarded combined-file check passes at 3438.2 MiB; the updated generic queue
+check passes at 3383.7 MiB. The combined target build passes (15871 jobs,
+6.0 GiB combined peak). The scoped axiom audit passes for 337545 declarations
+at 3421.8 MiB. Next instantiate concrete selected movement-class
+placement, ordinary geometry/header preparation and uniform resource bounds.
+Selected analytic/class separation facts, whole publication, seam lifecycle
+and R4/tensor restoration remain open. S4 remains incomplete; kappa is unchanged.

@@ -17,6 +17,31 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 namespace ArchiveTilePlan
 variable {t₀ T Q c d W K : ℕ}
 
+noncomputable def realGatherTimeCost (plan : ArchiveTilePlan t₀ T Q c d W)
+    (V s width radius L w B : ℕ) (S : Stacks T (prime+K)) : ℕ :=
+  (replicaCoreGatherLoopCost V s width radius L w B +
+          ((gatherCounterSetupCost (coreGatherIndices s width radius L).length ((2^d)^c) (L*w) +
+            (B*(6*((2^d)^c*L*w)+13)+6) + (2*((2^d)^c*L*w)+4))+plan.inverseCost S)) +
+        retireDummyBatchesCost (coreGatherIndices s width radius L).length ((2^d)^c) (2^d) (L*w)
+
+noncomputable def realGatherStockAllowance (plan : ArchiveTilePlan t₀ T Q c d W)
+    (V s width radius L w B : ℕ) : ℕ :=
+  (((B*(coreGatherIndices s width radius L).length*L*w+
+            3*(replicaCoreGatherStepCost V s width radius L w+2)) +
+            ((2*gatherCounterSetupCost (coreGatherIndices s width radius L).length ((2^d)^c) (L*w) +
+              (B*(((2^d)^c-(coreGatherIndices s width radius L).length)*L*w)+
+                2*(4*((2^d)^c*L*w)+10)))+plan.inverseStockAllowance)) +
+          2*retireDummyBatchesCost (coreGatherIndices s width radius L).length ((2^d)^c) (2^d) (L*w))
+
+noncomputable def realGatherProgram {P U : Type} (plan : ArchiveTilePlan t₀ T Q c d W)
+    (e : Fin 168 → Fin T) (count source archive saved tmp replicas savedReplicas
+      realRows capacityRows blockWidth rowSymbols padSymbols missing acc padSaved padTmp : Fin T) :
+    Pr P T Q (prime+K) U :=
+  .seq (.seq (replicaCoreGatherLoop e count source archive saved tmp replicas savedReplicas)
+          (.seq (generatedPrefixPadRows realRows capacityRows blockWidth rowSymbols padSymbols missing plan.src
+            acc padSaved padTmp replicas savedReplicas (pairSym (prime+K) false false)) plan.inverseProgram))
+          (retireDummyBatches realRows capacityRows replicas blockWidth rowSymbols padSymbols missing padSaved padTmp plan.src)
+
 theorem expose_real_gather_exec_within {P U : Type} (plan : ArchiveTilePlan t₀ T Q c d W)
     (body : P → Pr P T Q (prime+K) U) (hW : 0 < W) (e : Fin 168 → Fin T) (he : Function.Injective e) (count source archive saved tmp replicas savedReplicas : Fin T)
     (hreg : [count,source,archive,saved,tmp,replicas,savedReplicas].Nodup)
@@ -50,25 +75,12 @@ theorem expose_real_gather_exec_within {P U : Type} (plan : ArchiveTilePlan t₀
     (hrowSymbols : S.R rowSymbols = []) (hpadSymbols : S.R padSymbols = []) (hmissing : S.R missing = [])
     (hacc : S.R acc = []) (hpadSaved : S.R padSaved = []) (hpadTmp : S.R padTmp = []) (depth : ℕ) :
     ∃ v' n, v'.user = v.user ∧
-      n ≤ (replicaCoreGatherLoopCost V s width radius L w Fs.length +
-          ((gatherCounterSetupCost (coreGatherIndices s width radius L).length ((2^d)^c) (L*w) +
-            (Fs.length*(6*((2^d)^c*L*w)+13)+6) + (2*((2^d)^c*L*w)+4))+plan.inverseCost S)) +
-        retireDummyBatchesCost (coreGatherIndices s width radius L).length ((2^d)^c) (2^d) (L*w) ∧
+      n ≤ plan.realGatherTimeCost V s width radius L w Fs.length S ∧
       ExecWithin body (fun z state => mnSize state+z ≤ mnSize (Host.mk v S)+depth+
-        (((Fs.length*(coreGatherIndices s width radius L).length*L*w+
-            3*(replicaCoreGatherStepCost V s width radius L w+2)) +
-            ((2*gatherCounterSetupCost (coreGatherIndices s width radius L).length ((2^d)^c) (L*w) +
-              (Fs.length*(((2^d)^c-(coreGatherIndices s width radius L).length)*L*w)+
-                2*(4*((2^d)^c*L*w)+10)))+plan.inverseStockAllowance)) +
-          2*retireDummyBatchesCost (coreGatherIndices s width radius L).length ((2^d)^c) (2^d) (L*w))) depth
-        (.seq (.seq (replicaCoreGatherLoop e count source archive saved tmp replicas savedReplicas)
-          (.seq (generatedPrefixPadRows realRows capacityRows blockWidth rowSymbols padSymbols missing plan.src
-            acc padSaved padTmp replicas savedReplicas (pairSym (prime+K) false false)) plan.inverseProgram))
-          (retireDummyBatches realRows capacityRows replicas blockWidth rowSymbols padSymbols missing padSaved padTmp plan.src))
+        plan.realGatherStockAllowance V s width radius L w Fs.length) depth
+        (plan.realGatherProgram e count source archive saved tmp replicas savedReplicas realRows capacityRows blockWidth rowSymbols padSymbols missing acc padSaved padTmp)
         (Host.mk v S) n (Host.mk v' {S with L := fun _ => [], R := (Function.update S.R plan.src
-          ((List.ofFn fun i : Fin (coreGatherIndices s width radius L).length =>
-            cstream (prime+K) w (Fs.reverse.map (packedInterval
-              (coreStart width (coreGatherIndices s width radius L)[i.val]-radius) L)).flatten).flatten))}) := by
+          (coreSupplierStream (prime+K) width radius L w Fs.reverse))}) := by
   obtain ⟨rows,hlen,hbatches,v₁,n₁,hu₁,hn₁,he₁⟩ := plan.expose_route_gather_exec_within body hW e he count source archive saved tmp
     replicas savedReplicas hreg hsep borrowed hwidth hwide hLfit hwV hvol hA hVpos hgroup Fs v S
     h163 h115 h103 h105 hs hw hr hL hz hblank h104 h106 h116 hsource harchive hreplicas hsavedReplicas
@@ -93,8 +105,8 @@ theorem expose_real_gather_exec_within {P U : Type} (plan : ArchiveTilePlan t₀
     (by rw [hbase _ ‹missing ≠ plan.src›]; exact hmissing)
     (by rw [hbase _ ‹plan.src ≠ padSaved›.symm]; exact hpadSaved)
     (by rw [hbase _ ‹plan.src ≠ padTmp›.symm]; exact hpadTmp) (by simp [F]) depth
-  refine ⟨v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,?_⟩
-  simpa only [F,Function.update_idem] using mn_seq_within_add he₁ he₂
+  refine ⟨v₂,n₁+n₂,hu₂.trans hu₁,(by simpa only [realGatherTimeCost] using Nat.add_le_add hn₁ hn₂),?_⟩
+  simpa only [coreSupplierStream,realGatherProgram,realGatherStockAllowance,F,Function.update_idem] using mn_seq_within_add he₁ he₂
 
 end ArchiveTilePlan
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

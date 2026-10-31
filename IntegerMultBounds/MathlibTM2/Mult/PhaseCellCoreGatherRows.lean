@@ -10,6 +10,13 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.NLogN.PhaseCellMatrix
 
+/-- The contiguous real batches consumed by core suppliers after inverse routing. -/
+def coreSupplierStream {s : ℕ} (A width radius L w : ℕ) (Fs : List (ZMod s → GaussianInt)) :
+    List (Fin (A+4)) :=
+  (List.ofFn fun i : Fin (coreGatherIndices s width radius L).length =>
+    cstream A w (Fs.map (packedInterval
+      (coreStart width (coreGatherIndices s width radius L)[i.val]-radius) L)).flatten).flatten
+
 /-- Preserve ambient coordinates while giving each core/replica pair one row. -/
 def coreGatherRows {s : ℕ} (width radius L : ℕ) (Fs : List (ZMod s → GaussianInt))
     (i : Fin (coreGatherIndices s width radius L).length) (j : Fin Fs.length) : List GaussianInt :=
