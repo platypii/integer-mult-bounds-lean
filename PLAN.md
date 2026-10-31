@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3408 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3411 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20253,3 +20253,42 @@ kappa is unchanged.
 The compatibility build passes with branch-stock and actual cached interior/
 preparation callers (14196 jobs, 4.7 GiB combined peak). The scoped axiom audit
 passes for 324900 declarations at 3127.0 MiB.
+
+### S4 checkpoint: the complete real-scalar stream shares one numerical reserve
+
+`CMulScalarBoundary.scalarBoundary` is the actual physical boundary after a
+prefix has been consumed: source suffix, reversed restoration archive and
+reversed result accumulator. Its register projection is `scalarLoopSt`.
+`scalarBoundary_size` reuses `mn_archive_prefix_append_size` to prove exact
+stock growth of only `done.length*w`; moving consumed input into its archive
+costs nothing. `CFr.eq_of_holds` identifies framed physical banks from their
+register contents, without enumerating host ports.
+
+`rmulScalar_loop_exec_within` structurally traverses the input coefficient list.
+Every body is the actual certified singleton `cmulBlock` from the previous
+chunk. Its exact output register file identifies the next physical boundary;
+metadata, scalar and multiplier cleanliness transfer through the existing
+frames. The complete outer `cwhileP` retains one shared
+`C*(rmulCost(w)+2*w+6)` numerical reserve plus `xs.length*w` output capacity,
+independent of the iteration count. No execution callback is supplied.
+
+`realScalarStream_exec_within` adds both actual restoration moves and uses
+execution uniqueness to recover the original complete stream time bound and
+exact endpoint. Its public `realScalarWorkspace C w N` is
+`C*(rmulCost(w)+2*w+6) + 5*(N*w) + 4`: shared single-word scratch and linear
+encoded data. Original operands/scalar and all work stacks restore; only the
+result prefix changes. The entire initial bank and spectator data count once.
+No repeated multiplication runtime is charged as batch scratch, no controller
+or host bank is enumerated, and default proof limits are preserved.
+
+Guarded checks pass at 1898.9 MiB (physical boundary), 1924.2 MiB (actual outer
+loop) and 2043.9 MiB (complete restored scalar stream). The initial module build
+passes (4266 jobs, 2.6 GiB combined peak). Next compose scalar routing,
+preparation and retirement with this stream and the certified merged branches,
+then cover the input/output weighting passes and actual cached interior caller.
+Complete interior stock, selected geometry/amortization, boundary/recovery/
+publication and tensor/R4 restoration remain open. S4 remains incomplete;
+kappa is unchanged.
+The compatibility build passes with branch-stock and actual cached interior/
+preparation callers (14201 jobs, 1.1 GiB combined peak). The scoped axiom audit
+passes for 324932 declarations at 3127.7 MiB.
