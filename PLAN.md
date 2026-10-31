@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3411 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3417 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20292,3 +20292,41 @@ kappa is unchanged.
 The compatibility build passes with branch-stock and actual cached interior/
 preparation callers (14201 jobs, 1.1 GiB combined peak). The scoped axiom audit
 passes for 324932 declarations at 3127.7 MiB.
+
+### S4 checkpoint: complete four-product, merged and scalar interior stock
+
+The existing generic table-load and list-cleanup native certificates now live
+in narrow `ChirpBankLoadStock`, retaining their original public names. Both the
+original core gather and scalar readiness generation reuse them; no copied
+controller proof or fixed register-list expansion is needed. Structural native
+certificates cover scalar routing, actual unary/binary/table counter generation
+and final operand retirement/publication.
+
+`ScalarPlacement.run_exec_within` composes routing with the complete scalar
+stream's shared numerical reserve and cleanup. `applyScalar_exec_within` adds
+actual readiness generation, and `applyCanonical_with_x_tail_exec_within`
+discharges the original canonical-bank layout/cleanliness conditions. These
+preserve the original time, exact frame, output-tail and decoded error bounds.
+Setup costs are shared independently of M; routing/publication add only linear
+native traffic.
+
+`interiorProducts_exec_within` now certifies the actual four triangular
+products, RHS duplication, branch subtraction, retained-scalar fetch, readiness
+generation, complete scalar application and final scalar-staging retirement.
+It starts with ordinary raw generator/input words and one borrowed scalar word,
+with no supplied execution/readiness/numerical callback. Execution uniqueness
+reuses the existing final cleanup and error proofs rather than enumerating its
+bank again. Its `interiorWorkspace` adds shared ring/scalar reserves, one-time
+scalar preparation and linear padded/row traffic; it never charges repeated
+arithmetic runtime as batch scratch. The entire initial bank counts once.
+
+Guarded checks pass at 1931.5 MiB (shared loader), 2076.9 MiB (original gather
+compatibility), 2035.4 MiB (native scalar stages), 2064.6 MiB (routed scalar),
+2042.3 MiB (readiness/application), 2038.0 MiB (canonical adapter) and 2064.8 MiB
+(complete interior products). The compatibility build with actual cached
+interior/preparation callers passes (14208 jobs, 5.0 GiB combined peak).
+Next cover input/output weighting, normalization and their retirement, then
+lift the full certificate to the actual cached interior boundary. The selected
+geometry/amortization, boundary/recovery/publication and tensor/R4 restoration
+also remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 324966 declarations at 3128.8 MiB.
