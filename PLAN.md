@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3323 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3328 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19213,5 +19213,43 @@ Guarded checks peak at 1884.9 MiB (generic locality geometry) and 3135.0 MiB
 declarations at 3421.1 MiB. Next use these geometry facts in concrete
 selected class instantiation, and bound the actual class program's additional
 header/control work and shared workspace. Selected coefficient/dominance facts,
+ordinary header/placement instantiation, publication, seam lifecycle and
+R4/tensor restoration remain open. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: actual core control costs split into data traffic and scalar work
+
+`descriptorScheduleTape_length` proves the serialized-volume identity for an
+arbitrary schedule and arbitrary placed packet bank. `SupplierInputCostLedger`
+separates replica-independent ordinary setup from replica counters and payload
+copying exactly. `coreTimeCost_eq` and `coreStock_eq` then expose the complete
+fixed body's numerical, descriptor, payload, replica-count and scalar-control
+charges without expanding any concrete 325-register bank.
+
+`mn_fill_bank_size` reuses the existing structural finite-embedding sum lemma
+(now public) to prove exact stock growth when an injective blank bank is filled.
+`SupplierInputPlan.Ready.packetVolume_le` applies this to the actual installation
+trace: total descriptor word volume is at most `inputStock`, with no packet
+layout case split. `coreCosts_le_setupReady` generates the full header-readiness
+witness from ordinary setup readiness and applies this volume estimate. Thus
+pricing assumes neither initialized numerical headers nor an execution callback.
+The witness is used to prove the bound; no second setup run is added to the
+actual machine program.
+
+The resulting extra time is bounded by `518*payloadLength+340*replicas` plus
+`coreControlTimeCost+42*inputSharedStock`; extra workspace is bounded by
+`768*payloadLength+504*replicas` plus `coreControlStock+62*inputSharedStock`.
+The existing producer time/workspace bills remain explicit. All terms left in
+the shared control bills depend only on scalar geometry and numerical setup,
+not stored RHS data. These are rigorous data-linear bounds for the actual body,
+not yet selected asymptotic estimates.
+
+Guarded checks peak at 3021.0 MiB (schedule volume), 3380.5 MiB (input ledger),
+1381.7 MiB (generic bank growth), 3384.4 MiB (actual packet volume), and
+3386.7 MiB (complete control ledger). The combined target build passes
+(15867 jobs, 10.0 GiB combined peak). The scoped axiom audit passes for 337503
+declarations at 3420.0 MiB. Next reuse `inverseCallerHeaders_cuts_poly`
+and `selectedRawHeaderCost_cuts_poly_le` from the existing raw-header polynomial
+modules for the exact same scalar generator, then absorb the remaining shared
+control bills and instantiate class pricing. Selected coefficient/dominance,
 ordinary header/placement instantiation, publication, seam lifecycle and
 R4/tensor restoration remain open. S4 remains incomplete; kappa is unchanged.

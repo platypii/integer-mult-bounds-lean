@@ -11,7 +11,7 @@ namespace IntegerMultBounds.MathlibTM2.Host
 open IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Stack
   IntegerMultBounds.MathlibTM2.Fast.Main
 
-private theorem sum_replace_embedding {α β : Type} [Fintype α] [Fintype β]
+theorem sum_replace_embedding {α β : Type} [Fintype α] [Fintype β]
     [DecidableEq β] (e : α → β) (he : Function.Injective e) (f g : β → ℕ) (h : α → ℕ)
     (hin : ∀ a, f (e a) = h a) (hoff : ∀ b, (¬ ∃ a, e a = b) → f b = g b) :
     (∑ b, f b)+(∑ a, g (e a)) = (∑ b, g b)+(∑ a, h a) := by
