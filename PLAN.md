@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3287 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3289 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18611,3 +18611,31 @@ passes for 333367 declarations at 3348.4 MiB. Concrete analytic-family bounds
 and proper interval separation, physical selected headers, whole exposure /
 consumer composition, publication, seam lifecycle and R4/tensor restoration
 remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: movement classes construct their indexed proper-core jobs
+
+`coreClassParameterBounds` derives interval order, ambient fit, origin fit and
+halo length from membership in the ordered gather class. The single class
+separation inequality `haloLength+band ≤ s` supplies the factory's boundary
+separation requirement. Shared analytic hypotheses instantiate the existing
+bounds constructor without endpoint-specific machine-sizing premises.
+
+`PackedNormalizedJob.coreClassJobs` constructs the entire indexed job family
+with the existing common-format constructor. `coreClassJobs_fields` gives the
+exact core index, radius, shared packet width and RHS list required by the
+supplier payload handoff. The fields reduce directly rather than requiring
+unfolding the analytic proof construction.
+
+Guarded checks peak at 3310.4 MiB (class geometry/bounds) and 3338.3 MiB
+(indexed jobs). The target build passes (15375 jobs, 3.5 GiB combined peak).
+The scoped axiom audit passes for 333228 declarations at 3348.2 MiB.
+
+Integration priority: the current routed batch theorem assumes each call's
+ordinary input headers are simultaneously ready. That is insufficient for a
+selected family reusing one fixed input bank with changing endpoints and
+precision. The selected runtime controller must generate/retire those headers
+between calls; allocating a prepared bank per core is not a closure of this
+obligation. Concrete analytic-family facts and class separation, selected
+header generation, whole exposure/consumer composition, publication, seam
+lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa is
+unchanged.
