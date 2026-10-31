@@ -45,7 +45,7 @@ theorem repeatableGatheredReplicaClass_exec_within (plan : ReplicaInteriorPlacem
     (hwV : executionWidth p l target rhsExp < 2^V) (hcoords : span < 2^V)
     (hunits : span*executionWidth p l target rhsExp < 2^V)
     (v : HS T Q A U) (S : Stacks T A)
-    (tail borrowed suffix packedBorrowed outputTail : List (Fin (A+4)))
+    (tail borrowed suffix ambientSuffix packedBorrowed outputTail : List (Fin (A+4)))
     (R K : ℕ)
     (hpushR : mnProgPush (rpProg (P := Empty) (Q := Q) (A := A) (U := U)
       Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR) ≤ R)
@@ -71,7 +71,7 @@ theorem repeatableGatheredReplicaClass_exec_within (plan : ReplicaInteriorPlacem
         Fs.length windows.origins.length L w r.1) →
     V = weightWorkspaceWidth (2^15*p) q w t u →
     S.R (plan.gather 113) = (List.range windows.origins.length).flatMap
-      (fun j => binSyms V (lo j).val) ++ suffix →
+      (fun j => binSyms V (lo j).val) ++ ambientSuffix →
     (∀ k ∈ [(118 : Fin 121),119,120], S.R (plan.solver k) = []) →
     (S.R (plan.gather 115)).length = V → (S.R (plan.gather 94)).length = w →
     (S.R (plan.gather 102)).length = L →
@@ -124,7 +124,7 @@ theorem repeatableGatheredReplicaClass_exec_within (plan : ReplicaInteriorPlacem
       (executionStagePrecision p l target rhsExp+1) q l s t u (PhaseCellBand.width p u)
       Fs.length windows.origins.length L w
       (by dsimp [w,q,executionWidth,executionPrecision]; omega) (fun j => (lo j).val)
-      borrowed tail suffix v S hbank hmasters
+      borrowed tail ambientSuffix v S hbank hmasters
       (hV.trans hwidth)
       (by simpa only [hwidth] using hpage)
       (by

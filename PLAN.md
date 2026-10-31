@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3504 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3511 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21407,3 +21407,49 @@ controller and connect class traversal. The current class theorem still takes
 retained masters and those pages as input; it does not close their construction
 or the all-class loop. Shared coupling/recovery, global scheduling, tensor/R4
 restoration and selected acceptance remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: generate ambient/local origin pages in one local scan
+
+`PhaseCellPairedHaloGroupRow` emits each selected ambient start together with
+its offset from the halo origin in the two coordinates of one table packet.
+The subtraction is proved exact in the table word width. Existing clipped
+interval arithmetic, local phase endpoints and the structural `tblForFrom`
+invariant are reused by `PhaseCellPairedLocalHaloGroup` and
+`PhaseCellPairedLocalHaloClassCode`. The scan costs at most
+`37*haloPhaseCount+16` table instructions; it never scans the whole axis.
+
+`PhaseCellPairedOriginBits` proves both packet projections without decoding.
+`PhaseCellCountedPairedOriginHost` is generic over an arbitrary verified list
+of coordinate pairs. It counts packets once, copies the ambient bit projection
+and moves the local bit projection, preserving borrowed suffixes and restoring
+scratch. Its actual tape work is at most `B*(12*V+6)+10` beyond table execution,
+with native push bound three. `PhaseCellPairedLocalHaloController` instantiates
+this language to generate exactly `haloOriginPackets` on 113,
+`haloPackedOffsets.flatMap (binSyms V)` on 109 and the common unary count on 116.
+
+`PhaseCellPreparedPairedLocalHaloClass` reuses the existing ordinary unary
+header loader, constructs the private table, executes that local scan and
+releases all 31 private ports. Its exact three-write endpoint preserves every
+other right tape, all left tapes and input/output streams. Both the full time
+bill (initialization, header loads, scan, projection and release) and an actual
+whole-bank `ExecWithin` certificate with three times that bill are proved.
+No origin page or table execution witness is supplied to this constructor.
+The width source and ordinary scalar geometry are still retained inputs.
+
+The repeatable-class theorem now permits independent borrowed suffixes for
+local and ambient pages. This lets the generated ambient page retain its unary
+endpoint header below the owned packet prefix; no unnecessary suffix equality
+is imposed by composition.
+
+Guarded checks pass at 1918.4 MiB (paired row), 1909.3 MiB (local group),
+1964.2 MiB (initialized local scan), 1874.9 MiB (packet projections), 1992.5 MiB
+(generic paired host), 2087.0 MiB (physical local controller), 2087.3 MiB
+(ordinary-header constructor) and 2152.9 MiB (independent-suffix class contract).
+Final native-proof cleanup is covered by the compatibility build with the
+repeatable class, released-class resources and global core local stock:
+14542 jobs, 4.4 GiB combined peak.
+Next place this constructor in the retained gather bank and instantiate its
+pages with the class's publication windows, then execute the class traversal.
+The all-class loop, shared coupling/recovery, global scheduling, tensor/R4
+restoration and selected acceptance remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331782 declarations at 3271.0 MiB.
