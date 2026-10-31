@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3245 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3248 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18127,3 +18127,30 @@ S4 remains incomplete; kappa is unchanged.
 Guarded checks peak at 1408.7 MiB (table language) and 2078.8 MiB (complete
 class trace). The guarded target build passes (9684 jobs, 2.7 GiB combined peak).
 The scoped axiom audit passes for 43098 declarations (2081.3 MiB peak).
+
+### S4 checkpoint: a physical replica body advances once and gathers its class
+
+`takeCopyPrefix_exec` composes the existing restoring prefix copy and counted
+transfer. It consumes one ambient row, leaves a forward working copy and adds
+the reversed row to a restoration archive, with exact cost `14*rowSymbols+14`.
+This structural primitive prevents seeking from the start of the replica bank
+for each later row.
+
+`placedCoreGather_exec_within` places the actual generated/retired sweep in an
+arbitrary injective caller view. Its empty procedure type removes caller-table
+compatibility premises, preserving the complete stock bound and exact frame.
+
+`replicaCoreGatherStep_exec` composes staging, that actual grouped sweep and
+local-row erasure. The final state changes exactly three right registers:
+the remaining ambient suffix, reversed restoration archive and packed class
+payload archive. All ordinary geometry, controller storage and local-row storage
+return. The cost is `16*rowSymbols+16+restoredCoreGatherCost`, independently of
+the replica index. The caller can therefore scan consecutive replica rows and
+restore the whole source in one final pass; that runtime loop is not yet proved.
+
+Guarded checks peak at 1939.5 MiB (staging), 2067.6 MiB (placement) and
+2089.1 MiB (actual replica body). The guarded target build passes (9688 jobs,
+2.7 GiB combined peak). Replica-loop composition/stock, physical transpose,
+selected supplier consumption/publication and R4/tensor composition remain
+open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 43110 declarations (2081.2 MiB peak).
