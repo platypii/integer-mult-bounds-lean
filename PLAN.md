@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3515 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3517 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21496,3 +21496,46 @@ class-list induction. That composed generated class and the all-class loop
 are not yet proved. Shared coupling/recovery, global scheduling, tensor/R4
 restoration and selected acceptance remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331813 declarations at 3271.6 MiB.
+
+### S4 checkpoint: generated class execution restores both bank ABIs
+
+`PhaseCellGeneratedHaloReplicaClass.generatedHaloReplicaClass_exec_within`
+composes placed ordinary-geometry page generation, the repeatable factory/
+numerical solve/accumulation/retirement operation, and coordinate-page release.
+The entry contract contains ordinary scalar masters (excluding the generated
+class count), geometry endpoints, the actual packed RHS and independent bounded
+accumulator. Neither local nor ambient origin packets are supplied. The window
+origins are identified with the actual halo class by the proved packet bridge.
+The controller-width bound is derived from the numerical metadata width.
+
+The same actual execution certifies the new class's physical-read accuracy,
+preserves every earlier disjoint-core accuracy certificate, bounds the encoded
+output, restores the entire gather entry bank and returns the exact released
+numerical bank. Borrowed RHS/output/cache suffixes, input/output streams and
+cache/replay cleanliness survive. The header-source disjointness fact is checked
+once over the thirteen-copy list, independently of numerical cases or replicas.
+
+`Cost/PhaseCellGeneratedHaloReplicaResources` charges all coordinate generation
+and release as shared key work. Beyond zero-replica reload setup, only
+`(10*cV+19)*N*B*L*w` reload traffic repeats. The actual full trace inherits the
+released numerical linear-stock bound plus shared native work and twice that
+linear copying allowance. Numerical arithmetic runtime is not used to estimate
+stock. Selected global setup accounting and final fast acceptance remain open.
+
+Guarded checks pass at 2202.6 MiB (complete generated class) and 3161.3 MiB
+(shared/repeated time and actual linear-stock transport). Compatibility with the
+retained-header installer and global core local stock passes: 15081 jobs,
+3.4 GiB combined peak.
+
+Next reuse `takeUnaryKey` and the counted-loop pattern for traversal. The class
+program is independent of L; L is an ordinary retained header. The existing
+`installLengthKey` also fills 103, which conflicts with the new gather caller's
+fresh 103 precondition, so use `takeUnaryKey` directly to load gather 102 and
+clear 102 after the restored class. Gather 87 can retain the binary key queue;
+119 is a candidate count port because neither is required fresh by the class
+contract. Verify their exact frame behavior before using them in the loop.
+Keep a common l/precision across the bounded length-key list, as the existing
+halo loop does, and carry all replica accuracy/range invariants structurally.
+The actual key loop, full halo recovery, global scheduling, tensor/R4 restoration
+and selected acceptance remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331829 declarations at 3272.0 MiB.
