@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3191 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3194 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17315,3 +17315,26 @@ for the complete generated tile. The guarded target build passes (8320 jobs,
 packed/counting/padding and conditional archive wrappers. Generated supplier
 readiness, complete-key setup reuse, tensor/layout composition and final audits
 remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: packed generated chunk tiles have bounded stock
+
+`generatedChunkPlanesUsing_exec_within` and its complete-key instance share
+one generated-tile reserve between real and imaginary routes. Total host stock
+is equal at the intervening boundary, including every spectator register.
+`packedRouterUsing_exec_within` supplies a reusable bounded codec composition:
+actual bit-plane copying, the router, source erasure and joining. Only the
+linear native codec kernels use runtime as a stock allowance; the router must
+supply its independent workspace trace.
+
+`packedGeneratedChunkTile_exec_within` instantiates that language with both
+actual generated bit-plane routes. It derives their readiness from the original
+packed input, preserves the existing runtime bill and returns the exact packed
+complete-key permutation with codec scratch and counter cleared. The additional
+codec allowance is linear in packed tile volume, without a runtime charge for
+the recursive transpose or a second bit-plane workspace reserve.
+
+Guarded file checks peak at 2961.7 MiB (planes), 2956.4 MiB (generic codec) and
+2972.8 MiB (complete packed tile). The guarded target build passes (8350 jobs,
+3.2 GiB combined peak). Counting/padding and conditional archive composition,
+generated supplier readiness, complete-key setup reuse, tensor/layout
+composition and final audits remain open. S4 is incomplete; kappa is unchanged.
