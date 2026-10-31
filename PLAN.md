@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3188 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3189 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17280,3 +17280,21 @@ and unchanged boundary payload length, then propagate through dimension-bank,
 packed/counting/padding and conditional archive wrappers. Generated S4 supplier
 readiness, complete-key setup reuse, tensor/layout composition and final audits
 remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: chronological chunk stages share one workspace reserve
+
+`chunkInterchangeLoop_exec_within` composes the actual generated stage list with
+one maximum of the stage allowances. Each stage restores scratch and changes
+only a length-preserving payload, so total host stock is identical at every
+stage boundary. Initial spectator storage is counted once; workspace has no
+extra factor for the number of stages. The exact existing bit endpoint and
+summed runtime bound are retained.
+
+The guarded file check peaks at 2962.4 MiB and the target build passes (8314
+jobs, 3.2 GiB combined peak). Arithmetic monotonicity keeps the sealed supplier
+reserve opaque instead of expanding it inside arithmetic automation.
+
+Next consume this certificate through dimension-bank generation/release and
+packed/counting/padding archive composition. Generated supplier readiness,
+complete-key setup reuse, tensor/layout composition and final audits remain
+open. S4 is incomplete; kappa is unchanged.
