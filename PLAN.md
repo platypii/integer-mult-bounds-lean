@@ -16551,9 +16551,16 @@ linear entry/recovery cost. The workspace allowance has no iteration, sibling or
 recursion-depth factor. A root-halt certificate covers every actually reachable
 prefix, independently of the separate runtime proof.
 
-This is the generic composition theorem, not yet the selected transpose's space
-certificate. Remaining: instantiate its local frame bounds and bank offsets,
-including the stage-1 leaf core, then connect the resulting bound to host stock
-and the archive transpose. S4 also still needs the generated supplier/readiness,
+The concrete instantiation now supplies node-bank head offsets of at most
+`36 * parentVolume`, head offsets at most one between ordinary leaf/retirement
+banks, and a linear parent-volume entry/recovery cost. `RevHalfVolumeMargin`
+discharges the concrete child-margin condition and the entry/recovery prefix
+bounds; recovery is bounded from its exact parent post-bank. Node-only local
+bounds are required only when the frame takes the node branch.
+
+This is not yet the selected transpose's space certificate. Remaining: supply
+the other local frame bounds, especially the stage-1 leaf core, then connect
+the resulting bound to host stock and the archive transpose. S4 also still needs
+the generated supplier/readiness,
 setup-reuse, R4/tensor, layout-restoration and final execution/error/cost audit.
 S4 remains incomplete; kappa is unchanged.

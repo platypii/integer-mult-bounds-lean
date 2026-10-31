@@ -27,21 +27,21 @@ structure FrameBounds (σ : S.Shape) (x₀ : Tapes t a) (lo hi : ℤ) : Prop whe
   test : ∀ i ≤ S.leaves σ, ∀ y, S.Leaf σ x₀ i y →
     ∀ j, lo+S.cTest σ ≤ (raw y (tapeCount pieces capacity stack ht impl)).head j ∧
       (raw y (tapeCount pieces capacity stack ht impl)).head j+S.cTest σ ≤ hi
-  split : ∀ y, S.Leaf σ x₀ (S.leaves σ) y →
+  split : m ≤ S.size σ → ∀ y, S.Leaf σ x₀ (S.leaves σ) y →
     ∀ c, RunInvariant impl.split.program (· = raw y impl.split.tapes) c →
       ∀ j, lo ≤ c.head j ∧ c.head j ≤ hi
-  segment : ∀ (i : Site pieces) (s : Seg), pieces[i] = .seg s → ∀ y, S.Node σ x₀ i.val y →
+  segment : m ≤ S.size σ → ∀ (i : Site pieces) (s : Seg), pieces[i] = .seg s → ∀ y, S.Node σ x₀ i.val y →
     ∀ c, RunInvariant (impl.segment s).program (· = raw y (impl.segment s).tapes) c →
       ∀ j, lo ≤ c.head j ∧ c.head j ≤ hi
-  enter : ∀ (i : Site pieces) (c : Call), pieces[i] = .call c → ∀ y, S.Node σ x₀ i.val y →
+  enter : m ≤ S.size σ → ∀ (i : Site pieces) (c : Call), pieces[i] = .call c → ∀ y, S.Node σ x₀ i.val y →
     ∀ z, RunInvariant (impl.enter c (returnCode pieces capacity i)).program
       (· = raw y (impl.enter c (returnCode pieces capacity i)).tapes) z →
       ∀ j, lo ≤ z.head j ∧ z.head j ≤ hi
-  recover : ∀ (i : Site pieces) (c : Call), pieces[i] = .call c → ∀ y, S.Node σ x₀ i.val y →
+  recover : m ≤ S.size σ → ∀ (i : Site pieces) (c : Call), pieces[i] = .call c → ∀ y, S.Node σ x₀ i.val y →
     ∀ C : ChildStep S σ x₀ y i c, ∀ z, S.Exit C.child C.entered z →
       ∀ d, RunInvariant (impl.recover c).program (· = raw z (impl.recover c).tapes) d →
         ∀ j, lo ≤ d.head j ∧ d.head j ≤ hi
-  merge : ∀ y, S.Node σ x₀ pieces.length y →
+  merge : m ≤ S.size σ → ∀ y, S.Node σ x₀ pieces.length y →
     ∀ c, RunInvariant impl.merge.program (· = raw y impl.merge.tapes) c →
       ∀ j, lo ≤ c.head j ∧ c.head j ≤ hi
   finish : ∀ y, S.Done σ x₀ y →
@@ -62,13 +62,13 @@ theorem frame_run_within (σ : S.Shape) (x₀ : Tapes t a) (hx : S.Entry σ x₀
   · simp only [hm,ite_true] at hrl
     obtain ⟨yn,hyn,hsp⟩ := S.split σ x₀ yl hx hm hyl
     obtain ⟨ns,_,hrs⟩ := block_jump_within_heads pieces capacity stack ht impl .split (first pieces)
-      yl yn (S.cSplit σ) hsp (fun _ => rfl) lo hi F.lower_nonpos F.upper_nonneg (F.split yl hyl)
+      yl yn (S.cSplit σ) hsp (fun _ => rfl) lo hi F.lower_nonpos F.upper_nonneg (F.split hm yl hyl)
     have hp := piece_run_within S σ x₀ hx hm lo hi F.lower_nonpos F.upper_nonneg
-      F.segment F.enter (hchild hm) F.recover
+      (F.segment hm) (F.enter hm) (hchild hm) (F.recover hm)
     obtain ⟨ym,hym,nsc,hrsc⟩ := schedule_run_within S σ x₀ lo hi yn hyn hrs.finish hp
     obtain ⟨yd,hyd,hmg⟩ := S.merge σ x₀ ym hx hm hym
     obtain ⟨nm,_,hrm⟩ := block_jump_within_heads pieces capacity stack ht impl .merge .finish
-      ym yd (S.cMerge σ) hmg (fun _ => rfl) lo hi F.lower_nonpos F.upper_nonneg (F.merge ym hym)
+      ym yd (S.cMerge σ) hmg (fun _ => rfl) lo hi F.lower_nonpos F.upper_nonneg (F.merge hm ym hym)
     obtain ⟨z,hz,nt,hrt⟩ := tail_run_within S σ x₀ hx lo hi F.lower_nonpos F.upper_nonneg
       yd hyd (F.finish yd hyd) F.pop
     exact ⟨z,hz,nl+ns+nsc+nm+nt,(((hrl.trans hrs).trans hrsc).trans hrm).trans hrt⟩
