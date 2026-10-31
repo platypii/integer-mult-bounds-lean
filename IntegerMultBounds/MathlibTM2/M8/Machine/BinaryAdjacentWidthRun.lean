@@ -48,7 +48,7 @@ def cost (P G B u : ℕ) (hs : Fin 4 → List Bool) :=
     BinaryAdjacentWidthMovementShared.constructedCoefficient*volume P G B u + 210*volume P G B u + 3
 
 omit [Stage2Machine.Total.Capacity] in
-private theorem equal_values (P G B u : ℕ) (hs : Fin 4 → List Bool)
+theorem equal_values (P G B u : ℕ) (hs : Fin 4 → List Bool)
     (hv : ∀ i, Counter.value (hs i) = values P G B u i) :
     ∀ i, Counter.value (BinaryAdjacentWidthPrefixShared.equalWords P G B hs i) = BinaryRadixRangePrepare.values (P*2) G B u i := by
   intro i; fin_cases i
@@ -57,7 +57,7 @@ private theorem equal_values (P G B u : ℕ) (hs : Fin 4 → List Bool)
   · exact hv 2
   · exact hv 3
 omit [Stage2Machine.Total.Capacity] in
-private theorem equal_canonical (P G B : ℕ) (hs : Fin 4 → List Bool)
+theorem equal_canonical (P G B : ℕ) (hs : Fin 4 → List Bool)
     (hc : ∀ i, GrowingCounterData.Canonical (hs i)) :
     ∀ i, GrowingCounterData.Canonical (BinaryAdjacentWidthPrefixShared.equalWords P G B hs i) := by
   intro i; fin_cases i
@@ -67,14 +67,14 @@ private theorem equal_canonical (P G B : ℕ) (hs : Fin 4 → List Bool)
   · exact hc 3
 
 omit [Stage2Machine.Total.Capacity] in
-private theorem prefix_setTape (caller : Tapes t prime) (P G B : ℕ)
+theorem prefix_setTape (caller : Tapes t prime) (P G B : ℕ)
     (hs : Fin 4 → List Bool) (payload : Fin t) (word : ℤ → Fin (prime+4)) :
     setTape (BinaryAdjacentWidthPrefixShared.output caller P G B hs) (prefixSlot payload) word 0 =
       BinaryAdjacentWidthPrefixShared.output (setTape caller payload word 0) P G B hs := by
   simp only [BinaryAdjacentWidthPrefixShared.output,prefixSlot,SharedPlacementAlphabet.setTape_append_left]
 
 omit [Stage2Machine.Total.Capacity] in
-private theorem source_changed (caller : Tapes t prime) (focus : Fin 4 → Fin t)
+theorem source_changed (caller : Tapes t prime) (focus : Fin 4 → Fin t)
     (payload : Fin t) (hs : Fin 4 → List Bool) (hsrc : Sources caller focus hs)
     (hh : caller.head payload = 0) (word : ℤ → Fin (prime+4)) :
     Sources (setTape caller payload word 0) focus hs := by
@@ -96,7 +96,7 @@ private theorem prepared_sources (caller : Tapes t prime) (focus : Fin 4 → Fin
   · intro i
     simpa only [BinaryRadixEqualShared.input,BinaryAdjacentWidthPrefixShared.output,movementFocus,equalSlot,prefixSlot,Tapes.append,Fin.addCases_left] using hsrc.head i
 
-private theorem setup_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t)
+theorem setup_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t)
     (P G B u : ℕ) (hs : Fin 4 → List Bool) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
     (hv : ∀ i, Counter.value (hs i) = values P G B u i)
     (hc : ∀ i, GrowingCounterData.Canonical (hs i)) (hsrc : Sources caller focus hs) :
@@ -107,7 +107,7 @@ private theorem setup_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t)
       (FixedHeaderBankCopy.empty BinaryRadixEqualShared.count)) (FixedHeaderBankCopy.empty 1))
       (FixedHeaderBankCopy.empty 17)) (FixedHeaderBankCopy.empty 22)
 
-private theorem cleanup_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t)
+theorem cleanup_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t)
     (P G B u : ℕ) (hs : Fin 4 → List Bool) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
     (hv : ∀ i, Counter.value (hs i) = values P G B u i)
     (hc : ∀ i, GrowingCounterData.Canonical (hs i)) :
@@ -138,7 +138,7 @@ private theorem equal_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t) (p
   exact hoare_extend_eq (hoare_extend_eq (hoare_extend_eq h
     (FixedHeaderBankCopy.empty 1)) (FixedHeaderBankCopy.empty 17)) (FixedHeaderBankCopy.empty 22)
 
-private theorem forward_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t) (payload : Fin t)
+theorem forward_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t) (payload : Fin t)
     (P G B u : ℕ) (hs : Fin 4 → List Bool) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
     (hv : ∀ i, Counter.value (hs i) = values P G B u i)
     (hc : ∀ i, GrowingCounterData.Canonical (hs i)) (hsrc : Sources caller focus hs)
@@ -155,7 +155,7 @@ private theorem forward_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t) 
     (by simpa only [BinaryRadixEqualShared.input,BinaryAdjacentWidthPrefixShared.output,equalSlot,prefixSlot,Tapes.append,Fin.addCases_left] using hh)
   simp only [BinaryRadixEqualShared.input,equalSlot,SharedPlacementAlphabet.setTape_append_left,prefix_setTape] at h
   exact h
-private theorem backward_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t) (payload : Fin t)
+theorem backward_runs (caller : Tapes t prime) (focus : Fin 4 → Fin t) (payload : Fin t)
     (P G B u : ℕ) (hs : Fin 4 → List Bool) (hP : 0 < P) (hG : 0 < G) (hB : 0 < B)
     (hv : ∀ i, Counter.value (hs i) = values P G B u i)
     (hc : ∀ i, GrowingCounterData.Canonical (hs i)) (hsrc : Sources caller focus hs)

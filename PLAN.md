@@ -17100,3 +17100,28 @@ Next instantiate this bounded equal-width call inside both adjacent-width
 movement directions, then the rectangular selector and archive-stock transfer.
 Generated S4 supplier readiness, complete-key setup reuse, tensor/layout
 composition and final audits remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: both adjacent binary-width directions are bounded
+
+`BinaryAdjacentWidthRunWithin.boundaries` shares actual prefix construction and
+cleanup between the two directions. Setup establishes one middle reserve for
+any payload with the same caller heads; structural bank head congruence carries
+that reserve between phase boundaries. Recovery is bounded from its exact
+restored endpoint.
+
+`equal_runs` instantiates the bounded shared equal-width radix call on the
+prefix-adjusted view and frames its actual execution over the stationary
+movement banks. The view's volume is exactly the adjacent binary volume.
+`longH_runs` composes equal interchange then forward digit movement;
+`longD_runs` composes inverse movement then equal interchange. Both retain the
+existing physical word-reindexing identities, exact original transpose,
+original charged runtime and wholly blank private banks at the endpoints.
+The middle reserve is a maximum of equal-call and movement allowances.
+
+Existing pure source/encoding helpers and paid setup/movement/cleanup contracts
+are exposed and reused. Guarded regression and new-file checks peak at
+2540.0 MiB and 2543.4 MiB; the guarded target build passes (6722 jobs).
+Next close the actual three-way rectangular-width selector, then transfer the
+complete selected binary interchange certificate to archive stock. Generated
+S4 supplier readiness, complete-key setup reuse, tensor/layout composition and
+final audits remain open. S4 is incomplete; kappa is unchanged.
