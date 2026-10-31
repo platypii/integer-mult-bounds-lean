@@ -20,6 +20,26 @@ theorem ownedCore_entire : ownedCore s s 0 = Finset.univ := by
   simp only [ownedCore,coreStart,coreLength,Nat.zero_mul,Nat.sub_zero,Nat.min_self,Nat.zero_add,mem_haloVertices,Finset.mem_univ,iff_true]
   exact ⟨Nat.zero_le _,i.val_lt⟩
 
+/-- A full-period core forces its generated halo to be the whole system,
+independently of the selected locality depth and band. -/
+theorem generatedWindow_entire (p u target : ℕ) :
+    (generatedWindow s s p u target 0).halo = Finset.univ := by
+  apply Finset.eq_univ_of_forall
+  intro i
+  apply (generatedWindow s s p u target 0).core_subset_halo
+  change i ∈ ownedCore s s 0
+  rw [ownedCore_entire]
+  exact Finset.mem_univ i
+
+/-- The ordinary full-line descriptor supplies the generated-window ABI.
+No seam-specific local solution or locality hypothesis is needed. -/
+theorem fullLine_generated_halo (p u target : ℕ) :
+    haloVertices s 0 s = (generatedWindow s s p u target 0).halo := by
+  rw [generatedWindow_entire]
+  ext i
+  simp only [mem_haloVertices,Finset.mem_univ,iff_true]
+  exact ⟨Nat.zero_le _,i.val_lt⟩
+
 theorem ExactCoreProduced.restrict_full {p : ℕ} {r : FamilyDispatchInput s A}
     {J : FamilyDispatchInput s A → (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ)} {output : List (Fin (A+4))}
     (h : ExactCoreProduced p s (fun _ => 0) J r output) (coreWidth k : ℕ) :
