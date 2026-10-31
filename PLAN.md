@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3368 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3370 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19733,3 +19733,41 @@ Guarded checks pass at 2063.6 MiB (packed replica data/order), 2046.0 MiB
 build with the prepared numerical batch and existing exposed-core driver passes
 (15878 jobs, 2.8 GiB combined peak); the scoped axiom audit passes. S4 remains
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: retain local gather controls across packed RHS replicas
+
+The global-coordinate gather from the preceding checkpoint decodes positions
+in the entire replica bank. That does not establish the desired fast repeated
+bill: coordinate width grows with the bank, and its quadratic decoder work is
+paid per replica/cell. The main route now uses retained local controls instead.
+Removed the superseded global-coordinate gather executors; restore from `7bfa9023`.
+The packed-coordinate slicing/order lemmas remain and are reused.
+
+`retainedRowGatherStep_exec` copies one packed row, advances it into a reverse
+restoration archive, gathers all fitting windows with one retained control page,
+and erases the local row copy. It restores the controls and all scratch.
+Its actual repeated bill is `B*(14*L*w+25)+28*volume+6*L*w+9*L+45`, with
+no coordinate decoder and no ambient source length.
+
+`Host.restoringRowScan_exec` factors the structural source/archive scan shared
+by these row pipelines. It proves source/counter restoration and the exact
+reverse row publication order over an arbitrary list, without enumerating a
+bank. `retainedRowGather_exec` instantiates that lemma with the actual fixed
+row program, deriving every step execution rather than assuming an executor.
+`retainedPackedReplicaGather_exec` identifies its physical bytes with the
+original ambient-coordinate cell RHS and supplies the complete packed-row
+loop. Empty replica lists work, and the complete borrowed source suffix restores.
+Only the declared destination prefix changes.
+
+The caller still must generate the local control page once and retire it after
+the replica scan, then connect the reverse-order rows to the prepared numerical
+batch. This replaces repeated global-coordinate generation, rather than
+assuming its decoder cost is free. Boundary/recovery batching, publication,
+complete stock and tensor/R4 restoration remain open.
+
+Guarded checks pass at 1414.0 MiB (structural row scan), 1976.9 MiB (retained
+row step), 1974.5 MiB (complete row loop), and 2051.2 MiB (packed numerical
+ABI). Combined build with the prepared numerical fast bounds and existing
+exposed-core driver passes (15880 jobs, 2.7 GiB combined peak); the scoped
+audit passes for 337538 declarations at 3422.9 MiB. S4 is incomplete;
+kappa is unchanged.
