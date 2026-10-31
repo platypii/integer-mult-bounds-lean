@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3294 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3296 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18714,3 +18714,27 @@ core-count headers, assembly of readiness from generated headers, and retirement
 around actual supplier execution. Concrete selected analytic facts, whole
 exposure/consumer composition, publication, seam lifecycle and R4/tensor
 restoration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: one class core-length counter is generated from its margins
+
+`generateCoreLength_exec_within` copies a retained halo-length counter and
+subtracts the retained radius twice using existing restoring unary operations.
+Its exact time is `4*haloLength+8*radius+12`; the execution-wide workspace bound
+is twice this bill. Only the new core counter changes, and both source words
+and scratch restore. Natural subtraction handles all dimensions structurally.
+`generateSupplierCoreLength_exec` uses the existing job halo identity to identify
+the generated word with the exact supplier core length.
+
+The radius, replica count, common packet width, halo symbol width and core
+length are movement-class invariants. Their setup should be retained across
+calls, using existing header-copy and unary-product operations; they do not
+need recomputation for each endpoint key. Changing masters, geometry width and
+endpoint parameters remain the per-job setup frontier.
+
+Guarded checks peak at 1396.0 MiB (generic counted margins) and 3302.7 MiB
+(supplier specialization). The target build passes (15175 jobs, 3.5 GiB combined
+peak). The scoped axiom audit passes for 332321 declarations at 3317.4 MiB.
+Class-header assembly and cleanup, generated per-call readiness, concrete
+selected analytic facts, whole exposure/consumer composition, publication,
+seam lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa
+is unchanged.
