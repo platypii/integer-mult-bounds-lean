@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3452 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3453 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20694,3 +20694,34 @@ then instantiate the total interior bound against selected geometry and
 precision. Supplier generation, recovery/seams and tensor/R4 restoration remain
 open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327016 declarations at 3159.2 MiB.
+
+### S4 checkpoint: total gathered interior stock has a linear native envelope
+
+`PhaseCellGatheredNumericalStock` names the exact complete allowance already
+certified by `gatheredReplicaInteriorBatch_exec_within` and bounds it by
+`gatheredInteriorLinearWorkspace`. The bound contains one zero-cell numerical
+reserve, one prepared-control charge, one copied-page charge, and
+`(1872+cachedOriginsTrafficFactor)*N*(B*(L+2^l)*w+span*w+1)`.
+The generic arithmetic comparison is proved over natural-number constants
+before substituting compiled-program push bounds. Numerical multiplication
+time and scalar scratch are absent from repeated traffic.
+
+`gatheredInterior_within_linear` applies this inequality directly to the actual
+complete execution's stock certificate. It preserves the execution, endpoint,
+time and all numerical/restoration postconditions; it does not replace a
+numerical execution with an assumed solver. The physical initial bank and its
+spectators remain counted exactly once.
+
+`gatheredInteriorLinearWorkspace_le_row_volume` further reduces repeated stock
+to a constant times `N*(B*L+span+1)*p` under `w ≤ cw*p` and `2^l ≤ cr*L`.
+The padding-to-row comparison is explicit and still needs instantiation for
+selected cell groups, especially short exceptional cells; it is not silently
+assumed of every generated row. Shared control/page charges remain visible.
+
+The guarded module check passes at 3148.2 MiB. Compatibility with the
+manuscript-scale geometry and existing gathered fast-time caller passes
+(14437 jobs, 3.4 GiB combined peak). Next discharge selected control widths,
+padding/exceptional-cell accounting and aggregate this native envelope over
+core/halo geometry. Supplier generation, recovery/seams and tensor/R4
+restoration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327676 declarations at 3164.0 MiB.
