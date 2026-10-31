@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3189 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3191 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17298,3 +17298,20 @@ Next consume this certificate through dimension-bank generation/release and
 packed/counting/padding archive composition. Generated supplier readiness,
 complete-key setup reuse, tensor/layout composition and final audits remain
 open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: complete generated chunk tiles have bounded stock
+
+`generatedChunkTileUsing_exec_within` now consumes the bounded chronological
+loop inside actual dimension-bank allocation and release. Structural native
+certificates cover an arbitrary unary product chain and both dimension banks;
+release has zero pushes. Allocation is charged once by twice its linear native
+runtime bill, followed by the shared maximum stage reserve. All later stage
+readiness is derived from the generated banks. Execution uniqueness retains
+the existing exact bit permutation, restored banks and original paid runtime.
+
+Guarded checks peak at 2923.3 MiB for the dimension-bank language and 2958.0 MiB
+for the complete generated tile. The guarded target build passes (8320 jobs,
+3.2 GiB combined peak). Next propagate this complete certificate through the
+packed/counting/padding and conditional archive wrappers. Generated supplier
+readiness, complete-key setup reuse, tensor/layout composition and final audits
+remain open. S4 is incomplete; kappa is unchanged.
