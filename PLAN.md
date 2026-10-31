@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3417 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3421 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20330,3 +20330,43 @@ lift the full certificate to the actual cached interior boundary. The selected
 geometry/amortization, boundary/recovery/publication and tensor/R4 restoration
 also remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 324966 declarations at 3128.8 MiB.
+
+### S4 checkpoint: varying real weights share one coefficient reserve
+
+`mn_archive_prefix_size` factors the source-to-restoration-archive stock
+identity out of `mn_archive_prefix_append_size`; the original three-port
+certificate reuses it and keeps its public contract. `CMulPairBoundary` applies
+that identity to both operand streams, then charges only the retained result.
+Its physical bank projects to the existing `blockLoopSt`, and exact boundary
+stock is initial stock plus `done.length*w`.
+
+`rmulPair_loop_exec_within` structurally traverses actual coefficient pairs.
+Each body reuses `rmulOne_runs`, the call-free compiler certificate and
+`CRuns.exec_within_native`. Existing frame/holds and readiness lemmas transfer
+the resulting physical boundary and clean multiplier bank. The whole loop
+shares `C*rmulCost(w)` scratch independently of the number of pairs. No body
+execution or numerical callback is supplied.
+
+`realWeightStream_exec_of_fits_within` adds all three actual restoration moves
+and uses execution uniqueness for the original time and exact endpoint.
+`realWeightWorkspace C w N = C*rmulCost(w)+7*(N*w)+6` is a single coefficient
+reserve plus linear encoded data. Both varying operand streams restore and
+only the ordered output prefix changes; initial spectator data count once.
+The normalized `realWeightStream_exec_within` and constructed reciprocal-input
+`weightedInputStream_exec_within` interfaces inherit the same certificate,
+including the original `q+b` normalization shift and output numerators.
+No repeated multiplication runtime is charged as batch scratch, no SS
+controller or host bank is enumerated, and default proof limits are preserved.
+
+Guarded checks pass at 1388.6 MiB (shared archive identity), 1903.0 MiB (two-input
+boundary), 1929.2 MiB (actual pair loop), 2052.2 MiB (restored normalized stream)
+and 2030.8 MiB (reciprocal-input adapter). The initial module build passes
+(4302 jobs, 2.6 GiB combined peak). Next lift these kernel certificates through
+actual weighting readiness/routing, normalization header generation and
+retirement, then compose with the certified interior product/scalar chain and
+actual cached interior caller. The selected geometry/amortization, boundary/
+recovery/publication and tensor/R4 restoration also remain open. S4 remains
+incomplete; kappa is unchanged.
+The compatibility build passes with the full interior/scalar stock chain and
+actual cached interior/preparation callers (14212 jobs, 2.7 GiB combined peak).
+The scoped axiom audit passes for 324977 declarations at 3129.4 MiB.
