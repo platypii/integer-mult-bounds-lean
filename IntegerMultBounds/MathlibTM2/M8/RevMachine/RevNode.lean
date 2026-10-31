@@ -169,6 +169,12 @@ theorem segT_ge (w : N.World ⊕ N.Temp) (l : List (AtomRoleSegment.SOp N.width)
 theorem segT_le (w : N.World ⊕ N.Temp) (l : List (AtomRoleSegment.SOp N.width)) : tapes N + 15 ≤ segT N w l :=
   Nat.le_add_left _ _
 
+/-- The node's ordinary counters are exactly the segment counter ABI. -/
+theorem nodeC_segCounters (b f : ℕ) : NodeSegment.SegCounters (nodeC N b f) b f :=
+  ⟨by simp [nodeC, Prepare.rest], by simp [nodeC, Prepare.rest], by simp [nodeC, Prepare.rest],
+    by simp [nodeC, Prepare.rest], by simp [nodeC, Prepare.rest], by simp [nodeC],
+    by simp [nodeC, Prepare.rest], by simp [nodeC, Prepare.rest], by simp [nodeC]⟩
+
 open Classical in
 /-- The XOR gate `dst += src` of a gate of the control. -/
 def gateOp (g : Circuit.Gate (N.World ⊕ N.Temp) (ZMod 2)) : List (M8.Machine.RoleOps.Op (tapes N)) :=

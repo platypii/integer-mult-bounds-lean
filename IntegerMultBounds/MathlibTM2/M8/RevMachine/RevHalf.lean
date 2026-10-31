@@ -267,10 +267,7 @@ theorem half_seg (hR : RevRuns N) {b₀ : ℕ} (σ : Frame (pcs N) capacity) (y 
     set l := AtomRoleSegment.sops ops hfits
     have hh := AtomRoleSegment.chain_hoare σ.hb (RevNode.segT N w l) hf (wireSlot N w) _ hw hp _ hV l
       (RevNode.segT_ge N w l) data
-    have hc : NodeSegment.SegCounters (nodeC N σ.b (σ.n / N.width)) σ.b (σ.n / N.width) :=
-      ⟨by simp [nodeC, Prepare.rest], by simp [nodeC, Prepare.rest], by simp [nodeC, Prepare.rest],
-        by simp [nodeC, Prepare.rest], by simp [nodeC, Prepare.rest], by simp [nodeC], by simp [nodeC, Prepare.rest],
-        by simp [nodeC, Prepare.rest], by simp [nodeC]⟩
+    have hc := RevNode.nodeC_segCounters N σ.b (σ.n / N.width)
     have hr := NodeSegment.seg_runs (fs := σ.f) (p := σ.p)
       (node := RecursiveViewFrame.savedStack (hdr (midView N σ.b σ.n σ.v)) (RecursiveViewFrame.savedStack (hdr σ.v) σ.node))
       (scalar := σ.scalar) (st := σ.st) (RevNode.segT_le N w l) _ hc hh
