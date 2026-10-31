@@ -16584,3 +16584,26 @@ the existing canonical input/returned-bank identities, and `InductionWithin.base
 uses that same coefficient at depth zero. These close the call adapter, not the
 recursive node assembly: node-bank offsets, bounded node composition, the full
 depth induction and the high-width wrappers remain open.
+
+### S4 checkpoint: stage-1 power-width transpose has linear workspace
+
+`NodeExecutionWithin.split_return` reuses the existing split, temporary fill,
+clear, merge and restored-return runs. The actual split's linear runtime bounds
+its endpoint head offset once; `dataBank_head_eq` transfers that bound to every
+literal schedule boundary without decoding saved stacks. The schedule shares
+one interval, and clear/merge/return form one linear-time tail. The row-volume
+shrink pays the physical call reserve with no depth or sibling factor.
+
+`InductionWithin.contract` now closes depth induction for the actual fixed graph:
+one coefficient works at every depth, retaining the original runtime budget,
+exact transpose, caller headers and stacks. `RunWithin.seq` includes the actual
+tape-preserving join. `RootExecutionWithin.run_within` applies it to paid root
+setup and the recursive graph, giving a genuinely halting execution, exact
+restored output and linear-volume head margins for every prefix. A halting
+witness also bounds all actually reachable prefixes via `prefix_of_halt`.
+
+This closes the power-width recursive core's space proof. The arbitrary/high-width
+wrappers still need bounded execution certificates before the stage-2 leaf core
+and selected archive transpose have their full space certificates. The remaining
+S4 supplier/readiness, setup reuse, tensor/layout and final audit obligations above
+remain open; S4 is incomplete and kappa is unchanged.

@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M8.Machine.InductionBaseWithin
-public import IntegerMultBounds.MathlibTM2.M8.Machine.NodeExecution
+public import IntegerMultBounds.MathlibTM2.M8.Machine.NodeExecutionWithin
 public import IntegerMultBounds.MathlibTM2.M8.Machine.CallInductionBridge
 public import IntegerMultBounds.MathlibTM2.M8.Machine.Budget
 
@@ -78,21 +78,8 @@ theorem calls {depth b : ℕ} {v : Descriptor} (capacity : Fintype.card PC ≤ 2
     (hs : Fin 6 → List Bool) (hv : RecursiveDimensionBank.Headers v hs)
     (f : ℤ → Fin (prime+4)) (p : ℤ) (node : Tapes 1 prime) (st : Tapes 2 prime)
     (ready : Ready f p node (SharedBank.empty 1 prime) st) :
-    ∀ (site : Site) w i j, pieces[site] = .call w i j →
-    ∀ data : RecursiveViewedAction.Data payloadCount v, BinaryInvariant.Ready data →
-    (∀ z, lo+(PieceExecution.callReserve D k w i j*volume prime v : ℕ) ≤
-      (raw (PieceExecution.dataBank hs f p node st data)
-        (tapeCount capacity widthSlot pcStack (implementation k))).head z ∧
-      (raw (PieceExecution.dataBank hs f p node st data)
-        (tapeCount capacity widthSlot pcStack (implementation k))).head z+
-        (PieceExecution.callReserve D k w i j*volume prime v : ℕ) ≤ hi) →
-    ∃ n ≤ PieceExecution.actualCallBound (v := v) k
-        (Budget.budget k depth (volume prime v)) w i j,
-      RunWithin (Control.program capacity widthSlot pcStack (implementation k))
-        (fun z => ∀ j, lo ≤ z.head j ∧ z.head j ≤ hi) n
-        (entryConfig capacity (.piece site) (PieceExecution.dataBank hs f p node st data))
-        (entryConfig capacity (successor site) (PieceExecution.dataBank hs f p node st
-          (ChildPermutation.child hw w i j data))) := by
+    NodeExecutionWithin.Calls capacity hw hs f p node st
+      (Budget.budget k depth (volume prime v)) D lo hi := by
   intro site w i j hic data hdata hbank
   obtain ⟨bits,rfl⟩ := hdata
   let mid := CallReady.parkedBank w bits hs f p node
@@ -148,6 +135,58 @@ theorem calls {depth b : ℕ} {v : Descriptor} (capacity : Fintype.card PC ≤ 2
   have he : encodedBits bits (fun _ => blank) (wireSlot w) =
       encoded (bits w) := encodedBits_wire bits _ w
   simpa only [PieceExecution.actualCallBound,ChildPermutation.child,he] using hcall
+
+/-- One coefficient for every recursive depth of the fixed graph. -/
+def coefficient (k : ℕ) : ℕ := 2*(Budget.base k+Budget.node k)
+
+/-- Actual recursive execution, exact restoration, original runtime, and a
+linear-volume workspace margin, with no assumed child execution. -/
+theorem contract (capacity : Fintype.card PC ≤ 2^k) (D : ℕ) (lo hi : ℤ)
+    (hD : coefficient k ≤ D) (depth : ℕ) : Contract capacity depth D lo hi := by
+  induction depth with
+  | zero =>
+      apply base capacity D lo hi
+      dsimp only [coefficient] at hD
+      omega
+  | succ depth ih =>
+    intro target v shape hs old hv hold f p node scalar st ready x initial hmargin
+    have hscalar := ready.scalar
+    subst scalar
+    have saved := RecursiveStackAllocation.saved_stacks_available old st
+      (FiniteReturnStack.address capacity (encoding target)) ready.descriptor ready.pc
+    have hw := Depth.split_width shape
+    have hd := Depth.split_divides shape
+    have hpRole := Depth.split_positive shape
+    have hrolevol : volume prime (role v roleCount) = volume prime v/roleCount :=
+      (Depth.selected_volume_role shape ⟨0,width_pos⟩ ⟨0,width_pos⟩).symm.trans
+        (Depth.selected_volume shape ⟨0,width_pos⟩ ⟨0,width_pos⟩)
+    have allCalls : ∀ rs : List Bool,
+        RecursiveDimensionBank.Headers (role v roleCount) (RecursiveRowsNodeHeaders.headers hs rs) →
+        NodeExecutionWithin.Calls capacity (v := role v roleCount) hw
+          (RecursiveRowsNodeHeaders.headers hs rs) f p (RecursiveViewFrame.savedStack hs node)
+          (RecursiveChildCallSetup.savedStacks old st (FiniteReturnStack.address capacity (encoding target)))
+          (Budget.budget k depth (volume prime v/roleCount)) D lo hi := by
+      intro rs hrs
+      rw [← hrolevol]
+      exact calls capacity D lo hi ih hw hpRole (fun i j => Depth.selected_shape shape i j)
+        _ hrs f p _ _ ⟨ready.payload,RecursiveRowsNode.saved_available hs node ready.node,rfl,saved.1,saved.2⟩
+    have hhalf : 2*volume prime (role v roleCount) ≤ volume prime v := by
+      rw [hrolevol]
+      have hm := Nat.div_mul_le_self (volume prime v) roleCount
+      have h2 := Nat.mul_le_mul_right (volume prime v/roleCount) two_le_roleCount
+      nlinarith only [hm,h2]
+    obtain ⟨n,hn,ht⟩ := NodeExecutionWithin.guard_return (v := v) capacity target hw shape.positive hd
+      old hs hv f p node st ready.node ready.descriptor ready.pc x
+      (Budget.budget k depth (volume prime v/roleCount)) D lo hi hD hold hhalf hmargin allCalls
+    have hV := RecursiveAffinePrepare.volume_positive Shared50ModularControl.prime_prime.two_le v shape.positive
+    have hroleLe : volume prime (role v roleCount) ≤ volume prime v := by
+      rw [hrolevol]
+      exact Nat.div_le_self _ _
+    have hret := Budget.return_cost_bound (volume prime v) hV old hs hold
+      (RecursiveRowsNode.header_length v shape.positive hs hv)
+    have hbound := Budget.node_bound k depth (volume prime v)
+      (volume prime (role v roleCount)) (RecursiveChildCallReturn.cost old hs) hV hroleLe hret
+    exact ⟨n,hn.trans hbound,ht⟩
 
 end
 end IntegerMultBounds.MathlibTM2.M8.Machine.InductionWithin
