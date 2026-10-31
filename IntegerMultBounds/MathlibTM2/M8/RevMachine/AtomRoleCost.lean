@@ -89,6 +89,21 @@ theorem loopCost_le (act : RecursiveViewedAction.Action t) (N V f : ℕ) (hf : 0
   rw [e1, e2]
   omega
 
+theorem setupCost_le (hf : 0 < f) (op : AtomOps.AtomOp (m+m) ℚ) :
+    setupCost f (plan op) ≤ (32*(m+1)^2 + 600*(m+1))*f+3 := by
+  have hs (j : Fin 4) := setCost_le hf (plan op j).1 (plan_le op j) (plan op j).2
+  have := hs 0; have := hs 1; have := hs 2; have := hs 3
+  simp only [setupCost]
+  nlinarith
+
+theorem eraseCost_le {N : ℕ} (s : Selection N) : eraseCost (vals s) ≤ 8*N+55 := by
+  have he (j : Fin 4) := CounterSteps.bits_length (vals s j)
+  have hv (j : Fin 4) := vals_le s j
+  have := he 0; have := he 1; have := he 2; have := he 3
+  have := hv 0; have := hv 1; have := hv 2; have := hv 3
+  simp only [eraseCost]
+  omega
+
 /-- **The cost of one atom operation**, at most `C f V`. -/
 theorem runCost_le {b : ℕ} (hb0 : 0 < b) (hf : 0 < f) (op : AtomOps.AtomOp (m+m) ℚ) (hop : Fits m op)
     (wire : Fin t) (v : Descriptor) (hw : v.width = (m*f)*b) (hp : v.Positive) :
@@ -100,18 +115,12 @@ theorem runCost_le {b : ℕ} (hb0 : 0 < b) (hf : 0 < f) (op : AtomOps.AtomOp (m+
   generalize volume prime v = V at hV hloop ⊢
   generalize AtomStepCost.constant (AtomRolePlan.act wire op hop) = K at hloop ⊢
   have hfV : f ≤ f * V := Nat.le_mul_of_pos_right _ (by omega)
-  have hs (j : Fin 4) := setCost_le hf (plan op j).1 (plan_le op j) (plan op j).2
   obtain ⟨S, hS⟩ : ∃ S, S = 8*(m+1)^2 + 150*(m+1) := ⟨_, rfl⟩
-  simp only [← hS] at hs
   have hsetup : setupCost f (plan op) ≤ 4*(S*f) + 3 := by
-    have := hs 0; have := hs 1; have := hs 2; have := hs 3
-    simp only [setupCost]; omega
-  have he (j : Fin 4) := CounterSteps.bits_length (vals ((kind hf op hop).sel (f-1)) j)
-  have hv (j : Fin 4) := vals_le ((kind hf op hop).sel (f-1)) j
-  have herase : eraseCost (vals ((kind hf op hop).sel (f-1))) ≤ 8*(m*f) + 55 := by
-    have := he 0; have := he 1; have := he 2; have := hv 0; have := hv 1; have := hv 2
-    have := he 3; have := hv 3
-    simp only [eraseCost]; omega
+    have h := setupCost_le hf op
+    rw [hS]
+    nlinarith
+  have herase := eraseCost_le ((kind hf op hop).sel (f-1))
   have hSf : S*f ≤ S*(f*V) := Nat.mul_le_mul_left S hfV
   have hmV : m*f ≤ f*V := by have : V ≤ f*V := Nat.le_mul_of_pos_left V hf; omega
   have e1 : (K + 481)*f*V = K*f*V + 481*(f*V) := by ring
