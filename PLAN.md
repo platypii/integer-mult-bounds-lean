@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3313 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3316 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19025,3 +19025,36 @@ origin/payload queues, shared counters and protected placement, and prove
 uniform selected bounds for these named costs. Selected analytic/class
 separation facts, exposure/publication, seam lifecycle and R4/tensor restoration
 remain open. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: generated class jobs match both runtime queues and shared count
+
+`coreJobs_origins` identifies the ordered jobs' binary origin stream with the
+same `coreGatherIndices` enumeration computed by the origin controller.
+`coreJobs_payloads` identifies their concatenated payloads with the exact
+supplier-major `coreGatherRows` stream returned by inverse routing. The proofs
+are structural over indexed jobs and reuse the existing row-interface theorem;
+no per-core certificates or program unrolling are generated. Shared payload
+length and per-replica output length follow from class geometry.
+
+`coreClassJobs_queues` instantiates these identities with the actual derived
+`coreClassJobs`, including their common binary scalar width and origin fits.
+`coreClassJobs_runtime_facts` derives the full numerical-job conjunction used
+by `coreLoop_exec` from class-level precision, target and inverse-operator
+facts. It preserves the supplied replica list's order, so exposure's reversed
+physical replica order can be used directly.
+
+`supplierBatchCount_exec_within` physically generates one retained payload
+counter from the class's existing replica-count and halo-symbol headers, using
+the existing structural unary-product program. Its value is the actual job
+payload length, with all source headers and scratch restored. Setup is charged
+once per class rather than once per job, at time at most
+`replicas*(4*haloSymbols+9)+4` and workspace at most twice that bill.
+
+Guarded checks peak at 3383.0 MiB (structural queues), 3384.4 MiB (derived class
+queues and runtime facts), and 3382.7 MiB (physical shared counter). The combined
+target build passes (15676 jobs, 5.9 GiB combined peak). The scoped axiom audit
+passes for 336547 declarations at 3392.6 MiB. Next compose actual
+origin generation and exposure with shared-counter setup, concrete readiness
+placement and the proved runtime loop, and derive uniform selected job costs.
+Selected analytic/class separation facts, whole publication, seam lifecycle
+and R4/tensor restoration remain open. S4 remains incomplete; kappa is unchanged.
