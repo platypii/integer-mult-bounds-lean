@@ -17079,3 +17079,24 @@ The guarded target build passes (6714 jobs). Next carry the bounded binary
 wrapper through shared placement and rectangular-width dispatch to archive
 stock. Generated S4 supplier readiness, complete-key setup reuse, tensor/layout
 composition and final audits remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: shared binary radix execution includes its header lifecycle
+
+`BinaryRadixEqualSharedWithin.shared_runs` places the full bounded binary radix
+wrapper on an arbitrary caller's source. Structural shared-margin transfer
+supplies its active bank reserve while the complementary caller tapes stay
+framed. Exact source replacement and private-source restoration reuse the
+existing bank identities.
+
+`runs` includes the physical sparse copy of the four original caller headers,
+shared execution and sparse erasure. One fixed reserve against original binary
+volume pays copy travel plus the inner reserve, or twice cleanup travel. Head
+equality of the exact restored caller transfers the final margin to erasure.
+The exact binary transpose, restored blank private bank and original paid time
+budget are preserved. The guarded check peaks at 2537.2 MiB; the guarded target
+build succeeds (6717 jobs).
+
+Next instantiate this bounded equal-width call inside both adjacent-width
+movement directions, then the rectangular selector and archive-stock transfer.
+Generated S4 supplier readiness, complete-key setup reuse, tensor/layout
+composition and final audits remain open. S4 is incomplete; kappa is unchanged.
