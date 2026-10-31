@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3223 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3224 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17738,3 +17738,27 @@ then connect physical packed-source exposure and the complete supplier
 lifecycle. Supplier batches, complete-key setup reuse, grouped publication,
 R4/tensor layout restoration and final audits remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: publication and descriptor generation compose under one placement
+
+`PublicationInputPlan` uses a single injective placement for the 276 private
+registers and nine retained input/scratch roles. This derives separation and
+small role-list distinctness uniformly. `PublicationInputPlan.exec` composes
+radius conversion and descriptor installation from an extended 242-register
+bank, yielding the exact `packedKeyDescriptorInput (packedKeyPublicationInput
+...)` view. The intermediate readiness is proved by embedding updates and
+extension composition rather than supplied by the caller.
+
+The same execution retains the sum of the existing time bills and linear
+stock allowances. Every right register outside the private bank is preserved,
+and the entire left bank is unchanged; this frame includes the headers needed
+by later normalization setup. A live local payload remains an input premise,
+so ambient source exposure has not been discharged.
+
+The guarded file check peaks at 3255.7 MiB; the guarded target build passes
+(14960 jobs, 3.5 GiB combined peak). The scoped axiom audit passes for 328422
+declarations (3249.8 MiB). Next compose this input plan with factory and
+normalization generation and the supplier descriptor lifecycle. Ambient
+exposure, complete supplier batches, complete-key setup reuse, grouped
+publication, R4/tensor layout restoration and final audits remain open.
+S4 is incomplete; kappa is unchanged.
