@@ -26,6 +26,16 @@ private theorem map_get_ofFn {α β : Type*} (xs : List α) (f : α → β) :
     (List.ofFn fun i : Fin xs.length => f xs[i.val]) = xs.map f := by
   simpa only [List.map_ofFn,Function.comp_def,List.get_eq_getElem] using congrArg (List.map f) (List.ofFn_get xs)
 
+/-- A replica's row lists flatten to its actual gathered coefficient word. -/
+theorem coreGatherRows_flatten {s : ℕ} (width radius L : ℕ)
+    (Fs : List (ZMod s → GaussianInt)) (j : Fin Fs.length) :
+    (List.ofFn (fun i => coreGatherRows width radius L Fs i j)).flatten =
+      coreGatherPayload width radius L [Fs[j.val]] := by
+  simp only [coreGatherRows,coreGatherPayload,List.flatMap_cons,List.flatMap_nil,List.append_nil]
+  rw [map_get_ofFn (coreGatherIndices s width radius L)
+    (fun k => packedInterval (coreStart width k-radius) L Fs[j.val])]
+  exact (List.flatMap_def ..).symm
+
 /-- This is exactly the replica-major source word consumed by inverse routing. -/
 theorem coreGatherPayload_rows {A s : ℕ} (width radius L w : ℕ)
     (Fs : List (ZMod s → GaussianInt)) :

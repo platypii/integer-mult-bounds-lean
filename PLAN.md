@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3259 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3263 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18319,3 +18319,33 @@ Guarded checks peak at 1975.6 MiB (generic physical pass) and 2081.3 MiB
 (gathered payload). The guarded target build passes (9694 jobs, 2.7 GiB combined
 peak).
 The scoped axiom audit passes for 43074 declarations (2081.3 MiB peak).
+
+### S4 checkpoint: physical padding and inverse routing return certified supplier batches
+
+`prefixPaddedRows` constructs each replica's finite row view directly from its
+zero-prefix and original row list. Its structural length, flattening and shifted
+real-row identities use no externally supplied padded array. `paddedGatherRows`
+specializes this view to the actual ambient packed windows and proves equality
+with `paddedCoreGatherPayload`, retaining physical RHS order.
+
+`ArchiveTilePlan.inverse_gather_exec_within` uses that constructed row view in
+the existing bounded inverse router. It returns exact batch identities for every
+real core in the same actual output archive; the final theorem has no padded
+matrix or execution-callback input premise.
+
+`pad_route_gather_exec_within` composes the physical padding pass and inverse
+routing from the unpadded gathered word. The existing source-update readiness
+lemma transports the bank contract, and source/private-bank separation keeps
+the inverse time bill unchanged. The combined trace includes both time bills,
+retained padding, shared padding scratch, the router reserve, and all cleanup.
+Its only changed right register is the routed source; real supplier batches
+remain the original packed ambient intervals.
+
+Selected padding-counter generation, composition with the outer ambient gather,
+actual supplier consumption/publication, selected sizing and R4/tensor
+composition remain open. S4 remains incomplete; kappa is unchanged.
+
+Guarded checks peak at 2038.7 MiB (generic row view), 2075.1 MiB (gather view),
+3086.0 MiB (inverse gather) and 3091.2 MiB (composed physical stage). The guarded
+target build passes (14047 jobs, 3.3 GiB combined peak).
+The scoped axiom audit passes for 321242 declarations (3099.3 MiB peak).
