@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3257 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3259 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18290,3 +18290,32 @@ Guarded checks peak at 2948.6 MiB (inverse planes), 2977.7 MiB (packed inverse),
 2955.4 MiB (coefficient inverse) and 3072.5 MiB (plan lifecycle). The guarded
 target build passes (8702 jobs, 3.3 GiB combined peak).
 The scoped axiom audit passes for 318070 declarations (3067.5 MiB peak).
+
+### S4 checkpoint: one physical pass pads every gathered replica
+
+`prefixPadRows_exec_within` implements counter-driven prefix padding for an
+arbitrary list of fixed-width symbol rows. It emits padding and transfers each
+row to an accumulator, then reverses the accumulator onto the source. It uses
+one source pass, preserves row order and the borrowed suffix, and restores the
+row counter and all scratch. The existing `IterStockSpec`/`scanP` language gives
+shared scratch rather than a reserve multiplied by row count. Its time is at
+most `B*(6*(rowWidth+padding)+13)+6`; added stock is retained padding volume
+plus `2*(4*(rowWidth+padding)+10)`.
+
+`padCoreGatherPayload_exec_within` instantiates this actual program on the
+existing gathered archive. Encoded padding is exactly zero Gaussian data, and
+each replica grows from the computed class size to the chosen core capacity.
+The result is `paddedCoreGatherPayload` in the same physical RHS order. Its
+length and shifted-slot lemmas retain every original packed ambient interval;
+removing dummy cores recovers the unpadded windows exactly.
+
+The physical pass currently reads ordinary retained row-symbol, padding-symbol
+and replica counters. Their selected generation, the padded finite-row view
+required by inverse routing, complete gather/pad/transpose composition and
+supplier consumption remain open, together with selected sizing,
+publication and R4/tensor composition. S4 remains incomplete; kappa is unchanged.
+
+Guarded checks peak at 1975.6 MiB (generic physical pass) and 2081.3 MiB
+(gathered payload). The guarded target build passes (9694 jobs, 2.7 GiB combined
+peak).
+The scoped axiom audit passes for 43074 declarations (2081.3 MiB peak).
