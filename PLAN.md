@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3406 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3408 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20219,3 +20219,37 @@ tensor/R4 restoration remain open. S4 remains incomplete; kappa is unchanged.
 The compatibility build passes with actual cached interior/preparation callers
 (14194 jobs, 1.0 GiB combined peak). The scoped axiom audit passes for 324880
 declarations at 3126.7 MiB.
+
+### S4 checkpoint: actual scalar-table iteration has a batch-independent reserve
+
+The existing compiler helper `WordCmd.native_of_noCalls` is now public and
+reused rather than copied. `CMulStock.rmulOne_noCalls` combines the existing
+`tcompile_noCalls` SS certificate with the bounded native split/combine,
+selection and truncation wrappers; no SS controller expansion is needed.
+`CRuns.exec_within_native` attaches a resource trace to the existing actual
+register-file execution, preserving its time, holds, frame and user contracts.
+
+`CMulScalarBlockStock.rmulBlock_one_exec_within` instantiates the actual
+`cmulBlock` on one coefficient and one real scalar. It restores the scalar
+word, archives the consumed input and retains the computed result, with the
+original `rmulCost(w)+2*w+6` time bill. Its extra-stock allowance is
+`C*(rmulCost(w)+2*w+6)`, where C bounds this fixed body's atomic pushes and
+is independent of stream length. This is one actual scalar-table iteration,
+not a certificate for the complete scalar stream. No execution is supplied;
+the existing `rmulOne_spec`/`block_runs` proofs provide it.
+
+Guarded checks pass at 1403.4 MiB (shared compiler helper), 1894.8 MiB
+(coefficient language) and 1894.7 MiB (actual restored scalar iteration).
+The initial module build passes (3187 jobs, 2.4 GiB combined peak).
+Next lift this iteration through `cmulTable`'s outer `cwhileP` with one shared
+reserve. `Host.mn_archive_prefix_append_size` already proves exactly the needed
+boundary accounting: moving consumed source into its reversed archive costs
+nothing and only retained result words grow. Use the existing `tableLoopSt`
+and frame/holds contracts, then charge the final two restoration moves as
+linear traffic. Do not multiply the scalar arithmetic reserve by stream length.
+Complete interior stock, selected geometry/amortization, boundary/recovery/
+publication and tensor/R4 restoration remain open. S4 remains incomplete;
+kappa is unchanged.
+The compatibility build passes with branch-stock and actual cached interior/
+preparation callers (14196 jobs, 4.7 GiB combined peak). The scoped axiom audit
+passes for 324900 declarations at 3127.0 MiB.

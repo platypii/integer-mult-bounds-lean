@@ -12,7 +12,7 @@ open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2 IntegerMultBounds.Ma
 open IntegerMultBounds.Schoenhage (Cmd WTape)
 variable {t T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
-private theorem native_of_noCalls {K : Type} {Γ : K → Type} {σ P : Type}
+theorem native_of_noCalls {K : Type} {Γ : K → Type} {σ P : Type}
     {p : Prog P Γ σ} {c : ℕ} (hn : NoCalls p) (hp : mnProgPush p ≤ c) : mnNativePushBound c p := by
   induction p with
   | act a => exact hp
