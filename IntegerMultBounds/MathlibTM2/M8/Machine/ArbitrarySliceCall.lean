@@ -155,6 +155,56 @@ def program := seq (seq prepareProgram (extend Implementation.program 12)) resto
 def data {v : Descriptor} (x : Fin (volume prime v) → ZMod 2) : Tapes payloadCount prime :=
   roles (RecursiveRowsSerialization.sourceData wires (encoded x))
 
+theorem data_toSlice {v : Descriptor} (t b : ℕ) (hfit : t+b ≤ v.width)
+  (x : Fin (volume prime v) → ZMod 2) : data (ArbitraryWidthSliceTranspose.toSlice t b hfit x) = data x := by
+  unfold data
+  rw [CallReady.source_roles,CallReady.source_roles]
+  exact congrArg CallSemantics.childRoles
+    (ArbitraryWidthSliceTranspose.toSlice_source t b hfit (encoded x))
+
+theorem data_return {v : Descriptor} (t b : ℕ) (hfit : t+b ≤ v.width)
+  (x : Fin (volume prime v) → ZMod 2) : data (Shared50RecursiveNodeRows.transpose (one_dvd _)
+    (ArbitraryWidthSliceTranspose.toSlice t b hfit x)) = data (ArbitraryWidthSliceTranspose.array t b hfit x) := by
+  unfold data
+  rw [CallReady.source_roles,CallReady.source_roles]
+  exact congrArg CallSemantics.childRoles
+    (ArbitraryWidthSliceTranspose.return_source t b hfit (encoded x))
+
+/-- Shared physical header preparation and restoration, independent of the
+payload semantics used by the recursive slice. -/
+theorem header_contracts (v : Descriptor) (hs : Fin 6 → List Bool) (ts bs : List Bool) (t b : ℕ)
+    (hp : v.Positive) (hv : RecursiveDimensionBank.Headers v hs)
+    (ht : Counter.value ts = t) (hb : Counter.value bs = b)
+    (ct : GrowingCounterData.Canonical ts) (cb : GrowingCounterData.Canonical bs)
+    (hfit : t+b ≤ v.width)
+    (f : ℤ → Fin (prime+4)) (p : ℤ) (node scalar : Tapes 1 prime) (st : Tapes 2 prime)
+    (frame : Tapes 1 prime) (hfree : RecursiveViewFrame.Free hs frame)
+    (before after : Tapes payloadCount prime) :
+    let child := ArbitrarySliceDimensions.headers (q := prime) hs bs v t b
+    let saved := RecursiveViewFrame.savedStack hs frame
+    HoareTime prepareProgram
+      (· = bank before hs ts bs f p node scalar st frame)
+      (· = bank before child ts bs f p node scalar st saved) (900*volume prime v) ∧
+    HoareTime restoreProgram
+      (· = bank after child ts bs f p node scalar st saved)
+      (· = bank after hs ts bs f p node scalar st frame) (128*volume prime v) := by
+  let child := ArbitrarySliceDimensions.headers (q := prime) hs bs v t b
+  let saved := RecursiveViewFrame.savedStack hs frame
+  have hprep : HoareTime prepareProgram
+      (fun z => z = bank before hs ts bs f p node scalar st frame)
+      (fun z => z = bank before child ts bs f p node scalar st saved) (900*volume prime v) :=
+    placed_exact headerPlacement _ _ _ _ (header_active _ _ _ _ _ _ _ _ _ _) (header_active _ _ _ _ _ _ _ _ _ _)
+      (header_extra _ _ _ _ _ _ _ _ _ _ _ _)
+      (ArbitrarySliceHeaders.prepares Shared50ModularControl.prime_prime.two_le hs ts bs v t b frame hv hp ht hb ct cb hfit)
+  have hrestore : HoareTime restoreProgram
+      (fun z => z = bank after child ts bs f p node scalar st saved)
+      (fun z => z = bank after hs ts bs f p node scalar st frame)
+      (128*volume prime v) :=
+    placed_exact headerPlacement _ _ _ _ (header_active _ _ _ _ _ _ _ _ _ _) (header_active _ _ _ _ _ _ _ _ _ _)
+      (header_extra _ _ _ _ _ _ _ _ _ _ _ _)
+      (ArbitrarySliceHeaders.restores Shared50ModularControl.prime_prime.two_le hs ts bs v t b frame hv hp hb cb hfit hfree)
+  exact ⟨hprep,hrestore⟩
+
 private theorem root_slice (depth : ℕ) (v : Descriptor) (t b : ℕ) (hfit : t+b ≤ v.width)
     (shape : Depth.Shape depth (ArbitraryWidthPieces.slice prime v t b))
     (hs : Fin 6 → List Bool) (hv : RecursiveDimensionBank.Headers (ArbitraryWidthPieces.slice prime v t b) hs)
@@ -166,17 +216,8 @@ private theorem root_slice (depth : ℕ) (v : Descriptor) (t b : ℕ) (hfit : t+
       (RootExecution.rootBudget depth (volume prime v)) := by
   have h := RootExecution.root_budget_hoare _ shape hs hv f p node scalar st ready
     (ArbitraryWidthSliceTranspose.toSlice t b hfit x)
-  have hin : data (ArbitraryWidthSliceTranspose.toSlice t b hfit x) = data x := by
-    unfold data
-    rw [CallReady.source_roles,CallReady.source_roles]
-    exact congrArg CallSemantics.childRoles
-      (ArbitraryWidthSliceTranspose.toSlice_source t b hfit (encoded x))
-  have hout : data (Shared50RecursiveNodeRows.transpose (one_dvd _)
-      (ArbitraryWidthSliceTranspose.toSlice t b hfit x)) = data (ArbitraryWidthSliceTranspose.array t b hfit x) := by
-    unfold data
-    rw [CallReady.source_roles,CallReady.source_roles]
-    exact congrArg CallSemantics.childRoles
-      (ArbitraryWidthSliceTranspose.return_source t b hfit (encoded x))
+  have hin := data_toSlice t b hfit x
+  have hout := data_return t b hfit x
   change HoareTime _ (fun z => z = rootBank (data (ArbitraryWidthSliceTranspose.toSlice t b hfit x)) hs f p node scalar st)
     (fun z => z = rootBank (data (Shared50RecursiveNodeRows.transpose (one_dvd _)
       (ArbitraryWidthSliceTranspose.toSlice t b hfit x))) hs f p node scalar st) _ at h
@@ -203,21 +244,10 @@ theorem call_hoare (depth : ℕ) (v : Descriptor) (hs : Fin 6 → List Bool) (ts
     ArbitrarySliceDimensions.headers_valid hs bs v t b hv hb cb
   have hshape : Depth.Shape depth (ArbitraryWidthPieces.slice prime v t b) :=
     ⟨ArbitraryWidthPieces.slice_positive _ Shared50ModularControl.prime_prime.pos v hp t b,hw,hr⟩
-  have hprep : HoareTime prepareProgram
-      (fun z => z = bank (data x) hs ts bs f p node scalar st frame)
-      (fun z => z = bank (data x) child ts bs f p node scalar st saved) (900*volume prime v) :=
-    placed_exact headerPlacement _ _ _ _ (header_active _ _ _ _ _ _ _ _ _ _) (header_active _ _ _ _ _ _ _ _ _ _)
-      (header_extra _ _ _ _ _ _ _ _ _ _ _ _)
-      (ArbitrarySliceHeaders.prepares Shared50ModularControl.prime_prime.two_le hs ts bs v t b frame hv hp ht hb ct cb hfit)
+  obtain ⟨hprep,hrestore⟩ := header_contracts v hs ts bs t b hp hv ht hb ct cb hfit
+    f p node scalar st frame hfree (data x) (data (ArbitraryWidthSliceTranspose.array t b hfit x))
   have hroot := hoare_extend_eq (root_slice depth v t b hfit hshape child hc f p node scalar st ready x)
     (SliceHeaderPlacement.tail ts bs saved)
-  have hrestore : HoareTime restoreProgram
-      (fun z => z = bank (data (ArbitraryWidthSliceTranspose.array t b hfit x)) child ts bs f p node scalar st saved)
-      (fun z => z = bank (data (ArbitraryWidthSliceTranspose.array t b hfit x)) hs ts bs f p node scalar st frame)
-      (128*volume prime v) :=
-    placed_exact headerPlacement _ _ _ _ (header_active _ _ _ _ _ _ _ _ _ _) (header_active _ _ _ _ _ _ _ _ _ _)
-      (header_extra _ _ _ _ _ _ _ _ _ _ _ _)
-      (ArbitrarySliceHeaders.restores Shared50ModularControl.prime_prime.two_le hs ts bs v t b frame hv hp hb cb hfit hfree)
   have hV := RecursiveAffinePrepare.volume_positive Shared50ModularControl.prime_prime.two_le v hp
   exact ((hprep.seq hroot).seq hrestore).consequence (fun _ h => h) (fun _ h => h) (by omega)
 

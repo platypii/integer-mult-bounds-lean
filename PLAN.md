@@ -16607,3 +16607,25 @@ wrappers still need bounded execution certificates before the stage-2 leaf core
 and selected archive transpose have their full space certificates. The remaining
 S4 supplier/readiness, setup reuse, tensor/layout and final audit obligations above
 remain open; S4 is incomplete and kappa is unchanged.
+
+### S4 checkpoint: arbitrary-offset slice calls retain the root workspace bound
+
+`HoareWithin` packages the same actual runtime, endpoint and halt as `HoareTime`
+with a predicate at every prefix. Sequential composition includes the physical
+join and shares the predicate; stationary-frame extension preserves it. Linear
+preparation and restoration phases can use the existing time contracts, with
+restoration bounded from its known parent post-bank.
+
+`ArbitrarySliceCall.header_contracts`, `data_toSlice` and `data_return` are now
+shared by the endpoint and space proofs. `ArbitrarySliceCallWithin.call_within`
+includes actual slice-header construction, the bounded recursive root execution
+and occupied-header restoration. The coefficient is independent of selected
+power depth and offset. `ArbitrarySliceStepWithin.step_within` also includes
+physical offset advancement with the same workspace coefficient and original
+runtime cost; restored data banks have identical heads. Head equality is proved
+over arbitrary padded tape counts before instantiating the concrete root bank.
+
+The counted-repeat and level wrappers still need to consume these certificates.
+Their space proofs must use the body prefix certificate rather than its
+superlinear runtime budget. Arbitrary/high-width dispatch, the stage-2 leaf core,
+archive stock, and the other S4 obligations above remain open.
