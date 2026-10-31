@@ -125,6 +125,20 @@ def loopCost (V : ℕ) : ℕ :=
   (f-1)*(AtomStepCost.constant act * V + 1 + AtomRoleSteps.stepCost N) + 6*(f-1) +
     7*(FlatCoordinateSchedule.bits (f-1)).length + 16 + 1 + AtomStepCost.constant act * V
 
+omit hb0 hp hv hf in
+theorem cross_counter_hoare (i₀ j₀ : ℕ) (hi : i₀ + (f-1) < N) (hj : j₀ + (f-1) < N)
+    (l : ℕ) (hl : l+1 < f) :
+    HoareTime (AtomRoleSteps.crossSteps _ (tapes_ge (u := u) (crossFamily f i₀ j₀ hi hj 0) act))
+      (fun x => x = levelBank (machine (u := u) (crossFamily f i₀ j₀ hi hj 0) act).tapes hs aux data (words b (crossFamily f i₀ j₀ hi hj l)))
+      (fun x => x = levelBank (machine (u := u) (crossFamily f i₀ j₀ hi hj 0) act).tapes hs aux data (words b (crossFamily f i₀ j₀ hi hj (l+1))))
+      (AtomRoleSteps.stepCost N) := by
+  have h := AtomRoleSteps.cross_steps (N := N) _ (tapes_ge (u := u) (crossFamily f i₀ j₀ hi hj 0) act) b hs aux data
+    (i₀ + l) (j₀ + l) (by omega) (by omega)
+  have e0 : min l (f-1) = l := by omega
+  have e1 : min (l+1) (f-1) = l+1 := by omega
+  simp only [crossFamily, e0, e1]
+  exact h
+
 theorem cross_loop (i₀ j₀ : ℕ) (hi : i₀ + (f-1) < N) (hj : j₀ + (f-1) < N) :
     HoareTime (LevelLoop.program (seq (machine (u := u) (crossFamily f i₀ j₀ hi hj 0) act).program
         (AtomRoleSteps.crossSteps _ (tapes_ge (u := u) (crossFamily f i₀ j₀ hi hj 0) act)))
@@ -135,11 +149,21 @@ theorem cross_loop (i₀ j₀ : ℕ) (hi : i₀ + (f-1) < N) (hj : j₀ + (f-1) 
       (loopCost (N := N) f act (volume prime v)) := by
   refine AtomRoleLoop.loop_hoare hb0 _ (crossFamily f i₀ j₀ hi hj) act (fun l => rfl) v hw hp hs hv aux f hf
     _ _ (fun l hl d => ?_) data
-  have h := AtomRoleSteps.cross_steps (N := N) _ (tapes_ge (u := u) (crossFamily f i₀ j₀ hi hj 0) act) b hs aux d
-    (i₀ + l) (j₀ + l) (by omega) (by omega)
+  exact cross_counter_hoare f act v hs aux d i₀ j₀ hi hj l hl
+
+omit hb0 hp hv hf in
+theorem within_counter_hoare (g : RecursiveAffineDimensions.Group) (j₀ i₀ : ℕ) (hji : j₀ < i₀)
+    (hi : i₀ + (f-1) < N)
+    (l : ℕ) (hl : l+1 < f) :
+    HoareTime (AtomRoleSteps.withinSteps _ (tapes_ge (u := u) (withinFamily f g j₀ i₀ hji hi 0) act))
+      (fun x => x = levelBank (machine (u := u) (withinFamily f g j₀ i₀ hji hi 0) act).tapes hs aux data (words b (withinFamily f g j₀ i₀ hji hi l)))
+      (fun x => x = levelBank (machine (u := u) (withinFamily f g j₀ i₀ hji hi 0) act).tapes hs aux data (words b (withinFamily f g j₀ i₀ hji hi (l+1))))
+      (AtomRoleSteps.stepCost N) := by
+  have h := AtomRoleSteps.within_steps (N := N) _ (tapes_ge (u := u) (withinFamily f g j₀ i₀ hji hi 0) act) b hs aux data
+    g (j₀ + l) (i₀ + l) (by omega) (by omega)
   have e0 : min l (f-1) = l := by omega
   have e1 : min (l+1) (f-1) = l+1 := by omega
-  simp only [crossFamily, e0, e1]
+  simp only [withinFamily, e0, e1]
   exact h
 
 theorem within_loop (g : RecursiveAffineDimensions.Group) (j₀ i₀ : ℕ) (hji : j₀ < i₀)
@@ -153,11 +177,22 @@ theorem within_loop (g : RecursiveAffineDimensions.Group) (j₀ i₀ : ℕ) (hji
       (loopCost (N := N) f act (volume prime v)) := by
   refine AtomRoleLoop.loop_hoare hb0 _ (withinFamily f g j₀ i₀ hji hi) act (fun l => rfl) v hw hp hs hv aux f hf
     _ _ (fun l hl d => ?_) data
-  have h := AtomRoleSteps.within_steps (N := N) _ (tapes_ge (u := u) (withinFamily f g j₀ i₀ hji hi 0) act) b hs aux d
-    g (j₀ + l) (i₀ + l) (by omega) (by omega)
+  exact within_counter_hoare f act v hs aux d g j₀ i₀ hji hi l hl
+
+omit hb0 hp hv hf in
+theorem rev_counter_hoare (i₀ j₀ : ℕ) (hi0 : f-1 ≤ i₀) (hi : i₀ < N) (hj : j₀ + (f-1) < N)
+    (l : ℕ) (hl : l+1 < f) :
+    HoareTime (AtomRoleSteps.revSteps _ (tapes_ge (u := u) (revFamily f i₀ j₀ hi0 hi hj 0) act))
+      (fun x => x = levelBank (machine (u := u) (revFamily f i₀ j₀ hi0 hi hj 0) act).tapes hs aux data (words b (revFamily f i₀ j₀ hi0 hi hj l)))
+      (fun x => x = levelBank (machine (u := u) (revFamily f i₀ j₀ hi0 hi hj 0) act).tapes hs aux data (words b (revFamily f i₀ j₀ hi0 hi hj (l+1))))
+      (AtomRoleSteps.stepCost N) := by
+  have h := AtomRoleSteps.rev_steps (N := N) _ (tapes_ge (u := u) (revFamily f i₀ j₀ hi0 hi hj 0) act) b hs aux data
+    (i₀ - l) (j₀ + l) (by omega) (by omega) (by omega)
   have e0 : min l (f-1) = l := by omega
   have e1 : min (l+1) (f-1) = l+1 := by omega
-  simp only [withinFamily, e0, e1]
+  simp only [revFamily, e0, e1]
+  have e2 : i₀ - l - 1 = i₀ - (l+1) := by omega
+  simp only [e2] at h
   exact h
 
 theorem rev_loop (i₀ j₀ : ℕ) (hi0 : f-1 ≤ i₀) (hi : i₀ < N) (hj : j₀ + (f-1) < N) :
@@ -170,14 +205,7 @@ theorem rev_loop (i₀ j₀ : ℕ) (hi0 : f-1 ≤ i₀) (hi : i₀ < N) (hj : j�
       (loopCost (N := N) f act (volume prime v)) := by
   refine AtomRoleLoop.loop_hoare hb0 _ (revFamily f i₀ j₀ hi0 hi hj) act (fun l => rfl) v hw hp hs hv aux f hf
     _ _ (fun l hl d => ?_) data
-  have h := AtomRoleSteps.rev_steps (N := N) _ (tapes_ge (u := u) (revFamily f i₀ j₀ hi0 hi hj 0) act) b hs aux d
-    (i₀ - l) (j₀ + l) (by omega) (by omega) (by omega)
-  have e0 : min l (f-1) = l := by omega
-  have e1 : min (l+1) (f-1) = l+1 := by omega
-  simp only [revFamily, e0, e1]
-  have e2 : i₀ - l - 1 = i₀ - (l+1) := by omega
-  simp only [e2] at h
-  exact h
+  exact rev_counter_hoare f act v hs aux d i₀ j₀ hi0 hi hj l hl
 
 end Families
 

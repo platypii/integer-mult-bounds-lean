@@ -64,6 +64,19 @@ theorem pad_injective (T₁ T₂ : ℕ) (h : T₁ ≤ T₂) : Function.Injective
 def placement (T₁ T₂ : ℕ) (h : T₁ ≤ T₂) :=
   InjectivePlacement.placement (pad T₁ T₂ h) (pad_injective T₁ T₂ h) (show T₁+2 + (T₂+2 - (T₁+2)) = T₂+2 by omega)
 
+/-- The active bank of a padded loop is the original smaller loop bank. -/
+theorem active_loop_bank {T₁ T₂ : ℕ} (h : T₁ ≤ T₂) (hk : k ≤ T₁)
+    (x : Tapes k a) (f : ℕ) :
+    Placement.active (placement T₁ T₂ h) (LevelLoop.bank (raw x T₂) f) =
+      LevelLoop.bank (raw x T₁) f := by
+  unfold placement
+  rw [InjectivePlacement.active_bank]
+  refine Placement.Tapes.ext' (fun i => ?_) (fun i => ?_) <;> dsimp only
+  · rw [loop_head x T₂ f (by omega), loop_head x T₁ f hk, pad_val]
+    split_ifs <;> first | rfl | omega
+  · rw [loop_tape x T₂ f (by omega), loop_tape x T₁ f hk, pad_val]
+    split_ifs <;> first | rfl | omega
+
 /-- **A padded loop.** -/
 theorem pad_hoare {T₁ T₂ q c : ℕ} (h : T₁ ≤ T₂) (hk : k ≤ T₁) (M : Program (T₁+2) q a) (x y : Tapes k a)
     (f : ℕ) (hM : HoareTime M (fun z => z = LevelLoop.bank (raw x T₁) f)
@@ -72,12 +85,7 @@ theorem pad_hoare {T₁ T₂ q c : ℕ} (h : T₁ ≤ T₂) (hk : k ≤ T₁) (M
       (fun z => z = LevelLoop.bank (raw y T₂) f) c := by
   refine InjectivePlacement.hoare_exact (X := LevelLoop.bank (raw x T₁) f) (X' := LevelLoop.bank (raw y T₁) f)
     hM _ _ _ _ _ ?_ ?_
-  · rw [InjectivePlacement.active_bank]
-    refine Placement.Tapes.ext' (fun i => ?_) (fun i => ?_) <;> dsimp only
-    · rw [loop_head x T₂ f (by omega), loop_head x T₁ f hk, pad_val]
-      split_ifs <;> first | rfl | omega
-    · rw [loop_tape x T₂ f (by omega), loop_tape x T₁ f hk, pad_val]
-      split_ifs <;> first | rfl | omega
+  · exact active_loop_bank h hk x f
   · apply CounterAdvance.replace_eq
     · intro i
       rw [loop_head y T₂ f (by omega), loop_head y T₁ f hk, loop_tape y T₂ f (by omega),
