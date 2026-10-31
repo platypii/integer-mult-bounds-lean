@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M8.RevMachine.Rev97Node
+public import IntegerMultBounds.MathlibTM2.M8.RevMachine.CounterCostBounds
 
 /-!
 # The frames' own budgets
@@ -30,10 +31,6 @@ open RevHalf (pcs Rk Ok)
 open NodeSplit (midView roleView)
 
 /-! ### Arithmetic -/
-
-theorem bits_len (x : ℕ) : (bits x).length ≤ x + 1 := by
-  have := Headers.length_le (bits x) (FlatCoordinateSchedule.bits_canonical x)
-  rwa [FlatCoordinateSchedule.bits_value] at this
 
 /-- The divisor constant of the atom width. -/
 theorem lc_le (b : ℕ) : BinaryDescriptorDivMod.linearConstant (bits b) ≤ 296 * (bits b).length + 3522 := by
@@ -253,32 +250,10 @@ theorem seg_le (σ : Frame (pcs N) capacity) (hn : 1 ≤ σ.n) (hd : N.roleCount
 
 /-! ### Calls -/
 
-theorem advsCost_le (X Y : ℕ) : ∀ r, Counters.advsCost X Y r ≤
-    (r + 1) * (10 * Y + 2 * (X + (r + 1) * Y + 1) + 7 * (Y + 1) + 29)
-  | 0 => by
-    have := bits_len X; have := bits_len Y
-    simp only [Counters.advsCost, Counters.advCost]; omega
-  | r+1 => by
-    have ih := advsCost_le X Y r
-    have h1 := bits_len (X + (r + 1) * Y); have h2 := bits_len Y
-    simp only [Counters.advsCost, Counters.advCost]
-    nlinarith
-
 /-- The constant of a call. -/
 def callK (N : RevNetwork) (k : ℕ) : ℕ :=
   180 * tapes N + 120000 + k + 2 * (N.width + 1) * (2 * N.width + 57) +
     4 * BinaryDescriptorDivMod.linearConstant (bits N.width) + 9000
-
-theorem advs_le {Y M r m : ℕ} (hY : Y ≤ M) (hM : 1 ≤ M) (hr : r + 1 ≤ m + 1) :
-    Counters.advsCost 0 Y r ≤ (m + 1) * ((2 * m + 57) * M) := by
-  refine (advsCost_le 0 Y r).trans (Nat.mul_le_mul hr ?_)
-  have e1 : (r + 1) * Y ≤ m * M + M := by
-    have h := Nat.mul_le_mul hr hY
-    calc (r + 1) * Y ≤ (m + 1) * M := h
-      _ = m * M + M := by ring
-  have e2 : (2 * m + 57) * M = 2 * (m * M) + 57 * M := by ring
-  rw [e2]
-  omega
 
 theorem call_le (σ : Frame (pcs N) capacity) (hm : N.width ≤ σ.n) (hd : N.roleCount ∣ σ.v.rows)
     (c : Schedule.Call (N.World ⊕ N.Temp)) (hc1 : 1 ≤ c.2) (hc : c.2 < N.width) :
