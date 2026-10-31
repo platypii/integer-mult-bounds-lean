@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3511 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3515 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21453,3 +21453,46 @@ pages with the class's publication windows, then execute the class traversal.
 The all-class loop, shared coupling/recovery, global scheduling, tensor/R4
 restoration and selected acceptance remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331782 declarations at 3271.0 MiB.
+
+### S4 checkpoint: place, identify and retire each class's origin pages
+
+`PhaseCellHaloClassPublicationWindows` turns the actual `haloPackedOffsets`
+into the class's disjoint publication windows. A structural induction proves
+that positive-length disjoint windows fitting a span have at most that many
+entries. The ambient packet bridge identifies the range-indexed origins used
+by the ordinary numerical factory with `haloOriginPackets`, in exactly the
+controller's order. No enumerated phase certificate is introduced.
+
+`PhaseCellPlacedPairedLocalHaloClass` places the ordinary-header constructor
+inside the retained gather bank. Its actual `ExecWithin` endpoint consists of
+exactly three writes: local page 109, ambient page 113 and count 116. The
+numerical solver projection is unchanged. The placed stock certificate pays
+three times the existing complete constructor bill, on the same execution.
+
+`PhaseCellReleasePairedOriginPages` builds one unary page-volume counter from
+the retained class count and width, erases exactly the two owned page prefixes,
+and releases that volume and the class count. Both borrowed suffixes, the
+width master and all scratch survive exactly. Its shared time is at most
+`18*B*V+11*B+20`, independent of the RHS replica count; native push bound two
+provides the whole-bank stock certificate. The proof is over arbitrary
+registers, page contents and suffixes.
+
+`PhaseCellReleaseGatheredOriginPages` instantiates that program in the actual
+gather bank. Its restoration theorem takes the exact gather equality returned
+by the existing released class solve and proves that page retirement restores
+the entire gather entry ABI. The unary endpoint header below the ambient page
+survives, so the next class can load ordinary geometry again. This closes the
+metadata-ownership step needed in addition to numerical-key retirement.
+
+Guarded checks pass at 2051.7 MiB (window/ambient bridge), 2096.3 MiB (placed
+constructor and frame/restoration facts), 1963.2 MiB (generic page retirement)
+and 2093.8 MiB (placed retirement and complete gather restoration). Final simp
+cleanup is checked by the compatibility build with the repeatable class,
+released-class resource bounds and global core local stock: 14546 jobs,
+2.7 GiB combined peak.
+Next compose placed generation, the repeatable numerical class and metadata
+retirement, instantiating the canonical halo publication windows, then run the
+class-list induction. That composed generated class and the all-class loop
+are not yet proved. Shared coupling/recovery, global scheduling, tensor/R4
+restoration and selected acceptance remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331813 declarations at 3271.6 MiB.
