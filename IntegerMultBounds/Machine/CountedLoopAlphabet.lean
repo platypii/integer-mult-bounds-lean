@@ -114,7 +114,7 @@ binary clock segment and its specified sentinel/end blank. -/
 def bank (v : Tapes t a) (clock : ℤ → Fin (a+4)) (bs : List Bool) : Tapes (t+1) a :=
   v.append ⟨fun _ => 1,fun _ => putBits clock 1 bs⟩
 
-private def cfg (_M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4))
+def cfg (_M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4))
     (head : ℤ) (state : Fin 5) : Config (t+1) (q+5) a :=
   ⟨Fin.natAdd q state,(v.append ⟨fun _ => head,fun _ => clock⟩).head,
     (v.append ⟨fun _ => head,fun _ => clock⟩).tape⟩
@@ -143,21 +143,21 @@ private theorem clock_step (M : Program t q a) (v : Tapes t a)
       · simp [hj]
     | right i => fin_cases i; simp [clockAction,Function.update_apply]
 
-private theorem step_zero (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ)
+theorem step_zero (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ)
     (h : clock r = bitSymbol false) :
     step (program M) (cfg M v clock r 0) =
       some (cfg M v (Function.update clock r (bitSymbol true)) (r+1) 0) := by
   apply clock_step (move := .right) (hs := by decide)
   simp [clockProgram,h]
 
-private theorem step_one (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ)
+theorem step_one (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ)
     (h : clock r = bitSymbol true) :
     step (program M) (cfg M v clock r 0) =
       some (cfg M v (Function.update clock r (bitSymbol false)) (r-1) 1) := by
   apply clock_step (move := .left) (hs := by decide)
   simp [clockProgram,h,bitSymbol]
 
-private theorem step_blank (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ)
+theorem step_blank (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ)
     (h : clock r = blank) :
     step (program M) (cfg M v clock r 0) = some (cfg M v clock (r-1) 2) := by
   have hh := clock_step M v clock r 0 2 (by decide) blank .left (by
@@ -165,7 +165,7 @@ private theorem step_blank (M : Program t q a) (v : Tapes t a) (clock : ℤ → 
   have he : Function.update clock r blank = clock := Function.update_eq_self_iff.mpr h.symm
   simpa only [Move.offset,sub_eq_add_neg,he] using hh
 
-private theorem step_return (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ)
+theorem step_return (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ)
     (s : Fin 5) (hs : s = 1 ∨ s = 2) (h : clock r ≠ separator) :
     step (program M) (cfg M v clock r s) = some (cfg M v clock (r-1) s) := by
   have hz : s ≠ 0 := by rcases hs with rfl | rfl <;> decide
@@ -174,7 +174,7 @@ private theorem step_return (M : Program t q a) (v : Tapes t a) (clock : ℤ →
     simp [clockProgram,h,hs,hz])
   simpa only [Move.offset,sub_eq_add_neg,Function.update_eq_self] using hh
 
-private theorem step_marker (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ)
+theorem step_marker (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ)
     (s : Fin 5) (hs : s = 1 ∨ s = 2) (h : clock r = separator) :
     step (program M) (cfg M v clock r s) =
       some (cfg M v clock (r+1) (if s = 1 then 3 else 4)) := by
@@ -185,7 +185,7 @@ private theorem step_marker (M : Program t q a) (v : Tapes t a) (clock : ℤ →
   have he : Function.update clock r separator = clock := Function.update_eq_self_iff.mpr h.symm
   simpa only [Move.offset,he] using hh
 
-private theorem halt (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ) :
+theorem halt (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ) :
     step (program M) (cfg M v clock r 4) = none := by
   simp [step,program,cfg,Tapes.append,clockProgram]
 
@@ -260,11 +260,11 @@ private theorem decrement_exact (M : Program t q a) (v : Tapes t a) (clock : ℤ
     (if underflow bs then 2 else 1) (by cases underflow bs <;> simp) n hmark hno
   cases hu : underflow bs <;> simpa [hu] using hr
 
-private def bodyCfg (c : Config t q a) (clock : ℤ → Fin (a+4)) (r : ℤ) :
+def bodyCfg (c : Config t q a) (clock : ℤ → Fin (a+4)) (r : ℤ) :
     Config (t+1) (q+5) a :=
   (c.extend (⟨fun _ => r,fun _ => clock⟩ : Tapes 1 a)).mapState (Fin.castAdd 5)
 
-private theorem body_step (M : Program t q a) (clock : ℤ → Fin (a+4)) (r : ℤ)
+theorem body_step (M : Program t q a) (clock : ℤ → Fin (a+4)) (r : ℤ)
     {c d : Config t q a} (h : step M c = some d) :
     step (program M) (bodyCfg c clock r) = some (bodyCfg d clock r) := by
   unfold step at h ⊢
@@ -290,7 +290,7 @@ private theorem body_step (M : Program t q a) (clock : ℤ → Fin (a+4)) (r : �
         · subst j; simp
         · simp [hj]
 
-private theorem body_return (M : Program t q a) (clock : ℤ → Fin (a+4)) (r : ℤ)
+theorem body_return (M : Program t q a) (clock : ℤ → Fin (a+4)) (r : ℤ)
     {c : Config t q a} (h : step M c = none) :
     step (program M) (bodyCfg c clock r) = some (cfg M c.tapes clock r 0) := by
   unfold step at h ⊢
@@ -306,7 +306,7 @@ private theorem body_return (M : Program t q a) (clock : ℤ → Fin (a+4)) (r :
     · subst j; simp
     · simp [hj]
 
-private theorem body_enter (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ) :
+theorem body_enter (M : Program t q a) (v : Tapes t a) (clock : ℤ → Fin (a+4)) (r : ℤ) :
     step (program M) (cfg M v clock r 3) = some (bodyCfg (v.start M) clock r) := by
   simp only [step,program,cfg,Tapes.append,Fin.addCases_right,ite_true,bodyCfg,
     Config.mapState,Config.extend,Config.tapes,Tapes.start,Move.offset,add_zero]
