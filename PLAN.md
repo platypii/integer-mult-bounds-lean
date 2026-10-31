@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3379 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3381 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19910,3 +19910,32 @@ Complete simultaneous stock, generation of the initial numerical page and scalar
 banks, interior publication, boundary/residual/recovery batching, selected final
 core/halo geometry and tensor/R4 restoration remain open. This closes the actual
 interior preparation/gather/consumer composition, not S4; kappa is unchanged.
+
+### S4 checkpoint: simultaneous stock for cache copying and shared gathering
+
+`gatheredReplicaInteriorPreparation_native` proves a uniform native push bound
+3 for the complete cache/dimension/gather program. It reuses the existing
+structural table-compiler, bank-load and embedding certificates; retained row
+scanning and copied weight pages are checked structurally, without enumerating
+register banks or expanding the controller table.
+
+`gatheredReplicaInteriorPreparation_within` certifies every intermediate store
+of the same actual preparation execution. `gatheredReplicaInteriorPreparation_within_linear`
+reprices its allowance as one shared control-generation bill, `1500*B*L*w`,
+and `1800*N*(B*L*w+span*w+1)`. The complete initial stock is included once, so
+retained numerical data, the original packed source, borrowed tails and spectator
+banks remain charged. There is no repeated numerical fast-time factor in this
+allowance.
+
+Guarded checks pass at 2096.5 MiB (native/trace certificate) and 3120.3 MiB
+(linear stock pricing). Combined build with the actual numerical composition
+and fast pricing passes (14166 jobs, 3.4 GiB combined peak). Scoped axiom audit
+passes for 324718 declarations at 3122.3 MiB.
+
+The cached numerical batch has execution/time certificates but no existing
+structural workspace certificate to lift directly. Its repeated arithmetic
+must be traced per record, with accumulated output charged separately; using
+the entire repeated fast runtime as stock would not close the selected bound.
+Complete numerical stock, initial key/scalar factories, halo publication and
+boundary/recovery, final core/halo amortization and tensor/R4 restoration remain
+open. S4 remains incomplete; kappa is unchanged.
