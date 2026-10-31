@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3271 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3274 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18457,3 +18457,32 @@ consumer on real routed core slots, skip the dummy prefix, and lift sequential
 consumption to the selected supplier list with shared scratch. Class/capacity
 dimension setup and bounds, publication, seam lifecycle and R4/tensor
 restoration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: routed supplier lists consume their archive with shared scratch
+
+`consumeRuns_exec` extends the existing structural append-run language to
+calls that consume input prefixes and retain result words. A generic stock
+lemma accounts for retired source symbols, so all calls share the maximum
+scratch reserve while output volumes add. The exact final source is the
+borrowed suffix and output accumulation keeps the existing reverse-call order.
+
+`PackedProducerPlan.routedBatch_exec` instantiates that rule with the actual
+routed supplier lifecycle and existing `GeneratedSupplierCall` records. It
+consumes the concatenation of those calls' exact local payloads and returns
+all existing numerical row certificates. Readiness and cost transport reuse
+support/frame lemmas; no per-call ambient gather or execution callback remains
+in the concrete batch theorem. Producer result/support separation is public
+for reuse rather than reproved.
+
+`routedGatherArchive_drop` derives the real supplier payload list from the
+router's shifted-slot certificates and uniform row lengths. Dropping exactly
+`missingCores*(replicas*(L*w))` symbols removes dummy batches and preserves real
+core order. It reuses `paddedArchiveRows_drop` through `coreBatchArchive_drop`.
+
+Guarded checks peak at 1397.0 MiB (generic consuming runs), 2067.3 MiB (real
+suffix) and 3387.2 MiB (concrete supplier batch). The combined target build
+passes (15650 jobs, 5.0 GiB combined peak). The scoped axiom audit passes for
+336248 declarations at 3390.1 MiB. Physical dummy-prefix retirement, selected
+call construction and dimension setup, selected bounds, publication, seam
+lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa is
+unchanged.

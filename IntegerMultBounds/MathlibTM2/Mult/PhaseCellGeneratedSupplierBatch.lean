@@ -53,7 +53,7 @@ end GeneratedSupplierCall
 namespace PackedProducerPlan
 variable {P U : Type} {body : P → Pr P T Q A U}
 
-private theorem result_off_support (producer : PackedProducerPlan T Q) : producer.result ∉ producer.support := by
+theorem result_off_support (producer : PackedProducerPlan T Q) : producer.result ∉ producer.support := by
   intro hm
   simp only [support,List.mem_append] at hm
   rcases hm with hm | hm
