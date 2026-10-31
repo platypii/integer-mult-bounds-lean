@@ -208,4 +208,16 @@ theorem six_field_cost {stack : Fin t} (ops : List (Slot stack)) (hlen : ops.len
   rw [hlen] at h
   omega
 
+/-- Storage depends on field lengths, independently of push/pop runtime. -/
+theorem span_le {stack : Fin t} (ops : List (Slot stack)) (xs : Fin t → List Bool)
+    (L : ℕ) (hL : ∀ i ∈ ops, (xs i).length ≤ L) : span ops xs ≤ ops.length*(L+1) := by
+  induction ops with
+  | nil => simp [span]
+  | cons i ops ih =>
+    have h := hL i List.mem_cons_self
+    have ht := ih (fun j hj => hL j (List.mem_cons_of_mem _ hj))
+    simp only [span] at ht
+    simp only [span,List.map_cons,List.sum_cons,List.length_cons]
+    nlinarith only [h,ht]
+
 end IntegerMultBounds.Machine.BinaryDescriptorFrames
