@@ -221,6 +221,41 @@ lemma rp_dataSwap_ge {x : Fin 91} (h0 : x ≠ zH) (h1 : x ≠ zF) (h2 : x ≠ zG
   simp only [ne_eq, Fin.ext_iff] at n0 n1 n2 n3
   omega
 
+set_option maxRecDepth 1000 in
+/-- A sealed host bank is exactly the word program's placed initial bank.
+The layout proof is structural over an arbitrary injective placement. -/
+lemma rp_place_start {ι : Fin 91 → Fin T} (hι : Function.Injective ι)
+    (S : Stacks T A) (hdr F G : List Bool)
+    (hL : ∀ j, S.L (ι j) = []) (h0 : S.R (ι 0) = cells [hdr])
+    (h1 : S.R (ι 1) = cells [F]) (h2 : S.R (ι 2) = cells [G])
+    (h3 : S.R (ι 3) = []) (hpriv : ∀ j : Fin 91, 4 ≤ j.val → S.R (ι j) = []) :
+    place S (ι ∘ dataSwap) (startBank hdr F G) = S := by
+  have he : Function.Injective (ι ∘ dataSwap) := hι.comp dataSwap.injective
+  refine place_self he (fun x => ?_) (fun x => ?_)
+  · have hx : (startBank hdr F G x).left = [] := by
+      simp only [startBank,Function.update_apply]; split_ifs <;> rfl
+    rw [hx]
+    exact hL _
+  · by_cases x0 : x = zH
+    · subst x
+      simpa only [Function.comp_apply,show dataSwap zH = 0 from rfl,startBank,
+        Function.update_of_ne (by decide : zH ≠ zG),Function.update_of_ne (by decide : zH ≠ zF),
+        Function.update_self,Schoenhage.reg] using h0
+    by_cases x1 : x = zF
+    · subst x
+      simpa only [Function.comp_apply,show dataSwap zF = 1 from rfl,startBank,
+        Function.update_of_ne (by decide : zF ≠ zG),Function.update_self,Schoenhage.reg] using h1
+    by_cases x2 : x = zG
+    · subst x
+      simpa only [Function.comp_apply,show dataSwap zG = 2 from rfl,startBank,
+        Function.update_self,Schoenhage.reg] using h2
+    have hx : startBank hdr F G x = emp := by simp [startBank,x0,x1,x2]
+    rw [hx]
+    by_cases x3 : x = zO
+    · subst x
+      simpa only [Function.comp_apply,show dataSwap zO = 3 from rfl,emp,Schoenhage.cells,Schoenhage.syms,List.flatMap_nil,List.map_nil] using h3
+    exact hpriv _ (rp_dataSwap_ge x0 x1 x2 x3)
+
 /-- The ring product on host stacks: the header and the operand arrays as bit words on `ι 0`,
 `ι 1`, `ι 2`, the output array onto the empty `ι 3`, within `3 · rpTime` steps. -/
 theorem rpHost_exec {ι : Fin 91 → Fin T} (hι : Function.Injective ι) (hQ : rpStates ≤ Q)
@@ -253,38 +288,17 @@ theorem rpHost_exec {ι : Fin 91 → Fin T} (hι : Function.Injective ι) (hQ : 
   set S₃ : Stacks T A := { S₂ with R := Function.update S₂.R (ι 2) (cells [G]) }
   -- the sealed stacks are the placed start bank
   have hι' : Function.Injective (ι ∘ dataSwap) := hι.comp dataSwap.injective
-  have hd : ∀ x, (ι ∘ dataSwap) x = ι (dataSwap x) := fun _ => rfl
   have hS₃ : place S₃ (ι ∘ dataSwap) (startBank hdr F G) = S₃ := by
-    refine place_self hι' (fun x => ?_) (fun x => ?_)
-    · have : (startBank hdr F G x).left = [] := by
-        simp only [startBank, Function.update_apply]; split_ifs <;> rfl
-      rw [this, hd]; exact hL _
-    · rw [hd]
-      by_cases x0 : x = zH
-      · subst x0
-        rw [show dataSwap zH = 0 by decide, startBank, Function.update_of_ne (by decide),
-          Function.update_of_ne (by decide), Function.update_self]
-        simp [S₃, S₂, S₁, Schoenhage.reg, n02, n01]
-      by_cases x1 : x = zF
-      · subst x1
-        rw [show dataSwap zF = 1 by decide, startBank, Function.update_of_ne (by decide),
-          Function.update_self]
-        simp [S₃, S₂, S₁, Schoenhage.reg, n12]
-      by_cases x2 : x = zG
-      · subst x2
-        rw [show dataSwap zG = 2 by decide, startBank, Function.update_self]
-        simp [S₃, S₂, S₁, Schoenhage.reg]
-      have hx : startBank hdr F G x = emp := by simp [startBank, x0, x1, x2]
-      rw [hx]
-      by_cases x3 : x = zO
-      · subst x3
-        rw [show dataSwap zO = 3 by decide]
-        simp [S₃, S₂, S₁, n03.symm, n13.symm, n23.symm, h3, emp, Schoenhage.cells]
-      have h4 := rp_dataSwap_ge x0 x1 x2 x3
-      have m0 : ι (dataSwap x) ≠ ι 0 := fun e => by have := congrArg Fin.val (hι e); simp at this; omega
-      have m1 : ι (dataSwap x) ≠ ι 1 := fun e => by have := congrArg Fin.val (hι e); simp at this; omega
-      have m2 : ι (dataSwap x) ≠ ι 2 := fun e => by have := congrArg Fin.val (hι e); simp at this; omega
-      simp [S₃, S₂, S₁, m0, m1, m2, hpriv _ h4, emp, Schoenhage.cells]
+    apply rp_place_start hι S₃ hdr F G hL
+    · simp [S₃,S₂,S₁,n02,n01]
+    · simp [S₃,S₂,S₁,n12]
+    · simp [S₃]
+    · simpa [S₃,S₂,S₁,n03.symm,n13.symm,n23.symm] using h3
+    · intro j hj
+      have n0 : ι j ≠ ι 0 := hι.ne (by intro e; subst j; norm_num at hj)
+      have n1 : ι j ≠ ι 1 := hι.ne (by intro e; subst j; norm_num at hj)
+      have n2 : ι j ≠ ι 2 := hι.ne (by intro e; subst j; norm_num at hj)
+      simpa [S₃,S₂,S₁,n0,n1,n2] using hpriv j hj
   -- the word program
   obtain ⟨σ', hσ', v₄, m₄, hu₄, hm₄, he₄⟩ := tcompile_runs (body := body) hι'
     (runs_pwCoreWith (hdrDecodes_decodeHeader3 (l := l) hp (by omega)) hw hlen hf hg) hQ v₃ S₃

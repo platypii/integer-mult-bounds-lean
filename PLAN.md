@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3387 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3392 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20018,3 +20018,50 @@ numerical caller. Complete numerical stock is not yet supplied at the S4
 interior boundary. Initial key/scalar generation, halo publication and
 boundary/recovery, final core/halo amortization and tensor/R4 restoration also
 remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: full ring primitive stock, including every format conversion
+
+`rp_place_start` factors the original sealed-bank placement proof over an
+arbitrary injective register placement. The existing `rpHost_exec` correctness
+proof and the new resource proof share it. Executable programs, original time
+bounds and final frames are unchanged; the new layout lemma is checked with
+default recursion and heartbeat limits.
+
+`rpHost_exec_within` composes three actual seals, the certified compiled core,
+and four actual unseals. Each native wrapper pass pays linear word traffic.
+Execution uniqueness reuses the original host time and exact restored bank,
+rather than reproving the cleanup register by register. Its workspace ledger
+is shared setup plus `771*(2*2^l*w*M)` encoded operand traffic.
+
+`autoStep_push` proves the exact output-arity push count for an arbitrary word
+automaton, structurally over its input/output lists. `autoWord_native` supplies
+the reusable native certificate. The actual ring coefficient encoders and
+decoder instantiate this once, without expanding controller states.
+
+`RpRunsWithin` composes the existing actual register-file contracts with their
+resource certificates. Native format stages reuse their proved linear runtime;
+the host stage supplies its independently proved workspace. All six stages of
+the original `rpProg` are instantiated, including both packed-buffer clears.
+
+`rpProg_exec_within` now certifies every intermediate store of the complete
+ring-product primitive on ordinary pair-symbol streams. It has the original
+`rpCost` time bound and exact restored frame/output prefix. Its stock bound
+counts the complete initial bank once and adds `(C+1)*rpWorkspace`, for the
+fixed program's static push bound C. `rpWorkspace_affine` proves that this ledger
+is one shared allowance plus `1842*(M*2^l*w)`. The repeated arithmetic runtime
+is not multiplied into scratch; the single-record allowance is shared across
+the batch. No caller-supplied numerical execution is assumed.
+
+Guarded checks pass at 1962.1 MiB (shared layout/original host), 1930.4 MiB
+(complete host stock), 1385.8 MiB (generic automata), 1388.4 MiB (register-file
+trace composition), 1924.8 MiB (actual format converters), and 1956.8 MiB
+(complete primitive stock). The compatibility rebuild with existing and new
+cached numerical callers passes (14191 jobs, 33.0 GiB combined peak, 4.3 minutes).
+The scoped axiom audit passes for 324873 declarations at 3125.8 MiB.
+
+Next lift this primitive certificate through the fixed short-convolution
+packing/setup interface and the cached numerical caller. The actual S4 interior
+boundary still needs that complete stock certificate. Initial numerical-key and
+scalar generation, halo publication/boundary/recovery, final core/halo geometry
+and amortization, tensor support and R4 restoration remain open. S4 is incomplete;
+kappa is unchanged.
