@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3479 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3481 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21084,3 +21084,42 @@ error through the published packed-word reads. Recovery, executed key scheduling
 tensor/R4 restoration and global selected acceptance remain open. S4 remains
 incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327242 declarations at 3163.8 MiB.
+
+### S4 checkpoint: complete generated numerical solve and packed publication
+
+`PhaseCellReplicaPublicationRead.flatMap_uniform_slice` proves one structural
+slice law over arbitrary fixed-volume list images with a borrowed suffix.
+`publicationReplicas_word` combines that law for input/output replica banks with
+the existing one-window scatter equality. Every packed published word is exactly
+its corresponding compact solver word, including both replica and cell indices.
+`publicationReplicas_errorOn` transfers the existing ambient-coordinate numerical
+error to packed halo reads without changing the error or adding a count factor.
+No coefficient representability assumption or decoded output oracle is needed.
+
+`PhaseCellGeneratedPublishedGatheredReplica.generatedPublishedGatheredReplica_exec_within`
+composes the actual generated-page numerical caller with the self-preparing
+packed publication caller. It starts from the ordinary page-free weight factory
+bank, packed forward RHS halos, retained origin packets and blank owned pages.
+The theorem generates weights and publication controls, gathers and solves all
+same-key replica cells, aligns ambient replicas, publishes, and retires the
+publication pages. Its output halos follow `Fs.reverse`, matching the numerical
+solver ABI. The compact solver result is consumed exactly to its borrowed tail;
+packed input is consumed exactly to its borrowed tail. Original raw cell RHS,
+weight cache and replay clock remain available for the following recovery phase.
+
+The execution has a named additive time bill and whole-bank stock bill for the
+complete composition. Gather headers/scratch and left tapes are restored,
+except packed source 124, published destination 110 and consumed replica clock
+121. Numerical scratch is restored; low result tape 93 exposes its borrowed tail.
+The same `1/2^target` error is certified on every published cell using actual
+`packedIntervalRead` of the final packed halo bank. The window class supplies
+geometric disjointness/fits; no scatter page or publication execution is assumed.
+
+Guarded checks pass at 2063.4 MiB (uniform word/error bridge) and 2153.8 MiB
+(complete generated solve/publication). Compatibility with the generated interior
+fast ledger and global core local-stock bound passes (14499 jobs, 2.8 GiB combined
+peak). Next attach the added shared/native publication charges to those ledgers,
+then connect the packed residual/recovery and second interior pass. Executed key
+scheduling, tensor/R4 restoration and global selected acceptance remain open.
+S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 328059 declarations at 3173.0 MiB.
