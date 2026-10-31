@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3230 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3233 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17864,3 +17864,34 @@ check peaks at 3319.4 MiB. The guarded target build passes (15610 jobs,
 connect physical ambient payload exposure. Complete-key setup reuse, grouped
 publication, R4/tensor layout restoration and final audits remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: arbitrary generated supplier batches share a maximum reserve
+
+`SupplierInputPlan.Ready.of_frame` and `Ready.update` preserve ordinary-input
+readiness under changes outside the plan's explicit support. Setup time and
+stock bills have matching frame lemmas, so an accumulating result does not
+change later calls' bills. The support is described structurally through port
+lists, not concrete enumeration of the 325-register bank.
+
+The generic `appendRuns_exec` composes arbitrary restored result-appending
+calls. It accounts for accumulated output volume and the maximum per-call
+reserve, rather than summing scratch reserves across calls. It retains a
+`List.Forall₂` output certificate and exact final result order (reverse call
+order on a prepending result stack).
+
+`PackedProducerPlan.generatedBatch_exec` instantiates that language with the
+actual generated/produced/retired supplier lifecycle. Calls may use different
+retained input plans, jobs, replica counts and core lengths. The batch returns
+certified rows for each job, includes every setup/descriptor/erasure time bill,
+and restores the exact original state except for packed outputs on the result.
+Its workspace is total output volume plus the maximum selected call reserve.
+The final theorem assumes ordinary retained inputs and mathematical job bounds;
+it introduces no execution-callback premise. Live local payloads remain inputs.
+
+Guarded checks peak at 1400.1 MiB (append language), 3307.5 MiB (input frame)
+and 3387.8 MiB (concrete batch). The guarded target build passes (15613 jobs,
+3.5 GiB combined peak); the scoped axiom audit passes for 336008 declarations
+(3385.0 MiB). Next connect physical ambient payload exposure and the selected
+bulk/seam supplier schedule. Complete-key setup reuse, grouped publication,
+R4/tensor layout restoration and final audits remain open. S4 is incomplete;
+kappa is unchanged.
