@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3381 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3385 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19939,3 +19939,41 @@ the entire repeated fast runtime as stock would not close the selected bound.
 Complete numerical stock, initial key/scalar factories, halo publication and
 boundary/recovery, final core/halo amortization and tensor/R4 restoration remain
 open. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: one scratch allowance for the actual ring-product record loop
+
+`WordCmd.tcompile_loop_runs_within` is a structural compiler resource rule for
+an arbitrary finite sequence of word banks. It retains the maximum boundary
+stock and one compiled-body scratch allowance, independently of loop length.
+The body certificate uses the existing actual word execution and the compiler's
+proved absence of calls; it does not expand a concrete controller or require a
+bound on the caller's procedure table.
+
+`WordCmd.place_stock_balance` and `wordBankStock_update` account exactly for
+arbitrary placed word banks, including both tape halves and their separators.
+The existing structural bank replacement theorem preserves all spectator stock.
+No 91-tape enumeration or concrete bank equality is used.
+
+`ringRecordLoop_exec_within` instantiates the compiler rule with the actual
+`recStep` runs. Its boundary invariant archives consumed operands without
+changing their total stock; only completed output bits increase persistent
+storage. It derives every record execution from `runs_recStep` and preserves
+the original word-level record order and final bank. The simultaneous allowance
+is the complete initial stock plus `2*records*r*w`, plus one compiled-record
+scratch allowance. The scratch is proportional to `ringRecordCost`, without
+a record-count multiplier. `ringRecordOutput_length_le` proves the explicit
+linear output allowance for arbitrary records, not just disk-grid inputs.
+
+Guarded checks pass at 1403.5 MiB (compiler loop), 1389.7 MiB (word-bank balance),
+1904.7 MiB (record boundary/output bounds), and 1909.2 MiB (actual record loop).
+Combined build with the gathered interior execution, fast pricing and preparation
+stock passes (14171 jobs, 2.6 GiB combined peak). The scoped axiom audit passes for
+324749 declarations at 3125.6 MiB.
+
+Next lift this actual loop certificate through `pwCoreWith`'s bounded header,
+constant/preparation and finish phases, then the ring host's sealing and format
+conversions. Reuse/factor the existing preparation proof so the record readiness
+and exact initial bank are derived once. The full cached numerical batch's
+stock certificate remains open, as do initial key/scalar generation, halo
+publication/boundary/recovery, selected core/halo amortization and tensor/R4
+restoration. S4 is incomplete; kappa is unchanged.
