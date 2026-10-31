@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3355 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3359 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19582,3 +19582,38 @@ selected lifecycle build passes (15630 jobs, 2.6 GiB combined peak). The scoped
 axiom audit passes. Actual cached-batch integration, proper-core fast time,
 publication, reserved support and tensor/R4 restoration remain open.
 S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: one cached interior execution for all same-key RHS/cell pairs
+
+`replicaInteriorBatch_exec` instantiates the existing fixed cached interior
+program once for N replicas and B origins. The physical input is the ordinary
+replica-major nested stream. `replicaInteriorRows_eq` identifies it structurally
+with the cached ABI, and the returned certificate describes the actual block
+`r*B+j` against RHS r at ambient origin j. The cache and borrowed suffix survive;
+the native workspace restores except for the certified output. Empty replica
+batches are permitted; a cell-length class is required to be nonempty.
+
+`replicaInteriorBatchCost_eq` reuses the existing affine cached ledger: ambient
+startup is charged once, followed by N times local coordinate/cell work.
+`replicaInteriorBatch_fast_le` bounds this actual bill by startup plus
+`D*N*B*(L+2^l)*p^(129/128)` under linear selected width/padding bounds. The
+repeated term has no ambient s/t factor. No coefficient-generation cost is
+silently included in that repeated arithmetic estimate.
+
+`batchWeightPage_replicas` proves the two-bank replica ordering structurally.
+`replicaWeightPage_exec` reuses the existing fixed counted copier to expand a
+single generated B-cell numerical weight page into the exact combined-batch
+page. Its cost is the explicit linear `replicateWeightPageCost N (B*L) w`;
+weight coefficients are not reevaluated. Following suffix and all other tapes
+restore. Installing the expanded page/cache clock into the complete driver,
+raw multi-replica gathering, and boundary/residual/recovery composition are
+still required. In particular this does not yet remove the old proper-core
+driver's per-RHS ambient charge; it supplies the verified batched interior
+replacement and its matching stream/weight ABI.
+
+Guarded checks pass at 2052.6 MiB (batch ordering), 2106.3 MiB (replica
+execution), 2058.2 MiB (numerical-page copying), and 3109.1 MiB (fast bill).
+The combined build with the existing exposed-core driver passes (15868 jobs,
+2.7 GiB combined peak). The scoped axiom audit passes. S4 remains incomplete;
+proper-core integration, publication and tensor/R4 restoration remain open.
+Kappa is unchanged.
