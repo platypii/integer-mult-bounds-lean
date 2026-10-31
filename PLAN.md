@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3436 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3439 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20485,3 +20485,31 @@ cached numerical caller, and close the interior stock boundary before the
 selected geometry/amortization gate. Recovery/seams and tensor/R4 restoration
 remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 325056 declarations at 3131.8 MiB.
+
+### S4 checkpoint: full staged-cell workspace from empty owned buffers
+
+`publishedCell_exec_within` composes the constructed arithmetic and coordinate-
+order publication traces. Execution uniqueness supplies the original exact time
+and final physical bank, avoiding another register-by-register cleanup proof.
+`publishedCell_sized_exec_within` specializes it to the existing amplified-error
+precision and width, using the established source-exponent monotonicity lemma.
+
+`stagePayload_native` certifies actual page addressing, prefix copying and
+routing with push bound three. `stagedCell_sized_exec_within` now covers the
+complete cell program starting from empty owned RHS/reciprocal buffers and a
+preserved payload. Its allowance is three times payload-staging traffic plus
+`publishedCellWorkspace`; numerical scratch is unchanged. Resource interfaces
+omit duplicate numerical-validity conclusions, which remain available from the
+original execution theorems. No execution callback, readiness oracle or finite
+register enumeration is introduced.
+
+Guarded single-file checks pass at 2082.4 MiB (published cell), 2071.4 MiB
+(sized publication), and 2074.9 MiB (full staged cell). The compatibility build
+with gathered numerical/preparation callers passes (14230 jobs, 2.7 GiB combined
+peak). Next lift this actual staged trace through the 117-to-121 embedding and
+cached generated setup, then close the complete interior stock boundary and
+check selected geometry/amortization. Recovery/seams and tensor/R4 restoration
+remain open. S4 is incomplete; kappa is unchanged.
+After final documentation edits, the staged target rebuild passes (4495 jobs,
+2.6 GiB combined peak). The scoped axiom audit passes for 325069 declarations
+at 3132.2 MiB with the actual gathered numerical/preparation import closure.
