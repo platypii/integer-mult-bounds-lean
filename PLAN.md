@@ -18037,3 +18037,22 @@ and 3325.9 MiB (full-line record). The guarded target build passes (15222 jobs,
 dispatch with retained seam crops and cleanup. Selected supplier wiring,
 whole-schedule exposure reuse, grouped publication, R4/tensor layout restoration
 and final audits remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: selected suppliers route through bounded movement classes
+
+`coreSupplierSchedule_movement` connects every selected proper-halo task to
+its ordered gather length class, retaining its distinct numerical endpoint
+key. It reuses the singleton proper-task theorem and the existing geometry
+routing lemmas; no core enumeration or new serialized data is needed.
+
+`coreSupplierSchedule_traversal_bound` bounds the source-traversal ledger for
+the two proper-halo passes and one optional shared full-period seam pass by
+`36*replicas*s*W`, independently of the number of cores. This is explicitly a
+schedule ledger, not an execution theorem: composing the physical grouped
+gather with the selected suppliers, pricing emitted overlapping payloads and
+publication, and proving the full layout/tensor composition remain open.
+The existing per-call exposed supplier must not be repeated and charged as
+though it realizes this grouped ledger. S4 remains incomplete.
+
+The guarded target build passes (3820 jobs, 2.4 GiB combined peak).
+The scoped axiom audit passes for 1524 declarations (1873.8 MiB peak).
