@@ -16907,3 +16907,32 @@ Remaining: instantiate that bounded core, then carry it through the paid
 initialization and selected transpose wrappers to archive stock. Generated S4
 supplier readiness, complete-key setup reuse, tensor/layout composition and final
 execution/error/cost audits remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the actual nine-phase core and shared pad/core/crop are bounded
+
+`CoreRunWithin.core_phase` instantiates all nine physical phases. Its reserve is
+the maximum of six fixed machine coefficients: family, residual leaf, the three
+shears, and the largest header switch. The existing volume equalities and common
+bank head congruence transfer that one reserve across top/low views and every
+payload. The bound has no atom-count, width, repetition or phase-count factor.
+`core_run` combines this actual bounded phase execution with the original exact
+transpose and certified `V*e^tau2` runtime theorem, accepting a reserve on the
+concrete input array rather than an execution callback.
+
+`CoreSharedWithin.runs` places that complete core on the caller's physically
+shared source, retaining arbitrary caller tapes and restoring its exact private
+bank. The existing source-cell, replacement and private-source identities serve
+both endpoint and prefix proofs.
+
+`PaddedCoreWithin.padded_runs` includes actual row padding, the shared nine-phase
+core and reversed crop. Actual padding head travel supplies the core margin;
+recovery uses the exact restored output bank. One fixed allowance against padded
+volume retains the original padding/cropping runtime and exact unpadded transpose.
+`shared_runs` additionally shares this complete wrapper with an arbitrary caller,
+restoring the padding and core private banks with every prefix bounded.
+
+Remaining: assemble exchange/join/separate around this padded core, then carry
+the certificate through paid metadata initialization and the selected supplier
+wrappers to archive stock. Generated S4 supplier readiness, complete-key setup
+reuse, tensor/layout composition and final execution/error/cost audits remain
+open. S4 is incomplete; kappa is unchanged.
