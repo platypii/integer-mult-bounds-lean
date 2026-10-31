@@ -19414,3 +19414,44 @@ Guarded checks pass at 3027.6 MiB (generic preparation) and 3548.1 MiB
 (packed supplier specialization). The combined supplier/preparation build and
 scoped axiom audit pass. Full-period ordinary input preparation follows in the
 next chunk. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: actual full-period bank, descriptor and clock from ordinary inputs
+
+`generateFullLineGridBank_exec` specializes the existing physical family-bank
+generator to `fullLineGridRecord`. It derives canonical binary room from the
+actual scalar-width theorem, supplies all 303 ordinary record words without a
+bank case split, and preserves the exact external frame. Its inputs are live
+RHS symbols, the replica count, eight ordinary scalar headers and a width seed;
+no preinstalled numerical masters or serialized descriptor are assumed.
+`generateFullLineDescriptor_exec` composes this with generic descriptor/clock
+preparation, producing the actual one-record schedule and clock while retaining
+the generated source bank. Setup, emission time and intermediate stock are
+explicit. Source-bank retirement and composition with the actual shared full
+solve/crop/retirement lifecycle remain to be done.
+
+Guarded checks pass at 3316.8 MiB (full-period bank) and 3321.1 MiB
+(bank/descriptor/clock composition). The combined full-line, packed supplier,
+restoring core-class and retained-seam targets build (15873 jobs, 8.3 GiB
+combined peak); the final current-target build also passes. The scoped audit
+passes for 337549 declarations at 3422.7 MiB.
+
+### S4 cost review: repeated ambient setup is still inside the native replica bill
+
+The new uniform body budgets are correct, but their remaining `replicaTime`
+term does not yet have the needed fast local bound. `packedHaloKeyCost` includes
+`2*s` and `installGroupHeadersCost`; `packedHaloPreparedInputCost` runs this
+internal key setup per RHS. Reusing the existing coarse `t^5*p^4` workspace
+estimate as a fast replica-time estimate would leave this repeated ambient
+charge unresolved. Do not attempt to absorb it as replica-independent setup.
+The manuscript's bulk construction also uses cores about `p^8` and halos about
+`p^3`; the current equal-core/guard geometry is a valid separation witness,
+but is not a completed cost-driven choice of the final schedule.
+
+Next finish the required single full-period S3 solve and lifecycle using the
+new physical input factory. For the proper branch, hoist internal same-key
+setup across RHS through existing retained/cached batch machinery, or verify
+that one shared full-period S3 solve can replace the local branch while meeting
+the complete tensor and R4 budget. The latter is a candidate, not an established
+replacement. Choose the final core width only with the per-input cost argument
+in place. Ordinary placement, publication and tensor/R4 restoration are still
+open. S4 remains incomplete; kappa is unchanged.
