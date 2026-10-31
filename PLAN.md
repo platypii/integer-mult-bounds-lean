@@ -19528,3 +19528,28 @@ and exposed-core build passes (15900 jobs, 3.5 GiB combined peak); the scoped
 axiom audit passes. Selected matching follows in the next chunk. The proper-core
 repeated ambient setup, publication and tensor/R4 restoration remain open.
 S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: selected fast time and linear stock for the restoring full solve
+
+`selectedFullLineGridCost_fast_le` and
+`selectedFullLineGridStock_scaled_volume_le` specialize the existing selected
+S3 ledger to one full-period record. Singleton accounting is proved over
+arbitrary cost functions before instantiating the physical bank.
+`selectedFullLineScalars_scaled_volume_le` charges scalar setup once to the
+global volume. `selectedFullLineLifecycleTime_fast_le` then bounds the actual
+ordinary-input restoring lifecycle by
+`2624001*T + N*D*t*(1+band^2/d)*p^(129/128) + 410` for a uniform D.
+`selectedFullLineLifecycleStock_le` bounds its stock allowance by a uniform
+constant times `N*s*p`, plus `2*T`. Both include setup and cleanup, rather
+than pricing only an assumed live S3 bank. Fixed program push bound C and
+ordinary placement/readiness remain explicit execution-side obligations.
+
+Guarded checks pass at 3389.5 MiB (scalar bounds), 3397.7 MiB (singleton S3
+matching) and 3404.4 MiB (complete selected lifecycle bounds). The combined
+build passes (15900 jobs, 3.5 GiB combined peak); the scoped audit passes for
+337676 declarations at 3430.4 MiB. This prices the required full-period branch;
+it does not establish that the branch can replace the proper-core construction.
+Next compare its total tensor/R4 budget before choosing that replacement or
+hoisting same-key proper-core setup across RHS. Physical seam publication,
+selected placement and tensor/R4 restoration remain open. S4 is incomplete;
+kappa is unchanged.
