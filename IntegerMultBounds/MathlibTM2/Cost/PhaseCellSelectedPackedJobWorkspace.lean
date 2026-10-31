@@ -55,17 +55,10 @@ theorem selectedDerivedCoreSharedCosts_poly_le (ct : ℕ) :
   refine ⟨max Ctime Cstock,?_⟩
   filter_upwards [htime,hstock] with n htime hstock
   intro h i _ A r hp ht hl hu htarget hV hW hB
-  have hband : PhaseCellBand.width (Sizes.p n) r.u ≤ Sizes.s n i := by
-    simpa only [hp] using r.bounds.hband
-  have hVr : r.V ≤ cv*Sizes.p n := by
-    rw [hV,hp,hl,ht]
-    exact selectedPackedHaloWorkspaceWidth_le ct h i r.u r.targetOut r.a r.b hu htarget hband
-  have hWr : r.W ≤ cW*Sizes.p n := by
-    rw [hW,hp,hl]
-    exact selectedPackedHaloCommonWidth_le ct h i r.u r.targetOut htarget hband
-  have hBr : r.Bcore ≤ cB*Sizes.p n := by
-    rw [hB,hp,hl,ht]
-    exact selectedInverseCallerWordWidth_le ct h i hu htarget hband
+  have hwidths := selectedDerivedCoreWidths_le ct h i r hp ht hl hu htarget hV hW hB
+  have hVr : r.V ≤ cv*Sizes.p n := hwidths.1
+  have hWr : r.W ≤ cW*Sizes.p n := hwidths.2.1
+  have hBr : r.Bcore ≤ cB*Sizes.p n := hwidths.2.2
   constructor
   · exact (htime h i A r hp ht hl hu htarget hVr hBr hWr).trans
       (Nat.mul_le_mul_right _ (Nat.mul_le_mul_right _ (le_max_left Ctime Cstock)))

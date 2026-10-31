@@ -19365,3 +19365,35 @@ budget/execution build passes (15906 jobs, 8.3 GiB combined peak); the scoped
 axiom audit passes for 337685 declarations at 3425.1 MiB. Default proof limits
 are unchanged. Selected whole-body and class integration follow in the next
 chunk. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: explicit uniform budgets for actual core-class bodies
+
+`selectedDerivedCoreBody_budget` joins producer loading/cleanup, S3 shared
+numerical setup/workspace and generated scalar-control pricing from ordinary
+setup readiness. For canonical constructed formats, actual body time is at
+most `replicas*replicaTime+K*(t^6*p^4+payloadLength+replicas)` and actual stock
+at most the latter shared/data reserve. The constant is uniform over selected
+sizes, axes, geometry, RHS data and ordinary caller states; fixed producer and
+body push allowances remain explicit parameters.
+
+`selectedCoreClassJobs_bodyBudget` applies this to the actual indexed job
+constructor. It reuses the proved class queue lengths to replace every local
+payload by the common `replicas*L*W`, and takes the finite maximum of the actual
+native replica-time bills to obtain a common time bound and one stock reserve.
+The empty class requires no special case. The loop's per-job time/stock inputs
+can now be discharged by explicit bills from ordinary setup readiness, rather
+than free execution/resource premises.
+
+`selectedDerivedCoreWidths_le` factors out the canonical workspace/packet/
+scalar width estimates. Existing body and shared numerical specializations
+reuse it instead of repeating the same sizing argument.
+
+Guarded checks pass at 3411.9 MiB (complete selected body budget), 3389.5 MiB
+(actual generated class budget), 3377.3 MiB (factored widths) and 3380.3 MiB
+(updated shared numerical specialization). The combined build and scoped axiom
+audit pass as recorded above. Next bound the class's actual native numerical
+time uniformly at the selected fast rate, instantiate the fixed push constants
+and ordinary class/header placement/readiness/analytic facts, and compose these
+budgets with the existing restoring class execution theorem. Whole publication,
+shared full-line seam execution and tensor/R4 restoration remain open. S4 is
+incomplete; kappa is unchanged.

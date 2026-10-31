@@ -32,6 +32,28 @@ theorem selectedPackedHaloWorkspaceWidth_le (ct : ℕ) {n : ℕ} (h : Sizes.Big 
   apply selectedWeightWorkspaceWidth_le (1032+8*ct) h i _ _ u hlocal _ hu
   omega
 
+/-- The constructed format determines all three selected width bounds. -/
+theorem selectedDerivedCoreWidths_le {A : ℕ} (ct : ℕ) {n : ℕ} (h : Sizes.Big n)
+    (i : Fin (Sizes.d n)) [NeZero (Sizes.s n i)] (r : PackedNormalizedJob A (Sizes.s n i))
+    (hp : r.p = Sizes.p n) (ht : r.t = Sizes.t n i)
+    (hl : r.l = haloInverseRingLog (Sizes.s n i) (Sizes.t n i))
+    (hu : r.u ≤ Sizes.p n) (htarget : r.targetOut ≤ ct*Sizes.p n)
+    (hV : r.V = packedHaloWorkspaceWidth r.p r.l (Sizes.s n i) r.t r.u (r.targetOut+1) 2 r.a r.b)
+    (hW : r.W = packedHaloCommonWidth r.p r.l (Sizes.s n i) r.u (r.targetOut+1) 2)
+    (hB : r.Bcore = inverseCallerWordWidth r.p r.u r.l r.targetOut (Sizes.s n i) r.t) :
+    r.V ≤ (2*(1032+8*ct)+426009)*Sizes.p n ∧
+      r.W ≤ (1032+8*ct)*Sizes.p n ∧ r.Bcore ≤ (2*(ct+21)+22)*Sizes.p n := by
+  have hband : PhaseCellBand.width (Sizes.p n) r.u ≤ Sizes.s n i := by
+    simpa only [hp] using r.bounds.hband
+  constructor
+  · rw [hV,hp,hl,ht]
+    exact selectedPackedHaloWorkspaceWidth_le ct h i r.u r.targetOut r.a r.b hu htarget hband
+  constructor
+  · rw [hW,hp,hl]
+    exact selectedPackedHaloCommonWidth_le ct h i r.u r.targetOut htarget hband
+  · rw [hB,hp,hl,ht]
+    exact selectedInverseCallerWordWidth_le ct h i hu htarget hband
+
 /-- Actual canonical job formats require no separately supplied width estimates. -/
 theorem selectedDerivedCoreCosts_le_shared_add_linear (ct : ℕ) {T Q : ℕ} {U : Type} :
     ∃ C : ℕ, ∀ n : ℕ, ∀ (_h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],
@@ -52,16 +74,7 @@ theorem selectedDerivedCoreCosts_le_shared_add_linear (ct : ℕ) {T Q : ℕ} {U 
     (2*(1032+8*ct)+426009) (1032+8*ct)
   refine ⟨C,?_⟩
   intro n h i _ A r hp ht hl hu htarget hV hW hB input plan producer pushBound v S hready
-  have hband : PhaseCellBand.width (Sizes.p n) r.u ≤ Sizes.s n i := by
-    simpa only [hp] using r.bounds.hband
-  have hVbound := selectedPackedHaloWorkspaceWidth_le ct h i r.u r.targetOut r.a r.b hu htarget hband
-  have hWbound := selectedPackedHaloCommonWidth_le ct h i r.u r.targetOut htarget hband
-  have hVr : r.V ≤ (2*(1032+8*ct)+426009)*Sizes.p n := by
-    rw [hV,hp,hl,ht]
-    exact hVbound
-  have hWr : r.W ≤ (1032+8*ct)*Sizes.p n := by
-    rw [hW,hp,hl]
-    exact hWbound
-  exact hcost n h i A r hp ht hl hu htarget hVr hWr hB input plan producer pushBound v S hready
+  have hwidths := selectedDerivedCoreWidths_le ct h i r hp ht hl hu htarget hV hW hB
+  exact hcost n h i A r hp ht hl hu htarget hwidths.1 hwidths.2.1 hB input plan producer pushBound v S hready
 
 end IntegerMultBounds.MathlibTM2.Cost
