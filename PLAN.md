@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3376 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3379 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19872,3 +19872,41 @@ packets and account for the single generated weight key. Interior publication
 into halo rows, boundary/residual/recovery batching, cache retirement, complete
 stock and tensor/R4 restoration remain open. This is a certified internal
 consumer, not completion of the proper-core driver or S4. Kappa is unchanged.
+
+### S4 checkpoint: execute cache preparation, shared gather and numerical batch together
+
+`gatheredReplicaInteriorPreparation_exec` executes the copied weight-cache and
+native dimension setup in the numerical bank, then the generated shared local
+control gather in the disjoint gather bank. The existing embedding frame proves
+that preparation preserves the other bank; no new bank enumeration or execution
+callback is required. Both exact bank projections are supplied to the consumer.
+
+`gatheredReplicaInteriorBatch_exec` composes that preparation with the counted
+handoff and actual cached numerical batch. It starts with one B-cell numerical
+page, ordinary metadata, packed RHS halos and binary local-offset packets, with
+an empty numerical RHS. It returns the ambient principal-solve error certificate
+and bounded output bytes for every replica/cell pair. Replica indices follow the
+gather scan's reverse order directly; there is no extra physical reversal pass.
+Local fitting windows imply the numerical ambient fitting condition, so that
+condition is derived rather than required a second time.
+
+The complete gather bank restores, including its original destination suffix,
+packed source and borrowed suffix, coordinate packets, counters, scratch, left
+stacks and input/output streams. The numerical cache and generated replay clock
+remain explicit retained outputs; native work tapes are clean except for the
+certified result and gathered RHS. Cache retirement is still required later.
+
+Guarded checks pass at 2121.2 MiB (preparation) and 2123.4 MiB (combined execution).
+The combined build with fast pricing and the legacy packed-cell caller passes
+(14138 jobs, 3.4 GiB combined peak). The scoped axiom audit passes for
+324389 declarations at 3118.0 MiB.
+
+`gatheredReplicaInteriorBatch_fast_le` prices this exact four-phase bill by
+one numerical startup, one local-control setup, one linear B-cell page charge,
+and `D*N*(B*(L+2^l)+span+1)*p^(129/128)+19`. The repeated charge includes
+cache copying and complete packed-row traffic, without an ambient-period or
+repeated decoder factor. Its guarded check passes at 3133.0 MiB.
+Complete simultaneous stock, generation of the initial numerical page and scalar
+banks, interior publication, boundary/residual/recovery batching, selected final
+core/halo geometry and tensor/R4 restoration remain open. This closes the actual
+interior preparation/gather/consumer composition, not S4; kappa is unchanged.
