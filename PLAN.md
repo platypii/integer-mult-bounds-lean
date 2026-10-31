@@ -16973,3 +16973,23 @@ certificate through generated metadata/atom-width preparation and selected
 supplier wrappers to archive stock. Generated S4 supplier readiness, complete-key
 setup reuse, tensor/layout composition and final audits remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: generated metadata and atom-width preparation are bounded
+
+`PreparedWithin.runs` includes actual dimension/join/zero-bank construction,
+shared atom-width computation, the bounded initialized high body, width erasure
+and metadata erasure. The existing generated source and canonical-header lemmas
+supply the body's real metadata; no execution or workspace callback is assumed.
+The pure metadata allowance specializes to twice original volume.
+
+Fixed setup and cleanup coefficients reuse the established linear costs. Setup
+head travel transfers one reserve through both preparation layers; exact source
+head restoration and reverse endpoint travel bound both recovery layers. The
+program's original nesting, transpose endpoint, blank private banks and runtime
+`C*V*e^tau2 + D*V` are preserved. The guarded file check peaks at 2582.6 MiB and
+the guarded target build passes (6689 jobs).
+
+Next close the common six-header high path, dispatch and selected supplier, then
+transfer the complete transpose workspace bound to archive stock. Generated S4
+supplier readiness, complete-key setup reuse, tensor/layout composition and final
+audits remain open. S4 is incomplete; kappa is unchanged.
