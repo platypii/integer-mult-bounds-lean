@@ -18876,3 +18876,29 @@ reader, fixed routed supplier and endpoint retirement, then iterate over the
 computed origin queue with one shared batch counter and scratch reserve.
 Concrete selected analytic facts, whole exposure/publication, seam lifecycle
 and R4/tensor restoration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: fixed consuming scans share an absolute boundary reserve
+
+`IterBoundedStockSpec` and `scanP_within_bounded_stock` extend the existing
+restoring counted-scan language to bodies that may decrease stock. Each actual
+body trace preserves one absolute iteration-boundary bound and uses one shared
+`ExecWithin` reserve. The scan reuses those traces directly, preserves stock
+while transferring counter symbols, and restores the counter afterward. Its
+space bill is boundary stock plus depth plus one body reserve, independent of
+the number of iterations. No native-only restriction is imposed on the body.
+The existing growing-output scan interface is preserved.
+
+`mn_consume_appendR_size` gives the exact stock identity after consuming a
+payload and prepending output. The existing upper bound now follows from this
+identity; `mn_consume_appendR_size_nonincreasing` shows a call cannot increase
+boundary stock when output length is at most consumed payload length. These
+provide the missing space interface for the fixed proper-core consumer loop,
+without using a size-dependent unrolled program.
+
+Guarded checks peak at 1410.7 MiB (scan) and 1399.5 MiB (consumption identity).
+The two-target build passes (2084 jobs, 2.1 GiB combined peak). The scoped axiom
+audit passes for 1252 declarations at 1395.8 MiB. Next compose the origin reader,
+routed supplier and endpoint cleanup, and instantiate the bounded scan using
+actual queued jobs and payload/output volumes. Selected class separation and
+analytic facts, exposure/publication, seam lifecycle and R4/tensor restoration
+remain open. S4 remains incomplete; kappa is unchanged.

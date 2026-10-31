@@ -11,9 +11,9 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Fast.Main
 variable {T Q A : ℕ} {P U C : Type} {body : P → Pr P T Q A U}
 
-theorem mn_consume_appendR_size_le (v w : HS T Q A U) (S : Stacks T A) (source result : Fin T)
+theorem mn_consume_appendR_size (v w : HS T Q A U) (S : Stacks T A) (source result : Fin T)
     (hne : source ≠ result) (payload tail xs : List (Fin (A+4))) (hsrc : S.R source = payload++tail) :
-    mnSize (mk w {S with R := Function.update (Function.update S.R source tail) result (xs++S.R result)}) ≤
+    mnSize (mk w {S with R := Function.update (Function.update S.R source tail) result (xs++S.R result)})+payload.length =
       mnSize (mk v S)+xs.length := by
   let M : Stacks T A := {S with R := Function.update S.R source tail}
   have hm := mn_size_update (mk v S) w (.rt source) tail
@@ -23,8 +23,25 @@ theorem mn_consume_appendR_size_le (v w : HS T Q A U) (S : Stacks T A) (source r
   have hr := mn_appendR_size w w M result xs
   have hresult : M.R result = S.R result := by simp [M,hne.symm]
   rw [hresult] at hr
-  change mnSize (mk w {M with R := Function.update M.R result (xs++S.R result)}) ≤ _
+  change mnSize (mk w {M with R := Function.update M.R result (xs++S.R result)})+payload.length = _
   rw [hr]
+  omega
+
+
+theorem mn_consume_appendR_size_le (v w : HS T Q A U) (S : Stacks T A) (source result : Fin T)
+    (hne : source ≠ result) (payload tail xs : List (Fin (A+4))) (hsrc : S.R source = payload++tail) :
+    mnSize (mk w {S with R := Function.update (Function.update S.R source tail) result (xs++S.R result)}) ≤
+      mnSize (mk v S)+xs.length := by
+  have h := mn_consume_appendR_size v w S source result hne payload tail xs hsrc
+  omega
+
+/-- Retiring at least as many symbols as a call publishes cannot increase stock. -/
+theorem mn_consume_appendR_size_nonincreasing (v w : HS T Q A U) (S : Stacks T A) (source result : Fin T)
+    (hne : source ≠ result) (payload tail xs : List (Fin (A+4)))
+    (hsrc : S.R source = payload++tail) (hvolume : xs.length ≤ payload.length) :
+    mnSize (mk w {S with R := Function.update (Function.update S.R source tail) result (xs++S.R result)}) ≤
+      mnSize (mk v S) := by
+  have h := mn_consume_appendR_size v w S source result hne payload tail xs hsrc
   omega
 
 theorem consumeRuns_exec (run : C → Pr P T Q A U) (source result : Fin T) (hne : source ≠ result)

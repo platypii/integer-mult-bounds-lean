@@ -2,8 +2,9 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Host.BinArithStock
 
-/-! Restoring counted scans share one native iteration reserve. Completed
-iterations may retain output, but must not shrink total stock. -/
+/-! Restoring counted scans share one iteration reserve. The final-stock
+interface handles growing outputs; the bounded-stock interface also permits
+consumption to shrink stock between iterations. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Node
 open IntegerMultBounds IntegerMultBounds.MathlibTM2
@@ -126,6 +127,88 @@ theorem scanP_within_final_stock {a t : Fin T} (hat : a ≠ t) {p : Pr P T Q A U
   obtain ⟨hn,hz⟩ := hwhole.toExec.unique hex
   have hzsize : mnSize z = mnSize (Host.mk vf F) := by rw [←hz]; exact hsize
   rw [hzsize]
+  simpa only [←hn,hz,scanP] using hwhole
+
+/-- A counted iteration preserves an absolute bound at iteration boundaries.
+Unlike `IterStockSpec`, this allows consumption to decrease stock. -/
+def IterBoundedStockSpec (body : P → Pr P T Q A U) (p : Pr P T Q A U)
+    (a t : Fin T) (Ψ : ℕ → Regs T A) (cost N bound reserve depth : ℕ) : Prop :=
+  ∀ j < N, ∀ (v : HS T Q A U) (S : Stacks T A),
+    (∀ k, k ≠ a → k ≠ t → S.R k = Ψ j k) → mnSize (Host.mk v S) ≤ bound →
+    ∃ (v' : HS T Q A U) (R' : Regs T A) (m : ℕ), v'.user = v.user ∧ m ≤ cost ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ bound+depth+reserve) depth
+        p (Host.mk v S) m (Host.mk v' {S with R := R'}) ∧
+      R' a = S.R a ∧ R' t = S.R t ∧
+      (∀ k, k ≠ a → k ≠ t → R' k = Ψ (j+1) k) ∧
+      mnSize (Host.mk v' {S with R := R'}) ≤ bound
+
+private theorem scanP_loop_bounded_stock {a t : Fin T} (hat : a ≠ t) {p : Pr P T Q A U}
+    {Ψ : ℕ → Regs T A} {cost N bound reserve depth : ℕ}
+    (hp : IterBoundedStockSpec body p a t Ψ cost N bound reserve depth) :
+    ∀ (xs : List (Fin (A+4))) (j : ℕ) (v : HS T Q A U) (S : Stacks T A),
+      S.R a = xs → j+xs.length ≤ N → (∀ k, k ≠ a → k ≠ t → S.R k = Ψ j k) →
+      mnSize (Host.mk v S) ≤ bound → v.flag = xs.head?.isSome →
+      ∃ (vf : HS T Q A U) (F : Stacks T A) (n : ℕ),
+        mnSize (Host.mk vf F) ≤ bound ∧
+        ExecWithin body (fun d z => mnSize z+d ≤ bound+depth+reserve) depth
+          (.loop (·.flag) (.seq (.act (popPush a t)) (.seq p (.act (peekR a)))))
+          (Host.mk v S) n (Host.mk vf F) := by
+  intro xs
+  induction xs with
+  | nil =>
+    intro j v S _ _ _ hbound hflag
+    exact ⟨v,S,1,hbound,.loop_false (by simpa using hflag) (by omega)⟩
+  | cons x xs ih =>
+    intro j v S ha hN hR hbound hflag
+    let S₀ : Stacks T A := {S with R := Function.update (Function.update S.R a xs) t (x::S.R t)}
+    have hpop : (popPush a t : Act T Q A U).run (Host.mk v S) = Host.mk {v with sym := some x} S₀ := by
+      simp [popPush,Action.run,ha,update_rt,S₀,hat.symm]
+    have hsize := popPush_size hat x xs v S ha
+    change mnSize (Host.mk v S₀) = mnSize (Host.mk v S) at hsize
+    obtain ⟨v₁,R₁,m,hu,hm,he,ha₁,ht₁,hR₁,hnext⟩ := hp j (by simp at hN; omega)
+      {v with sym := some x} S₀ (by intro k hka hkt; simpa [S₀,hka,hkt] using hR k hka hkt) (by change mnSize (Host.mk v S₀) ≤ bound; rw [hsize]; exact hbound)
+    let F₁ : Stacks T A := {S with R := R₁}
+    have ha₁' : F₁.R a = xs := by simpa [F₁,S₀,hat] using ha₁
+    obtain ⟨vf,F,n,hfinal,hw⟩ := ih (j+1) {v₁ with flag := xs.head?.isSome} F₁ ha₁'
+      (by simp at hN; omega) hR₁ hnext rfl
+    have hpeek := Exec.act (body := body) (peekR a) (Host.mk v₁ F₁)
+    rw [peekR_run,ha₁'] at hpeek
+    have hpopw := ExecWithin.act (body := body)
+      (Inv := fun d z => mnSize z+d ≤ bound+depth+reserve) (d := depth)
+      (popPush a t) (Host.mk v S) (by omega)
+      (by rw [hpop]; change mnSize (Host.mk v S₀)+depth ≤ _; omega)
+    rw [hpop] at hpopw
+    have hpeekw := mn_native_exec_within hpeek 0
+      (by simp [mnNativePushBound,peekR,mnActPush]) depth (bound+depth+reserve) (by
+        change mnSize (Host.mk v₁ F₁)+depth ≤ _
+        change mnSize (Host.mk v₁ F₁) ≤ bound at hnext
+        omega)
+    exact ⟨vf,F,1+(m+1)+n+1,hfinal,
+      .loop_true (by simpa using hflag) (.seq hpopw (.seq he hpeekw)) hw⟩
+
+/-- A restoring scan shares one iteration reserve above a boundary bound. -/
+theorem scanP_within_bounded_stock {a t : Fin T} (hat : a ≠ t) {p : Pr P T Q A U}
+    {Ψ : ℕ → Regs T A} {cost N bound reserve depth : ℕ}
+    (hp : IterBoundedStockSpec body p a t Ψ cost N bound reserve depth) (j : ℕ) (v : HS T Q A U) (S : Stacks T A)
+    (hN : j+(S.R a).length ≤ N) (hR : ∀ k, k ≠ a → k ≠ t → S.R k = Ψ j k)
+    (hbound : mnSize (Host.mk v S) ≤ bound)
+    {z : Store (HΓ (T := T) A) (HS T Q A U)} {n : ℕ}
+    (hex : Exec body (scanP a t p) (Host.mk v S) n z) :
+    ExecWithin body (fun d u => mnSize u+d ≤ bound+depth+reserve) depth
+      (scanP a t p) (Host.mk v S) n z := by
+  obtain ⟨vf,F,m,hmono,hw⟩ := scanP_loop_bounded_stock hat hp (S.R a) j
+    {v with flag := (S.R a).head?.isSome} S rfl hN hR hbound rfl
+  obtain ⟨v',hu,he⟩ := moveR_exec body t a hat.symm id vf F
+  change mnSize (Host.mk vf F) ≤ bound at hmono
+  have hsize := mn_movedR_size a t hat vf v' F
+  change mnSize (Host.mk v' {F with R := movedR F.R t a id (F.R t)}) = mnSize (Host.mk vf F) at hsize
+  have hpeek := Exec.act (body := body) (peekR a) (Host.mk v S)
+  rw [peekR_run] at hpeek
+  have hpw := mn_native_exec_within hpeek 0 (by simp [mnNativePushBound,peekR,mnActPush]) depth
+    (bound+depth+reserve) (by omega)
+  have hmove := Host.moveR_within t a id he depth (bound+depth+reserve) (by omega)
+  have hwhole := ExecWithin.seq hpw (.seq hw hmove)
+  obtain ⟨hn,hz⟩ := hwhole.toExec.unique hex
   simpa only [←hn,hz,scanP] using hwhole
 
 end IntegerMultBounds.MathlibTM2.Node
