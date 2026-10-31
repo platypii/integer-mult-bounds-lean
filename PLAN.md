@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3218 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3220 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17659,3 +17659,30 @@ Guarded checks peak at 1379.4 MiB (composition), 1409.8 MiB (geometry) and
 need to be generated for the full 325-word supplier input, followed by supplier
 batches, complete-key setup reuse, grouped publication, R4/tensor layout
 restoration and final audits. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: normalization parameter queues are physically generated
+
+`prependBinaryHeader_exec` converts a retained ordinary header into a binary
+word and prepends it with the existing order-preserving move. The source is
+retained, all three scratch words are restored and the additional stock depends
+only on binary width. `binaryHeaderQueue_exec` lifts this construction over an
+arbitrary source-port list in loader order. Its exact endpoint prepends the
+concatenated binary words to the original caller suffix. Structural recursion
+and the additive stock composition lemma avoid concrete register cases.
+
+`generateInverseParameters_exec` instantiates the language for the eight
+normalization parameters in `inverseParameterWords` order. It requires actual
+retained unary parameter headers and a width header; no binary parameter queue
+is supplied. It proves the exact loader packet, source/scratch restoration,
+time at most `(p+u+l+target+s+t+a+b)*(4*B+10)+8*(8*B+12)+1`, and additional
+stock `8*(2*(4*B+4))` for the same execution. The generic cost identity reduces
+an arbitrary parameter list to its total source length and field count.
+
+Guarded checks peak at 1414.4 MiB (queue language) and 1938.4 MiB (eight
+parameters). The guarded target build passes (3997 jobs, 2.5 GiB combined
+peak); the scoped axiom audit passes for 8659 declarations (1946.8 MiB).
+Installation into the full outer bank, remaining unary metadata and packed
+source exposure still remain before all 325 supplier words are generated.
+Full supplier batches, complete-key setup reuse, grouped publication,
+R4/tensor layout restoration and final audits remain open. S4 is incomplete;
+kappa is unchanged.
