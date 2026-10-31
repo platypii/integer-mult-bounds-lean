@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3489 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3494 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21241,3 +21241,49 @@ reload between keys. Then reuse the packed coupling page across replicas.
 Recovery, executed global key scheduling, tensor/R4 restoration and selected
 acceptance remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 325457 declarations at 3141.8 MiB.
+
+### S4 checkpoint: generated numerical solve updates the independent accumulator
+
+`Host/EmbedFrame` reuses the existing structural frame rule and execution
+uniqueness to prove untouched-stack preservation. A generic structural theorem
+shows that embedding any closed program accesses only its placed stacks; it does
+not unfold compiled numerical generators. `PhaseCellGeneratedGatheredReplicaFrame`
+applies that theorem to the weight factory, cache preparation, local gather and
+cached arithmetic, and checks only the small native handoff's explicit ports.
+The actual generated numerical execution therefore preserves an independent
+accumulated output tape, with no repeated numerical proof or extra time/stock.
+
+`PhaseCellReplicaPublicationSuffix` proves that packed replica reads ignore the
+accumulator's borrowed output suffix inside ownership. This is exact word
+identity and requires no decoding or magnitude assumption.
+
+`PhaseCellGeneratedAccumulatingGatheredReplica.generatedAccumulatingGatheredReplica_exec_within`
+composes the actual generated numerical solve with self-preparing independent
+publication. The accumulator starts in numerical solver replica order and may
+contain earlier classes' bounded results. The theorem restores the entire gather
+bank, including original packed RHS 124 and exact replica counter 121. It consumes
+only the compact solver result to its borrowed suffix and updates the independent
+output bank, while retaining numerical raw RHS/cache state for explicit retirement.
+It preserves the output magnitude witness, certifies the same `1/2^target` error
+on the new class, and conditionally preserves every earlier disjoint core's
+physical-read accuracy on the actual before/after accumulator. Both borrowed
+suffixes remain outside ownership. No numerical execution or publication oracle
+is supplied.
+
+`Cost/PhaseCellAccumulatingReplicaResources` proves exact bill comparisons:
+independent accumulation saves `N*(6*span*w+7)` time allowance and twice that stock
+allowance relative to the previous routed single-class caller. Monotonicity then
+reuses its complete 129/128 fast-time and linear local-stock theorems, including
+an actual-trace `*_within_linear` wrapper. Shared publication setup is unchanged;
+no new asymptotic derivation or per-RHS setup charge is introduced.
+
+Guarded checks pass at 1385.3 MiB (generic frame rule), 2121.6 MiB (numerical
+footprint), 2046.2 MiB (suffix reads), 2156.2 MiB (complete generated accumulation)
+and 3158.5 MiB (resource comparison/repricing). Final proof cleanups are checked
+by the compatibility build with fitting output fields and global core local
+stock (14518 jobs, 3.4 GiB combined peak). Next retire the owned raw RHS/cache
+prefixes, reload ordinary numerical headers between keys and connect the actual
+length-class controller, then execute shared packed coupling across replicas.
+Recovery, global key scheduling, tensor/R4 restoration and selected acceptance
+remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 328231 declarations at 3180.0 MiB.
