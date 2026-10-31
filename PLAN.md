@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3468 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3470 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20974,3 +20974,33 @@ The guarded file check passes at 2090.3 MiB. Compatibility with encoded
 publication and the generated gathered caller passes (14208 jobs, 2.7 GiB
 combined peak).
 The scoped axiom audit passes for 45315 declarations at 2135.1 MiB.
+
+### S4 checkpoint: align packed ambient replicas with the solver output order
+
+`PhaseCellReversePackedLines` proves a structural counted sweep over arbitrary
+fixed-volume symbol lists. Each line is transferred to temporary storage and
+moved onto the destination, reversing line order while preserving symbol order.
+The source suffix and destination suffix survive. The counted variant costs
+`N*(6*V+9)+2`; the retained-count variant first copies the replica counter and
+costs `N*(6*V+13)+6`. Both have native push bound two. The ordinary variant also
+has a reusable stock certificate. No coefficient decoding or finite cases occur.
+
+`PhaseCellReverseGatheredAmbient.reverseGatheredAmbient_exec_within` instantiates
+the retained-count sweep in the actual 126-register gather bank: count 121,
+working clock 125, symbol volume 123, source 124, destination 110, line 122 and
+scratch 7. It converts the restored forward packed ambient bank into exactly
+`Fs.reverse` order, matching the generated gathered numerical output. Only
+source 124 and destination 110 change; all metadata, scratch and left tapes are
+restored. Its whole-bank stock allowance is twice the linear native time bill.
+No extra registers or natural row-count header are needed for this routing.
+
+Guarded checks pass at 1967.1 MiB (generic routing and stock) and 2051.4 MiB
+(actual gather-bank adapter). Compatibility with the generated gathered solver,
+shared scatter-control factory and encoded publication passes (14210 jobs,
+2.7 GiB combined peak). Next compose publication with this aligned bank; replace
+the publication line-retirement transfer's row-count product with the retained
+symbol-volume counter so no division/header reconstruction is required.
+The complete publication caller, recovery, executed key scheduling, tensor/R4
+restoration and global selected acceptance remain open. S4 remains incomplete;
+kappa is unchanged.
+The scoped axiom audit passes for 45336 declarations at 2130.8 MiB.
