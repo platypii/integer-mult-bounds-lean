@@ -62,6 +62,14 @@ theorem heads_of_run (hr : run M n c = some d) (lo hi : ℤ)
   change c.head i-(m : ℤ) ≤ z.head i ∧ z.head i ≤ c.head i+(m : ℤ) at ht
   omega
 
+theorem heads_of_run_le {B : ℕ} (hr : run M n c = some d) (hn : n ≤ B) (lo hi : ℤ)
+    (hbank : ∀ i, lo+B ≤ c.head i ∧ c.head i+B ≤ hi) :
+    RunWithin M (fun v => ∀ i, lo ≤ v.head i ∧ v.head i ≤ hi) n c d := by
+  apply heads_of_run hr lo hi
+  intro i
+  have hb := hbank i
+  omega
+
 /-- Step simulations preserve all intermediate configurations, not just endpoints. -/
 theorem simulation {u r b : ℕ} {N : Program u r b} {G : TapePred u b}
     (f : Config t q a → Config u r b)

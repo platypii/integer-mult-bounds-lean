@@ -16564,3 +16564,11 @@ the resulting bound to host stock and the archive transpose. S4 also still needs
 the generated supplier/readiness,
 setup-reuse, R4/tensor, layout-restoration and final execution/error/cost audit.
 S4 remains incomplete; kappa is unchanged.
+
+The stage-1 leaf-core work now reuses the same bounded-run language.
+`PieceExecutionWithin.schedule_run_within` lifts the actual literal schedule,
+given bounded child calls, while retaining its existing summed runtime budget
+and a shared head interval. Parked heads are independent of array contents.
+`InductionBaseWithin.run_within` supplies the depth-zero certificate from the
+existing linear-time execution. The recursive-depth case and high-width
+wrappers still need space certificates before the full leaf-core bound closes.
