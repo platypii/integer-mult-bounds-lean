@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3335 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3338 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19315,3 +19315,34 @@ shared full-line seam execution and tensor/R4 restoration remain open.
 Guarded checks pass at 3376.4 MiB (derived job widths and body pricing) and
 3376.5 MiB (actual generated class jobs). The combined class-pricing/execution
 build and scoped axiom audit pass. Kappa is unchanged.
+
+### S4 checkpoint: shared numerical bills for actual generated class jobs
+
+`PackedNormalizedJob.sharedWorkspace` names the existing zero-replica numerical
+allowance. `workspace_le_shared_add_payload` reuses S3's structural affine
+workspace theorem to bound the actual job's workspace by this allowance plus
+`500*(payloadLength+replicas)`. Persistent and published storage are separately
+bounded by payload volume. No concrete register bank is expanded.
+
+`selectedPackedJobSharedWorkspace_poly_le` specializes the existing selected
+zero-replica estimate to a constructed job. `selectedDerivedCoreSharedCosts_poly_le`
+joins it with S3 setup-time pricing and derives all three canonical format
+width bounds. `selectedCoreClassJobs_sharedCosts` applies this to the actual
+ordered class constructor, with one constant chosen before selected sizes,
+axes, class geometry, coefficients and replica data. Both shared numerical
+bills are bounded by `C*t^6*p^4`; neither includes a replica multiplier.
+
+Guarded checks pass at 3385.6 MiB (structural job workspace), 3381.5 MiB
+(selected shared costs) and 3382.0 MiB (actual generated class shared costs).
+The combined selected-pricing/execution build passes (15901 jobs, 3.5 GiB
+combined peak). The scoped axiom audit passes on the combined closure.
+
+Full producer retirement pricing remains open. Experimental singleton
+producer identities triggered expensive definitional comparisons involving
+the compiled cleanup allowance; those experiments are not part of this
+checkpoint. Avoid normalizing compiled program syntax in arithmetic proofs:
+price loader, cleanup and shared workspace through structural interfaces.
+The actual class execution still needs uniform producer/body budgets and
+ordinary placement/readiness/analytic instantiation. Publication, the shared
+full-line seam lifecycle and tensor/R4 restoration remain open. S4 remains
+incomplete; kappa is unchanged.
