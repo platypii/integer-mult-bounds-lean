@@ -29,7 +29,7 @@ theorem strip_raw (c : Tapes k a) (slots : Fin k → Fin t)
 theorem bank_eq_raw (c : Tapes k a) : CleanSubbank.bank (s := t) c = raw c (k+t) :=
   SharedBankStageInput.eq_raw _ _ _ (fun _ => rfl) (CleanSubbank.payload_bank c) (CleanSubbank.strip_bank c)
 
-private theorem two_bank_eq_raw (c : Tapes k a) :
+theorem two_bank_eq_raw (c : Tapes k a) :
     (c.append (SharedBank.empty t a)).append (SharedBank.empty u a) = raw c ((k+t)+u) :=
   SharedBankStageInput.eq_raw _ _ (SharedBankFrames.commonSlots k t u) (fun _ => rfl)
     (SharedBankFrames.payload_common _ _ _) (SharedBankFrames.strip_common_blank _ _ _)

@@ -16807,3 +16807,36 @@ transpose workspace theorem and transfer it to selected archive stock. Generated
 S4 supplier/readiness, complete-key setup reuse, tensor/layout composition and
 final execution/error/cost audits also remain open. S4 is incomplete; kappa is
 unchanged.
+
+### S4 checkpoint: the complete reversed-family leaf shares linear workspace
+
+`SharedBank.stage_within` and `SharedBankPair.pair_within` lift bounded execution
+through the existing physically shared payload and stripped metadata banks.
+`SharedBankRawCompose.realizes_within` retains exact clean-bank endpoints and the
+real sequence transition. The existing structural raw-bank identity is shared
+with the endpoint theorem.
+
+`Blocks.seq_within`, `raw_head_change` and `post_raw_heads` transport prefix
+bounds and endpoint head travel between differently padded common banks.
+`Blocks.RawWithin` packages a uniform reserve. Its `before_within` and
+`after_within` rules pay linear preparation/recovery around a bounded core;
+recovery uses a smaller interval for the core, independently of its runtime.
+
+`Family.leaf_runs_within` applies this language to real offset setup, header
+push, subview installation, core execution, restore and counter advance. Header
+length and volume bounds absorb preparation and recovery in the fixed additive
+allowance 2000. The proof is structural over an arbitrary core. The concrete
+`LeafCoreWithin.core_space` supplies its prefix predicate from actual stage-1
+execution; keeping that instantiation separate prevents Lean from repeatedly
+unfolding the concrete network's control-state cardinalities.
+
+`RevNode.Good.to_leafCore` connects the actual reversed-family role streams to
+the core's source contract. `RevHalf.leaf_heads_within` consumes the complete
+leaf theorem on the existing frame leaf-loop banks, with no execution callback
+or stock oracle. It retains the original runtime and restored endpoint theorem.
+
+Remaining: transfer the frame-entry reserve to these leaf-loop banks, assemble
+all local frame fields and close the complete stage-2 transpose workspace theorem,
+then transfer it to selected archive stock. Generated S4 supplier/readiness,
+complete-key setup reuse, tensor/layout composition and final audits remain
+open. S4 is incomplete; kappa is unchanged.
