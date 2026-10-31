@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3269 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3271 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18432,3 +18432,28 @@ supplier input payload register and restore/retire the archive. Selected
 class/capacity dimension generation and bounds, supplier publication, seam
 lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa is
 unchanged.
+
+### S4 checkpoint: routed payloads feed the existing generated supplier lifecycle
+
+`takePrefix_exec_within` extends the existing physical `takePrefix` primitive
+with its structural native push and full workspace certificates. It consumes a
+counted prefix in original order and restores both work stacks in exactly
+`6*payloadLength+6` steps. No duplicate transfer implementation is retained.
+
+`SupplierInputPlan.routedRun_exec` consumes an actual archive prefix into the
+existing retained payload register, executes `input.run producer`, and erases
+the local payload. Its exact endpoint advances only the source archive and
+prepends the proved solver output to the result register. The remaining archive
+suffix, headers and scratch are preserved. Ordinary readiness is checked in the
+state after installing the consumed payload; no execution or ambient gather
+callback is a premise. Time and stock include prefix transfer, the existing
+supplier lifecycle and local payload erasure. This avoids repeating ambient
+exposure per supplier.
+
+Guarded checks peak at 1930.8 MiB (prefix stock) and 3389.9 MiB (routed supplier).
+The target build passes (15623 jobs, 3.5 GiB combined peak). The scoped axiom
+audit passes for 336037 declarations at 3385.9 MiB. Next instantiate this
+consumer on real routed core slots, skip the dummy prefix, and lift sequential
+consumption to the selected supplier list with shared scratch. Class/capacity
+dimension setup and bounds, publication, seam lifecycle and R4/tensor
+restoration remain open. S4 is incomplete; kappa is unchanged.
