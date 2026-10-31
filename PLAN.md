@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3212 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3213 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17544,3 +17544,25 @@ live inputs at this interface. Their actual generation/exposure, full supplier
 batch composition, complete-key setup reuse, grouped publication and R4/tensor
 layout restoration remain before S4 can close. S4 is incomplete; kappa is
 unchanged.
+
+### S4 checkpoint: the numerical master bank is physically installed from live headers
+
+`installMasterHeaderBank_exec` reuses the existing arbitrary-list unary header
+copier for the ten numerical masters. It proves that the actual resulting
+private bank is exactly `masterHeaderBank` with the original host tapes,
+including every blank private port. Native `LengthKeyReady` follows from that
+exact installed bank rather than being supplied as an input certificate.
+Sources and the single copier scratch are retained; the same execution carries
+its exact linear header-copy cost and a bounded intermediate stock trace.
+
+The proof uses generic destination uniqueness and bank-frame lemmas, with no
+per-port execution enumeration. Retained ordinary master values and blank
+private storage are the input premises. This supplies the physical native
+master-bank layer; binary geometry, packed source/payload installation and
+normalization metadata still have to be connected before the full 325-word
+producer input is generated.
+
+The guarded file check peaks at 3214.1 MiB and the guarded target build passes
+(14755 jobs, 3.4 GiB combined peak). Full supplier batches, complete-key setup
+reuse, grouped publication and R4/tensor layout restoration also remain open.
+S4 is incomplete; kappa is unchanged.
