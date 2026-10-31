@@ -40,7 +40,7 @@ theorem produce_exec (input : SupplierInputPlan T) (producer : PackedProducerPla
       (∀ i j, (rows i j).length = L) ∧
       (∀ i : Fin 1, r.ExactRowOutput J (List.ofFn (rows i))) ∧
       (∀ i, F.R (input.work i) = r.words i) ∧
-      (∀ i, i ≠ producer.result → (∀ j, i ≠ input.work j) → F.R i = S.R i) ∧ F.L = S.L ∧
+      (∀ i, i ≠ producer.result → (∀ j, i ≠ input.work j) → F.R i = S.R i) ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
         (input.stock r S+(31*tape.length+9+(C+1)*producer.workspace (U := U) [r]))) depth
         (input.produce producer) (Host.mk v S) n (Host.mk v' F) ∧
@@ -48,7 +48,7 @@ theorem produce_exec (input : SupplierInputPlan T) (producer : PackedProducerPla
         (List.ofFn fun i => (List.ofFn fun j => cstream A r.W (rows i j)).flatten).flatten++
           S.R producer.result := by
   dsimp only
-  obtain ⟨v₁,n₁,H,hu₁,hn₁,hwords,hframe,hL,he₁⟩ := input.exec (body := body) r v S hready depth
+  obtain ⟨v₁,n₁,H,hu₁,hn₁,hwords,hframe,hL,hI,hO,he₁⟩ := input.exec (body := body) r v S hready depth
   have hcontrol (k : Fin T)
       (hk : k ∈ [producer.count,producer.tmp,producer.spare,producer.clock,producer.saved,producer.savedClock]) :
       H.R k = S.R k := hframe k (hcontrolOff k hk)
@@ -75,7 +75,7 @@ theorem produce_exec (input : SupplierInputPlan T) (producer : PackedProducerPla
   have hwhole := mn_seq_within_add he₁ he₂'
   let F : Stacks T A := {H with R := (Function.update H.R producer.result
     ((List.ofFn fun i => (List.ofFn fun j => cstream A r.W (rows i j)).flatten).flatten++H.R producer.result))}
-  refine ⟨v₂,n₁+n₂,F,rows,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,hlen,hrows,?_,?_,hL,hwhole,?_⟩
+  refine ⟨v₂,n₁+n₂,F,rows,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,hlen,hrows,?_,?_,hL,hI,hO,hwhole,?_⟩
   · intro i
     change Function.update H.R producer.result _ (input.work i) = _
     rw [Function.update_of_ne (hresultOff i).symm,hwords]

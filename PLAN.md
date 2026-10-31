@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3229 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3230 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17838,3 +17838,29 @@ the generated source bank and lift the complete lifecycle to supplier batches.
 Ambient payload exposure, complete-key setup reuse, grouped publication,
 R4/tensor layout restoration and final audits remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: generated single-job suppliers restore the full caller state
+
+`SupplierInputPlan.run_exec` composes input generation, actual packed
+production, descriptor/clock retirement and physical erasure of the generated
+325-word source bank. Its exact final machine state is the original state with
+only the packed returned rows prepended to the result. The returned rows retain
+their rectangular length and `ExactRowOutput` certificates. The initial bank is
+blank and the ordinary retained inputs are preserved; no prepared numerical
+bank or descriptor queue is assumed.
+
+Cleanup reuses the arbitrary-list `clearWords_exec` theorem, with an injective
+source-bank placement. It charges each actual generated word once:
+`2*(sum_i (r.words i).length)+651` steps. Its zero native push bound adds no
+workspace allowance. The complete trace retains the existing setup and producer
+stock bound. Input and producer interfaces now also expose the unchanged host
+input/output tapes, allowing exact full-state restoration rather than only
+register-frame claims.
+
+The guarded lifecycle check peaks at 3375.6 MiB; the strengthened input-plan
+check peaks at 3319.4 MiB. The guarded target build passes (15610 jobs,
+3.5 GiB combined peak). The scoped axiom audit passes for 335937 declarations
+(3382.2 MiB). Next lift the restored lifecycle to complete supplier batches and
+connect physical ambient payload exposure. Complete-key setup reuse, grouped
+publication, R4/tensor layout restoration and final audits remain open.
+S4 is incomplete; kappa is unchanged.

@@ -96,7 +96,7 @@ theorem exec (plan : SupplierInputPlan T) (r : PackedNormalizedJob A s)
     (v : HS T Q A U) (S : Stacks T A) (hready : plan.Ready r S) (depth : ℕ) :
     ∃ v' n F, v'.user = v.user ∧ n ≤ plan.timeCost r S ∧
       (∀ i, F.R (plan.work i) = r.words i) ∧
-      (∀ i, (∀ j, i ≠ plan.work j) → F.R i = S.R i) ∧ F.L = S.L ∧
+      (∀ i, (∀ j, i ≠ plan.work j) → F.R i = S.R i) ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+plan.stock r S)
         depth plan.program (Host.mk v S) n (Host.mk v' F) := by
   obtain ⟨v',n,F,hu,hn,hbank,hframe,hleft,he⟩ := plan.publication.fromHeaders_exec (body := body)
@@ -108,11 +108,13 @@ theorem exec (plan : SupplierInputPlan T) (r : PackedNormalizedJob A s)
     (coreLength s r.coreWidth r.k) (cstream A r.W (r.Fs.map (packedInterval r.a (r.b-r.a))).flatten) v S
     hready.blank hready.left hready.masters hready.radius hready.geometryWidth hready.headers hready.payload
     hready.tmp hready.saved hready.span hready.parameters hready.width hready.core hready.word depth
-  refine ⟨v',n,F,hu,hn,?_,hframe,hleft,he⟩
-  intro i
-  have hwords := congrArg (fun C : Stacks 325 A => C.R i) hbank
-  change F.R (plan.work i) = r.words i
-  exact hwords.trans (by rfl)
+  refine ⟨v',n,F,hu,hn,?_,hframe,hleft,?_,?_,he⟩
+  · intro i
+    have hwords := congrArg (fun C : Stacks 325 A => C.R i) hbank
+    change F.R (plan.work i) = r.words i
+    exact hwords.trans (by rfl)
+  · exact congrArg (fun C : Stacks 325 A => C.inp) hbank
+  · exact congrArg (fun C : Stacks 325 A => C.out) hbank
 
 end SupplierInputPlan
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
