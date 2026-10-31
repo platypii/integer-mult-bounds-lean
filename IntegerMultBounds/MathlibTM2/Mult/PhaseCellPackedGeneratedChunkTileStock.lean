@@ -13,6 +13,14 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Fast.Main
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 
+/-- Workspace for native codecs and the shared two-plane router reserve. -/
+noncomputable def packedChunkStockAllowance {T : ℕ} (t d W c : ℕ)
+    (ps bs : List (Fin T)) (rs : List (ChunkInterchangeStage T)) : ℕ :=
+  let V := (2^d)^c*(2^d*W)
+  2*(12*V+12)+
+    (2*(unaryPowerChainCost (2^d) 1 ps.length+unaryPowerChainCost (2^d) W bs.length)+
+      chunkStockAllowance t d rs)+(8*V+6)
+
 /-- Route an actual packed pair tile through both generated bit-plane lifecycles
 and the shared codec proof. No routing/execution callback is a caller premise. -/
 theorem packedGeneratedChunkTile_exec_within {t₀ T Q K c : ℕ} {U P : Type}
@@ -58,14 +66,12 @@ theorem packedGeneratedChunkTile_exec_within {t₀ T Q K c : ℕ} {U P : Type}
     ∃ v' n, v'.user = v.user ∧
       n ≤ packedGeneratedChunkTileCost T t₀ d W c (∑ j, (S.R (ι j)).length) ps bs rs ∧
       ExecWithin body (fun z state => mnSize state+z ≤ mnSize (mk v S)+depth+
-        2*(12*((2^d)^c*(2^d*W))+12)+
-        (2*(unaryPowerChainCost (2^d) 1 ps.length+unaryPowerChainCost (2^d) W bs.length)+
-          chunkStockAllowance T d rs)+(8*((2^d)^c*(2^d*W))+6)) depth (packedGeneratedChunkTile hd re im hi hQre hQim ι hι hT
+        packedChunkStockAllowance T d W c ps bs rs) depth (packedGeneratedChunkTile hd re im hi hQre hQim ι hι hT
         src tmp saved count reRev imRev base one width powTmp powSaved
         a half par bits cnt work ps bs rs) (mk v S) n
         (mk v' {S with L := fun _ => [], R := (Function.update (Function.update S.R src
           (keyReplicaWords (fun r k b => pairSym (prime+K) (realBits r k b) (imagBits r k b)))) count [])}) := by
-  dsimp only [packedGeneratedChunkTileCost]
+  dsimp only [packedGeneratedChunkTileCost,packedChunkStockAllowance]
   let rs := wiredChunkStages (2^d) W one exponent prefixes suffixes
   let V := (2^d)^c*(2^d*W)
   have hr := hreg
@@ -85,44 +91,52 @@ theorem packedGeneratedChunkTile_exec_within {t₀ T Q K c : ℕ} {U P : Type}
     have hI : I.length = V := by simp [I,replicaKeyWords,V]
     change (∑ j, (M.R (ι j)).length) ≤ _ at h₂
     omega
-  refine packedRouterUsing_exec_within src (ι (reg re)) (ι (reg im)) tmp saved count reRev imRev hreg hA
+  have hroute : ∀ u : HS T Q (prime+K) U, ∃ u' n, u'.user = u.user ∧
+      n ≤ 2*generatedChunkTileCost T t₀ d W ((∑ j, (S.R (ι j)).length)+2*V) ps bs rs ∧
+      ExecWithin body (fun z state => mnSize state+z ≤ mnSize (mk u M)+depth+
+        (2*(unaryPowerChainCost (2^d) 1 ps.length+unaryPowerChainCost (2^d) W bs.length)+
+          chunkStockAllowance T d rs)) depth
+        (generatedChunkPlanes hd re im hi hQre hQim ι hι hT base one width powTmp powSaved
+          a half par bits cnt work ps bs rs) (mk u M) n
+        (mk u' (packedRouterPlaneOutput S (ι (reg re)) (ι (reg im)) realBits imagBits)) := by
+    intro u
+    obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := generatedChunkPlanes_exec_within body hd re im hi hne hreHead himHead hQre hQim ι hι hT
+      base one width exponent powTmp powSaved a half par bits cnt work ps bs hp hb hsep hbankOff hprotected
+      prefixes suffixes hprefixes hsuffixes d W hW hgen hdisjoint hmaster hcontrols realBits imagBits u M
+      (by rw [hcontrolFrame base (by simp)]; exact hbase)
+      (by rw [hcontrolFrame one (by simp)]; exact hone)
+      (by rw [hcontrolFrame width (by simp)]; exact hwidth)
+      (by rw [hcontrolFrame exponent (by simp)]; exact hexponent)
+      (by intro i hi; rw [hframe i (hbankOff i hi (reg re)) (hbankOff i hi (reg im))]; exact hblank i hi)
+      (by rw [hcontrolFrame powTmp (by simp)]; exact htmp)
+      (by rw [hcontrolFrame powSaved (by simp)]; exact hsaved)
+      hL
+      (by
+        intro j hj
+        have hoff (i : Fin t₀) : ι j ≠ ι (reg i) := by
+          intro he
+          have hh := congrArg Fin.val (hι he)
+          change j.val = i.val at hh
+          have hi := i.isLt
+          omega
+        rw [hframe _ (hoff re) (hoff im)]
+        exact hpriv j hj)
+      (by intro k; rw [hframe _ (hplaced.ne (hreHead k)) (hplaced.ne (himHead k))]; exact hhdr k)
+      (by
+        intro i hi
+        rw [hcontrolFrame i (List.mem_append_right [base,one,width,exponent,powTmp,powSaved] hi)]
+        exact hgenBlank i hi)
+      (by simp only [M,packedRouterPlaneInput,Function.update_of_ne (hplaced.ne hne),Function.update_self,replicaKeyWords_map])
+      (by simp only [M,packedRouterPlaneInput,Function.update_self,replicaKeyWords_map])
+      (by intro i hire hiim hheads s hs; rw [hframe _ (hplaced.ne hire) (hplaced.ne hiim)] at hs; exact hother i hire hiim hheads s hs) depth
+    refine ⟨v₂,n₂,hu₂,hn₂.trans (Nat.mul_le_mul_left 2 (generatedChunkTileCost_mono ps bs rs hvolume)),?_⟩
+    simpa only [packedRouterPlaneOutput,keyReplicaWords_map,Nat.add_assoc] using he₂
+  simpa only [Nat.add_assoc,packedGeneratedChunkTile,rs,V] using (packedRouterUsing_exec_within (body := body) src (ι (reg re)) (ι (reg im)) tmp saved count reRev imRev hreg hA
     realBits imagBits (generatedChunkPlanes hd re im hi hQre hQim ι hι hT base one width powTmp powSaved
       a half par bits cnt work ps bs rs)
     (2*generatedChunkTileCost T t₀ d W ((∑ j, (S.R (ι j)).length)+2*V) ps bs rs)
     (2*(unaryPowerChainCost (2^d) 1 ps.length+unaryPowerChainCost (2^d) W bs.length)+
       chunkStockAllowance T d rs) depth
-    v S hsrc hcount hcodecBlank ?_
-  intro u
-  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := generatedChunkPlanes_exec_within body hd re im hi hne hreHead himHead hQre hQim ι hι hT
-    base one width exponent powTmp powSaved a half par bits cnt work ps bs hp hb hsep hbankOff hprotected
-    prefixes suffixes hprefixes hsuffixes d W hW hgen hdisjoint hmaster hcontrols realBits imagBits u M
-    (by rw [hcontrolFrame base (by simp)]; exact hbase)
-    (by rw [hcontrolFrame one (by simp)]; exact hone)
-    (by rw [hcontrolFrame width (by simp)]; exact hwidth)
-    (by rw [hcontrolFrame exponent (by simp)]; exact hexponent)
-    (by intro i hi; rw [hframe i (hbankOff i hi (reg re)) (hbankOff i hi (reg im))]; exact hblank i hi)
-    (by rw [hcontrolFrame powTmp (by simp)]; exact htmp)
-    (by rw [hcontrolFrame powSaved (by simp)]; exact hsaved)
-    hL
-    (by
-      intro j hj
-      have hoff (i : Fin t₀) : ι j ≠ ι (reg i) := by
-        intro he
-        have hh := congrArg Fin.val (hι he)
-        change j.val = i.val at hh
-        have hi := i.isLt
-        omega
-      rw [hframe _ (hoff re) (hoff im)]
-      exact hpriv j hj)
-    (by intro k; rw [hframe _ (hplaced.ne (hreHead k)) (hplaced.ne (himHead k))]; exact hhdr k)
-    (by
-      intro i hi
-      rw [hcontrolFrame i (List.mem_append_right [base,one,width,exponent,powTmp,powSaved] hi)]
-      exact hgenBlank i hi)
-    (by simp only [M,packedRouterPlaneInput,Function.update_of_ne (hplaced.ne hne),Function.update_self,replicaKeyWords_map])
-    (by simp only [M,packedRouterPlaneInput,Function.update_self,replicaKeyWords_map])
-    (by intro i hire hiim hheads s hs; rw [hframe _ (hplaced.ne hire) (hplaced.ne hiim)] at hs; exact hother i hire hiim hheads s hs) depth
-  refine ⟨v₂,n₂,hu₂,hn₂.trans (Nat.mul_le_mul_left 2 (generatedChunkTileCost_mono ps bs rs hvolume)),?_⟩
-  simpa only [packedRouterPlaneOutput,keyReplicaWords_map,Nat.add_assoc] using he₂
+    v S hsrc hcount hcodecBlank hroute)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

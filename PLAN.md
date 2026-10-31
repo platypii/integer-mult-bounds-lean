@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3194 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3196 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17338,3 +17338,24 @@ Guarded file checks peak at 2961.7 MiB (planes), 2956.4 MiB (generic codec) and
 3.2 GiB combined peak). Counting/padding and conditional archive composition,
 generated supplier readiness, complete-key setup reuse, tensor/layout
 composition and final audits remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: packed tiles generate their own bounded payload counter
+
+`withPayloadCounter_exec_within` composes actual unary counter generation from
+an owned payload with an independently bounded counter-consuming body. It
+retains the established runtime and exact cleaned endpoint by execution
+uniqueness. The counter setup adds twice its linear native runtime bill once;
+the body keeps its own workspace allowance.
+
+`countedPackedGeneratedChunkTile_exec_within` instantiates this structural
+contract with the actual packed generated tile. Counter-bank and control
+readiness follow from physical disjointness, and the initially blank counter is
+restored. `packedChunkStockAllowance` names the existing codec/router allowance
+for reuse by counting and padding without repeating its expression.
+
+Guarded checks peak at 1393.6 MiB (counter composition), 2974.6 MiB (packed
+allowance interface) and 2974.5 MiB (counted packed tile). The guarded target
+build passes (8354 jobs, 3.2 GiB combined peak). Padding and conditional archive
+composition, generated supplier readiness, complete-key setup reuse,
+tensor/layout composition and final audits remain open. S4 is incomplete;
+kappa is unchanged.
