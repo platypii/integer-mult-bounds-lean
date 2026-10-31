@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3278 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3280 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18512,4 +18512,30 @@ scoped axiom audit passes for 321450 declarations at 3103.3 MiB. Next construct
 selected supplier calls whose payload list is this exact real stream and compose
 the already proved consuming batch. Selected dimension setup/bounds,
 publication, seam lifecycle and R4/tensor restoration remain open. S4 is
+incomplete; kappa is unchanged.
+
+### S4 checkpoint: indexed core calls consume the exact exposed stream
+
+`GeneratedSupplierCall.payload_coreGather` derives a call's actual payload from
+its existing job halo equations and movement-class membership. It does not add
+an endpoint/payload oracle. The corresponding length and output-volume lemmas
+reduce to the shared class dimensions. `coreSupplierCalls_payload` lifts this
+identity to the ordered indexed call list, exactly matching the real stream
+returned by `expose_real_gather_exec_within`; `coreSupplierCalls_volume` reduces
+the output-volume sum to `classSize*(replicas*(haloLength-2*radius)*wordWidth)`.
+
+`coreRoutedBatch_exec` specializes the concrete consuming supplier batch to
+that exact stream. It derives every per-call payload-count premise from one
+retained class count, reuses the existing mathematical call records, and keeps
+one maximum supplier scratch reserve. Its final source is the borrowed suffix
+and all numerical output certificates are preserved. Instantiating the call
+family at `Fs.reverse` matches the physical gather order without an implicit
+permutation.
+
+Guarded checks peak at 3383.2 MiB (core call identities) and 3383.5 MiB
+(specialized consumer). The target build passes (15649 jobs, 3.5 GiB combined
+peak). The scoped axiom audit passes for 336240 declarations at 3389.4 MiB.
+The selected mathematical job constructor and its parameter/precision bounds
+are still open, as are physical selected dimension setup, full exposure/consumer
+composition, publication, seam lifecycle and R4/tensor restoration. S4 remains
 incomplete; kappa is unchanged.
