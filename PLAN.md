@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3306 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3308 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18902,3 +18902,32 @@ routed supplier and endpoint cleanup, and instantiate the bounded scan using
 actual queued jobs and payload/output volumes. Selected class separation and
 analytic facts, exposure/publication, seam lifecycle and R4/tensor restoration
 remain open. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: one complete fixed core body restores all changing setup
+
+`SupplierSetupPlan.coreStep_exec` composes the actual queued-origin reader,
+fixed routed supplier lifecycle and retirement of the two endpoint headers.
+The program contains only fixed register wiring, with no job or core-index
+argument. It consumes one binary origin and one actual halo payload, computes
+all changing numerical setup, runs the supplier, retains its numerical row
+certificates, and restores endpoint storage, local payload and temporary banks.
+Its exact endpoint changes only the origin queue, payload archive and result
+register. Time includes all three phases; workspace composes the existing
+bounded traces, with no additional reserve for endpoint retirement.
+
+`PackedNormalizedJob.inputPayload_length` identifies the actual packed halo
+volume. `coreOutput_length_le_payload` uses the job's core-and-margins identity
+to show output is no larger than consumed payload, for arbitrary certified
+rows. `coreStep_boundary_size_le` combines this with the exact consumption
+stock law: consuming the origin and payload queues while retaining the result
+cannot increase completed-iteration stock. This supplies the boundary estimate
+needed by the consuming counted-scan interface.
+
+Guarded checks peak at 3410.7 MiB (complete core body) and 3374.9 MiB (volume and
+boundary stock). The target build passes (15635 jobs, 3.5 GiB combined peak).
+The scoped axiom audit passes for 336230 declarations at 3388.2 MiB. Next
+instantiate the fixed runtime traversal with the generated ordered origins,
+shared payload counter and certified outputs, then bound generated-state costs
+uniformly for the selected class. Selected analytic/class separation facts,
+whole exposure/publication, seam lifecycle and R4/tensor restoration remain
+open. S4 remains incomplete; kappa is unchanged.
