@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3267 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3269 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18406,3 +18406,29 @@ at 3100.7 MiB. The remaining selected integration must supply actual class and
 capacity dimensions, compose outer gathering and inverse routing, then consume
 supplier batches and publish results. Seam lifecycle, selected sizing and
 R4/tensor restoration also remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: one ambient exposure feeds generated padding and inverse routing
+
+`generated_pad_route_gather_exec_within` replaces prepared row/padding symbol
+counter premises with retained class-size, capacity and packet-width dimensions.
+It composes the complete generated padding lifecycle with the existing inverse
+router, returning exact supplier-batch identities while restoring all generated
+counters and scratch.
+
+`expose_route_gather_exec_within` composes that lifecycle with the actual
+restoring replica gather loop. Its source is the ambient replica lines with a
+borrowed suffix; its final right-register effect changes only the routed
+archive. The ambient source, restoration archive, retained dimensions and all
+other registers are restored. Physical replica order is explicitly
+`Fs.reverse` in the supplier identities. Both time and workspace bills include
+all three stages; no execution callback or prepared symbol counter is a caller
+premise. The router bank and gather geometry still require ordinary readiness.
+
+Guarded checks peak at 3095.4 MiB (generated pad/router) and 3116.0 MiB
+(ambient exposure composition). The target build passes (14065 jobs, 3.4 GiB
+combined peak). The scoped axiom audit passes for 321432 declarations at
+3102.6 MiB. Next connect sequential routed-batch extraction to the existing
+supplier input payload register and restore/retire the archive. Selected
+class/capacity dimension generation and bounds, supplier publication, seam
+lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa is
+unchanged.
