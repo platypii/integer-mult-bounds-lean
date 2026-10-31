@@ -17125,3 +17125,28 @@ Next close the actual three-way rectangular-width selector, then transfer the
 complete selected binary interchange certificate to archive stock. Generated
 S4 supplier readiness, complete-key setup reuse, tensor/layout composition and
 final audits remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the actual rectangular binary selector is bounded
+
+`BinaryAdjacentWidthSelectorDispatchWithin.runs` is a generic bounded finite-flow
+rule for the physical three-way width comparison. It includes selector cleanup,
+the actual branch-entry transition and halting of the chosen terminal branch.
+Its proof reuses `jump_then_halt_within`, without enumerating concrete control
+states or duplicating the selector's data proof.
+
+`BinaryInterchangeRunWithin.runs` instantiates that rule with the bounded equal,
+longer-H and longer-D executions on their common blank private layout. Original
+binary volume pays one maximum of the three branch/selector allowances. Existing
+volume equalities, canonical short-header sources and word reindexings supply
+the actual branches; both comparisons are charged. The exact rectangular binary
+transpose, restored private bank and original selected runtime budget remain
+certified. Existing source helpers and the pure original-volume bounds are
+exposed and reused.
+
+Guarded checks peak at 1385.0 MiB (selector rule), 2537.4 MiB (original execution
+regression), 2542.8 MiB (budget regression) and 2569.2 MiB (complete bounded
+interchange). The guarded target build passes (6728 jobs). Next transfer this
+complete selected binary certificate into the alphabet/state/host compilation
+and actual archive-stock interfaces. Generated S4 supplier readiness,
+complete-key setup reuse, tensor/layout composition and final audits remain
+open. S4 is incomplete; kappa is unchanged.

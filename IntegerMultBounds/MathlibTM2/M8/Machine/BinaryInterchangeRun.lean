@@ -79,7 +79,7 @@ def cost (P G B h d : ℕ) (hs : Fin 5 → List Bool) :=
       (BinaryAdjacentWidthRun.cost P G B h (shortWords hs 3))
 
 omit [Stage2Machine.Total.Capacity] in
-private theorem short_sources (caller : Tapes t prime) (focus : Fin 5 → Fin t)
+theorem short_sources (caller : Tapes t prime) (focus : Fin 5 → Fin t)
     (hs : Fin 5 → List Bool)
     (ht : ∀ i, caller.tape (focus i) = RadixZeroFill.encodedBinary (hs i))
     (hh : ∀ i, caller.head (focus i) = 1) (j : Fin 5) :
@@ -97,7 +97,7 @@ private theorem short_sources (caller : Tapes t prime) (focus : Fin 5 → Fin t)
     · exact hh j
 
 omit [Stage2Machine.Total.Capacity] in
-private theorem short_canonical (hs : Fin 5 → List Bool)
+theorem short_canonical (hs : Fin 5 → List Bool)
     (hc : ∀ i, GrowingCounterData.Canonical (hs i)) (j : Fin 5) :
     ∀ i, GrowingCounterData.Canonical (shortWords hs j i) := by
   intro i; fin_cases i
@@ -107,7 +107,7 @@ private theorem short_canonical (hs : Fin 5 → List Bool)
   · exact hc j
 
 omit [Stage2Machine.Total.Capacity] in
-private theorem prefix_sources (caller : Tapes t prime) (focus : Fin 4 → Fin t)
+theorem prefix_sources (caller : Tapes t prime) (focus : Fin 4 → Fin t)
     (hs : Fin 4 → List Bool) (hsrc : Sources caller focus hs) :
     Sources (BinaryAdjacentWidthPrefixShared.input caller) (fun i => prefixSlot (focus i)) hs := by
   constructor

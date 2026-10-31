@@ -44,7 +44,7 @@ private theorem short_values_d (P G B h d : ℕ) (hs : Fin 5 → List Bool)
   · exact hv 4
 
 omit [Stage2Machine.Total.Capacity] in
-private theorem original_volume_bounds (P G B h d : ℕ)
+theorem original_volume_bounds (P G B h d : ℕ)
     (hP : 0 < P) (hG : 0 < G) (hB : 0 < B) :
     0 < BinaryAdjacentWidthInterchange.volume P (2^h) G (2^d) B ∧
     h ≤ BinaryAdjacentWidthInterchange.volume P (2^h) G (2^d) B ∧
