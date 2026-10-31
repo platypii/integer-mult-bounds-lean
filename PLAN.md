@@ -19671,3 +19671,32 @@ combined peak). The numerical execution/cost composition follows in the next
 chunk. Raw multi-replica gathering, proper-core boundary/recovery integration,
 publication and tensor/R4 restoration remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: executed replica interior solve starts from one numerical page
+
+`preparedReplicaInteriorBatch_exec` now executes the fixed preparation program
+and the existing cached numerical batch in sequence. Its initial bank contains
+one generated B-cell weight page and already gathered replica-major RHS rows;
+it does not assume an expanded cache or a ready solver execution. The returned
+physical block r*B+j has the original ambient principal-solve error certificate
+for RHS r at origin j. The same execution preserves the input/output streams,
+returns the declared RHS/borrowed suffix, clears native workspace and retains
+the expanded numerical cache/clock for the caller to release. Output width,
+encoded range and exact output length come from the executed numerical result.
+
+`prepareReplicaInteriorCacheCost_le` absorbs all copied-page installation and
+dimension conversion into `500*(N+1)*B*L*w` for positive dimensions.
+`preparedReplicaInteriorBatch_fast_le` matches the actual full time bill to
+one cached startup plus `D*(N+1)*B*(L+2^l)*p^(129/128)` under the existing
+linear word/coordinate-width and padding bounds. There is no ambient period in
+the repeated term. Pure arithmetic is factored before concrete cost terms are
+instantiated, and the existing S1/cached arithmetic bounds are reused.
+
+Guarded checks pass at 2096.6 MiB (composed numerical execution) and 3121.9 MiB
+(complete fast bill). The combined build passes as recorded above; the scoped
+axiom audit passes for 337516 declarations at 3422.7 MiB. The caller still must
+generate/gather these replica rows and the one numerical key, connect batched
+boundary/residual/recovery and publication, release the retained cache, and
+prove the full driver stock/layout contracts. This is the executed interior
+replacement, not completion of the proper-core fast driver. S4 is incomplete;
+kappa is unchanged.
