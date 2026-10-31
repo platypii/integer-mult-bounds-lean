@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3332 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3333 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19275,3 +19275,20 @@ complete selected class instantiation or S4. Next discharge concrete selected
 job widths, numerical data and ordinary preparation/placement premises, then
 join execution and pricing at class level. Publication, the shared full-line
 seam lifecycle and tensor/R4 restoration remain open; kappa is unchanged.
+
+### S4 checkpoint: derive canonical selected scalar-header width
+
+`selectedInverseCallerWordWidth_le` proves that the actual canonical header
+width is at most `(2*(ct+21)+22)*p`. The proof reuses the existing workspace
+polynomial (factored out as `inverseCallerWorkspace_poly`) and selected axis
+bit bounds, then takes `Nat.size`. No encoding or executable changes.
+`selectedCanonicalCoreControlCosts_poly_le` uses this fact, and the actual
+fixed-body selected pricing theorem no longer assumes a separate linear
+`Bcore` bound. Workspace and common packet widths still require instantiation.
+
+The width check passes at 3282.4 MiB and selected body pricing at 3407.5 MiB.
+The combined execution/cost target build passes (15883 jobs, 8.4 GiB combined
+peak). The scoped axiom audit also passes. This discharges one concrete
+selected-class premise; ordinary placement,
+readiness, analytic coefficient/dominance facts and full class assembly remain
+open. S4 remains incomplete; publication, seam and tensor obligations remain.

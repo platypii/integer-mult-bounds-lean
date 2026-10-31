@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellCoreControlPolynomial
-public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedRawBatchKeys
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCoreHeaderWidth
 
 /-! The actual fixed core body's scalar control costs inherit the existing
 selected raw-header polynomial, independently of the number of RHS replicas. -/
@@ -79,14 +79,36 @@ theorem selectedCoreControlCosts_poly_le (ct cv cB cW : ℕ) :
       _ = C*t^6 := by dsimp only [C]; ring
   exact ⟨hcost.1.trans hbound,hcost.2.trans hbound⟩
 
-/-- Selected scalar pricing applies to the actual fixed body from ordinary setup readiness. -/
-theorem selectedCoreCosts_le_shared_add_linear (ct cv cB cW : ℕ) {T Q : ℕ} {U : Type} :
+/-- Canonical scalar width is derived from the selected dimensions. -/
+theorem selectedCanonicalCoreControlCosts_poly_le (ct cv cW : ℕ) :
     ∃ C : ℕ, ∀ n : ℕ, ∀ (_h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],
       ∀ A : ℕ, ∀ r : PackedNormalizedJob A (Sizes.s n i),
       r.p = Sizes.p n → r.t = Sizes.t n i →
       r.l = haloInverseRingLog (Sizes.s n i) (Sizes.t n i) →
       r.u ≤ Sizes.p n → r.targetOut ≤ ct*Sizes.p n →
-      r.V ≤ cv*Sizes.p n → r.Bcore ≤ cB*Sizes.p n → r.W ≤ cW*Sizes.p n →
+      r.V ≤ cv*Sizes.p n → r.W ≤ cW*Sizes.p n →
+      r.Bcore = inverseCallerWordWidth r.p r.u r.l r.targetOut (Sizes.s n i) r.t →
+      (coreControlTimeCost r.Bcore r+42*r.inputSharedStock ≤ C*Sizes.t n i^6) ∧
+      (coreControlStock r.Bcore r+62*r.inputSharedStock ≤ C*Sizes.t n i^6) := by
+  obtain ⟨C,hcontrol⟩ := selectedCoreControlCosts_poly_le ct cv (2*(ct+21)+22) cW
+  refine ⟨C,?_⟩
+  intro n h i _ A r hp ht hl hu htarget hV hW hBcanonical
+  have hband : PhaseCellBand.width (Sizes.p n) r.u ≤ Sizes.s n i := by
+    simpa only [hp] using r.bounds.hband
+  have hB := selectedInverseCallerWordWidth_le ct h i hu htarget hband
+  have hBr : r.Bcore ≤ (2*(ct+21)+22)*Sizes.p n := by
+    rw [hBcanonical,hp,hl,ht]
+    exact hB
+  exact hcontrol n h i A r hp ht hl hu htarget hV hBr hW hBcanonical
+
+/-- Selected scalar pricing applies to the actual fixed body from ordinary setup readiness. -/
+theorem selectedCoreCosts_le_shared_add_linear (ct cv cW : ℕ) {T Q : ℕ} {U : Type} :
+    ∃ C : ℕ, ∀ n : ℕ, ∀ (_h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],
+      ∀ A : ℕ, ∀ r : PackedNormalizedJob A (Sizes.s n i),
+      r.p = Sizes.p n → r.t = Sizes.t n i →
+      r.l = haloInverseRingLog (Sizes.s n i) (Sizes.t n i) →
+      r.u ≤ Sizes.p n → r.targetOut ≤ ct*Sizes.p n →
+      r.V ≤ cv*Sizes.p n → r.W ≤ cW*Sizes.p n →
       r.Bcore = inverseCallerWordWidth r.p r.u r.l r.targetOut (Sizes.s n i) r.t →
       ∀ (input : SupplierInputPlan T) (plan : SupplierSetupPlan input) (producer : PackedProducerPlan T Q)
         (pushBound : ℕ) (v : HS T Q A U) (S : Stacks T A), plan.Ready r S →
@@ -94,10 +116,10 @@ theorem selectedCoreCosts_le_shared_add_linear (ct cv cB cW : ℕ) {T Q : ℕ} {
         518*r.inputPayload.length+340*r.Fs.length+C*Sizes.t n i^6) ∧
       (coreStock (U := U) producer pushBound r.Bcore r ≤ (pushBound+1)*producer.workspace (U := U) [r]+
         768*r.inputPayload.length+504*r.Fs.length+C*Sizes.t n i^6) := by
-  obtain ⟨C,hcontrol⟩ := selectedCoreControlCosts_poly_le ct cv cB cW
+  obtain ⟨C,hcontrol⟩ := selectedCanonicalCoreControlCosts_poly_le ct cv cW
   refine ⟨C,?_⟩
-  intro n h i _ A r hp ht hl hu htarget hV hB hW hBcanonical input plan producer pushBound v S hready
-  have hs := hcontrol n h i A r hp ht hl hu htarget hV hB hW hBcanonical
+  intro n h i _ A r hp ht hl hu htarget hV hW hBcanonical input plan producer pushBound v S hready
+  have hs := hcontrol n h i A r hp ht hl hu htarget hV hW hBcanonical
   have hc := plan.coreCosts_le_setupReady producer pushBound r.Bcore r v S hready
   constructor
   · have hscalar := hs.1; have hbody := hc.1; omega

@@ -22,10 +22,10 @@ theorem inverseExecutionExponent_poly {p l target N band Z : ℕ}
   unfold inverseExecutionExponent
   omega
 
-theorem inverseCallerWordWidth_poly {p u l target s t Z : ℕ}
+theorem inverseCallerWorkspace_poly {p u l target s t Z : ℕ}
     (hZ : 1 ≤ Z) (hp : p ≤ Z) (hu : u ≤ Z) (hl : l ≤ Z) (htarget : target ≤ Z)
     (hs : s ≤ Z) (ht : t ≤ Z) (hband : PhaseCellBand.width p u ≤ Z) :
-    inverseCallerWordWidth p u l target s t ≤ 100000*Z^2 := by
+    inverseCallerWorkspace p u l target s t ≤ 100000*Z^2 := by
   have hE := inverseExecutionExponent_poly hZ hp hl htarget hs hband
   have hroom : inversePrecisionRoom p l target s (PhaseCellBand.width p u) ≤ 67000*Z := by
     unfold inversePrecisionRoom
@@ -33,10 +33,15 @@ theorem inverseCallerWordWidth_poly {p u l target s t Z : ℕ}
     omega
   have hsquare := Nat.pow_le_pow_left (show t+1 ≤ 2*Z by omega) 2
   have hZpow : Z ≤ Z^2 := Nat.le_self_pow (by decide) Z
-  have hwork : inverseCallerWorkspace p u l target s t ≤ 100000*Z^2 := by
-    unfold inverseCallerWorkspace
-    nlinarith only [hp,hu,hband,hroom,hsquare,hZpow,hZ]
-  exact (Nat.size_le.mpr Nat.lt_two_pow_self).trans hwork
+  unfold inverseCallerWorkspace
+  nlinarith only [hp,hu,hband,hroom,hsquare,hZpow,hZ]
+
+theorem inverseCallerWordWidth_poly {p u l target s t Z : ℕ}
+    (hZ : 1 ≤ Z) (hp : p ≤ Z) (hu : u ≤ Z) (hl : l ≤ Z) (htarget : target ≤ Z)
+    (hs : s ≤ Z) (ht : t ≤ Z) (hband : PhaseCellBand.width p u ≤ Z) :
+    inverseCallerWordWidth p u l target s t ≤ 100000*Z^2 := by
+  exact (Nat.size_le.mpr Nat.lt_two_pow_self).trans
+    (inverseCallerWorkspace_poly hZ hp hu hl htarget hs ht hband)
 
 theorem inverseMasterValues_cuts_poly {p u l target s t a b Z : ℕ} [NeZero s]
     (hZ : 1 ≤ Z) (hp : p ≤ Z) (hu : u ≤ Z) (hl : l ≤ Z) (htarget : target ≤ Z)
