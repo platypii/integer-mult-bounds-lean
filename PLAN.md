@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3397 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3403 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20144,3 +20144,43 @@ scalar stages and the actual cached numerical batch. Complete interior stock,
 selected geometry/amortization, boundary/recovery/publication and tensor/R4
 restoration remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 324826 declarations at 3125.2 MiB.
+
+### S4 checkpoint: complete compact triangular-pair workspace
+
+`ExecWithin.cast` supplies the same step-count/final-store rewriting API as
+ordinary executions. The upper batch uses it to reuse the existing reversal
+and fixed-bank endpoint identities without another register cleanup proof.
+
+`PhaseCellTriangularNativeStock` proves dimension-independent native push bounds
+for actual row reversal and upper-to-lower compaction. The upper and lower
+batch resource contracts preserve their original time bills, coefficient
+interpretations, error bounds, borrowed tails and exact physical frames.
+`triangularPair_with_x_tail_exec_within` composes the two certified numerical
+products and the actual intervening compaction.
+
+`triangularPairRestored_with_x_tail_exec_within` then retires the compact upper
+operand, preserving the original right operand. Finally
+`compactTriangularPair_with_x_tail_exec_within` executes result cropping,
+retirement of both padded product streams and final publication. Its endpoint
+is exactly the original canonical bank with the compact result prefixed to the
+original output tail, with the original `compactPairCost` and lower-product
+error estimate. No execution or numerical callback is supplied.
+
+`compactPairWorkspace` consists of two fixed-convolution workspace allowances
+and native linear traffic for reversal, compaction, intermediate retirement
+and final publication. Its shared setup is independent of M; every repeated
+charge is linear in padded batch/row volume and record counters. The complete
+initial bank and spectator tails are counted once. No arithmetic runtime is
+used as a batch scratch bound, no tape bank is enumerated, and default proof
+limits are preserved.
+
+Guarded checks pass at 1040.6 MiB (generic cast API), 1939.4 MiB (native row
+operations), 1947.4 MiB (upper product), 1938.4 MiB (lower product),
+1954.6 MiB (pair), 1952.0 MiB (input retirement) and 1954.3 MiB (complete
+compact result). Next lift through the two-branch/scalar stages and actual
+cached interior caller. Complete interior stock, selected geometry and
+amortization, boundary/recovery/publication and tensor/R4 restoration remain
+open. S4 remains incomplete; kappa is unchanged.
+The compatibility build passes with the actual cached interior/preparation
+callers (14191 jobs, 6.6 GiB combined peak). The scoped axiom audit passes for
+324865 declarations at 3127.2 MiB.

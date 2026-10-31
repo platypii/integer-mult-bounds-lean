@@ -33,6 +33,10 @@ namespace ExecWithin
 variable {body : P → Prog P Γ σ} {Inv J : ℕ → Store Γ σ → Prop}
   {d : ℕ} {p : Prog P Γ σ} {s t : Store Γ σ} {n : ℕ}
 
+/-- Rewrite a resource trace's step count and final store. -/
+theorem cast {t' : Store Γ σ} {n' : ℕ} (h : ExecWithin body Inv d p s n t)
+    (hn : n = n') (ht : t = t') : ExecWithin body Inv d p s n' t' := hn ▸ ht ▸ h
+
 theorem toExec (h : ExecWithin body Inv d p s n t) : Exec body p s n t := by
   induction h with
   | act a s _ _ => exact Exec.act a s
