@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3186 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3188 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17255,3 +17255,28 @@ certified; next propagate this stock through the generated/counting chunk-tile
 and conditional archive composition. Generated S4 supplier readiness,
 complete-key setup reuse, tensor/layout composition and final audits remain
 open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: generated chunk interchange has a complete stock trace
+
+`PhaseCellInterchangeHeaderStock` proves a fixed two-push native allowance for
+canonical unary-to-binary header generation. An arbitrary header list shares
+one structural certificate, instantiated for the five real interchange fields.
+Clearing an owned header list has zero native pushes.
+
+`generatedChunkInterchange_exec_within` includes actual generation from borrowed
+unary dimensions, the full placed selected interchange and header erasure. The
+stock allowance is initial stock plus twice the linear header-generation bill,
+the selected swap's fixed linear-volume allowance and register/depth overhead.
+Only linear native setup is bounded by its runtime; the recursive swap uses its
+proved workspace certificate. Erasure adds no boundary stock.
+
+Execution uniqueness retains the established exact bit permutation, restored
+metadata/control bank and original charged runtime. The guarded checks peak at
+2925.3 MiB (header stock language) and 2958.8 MiB (complete generated stage);
+the guarded target build passes (8310 jobs).
+
+Next compose the chronological chunk-stage list with a shared maximum allowance
+and unchanged boundary payload length, then propagate through dimension-bank,
+packed/counting/padding and conditional archive wrappers. Generated S4 supplier
+readiness, complete-key setup reuse, tensor/layout composition and final audits
+remain open. S4 is incomplete; kappa is unchanged.
