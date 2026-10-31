@@ -17011,3 +17011,25 @@ stage-1 fallback and constant lifecycle, then the sealed selected transpose and
 archive-stock interface. Generated S4 supplier readiness, complete-key setup
 reuse, tensor/layout composition and final audits remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the actual selected supplier has bounded workspace
+
+`SupplierWithin.runs` includes the real threshold-guard initialization,
+descriptor selector, selected high path or stage-1 fallback, and guard erasure.
+Both branches transpose the exact original source and restore every private
+bank. The selected runtime bound `C*V*max(1,e)^tau2` is retained, including the
+bounded-width comparison that pays the fallback at the selected exponent.
+
+`extend_outer_within` frames the high execution over the stationary stage-1
+private bank structurally. One branch reserve is the maximum of the high,
+fallback and selector allowances. Guard preparation adds its fixed cost;
+recovery uses the exact restored endpoint and twice its fixed erasure cost.
+The final coefficient is independent of descriptor width and volume.
+
+Small generic margin lemmas keep concrete guard costs out of arithmetic
+normalization; they transfer and weaken reserves before machine sizes are
+instantiated. The guarded file check peaks at 2570.4 MiB and the guarded target
+build passes (6697 jobs). Next carry this certificate through the sealed selected
+transpose and transfer it to archive stock. Generated S4 supplier readiness,
+complete-key setup reuse, tensor/layout composition and final audits remain
+open. S4 is incomplete; kappa is unchanged.
