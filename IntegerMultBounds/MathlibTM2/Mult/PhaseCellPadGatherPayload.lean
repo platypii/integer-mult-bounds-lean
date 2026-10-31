@@ -30,7 +30,7 @@ theorem paddedCoreGatherPayload_length {s : ℕ} (capacity width radius L : ℕ)
   simp only [paddedCoreGatherPayload,List.length_flatMap,hrow,List.map_const',List.sum_replicate,smul_eq_mul]
   exact (Nat.mul_assoc ..).symm
 
-private theorem gatherSymbols_rows {s : ℕ} (A width radius L w : ℕ) (Fs : List (ZMod s → GaussianInt)) :
+theorem coreGatherPayload_symbols_rows {s : ℕ} (A width radius L w : ℕ) (Fs : List (ZMod s → GaussianInt)) :
     cstream A w (coreGatherPayload width radius L Fs) =
       (Fs.map (fun F => cstream A w (coreGatherPayload width radius L [F]))).flatten := by
   simp only [coreGatherPayload,List.flatMap_cons,List.flatMap_nil,List.append_nil,
@@ -103,7 +103,7 @@ theorem padCoreGatherPayload_exec_within {s : ℕ}
     (pairSym A false false) _ _ xs hlen tail v S hrow hpad
     (by
       change S.R src = (Fs.map (fun F => cstream A w (coreGatherPayload width radius L [F]))).flatten++tail
-      rw [←gatherSymbols_rows]
+      rw [←coreGatherPayload_symbols_rows]
       exact hsrc) hacc (by simpa only [xs,List.length_map] using hrows)
     hsavedRows hsaved htmp depth
   have hout : xs.flatMap (fun x => List.replicate ((capacity-(coreGatherIndices s width radius L).length)*L*w)

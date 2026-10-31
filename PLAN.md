@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3264 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3267 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18380,3 +18380,29 @@ ambient gather/pad/router chain remains open, as do supplier consumption,
 publication, the seam lifecycle, selected sizing and R4/tensor restoration.
 S4 remains incomplete; kappa is unchanged. The previous chunk's push remains
 pending approval after automatic review rejected export to the configured remote.
+
+### S4 checkpoint: grouped padding generates and retires both symbol counters
+
+`gatherCounterSetup_exec_within` generates row and padding symbol counts from
+retained class size, capacity and block width. Its combined setup cost is at
+most `capacity*(4*blockWidth+17)+18` for a fitting class; the two products share
+the same dimension language and require no finite case enumeration.
+
+`generatedPrefixPadRows_exec_within` composes that setup with the actual
+restoring replica scan and erases both generated counters afterward. Its exact
+postcondition changes only the source archive. The workspace trace includes
+setup, retained padding, shared scan scratch and counter retirement, while
+preserving dimension words, replica count, borrowed suffix and scratch.
+`generatedPadCoreGatherPayload_exec_within` specializes the same lifecycle to
+the actual Gaussian gather payload, producing exactly `paddedCoreGatherPayload`.
+The existing encoded-row identity is now public as
+`coreGatherPayload_symbols_rows`, reused instead of duplicated.
+
+Guarded checks peak at 1950.3 MiB (paired setup), 1959.1 MiB (complete generic
+padding lifecycle) and 2073.7 MiB (Gaussian specialization). The guarded build
+of the new wrapper and existing pad/router composition passes (14051 jobs,
+4.3 GiB combined peak). The scoped axiom audit passes for 321269 declarations
+at 3100.7 MiB. The remaining selected integration must supply actual class and
+capacity dimensions, compose outer gathering and inverse routing, then consume
+supplier batches and publish results. Seam lifecycle, selected sizing and
+R4/tensor restoration also remain open. S4 is incomplete; kappa is unchanged.
