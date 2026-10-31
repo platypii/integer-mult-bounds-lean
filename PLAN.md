@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3322 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3323 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19186,3 +19186,32 @@ at 3421.8 MiB. Next instantiate concrete selected movement-class
 placement, ordinary geometry/header preparation and uniform resource bounds.
 Selected analytic/class separation facts, whole publication, seam lifecycle
 and R4/tensor restoration remain open. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: selected locality cores discharge boundary separation
+
+`localityCoreWidth` chooses core width equal to the locality guard
+`localityDepth p target * PhaseCellBand.width p u`. This directly meets the
+existing structural overlap hypothesis. `localityCoreGeometry_poly` bounds
+three such widths plus one band by `(816*(ct+5)+17)*p^3` whenever
+`target ≤ ct*p`. The argument is uniform in `u` and has no per-core cases.
+`coreGatherLength_le` bounds either generated movement length by core width
+plus two guards.
+
+`selectedSourceAxis_eventually_polynomial` complements the existing target-axis
+polynomial lemma: the selected axis bounds give `t < 2*s`, so source axes also
+eventually dominate every fixed precision polynomial. `selectedCoreGeometry`
+then proves positive chosen width and `L+band ≤ s` for every generated movement
+length, uniformly over selected axes and target range. This discharges the
+previously open proper-class separated-boundary premise for the chosen
+schedule. No extra near-full-window fallback is needed in the selected large
+regime. `selectedCoreHalo_volume_le_nine` reuses the existing full generated
+schedule volume proof, including its shared full-line fallback allowance.
+
+Guarded checks peak at 1884.9 MiB (generic locality geometry) and 3135.0 MiB
+(selected source-axis and core geometry). The combined target build passes
+(15862 jobs, 3.4 GiB combined peak). The scoped axiom audit passes for 337557
+declarations at 3421.1 MiB. Next use these geometry facts in concrete
+selected class instantiation, and bound the actual class program's additional
+header/control work and shared workspace. Selected coefficient/dominance facts,
+ordinary header/placement instantiation, publication, seam lifecycle and
+R4/tensor restoration remain open. S4 remains incomplete; kappa is unchanged.
