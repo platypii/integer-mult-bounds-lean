@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedGatheredReplicaInteriorBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedGatheredPublication
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaPublicationRead
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaPublicationRange
 
 /-! Complete generated same-key interior solve and packed halo publication.
 The numerical error transfers by exact word equality, with no count factor. -/
@@ -84,7 +84,9 @@ theorem generatedPublishedGatheredReplica_exec_within (plan : ReplicaInteriorPla
     S.R (plan.gather 110) = [] →
     ∃ v' F n, ∃ replicas : List (PublicationReplica A),
       replicas.map PublicationReplica.ambient = Fs.reverse.map (fun C => cstream A w (packedInterval origin span C)) ∧
-      replicas.length = Fs.length ∧ (∀ r ∈ replicas, r.Valid windows w 0) ∧ v'.user = v.user ∧
+      replicas.length = Fs.length ∧ (∀ r ∈ replicas, r.Valid windows w 0) ∧
+      EncodedRange A w q (interiorOutputExponent p l target rhsExp)
+        (replicas.flatMap (PublicationReplica.output windows w)) ∧ v'.user = v.user ∧
       n ≤ generatedPublishedGatheredReplicaCost p l Fs.length windows.origins.length V span L s t u target rhsExp ∧
       ExecWithin body (fun level z => mnSize z+level ≤ mnSize (mk v S)+depth+
         generatedPublishedGatheredReplicaWorkspace (A := A) (U := U) hQ R K p l Fs.length
@@ -139,10 +141,29 @@ theorem generatedPublishedGatheredReplica_exec_within (plan : ReplicaInteriorPla
   have hnrep : replicas.length = Fs.length := by
     have hh := congrArg List.length ha
     simpa only [List.length_map,List.length_reverse] using hh
+  have hambientRange : ∀ r ∈ replicas,
+      EncodedRange A w q (interiorOutputExponent p l target rhsExp) r.ambient := by
+    intro r hr
+    have hm : r.ambient ∈ replicas.map PublicationReplica.ambient := List.mem_map.mpr ⟨r,hr,rfl⟩
+    rw [ha] at hm
+    obtain ⟨source,hsourceMem,hsourceEq⟩ := List.mem_map.mp hm
+    rw [←hsourceEq]
+    obtain ⟨j,hj,rfl⟩ := List.mem_iff_getElem.mp hsourceMem
+    refine ⟨packedInterval origin span (Fs.reverse[j]'hj),rfl,?_⟩
+    intro z hz
+    obtain ⟨i,hi,rfl⟩ := List.mem_iff_getElem.mp hz
+    have hiSpan : i < span := by simpa only [packedInterval_length _ hspan] using hi
+    rw [packedInterval_get _ hspan hiSpan]
+    have hh := hC j (by simpa only [List.length_reverse] using hj) ((origin+i : ℕ) : ZMod s)
+    simp only [List.getD_eq_getElem _ _ hj] at hh
+    exact hh.trans (pow_le_pow_right₀ (by norm_num) (rhsExponent_le_interiorOutputExponent p l target rhsExp))
+  have houtputRange : EncodedRange A w q (interiorOutputExponent p l target rhsExp)
+      (replicas.flatMap (PublicationReplica.output windows w)) :=
+    publicationReplicas_output_range windows replicas hvalid hambientRange (by rw [hinput]; exact ys.bounded)
   have hsolver (k : Fin 121) (hk : k ≠ 93) : F.R (plan.solver k) = M.R (plan.solver k) :=
     hframe₂ _ (plan.solver_injective.ne hk) (plan.disjoint 124 k).symm
       (plan.disjoint 110 k).symm (plan.disjoint 121 k).symm
-  refine ⟨v₂,F,n₁+n₂,replicas,ha,hnrep,hvalid,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,?_,
+  refine ⟨v₂,F,n₁+n₂,replicas,ha,hnrep,hvalid,houtputRange,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,?_,
     hd₂,hout₂,hclock₂,hs₂,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · simpa only [generatedPublishedGatheredReplica,generatedPublishedGatheredReplicaWorkspace] using mn_seq_within_add he₁ he₂
   · exact hi₂.trans (congrArg (fun B : Stacks 126 A => B.inp) hgather)

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3484 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3486 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21161,3 +21161,40 @@ the actual output. Do not substitute the old full-period ambient coupling for
 the compact bulk route. Recovery, executed key scheduling, tensor/R4 restoration
 and global selected acceptance remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 328108 declarations at 3174.0 MiB.
+
+### S4 checkpoint: published replicas carry fitting packed recovery fields
+
+`PhaseCellReplicaPublicationRange` supplies structural bounded-encoding laws for
+word-aligned take/drop, append and general publication-window scatter. The replica
+proof splits the actual compact encoded stream at each proved input length;
+its magnitude witness is never replaced by an assumed decoded-row witness.
+`publicationReplicas_output_range` preserves the ambient/input magnitude bound
+through the complete concatenated output bank.
+
+The actual `generatedPublishedGatheredReplica_exec_within` theorem now returns
+an `EncodedRange` witness for its published bank at `interiorOutputExponent`.
+The original packed RHS magnitudes are promoted using the existing
+`rhsExponent_le_interiorOutputExponent` theorem; compact solution magnitudes
+come from the generated solver's actual bounded stream. No extra magnitude
+hypothesis is added to the caller.
+
+`publicationReplicas_packedField` slices each actual output replica and reuses
+`encodedRange_packedField` to produce its packed Gaussian-integer representation,
+global magnitude bound and `Fits` certificate. `PhaseCellPublishedReplicaField`
+adds exact read equality throughout the owned halo, including the following
+replicas as a borrowed suffix. Its `publicationReplicas_field_errorOn` transfers
+the physical read error to this very same field on any core contained in the
+halo, with no new numerical loss. These are the data/accuracy requirements of
+the existing packed coupling interface; there is no ambient-sized allocation.
+
+Guarded checks pass at 2051.7 MiB (encoding preservation/field extraction),
+2046.4 MiB (field read/error bridge) and 2158.2 MiB (strengthened complete caller).
+The first residual coupling masks to the halo interior, so untouched boundary
+words in the publication ambient bank are ignored by that phase. Before using
+that residual, complete the interior length-class accumulation and feed the
+resulting local fields through the shared packed coupling page across replicas.
+Recovery, executed key scheduling, tensor/R4 restoration and global selected
+acceptance remain open. S4 remains incomplete; kappa is unchanged.
+Compatibility with packed recovery coupling and both complete-caller ledgers
+passes (15022 jobs, 26.0 GiB combined peak while refreshing the coupling import
+closure). The scoped axiom audit passes for 330650 declarations at 3262.2 MiB.
