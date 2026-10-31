@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3224 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3226 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17762,3 +17762,27 @@ normalization generation and the supplier descriptor lifecycle. Ambient
 exposure, complete supplier batches, complete-key setup reuse, grouped
 publication, R4/tensor layout restoration and final audits remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: all outer supplier input layers execute as one setup
+
+`PublicationInputPlan.normalized_exec` composes publication-radius generation,
+descriptor header/payload installation and normalization-frame generation.
+Starting from an extended native 242-register bank, its actual program produces
+the exact full 325-register `packedNormalizedInputBank` view. The caller does
+not supply either intermediate bank or a serialized normalization queue.
+All time bills and additive stock allowances remain attached to this same
+execution. Every right register outside the final private bank and the entire
+left bank are preserved, including the retained headers and shared scratch.
+
+The generic `embStk_extend_of_frame` proves that a generated smaller view and
+an external frame preserve blank surrounding workspace. Together with prefix
+projection lemmas it supplies the later-stage input views without concrete
+register enumeration or expansion of numerical bank data.
+
+Guarded checks peak at 1384.2 MiB (frame language) and 3309.2 MiB (composed
+setup). The guarded target build passes (15156 jobs, 3.5 GiB combined peak);
+the scoped axiom audit passes for 332062 declarations (3313.5 MiB). Native
+factory generation and ambient payload exposure still have to precede this
+outer setup, followed by the supplier descriptor lifecycle, complete batches,
+complete-key setup reuse, grouped publication, R4/tensor layout restoration
+and final audits. S4 is incomplete; kappa is unchanged.
