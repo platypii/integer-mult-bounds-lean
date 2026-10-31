@@ -18364,3 +18364,19 @@ The guarded file check passes at 1940.5 MiB; the target build passes (3969 jobs,
 row-counter setup, ambient gathering and padding/routing remain open. Selected
 supplier consumption/publication, seam lifecycle, sizing and R4/tensor
 composition remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: padding-counter setup has a bounded physical trace
+
+`paddingCounterSetup_exec_within` lifts the existing actual setup execution to
+an execution-wide stock certificate using its structural native push bound.
+The reserve is twice `paddingCounterSetupCost`, not a premise about a prepared
+counter. `paddingCounterSetupCost_le` bounds the entire setup and retirement
+bill by `capacity*(4*blockWidth+17)+18` whenever the class fits its capacity.
+The proof uses arbitrary natural dimensions and existing unary operations.
+
+The guarded file check passes at 1951.0 MiB; the target build passes (3971 jobs,
+2.5 GiB combined peak). Composition with row-counter generation and the actual
+ambient gather/pad/router chain remains open, as do supplier consumption,
+publication, the seam lifecycle, selected sizing and R4/tensor restoration.
+S4 remains incomplete; kappa is unchanged. The previous chunk's push remains
+pending approval after automatic review rejected export to the configured remote.
