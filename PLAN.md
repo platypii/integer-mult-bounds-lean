@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3450 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3452 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20664,3 +20664,33 @@ supplier integration, recovery/seams and tensor/R4 restoration remain open.
 Next connect these geometry bounds to the actual complete interior ledger,
 then select the concrete global schedule. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327637 declarations at 3163.3 MiB.
+
+### S4 checkpoint: cached numerical stock is shared reserve plus linear traffic
+
+`PhaseCellNumericalStock` proves an exact affine decomposition of the complete
+staged-cell allowance. `stagedCellStockPerCell` contains no scalar multiplication
+scratch or shared ring workspace. With a legal output shift and positive row/
+word widths it is at most `8064*(R+1)*(L+2^l)*w`; all numerical reserves remain
+in the zero-cell shared term.
+
+`PhaseCellCachedNumericalStock` extends the exact identity through generated
+cached setup, ordinary-origin retirement and complete runtime release.
+`cachedOriginsStockPerCell` states the actual coefficient, including control
+packet width V. A generic natural-number traffic comparison is proved before
+instantiating compiled-program push constants, avoiding compiler expansion.
+With V ≤ cV*w, `cachedOriginsWorkspace_le_shared_add_traffic` bounds the whole
+allowance by its zero-cell shared reserve plus
+`cachedOriginsTrafficFactor * B * (L+2^l) * w`. The factor depends only on fixed
+program push constants, R and cV; it contains no multiplication-time term or
+scalar reserve K. Substituting B=N*cellCount therefore charges numerical setup
+once for all RHS/cell pairs, not once per replica.
+
+Guarded checks pass at 2099.8 MiB (staged decomposition and traffic bound) and
+2126.8 MiB (complete cached numerical affine/traffic bound). The compatibility
+build with the actual gathered stock caller and manuscript-scale geometry
+passes (14420 jobs, 2.8 GiB combined peak).
+Next combine this numerical bound with preparation/gathering/handoff charges,
+then instantiate the total interior bound against selected geometry and
+precision. Supplier generation, recovery/seams and tensor/R4 restoration remain
+open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327016 declarations at 3159.2 MiB.
