@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedProducerPlan
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorEmit
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareDescriptorBank
 
 /-! Produce the next ordinary packed descriptor and its runtime clock from a
 live borrowed bank. The caller supplies word contents, not a serialized queue. -/
@@ -36,10 +36,6 @@ theorem prepareDescriptor_exec (plan : PackedProducerPlan T Q) (r : PackedNormal
   have hr := plan.hreg
   regs_ne hr
   have htmp := hscratch plan.tmp (by simp)
-  have hreg : ∀ i ∈ List.ofFn source, [i,plan.src,plan.tmp,plan.saved].Nodup := by
-    intro i hi
-    obtain ⟨j,rfl⟩ := List.mem_ofFn.mp hi
-    exact hsourceReg j
   have htape : descriptorBankTape ((List.ofFn source).map (fun i => (i,S.R i))) =
       descriptorScheduleTape plan.work PackedNormalizedJob.words [r] := by
     simp only [descriptorScheduleTape,List.map_cons,List.map_nil,List.flatten_cons,List.flatten_nil,List.append_nil,
@@ -47,15 +43,9 @@ theorem prepareDescriptor_exec (plan : PackedProducerPlan T Q) (r : PackedNormal
   let tape := descriptorScheduleTape plan.work PackedNormalizedJob.words [r]
   let M : Stacks T A := {S with R := Function.update S.R plan.src (tape++S.R plan.src)}
   let F : Stacks T A := {M with R := Function.update M.R plan.clock [tick]}
-  obtain ⟨v',hu,he⟩ := emitDescriptorBank_exec (body := body) plan.src plan.tmp plan.saved
-    (List.ofFn source) hreg v S htmp hsaved
-  rw [htape] at he
-  have hclockM : M.R plan.clock = [] :=
-    (Function.update_of_ne ‹plan.src ≠ plan.clock›.symm _ _).trans hclock
-  have hstep : Exec body (.act (.push (.rt plan.clock) (fun _ => tick) .done)) (Host.mk v' M) 1 (Host.mk v' F) := by
-    simpa only [F,Host.mk,Action.run,update_rt,get_rt,hclockM] using
-      Exec.act (body := body) (.push (.rt plan.clock) (fun _ => tick) .done) (Host.mk v' M)
-  have hwhole := Exec.seq he hstep
+  obtain ⟨v',hu,hwhole⟩ := prepareDescriptorBank_exec (body := body) source plan.src plan.tmp plan.saved plan.clock
+    hsourceReg ‹plan.src ≠ plan.clock›.symm v S htmp hsaved hclock depth
+  rw [htape] at hwhole
   have hframe (i : Fin T) (his : i ≠ plan.src) (hic : i ≠ plan.clock) : F.R i = S.R i := by
     simp only [F,M,Function.update_of_ne his,Function.update_of_ne hic]
   refine ⟨v',hu,?_,?_⟩
@@ -79,10 +69,6 @@ theorem prepareDescriptor_exec (plan : PackedProducerPlan T Q) (r : PackedNormal
       exact hsaved
     · rw [hframe _ ‹plan.src ≠ plan.savedClock›.symm ‹plan.clock ≠ plan.savedClock›.symm]
       exact hsavedClock
-  · apply mn_native_exec_within hwhole 2
-    · exact ⟨emitDescriptorBank_native _ _ _ _,by simp [mnNativePushBound,mnActPush]⟩
-    · have hc := emitDescriptorBankCost_le S.R (List.ofFn source)
-      rw [htape] at hc
-      omega
+  · exact hwhole.mono (by intro d z hz; omega)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.PackedProducerPlan

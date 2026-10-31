@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3341 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3344 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19397,3 +19397,20 @@ and ordinary class/header placement/readiness/analytic facts, and compose these
 budgets with the existing restoring class execution theorem. Whole publication,
 shared full-line seam execution and tensor/R4 restoration remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: one structural descriptor/clock preparation operation
+
+`prepareDescriptorBank` serializes any live finite bank and generates the
+one-record dispatch clock. Its proof is structural over source registers;
+`descriptorBankTape_sources_eq` identifies the emitted tape with any consumer
+placement carrying the same words. The packed supplier now reuses this proof,
+with its existing executable and readiness contract unchanged.
+
+The stock interface groups the complete allowance as `base+(22*tapeLength+4)`.
+An ungrouped `base+22*tapeLength+4` caused the composition helper to infer a
+partial allowance and unfold the surrounding state size until the default
+heartbeat limit. The grouped interface composes directly, with no raised limit.
+Guarded checks pass at 3027.6 MiB (generic preparation) and 3548.1 MiB
+(packed supplier specialization). The combined supplier/preparation build and
+scoped axiom audit pass. Full-period ordinary input preparation follows in the
+next chunk. S4 remains incomplete; kappa is unchanged.
