@@ -19476,3 +19476,38 @@ combined restoring supplier/full-period lifecycle build passes (15877 jobs,
 5.9 GiB combined peak), and its scoped audit passes for 337618 declarations
 at 3423.9 MiB. The full-period caller composition follows in the next chunk.
 S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: one complete restoring full-period solve from ordinary inputs
+
+`PackedProducerPlan.fullLineFromLiveBank_exec` reuses the existing 325-port
+supplier wiring for S3's 303-port dispatcher. It generates one descriptor and
+clock, executes one full-period batch solve, and retires that descriptor and
+clock. The final state changes only the result register. Its actual returned
+bytes retain `ExactCoreProduced` on the entire period, including the normalized
+exact-inverse error and unit-ball certificate. No per-seam solve is introduced.
+
+`FullLineInputPlan` packages static placement and ordinary scalar/RHS inputs.
+Its setup bills depend on scalar dimensions and replica count, rather than
+exposing concrete payload terms in resource statements.
+`FullLineInputPlan.run_exec` generates the actual full-period record bank,
+derives numerical readiness from ordinary parameters and the input bound,
+runs the restoring producer, and clears the generated bank except its borrowed
+width seed. It returns exactly the original state with the certified full-line
+output appended to the result. The input bank, width seed, descriptor suffix,
+clock, scratch, input/output streams and all other registers restore. The
+program is fixed by placement and recovery mode, not by the mathematical RHS
+list or a supplied execution callback.
+
+Time is ordinary bank generation plus the actual S3 grid bill, linear descriptor
+traffic and linear bank retirement. Stock is ordinary generation allowance plus
+one S3 producer reserve and linear descriptor traffic; final bank retirement
+adds no stock. Fixed program/body push bounds remain explicit.
+
+The guarded checks pass at 3399.6 MiB (live-bank full producer), 3321.7 MiB
+(ordinary input plan) and 3394.6 MiB (complete ordinary-input lifecycle).
+Combined build and scoped audit pass as recorded above. Next match this actual
+lifecycle to selected S3 fast costs and connect its retained output to physical
+seam cropping/publication and tensor/R4 layout restoration. The proper-core
+replica ambient-setup issue recorded above remains open; this checkpoint does
+not prove its fast bound or justify replacing the complete proper branch.
+S4 remains incomplete; kappa is unchanged.
