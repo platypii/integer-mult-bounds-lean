@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3292 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3294 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18690,3 +18690,27 @@ publication and core-count headers, then master retirement around the actual
 supplier call. Concrete selected analytic facts, exposure/consumer composition,
 publication, seam lifecycle and R4/tensor restoration remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: supplier geometry width is physically generated and scratch retires
+
+`placedWeightWidth_exec_within` places the existing weight-width generator in
+an arbitrary injective caller bank, preserving its exact single-destination
+frame and time bound. Its structural native certificate handles arbitrary
+input dimensions and avoids another arithmetic implementation.
+
+`generateSupplierGeometryWidth_exec` generates the internal `2*q+8` counter,
+runs that placed generator from scaled precision, arithmetic precision and the
+retained ambient parameters, then erases the temporary counter. The existing
+job bounds identify the generated result with `job.V`; the exact endpoint
+changes only the geometry-width destination. `factoryPrecision_eq` identifies
+the generated master precision with the job precision without per-port cases.
+The complete time and stock bills include temporary-counter setup and cleanup.
+
+Guarded checks peak at 1962.7 MiB (placed existing generator) and 3325.2 MiB
+(supplier geometry lifecycle). The target build passes (15176 jobs, 3.5 GiB
+combined peak). The scoped axiom audit passes for 332329 declarations at
+3316.6 MiB. Remaining fixed-bank setup includes radius, publication and
+core-count headers, assembly of readiness from generated headers, and retirement
+around actual supplier execution. Concrete selected analytic facts, whole
+exposure/consumer composition, publication, seam lifecycle and R4/tensor
+restoration remain open. S4 is incomplete; kappa is unchanged.
