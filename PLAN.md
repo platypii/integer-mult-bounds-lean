@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3465 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3467 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20917,3 +20917,35 @@ key scheduling and complete recovery/seam/publication composition. Tensor/R4
 restoration and the global selected acceptance theorem remain open.
 S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 332586 declarations at 3300.4 MiB.
+
+### S4 checkpoint: publish actual compact solver streams into replica halos
+
+`PhaseCellReplicaPublicationFromEncoded` structurally splits the actual bounded
+encoded solver output into publication records. Row counts, lengths, flattened
+input equality and ambient-line order are proved by list induction, not supplied
+by a decoded-row or execution oracle. These compact outputs require zero
+padding rows. `PublicationWindows.scatter_word` proves every published word is
+exactly its corresponding compact source word; `scatter_error` transfers local
+numerical error unchanged, without a row/replica count factor.
+
+`PhaseCellReplicaEncodedPublication.publishEncodedReplicas_exec_within` feeds
+those constructed records into the existing physical replica publication
+program and its native stock theorem. It consumes exactly the solver prefix,
+updates the packed ambient replica lines, restores source/output suffixes and
+all unrelated registers, and releases its replica counter/accumulator. The
+metadata/control tape hypotheses are explicit for subsequent wiring to the
+restored shared-gather controls. No numerical rows or publication execution
+witnesses are assumed. `replicaEncodedPublicationCost_le` bounds time by
+`87*N*s*w+4`; the existing push-two certificate gives the corresponding linear
+stock allowance.
+
+Guarded checks pass at 2056.8 MiB (stream splitting and exact word-read bridge)
+and 2055.3 MiB (executed encoded publication and linear cost). The final
+compatibility build includes the error-transfer lemma and passes with the
+actual generated gathered caller and global core local-stock bound (14445 jobs,
+2.7 GiB combined peak).
+Next wire this publication after the generated gathered solve using local
+windows and restored controls, then connect residual/recovery and the executed
+key schedule. Tensor/R4 restoration and the global selected acceptance theorem
+remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327193 declarations at 3163.4 MiB.
