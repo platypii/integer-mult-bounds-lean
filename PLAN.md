@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3184 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3185 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17209,3 +17209,27 @@ then join their actual traces with the existing complete swap endpoint by
 execution uniqueness. Archive-stock composition, generated S4 supplier
 readiness, complete-key setup reuse, tensor/layout composition and final audits
 remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: native swap setup and normalization have stock certificates
+
+`StackNativeStock.mn_pop_one_push` proves that a successful pop pays for at most
+one subsequent push. `loop_action_within` lifts a preserved loop guard and a
+nonincreasing iteration to the actual loop's complete stock trace, independently
+of its iteration count. Both lemmas are structural over arbitrary native stores.
+
+`StackLoopsStock.unload_within` and `sieve_within` instantiate this rule with the
+actual nonempty-stack guards and host actions. `normTape_within` and
+`normList_within` compose those traces without any growth allowance. They
+certify existing executions, preserving every endpoint and runtime proof.
+`markList_within` and `shiftList_within` charge only the fixed list length;
+`dropList_within` is nonincreasing. No normalization-time factor multiplies
+initial or supplier stock.
+
+Guarded checks peak at 1388.1 MiB (generic native stock language) and 1396.2 MiB
+(actual lifecycle certificates); the guarded target build passes (2066 jobs).
+Next combine actual marking/header shifts, the placed selected foreign call,
+and normalization/unmarking. Execution uniqueness can retain the complete
+existing swap endpoint and time bound while the new trace supplies stock.
+Archive-stock composition, generated S4 supplier readiness, complete-key setup
+reuse, tensor/layout composition and final audits remain open.
+S4 is incomplete; kappa is unchanged.
