@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3289 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3291 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18639,3 +18639,29 @@ obligation. Concrete analytic-family facts and class separation, selected
 header generation, whole exposure/consumer composition, publication, seam
 lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa is
 unchanged.
+
+### S4 checkpoint: changing supplier masters are physically computed from scalar headers
+
+`PackedNormalizedJob.factoryMasters_eq_inverse` identifies the factory's master
+vector with the existing computed inverse dimensions by one precision identity,
+without per-port cases. `generateSupplierMasters_exec` composes the existing
+ordinary-header scalar bootstrap and inverse-header exporter. From eight unary
+parameters it computes the band, actual boundary cardinality, arithmetic and
+stage precision, and scaled precision, producing the exact ten factory master
+words at blank ports.
+
+The theorem covers the actual complete trace with time and workspace bounds,
+frames all registers outside the scalar table/master ports, and returns the
+computed table's original-parameter, accumulator and fit facts for cleanup.
+`tblUnaryCopies_native` supplies a structural bound for arbitrary header lists;
+`installInverseHeaders_native` reuses the generic compiled-table certificate.
+No prepared binary scalar table or per-job execution is an input premise.
+
+Guarded checks peak at 1393.9 MiB (structural header export) and 3347.9 MiB
+(supplier master generation). The target build passes (15389 jobs, 3.5 GiB
+combined peak). The scoped axiom audit passes for 333404 declarations at
+3349.4 MiB. The fixed-bank per-call lifecycle still needs table/master
+retirement and generation of the remaining supplier readiness headers before
+selected batch composition. Concrete analytic-family instantiation,
+publication, seam lifecycle and R4/tensor restoration remain open. S4 is
+incomplete; kappa is unchanged.
