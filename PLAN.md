@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3447 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3449 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20602,3 +20602,31 @@ kappa is unchanged.
 The compatibility build with actual gathered numerical/preparation callers passes
 (14237 jobs, 2.8 GiB combined peak). The scoped axiom audit passes for 325097
 declarations at 3133.3 MiB.
+
+### S4 checkpoint: complete shared-gather/handoff/numerical stock boundary
+
+`handedReplicaInteriorBatch_exec_within` certifies counted payload handoff and
+the complete ordinary-origin cached solve in an arbitrary disjoint physical
+placement. It uses the generic embedding stock theorem to count gathering,
+cache and all spectator storage once. Existing numerical and restoration
+postconditions are retained by execution uniqueness, without duplicating their
+proofs or adding execution/readiness callbacks.
+
+`gatheredReplicaInteriorBatch_exec_within` composes actual cache preparation and
+shared local-control gathering with that handoff/numerical trace. The complete
+existing output accuracy, bounded encoded output, restored gathering bank,
+restored RHS/borrowed data, clean numerical workspace and retained cache/clock
+postconditions now accompany a simultaneous stock invariant. Its allowance is
+three times preparation/gather native traffic, twice handoff traffic, and one
+complete cached numerical allowance for all RHS/cell pairs. The original time
+ledger is unchanged. The resource proof uses structural certificates and bank
+projection identities, not finite-register enumeration.
+
+Guarded single-file checks pass at 2125.8 MiB (handoff plus numerical solve) and
+2132.7 MiB (complete gathered caller). The compatibility build with existing fast
+cost and preparation-stock callers passes (14238 jobs, 2.8 GiB combined peak).
+Next close the quantitative geometry/amortization gate for this actual interior
+execution before building further lifecycle wrappers. Numerical key/page
+supplier integration, recovery/seams and tensor/R4 restoration remain open.
+S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 325100 declarations at 3134.6 MiB.
