@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3206 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3207 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17456,3 +17456,21 @@ passes (8704 jobs, 3.3 GiB combined peak).
 Next consume the uniform bounds in selected produced/archive accounting and
 close generated supplier readiness, complete-key setup reuse, tensor/layout
 composition and final S4 audits. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: produced archive executions consume uniform selected stock
+
+`produce_transpose_pair_exec_within_volume` applies the uniform archive stock
+bound to the actual composed producer/transpose program. Its archive allowance
+is at most `(stockCoefficient T+1)*(V₁+V₂)`, where each volume uses that class's
+selected conditional capacity. Thus absent classes contribute no archive stock,
+and no number-of-address-chunks factor survives. Production and archive
+workspace still share a maximum; both raw produced payloads are counted at the
+handoff. Exact batch/row certificates, final packed outputs and original paid
+runtime remain attached to this same execution.
+
+The guarded file check peaks at 3406.1 MiB and the guarded target build passes
+(15764 jobs, 3.5 GiB combined peak). Next connect generated supplier/source
+readiness and complete-key setup reuse to the selected grouped/publication
+consumer, then close R4/tensor layout and the final S4 audits. The existing
+grouped and published-tensor interfaces still have separate physical setup and
+integration obligations. S4 is incomplete; kappa is unchanged.
