@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3238 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3241 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18008,3 +18008,32 @@ generate its dispatcher descriptor, and connect retained seam crops to the
 selected full-period task. Whole-schedule exposure reuse, grouped publication,
 R4/tensor layout restoration and final audits remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: complete full-line batch banks are physically assembled
+
+`familyDispatchBank` describes the sparse 303-register ABI through its scalar
+table, ambient source and replica count. Its scalar/core lookup lemmas use the
+existing disjoint register cover, so no enumeration of the full bank is needed.
+
+`generateFamilyDispatchBank_exec` composes scalar bootstrapping, a restoring
+ambient-word copy and unary replica-count installation. It proves the exact
+placed bank, unchanged host tapes and left stacks, and a frame for every right
+register outside the private bank. The same execution carries the scalar setup
+bill plus `6*source.length+6` and `4*replicas+4`, with the corresponding linear
+stock allowances. Its inputs are ordinary scalar headers/width/count, ambient
+data and blank workspace, not a prepared dispatch bank.
+
+`fullLineGridRecord` constructs the full-period mathematical record for an
+arbitrary list of RHS replicas. `fullLineGridRecord_ready` proves its actual
+`GridDispatchReady` contract from the existing mathematical sizing and unit-ball
+bounds. Its serialized words are exactly those of the physical bank generator,
+independently of host tapes. This extends the former singleton constructor to
+the shared full-line seam batch without arbitrary descriptor words.
+
+Guarded checks peak at 3238.8 MiB (bank language), 3256.9 MiB (physical setup)
+and 3325.9 MiB (full-line record). The guarded target build passes (15222 jobs,
+3.5 GiB combined peak); the scoped axiom audit passes for 333237 declarations
+(3323.0 MiB). Next serialize this generated bank and compose the shared full-line
+dispatch with retained seam crops and cleanup. Selected supplier wiring,
+whole-schedule exposure reuse, grouped publication, R4/tensor layout restoration
+and final audits remain open. S4 is incomplete; kappa is unchanged.
