@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3463 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3465 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20888,3 +20888,32 @@ supplier/key schedule, keeping distinct endpoint-key multiplicities explicit.
 Recovery/seams and tensor/R4 restoration remain open. S4 is incomplete;
 kappa is unchanged.
 The scoped axiom audit passes for 325715 declarations at 3150.2 MiB.
+
+### S4 checkpoint: selected factory costs preserve the generated caller's fast bound
+
+`PhaseCellReplicaWeightFactoryCost` proves the actual numerical page factory
+cost is bounded by `1000031*t*Z^4+2*N` under explicit metadata width and cell-count
+bounds. `selectedGenerateReplicaWeightPageCost_poly_le` derives
+`C*t*p^4+2*N` from selected axis bit widths, linear cell/word precision and u≤p.
+The corresponding physical stock comparison uses the same shared polynomial
+term and only a linear replica-header term, multiplied by the fixed program's
+atomic-push bound. It does not charge coefficient generation per RHS.
+
+`generatedGatheredReplicaInteriorBatchCost` names the exact time ledger in the
+actual generated-page execution theorem.
+`generatedGatheredReplicaInteriorBatch_fast_le` attaches the existing complete
+gather/cache/handoff/numerical fast envelope to that ledger. Its shared term
+adds the zero-replica numerical page factory; the 2*N native header cost is
+absorbed by increasing the repeated constant by two. The repeated arithmetic
+exponent remains 129/128 and no supplier polynomial is repeated across replicas.
+Shared page construction is visible for distinct-key setup accounting, rather
+than hidden in a per-input coefficient.
+
+Guarded checks pass at 2152.1 MiB (factory polynomial/selected/stock bounds) and
+3166.0 MiB (actual generated gathered caller fast time). Compatibility with
+selected local stock and distinct-key setup accounting passes (15278 jobs,
+3.4 GiB combined peak). Next attach the shared supplier allowances to executed
+key scheduling and complete recovery/seam/publication composition. Tensor/R4
+restoration and the global selected acceptance theorem remain open.
+S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 332586 declarations at 3300.4 MiB.
