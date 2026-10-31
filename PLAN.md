@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3486 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3489 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21198,3 +21198,46 @@ acceptance remain open. S4 remains incomplete; kappa is unchanged.
 Compatibility with packed recovery coupling and both complete-caller ledgers
 passes (15022 jobs, 26.0 GiB combined peak while refreshing the coupling import
 closure). The scoped axiom audit passes for 330650 declarations at 3262.2 MiB.
+
+### S4 checkpoint: independent output accumulation preserves the original RHS
+
+The existing complete single-class caller publishes into its original packed
+RHS ambient. That is correct for one class, but cannot be iterated across length
+classes: later numerical gathers must still read the original RHS, while later
+publications must retain earlier solutions. The accumulation route therefore
+uses an independent output bank already in the solver's reverse replica order.
+This avoids reversing that output bank on every class.
+
+`PhaseCellRetainedEncodedPublication` executes symbol-volume publication into
+that independent bank while borrowing and exactly restoring the replica counter.
+Its only persistent right-tape changes are the consumed compact source prefix
+and updated output bank; counter symbols, backup and all scratch are restored.
+Both borrowed suffixes survive. Its time is bounded by `60*N*(volume+1)+10` and
+a native push-two certificate gives the actual whole-bank stock bound.
+
+`PhaseCellReplicaPublicationPreserves` combines the existing scatter slice-off
+law with uniform replica slicing. It proves exact preservation of complete
+words outside the new class, including output suffixes. The physical-read
+`*_preserves_errorOn` theorem retains an earlier disjoint core's error unchanged.
+The retained publication execution theorem returns this conditional preservation
+for its actual before/after output tapes, without a publication execution oracle.
+
+`PhaseCellAccumulatingGatheredPublication` places this operation beside the
+existing gather/solver banks, generating and retiring its own window/control
+pages. Its output port is disjoint from both banks. It restores every tape except
+solver result 93 and the independent output, hence in particular original packed
+RHS 124, all headers and replica count 121 survive for the following class.
+Counter backup uses existing gather register 120; no new scratch bank is needed.
+Shared setup and repeated native traffic have named time/stock bills; page
+retirement has zero additional stock reserve.
+
+Guarded checks pass at 2054.5 MiB (packed preservation), 2098.0 MiB (retained
+physical publication) and 2146.4 MiB (self-preparing placed accumulation).
+Compatibility with the original complete single-class numerical caller and
+linear-stock ledger passes (14284 jobs, 2.8 GiB combined peak). Next compose
+this accumulation route with the generated numerical solve and the actual
+length-class traversal, including numerical cache/RHS retirement and header
+reload between keys. Then reuse the packed coupling page across replicas.
+Recovery, executed global key scheduling, tensor/R4 restoration and selected
+acceptance remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 325457 declarations at 3141.8 MiB.
