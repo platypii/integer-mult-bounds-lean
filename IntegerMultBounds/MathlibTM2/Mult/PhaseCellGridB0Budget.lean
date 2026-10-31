@@ -20,6 +20,21 @@ theorem gridInverse_normalized_smallness {p target j : ℕ} (hp : 4 ≤ p) (htar
   have hpos : (0 : ℝ) ≤ 1/2^(p+8) := by positivity
   linarith only [hs,hd,ht,hpos]
 
+theorem gridInverse_matrix_error_le_quarter {p : ℕ} (hp : 4 ≤ p) :
+    (2 : ℝ)^p*((32*(p : ℝ)^2/(2 : ℝ)^(45*p))/2) ≤ 1/4 := by
+  have hpPow : (p : ℝ) ≤ (2 : ℝ)^p := by exact_mod_cast (show p < 2^p from Nat.lt_two_pow_self).le
+  have hsq := pow_le_pow_left₀ (Nat.cast_nonneg p) hpPow 2
+  have hden : 64*(p : ℝ)^2*(2 : ℝ)^p ≤ (2 : ℝ)^(45*p) := by
+    calc
+      _ ≤ 64*((2 : ℝ)^p)^2*(2 : ℝ)^p := by gcongr
+      _ = (2 : ℝ)^(p*3+6) := by rw [pow_add,pow_mul]; norm_num; ring
+      _ ≤ _ := pow_le_pow_right₀ (by norm_num) (by omega)
+  have he : (2 : ℝ)^p*((32*(p : ℝ)^2/(2 : ℝ)^(45*p))/2) =
+      (16*(p : ℝ)^2*(2 : ℝ)^p)/(2 : ℝ)^(45*p) := by ring
+  rw [he]
+  apply (div_le_iff₀ (by positivity : (0 : ℝ) < 2^(45*p))).mpr
+  nlinarith only [hden]
+
 theorem gridInverse_operator_error_le_ten {p target j : ℕ} (hp : 4 ≤ p) (htarget : p+8 ≤ target) :
     7+(2 : ℝ)^p*((2/2^p+(1/(2 : ℝ)^target)/(2 : ℝ)^j)+
       (32*(p : ℝ)^2/(2 : ℝ)^(45*p))/2) ≤ 10 := by
@@ -34,19 +49,7 @@ theorem gridInverse_operator_error_le_ten {p target j : ℕ} (hp : 4 ≤ p) (hta
     norm_num
     field_simp
   rw [hcancel] at hs
-  have hpPow : (p : ℝ) ≤ (2 : ℝ)^p := by exact_mod_cast (show p < 2^p from Nat.lt_two_pow_self).le
-  have hsq := pow_le_pow_left₀ (Nat.cast_nonneg p) hpPow 2
-  have hden : 64*(p : ℝ)^2*(2 : ℝ)^p ≤ (2 : ℝ)^(45*p) := by
-    calc
-      _ ≤ 64*((2 : ℝ)^p)^2*(2 : ℝ)^p := by gcongr
-      _ = (2 : ℝ)^(p*3+6) := by rw [pow_add,pow_mul]; norm_num; ring
-      _ ≤ _ := pow_le_pow_right₀ (by norm_num) (by omega)
-  have hm : (2 : ℝ)^p*((32*(p : ℝ)^2/(2 : ℝ)^(45*p))/2) ≤ 1/4 := by
-    have he : (2 : ℝ)^p*((32*(p : ℝ)^2/(2 : ℝ)^(45*p))/2) =
-        (16*(p : ℝ)^2*(2 : ℝ)^p)/(2 : ℝ)^(45*p) := by ring
-    rw [he]
-    apply (div_le_iff₀ (by positivity : (0 : ℝ) < 2^(45*p))).mpr
-    nlinarith only [hden]
+  have hm := gridInverse_matrix_error_le_quarter hp
   have hr : (2 : ℝ)^p*(2/(2 : ℝ)^p) = 2 := by field_simp
   nlinarith only [hs,hm,hr]
 

@@ -34,9 +34,9 @@ theorem publishedInverse_smallness {p : ℕ} (hp : 4 ≤ p) : (3 : ℝ)/2^p ≤ 
 
 /-- The normalized arithmetic and two component-locality losses fit within
 three units of p-bit error at a linear precision target. -/
-theorem generatedCore_error_le {p target j : ℕ} (htarget : p+2 ≤ target) :
+theorem generatedCore_error_le_quarters {p target j : ℕ} (htarget : p+2 ≤ target) :
     (2/(2 : ℝ)^p+(1/(2 : ℝ)^target)/(2 : ℝ)^j)+
-      (1/(2 : ℝ)^target+1/(2 : ℝ)^target)/(2 : ℝ)^j ≤ 3/(2 : ℝ)^p := by
+      (1/(2 : ℝ)^target+1/(2 : ℝ)^target)/(2 : ℝ)^j ≤ (11/4 : ℝ)/(2 : ℝ)^p := by
   have ht : (1 : ℝ)/2^target ≤ (1/(2 : ℝ)^p)/4 := by
     calc
       (1 : ℝ)/2^target ≤ 1/(2 : ℝ)^(p+2) :=
@@ -47,12 +47,13 @@ theorem generatedCore_error_le {p target j : ℕ} (htarget : p+2 ≤ target) :
   calc
     _ = 2/(2 : ℝ)^p+3*((1/(2 : ℝ)^target)/(2 : ℝ)^j) := by ring
     _ ≤ 2/(2 : ℝ)^p+3*((1/(2 : ℝ)^p)/4) := by linarith
-    _ ≤ 3/(2 : ℝ)^p := by
-      have h : (0 : ℝ) ≤ 1/(2 : ℝ)^p := by positivity
-      calc
-        _ = (11/4 : ℝ)*(1/(2 : ℝ)^p) := by ring
-        _ ≤ 3*(1/(2 : ℝ)^p) := mul_le_mul_of_nonneg_right (by norm_num) h
-        _ = 3/(2 : ℝ)^p := by ring
+    _ = (11/4 : ℝ)/(2 : ℝ)^p := by ring
+
+theorem generatedCore_error_le {p target j : ℕ} (htarget : p+2 ≤ target) :
+    (2/(2 : ℝ)^p+(1/(2 : ℝ)^target)/(2 : ℝ)^j)+
+      (1/(2 : ℝ)^target+1/(2 : ℝ)^target)/(2 : ℝ)^j ≤ 3/(2 : ℝ)^p := by
+  exact (generatedCore_error_le_quarters htarget).trans
+    (div_le_div_of_nonneg_right (by norm_num) (by positivity))
 
 /-- With the generated cover and selected normalization, the only numerical
 premise is core accuracy against the exact inverse on the same input. -/
