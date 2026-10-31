@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3301 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3303 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18792,3 +18792,33 @@ rather than assuming all call parameters are ready initially or unrolling a
 size-dependent program. Concrete selected analytic facts, whole publication,
 seam lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa
 is unchanged.
+
+### S4 checkpoint: one fixed supplier body generates and retires numerical headers
+
+`SupplierSetupPlan` packages only fixed register wiring and separation facts
+for the computed numerical-header setup. Its `Ready` contract consists of
+ordinary base inputs and blank temporary/numerical storage; its execution
+method reuses the already proved actual generation trace. The generated master
+and geometry register list is proved distinct from that static wiring.
+
+`SupplierSetupPlan.run_exec` composes generated readiness, the existing actual
+supplier lifecycle, and retirement of all eleven changing numerical headers.
+It preserves numerical row certificates and restores every caller right
+register except the accumulated result register. Retained class headers,
+ordinary parameters and the installed payload survive the call. Retirement
+costs exactly `2*(sum factoryMasters+V)+23` and needs no extra push reserve.
+The complete trace includes setup, solver execution and cleanup. The program
+has no job/core-index argument, making it a reusable runtime-loop body.
+
+The theorem returns the actually generated ready state as an existential
+witness for the existing setup/solver cost functions; it is not an initial
+prepared-state premise or an execution callback. Selected pricing can bound
+that witness through its proved readiness facts.
+
+Guarded checks peak at 3346.1 MiB (static setup plan) and 3390.2 MiB (complete
+supplier body). The target build passes (15627 jobs, 3.5 GiB combined peak).
+The scoped axiom audit passes for 336170 declarations at 3386.2 MiB. Next
+compose routed-prefix installation and local payload erasure with this body,
+then generate endpoint parameters in a fixed runtime traversal. Concrete
+selected analytic facts, whole publication, seam lifecycle and R4/tensor
+restoration remain open. S4 is incomplete; kappa is unchanged.
