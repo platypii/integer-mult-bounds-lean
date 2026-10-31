@@ -15,14 +15,6 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 open IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {T Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ T Q A U}
 
-theorem copyUnaryHeaders_native (tmp : Fin T) (rs : List (Fin T × Fin T)) :
-    mnNativePushBound 2 (copyUnaryHeaders (P := P₀) (Q := Q) (A := A) (U := U) tmp rs) := by
-  induction rs with
-  | nil => exact Nat.zero_le _
-  | cons r rs ih =>
-    exact ⟨by simp [ucopy,umulSym,scanR,drainR,popDo,keepIn,pushN,moveR,whileR,moveStep,peekR,
-      mnNativePushBound,mnActPush],ih⟩
-
 def masterHeaderCopies (work : Fin 224 → Fin T) (source : Fin 10 → Fin T) : List (Fin T × Fin T) :=
   List.ofFn (fun i => (source i,work (inverseMasterCorePort i)))
 

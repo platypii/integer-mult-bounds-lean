@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3498 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3503 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21329,3 +21329,54 @@ retained key metadata, then connect the actual length-class controller and share
 packed coupling loop. Recovery, global key scheduling, tensor/R4 restoration and
 selected acceptance remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 329568 declarations at 3214.4 MiB.
+
+### S4 checkpoint: reload the ordinary replica factory from retained key metadata
+
+The generic `copyUnaryHeaders_native` lemma now lives beside the structural
+copier in `PhaseCellHeaderCopies`, preserving its qualified name and existing
+supplier API. This keeps new reload proofs independent of the large master-bank
+installer import closure. `PhaseCellPlacedHeaderCopies.unaryCopiesR_project`
+proves destination-bank transport over an arbitrary copy list; concrete header
+roles are instantiated only afterward.
+
+`PhaseCellReplicaFactoryHeaderData` specifies the thirteen ordinary copies from
+retained gather masters into the released numerical bank. Precision, stage,
+fraction, axis geometry, band, level, row size, replica count, cell count and word
+width are copied; the row master supplies both row ports. Level is retained at
+gather 108 so local origin packets can remain at 109. Its data theorem proves
+that adding the repeated origin tape gives exactly `replicaWeightFactoryInputBank`.
+The public structural range/modulo lemma in `PhaseCellReplicaBatchOrder` reuses
+the existing replica-major list proof, including the empty-page case.
+
+`PhaseCellReloadReplicaFactoryHeaders` executes those copies and certifies their
+projected unary bank. `PhaseCellReloadReplicaOriginPackets` generates one counted
+page volume and reuses `repeatPrefix`/`copyPrefix`: it copies a retained page once
+for factory setup and once per RHS, restoring the page, replica symbols, cell
+count, binary-width master and all scratch. No coordinate decoding or numerical
+coefficient generation occurs in the repeated work.
+
+`PhaseCellReloadReplicaFactoryInput.reloadReplicaFactoryInput_exec_within`
+composes both real programs. Starting from the exact released numerical bank,
+retained scalar masters and one ambient-origin page at gather 113, it constructs
+the exact ordinary factory input, including the setup prefix, replica-major
+origin packets and unary level suffix. The entire gather bank, all left tapes,
+input/output streams and every unrelated right tape survive. No precomputed
+numerical page or reload execution witness is assumed.
+
+The exact time split is shared zero-replica setup plus
+`N*(10*B*weightWorkspaceWidth P q w t u+19)`. Under the existing linear metadata
+width bound this repeated part is at most `(10*cV+19)*N*B*L*w`. Native push bound
+two certifies the actual whole-bank stock with twice the named time bill; only
+native copying, not numerical multiplication time, is used for that allowance.
+
+Guarded checks pass at 1404.4 MiB (copier resource factoring), 1393.5 MiB
+(structural placement), 2133.2 MiB (factory header/packet data), 2086.2 MiB
+(placed scalar reload), 1965.3 MiB (origin-page copying) and 2110.8 MiB (complete
+reload with affine/shared traffic bounds). Next compose reload with the released
+solve/accumulate/retire class program and connect the key controller's actual
+local/ambient origin pages. Length-class traversal, shared packed coupling and
+recovery, global key scheduling, tensor/R4 restoration and selected acceptance
+remain open. S4 remains incomplete; kappa is unchanged.
+Compatibility with the retained-header installer, released-class resource bounds
+and global core local stock passes (15061 jobs, 25.8 GiB combined peak). The scoped
+axiom audit passes for 331700 declarations at 3268.8 MiB.

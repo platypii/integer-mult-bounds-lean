@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.ChirpUnaryCopies
+public import IntegerMultBounds.MathlibTM2.StackResources
 
 /-! Copy retained ordinary headers into a private solver bank. Separation of
 all sources from all destinations makes the structural list reusable unchanged. -/
@@ -52,3 +53,19 @@ theorem copyUnaryHeaders_exec (tmp : Fin T) (rs : List (Fin T × Fin T))
     omega
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
+
+namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
+open IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Mult.ShortConv
+variable {T Q A : ℕ} {P₀ U : Type}
+
+theorem copyUnaryHeaders_native (tmp : Fin T) (rs : List (Fin T × Fin T)) :
+    mnNativePushBound 2 (copyUnaryHeaders (P := P₀) (Q := Q) (A := A) (U := U) tmp rs) := by
+  induction rs with
+  | nil => exact Nat.zero_le _
+  | cons r rs ih =>
+    exact ⟨by simp [ucopy,umulSym,scanR,drainR,popDo,keepIn,pushN,moveR,whileR,moveStep,peekR,
+      mnNativePushBound,mnActPush],ih⟩
+
+end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

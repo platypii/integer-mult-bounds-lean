@@ -60,6 +60,14 @@ private theorem replicaRows_eq {α : Type} (N B : ℕ) (hB : 0 < B) (f : ℕ →
       rw [(replicaCell_index hB r j (List.mem_range.mp hj)).1]
     _ = _ := range_const_flatMap N _
 
+/-- A replica-major origin tape repeats the one-key origin page. -/
+theorem range_mod_flatMap_eq_replicate {α : Type} (N B : ℕ) (f : ℕ → List α) :
+    (List.range (N*B)).flatMap (fun n => f (n%B)) =
+      (List.replicate N ((List.range B).flatMap f)).flatten := by
+  cases B with
+  | zero => simp
+  | succ B => exact replicaRows_eq N (B+1) (by omega) f
+
 /-- Repeat the two numerical banks separately, preserving the cached ABI. -/
 theorem batchWeightPage_replicas (A w q P s t u N B L : ℕ) (hB : 0 < B) (lo : ℕ → ℕ) :
     batchWeightPage A w q P s t u (N*B) L (fun n => lo (n%B)) =
