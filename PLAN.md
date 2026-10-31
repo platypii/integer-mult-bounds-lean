@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3202 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3203 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17404,3 +17404,20 @@ jobs, 3.3 GiB combined peak). Paired/produced archive composition and uniform
 selected stock substitution remain; generated supplier readiness, complete-key
 setup reuse, tensor/layout composition and final S4 audits are also open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: paired conditional archive tiles share workspace
+
+`conditional_pair_exec_within` composes both actual conditional archive traces
+from their original ordinary readiness. The first returned frame derives the
+second readiness, active flag and unchanged runtime bill. A direct stack-update
+balance and the exact padded-row lengths bound the intervening stock by initial
+stock plus the first padded output volume. Temporary workspace is the maximum
+of both conditional allowances, not their sum. Empty first classes contribute
+zero retained volume through their selected capacity.
+
+The guarded file check peaks at 3067.7 MiB; the guarded target build passes
+(8705 jobs, 3.3 GiB combined peak). Next compose the existing bounded packed
+producer pair with this archive pair and discharge the uniform selected stock
+substitution. Generated supplier readiness, complete-key setup reuse,
+tensor/layout composition and final S4 audits remain open. S4 is incomplete;
+kappa is unchanged.
