@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3481 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3484 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21123,3 +21123,41 @@ then connect the packed residual/recovery and second interior pass. Executed key
 scheduling, tensor/R4 restoration and global selected acceptance remain open.
 S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 328059 declarations at 3173.0 MiB.
+
+### S4 checkpoint: complete published caller retains fast time and linear stock
+
+`Cost/PhaseCellPublishedReplicaTraffic` proves exact affine replica decompositions
+for the actual prepared publication caller. Time is its zero-replica shared bill
+plus `N*(47*span*w+26)`; stock is its zero-replica shared bill plus twice that
+native traffic. Universal comparisons by `73*N*(span*w+1)` and
+`146*N*(span*w+1)` cover empty halos without side conditions. Publication page
+generation remains entirely shared.
+
+`Cost/PhaseCellGeneratedPublishedReplicaFast.generatedPublishedGatheredReplica_fast_le`
+attaches the existing generated interior fast ledger to the complete executed
+solve/publication program. The additional zero-replica publication bill is
+explicitly shared. Native repeated traffic is absorbed by increasing the
+constant by `73*(cw+1)`, using the selected linear word-width hypothesis and
+`p ≤ p^(129/128)`. The repeated arithmetic exponent remains 129/128; no page
+construction or numerical coefficient generation is repeated per RHS.
+
+`Cost/PhaseCellGeneratedPublishedReplicaStock` bounds the actual complete stock
+by shared weight-page generation, the existing gathered numerical linear stock,
+shared publication setup, and an added native coefficient `2*factoryPush+146`
+times `N*(B*(L+2^l)*w+span*w+1)`. Its `*_within_linear` theorem reprices the actual
+certified execution without changing its endpoint, time or accuracy. Numerical
+multiplication time is not used as a repeated stock allowance.
+
+Guarded checks pass at 2100.2 MiB (exact publication traffic), 3175.1 MiB
+(complete fast time) and 3135.6 MiB (complete linear stock). Compatibility with
+global core local stock passes (14506 jobs, 5.7 GiB combined peak).
+
+The recovery interface inspection confirms the next concrete bridge: the
+existing packed coupling caller expects an encoded packed Gaussian-integer
+field with magnitude/Fits bounds, whereas the new publication caller returns
+records and exact packed reads. Carry the bounded encoded witness through
+aligned scatter and replica splitting, then derive that recovery input from
+the actual output. Do not substitute the old full-period ambient coupling for
+the compact bulk route. Recovery, executed key scheduling, tensor/R4 restoration
+and global selected acceptance remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 328108 declarations at 3174.0 MiB.
