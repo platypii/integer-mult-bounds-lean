@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3216 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3218 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17635,3 +17635,27 @@ factory setup, then finish packed source exposure and outer metadata for the
 325-word supplier input. Full supplier batches, complete-key setup reuse,
 grouped publication, R4/tensor layout restoration and final audits remain
 open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: complete generated factory setup has linear stock
+
+`factoryGeometry_exec_within` composes the width-only conversion certificates
+with the existing linear copying, subtraction and erasure traces. Its extra
+stock is `8*a+8*b+24*V+40`; no coordinate-times-width runtime factor enters the
+workspace. The original exact endpoint, retained sources, scratch restoration
+and runtime bill follow for the same trace by execution uniqueness.
+
+`installPackedFactory_exec_within` attaches this certificate to actual native
+master installation. It generates the exact placed `packedFactoryInputBank`
+from ordinary retained headers and blank private storage, with additional stock
+`2*copyUnaryHeadersCost + (8*a+8*b+24*V+40)`. The generic
+`mn_seq_within_add` composes local additive stock allowances without unfolding
+programs or reconstructing executions. No new prepared-bank or execution
+premises are introduced.
+
+Guarded checks peak at 1379.4 MiB (composition), 1409.8 MiB (geometry) and
+3217.4 MiB (complete setup). The guarded target build passes (14786 jobs,
+3.4 GiB combined peak); the scoped axiom audit passes for 328719 declarations
+(3226.5 MiB). Packed source exposure and outer normalization metadata still
+need to be generated for the full 325-word supplier input, followed by supplier
+batches, complete-key setup reuse, grouped publication, R4/tensor layout
+restoration and final audits. S4 is incomplete; kappa is unchanged.
