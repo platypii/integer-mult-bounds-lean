@@ -36,4 +36,10 @@ theorem autoWord_native (i0 : Fin ni) (ins : Fin ni → Fin T) (outs : Fin no �
   simp [autoWord,autoInner,autoReset,autoStep_push,moveR,moveStep,whileR,peekR,
     mnNativePushBound,mnActPush,hc,hno]
 
+theorem autoWords_native [NeZero ni] (ins : Fin ni → Fin T) (outs : Fin no → Fin T)
+    (st ctr tmp : Fin T) (M : Auto A ni no) {c : ℕ} (hc : 1 ≤ c) (hno : no ≤ c) :
+    mnNativePushBound c (autoWords (P := P) (Q := Q) (A := A) (U := U) ins outs st ctr tmp M) := by
+  exact ⟨by simp [autoReset,peekR,mnNativePushBound,mnActPush],
+    autoWord_native 0 ins outs st ctr tmp M hc hno⟩
+
 end IntegerMultBounds.MathlibTM2.Host

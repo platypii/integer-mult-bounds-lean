@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3403 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3406 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20184,3 +20184,38 @@ open. S4 remains incomplete; kappa is unchanged.
 The compatibility build passes with the actual cached interior/preparation
 callers (14191 jobs, 6.6 GiB combined peak). The scoped axiom audit passes for
 324865 declarations at 3127.2 MiB.
+
+### S4 checkpoint: four-product branch computation and subtraction stock
+
+`autoWords_native` extends the existing structural automaton certificate to
+word streams. It reuses `autoWord_native` and is independent of the controller
+states and the number of input words. The actual Gaussian branch subtraction
+instantiates this certificate; no controller enumeration is introduced.
+
+`twoBranches_with_x_tail_exec_within` instantiates the compact triangular-pair
+resource theorem on the combined generator/RHS banks. The existing row-bank
+identities recover both compact branch streams in the original order.
+`twoBranchesFromSingleInput_with_x_tail_exec_within` executes the initial RHS
+duplication, adding `18*(M*L*w)+18` native traffic stock. All four triangular
+products retain the shared `compactPairWorkspace` at the doubled batch count.
+
+`mergedBranches_with_x_tail_exec_within` adds actual generated routing counts,
+branch separation, subtraction and publication. `fixedBranchMerge_native`
+proves push bound three structurally, using the generic automaton lemma for
+the word subtraction. The additional merge stock is `3*fixedMergeCost`, linear
+in word payload and counters. The theorem preserves the original complete
+time bill and exact final physical bank, including borrowed generator data
+and output tails. No supplied execution or numerical callback is used.
+
+Guarded checks pass at 1385.6 MiB (generic stream automata), 1941.3 MiB
+(combined branches), 1947.9 MiB (single-RHS producer) and 2043.8 MiB (complete
+merge). The initial module build passes (4329 jobs, 4.5 GiB combined peak).
+Next certify the repeated real-scalar stream with one per-word numerical
+reserve, then compose scalar preparation/routing/retirement and input/output
+weighting into the actual cached interior execution. Repeated scalar
+multiplication time must not be used as whole-batch scratch. Complete interior
+stock, selected geometry/amortization, boundary/recovery/publication and
+tensor/R4 restoration remain open. S4 remains incomplete; kappa is unchanged.
+The compatibility build passes with actual cached interior/preparation callers
+(14194 jobs, 1.0 GiB combined peak). The scoped axiom audit passes for 324880
+declarations at 3126.7 MiB.
