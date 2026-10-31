@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3370 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3371 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19771,3 +19771,39 @@ ABI). Combined build with the prepared numerical fast bounds and existing
 exposed-core driver passes (15880 jobs, 2.7 GiB combined peak); the scoped
 audit passes for 337538 declarations at 3422.9 MiB. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: complete shared local-control gather lifecycle
+
+`sharedPackedReplicaGather_exec` is one fixed 126-tape program: it generates
+local binary-origin sweep controls once, runs the retained packed-row scan for
+every RHS, then erases the controls. It returns exactly the original state
+with the certified reverse-replica cell rows prepended to its destination.
+Packed source and borrowed suffix, original coordinate packets/count, scalar
+headers, replica counter, restoration archive, left stacks and streams restore.
+No ready unary control tape or supplied gather execution is assumed.
+
+The coordinate-width obligations are only `w`, `span`, and `span*w` below
+`2^V`; they do not involve the number of replicas. Thus local gather coordinates
+stay separate from the solver's original ambient coordinates.
+`sharedPackedReplicaGatherCost_eq` puts all binary decoding in the one-time
+`preparedOriginAdvanceCost V span w B` charge. The repeated bill is
+`N*(B*(14*L*w+25)+30*span*w+6*L*w+9*L+50)`.
+`sharedPackedReplicaGatherCost_le` bounds it, including lifecycle cleanup, by
+that shared setup plus `100*N*(B*L*w+span*w+1)` for positive dimensions.
+There is no repeated decoder or ambient-period factor.
+
+Next compose gather and numerical work in disjoint placed banks. Prepare the
+numerical cache with an initially empty RHS, execute the local gather, and use
+the existing `takePrefix` to hand off exactly the generated RHS prefix while
+preserving both bank suffixes. The original ambient numerical packets can then
+remain untouched while the gather uses local offsets. The register budget can
+hold a 126-port gather bank and a 121-port numerical bank within the existing
+325-port supplier workspace, with spare control tapes. This placement and the
+handoff execution still need proof; it is not yet a combined solver theorem.
+Boundary/residual/recovery batching, publication and tensor/R4 restoration also
+remain open.
+
+The guarded module check passes at 2104.9 MiB. The combined build with the
+prepared numerical fast bounds and existing exposed-core driver passes
+(15881 jobs, 2.7 GiB combined peak); the scoped axiom audit passes.
+S4 remains incomplete; kappa is unchanged.
