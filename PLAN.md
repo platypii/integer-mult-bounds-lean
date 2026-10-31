@@ -17033,3 +17033,25 @@ build passes (6697 jobs). Next carry this certificate through the sealed selecte
 transpose and transfer it to archive stock. Generated S4 supplier readiness,
 complete-key setup reuse, tensor/layout composition and final audits remain
 open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the sealed selected radix supplier has bounded workspace
+
+`TotalWithin.runs` transfers the complete supplier certificate through sealed
+tape/state relabeling. Generic `within_recast` and `margin_recast` reason over
+arbitrary counts before instantiating the supplier; the huge concrete counts
+remain sealed. A fixed cutoff is chosen from the already proved numerical
+fallback theorem, so the public bounded run has no cutoff or execution premise.
+
+The bounded halting execution supplies every-prefix invariance to the existing
+`Total.runs`, retaining its exact original rounded time budget, exact transpose
+and restored private banks. The guarded file check peaks at 2525.3 MiB and the
+guarded target build passes (6702 jobs).
+
+The archive uses the larger binary interchange chain, so selected radix-root
+space alone does not yet close archive stock: physical binary radix preparation,
+root-header generation, crop and recovery, shared placement and rectangular
+width dispatch still need their bounded certificates. The existing pure
+`BinaryRadixRangeRuntimeBudget.root_volume_bound` supplies the fixed prime-squared
+volume conversion. Generated S4 supplier readiness, complete-key setup reuse,
+tensor/layout composition and final audits also remain open.
+S4 is incomplete; kappa is unchanged.
