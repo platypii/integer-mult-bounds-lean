@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.M8.RevMachine.Rev97Node
 public import IntegerMultBounds.MathlibTM2.M8.RevMachine.CounterCostBounds
+public import IntegerMultBounds.MathlibTM2.M8.RevMachine.NodeSplitBounds
 
 /-!
 # The frames' own budgets
@@ -131,18 +132,8 @@ structure ViewSizes (σ : Frame (pcs N) capacity) : Prop where
   hrole : ∀ i, (hdr (roleView N σ.b σ.n σ.v) i).length ≤ 2 * volume prime σ.v
 
 theorem viewSizes (σ : Frame (pcs N) capacity) (hd : N.roleCount ∣ σ.v.rows) : ViewSizes σ := by
-  have hmid := NodeSplit.mid_volume N (b := σ.b) (n := σ.n) (v := σ.v) σ.hw
-  have hW := NodeSplit.roleCount_pos N σ.hpos hd
-  have hr := RecursiveInterchangeLayout.role_volume_mul prime N.roleCount (midView N σ.b σ.n σ.v) hd
-  have hrole : volume prime (roleView N σ.b σ.n σ.v) ≤ volume prime σ.v := by
-    rw [← hmid, ← hr]; exact Nat.le_mul_of_pos_right _ hW
-  have hmp := NodeSplit.mid_positive N (b := σ.b) (n := σ.n) σ.hpos
-  have hrp := NodeSplit.roleView_positive N (b := σ.b) (n := σ.n) σ.hpos hd
-  refine ⟨hmid, hrole, hmp, hrp, fun i => ?_, fun i => ?_⟩
-  · have := RecursiveRowsNode.header_length _ hmp _ (Routines.hdr_headers _) i
-    rwa [hmid] at this
-  · have := RecursiveRowsNode.header_length _ hrp _ (Routines.hdr_headers _) i
-    omega
+  have h := NodeSplit.viewBounds N σ.v σ.hpos σ.b σ.n σ.hb σ.hw hd
+  exact ⟨h.mid,h.role,h.midPos,h.rolePos,h.middleHeaders,h.roleHeaders⟩
 
 /-- The constant of the split. -/
 def splitK (N : RevNetwork) : ℕ :=
