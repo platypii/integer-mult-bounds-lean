@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3308 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3310 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18931,3 +18931,32 @@ shared payload counter and certified outputs, then bound generated-state costs
 uniformly for the selected class. Selected analytic/class separation facts,
 whole exposure/publication, seam lifecycle and R4/tensor restoration remain
 open. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: runtime scans retain existential row certificates
+
+`IterWithinSpec` and `scanP_exec_within_invariant` extend the restoring counted
+scan to arbitrary indexed predicates on register contents, independent of the
+two scan counters. The loop constructs its trace and final invariant together,
+so outputs produced by earlier suppliers can be existential witnesses in the
+invariant rather than a register file fixed before execution. It restores the
+count word and blank saved bank, preserves input/output/left storage and user,
+and proves time at most `N*(bodyCost+5)+4`, boundary stock at most the shared
+bound and execution-wide stock at most that bound plus depth plus one body
+reserve. The existing pop/push stock identity is reused as public
+`mn_popPush_size`, with no duplicate arithmetic proof.
+
+`SupplierInputPlan.Ready` now determines master-copy, descriptor-header,
+input-setup time and stock costs from the mathematical job alone. The complete
+`coreStep_exec` uses these exact identities, removing its generated physical
+ready-state witness from both resource bounds. This permits class bounds to be
+proved over jobs before choosing actual execution outputs or generated states.
+
+Guarded checks peak at 1414.5 MiB (invariant scan), 3370.5 MiB (ready-state cost
+identities) and 3411.4 MiB (updated actual core body). The combined core/scan
+target build passes (15638 jobs, 3.5 GiB combined peak). The scoped axiom audit
+passes for 336247 declarations at 3388.9 MiB. Next instantiate the
+semantic invariant with consumed origin/payload suffixes and accumulated row
+certificates, and bound the job-only costs over the selected movement class.
+Selected analytic/class separation facts, whole exposure/publication, seam
+lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa is
+unchanged.

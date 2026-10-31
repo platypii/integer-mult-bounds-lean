@@ -27,7 +27,7 @@ theorem IterStockSpec.toIterSpec {p : Pr P T Q A U} {a t : Fin T} {Ψ : ℕ → 
   obtain ⟨v',R',m,hu,hm,he,ha,ht,hR,_⟩ := h j hj v S hS
   exact ⟨v',R',m,hu,hm,he,ha,ht,hR⟩
 
-private theorem popPush_size {a t : Fin T} (hat : a ≠ t) (x : Fin (A+4)) (xs : List (Fin (A+4)))
+theorem mn_popPush_size {a t : Fin T} (hat : a ≠ t) (x : Fin (A+4)) (xs : List (Fin (A+4)))
     (v : HS T Q A U) (S : Stacks T A) (ha : S.R a = x::xs) :
     mnSize (Host.mk v {S with R := Function.update (Function.update S.R a xs) t (x::S.R t)}) =
       mnSize (Host.mk v S) := by
@@ -86,7 +86,7 @@ private theorem scanP_loop_stock {a t : Fin T} (hat : a ≠ t) {p : Pr P T Q A U
     have ha₁' : F₁.R a = xs := by simpa [F₁,S₀,hat] using ha₁
     obtain ⟨vf,F,n,hfinal,hw⟩ := ih (j+1) {v₁ with flag := xs.head?.isSome} F₁ ha₁'
       (by simp at hN; omega) hR₁ rfl
-    have hsize := popPush_size hat x xs v S ha
+    have hsize := mn_popPush_size hat x xs v S ha
     change mnSize (Host.mk v S₀) = mnSize (Host.mk v S) at hsize
     have hmono' : mnSize (Host.mk v S₀) ≤ mnSize (Host.mk v₁ F₁) := hmono
     have hfinal' : mnSize (Host.mk v₁ F₁) ≤ mnSize (Host.mk vf F) := hfinal
@@ -163,7 +163,7 @@ private theorem scanP_loop_bounded_stock {a t : Fin T} (hat : a ≠ t) {p : Pr P
     let S₀ : Stacks T A := {S with R := Function.update (Function.update S.R a xs) t (x::S.R t)}
     have hpop : (popPush a t : Act T Q A U).run (Host.mk v S) = Host.mk {v with sym := some x} S₀ := by
       simp [popPush,Action.run,ha,update_rt,S₀,hat.symm]
-    have hsize := popPush_size hat x xs v S ha
+    have hsize := mn_popPush_size hat x xs v S ha
     change mnSize (Host.mk v S₀) = mnSize (Host.mk v S) at hsize
     obtain ⟨v₁,R₁,m,hu,hm,he,ha₁,ht₁,hR₁,hnext⟩ := hp j (by simp at hN; omega)
       {v with sym := some x} S₀ (by intro k hka hkt; simpa [S₀,hka,hkt] using hR k hka hkt) (by change mnSize (Host.mk v S₀) ≤ bound; rw [hsize]; exact hbound)

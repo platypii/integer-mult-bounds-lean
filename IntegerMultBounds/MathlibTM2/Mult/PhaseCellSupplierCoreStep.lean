@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedRoutedSupplier
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSupplierReadyCosts
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReadSupplierJobEndpoints
 
 /-! A fixed core step reads its origin, consumes one routed batch, and restores
@@ -64,14 +64,14 @@ theorem coreStep_exec (plan : SupplierSetupPlan input) (producer : PackedProduce
     ∃ H v' n, ∃ rows : Fin 1 → Fin B → List GaussianInt,
       input.Ready r H ∧ v'.user = v.user ∧
       n ≤ readSupplierEndpointsCost V r.a (r.b-r.a)+
-        ((6*r.inputPayload.length+6)+(timeCost r+(input.timeCost r H+
+        ((6*r.inputPayload.length+6)+(timeCost r+(r.inputTimeCost+
           (producer.timeCost (U := U) [r]+20*(descriptorScheduleTape producer.work PackedNormalizedJob.words [r]).length+7)+
           (2*(∑ i, (r.words i).length)+651))+retirementCost r)+(2*r.inputPayload.length+2))+
         (2*(r.a+r.b)+5) ∧
       (∀ i j, (rows i j).length = L) ∧ (∀ i : Fin 1, r.ExactRowOutput J (List.ofFn (rows i))) ∧
       ExecWithin body (fun d state => mnSize state+d ≤ mnSize (Host.mk v S)+depth+
         (3*readSupplierEndpointsCost V r.a (r.b-r.a)+
-          (2*(6*r.inputPayload.length+6)+(stock r+(input.stock r H+
+          (2*(6*r.inputPayload.length+6)+(stock r+(r.inputStock+
             (31*(descriptorScheduleTape producer.work PackedNormalizedJob.words [r]).length+9+
               (C+1)*producer.workspace (U := U) [r])))))) depth
         (plan.coreStep producer width halo origins binary work endpointSaved endpointTmp count source saved tmp)
@@ -101,6 +101,8 @@ theorem coreStep_exec (plan : SupplierSetupPlan input) (producer : PackedProduce
     (by rw [hE saved (by first | assumption | exact Ne.symm (by assumption)) (by first | assumption | exact Ne.symm (by assumption)) (by first | assumption | exact Ne.symm (by assumption))]; exact hsaved)
     (by rw [hE tmp (by first | assumption | exact Ne.symm (by assumption)) (by first | assumption | exact Ne.symm (by assumption)) (by first | assumption | exact Ne.symm (by assumption))]; exact htmp)
     hsourceOff hpayloadOff (by first | assumption | exact Ne.symm (by assumption)) (by rw [hframe producer.src hsrcMem]; exact hk) C depth hpush hbody
+  rw [hheaders.timeCost_eq] at hn₂
+  rw [hheaders.stock_eq] at he₂
   let output := (List.ofFn fun i => (List.ofFn fun j => cstream A r.W (rows i j)).flatten).flatten
   let G : Stacks T A := {E with R := (Function.update (Function.update E.R source tail) producer.result
     (output++E.R producer.result))}
