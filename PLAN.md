@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3281 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3284 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18564,3 +18564,27 @@ The guarded file check passes at 3354.9 MiB. The target build passes (15369 jobs
 still need to be derived for the concrete selected family, followed by physical
 header setup, exposure/consumer composition, publication, seam lifecycle and
 R4/tensor restoration. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: selected packed bounds derive workspace and ring sizing
+
+`weightWorkspaceWidth_packed_fits` proves that the existing numerical weight
+workspace covers packed factory coordinates, packet width and endpoint symbol
+volume. It reuses the coefficient workspace bound and symbol-volume lemma,
+including the stronger four-band controller margin required by the factory.
+
+`PackedHaloParameterBounds.ofAnalytic` constructs all binary workspace-fit
+fields from analytic assumptions and ordinary interval inequalities, choosing
+`packedHaloWorkspaceWidth` from the existing precision formula. This removes
+independent `hfitV`, `hwide`, `hwV`, `hcoords` and `hunits` caller obligations.
+`selectedPackedHaloParameterBounds` then supplies the selected phase-gap bound
+from `Sizes.Big` and ring padding from `haloInverseRingLog_fits`; selected
+precision and geometry are no longer independently assumed sizing certificates.
+
+Guarded checks peak at 2077.4 MiB (geometry), 3300.9 MiB (analytic constructor),
+and 3300.7 MiB (selected specialization). The target build passes (15152 jobs,
+3.4 GiB combined peak). The scoped axiom audit passes for 332086 declarations
+at 3312.7 MiB. Analytic band/operand/dominance facts, proper-interval separation
+and the common packet-width bound still need concrete selected-family
+instantiation. Physical selected header setup, exposure/consumer composition,
+publication, seam lifecycle and R4/tensor restoration also remain open. S4 is
+incomplete; kappa is unchanged.
