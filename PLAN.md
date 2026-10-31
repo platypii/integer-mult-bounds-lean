@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3470 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3476 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21004,3 +21004,46 @@ The complete publication caller, recovery, executed key scheduling, tensor/R4
 restoration and global selected acceptance remain open. S4 remains incomplete;
 kappa is unchanged.
 The scoped axiom audit passes for 45336 declarations at 2130.8 MiB.
+
+### S4 checkpoint: route and publish compact results with retained symbol volume
+
+`PhaseCellSymbolReplicaPublicationStep` scatters one zero-padding compact result
+and transfers its completed ambient line using the retained symbol-volume
+counter directly. `PhaseCellSymbolReplicaPublicationLoop` and `Batch` lift this
+actual step through the fixed counted loop and restore publication order.
+The existing scatter program, source-suffix and output-length proofs are reused;
+no row-count header, unary division or generated row-count product is required.
+
+`PhaseCellSymbolEncodedPublication.symbolEncodedPublication_exec_within`
+constructs publication records from the actual bounded encoded solver stream,
+then certifies the complete physical batch. It costs `N*(41*V+13)+4`, at most
+`54*N*V+4` for positive line volume V, and has native push bound two with the
+corresponding whole-bank stock certificate.
+
+`PhaseCellRoutedEncodedPublication` composes retained-count ambient reversal
+with this publication. One execution consumes the forward ambient prefix and
+reverse-order compact solver prefix, preserving both borrowed suffixes and all
+unrelated state. The returned records have ambient order exactly the reverse of
+the input bank. Combined time is at most `73*N*V+10` for V positive; the actual
+trace has stock allowance twice its named linear movement bill.
+
+`PhaseCellRoutedGatheredPublication` instantiates this composite program in the
+actual disjoint gather/solver placement. It consumes the solver's tape 93,
+routes ambient tape 124 into gather tape 110, uses retained count 121 and symbol
+volume 123, and restores every other tape except the consumed replica clock.
+The records' ambient lines are exactly the packed halos for `Fs.reverse`, so
+publication now agrees with the numerical solver's output ABI. No additional
+registers, numerical row oracle or supplied execution witness are introduced.
+The window-size page and generated scatter page remain explicit preparation
+hypotheses; next generate these in the composed caller using the retained
+origin packet and existing unary-product/control factories, then compose with
+the complete generated numerical solve and transfer its error certificate.
+
+Guarded checks pass at 2065.2 MiB (step), 2066.7 MiB (loop), 2061.0 MiB (batch),
+2064.4 MiB (encoded publication), 2088.3 MiB (routing/publication composition)
+and 2096.0 MiB (actual placement). Final definitions and the combined linear
+cost bound also pass in the compatibility build with generated gathered
+arithmetic, shared controls and global core local stock (14448 jobs, 2.7 GiB
+combined peak). Recovery, executed key scheduling, tensor/R4 restoration and
+global selected acceptance remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327223 declarations at 3163.4 MiB.
