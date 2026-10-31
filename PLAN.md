@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3385 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3387 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19977,3 +19977,44 @@ and exact initial bank are derived once. The full cached numerical batch's
 stock certificate remains open, as do initial key/scalar generation, halo
 publication/boundary/recovery, selected core/halo amortization and tensor/R4
 restoration. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: complete compiled pointwise-product core stock
+
+`pwPreparation_spec` factors the existing header, constant and operand-preparation
+executions together with their exact resulting `RecReady` bank. The original
+`runs_pwCoreWith` correctness proof now reuses this construction. The new helper
+uses default heartbeat and recursion limits; the existing proof's limits and
+all executable definitions remain unchanged.
+
+`wordBankStock_updates_le` accounts for an arbitrary structural list of word-bank
+assignments. `pwPreparedBank_stock_le` applies it separately to decoding, constants
+and operand preparation, yielding shared scalar stock plus `4*(|F|+|G|)`.
+Splitting these phases avoids a large whole-bank definitional comparison; no
+concrete tape-bank enumeration or increased proof limits are used.
+
+`ringCore_exec_within` composes those actual setup executions, the certified
+record loop, and actual finish execution into one simultaneous stock certificate
+for the original compiled `pwCoreWith` program. Exact archive stock accounts for
+cleanup as well as the live loop. The allowance contains only scalar dimensions,
+header length and encoded operand length, never numerical data or an assumed
+record execution. `ringCoreWorkspace_affine` proves that its workspace ledger is
+one shared allowance plus `750*X`, where X is encoded operand volume. Record
+scratch is charged once, independently of batch count. The complete spectator
+bank is retained in the initial stock once.
+
+Execution uniqueness attaches this trace to the existing correctness execution,
+reusing its original time bound and exact cleaned output bank. Thus neither the
+complete cost ledger nor the numerical/cleanup correctness is reproved.
+
+Guarded checks pass at 1996.8 MiB (shared preparation/refactored correctness),
+1394.1 MiB (structural word assignments), 1919.2 MiB (prepared-bank pricing), and
+1949.2 MiB (full core stock). The compatibility rebuild with existing and new
+cached callers passes (14186 jobs, 32.7 GiB combined peak, 4.5 minutes). The
+scoped axiom audit passes for 324838 declarations at 3125.1 MiB.
+
+Next lift the core certificate through the ring host's sealing/unsealing and
+coefficient format conversions, then through the short-convolution/cached
+numerical caller. Complete numerical stock is not yet supplied at the S4
+interior boundary. Initial key/scalar generation, halo publication and
+boundary/recovery, final core/halo amortization and tensor/R4 restoration also
+remain open. S4 is incomplete; kappa is unchanged.

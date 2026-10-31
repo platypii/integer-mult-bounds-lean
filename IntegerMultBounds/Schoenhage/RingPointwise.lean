@@ -292,17 +292,33 @@ def pwCost (p _d l _K w H M X : ℕ) : ℕ :=
     50 * X + 100 * 2 ^ l + 60 * l + 10 * (p + l + w) + 6 * (wOf p l w * 2 ^ l) + 4 * 2 ^ l * (wOf p l w + 2) +
     10 * wOf p l w + 1000
 
-set_option maxHeartbeats 32000000 in
-theorem runs_pwCoreWith {dec : Cmd 𝕌} {hdr : List Bool} {p l w : ℕ} {fs gs : List (Rec (2 ^ l))}
-    (hdec : HdrDecodes dec hdr p l w) (hw : p + 2 ≤ w) (hlen : fs.length = gs.length)
-    (hf : ∀ f ∈ fs, DiskGrid p f.1 f.2) (hg : ∀ g ∈ gs, DiskGrid p g.1 g.2) :
-    Runs (pwCoreWith dec) (startBank hdr (array w fs) (array w gs))
-      (· = Function.update (startBank hdr (array w fs) (array w gs))
-        zO (reg (array w (List.zipWith (prodRec p) fs gs))))
-      (pwCost p 0 l 0 w hdr.length fs.length (array w fs).length) := by
-  have hw1 : 1 ≤ w := by omega
-  set F := array w fs
-  set G := array w gs
+/-- The ordinary word bank immediately before the shared record loop. -/
+def pwPreparedBank (p l w : ℕ) (hdr F G : List Bool) : Fin 𝕌 → WTape :=
+  let τ₀ := startBank hdr F G
+  let τ₁ := Function.update (Function.update (Function.update τ₀ iP (reg (ones p))) iL (reg (ones l)))
+    iW (reg (ones w))
+  let τ₂ := constBank p l w τ₁
+  Function.update (Function.update (Function.update (Function.update (Function.update
+    (Function.update τ₂ iW (reg (ones (2 * 2 ^ l)))) iP ⟨[], cut w F⟩) iL ⟨[], cut w G⟩)
+    zF ⟨[F], []⟩) zG ⟨[G], []⟩) zO ⟨[[]], []⟩
+
+set_option maxRecDepth 1000 in
+/-- The three actual setup executions and the resulting record readiness share
+one construction. Consumers need no supplied preparation execution. -/
+theorem pwPreparation_spec {dec : Cmd 𝕌} {hdr : List Bool} {p l w : ℕ}
+    (hdec : HdrDecodes dec hdr p l w) (hw1 : 1 ≤ w) (F G : List Bool) :
+    let τ₀ := startBank hdr F G
+    let τ₁ := Function.update (Function.update (Function.update τ₀ iP (reg (ones p))) iL (reg (ones l)))
+      iW (reg (ones w))
+    let τ₂ := constBank p l w τ₁
+    let τ₃ := pwPreparedBank p l w hdr F G
+    Runs dec τ₀ (· = τ₁) (headerCost p (2 ^ l) w hdr.length) ∧
+    Runs constAll τ₁ (· = τ₂) (constCost p l w) ∧
+    Runs pwPrep τ₂ (· = τ₃)
+      (60 * 2 ^ l + 60 * l + 4 * (p + l + w) + 10 * (F.length + G.length) + 400 +
+        2 * (clen (cut w F) + clen (cut w G))) ∧
+    RecReady (wOf p l w) (2 ^ l) w (p + l) (wOf p l w * 2 ^ l) τ₃ := by
+  dsimp only
   set τ₀ := startBank hdr F G
   have hc₀ : Clean τ₀ := by
     unfold Clean; funext i
@@ -346,6 +362,27 @@ theorem runs_pwCoreWith {dec : Cmd 𝕌} {hdr : List Bool} {p l w : ℕ} {fs gs 
       (by tsimp [τ₃, τ₂, constBank, τ₁, τ₀, startBank]) (by tsimp [τ₃, τ₂, constBank, τ₁, τ₀, startBank])
       (by tsimp [τ₃, τ₂, constBank, τ₁, τ₀, startBank]) (by tsimp [τ₃, τ₂, constBank, τ₁, τ₀, startBank])
       (by tsimp [τ₃, τ₂, constBank, τ₁, τ₀, startBank]) (by tsimp [τ₃, τ₂, constBank, τ₁, τ₀, startBank])
+  exact ⟨s1,s2,s3,hR₃⟩
+
+set_option maxHeartbeats 32000000 in
+theorem runs_pwCoreWith {dec : Cmd 𝕌} {hdr : List Bool} {p l w : ℕ} {fs gs : List (Rec (2 ^ l))}
+    (hdec : HdrDecodes dec hdr p l w) (hw : p + 2 ≤ w) (hlen : fs.length = gs.length)
+    (hf : ∀ f ∈ fs, DiskGrid p f.1 f.2) (hg : ∀ g ∈ gs, DiskGrid p g.1 g.2) :
+    Runs (pwCoreWith dec) (startBank hdr (array w fs) (array w gs))
+      (· = Function.update (startBank hdr (array w fs) (array w gs))
+        zO (reg (array w (List.zipWith (prodRec p) fs gs))))
+      (pwCost p 0 l 0 w hdr.length fs.length (array w fs).length) := by
+  have hw1 : 1 ≤ w := by omega
+  set F := array w fs
+  set G := array w gs
+  set τ₀ := startBank hdr F G
+  set τ₁ := Function.update (Function.update (Function.update τ₀ iP (reg (ones p))) iL (reg (ones l)))
+    iW (reg (ones w))
+  set τ₂ := constBank p l w τ₁
+  set τ₃ := Function.update (Function.update (Function.update (Function.update (Function.update
+      (Function.update τ₂ iW (reg (ones (2 * 2 ^ l)))) iP ⟨[], cut w F⟩) iL ⟨[], cut w G⟩)
+      zF ⟨[F], []⟩) zG ⟨[G], []⟩) zO ⟨[[]], []⟩
+  obtain ⟨s1,s2,s3,hR₃⟩ := pwPreparation_spec hdec hw1 F G
   set ps := List.zip (fs.map (lsbPairs w)) (gs.map (lsbPairs w))
   have hpf : ps.map Prod.fst = fs.map (lsbPairs w) := by rw [List.map_fst_zip]; simp [hlen]
   have hpg : ps.map Prod.snd = gs.map (lsbPairs w) := by rw [List.map_snd_zip]; simp [hlen]

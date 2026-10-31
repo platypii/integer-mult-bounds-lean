@@ -50,4 +50,16 @@ theorem wordBankStock_update (τ : Fin t → WTape) (i : Fin t) (x : WTape) :
       simp only [Function.update_of_ne hji])
   simpa only [wordBankStock,Fin.sum_univ_one] using h
 
+/-- A structural assignment list bounds a bank without enumerating its ports. -/
+theorem wordBankStock_updates_le (τ : Fin t → WTape) (xs : List (Fin t × WTape)) :
+    wordBankStock (xs.foldl (fun σ x => Function.update σ x.1 x.2) τ) ≤
+      wordBankStock τ+(xs.map (fun x => clen x.2.left+clen x.2.right)).sum := by
+  induction xs generalizing τ with
+  | nil => simp
+  | cons x xs ih =>
+    have h := wordBankStock_update τ x.1 x.2
+    have hi := ih (Function.update τ x.1 x.2)
+    simp only [List.foldl_cons,List.map_cons,List.sum_cons]
+    omega
+
 end IntegerMultBounds.MathlibTM2.Host.WordCmd
