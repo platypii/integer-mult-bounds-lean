@@ -51,4 +51,17 @@ theorem coreGatherLength_le (s width radius L : ℕ) (hw : 0 < width)
   · have hm := Nat.mod_lt s hw
     omega
 
+/-- Positive-width cores have at most one index per ambient coordinate. -/
+theorem coreIndices_length_le (s width : ℕ) (hw : 0 < width) : (coreIndices s width).length ≤ s := by
+  have hm : s ≤ s*width := by simpa using Nat.mul_le_mul_left s (show 1 ≤ width by omega)
+  have hnum : s+width-1 < (s+1)*width := by
+    have hsub : s+width-1 < s+width := by omega
+    nlinarith only [hsub,hm]
+  simp only [coreIndices,List.length_range]
+  exact Nat.le_of_lt_succ ((Nat.div_lt_iff_lt_mul hw).mpr hnum)
+
+theorem coreGatherIndices_length_le (s width radius L : ℕ) (hw : 0 < width) :
+    (coreGatherIndices s width radius L).length ≤ s :=
+  (List.length_filter_le ..).trans (coreIndices_length_le s width hw)
+
 end IntegerMultBounds.NLogN.PhaseCellMatrix

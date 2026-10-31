@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3328 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3332 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19253,3 +19253,25 @@ modules for the exact same scalar generator, then absorb the remaining shared
 control bills and instantiate class pricing. Selected coefficient/dominance,
 ordinary header/placement instantiation, publication, seam lifecycle and
 R4/tensor restoration remain open. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: selected fixed-body scalar control pricing
+
+The fixed core body's scalar time and stock charges now reuse the existing
+selected raw-header polynomial. `selectedCoreCosts_le_shared_add_linear`
+combines those bounds with ordinary setup readiness and the actual body's
+producer, payload and replica bills. It assumes the selected job's canonical
+header width and linear width bounds; their concrete instantiation remains open.
+Structural core-count bounds price generated origin preparation by a fixed
+multiple of `t^3`. Exact class counter/preparation/retirement identities expose
+the remaining payload and replica charges. A list-level volume lemma absorbs
+scalar control totals for up to `2*t` jobs, including any fixed polynomial
+precision factor, into selected volume `T`.
+
+The guarded combined target build passes (15882 jobs, 13.1 GiB combined peak).
+Single-file checks peak at 3425.7 MiB (generic scalar pricing), 3396.3 MiB
+(selected scalar pricing), 3374.7 MiB (list volume) and 3400.2 MiB
+(class preparation pricing). The scoped axiom audit passes. These bounds do not
+complete selected class instantiation or S4. Next discharge concrete selected
+job widths, numerical data and ordinary preparation/placement premises, then
+join execution and pricing at class level. Publication, the shared full-line
+seam lifecycle and tensor/R4 restoration remain open; kappa is unchanged.
