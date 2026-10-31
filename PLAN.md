@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3460 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3463 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20852,3 +20852,39 @@ with the global schedule. The existing prepared caller still starts from its
 supplied-page bank until that composition is proved. Recovery/seams and tensor/
 R4 restoration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 325701 declarations at 3149.6 MiB.
+
+### S4 checkpoint: actual generated-page gathered numerical caller
+
+`replicaWeightFactoryInputBank` contains ordinary metadata, a saved unary
+replica count, raw RHS/borrowed storage and binary origin packets, with no
+numerical weight page. `replicaWeightFactoryBank_exec_within` generates the
+page and reaches exactly `replicaInteriorCacheInputBank`, discharging all
+coefficient/table freshness and dimensional hypotheses from that initial bank.
+`generateReplicaWeightPageCost_replicas` proves the factory cost is its shared
+zero-replica cost plus 2*N: coefficient generation is not repeated across RHSs.
+
+`generatedReplicaInteriorBatch_exec_within` embeds that actual factory into the
+121-register cache bank and sequences the existing complete prepared caller.
+`generatedGatheredReplicaInteriorBatch_exec_within` embeds it into the disjoint
+solver bank before cache preparation/shared gathering/handoff/numerical solve.
+The latter now starts with the page-free metadata bank and packed RHS source.
+Both retain the full existing accuracy, bounded encoded output, restored RHS/
+borrowed data and cache lifecycle facts. The gathered caller also restores its
+entire gathering bank. Structural embedding counts spectators once; no new
+registers, execution callbacks, precomputed page or numerical readiness oracle
+are introduced.
+
+The same exact generated page is copied for all RHS/cell pairs. The initial
+factory-origin prefix is consumed, while the subsequent ordinary solver origin
+packets remain available for their established retirement lifecycle. Shared
+factory time/stock is explicit; the previous repeated numerical/gather traffic
+allowance is unchanged apart from the linear replica-header setup.
+
+Guarded checks pass at 2139.1 MiB (factory bank endpoint), 2133.3 MiB (generated
+prepared caller), and 2136.0 MiB (generated gathered caller). The compatibility
+build with selected halo stock passes (14358 jobs, 4.4 GiB combined peak).
+Next attach selected shared-factory time/stock bounds and complete the
+supplier/key schedule, keeping distinct endpoint-key multiplicities explicit.
+Recovery/seams and tensor/R4 restoration remain open. S4 is incomplete;
+kappa is unchanged.
+The scoped axiom audit passes for 325715 declarations at 3150.2 MiB.
