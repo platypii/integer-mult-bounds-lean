@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedExactTileSchedule
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedProducerPlan
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellArchiveTileSource
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConditionalArchiveTile
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCoreTileRows
@@ -52,14 +52,16 @@ theorem packedExactTileProduction_exec
             (mk v S) n (mk v' {S with R := (Function.update S.R result
               ((List.ofFn fun j => cstream (prime+K) W (List.ofFn fun i => tile.padded i j).flatten).flatten))}) := by
   dsimp only
-  obtain ⟨v₁,n₁,tileRows,hu₁,hn₁,he₁,hlen,hcert,hstock⟩ := packedExactTileSchedule_exec (body := body)
-    hR hQ hA work hwork src saved count tmp spare result clock savedClock hreg hsep records W hwidth v S
-    t ht hp htarget hlocal J hJ (2^d) L hreplicas hcore rest hblank hleft hscratch hsource hclock hsaved hsavedClock
+  let producer : PackedProducerPlan T Q :=
+    ⟨hR,hQ,work,hwork,src,saved,count,tmp,spare,result,clock,savedClock,hreg,hsep⟩
+  obtain ⟨v₁,n₁,tileRows,hu₁,hn₁,he₁,hlen,hcert,hstock⟩ := producer.exec body hA
+    records W hwidth t ht hp htarget hlocal J hJ (2^d) L hreplicas hcore rest v S
+    ⟨hblank,hleft,hscratch,hsource,hclock,hsaved,hsavedClock⟩
   let raw := (List.ofFn fun i => (List.ofFn fun j => cstream (prime+K) W (tileRows i j)).flatten).flatten
   let M : Stacks T (prime+K) := {S with R := Function.update S.R plan.src raw}
   have he₁' : Exec body (descriptorSolverSchedule src saved tmp clock savedClock
       (packedNormalizedDescriptorStep work src saved count tmp spare result hR hQ)) (mk v S) n₁ (mk v₁ M) := by
-    simpa only [hresult,List.append_nil,M,hplanSrc] using he₁
+    simpa only [PackedProducerPlan.program,producer,hresult,List.append_nil,M,hplanSrc] using he₁
   have hready : plan.Ready W tileRows M := hbank.ready_source W tileRows
   have hr := hreg
   regs_ne hr
