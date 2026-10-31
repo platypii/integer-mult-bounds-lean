@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3394 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3397 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20113,3 +20113,34 @@ then the cached interior caller. The full S4 interior stock boundary, selected
 geometry/amortization, boundary/recovery/publication and tensor/R4 restoration
 remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 8434 declarations at 1947.0 MiB.
+
+### S4 checkpoint: fixed convolution workspace includes shared setup and retirement
+
+`ShortConvSetupStock.batchSetup_native` proves a structural push bound of three
+for actual unary product/padding and gamma-header generation. The generated
+word list's `clearWords_native` certificate has bound zero.
+
+`ShortConvBatchUnaryStock.batchFromUnary_prefix_exec_within` composes shared
+setup, the complete raw batch and retirement. Setup contributes three times
+its batch-independent native traffic bill; retirement adds no workspace.
+A separate actual trace and execution uniqueness reuse the original time and
+exact restored frame. Borrowed operand suffixes and output tails are preserved.
+
+`ShortConvFixedStock.exec_with_tails_within` discharges every fixed 117-tape
+layout obligation, starting from the ordinary raw-stream/unary-dimension bank.
+Its public `workspace C p l w M` is independent of raw operand lengths and is
+`3*batchSetupCost(p,l,w,2^l,2^l) + (C+1)*rpWorkspace(p,l,w,0)` plus
+`(1842*(C+1)+120)*(M*2^l*w) + 150*M + 48`.
+Here C bounds the static ring-program push count, independent of input batch
+dimensions. The theorem preserves the original `Fixed.cost`, numerical result,
+borrowed tails, user state and exact final frame. No numerical callback or
+execution is supplied and default proof limits are preserved.
+
+Guarded checks pass at 1929.6 MiB (setup), 4008.7 MiB (shared lifecycle) and
+1955.7 MiB (fixed adapter). The compatibility build with the actual cached
+interior and preparation cost callers passes (14185 jobs, 2.7 GiB combined
+peak). Next lift this fixed certificate through upper/lower triangular products,
+scalar stages and the actual cached numerical batch. Complete interior stock,
+selected geometry/amortization, boundary/recovery/publication and tensor/R4
+restoration remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 324826 declarations at 3125.2 MiB.
