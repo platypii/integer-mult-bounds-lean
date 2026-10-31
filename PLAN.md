@@ -16840,3 +16840,37 @@ all local frame fields and close the complete stage-2 transpose workspace theore
 then transfer it to selected archive stock. Generated S4 supplier/readiness,
 complete-key setup reuse, tensor/layout composition and final audits remain
 open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the complete recursive PR97 root has uniform linear workspace
+
+`raw_margin_of_padding` transfers a reserve from one padded bank to every raw
+padding of the same common bank. `GraphExists.volume_margin_raw` applies it to
+the actual finite graph bank, which contains common and blank private tapes.
+`RevHalf.ordinary_bank_margin` transfers frame entry's reserve to every leaf-loop
+or retirement bank, with the existing one-cell head-offset bound.
+
+`RevHalf.FrameReserve` collects pure coefficient inequalities. Its chosen
+`frameSpaceConstant` takes the maximum of preparation, leaf, split, segment,
+merge, call, finish and pop allowances; segment space uses the maximum over the
+fixed schedule. `RevHalf.frame_bounds` discharges every local frame field from
+the actual block certificates. The proof remains structural over its core.
+
+`RevHalf.frame_contract_within` closes strong induction using geometric child
+volume shrinkage and positive call ranks. Root and child frames have positive
+atom counts, so preparation uses its uniform positive-size volume bound. The
+resulting coefficient is independent of base atom width as well as atom count
+and recursion depth. `RevHalf.contract_within` instantiates the core-space
+predicate from the actual original-header stage-1 execution; no recursive
+execution or workspace oracle remains.
+
+`Stage2Machine.FamilyRootWithin.root_heads` applies that contract to the actual
+PR97 root with halt return address, bounding every reachable execution prefix.
+`root_hoare` combines the certificate with the already proved data semantics and
+runtime theorem: one genuinely halting execution returns the exact reversed
+interchange within the original time budget, with the same uniform workspace
+reserve.
+
+Remaining: carry the root certificate through the paid stage-2 initialization,
+selected transpose wrappers and archive stock interface. Generated S4 supplier
+readiness, complete-key setup reuse, tensor/layout composition and final
+execution/error/cost audits remain open. S4 is incomplete; kappa is unchanged.
