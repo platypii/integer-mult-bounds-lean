@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3439 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3441 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20513,3 +20513,29 @@ remain open. S4 is incomplete; kappa is unchanged.
 After final documentation edits, the staged target rebuild passes (4495 jobs,
 2.6 GiB combined peak). The scoped axiom audit passes for 325069 declarations
 at 3132.2 MiB with the actual gathered numerical/preparation import closure.
+
+### S4 checkpoint: staged arithmetic in the physical cache bank
+
+`cachedStagedCell_sized_exec_within` lifts the actual staged-cell trace into the
+121-register cache bank using `exec_emb_within_stock`. The workspace allowance
+is relative to the whole initial bank: all four high cache/clock/scratch
+registers and any other spectators count once. It returns the exact projected
+published output and preserves the four high registers, without another
+register enumeration or an execution callback.
+
+`prepareBatchRuntime_native` and `prepareBatchRuntime_exec_within` cover the
+actual payload swap and ordinary runtime-header installation. Their allowance
+is four times the existing linear routing/header cost. The push bound is four,
+not three: unary multiplication by three keeps a symbol while emitting three.
+The initial lower bound was rejected by the checker and corrected structurally.
+
+Single-file checks pass at 2085.9 MiB (embedded staged arithmetic) and 1938.2 MiB
+(runtime preparation). The compatibility build with the actual gathered
+numerical/preparation callers passes (14232 jobs, 3.8 GiB combined peak).
+The shared header/numerical-generator setup still needs a stock certificate
+before these pieces close `cachedGeneratedBatch`; its one-time numerical cost
+must remain separate from the linear replicated-page traffic. Next certify that
+setup, compose the actual cached caller, and close the interior stock boundary
+before the geometry/amortization gate. Recovery/seams and tensor/R4 restoration
+remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 325085 declarations at 3132.6 MiB.
