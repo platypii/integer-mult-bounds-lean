@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3467 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3468 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20933,8 +20933,9 @@ those constructed records into the existing physical replica publication
 program and its native stock theorem. It consumes exactly the solver prefix,
 updates the packed ambient replica lines, restores source/output suffixes and
 all unrelated registers, and releases its replica counter/accumulator. The
-metadata/control tape hypotheses are explicit for subsequent wiring to the
-restored shared-gather controls. No numerical rows or publication execution
+metadata/control tape hypotheses are explicit for subsequent wiring to a
+shared scatter-control factory. Gather advances require conversion and the
+current gather program erases them. No numerical rows or publication execution
 witnesses are assumed. `replicaEncodedPublicationCost_le` bounds time by
 `87*N*s*w+4`; the existing push-two certificate gives the corresponding linear
 stock allowance.
@@ -20945,7 +20946,31 @@ compatibility build includes the error-transfer lemma and passes with the
 actual generated gathered caller and global core local-stock bound (14445 jobs,
 2.7 GiB combined peak).
 Next wire this publication after the generated gathered solve using local
-windows and restored controls, then connect residual/recovery and the executed
+windows and generated scatter controls, then connect residual/recovery and the executed
 key schedule. Tensor/R4 restoration and the global selected acceptance theorem
 remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327193 declarations at 3163.4 MiB.
+
+### S4 checkpoint: generate shared scatter controls from retained origins
+
+`PhaseCellPreparedWindowPublicationControls` composes the existing binary-origin
+advance factory with `windowPublicationControls`, then erases the temporary
+advance page. The execution theorem starts from retained origin packets and
+ordinary dimension headers; only scatter destination 92 changes. Origin packets,
+count, window header, scratch, and borrowed destination suffix are restored.
+The cost is bounded by `preparedOriginAdvanceCost V s w B+37*s*w+2*B+29`,
+paid once per key rather than once per RHS. No new arithmetic controller or
+case enumeration is introduced.
+
+This corrects the previous integration assumption: gather advances and scatter
+gaps differ, and the gathered caller clears its advance page. The existing
+structural converter supplies the missing bridge. Next compose this factory
+with encoded publication while reconciling the reversed solver replica order
+and physically supplying the halo row-count header. Recovery, executed key
+scheduling, tensor/R4 restoration and global selected acceptance remain open.
+S4 remains incomplete; kappa is unchanged.
+
+The guarded file check passes at 2090.3 MiB. Compatibility with encoded
+publication and the generated gathered caller passes (14208 jobs, 2.7 GiB
+combined peak).
+The scoped axiom audit passes for 45315 declarations at 2135.1 MiB.
