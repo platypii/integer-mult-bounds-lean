@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.Machine.CountedLoopAlphabetPaths
 public import IntegerMultBounds.Machine.RunInvariant
 
-/-! A uniform per-body runtime bounds workspace for the entire counted loop.
+/-! Body prefix bounds control workspace for the entire counted loop.
 Exact countdown words determine the body index. The allowance is paid once,
 not multiplied by the number of iterations. -/
 @[expose] public section
@@ -66,6 +66,28 @@ private theorem level_invariant (M : Program t q a) (clock : ℤ → Fin (a+4)) 
     · exact ⟨0,Nat.zero_le _,rfl,Relation.ReflTransGen.refl⟩
     · exact hclock.putBits bs
   exact hinit.run hI hstart hreturn hcontrol hrun
+
+/-- The clock proof accepts a body prefix certificate independently of runtime. -/
+theorem loop_heads_of_body (M : Program t q a) (clock : ℤ → Fin (a+4)) (bs : List Bool)
+    (v : ℕ → Tapes t a) (B : ℕ)
+    (hbody : ∀ l < Counter.value bs, HoareTime M (· = v l) (· = v (l+1)) B)
+    (hclock : ClockTape bs.length clock) (lo hi : Fin t → ℤ)
+    (hbanks : ∀ l ≤ Counter.value bs, ∀ i, lo i ≤ (v l).head i ∧ (v l).head i ≤ hi i)
+    (hheads : ∀ l < Counter.value bs, ∀ x, RunInvariant M (· = v l) x →
+      ∀ i, lo i ≤ x.head i ∧ x.head i ≤ hi i)
+    {c : Config (t+1) (q+5) a} {n : ℕ}
+    (hrun : Machine.run (program M) n ((bank (v 0) clock bs).start (program M)) = some c) :
+    ∀ i : Fin (t+1),
+      (Fin.addCases (motive := fun _ : Fin (t+1) => ℤ) lo (fun _ : Fin 1 => 0)) i ≤ c.head i ∧
+      c.head i ≤ (Fin.addCases (motive := fun _ : Fin (t+1) => ℤ) hi (fun _ : Fin 1 => (bs.length : ℤ)+1)) i := by
+  have hc := level_invariant M clock bs v B hbody hclock hrun
+  apply hc.heads lo hi
+  · intro f x hx i
+    obtain ⟨l,hl,hf,hr⟩ := hx
+    exact hheads l hl x hr i
+  · intro w f r s hw i
+    obtain ⟨l,hl,rfl,hp⟩ := hw
+    exact hbanks l hl i
 
 /-- Every prefix of the real counted loop uses the body-bank intervals enlarged
 by one body allowance B, plus the fixed binary clock interval. No factor of

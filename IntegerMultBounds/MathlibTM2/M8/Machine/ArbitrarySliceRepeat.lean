@@ -165,7 +165,7 @@ def cleanClock := BinaryDescriptorCleanupList.oneProgram (a := prime) clockSlot
 def loop := CountedLoopReuseAlphabet.program ArbitrarySliceStep.program
 def program := seq (seq initializeClock loop) cleanClock
 
-private theorem initialize_hoare (v : Tapes sliceCount prime) (as : List Bool) :
+theorem initialize_hoare (v : Tapes sliceCount prime) (as : List Bool) :
     HoareTime initializeClock (fun w => w = input v as)
       (fun w => w = counted v CountedLoopReuseAlphabet.empty 1 as)
       (RecursiveChildQuotientsConstant.cost 0) := by
@@ -181,7 +181,7 @@ private theorem initialize_hoare (v : Tapes sliceCount prime) (as : List Bool) :
   rw [clock_replace]
   rfl
 
-private theorem cleanup_hoare (v : Tapes sliceCount prime) (as : List Bool) :
+theorem cleanup_hoare (v : Tapes sliceCount prime) (as : List Bool) :
     HoareTime cleanClock (fun w => w = counted v CountedLoopReuseAlphabet.empty 1 as)
       (fun w => w = output v as) 4 := by
   have h := BinaryDescriptorCleanupList.one_hoare clockSlot

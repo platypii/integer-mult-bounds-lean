@@ -16629,3 +16629,26 @@ The counted-repeat and level wrappers still need to consume these certificates.
 Their space proofs must use the body prefix certificate rather than its
 superlinear runtime budget. Arbitrary/high-width dispatch, the stage-2 leaf core,
 archive stock, and the other S4 obligations above remain open.
+
+### S4 checkpoint: counted slice repetition shares nonlinear body workspace
+
+`CountedLoopAlphabet.loop_heads_of_body` reuses the existing exact countdown
+invariant with a separate body-prefix certificate. The body runtime establishes
+termination and the next boundary bank, but does not enter the space bound.
+`CountedLoopReuseAlphabet.loop_heads_of_body` carries this through copying,
+restoring and clearing the clock; its extra allowance is `3*countBits.length+8`.
+The previous runtime-based API is retained as a corollary.
+
+`ArbitrarySliceRepeatWithin.repeat_within` applies the bounded slice step at
+every actual offset. Parked head equality is shared across both payload changes
+and offset words. Canonical count length is derived from the ordinary fit and
+positive-volume facts, giving one fixed coefficient (the slice-step coefficient
+plus 20), independent of repeat count and selected depth. `consume_within` also
+executes count-digit erasure and leaves both appended controller tapes blank.
+Original exact summed runtime and full physical output/restoration are retained.
+
+This closes the runtime-counted slice-repeat component. Concrete digit/width
+and high-prefix wrappers still need bounded certificates before the stage-2
+leaf core and selected archive transpose have their full space proof. S4 remains
+incomplete; the remaining supplier/readiness, setup-reuse, tensor/layout and final
+audit obligations above are unchanged.

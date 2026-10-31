@@ -54,6 +54,13 @@ theorem of_time_post_heads (h : HoareTime M pre post B) (lo hi : ℤ)
   obtain ⟨n,c,hn,hr,hh,hp⟩ := h v hv
   exact ⟨n,hn,c,RunWithin.heads_of_run_post_le hr hn lo hi (hmargin c.tapes hp),hh,hp⟩
 
+/-- Reuse an existing complete execution once all reachable prefixes are bounded. -/
+theorem of_time_invariant (h : HoareTime M pre post B)
+    (hheads : ∀ c, RunInvariant M pre c → H c.tapes) : HoareWithin M pre post B H := by
+  intro v hv
+  obtain ⟨n,c,hn,hr,hh,hp⟩ := h v hv
+  exact ⟨n,hn,c,⟨hr,fun m _ z hz => hheads z ⟨v,hv,m,hz⟩⟩,hh,hp⟩
+
 /-- The halting certificate covers every actually reachable prefix. -/
 theorem invariant (h : HoareWithin M pre post B H) {c : Config t q a}
     (hc : RunInvariant M pre c) : H c.tapes := by

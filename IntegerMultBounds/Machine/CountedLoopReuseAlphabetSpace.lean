@@ -11,15 +11,19 @@ The encoded count affects time, while space uses one body allowance. -/
 namespace IntegerMultBounds.Machine.CountedLoopReuseAlphabet
 variable {t q a : ℕ}
 
-theorem loop_heads (M : Program t q a) (bs : List Bool) (v : ℕ → Tapes t a) (B : ℕ)
+/-- Body prefixes and runtime have separate contracts. Only the copied count's
+length appears in the extra workspace for controller preparation and cleanup. -/
+theorem loop_heads_of_body (M : Program t q a) (bs : List Bool) (v : ℕ → Tapes t a) (B : ℕ)
     (hbody : ∀ l < Counter.value bs, HoareTime M (· = v l) (· = v (l+1)) B)
     (lo hi : ℤ)
     (hbanks : ∀ l ≤ Counter.value bs, ∀ i, lo ≤ (v l).head i ∧ (v l).head i ≤ hi)
+    (hheads : ∀ l < Counter.value bs, ∀ x, RunInvariant M (· = v l) x →
+      ∀ i, lo ≤ x.head i ∧ x.head i ≤ hi)
     {c : Config (t+2) (7+(q+5)+4) a} {n : ℕ}
     (hrun : Machine.run (program M) n ((bank (v 0) empty (binary bs) 1 1).start (program M)) = some c) :
-    ∀ i, min lo 0-(B+3*bs.length+8 : ℕ) ≤ c.head i ∧
-      c.head i ≤ max hi ((bs.length : ℤ)+1)+(B+3*bs.length+8 : ℕ) := by
-  let budget := B+3*bs.length+8
+    ∀ i, min lo 0-(3*bs.length+8 : ℕ) ≤ c.head i ∧
+      c.head i ≤ max hi ((bs.length : ℤ)+1)+(3*bs.length+8 : ℕ) := by
+  let budget := 3*bs.length+8
   let lower := min lo 0
   let upper := max hi ((bs.length : ℤ)+1)
   let H : TapePred (t+2) a := fun w => ∀ i, lower-budget ≤ w.head i ∧ w.head i ≤ upper+budget
@@ -39,7 +43,6 @@ theorem loop_heads (M : Program t q a) (bs : List Bool) (v : ℕ → Tapes t a) 
       controls_hoare (clean_hoare (List.replicate bs.length true) bs) (v (Counter.value bs))
   have hP : 3*bs.length+8 ≤ budget := by dsimp [budget]; omega
   have hC : 2*bs.length+4 ≤ budget := by dsimp [budget]; omega
-  have hB : B ≤ budget := by dsimp [budget]; omega
   have hbank (l : ℕ) (hl : l ≤ Counter.value bs) (clock descriptor : ℤ → Fin (a+4)) :
       ∀ i, lower ≤ (bank (v l) clock descriptor 1 1).head i ∧
         (bank (v l) clock descriptor 1 1).head i ≤ upper := by
@@ -86,7 +89,7 @@ theorem loop_heads (M : Program t q a) (bs : List Bool) (v : ℕ → Tapes t a) 
       · simp [empty]
       · intro j hj; simp [empty,show j ≠ 0 by omega,blank,separator,Fin.ext_iff]
       · simp [empty,show (bs.length : ℤ)+1 ≠ 0 by omega]
-    have hh := CountedLoopAlphabet.loop_heads M empty bs v B hbody hc (fun _ => lo) (fun _ => hi) hbanks hx
+    have hh := CountedLoopAlphabet.loop_heads_of_body M empty bs v B hbody hc (fun _ => lo) (fun _ => hi) hbanks hheads hx
     intro i
     induction i using (Fin.addCases (m := t+1) (n := 1)) with
     | left i =>
@@ -118,5 +121,31 @@ theorem loop_heads (M : Program t q a) (bs : List Bool) (v : ℕ → Tapes t a) 
   apply RunInvariant.seq_tapes (hp.seq hl) H ?_ heHeads hfull
   intro z hz
   exact RunInvariant.seq_tapes hp H hpHeads hlHeads hz
+
+theorem loop_heads (M : Program t q a) (bs : List Bool) (v : ℕ → Tapes t a) (B : ℕ)
+    (hbody : ∀ l < Counter.value bs, HoareTime M (· = v l) (· = v (l+1)) B)
+    (lo hi : ℤ)
+    (hbanks : ∀ l ≤ Counter.value bs, ∀ i, lo ≤ (v l).head i ∧ (v l).head i ≤ hi)
+    {c : Config (t+2) (7+(q+5)+4) a} {n : ℕ}
+    (hrun : Machine.run (program M) n ((bank (v 0) empty (binary bs) 1 1).start (program M)) = some c) :
+    ∀ i, min lo 0-(B+3*bs.length+8 : ℕ) ≤ c.head i ∧
+      c.head i ≤ max hi ((bs.length : ℤ)+1)+(B+3*bs.length+8 : ℕ) := by
+  have hh := loop_heads_of_body M bs v B hbody (lo-B) (hi+B)
+    (by intro l hl i; have h := hbanks l hl i; constructor <;> omega)
+    (by
+      intro l hl x hx i
+      have h := hx.heads_eq (hbody l hl) i
+      have hb := hbanks l hl.le i
+      omega) hrun
+  have hlo := min_le_left lo (0 : ℤ)
+  have hlz := min_le_right lo (0 : ℤ)
+  have hhi := le_max_left hi ((bs.length : ℤ)+1)
+  have hhz := le_max_right hi ((bs.length : ℤ)+1)
+  have hl : min lo 0-(B : ℕ) ≤ min (lo-B) 0 := le_min (by omega) (by omega)
+  have hu : max (hi+B) ((bs.length : ℤ)+1) ≤ max hi ((bs.length : ℤ)+1)+(B : ℕ) :=
+    max_le (by omega) (by omega)
+  intro i
+  have h := hh i
+  omega
 
 end IntegerMultBounds.Machine.CountedLoopReuseAlphabet
