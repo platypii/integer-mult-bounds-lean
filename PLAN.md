@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3233 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3235 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17893,5 +17893,34 @@ and 3387.8 MiB (concrete batch). The guarded target build passes (15613 jobs,
 3.5 GiB combined peak); the scoped axiom audit passes for 336008 declarations
 (3385.0 MiB). Next connect physical ambient payload exposure and the selected
 bulk/seam supplier schedule. Complete-key setup reuse, grouped publication,
+R4/tensor layout restoration and final audits remain open. S4 is incomplete;
+kappa is unchanged.
+
+### S4 checkpoint: ambient replica lines generate the exact local payload
+
+`rawReplicaPayload_exec` adapts the existing restoring replica gather to a
+retained arbitrary word width and a separate payload destination. It reuses
+runtime control generation, unary dimension products, prefix copying and the
+single restoring gather sweep. The entire ambient source and its borrowed
+suffix survive; retained dimensions and scratch are restored. Controls and
+temporary counts are generated and erased within the actual program.
+
+`rawReplicaPayloadCost_le` bounds the full transport by 250 times encoded
+ambient replica volume for positive width/window length. The native two-push
+certificate yields `rawReplicaPayload_exec_within` with additional stock at
+most 500 times that volume. This is linear stream work, independently of
+arithmetic workspace. The positive replica count is explicit.
+
+`replicaPayload_exec_within` instantiates the sweep for a nonempty list of
+ambient RHS fields and proves that its output is exactly
+`cstream A W (Fs.map (packedInterval a L)).flatten`, the generated supplier's
+payload format. Generic list and window identities retain ambient coordinates;
+no prepared local payload or serialized gather control is assumed.
+
+Guarded checks peak at 2099.1 MiB (physical gather) and 2046.5 MiB (list ABI).
+The guarded target build passes (4389 jobs, 2.6 GiB combined peak); the scoped
+axiom audit passes for 40473 declarations (2057.5 MiB). Next place this gather
+into the supplier input plan and compose its trace/cleanup with production.
+The selected bulk/seam schedule, complete-key setup reuse, grouped publication,
 R4/tensor layout restoration and final audits remain open. S4 is incomplete;
 kappa is unchanged.
