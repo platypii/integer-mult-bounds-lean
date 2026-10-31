@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3296 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3298 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18738,3 +18738,29 @@ Class-header assembly and cleanup, generated per-call readiness, concrete
 selected analytic facts, whole exposure/consumer composition, publication,
 seam lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa
 is unchanged.
+
+### S4 checkpoint: seven class-invariant supplier headers are physically assembled
+
+`supplierClassHeaders_exec_within` composes the existing structural unary-header
+copier, unary product and counted-margin core generator. It copies radius,
+replica count, common word width, precision and scalar width, computes halo
+symbol volume, and generates core length. It returns all seven exact header
+words with one complete time/workspace certificate and a frame preserving every
+other register. Sources and both scratch counters restore.
+
+`SupplierInputPlan.generateClassReady_exec` specializes the output to the actual
+publication-header, scalar-width and core destinations. The resulting
+`ClassReady` contract contains the invariant part of supplier readiness.
+`ClassReady.of_frame` transports it across later setup that leaves these seven
+headers unchanged. The existing copier's native certificate is now public and
+reused, rather than duplicated. Setup is intended once per movement class,
+not once per endpoint-dependent numerical job.
+
+Guarded checks peak at 3240.8 MiB (bounded assembly) and 3319.6 MiB (actual
+class readiness and frame). The target build passes (15176 jobs, 3.5 GiB
+combined peak). The scoped axiom audit passes for 332346 declarations at
+3316.9 MiB. The remaining fixed-bank lifecycle must compose changing endpoints,
+master and geometry generation with class readiness and actual supplier
+execution, then retire only per-call headers. Concrete selected analytic facts,
+whole exposure/consumer composition, publication, seam lifecycle and R4/tensor
+restoration remain open. S4 is incomplete; kappa is unchanged.

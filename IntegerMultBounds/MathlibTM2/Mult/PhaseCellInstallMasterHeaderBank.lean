@@ -15,7 +15,7 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 open IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {T Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ T Q A U}
 
-private theorem copyUnaryHeaders_native (tmp : Fin T) (rs : List (Fin T × Fin T)) :
+theorem copyUnaryHeaders_native (tmp : Fin T) (rs : List (Fin T × Fin T)) :
     mnNativePushBound 2 (copyUnaryHeaders (P := P₀) (Q := Q) (A := A) (U := U) tmp rs) := by
   induction rs with
   | nil => exact Nat.zero_le _
