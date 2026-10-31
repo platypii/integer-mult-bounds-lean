@@ -66,6 +66,49 @@ theorem HeadBounds.step {lo₀ hi₀ lo₁ hi₁ r : ℤ} {c c' : Config 3 4 a}
     · simp only [ite_eq_right hi] at hs
       cases hs
 
+/-- Every actual comparison transition retains complete operand tapes,
+including cells outside the scanned words. -/
+theorem step_operands {c d : Config 3 4 a} (hs : Machine.step (program a) c = some d)
+    (i : Fin 3) (hi : i ≠ 2) : d.tape i = c.tape i := by
+  have hn : c.state ≠ 3 := by intro he; simp [Machine.step,program,he] at hs
+  simp only [Machine.step,program,ite_eq_right hn] at hs
+  by_cases hb : c.tape 0 (c.head 0) = blank ∧ c.tape 1 (c.head 1) = blank
+  · simp only [ite_eq_left hb,Option.some.injEq] at hs
+    subst d
+    funext z
+    dsimp only
+    simp only [ite_eq_right hi]
+    split_ifs with he
+    · rw [he]
+    · rfl
+  · simp only [ite_eq_right hb] at hs
+    by_cases hv : isInput (c.tape 0 (c.head 0)) ∧ isInput (c.tape 1 (c.head 1))
+    · simp only [ite_eq_left hv,Option.some.injEq] at hs
+      subst d
+      funext z
+      change (if z = c.head i then c.tape i (c.head i) else c.tape i z) = c.tape i z
+      split_ifs with he
+      · rw [he]
+      · rfl
+    · simp only [ite_eq_right hv] at hs
+      cases hs
+
+/-- The operand frame and head bounds belong to the same actual run. -/
+theorem run_operands {c d : Config 3 4 a} {k : ℕ}
+    (hrun : Machine.run (program a) k c = some d) (i : Fin 3) (hi : i ≠ 2) :
+    d.tape i = c.tape i := by
+  induction k generalizing c with
+  | zero =>
+    simp only [Machine.run,Option.some.injEq] at hrun
+    subst d; rfl
+  | succ k ih =>
+    simp only [Machine.run] at hrun
+    cases hs : Machine.step (program a) c with
+    | none => simp [hs] at hrun
+    | some e =>
+      rw [hs,Option.bind_some] at hrun
+      exact (ih hrun).trans (step_operands hs i hi)
+
 /-- The invariant holds at every prefix, including the terminal prefix. -/
 theorem HeadBounds.run {lo₀ hi₀ lo₁ hi₁ r : ℤ} {c c' : Config 3 4 a}
     (h : HeadBounds lo₀ hi₀ lo₁ hi₁ r c) {k : ℕ}
