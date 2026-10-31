@@ -60,8 +60,17 @@ theorem dispatchRetainedSeamCrops_exec
       F.R dst = (coreRows.reverse.map (fun rs => cstream A (2*p+13) rs.flatten)).flatten++S.R dst ∧
       F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
       (∀ i, i ≠ result → i ≠ dst → F.R i = S.R i) ∧
-      List.Forall₂ (SeamCropRows p coreWidth r (fun _ => J)) ks coreRows := by
-  obtain ⟨v₁,n₁,outputs,hu₁,hn₁,he₁,ha,_⟩ := gridFamilyDispatch_exact_core_exec_trace (body := body)
+      List.Forall₂ (SeamCropRows p coreWidth r (fun _ => J)) ks coreRows ∧
+      ∀ C, mnProgPush (gridFamilyDispatch work src saved count tmp spare result clock savedClock
+        (P := P) (U := U) (A := A) recovery hR hQ) ≤ C →
+        (∀ f, mnProgPush (body f) ≤ C) → ∀ depth,
+        ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+          (C+1)*(([r].map (fun r => r.gridStock p l t work)).sum+6*[r].length+2*(descriptorScheduleTape work FamilyDispatchInput.words [r]).length+8)+
+          2*(ks.length*(80*(r.inputs.length*s*(2*p+13))+14)+1)) depth
+          (.seq (gridFamilyDispatch work src saved count tmp spare result clock savedClock recovery hR hQ)
+            (retainedSeamCrops archiveClock archiveClockSave sourceSave result dst savedSkip savedRow cropTmp rows wordWidth retireCount trash retireTmp skip rowSymbols ks))
+          (mk v S) n (mk v' F) := by
+  obtain ⟨v₁,n₁,outputs,hu₁,hn₁,he₁,ha,hstock⟩ := gridFamilyDispatch_exact_core_exec_trace (body := body)
     work hwork src saved count tmp spare result clock savedClock hreg hsep recovery hR hQ hA
     hp hst hθ hgap [r] (by simpa using hr) (fun _ => X) (fun _ => Y)
     (by
@@ -82,6 +91,8 @@ theorem dispatchRetainedSeamCrops_exec
     cases ha with
     | cons hprod hrest => cases hrest; exact ⟨_,rfl,hprod⟩
   subst outputs
+  have hout : [output].reverse.flatten = output := by simp
+  rw [hout] at hstock
   let S₁ : Stacks T A := {S with R := Function.update S.R result (output++S.R result)}
   have he₁' : Exec body (gridFamilyDispatch work src saved count tmp spare result clock savedClock recovery hR hQ)
       (mk v S) n₁ (mk v₁ S₁) := by simpa [S₁] using he₁
@@ -115,11 +126,22 @@ theorem dispatchRetainedSeamCrops_exec
         all_goals first | assumption | (apply Ne.symm; assumption)
       rw [hstable i hne]
       exact hclean i hi)
-  refine ⟨output,coreRows,v₂,F,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁' hn₂,Exec.seq he₁' he₂,?_,hproduced,?_,hi,ho,hl,?_,haccuracy⟩
+  refine ⟨output,coreRows,v₂,F,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁' hn₂,Exec.seq he₁' he₂,?_,hproduced,?_,hi,ho,hl,?_,haccuracy,?_⟩
   · rw [hframe result ‹result ≠ dst›]
     simp [S₁,hresult]
   · simpa only [hstable _ ‹result ≠ dst›.symm] using hd
   · intro i hir hid
     exact (hframe i hid).trans (hstable i hir)
+
+  · intro C hp hb depth
+    have hw₁ : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+        (C+1)*(([r].map (fun r => r.gridStock p l t work)).sum+6*[r].length+2*(descriptorScheduleTape work FamilyDispatchInput.words [r]).length+8))
+        depth (gridFamilyDispatch work src saved count tmp spare result clock savedClock recovery hR hQ)
+        (mk v S) n₁ (mk v₁ S₁) := hstock C hp hb depth
+    have hM := hw₁.final
+    have hw₂ := retainedSeamCrops_within he₂ hn₂ depth
+    apply ExecWithin.seq
+    · exact hw₁.mono (by intro d z hz; omega)
+    · exact hw₂.mono (by intro d z hz; omega)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
