@@ -16696,3 +16696,26 @@ Shared-source movement placement and the ordered exchange/join/separate assembly
 still need to consume these local certificates. Padded and digit/width dispatch,
 the stage-2 leaf-core space certificate, archive stock and the other S4 obligations
 above remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: shared ordered movement composes with high-prefix exchange
+
+`SharedPlacementAlphabet.shared_within` is the bounded counterpart of the
+existing physical source-sharing contract. It uses the same active projection,
+complementary frame and exact replacement laws. Both ordered join and inverse
+separation consume it in `ArbitraryWidthHighMovementPlacementWithin`; their
+local head intervals lift to the caller's shared source with the entire private
+bank restored and every complementary tape retained.
+
+`ArbitraryWidthHighExchangeJoinWithin.realizes_within` composes the bounded
+shared exchange and ordered join with the maximum of their reserves. Exact
+boundary-head restoration transfers the original margin to the join; workspace
+has no prefix-length or phase-count factor. The original complete theorem supplies
+the final permutation and runtime budget. `ArbitraryWidthHighSeparateSharedWithin`
+also lifts the final manuscript high-row view through the bounded inverse
+movement, retaining its exact source word and original runtime substitution.
+
+The padded power-width piece between those views and the digit/width-dispatch
+wrappers still need bounded certificates. The full high-run composition, stage-2
+leaf-core space certificate, selected archive stock and the remaining S4 supplier,
+readiness, setup-reuse, tensor/layout and final audit obligations remain open.
+S4 is incomplete; kappa is unchanged.
