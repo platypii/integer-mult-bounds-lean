@@ -24,14 +24,14 @@ theorem embedded_mem_support (plan : ArchiveTilePlan t₀ T Q c d W) (j : Fin (s
   simp only [support,List.mem_append]
   exact Or.inr (List.mem_ofFn.mpr ⟨j,rfl⟩)
 
-theorem Ready.of_frame {plan : ArchiveTilePlan t₀ T Q c d W} {w : ℕ}
-    {rows : Fin N → Fin (2^d) → List GaussianInt} {S F : Stacks T (prime+K)}
-    (h : plan.Ready w rows S) (hR : ∀ i ∈ plan.support, F.R i = S.R i) (hL : F.L = S.L) :
-    plan.Ready w rows F := by
+theorem BankReady.of_frame {plan : ArchiveTilePlan t₀ T Q c d W}
+    {S F : Stacks T (prime+K)}
+    (h : plan.BankReady S) (hR : ∀ i ∈ plan.support, F.R i = S.R i) (hL : F.L = S.L) :
+    plan.BankReady F := by
   have hroles (i : Fin T) (hi : i ∈ plan.roles) : F.R i = S.R i := hR i (by simp [support,hi])
   have hbank (j : Fin (swapT t₀)) : F.R (plan.ι j) = S.R (plan.ι j) :=
     hR _ (embedded_mem_support plan j)
-  refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+  refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · rw [hroles _ (by simp [roles])]; exact h.hbase
   · rw [hroles _ (by simp [roles])]; exact h.hone
   · rw [hroles _ (by simp [roles])]; exact h.hwidth
@@ -54,7 +54,6 @@ theorem Ready.of_frame {plan : ArchiveTilePlan t₀ T Q c d W} {w : ℕ}
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
       rcases hi with rfl | rfl | rfl | rfl | rfl | rfl <;> simp [roles]
     rw [hroles i hm]; exact h.hgenBlank i hi
-  · rw [hroles _ (by simp [roles])]; exact h.hsrc
   · rw [hroles _ (by simp [roles])]; exact h.hcount
   · intro i hi
     have he : F.R i = S.R i := by
@@ -67,5 +66,13 @@ theorem Ready.of_frame {plan : ArchiveTilePlan t₀ T Q c d W} {w : ℕ}
   · intro i hre him hhd
     rw [hbank]
     exact h.hother i hre him hhd
+
+theorem Ready.of_frame {plan : ArchiveTilePlan t₀ T Q c d W} {w : ℕ}
+    {rows : Fin N → Fin (2^d) → List GaussianInt} {S F : Stacks T (prime+K)}
+    (h : plan.Ready w rows S) (hR : ∀ i ∈ plan.support, F.R i = S.R i) (hL : F.L = S.L) :
+    plan.Ready w rows F := by
+  refine ⟨h.toBankReady.of_frame hR hL,?_⟩
+  rw [hR plan.src (by simp [support,roles])]
+  exact h.hsrc
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ArchiveTilePlan

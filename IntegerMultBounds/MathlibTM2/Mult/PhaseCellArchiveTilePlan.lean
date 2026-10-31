@@ -74,8 +74,7 @@ structure ArchiveTilePlan (t₀ T Q c d W : ℕ) where
 namespace ArchiveTilePlan
 variable {t₀ T Q c d W K N : ℕ}
 
-structure Ready (plan : ArchiveTilePlan t₀ T Q c d W) (w : ℕ)
-    (rows : Fin N → Fin (2^d) → List GaussianInt) (S : Stacks T (prime+K)) : Prop where
+structure BankReady (plan : ArchiveTilePlan t₀ T Q c d W) (S : Stacks T (prime+K)) : Prop where
   hbase : (S.R plan.base).length = 2^d
   hone : (S.R plan.one).length = 1
   hwidth : (S.R plan.width).length = W
@@ -87,11 +86,14 @@ structure Ready (plan : ArchiveTilePlan t₀ T Q c d W) (w : ℕ)
   hpriv : ∀ j : Fin (swapT t₀), t₀ ≤ j.val → S.R (plan.ι j) = []
   hhdr : ∀ k, S.R (plan.ι (reg (plan.hd k))) = []
   hgenBlank : ∀ i ∈ [plan.a,plan.half,plan.par,plan.bits,plan.cnt,plan.work], S.R i = []
-  hsrc : S.R plan.src = (List.ofFn fun i => (List.ofFn fun j => cstream (prime+K) w (rows i j)).flatten).flatten
   hcount : S.R plan.count = []
   hcodecBlank : ∀ i ∈ [plan.ι (reg plan.re),plan.ι (reg plan.im),plan.tmp,plan.saved,plan.reRev,plan.imRev], S.R i = []
   hother : ∀ i, i ≠ plan.re → i ≠ plan.im → (∀ k, plan.hd k ≠ i) →
     ∀ s ∈ S.R (plan.ι (reg i)), s ≠ blank ∧ s.val < prime+4
+
+structure Ready (plan : ArchiveTilePlan t₀ T Q c d W) (w : ℕ)
+    (rows : Fin N → Fin (2^d) → List GaussianInt) (S : Stacks T (prime+K)) : Prop extends BankReady plan S where
+  hsrc : S.R plan.src = (List.ofFn fun i => (List.ofFn fun j => cstream (prime+K) w (rows i j)).flatten).flatten
 
 noncomputable def program {P U : Type} (plan : ArchiveTilePlan t₀ T Q c d W) : Pr P T Q (prime+K) U :=
   paddedCountedChunkTile c plan.hd plan.re plan.im plan.hi plan.hQre plan.hQim plan.ι plan.hι plan.hT
