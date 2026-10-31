@@ -108,7 +108,7 @@ private theorem extra_controls (v : Tapes t a) (w : Tapes 2 a) :
   cases v
   simp [Placement.extra,Tapes.append,finAddFlip_apply_natAdd]
 
-private theorem controls_hoare {k cost : ℕ} {M : Program 2 k a} {w w' : Tapes 2 a}
+theorem controls_hoare {k cost : ℕ} {M : Program 2 k a} {w w' : Tapes 2 a}
     (h : HoareTime M (fun x => x = w) (fun x => x = w') cost) (v : Tapes t a) :
     HoareTime (controlsProgram M t) (fun x => x = v.append w) (fun x => x = v.append w') cost := by
   apply (Placement.hoare_at h (finAddFlip : Fin (2+t) ≃ Fin (t+2)) (v.append w) (active_controls v w)).consequence
@@ -119,7 +119,7 @@ private theorem controls_hoare {k cost : ℕ} {M : Program 2 k a} {w w' : Tapes 
   simpa only [active_controls,extra_controls] using
     Placement.view (finAddFlip : Fin (2+t) ≃ Fin (t+2)) (v.append w')
 
-private theorem loop_bank (v : Tapes t a) (cs ds : List Bool) :
+theorem loop_bank (v : Tapes t a) (cs ds : List Bool) :
     (CountedLoopAlphabet.bank v empty cs).append (one (binary ds) 1) = bank v (binary cs) (binary ds) 1 1 := by
   have hl (i : Fin t) : Fin.castAdd 1 (Fin.castAdd 1 i) = Fin.castAdd 2 i := Fin.ext rfl
   have hc : Fin.castAdd 1 (Fin.natAdd t (0 : Fin 1)) = Fin.natAdd t (0 : Fin 2) := Fin.ext rfl
@@ -147,6 +147,22 @@ def program (M : Program t q a) : Program (t+2) (7+(q+5)+4) a :=
   seq (seq (controlsProgram (prepareControls a) t) (extend (CountedLoopAlphabet.program M) 1))
     (controlsProgram (cleanControls a) t)
 
+/-- The counted phase on the prepared mutable clock, retaining the descriptor. -/
+theorem counted_hoare (M : Program t q a) (bs : List Bool) (n : ℕ)
+    (v : ℕ → Tapes t a) (cost : ℕ → ℕ) (hcount : Counter.value bs = n)
+    (hbody : ∀ i < n, HoareTime M (· = v i) (· = v (i+1)) (cost i)) :
+    HoareTime (extend (CountedLoopAlphabet.program M) 1)
+      (· = bank (v 0) (binary bs) (binary bs) 1 1)
+      (· = bank (v n) (binary (List.replicate bs.length true)) (binary bs) 1 1)
+      ((∑ i ∈ Finset.range n, cost i)+6*n+2*bs.length+2) := by
+  have hl := (CountedLoopAlphabet.loop_hoare M empty bs n v cost hcount rfl
+    (by simp [empty,show (1 : ℤ)+bs.length ≠ 0 by omega]) hbody).extend (one (binary bs) 1)
+  apply hl.consequence _ _ le_rfl
+  · intro w hw
+    exact ⟨_,rfl,(loop_bank (v 0) bs bs).trans hw.symm |>.symm⟩
+  · rintro w ⟨small,rfl,rfl⟩
+    exact loop_bank (v n) (List.replicate bs.length true) bs
+
 /-- Arbitrary-alphabet exact-bank chain with real binary preparation, amortized
 countdown, both joins, and cleanup. Foreign body symbols need no invariant or
 encoding premise; the body contract alone determines their final contents. -/
@@ -156,17 +172,7 @@ theorem loop_hoare (M : Program t q a) (bs : List Bool) (n : ℕ)
     HoareTime (program M) (fun w => w = bank (v 0) empty (binary bs) 1 1)
       (fun w => w = bank (v n) empty (binary bs) 1 1)
       ((∑ i ∈ Finset.range n, cost i)+6*n+7*bs.length+16) := by
-  have hl := (CountedLoopAlphabet.loop_hoare M empty bs n v cost hcount rfl
-    (by simp [empty,show (1 : ℤ)+bs.length ≠ 0 by omega]) hbody).extend (one (binary bs) 1)
-  have hl' : HoareTime (extend (CountedLoopAlphabet.program M) 1)
-      (fun w => w = bank (v 0) (binary bs) (binary bs) 1 1)
-      (fun w => w = bank (v n) (binary (List.replicate bs.length true)) (binary bs) 1 1)
-      ((∑ i ∈ Finset.range n, cost i)+6*n+2*bs.length+2) := by
-    apply hl.consequence _ _ le_rfl
-    · intro w hw
-      exact ⟨_,rfl,(loop_bank (v 0) bs bs).trans hw.symm |>.symm⟩
-    · rintro w ⟨small,rfl,rfl⟩
-      exact loop_bank (v n) (List.replicate bs.length true) bs
+  have hl' := counted_hoare M bs n v cost hcount hbody
   have hp := controls_hoare (prepare_hoare (a := a) bs) (v 0)
   have he := controls_hoare (clean_hoare (a := a) (List.replicate bs.length true) bs) (v n)
   simp only [List.length_replicate] at he
