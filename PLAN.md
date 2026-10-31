@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3494 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3498 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21287,3 +21287,45 @@ length-class controller, then execute shared packed coupling across replicas.
 Recovery, global key scheduling, tensor/R4 restoration and selected acceptance
 remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 328231 declarations at 3180.0 MiB.
+
+### S4 checkpoint: each accumulated class retires its numerical ownership
+
+`PhaseCellRetireReplicaNumericalKey` uses the actual replay clock, whose length
+is twice the numerical payload volume. Division by the fixed constant two builds
+the RHS ownership counter; the existing counted-prefix eraser then consumes only
+the owned raw RHS. `releaseWeightCache` consumes the corresponding weight page
+using the original replay clock and releases that clock. Borrowed RHS and cache
+tails survive exactly, scratch is restored, and no repeated dimensions product
+or new parameter source is required. Time is at most `32*volume+20`; native push
+bound three gives its linear whole-bank stock certificate.
+
+`PhaseCellRetireGatheredNumericalKey` places this program in the physical solver
+bank and transports its exact three-write endpoint through the existing embedding
+lemmas. Its structural low-bank theorem proves that numerical scratch plus the
+two borrowed tails becomes exactly `releasedCellBank [] borrowed result ...`,
+the ABI expected by retained-header installation. Cache/replay roles 118--120
+are empty and the original cache suffix at 117 survives.
+
+`PhaseCellReleasedAccumulatingGatheredReplica.releasedAccumulatingGatheredReplica_exec_within`
+composes the complete generated solve, independent packed publication and key
+retirement. It restores the entire gather bank and original RHS, retains all
+new and earlier disjoint-core accuracy/magnitude certificates, and returns the
+exact released numerical bank. The remaining per-key numerical cache is its
+original borrowed suffix; no owned RHS, weight page or replay counter remains.
+
+`Cost/PhaseCellReleasedReplicaResources` prices this actual composed execution.
+The complete fast-time exponent remains 129/128; retirement increases the repeated
+constant by `32*cw` and the additive constant from 19 to 39. Whole-bank stock is
+the existing linear local envelope plus `96*N*(B*(L+2^l)*w+span*w+1)+60`.
+The `*_within_linear` wrapper preserves the same execution and all correctness
+certificates. Numerical multiplication time is not used as a stock estimate.
+
+Guarded checks pass at 1967.7 MiB (native retirement), 2085.3 MiB (placed retirement
+and released ABI), 2150.3 MiB (complete released class) and 3179.3 MiB (fast-time/
+linear-stock ledgers). Compatibility with the retained-header installer and
+global core local stock passes (14707 jobs, 6.6 GiB combined peak).
+Next reload the ordinary numerical factory headers and origin packets from
+retained key metadata, then connect the actual length-class controller and shared
+packed coupling loop. Recovery, global key scheduling, tensor/R4 restoration and
+selected acceptance remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 329568 declarations at 3214.4 MiB.
