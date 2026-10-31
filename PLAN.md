@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3227 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3229 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17810,3 +17810,31 @@ header values and connect this generated bank to the packed producer's existing
 descriptor lifecycle. Ambient payload exposure, complete supplier batches,
 complete-key setup reuse, grouped publication, R4/tensor layout restoration and
 final audits remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: generated job banks feed the actual packed producer
+
+`SupplierInputPlan` packages fixed physical placement/separation. Its `Ready`
+record contains only retained ordinary header values, a live local payload and
+blank private/scratch storage. `SupplierInputPlan.exec` specializes the complete
+input-generation chain to a mathematical `PackedNormalizedJob` and proves that
+every generated source word is exactly `r.words`. Selected factory precision
+and stage values follow the existing factory construction; no prepared bank,
+serialized descriptor, binary parameter queue or execution certificate enters
+readiness.
+
+`SupplierInputPlan.produce_exec` composes that actual setup with the packed
+producer's existing descriptor emission, numerical call and descriptor/clock
+retirement. It returns actual rows with rectangular lengths and `ExactRowOutput`,
+proves their packed output is appended to the caller result, and carries all
+setup, producer and lifecycle time/stock bills on the same trace. The generated
+source bank is preserved after production, ready for physical erasure; every
+other right register outside that bank and the result is restored, and the
+entire left bank is unchanged.
+
+Guarded checks peak at 3318.9 MiB (input plan) and 3376.4 MiB (generated
+producer). The guarded target build passes (15604 jobs, 3.5 GiB combined peak);
+the scoped axiom audit passes for 335873 declarations (3382.3 MiB). Next erase
+the generated source bank and lift the complete lifecycle to supplier batches.
+Ambient payload exposure, complete-key setup reuse, grouped publication,
+R4/tensor layout restoration and final audits remain open. S4 is incomplete;
+kappa is unchanged.
