@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3241 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3242 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18056,3 +18056,28 @@ though it realizes this grouped ledger. S4 remains incomplete.
 
 The guarded target build passes (3820 jobs, 2.4 GiB combined peak).
 The scoped axiom audit passes for 1524 declarations (1873.8 MiB peak).
+
+### S4 checkpoint: generated grouped exposure has the packed supplier format
+
+`coreGatherPayload` names the replica-major packed windows of a whole movement
+class. Its exact length is `replicas*classSize*haloLength`; the slot theorem
+identifies every contiguous core segment using the existing uniform-row window
+lemma. The symbol identity reuses `coreGather_packed` rather than repeating
+its coordinate proof.
+
+`initializedCoreGather_payload_exec` now gives that payload from the actual
+runtime core-gather program: retained binary geometry generates the controller
+and origins, and a single restoring sweep gathers all cores in the class.
+The original ambient line is preserved, with the existing exact time bound
+and external frame. No prepared controls or origin stream are premises.
+
+This physical bridge currently handles one ambient RHS line at a time. The
+arbitrary-list payload definition records the replica-major format required
+for the subsequent replica/core transpose; it does not claim that a replica
+loop, transpose or supplier consumption has already executed. Uniform stock,
+control retirement, replica composition, selected supplier feeding and grouped
+publication remain integration obligations. S4 remains incomplete.
+
+The guarded file check peaks at 2074.7 MiB; the guarded target build passes
+(9676 jobs, 2.7 GiB combined peak).
+The scoped axiom audit passes for 42889 declarations (2078.7 MiB peak).
