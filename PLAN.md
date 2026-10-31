@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3455 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3457 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20758,3 +20758,34 @@ core/halo schedule, retaining shared supplier/setup multiplicities. Supplier
 integration, recovery/seams and tensor/R4 restoration remain open.
 S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327700 declarations at 3164.8 MiB.
+
+### S4 checkpoint: selected metadata discharges gathered stock widths
+
+`PhaseCellSelectedGatheredStock.executionWidth_le_linear` derives actual word
+width from linear ring-log, target and RHS-exponent bounds.
+`selectedGatheredWidths` then derives the numerical weight/control width from
+selected axis bit bounds and u ≤ p. The resulting complete interior stock
+comparison no longer assumes an independently supplied workspace width.
+`selectedHaloGatheredWidths` uses the actual ambient-gap ring choice, deriving
+both l ≤ 20*p and 2^l ≤ 20*p along with the required linear word/control widths.
+`selectedAxis_gap_le_source` derives the local padding gap premise from
+`Sizes.Big` directly.
+
+`PhaseCellSelectedHaloGatheredStock.selectedHaloGatheredStock_le_local`
+combines these facts with the complete gathered workspace and local halo-key
+aggregation. Empty length classes explicitly pay zero executions: positive
+candidate lengths need not have any matching rows. Each nonempty class uses
+the already proved raw-workspace-to-linear comparison. The selected local
+allowance retains shared key/setup/supplier charges and bounds repeated traffic
+without per-row padding assumptions or an assumed solver/workspace oracle.
+This is still an allowance theorem, not an executed global halo-key schedule.
+
+Guarded checks pass at 3146.5 MiB (selected widths and metadata premises) and
+3136.2 MiB (selected raw-workspace halo aggregation). Compatibility with the
+manuscript-scale core geometry and existing gathered fast-time caller passes
+(14444 jobs, 3.4 GiB combined peak).
+Next aggregate local bills over actual core/halo windows and prove shared
+supplier/setup multiplicities, then connect the selected global schedule.
+Supplier execution integration, recovery/seams and tensor/R4 restoration remain
+open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327707 declarations at 3165.0 MiB.
