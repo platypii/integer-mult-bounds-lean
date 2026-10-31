@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3284 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3287 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18588,3 +18588,26 @@ and the common packet-width bound still need concrete selected-family
 instantiation. Physical selected header setup, exposure/consumer composition,
 publication, seam lifecycle and R4/tensor restoration also remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: all proper-core jobs choose one bounded packet format
+
+`boundaryHaloTarget_mono_rows` proves monotonicity in boundary cardinality.
+`packedHaloCommonWidth_fits` uses the ambient cardinality bound to choose one
+packet width for every endpoint-dependent job. `PackedNormalizedJob.ofCoreCommon`
+then constructs proper jobs in that shared format with no width-fit caller
+premise. Its geometry, RHS list and common word width reduce directly to the
+inputs, retaining the indexed supplier handoff interface.
+
+`selectedPackedHaloCommonWidth_le` specializes the existing inverse execution
+width estimate at ambient row count, proving the common format is bounded by
+`(1032+8*targetScale)*p`. Numerical execution precision still depends on each
+job's actual boundary size and complete endpoint key; only storage format is
+shared. This does not assert reuse of different numerical setup pages.
+
+Guarded checks peak at 3308.7 MiB (common-width fit), 3307.9 MiB (selected
+linear bound), and 3327.1 MiB (common-format job constructor). The combined
+target build passes (15388 jobs, 5.8 GiB combined peak). The scoped axiom audit
+passes for 333367 declarations at 3348.4 MiB. Concrete analytic-family bounds
+and proper interval separation, physical selected headers, whole exposure /
+consumer composition, publication, seam lifecycle and R4/tensor restoration
+remain open. S4 is incomplete; kappa is unchanged.
