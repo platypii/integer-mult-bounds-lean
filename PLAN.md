@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3198 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3202 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17382,3 +17382,25 @@ counted tile check peaks at 2977.2 MiB; the guarded target build passes (8360 jo
 views and conditional archive composition. Generated supplier readiness,
 complete-key setup reuse, tensor/layout composition and final audits remain
 open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: ordinary conditional archive plans supply bounded tile traces
+
+`paddedCoefficientChunkTile_exec_within` transfers the actual padded packed
+trace to the established Gaussian coefficient endpoint by execution uniqueness.
+The existing coefficient padding, original-suffix and runtime proofs are reused
+without reconstructing physical routing. `paddedArchiveRowsChunkTile_exec_within`
+then reuses the archive encoding and core-row recovery views with that trace.
+
+`ArchiveTilePlan.exec_within` consumes ordinary `Ready` data and derives the
+complete padded archive execution, exact rows and original cost. Its named
+`stockAllowance` includes native padding/counter/codec setup and the shared
+selected transpose reserve. `conditional_exec_within` handles the actual runtime
+header branch: an empty class needs zero additional stock; a nonempty class
+uses exactly the archive plan allowance. Header peeking changes no tape stock.
+
+Guarded checks peak at 2960.5 MiB (coefficients), 3054.7 MiB (rows), 3050.6 MiB
+(plan) and 3058.8 MiB (conditional plan). The guarded target build passes (8702
+jobs, 3.3 GiB combined peak). Paired/produced archive composition and uniform
+selected stock substitution remain; generated supplier readiness, complete-key
+setup reuse, tensor/layout composition and final S4 audits are also open.
+S4 is incomplete; kappa is unchanged.
