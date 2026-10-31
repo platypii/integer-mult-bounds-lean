@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3476 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3479 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21047,3 +21047,40 @@ arithmetic, shared controls and global core local stock (14448 jobs, 2.7 GiB
 combined peak). Recovery, executed key scheduling, tensor/R4 restoration and
 global selected acceptance remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327223 declarations at 3163.4 MiB.
+
+### S4 checkpoint: physical publication generates and releases its own pages
+
+`PhaseCellPrepareReplicaPublicationPages` builds the unary window volume `L*w`
+from retained headers and generates scatter controls from retained binary origins.
+Its exact endpoint writes only tapes 103 and 92. The execution theorem restores
+all origins, borrowed suffixes, headers and scratch; a closed-program stock
+certificate charges the table compiler only in this shared setup allowance.
+
+`PhaseCellGatheredPublicationPages` embeds that factory into the existing
+arbitrary disjoint gather/solver placement. The generic two-update embedding
+lemma gives its exact endpoint without enumerating the concrete bank layout.
+
+`PhaseCellPreparedGatheredPublication.preparedGatheredPublication_exec_within`
+composes the actual factory, aligned packed routing and symbol-volume publication,
+then erases both owned pages. It starts with blank pages and ordinary retained
+metadata: no window page, scatter page or supplied publication execution is
+assumed. Its returned records agree with the solver's reverse replica order,
+and both source suffixes survive. Every tape except solver result 93, packed
+source 124, published destination 110 and consumed replica clock 121 is restored.
+The numerical weight cache and original RHS bank are spectators throughout.
+
+The named time bill is shared page preparation plus routed publication plus
+`4*span*w+2*L*w+4` for release. The whole-bank stock bill is shared factory push
+bound times its setup cost plus twice routed publication cost. Page release has
+native push bound zero, so contributes no additional stock reserve. All costs
+are tied to this actual composed execution.
+
+Guarded checks pass at 2082.7 MiB for the page factory, 2100.5 MiB for placed
+page preparation and 2128.7 MiB for the complete prepared
+publication caller. Compatibility with the actual generated gathered solver and
+global core local stock passes (14451 jobs, 2.8 GiB combined peak). Next compose
+this caller with the generated numerical solve and carry its per-cell numerical
+error through the published packed-word reads. Recovery, executed key scheduling,
+tensor/R4 restoration and global selected acceptance remain open. S4 remains
+incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327242 declarations at 3163.8 MiB.
