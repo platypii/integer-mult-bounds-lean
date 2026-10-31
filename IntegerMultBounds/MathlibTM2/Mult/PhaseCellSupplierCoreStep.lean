@@ -29,6 +29,21 @@ noncomputable def coreStep (plan : SupplierSetupPlan input) (producer : PackedPr
     (.seq (plan.routedRun producer count source saved tmp)
       (clearWords [input.parameters 6,input.parameters 7]))
 
+noncomputable def coreTimeCost (producer : PackedProducerPlan T Q) (V : ℕ)
+    (r : PackedNormalizedJob A s) : ℕ :=
+  readSupplierEndpointsCost V r.a (r.b-r.a)+
+        ((6*r.inputPayload.length+6)+(timeCost r+(r.inputTimeCost+
+          (producer.timeCost (U := U) [r]+20*(descriptorScheduleTape producer.work PackedNormalizedJob.words [r]).length+7)+
+          (2*(∑ i, (r.words i).length)+651))+retirementCost r)+(2*r.inputPayload.length+2))+
+        (2*(r.a+r.b)+5)
+
+noncomputable def coreStock (producer : PackedProducerPlan T Q) (C V : ℕ)
+    (r : PackedNormalizedJob A s) : ℕ :=
+  (3*readSupplierEndpointsCost V r.a (r.b-r.a)+
+          (2*(6*r.inputPayload.length+6)+(stock r+(r.inputStock+
+            (31*(descriptorScheduleTape producer.work PackedNormalizedJob.words [r]).length+9+
+              (C+1)*producer.workspace (U := U) [r])))))
+
 theorem coreStep_exec (plan : SupplierSetupPlan input) (producer : PackedProducerPlan T Q)
     (r : PackedNormalizedJob A s)
     (hsourceReg : ∀ i, [input.work i,producer.src,producer.tmp,producer.saved].Nodup)
@@ -63,17 +78,10 @@ theorem coreStep_exec (plan : SupplierSetupPlan input) (producer : PackedProduce
     (hbody : ∀ f, mnProgPush (body f) ≤ C) :
     ∃ H v' n, ∃ rows : Fin 1 → Fin B → List GaussianInt,
       input.Ready r H ∧ v'.user = v.user ∧
-      n ≤ readSupplierEndpointsCost V r.a (r.b-r.a)+
-        ((6*r.inputPayload.length+6)+(timeCost r+(r.inputTimeCost+
-          (producer.timeCost (U := U) [r]+20*(descriptorScheduleTape producer.work PackedNormalizedJob.words [r]).length+7)+
-          (2*(∑ i, (r.words i).length)+651))+retirementCost r)+(2*r.inputPayload.length+2))+
-        (2*(r.a+r.b)+5) ∧
+      n ≤ coreTimeCost (U := U) producer V r ∧
       (∀ i j, (rows i j).length = L) ∧ (∀ i : Fin 1, r.ExactRowOutput J (List.ofFn (rows i))) ∧
       ExecWithin body (fun d state => mnSize state+d ≤ mnSize (Host.mk v S)+depth+
-        (3*readSupplierEndpointsCost V r.a (r.b-r.a)+
-          (2*(6*r.inputPayload.length+6)+(stock r+(r.inputStock+
-            (31*(descriptorScheduleTape producer.work PackedNormalizedJob.words [r]).length+9+
-              (C+1)*producer.workspace (U := U) [r])))))) depth
+        coreStock (U := U) producer C V r) depth
         (plan.coreStep producer width halo origins binary work endpointSaved endpointTmp count source saved tmp)
         (Host.mk v S) n (Host.mk v' {S with R := (Function.update
           (Function.update (Function.update S.R origins originTail) source tail) producer.result
@@ -143,7 +151,7 @@ theorem coreStep_exec (plan : SupplierSetupPlan input) (producer : PackedProduce
           · simp [G,E,endpointState,ha,hb,hresult,hs]
   rw [hend] at hwhole
   refine ⟨H,v₃,n₁+(n₂+(2*(r.a+r.b)+5)),rows,hheaders,hu₃.trans (hu₂.trans hu₁),?_,hlen,hrows,?_⟩
-  · omega
-  · simpa only [coreStep,endpointState,E,output,Nat.add_assoc] using hwhole
+  · dsimp only [coreTimeCost]; omega
+  · simpa only [coreStep,coreStock,endpointState,E,output,Nat.add_assoc] using hwhole
 end SupplierSetupPlan
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
