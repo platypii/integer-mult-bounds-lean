@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3359 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3361 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19617,3 +19617,34 @@ The combined build with the existing exposed-core driver passes (15868 jobs,
 2.7 GiB combined peak). The scoped axiom audit passes. S4 remains incomplete;
 proper-core integration, publication and tensor/R4 restoration remain open.
 Kappa is unchanged.
+
+### S4 checkpoint: install copied replica weights and generate their replay clock
+
+`cacheWeightPageFromDimensions_exec` generates the two temporary unary products
+from ordinary replica/row/word dimensions, installs the numerical page in the
+retained cache, generates its replay clock, and clears both temporary counters.
+Its exact final state changes only the source prefix, retained cache and clock.
+The linear bill is `26*N*rows*w + 15*N*rows + 9*N + 27`.
+
+`replicaWeightCache_exec` composes the actual counted weight-page copier with
+that installer. It starts from one generated B-cell numerical page followed by
+an arbitrary suffix, and produces the exact N-replica cached page plus its clock.
+All scratch, input/output streams, left stacks and unrelated registers restore;
+the old cache suffix survives. The fixed program evaluates no weight coefficients.
+`replicaWeightCacheCost_le` bounds its actual time by
+`200*(N+1)*(B*L*w+1)`. The execution theorem also bounds every compiled
+configuration by the corresponding fixed-push multiple of that linear bill.
+No preconstructed expanded cache or supplied replay-clock execution is assumed.
+
+The next composition must prepare native solver dimensions (N*B cells of length
+L, versus N copies of a B*L-row page), gather raw RHS rows, and join the installed
+cache to `replicaInteriorBatch_exec`. Boundary/residual/recovery batching and
+publication remain necessary before replacing the existing proper-core driver.
+The old driver's repeated ambient charge is still open; this is the actual
+page/clock installation step for its batched replacement.
+
+Guarded checks pass at 1981.5 MiB (dimension-based installation) and 2089.2 MiB
+(copied replica cache). The combined build with replica fast pricing and the
+existing exposed-core driver passes (15870 jobs, 2.8 GiB combined peak). The
+scoped audit passes for 337500 declarations at 3420.5 MiB. S4 is incomplete;
+kappa is unchanged.
