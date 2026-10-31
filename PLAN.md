@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3243 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3245 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18103,3 +18103,27 @@ The replica loop, uniform grouped-gather stock, physical transpose into supplier
 order, selected supplier consumption, publication and R4/tensor composition
 remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 42895 declarations (2079.0 MiB peak).
+
+### S4 checkpoint: structural table certificates bound the complete grouped trace
+
+`tblCompile_native` proves a three-push, call-free certificate by induction over
+arbitrary table code. Its instruction and comparison proofs do not enumerate
+any concrete controller or depend on table size/register placement. This
+supplies reusable proof language for generated control routines.
+
+`restoredCoreGather_native` combines that certificate with structural bank-copy
+and erasure lemmas, the advance-control routines, and placement. The concrete
+core controller is never expanded in the certificate. The resulting
+`restoredCoreGather_exec_within` bounds every intermediate configuration by
+initial stock plus `3*restoredCoreGatherCost`, for the same actual restored
+execution and packed outputs. All header setup, generated controls, source
+sweep and retirement are included; no execution premise is added.
+
+This is a symbolic runtime-based reserve for native control/stream work. Its
+selected-sizing simplification remains open, as do the replica loop, physical
+transpose, selected supplier consumption/publication and R4/tensor composition.
+S4 remains incomplete; kappa is unchanged.
+
+Guarded checks peak at 1408.7 MiB (table language) and 2078.8 MiB (complete
+class trace). The guarded target build passes (9684 jobs, 2.7 GiB combined peak).
+The scoped axiom audit passes for 43098 declarations (2081.3 MiB peak).
