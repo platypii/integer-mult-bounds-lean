@@ -49,7 +49,7 @@ theorem dispatchRetainedSeamArchive_exec
     (hclean : ∀ i ∈ [archiveClockSave,sourceSave,savedSkip,savedRow,cropTmp,retireCount,trash,retireTmp], S.R i = []) :
     ∃ output : List (Fin (A+4)), ∃ coreRows : List (List GaussianInt), ∃ v' F n, v'.user = v.user ∧
       n ≤ r.gridCost p l t work+2*(descriptorScheduleTape work FamilyDispatchInput.words [r]).length+19+
-        (r.inputs.length*(packedCoreArchiveStepCost (coreStart coreWidth k) (coreLength s coreWidth k) s (2*p+13)+3)+2+6*output.length+6*r.inputs.length+12) ∧
+        (80*(r.inputs.length*s*(2*p+13))+14) ∧
       Exec body (.seq (gridFamilyDispatch work src saved count tmp spare result clock savedClock recovery hR hQ)
         (retainedSeamArchive archiveClock archiveClockSave sourceSave skip rowSymbols result dst savedSkip savedRow cropTmp rows wordWidth retireCount trash retireTmp))
         (mk v S) n (mk v' F) ∧
@@ -112,7 +112,14 @@ theorem dispatchRetainedSeamArchive_exec
         all_goals first | assumption | (apply Ne.symm; assumption)
       rw [hstable i hne]
       exact hclean i hi)
-  refine ⟨output,coreRows,v₂,F,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁' hn₂,Exec.seq he₁' he₂,?_,hproduced,?_,hi,ho,hl,?_,hrowLength,haccuracy⟩
+  have hn₂' : n₂ ≤ 80*(r.inputs.length*s*(2*p+13))+14 := by
+    rw [ExactCoreProduced.full_output_length hproduced] at hn₂
+    exact hn₂.trans (retainedSeamArchiveCost_linear r.inputs.length s
+      (coreStart coreWidth k) (coreLength s coreWidth k) (2*p+13)
+      (Nat.pos_of_ne_zero (NeZero.ne s)) (by omega) hstart (by
+        unfold coreLength
+        exact (Nat.min_le_right _ _).trans (Nat.sub_le _ _)))
+  refine ⟨output,coreRows,v₂,F,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁' hn₂',Exec.seq he₁' he₂,?_,hproduced,?_,hi,ho,hl,?_,hrowLength,haccuracy⟩
   · rw [hframe result ‹result ≠ dst›]
     simp [S₁,hresult]
   · simpa only [hstable _ ‹result ≠ dst›.symm] using hd
