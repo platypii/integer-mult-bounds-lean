@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawPackedCellInputs
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCellRows
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchInputBank
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBatchInputBankUpdate
 public import IntegerMultBounds.MathlibTM2.Host.Embed
 
 /-! The local gather produces the unchanged closed arithmetic batch's native
@@ -35,31 +35,7 @@ def packedCellGroupInputCost (V N L w K q : ℕ) : ℕ :=
   8*q+2*w+11+(w*(4*V+10)+6*V+10+(K*(3*tblC V V+29*V+30)+8*N*w+78*V+91+
     (K*(14*L*w+27)+32*N*w+17*N+11*V+6*L*w+9*L+60)))
 
-theorem batchInputBank_prepend_rhs (precision stage q l s t u band L B : ℕ) (lo : ℕ → ℕ)
-    (rhs borrowed outTail : List (Fin (A+4))) (inp : List (Bool ⊕ Bool)) (out : List Bool) :
-    {batchInputBank precision stage q l s t u band L B lo [] borrowed outTail inp out with
-      R := Function.update (batchInputBank precision stage q l s t u band L B lo [] borrowed outTail inp out).R
-        110 (rhs++borrowed)} =
-      batchInputBank precision stage q l s t u band L B lo rhs borrowed outTail inp out := by
-  refine Stacks.ext rfl rfl rfl ?_
-  funext k
-  by_cases hk : k = 110
-  · subst k; simp [batchInputBank]
-  · have hv : k.val ≠ 110 := by intro he; apply hk; exact Fin.ext he
-    simp [batchInputBank,hk,hv]
 
-theorem batchInputBank_update_result (precision stage q l s t u band L B : ℕ) (lo : ℕ → ℕ)
-    (rhs borrowed result result' : List (Fin (A+4))) (inp : List (Bool ⊕ Bool)) (out : List Bool) :
-    {batchInputBank precision stage q l s t u band L B lo rhs borrowed result inp out with
-      R := Function.update (batchInputBank precision stage q l s t u band L B lo rhs borrowed result inp out).R
-        93 result'} =
-      batchInputBank precision stage q l s t u band L B lo rhs borrowed result' inp out := by
-  refine Stacks.ext rfl rfl rfl ?_
-  funext k
-  by_cases hk : k = 93
-  · subst k; simp [batchInputBank]
-  · have hv : k.val ≠ 93 := by intro he; apply hk; exact Fin.ext he
-    simp [batchInputBank,hk,hv]
 
 theorem batchInputBank_low (precision stage q l s t u band L B : ℕ) (lo : ℕ → ℕ)
     (rhs borrowed outTail : List (Fin (A+4))) (inp : List (Bool ⊕ Bool)) (out : List Bool)

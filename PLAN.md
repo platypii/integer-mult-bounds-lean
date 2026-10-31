@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3371 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3376 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19807,3 +19807,34 @@ The guarded module check passes at 2104.9 MiB. The combined build with the
 prepared numerical fast bounds and existing exposed-core driver passes
 (15881 jobs, 2.7 GiB combined peak); the scoped axiom audit passes.
 S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: generated payload handoff between disjoint gather/solver banks
+
+`generatedPrefixHandoff_exec` generates cell-count times cell-length times word
+width, executes the existing forward-order `takePrefix`, and retires both
+counters. Only the source/destination prefixes change; both suffixes, dimension
+headers and scratch survive. Its bill is `12*N*L*w+15*N*L+9*N+19`, bounded by
+`36*N*L*w+19` for positive row/word widths. The same execution has a proved
+native push bound 2 and a data-linear bound on every compiled configuration.
+
+`ReplicaInteriorPlacement` packages two injective disjoint banks. The concrete
+standard placement uses 247 tapes (126 gather, 121 numerical). A single
+injective map from their sum proves mixed-register separation structurally.
+`handoff_exec` supplies both exact bank projections after the counted move,
+without expanding either bank. It uses numerical cell/row dimensions and the
+retained gather word width, so no extra supplied payload count is assumed.
+
+The existing source/result `batchInputBank` update lemmas now live in the
+narrow shared `PhaseCellBatchInputBankUpdate` module. The legacy packed-cell
+caller reuses them with unchanged names and executable behavior. The combined
+audit detected an initially duplicated source-update lemma; the duplicate was
+removed and both callers now import the same declarations.
+
+Guarded checks pass at 2949.1 MiB (generated handoff/native stock), 2090.6 MiB
+(placement and both projections), 2073.8 MiB (shared bank updates) and 2111.1 MiB
+(legacy packed-cell caller). The compatibility rebuild passes (15875 jobs,
+20.3 GiB combined peak); the final focused rebuild passes at 3.4 GiB combined
+peak. The scoped axiom audit passes. The certified numerical consumer follows
+in the next chunk. Complete gather/cache/solver composition and the remaining
+boundary, publication and tensor/R4 obligations remain open. S4 is incomplete;
+kappa is unchanged.
