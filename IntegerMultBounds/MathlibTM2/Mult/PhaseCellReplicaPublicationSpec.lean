@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaPublicationBatch
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaPublicationStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaPublicationAccuracy
 
 /-! Complete replica publication restores forward line order with one final
@@ -9,7 +9,7 @@ move. All borrowed suffixes and private accumulator registers are restored. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Stack
   IntegerMultBounds.MathlibTM2.Host IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
-  IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry ScalarPlacement
+  IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry ScalarPlacement IntegerMultBounds.MathlibTM2.Fast.Main
 variable {T Q A s L : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T Q A U}
 
 theorem replicaPublicationBatch_accuracy_exec
@@ -43,6 +43,10 @@ theorem replicaPublicationBatch_accuracy_exec
       F.R outAcc = [] ∧
       F.R clock = [] ∧ F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
       (∀ i, i ≠ src → i ≠ dst → i ≠ clock → F.R i = S.R i) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+
+        2*replicaPublicationCost replicas.length s missing L w) 0
+        (.seq (countedLoop clock (replicaPublicationStep padRows wordWidth retireCount control savedControl gap window src dst acc trash tmp lineRows outAcc saved))
+          (moveR outAcc dst id)) (mk v S) n (mk v' F) ∧
       ∀ j (hj : j < replicas.length) n (hn : n < windows.origins.length),
         PhaseCellInterface.ErrorOn (haloVertices s windows.origins[n] (windows.origins[n]+L))
           (pairedCellRead q w ((F.R dst).drop (j*(s*w)))) (target j) error := by
@@ -50,9 +54,10 @@ theorem replicaPublicationBatch_accuracy_exec
     clock padRows wordWidth retireCount control savedControl gap window src dst acc trash tmp lineRows outAcc saved
     hreg windows w missing hw1 replicas hvalid sourceTail outputTail v S hsrc hdst hclock
     hpadRows hwidth hlineRows hc hw hclean houtAcc
-  refine ⟨v',F,n,hu,hn,he,hs,hd,ha,hclock',hi,ho,hl,hframe,?_⟩
-  intro j hj k hk
-  exact replicaPublication_errorOn windows q w missing replicas hvalid outputTail (F.R dst) hd
-    j hj k hk (target j) error (hgood j hj k hk)
+  refine ⟨v',F,n,hu,hn,he,hs,hd,ha,hclock',hi,ho,hl,hframe,?_,?_⟩
+  · simpa only [Nat.add_zero] using replicaPublication_within_stock he hn 0
+  · intro j hj k hk
+    exact replicaPublication_errorOn windows q w missing replicas hvalid outputTail (F.R dst) hd
+      j hj k hk (target j) error (hgood j hj k hk)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
