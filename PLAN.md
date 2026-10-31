@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3221 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3223 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17712,3 +17712,29 @@ packed source exposure and their composition with factory generation remain
 before the full supplier input is generated. Supplier batches, complete-key
 setup reuse, grouped publication, R4/tensor layout restoration and final audits
 also remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: lower publication and descriptor frames have physical setup
+
+`generatePublicationFrame_exec` generates the publication radius from retained
+ordinary radius and width headers. It proves the entire placed view equals
+`packedKeyPublicationInput` and keeps the converter's time and width-only stock
+certificate on the same execution. All other registers and scratch are restored.
+
+`generateDescriptorFrame_exec` reuses the arbitrary-list unary header copier
+for the four descriptor headers and the order-preserving live-word copier for
+the payload. Its exact endpoint gives the entire `packedKeyDescriptorInput`
+view, preserving the numerical bank and all external source/scratch words.
+Its paid time is the header-copy bill plus `6*payload.length+6`; additional
+stock is twice that bill. Header destinations are handled through an injective
+four-port placement and sparse lookup, without enumerating the full bank.
+The payload is still an actual borrowed exposed word at this interface:
+ambient gathering/exposure is not claimed by this installation theorem.
+
+Guarded checks peak at 3235.3 MiB (publication) and 3251.7 MiB (descriptor).
+The guarded target build passes (14959 jobs, 5.7 GiB combined peak for both
+modules); the scoped axiom audit passes for 328393 declarations (3247.9 MiB).
+Next compose factory, publication, descriptor and normalization generation,
+then connect physical packed-source exposure and the complete supplier
+lifecycle. Supplier batches, complete-key setup reuse, grouped publication,
+R4/tensor layout restoration and final audits remain open. S4 is incomplete;
+kappa is unchanged.
