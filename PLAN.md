@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3248 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3249 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18154,3 +18154,29 @@ Guarded checks peak at 1939.5 MiB (staging), 2067.6 MiB (placement) and
 selected supplier consumption/publication and R4/tensor composition remain
 open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 43110 declarations (2081.2 MiB peak).
+
+### S4 checkpoint: runtime replica gathering restores the complete ambient bank
+
+`replicaCoreGatherLoop_exec` executes the advancing class-gather body under the
+existing restoring `scanP`, driven by the retained replica counter. Its
+structural invariant records the unprocessed ambient rows, reversed processed
+source prefix and accumulated packed class payloads. After the runtime scan,
+one final linear move restores the entire ambient source and borrowed suffix.
+The counter, saved counter, restoration archive, working row, ordinary geometry
+and all other registers return exactly. Only the packed payload archive changes.
+
+The concrete program is independent of the mathematical RHS list; that list
+specifies its input and output. Empty replica lists are covered. Since the
+archive prepends, its proved output is exactly the class payload of
+`Fs.reverse`, preserving core order within each replica. The subsequent layout
+bridge must retain this explicit replica-order convention.
+
+The time bound is `B*(replicaCoreGatherStepCost+5)+2*(B*s*w)+6`. Ambient
+traversal is per replica and movement class, not per core. This execution theorem
+does not yet claim shared maximum scratch: the loop-boundary stock proof,
+physical transpose, selected supplier consumption/publication and R4/tensor
+composition remain open. S4 remains incomplete; kappa is unchanged.
+
+The guarded file check peaks at 2124.9 MiB; the guarded target build passes
+(9689 jobs, 2.7 GiB combined peak).
+The scoped axiom audit passes for 43113 declarations (2082.1 MiB peak).
