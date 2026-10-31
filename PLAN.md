@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3354 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3355 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19553,3 +19553,32 @@ Next compare its total tensor/R4 budget before choosing that replacement or
 hoisting same-key proper-core setup across RHS. Physical seam publication,
 selected placement and tensor/R4 restoration remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 architecture gate: full-period arithmetic does not replace short-field exposure
+
+`tensorAxisDensityCost_le` now proves the generic finite-axis aggregation:
+if each axis has at most V line entries and costs
+`shared + N*D*t*(1+band^2/d)*M`, the sum is at most
+`d*shared + D*V*(d+band^2)*M`. `phaseCellBand_sq_le` proves the
+executable integer band's squared width is at most `32*p/u+2`, including the
+zero-denominator convention. `fullPeriodTensorCost_le` combines these with
+the actual full-period branch's shared cost shape. This is an arithmetic
+comparison, explicitly excluding movement; it assumes the supplied per-axis
+charges satisfy that bound and is not a tensor execution theorem.
+
+The architecture decision is to retain the proper-core branch. The manuscript
+bulk transfer recorded in `NearOne/DESIGN.md` requires short core/halo fields:
+it pays `p^tau polylog p` movement once across axes. The full-period arithmetic
+bound alone cannot pay that exposure or substitute for the fused schedule.
+Keep the restoring full-period solver for seam fallbacks. Next remove repeated
+ambient header/key setup from the proper branch by batching same-key RHS/origin
+pairs through the existing cached batch interfaces, which already accept a
+varying RHS and origin per replica. Retaining weights/factors alone does not
+remove the current per-RHS unary header installation. Choose the larger final
+core width only after the resulting per-input bill is proved.
+
+The tensor-density check passes at 1872.7 MiB. The combined density/full-period
+selected lifecycle build passes (15630 jobs, 2.6 GiB combined peak). The scoped
+axiom audit passes. Actual cached-batch integration, proper-core fast time,
+publication, reserved support and tensor/R4 restoration remain open.
+S4 remains incomplete; kappa is unchanged.
