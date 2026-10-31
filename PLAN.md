@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3215 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3216 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17610,3 +17610,28 @@ still required before the full 325-word supplier input is generated. Full
 supplier batches, complete-key setup reuse, grouped publication, R4/tensor
 layout restoration and final S4 audits remain open. S4 is incomplete; kappa
 is unchanged.
+
+### S4 checkpoint: unary-to-binary conversion has width-only workspace
+
+`Host.toBinary_exec_within` attaches a bound on every intermediate compiled
+configuration to the existing conversion's exact output and runtime contract.
+Its additional stock is `2*(4*width+4)`, independently of the retained unary
+value and hence independently of the number of increments. It charges the
+initial zero-word construction once; guarded moves, increments and the symbol
+loop do not increase boundary stock.
+
+`loop_within_of_boundary` lifts an existing loop execution using separate
+iteration-boundary and full-trace invariants. `eachSym_within` uses it for any
+body with a nonincreasing-stock certificate. `moveR_within`,
+`incrField_within` and `countIter_within` work on arbitrary existing executions,
+without requiring binary decoding or concrete input enumeration. Thus repeated
+counting reuses scratch rather than charging runtime as workspace.
+
+The guarded binary-stock file check peaks at 1411.0 MiB; the generic loop check
+peaks at 1032.3 MiB. The guarded target build passes (2079 jobs, 2.1 GiB
+combined peak), and the scoped axiom audit passes for 1208 declarations
+(1395.1 MiB). Next compose these certificates through geometry and complete
+factory setup, then finish packed source exposure and outer metadata for the
+325-word supplier input. Full supplier batches, complete-key setup reuse,
+grouped publication, R4/tensor layout restoration and final audits remain
+open. S4 is incomplete; kappa is unchanged.
