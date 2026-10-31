@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3310 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3311 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18960,3 +18960,35 @@ certificates, and bound the job-only costs over the selected movement class.
 Selected analytic/class separation facts, whole exposure/publication, seam
 lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa is
 unchanged.
+
+### S4 checkpoint: one fixed counted consumer traverses ordered queues
+
+`consumeScan_exec` instantiates the semantic scan invariant with consumed and
+remaining jobs, both actual queue suffixes, accumulated encoded outputs and a
+`Forall₂` certificate in job order. Its executable is `scanP count saved p`:
+the job list controls the specification and initial count only, never program
+unrolling. The fixed body consumes one origin and payload, appends a certified
+output no larger than its payload, and preserves ordinary caller readiness.
+The theorem returns the exact final queue suffixes and reverse-prepended
+certified outputs, restores the count and saved bank, and frames all other
+caller storage. Time is at most `jobs.length*(bodyCost+5)+4`; workspace uses
+initial stock plus depth plus one shared body reserve.
+
+During instantiation, a right-register-only invariant proved too narrow for
+the supplier's left-bank readiness. `IterWithinSpec` and the semantic scan now
+carry predicates over full stack states, with an explicit rule for counter
+transfers. This preserves left-bank, input and output facts through traversal.
+
+`mn_consume_pair_appendR_size_nonincreasing` factors the two-queue boundary
+estimate. The actual core boundary theorem is now one application with its
+proved output-volume inequality. Restore its former direct proof from
+`e70f28f8` if needed.
+
+The guarded consumer check passes at 1413.2 MiB; the actual core stock check
+passes at 3376.0 MiB. The core target build passes (15639 jobs, 3.5 GiB combined
+peak). The scoped axiom audit passes for 336249 declarations at 3389.4 MiB.
+Next discharge the fixed consumer's body contract using `coreStep_exec`
+and a concrete supplier readiness invariant, with uniform job-only costs for
+the selected movement class. Selected analytic/class separation facts, whole
+exposure/publication, seam lifecycle and R4/tensor restoration remain open.
+S4 remains incomplete; kappa is unchanged.

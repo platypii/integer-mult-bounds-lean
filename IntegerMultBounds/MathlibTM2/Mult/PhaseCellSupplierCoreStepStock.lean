@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSupplierCoreStep
-public import IntegerMultBounds.MathlibTM2.Host.ConsumeRuns
+public import IntegerMultBounds.MathlibTM2.Host.ConsumeScan
 
 /-! Proper-core calls publish fewer symbols than their routed halo payloads;
 consuming the origin queue as well only decreases iteration-boundary stock. -/
@@ -51,20 +51,9 @@ theorem coreStep_boundary_size_le (r : PackedNormalizedJob A s)
       (Function.update (Function.update S.R origins originTail) source tail) result
       ((List.ofFn fun i => (List.ofFn fun j => cstream A r.W (rows i j)).flatten).flatten++S.R result))}) ≤
       mnSize (Host.mk v S) := by
-  have hr := hreg
-  regs_ne hr
-  let E : Stacks T A := {S with R := Function.update S.R origins originTail}
-  have hretire := mn_consume_appendR_size_nonincreasing v v S origins result
-    ‹origins ≠ result› (binSyms V r.a) originTail [] horigins (by simp)
-  have hresult : E.R result = S.R result := by simp [E,Ne.symm ‹origins ≠ result›]
-  have hretire' : mnSize (Host.mk v E) ≤ mnSize (Host.mk v S) := by
-    change mnSize (Host.mk v {E with R := Function.update E.R result ([]++S.R result)}) ≤ _ at hretire
-    simpa only [List.nil_append,←hresult,Function.update_eq_self] using hretire
-  have hconsume := mn_consume_appendR_size_nonincreasing v w E source result
-    ‹source ≠ result› r.inputPayload tail _ (by simpa [E,Ne.symm ‹origins ≠ source›] using hsource)
+  exact mn_consume_pair_appendR_size_nonincreasing v w S origins source result hreg
+    (binSyms V r.a) originTail r.inputPayload tail _ horigins hsource
     (r.coreOutput_length_le_payload rows hreplicas hcore hlen)
-  rw [hresult] at hconsume
-  exact hconsume.trans hretire'
 
 end SupplierSetupPlan
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
