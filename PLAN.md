@@ -19838,3 +19838,37 @@ peak. The scoped axiom audit passes. The certified numerical consumer follows
 in the next chunk. Complete gather/cache/solver composition and the remaining
 boundary, publication and tensor/R4 obligations remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: handed-off bytes feed the certified numerical batch
+
+`handedReplicaInteriorBatch_exec` composes the generated counted handoff with
+the actual fixed cached interior program in the disjoint numerical bank. It
+starts with an empty numerical RHS and a gathered prefix, derives the full
+native input bank after transfer, and returns the original per-replica/cell
+ambient principal-solve certificate for the same physical output bytes. The
+gather bank is restored to its declared suffix. Numerical cache ports survive,
+all native left stacks and non-input/output native right stacks are blank, and
+the RHS/borrowed stream, bounded output format and output length are explicit.
+No numerical execution callback is assumed.
+
+`handedReplicaInteriorBatch_fast_le` prices this execution's full bill by one
+cached startup plus `D*N*B*(L+2^l)*p^(129/128)+19`. Count generation and transfer
+are absorbed as linear encoded traffic; the repeated arithmetic envelope is
+unchanged. `packedReplicaStream_list_eq_batch` supplies the byte-level bridge
+from a list of gathered RHS rows, including the retained gather's reverse
+replica order, to the indexed numerical ABI. Its list/index proof reuses a
+single generic structural `range_getD_flatMap` lemma.
+
+Guarded checks pass at 2114.4 MiB (handoff plus numerical execution), 3111.5 MiB
+(fast bill), and 2064.2 MiB (list/byte layout bridge). Combined compatibility
+and focused builds pass as recorded above. The final scoped axiom audit passes
+for 337554 declarations at 3423.3 MiB, including both old/new callers after the
+shared update-lemma refactor.
+
+Next compose actual cache preparation, the shared local-control gather, and
+this handoff/numerical consumer from the caller's initial bank. That composition
+must keep the gather's local packets separate from the numerical bank's ambient
+packets and account for the single generated weight key. Interior publication
+into halo rows, boundary/residual/recovery batching, cache retirement, complete
+stock and tensor/R4 restoration remain open. This is a certified internal
+consumer, not completion of the proper-core driver or S4. Kappa is unchanged.

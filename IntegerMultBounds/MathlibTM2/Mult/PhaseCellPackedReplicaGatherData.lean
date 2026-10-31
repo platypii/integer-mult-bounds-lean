@@ -99,8 +99,8 @@ theorem packedReplicaGatherRows_eq {A s : ℕ} (w origin span N L : ℕ) (offset
   intro j hj
   exact packedReplicaStream_window w origin span N C j L r hspan (List.mem_range.mp hr) (hfit j hj)
 
-private theorem range_getD_flatMap {α : Type} (xs : List ℕ) (f : ℕ → List α) :
-    (List.range xs.length).flatMap (fun j => f (xs.getD j 0)) = xs.flatMap f := by
+theorem range_getD_flatMap {α β : Type} (xs : List α) (d : α) (f : α → List β) :
+    (List.range xs.length).flatMap (fun j => f (xs.getD j d)) = xs.flatMap f := by
   induction xs with
   | nil => simp
   | cons x xs ih => simpa [List.range_succ_eq_map,List.flatMap_map] using congrArg (f x ++ ·) ih
@@ -117,7 +117,34 @@ theorem packedReplicaRows_eq_batch {s : ℕ} (N origin L : ℕ) (offsets : List 
   symm
   change (List.range offsets.length).flatMap (fun j =>
     cellSourceRows L (fun j => ((origin+offsets.getD j 0 : ℕ) : ZMod s)) (fun _ => C r) j) = _
-  simpa only [cellSourceRows] using range_getD_flatMap offsets
+  simpa only [cellSourceRows] using range_getD_flatMap offsets 0
     (fun j => cellSourceRows L (fun _ => ((origin+j : ℕ) : ZMod s)) C r)
+
+/-- A list of gathered RHS rows has the exact indexed numerical layout. The
+default is used only outside the declared replica range. -/
+theorem packedReplicaRows_list_eq_batch {s : ℕ} (origin L : ℕ) (offsets : List ℕ)
+    (Fs : List (ZMod s → GaussianInt)) (d : ZMod s → GaussianInt) :
+    Fs.flatMap (fun F => offsets.flatMap (fun j =>
+      cellSourceRows L (fun _ => ((origin+j : ℕ) : ZMod s)) (fun _ => F) 0)) =
+    (List.range Fs.length).flatMap (fun r => (List.range offsets.length).flatMap
+      (cellSourceRows L (fun j => ((origin+offsets.getD j 0 : ℕ) : ZMod s)) (fun _ => Fs.getD r d))) := by
+  calc
+    _ = (List.range Fs.length).flatMap (fun r => offsets.flatMap (fun j =>
+        cellSourceRows L (fun _ => ((origin+j : ℕ) : ZMod s)) (fun _ => Fs.getD r d) 0)) :=
+      (range_getD_flatMap Fs d _).symm
+    _ = (List.range Fs.length).flatMap (fun r => offsets.flatMap (fun j =>
+        cellSourceRows L (fun _ => ((origin+j : ℕ) : ZMod s)) (fun r => Fs.getD r d) r)) := by
+      simp only [cellSourceRows]
+    _ = _ := packedReplicaRows_eq_batch Fs.length origin L offsets (fun r => Fs.getD r d)
+
+/-- Byte-level bridge, also applicable to the gather loop's reversed RHS list. -/
+theorem packedReplicaStream_list_eq_batch {A s : ℕ} (w origin L : ℕ) (offsets : List ℕ)
+    (Fs : List (ZMod s → GaussianInt)) (d : ZMod s → GaussianInt) :
+    Fs.flatMap (fun F => cstream A w (offsets.flatMap (fun j =>
+      cellSourceRows L (fun _ => ((origin+j : ℕ) : ZMod s)) (fun _ => F) 0))) =
+    cstream A w ((List.range Fs.length).flatMap (fun r => (List.range offsets.length).flatMap
+      (cellSourceRows L (fun j => ((origin+offsets.getD j 0 : ℕ) : ZMod s)) (fun _ => Fs.getD r d)))) := by
+  rw [←packedReplicaRows_list_eq_batch origin L offsets Fs d]
+  simp only [cstream,List.flatMap_assoc]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
