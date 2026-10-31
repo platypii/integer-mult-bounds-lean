@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3251 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3253 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18235,3 +18235,31 @@ transpose into supplier order, selected supplier consumption/publication,
 selected sizing bounds and R4/tensor composition remain open. S4 remains
 incomplete; kappa is unchanged.
 The scoped axiom audit passes for 43179 declarations (2082.7 MiB peak).
+
+### S4 checkpoint: reuse inverse routing with generated counters and row lists
+
+`ArchiveTilePlan.inverseProgram` reuses the existing inverse chunk stages and
+packed coefficient codec. `inverse_exec` generates the payload counter from
+the actual source, executes that concrete inverse route, and restores the
+counter and all other right registers. Its ordinary `BankReady` premise has
+no execution callback or prepared counter. Input is a complete padded
+replica-major rectangle of row lists; output is one contiguous replica batch
+per core. The same theorem includes the counter generation and inverse-route
+time bill.
+
+`coreGatherRows` gives the actual ambient windows a rectangular row interface.
+Its length theorem, `coreGatherPayload_rows` and `coreGatherRows_supplier`
+identify both sides exactly: the gather archive has the inverse router input
+format, and each core's output block has the existing supplier payload format.
+The RHS list records physical order, so applying these identities to
+`Fs.reverse` retains the proved gather order without an implicit reversal.
+The proofs reuse finite-list views and existing packed interval identities.
+
+This does not yet supply physical per-replica padding to router capacity or
+the inverse wrapper's uniform workspace certificate. Those connections,
+selected supplier consumption/publication, selected sizing and R4/tensor
+composition remain open. S4 remains incomplete; kappa is unchanged.
+
+Guarded checks peak at 3051.2 MiB (inverse program) and 2075.7 MiB (row ABI).
+The guarded target build passes (13897 jobs, 4.1 GiB combined peak).
+The scoped axiom audit passes for 320497 declarations (3078.5 MiB peak).
