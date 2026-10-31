@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3303 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3304 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18822,3 +18822,32 @@ compose routed-prefix installation and local payload erasure with this body,
 then generate endpoint parameters in a fixed runtime traversal. Concrete
 selected analytic facts, whole publication, seam lifecycle and R4/tensor
 restoration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: routed consumption uses the generated fixed supplier lifecycle
+
+`SupplierSetupPlan.routedRun_exec` consumes an actual archive prefix into the
+local payload register, runs the fixed numerical-setup/solver/retirement body,
+and erases the local payload. Its exact endpoint changes only the archive
+source (to its remaining suffix) and accumulated result. All numerical headers,
+temporary banks, payload storage and scratch restore. It preserves the actual
+solver's numerical row certificates and includes prefix movement, setup,
+execution, header retirement and payload erasure in one time/workspace trace.
+
+`PackedNormalizedJob.inputPayload` names the common packed interval interface.
+Initial setup readiness is checked in the state after installing that prefix;
+it contains ordinary scalar/class inputs and blank numerical storage, not
+prepared numerical headers. The generated ready-state witness is produced by
+the actual setup execution. The program itself has no job/core-index argument,
+so the same body can be used by a runtime class traversal.
+
+A broad simplification of register-support membership reached the default
+recursion limit; the proof now uses explicit structural membership and keeps
+all existing proof limits.
+
+The guarded file check passes at 3389.3 MiB. The target build passes (15629 jobs,
+3.5 GiB combined peak). The scoped axiom audit passes for 336183 declarations at
+3385.6 MiB. Next generate endpoint parameters from the existing ordered core
+origin controller and iterate this fixed body, including one shared batch-count
+counter. Concrete selected analytic facts, whole exposure/publication,
+seam lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa is
+unchanged.
