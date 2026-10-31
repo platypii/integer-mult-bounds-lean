@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3434 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3436 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20461,3 +20461,27 @@ and the actual cached numerical caller, then close the complete S4 interior
 stock boundary. Selected geometry/amortization, boundary/recovery/seam lifecycle
 and tensor/R4 restoration remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 325043 declarations at 3131.4 MiB.
+
+### S4 checkpoint: constructed cell data and coordinate-order publication stock
+
+`constructedCell_exec_within` specializes the complete arithmetic workspace
+certificate to the manuscript's constructed columns, reciprocal scalar and
+similarity weights. It discharges their range/length hypotheses from existing
+mathematical lemmas. The resource conclusion retains exact execution, time and
+physical endpoint; numerical validity remains in `constructedCell_exec`, so
+callers need not elaborate a duplicate validity postcondition.
+
+`publishFromDimensions_native` certifies the actual half-count, row reversal,
+prefix release and counter retirement structurally, independent of dimensions.
+`publishWords_exec_within` reuses the existing exact publication execution and
+charges at most three times its original linear traffic cost. Neither wrapper
+introduces an execution callback or a finite register enumeration.
+
+Guarded checks pass at 2072.4 MiB (constructed arithmetic) and 2042.7 MiB
+(publication). The compatibility build with the actual gathered numerical and
+preparation callers passes (14227 jobs, 4.4 GiB combined peak).
+Next compose these traces in `publishedCell`, lift through sized staging to the
+cached numerical caller, and close the interior stock boundary before the
+selected geometry/amortization gate. Recovery/seams and tensor/R4 restoration
+remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 325056 declarations at 3131.8 MiB.
