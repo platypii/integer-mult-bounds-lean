@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3298 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3301 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18764,3 +18764,31 @@ master and geometry generation with class readiness and actual supplier
 execution, then retire only per-call headers. Concrete selected analytic facts,
 whole exposure/consumer composition, publication, seam lifecycle and R4/tensor
 restoration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: actual changing-header setup establishes complete supplier readiness
+
+`supplierChangingHeaders_exec` composes restored scalar/master generation with
+geometry-width generation. Its exact frame permits only the ten master ports
+and geometry-width destination to change; all temporary table and geometry
+scratch restore. The output masters are the job's exact factory words and the
+geometry destination holds its exact `V`, under one time/workspace trace.
+
+`SupplierInputPlan.BaseReady` records ordinary retained class headers, scalar
+parameters, installed payload and blank work storage, excluding both changing
+numerical header families. Its frame lemma preserves these facts across the
+computed setup. `generateReady_exec` runs the actual changing-header program
+from this state and returns complete `input.Ready` for the resulting physical
+bank. No prepared master or geometry word, setup execution or callback is a
+caller premise. Static separation protects all base inputs and payload.
+
+Guarded checks peak at 3346.2 MiB (paired changing setup), 3308.3 MiB (base
+readiness), and 3340.3 MiB (complete generated readiness). The target build passes
+(15404 jobs, 3.5 GiB combined peak). The scoped axiom audit passes for 333546
+declarations at 3351.3 MiB. Next place this setup inside routed payload
+consumption and retire the generated numerical headers after the actual
+supplier. Ordinary endpoint parameters still need runtime generation between
+calls; a fixed runtime controller must realize the selected class traversal,
+rather than assuming all call parameters are ready initially or unrolling a
+size-dependent program. Concrete selected analytic facts, whole publication,
+seam lifecycle and R4/tensor restoration remain open. S4 is incomplete; kappa
+is unchanged.
