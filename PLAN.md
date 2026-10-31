@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3392 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3393 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20065,3 +20065,26 @@ boundary still needs that complete stock certificate. Initial numerical-key and
 scalar generation, halo publication/boundary/recovery, final core/halo geometry
 and amortization, tensor support and R4 restoration remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: coefficient-level short-convolution resource contracts
+
+`ShortConvBatchStock.batch_exec_within` lifts the complete ring primitive's
+workspace certificate to the existing short-convolution coefficient interface.
+It preserves the original batch time, output prefix and physical frame; the
+existing block/coefficient identity identifies the output without repeating
+numerical correctness. Stock remains the initial bank plus one shared ring
+allowance and linear padded batch volume.
+
+`packBatch_coeffs_prefix_exec_within` certifies the actual raw-input packer,
+including arbitrary source/destination tails. A structural native push bound of
+three converts its existing linear traffic bill into a workspace allowance.
+This charge contains no ring arithmetic runtime and requires no supplied
+execution. Both contracts use default proof limits.
+
+Guarded checking passes at 1937.0 MiB. The module build passes (4000 jobs,
+2.5 GiB combined peak). Next compose the two packers, certified ring call and
+packed-buffer retirement into `batchProgram`, then lift through the fixed
+setup and cached interior caller. Complete interior stock, selected geometry
+and amortization, boundary/publication/recovery and tensor/R4 restoration
+remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 8424 declarations at 1946.7 MiB.
