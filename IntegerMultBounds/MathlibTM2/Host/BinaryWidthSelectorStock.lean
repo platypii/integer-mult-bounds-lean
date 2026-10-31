@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Host.ForeignStock
-public import IntegerMultBounds.Machine.BinaryAdjacentWidthSelector
+public import IntegerMultBounds.Machine.BinaryAdjacentWidthSelectorBounds
 
 /-! The concrete interchange width selector uses linear header storage.
 Its runtime is linear in header lengths, so the native simulator bound suffices;
@@ -12,13 +12,6 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast.Main
 abbrev states := Fintype.card (FiniteFlow.Control BinaryAdjacentWidthSelector.states)
 variable {T A : ℕ} {P U : Type}
-
-theorem cost_length (hs ds : List Bool) :
-    BinaryAdjacentWidthSelector.cost hs ds ≤ 4*(hs.length+ds.length)+27 := by
-  have h := BinaryAdjacentWidthSelector.Less.cost_length hs ds
-  have h' := BinaryAdjacentWidthSelector.Less.cost_length ds hs
-  unfold BinaryAdjacentWidthSelector.cost
-  omega
 
 /-- Execute the actual placed three-way selector. The complete represented tape
 bank restores, and every host configuration has linear header workspace. -/
@@ -38,7 +31,7 @@ theorem exec_within (body : P → Pr P T states A U)
   have h := BinaryAdjacentWidthSelector.preserves left right flag hlr hlf hrf w hs ds hht hhh hdt hdh hft hfh
   obtain ⟨v',S',w',hw,hr,hu,hi,ho,n,hn,he⟩ := foreign_exec_within_time _ body h v S w rfl hrep depth
   subst w'
-  have hb := Nat.add_le_add_right (Nat.mul_le_mul_right (T+5) (cost_length hs ds)) 6
+  have hb := Nat.add_le_add_right (Nat.mul_le_mul_right (T+5) (BinaryAdjacentWidthSelector.cost_length hs ds)) 6
   exact ⟨v',S',hr,hu,hi,ho,n,hn.trans hb,he.mono (by intro d z hz; omega)⟩
 
 end IntegerMultBounds.MathlibTM2.Host.BinaryWidthSelectorStock
