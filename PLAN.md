@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3445 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3447 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20576,3 +20576,29 @@ the interior stock boundary, then check selected geometry/amortization.
 Recovery/seams and tensor/R4 restoration remain open. S4 is incomplete;
 kappa is unchanged.
 The scoped axiom audit passes for 325090 declarations at 3132.9 MiB.
+
+### S4 checkpoint: ordinary-origin and prepared-replica numerical stock
+
+`cachedBatchFromOrigins_exec_within` certifies origin-packet retirement before
+the complete cached numerical lifecycle. Its allowance adds only the actual
+packet-discard traffic to `cachedClosedWorkspace`. Embedding counts the entire
+physical initial bank once; exact published output and the high cache frame
+are retained.
+
+`preparedReplicaInteriorBatch_exec_within` composes actual cache installation
+with one numerical execution over all N*B RHS/cell pairs. It retains the full
+existing endpoint, accuracy, bounded encoded output and restoration guarantees
+by execution uniqueness, without repeating the mathematical cell-error proof.
+Cache installation uses its existing native push certificate; numerical work
+uses the new ordinary-origin trace. No readiness or execution callback is
+introduced, and no per-replica ambient setup is reinstated.
+
+Guarded single-file checks pass at 2120.5 MiB (ordinary-origin caller) and
+2125.8 MiB (complete prepared-replica caller). Next lift the resource certificate
+through disjoint handoff and shared gathering, then close the total interior
+stock/cost comparison against the selected geometry before further lifecycle
+work. Recovery/seams and tensor/R4 restoration remain open. S4 is incomplete;
+kappa is unchanged.
+The compatibility build with actual gathered numerical/preparation callers passes
+(14237 jobs, 2.8 GiB combined peak). The scoped axiom audit passes for 325097
+declarations at 3133.3 MiB.
