@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3441 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3445 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20539,3 +20539,40 @@ setup, compose the actual cached caller, and close the interior stock boundary
 before the geometry/amortization gate. Recovery/seams and tensor/R4 restoration
 remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 325085 declarations at 3132.6 MiB.
+
+### S4 checkpoint: complete cached numerical setup/arithmetic/release stock
+
+`Host.ClosedProgramStock` proves structurally that a program with procedure
+labels in `Empty` has no calls, and that a native push certificate implies no
+calls. Existing embedding certificates then certify closed numerical generators
+without unfolding compiled controllers or repeating their arithmetic proofs.
+This shortcut is used only for shared setup and linear native lifecycle work;
+stream arithmetic still uses the previously proved shared scratch reserves.
+
+`cachedGeneratedBatchSetup_native` and `cachedBatchInputBank_setup_exec_within`
+certify the actual numerical setup from ordinary headers and the retained
+weight page. `cachedSetupWorkspace_affine` proves exactly that this allowance
+is its zero-cell shared cost plus
+`B * C * (104 * L * (2*q+8) + 15*L + 64)`, where C is the dimension-independent
+maximum atomic push of the setup program. Numerical generation is charged once;
+replica growth is linear encoded traffic.
+
+`cachedGeneratedBatch_sized_exec_within` composes that setup with the existing
+physical-cache staged arithmetic certificate. `cachedClosedBatch_sized_exec_within`
+adds actual runtime release, returns the restored RHS/borrowed bank and published
+output, and preserves all four high cache registers. The initial whole bank is
+counted once throughout. These are actual executions with no execution or
+readiness callback. Unused L≤s hypotheses are omitted from the resource-only
+interfaces; original numerical specifications remain unchanged.
+
+Guarded checks pass at 1386.6 MiB (closed-program structure), 2086.2 MiB
+(setup including its affine identity), 2107.4 MiB (generated cached caller), and
+2113.6 MiB (complete closing caller). The compatibility build with actual
+gathered numerical/preparation callers passes (14235 jobs, 2.7 GiB combined
+peak); the final target rebuild after adding the affine lemma passes (9868 jobs,
+2.7 GiB combined peak).
+Next lift through origin retirement and prepared-replica composition to close
+the interior stock boundary, then check selected geometry/amortization.
+Recovery/seams and tensor/R4 restoration remain open. S4 is incomplete;
+kappa is unchanged.
+The scoped axiom audit passes for 325090 declarations at 3132.9 MiB.
