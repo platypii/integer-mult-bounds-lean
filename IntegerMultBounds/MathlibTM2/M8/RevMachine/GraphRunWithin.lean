@@ -16,6 +16,26 @@ variable {Seg Call : Type} {t a k : ℕ} (pieces : List (Piece Seg Call))
   (capacity : Fintype.card (PC pieces.length) ≤ 2^k) (stack : Fin t) (ht : 0 < t)
   (impl : Implementation t a k Seg Call)
 
+/-- A padded block and its actual state-selected edge preserve the same tape predicate. -/
+theorem member_jump_within (pc target : PC pieces.length) (before after : Tapes t a)
+    {H : TapePred (tapeCount pieces capacity stack ht impl) a} {n : ℕ}
+    {c : Config (tapeCount pieces capacity stack ht impl)
+      (states pieces capacity stack ht impl (encoding pieces pc)) a}
+    (hr : RunWithin (family pieces capacity stack ht impl (encoding pieces pc)) H n
+      ((raw before (tapeCount pieces capacity stack ht impl)).start
+        (family pieces capacity stack ht impl (encoding pieces pc))) c)
+    (hh : step (family pieces capacity stack ht impl (encoding pieces pc)) c = none)
+    (hbank : c.tapes = raw after (tapeCount pieces capacity stack ht impl))
+    (he : next pieces capacity stack ht impl (encoding pieces pc) c.state = some (encoding pieces target)) :
+    RunWithin (program pieces capacity stack ht impl) H (n+1)
+      (entryConfig pieces capacity stack ht impl pc before)
+      (entryConfig pieces capacity stack ht impl target after) := by
+  have hj := FiniteFlow.block_then_jump_within (family pieces capacity stack ht impl)
+    (next pieces capacity stack ht impl) (encoding pieces .prepare) (encoding pieces pc)
+    (encoding pieces target) hr hh he
+  rw [hbank] at hj
+  exact hj
+
 theorem block_jump_within_heads (pc target : PC pieces.length) (before after : Tapes t a) (B : ℕ)
     (h : HoareTime (block pieces capacity stack ht impl pc).program
       (· = raw before (block pieces capacity stack ht impl pc).tapes)
@@ -50,11 +70,7 @@ theorem block_jump_within_heads (pc target : PC pieces.length) (before after : T
     intro st
     rw [he st]
     rfl
-  have hj := FiniteFlow.block_then_jump_within (family pieces capacity stack ht impl)
-    (next pieces capacity stack ht impl) (encoding pieces .prepare) (encoding pieces pc)
-    (encoding pieces target) hr hh (he' c.state)
-  rw [hbank] at hj
-  exact ⟨n+1,by omega,hj⟩
+  exact ⟨n+1,by omega,member_jump_within pieces capacity stack ht impl pc target before after hr hh hbank (he' c.state)⟩
 
 end
 end IntegerMultBounds.MathlibTM2.M8.RevMachine.GraphRun

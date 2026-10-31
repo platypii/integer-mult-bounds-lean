@@ -50,6 +50,18 @@ theorem trans (h : RunWithin M H n c d) (h' : RunWithin M H m d z) :
     rw [he,run_add,h.1,Option.bind_some] at hx
     exact h'.2 (k-n) (by omega) x hx
 
+/-- Linear-time control routines get prefix bounds from physical head travel. -/
+theorem heads_of_run (hr : run M n c = some d) (lo hi : ℤ)
+    (hbank : ∀ i, lo+n ≤ c.head i ∧ c.head i+n ≤ hi) :
+    RunWithin M (fun v => ∀ i, lo ≤ v.head i ∧ v.head i ≤ hi) n c d := by
+  refine ⟨hr,?_⟩
+  intro m hm z hz i
+  have ht := run_head_travel hz i
+  have hb := hbank i
+  change lo ≤ z.head i ∧ z.head i ≤ hi
+  change c.head i-(m : ℤ) ≤ z.head i ∧ z.head i ≤ c.head i+(m : ℤ) at ht
+  omega
+
 /-- Step simulations preserve all intermediate configurations, not just endpoints. -/
 theorem simulation {u r b : ℕ} {N : Program u r b} {G : TapePred u b}
     (f : Config t q a → Config u r b)
