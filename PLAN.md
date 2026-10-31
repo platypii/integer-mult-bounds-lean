@@ -16993,3 +16993,21 @@ Next close the common six-header high path, dispatch and selected supplier, then
 transfer the complete transpose workspace bound to archive stock. Generated S4
 supplier readiness, complete-key setup reuse, tensor/layout composition and final
 audits remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the complete common-header high path is bounded
+
+`HighWithin.runs` starts from the caller's original six shape headers and blank
+private banks. It includes actual common header folding and stage-2 row metadata
+construction, the bounded prepared high body, and common metadata erasure.
+Existing folded-volume and source-encoding identities retain the exact original
+transpose endpoint. One fixed reserve is the maximum of setup plus body space
+and twice cleanup travel; all private banks are restored. The original
+`C*V*e^tau2 + D*V` runtime remains certified.
+
+`HighWithin.input_head_congr` handles the full bank structurally before concrete
+tape sizes are instantiated. The guarded check peaks at 2604.5 MiB; the guarded
+target build succeeds (6694 jobs). Next close the actual supplier selector,
+stage-1 fallback and constant lifecycle, then the sealed selected transpose and
+archive-stock interface. Generated S4 supplier readiness, complete-key setup
+reuse, tensor/layout composition and final audits remain open.
+S4 is incomplete; kappa is unchanged.
