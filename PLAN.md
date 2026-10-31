@@ -16951,3 +16951,25 @@ The guarded file check peaks at 2546.5 MiB; the guarded target build succeeds
 carry this certificate through paid initialization and selected supplier wrappers
 to archive stock. Generated supplier readiness, setup reuse, tensor/layout
 composition and final S4 audits remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: selected padding and paid high-body initialization are bounded
+
+`HighCostWithin.runs` instantiates the high-body certificate with the actual
+selected joined depth and padded rows. `Params.volume_le` discharges the pure
+factor-two volume condition, and the existing `HighCost.cost_le` retains the
+selected exponent's runtime bound.
+
+`InitWithin.runs` includes all three sparse metadata copies, the selected high
+body and all three erasures. A metadata bound `V ≤ D*originalVolume` gives one
+fixed reserve: setup travel plus body space, or twice cleanup travel, whichever
+is larger. Setup head travel transfers the margin to the prepared bank; exact
+source-head restoration transfers it to cleanup. All private banks start and
+finish blank, the caller's source is exactly transposed, and the runtime remains
+`C*originalVolume*e^tau2 + 802*V`.
+
+Guarded checks peak at 2523.8 MiB (selected padding) and 2548.2 MiB
+(initialization); the guarded target build passes (6686 jobs). Next carry the
+certificate through generated metadata/atom-width preparation and selected
+supplier wrappers to archive stock. Generated S4 supplier readiness, complete-key
+setup reuse, tensor/layout composition and final audits remain open.
+S4 is incomplete; kappa is unchanged.
