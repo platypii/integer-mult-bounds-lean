@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3263 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3264 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -18349,3 +18349,18 @@ Guarded checks peak at 2038.7 MiB (generic row view), 2075.1 MiB (gather view),
 3086.0 MiB (inverse gather) and 3091.2 MiB (composed physical stage). The guarded
 target build passes (14047 jobs, 3.3 GiB combined peak).
 The scoped axiom audit passes for 321242 declarations (3099.3 MiB peak).
+
+### S4 checkpoint: padding-symbol counts are generated from retained dimensions
+
+`paddingCounterSetup_exec` composes existing unary copy, subtraction and product
+loops to generate `(capacity-rows)*blockWidth` symbols in an initially blank
+padding counter. It preserves the actual retained dimension words and every
+other register, including the subtraction workspace and both scratch registers.
+Its time bill includes all four physical stages and workspace retirement;
+natural subtraction covers empty and over-capacity inputs without case splits.
+
+The guarded file check passes at 1940.5 MiB; the target build passes (3969 jobs,
+2.5 GiB combined peak). The execution-wide stock wrapper and composition with
+row-counter setup, ambient gathering and padding/routing remain open. Selected
+supplier consumption/publication, seam lifecycle, sizing and R4/tensor
+composition remain open. S4 is incomplete; kappa is unchanged.
