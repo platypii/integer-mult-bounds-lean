@@ -7,7 +7,23 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPaddedArchiveTileData
 padding premises of generated publication in the original core-class order. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
-open IntegerMultBounds
+open IntegerMultBounds IntegerMultBounds.MathlibTM2.Fast
+
+theorem paddedArchiveStream_length {A C B L : ℕ} (w : ℕ)
+    (padded : Fin C → Fin B → List GaussianInt) (hlen : ∀ i j, (padded i j).length = L) :
+    ((List.ofFn fun j => cstream A w (List.ofFn fun i => padded i j).flatten).flatten).length =
+      B*(C*L*w) := by
+  have hrow (j : Fin B) : (List.ofFn fun i => padded i j).flatten.length = C*L := by
+    rw [length_flatten_const _ (by
+      intro row hr
+      obtain ⟨i,he⟩ := List.mem_ofFn.mp hr
+      subst row
+      exact hlen i j),List.length_ofFn]
+  rw [length_flatten_const _ (by
+    intro line hr
+    obtain ⟨j,he⟩ := List.mem_ofFn.mp hr
+    subst line
+    rw [length_cstream,hrow]),List.length_ofFn]
 
 theorem generatedCoreTilePadding_spec {s width L C B : ℕ}
     (hN : (corePublicationIndices s width L).length ≤ C)
