@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedProducerDescriptor
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorRetire
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseDescriptorBank
 
 /-! Release the generated descriptor and clock after the producer restores them.
 Only the owned prefix is retired; the caller's following queue is retained. -/
@@ -30,26 +30,13 @@ theorem releaseDescriptor_exec (plan : PackedProducerPlan T Q) (r : PackedNormal
         (Host.mk v' {S with R := (Function.update (Function.update S.R plan.src rest) plan.clock [])}) := by
   have hr := plan.hreg
   regs_ne hr
-  let fields := placedDescriptorFields plan.work r.words
-  have hfields : fields.length = 325 := List.length_ofFn
-  have htape : descriptorScheduleTape plan.work PackedNormalizedJob.words [r] = descriptorBankTape fields := by
-    simp only [descriptorScheduleTape,List.flatMap_cons,List.flatMap_nil,List.append_nil,fields]
-  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := retireDescriptorBank_exec (body := body) plan.src plan.count plan.tmp
-    (by regs_nodup) fields rest v S (by simpa only [htape] using hsrc) hcount htmp
-  rw [hfields] at he₁
-  let M : Stacks T A := {S with R := Function.update S.R plan.src rest}
-  obtain ⟨v₂,hu₂,he₂⟩ := uclear_exec body plan.clock v₁ M
-  have hc : (M.R plan.clock).length = 1 := by
-    simpa only [M,Function.update_of_ne ‹plan.src ≠ plan.clock›.symm] using hclock
-  rw [hc] at he₂
-  have hwhole := Exec.seq he₁ he₂
-  have htime : n₁+4 ≤ 9*(descriptorScheduleTape plan.work PackedNormalizedJob.words [r]).length+5 := by
-    rw [htape]
-    omega
-  refine ⟨v₂,n₁+4,hu₂.trans hu₁,htime,?_⟩
-  apply mn_native_exec_within hwhole 1
-  · exact ⟨retireDescriptorBank_native _ _ _ _,by
-      simp [uclear,drainR,popDo,peekR,mnNativePushBound,mnActPush]⟩
-  · omega
+  have htape : descriptorScheduleTape plan.work PackedNormalizedJob.words [r] =
+      descriptorBankTape (placedDescriptorFields plan.work r.words) := by
+    simp only [descriptorScheduleTape,List.flatMap_cons,List.flatMap_nil,List.append_nil]
+  obtain ⟨v',n,hu,hn,he⟩ := releaseDescriptorBank_exec (body := body) plan.work r.words
+    plan.src plan.count plan.tmp plan.clock (by regs_nodup) rest v S
+    (by simpa only [htape] using hsrc) hcount htmp hclock depth
+  rw [← htape] at hn he
+  exact ⟨v',n,hu,hn,he.mono (by intro d z hz; omega)⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.PackedProducerPlan

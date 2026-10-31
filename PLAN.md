@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3344 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3349 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -19455,3 +19455,24 @@ the complete tensor and R4 budget. The latter is a candidate, not an established
 replacement. Choose the final core width only with the per-input cost argument
 in place. Ordinary placement, publication and tensor/R4 restoration are still
 open. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: shared descriptor retirement and seed-preserving bank cleanup
+
+`releaseDescriptorBank_exec` retires one physical descriptor and its generated
+clock for any fixed bank width, preserving the following queue and every other
+register. The existing packed supplier reuses it with unchanged executable,
+time and stock contracts. The full-period S3 supplier uses the same operation
+at 303 ports.
+
+`clearBankExcept_exec` restores an injectively placed generated bank to an
+ordinary base state while retaining one borrowed seed. It proves the final
+frame and linear cleanup bill structurally over a filtered register list,
+without enumerating the concrete bank. Clearing has native push bound zero,
+so every intermediate stock is at most the initial stock.
+
+Guarded checks pass at 3031.0 MiB (generic descriptor retirement), 3542.4 MiB
+(packed specialization) and 1935.8 MiB (seed-preserving bank cleanup). The
+combined restoring supplier/full-period lifecycle build passes (15877 jobs,
+5.9 GiB combined peak), and its scoped audit passes for 337618 declarations
+at 3423.9 MiB. The full-period caller composition follows in the next chunk.
+S4 remains incomplete; kappa is unchanged.
