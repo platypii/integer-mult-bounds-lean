@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3196 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3198 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17359,3 +17359,26 @@ build passes (8354 jobs, 3.2 GiB combined peak). Padding and conditional archive
 composition, generated supplier readiness, complete-key setup reuse,
 tensor/layout composition and final audits remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: short packed tiles include bounded physical padding
+
+`generatedReplicaTilePadding_exec_within` supplies the actual prefix-padding
+trace, retaining the original packed suffix and restoring every generated
+counter. Its workspace allowance is `74*V+56`, linear in the padded volume
+with no multiplier depending on the replica exponent. The variable-push total
+exponent generation is certified separately: the empty-exponent branch skips
+both loops, while positive exponents absorb its native push bill into volume.
+The remaining padding kernel has a fixed two-push structural certificate.
+
+`paddedCountedChunkTile_exec_within` composes that trace with the actual counted
+packed route, deriving all later readiness from the padding endpoint. It
+retains the original paid runtime, exact routed padded output and original
+suffix recovery fact. Arithmetic association is made explicit before weakening
+stock invariants, avoiding expansion of the sealed selected supplier reserve.
+
+The padding certificate's guarded check peaks at 1965.0 MiB. The complete padded
+counted tile check peaks at 2977.2 MiB; the guarded target build passes (8360 jobs,
+3.2 GiB combined peak). Next transfer this certificate through coefficient/row
+views and conditional archive composition. Generated supplier readiness,
+complete-key setup reuse, tensor/layout composition and final audits remain
+open. S4 is incomplete; kappa is unchanged.
