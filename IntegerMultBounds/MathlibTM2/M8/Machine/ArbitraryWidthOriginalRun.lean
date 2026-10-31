@@ -43,7 +43,7 @@ def cost (d : Descriptor) (hs : Fin 6 → List Bool) :=
   ArbitraryWidthHighCommonPrepare.setupCost prime d+1+
     ArbitraryWidthHighCommonDispatch.cost d hs+1+ArbitraryWidthHighCommonPrepare.cleanupCost prime d
 
-private theorem extend_banks_hoare {states budget : ℕ} {M : Program ((t+16)+19) states prime}
+theorem extend_banks_hoare {states budget : ℕ} {M : Program ((t+16)+19) states prime}
     {v w : Tapes ((t+16)+19) prime}
     (h : HoareTime M (fun z => z = v) (fun z => z = w) budget) :
     HoareTime (extendBanks M)

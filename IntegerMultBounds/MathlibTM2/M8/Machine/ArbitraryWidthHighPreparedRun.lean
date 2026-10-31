@@ -53,7 +53,7 @@ def cost (P e G B : ℕ) (jh : Fin 6 → List Bool) :=
       (2*volume prime (originalDescriptor P e G B))
 
 omit [Net] in
-private theorem changed_bank (base : Tapes t prime) (focus : Fin t)
+theorem changed_bank (base : Tapes t prime) (focus : Fin t)
     (P G B e r : ℕ) (dh : Fin 5 → List Bool) (jh : Fin 6 → List Bool)
     (word : ℤ → Fin (prime+4)) :
     setTape (bank base P G B e r dh jh) (baseSlot focus) word 0 =

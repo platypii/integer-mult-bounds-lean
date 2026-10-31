@@ -41,7 +41,7 @@ theorem caller_cells (caller : Tapes t prime) (d : Descriptor) (hs : Fin 6 → L
   simp only [callerSlot,ArbitraryWidthHighCommonPrepare.output,Tapes.append,Fin.addCases_left]
   exact ⟨trivial,trivial⟩
 
-private theorem changed_common (caller : Tapes t prime) (d : Descriptor) (hs : Fin 6 → List Bool)
+theorem changed_common (caller : Tapes t prime) (d : Descriptor) (hs : Fin 6 → List Bool)
     (focus : Fin t) (word : ℤ → Fin (prime+4)) :
     setTape (ArbitraryWidthHighCommonPrepare.output caller d hs prime) (callerSlot focus) word 0 =
       ArbitraryWidthHighCommonPrepare.output (setTape caller focus word 0) d hs prime := by

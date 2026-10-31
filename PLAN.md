@@ -16772,3 +16772,38 @@ bounded contracts before the full stage-1 leaf core and stage-2 selected archive
 transpose receive their space certificates. Archive stock, generated S4 supplier
 readiness, complete-key setup reuse, tensor/layout composition and final audits
 remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: complete stage-1 original-header execution bounds the stage-2 leaf
+
+`ArbitraryWidthHighPreparedRunWithin` bounds actual branch-metadata construction,
+private-header initialization, the complete high body and reverse erasure with
+one original-volume reserve. `ArbitraryWidthHighCommonHighBodyWithin` transfers
+that certificate through the existing folded-descriptor and exact source-word
+identities. Three existing structural bank/extension helpers are shared with
+the endpoint proofs rather than reproved.
+
+`FiniteFlow.jump_then_halt_within` composes an actual bounded selector block,
+its physical jump and a bounded terminal block. The runtime descriptor selector
+uses it in `ArbitraryWidthHighBranchCompositionWithin`. The concrete common
+dispatch shares one reserve across selector, high branch and fallback: the
+existing finite cutoff makes fallback time linear in volume. The selected
+branch retains its original runtime charge and actual restored endpoints.
+
+`ArbitraryWidthOriginalRunWithin` includes common metadata synthesis and erasure
+from the original six headers. `HoareWithin.branch` includes the actual one-step
+conditional; `ArbitraryWidthOriginalTotalRunWithin` uses it for zero and positive
+widths. No execution callback, precomputed branch outcome or noncanonical runtime
+metadata is supplied by callers.
+
+`Embed.place_within` transports active and complementary prefix bounds with
+abstract tape/state counts before concrete instantiation. The concrete
+`LeafCoreWithin.core_runs_within` consumes the complete stage-1 certificate on
+the existing stage-2 common bank, preserving its original exact transpose and
+runtime theorem. Every actual prefix of this placed leaf fits one fixed
+linear-volume reserve, for any cutoff satisfying the existing high-depth bound.
+
+Remaining: supply the other local frame bounds, assemble the complete stage-2
+transpose workspace theorem and transfer it to selected archive stock. Generated
+S4 supplier/readiness, complete-key setup reuse, tensor/layout composition and
+final execution/error/cost audits also remain open. S4 is incomplete; kappa is
+unchanged.
