@@ -45,6 +45,14 @@ theorem batch_exec_within (h : RpLayout rg ι) (hT : 91 ≤ T) (hQ : rpStates �
     (fun n => coeff p l (X n) (Y n)) (fun n hn => rpOut_blocks p l X Y n (hxy n hn))
   simpa only [hout] using he
 
+theorem packBatch_native
+    (records recordSaved count pad src saved acc buf savedBlock tmp dst : Fin T) :
+    mnNativePushBound 3 (packBatch (P := P) (Q := Q) (A := A) (U := U)
+      records recordSaved count pad src saved acc buf savedBlock tmp dst) := by
+  simp [packBatch,packLoopBody,packNext,copyPrefix,copyR,copyStep,transfer,transferAct,
+    umulSym,popPush,scanR,drainR,popDo,keepIn,pushN,moveR,moveStep,whileR,peekR,
+    mnNativePushBound,mnActPush]
+
 theorem packBatch_coeffs_prefix_exec_within
     {records recordSaved count pad src saved acc buf savedBlock tmp dst : Fin T}
     (hreg : [records, recordSaved, count, pad, src, saved, acc, buf, savedBlock, tmp, dst].Nodup)
@@ -67,8 +75,6 @@ theorem packBatch_coeffs_prefix_exec_within
     v S tail hrecords hsrc hcount hpad hrecordSaved hsaved hacc hbuf hsavedBlock htmp
   refine ⟨v', hu, fun depth => ?_⟩
   apply mn_native_exec_within he 3 ?_ depth _ (by omega)
-  simp [packBatch,packLoopBody,packNext,copyPrefix,copyR,copyStep,transfer,transferAct,
-    umulSym,popPush,scanR,drainR,popDo,keepIn,pushN,moveR,moveStep,whileR,peekR,
-    mnNativePushBound,mnActPush]
+  exact packBatch_native records recordSaved count pad src saved acc buf savedBlock tmp dst
 
 end IntegerMultBounds.MathlibTM2.Mult.ShortConv

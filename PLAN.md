@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3393 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3394 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -20088,3 +20088,28 @@ setup and cached interior caller. Complete interior stock, selected geometry
 and amortization, boundary/publication/recovery and tensor/R4 restoration
 remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 8424 declarations at 1946.7 MiB.
+
+### S4 checkpoint: complete raw-input short-convolution batch stock
+
+`ShortConvBatchProgramStock.batchProgram_prefix_exec_within` certifies the
+actual two raw-input packers, shared ring call and both packed-buffer clears.
+The original `batchCost` and exact output/frame contract are recovered by
+execution uniqueness. A private trace lemma composes the actual stages;
+`packBatch_native` is shared with the coefficient-level packer certificate.
+No numerical execution is supplied, no tape bank is enumerated, and default
+proof limits are preserved.
+
+`batchProgram_stock_le` reduces the complete extra-stock bill to
+`(C+1)*rpWorkspace(p,l,w,0) + (1842*(C+1)+120)*(M*2^l*w) + 150*M + 48`.
+Thus packing contributes linear padded traffic and record counters, the ring
+shares its numerical scratch, and retirement contributes zero extra stock.
+The complete initial bank, including borrowed suffixes and spectators, is
+counted once.
+
+The guarded single-file check passes at 4021.5 MiB; the complete module build,
+including the final scalar bound, passes (4002 jobs, 4.5 GiB combined peak).
+Next lift through shared unary setup/retirement and `ShortConv.Fixed.program`,
+then the cached interior caller. The full S4 interior stock boundary, selected
+geometry/amortization, boundary/recovery/publication and tensor/R4 restoration
+remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 8434 declarations at 1947.0 MiB.
