@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.M8.Machine.ArbitrarySliceRepeat
+public import IntegerMultBounds.Machine.HoareWithinPlacement
 public import IntegerMultBounds.Machine.ArbitraryWidthLevelAdvance
 public import IntegerMultBounds.Machine.ArbitraryWidthPieceLoop
 public import IntegerMultBounds.MathlibTM2.M8.Machine.ArbitrarySliceCall
@@ -140,6 +141,39 @@ theorem repeat_placed {r c : ℕ} {M : Program (S+2) r prime} (ns rs : List Bool
   rintro v ⟨w,rfl,rfl⟩
   rw [Placement.replace,repeat_extra,← repeat_output_active ns slice' level]
   exact Placement.view _ _
+
+/-- The same placement carries a bounded run and preserves its exact parent bank. -/
+theorem repeat_placed_within {r c : ℕ} {M : Program (S+2) r prime} (ns rs : List Bool)
+    (slice slice' : Tapes S prime) (level : Tapes 6 prime) (lo hi : ℤ)
+    (h : HoareWithin M (· = ArbitrarySliceRepeat.input slice rs)
+      (· = slice'.append (SharedBank.empty 2 prime)) c (fun z => ∀ j, lo ≤ z.head j ∧ z.head j ≤ hi))
+    (hframe : ∀ j, lo ≤ (emitted ns rs slice level).head j ∧ (emitted ns rs slice level).head j ≤ hi) :
+    HoareWithin (Placement.placed M repeatPlacement) (· = emitted ns rs slice level)
+      (· = parent ns slice' level) c (fun z => ∀ j, lo ≤ z.head j ∧ z.head j ≤ hi) := by
+  apply (HoareWithin.placed_heads_at h repeatPlacement (emitted ns rs slice level)
+    (repeat_active ns rs slice level) (fun j => hframe (repeatPlacement (Fin.natAdd (S+2) j)))).consequence
+    (fun _ h => h) _ le_rfl (fun _ h => h)
+  rintro v ⟨w,rfl,rfl⟩
+  rw [Placement.replace,repeat_extra,← repeat_output_active ns slice' level]
+  exact Placement.view _ _
+
+/-- Erasing the emitted digit moves a boundary head by at most one; the slice
+and level heads themselves are shared across their payload words. -/
+theorem parent_emitted_heads (ns rs : List Bool) (slice slice' : Tapes S prime) (level : Tapes 6 prime)
+    (hhead : slice'.head = slice.head) :
+    ∀ j, (emitted ns rs slice level).head j-1 ≤ (parent ns slice' level).head j ∧
+      (parent ns slice' level).head j ≤ (emitted ns rs slice level).head j+1 := by
+  intro j
+  induction j using Fin.addCases with
+  | left j =>
+    simp only [parent,emitted,Tapes.append,Fin.addCases_left]
+    simp only [ArbitraryWidthPieceCounter.ready,ArbitraryWidthPieceCounter.input,setTape,
+      Function.update_apply,SharedBank.empty]
+    split_ifs <;> omega
+  | right j =>
+    simp only [parent,emitted,Tapes.append,Fin.addCases_right]
+    rw [hhead]
+    constructor <;> omega
 
 end
 end IntegerMultBounds.MathlibTM2.M8.Machine.ArbitraryWidthConsumePlacement

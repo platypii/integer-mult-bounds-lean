@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.Machine.ArbitraryWidthPieceCounter
 public import IntegerMultBounds.Machine.ArbitraryWidthPieces
 public import IntegerMultBounds.Machine.LoopChain
+public import IntegerMultBounds.Machine.HoareWithinLoop
 
 /-! A fixed runtime base-digit loop around actual quotient/remainder
 extraction. A fixed continuation consumes each physically emitted digit and
@@ -91,6 +92,32 @@ theorem loop_hoare (B N : ℕ) (hB : 2 ≤ B) (consume : Program (14+t) s a)
     simp [show remaining B N i ≠ 0 from Nat.ne_of_gt (before B N i hB hi)]
   · rw [test_state,exit B N hB]
     rfl
+
+/-- The actual digit driver shares a prefix predicate between extraction and
+continuation, including its real while tests and return transitions. -/
+theorem loop_within (B N : ℕ) (hB : 2 ≤ B) (consume : Program (14+t) s a)
+    (payload : ℕ → Tapes t a) (consumeCost : ℕ → ℕ) (H : TapePred (14+t) a)
+    (hzero : H (state B N 0 (payload 0)))
+    (hstage : ∀ i < count B N, HoareWithin (extend (ArbitraryWidthPieceCounter.stage (a := a) B) t)
+      (· = state B N i (payload i)) (· = emitted B N i (payload i))
+      (ArbitraryWidthPieceCounter.stageCost B (bits (remaining B N i))) H)
+    (hconsume : ∀ i < count B N, HoareWithin consume (· = emitted B N i (payload i))
+      (· = state B N (i+1) (payload (i+1))) (consumeCost i) H) :
+    HoareWithin (loop B consume) (· = state B N 0 (payload 0))
+      (· = state B N (count B N) (payload (count B N)))
+      (∑ i ∈ Finset.range (count B N),
+        (ArbitraryWidthPieceCounter.stageCost B (bits (remaining B N i))+consumeCost i+3)) H := by
+  have h := HoareWithin.while_chain (body B consume) test (fun i => state B N i (payload i))
+    (fun i => ArbitraryWidthPieceCounter.stageCost B (bits (remaining B N i))+consumeCost i+1)
+    H hzero (count B N)
+    (fun i hi => ((hstage i hi).seq (hconsume i hi)).consequence (fun _ h => h) (fun _ h => h)
+      (by omega) (fun _ h => h))
+    (by
+      intro i hi
+      rw [test_state]
+      simp [show remaining B N i ≠ 0 from Nat.ne_of_gt (before B N i hB hi)])
+    (by rw [test_state,exit B N hB]; rfl)
+  simpa only [loop,Nat.add_assoc] using h
 
 theorem count_le (B N : ℕ) : count B N ≤ N := by
   by_cases hn : N = 0

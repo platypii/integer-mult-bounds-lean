@@ -16719,3 +16719,27 @@ wrappers still need bounded certificates. The full high-run composition, stage-2
 leaf-core space certificate, selected archive stock and the remaining S4 supplier,
 readiness, setup-reuse, tensor/layout and final audit obligations remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the actual digit continuation and dispatcher share workspace
+
+`ArbitraryWidthConsumePlacement.repeat_placed_within` reuses the physical
+projection, complementary frame and exact replacement proofs for counted slice
+calls. Digit erasure changes a boundary head by at most one; slice and level
+heads are shared across data and offset words. `ArbitraryWidthPieceConsumeWithin`
+combines this with the real depth/width advance. Its fixed reserve is the maximum
+of the repeated-slice allowance and the linear selected-power advance allowance;
+the ordinary selected-power bound supplies the volume hypothesis.
+
+`RunWithin.while_iteration` and `HoareWithin.while_chain` include actual tests,
+body runs, returns and halt with one prefix predicate. The concrete runtime digit
+loop consumes that language. `ArbitraryWidthPieceExecutionWithin.dispatches_within`
+closes the body obligations using actual linear digit extraction and the bounded
+nonlinear continuation, with no assumed continuation trace. Boundary-head equality
+transfers one original volume reserve to every digit. The full physical bank
+adapter retains the exact transpose endpoint and original charged runtime.
+
+Paid dispatcher setup/cleanup and padded-piece placement/cropping still need
+bounded certificates before composing the complete high-width run. The stage-2
+leaf-core certificate, selected archive stock and the other S4 supplier/readiness,
+setup-reuse, tensor/layout and final audit obligations remain open. S4 is
+incomplete; kappa is unchanged.
