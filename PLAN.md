@@ -16743,3 +16743,32 @@ bounded certificates before composing the complete high-width run. The stage-2
 leaf-core certificate, selected archive stock and the other S4 supplier/readiness,
 setup-reuse, tensor/layout and final audit obligations remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: complete high-width body and private-header lifecycle share workspace
+
+`ArbitraryWidthPieceRunWithin.runs_within` surrounds the actual bounded digit
+execution with paid sole-header setup and cleanup. Existing header-length and
+last-power estimates give linear-volume phase bounds; setup head travel supplies
+the dispatcher margin, and cleanup is bounded from the exact restored post-bank.
+`SharedPlacementAlphabet.shared_margin` transports a whole-bank reserve through
+the same active projection used by the shared execution theorem.
+
+`ArbitraryWidthPaddedPiecePlacementWithin`, `ArbitraryWidthPaddedPieceRunWithin`
+and `ArbitraryWidthPaddedPieceSharedWithin` lift that dispatcher onto the physical
+shared payload, including real row padding and reversed cropping. Their fixed
+reserve is measured against padded volume, retaining the original complete
+runtime, transpose endpoint, restored private banks and arbitrary caller frame.
+
+`ArbitraryWidthHighRunWithin.runs_within` composes exchange/join, padded dispatch
+and inverse separation. Row rounding increases volume by at most two; exact
+boundary-head restoration lets all three phases reuse one original-volume
+reserve. `ArbitraryWidthHighInitializedRunWithin.runs_within` additionally
+constructs and erases all execution-private headers. A fixed bound `V ≤ D*volume`
+on supplied metadata lengths gives one fixed workspace coefficient depending on
+`D`, with no assumed execution trace and no iteration or phase-count factor.
+
+The branch/common metadata preparation and actual branch selection still need
+bounded contracts before the full stage-1 leaf core and stage-2 selected archive
+transpose receive their space certificates. Archive stock, generated S4 supplier
+readiness, complete-key setup reuse, tensor/layout composition and final audits
+remain open. S4 is incomplete; kappa is unchanged.

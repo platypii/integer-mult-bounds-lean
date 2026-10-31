@@ -9,6 +9,21 @@ caller tapes and the cleared private source at their exact endpoints. -/
 namespace IntegerMultBounds.Machine.SharedPlacementAlphabet
 variable {a l r states cost : ℕ} {M : Program r states a} {w w' : Tapes r a} {lo hi : ℤ}
 
+/-- The active projection inherits the original whole-bank reserve exactly. -/
+theorem shared_margin {K : ℕ}
+    (v : Tapes l a) (i : Fin l) (j : Fin r) (spare : ℤ → Fin (a+4)) (spareHead : ℤ)
+    (hf : v.tape i = w.tape j) (hp : v.head i = w.head j)
+    (hwhole : ∀ k, lo+(K : ℕ) ≤ (v.append (setTape w j spare spareHead)).head k ∧
+      (v.append (setTape w j spare spareHead)).head k+(K : ℕ) ≤ hi) :
+    ∀ k, lo+(K : ℕ) ≤ w.head k ∧ w.head k+(K : ℕ) ≤ hi := by
+  have ha : Placement.active (sharedPlacement i j) (v.append (setTape w j spare spareHead)) = w := by
+    rw [active_shared,hf,hp,setTape_setTape,setTape_self]
+  intro k
+  have hm := hwhole (sharedPlacement i j (Fin.castAdd l k))
+  change lo+(K : ℕ) ≤ (Placement.active (sharedPlacement i j) (v.append (setTape w j spare spareHead))).head k ∧
+    (Placement.active (sharedPlacement i j) (v.append (setTape w j spare spareHead))).head k+(K : ℕ) ≤ hi at hm
+  rwa [ha] at hm
+
 theorem shared_within
     (h : HoareWithin M (· = w) (· = w') cost (fun z => ∀ j, lo ≤ z.head j ∧ z.head j ≤ hi))
     (v : Tapes l a) (i : Fin l) (j : Fin r) (spare : ℤ → Fin (a+4)) (spareHead : ℤ)
