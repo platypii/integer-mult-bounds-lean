@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3213 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3214 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17566,3 +17566,22 @@ The guarded file check peaks at 3214.1 MiB and the guarded target build passes
 (14755 jobs, 3.4 GiB combined peak). Full supplier batches, complete-key setup
 reuse, grouped publication and R4/tensor layout restoration also remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: binary factory geometry is generated from retained coordinates
+
+`factoryGeometry_exec` composes the existing unary copier, subtraction and
+fixed-width unary-to-binary converter. It generates the binary origin, binary
+interval length and private unary width word from retained ordinary coordinate
+and width headers. Its exact endpoint changes only those three destination
+words; all retained sources and scratch words are restored. No binary geometry
+word is an input premise. The explicit runtime bound includes both conversions,
+temporary interval generation and its erasure.
+
+The guarded file check peaks at 1409.6 MiB; the guarded target build passes
+(2074 jobs, 2.1 GiB combined peak). The scoped axiom audit passes for 1106
+declarations (1394.0 MiB). A tight intermediate workspace certificate and
+composition with the installed master bank remain open; runtime is not being
+used as a substitute for the required linear workspace bound. Next close the
+complete generated supplier input, then lift its lifecycle to complete-key
+batches and grouped publication. R4/tensor layout restoration and the final
+S4 audits remain open. S4 is incomplete; kappa is unchanged.
