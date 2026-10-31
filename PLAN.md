@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3237 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3238 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17982,3 +17982,29 @@ declarations (1873.7 MiB). Actual wiring of generated packed bulk calls and
 the retained full-period seam solve to these tasks, whole-schedule exposure
 reuse, grouped publication, R4/tensor layout restoration and final audits
 remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: full-line scalar tables bootstrap from ordinary headers
+
+`generateInverseScalarBank_exec` composes the arbitrary-list binary parameter
+queue generator with the existing scalar allocator and inverse-parameter
+loader. Its inputs are the eight ordinary header values, an ordinary width
+word, blank scalar storage and blank queue/scratch. The actual program generates
+and consumes its binary queue, leaving exactly the existing
+`inverseInputScalars` table. No prepared encoded scalar table or parameter
+queue is assumed. The queue is restored, as are both host tapes, every left
+stack and every right stack outside the scalar table.
+
+The same execution has time at most
+`(p+u+l+target+s+t+a+b)*(4*B+10)+228*B+263` and additional stock
+`392*B+396`. Allocation/loading native certificates are structural over their
+word lists. A small table-state identity aligns the installed parameters with
+the full-line dispatch ABI. Arithmetic normalization is isolated from bank
+terms; default proof limits are unchanged.
+
+The guarded file check peaks at 3231.5 MiB; the guarded target build passes
+(14756 jobs, 3.4 GiB combined peak). The scoped axiom audit passes for 327014
+declarations (3215.4 MiB). Next assemble the full-line seam source/count bank,
+generate its dispatcher descriptor, and connect retained seam crops to the
+selected full-period task. Whole-schedule exposure reuse, grouped publication,
+R4/tensor layout restoration and final audits remain open. S4 is incomplete;
+kappa is unchanged.
