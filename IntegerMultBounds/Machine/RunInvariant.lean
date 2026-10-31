@@ -33,19 +33,31 @@ theorem RunInvariant.step {M : Program t q a} {pre : TapePred t a} {c d : Config
   obtain ⟨v,hv,n,hr⟩ := hc
   exact ⟨v,hv,n+1,run_step_append hr hs⟩
 
-/-- A reached halting configuration is the endpoint of the actual Hoare run,
-so its complete tapes satisfy the postcondition. -/
-theorem RunInvariant.post {M : Program t q a} {pre post : TapePred t a} {k : ℕ}
-    (h : HoareTime M pre post k) {c : Config t q a} (hc : RunInvariant M pre c)
-    (hh : Machine.step M c = none) : post c.tapes := by
+/-- Recover a complete configuration postcondition, including the terminal
+finite state used by a controller's next-block function. -/
+theorem RunInvariant.post_config {M : Program t q a} {pre : TapePred t a}
+    {post : Config t q a → Prop}
+    (hcomplete : ∀ v, pre v → ∃ n z, run M n (v.start M) = some z ∧
+      Machine.step M z = none ∧ post z)
+    {c : Config t q a} (hc : RunInvariant M pre c) (hh : Machine.step M c = none) : post c := by
   obtain ⟨v,hv,n,hr⟩ := hc
-  obtain ⟨m,z,_,hz,hhalt,hpost⟩ := h v hv
+  obtain ⟨m,z,hz,hhalt,hpost⟩ := hcomplete v hv
   have hn := run_length_le_of_halt hr hz hhalt
   have hm := run_length_le_of_halt hz hr hh
   have he : n = m := by omega
   rw [he,hz,Option.some.injEq] at hr
   subst c
   exact hpost
+
+/-- A reached halting configuration is the endpoint of the actual Hoare run,
+so its complete tapes satisfy the postcondition. -/
+theorem RunInvariant.post {M : Program t q a} {pre post : TapePred t a} {k : ℕ}
+    (h : HoareTime M pre post k) {c : Config t q a} (hc : RunInvariant M pre c)
+    (hh : Machine.step M c = none) : post c.tapes := by
+  apply RunInvariant.post_config (post := fun z => post z.tapes) ?_ hc hh
+  intro v hv
+  obtain ⟨n,z,_,hr,hh,hpost⟩ := h v hv
+  exact ⟨n,z,hr,hh,hpost⟩
 
 /-- Linear-time components get fixed intervals from their initial head bounds.
 The theorem does not substitute runtime for space in recursive bodies. -/
