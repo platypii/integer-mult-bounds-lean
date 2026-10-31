@@ -17955,3 +17955,30 @@ R4/tensor layout restoration and final audits remain open. Per-call ambient
 transport is proved here; the required whole-schedule exposure multiplicity
 and reuse bound is still an integration obligation. S4 is incomplete; kappa
 is unchanged.
+
+### S4 checkpoint: selected supplier tasks separate proper halos from one seam solve
+
+`coreSupplierSchedule` is the computed complete-endpoint-key schedule with
+explicit core lists. Its flattened core order is a permutation of all owned
+cores, and its endpoint keys are distinct. `coreSupplierSchedule_proper` proves
+that every non-full task is exactly one core; `coreSupplierSchedule_full`
+identifies the full-period task with the complete seam group.
+
+`coreSupplierSetupCost_eq` gives the exact selected setup ledger: the sum of
+proper-core charges plus one full-period charge if the seam key occurs. It
+never charges full-period numerical setup per seam crop. The matching output
+volume theorem is exactly `replicas*s*W`, including clipped cores. These are
+structural list proofs over the computed schedule, with no finite case data.
+
+Inspection confirms that packed normalized jobs exclude full-period intervals
+(`PackedNormalizedJob.haloLength_lt`). The selected seam path must therefore
+use the existing retained full-line dispatch/crop machinery, rather than
+attempting to represent seam fallbacks as packed proper-halo jobs. The new
+schedule makes that required branch and its setup accounting explicit.
+
+The guarded file check peaks at 1875.7 MiB; the guarded target build passes
+(3819 jobs, 2.4 GiB combined peak). The scoped axiom audit passes for 1522
+declarations (1873.7 MiB). Actual wiring of generated packed bulk calls and
+the retained full-period seam solve to these tasks, whole-schedule exposure
+reuse, grouped publication, R4/tensor layout restoration and final audits
+remain open. S4 is incomplete; kappa is unchanged.
