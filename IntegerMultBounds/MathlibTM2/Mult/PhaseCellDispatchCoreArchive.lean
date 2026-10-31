@@ -1,9 +1,10 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExactCoreArchive
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExactCoreArchiveRows
 
 /-! Execute one generated descriptor batch and archive its certified cores.
-The intermediate dispatch bank and its output certificate are derived here. -/
+The intermediate dispatch bank and its row certificates are derived here.
+The former field-valued return interface is available in commit 02f99a42. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Stack
@@ -48,23 +49,24 @@ theorem dispatchCoreArchive_exec
     (hrowSymbols : (S.R rowSymbols).length = coreLength s coreWidth k*(2*p+13))
     (hrows : (S.R rows).length = s) (hwordWidth : (S.R wordWidth).length = 2*p+13)
     (hclean : ∀ i ∈ [savedSkip,savedRow,cropTmp,retireCount,trash,retireTmp], S.R i = []) :
-    ∃ Ds : List (ZMod s → GaussianInt), ∃ v' F n, v'.user = v.user ∧
+    ∃ coreRows : List (List GaussianInt), ∃ v' F n, v'.user = v.user ∧
       n ≤ r.gridCost p l t work+2*(descriptorScheduleTape work FamilyDispatchInput.words [r]).length+19+
         (r.inputs.length*(packedCoreArchiveStepCost (coreStart coreWidth k) (coreLength s coreWidth k) s (2*p+13)+3)+2) ∧
       Exec body (.seq (gridFamilyDispatch work src saved count tmp spare result clock savedClock recovery hR hQ)
         (packedCoreArchiveLoop archiveClock skip rowSymbols result dst savedSkip savedRow cropTmp rows wordWidth retireCount trash retireTmp))
         (mk v S) n (mk v' F) ∧
       F.R result = S.R result ∧
-      F.R dst = (Ds.reverse.map (fun D => cstream A (2*p+13) (ownedCoreWords coreWidth k D))).flatten++S.R dst ∧
+      F.R dst = cstream A (2*p+13) coreRows.flatten++S.R dst ∧
       F.R archiveClock = [] ∧ F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
       (∀ i, i ≠ result → i ≠ dst → i ≠ archiveClock → F.R i = S.R i) ∧
-      List.Forall₂ (fun input D =>
+      (∀ row ∈ coreRows, row.length = coreLength s coreWidth k) ∧
+      List.Forall₂ (fun input row =>
         let out := packedIntervalRead p (2*p+13) (coreStart coreWidth k)
-          (cstream A (2*p+13) (ownedCoreWords coreWidth k D)++S.R dst)
+          (cstream A (2*p+13) row)
         (∀ i ∈ ownedCore s coreWidth k, ‖out i‖ ≤ 1) ∧
         ErrorOn (ownedCore s coreWidth k) out
           ((((2 : ℂ)^inverseNormalizationShift p)⁻¹ • J) ((1/2 : ℂ) • fun i => value p (input i)))
-          (3/(2 : ℝ)^p)) r.inputs.reverse Ds.reverse := by
+          (3/(2 : ℝ)^p)) r.inputs.reverse coreRows := by
   obtain ⟨v₁,n₁,outputs,hu₁,hn₁,he₁,ha,_⟩ := gridFamilyDispatch_exact_core_exec_trace (body := body)
     work hwork src saved count tmp spare result clock savedClock hreg hsep recovery hR hQ hA
     hp hst hθ hgap [r] (by simpa using hr) (fun _ => x) (fun _ => y)
@@ -86,7 +88,7 @@ theorem dispatchCoreArchive_exec
   have hr' := harchive
   regs_ne hr'
   have hstable (i : Fin T) (hi : i ≠ result) : S₁.R i = S.R i := by simp [S₁,hi]
-  obtain ⟨Ds,v₂,F,n₂,hu₂,hn₂,he₂,hs,hd,hc,hi,ho,hl,hframe,haccuracy⟩ := exactCoreArchive_exec (body := body)
+  obtain ⟨coreRows,v₂,F,n₂,hu₂,hn₂,he₂,hs,hd,hc,hi,ho,hl,hframe,hrowLength,haccuracy⟩ := exactCoreArchive_rows_exec (body := body)
     archiveClock skip rowSymbols result dst savedSkip savedRow cropTmp rows wordWidth retireCount trash retireTmp harchive
     v₁ S₁ p coreWidth k r (fun _ => J) output hproduced hstart (S.R result) (by simp [S₁])
     (by rw [hstable _ ‹archiveClock ≠ result›]; exact harchiveClock)
@@ -102,10 +104,9 @@ theorem dispatchCoreArchive_exec
         all_goals first | assumption | (apply Ne.symm; assumption)
       rw [hstable i hne]
       exact hclean i hi)
-  refine ⟨Ds,v₂,F,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁' hn₂,Exec.seq he₁' he₂,hs,?_,hc,hi,ho,hl,?_,?_⟩
+  refine ⟨coreRows,v₂,F,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁' hn₂,Exec.seq he₁' he₂,hs,?_,hc,hi,ho,hl,?_,hrowLength,haccuracy⟩
   · simpa only [hstable _ ‹result ≠ dst›.symm] using hd
   · intro i hir hid hic
     exact (hframe i hir hid hic).trans (hstable i hir)
-  · simpa only [hstable _ ‹result ≠ dst›.symm] using haccuracy
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
