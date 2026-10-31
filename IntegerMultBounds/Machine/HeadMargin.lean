@@ -21,4 +21,10 @@ theorem before {S B C : ℕ} {lo upper x y : ℤ} (h : S+B ≤ C)
     (hm : lo+(C : ℕ) ≤ y ∧ y+(C : ℕ) ≤ upper) :
     lo+(B : ℕ) ≤ x ∧ x+(B : ℕ) ≤ upper := by omega
 
+theorem centered (D : ℕ) {x : ℤ} (hx : 0 ≤ x ∧ x ≤ 1) :
+    -(D : ℤ)+(D : ℕ) ≤ x ∧ x+(D : ℕ) ≤ (D : ℤ)+1 := by omega
+
+theorem centered_width (D : ℕ) :
+    ((D : ℤ)+1+1-(-(D : ℤ))).toNat = 2*D+2 := by omega
+
 end IntegerMultBounds.Machine.HeadMargin

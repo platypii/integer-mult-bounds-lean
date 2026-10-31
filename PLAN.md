@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3179 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3182 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17150,3 +17150,34 @@ complete selected binary certificate into the alphabet/state/host compilation
 and actual archive-stock interfaces. Generated S4 supplier readiness,
 complete-key setup reuse, tensor/layout composition and final audits remain
 open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: selected swap foreign execution has linear-volume host stock
+
+`Alphabet.map_within` transfers the actual bounded execution through finite
+alphabet encoding. `HoareWithin.liftQ` transfers it through state embedding.
+Both use generic run simulation, retain exact runtime and halting, and preserve
+every prefix head bound.
+
+`foreign_exec_within_hoare_heads` derives the simulator's reachable invariant
+from the bounded machine contract. Each tape interval is widened by that tape's
+initial left/right stack lengths; the resulting sum counts the initial stock
+once. The caller supplies only initial representation. No stack-span or
+intermediate execution/stock certificate is required. Simulator overhead is
+charged per transition boundary, rather than multiplied by the full runtime.
+
+`SwapMachineStock.exec_within` instantiates these transfers with the actual
+selected interchange, host alphabet and host state bound. Caller heads at zero
+or one give centered intervals from one fixed volume reserve. The resulting
+foreign execution has exact represented transpose, original simulation time
+budget and stock at most initial stock plus tape count times a fixed linear
+binary-volume allowance, plus simulator overhead. `HeadMargin.centered` and
+`centered_width` instantiate that arithmetic without normalizing concrete
+supplier coefficients.
+
+Guarded checks peak at 1377.4 MiB (margin language), 1373.7 MiB (alphabet),
+1381.2 MiB (state embedding), 1391.4 MiB (foreign bridge), and 2570.3 MiB
+(selected host swap). The guarded target build passes (6762 jobs). Remaining:
+placed-register marking/header shifts, normalization and unmarking, then actual
+archive-stock composition. Generated S4 supplier readiness, complete-key setup
+reuse, tensor/layout composition and final audits remain open.
+S4 is incomplete; kappa is unchanged.
