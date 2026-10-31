@@ -241,10 +241,11 @@ theorem shear_phase {N : ℕ} (hN₁ : count tR + 22 ≤ N) (hN₂ : count tR + 
       Shared50RecursiveNodeSemantics.encoded]) y hy
   · rw [hz, B, Leaf.leafBank, hroles]
 
-/-- The cost of a shear is linear in the atoms. -/
-theorem cost_le (l : List (SOp 1)) {u : Descriptor} {w n : ℕ} (hp : u.Positive) (hw : 0 < w)
-    (hwn : u.width = n * w) (hn : 1 ≤ n) :
-    cost l u w n ≤ (chainConst io l + 200000) * (n + 1) * volume prime u := by
+/-- Generated counters and their erasure are linear in active volume. -/
+theorem boundary_costs {u : Descriptor} {w n : ℕ} (hp : u.Positive) (hw : 0 < w)
+    (hwn : u.width = n*w) (hn : 1 ≤ n) :
+    costs prime setList (setIn u.width w)+costs prime cleanList (cleanIn n)+2 ≤
+      200000*volume prime u := by
   have hV := RecursiveAffinePrepare.volume_positive (Nat.Prime.two_le Networks.Shared50ModularControl.prime_prime) u hp
   have he := Switch.width_le hp
   have hwe : w ≤ u.width := by rw [hwn]; exact Nat.le_mul_of_pos_left w hn
@@ -264,8 +265,15 @@ theorem cost_le (l : List (SOp 1)) {u : Descriptor} {w n : ℕ} (hp : u.Positive
     (by simp [Straight.OkAll, Straight.Ok, cleanList, cleanIn])
   rw [show setList.length = 3 from rfl] at h₁
   rw [show cleanList.length = 2 from rfl] at h₃
-  unfold cost
   nlinarith
+
+/-- The cost of a shear is linear in the atoms. -/
+theorem cost_le (l : List (SOp 1)) {u : Descriptor} {w n : ℕ} (hp : u.Positive) (hw : 0 < w)
+    (hwn : u.width = n*w) (hn : 1 ≤ n) :
+    cost l u w n ≤ (chainConst io l+200000)*(n+1)*volume prime u := by
+  have h := boundary_costs hp hw hwn hn
+  unfold cost
+  nlinarith only [h]
 
 /-! ### The three shears -/
 

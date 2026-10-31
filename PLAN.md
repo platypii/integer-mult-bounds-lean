@@ -16874,3 +16874,36 @@ Remaining: carry the root certificate through the paid stage-2 initialization,
 selected transpose wrappers and archive stock interface. Generated S4 supplier
 readiness, complete-key setup reuse, tensor/layout composition and final
 execution/error/cost audits remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the stage-2 core's actual phases share workspace
+
+`Core.PhaseWithin` mirrors the established phase language with one prefix
+predicate. Sequencing, relation/interval weakening, bank congruence and linear
+phase head travel retain original charged runtimes. `core_hoare_within` composes
+the actual nine phases and reuses the existing swap argument; `transpose_within`
+likewise retains the existing exact array semantics. No analytic permutation
+argument is duplicated for workspace.
+
+`FamilyStepWithin.family_step` includes the actual halt-code push and bounded
+PR97 root, with the PC stack restored. Its reserve is independent of atom width,
+atom count and recursion depth. `LeafWithin.leaf_phase` consumes the actual
+original-header stage-1 certificate on the residual low view. `PadWithin.pad_step`
+lifts bounded phases to the shared core tape count with stationary zero private
+tapes, retaining their exact phase relations and runtime bounds.
+
+`ShearRun.boundary_costs` shares the existing generated-counter and cleanup
+estimates with its time proof. `ShearWithin.shear_phase` bounds the actual placed
+and padded atom chain using `NodeSegment.segment_heads`; the workspace coefficient
+is independent of the atom count, despite its larger runtime. Structural role
+head equality transfers the setup margin to cleanup without charging the chain's
+runtime. Generated counters, chain placement, padding and erasure are included.
+
+`BankHeads` proves raw/common-bank head congruence before concrete tape counts
+are instantiated. `AssemblyWithin` lifts the family and residual leaf onto the
+actual core bank; boundary heads are independent of the view and payload. These
+certificates now support the concrete nine-phase core assembly.
+
+Remaining: instantiate that bounded core, then carry it through the paid
+initialization and selected transpose wrappers to archive stock. Generated S4
+supplier readiness, complete-key setup reuse, tensor/layout composition and final
+execution/error/cost audits remain open. S4 is incomplete; kappa is unchanged.
