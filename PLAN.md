@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3185 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3186 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -17233,3 +17233,25 @@ existing swap endpoint and time bound while the new trace supplies stock.
 Archive-stock composition, generated S4 supplier readiness, complete-key setup
 reuse, tensor/layout composition and final audits remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: the complete placed swap has linear-volume host stock
+
+`placedSwapProg_run_within` composes the actual register marking and header
+shifts, physically placed selected swap, normalization and unmarking. Setup
+adds only a fixed register-count allowance; normalization and unmarking retain
+the foreign call's stock allowance. Every boundary satisfies initial stock plus
+`T*(2*reserve+2)+3*T+20` and the call-depth charge, where the fixed reserve is
+linear in original binary volume. Initial spectator storage is counted once.
+
+The constructed complete trace is identified with `placedSwapProg_run` by
+`Exec.unique`. This reuses the established exact physical stack endpoint and
+original paid runtime, without duplicating the transpose/recovery semantics or
+the runtime substitution. `placedSwapProg_exec_within` supplies the ordinary
+all-left-stacks-empty interface with its exact `swapList` endpoint.
+
+The guarded complete-file check peaks at 2599.2 MiB; the guarded target build
+passes (6770 jobs). The selected transpose's full placed lifecycle is now
+certified; next propagate this stock through the generated/counting chunk-tile
+and conditional archive composition. Generated S4 supplier readiness,
+complete-key setup reuse, tensor/layout composition and final audits remain
+open. S4 is incomplete; kappa is unchanged.
