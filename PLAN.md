@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3975 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3978 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27841,3 +27841,30 @@ Expanded compatibility build passes (16538 jobs, 5.9 GiB combined peak).
 Guarded file checks pass at 3426.3 MiB (retained prefix), 3424.8 MiB
 (restoring raw call) and 3443.5 MiB (computed complex call). The broad axiom
 audit passes for 341663 declarations at 3527.6 MiB.
+
+### S4 checkpoint: actual complex jobs use fixed pairing placement and accuracy
+
+`Mult.PhaseCellRecoveryPairPlacement` places three retained master ports and
+five cleared recovery work ports in the pairing bank. Injectivity uses the
+small master-index injection, existing bank injections and cross-bank
+separation; no full Fin392 enumeration is used. Existing wiring discharges
+the pairing controls except replica/count and replica/spare separation.
+
+`Mult.PhaseCellActualComputedComplexRecovery.paired_exec_ofComplexBounds`
+specializes the complete generated recovery/pairing/restoration program to
+actual complex halo jobs with this fixed placement. It derives ambient scalar
+width, generated master identities and component target order internally.
+The extra scalar target bit pays pairing, yielding complex error 1/2^target
+on the halo. The final state and same-run time/stock bounds include all setup,
+recovery, pairing and retirement. Callers supply ordinary scalar headers and
+the original complex payload, with no computed-header or output oracle.
+
+Next use the existing interval archive loop to crop/retire the returned
+complex packets and transfer their certificate to actual destination order,
+then lift through ordered core groups. Concrete ambient layout, grouped cost
+absorption, tensor/R4 restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
+
+Guarded file checks pass at 3421.7 MiB (placement) and 3419.3 MiB (actual
+complex call). Expanded compatibility build passes (16540 jobs); broad axiom
+audit passes for 341675 declarations at 3525.9 MiB.
