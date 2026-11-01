@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3870 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3874 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26327,3 +26327,39 @@ cached recovery space into the complete caller. Selected reserve absorption,
 physical factory/header integration, distinct-core scheduling/amortization,
 tensor/R4 composition, layout restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: complete first-pass/recovery caller carries intermediate workspace
+
+`Mult.PhaseCellPreparedReplicaRecoveryArchivesStock` proves a fixed native push
+bound for physical setup and archive installation, then reuses the existing
+exact execution and state/frame contract to obtain a resource trace. Setup's
+closed-program push constant is kept symbolic/irreducible, preventing repeated
+normalization of the large program. Archive copying and movement need at most
+two pushes per action. Its named reserve multiplies the actual preparation
+bill, with shared setup paid once and linear replicated archive traffic.
+
+`Mult.PhaseCellPreparedCachedBatchedReplicaRecoveryStock` composes this prefix
+with the established initialized cached recovery workspace through final
+assembly. `Mult.PhaseCellReleasedPreparedCachedReplicaRecoveryStock` adds paid
+native cleanup, using the existing zero-push clear-bank rule so cleanup adds
+no intermediate reserve. Existing factor, peripheral, archive and certificate
+proofs are retained for these actual executions.
+
+`Mult.PhaseCellFirstCachedReplicaRecoveryStock` composes the checked first pass
+and released/prepared recovery. The complete caller now returns assembly
+certificates, the existing total time allowance and an actual intermediate
+workspace trace for the same execution. The named allowance is the first-pass
+workspace plus preparation/archive reserve plus initialized cached recovery
+workspace. No initial factor-production or global scheduling work is silently
+included in this caller contract.
+
+Guarded checks pass at 3401.7 MiB (archive preparation), 3320.4 MiB (prepared
+recovery), 3323.2 MiB (released/prepared recovery) and 3342.6 MiB (complete
+caller). The complete scoped compatibility build passes (15934 jobs, 3.6 GiB
+combined peak); the axiom audit passes for 336736 declarations at 3402.4 MiB.
+Next simplify the complete workspace allowance under selected widths using
+shared setup absorption, one transition scratch reserve and existing recovery
+space. Physical factory/header integration, distinct-core scheduling and
+amortization, tensor/R4 composition, layout restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
