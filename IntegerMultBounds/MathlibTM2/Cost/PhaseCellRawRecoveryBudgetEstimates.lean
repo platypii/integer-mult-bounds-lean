@@ -14,10 +14,10 @@ open Filter IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.Mat
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 variable {Q A : ℕ} {U : Type}
 
-theorem selectedRawRecoveryTimeBudget_sum_le (b : RawRecoveryProgramBounds Q A U) (v : HS 392 Q A U)
+theorem selectedRawRecoveryTimeBudget_sum_le (b : RawRecoveryProgramBounds Q A U)
     (ct cH cW : ℕ) :
     ∃ F : ℝ, 0 ≤ F ∧ ∀ᶠ n : ℕ in atTop, ∀ (_h : Sizes.Big n)
-      (i : Fin (Sizes.d n)) [NeZero (Sizes.s n i)]
+      (i : Fin (Sizes.d n)) [NeZero (Sizes.s n i)] (_v : HS 392 Q A U)
       (records : List (RawRecoveryJob (Sizes.s n i)))
       (N band : ℕ),
       records.length ≤ 2*Sizes.t n i →
@@ -34,7 +34,7 @@ theorem selectedRawRecoveryTimeBudget_sum_le (b : RawRecoveryProgramBounds Q A U
   obtain ⟨F,hF,hbound⟩ := selectedRawRecoverySchedule_density_time_le ct cH cW
   refine ⟨F,hF,?_⟩
   filter_upwards [hbound] with n hb
-  intro h i _ records N band hcount hparams hspan hvolume
+  intro h i _ v records N band hcount hparams hspan hvolume
   let B := fun r : RawRecoveryJob (Sizes.s n i) => Classical.choice (b.batch_nonempty v r)
   have hs := hb h i records B N band hcount hparams hspan hvolume
   simpa only [RawRecoveryJob.runTime_eq_budget] using hs

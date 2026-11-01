@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3938 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3940 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27284,3 +27284,22 @@ cleanup, descriptor and fixed controls into the actual fast-time bound, and
 join it to this trace. Final constructor-bound instantiation, physical component
 production, tensor/R4 composition, layout restoration and outer integration
 remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: one restoring execution has fast time and linear space
+
+`Cost.PhaseCellSelectedRawRecoveryScheduleTime` combines the complete caller,
+coordinate cleanup, descriptor traffic and fixed controls into the actual named
+scheduler time budget: 4*T + F*N*t*(1+band^2/d)*p^(129/128). The transferred
+caller estimate now quantifies the host-state witness after its uniform eventual
+bound, matching the workspace interface.
+
+`Cost.PhaseCellSelectedRawRecoveryScheduleFastExec` applies this estimate to the
+same execution and certified outputs as the linear-space scheduler theorem.
+The trace still has allowance (Cprog+1)*(3*T+C*N*s*p), and the source/private
+restoration contract is unchanged. This does not produce the descriptor source.
+
+Guarded checks pass at 3471.4 MiB (time estimate) and 3462.4 MiB (joint actual
+execution). Guarded build passes (16067 jobs, 3.5 GiB combined peak); axiom audit
+passes for 339007 declarations at 3466.1 MiB. Next instantiate concrete
+core-class parameters and execute physical input production/publication, then
+compose with tensor/R4 restoration. S4 is incomplete; kappa is unchanged.
