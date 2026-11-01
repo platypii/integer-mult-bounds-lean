@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4008 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4009 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28307,3 +28307,36 @@ Guarded file checks pass at 3432.0 MiB (placement) and 3419.0 MiB
 combined peak).
 Broad axiom audit passes for 341979 declarations at 3545.9 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: ordinary computed-call readiness has a scan frame rule
+
+`Mult.PhaseCellComputedRecoveryReady.LocalReady` packages the existing local
+call's ordinary unary/scalar inputs, normalization readiness, cleared scratch,
+left-work emptiness and original halo payload. It contains no computed headers,
+factors, recovered fields, outputs or executions. `LocalReady.ordered_exec`
+uses that record to invoke the checked complete crop-bank ordered execution,
+retaining its exact final frame, time and same-run stock certificate.
+
+`localSupport` names only the tapes inspected by readiness.
+`LocalReady.of_frame` preserves readiness under equality on this support and
+on the left recovery work bank. `LocalReady.update_external` specializes the
+rule to an arbitrary external right-tape update. `localSupport_result` derives
+from existing plan separation and crop/normalization linking that the
+accumulated result register lies outside the support. Thus later publication
+does not invalidate the ordinary-input invariant. The support proof stays
+structural over arbitrary work banks; it never enumerates 392 registers.
+
+Inspection confirms that the old core scan is specialized to the older
+producer setup. The next composition should reuse `takePrefix_exec_within`
+and the existing `consumeRuns_exec`/counted scan machinery with this readiness
+invariant: transfer one local halo into work port 124, invoke the computed
+ordered call, and identify the restored frame. It must not reuse the older
+prepared numerical setup as an oracle. Actual routed-call/group execution,
+complete grouped cost absorption and tensor/R4 restoration remain open.
+S4 is incomplete; kappa unchanged.
+
+Guarded file check passes at 3442.0 MiB; expanded compatibility passes
+(16572 jobs, 3.5 GiB combined peak). Broad axiom audit passes for 342012
+declarations at 3546.1 MiB, permitting only propext, Quot.sound and
+Classical.choice.
