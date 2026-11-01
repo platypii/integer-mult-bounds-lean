@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3883 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3885 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26538,3 +26538,31 @@ passes (15945 jobs, 3.5 GiB combined peak); the axiom audit passes for 336781
 declarations at 3402.4 MiB. Next connect initial ordinary-header/input storage
 and distinct-core scheduling/amortization, then tensor/R4 composition, layout
 restoration and outer integration. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: explicit ordinary-header input and selected initial stock
+
+`Mult.PhaseCellGeneratedRecoveryInputBank` constructs an ordinary-header bank
+for the 392-register physical caller: scalar gather masters, interval and width
+headers, one packed RHS archive and the replica count. Left stacks are empty,
+and high workspace is blank outside the count port. Its canonical buffers
+retain the actual initial gather view. `generatedRecoveryInput_headers` proves
+the existing caller header contract; generic off-bank and count lemmas expose
+the initial workspace. Header selection is bounded structurally by a common
+sum using a two-branch inequality, avoiding exhaustive port case splitting.
+
+`generatedRecoveryInput_stock_le` bounds the actual initial host stock by the
+explicit input/output tape lengths, `392*generatedRecoveryHeaderStock H`, and
+exactly one `N*span*wordWidth` payload archive. It does not multiply the packed
+payload by the register count. `Cost.PhaseCellSelectedGeneratedRecoveryInput`
+then absorbs the nonreplica headers into `T`, obtaining initial stock at most
+`inp.length+out.length+T+C*N*t*p` for the existing general selected halo widths.
+The RHS archive and count are priced linearly in replicas.
+
+The input module passes its guarded check at 3288.7 MiB; selected initial stock
+passes at 3391.6 MiB. The scoped compatibility build passes (15947 jobs, 3.5 GiB
+combined peak); the axiom audit passes for 336797 declarations at 3401.9 MiB.
+Next instantiate the complete physical caller on this bank, discharge its
+remaining workspace/cache/peripheral premises, and combine initial stock with
+the existing selected extra-workspace certificate. Distinct-core scheduling,
+tensor/R4 composition, layout restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
