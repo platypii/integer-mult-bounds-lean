@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3635 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3637 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23192,3 +23192,30 @@ Connecting cleanup/core setup to the actual caller, factory input production,
 complete resources, global scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 333411 declarations at 3313.8 MiB.
+
+### S4 checkpoint: uniform cleanup bound for the generated native coupling bank
+
+`PhaseCellNativeWordStock` bounds owned word stock through arbitrary register
+updates, unary header-copy schedules and the three scalar counter updates. Each
+proof is structural over an arbitrary nodup list; no native-port case expansion
+or symbolic concrete certificate is used.
+
+`PhaseCellReplicaCouplingNativeStock` applies these lemmas to the actual canonical
+coupling construction: nine ordinary headers plus three generated counters over
+the released bank. Payload ports 93/110 do not contribute. For any state with
+that generated native view, cleanup costs at most
+`2*(P+2*q+2*w+s+t+u+band+a+b+topN(w))+235`, independently of RHS payload sizes and
+replica count. The existing loop-frame theorem transports this bound unchanged
+through every replica. The generated native-view equality still needs to be
+exposed and propagated from executed setup into the final caller.
+
+Native cleanup's owned list is now explicitly a map of the 117-register index
+list; its proved membership and physical cleanup behavior are unchanged.
+Guarded checks pass at 2029.7 MiB (generic stock), 3264.8 MiB (cleanup port map)
+and 3257.4 MiB (canonical cleanup bound), under default limits. Compatibility
+with initialized recovery and actual interior/coupling passes (15173 jobs,
+3.5 GiB combined peak). Cleanup/caller integration, actual factory input
+production, remaining shared readiness, complete resources, scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+The combined scoped axiom audit passes for 333423 declarations at 3318.5 MiB.

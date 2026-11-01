@@ -13,12 +13,27 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.NLogN
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 248 Q A U}
 
+def replicaCouplingNativeIndices : List (Fin 117) :=
+  (List.finRange 117).filter (fun k => decide (k ≠ 93 ∧ k ≠ 110))
+
 def replicaCouplingNativePorts : List (Fin 248) :=
-  (List.finRange 248).filter (fun k => decide (k.val < 117 ∧ k ≠ 93 ∧ k ≠ 110))
+  replicaCouplingNativeIndices.map (Fin.castLE (by decide : 117 ≤ 248))
 
 @[simp] theorem mem_replicaCouplingNativePorts (k : Fin 248) :
     k ∈ replicaCouplingNativePorts ↔ k.val < 117 ∧ k ≠ 93 ∧ k ≠ 110 := by
-  simp [replicaCouplingNativePorts]
+  constructor
+  · intro hk
+    obtain ⟨i,hi,rfl⟩ := List.mem_map.mp hk
+    have hh : i ≠ 93 ∧ i ≠ 110 := by simpa [replicaCouplingNativeIndices] using hi
+    refine ⟨i.isLt,?_,?_⟩
+    · intro h; exact hh.1 (Fin.ext (congrArg (fun k : Fin 248 => k.val) h))
+    · intro h; exact hh.2 (Fin.ext (congrArg (fun k : Fin 248 => k.val) h))
+  · intro ⟨hk,h93,h110⟩
+    apply List.mem_map.mpr
+    refine ⟨⟨k.val,hk⟩,?_,rfl⟩
+    have h93' : (⟨k.val,hk⟩ : Fin 117) ≠ 93 := by intro h; exact h93 (Fin.ext (congrArg (fun k : Fin 117 => k.val) h))
+    have h110' : (⟨k.val,hk⟩ : Fin 117) ≠ 110 := by intro h; exact h110 (Fin.ext (congrArg (fun k : Fin 117 => k.val) h))
+    simp [replicaCouplingNativeIndices,h93',h110']
 
 def releasedReplicaCouplingNative (S : Stacks 248 A) : Stacks 248 A :=
   {S with R := fun k => if k.val < 117 ∧ k ≠ 93 ∧ k ≠ 110 then [] else S.R k}
@@ -57,7 +72,8 @@ theorem releaseReplicaCouplingNative_exec (v : HS 248 Q A U) (S : Stacks 248 A) 
     ∃ v', v'.user = v.user ∧
       Exec body releaseReplicaCouplingNative (mk v S) (releaseReplicaCouplingNativeCost S)
         (mk v' (releasedReplicaCouplingNative S)) := by
-  have hnd : replicaCouplingNativePorts.Nodup := (List.nodup_finRange 248).filter _
+  have hnd : replicaCouplingNativePorts.Nodup :=
+    ((List.nodup_finRange 117).filter _).map (Fin.castLE_injective (by decide : 117 ≤ 248))
   obtain ⟨v',hu,he⟩ := clearWords_exec (body := body) replicaCouplingNativePorts hnd v S
   exact ⟨v',hu,by simpa only [releaseReplicaCouplingNative,releaseReplicaCouplingNativeCost,
     releasedReplicaCouplingNative,mem_replicaCouplingNativePorts] using he⟩
