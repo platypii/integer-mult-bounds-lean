@@ -1,7 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedComputedRecoveryExec
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedPairRecoveryOutput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedPairedRecoveryExec
 
 /-! One computed complex call generates masters once, recovers scalar fields,
 pairs the actual output and restores every owned setup bank. -/
@@ -69,71 +68,20 @@ theorem complex_exec (plan : ComputedRecoveryPlan T) (b : RawRecoveryProgramBoun
             (fun k => if k ∈ List.ofFn plan.work then [] else S.R k) plan.result
             ((Gs.map (fun D => cstream A r.problem.wordWidth
               (packedInterval r.problem.origin r.problem.span D))).flatten++S.R plan.result))}) := by
-  obtain ⟨v₁,F,n₁,outputs,hu₁,hn₁,hcert,hI,hO,hL,hframe,hmastersLength,he₁,htrace₁⟩ :=
-    plan.exec_retained b d r hmastersEq Fs hfields wl hwl v S hp hW hN hvalues hwidth hscalar
-      hmasters hmasterScratch hblank hleft hpayload hscratch hclock hsaved hsavedClock
-  obtain ⟨word,hword,hwords⟩ : ∃ word, r.output word ∧ outputs.reverse.flatten = word := by
-    cases hcert with
-    | cons h hs => cases hs; exact ⟨_,h,by simp⟩
-  let M : Stacks T A := {F with R := (Function.update
-    (fun k => if k ∈ List.ofFn plan.work then [] else F.R k) plan.result (outputs.reverse.flatten++F.R plan.result))}
+  obtain ⟨Gs,hGs,v₂,F,n,hu,hn,hI,hO,hL,hframe,hmastersLength,hex,hgood,htrace⟩ :=
+    plan.complex_retained_exec b e he hpairReg hpairMaster hpairWork d r hmastersEq Fs hfields Zs hlen htargets
+      wl hwl v S hp hW hN hvalues hwidth hscalar hmasters hmasterScratch hblank hleft hpayload
+      hscratch hclock hsaved hsavedClock
+  let stream := (Gs.map (fun D => cstream A r.problem.wordWidth
+    (packedInterval r.problem.origin r.problem.span D))).flatten++S.R plan.result
+  let K : Stacks T A := {F with R := (Function.update
+    (fun k => if k ∈ List.ofFn plan.work then [] else F.R k) plan.result stream)}
   have hmasterNe (i : Fin 10) : plan.master.masters i ≠ plan.result := by
     intro hi; exact plan.master_controls i (by simp [hi])
   have hmasterOff (i : Fin 10) : plan.master.masters i ∉ List.ofFn plan.work := by
     intro hm
     obtain ⟨j,hj⟩ := List.mem_ofFn.mp hm
     exact plan.master_work i j hj.symm
-  have hMmaster (i : Fin 10) : (M.R (plan.master.masters i)).length = recoveryMasterValues r.problem i := by
-    simpa only [M,Function.update_of_ne (hmasterNe i),ite_eq_right (hmasterOff i)] using hmastersLength i
-  have hworkNe (k : Fin T) (hk : k ∈ List.ofFn plan.work) : k ≠ plan.result := by
-    obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hk
-    intro hi
-    exact plan.separate i (by simp [hi])
-  have hcontrol (k : Fin T) (hk : k ∈ [plan.replicas,plan.count,plan.spare]) : M.R k = S.R k := by
-    have hm : ∀ i, plan.master.masters i ≠ k := by
-      intro i hi
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl
-      · exact plan.master_seeds i (by simp [hi])
-      · exact plan.master_controls i (by simp [hi])
-      · exact plan.master_controls i (by simp [hi])
-    have hw : k ∉ List.ofFn plan.work := by
-      intro hw
-      obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hw
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with hi | hi | hi
-      · exact (plan.seed_work i).2.2 hi.symm
-      · exact plan.separate i (by simp [hi])
-      · exact plan.separate i (by simp [hi])
-    have hr : k ≠ plan.result := by
-      have hr := hpairReg
-      regs_ne hr
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl <;> first | assumption | exact Ne.symm (by assumption)
-    simp only [M,Function.update_of_ne hr,ite_eq_right hw,hframe k hm]
-  have hresult : F.R plan.result = S.R plan.result := hframe _ (fun i => hmasterNe i)
-  obtain ⟨Gs,hGs,v₂,n₂,hu₂,hn₂,he₂,hgood⟩ := r.prepared_pair_output_exec e he plan.replicas plan.count
-    plan.result plan.spare hpairReg (by have := b.hA; omega) hword Zs htargets (S.R plan.result) v₁ M
-    (by rw [hpairMaster.1]; exact hMmaster 2)
-    (by rw [hpairMaster.2.1]; exact hMmaster 8)
-    (by rw [hpairMaster.2.2]; exact hMmaster 9)
-    (by
-      intro k hk
-      have hm := hpairWork k hk
-      simp only [M,Function.update_of_ne (hworkNe _ hm),hm,ite_true])
-    (by rw [hcontrol _ (by simp),hlen]; exact hN)
-    (by simp only [M,Function.update_self,hwords,hresult])
-    (by rw [hcontrol _ (by simp)]; exact hscratch _ (by simp))
-    (by rw [hcontrol _ (by simp)]; exact hscratch _ (by simp))
-  rw [hlen] at hn₂
-  let stream := (Gs.map (fun D => cstream A r.problem.wordWidth
-    (packedInterval r.problem.origin r.problem.span D))).flatten++S.R plan.result
-  let K : Stacks T A := {F with R := (Function.update
-    (fun k => if k ∈ List.ofFn plan.work then [] else F.R k) plan.result stream)}
-  have hK : {M with R := Function.update M.R plan.result stream} = K := by
-    simp only [M,K,Function.update_idem]
-  change Exec body _ _ _ (Host.mk v₂ {M with R := Function.update M.R plan.result stream}) at he₂
-  rw [hK] at he₂
   obtain ⟨v₃,hu₃,he₃⟩ := clearWords_exec (body := body) (List.ofFn plan.master.masters)
     (List.nodup_ofFn.mpr plan.master.masters_injective) v₂ K
   have hKmaster (i : Fin 10) : (K.R (plan.master.masters i)).length = recoveryMasterValues r.problem i := by
@@ -164,20 +112,20 @@ theorem complex_exec (plan : ComputedRecoveryPlan T) (b : RawRecoveryProgramBoun
         · simp only [hw,ite_false]
           exact hframe k (by intro i hi; exact hm (List.mem_ofFn.mpr ⟨i,hi⟩))
   rw [hfinal] at he₃
-  refine ⟨Gs,hGs.trans hlen,v₃,n₁+(n₂+retireRecoveryMastersCost r.problem),hu₃.trans (hu₂.trans hu₁),?_,
-    Exec.seq he₁ (Exec.seq he₂ he₃),hgood,?_⟩
-  · simpa only [Nat.add_assoc] using Nat.add_le_add hn₁ (Nat.add_le_add_right hn₂ (retireRecoveryMastersCost r.problem))
+  have hex' : Exec body (plan.complexProgram b e) (Host.mk v S) (n+retireRecoveryMastersCost r.problem)
+      (Host.mk v₃ {S with R := (Function.update
+        (fun k => if k ∈ List.ofFn plan.work then [] else S.R k) plan.result stream)}) := by
+    unfold retainedComplexProgram at hex
+    cases hex with
+    | seq hex₁ hex₂ =>
+      simpa only [complexProgram,Nat.add_assoc] using Exec.seq hex₁ (Exec.seq hex₂ he₃)
+  refine ⟨Gs,hGs,v₃,n+retireRecoveryMastersCost r.problem,hu₃.trans hu,?_,hex',hgood,?_⟩
+  · exact Nat.add_le_add_right hn _
   · intro Cprog hpush hbody depth
-    have ht₁ := htrace₁ Cprog hpush hbody 0
-    have ht₂ := preparedPairRecoveryOutput_within_stock he₂ hn₂ 0
-    have ht₁₂ := mn_seq_within_add ht₁ ht₂
-    have ht₃ := mn_native_exec_within he₃ 0 (clearWords_native _) 0 _ (by
-      simpa only [Nat.zero_mul,Nat.add_zero] using ht₁₂.final)
-    have ht := (ExecWithin.seq ht₁₂ ht₃).seq_assoc
-    have hshift := ht.shift depth (J := fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+
-      (d.stock+recoveryLifecycleStock b plan.work r Fs.length Cprog+8*preparedPairRecoveryOutputCost r Fs.length))
-      (by intro j z hz; omega)
-    simpa only [complexProgram,Nat.zero_add,Nat.add_assoc] using hshift
+    have ht := htrace Cprog hpush hbody depth
+    have ht₃ := mn_native_exec_within he₃ 0 (clearWords_native _) depth _ (by
+      simpa only [Nat.zero_mul,Nat.add_zero] using ht.final)
+    simpa only [retainedComplexProgram,complexProgram] using (ExecWithin.seq ht ht₃).seq_assoc
 
 end ComputedRecoveryPlan
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
