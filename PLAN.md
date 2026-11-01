@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3831 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3833 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25801,3 +25801,30 @@ workspace and selected time for the composed caller remain open. Physical
 factory input-header integration, distinct-core amortization, tensor/R4
 composition, layout restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: selected first-pass arithmetic reuses the retained coupling estimate
+
+`Cost.PhaseCellReplicaCouplingFast` separates the actual residual coupling bill
+into native/setup traffic and the repeated retained-page arithmetic loop. The
+split is an exact natural-number identity, including the counted-loop control
+cost. `releasedReplicaCoupling_fast_le` reuses the existing active-row arithmetic
+bound with width `cw*p`; shared setup is outside the replica factor.
+
+`Cost.PhaseCellSelectedFirstReplicaPass` identifies the executed first-pass bill
+with the established initialized real/RHS row pass plus residual coupling.
+`selectedFirstReplicaPass_fast_le` composes their existing estimates at selected
+widths. Its numerical work has the `p^(129/128)` scale with local-coordinate and
+active-row factors; shared setup and all native traffic remain paid in the
+explicit `firstReplicaPassNativeTime` ledger. No new numerical implementation
+or per-replica arithmetic proof is introduced.
+
+Guarded checks pass at 3335.2 MiB (coupling split/fast arithmetic) and
+3336.9 MiB (selected first pass). Compatibility build passes (15819 jobs,
+3.5 GiB combined peak). The scoped axiom audit passes for 336549 declarations
+at 3396.6 MiB. This is not yet the complete selected bound for the
+composed caller: native first-pass traffic and shared setup still need their
+volume/density estimates before combining with the closed recovery bound.
+Physical factory input-header integration, combined first-pass/preparation
+workspace, distinct-core amortization, tensor/R4 composition, layout restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
