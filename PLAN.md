@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3706 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3709 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24102,3 +24102,34 @@ Preparation/whole-caller workspace, selected resource bounds,
 first-pass/generated-factory integration, scheduling, tensor/R4 restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334171 declarations at 3332.6 MiB.
+
+
+### S4 checkpoint: both triangular passes execute with shared numerical workspace
+
+`Host.ReplaceFourStock.mn_replace_four_size` extends the three-port storage
+identity by one independent update. `PhaseCellBandBackwardLoopStock` uses it
+for the backward pass's pending, output, coefficient and reciprocal ports.
+Pending storage loses one word, output gains one, and both remaining table
+streams shrink. The generic counted-scan theorem therefore shares the
+backward row's reserve across every column, with the original time bill and
+output valuation.
+
+`PhaseCellBandLinePassStock.band_linePass_runs_within` now composes the entire
+`bandLinePassP`: forward-factor copying, the forward pass, zero padding and
+order restoration, backward-factor/reciprocal copying, the backward pass and
+final pending-stack retirement. Its workspace allowance is
+`2*realWeightWorkspace L w B+realWeightWorkspace K w 1+
+10000*(s+1)*(B+1)*(w+1)`. Numerical reserves are independent of column count;
+linear table-copy/traffic storage is paid explicitly. The existing numerical
+output, time bill and complete frame are retained.
+
+Guarded checks pass at 1389.4 MiB (four-port identity), 2108.5 MiB (backward
+pass) and 2138.6 MiB (complete two-pass program). Next compose this kernel with
+the physical normalization/unscaling and retained-factor solve interfaces,
+then the recovery RHS construction and preparation traversal.
+Preparation/whole-caller workspace, selected resource bounds,
+first-pass/generated-factory integration, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Compatibility with the actual batched recovery bill and generated baseline
+passes (15462 jobs, 2.8 GiB combined peak). Scoped axiom audit passes for
+334174 declarations at 3333.0 MiB.
