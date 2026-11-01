@@ -37,7 +37,9 @@ theorem prepareReplicaCouplingGeometry_exec_within {plan : ReplicaInteriorPlacem
       embStk plan.gather F = embStk plan.gather S ∧
       embStk weightCacheCoreReg (embStk plan.solver F) = embStk weightCacheCoreReg (embStk plan.solver S) ∧
       F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
-      (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) := by
+      (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) ∧
+      (∀ k : Fin 168, k ≠ 163 →
+        k ∉ [145,146,147,148,149,151,154,155,156,164,165] → F.R (placement.bank k) = S.R (placement.bank k)) := by
   have hsrc : plan.gather 115 ≠ placement.bank 163 := (placement.bank_gather_disjoint 163 115).symm
   have hdst : placement.bank 163 ≠ plan.gather 7 := placement.bank_gather_disjoint 163 7
   have htmpSrc : plan.gather 115 ≠ plan.gather 7 := plan.gather_injective.ne (by decide)
@@ -103,7 +105,7 @@ theorem prepareReplicaCouplingGeometry_exec_within {plan : ReplicaInteriorPlacem
     simpa only [placement.bank_native] using hj (Fin.castLE (by decide : 117 ≤ 168) i) hne
   have hecopy := mn_native_exec_within he₁' 2 (by
     simp [ucopy,umulSym,scanR,drainR,popDo,keepIn,pushN,moveR,moveStep,whileR,peekR,mnNativePushBound,mnActPush]) depth _ (le_refl _)
-  refine ⟨v₂,F,(4*V+4)+n₂,hu₂'.trans (hu₂.trans hu₁),by unfold prepareReplicaCouplingGeometryCost; omega,?_,?_,?_,?_,hleftF,?_,?_,hRoff⟩
+  refine ⟨v₂,F,(4*V+4)+n₂,hu₂'.trans (hu₂.trans hu₁),by unfold prepareReplicaCouplingGeometryCost; omega,?_,?_,?_,?_,hleftF,?_,?_,hRoff,?_⟩
   · have hsize := hecopy.final
     change mnSize (mk v₁ J)+depth ≤ mnSize (mk v S)+depth+2*(4*V+4) at hsize
     refine .seq (hecopy.mono ?_) (he.mono ?_)
@@ -128,5 +130,8 @@ theorem prepareReplicaCouplingGeometry_exec_within {plan : ReplicaInteriorPlacem
       exact (congrFun (congrArg Stacks.R hview) _).trans (hn i)
   · exact hi
   · exact ho
+
+  · intro k h163 hk
+    exact (congrFun (congrArg Stacks.R hview) k).trans ((hframe k hk).trans (hj k h163))
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

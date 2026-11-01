@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3560 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3563 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21986,3 +21986,39 @@ then close the staged local coupling and cleanup transition. Boundary recovery,
 second interior pass, global endpoint scheduling, tensor/R4 restoration and
 outer integration remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 328469 declarations at 3217.5 MiB.
+
+
+### S4 checkpoint: compose actual shared geometry and coefficient-page setup
+
+`PhaseCellOrdinaryCouplingCoefficientInterval` reuses the existing shared page
+generator through its involutive header permutation. The two views cancel on
+ordinary headers, while all page ports are fixed. This is a static embedding
+with the existing execution bill, not a duplicated coefficient algorithm.
+
+`PhaseCellPrepareReplicaCouplingPage` places that actual program in the disjoint
+replica bank. It returns the exact shared page state, restored numerical headers,
+unchanged binary geometry, gather masters, left tapes, streams and all tapes
+outside the coupling bank. `PhaseCellPrepareReplicaCouplingGeometry` now exposes
+the extended frame already supplied by its generator, so page freshness survives
+geometry setup without reconstructing the execution.
+
+`PhaseCellInitializeReplicaCouplingPage` composes geometry and page generation.
+Its header facts follow from ordinary `CouplingReady`; its conclusion provides
+the actual encoded coefficient page, page-word count, row width, geometry and
+restored `CouplingReady` for subsequent scalar counter initialization. Both
+programs execute once outside the intended replica cursor loop. The original
+borrowed page suffix is preserved.
+
+Guarded checks pass at 2138.8 MiB (ordinary page view), 2143.2 MiB (placed page),
+2135.6 MiB (stronger geometry frame) and 2168.7 MiB (composed page setup).
+Compatibility with native setup and selected replica resources passes
+(14797 jobs, 2.8 GiB combined peak).
+
+The page setup now has an actual trace and explicit time bound; its full
+workspace certificate remains open. Next lift the coefficient generator's
+native stock bound, initialize retained scalar counters after page setup, and
+close one staged local coupling/cleanup transition before the structural cursor
+loop. Boundary recovery and the second interior pass, global endpoint schedule,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+The scoped axiom audit passes for 328776 declarations at 3224.1 MiB.
