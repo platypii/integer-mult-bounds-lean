@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFirstReplicaPassShared
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFirstCachedReplicaPassShared
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleasedPreparedCachedReplicaRecovery
 
 /-! Execute the first pass and cached recovery on the same retained factor bank. -/
@@ -15,11 +15,11 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
 variable {s Q A : ℕ} [NeZero s] {P U : Type} {body : P → Pr P 392 Q A U}
 
 noncomputable def firstCachedReplicaRecovery (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 392 Q A U :=
-  .seq (initializedReplicaInteriorCoupling replicaRecoveryBatchCoupling 247 248 hR hQ)
+  .seq (initializedCachedReplicaInteriorCoupling replicaRecoveryBatchCoupling 247 248 hR hQ)
     (releasedPreparedCachedReplicaRecovery hR hQ)
 
 def firstCachedReplicaRecoveryTime (H J : ReplicaHaloProblem s) : ℕ :=
-  firstReplicaPassTime H+(replicaCouplingNativeCleanupBound (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band
+  firstCachedReplicaPassTime H+(replicaCouplingNativeCleanupBound (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band
     H.origin (H.origin+H.span)+(((4*(H.span*H.wordWidth)+4)+initializeReplicaBoundaryRhsCost H)+
     (copyRowsOrderedCost H.Fs.length (H.span*H.wordWidth)+4*(H.Fs.length*(H.span*H.wordWidth))+4))+
     initializedCachedBatchedReplicaRecoveryTime H J)
@@ -75,9 +75,11 @@ theorem firstCachedReplicaRecovery_exec (H : ReplicaHaloProblem s) (hR : rpState
       G.R 391 = outputs.reverse.flatten ∧ Exec body (firstCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) := by
   obtain ⟨v₁,J,n₁,residuals,hu₁,hn₁,he₁,hlen,harchive,hgood,hfactorJ,hshared,hrhsHeaders,h247,h248J,
     hnativeL,hleftFrame,hrightFrame,hperipheral,h93,h110,hshare,hcleanup⟩ :=
-    firstReplicaPass_shared_exec (body := body) H hR hQ hA hspan horigin R K hpushR hpushK hpad buffers v S
+    firstCachedReplicaPass_shared_exec (body := body) H hR hQ hA hspan horigin R K hpushR hpushK hpad buffers v S
       headers hbank hcache hsolverFresh hinput houtputStream hsaved hkeys hdst h86 h119 depth hp hwidth
       hblank hfresh target columns hfactor hwork hmasters hstage hlevel hprivate
+      (by simpa only [replicaRecoveryBatchCoupling_bank,recoveryMaskCallerReg] using h159)
+      (by simpa only [replicaRecoveryBatchCoupling_bank,recoveryMaskCallerReg] using h161)
   have hworkerL := replicaRecoveryBatchCoupling_worker_left_restored hnativeL hleftFrame
   have hhigh (k : Fin 392) (hk : 300 ≤ k.val) : J.R k = S.R k := by
     apply hrightFrame

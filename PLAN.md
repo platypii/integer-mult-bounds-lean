@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3848 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3851 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26049,5 +26049,43 @@ pass (15906 jobs, 10.7 GiB combined peak; final retirement closure 15907 jobs,
 compose retirement with the executed cached first pass, restore its shared-bank
 interface and substitute it into the complete first-pass/recovery caller.
 Factory/header integration, combined caller workspace, distinct-core
+amortization, tensor/R4 composition, layout restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: the complete first-pass/recovery caller now uses cached coupling
+
+`Mult.PhaseCellReleasedRetiredCachedReplicaCoupling` executes the cached
+released-bank caller followed by actual mask retirement. The exact generated
+stream lengths give retirement cost `4*(span+band)+4`, paid once. Clearing the
+masks restores the original full shared-header frame, including both cache
+ports, from their initial emptiness. Native readiness/counters, metadata, page,
+archive ordering, residual bounds and all external frames are transported
+through the retirement endpoint.
+
+`initializedCachedReplicaInteriorCoupling` now uses that retired cached worker.
+`Mult.PhaseCellExecutedCachedReplicaInteriorCoupling` executes its initialized
+halo prefix and preserves the established first-pass output interface.
+`Mult.PhaseCellFirstCachedReplicaPassShared` derives the complete recovery bank
+from this trace using the existing shared-bank assembly proof. Guard scratch
+emptiness follows from the initial factory workspace, so no new caller
+hypothesis is added for that scratch port.
+
+The actual `firstCachedReplicaRecovery` program and theorem now use this cached
+first pass. Its time allowance uses `firstCachedReplicaPassTime`, which includes
+shared setup, cached transitions and paid retirement. Existing initial empty
+recovery-mask hypotheses also supply first-pass cache emptiness; retirement
+restores them before the second mask initialization. The complete caller no
+longer uses the per-replica geometry-table coupling implementation. Original
+uncached first-pass theorems remain compatibility references; their partial
+selected cost result is not the new cached caller's final estimate.
+
+Guarded checks pass at 2224.1 MiB (released cached coupling plus retirement),
+3285.8 MiB (retired initialized interior), 3326.7 MiB (shared first-pass bank)
+and 3340.1 MiB (complete cached first-pass/recovery caller). The complete scoped
+compatibility build passes (15910 jobs, 3.5 GiB combined peak); the axiom audit
+passes for 336637 declarations at 3398.7 MiB. Next close the selected first-pass
+fast estimate using the existing cached loop bound and shared setup accounting,
+and combine caller workspace. Physical factory/header integration, distinct-core
 amortization, tensor/R4 composition, layout restoration and outer integration
 remain open. S4 is incomplete; kappa is unchanged.
