@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3913 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3914 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26988,5 +26988,34 @@ Guarded checks pass at 1878.1 MiB (overlap), 1868.5 MiB (core boundary),
 3461.6 MiB. Next sum the full local volume, including scalar preparation and
 normalization payload, apply wider-core guard amortization, and instantiate
 core-class time budgets. Descriptor traffic/cleanup, peak stock budgets,
+physical component production, tensor/R4 composition, layout restoration and
+outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: full core recovery local volume has one global gap bill
+
+`Cost.PhaseCellCoreRecoveryLocalVolume` exposes a geometry-only local volume and
+proves its exact equality to replicaRecoveryLocalVolume at an actual problem's
+endpoints. Boundary-solve work sums to at most
+312*(t-s)*band²+39*coreCount*band². Combining this with native traffic, halo
+span, both active-row masks and scalar preparation gives the full estimate
+200*s+600*(t-s)*band²+100*coreCount*(p²+band²).
+
+If core width covers p²+band², cell padding and the locality guard, coreSlots_le_two
+absorbs the per-core overhead. The entire summed local volume is then at most
+600*(s+(t-s)*band²). A direct corollary applies this bound to actual numerical
+problems assigned to each core endpoint, comparing only their geometric
+parameters, with no comparison of solutions or heavy numerical data.
+
+The selected wider-core theorem discharges every premise: the existing p^8
+width covers p²+band² and 5*p; phaseGap_cellLength_le supplies cell padding, and
+selectedAmortizedCoreGeometry supplies room and guards. Thus the full local
+volume bound is now established for the selected manuscript schedule, including
+seam fallbacks, without any additional core-count factor.
+
+Guarded check passes at 3388.2 MiB. Scoped compatibility build passes (16122 jobs,
+3.5 GiB combined observed peak); axiom audit passes for 338861 declarations at
+3464.4 MiB. Next transfer the actual core-class raw-job constructor profiles
+and list order to this estimate, combine it with the raw-job list ledger and
+shared setup bounds, then price descriptor traffic/cleanup. Peak stock budgets,
 physical component production, tensor/R4 composition, layout restoration and
 outer integration remain open. S4 is incomplete; kappa is unchanged.
