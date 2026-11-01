@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3793 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3796 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25116,3 +25116,37 @@ Guarded checks pass at 3292.5 MiB (placed initialization), 3307.8 MiB
 (initialized complete caller) and 3389.3 MiB (cached native sparse traffic).
 Compatibility build passes (15742 jobs, 5.9 GiB combined peak). Scoped
 axiom audit passes for 336380 declarations at 3386.6 MiB.
+
+
+### S4 checkpoint: all repeated cached recovery work has the selected fast bound
+
+`Cost.PhaseCellCachedRecoveryRowFast` absorbs scalar-counter setup using the
+existing cubic width estimate and the eventual selected-axis bound `p^2 <= t`.
+The complete cached preparation row, including boundary solves, numerical
+coupling, staging, replay and both archives, satisfies a uniform
+`D*(t+(t-s)*band^2)*p^(129/128)` bound. Existing sparse family-volume facts
+price the boundary and active coupling work; no per-row native residue remains.
+
+`Cost.PhaseCellCachedBatchedRecoveryFast` proves an affine identity for the
+actual cached caller and combines that row estimate with its shared second
+interior pass. All repeated traffic, including publication and second-pass
+formatting, is absorbed into the same fast gap-volume bill. Only the explicit
+shared interior setup and a fixed constant remain outside the replica factor.
+
+`Cost.PhaseCellSelectedCachedRecoveryFast.selectedInitializedCachedReplicaRecovery_fast_le`
+instantiates selected precision/metadata widths and axis growth, applies the
+existing axis-density estimate, and absorbs actual mask initialization into
+one whole-box volume allowance. It bounds every step count below the executed
+initialized cached caller's time certificate by shared interior setup plus
+`T+24` and `D*replicas*t*(1+band^2/d)*p^(129/128)`, eventually uniformly in axes.
+This improves the earlier selected recovery estimate, which still exposed
+per-replica native control traffic.
+
+Next bound shared interior setup and selected caller workspace, then connect
+first-pass/generated-factory execution and the outer schedule. Distinct-core
+amortization/scheduling and tensor/R4 restoration remain open. S4 is incomplete;
+kappa is unchanged.
+Guarded checks pass at 3379.7 MiB (complete row fast bound), 3390.4 MiB
+(cached batched bound) and 3380.4 MiB (selected initialized bound).
+Compatibility build passes (15746 jobs, 3.5 GiB combined peak). Scoped
+axiom audit passes for 336389 declarations at 3387.2 MiB.
