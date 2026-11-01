@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3696 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3698 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23980,3 +23980,30 @@ The scoped axiom audit passes for 334144 declarations at 3331.2 MiB.
 Preparation and whole-caller workspace, selected resource bounds,
 first-pass/generated-factory integration, scheduling, tensor/R4 restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: triangular column endpoints release storage
+
+`Host.ReplaceThreeStock.mn_replace_three_size` proves the exact storage
+balance for three distinct right-port replacements, with arbitrary contents
+and unchanged spectator stacks. Three applications of the generic stack
+update identity suffice; the proof does not enumerate concrete registers.
+
+`PhaseCellBandStepStock.bandFwdStep_stock` applies that balance to a forward
+column: pending-word updates preserve length, transferring the head to the
+output preserves storage, and the consumed factor column releases exactly
+`col.length*wordWidth` symbols. `bandFwdStep_stock_of_holds` derives the same
+balance for the physical state returned by the existing valuation/frame
+contract. `bandRecip_stock` proves that reciprocal replacement preserves the
+pending stack's length and releases its one consumed table word.
+
+These are endpoint invariants for sharing numerical scratch across triangular
+columns. They do not yet bound peaks inside the surrounding native operations
+or establish a whole triangular-pass `ExecWithin` certificate.
+Guarded checks pass at 1390.6 MiB (generic balance) and 1923.3 MiB (band-step
+balances). Compatibility with the actual batched recovery bill and generated
+baseline passes (15451 jobs, 2.7 GiB combined peak).
+Preparation/whole-caller workspace, selected resource bounds,
+first-pass/generated-factory integration, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334148 declarations at 3330.9 MiB.
