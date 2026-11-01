@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3874 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3878 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26363,3 +26363,41 @@ shared setup absorption, one transition scratch reserve and existing recovery
 space. Physical factory/header integration, distinct-core scheduling and
 amortization, tensor/R4 composition, layout restoration and outer integration
 remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: selected complete-caller workspace is shared volume plus linear payload
+
+`Cost.PhaseCellFirstCachedReplicaWorkspace` compares the first pass's cached
+numerical scratch directly to the existing recovery-preparation reserve. The
+same local coupling workspace is a subterm of that reserve; no new polynomial
+scratch estimate is required. It also separates first-pass halo shared space,
+released coupling space and linear native/halo traffic.
+
+`Cost.PhaseCellSelectedFirstCachedReplicaWorkspace` combines existing shared
+interior, coupling and recovery-preparation volume estimates, obtaining
+`4*T+((76*cw+82)+40*cw*trafficFactor)*replicaCount*t*p` for the executed first
+pass's actual workspace allowance. The staging/finishing reserve is absorbed
+once, while the counted loop reuses one numerical reserve.
+
+`Cost.PhaseCellSelectedRecoveryArchiveWorkspace` bounds the actual preparation
+archive allowance by one shared handoff reserve plus linear archive-copy
+traffic. Shared handoff absorption reuses the existing coupling-setup theorem
+at a fixed push scale. Its selected bound is `T+Carchive*replicaCount*t*p`.
+
+`Cost.PhaseCellSelectedFirstCachedReplicaRecoveryWorkspace` combines those
+bounds with the established initialized recovery space. The actual named
+`firstCachedReplicaRecoveryWorkspace H (B.problem htarget) ...` is eventually
+at most `9*T+C*replicaCount*t*p` for selected widths, with C independent of the
+axis and problem. Together with the complete caller's `ExecWithin` theorem,
+this bounds every intermediate store relative to initial storage, including
+ambient call depth. This is a per-core additional-workspace result, not a
+claim that initial factor storage or global distinct-core scheduling is free.
+
+Guarded checks pass at 3389.3 MiB (first-pass affine comparison), 3385.2 MiB
+(archive preparation), 3398.1 MiB (selected first pass) and 3389.6 MiB (complete
+selected caller workspace). The complete scoped compatibility build passes
+(15938 jobs, 3.5 GiB combined peak); the axiom audit passes for 336744
+declarations at 3400.8 MiB. Next integrate actual physical factory/header
+production and initial-bank storage with the executed caller. Distinct-core
+scheduling/amortization, tensor/R4 composition, layout restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
