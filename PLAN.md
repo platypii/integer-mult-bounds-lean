@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3919 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3921 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27081,3 +27081,34 @@ raw-job runStock, sum descriptor loading and cleanup, and discharge peak stock
 budgets. Final constructor-bound instantiation, physical component production,
 tensor/R4 composition, layout restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: raw bank and descriptor traffic retain shared/replica stock
+
+`Cost.PhaseCellRawRecoveryInputStock` bounds the actual raw bank by the canonical
+input allowance plus ordinary-width payload and the two disposable format
+headers. A generic register-update stock lemma handles the three updates
+structurally, without expanding the 392-register bank. This directly bounds
+raw-job initialStock, descriptor word volume and actual loader cost.
+
+The explicit input allowance splits exactly into shared geometry and a replica
+row allowance 392+span*(wordWidth+W). The unary replica-count header is removed
+from generatedRecoveryHeaderStock's shared part; counting it as replica-free
+setup would be incorrect. Shared geometry is bounded by a uniform polynomial
+in t and p; the row allowance is linear in local packed payload and count.
+
+`Cost.PhaseCellRawRecoveryDescriptorTraffic` sums these allowances structurally.
+It bounds serialization and loading by total input stock, absorbs the summed
+shared geometry and fixed per-job controls once, and prices loading, two tape
+traversals and loop controls by
+T+27*N*(392*coreCount+(cw+cW)*totalSpan*p).
+The actual common-width and normalized payloads are both covered. No per-core
+T is summed and no execution assumption is added.
+
+Guarded checks pass at 3418.3 MiB (input stock and polynomial) and 3449.4 MiB
+(descriptor traffic). Scoped compatibility build passes (16130 jobs, 3.5 GiB
+combined observed peak); axiom audit passes for 338889 declarations at
+3463.5 MiB. Next retain the full runStock workspace bills before absorption,
+sum restoring cleanup, and discharge the schedule's uniform stock/time budgets.
+Final constructor-bound instantiation, physical component production, tensor/R4
+composition, layout restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
