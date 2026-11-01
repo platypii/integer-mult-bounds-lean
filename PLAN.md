@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3572 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3574 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22164,3 +22164,37 @@ certificate remains open. Boundary recovery and the second interior pass,
 global endpoint schedule, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 329027 declarations at 3233.2 MiB.
+
+
+### S4 checkpoint: execute the complete structural replica coupling loop
+
+`PhaseCellReplicaCouplingLoop` instantiates the existing structural counted-loop
+theorem with the actual checked cursor transition. Its invariant retains the
+original shared bank, the queue cursor, restored controls/scratch and the
+physical residual archive. Every archive row has an actual interior-field
+accuracy witness and the matching original RHS identity. Rows are tracked in
+physical archive order, so each prepend is proved by list structure rather
+than replica-specific checks.
+
+The loop consumes every paired input row, releases both borrowed queue suffixes,
+restores the entire shared coupling bank, all left tapes and streams, and
+preserves every other right tape outside its private clock, queues and archive.
+Its time is bounded by `N*(replicaCouplingTransitionCost H V+3)+2`.
+
+`PhaseCellInitializedReplicaCouplingLoop` generates that clock by copying the
+retained gather-121 replica-count master once, executes the loop and releases
+the private counter. The initial counter is empty; no independent prepared
+clock is assumed. The master and all right tapes outside queues/archive are
+restored. Initialization adds exactly `4*N+4` to the time bill.
+
+Guarded checks pass at 2217.1 MiB (structural loop) and 2196.4 MiB (generated
+clock and complete loop). Compatibility with shared runtime initialization and
+selected replica resources passes (14843 jobs, 2.8 GiB combined peak).
+
+Next compose actual shared runtime setup with the initialized loop, discharge
+its retained header/freshness premises from the previous initialized phase,
+and attach the local arithmetic workspace certificate. The residual archive
+then feeds boundary recovery and the second interior pass. Global endpoint
+scheduling, tensor/R4 restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
+The scoped axiom audit passes for 329037 declarations at 3231.5 MiB.
