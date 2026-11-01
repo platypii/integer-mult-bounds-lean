@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3878 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3879 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26401,3 +26401,36 @@ declarations at 3400.8 MiB. Next integrate actual physical factory/header
 production and initial-bank storage with the executed caller. Distinct-core
 scheduling/amortization, tensor/R4 composition, layout restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: execute the complete generated factory in the cached caller bank
+
+`Mult.PhaseCellPlacedGeneratedReplicaBoundaryFactory` embeds the established
+389-register generated factory in the 392-register cached caller. This reuses
+actual ordinary-header installation, numerical factor production, word-width
+installation and paid retirement of obsolete factory geometry. It does not
+start from an assumed installed factory input. The result supplies generated
+factor data, ordinary coupling masters, stage/level, clean geometry ports,
+restored gather state, factory workspace and the full frame outside the factor
+bank, with the established generated-factory time bill.
+
+Structural bank-view identities identify the old and enlarged factor/coupling
+banks. A reusable `ReplicaLoopHeaders.of_gather_view` transports the ordinary
+header language across bank sizes. `ReplicaBoundaryFactorData.initial_native_bank`
+derives the initial empty released numerical bank from actual factor workspace,
+and `ReplicaFactoryWorkspace.coupling_fresh` supplies the first-pass scratch
+ports. No numerical cases or factorization proof are repeated.
+
+The lower factory already proves a right-frame for unused auxiliary ports,
+including the future cached-mask ports, but several public factory wrappers
+currently discard it. Next expose that existing fact through the generated
+factory interface, derive mask freshness, and compose physical generation with
+the complete cached first-pass/recovery caller. Initial shared-bank/left-frame
+conditions and factory resource accounting must also be connected explicitly.
+
+The guarded file check passes at 3306.1 MiB. The complete scoped compatibility
+build passes (15939 jobs, 3.5 GiB combined peak); the axiom audit passes for
+336759 declarations at 3401.6 MiB. Physical factory/caller composition and
+initial-bank storage, distinct-core scheduling/amortization, tensor/R4
+composition, layout restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
