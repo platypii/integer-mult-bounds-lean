@@ -33,8 +33,9 @@ theorem placedReplicaCouplingRelease_exec (H : ReplicaHaloProblem s) (target : �
       ReplicaBoundaryFactorData H target columns (embStk replicaRecoveryBoundaryFactoryReg F) ∧
       ReplicaRecoveryCoreReady H (12*H.band+1) (embStk replicaRecoveryPreparationNativeReg F) ∧
       F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
-      (∀ k : Fin 248, 117 ≤ k.val → F.R (replicaRecoveryPreparationNativeReg k) = S.R (replicaRecoveryPreparationNativeReg k)) ∧
-      (∀ k, (∀ i, replicaRecoveryPreparationNativeReg i ≠ k) → F.L k = S.L k ∧ F.R k = S.R k) := by
+      (∀ k : Fin 248, 117 ≤ k.val ∨ k = 93 ∨ k = 110 → F.R (replicaRecoveryPreparationNativeReg k) = S.R (replicaRecoveryPreparationNativeReg k)) ∧
+      (∀ k, (∀ i, replicaRecoveryPreparationNativeReg i ≠ k) → F.L k = S.L k ∧ F.R k = S.R k) ∧
+      F.R (replicaRecoveryPreparationNativeReg 116) = [] := by
   let e := replicaRecoveryPreparationNativeReg
   let B := embStk e S
   let G := releasedReplicaCouplingNative B
@@ -52,7 +53,7 @@ theorem placedReplicaCouplingRelease_exec (H : ReplicaHaloProblem s) (target : �
     replicaRecoveryPreparationNativeReg_injective (fun f : Empty => nomatch f) he v rfl S rfl
   let F := embOvr e G.get S
   have hview : embStk e F = G := embStk_ovr replicaRecoveryPreparationNativeReg_injective G S
-  refine ⟨v',F,hu'.trans hu,he',?_,?_,?_,rfl,rfl,?_,?_⟩
+  refine ⟨v',F,hu'.trans hu,he',?_,?_,?_,rfl,rfl,?_,?_,?_⟩
   · change ReplicaBoundaryFactorData H target columns (embStk packedBoundaryRecoveryBase (embStk e F))
     rw [hview]
     exact hdata
@@ -61,8 +62,15 @@ theorem placedReplicaCouplingRelease_exec (H : ReplicaHaloProblem s) (target : �
   · exact embOvr_left_of_eq S G rfl
   · intro k hk
     have hh := congrArg (fun Z : Stacks 248 A => Z.R k) hview
-    exact hh.trans (releasedReplicaCouplingNative_high B k hk)
+    apply hh.trans
+    rcases hk with hk | rfl | rfl
+    · exact releasedReplicaCouplingNative_high B k hk
+    · simp [G,releasedReplicaCouplingNative,B,e,embStk]
+    · simp [G,releasedReplicaCouplingNative,B,e,embStk]
   · intro k hk
     exact embOvr_off G.get S hk
+
+  · have hh := congrArg (fun Z : Stacks 248 A => Z.R 116) hview
+    exact hh.trans (releasedReplicaCouplingNative_blank B 116 (by decide) (by decide))
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

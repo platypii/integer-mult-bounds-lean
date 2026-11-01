@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3825 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3826 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25604,3 +25604,32 @@ Next connect the generated first pass and factory outputs to the retained
 setup premises, then complete workspace and distinct-core scheduling. Tensor/R4
 composition, layout restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: paid native cleanup feeds the prepared cached recovery caller
+
+`Mult.PhaseCellReleasedPreparedCachedReplicaRecovery` executes native coupling
+cleanup, physical setup, archive installation, cached recovery, the shared
+second interior pass and final assembly as one program. Its initial shared
+language permits live coupling arithmetic; recovery-core readiness and the
+empty disposable count are consequences of executed cleanup. The generated
+factor data, original RHS/residual queues, gather state, peripheral data and
+new archive/control ports are carried through the structural placement frames.
+
+The returned assembled outputs retain the existing per-replica certificates
+and the time bound pays actual native cleanup stock plus the complete prepared
+cached caller. The release theorem now explicitly preserves both payload
+queues and proves that its disposable count is empty.
+
+A direct final arithmetic comparison tried to unfold mismatched concrete cost
+expressions and hit the recursion limit. Normalizing only associativity before
+using the abstract addition inequality avoids that reduction; proof limits are
+unchanged.
+
+Guarded checks pass at 3316.3 MiB (cleanup queue frame) and 3320.6 MiB
+(composed caller). Compatibility build passes (15805 jobs, 3.5 GiB combined peak).
+The scoped axiom audit passes for 336512 declarations at 3390.8 MiB.
+Next derive the retained shared-bank and ordinary-header premises from the
+executed first pass and generated factory. Combined prefix/coupling workspace,
+distinct-core amortization, tensor/R4 composition, layout restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
