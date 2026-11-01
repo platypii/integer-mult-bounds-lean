@@ -9,6 +9,20 @@ namespace IntegerMultBounds.MathlibTM2.Host
 
 open IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2.Stack
 
+/-- Extending a bank commutes with changing one of its owned registers. -/
+theorem embExt_update {T T' : ℕ} {β : Type} (e : Fin T → Fin T') (he : Function.Injective e)
+    (f : Fin T → β) (g : Fin T' → β) (i : Fin T) (x : β) :
+    embExt e (Function.update f i x) g = Function.update (embExt e f g) (e i) x := by
+  funext j
+  by_cases hj : ∃ k, e k = j
+  · obtain ⟨k,rfl⟩ := hj
+    rw [embExt_apply he]
+    by_cases hk : k = i
+    · subst k; simp
+    · rw [Function.update_of_ne hk,Function.update_of_ne (fun h => hk (he h)),embExt_apply he]
+  · have hoff : ∀ k, e k ≠ j := by simpa using hj
+    rw [embExt_off _ _ hoff,Function.update_of_ne (hoff i).symm,embExt_off _ _ hoff]
+
 theorem embExt_update_stream {T T' A : ℕ} (e : Fin T → Fin T') (he : Function.Injective e)
     (R : Fin T' → List (Fin (A + 4))) (str : Fin T) (out : List (Fin (A + 4))) :
     embExt e (Function.update (R ∘ e) str out) R = Function.update R (e str) out := by
@@ -29,6 +43,18 @@ theorem embOvr_stream {T T' A : ℕ} (e : Fin T → Fin T') (he : Function.Injec
   have hL : embExt e (S.L ∘ e) S.L = S.L := embExt_comp (e := e) S.L
   have hR := embExt_update_stream e he S.R str out
   simp only [embOvr, embStk, Stacks.get, hL, hR]
+
+/-- Two changed streams retain a literal ambient frame under placement. -/
+theorem embOvr_two_streams {T T' A : ℕ} (e : Fin T → Fin T') (he : Function.Injective e)
+    (S : Stacks T' A) (src dst : Fin T) (input output : List (Fin (A+4))) :
+    embOvr e ({embStk e S with R := (Function.update
+      (Function.update (embStk e S).R src input) dst output)} : Stacks T A).get S =
+      {S with R := Function.update (Function.update S.R (e src) input) (e dst) output} := by
+  have hL : embExt e (S.L ∘ e) S.L = S.L := embExt_comp (e := e) S.L
+  have hR : embExt e (Function.update (Function.update (S.R ∘ e) src input) dst output) S.R =
+      Function.update (Function.update S.R (e src) input) (e dst) output := by
+    rw [embExt_update e he,embExt_update_stream e he]
+  simp only [embOvr,embStk,Stacks.get,hL,hR]
 
 /-- Reading a changed shared stream back through the embedding changes only the
 small program's stream. This supplies the next phase's exact initial state. -/
