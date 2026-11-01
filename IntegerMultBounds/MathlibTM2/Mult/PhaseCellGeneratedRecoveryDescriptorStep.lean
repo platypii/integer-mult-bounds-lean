@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedRecoveryInputExec
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorCleanupStock
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellDescriptorBankStepStock
 public import IntegerMultBounds.MathlibTM2.StackInvariantShift
 
 /-! Load ordinary input, run the physical cached caller, collect its certified
@@ -111,30 +111,8 @@ theorem generatedRecoveryDescriptorStep_exec (H : ReplicaHaloProblem s) (hR : rp
       rw [hready] at hbase
       dsimp only [generatedRecoveryInputStock,List.length_nil] at hb hz
       omega
-  have hr := hreg
-  regs_ne hr
-  have hreg' : [src,saved,count,tmp,spare].Nodup := by
-    simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or] at hreg ⊢
-    tauto
-  have hsep' (i : Fin 392) : work i ∉ [src,saved,count,tmp,spare] := by
-    have hh := hsep i
-    simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hh ⊢
-    tauto
-  have hresult (i : Fin 392) : work i ≠ result := by
-    have hh := hsep i
-    simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hh
-    exact hh.2.2.2.2.2
-  have houter : [src,saved,result].Nodup := by
-    simp only [List.nodup_cons,List.mem_cons,List.not_mem_nil,or_false,not_or] at hreg ⊢
-    tauto
-  obtain ⟨v',F,n,hu,hn,hex,hpF,htrace⟩ := descriptorBankStep_exec_restored (body := body)
-    work hwork src saved count tmp spare result hreg' hsep' hresult ‹tmp ≠ result›.symm houter
-    words rest 391 solve time stock (6*stock+2358) post v S hblank hleft hsource hcount htmp hspare hsolve
-    (by intro F hf
-        have hh := descriptorBankCleanupCost_le_stock (391 : Fin 392) F
-        have hb := hf.2.2.2
-        omega)
-    (by intro F hf; exact ⟨hf.1,hf.2.1⟩)
-  exact ⟨v',n,F.R 391,hu,hn,hex,hpF.2.2.1,htrace⟩
+  exact descriptorBankStep_exec_stock (body := body) work hwork src saved count tmp spare result hreg hsep
+    words rest 391 solve time stock (GeneratedRecoveryOutput H target X) v S
+    hblank hleft hsource hcount htmp hspare hsolve
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

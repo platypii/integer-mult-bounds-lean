@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3897 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3903 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26780,3 +26780,42 @@ restoring job scheduler, preserving the existing component-expansion order and
 paying its input production. Schedule budgets still need the affine setup/row
 ledger; tensor/R4 composition, layout restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: raw descriptor schedules execute normalization internally
+
+`Mult.PhaseCellDescriptorBankStepStock` factors the generic six-port separation,
+host-frame, output collection and two-sided cleanup argument over arbitrary
+private-bank size. Its cleanup bill is `6*stock+6*N+6`. The previous generated
+recovery descriptor step now uses this lemma, removing its duplicate restore
+proof. `Mult.PhaseCellNormalizedRecoveryDescriptorStep` instantiates it with raw
+input words and the actual combined normalization/factory/cached-recovery
+program. It derives private final stock from the executed trace after cancelling
+preserved host tapes; mathematical time/stock bounds remain explicit, with no
+solver execution premises.
+
+`RawRecoveryJob` extends the existing mathematical recovery job with raw fields,
+common input width and their exact normalization/format relations. It stores no
+execution or resource bounds. Named `inputTime`, `initialStock`, `runTime` and
+`runStock` expose the actual bills for the next affine ledger.
+`RawRecoveryJob.ofComplexBounds` derives those input relations from ordinary
+unit-grid complex fields, ordered component expansion and canonical precision.
+`RawRecoveryJob.coreClassJobs` uses the existing core movement order and bounds,
+with the common-width inequality supplied mathematically.
+
+`Mult.PhaseCellRawRecoveryJobSchedule` executes these records with normalization
+inside each restoring descriptor step. The existing descriptor scheduler proves
+restoration, certified outputs and one peak scratch allowance. Loading, physical
+normalization, factor generation, cached recovery, output collection, cleanup
+and descriptor/clock restoration are paid; total output volume comes from the
+inherited assembly certificates. Input component fields are serialized in the
+existing component order; physical component expansion and outer supplier/R4
+movement still need their full composition.
+
+Guarded checks pass at 3036.6 MiB (generic cleanup), 3399.4 MiB (raw descriptor),
+3382.1 MiB (raw jobs), 3371.7 MiB (bounds constructor), 3376.1 MiB (core classes)
+and 3415.3 MiB (raw executed schedule). The scoped compatibility build passes
+(16108 jobs, 8.3 GiB combined peak); the axiom audit passes for 338797 declarations
+at 3460.2 MiB. Next discharge schedule time/stock bounds with the affine
+shared-setup/replica-row ledger. Component production, tensor/R4 composition,
+layout restoration and outer integration remain open. S4 is incomplete; kappa
+is unchanged.
