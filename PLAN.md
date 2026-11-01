@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4006 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4008 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28271,4 +28271,39 @@ Guarded file check passes at 3439.4 MiB. The local dependency build passes
 (15916 jobs, 3.5 GiB combined peak), and expanded compatibility passes
 (16569 jobs).
 Broad axiom audit passes for 341966 declarations at 3545.6 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: ordered recovery reuses the existing crop bank
+
+`Mult.PhaseCellRecoveryOrderPlacement` constructs the 14-port order-restoration
+placement from the existing crop bank and retained packet-width register.
+Rows use crop port 4; replicas use the existing replica seed; the normalized
+source uses crop port 12; ordered output returns to the raw result port. All
+nine reversal scratch roles reuse crop scratch in the cleared recovery bank.
+No fresh registers or initially blank scratch hypotheses are introduced.
+
+Ambient injection is proved structurally from crop injection and a disjoint
+single packet-width port; only the small 13/14-role selectors are checked.
+The remaining separation obligations are packet width versus rows, replica
+count and normalized destination. Existing seed/work and seed/result facts
+discharge all other separation.
+
+`Mult.PhaseCellCropOrderedRecovery.crop_ordered_exec` specializes the complete
+computed ordered execution to this placement. Existing crop rows and retained
+word-width/replica counters discharge all order-pass readiness. The returned
+execution preserves the previous exact frame, unchanged output certificate,
+time sum and all-depth stock bound. This connects the placement to the actual
+execution rather than leaving an unused wiring definition.
+
+Concrete supplier-wide bank construction, grouped scan and full cost absorption
+remain open; this checkpoint closes the reversal-specific placement argument.
+Next connect generated ordinary-input readiness to the existing scan, sum full
+grouped bills and close tensor/R4 restoration. S4 remains incomplete; kappa
+is unchanged.
+
+Guarded file checks pass at 3432.0 MiB (placement) and 3419.0 MiB
+(crop-bank execution). Expanded compatibility passes (16571 jobs, 3.5 GiB
+combined peak).
+Broad axiom audit passes for 341979 declarations at 3545.9 MiB, permitting
 only propext, Quot.sound and Classical.choice.
