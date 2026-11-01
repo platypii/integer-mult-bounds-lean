@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3520 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3525 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21576,11 +21576,73 @@ limits intact. Generic counted-step and counted-loop checks pass at 1387.9 and
 installer and global core local stock passes: 15084 jobs, 2.8 GiB combined peak.
 
 Next instantiate the loop invariant with the actual replica accuracy, output
-row ranges and metadata. Reuse the existing exact positive `haloLengthKeys`
-schedule (rather than adding empty-candidate branches to this nonempty-class
-contract), identify generated windows, and carry earlier-class errors using
-cross-class disjointness. Verify the physical key/count generator and initial
-flag test and charge that setup explicitly. The concrete all-class traversal,
+row ranges and metadata, identify generated windows, and carry earlier-class
+errors using cross-class disjointness. `haloLengthKeys` is a positive candidate
+schedule and can contain empty classes: the nonempty numerical contract needs
+either filtering or a runtime skip after the generated count is tested.
+Verify the physical key/count generator and initial flag test and charge that
+setup explicitly. The concrete all-class traversal,
 full halo recovery, global scheduling, tensor/R4 restoration and selected
 acceptance remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331855 declarations at 3272.4 MiB.
+
+### S4 checkpoint: concrete packed replica loop invariant and halo coverage
+
+`PhaseCellReplicaOutputRows` splits a bounded flattened stream structurally
+at aligned row boundaries. It supplies the exact bounded output-row witnesses
+required by the next class, rather than assuming a fresh row-range oracle.
+`PhaseCellReplicaHaloGeometry` identifies the canonical local windows with
+ambient halo groups, derives all solver geometry, and proves coordinate bounds
+and cross-class avoidance for arbitrary indices and distinct lengths.
+
+`PhaseCellReplicaHaloProblem` packages the fixed analytic data, RHS bound and
+principal-system solves once. Metadata-width fitting is independent of keys.
+`ReplicaLoopHeaders.of_frame` transports ordinary common headers past queue and
+counter updates; neither numerical pages nor decoded per-key dimensions are
+part of that common interface. Buffers include a saved gather view so the loop
+can preserve arbitrary spectator right tapes and every gather left tape.
+
+`PhaseCellGeneratedReplicaHaloLoop.replicaHaloLoop_step` instantiates the actual
+binary-key processor with that data. `ReplicaHaloLoopState` carries remaining
+keys, physical packet/count equality, released numerical/cache banks, original
+RHS and common headers, bounded accumulator rows and all completed-class
+accuracy. Its transition uses the executed class's output witnesses and generic
+cross-class preservation. `replicaHaloLoop_exec_within` discharges the structural
+loop's execution premise; no per-class execution witness is left as an assumption.
+`runReplicaHaloLoop_exec_within` executes and pays the initial counter test, so
+it has no supplied flag-readiness condition. Time is the sum of actual key bills
+plus three per key and two endpoint steps. Stock uses the sum of actual key
+allowances and counts the original whole bank once.
+
+The final invariant restores the entire saved gather bank, with the owned key
+queue and counter replaced by their released endpoints, and preserves input/
+output streams and borrowed tails. Generated cell coverage gives halo-interior
+accuracy for every replica with the original error, without a key, cell, volume
+or replica factor. Empty classes have vacuous accuracy; coverage needs executions
+only for the nonempty classes. The runtime loop currently still requires its
+queued classes to be nonempty. The existing positive candidate queue can contain
+empty classes, so it cannot yet be connected without a dispatch/filter proof.
+
+`Cost/PhaseCellReplicaHaloLoopResources` transports this exact execution to the
+sum of the proved linear per-class stock envelopes. Parsing remains shared key
+work. Numerical multiplication runtime is not used as a storage estimate.
+
+Guarded checks pass at 2047.9 MiB (row witnesses), 2066.2 MiB (generic halo
+geometry), 2155.2 MiB (fixed problem/header transport), 2159.4 MiB (concrete loop,
+full gather restoration and coverage; 2.42 seconds) and 3162.0 MiB (linear stock).
+The new loop has its own module; the older `PhaseCellReplicaHaloLoop` source and
+API are preserved unchanged and its guarded rebuild passes. Final compatibility
+with that older loop, the retained-header installer and global core local stock
+passes: 15119 jobs, 3.4 GiB combined peak.
+
+Next handle positive candidates with zero generated cells. Generate the two pages
+once, test the actual count at 116, execute the numerical/accumulation branch only
+when nonzero, then use shared page retirement. Do not add a separate probe that
+regenerates the pages. Reuse `preparedHaloLengthCandidates` and
+`selectSixPositiveLengths` with retained widths, then move the generated count
+from 86 to 119; the existing selector computes positive distinct candidates
+algebraically and does not need a whole-axis scan. Connect the actual key producer
+and initialize the independent accumulator (zeros suffice) before the loop.
+Full halo recovery, global scheduling, tensor/R4 restoration and selected
+acceptance remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 332143 declarations at 3278.0 MiB.
