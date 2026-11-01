@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3715 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3718 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24198,3 +24198,38 @@ Preparation/whole-caller workspace, selected resource bounds,
 first-pass/generated-factory integration, scheduling, tensor/R4 restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334200 declarations at 3334.5 MiB.
+
+
+### S4 checkpoint: the complete prepared residual solve has a workspace certificate
+
+`Host.EmbedStockTrace.exec_emb_within_stock_of_exec` attaches a local bounded
+trace to an existing placed execution by determinism. The original placed
+endpoint and step witness are retained, and the entire surrounding initial
+stock is counted once. This avoids repeating final-state reconciliation when
+lifting each numerical phase.
+
+`PhaseCellPreparedBoundaryUnscaleStock` lifts bounded generated unscaling into
+the prepared caller and publishes over its existing output suffix. Both
+order-restoring publication moves use the storage-preserving move rule; they
+add no workspace reserve.
+
+`PhaseCellPreparedResidualSolveStock.preparedResidualSolve_exec_within` now
+executes the complete retained-factor solve: generated normalization, both
+triangular passes, generated unscaling and publication. The physical
+normalization/solve frame supplies the actual solution and restored readiness
+for unscaling; allocated solution bounds discharge its numerical hypotheses.
+The theorem preserves the existing mathematical output and exact time bill.
+Its `preparedResidualSolveWorkspace` sums the two scaling reserves, their
+linear precision setup allowance and `boundarySolveWorkspace`; it does not
+charge triangular scratch once per column or spectator storage per phase.
+
+Guarded checks pass at 1380.1 MiB (embedding trace rule), 3113.0 MiB
+(prepared unscaling/publication), and 3130.0 MiB (complete residual solve).
+Compatibility with the actual batched recovery bill and generated baseline
+passes (15473 jobs, 3.4 GiB combined peak). Next carry this certificate through
+the retained boundary row, bound recovery RHS construction and share the row
+reserve across preparation using its proved endpoint-stock invariant.
+Whole-caller workspace, selected resource bounds, first-pass/generated-factory
+integration, scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334206 declarations at 3338.1 MiB.
