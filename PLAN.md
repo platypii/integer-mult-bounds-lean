@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3841 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3842 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25952,5 +25952,33 @@ generate the first-pass masks once, connect cached runtime initialization and
 loop execution, and handle mask retirement/switching before recovery's mask
 initialization. The existing complete caller still uses uncached first-pass
 coupling until that integration is proved. Factory/header integration, combined
+workspace, distinct-core amortization, tensor/R4 composition, layout restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: shared mask modes and the initialized cached traversal
+
+`initializeCouplingMasks boundary` generalizes the existing recovery mask
+program over the source mode while retaining the true target guard. Execution
+and native workspace are proved once for either mode. The original recovery
+program and both theorem statements are preserved as true-mode specializations.
+The false-mode first pass can now use the same mask-generation proof language.
+
+`Mult.PhaseCellInitializedCachedReplicaCouplingLoop` copies the retained replica
+count into the private clock, executes the cached traversal, and releases the
+clock. It retains the traversal's residual ordering, accuracy, shared-bank and
+spectator frames, including both cached masks. Its time bound includes the
+`4*replicaCount+4` clock-copy charge and all cached transition/control costs.
+
+Guarded file checks pass at 2122.9 MiB (generic mask execution), 2081.9 MiB
+(generic mask workspace and recovery specialization), and 2207.4 MiB
+(initialized cached traversal). The complete scoped compatibility build passes
+(15901 jobs; final refresh 2.8 GiB combined peak). The axiom audit passes for
+336590 declarations at 3395.7 MiB. Integration must run shared mask generation
+before scalar-counter installation: the mask generator needs the low scratch
+bank empty. Next compose page/geometry, masks and counters, then substitute the
+initialized cached traversal into the actual first-pass caller. Mask retirement
+before recovery must be executed and charged. The existing complete caller still
+uses uncached first-pass coupling. Factory/header integration, combined
 workspace, distinct-core amortization, tensor/R4 composition, layout restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.

@@ -4,7 +4,8 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBinaryRibbonMask
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingIntervalMetadata
 public import IntegerMultBounds.MathlibTM2.Host.OrderedMove
 
-/-! Generate both recovery masks once, retaining natural-order streams in the cache ports. -/
+/-! Generate coupling masks once for either source mode. Recovery retains its
+existing true-source wrapper; both modes use the same target guard and cost. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
@@ -12,6 +13,11 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Layer IntegerMultBounds.MathlibTM2.Fast.TableVM
   IntegerMultBounds.MathlibTM2.Mult.ShortConv
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 168 Q A U}
+
+def initializeCouplingMasks (boundary : Bool) : Pr P 168 Q A U :=
+  .seq (.seq loadRibbonMaskBank (ribbonMaskHost boundary))
+    (.seq (moveRightOrdered 158 0 159)
+      (.seq (placedBinaryRecoveryGuardInterval true) (moveRightOrdered 136 0 161)))
 
 def initializeRecoveryMasks : Pr P 168 Q A U :=
   .seq (.seq loadRibbonMaskBank (ribbonMaskHost true))
@@ -22,7 +28,7 @@ def initializeRecoveryMasksCost (V N band : ℕ) :=
   (152*V+153+((32*(N+2*band)+2)*tblC V 1+68*V+2*(N+2*band)+72))+
     (4*(N+2*band)+4)+(144*V+145+((46*N+2)*tblC V 1+66*V+2*N+70))+(4*N+4)
 
-theorem initializeRecoveryMasks_exec {s t band a b origin N V : ℕ} [NeZero s]
+theorem initializeCouplingMasks_exec (boundary : Bool) {s t band a b origin N V : ℕ} [NeZero s]
     (hst : s < t) (ha : a ≤ s) (hb : b ≤ s) (hband : band ≤ s) (hfit : origin+N ≤ s)
     (hwide : 8*(t+1)^2+4*band+8 < 2^V) (hfitV : origin+(N+2*band)+s < 2^V)
     (v : HS 168 Q A U) (S : Stacks 168 A)
@@ -30,9 +36,9 @@ theorem initializeRecoveryMasks_exec {s t band a b origin N V : ℕ} [NeZero s]
     (hclean : ∀ k : Fin 168, k.val < 63 → S.R k = [])
     (h136 : S.R 136 = []) (h158 : S.R 158 = []) (h159 : S.R 159 = []) (h161 : S.R 161 = []) :
     ∃ v' m, v'.user = v.user ∧ m ≤ initializeRecoveryMasksCost V N band ∧
-      Exec body initializeRecoveryMasks (mk v S) m
+      Exec body (initializeCouplingMasks boundary) (mk v S) m
         (mk v' {S with R := (Function.update (Function.update S.R 159
-          ((couplingRibbonFlags (s := s) true t band a b origin N).map (fun flag => pairSym A flag flag)))
+          ((couplingRibbonFlags (s := s) boundary t band a b origin N).map (fun flag => pairSym A flag flag)))
           161 (recoveryGuardIntervalSymbols true A s t (2*band) a b origin N))}) := by
   let rv := couplingIntervalValue s t band a b origin N
   let gv := fun k : Fin 117 => rv (intervalGuardPlacement k)
@@ -41,19 +47,19 @@ theorem initializeRecoveryMasks_exec {s t band a b origin N V : ℕ} [NeZero s]
   have hblank : ∀ r, S.R (ribbonTableReg r) = [] := by
     intro r
     exact hclean _ ((ribbonTableReg_range r).trans (by decide))
-  obtain ⟨v₁,m₁,hu₁,hm₁,he₁⟩ := binaryRibbonMask_exec (body := body) true rv
+  obtain ⟨v₁,m₁,hu₁,hm₁,he₁⟩ := binaryRibbonMask_exec (body := body) boundary rv
     (by simp [rv,couplingIntervalValue]) (by simp [rv,couplingIntervalValue])
     (by simp [rv,couplingIntervalValue]) (by simp [rv,couplingIntervalValue])
     (by simp [rv,couplingIntervalValue]) (by simp [rv,couplingIntervalValue])
     (by simp [rv,couplingIntervalValue]) hst ha hb hband hfit hfitV (by omega)
     (fun i => hbound _) v S hgeometry.width hgeometry.ribbon hblank
-  let xs := (couplingRibbonFlags (s := s) true t band a b origin N).map (fun flag => pairSym A flag flag)
+  let xs := (couplingRibbonFlags (s := s) boundary t band a b origin N).map (fun flag => pairSym A flag flag)
   have hxs : xs.length = N+2*band := by
     dsimp only [xs,List.length_map]
-    rw [couplingRibbonFlags_eq_map true hst band a b origin N hb hband hfit]
+    rw [couplingRibbonFlags_eq_map boundary hst band a b origin N hb hband hfit]
     simp
   let B : Stacks 168 A := {S with R := Function.update S.R 158 xs}
-  have he₁' : Exec body (.seq loadRibbonMaskBank (ribbonMaskHost true)) (mk v S) m₁ (mk v₁ B) := by
+  have he₁' : Exec body (.seq loadRibbonMaskBank (ribbonMaskHost boundary)) (mk v S) m₁ (mk v₁ B) := by
     simpa only [h158,List.append_nil] using he₁
   obtain ⟨v₂,hu₂,he₂⟩ := moveRightOrdered_exec (body := body) 158 0 159 (by decide) (by decide) (by decide)
     v₁ B (by simpa [B] using hclean 0 (by decide))
@@ -107,5 +113,21 @@ theorem initializeRecoveryMasks_exec {s t band a b origin N V : ℕ} [NeZero s]
   funext k
   by_cases hk136 : k = 136 <;> by_cases hk159 : k = 159 <;> by_cases hk161 : k = 161 <;>
     simp [K,J,h136,h161,ys,xs,hk136,hk159,hk161]
+
+
+theorem initializeRecoveryMasks_exec {s t band a b origin N V : ℕ} [NeZero s]
+    (hst : s < t) (ha : a ≤ s) (hb : b ≤ s) (hband : band ≤ s) (hfit : origin+N ≤ s)
+    (hwide : 8*(t+1)^2+4*band+8 < 2^V) (hfitV : origin+(N+2*band)+s < 2^V)
+    (v : HS 168 Q A U) (S : Stacks 168 A)
+    (hgeometry : CouplingIntervalMetadata V s t band a b origin N S)
+    (hclean : ∀ k : Fin 168, k.val < 63 → S.R k = [])
+    (h136 : S.R 136 = []) (h158 : S.R 158 = []) (h159 : S.R 159 = []) (h161 : S.R 161 = []) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ initializeRecoveryMasksCost V N band ∧
+      Exec body initializeRecoveryMasks (mk v S) m
+        (mk v' {S with R := (Function.update (Function.update S.R 159
+          ((couplingRibbonFlags (s := s) true t band a b origin N).map (fun flag => pairSym A flag flag)))
+          161 (recoveryGuardIntervalSymbols true A s t (2*band) a b origin N))}) := by
+  exact initializeCouplingMasks_exec (body := body) true hst ha hb hband hfit hwide hfitV v S
+    hgeometry hclean h136 h158 h159 h161
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
