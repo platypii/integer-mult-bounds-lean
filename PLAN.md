@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3930 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3934 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27214,3 +27214,37 @@ reprice the actual scheduler time and peak trace. Final constructor-bound
 instantiation, physical component production, tensor/R4 composition, layout
 restoration and outer integration remain open. S4 is incomplete; kappa is
 unchanged.
+
+### S4 checkpoint: exact scheduler budgets inherit quantitative estimates
+
+`Mult.PhaseCellRawRecoveryProgramBounds` packages the fixed arithmetic-program
+bounds reused across jobs and axes. It supplies witness existence through the
+proved physical caller and a stock-budget function; it contains no job, batch,
+solution or execution assumptions.
+
+`Cost.PhaseCellRawRecoveryBudgetEstimates` transfers the selected density-time,
+scaled stock and restoring-cleanup estimates to exact timeBudget/stockBudget.
+Witness families are derived internally from batch_nonempty and disappear via
+runTime_eq_budget/runStock_eq_budget. The transferred estimates therefore have
+no batch-family premise.
+
+`Mult.PhaseCellRawRecoveryScheduleBudgets` names the actual whole-schedule time
+and peak-workspace bills and exposes execution using the packaged program
+bounds. `Cost.PhaseCellRawRecoveryScheduleBudgetCosts` splits the exact time bill
+into caller, cleanup, descriptor/control and constant terms. Its workspace
+inequality retains the physical single-peak trace while bounding scratch by
+summed stock and descriptor traffic, which have already been amortized. These
+are the direct interfaces for the final selected scheduler estimates.
+
+Guarded checks pass at 3379.6 MiB (fixed program package), 3439.3 MiB (budget
+estimate transfer), 3405.8 MiB (named scheduler execution), and 3437.1 MiB
+(scheduler bill identities). Scoped compatibility build passes (16143 jobs,
+1.1 GiB combined observed peak, mostly replayed); axiom audit passes for 338996
+declarations at 3465.2 MiB. Next strengthen the repeated stock bound from
+replicaRecoveryLocalVolume to replicaHaloLocalCoordinates: rawRecoveryJobRowWorkspace
+uses only span, coordinates and linear widths, so this avoids importing sparse
+numerical density into storage. Sum coordinates using coreHalo_localNativeVolume_le
+at width one, price output volume, and combine the transferred estimates with
+the actual scheduler bills. Final constructor-bound instantiation, physical
+component production, tensor/R4 composition, layout restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
