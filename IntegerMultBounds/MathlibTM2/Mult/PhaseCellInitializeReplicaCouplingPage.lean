@@ -35,7 +35,8 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
       embStk plan.gather F = embStk plan.gather S ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (F.R (placement.bank 139)).length = (couplingCoefficientPageInterval precision q s t u band a b a (b-a)).length ∧
       (F.R (placement.bank 140)).length = 2*band+1 ∧
-      (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) := by
+      (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) ∧
+      (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], S.R (placement.bank k) = [] → F.R (placement.bank k) = []) := by
   have hheaders : ∀ p ∈ couplingGeometryAssignments,
       (S.R (placement.bank p.1)).length = couplingGeometryHeaderValue s t band a b p.1 := by
     intro p hp
@@ -66,7 +67,7 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
           rw [hframe₁ k hn.1 hn.2]
           exact hfresh k hk)
   refine ⟨v₂,F,n₁+n₂,hu₂.trans hu₁,by omega,.seq he₁.toExec he₂,?_,hmetaF,?_,
-    hgather₂.trans hgather₁,hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_⟩
+    hgather₂.trans hgather₁,hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_,?_⟩
   · rw [hnative₂]
     exact hreadyG
   · have hp := congrFun (congrArg Stacks.R hview) 138
@@ -83,5 +84,17 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
 
   · intro k hk
     exact (hoff₂ k hk).trans (hoff₁ k hk)
+
+  · intro k hk hkS
+    have hn : k ≠ 163 ∧ k ∉ ([(145 : Fin 168),146,147,148,149,151,154,155,156,164,165]) := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+    have hG := (hframe₁ k hn.1 hn.2).trans hkS
+    have hp := congrFun (congrArg Stacks.R hview) k
+    change F.R (placement.bank k) = _ at hp
+    rw [hp]
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;>
+      simp [sharedCouplingPageState,embStk_R,hG]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

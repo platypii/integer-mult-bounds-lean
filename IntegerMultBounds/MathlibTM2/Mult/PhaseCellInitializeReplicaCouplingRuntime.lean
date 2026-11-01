@@ -43,8 +43,9 @@ theorem initializeReplicaCouplingRuntime_exec_within {plan : ReplicaInteriorPlac
       embStk plan.gather F = embStk plan.gather S ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (F.R (placement.bank 139)).length = (couplingCoefficientPageInterval precision q s t u band a b a (b-a)).length ∧
       (F.R (placement.bank 140)).length = 2*band+1 ∧
-      (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) := by
-  obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hreadyJ,hmeta,hpage,hgather₁,hleft₁,hi₁,ho₁,hcount,hrows,hoff₁⟩ :=
+      (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) ∧
+      (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], S.R (placement.bank k) = [] → F.R (placement.bank k) = []) := by
+  obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hreadyJ,hmeta,hpage,hgather₁,hleft₁,hi₁,ho₁,hcount,hrows,hoff₁,hfreshJ⟩ :=
     initializeReplicaCouplingPage_exec_within (body := body) placement hA hprecision hst hab hb ha hwide hfitV
       raw v S hready hV htmp h107 hblank hfresh depth
   let e := fun i => plan.solver (weightCacheCoreReg i)
@@ -63,7 +64,7 @@ theorem initializeReplicaCouplingRuntime_exec_within {plan : ReplicaInteriorPlac
     · funext k
       exact hframe₂ _ (fun i => (plan.disjoint k (weightCacheCoreReg i)).symm)
   refine ⟨v₂,F,n₁+n₂,hu₂.trans hu₁,?_,?_,hretained,?_,?_,hgather₂.trans hgather₁,
-    hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_⟩
+    hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_,?_⟩
   · unfold initializeReplicaCouplingRuntimeCost
     omega
   · have hsize := he₁.final
@@ -86,5 +87,11 @@ theorem initializeReplicaCouplingRuntime_exec_within {plan : ReplicaInteriorPlac
       rw [← placement.bank_native i]
       exact hk _)).trans
     exact hoff₁ k hk
+
+  · intro k hk hkS
+    rw [hhigh k (by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> decide)]
+    exact hfreshJ k hk hkS
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

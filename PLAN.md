@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3574 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3575 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22198,3 +22198,38 @@ then feeds boundary recovery and the second interior pass. Global endpoint
 scheduling, tensor/R4 restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
 The scoped axiom audit passes for 329037 declarations at 3231.5 MiB.
+
+
+### S4 checkpoint: shared setup and all-replica coupling compose in one trace
+
+`PhaseCellPreparedReplicaCoupling` executes actual geometry, coefficient-page
+and scalar-counter setup once, then the complete generated counted replica loop.
+It derives the loop's retained readiness, actual page, word count, row width and
+binary geometry from that setup trace. Its output includes the complete residual
+archive with per-row accuracy/RHS witnesses, released queues and private count,
+and the retained page, geometry, counters and scratch facts needed for recovery.
+The time bill is shared setup plus the existing generated-loop bill.
+
+The page/runtime setup contracts now expose preservation of the six extended
+scratch ports used by local coupling. These facts were already proved by the
+exact page state and off-native counter frame; exposing them discharges the
+loop's freshness conditions without a second scratch-bank premise.
+
+The placement audit found that gather 125 is fresh after the interior pass and
+unused by shared setup or coupling controls. The forthcoming caller can use it
+as the residual archive, alongside gather 123 for symbol volume, 104/105 for
+scratch and 122 for the private count, without increasing the tape count.
+
+Guarded checks pass at 2173.4 MiB (page scratch preservation), 2141.2 MiB
+(page workspace contract), 2155.6 MiB (runtime scratch preservation) and
+2217.1 MiB (composed shared setup and replica loop). Compatibility with ordinary
+native initialization and selected replica resources passes
+(14847 jobs, 2.8 GiB combined peak).
+
+Next prepend the existing actual ordinary-header reload from the released
+numerical bank, instantiate the retained gather controls, and connect the
+preceding initialized interior/row constructor. The local arithmetic workspace
+certificate and selected coupling resource ledger remain open. Boundary
+recovery and the second interior pass, global endpoint scheduling, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 329041 declarations at 3233.6 MiB.
