@@ -39,7 +39,8 @@ theorem placedReplicaRecoverySetup_exec (H : ReplicaHaloProblem s) (W : ℕ) (hA
         embStk (Fin.castLE (by decide : 248 ≤ 255)) (embStk replicaRecoverySetupWorkerReg S) ∧
       embStk replicaRecoveryBatchInterior.gather F = embStk replicaRecoveryBatchInterior.gather S ∧
       F.L = S.L ∧
-      (∀ k : Fin 392, 389 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) := by
+      (∀ k : Fin 392, 389 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧
+      (∀ k, (∀ i, replicaRecoverySetupWorkerReg i ≠ k) → F.R k = S.R k) := by
   let e : Fin 389 → Fin 392 := Fin.castLE (by decide)
   obtain ⟨vi,G,n,hu,hn,he,hphysical,hcoreG,hnative,hgather,hL,hframe⟩ :=
     replicaRecoveryCallerSetup_exec (body := fun f : Empty => nomatch f) H W hA
@@ -54,7 +55,7 @@ theorem placedReplicaRecoverySetup_exec (H : ReplicaHaloProblem s) (W : ℕ) (hA
   have hgatherF : embStk replicaRecoveryBatchInterior.gather F = embStk replicaRecoveryCallerInterior.gather G := by
     change embStk replicaRecoveryCallerInterior.gather (embStk e F) = _
     rw [hview]
-  refine ⟨v',F,n,hu'.trans hu,hn,he',?_,?_,?_,?_,?_,?_⟩
+  refine ⟨v',F,n,hu'.trans hu,hn,he',?_,?_,?_,?_,?_,?_,?_⟩
   · rw [hworker]; exact hphysical
   · rw [hworker]; exact hcoreG
   · rw [hworker]; exact hnative
@@ -66,5 +67,23 @@ theorem placedReplicaRecoverySetup_exec (H : ReplicaHaloProblem s) (W : ℕ) (hA
     have hv : i.val = k.val := congrArg Fin.val heq
     have hi := i.isLt
     omega
+
+  · intro k hk
+    by_cases hlow : k.val < 389
+    · let j : Fin 389 := ⟨k.val,hlow⟩
+      have hj : e j = k := Fin.ext rfl
+      have hh := congrArg (fun Z : Stacks 389 A => Z.R j) hview
+      change F.R (e j) = G.R j at hh
+      have hoff := hframe j (by
+        intro i heq
+        exact hk i ((congrArg e heq).trans hj))
+      change G.R j = S.R (e j) at hoff
+      rw [hj] at hh hoff
+      exact hh.trans hoff
+    · exact (embOvr_off G.get S (by
+        intro i heq
+        have hv : i.val = k.val := congrArg Fin.val heq
+        have hi := i.isLt
+        omega)).2
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

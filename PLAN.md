@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3823 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3824 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25549,3 +25549,28 @@ provide the retained shared bank and compatible ordinary headers. Combined
 coupling workspace, distinct-core amortization, tensor/R4 composition, layout
 restoration and outer integration remain open. S4 is incomplete; kappa is
 unchanged.
+
+
+### S4 checkpoint: restore the second pass's peripheral readiness after archive consumption
+
+The placed setup theorem now exposes its complete right-register frame outside
+the setup worker. The executed setup/archive prefix composes that frame with
+the handoff frame, proves that the consumed gather archive at port 125 is empty,
+and preserves left stacks and input/output. Its preparation count remains
+unchanged. These are facts about the actual prefix endpoint, not new input
+readiness assumptions.
+
+`Mult.PhaseCellPreparedReplicaRecoveryPeripheral` derives
+`ReplicaRecoveryPeripheralReady` from these frames and the peripheral state with
+its archive port cleared. This explicitly handles the first-pass residual
+archive temporarily occupying a port that the second pass requires fresh.
+The proof reuses the existing preparation-frame rule and placement disjointness.
+
+Guarded checks pass at 3292.8 MiB (setup frame), 3296.1 MiB (prefix frame)
+and 3288.2 MiB (peripheral restoration). Compatibility build passes
+(15775 jobs, 5.8 GiB combined peak). The scoped axiom audit passes for
+336496 declarations at 3389.5 MiB. Next use the restored peripheral language
+to compose the prefix with initialized cached recovery and assembly. That
+composition, first-pass/factory shared-bank construction, combined coupling
+workspace, distinct-core amortization, tensor/R4 composition, layout restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
