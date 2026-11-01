@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3889 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3891 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26655,3 +26655,35 @@ build passes (15963 jobs, 10.8 GiB combined peak); the axiom audit passes for
 and connect this restoring step to the shared-peak descriptor scheduler, with
 its affine setup/row ledger. Tensor/R4 composition, layout restoration and
 outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: execute mathematical recovery jobs with shared peak scratch
+
+`Mult.PhaseCellGeneratedRecoveryJob` records a halo problem, target, mathematical
+solutions and the existing parameter/sizing/solution hypotheses. It contains no
+executions, supplied factors, ready banks or machine resource oracles. Its words
+are the explicit ordinary-header input bank. Its output predicate retains the
+actual recovery assembly certificates. A structural proof over arbitrary
+`Forall₂` row lists proves exact output volume `N*span*wordWidth`; the schedule
+archive volume is the sum of these mathematical job volumes.
+
+`Mult.PhaseCellGeneratedRecoveryJobSchedule.generatedRecoveryJobSchedule_exec`
+instantiates the existing restoring descriptor scheduler with the physical
+cached caller. Each step execution and resource certificate is derived from
+`generatedRecoveryDescriptorStep_exec`. Uniform mathematical bounds on the
+actual per-job time and stock expressions remain explicit hypotheses. The
+schedule restores descriptor source/saved/clock state and the private bank,
+appending certified outputs to the result archive. Loading, two-sided cleanup,
+loop controls and descriptor movement are all paid in the time bill.
+
+Its intermediate-stock allowance is the accumulated certified output volume
+plus the maximum job scratch allowance, descriptor traffic and clock stock.
+Scratch is not summed over jobs. This reuses the generic scheduler's established
+induction rather than introducing another execution loop or per-case proof.
+
+Guarded checks pass at 3326.2 MiB (job/output volume) and 3359.1 MiB (executed
+schedule). The scoped compatibility build passes (15973 jobs, 3.4 GiB combined
+peak); the axiom audit passes for 336955 declarations at 3407.0 MiB. Next supply
+the manuscript core-job list and its mathematical budgets, retaining the affine
+shared-setup/replica-row ledger for distinct-core amortization. Tensor/R4
+composition, layout restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
