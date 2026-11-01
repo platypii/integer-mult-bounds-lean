@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3769 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3771 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24889,3 +24889,33 @@ S4 is incomplete; kappa is unchanged.
 Compatibility with the existing bounded caller passes (15355 jobs,
 2.7 GiB combined peak). Scoped axiom audit passes for 336062 declarations
 at 3376.0 MiB.
+
+
+### S4 checkpoint: cached guards execute and cached ribbon preparation restores its workspace
+
+`Mult.PhaseCellCachedGuardCouplingInterval.cachedGuardCouplingInterval_exec_within`
+replays the retained interval guard stream with `Host.replayCache`, then
+reuses the bounded counted/restored coupling interval. It preserves the
+original exact numerical output, page/source restoration and ambient guard
+suffix. Guard supply costs `6*rows+6`; its reserve is linear replay traffic
+plus the existing interval reserve, with no geometry table evaluation.
+
+`Mult.PhaseCellCachedPreparedLocalRibbon.cachedPreparedLocalRibbon_exec`
+combines the existing local padding/count setup, cached ribbon-mask worker
+and padding release. Existing local-ribbon semantics identify its output
+with the actual coupling source interval. The exact original endpoint and
+borrowed suffixes survive. The time bill replaces wide mask generation by
+`cachedGatheredRibbonCost`; no binary geometry bank or value oracle is
+needed beyond the retained local row count. Redundant scratch assumptions
+are supplied through one existing clean-bank predicate.
+
+Guarded checks pass at 2103.6 MiB (cached guard interval) and 2099.2 MiB
+(cached prepared ribbon). These are execution components; the existing
+complete caller still uses generated masks. Next compose the cached local
+lifecycle, initialize both caches once, and thread their preservation
+through the actual shared preparation traversal. Selected workspace,
+first-pass/generated-factory execution, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Compatibility with the existing bounded caller passes (15357 jobs,
+4.4 GiB combined peak). Scoped axiom audit passes for 336069 declarations
+at 3377.0 MiB.
