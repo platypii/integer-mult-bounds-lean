@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3921 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3923 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27112,3 +27112,34 @@ sum restoring cleanup, and discharge the schedule's uniform stock/time budgets.
 Final constructor-bound instantiation, physical component production, tensor/R4
 composition, layout restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: full raw workspace retains local coordinates and shared setup
+
+`Cost.PhaseCellCompleteCachedRecoveryLocalWorkspace` sharpens the existing
+first-pass and recovery affine workspace proofs to retain actual local halo
+coordinates rather than replacing them by 40*t. A single symbol-volume bound
+supplies both passes. The complete caller combines those traces with cached
+coupling's shared allowance, one preparation-row reserve and archive workspace.
+`completeCachedRecoverySharedWorkspace` retains all setup explicitly;
+`completeCachedRecoveryTrafficFactor` pays linear replica storage in local
+coordinates times word width. The coarse per-core T allowances are not used.
+
+`Cost.PhaseCellRawRecoveryWorkspaceLedger` connects this bound to actual
+RawRecoveryJob.runStock. Initial raw storage and canonical storage use the
+affine raw-input allowance; normalization uses its exact affine time split;
+generated factory stock remains a symbolic fixed push constant times its
+actual factory cost. The result is shared workspace plus N times a row
+allowance. The row allowance is uniformly bounded by C*localVolume*p under the
+selected execution/common width bounds. Precision has exponent one in this
+space bound; the fast-time p^(129/128) estimate is never used to price storage.
+No trace, solution or execution oracle is introduced.
+
+Guarded checks pass at 3403.3 MiB (complete local workspace) and 3453.2 MiB
+(raw workspace ledger). Scoped compatibility build passes (16132 jobs, 1.1 GiB
+combined observed peak, mostly replayed); axiom audit passes for 338904
+declarations at 3463.9 MiB. Next bound/sum the explicit shared workspace
+polynomials, sum restoring cleanup using this affine runStock allowance, and
+discharge uniform schedule time/peak-stock budgets. Final constructor-bound
+instantiation, physical component production, tensor/R4 composition, layout
+restoration and outer integration remain open. S4 is incomplete; kappa is
+unchanged.
