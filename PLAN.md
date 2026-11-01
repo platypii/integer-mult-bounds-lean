@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3891 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3893 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26687,3 +26687,32 @@ the manuscript core-job list and its mathematical budgets, retaining the affine
 shared-setup/replica-row ledger for distinct-core amortization. Tensor/R4
 composition, layout restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: construct recovery jobs from manuscript core-class bounds
+
+`Mult.PhaseCellGeneratedRecoveryJobBounds.GeneratedRecoveryJob.ofBounds`
+constructs the cached caller's mathematical job from the established
+`PackedHaloParameterBounds` interface and bounded quantized input fields.
+Diagonal dominance restricted to the halo interior and halo vertices supplies
+both real reference-solution families by the existing `solves_exists` theorem.
+The constructor derives all `ReplicaHaloProblem` and `GeneratedRecoveryJob`
+solution, geometry and sizing fields; no solution witnesses or executions are
+premises. Its ordinary parameters, field list and target retain exact identities.
+
+`Mult.PhaseCellGeneratedRecoveryCoreClassJobs` applies that constructor in the
+existing `coreGatherIndices` order. It reuses `coreClassParameterBounds` for
+every member of an ordered movement class, retaining the same generated-window
+endpoints, interval span, axis/precision parameters, field list and recovery
+target `targetOut+1`. A field-identity theorem exposes these facts for the
+schedule's mathematical cost ledger. Input fields must satisfy their magnitude
+bound at the actual packed halo precision; normalization/complex-component
+production is not silently assumed to have executed by this constructor.
+
+Guarded checks pass at 3376.5 MiB (bounds constructor) and 3379.2 MiB (ordered
+core-class jobs). The scoped compatibility build passes (16098 jobs, 3.5 GiB
+combined peak); the expanded axiom audit passes for 338705 declarations at
+3459.0 MiB. Next connect quantized input production and instantiate the
+shared-peak job schedule on these core classes, discharging its mathematical
+time/stock bounds with the affine setup/row ledger. Tensor/R4 composition,
+layout restoration and outer integration remain open. S4 is incomplete; kappa
+is unchanged.
