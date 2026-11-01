@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4022 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4023 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28643,4 +28643,42 @@ restoration remain open. S4 is incomplete; kappa unchanged.
 Guarded file check passes at 3477.5 MiB.
 Expanded compatibility passes (16585 jobs, 3.6 GiB combined peak). Broad
 axiom audit passes for 342077 declarations at 3550.5 MiB, permitting only
+propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: preparation traffic joins the grouped auxiliary volume bound
+
+`Cost.PhaseCellComputedRecoveryPreparation.computedRecoverySetupTime_eq`
+separates actual master/seed/header work from complex-input preparation and
+22 traversals of the descriptor tape, including final retirement. The proof
+uses `placedDescriptorTape_length` and the existing raw input-stock bound,
+rather than expanding the 392-register bank or repricing numerical data.
+The existing shared/replica stock split and actual native-width fit bound
+its repeated traffic by encoded local halo volume.
+
+`recoverySeedCopyCost_affine` proves seed copying adds exactly `4*N`; its
+pointwise header proof isolates only the replica-count role, followed by the
+small sparse role list. Generated complex headers add `8*N`, so
+`computedRecoveryScalarTime_affine` has an exact `12*N` repeated charge.
+Master generation and retirement remain in the explicit base bill.
+
+`computedRecoveryAuxiliaryScheduleTime_le_preparation` applies these facts to
+the actual auxiliary ledger. For a shared complex replica count N it bounds
+the sum by:
+- the sum of scalar base setup, zero-replica postprocessing and 44 times shared
+  raw input stock;
+- `17*totalEncodedHaloVolume+8676*jobCount`;
+- `N*(340*totalEncodedHaloVolume+34589*jobCount)`.
+
+Thus the repeated preparation/postprocessing contribution is priced by total
+local symbols and job count before any selected-axis absorption. The explicit
+base/shared sums still require selected setup bounds; this is not yet a full
+fast-time theorem. Next bound those sums and combine the class volume estimates
+with the actual summed-time execution. Concrete ordinary-bank readiness,
+ambient exposure/publication, tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa unchanged.
+
+Guarded file check passes at 3480.5 MiB.
+Expanded compatibility passes (16586 jobs, 3.6 GiB combined peak). Broad
+axiom audit passes for 342086 declarations at 3549.1 MiB, permitting only
 propext, Quot.sound and Classical.choice.
