@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3861 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3864 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26228,3 +26228,35 @@ trace with the existing full loop correctness theorem. Shared setup and
 complete-caller workspace, physical factory/header integration, distinct-core
 scheduling/amortization, tensor/R4 composition, layout restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: one workspace reserve through the complete prepared cached traversal
+
+`Mult.PhaseCellCachedReplicaCouplingLoopStock` instantiates the existing
+counted-loop shared-stock rule. Its small invariant carries the replica cursor,
+restored common bank and volume/scratch frames. The checked cached transition
+supplies a uniform trace and nonincreasing completed stock at every iteration.
+Execution uniqueness joins the resulting resource trace to the established
+full loop correctness theorem, reusing its archive order, row accuracy and
+spectator frames rather than proving that induction again. The transition
+reserve is reused once across the entire loop, independent of replica count.
+
+`Mult.PhaseCellInitializedCachedReplicaCouplingLoopStock` includes actual clock
+copying and release. The native copy adds the linear allowance
+`8*replicaCount+8`; the numerical scratch remains one transition reserve.
+`Mult.PhaseCellPreparedCachedReplicaCouplingStock` composes actual shared
+geometry/page/mask/counter setup with that initialized traversal. Its named
+workspace is one shared-runtime reserve plus linear clock allowance plus one
+transition reserve, with the same exact executable, time bound, actual masks,
+residual specifications and restored-bank frames as the existing prepared
+caller. Traces hold at every ambient call depth.
+
+Guarded checks pass at 2199.8 MiB (counted loop), 2201.9 MiB (initialized loop)
+and 2232.7 MiB (prepared traversal). The complete scoped compatibility build
+passes (15924 jobs, 2.8 GiB combined peak); the axiom audit passes for 336676
+declarations at 3399.9 MiB. Next connect the header loader and mask retirement
+to this resource trace, then the initialized interior and full caller. Selected
+workspace absorption can reuse the shared setup and existing numerical scratch
+polynomials. Complete-caller workspace, physical factory/header integration,
+distinct-core scheduling/amortization, tensor/R4 composition, layout restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
