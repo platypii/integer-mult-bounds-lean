@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3764 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3765 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24780,4 +24780,27 @@ scheduling, tensor/R4 restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
 Compatibility with the bounded caller passes (15680 jobs, 3.5 GiB
 combined peak). Scoped axiom audit passes for 336042 declarations at
+3374.5 MiB.
+
+
+### S4 checkpoint: actual selected recovery numerical time has the axis-density form
+
+`Cost.PhaseCellSelectedReplicaRecoveryDensityFast.selectedBatchedReplicaRecovery_density_fast_le`
+applies the complete phase-gap caller estimate to selected axes and actual
+executed step counts. Existing selected gathered-width lemmas discharge the
+ring, word and metadata premises; `axisGapVolume_le` uses the selected axis
+bounds to replace gap volume by `t*(1+band^2/d)`. The numerical allowance is
+a uniform constant times replica count times that density volume times
+`p^(129/128)`. No new selected arithmetic or growth estimates are proved.
+
+The actual native preparation/linear traffic and shared interior setup remain
+explicit, including the fixed caller overhead. They are not claimed to meet
+the final selected resource theorem yet.
+
+Guarded module check passes at 3358.5 MiB. Native traffic, selected whole-
+caller space, first-pass/generated-factory execution, scheduling, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa is
+unchanged.
+Compatibility with the bounded caller passes (15682 jobs, 3.5 GiB
+combined peak). Scoped axiom audit passes for 336043 declarations at
 3374.5 MiB.
