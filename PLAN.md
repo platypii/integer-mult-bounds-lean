@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3648 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3651 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23440,3 +23440,36 @@ theorem with `initializedReplicaHaloLoop_exec_within` and carry the complete
 resource bounds. Executed factory input production, old-geometry retirement,
 complete time/workspace bounds, scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: construct the whole caller trace and retire old factory geometry
+
+`PhaseCellInitializedReplicaInteriorRecoveryExec` invokes the actual initialized
+interior loop from its physical input headers and then the complete recovery
+finish theorem. It supplies the loop's push bounds reflexively and constructs
+its execution witness internally. No execution premise, intermediate coupling
+cursor or residual archive is supplied by the caller. The total time bill reuses
+`initializedReplicaHaloTime` and the existing real-row, reverse-copy and combined
+coupling/recovery bills. The initial prepared factor certificate and ordinary
+shared masters remain explicit inputs until factory placement is composed.
+
+`PhaseCellRetireReplicaFactoryGeometry` clears the eleven binary geometry ports,
+the binary cursor and width master once. The generic list stock bound charges at
+most `26*V+27` steps from the old encoded width and cursor bound. It preserves
+actual factor data, numerical masters, stage and level, and provides exact blank
+geometry ports plus an outside-port frame. This resolves the old-geometry/fresh-
+geometry incompatibility with an executed, paid operation.
+
+`PhaseCellReplicaBoundaryFactoryWidth` now retains its already proved cursor
+bound. `PhaseCellReplicaBoundaryFactoryForCoupling` composes actual factor/width
+generation with geometry retirement, returning generated factors and ordinary
+masters beside fresh geometry workspace. It still starts from the canonical
+factory input bank; executing that input's production and placing this trace in
+the common caller are remaining obligations.
+
+Guarded checks pass at 3311.1 MiB (whole caller execution), 3296.3 MiB (geometry
+retirement), 3290.4 MiB (factory width/cursor) and 3282.4 MiB (factory plus paid
+retirement), under default limits. Scoped compatibility passes (15411 jobs,
+3.5 GiB combined peak), and the axiom audit passes for 333531 declarations at
+3316.6 MiB. Next execute factory input production and compose the placed factory
+with the actual caller, then close complete time/workspace bounds, scheduling,
+tensor/R4 restoration and outer integration. S4 is incomplete; kappa unchanged.

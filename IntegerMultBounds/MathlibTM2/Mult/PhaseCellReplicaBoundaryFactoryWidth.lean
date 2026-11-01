@@ -55,7 +55,8 @@ theorem replicaBoundaryFactoryWidth_exec (H : ReplicaHaloProblem s) (target : �
       ReplicaBoundaryFactorData H target columns F ∧
       PackedHaloRetainedHeaders (2^15*H.p) (H.stage+1) H.precision H.l s H.t H.u H.band
         H.origin (H.origin+H.span) (publicationGeometryWidth H.t H.band) H.wordWidth
-        (embStk packedRecoveryRuntimeReg (extendStacks (by decide) F)) := by
+        (embStk packedRecoveryRuntimeReg (extendStacks (by decide) F)) ∧
+      (F.R 157).length ≤ publicationGeometryWidth H.t H.band := by
   dsimp only
   have hw : H.wordWidth = 2*H.precision+8 := by
     unfold ReplicaHaloProblem.wordWidth ReplicaHaloProblem.precision executionWidth executionPrecision
@@ -66,7 +67,7 @@ theorem replicaBoundaryFactoryWidth_exec (H : ReplicaHaloProblem s) (target : �
     (by decide) H.precision v S hdata.bank.workspace.precision h130 h135
   have hframe (k : Fin 242) (hk : k ≠ 130) : (replicaBoundaryFactoryWidthState H S).R k = S.R k :=
     Function.update_of_ne hk _ _
-  refine ⟨v',hu,by simpa only [←hw,replicaBoundaryFactoryWidthState] using he,?_,?_⟩
+  refine ⟨v',hu,by simpa only [←hw,replicaBoundaryFactoryWidthState] using he,?_,?_,?_⟩
   · apply hdata.of_runtime_frame H target columns (F := replicaBoundaryFactoryWidthState H S) rfl
     · intro k hk; apply hframe; intro he; have hv := congrArg Fin.val he; norm_num at hv; omega
     · exact hframe 119 (by decide)
@@ -79,6 +80,9 @@ theorem replicaBoundaryFactoryWidth_exec (H : ReplicaHaloProblem s) (target : �
           (packedRecoveryRuntimeReg 130) (List.replicate H.wordWidth tick)})
     rw [embStk_updateR packedRecoveryRuntimeReg_injective]
     exact hbetween.headers.update_width H.wordWidth
+  · change (Function.update S.R 130 (List.replicate H.wordWidth tick) 157).length ≤ _
+    rw [Function.update_of_ne (by decide : (157 : Fin 242) ≠ 130)]
+    exact hbetween.binaryLength
 
 noncomputable def replicaBoundaryFactoryWithWidth (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P 242 Q A U :=
   .seq (packedBoundaryFactoryGeometry (P := P) (Q := Q) (A := A) (U := U) hR hQ)
@@ -96,13 +100,14 @@ theorem replicaBoundaryFactoryWithWidth_exec (H : ReplicaHaloProblem s) (target 
       ReplicaBoundaryFactorData H target columns F ∧
       PackedHaloRetainedHeaders (2^15*H.p) (H.stage+1) H.precision H.l s H.t H.u H.band
         H.origin (H.origin+H.span) (publicationGeometryWidth H.t H.band) H.wordWidth
-        (embStk packedRecoveryRuntimeReg (extendStacks (by decide) F)) := by
+        (embStk packedRecoveryRuntimeReg (extendStacks (by decide) F)) ∧
+      (F.R 157).length ≤ publicationGeometryWidth H.t H.band := by
   obtain ⟨v₁,J,m,columns,hu₁,hm,he₁,hdata,hbetween⟩ := replicaBoundaryFactory_exec (body := body)
     H target hR hQ hA hp hwidth hpad htarget v S
-  obtain ⟨v₂,hu₂,he₂,hdataF,hheaders⟩ := replicaBoundaryFactoryWidth_exec (body := body)
+  obtain ⟨v₂,hu₂,he₂,hdataF,hheaders,hcursor⟩ := replicaBoundaryFactoryWidth_exec (body := body)
     H target columns v₁ J hdata hbetween
   exact ⟨v₂,replicaBoundaryFactoryWidthState H J,m+(8*H.precision+9),columns,
-    hu₂.trans hu₁,by omega,Exec.seq he₁ he₂,hdataF,hheaders⟩
+    hu₂.trans hu₁,by omega,Exec.seq he₁ he₂,hdataF,hheaders,hcursor⟩
 
 end ScalarPlacement
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
