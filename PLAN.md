@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3737 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3739 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24393,3 +24393,27 @@ resource inequalities, first-pass/generated-factory integration, scheduling,
 tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
 Scoped axiom audit passes for 334289 declarations at 3338.7 MiB.
+
+
+### S4 checkpoint: the complete interval restores its retained physical streams within workspace
+
+`PhaseCellIntervalRestoreStock.restoreIntervalCouplingPass_native` proves a
+structural three-push bound for binary cursor reconstruction, source ribbon
+restoration and coefficient-page restoration. It is independent of numerical
+values and interval length.
+
+`PhaseCellRestoredRetainedCouplingIntervalStock.restoredRetainedCouplingInterval_exec_within`
+composes the placed numerical interval with that native suffix, preserving
+the original exact output, restored streams and time bill. Its workspace is
+the single numerical row reserve plus three times the existing native
+restoration traffic bill. Numerical scratch is not charged per row. Explicit
+reserve arguments avoid deep elaborator inference without changing limits.
+
+Guarded checks pass at 2088.3 MiB (native restoration) and 2109.6 MiB
+(complete restored interval). Compatibility with the actual batched recovery
+time theorem passes (15400 jobs, 2.8 GiB combined peak). Next lift through
+local setup/feed and packed recovery RHS, then collection and preparation.
+Whole-caller workspace, selected resource inequalities, first-pass/generated
+factory integration, scheduling, tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334296 declarations at 3338.8 MiB.
