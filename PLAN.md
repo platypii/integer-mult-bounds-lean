@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4024 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4025 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28713,3 +28713,37 @@ Guarded file check passes at 3501.9 MiB. Expanded compatibility passes
 (16587 jobs, 3.6 GiB combined peak). Broad axiom audit passes for 342089
 declarations at 3549.2 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+
+### S4 checkpoint: generated master/header base setup has a shared class bound
+
+`Cost.PhaseCellComputedRecoveryMasterSetup` prices actual master generation
+through `inverseHeaderCosts_poly` and the existing cut-dependent bounds on
+the ten master values. A sparse seed-copy identity expresses its zero-replica
+bill directly through those same masters plus ordinary p/W headers; the proof
+evaluates only the small role lists, never the ambient 392-register bank.
+The master-retirement sum uses the same master-value bridge. Generated complex
+header controls are included explicitly.
+
+`computedRecoveryScalarBaseTime_poly` proves a polynomial bound for the full
+master/scalar/seed/header base bill under ordinary parameter and width bounds.
+`selectedRecoveryMasterSetup_volume_le` instantiates that bound at
+`Z=cZ*t*p` and applies the existing distinct-core setup theorem to the entire
+job list. It spends no per-job whole-axis allowance and has no replica factor.
+
+`selectedRecoveryBaseSetup_volume_le` combines this actual master/header bill
+with the previously bounded zero-replica postprocessing bill. By assigning
+half the allowance to each sum, their complete class sum is eventually paid
+by one shared T allowance (or any fixed scaled version).
+
+Next combine this base allowance, the existing shared raw input-stock bound,
+grouped local traffic, movement and the raw numerical estimate into the full
+computed-core fast-time comparison. Class preparation/scan/cleanup must remain
+explicit when lifting to execution. Concrete bank readiness, ambient
+exposure/publication, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa unchanged.
+
+Guarded file check passes at 3508.0 MiB.
+Expanded compatibility passes (16588 jobs, 3.6 GiB combined peak). Broad
+axiom audit passes for 342092 declarations at 3550.0 MiB, permitting only
+propext, Quot.sound and Classical.choice.
