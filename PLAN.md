@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4015 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4017 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28494,3 +28494,38 @@ Guarded file check passes at 3453.9 MiB.
 Expanded compatibility passes (16578 jobs, 3.6 GiB combined peak). Broad
 axiom audit passes for 342046 declarations at 3549.5 MiB, permitting only
 propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: indexed class geometry feeds actual execution and movement ledger
+
+`Mult.PhaseCellIndexedComputedCoreClass.indexedClassRun_exec` specializes the
+complete computed lifecycle to jobs indexed by the actual core-gather list.
+It reuses `coreJobs_origins`, `coreJobs_payloads` and
+`coreJobs_payload_length`, deriving the origin queue, shared halo length,
+payload volume and origin fit. Its physical source premise is the actual
+`coreSupplierStream` for the supplied replica fields. No independent stream
+identity or payload-count witness remains. It retains ordinary-input
+readiness, ambient separation and complete per-class cost inequalities.
+
+`Cost.PhaseCellComputedCoreMovement.computedCoreTime_eq` separates the actual
+executed core bill exactly into normalized recovery and movement/control
+work. Endpoint reading plus generated endpoint retirement costs at most
+`19*V+14*s+27` per job. Transfer is charged by actual local halo symbols, and
+physical replica-order restoration uses its local-volume bound.
+`computedCoreScheduleTime_le` sums full core bills over arbitrary class records
+with a uniform replica/halo/word/core profile, retaining the sum of normalized
+recovery costs explicitly. No per-job shared T allowance is introduced.
+
+These bounds account for the movement added around normalized recovery;
+master/scalar/numerical/postprocessing costs remain inside that normalized
+recovery sum and have not yet been asymptotically absorbed. Next instantiate
+ordinary banks for the generated core families, compose ambient exposure and
+publication, and compare all grouped setup and numerical bills before
+selected-axis absorption. Tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa unchanged.
+
+Guarded checks pass at 3470.8 MiB (indexed class execution) and 3464.3 MiB
+(complete movement ledger).
+Expanded compatibility passes (16580 jobs, 5.9 GiB combined parallel peak).
+Broad axiom audit passes for 342052 declarations at 3549.0 MiB, permitting
+only propext, Quot.sound and Classical.choice.
