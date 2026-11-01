@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3807 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3809 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25300,3 +25300,36 @@ Guarded checks pass at 3208.2 MiB (cached coupling scratch), 3344.8 MiB
 (complete preparation envelope) and 3374.8 MiB (selected preparation volume).
 Compatibility build passes (15747 jobs, 3.5 GiB combined peak). Scoped
 axiom audit passes for 336422 declarations at 3387.6 MiB.
+
+
+### S4 checkpoint: packed-ring and interior arithmetic shared scratch are polynomial
+
+`Cost.PhaseCellRingSharedWorkspacePolynomial` bounds the actual zero-record
+packed-ring reserve and the fixed convolution wrapper under a common ordinary
+dimension envelope. A coarse polynomial bound on `rpRingBound` reuses the
+existing packed-product cost certificate; this scratch allowance is shared,
+never multiplied by the replica count. The fixed wrapper is composed from
+separate header/setup and record-scratch inequalities.
+
+The first direct simplification of the zero-batch fixed wrapper exceeded the
+4 GiB module target. `fixedWorkspace_zero_eq` instead proves its arithmetic
+identity over abstract setup/record values and instantiates them last. This
+avoids unfolding the nested numerical workspace during simplification and
+brings the checked module below the target without changing proof limits.
+
+`Cost.PhaseCellInteriorSharedNumericalWorkspace.stagedCellWorkspace_zero_poly`
+combines the fixed-convolution bound with existing scalar/weight scratch and
+precision-counter preparation bounds. The entire zero-replica staged interior
+arithmetic reserve is polynomial in the common physical envelope, including
+normalization, input weights, the packed product, scalar multiplication, output
+weights and publication formatting.
+
+Next combine these numerical bounds with shared setup-factory and control-page
+storage, then absorb shared interior workspace into selected volume and close
+the complete caller space bound. First-pass/generated-factory integration,
+distinct-core scheduling/amortization, tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+Final guarded checks pass at 3141.2 MiB (packed-ring/fixed shared workspace)
+and 3171.4 MiB (zero-replica staged numerical scratch). Compatibility build
+passes (15697 jobs, 3.4 GiB combined peak). Scoped axiom audit passes for
+336431 declarations at 3388.7 MiB.
