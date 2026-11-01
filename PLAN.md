@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3580 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3581 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22328,3 +22328,32 @@ format contracts before composing recovery and the second interior pass.
 Local arithmetic workspace, selected coupling resources, global scheduling,
 tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: archived replica residuals approximate the exact Schur RHS
+
+`PhaseCellReplicaCouplingResidualAccuracy` reuses `haloResidual_error_bound`
+for each actual residual witness. The guarded implementation agrees with the
+numerical residual on the halo boundary; skipped values elsewhere do not enter
+the estimate. Dominance and exact interior solves come from the existing halo
+problem, and the existing precision reserve discharges residual storage width.
+
+`ReplicaCouplingResidualsAccurate` packages one exact interior inverse shared
+by every row of the physical archive and the boundary error estimate with its
+actual replica index. A structural archive lemma derives this from the row
+witnesses. `initializedReplicaInteriorCoupling_finish` now returns this accuracy
+contract alongside the encoded archive and its norm/word-fit bounds. No new
+execution premise or per-replica numerical proof is introduced.
+
+The recovery precision remains an explicit next obligation: the existing
+boundary-solution theorem expects the `boundaryHaloTarget` allowance, whose
+sizing lemma aligns interior and boundary precision. The current arbitrary
+interior target is retained in the residual error estimate; it is not silently
+identified with the stronger recovery target.
+
+Guarded checks pass at 3204.5 MiB (archive accuracy) and 3218.8 MiB (caller).
+Compatibility with selected row resources passes (14941 jobs, 3.4 GiB combined
+peak). Default proof limits are unchanged. Next instantiate the recovery target,
+connect boundary solve/recovery and the second interior pass, then close local
+workspace and selected resources. Global scheduling, tensor/R4 restoration and
+outer integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 330278 declarations at 3248.6 MiB.

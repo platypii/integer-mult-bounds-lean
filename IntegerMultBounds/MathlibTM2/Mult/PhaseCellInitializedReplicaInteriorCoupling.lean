@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingResidualAccuracy
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaInteriorFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleasedReplicaCoupling
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInitializedReplicaCouplingRows
@@ -52,7 +53,8 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
         (couplingCoefficientPageInterval (2^15*H.p) H.precision s H.t H.u H.band H.origin (H.origin+H.span) H.origin H.span).length ∧
       (G.R (placement.bank 140)).length = 2*H.band+1 ∧
       (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], G.R (placement.bank k) = []) ∧
-      (∀ D ∈ Ds, (∀ i, ‖value H.precision (D i)‖ ≤ (2 : ℝ)^replicaResidualExponent H) ∧ (∀ i, Fits H.wordWidth (D i))) := by
+      (∀ D ∈ Ds, (∀ i, ‖value H.precision (D i)‖ ≤ (2 : ℝ)^replicaResidualExponent H) ∧ (∀ i, Fits H.wordWidth (D i))) ∧
+      ReplicaCouplingResidualsAccurate H Ds := by
   have hframeInitial (k : Fin 168) (hk : 117 ≤ k.val) :
       F.R (placement.bank k) = S.R (placement.bank k) :=
     placement.interior_preserves_extended output hR hQ hbankOutput k hk he₀.toExec
@@ -97,7 +99,7 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
       (by intro k hk; rw [hbankR k]; exact hblankF k hk)
       (by intro k hk; rw [hbankR k]; exact hfreshF₀ k hk)
   refine ⟨v₂,G,n₁+n₂,Ds,hu₂.trans hu₁,by omega,.seq he₁.toExec he₂,hcount,hout,hrhsF,hready,hmeta,
-    hL₂.trans hL₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,hlen,harchive,hgood,?_,hpageCount,hrows,hfreshF,hDsBounds⟩
+    hL₂.trans hL₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,hlen,harchive,hgood,?_,hpageCount,hrows,hfreshF,hDsBounds,replicaCouplingResiduals_accurate H hp hwidth Ds hlen hgood⟩
   · intro k hk hp
     apply (hframe₂ k hk hp).trans
     have hn : k ≠ output ∧ k ≠ rhs := by
