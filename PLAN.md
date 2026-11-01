@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3606 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3609 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22652,3 +22652,40 @@ archive loading/row iteration, workspace/selected resources, global scheduling,
 tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
 The scoped axiom audit passes for 332330 declarations at 3295.1 MiB.
+
+### S4 checkpoint: actual archived boundary solutions drive accurate local recovery
+
+`PhaseCellReplicaRecoveryReady` separates shared recovery-core readiness from
+its disposable count/mask headers. The core contains the prepared numerical
+bank, retained masters/geometry/coefficient page, recursion headers and clean
+workspace. Row-owned solution, RHS and output prefixes stay outside this shared
+contract.
+
+`PhaseCellPreparedReplicaRecoveryReady` transports the core through the proved
+input-preparation frame and combines it with the generated count/mask. Its
+actual preparation trace supplies `ReplicaRecoveryReady`; no independently
+prepared recovery entry state is assumed.
+
+`PhaseCellReplicaBoundaryRecovery` instantiates the existing actual local
+recovery program for `replicaBoundarySolution` of an archived residual witness.
+It uses `boundaryRecoveryTarget` in the boundary solve target, derives shared
+precision/stage/word sizing, obtains boundary-solution accuracy from the shared
+computed-column certificate, and discharges coefficient and geometry fits from
+`ReplicaHaloProblem`. The returned field fits the working words and approximates
+the exact principal-system solution on the full halo to `1/2^target`. The result
+also retains the existing recovery exit frames, factor workspace/pages and
+released scratch facts needed by the next row.
+
+Guarded checks pass at 3252.5 MiB (readiness language), 3264.2 MiB
+(preparation-to-readiness) and 3273.8 MiB (actual recovery specialization).
+Compatibility with the retained initialized boundary phase passes (15115 jobs,
+5.8 GiB combined peak); every changed module stays below 4 GiB. Default proof
+limits are unchanged.
+
+Next lift this native 248-register recovery execution into the retained
+255-register machine and compose it with physical preparation, then retire and
+archive the recovered output while advancing both row cursors. Shared factor
+generation, global archive loading/iteration, workspace/selected resources,
+global scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 332366 declarations at 3295.6 MiB.
