@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3854 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3856 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26126,3 +26126,36 @@ and close combined caller workspace. Physical factory/header integration,
 distinct-core scheduling/amortization, tensor/R4 composition, layout restoration
 and outer integration remain open. Per-core setup absorption does not discharge
 the distinct-core scheduling obligation. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: complete selected time for first pass, handoff and cached recovery
+
+`Cost.PhaseCellCachedRecoveryHandoff` splits the exact complete-caller bill into
+first pass, shared native cleanup/boundary preparation, linear archive copying
+and initialized cached recovery. The shared handoff cost is at most 100 times
+`cachedReplicaCouplingSharedTime`, so the existing selected setup theorem pays
+it below `T` without another polynomial construction argument. The proof uses
+the generated native counter bound, the common word/metadata width relation and
+the boundary count bound `span+2*band`. Archive copying costs
+`replicaCount*(22*(span*wordWidth)+19)` and fits the same fast gap-volume term.
+
+`Cost.PhaseCellSelectedFirstCachedReplicaRecoveryTotal` combines the established
+first-pass and initialized-recovery total estimates with that handoff bound.
+For the actual `firstCachedReplicaRecoveryTime H (B.problem htarget)`, selected
+widths give eventually
+`5*T+48+F*replicaCount*t*(1+band^2/d)*p^(129/128)`.
+This includes first-pass shared setup and cached coupling, mask retirement,
+native release, physical preparation, archive/RHS installation, initialized
+cached recovery, second interior pass and certified assembly. The existing
+execution theorem uses this exact time allowance. Initial generated factors and
+compatible ordinary headers remain inputs; this theorem does not claim their
+physical production is part of the caller or that distinct-core setup has been
+amortized globally.
+
+Guarded checks pass at 3403.2 MiB (handoff/archives) and 3392.3 MiB (complete
+selected caller time). The complete scoped compatibility build passes (15915
+jobs, 3.5 GiB combined peak); the axiom audit passes for 336652 declarations at
+3398.2 MiB. Next close intermediate workspace for the combined caller, then
+integrate physical factory/header production. Distinct-core scheduling and
+amortization, tensor/R4 composition, layout restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
