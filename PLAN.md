@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3712 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3715 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24165,3 +24165,36 @@ Preparation/whole-caller workspace, selected resource bounds,
 first-pass/generated-factory integration, scheduling, tensor/R4 restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334191 declarations at 3333.4 MiB.
+
+
+### S4 checkpoint: allocated physical normalization and solve execute within workspace
+
+`PhaseCellBoundaryFoldedSolveStock` reuses the bounded complete two-pass kernel
+under the ordinary `BoundarySolveReady` contract. RHS look-ahead padding is
+native linear traffic. `boundary_foldedSolve_allocated_runs_within` derives
+all coefficient and intermediate fit hypotheses from the existing matrix
+stability, generated precision and Newton-count lemmas, then executes the
+actual padding/solve program. `boundarySolveWorkspace` packages the two-pass
+reserve and the explicit padding allowance without exposing factor data.
+
+`PhaseCellBoundarySolvePhysicalStock` transports that contract to the physical
+factor bank. It returns the original output valuation, complete frame,
+legacy-register preservation and time bill together with the bounded trace.
+
+`PhaseCellGeneratedBoundaryNormalizeSolveStock` composes actual generated
+normalization with that physical solve. The normalized RHS, readiness and
+multiplier-bank restoration are derived from the preceding execution. The
+resulting trace has the original time bill and numerical output, with local
+workspace `realScalarWorkspace D w N+1000*(q+1)+
+boundarySolveWorkspace R C w N W`. Neither normalized RHS nor a solve trace is
+supplied by the caller.
+
+Guarded checks pass at 3123.2 MiB (allocated folded contracts), 3093.6 MiB
+(physical solve), and 3114.1 MiB (normalization/solve composition).
+Compatibility with the actual batched recovery bill and generated baseline
+passes (15470 jobs, 3.4 GiB combined peak). Next lift normalization/solve through
+the prepared caller and compose bounded generated unscaling/publication.
+Preparation/whole-caller workspace, selected resource bounds,
+first-pass/generated-factory integration, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334200 declarations at 3334.5 MiB.
