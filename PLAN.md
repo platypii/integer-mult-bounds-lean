@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4039 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4041 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28895,3 +28895,31 @@ Guarded staged-readiness check passes at 3424.8 MiB. Expanded compatibility
 passes (16603 jobs, 3.5 GiB combined peak). Broad axiom audit passes for
 342330 declarations at 3551.7 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: actual class execution derives wiring and staged readiness
+
+`ComputedClassBanks` places the reusable recovery bank, 117-register geometry
+bank and class stream controls under separate ownership constructors. Its
+`localSupport_range` proves structurally that every local recovery register
+belongs to the numerical bank. No large register enumeration is introduced.
+
+`ComputedClassBanks.classRun_exec` instantiates the complete preparation,
+computed core scan and final counter cleanup. It derives all static placement,
+scan-frame, routing and preparation separation conditions from the one bank
+injection. It also derives each staged `LocalReady` witness from the ordinary
+shared tape facts using `RecoveryBanks.stagedReady`; callers no longer supply
+prepared payloads or readiness at hypothetical intermediate states.
+
+The same returned run has certified ordered per-job outputs, the exact summed
+core bill plus class controls, all-depth stock, preserved user state and an
+exact frame changing only the consumed source and accumulated result. Initial
+geometry and numerical parameters remain ordinary caller inputs. Job geometry,
+shared parameter values and the input supplier stream still need to be
+instantiated for the actual proper-core family; the fast bill must then be
+attached to this run. Exposure/publication and tensor/R4 restoration remain
+open. S4 is incomplete; kappa unchanged.
+
+Expanded compatibility passes (16605 jobs, 3.5 GiB combined peak). Broad axiom
+audit passes for 342450 declarations at 3551.9 MiB, permitting only propext,
+Quot.sound and Classical.choice. Initial class-bank and class-run guarded
+checks pass at 3436.2 MiB and 3447.8 MiB respectively.
