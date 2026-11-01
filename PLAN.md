@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3724 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3729 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24270,3 +24270,35 @@ Whole-caller workspace, selected resource bounds, first-pass/generated-factory
 integration, scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334240 declarations at 3334.6 MiB.
+
+
+### S4 checkpoint: recovery coupling arithmetic shares one stream reserve
+
+The recovery RHS's numerical leaf is `integerRowPrepared`, through the
+retained spatial-coupling row. `PhaseCellIntegerRowStock` reuses the existing
+varying-real-factor stream bound and adds only the subtraction accumulator's
+native linear traffic. Its original products, accumulated output and time
+bill are preserved; multiplication scratch is charged once for the whole row.
+
+`PhaseCellIntegerRowCallStock` bounds operand staging and output release
+around that arithmetic. `PhaseCellBorrowedRHSRowStock` includes consumed
+operand retirement and borrowing/restoring the physical RHS over its retained
+precision header. Structural native certificates cover the staging, copies,
+retirement and discard programs.
+
+`PhaseCellRetainedCouplingRowStock` places that bounded call away from geometry
+headers. `PhaseCellRetainedCouplingArithmeticStock` supplies the exact prepared
+operand-prefix interface used by spatial coupling rows. Its workspace is
+`realWeightWorkspace C w L+3000*(L+1)*(w+1)`, relative to the actual staged
+initial bank, with the existing output/archive state and time bill.
+
+Guarded checks pass at 2050.1 MiB (prepared arithmetic), 2073.8 MiB (staged
+call), 2072.3 MiB (borrowed/consumed RHS), 2050.8 MiB (retained placement), and
+2048.2 MiB (prepared-prefix arithmetic interface). Compatibility with the
+actual batched recovery bill and generated baseline passes (15455 jobs,
+2.7 GiB combined peak). Next lift this bound through retained spatial rows
+and the interval lifecycle, then compose recovery RHS collection/preparation.
+Whole-caller workspace, selected resource bounds, first-pass/generated-factory
+integration, scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334261 declarations at 3335.7 MiB.
