@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3704 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3706 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24067,3 +24067,38 @@ across columns. Preparation/whole-caller workspace, selected resource bounds,
 first-pass/generated-factory integration, scheduling, tensor/R4 restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334166 declarations at 3333.4 MiB.
+
+
+### S4 checkpoint: the complete forward triangular pass shares one row reserve
+
+`Fast.ResampBScanStock.rsb_scanIf_loop_within` lifts a counted register scan
+with a common body reserve and nonincreasing endpoint stock. Its induction
+tracks actual valuation, clean multiplier bank, full frame and exact counter
+parking. Successful counter transfers do not grow storage; each completed body
+returns to the storage envelope before the next iteration. The loop returns
+both a bounded trace and nonincreasing final stock.
+
+`rsb_scanIf_runs_within` restores the parked counter using the existing
+storage-preserving move rule, without adding a traffic-sized reserve.
+`rsb_rep_runs_within` specializes the theorem to counted repetition and keeps
+the existing `N*(rowTime+6)+4` bill. These structural rules apply to arbitrary
+register maps, lists, branch tests and iteration valuations.
+
+`PhaseCellBandForwardLoopStock.band_fwdLoop_runs_within` instantiates that rule
+with the actual bounded forward column. Its endpoint invariant uses the
+three-port balance: the pending list loses one word, the output gains one
+word, and the remaining coefficient column stream shrinks. Counter and
+spectator contents cancel through the returned holds/frame contract.
+The complete forward pass has the same workspace allowance as one row,
+`realWeightWorkspace C w B+1000*(B+1)*(w+1)`, independent of column count,
+with the original time bill and numerical output valuation.
+
+Guarded checks pass at 1945.8 MiB (generic counted scan) and 2093.4 MiB
+(actual forward pass). Compatibility with backward-row bounds, the complete
+batched recovery bill and generated baseline passes (15459 jobs, 2.8 GiB
+combined peak). Next establish the backward pass's corresponding nonincreasing
+valuation invariant and compose both passes with normalization/unscaling.
+Preparation/whole-caller workspace, selected resource bounds,
+first-pass/generated-factory integration, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334171 declarations at 3332.6 MiB.
