@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3746 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3748 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24473,3 +24473,32 @@ remain open. S4 is incomplete; kappa is unchanged.
 Compatibility with the actual batched recovery time theorem passes
 (15407 jobs, 2.8 GiB combined peak). Scoped axiom audit passes for
 334311 declarations at 3340.0 MiB.
+
+
+### S4 checkpoint: prepared shared coupling reaches the packed recovery caller
+
+`PhaseCellPreparedSharedLocalFeedCouplingIntervalStock` includes private
+scalar-counter generation, the bounded shared coupling lifecycle and counter
+release. It reuses `couplingReadiness_native` through register placement: setup
+adds three times its existing traffic bill, and `clearWords_native` gives
+zero additional cleanup reserve. `preparedSharedLocalFeedCouplingWorkspace`
+names the complete allowance. Explicit zero-addition normalization avoids
+unfolding large final tape states during composition; proof limits are unchanged.
+
+`PhaseCellPackedRecoveryCouplingStock.packedRecoveryCoupling_exec_within`
+lifts this closed worker into the actual 248-register recovery bank. Its
+readiness comes from the existing retained factor workspace, master headers
+and native-bank hypotheses. The theorem preserves the original time bill
+and exact consumed RHS/natural-order solver-input endpoint, with the same
+reserve under placement and no additional resource oracle.
+
+Guarded checks pass at 2170.1 MiB (prepared shared lifecycle) and 3215.6 MiB
+(actual packed recovery caller), within the per-module target. Next bound
+packed boundary recovery input staging, compose the complete recovery RHS,
+and lift through replica collection/preparation. Whole-caller workspace,
+selected resource inequalities, first-pass/generated-factory integration,
+scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+Compatibility with the actual batched recovery time theorem passes
+(15410 jobs, 3.4 GiB combined peak). Scoped axiom audit passes for
+334317 declarations at 3340.5 MiB.
