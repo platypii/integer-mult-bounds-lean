@@ -68,11 +68,11 @@ theorem packedBoundaryFactoryGeometry_between_exec (hR : rpStates ≤ Q) (hQ : S
         q l s t u band a b V w W B.card (extendStacks (by decide) F) ∧
       F.R 220 = bandTableWords A w B W columns 0++S.R 220 ∧
       BoundaryFactorStock (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg F))
-        (boundaryFactorStockBound q w band B.card) := by
+        (boundaryFactorStockBound q w band B.card) ∧ F.R 93 = S.R 93 ∧ F.L 167 = S.L 167 := by
   dsimp only
   obtain ⟨v',F,n,columns,hu',hn,he,hinp,hout,hraw,hstock,hlen,hformat,haccuracy,hstage,
     hsolve,hbo,hhf,hdf,hvk,h224,h225,hleft',hmul,hmaster,h223,h184,h220,h221,
-    herror,hnative,hmeta,hbuffer,h93,hheader⟩ :=
+    herror,hnative,hmeta,hbuffer,h93,hheader,hmaskLeft⟩ :=
     packedBoundaryFactoryGeometry_spec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad v S tail h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138
       h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometryBlank
@@ -133,7 +133,7 @@ theorem packedBoundaryFactoryGeometry_between_exec (hR : rpStates ≤ Q) (hQ : S
       have hi := i.isLt
       simp [embStk,packedRecoveryRuntimeReg,packedHaloRuntimeReg,extendStacks,
         show i.val < 242 by omega]
-  refine ⟨v',F,n,columns,hu',hn,he,hinp,hout,hsrc,hbuffer,⟨hlen,hformat,hstage⟩,herror,⟨hbo,hhf,hdf⟩,?_,hraw,hstock⟩
+  refine ⟨v',F,n,columns,hu',hn,he,hinp,hout,hsrc,hbuffer,⟨hlen,hformat,hstage⟩,herror,⟨hbo,hhf,hdf⟩,?_,hraw,hstock,h93,hmaskLeft⟩
   constructor
   · simpa only [packedBoundaryRecoveryBase,embStk_extendStacks] using hbank
   · constructor

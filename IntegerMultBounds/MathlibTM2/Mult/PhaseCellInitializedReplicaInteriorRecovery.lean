@@ -49,7 +49,8 @@ theorem initializedReplicaInteriorRecovery_finish (H : ReplicaHaloProblem s)
     (hpage : S.R (replicaRecoveryCallerCoupling.bank 138) = [])
     (hclean : ∀ k ∈ ([129,131,133,134,136,153] : List (Fin 242)),
       (embStk packedBoundaryRecoveryBase (embStk replicaRecoveryCallerNativeReg S)).R k = [])
-    (hleft : ∀ k : Fin 255, S.L (replicaRecoveryCallerWorkerReg k) = [])
+    (hmaskLeft : S.L (replicaRecoveryCallerWorkerReg 167) = [])
+    (hprivateLeft : ∀ k : Fin 255, 242 ≤ k.val → S.L (replicaRecoveryCallerWorkerReg k) = [])
     (hprivate : ∀ k : Fin 255, 242 ≤ k.val → S.R (replicaRecoveryCallerWorkerReg k) = [])
     (hqueue : S.R 388 = []) (hcontroller : S.R 387 = []) :
     ∃ v' G m, v'.user = v.user ∧ m ≤ n+realReplicaRowsCost H.Fs.length (H.span*H.wordWidth)+
@@ -87,7 +88,8 @@ theorem initializedReplicaInteriorRecovery_finish (H : ReplicaHaloProblem s)
       (embStk replicaRecoveryCallerWorkerReg S).L := by
     funext k
     by_cases hk : k.val < 117
-    · exact (hnativeLeft ⟨k.val,hk⟩).trans (hleft k).symm
+    · exact (hnativeLeft ⟨k.val,hk⟩).trans
+        (hfactor.bank.workspace.left_low ⟨k.val,by omega⟩).symm
     · exact (initializedReplicaHaloLoop_recovery_frame hR hQ he₀.toExec k (by omega)).1
   have hworkerLJ : (embStk replicaRecoveryCallerWorkerReg J).L =
       (embStk replicaRecoveryCallerWorkerReg S).L := by
@@ -162,7 +164,8 @@ theorem initializedReplicaInteriorRecovery_finish (H : ReplicaHaloProblem s)
           norm_num at hk
           omega
         exact (hhigh (Fin.castLE (by decide) k) hb).trans (hclean k hk))
-      (by intro k; exact (congrFun hworkerLJ k).trans (hleft k))
+      ((congrFun hworkerLJ 167).trans hmaskLeft)
+      (by intro k hk; exact (congrFun hworkerLJ k).trans (hprivateLeft k hk))
       (by intro k hk; exact (hhigh k (by omega)).trans (hprivate k hk))
       ((hframe 388 (by decide) (by decide)).trans
         ((initializedReplicaHaloLoop_recovery_frame_at hR hQ he₀.toExec 388 (by decide)).2.trans hqueue))

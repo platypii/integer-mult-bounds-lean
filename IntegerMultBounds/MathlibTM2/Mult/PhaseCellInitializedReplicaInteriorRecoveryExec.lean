@@ -54,7 +54,8 @@ theorem initializedReplicaInteriorRecovery_exec (H : ReplicaHaloProblem s)
     (hpage : S.R (replicaRecoveryCallerCoupling.bank 138) = [])
     (hclean : ∀ k ∈ ([129,131,133,134,136,153] : List (Fin 242)),
       (embStk packedBoundaryRecoveryBase (embStk replicaRecoveryCallerNativeReg S)).R k = [])
-    (hleft : ∀ k : Fin 255, S.L (replicaRecoveryCallerWorkerReg k) = [])
+    (hmaskLeft : S.L (replicaRecoveryCallerWorkerReg 167) = [])
+    (hprivateLeft : ∀ k : Fin 255, 242 ≤ k.val → S.L (replicaRecoveryCallerWorkerReg k) = [])
     (hprivate : ∀ k : Fin 255, 242 ≤ k.val → S.R (replicaRecoveryCallerWorkerReg k) = [])
     (hqueue : S.R 388 = []) (hcontroller : S.R 387 = []) :
     ∃ v' G m, v'.user = v.user ∧ m ≤ initializedReplicaInteriorRecoveryCost H target ∧
@@ -86,7 +87,7 @@ theorem initializedReplicaInteriorRecovery_exec (H : ReplicaHaloProblem s)
   obtain ⟨v',G,m,hu,hm,hex,h387,h121,h125,h388,harchive,hcore,hphysical,hfactorG⟩ :=
     initializedReplicaInteriorRecovery_finish (body := body) H hR hQ hA hp hwidth hspan horigin hpad
       target columns htarget X hX buffers v v₀ S F n 0 _ hu₀ he hloop hfactor hmasters hstage hlevel
-      hblank hfresh hpage hclean hleft hprivate hqueue hcontroller
+      hblank hfresh hpage hclean hmaskLeft hprivateLeft hprivate hqueue hcontroller
   refine ⟨v',G,m,hu,?_,hex,h387,h121,h125,h388,harchive,hcore,hphysical,hfactorG⟩
   unfold initializedReplicaInteriorRecoveryCost
   omega

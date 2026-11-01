@@ -82,8 +82,8 @@ theorem packedBoundaryFactoryGeometry_spec (hR : rpStates ≤ Q) (hQ : SS.states
         releasedCellBank [] tail ((embStk packedBoundaryTableRouting F).R 93) (embStk packedBoundaryTableRouting F).inp (embStk packedBoundaryTableRouting F).out ∧
       CouplingIntervalMetadata V s t band a b a (b-a) (embStk packedHaloRuntimeReg F) ∧
       F.R 132 = S.R 132 ∧ F.R 93 = S.R 93 ∧
-      ∀ k : Fin 242, 117 ≤ k.val → k.val < 168 → k ≠ 143 →
-        k ∉ packedBoundaryGeometryPorts → F.R k = S.R k := by
+      (∀ k : Fin 242, 117 ≤ k.val → k.val < 168 → k ≠ 143 →
+        k ∉ packedBoundaryGeometryPorts → F.R k = S.R k) ∧ F.L 167 = S.L 167 := by
   dsimp only
   obtain ⟨v₁,S₁,n₁,columns,hu₁,hn₁,he₁,hinputFrame,houtputFrame,hrawTable,hstock,
     ⟨hlen,hformat,hcolumns,hstage,hsolve,hbo,hhf,hdf,hvk,h224,h225,hleft',hmul,
@@ -148,7 +148,7 @@ theorem packedBoundaryFactoryGeometry_spec (hR : rpStates ≤ Q) (hQ : SS.states
     packedBoundaryFactorStock_of_high_frame S₁ F (fun i hi => hframe i (by
       simp [packedBoundaryGeometryPorts]; omega)) hstock,
     hlen,hformat,hcolumns,hstage,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,herror,?_,hmeta,
-    hframe132.trans hbuffer,hframe93.trans hfactory93,?_⟩
+    hframe132.trans hbuffer,hframe93.trans hfactory93,?_,?_⟩
   · rw [hstate]; exact hsolve
   · rw [hstate]; exact hbo
   · rw [hstate]; exact hhf
@@ -184,5 +184,8 @@ theorem packedBoundaryFactoryGeometry_spec (hR : rpStates ≤ Q) (hQ : SS.states
   · simpa [embStk,packedBoundaryTableRouting,Equiv.swap_apply_def,hinp,hout,hframe93] using hnative'
   · intro k hk hk' h143 hnot
     exact (hframe k hnot).trans (hheader k hk hk' h143)
+  · apply (congrFun hL 167).trans
+    have hh := (hoff 167 (fun i => packedBoundaryFactorReg_avoids_metadata i 167 (by decide) (by decide))).1
+    simpa [embStk,packedBoundaryTableRouting,Equiv.swap_apply_def] using hh
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

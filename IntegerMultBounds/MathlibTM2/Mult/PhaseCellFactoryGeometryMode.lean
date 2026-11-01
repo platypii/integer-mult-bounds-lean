@@ -91,8 +91,14 @@ theorem packedBoundaryFactoryGeometryUsing_spec (freshGeometry : Bool) (hR : rpS
         k ∉ packedBoundaryGeometryPorts → F.R k = S.R k := by
   cases freshGeometry with
   | true =>
-    exact packedBoundaryFactoryGeometry_spec hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
+    obtain ⟨v',F,n,columns,hu',hn,he,hin,hout,hraw,hstock,hlen,hformat,hcolumns,hstage,
+      hsolve,hbo,hhf,hdf,h206,h224,h225,hleft',hmul,hmaster,h223,h184,h220,h221,herror,
+      hnative,hmeta,hbuffer,h93,hframe,_⟩ :=
+      packedBoundaryFactoryGeometry_spec hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad
       v S tail h109 h115 h116 hleft hready haMaster hbMaster h0 h139 h127 h138 h143 h147 h151 h153 h152 hnew h132left hV h155 h165 hfitV hgeometry
+    exact ⟨v',F,n,columns,hu',hn,he,hin,hout,hraw,hstock,hlen,hformat,hcolumns,hstage,
+      hsolve,hbo,hhf,hdf,h206,h224,h225,hleft',hmul,hmaster,h223,h184,h220,h221,herror,
+      hnative,hmeta,hbuffer,h93,hframe⟩
   | false =>
     obtain ⟨v',F,n,columns,hu',hn,he,hin,hout,hraw,hstock,hlen,hformat,hcolumns,hstage,
       hsolve,hbo,hhf,hdf,h206,h224,h225,hleft',hmul,hmaster,h223,h184,h220,h221,herror,

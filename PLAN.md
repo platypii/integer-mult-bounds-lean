@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3655 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3658 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23510,3 +23510,42 @@ native-bank/scratch facts through these wrappers, discharge the remaining
 initial physical readiness, and join this generated factory to the actual full
 caller. Complete time/workspace bounds, scheduling, tensor/R4 restoration and
 outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: generated factors and complete replica recovery share one execution
+
+`PhaseCellGeneratedReplicaRecovery` composes the actual generated factory with
+the full initialized interior/coupling/recovery caller. Its inputs are ordinary
+gather headers, RHS data and initially blank numerical/private storage; it
+assumes no factor columns, intermediate physical readiness, residual archive or
+execution witness. It returns fitted full-halo accurate replica fields in an
+owned archive with empty suffix, preserved reusable factors/readiness, cleared
+source/controller queues and the retained replica count. Canonical native
+borrowed/result suffixes are empty at this generated setup boundary. The time
+bill is the sum of the existing generated-factory and complete caller bills.
+
+`PhaseCellReplicaFactoryWorkspace` carries only the physical factory facts the
+caller needs: blank native right stacks, the shared scratch ports and mask-left
+freshness. The factory's existing archive frame and off-workspace left frame now
+retain ports 93 and 167 through the lower wrappers. The workspace certificate
+is derived from actual between-input readiness, transported through width
+installation and paid geometry retirement, and returned by placed generation.
+
+`PhaseCellReplicaRecoveryLeft` derives low left-stack emptiness from the prepared
+factor workspace. Boundary-phase left agreement needs only the displaced mask
+and fresh private left registers; the blanket all-left-empty caller premise is
+removed. The actual interior trace still restores its native bank and preserves
+high left stacks, so its factor transport uses the smaller interface directly.
+This avoids manufacturing a stronger, unused factory left-bank invariant.
+Older geometry-mode, initialized-batch and periodic-factor callers remain
+compatible with the strengthened supplier outputs.
+
+All modified modules pass guarded checks under default limits. Key peaks are
+3098.1 MiB (left language), 3256.0 MiB (factory workspace), 3391.1 MiB (canonical
+factor execution), 3333.3 MiB (coupled caller), 3328.8 MiB (interior composition)
+and 3472.2 MiB (complete generated execution); remaining modified-module peaks
+are below these. Scoped compatibility passes (15460 jobs, 3.7 GiB combined
+peak), and the axiom audit passes for 333837 declarations at 3324.8 MiB.
+Next close selected fast time and complete workspace bounds for this exact
+trace, reusing the existing interior/coupling and factor resource language,
+then finish scheduling, tensor/R4 restoration and outer integration. S4 is
+incomplete; kappa is unchanged.

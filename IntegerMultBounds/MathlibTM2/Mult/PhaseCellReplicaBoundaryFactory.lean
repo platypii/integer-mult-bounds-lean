@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedFactoryFactorExec
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaBoundarySolution
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaFactoryWorkspace
 
 /-! The executed shared factory supplies exactly the numerical language used
 by replica boundary solve and recovery, at their common proved precision. -/
@@ -94,7 +95,7 @@ theorem replicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target : ℕ)
       PackedHaloBetweenInputs (2^15*H.p) (H.stage+1) H.precision H.l s H.t H.u H.band
         H.origin (H.origin+H.span) (publicationGeometryWidth H.t H.band) H.wordWidth (12*H.band+1)
         (haloBoundary s H.t H.band H.origin (H.origin+H.span)).card (extendStacks (by decide) F) ∧
-      F.inp = S.inp ∧ F.out = S.out := by
+      F.inp = S.inp ∧ F.out = S.out ∧ ReplicaFactoryWorkspace F := by
   obtain ⟨hq,hstage,hw⟩ := H.boundary_sizing (boundaryRecoveryTarget H.p target) htarget
   simp only [ReplicaHaloProblem.band] at hq hstage hw
   have ha : 0 < |H.α| := abs_pos.mpr (by
@@ -105,13 +106,13 @@ theorem replicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target : ℕ)
     linarith)
   have hα : |H.α|^2 = (H.u : ℝ) := by simpa only [sq_abs] using H.alpha_sq
   have hbudget : |H.α|^2*H.d ≤ H.p := by simpa only [sq_abs] using H.budget
-  obtain ⟨v',F,n,columns,hu,hn,he,hinp,hout,h110,h132,hcolumns,herror,hpages,hbetween,htable,hstock⟩ :=
+  obtain ⟨v',F,n,columns,hu,hn,he,hinp,hout,h110,h132,hcolumns,herror,hpages,hbetween,htable,hstock,h93,hmaskLeft⟩ :=
     packedFactoryInputBank_factor_exec (body := body) (p := H.p) (l := H.l) (s := s) (t := H.t) (u := H.u)
       (target := boundaryRecoveryTarget H.p target) (rhsExp := H.rhsExp)
       (a := H.origin) (b := H.origin+H.span) (α := |H.α|) (d := H.d)
       hR hQ hA hp hwidth ha H.s_lt_t H.u_pos hα H.theta_lower H.gap hbudget H.band_fit
       (by have hh := H.span_fit; omega) H.span_fit hpad v S
-  refine ⟨v',F,n,columns,hu,hn,?_,?_,?_,?_,?_⟩
+  refine ⟨v',F,n,columns,hu,hn,?_,?_,?_,?_,?_,?_⟩
   · have hin := replicaBoundaryFactoryInput_eq H target htarget S
     simp only [ReplicaHaloProblem.band] at hin
     exact (congrArg (fun I : Stacks 242 A => Exec body (packedBoundaryFactoryGeometry hR hQ)
@@ -124,5 +125,9 @@ theorem replicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target : ℕ)
   · simpa only [ReplicaHaloProblem.band,← hq,← hw,← hstage] using hbetween
   · exact hinp
   · exact hout
+  · apply ReplicaFactoryWorkspace.of_between hbetween
+    · exact h93.trans (packedFactoryInputBank_blank_of_not_mem _ _ _ _ _ _ _ _ _ _ _ _ 93 (by decide))
+    · exact h110
+    · exact hmaskLeft.trans (packedFactoryInputBank_left _ _ _ _ _ _ _ _ _ _ _ _ 167)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

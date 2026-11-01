@@ -52,7 +52,7 @@ theorem packedFactoryInputBank_factor_exec (hR : rpStates ≤ Q) (hQ : SS.states
         q l s t u band a b V w W B.card (extendStacks (by decide) F) ∧
       F.R 220 = bandTableWords A w B W columns 0++S.R 220 ∧
       BoundaryFactorStock (embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg F))
-        (boundaryFactorStockBound q w band B.card) := by
+        (boundaryFactorStockBound q w band B.card) ∧ F.R 93 = S.R 93 ∧ F.L 167 = S.L 167 := by
   dsimp only
   let V := publicationGeometryWidth t (PhaseCellBand.width p u)
   let band := PhaseCellBand.width p u

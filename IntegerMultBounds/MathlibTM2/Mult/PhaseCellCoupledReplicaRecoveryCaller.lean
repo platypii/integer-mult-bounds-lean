@@ -5,6 +5,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleasedReplicaRecovery
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingRecoveryBank
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingRecoveryFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingRetainedHeaders
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaRecoveryLeft
 
 /-! Actual shared coupling followed by complete boundary solve and recovery.
 The phase boundary supplies no assumed residual archive or recovery readiness. -/
@@ -54,7 +55,8 @@ theorem coupledReplicaRecoveryCaller_exec (H : ReplicaHaloProblem s)
     (hpage : S.R (replicaRecoveryCallerCoupling.bank 138) = [])
     (hclean : ∀ k ∈ ([129,131,133,134,136,153] : List (Fin 242)),
       (embStk packedBoundaryRecoveryBase (embStk replicaRecoveryCallerNativeReg S)).R k = [])
-    (hleft : ∀ k : Fin 255, S.L (replicaRecoveryCallerWorkerReg k) = [])
+    (hmaskLeft : S.L (replicaRecoveryCallerWorkerReg 167) = [])
+    (hprivateLeft : ∀ k : Fin 255, 242 ≤ k.val → S.L (replicaRecoveryCallerWorkerReg k) = [])
     (hprivate : ∀ k : Fin 255, 242 ≤ k.val → S.R (replicaRecoveryCallerWorkerReg k) = [])
     (hqueue : S.R 388 = []) (hcontroller : S.R 387 = []) :
     ∃ v' F n, v'.user = v.user ∧ n ≤ coupledReplicaRecoveryCallerCost H target ∧
@@ -115,8 +117,8 @@ theorem coupledReplicaRecoveryCaller_exec (H : ReplicaHaloProblem s)
     exact (hext (Fin.castLE (by decide) k) (by change 168 ≤ k.val; omega) (by
       intro he; have hv := congrArg (fun k : Fin 259 => k.val) he
       have hi := k.isLt; change k.val = 257 at hv; omega)).trans (hprivate k hk)
-  have hleftJ (k : Fin 255) : J.L (replicaRecoveryCallerWorkerReg k) = [] := by
-    rw [hL]; exact hleft k
+  have hprivateLeftJ (k : Fin 255) (hk : 242 ≤ k.val) : J.L (replicaRecoveryCallerWorkerReg k) = [] := by
+    rw [hL]; exact hprivateLeft k hk
   obtain ⟨hdata,hsharedBank⟩ :
       ReplicaBoundaryFactorData H target columns
         (embStk packedBoundaryRecoveryBase (embStk replicaRecoveryCallerNativeReg J)) ∧
@@ -131,7 +133,7 @@ theorem coupledReplicaRecoveryCaller_exec (H : ReplicaHaloProblem s)
         intro he; have hv := congrArg (fun k : Fin 259 => k.val) he
         have hi := k.isLt; change k.val = 257 at hv; omega)
     · intro k hk
-      exact ⟨hleftJ (Fin.castLE (by decide) k),hprivateJ (Fin.castLE (by decide) k) hk⟩
+      exact ⟨hprivateLeftJ (Fin.castLE (by decide) k) hk,hprivateJ (Fin.castLE (by decide) k) hk⟩
     · intro k hk
       have hlow : k.val < 168 := by
         simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff] at hk
@@ -172,7 +174,9 @@ theorem coupledReplicaRecoveryCaller_exec (H : ReplicaHaloProblem s)
       (12*H.band+1) columns htarget hdata.prepared hdata.error X hX Ds ⟨hlen,hgood⟩ buffers v₁ J
       hheadersJ harchive ((hext 258 (by decide) (by decide)).trans hqueue)
       ((hext 255 (by decide) (by decide)).trans hcontroller)
-      (by intro i; exact (hleftJ _).trans (hleftJ _).symm)
+      (replicaBoundaryPhase_left_of_bank (embStk replicaRecoveryCallerWorkerReg J) hdata.bank
+        (by change J.L (replicaRecoveryCallerWorkerReg 167) = []; rw [hL]; exact hmaskLeft)
+        (by intro k hk; exact hprivateLeftJ k (by omega)))
       hdata.pages (by intro i hi; exact hprivateJ i (by omega)) hsharedBank hcost
       (hfreshNative 167 (by decide))
   refine ⟨v',F,n₁+n₂,hu₂.trans hu₁,by unfold coupledReplicaRecoveryCallerCost; omega,

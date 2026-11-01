@@ -34,19 +34,28 @@ theorem retiredReplicaFactoryGeometry_blank (S : Stacks 242 A) (k : Fin 168)
     List.mem_map.mpr ⟨k,hk,rfl⟩
   simp only [retiredReplicaFactoryGeometry,if_pos hm]
 
+theorem retiredReplicaFactoryGeometry_low (S : Stacks 242 A) (k : Fin 242) (hk : k.val < 145) :
+    (retiredReplicaFactoryGeometry S).R k = S.R k := by
+  apply retiredReplicaFactoryGeometry_frame
+  intro hm
+  have hc : replicaFactoryGeometryNativePorts.all (fun k => decide (145 ≤ k.val)) = true := by decide +kernel
+  have hh := of_decide_eq_true (List.all_eq_true.mp hc k hm)
+  omega
+
 theorem retireReplicaFactoryGeometry_exec (H : ReplicaHaloProblem s) (target V : ℕ)
     (columns : List (ZMod s → GaussianInt)) (v : HS 242 Q A U) (S : Stacks 242 A)
     (hdata : ReplicaBoundaryFactorData H target columns S)
     (hheaders : PackedHaloRetainedHeaders (2^15*H.p) (H.stage+1) H.precision H.l s H.t H.u H.band
       H.origin (H.origin+H.span) V H.wordWidth (embStk (Fin.castLE (by decide : 168 ≤ 242)) S))
-    (hcursor : (S.R 157).length ≤ V) :
+    (hcursor : (S.R 157).length ≤ V) (hwork : ReplicaFactoryWorkspace S) :
     ∃ v' n, v'.user = v.user ∧ n ≤ 26*V+27 ∧
       Exec body retireReplicaFactoryGeometry (mk v S) n (mk v' (retiredReplicaFactoryGeometry S)) ∧
       ReplicaBoundaryFactorData H target columns (retiredReplicaFactoryGeometry S) ∧
       CouplingMasterHeaders (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band H.origin (H.origin+H.span)
         (embStk (Fin.castLE (by decide : 168 ≤ 242)) (retiredReplicaFactoryGeometry S)) ∧
       ((retiredReplicaFactoryGeometry S).R 118).length = H.stage+1 ∧
-      ((retiredReplicaFactoryGeometry S).R 120).length = H.l := by
+      ((retiredReplicaFactoryGeometry S).R 120).length = H.l ∧
+      ReplicaFactoryWorkspace (retiredReplicaFactoryGeometry S) := by
   have hbound (k : Fin 168) (hk : k ∈ replicaFactoryGeometryPorts) :
       (S.R (Fin.castLE (by decide : 168 ≤ 242) k)).length ≤ V := by
     rcases List.mem_append.mp hk with hk | hk
@@ -69,22 +78,12 @@ theorem retireReplicaFactoryGeometry_exec (H : ReplicaHaloProblem s) (target V :
     exact hsum
   obtain ⟨v',hu,he⟩ := clearWords_exec (body := body) replicaFactoryGeometryNativePorts
     (by decide) v S
-  refine ⟨v',_,hu,?_,he,?_,?_,?_,?_⟩
+  refine ⟨v',_,hu,?_,he,?_,?_,?_,?_,?_⟩
   · change 2*(replicaFactoryGeometryNativePorts.map (fun k => (S.R k).length)).sum+2*13+1 ≤ _
     omega
   · apply hdata.of_runtime_frame H target columns (F := retiredReplicaFactoryGeometry S) rfl
-    · intro k hk
-      apply retiredReplicaFactoryGeometry_frame
-      intro hm
-      obtain ⟨i,hi,he⟩ := List.mem_map.mp hm
-      have hv := congrArg (fun k : Fin 242 => k.val) he
-      simp only [replicaFactoryGeometryPorts,couplingIntervalPorts,List.mem_append,List.mem_cons,
-        List.not_mem_nil,or_false,Fin.ext_iff] at hi
-      norm_num at hi
-      have hi' : 145 ≤ i.val := by omega
-      change i.val = k.val at hv
-      omega
-    · exact retiredReplicaFactoryGeometry_frame S 119 (by decide)
+    · intro k hk; exact retiredReplicaFactoryGeometry_low S k (by omega)
+    · exact retiredReplicaFactoryGeometry_low S 119 (by decide)
     · intro k hk h238
       apply retiredReplicaFactoryGeometry_frame
       intro hm
@@ -102,5 +101,16 @@ theorem retireReplicaFactoryGeometry_exec (H : ReplicaHaloProblem s) (target V :
     exact hheaders.stage
   · rw [retiredReplicaFactoryGeometry_frame S 120 (by decide)]
     exact hheaders.level
+  · apply hwork.of_frame (F := retiredReplicaFactoryGeometry S)
+    · intro i
+      apply retiredReplicaFactoryGeometry_low
+      have hi := i.isLt
+      change i.val < 145
+      omega
+    · intro k hk
+      apply retiredReplicaFactoryGeometry_frame
+      have hc : replicaFactoryScratchPorts.all (fun k => decide (k ∉ replicaFactoryGeometryNativePorts)) = true := by decide +kernel
+      exact of_decide_eq_true (List.all_eq_true.mp hc k hk)
+    · rfl
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
