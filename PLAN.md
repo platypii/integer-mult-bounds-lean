@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3760 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3761 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24671,3 +24671,32 @@ S4 is incomplete; kappa is unchanged.
 Compatibility with the bounded caller passes (15548 jobs, 3.5 GiB
 combined peak). Scoped axiom audit passes for 335467 declarations at
 3353.9 MiB.
+
+
+### S4 checkpoint: retained coupling has a fast multiplication-stream estimate
+
+`Cost.PhaseCellRetainedCouplingFast.retainedPageSpatialGuardedStepCost_le`
+bounds both actual skip outcomes by
+`1000*(band+1)*(rmulCost w+w+1)`, retaining the multiplication kernel and
+bandwidth rather than replacing them with a fourth-power polynomial.
+The generic finite-sum estimate lifts this to the actual interval loop.
+`retainedPageSpatialIntervalLoopCost_fast_le` reuses `chirp_rmul_le` to price
+the numerical stream by interval length times bandwidth times `p^(129/128)`,
+with the existing counted-loop overhead explicit.
+
+`preparedSharedLocalFeedCouplingIntervalCost_split` separates the numerical
+loop from `retainedCouplingIntervalNativeCost`; its subtraction is exact
+because the full lifecycle bill explicitly contains the loop.
+`preparedSharedLocalFeedCouplingIntervalCost_fast_le` transfers the stream
+estimate to the actual prepared shared lifecycle, preserving setup, mask,
+copying, restoration and release as their own native bill. No kernel or
+concrete numerical cases are reproved.
+
+Guarded final module check passes at 3268.0 MiB. Next combine this estimate
+with the boundary-fast complete caller and bound the remaining native
+traffic. Selected whole-caller space, first-pass/generated-factory execution,
+scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+Compatibility with the bounded caller passes (15447 jobs, 3.5 GiB
+combined peak). Scoped axiom audit passes for 335477 declarations at
+3354.1 MiB.
