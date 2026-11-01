@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3981 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3985 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27930,3 +27930,48 @@ headers), 2073.1 MiB (generated crop) and 2043.4 MiB (placed crop). The
 expanded compatibility build passes (16544 jobs, 39.5 GiB combined peak,
 4.6 minutes after rebuilding embedding dependents).
 Axiom audit passed for 341712 declarations. Guarded check peak RSS: 3528.7 MiB.
+
+### S4 checkpoint: one actual computed call recovers, pairs and crops
+
+`Mult.PhaseCellRetainedPairedRecoveryExec` factors the paired execution
+prefix into retainedComplexProgram/complex_retained_exec. It retains generated
+master lengths and the original frame for later assembly. The existing
+ComputedRecoveryPlan.complex_exec now reuses that theorem and adds retirement;
+its public contract and program remain unchanged. Numerical recovery and
+pairing execution are not reproved.
+
+`Mult.PhaseCellRecoveryCropPlacement` contains crop register maps, injection,
+master/source/replica identities, scratch placement in cleared recovery work
+and separation of ordinary crop dimensions/destination. It stores no solution,
+execution or numerical resource bound.
+
+`Mult.PhaseCellComputedCroppedRecoveryExec.cropped_exec` composes the retained
+paired prefix with the placed generated crop lifecycle, then erases masters
+once. It derives every crop symbol count internally from the live numerical
+masters and ordinary offset/row/replica dimensions. The original intermediate
+result source restores to its suffix; the exact final frame is the initial
+state with recovery work empty and cropped packets prepended to destination.
+Accuracy follows the actual reverse destination packet order.
+
+Time includes one master setup, raw recovery, prepared pairing, generated
+crop/archive/cleanup and master retirement. The same run has the original
+recovery stock plus eight times each explicit pairing/crop bill; final
+master retirement adds time without stock.
+
+`Mult.PhaseCellActualComputedCroppedRecovery.cropped_exec_ofComplexBounds`
+specializes this lifecycle to actual complex halo jobs. Scalar sizing, master
+identities and component target order are derived, and the extra scalar
+target bit yields complex error 1/2^target on the cropped interval. No
+computed-header, normalized-field, target-order or execution oracle is supplied.
+
+Next instantiate concrete supplier crop wiring, match cropped solver precision
+to the publication format, and lift this restoring call through ordered core
+groups and physical exposure. Sum complete per-job bills before selected-axis
+absorption. Tensor/R4 restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
+
+Expanded compatibility build passes (16548 jobs, 3.5 GiB combined peak).
+Guarded checks pass at 3437.7 MiB (retained paired prefix), 3427.8 MiB
+(restoring paired call), 3406.9 MiB (crop placement), 3434.9 MiB (combined
+cropped call) and 3420.1 MiB (actual constructor specialization).
+Axiom audit passed for 341741 declarations. Guarded check peak RSS: 3539.5 MiB.
