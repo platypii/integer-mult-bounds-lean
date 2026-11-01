@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3585 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3588 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22437,3 +22437,30 @@ boundary recovery, the second interior pass, workspace/selected resources,
 global scheduling, tensor/R4 restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331309 declarations at 3267.0 MiB.
+
+### S4 checkpoint: route the real folded archive RHS in one preparation trace
+
+`PhaseCellTakeMappedPrefix` generalizes the existing restoring prefix transfer
+to an arbitrary symbol map. `PhaseCellRealBoundaryRhsTransfer` specializes it
+to real projection, so projection and routing use the same transfer instead of
+an additional complete scan. The boundary-symbol count is retained for reuse;
+no count generation is repeated per row.
+
+`PhaseCellPrepareReplicaBoundaryRhs` composes physical archive extraction,
+retained boundary folding and that real transfer. One actual trace consumes
+the archive row and installs exactly the real `bFoldOrder` words at the requested
+destination. All intermediate banks and scratch are restored; only the archive
+tail and destination RHS change. Its time bound is the existing extraction/fold
+bill plus `6*(boundaryCount*w)+6` for combined projection/routing.
+
+Guarded checks pass at 1942.6 MiB (generic mapped transfer), 1927.6 MiB (real
+specialization) and 2087.7 MiB (complete preparation). Compatibility with the
+replica boundary solver and initialized interior/coupling caller passes
+(14830 jobs, 2.7 GiB combined peak). Default proof limits are unchanged.
+
+Next instantiate the destination at the prepared solver RHS port and transport
+the shared factor readiness/pages through preparation, then compose the actual
+boundary solve. Shared boundary setup generation, recovery, the second interior
+pass, workspace/selected resources, global scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331317 declarations at 3267.9 MiB.
