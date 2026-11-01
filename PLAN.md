@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3859 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3861 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26194,3 +26194,37 @@ workspace traces through staging, transition and counted traversal, then shared
 setup and the complete caller. Physical factory/header integration,
 distinct-core scheduling/amortization, tensor/R4 composition, layout restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: cached transition workspace and nonincreasing completed stock
+
+`StackInvariantShift` proves a generic call-depth shift for invariant-carrying
+executions and its stock-bound specialization. A trace checked at depth zero
+can therefore be reused at every ambient depth without rebuilding witnesses or
+changing its program, execution time or endpoint. This is separate from the
+existing core invariant module, keeping downstream rebuilds narrow.
+
+`Mult.PhaseCellReplicaCouplingStock` derives queue lengths from an arbitrary
+replica cursor, then uses the existing three-port stock balance to show that a
+transition consuming two rows and archiving one cannot increase completed
+stock. The proof depends only on the cursor endpoints, archive length and
+spectator frame; it is independent of numerical implementations and row cases.
+
+`ReplicaCouplingCursor.couple_cached_within` in
+`Mult.PhaseCellCachedReplicaCouplingTransitionStock` composes actual staging
+with the cached residual workspace trace. It preserves the established cursor,
+accuracy, archive and shared-bank output contract, returns one trace valid at
+every ambient depth, and proves nonincreasing completed stock. The reserve is
+twice the staging bill plus local coupling scratch and twice the finishing
+bill. These are the hypotheses needed by the existing counted-loop shared
+reserve rule; no new accuracy/archive induction is needed for loop space.
+
+Guarded checks pass at 1384.5 MiB (generic depth shift), 2160.0 MiB (cursor
+stock balance) and 2204.2 MiB (transition trace and completed stock). The
+complete scoped compatibility build passes (15921 jobs, 2.8 GiB combined peak);
+the axiom audit passes for 336668 declarations at 3399.4 MiB. Next instantiate
+the counted-loop resource rule, reusing execution uniqueness to combine its
+trace with the existing full loop correctness theorem. Shared setup and
+complete-caller workspace, physical factory/header integration, distinct-core
+scheduling/amortization, tensor/R4 composition, layout restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
