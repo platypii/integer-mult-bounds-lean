@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3763 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3764 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24755,3 +24755,29 @@ and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Compatibility with the bounded caller passes (15551 jobs, 3.5 GiB
 combined peak). Scoped axiom audit passes for 335488 declarations at
 3354.3 MiB.
+
+
+### S4 checkpoint: actual recovery numerical time fits the existing phase-gap volume
+
+`Cost.PhaseCellReplicaRecoveryGapFast.replicaHaloLocalCoordinates_le`
+bounds the existing local interior coordinate allowance by `40*H.t`, using
+only interval fit, finite cardinality and the elementary quotient bound.
+`batchedReplicaRecovery_gap_fast_le` reuses `familyKernelVolume_le` to
+bound the actual boundary and active-coupling terms together. The complete
+caller numerical allowance is now a uniform constant times replica count
+times `H.t+(H.t-s)*H.band^2` times `H.p^(129/128)`. No geometric cover,
+scalar arithmetic or boundary solve is reproved.
+
+Shared interior setup and the actual native preparation/linear traffic bill
+remain explicit. This is the actual batched caller estimate, not a scalar
+replacement. Selected parameter substitution and native traffic bounds are
+still needed for the final resource theorem.
+
+Guarded module check passes at 3367.6 MiB. The initial build refreshed older
+family-proof dependencies (15616 jobs, 36.4 GiB combined peak, within guard).
+Selected whole-caller space, first-pass/generated-factory execution,
+scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+Compatibility with the bounded caller passes (15680 jobs, 3.5 GiB
+combined peak). Scoped axiom audit passes for 336042 declarations at
+3374.5 MiB.
