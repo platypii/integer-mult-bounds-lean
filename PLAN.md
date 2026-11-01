@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3824 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3825 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25574,3 +25574,33 @@ to compose the prefix with initialized cached recovery and assembly. That
 composition, first-pass/factory shared-bank construction, combined coupling
 workspace, distinct-core amortization, tensor/R4 composition, layout restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: executed preparation feeds cached recovery and final assembly
+
+`Mult.PhaseCellPreparedCachedBatchedReplicaRecovery` composes physical setup
+and archive installation with the actual initialized cached recovery caller.
+The first-pass residual archive, retained factors/core, compatible ordinary
+headers and mathematical solution family determine the returned recovery batch.
+Physical readiness, archive cursor and the second pass's peripheral language
+are derived through executed preparation, not assumed at the intermediate state.
+
+The theorem returns actual assembled outputs with the existing per-replica
+`ReplicaRecoveryAssemblyOutput` certificates. Its time bound includes the complete
+preparation prefix and initialized cached recovery. Original boundary tails and
+the accumulator tail are retained; the final output occupies port 391. The
+prefix theorem additionally exposes preservation of native ports other than
+the two input queues, supplying mask/retained-RHS prerequisites structurally.
+
+An initial elaboration timed out while inferring an indexed residual's bound
+inside the large caller signature. Supplying `j.isLt` explicitly avoids automatic
+bound search through compiled-program hypotheses; no proof limits were raised.
+
+Guarded checks pass at 3302.4 MiB (prefix native frame) and 3317.6 MiB
+(composed caller). Compatibility build passes (15804 jobs, 3.5 GiB combined peak).
+The scoped axiom audit passes for 336504 declarations at 3391.1 MiB.
+This is an execution/time composition; combined prefix workspace remains open.
+Next connect the generated first pass and factory outputs to the retained
+setup premises, then complete workspace and distinct-core scheduling. Tensor/R4
+composition, layout restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.

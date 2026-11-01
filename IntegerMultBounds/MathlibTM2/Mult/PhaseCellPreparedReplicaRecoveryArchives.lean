@@ -44,7 +44,10 @@ theorem preparedReplicaRecoveryArchives_exec (H : ReplicaHaloProblem s) (target 
         (F.R (replicaRecoveryPreparationCallerWorkerReg 125)) (F.R (replicaRecoveryPreparationCallerWorkerReg 256))
         (embStk replicaRecoveryPreparationCallerWorkerReg F) ∧ F.R 390 = S.R 390 ∧
       F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧ F.R 125 = [] ∧
-      (∀ k, k ≠ 125 → (∀ i, replicaRecoverySetupWorkerReg i ≠ k) → F.R k = S.R k) := by
+      (∀ k, k ≠ 125 → (∀ i, replicaRecoverySetupWorkerReg i ≠ k) → F.R k = S.R k) ∧
+      (∀ k : Fin 248, k ≠ 93 → k ≠ 238 →
+        F.R (replicaRecoveryPreparationCallerWorkerReg (Fin.castLE (by decide) k)) =
+          S.R (replicaRecoveryPreparationCallerWorkerReg (Fin.castLE (by decide) k))) := by
   have hworker (Z : Stacks 392 A) : embStk replicaRecoverySetupWorkerReg Z =
       embStk (Fin.castLE (by decide : 255 ≤ 257)) (embStk replicaRecoveryPreparationCallerWorkerReg Z) := by
     change embStk replicaRecoverySetupWorkerReg Z =
@@ -79,7 +82,7 @@ theorem preparedReplicaRecoveryArchives_exec (H : ReplicaHaloProblem s) (target 
   refine ⟨v',_,n₁+n₂,hu₂.trans hu₁,by omega,Exec.seq he₁ he₂,?_,
     (hframe 390 (by decide) (by decide) (by decide)).trans (hhigh 390 (by decide)).2,hL₂.trans hL,
     hi₂.trans (congrArg (fun Z : Stacks 126 A => Z.inp) hgather),
-    ho₂.trans (congrArg (fun Z : Stacks 126 A => Z.out) hgather),?_,?_⟩
+    ho₂.trans (congrArg (fun Z : Stacks 126 A => Z.out) hgather),?_,?_,?_⟩
   · simpa only [h238,h93] using hready
   · simp only [Function.update_of_ne (by decide : (125 : Fin 392) ≠ replicaRecoveryPreparationCallerWorkerReg 238),
       replicaRecoveryBatchInterior_gather]
@@ -90,5 +93,17 @@ theorem preparedReplicaRecoveryArchives_exec (H : ReplicaHaloProblem s) (target 
     have h238w : replicaRecoverySetupWorkerReg 238 = replicaRecoveryPreparationCallerWorkerReg 238 := replicaRecoverySetupWorkerReg_eq 238
     exact (hframe k (fun he => hk 93 (h93w.trans he.symm))
       (fun he => hk 238 (h238w.trans he.symm)) h125).trans (hsetupOff k hk)
+
+  · intro k hk93 hk238
+    have hinj : Function.Injective replicaRecoveryPreparationCallerWorkerReg :=
+      replicaRecoveryPreparationCallerReg_injective.comp (Fin.castLE_injective _)
+    apply (hframe _ ?_ ?_ ?_).trans (hport k)
+    · apply hinj.ne
+      intro he
+      exact hk93 (Fin.ext (congrArg (fun j : Fin 257 => j.val) he))
+    · apply hinj.ne
+      intro he
+      exact hk238 (Fin.ext (congrArg (fun j : Fin 257 => j.val) he))
+    · exact replicaRecoveryPreparationCallerReg_gather_disjoint _ 125
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
