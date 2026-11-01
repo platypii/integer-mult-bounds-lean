@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3584 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3585 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22413,3 +22413,27 @@ fold-counter and factor setup generation, boundary recovery, the second interior
 pass, workspace/selected resources, global scheduling, tensor/R4 restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331256 declarations at 3266.6 MiB.
+
+### S4 checkpoint: compose physical archive extraction and boundary folding
+
+`PhaseCellFoldReplicaBoundaryRhs` consumes one actual residual archive row,
+selects its halo boundary with the shared mask, and executes the existing
+retained boundary fold through an arbitrary injective bank placement. Its
+single trace returns exactly the boundary field in `bFoldOrder`, restores the
+intermediate RHS tape, and preserves every stack except the archive tail and
+folded RHS output. Native counters and numerical fold internals remain behind
+the existing execution and embedding lemmas.
+
+The generic contract retains the common fold counters and scratch hypotheses,
+so no row-specific permutation proof or concrete bank certificate is required.
+The time bound is the sum of archive extraction and the existing fold bill.
+The guarded single-file check passes at 2083.3 MiB; compatibility with the
+replica boundary solver and initialized interior/coupling path passes
+(14827 jobs, 2.8 GiB combined peak). Default proof limits are unchanged.
+
+Next project the folded words to their real component and route them into the
+prepared solver RHS register. Shared mask/fold-counter/factor setup generation,
+boundary recovery, the second interior pass, workspace/selected resources,
+global scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331309 declarations at 3267.0 MiB.
