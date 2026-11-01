@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3695 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3696 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23956,3 +23956,27 @@ resource bounds, first-pass/generated-factory integration, scheduling,
 tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
 Scoped axiom audit passes for 334142 declarations at 3331.0 MiB.
+
+
+### S4 checkpoint: triangular numerical products reuse the weighting stream reserve
+
+`PhaseCellBandProductStock.rsb_rmulStream_exec_within` transports the existing
+varying-real-factor stream theorem through an arbitrary injective band role
+map. It returns the actual ordered product stream, preserves both operands,
+and charges one numerical reserve plus linear stream storage. This supplies
+the numerical operation used by both forward column products and backward
+reciprocal products; it does not duplicate their coefficient multiplication
+proofs or charge numerical time once per coefficient as live scratch.
+
+`rsb_rmulStream_within` attaches the same bound to an existing execution by
+execution uniqueness. This lets the band-step proof retain its existing
+intermediate states and time witnesses when adding peak-storage certificates.
+The surrounding native copy/update phases and the full triangular loops still
+need their own composition and iteration-boundary stock arguments.
+
+The guarded module check passes at 2042.4 MiB. Compatibility with the batched
+recovery bill and generated baseline passes (15450 jobs, 2.7 GiB combined peak).
+The scoped axiom audit passes for 334144 declarations at 3331.2 MiB.
+Preparation and whole-caller workspace, selected resource bounds,
+first-pass/generated-factory integration, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
