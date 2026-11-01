@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3751 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3755 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24531,3 +24531,36 @@ open. S4 is incomplete; kappa is unchanged.
 Compatibility with the actual batched recovery time theorem passes
 (15413 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
 334330 declarations at 3341.6 MiB.
+
+
+### S4 checkpoint: complete recovery preparation shares one row workspace reserve
+
+`PhaseCellCollectedReplicaRecoveryRhsStock` composes bounded RHS construction
+with actual archive collection, preserving the original output, readiness
+and frame facts. Trace uniqueness attaches the collection bound at every
+ambient depth to the existing endpoint.
+
+`PhaseCellReplicaRecoveryPreparationRowStock` combines the retained boundary
+solve with RHS construction/collection. Its allowance is the established
+boundary-row reserve plus the collected RHS reserve. It retains the original
+exact iteration-end storage equality and numerical row certificate.
+
+`PhaseCellCountedBankLoopStock.countedBankLoop_exec_within` is a generic
+closed-worker-bank rule over an external consuming counter. Bounded worker
+traces and nonincreasing endpoint stock suffice to share one reserve across
+all iterations, using the existing generic counted-loop and embedding rules.
+`PhaseCellReplicaRecoveryPreparationLoopStock` instantiates it with the
+original recovery cursor invariant and row storage equality. The actual
+computed batch, aligned archives, readiness, frames and original time bill
+are preserved. Workspace is independent of replica count.
+
+Guarded checks pass at 3299.1 MiB (collection), 3327.8 MiB (complete row),
+1393.0 MiB (generic bank loop), and 3312.3 MiB (complete preparation loop).
+Next lift through preparation placement/release and compose with the bounded
+shared second pass/assembly, then establish selected resource inequalities.
+Whole-caller workspace, selected resource inequalities, first-pass/generated
+factory integration, scheduling, tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+Compatibility with the actual batched recovery time theorem passes
+(15446 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
+334349 declarations at 3341.3 MiB.
