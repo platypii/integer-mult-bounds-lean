@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3625 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3627 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22926,3 +22926,26 @@ and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Compatibility with actual initialized interior/coupling passes (15152 jobs,
 3.5 GiB combined peak). The combined scoped axiom audit passes for 332474
 declarations at 3297.5 MiB. Default proof limits are unchanged.
+
+### S4 checkpoint: produce the owned original-order recovery RHS queue
+
+`PhaseCellCopyRowsOrdered` reuses `restoringRowScan` to traverse arbitrary
+uniform rows, copy each reversed row above a private buffer, restore the source
+from its existing reverse archive, then reverse the complete buffer once into
+the destination. Only the destination changes. The retained source and arbitrary
+borrowed source suffix, count, width and all scratch restore. No total-volume
+header is supplied or generated. The bound is `N*(18*V+19)+8`.
+
+`PhaseCellPrepareReplicaRecoveryRhs` specializes this structural proof to the
+actual retained gather source and its existing row-count/volume masters. It
+produces `Fs.flatMap packedInterval` in ordinary order, exactly matching the
+loaded recovery loop's RHS input, above the destination's borrowed suffix.
+The generic checker peaks at 1960.7 MiB and the specialization at 2157.1 MiB,
+with default limits. Compatibility with loaded recovery and actual initialized
+interior/coupling passes (15154 jobs, 2.8 GiB combined peak).
+
+Next connect this producer, the actual coupling archive and loaded recovery in
+one caller placement, then discharge shared-factor production. Workspace/selected
+bounds, global scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 332481 declarations at 3298.2 MiB.
