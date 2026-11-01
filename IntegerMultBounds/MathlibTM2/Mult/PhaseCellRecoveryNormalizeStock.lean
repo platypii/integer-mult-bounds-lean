@@ -56,6 +56,11 @@ theorem RecoveryNormalizePlan.native (plan : RecoveryNormalizePlan T) :
     topWidenWord,topDupF,unaryProduct,ucopy,usub,dropTop,umulSym,transfer,transferAct,moveR,moveStep,
     uclear,scanP,scanR,drainR,popDo,keepIn,whileR,peekR,pushN,popPush,mnNativePushBound,mnActPush]
 
+theorem RecoveryNormalizePlan.finished_native (plan : RecoveryNormalizePlan T) :
+    mnNativePushBound 13 (plan.finishedProgram (P := P) (Q := Q) (A := A) (U := U)) := by
+  refine ⟨plan.native,?_⟩
+  simp [uclear,drainR,popDo,peekR,mnNativePushBound,mnActPush]
+
 theorem RecoveryNormalizePlan.within_stock {body : P → Pr P T Q A U} (plan : RecoveryNormalizePlan T)
     {v v' : HS T Q A U} {S F : Stacks T A} {n cost : ℕ}
     (hex : Exec body plan.program (Host.mk v S) n (Host.mk v' F)) (hn : n ≤ cost) (depth : ℕ) :

@@ -38,5 +38,9 @@ variable {T Q A : ℕ} {P U : Type}
 def program (plan : RecoveryNormalizePlan T) : Pr P T Q A U :=
   ordinaryNormalizePackedBatch plan.scalar plan.ports plan.header plan.precision plan.wide plan.rows plan.replicas
     plan.inputWidth plan.count plan.src plan.work plan.saved plan.tmp plan.sp plan.sg plan.cy
+/-- Consume the crop stage's owned packet-width header after normalization. -/
+def finishedProgram (plan : RecoveryNormalizePlan T) : Pr P T Q A U :=
+  .seq plan.program (IntegerMultBounds.MathlibTM2.Node.uclear plan.inputWidth)
+
 end RecoveryNormalizePlan
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

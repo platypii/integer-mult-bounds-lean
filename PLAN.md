@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3992 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3995 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28048,3 +28048,45 @@ Guarded checks pass at 3382.0 MiB (magnitude/width), 3142.0 MiB
 (normalization wiring), 3143.8 MiB (native stock) and 3388.8 MiB
 (executed normalization). Broad axiom audit passes for 341850 declarations
 at 3541.4 MiB.
+
+### S4 checkpoint: retain the computed crop width through normalization cleanup
+
+`Mult.PhaseCellRecoveryCropArchive` factors header generation and actual
+complex crop/archive execution into a shared prefix. The existing fully
+clearing generatedRecoveryCrop theorem reuses this prefix; its final frame
+and cost contract remain unchanged. No numerical or archive execution is
+duplicated.
+
+`Mult.PhaseCellRecoveryCropWithWidth` adds the variant that retains port 9,
+the already-generated rows*(2*q+8) symbol-count header. All other generated
+controls restore. Its explicit final frame records that retained header,
+consumed source suffix and cropped destination.
+recoveryCropWithWidthCost_retire proves that its cost plus eventual header
+cleanup equals the old fully clearing crop cost exactly. Delaying erasure
+therefore adds no setup or erasure work.
+
+`Mult.PhaseCellPlacedRecoveryCropWithWidth` places this lifecycle with the
+exact three-stream frame and same-run stock bound, using the existing generic
+bank-update commutation lemma rather than register case analysis.
+
+RecoveryNormalizePlan.finishedProgram now appends retirement of its owned
+inputWidth header. NormalizeRecoveryOutput.exec executes that complete
+normalization/cleanup program, includes the exact header retirement time,
+and proves the same global row accuracy with stock thirteen times the
+complete bill. The crop-generated header can thus pass to normalization
+and return to its originally blank state afterward.
+
+These matching stages are individually proved; they are not yet composed
+inside the full computed recovery call. Next wire the retained crop width to
+normalization inputWidth, generate the ordinary parameter queue from retained
+inputs, compose final cleanup once, and reconcile actual reverse replica
+order with publication before claiming PackedNormalizedJob.output. Then lift
+through ordered groups and physical exposure. Concrete ambient allocation,
+grouped cost absorption, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+
+Expanded compatibility build passes (16558 jobs). Guarded checks pass at
+2060.2 MiB (shared crop prefix), 2058.3 MiB (fully clearing crop), 2061.1 MiB
+(retained-width crop), 2045.2 MiB (placed retained crop), 3141.7 MiB
+(normalization plan), 3143.8 MiB (native stock) and 3412.1 MiB (finished
+normalization). Broad axiom audit passes for 341864 declarations at 3545.0 MiB.

@@ -18,7 +18,7 @@ variable {T Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T Q A U}
 
 noncomputable def timeCost (r : PackedNormalizedJob A s) (N : ℕ) : ℕ :=
   preparedNormalizePackedBatchCost r.Bcore r.p r.u r.l r.targetOut s r.t r.a r.b r.W N
-    (coreLength s r.coreWidth r.k)+214*r.Bcore+217
+    (coreLength s r.coreWidth r.k)+214*r.Bcore+217+2*(coreLength s r.coreWidth r.k*(2*r.q+8))+2
 
 theorem exec (plan : RecoveryNormalizePlan T) (hA : 4 ≤ A) (r : PackedNormalizedJob A s)
     (Ds : List (ZMod s → GaussianInt)) (oldTail tail headerTail : List (Fin (A+4)))
@@ -43,15 +43,15 @@ theorem exec (plan : RecoveryNormalizePlan T) (hA : 4 ≤ A) (r : PackedNormaliz
     Gs.length = Ds.length ∧
     ∃ v' n, v'.user = v.user ∧
       n ≤ timeCost r Ds.length ∧
-      Exec body plan.program (Host.mk v S) n
-        (Host.mk v' {S with R := (Function.update (Function.update S.R plan.header headerTail) plan.src
+      Exec body plan.finishedProgram (Host.mk v S) n
+        (Host.mk v' {S with R := (Function.update (Function.update (Function.update S.R plan.inputWidth []) plan.header headerTail) plan.src
           ((Gs.map (fun D => cstream A r.W (ownedCoreWords r.coreWidth r.k D))).flatten++tail))}) ∧
       List.Forall₂ (fun F D => PhaseCellInterface.ErrorOn (ownedCore s r.coreWidth r.k)
         (packedIntervalRead r.p r.W (coreStart r.coreWidth r.k)
           (cstream A r.W (ownedCoreWords r.coreWidth r.k D)++tail)) (r.rowTarget F) r.rowError) r.Fs.reverse Gs ∧
       ∀ depth, ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+13*timeCost r Ds.length)
-        depth plan.program (Host.mk v S) n
-        (Host.mk v' {S with R := (Function.update (Function.update S.R plan.header headerTail) plan.src
+        depth plan.finishedProgram (Host.mk v S) n
+        (Host.mk v' {S with R := (Function.update (Function.update (Function.update S.R plan.inputWidth []) plan.header headerTail) plan.src
           ((Gs.map (fun D => cstream A r.W (ownedCoreWords r.coreWidth r.k D))).flatten++tail))}) := by
   dsimp only
   have hfit : coreStart r.coreWidth r.k+coreLength s r.coreWidth r.k ≤ s := by have := r.hright; omega
@@ -75,7 +75,35 @@ theorem exec (plan : RecoveryNormalizePlan T) (hA : 4 ≤ A) (r : PackedNormaliz
     (ownedCore s r.coreWidth r.k) hactive hcover r.q r.hqSizing
     (r.Fs.map (componentSolution r.localSolution)).reverse Ds hmag oldTail tail headerTail v S
     hwidth hscalar hparameters hp hW hrows hN hblank hheaders hinputWidth hsrc hgood'
-  refine ⟨hlen,v',n,hu,hn,hex,?_,fun depth => plan.within_stock hex hn depth⟩
+  let output := ((Ds.map (fun D i => finalRoundWord (2*r.q+8) r.q r.p (inverseNormalizationShift r.p) (D i))).map
+    (fun D => cstream A r.W (ownedCoreWords r.coreWidth r.k D))).flatten++tail
+  let F : Stacks T A := {S with R := Function.update (Function.update S.R plan.header headerTail) plan.src output}
+  obtain ⟨v₂,hu₂,hclear⟩ := uclear_exec (body := body) plan.inputWidth v' F
+  have hr := plan.regs
+  regs_ne hr
+  have hpacket : (F.R plan.inputWidth).length = coreLength s r.coreWidth r.k*(2*r.q+8) := by
+    simpa [F,‹plan.header ≠ plan.inputWidth›.symm,‹plan.inputWidth ≠ plan.src›] using hinputWidth
+  have hfinal : {F with R := Function.update F.R plan.inputWidth []} =
+      {S with R := Function.update (Function.update (Function.update S.R plan.inputWidth []) plan.header headerTail) plan.src output} := by
+    refine Stacks.ext ?_ ?_ ?_ ?_
+    · rfl
+    · rfl
+    · rfl
+    funext k
+    change Function.update F.R plan.inputWidth [] k = _
+    by_cases hk : k = plan.inputWidth
+    · subst k; simp [‹plan.header ≠ plan.inputWidth›.symm,‹plan.inputWidth ≠ plan.src›]
+    · simp [F,Function.update_apply,hk]
+  rw [hpacket,hfinal] at hclear
+  let steps := n+(2*(coreLength s r.coreWidth r.k*(2*r.q+8))+2)
+  have hex' : Exec body plan.finishedProgram (Host.mk v S) steps
+      (Host.mk v₂ {S with R := Function.update (Function.update (Function.update S.R plan.inputWidth [])
+        plan.header headerTail) plan.src output}) := Exec.seq hex hclear
+  have hsteps : steps ≤ timeCost r Ds.length := by
+    unfold steps timeCost
+    omega
+  refine ⟨hlen,v₂,steps,hu₂.trans hu,hsteps,hex',?_,fun depth =>
+    mn_native_exec_within hex' 13 plan.finished_native depth _ (by omega)⟩
   have hback := List.rel_reverse haccuracy
   simp only [List.map_reverse,List.reverse_reverse] at hback
   have hglobal := r.normalized_recovery_core_accuracy _ tail hback
