@@ -61,34 +61,19 @@ noncomputable def replicaCouplingResidual {plan : ReplicaInteriorPlacement T}
 
 /-- A local row executor with the common feed endpoint can reuse the complete
 archive/retirement proof, independently of how it computed its result. -/
-theorem replicaCouplingResidual_finish {plan : ReplicaInteriorPlacement T}
-    (placement : ReplicaCouplingPlacement plan) (worker : Pr P T Q A U)
-    (volume dst saved tmp : Fin T) (L : ℕ)
-    (field ys tail rhsTail : List (Fin (A+4))) (hfieldLen : field.length = L) (hys : ys.length = L)
-    (v v₁ : HS T Q A U) (S : Stacks T A) (n₁ cost : ℕ)
-    (hu₁ : v₁.user = v.user) (hn₁ : n₁ ≤ cost)
-    (he₁ : Exec body worker (mk v S) n₁
-      (mk v₁ {S with R := (Function.update (Function.update S.R (placement.bank 93) rhsTail)
-        (placement.bank 110) (ys++S.R (placement.bank 110)))}))
-    (hreg : [volume,placement.bank 132,placement.bank 110,dst,saved,tmp,placement.bank 93].Nodup)
-    (hvolume : (S.R volume).length = L) (hsource : S.R (placement.bank 132) = field++tail)
-    (hsaved : S.R saved = []) (htmp : S.R tmp = []) :
-    ∃ v' m, v'.user = v.user ∧ m ≤ cost+finishReplicaCouplingRowCost L ∧
-      Exec body (.seq worker (finishReplicaCouplingRow volume (placement.bank 132) (placement.bank 110) dst saved tmp))
-        (mk v S) m (mk v' (replicaResidualState placement dst tail rhsTail ys S)) := by
+theorem replicaResidualState_finish {plan : ReplicaInteriorPlacement T}
+    (placement : ReplicaCouplingPlacement plan) (volume dst saved tmp : Fin T)
+    (tail rhsTail ys : List (Fin (A+4))) (S : Stacks T A)
+    (hreg : [volume,placement.bank 132,placement.bank 110,dst,saved,tmp,placement.bank 93].Nodup) :
+    let J : Stacks T A := {S with R := (Function.update (Function.update S.R (placement.bank 93) rhsTail)
+      (placement.bank 110) (ys++S.R (placement.bank 110)))}
+    {J with R := (Function.update (Function.update (Function.update J.R (placement.bank 132) tail)
+      (placement.bank 110) (S.R (placement.bank 110))) dst (ys++J.R dst))} =
+      replicaResidualState placement dst tail rhsTail ys S := by
   have hr := hreg
   regs_ne hr
-  let J : Stacks T A := {S with R := Function.update (Function.update S.R (placement.bank 93) rhsTail) (placement.bank 110) (ys++S.R (placement.bank 110))}
-  obtain ⟨v₂,hu₂,he₂⟩ := finishReplicaCouplingRow_exec_within (body := body) volume (placement.bank 132)
-    (placement.bank 110) dst saved tmp (by regs_nodup) L
-    field ys tail (S.R (placement.bank 110)) hfieldLen hys v₁ J
-    (by simpa [J,‹volume ≠ placement.bank 110›,‹volume ≠ placement.bank 93›] using hvolume)
-    (by simpa [J,‹placement.bank 132 ≠ placement.bank 110›,‹placement.bank 132 ≠ placement.bank 93›] using hsource)
-    (by simp [J])
-    (by simpa [J,‹placement.bank 110 ≠ saved›.symm,‹saved ≠ placement.bank 93›] using hsaved)
-    (by simpa [J,‹placement.bank 110 ≠ tmp›.symm,‹tmp ≠ placement.bank 93›] using htmp) 0
-  refine ⟨v₂,n₁+finishReplicaCouplingRowCost L,hu₂.trans hu₁,by omega,(Exec.seq he₁ he₂.toExec).cast rfl ?_⟩
-  apply congrArg (mk v₂)
+  let J : Stacks T A := {S with R := (Function.update (Function.update S.R (placement.bank 93) rhsTail)
+    (placement.bank 110) (ys++S.R (placement.bank 110)))}
   dsimp only [replicaResidualState]
   refine Stacks.ext rfl rfl rfl ?_
   funext k
@@ -107,6 +92,35 @@ theorem replicaCouplingResidual_finish {plan : ReplicaInteriorPlacement T}
     simp [J,‹placement.bank 110 ≠ dst›,‹placement.bank 110 ≠ placement.bank 93›,
       ‹placement.bank 132 ≠ placement.bank 110›.symm]
   simp [J,hfield,hrhs,hdst,hresidual]
+
+theorem replicaCouplingResidual_finish {plan : ReplicaInteriorPlacement T}
+    (placement : ReplicaCouplingPlacement plan) (worker : Pr P T Q A U)
+    (volume dst saved tmp : Fin T) (L : ℕ)
+    (field ys tail rhsTail : List (Fin (A+4))) (hfieldLen : field.length = L) (hys : ys.length = L)
+    (v v₁ : HS T Q A U) (S : Stacks T A) (n₁ cost : ℕ)
+    (hu₁ : v₁.user = v.user) (hn₁ : n₁ ≤ cost)
+    (he₁ : Exec body worker (mk v S) n₁
+      (mk v₁ {S with R := (Function.update (Function.update S.R (placement.bank 93) rhsTail)
+        (placement.bank 110) (ys++S.R (placement.bank 110)))}))
+    (hreg : [volume,placement.bank 132,placement.bank 110,dst,saved,tmp,placement.bank 93].Nodup)
+    (hvolume : (S.R volume).length = L) (hsource : S.R (placement.bank 132) = field++tail)
+    (hsaved : S.R saved = []) (htmp : S.R tmp = []) :
+    ∃ v' m, v'.user = v.user ∧ m ≤ cost+finishReplicaCouplingRowCost L ∧
+      Exec body (.seq worker (finishReplicaCouplingRow volume (placement.bank 132) (placement.bank 110) dst saved tmp))
+        (mk v S) m (mk v' (replicaResidualState placement dst tail rhsTail ys S)) := by
+  have hr := hreg
+  regs_ne hr
+  let J : Stacks T A := {S with R := (Function.update (Function.update S.R (placement.bank 93) rhsTail) (placement.bank 110) (ys++S.R (placement.bank 110)))}
+  obtain ⟨v₂,hu₂,he₂⟩ := finishReplicaCouplingRow_exec_within (body := body) volume (placement.bank 132)
+    (placement.bank 110) dst saved tmp (by regs_nodup) L
+    field ys tail (S.R (placement.bank 110)) hfieldLen hys v₁ J
+    (by simpa [J,‹volume ≠ placement.bank 110›,‹volume ≠ placement.bank 93›] using hvolume)
+    (by simpa [J,‹placement.bank 132 ≠ placement.bank 110›,‹placement.bank 132 ≠ placement.bank 93›] using hsource)
+    (by simp [J])
+    (by simpa [J,‹placement.bank 110 ≠ saved›.symm,‹saved ≠ placement.bank 93›] using hsaved)
+    (by simpa [J,‹placement.bank 110 ≠ tmp›.symm,‹tmp ≠ placement.bank 93›] using htmp) 0
+  refine ⟨v₂,n₁+finishReplicaCouplingRowCost L,hu₂.trans hu₁,by omega,(Exec.seq he₁ he₂.toExec).cast rfl ?_⟩
+  exact congrArg (mk v₂) (replicaResidualState_finish placement volume dst saved tmp tail rhsTail ys S hreg)
 
 
 theorem replicaCouplingResidual_exec {plan : ReplicaInteriorPlacement T}

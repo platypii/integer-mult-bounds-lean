@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3856 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3859 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26159,3 +26159,38 @@ jobs, 3.5 GiB combined peak); the axiom audit passes for 336652 declarations at
 integrate physical factory/header production. Distinct-core scheduling and
 amortization, tensor/R4 composition, layout restoration and outer integration
 remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: preserve cached replica workspace through local execution and finishing
+
+`cachedReplicaLocalCoupling_exec_within` now lifts the interval worker's existing
+intermediate-workspace trace into any replica coupling bank. It accepts a bound
+for scalar multiplication push and returns the same exact endpoint and time
+bound as the established execution theorem. The execution-only theorem is a
+specialization, so downstream correctness and time interfaces are preserved.
+`cachedReplicaLocalCouplingWorkspace` names the existing interval scratch plus
+feed allowance; no replica-count factor is introduced.
+
+`replicaResidualState_finish` factors the exact final bank identity out of the
+original generic finishing proof. Both that proof and the new
+`Mult.PhaseCellReplicaCouplingResidualStock` reuse it. The workspace rule accepts
+an arbitrary worker allowance W and composes it with the existing finishing
+trace, charging W plus twice the linear finishing cost. The cached residual
+specialization in `Mult.PhaseCellCachedReplicaCouplingResidualStock` retains
+this actual trace through input retirement and residual archiving.
+
+`Cost.PhaseCellCachedReplicaCouplingWorkspace` reuses the existing interval
+workspace polynomial to bound cached local execution plus residual finishing
+by `400000*(ssMulConst+1)*Z^4` under a common envelope. This is shared row
+scratch, independent of replica count; establishing its reuse through the
+transition and counted loop remains necessary before claiming caller space.
+
+Guarded checks pass at 2139.5 MiB (local coupling trace), 2139.7 MiB (generic
+endpoint/original finishing), 2128.4 MiB (workspace finishing), 2127.6 MiB
+(cached residual trace) and 3204.1 MiB (row workspace polynomial). The complete
+scoped compatibility build passes (15918 jobs, 38.3 GiB combined peak); the
+axiom audit passes for 336660 declarations at 3400.1 MiB. Next transport these
+workspace traces through staging, transition and counted traversal, then shared
+setup and the complete caller. Physical factory/header integration,
+distinct-core scheduling/amortization, tensor/R4 composition, layout restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
