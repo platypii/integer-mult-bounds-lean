@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3826 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3827 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25631,5 +25631,31 @@ Guarded checks pass at 3316.3 MiB (cleanup queue frame) and 3320.6 MiB
 The scoped axiom audit passes for 336512 declarations at 3390.8 MiB.
 Next derive the retained shared-bank and ordinary-header premises from the
 executed first pass and generated factory. Combined prefix/coupling workspace,
+distinct-core amortization, tensor/R4 composition, layout restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: identify first-pass and recovery bank views structurally
+
+`Mult.PhaseCellReplicaRecoveryBatchCoupling` reindexes the established coupling
+placement into the common 392-register caller. Its bank, runtime and native
+view identities identify the actual first-pass ports with the preparation
+worker; no numerical data is copied to change views.
+
+`replicaRecoveryBatchCoupling_factor_extension_frame` proves that every worker
+extension port at index at least 168 is outside the complete first-pass
+interior/coupling footprint. It consumes the structural frame already returned
+by `initializedReplicaInteriorCoupling_exec`. The proof uses placement
+injectivity, gather disjointness, reserved solver ports and the output gap,
+rather than per-register checks. It covers both generated factor pages and
+private recovery extension buffers.
+
+Guarded check passes at 3288.5 MiB. Compatibility build passes
+(15808 jobs, 3.4 GiB combined peak). The scoped axiom audit passes for
+336521 declarations at 3391.4 MiB. This identifies physical views and protects
+right-register factor stock; it does not yet prove the whole retained shared
+bank. Left-workspace preservation through the first interior pass still needs
+to be established before reusing `coupling_recovery_bank` for the complete
+connection. First-pass/factory integration, combined prefix/coupling workspace,
 distinct-core amortization, tensor/R4 composition, layout restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
