@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3687 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3691 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23851,3 +23851,47 @@ and scratch facts, and compose preparation/interior/assembly. Whole-caller
 resource bounds, generated-factory composition, scheduling, tensor/R4
 restoration and outer integration remain open. S4 is incomplete; kappa unchanged.
 Scoped axiom audit passes for 334123 declarations at 3330.0 MiB.
+
+### S4 checkpoint: preparation, one shared second pass and final assembly execute together
+
+`PhaseCellReplicaRecoveryInteriorExec` now returns its already-proved gather
+frame. `PhaseCellPlacedReplicaRecoveryInterior` lifts the actual source reorder,
+shared interior solve and real projection through the isolated 249-role bank.
+The exact gather/solver views transport starting readiness; stock-aware
+embedding returns the actual packed fields, gather frame and complete spectator
+frame for retained boundary, mask and assembly storage. The workspace envelope
+counts the whole caller's initial stock once.
+
+`PhaseCellPlacedReplicaRecoveryFinish` derives assembly's width/count/scratch
+and retained archive/mask premises from that actual pass's frames and composes
+its trace with the placed consuming assembly scan. The extra workspace is
+only the previously proved single-row assembly reserve.
+
+`PhaseCellBatchedReplicaRecovery` now executes all three phases in one common
+caller. Starting from the paired input cursor, shared factor readiness and
+ordinary peripheral headers, it executes preparation, constructs the recovery
+batch, derives the released numerical bank and peripheral readiness, executes
+one shared second interior pass, and assembles its actual fields. Its returned
+`List.Forall₂` certificates associate every emitted packed field with its
+original replica index, fitting format and final full-halo error. Both consumed
+assembly sources restore their suffixes, and the reversed output archive is
+published at 391 with the original owned suffix. No intermediate batch,
+boundary field, recovery RHS or execution witness is supplied.
+
+`PhaseCellBatchedReplicaRecoveryTime` audits the exact executed bill as one
+initialized batch-interior bill plus
+`N*(replicaRecoveryPreparationRowCost H+40*rowVolume+25*span+50)+24`.
+Per-row preparation remains explicit for the selected resource estimate. The
+full three-phase trace currently has an `Exec` certificate; preparation's own
+workspace still needs an `ExecWithin` bound before the whole-caller workspace
+claim can be closed.
+
+All modified/new modules pass guarded checks under default limits: 3263.5 MiB
+(generic gather frame), 3276.4 MiB (placed second pass), 3279.6 MiB (finish
+composition), 3306.1 MiB (complete batched recovery) and 3306.3 MiB (exact bill).
+Compatibility with generated scalar recovery and periodic factor setup passes
+(15448 jobs, 3.4 GiB combined peak). Next close preparation/whole-caller resource
+bounds and join this optimized trace to actual first-pass coupling and the
+generated shared factory. Scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334137 declarations at 3329.9 MiB.
