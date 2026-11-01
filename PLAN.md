@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3997 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3999 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28125,3 +28125,39 @@ Expanded compatibility build passes (16560 jobs, 3.6 GiB combined peak).
 Guarded checks pass at 3140.7 MiB (queue wiring) and 3431.7 MiB
 (unary-input normalization). Broad axiom audit passes for 341893 declarations
 at 3544.2 MiB.
+
+### S4 checkpoint: crop and unary-input normalization execute as one restoring stage
+
+`Mult.PhaseCellRecoveryNormalizeReady` defines ordinary unary readiness and
+a support-based frame lemma. The source and generated packet-width header
+are deliberately supplied by cropping. RecoveryCropNormalizeLink contains
+only placement, injection, the inputWidth/source identities and separation
+from the ordinary readiness support.
+
+`Mult.PhaseCellCropNormalizeRecovery.crop_exec` composes the actual retained-
+width crop with unary-input normalization. Core geometry derives the crop
+dimensions and containment; the frame lemma preserves ordinary readiness.
+Crop port 9 supplies normalization inputWidth exactly, and crop destination
+supplies normalization source. Parameter words are generated from unary
+inputs, consumed and restored to their original queue suffix. The retained
+width is erased after normalization. The exact final state changes only the
+consumed halo source and the normalized p/W destination, with global
+rowTarget/rowError accuracy in actual reverse replica order.
+
+The same run carries cropStock over the original initial state. cropTimeCost_eq
+shows that complete time is the old fully clearing crop bill plus queue setup
+and the original normalization bill: moving header cleanup introduces no
+extra work and is not charged twice.
+
+This stage starts at certified recovered complex halo fields. Next compose
+it with retainedComplexProgram, choose InverseMasterInput from the existing
+PackedNormalizedJob Bcore/fit fields so both stages share the scalar width,
+and retire masters once afterward. Reconcile reverse replica order with
+publication, then execute ordered groups and physical exposure. Concrete
+ambient allocation, grouped cost absorption, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa unchanged.
+
+Expanded compatibility build passes (16562 jobs, 3.5 GiB combined peak).
+Guarded checks pass at 3391.9 MiB (readiness/frame language) and
+3400.8 MiB (composed crop/normalization, including the exact cost identity).
+Broad axiom audit passes for 341937 declarations at 3545.1 MiB.
