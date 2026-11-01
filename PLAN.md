@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3579 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3580 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22301,3 +22301,30 @@ selected coupling ledger, and use the bounded residual archive for boundary
 recovery and the second interior pass. Global endpoint scheduling, tensor/R4
 restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 329058 declarations at 3234.4 MiB.
+
+### S4 checkpoint: derive extended coupling freshness from the initial layout
+
+`PhaseCellReplicaInteriorFrame` proves a structural footprint for the complete
+initialized interior controller. Closed numerical programs stay behind their
+existing embedding footprint lemmas; native header copies and publication are
+handled structurally. The generic execution frame rule then preserves every
+outside tape, including the extended coupling bank disjoint from gather and
+solver storage. No second numerical execution proof is needed.
+
+`initializedReplicaInteriorCoupling_finish` now assumes extended metadata and
+scratch freshness in the original initialized state, rather than the state
+returned by the interior execution. It derives their preservation from the
+actual trace. Its retained coefficient-page suffix is likewise expressed in
+terms of the original state.
+
+Guarded checks pass at 2140.8 MiB (structural frame) and 2212.4 MiB (updated
+caller). Compatibility with selected row resources passes (14852 jobs,
+2.8 GiB combined peak). The scoped axiom audit passes for 329074 declarations
+at 3232.4 MiB. Default proof limits are unchanged.
+
+Next connect the archived guarded residual witnesses to the existing halo
+residual and boundary-solution accuracy theorems, checking their precision and
+format contracts before composing recovery and the second interior pass.
+Local arithmetic workspace, selected coupling resources, global scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.

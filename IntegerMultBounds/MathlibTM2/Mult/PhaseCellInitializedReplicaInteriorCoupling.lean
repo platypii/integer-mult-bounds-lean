@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaInteriorFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleasedReplicaCoupling
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInitializedReplicaCouplingRows
 
@@ -32,8 +33,8 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
       (initializedReplicaHaloLoop plan output hR hQ) (mk v S) n (mk v₀ F))
     (h : ReplicaHaloLoopState H plan output buffers (haloLengthKeys s H.t H.band H.origin (H.origin+H.span)) [] F)
     (hp : 2 ≤ H.p) (hwidth : 8*H.p ≤ 2^H.u)
-    (hblank : ∀ k ∈ ([(145 : Fin 168),146,147,148,149,151,154,155,156,157,163,164,165]), F.R (placement.bank k) = [])
-    (hfresh : ∀ k ∈ [(127 : Fin 168),135,139,140,143,158,166,167], F.R (placement.bank k) = []) :
+    (hblank : ∀ k ∈ ([(145 : Fin 168),146,147,148,149,151,154,155,156,157,163,164,165]), S.R (placement.bank k) = [])
+    (hfresh : ∀ k ∈ [(127 : Fin 168),135,139,140,143,158,166,167], S.R (placement.bank k) = []) :
     ∃ v' G m, ∃ Ds : List (ZMod s → GaussianInt), v'.user = v.user ∧ m ≤ n+realReplicaRowsCost H.Fs.length (H.span*H.wordWidth)+reverseCopyRowsCost H.Fs.length (H.span*H.wordWidth)+releasedReplicaCouplingCost H ∧
       Exec body (initializedReplicaInteriorCoupling placement output rhs hR hQ) (mk v S) m (mk v' G) ∧
       G.R (plan.gather 122) = [] ∧ G.R output = buffers.accumulatorTail ∧ G.R rhs = (F.R rhs) ∧
@@ -46,12 +47,31 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
       G.R (plan.gather 125) = Ds.flatMap (fun D => cstream A H.wordWidth (packedInterval H.origin H.span D)) ∧
       (∀ j : Fin Ds.length, ReplicaCouplingResidualSpec H (H.Fs.length-1-j.val) (Ds[j.val]'j.isLt)) ∧
       G.R (placement.bank 138) = cstream A H.wordWidth
-        (couplingCoefficientPageInterval (2^15*H.p) H.precision s H.t H.u H.band H.origin (H.origin+H.span) H.origin H.span)++F.R (placement.bank 138) ∧
+        (couplingCoefficientPageInterval (2^15*H.p) H.precision s H.t H.u H.band H.origin (H.origin+H.span) H.origin H.span)++S.R (placement.bank 138) ∧
       (G.R (placement.bank 139)).length =
         (couplingCoefficientPageInterval (2^15*H.p) H.precision s H.t H.u H.band H.origin (H.origin+H.span) H.origin H.span).length ∧
       (G.R (placement.bank 140)).length = 2*H.band+1 ∧
       (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], G.R (placement.bank k) = []) ∧
       (∀ D ∈ Ds, (∀ i, ‖value H.precision (D i)‖ ≤ (2 : ℝ)^replicaResidualExponent H) ∧ (∀ i, Fits H.wordWidth (D i))) := by
+  have hframeInitial (k : Fin 168) (hk : 117 ≤ k.val) :
+      F.R (placement.bank k) = S.R (placement.bank k) :=
+    placement.interior_preserves_extended output hR hQ hbankOutput k hk he₀.toExec
+  have hblankF : ∀ k ∈ ([(145 : Fin 168),146,147,148,149,151,154,155,156,157,163,164,165]),
+      F.R (placement.bank k) = [] := by
+    intro k hk
+    have hlow : 117 ≤ k.val := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+    rw [hframeInitial k hlow]
+    exact hblank k hk
+  have hfreshF₀ : ∀ k ∈ [(127 : Fin 168),135,139,140,143,158,166,167],
+      F.R (placement.bank k) = [] := by
+    intro k hk
+    have hlow : 117 ≤ k.val := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+    rw [hframeInitial k hlow]
+    exact hfresh k hk
   have hdom := H.dominates hp hwidth
   obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hcursor,hgather,hL₁,hi₁,ho₁,hframe₁⟩ :=
     initializedReplicaCouplingRows_finish (body := body) H plan output rhs houtput hrhs hsep hR hQ (by omega : 4 ≤ A)
@@ -74,8 +94,8 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
     releasedReplicaCoupling_exec (body := body) H placement output rhs houtput hrhs hbankOutput hbankRhs hsep hQ hA
       hspan horigin buffers.accumulatorTail (F.R rhs) buffers.rhsTail buffers.solverOutputTail
       buffers v₁ J hcursor hheadersJ hreleased
-      (by intro k hk; rw [hbankR k]; exact hblank k hk)
-      (by intro k hk; rw [hbankR k]; exact hfresh k hk)
+      (by intro k hk; rw [hbankR k]; exact hblankF k hk)
+      (by intro k hk; rw [hbankR k]; exact hfreshF₀ k hk)
   refine ⟨v₂,G,n₁+n₂,Ds,hu₂.trans hu₁,by omega,.seq he₁.toExec he₂,hcount,hout,hrhsF,hready,hmeta,
     hL₂.trans hL₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,hlen,harchive,hgood,?_,hpageCount,hrows,hfreshF,hDsBounds⟩
   · intro k hk hp
@@ -84,7 +104,7 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
       simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hp
       exact ⟨hp.1,hp.2.1⟩
     exact hframe₁ k hn.1 hn.2
-  · rw [hbankR 138] at hpage
+  · rw [hbankR 138,hframeInitial 138 (by decide)] at hpage
     exact hpage
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
