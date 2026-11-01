@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3903 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3905 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26819,3 +26819,33 @@ at 3460.2 MiB. Next discharge schedule time/stock bounds with the affine
 shared-setup/replica-row ledger. Component production, tensor/R4 composition,
 layout restoration and outer integration remain open. S4 is incomplete; kappa
 is unchanged.
+
+### S4 checkpoint: normalization has an affine shared/replica schedule ledger
+
+`Cost.PhaseCellRecoveryInputLedger` splits the actual executed normalization
+cost exactly into `normalizeRecoveryInputSharedTime H W + N*normalizeRecoveryInputRowTime H W`.
+The shared header/retirement bill is at most `128*(cW+cw+2)*p` under the common
+and execution width bounds. The row bill is at most
+`(4*cW+12*cw+28)*span*p`, including common-width input reading and all shift work.
+`rawRecoveryJob_runTime_split` connects this split to the actual named raw-job
+bill, deriving agreement between raw and normalized replica counts from the
+job's field relation.
+
+`Cost.PhaseCellRecoveryInputSchedule` lifts the split structurally over job
+lists. The row sum is bounded by total halo span, while the summed shared bills
+fit one volume reserve using the existing distinct-core polynomial lemma.
+Consequently actual normalization time over a schedule is eventually at most
+`T+(4*cW+12*cw+28)*N*volume*p`, given its count, selected width, uniform replica
+count and summed-span bounds. No already-absorbed per-core T charge is summed.
+The distinct-core lemma now quantifies record types inside its uniform eventual
+bound, allowing jobs whose axis type depends on n and i without another
+per-case estimate. Existing factory/coupling instances still pass.
+
+Guarded checks pass at 3394.2 MiB (input ledger), 3388.0 MiB (uniform core setup)
+and 3450.0 MiB (normalization schedule). The scoped compatibility build passes
+(16110 jobs, 1.1 GiB combined observed peak, mostly replayed); the axiom audit
+passes for 338807 declarations at 3462.6 MiB. Next combine the remaining physical
+caller's shared and replica bills, descriptor traffic and cleanup in the same
+ledger, and discharge the raw schedule's mathematical time/stock budgets for
+core classes. Physical component production, tensor/R4 composition, layout
+restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.

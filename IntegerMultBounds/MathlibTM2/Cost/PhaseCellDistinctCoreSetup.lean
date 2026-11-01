@@ -25,13 +25,13 @@ private theorem sum_map_le_length_mul {α : Type} (records : List α) (cost : α
 
 /-- One shared volume reserve pays all polynomial setup calls in an axis
 schedule. The number of replicas does not enter this setup bill. -/
-theorem selectedDistinctCoreSetup_volume_le (C pExp tExp scale : ℕ) {α : Type} :
-    ∀ᶠ n : ℕ in atTop, ∀ (i : Fin (Sizes.d n)) (records : List α) (cost : α → ℕ),
+theorem selectedDistinctCoreSetup_volume_le (C pExp tExp scale : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ {α : Type} (i : Fin (Sizes.d n)) (records : List α) (cost : α → ℕ),
       records.length ≤ 2*Sizes.t n i →
       (∀ r ∈ records, cost r ≤ C*Sizes.t n i^tExp*Sizes.p n^pExp) →
       scale*(records.map cost).sum ≤ Sizes.T n := by
   filter_upwards [selectedAxisPolynomial_le_volume (2*scale*C) pExp (tExp+1)] with n hv
-  intro i records cost hcount hcost
+  intro α i records cost hcount hcost
   have hs := sum_map_le_length_mul records cost _ hcost
   have hcount' := hcount
   calc
