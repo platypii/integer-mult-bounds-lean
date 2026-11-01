@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3767 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3769 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24855,3 +24855,37 @@ kappa is unchanged.
 Compatibility with the bounded caller passes (15682 jobs, 3.5 GiB
 combined peak). Scoped axiom audit passes for 336049 declarations at
 3376.2 MiB.
+
+
+### S4 checkpoint: avoid repeating wide metadata mask generation; first cached consumer executes
+
+Resource audit found that the current native bill regenerates ribbon and
+row-guard masks on each replica using `H.metadataWidth`. This width is the
+coefficient evaluator width, containing `13*(2^15*H.p)`, while the uniform
+table bill is `32*(V+4)^2+8*w`. The current per-row certificate is therefore
+too coarse to absorb directly into the numerical fast bound. This identifies
+a limitation of the existing estimate, not a proved lower bound on execution.
+The next implementation path is to generate geometry masks once per shared
+core and replay them across replicas, matching retained coefficient reuse.
+
+`Host.ReplayCache.replayCache_exec_within` supplies natural-order replay of
+an arbitrary retained stream, preserving its source and restoring both
+temporary stacks. Its exact time is `6*length+6`, with a structural two-push
+workspace certificate.
+`Mult.PhaseCellCachedGatheredRibbon.cachedGatheredRibbon_exec_within` uses
+this operation to replace ribbon-mask generation, then reuses the original
+masking worker. It returns the exact original masked ribbon update and
+preserves the cache. Its time/workspace bounds contain no metadata table
+evaluation factor. This checked worker is not yet installed in the actual
+batched caller; cache initialization, guard-mask replay and lifecycle/loop
+integration remain necessary. Existing complete-caller proofs are preserved.
+
+Guarded checks pass at 1870.9 MiB (generic replay) and 2072.4 MiB (cached
+ribbon consumer). Next implement guard replay and share both initialized
+mask caches through the actual preparation traversal, then update selected
+resource bounds. Selected workspace, first-pass/generated-factory execution,
+scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+Compatibility with the existing bounded caller passes (15355 jobs,
+2.7 GiB combined peak). Scoped axiom audit passes for 336062 declarations
+at 3376.0 MiB.
