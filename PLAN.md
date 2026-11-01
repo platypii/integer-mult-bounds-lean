@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3776 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3779 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24980,3 +24980,35 @@ remain open. S4 is incomplete; kappa is unchanged.
 Compatibility with the existing bounded caller passes (15362 jobs,
 2.8 GiB combined peak). Scoped axiom audit passes for 336088 declarations
 at 3378.3 MiB.
+
+
+### S4 checkpoint: cached packed RHS executes and both mask caches initialize once
+
+`Mult.PhaseCellCachedPackedRecoveryCoupling` lifts the prepared cached
+worker into the actual 248-register recovery bank, deriving readiness from
+retained factors and master headers.
+`Mult.PhaseCellCachedPackedBoundaryRecoveryRhs` includes boundary-field
+unfolding/input staging and bounded cached coupling. Its exact endpoint
+preserves both cache tapes while returning the actual boundary field and
+modified RHS. The bounds contain replay traffic rather than per-replica
+geometry-mask evaluation.
+
+`Mult.PhaseCellInitializeRecoveryMasks.initializeRecoveryMasks_exec` reuses
+the original ribbon and guard generators once, then existing ordered moves
+retain their natural-order outputs at 159 and 161. The exact endpoint changes
+only those cache ports: working mask tapes, scratch and geometry headers
+are restored. Its explicit shared initialization bill keeps table evaluation
+outside the repeated cached worker. Factor pages reside above the reserved
+154--167 geometry gap and are not cache destinations.
+
+Guarded checks pass at 3219.0 MiB (packed cached coupling), 3238.3 MiB
+(complete cached RHS), and 2119.3 MiB (mask initialization). Next thread
+cache readiness and preservation through replica collection/preparation,
+and place initialization outside the actual preparation loop. The current
+complete batched caller still uses generated masks. Selected resource
+bounds, first-pass/generated-factory execution, scheduling, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa is
+unchanged.
+Compatibility with the existing bounded caller passes (15366 jobs,
+5.2 GiB combined peak). Scoped axiom audit passes for 336101 declarations
+at 3378.7 MiB.
