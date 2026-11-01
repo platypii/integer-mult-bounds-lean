@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3978 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3981 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27894,3 +27894,39 @@ S4 is incomplete; kappa is unchanged.
 Guarded module check passes at 2045.5 MiB. Expanded compatibility build passes
 (16541 jobs, 2.7 GiB combined peak).
 Broad axiom audit: Axiom audit passed for 341689 declarations. Guarded check peak RSS: 3525.6 MiB.
+
+### S4 checkpoint: crop/archive controls are generated from retained masters
+
+`Mult.PhaseCellPrepareRecoveryCropHeaders` derives word width, span, skip
+symbols, row symbols and replica clock from numerical precision/endpoints
+and ordinary offset/row/replica dimensions. No symbol-count header is supplied.
+The small program preserves every borrowed dimension and spectator and has
+an exact setup bill and native push-eight bound.
+
+`Mult.PhaseCellGeneratedRecoveryCrop` composes this setup with the unchanged
+interval archive loop and retirement of all generated headers. It consumes
+actual complex packets, crops contained intervals without numerical loss,
+and restores all setup/scratch registers. Its literal final state changes
+only source to its suffix and destination to cropped packets in reverse
+order. Time includes header generation, archive traversal and cleanup; the
+same run has stock at most eight times that explicit bill.
+
+`Mult.PhaseCellPlacedGeneratedRecoveryCrop` places this lifecycle in arbitrary
+ambient registers with the exact same two-stream frame and resource bounds.
+Host.EmbedStream now has the generic embExt_update commutation lemma and
+embOvr_two_streams, avoiding repeated register cases for such lifecycles.
+
+The actual computed complex call and this crop stage are individually proved.
+Their final connection must keep the masters live through pairing and crop
+setup, then retire the masters once. Match cropped output precision to the
+existing publication format before fixing the grouped output width.
+Do not supply precomputed crop headers
+or regenerate master setup. Ordered core-group execution, complete bill
+absorption, tensor/R4 restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
+
+Guarded checks pass at 1388.7 MiB (embedding helper), 1940.7 MiB (crop
+headers), 2073.1 MiB (generated crop) and 2043.4 MiB (placed crop). The
+expanded compatibility build passes (16544 jobs, 39.5 GiB combined peak,
+4.6 minutes after rebuilding embedding dependents).
+Axiom audit passed for 341712 declarations. Guarded check peak RSS: 3528.7 MiB.
