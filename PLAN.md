@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3907 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3908 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26892,5 +26892,31 @@ declarations at 3457.9 MiB. Next refine repeated-work estimates from whole-axis
 gap volume to actual local halo volume before summing core-class jobs; directly
 summing the current whole-axis bound would introduce an unwanted core-count
 factor. Descriptor traffic/cleanup, time and peak stock budgets, physical
+component production, tensor/R4 composition, layout restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: cached recovery uses actual local numerical volume
+
+`Cost.PhaseCellRecoveryLocalVolume` retains local interior coordinates, interval
+payload, boundary-row work and sparse active-row work in
+`replicaRecoveryLocalVolume`. Scalar preparation costs p² local coordinates
+per core rather than requiring p² ≤ t and charging the ambient axis. The cached
+preparation-row theorem bounds the actual row cost by this local volume times
+p^(129/128), uniformly in widths. It uses existing numerical bounds and the
+actual coefficient-page length geometry, without an execution premise or an
+ambient traversal term.
+
+`cachedBatchedReplicaRecovery_local_fast_le` lifts the local row bound through
+the complete cached recovery stage, retaining shared interior setup separately.
+The prior whole-axis `cachedBatchedReplicaRecovery_fast_le` keeps its statement
+and is now a short corollary via `replicaRecoveryLocalVolume_gap_le`, avoiding
+a second full recovery-cost proof. The local bound has no p² ≤ t hypothesis.
+
+Guarded checks pass at 3388.4 MiB (local volume/row) and 3386.6 MiB (complete
+cached recovery). Compatibility build passes (16113 jobs, 6.0 GiB combined
+observed peak); axiom audit passes for 338824 declarations at 3460.5 MiB.
+Next refine first-pass cached coupling with the same local volume, then lift
+the complete raw caller and sum local volumes using core overlap and guard
+amortization. Descriptor traffic/cleanup, time and peak stock budgets, physical
 component production, tensor/R4 composition, layout restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
