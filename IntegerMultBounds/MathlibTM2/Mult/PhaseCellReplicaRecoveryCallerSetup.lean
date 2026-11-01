@@ -35,7 +35,9 @@ theorem replicaRecoveryCallerSetup_exec (H : ReplicaHaloProblem s) W (hA : 4 ≤
         (embStk (Fin.castLE (by decide : 248 ≤ 255)) (embStk replicaRecoveryCallerWorkerReg F)) ∧
       embStk (Fin.castLE (by decide : 248 ≤ 255)) (embStk replicaRecoveryCallerWorkerReg F) =
         embStk (Fin.castLE (by decide : 248 ≤ 255)) (embStk replicaRecoveryCallerWorkerReg G) ∧
-      embStk replicaRecoveryCallerInterior.gather F = embStk replicaRecoveryCallerInterior.gather G := by
+      embStk replicaRecoveryCallerInterior.gather F = embStk replicaRecoveryCallerInterior.gather G ∧
+      F.L = G.L ∧
+      (∀ k, (∀ i, replicaRecoveryCallerWorkerReg i ≠ k) → F.R k = G.R k) := by
   let e := replicaRecoveryCallerWorkerReg
   have hinj : Function.Injective e := replicaRecoveryCallerWorkerReg_injective
   have h104 : G.R (e 104) = [] := hcore.native 104 (by decide) (by decide) (by decide)
@@ -83,9 +85,14 @@ theorem replicaRecoveryCallerSetup_exec (H : ReplicaHaloProblem s) W (hA : 4 ≤
       exact (embOvr_off B.get J (fun k => replicaRecoveryCallerReg_worker_gather_disjoint k i)).2.trans
         (Function.update_of_ne (replicaRecoveryCallerReg_worker_gather_disjoint 251 i).symm _ _)
   refine ⟨v',F,(4*(H.span*H.wordWidth)+4)+n,hu'.trans (hu.trans hu₁),by omega,
-    Exec.seq he₁' he',?_,?_,?_,hgather⟩
+    Exec.seq he₁' he',?_,?_,?_,hgather,?_,?_⟩
   · rw [hview]; exact hphysical
   · rw [hview]; exact hcoreF
   · rw [hview,retainedReplicaBoundarySetupState_native,hnativeJ]
+  · have hBL : B.L = (embStk e J).L := embOvr_left_of_eq (embStk e J)
+      (initializedReplicaBoundaryRhsState H (embStk replicaBoundaryPhaseReg (embStk e J))) rfl
+    exact embOvr_left_of_eq J B hBL
+  · intro k hk
+    exact (embOvr_off B.get J hk).2.trans (Function.update_of_ne (hk 251).symm _ _)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

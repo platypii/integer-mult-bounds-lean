@@ -18,7 +18,7 @@ def prepareReplicaRecoveryCallerRhs : Pr P 389 Q A U :=
 
 theorem prepareReplicaRecoveryCallerRhs_exec (H : ReplicaHaloProblem s)
     (buffers : ReplicaLoopBuffers A) (v : HS 389 Q A U) (S : Stacks 389 A)
-    (headers : ReplicaLoopHeaders H replicaRecoveryCallerInterior.gather buffers S)
+    (headers : ReplicaRecoveryRhsHeaders H replicaRecoveryCallerInterior.gather buffers S)
     (hcontroller : S.R 387 = []) (hqueue : S.R 388 = []) :
     ∃ v' n, v'.user = v.user ∧ n ≤ copyRowsOrderedCost H.Fs.length (H.span*H.wordWidth) ∧
       Exec body prepareReplicaRecoveryCallerRhs (mk v S) n

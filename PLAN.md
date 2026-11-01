@@ -23092,3 +23092,29 @@ incomplete; kappa is unchanged.
 Compatibility with factory and placed recovery passes (15269 jobs, 5.7 GiB
 combined peak). The combined scoped axiom audit passes for 333369 declarations
 at 3313.7 MiB.
+
+### S4 correction: recovery headers must permit the actual residual archive
+
+Composition exposed an overstrong premise in the earlier recovery caller:
+`ReplicaLoopHeaders.fresh` requires gather 125 blank, while the actual coupling
+archive occupies gather 125. That interface cannot support a nonempty residual
+archive. Compilation alone did not establish that its preconditions were usable.
+
+`ReplicaRecoveryRhsHeaders` now contains only the producer's actual requirements:
+retained replica count, row volume, original RHS source and scratch 88/89/104/105.
+The generic and placed RHS producers and recovery caller use this narrower
+contract. Ordinary initial loop headers imply it, and `update_archive` proves
+it survives arbitrary publication at gather 125. `of_frame` transports it through
+whole-gather preservation, ready for the shared setup composition.
+
+Caller setup also now exposes unchanged global left stacks and an off-worker
+right-stack frame, supplying the remaining placement obligations for that join.
+Guarded checks pass at 2161.9 MiB (narrow headers/producer), 3285.3 MiB (corrected
+recovery caller) and 3263.3 MiB (setup frame). Default limits are unchanged.
+Shared setup/caller composition, factory input production, post-factory
+coupling/core readiness, preceding interior/coupling, complete resources,
+global scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+Compatibility with shared factory and caller setup passes (15269 jobs, 3.5 GiB
+combined peak). The combined scoped axiom audit passes for 333382 declarations
+at 3313.4 MiB.

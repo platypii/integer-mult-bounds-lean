@@ -13,6 +13,47 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {s T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
+structure ReplicaRecoveryRhsHeaders (H : ReplicaHaloProblem s) (gather : Fin 126 → Fin T)
+    (buffers : ReplicaLoopBuffers A) (S : Stacks T A) : Prop where
+  count : (S.R (gather 121)).length = H.Fs.length
+  volume : (S.R (gather 123)).length = H.span*H.wordWidth
+  source : S.R (gather 124) = H.Fs.flatMap
+    (fun F => cstream A H.wordWidth (packedInterval H.origin H.span F))++buffers.packedRhsTail
+  fresh : ∀ k ∈ ([(88 : Fin 126),89,104,105]), S.R (gather k) = []
+
+theorem ReplicaLoopHeaders.recovery_rhs (H : ReplicaHaloProblem s) (gather : Fin 126 → Fin T)
+    (buffers : ReplicaLoopBuffers A) (S : Stacks T A) (h : ReplicaLoopHeaders H gather buffers S) :
+    ReplicaRecoveryRhsHeaders H gather buffers S := by
+  refine ⟨?_,h.volume,h.source,?_⟩
+  · have hh := h.masters (121,113) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide)
+    simpa [replicaFactoryHeaderValue] using hh
+  · intro k hk
+    exact h.fresh k (by simp only [List.mem_cons,List.not_mem_nil,or_false] at hk ⊢; tauto)
+
+theorem ReplicaRecoveryRhsHeaders.of_frame (H : ReplicaHaloProblem s) (gather : Fin 126 → Fin T)
+    (buffers : ReplicaLoopBuffers A) (S F : Stacks T A) (h : ReplicaRecoveryRhsHeaders H gather buffers S)
+    (hf : ∀ k, F.R (gather k) = S.R (gather k)) : ReplicaRecoveryRhsHeaders H gather buffers F := by
+  constructor
+  · rw [hf]; exact h.count
+  · rw [hf]; exact h.volume
+  · rw [hf]; exact h.source
+  · intro k hk; rw [hf]; exact h.fresh k hk
+
+theorem ReplicaRecoveryRhsHeaders.update_archive (H : ReplicaHaloProblem s)
+    (plan : ReplicaInteriorPlacement T) (buffers : ReplicaLoopBuffers A) (S : Stacks T A)
+    (h : ReplicaRecoveryRhsHeaders H plan.gather buffers S) (words : List (Fin (A+4))) :
+    ReplicaRecoveryRhsHeaders H plan.gather buffers
+      {S with R := Function.update S.R (plan.gather 125) words} := by
+  constructor
+  · simpa only [Function.update_of_ne (plan.gather_injective.ne (by decide : (121 : Fin 126) ≠ 125))] using h.count
+  · simpa only [Function.update_of_ne (plan.gather_injective.ne (by decide : (123 : Fin 126) ≠ 125))] using h.volume
+  · simpa only [Function.update_of_ne (plan.gather_injective.ne (by decide : (124 : Fin 126) ≠ 125))] using h.source
+  · intro k hk
+    have hne : k ≠ 125 := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl <;> decide
+    exact (Function.update_of_ne (plan.gather_injective.ne hne) _ _).trans (h.fresh k hk)
+
 def prepareReplicaRecoveryRhs (plan : ReplicaInteriorPlacement T) (rhs reversed : Fin T) : Pr P T Q A U :=
   copyRowsOrdered (plan.gather 121) (plan.gather 89) (plan.gather 123) (plan.gather 124)
     (plan.gather 88) reversed rhs (plan.gather 104) (plan.gather 105)
@@ -21,7 +62,7 @@ theorem prepareReplicaRecoveryRhs_exec (H : ReplicaHaloProblem s)
     (plan : ReplicaInteriorPlacement T) (rhs reversed : Fin T)
     (hgd : ∀ k, plan.gather k ≠ rhs) (hgr : ∀ k, plan.gather k ≠ reversed) (hsep : rhs ≠ reversed)
     (buffers : ReplicaLoopBuffers A) (v : HS T Q A U) (S : Stacks T A)
-    (headers : ReplicaLoopHeaders H plan.gather buffers S) (hblank : S.R reversed = []) :
+    (headers : ReplicaRecoveryRhsHeaders H plan.gather buffers S) (hblank : S.R reversed = []) :
     ∃ v' n, v'.user = v.user ∧ n ≤ copyRowsOrderedCost H.Fs.length (H.span*H.wordWidth) ∧
       Exec body (prepareReplicaRecoveryRhs plan rhs reversed) (mk v S) n
         (mk v' {S with R := Function.update S.R rhs (H.Fs.flatMap (fun F => cstream A H.wordWidth (packedInterval H.origin H.span F))++S.R rhs)}) := by
@@ -35,8 +76,7 @@ theorem prepareReplicaRecoveryRhs_exec (H : ReplicaHaloProblem s)
     simp [List.nodup_cons,hgd,hgr,Ne.symm (hgd _),Ne.symm (hgr _),hsep,Ne.symm hsep,
       plan.gather_injective.eq_iff]
   have hN : (S.R (plan.gather 121)).length = rows.length := by
-    simpa [rows,replicaFactoryHeaderValue] using headers.masters (121,113)
-      (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide)
+    simpa only [rows,List.length_map] using headers.count
   obtain ⟨v',n,hu,hn,he⟩ := copyRowsOrdered_exec (body := body)
     (plan.gather 121) (plan.gather 89) (plan.gather 123) (plan.gather 124)
     (plan.gather 88) reversed rhs (plan.gather 104) (plan.gather 105) hregs

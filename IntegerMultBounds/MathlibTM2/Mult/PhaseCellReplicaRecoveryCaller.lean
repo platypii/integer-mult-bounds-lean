@@ -41,7 +41,7 @@ theorem replicaRecoveryCaller_exec (H : ReplicaHaloProblem s)
       (fun i => (value H.precision (H.Fs.reverse.getD (H.Fs.length-1-r) (fun _ => 0) i)).re)) →
     ∀ (Ds : List (ZMod s → GaussianInt)), ReplicaRecoveryResidualRows H Ds →
     ∀ (buffers : ReplicaLoopBuffers A) (v : HS 389 Q A U) (G : Stacks 389 A),
-    ReplicaLoopHeaders H replicaRecoveryCallerInterior.gather buffers G →
+    ReplicaRecoveryRhsHeaders H replicaRecoveryCallerInterior.gather buffers G →
     G.R 125 = Ds.flatMap (fun D => cstream A H.wordWidth (packedInterval H.origin H.span D)) →
     G.R 388 = [] → G.R 387 = [] →
     let C := embStk replicaRecoveryCallerReg G
@@ -92,8 +92,7 @@ theorem replicaRecoveryCaller_exec (H : ReplicaHaloProblem s)
     rw [hread 256 (by decide)]
     change (G.R (replicaRecoveryCallerReg 256)).length = _
     rw [replicaRecoveryCallerReg_master]
-    have hh := headers.masters (121,113) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide)
-    simpa [replicaRecoveryCallerInterior_gather,replicaFactoryHeaderValue] using hh
+    simpa [replicaRecoveryCallerInterior_gather] using headers.count
   obtain ⟨vi,F,n,hu,hn,he,h255,h256,h257,h258,hresF,hrhsF,houtput,hcoreF,hphysicalF,h116F,h167F,hL,hinp,hout,
     h110,h132,hpersistent,hfactor⟩ := loadedReplicaRecoveryLoop_exec (body := fun z : Empty => nomatch z)
       H hR hQ hA hp hwidth hsep hpad target W columns htarget hcolumns htable X hX Ds hDs
