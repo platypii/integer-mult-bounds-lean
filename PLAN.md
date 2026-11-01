@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3771 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3773 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24919,3 +24919,35 @@ and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Compatibility with the existing bounded caller passes (15357 jobs,
 4.4 GiB combined peak). Scoped axiom audit passes for 336069 declarations
 at 3377.0 MiB.
+
+
+### S4 checkpoint: complete cached local coupling lifecycle has bounded execution
+
+`Mult.PhaseCellCachedPackedCouplingInterval` specializes cached guard replay
+to the actual packed source and RHS, reusing existing interval-window and
+output identities.
+`Mult.PhaseCellCachedLocalCouplingInterval.cachedLocalCouplingInterval_exec_within`
+composes cached ribbon padding/masking, cached guarded numerical coupling
+and source release. Ports 159 and 161 retain the ribbon and guard caches;
+the exact endpoint updates only the consumed RHS and returned result tape.
+The worker uses the same 168-register bank, reclaiming metadata ports no
+longer needed by this cached path.
+
+The theorem retains numerical format, source geometry, coefficient page,
+borrowed suffixes and both caches. Its time bill has linear replay/count
+and stream traffic plus the existing numerical interval bill, with no
+per-replica table-based mask generation. `cachedLocalCouplingWorkspace`
+names its complete reserve. Closed native prefix/suffix certificates and
+the bounded numerical worker compose at arbitrary ambient depth.
+
+Guarded checks pass at 2102.9 MiB (packed specialization) and 2135.6 MiB
+(complete bounded local lifecycle). Next connect result feeding and shared
+header placement, initialize mask caches once per core, and replace the
+actual preparation-loop worker. The current complete batched caller still
+uses generated masks; selected resource bounds must follow that integration.
+Selected workspace, first-pass/generated-factory execution, scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+Compatibility with the existing bounded caller passes (15359 jobs,
+2.8 GiB combined peak). Scoped axiom audit passes for 336077 declarations
+at 3377.7 MiB.
