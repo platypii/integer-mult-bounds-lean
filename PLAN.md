@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3864 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3867 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26260,3 +26260,35 @@ workspace absorption can reuse the shared setup and existing numerical scratch
 polynomials. Complete-caller workspace, physical factory/header integration,
 distinct-core scheduling/amortization, tensor/R4 composition, layout restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: released headers, mask retirement and selected shared workspace
+
+`Mult.PhaseCellReleasedCachedReplicaCouplingStock` composes actual header
+reloading with the prepared cached traversal. Its resource reserve is twice
+the header-copy bill plus the prepared traversal reserve, preserving the full
+existing residual, accuracy, native-counter, generated-mask and spectator
+contract at every ambient call depth.
+
+`Mult.PhaseCellReleasedRetiredCachedReplicaCouplingStock` adds actual mask
+retirement without additional workspace. Execution uniqueness joins the
+composed resource trace to the established retired caller's exact endpoint,
+time bound and restored empty-mask/shared-bank interface. The retirement's
+existing zero-push trace is reused; the final-state proof is not repeated.
+
+`Cost.PhaseCellCachedCouplingSharedWorkspace` prices the actual header/runtime
+reserves by `(26+maskProgramPush)*cachedReplicaCouplingSharedTime`, leaving
+only `8*replicaCount+8` and one transition reserve. The existing shared-setup
+volume theorem then pays this shared workspace below `T` for selected axes.
+This reuses the complete setup envelope, including mask generation, instead of
+introducing another selected polynomial construction proof.
+
+Guarded checks pass at 2238.2 MiB (released cached resource trace), 2211.7 MiB
+(retired resource trace) and 3370.9 MiB (selected shared workspace). The complete
+scoped compatibility build passes (15927 jobs, 5.1 GiB combined peak); the
+axiom audit passes for 336690 declarations at 3400.2 MiB. Next compose this trace
+with the initialized interior/RHS prefix and then the complete first-pass and
+recovery caller. Numerical reserve absorption and complete-caller workspace,
+physical factory/header integration, distinct-core scheduling/amortization,
+tensor/R4 composition, layout restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
