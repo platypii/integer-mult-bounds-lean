@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3796 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3797 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25150,3 +25150,30 @@ Guarded checks pass at 3379.7 MiB (complete row fast bound), 3390.4 MiB
 (cached batched bound) and 3380.4 MiB (selected initialized bound).
 Compatibility build passes (15746 jobs, 3.5 GiB combined peak). Scoped
 axiom audit passes for 336389 declarations at 3387.2 MiB.
+
+
+### S4 checkpoint: complete shared interior setup has one polynomial envelope
+
+`Cost.PhaseCellReplicaSharedSetupPolynomial` closes the shared interior setup
+bill structurally. `replicaSharedControls_poly` bounds native origin preparation,
+page release/reload, publication and retirement under one dimension/width
+envelope. `generatedHaloReplicaSharedTime_poly` combines that control allowance
+with existing shared weight-page and cached generator-factory construction
+bounds. Factory widths are the actual computed `integerSetupWidth` and
+`coefficientWorkspaceWidth`, with explicit envelope premises.
+
+`replicaHaloKeySharedTime_poly` lifts this to the actual key interpreter,
+including parser/control costs and its empty-group branch.
+`initializedReplicaHaloSharedTime_poly` bounds the complete executed shared
+interior setup, including length-key generation and all scheduled numerical
+factories, by one fixed constant times `Z^6`. The schedule sum reuses the existing
+six-key length bound; no numerical case enumeration or setup-value oracle is used.
+
+Next instantiate this envelope from selected dimensions and computed factory
+widths, absorb its polynomial bill into the whole-box volume allowance, and
+establish selected caller workspace. First-pass/generated-factory integration,
+distinct-core scheduling/amortization, tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+Guarded module check passes at 3265.2 MiB. Compatibility build passes
+(15747 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for 336394
+declarations at 3386.7 MiB.
