@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3955 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3956 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27533,3 +27533,33 @@ Expanded compatibility build passes (16517 jobs, 37.1 GiB combined observed
 peak), including the older exposed-core supplier and selected body-budget
 modules. The correspondingly expanded axiom audit passes for 341444
 declarations at 3519.6 MiB.
+
+### S4 checkpoint: five derived recovery headers are generated physically
+
+`Mult.PhaseCellCompleteComplexRecoveryHeaders` defines the seed input bank by
+removing only the five derived headers from complexRecoveryInput. The seed
+retains the ten computed numerical masters, the three ordinary p/W/N headers
+and the original complex payload. completeComplexRecoveryHeaders then reuses
+generateWordWidth, placedWeightWidth, unary copy/subtraction, unaryProduct
+and generateDoubleWidth to compute word width, metadata width, local span,
+span*wordWidth and the doubled replica count. Its actual final bank is exactly
+complexRecoveryInput. Payload, masters, host tapes and scratch restore.
+
+The time bill is (8*q+9) + weightWidthCost(2^15*p,q,w,t,u) +
+(4*(origin+span)+4) + (4*origin+4) + (span*(4*w+9)+4) + (8*N+9).
+A structural native push bound of 18 supplies an intermediate-space allowance
+of 18 times this local bill over the initial bank. No supplied product, span
+difference or doubled-count witness is used; only H.Fs.length=2*Fs.length
+relates the mathematical job to the ordinary complex replica count.
+
+Next instantiate sparse header installation on this seed interface (reuse a
+generic scalar-value/support installation lemma for both full and seed banks,
+rather than duplicate the copier proof), then compose the computed master
+generator, header completion and existing recovery lifecycle. Ordered-class
+composition and summed selected-axis producer costs remain open, as do output
+pairing/cropping/publication and tensor/R4 restoration. S4 is incomplete;
+kappa is unchanged.
+
+Guarded check passes at 3410.3 MiB; expanded compatibility build passes
+(16518 jobs, 1.1 GiB combined observed peak, mostly replayed); axiom audit
+passes for 341461 declarations at 3521.7 MiB.
