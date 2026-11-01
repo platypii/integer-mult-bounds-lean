@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4011 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4012 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28379,3 +28379,42 @@ Guarded checks pass at 3430.7 MiB (routed call) and 3442.6 MiB (complete core
 step). Expanded compatibility passes (16574 jobs, 3.6 GiB combined peak).
 Broad axiom audit passes for 342025 declarations at 3546.9 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: one counted scan executes actual computed core jobs
+
+`Mult.PhaseCellComputedCoreScan.coreScan_exec` lifts the endpoint-reading
+computed core step through the existing `consumeScan_exec` theorem. The
+program is one fixed runtime `scanP`, independent of the mathematical job
+list. It consumes the queued origins and halo archive in their given order,
+returns an original-order `Forall₂ PackedNormalizedJob.output` certificate,
+and retains actual output packets in the explicitly reversed stack order.
+The exact final frame restores every other tape and both loop registers.
+
+A support-local invariant preserves ordinary-input readiness across loop
+counter updates and previous job publication. Readiness is transported from
+the explicitly staged baseline state to the actual current origin/payload
+tails, handling generated endpoint and payload ports structurally. The proof
+invokes the actual checked `core_exec` for each step, rather than a supplied
+execution or numerical-output oracle. Only ordinary readiness, fit, register
+separation and cost inequalities remain caller premises.
+
+Each step's certified output volume is at most its consumed halo volume,
+using owned-core containment and the unchanged output-length theorem. Thus
+the counted group uses one shared stock reserve, without multiplying it by
+the number of cores or adding the full accumulated output again.
+`coreTimeCost` and `coreStock` name the complete executed bills, including
+endpoint generation/retirement, transfer, master generation/cleanup, numerical
+recovery, pairing, crop, normalization and physical replica-order restoration.
+Group time is `jobs.length*(cost+5)+4` under uniform per-class cost bounds;
+those cost bounds have not yet been asymptotically discharged.
+
+Next connect actual class origin/payload streams and ordinary bank preparation,
+then compare full grouped bills before spending the shared selected-axis T
+allowance. Exposure/publication fusion, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa unchanged.
+
+Guarded file check passes at 3449.1 MiB.
+Expanded compatibility passes (16575 jobs, 3.5 GiB combined peak). Broad
+axiom audit passes for 342031 declarations at 3547.4 MiB, permitting only
+propext, Quot.sound and Classical.choice.
