@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4017 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4019 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28529,3 +28529,41 @@ Guarded checks pass at 3470.8 MiB (indexed class execution) and 3464.3 MiB
 Expanded compatibility passes (16580 jobs, 5.9 GiB combined parallel peak).
 Broad axiom audit passes for 342052 declarations at 3549.0 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: singleton recovery calls share one whole-class fast raw bound
+
+`Cost.PhaseCellComputedRecoveryScheduleLedger.rawRecoverySingletonBudgets_sum`
+proves the exact structural identity
+`sum(singleton budgets)+10 = whole-list budget+10*jobCount`.
+Numerical work, descriptor traffic and restoring scheduler charges agree;
+only fixed local entry/exit overhead is repeated. The proof never expands
+concrete descriptor banks or numerical programs.
+
+`computedRecoveryAuxiliaryTime` retains every additional actual bill: master
+generation, seed copying, generated recovery headers, descriptor production
+and retirement, pairing, cropping, queue/scalar normalization and final master
+cleanup. `computedCoreScheduleTime_eq` splits the sum of complete executed
+core bills into one whole-list raw budget, the sum of these auxiliary bills
+and movement bills, and the fixed scheduler entry/exit charge.
+
+`Cost.PhaseCellSelectedComputedCoreScheduleTime.selectedComputedCoreScheduleTime_le`
+applies the existing selected raw-schedule theorem once to the projected raw
+job list. It bounds the summed full core bills by one `4*T` term plus the fast
+local numerical-volume term, all auxiliary/movement sums and linear job-count
+overhead. It assumes only the existing selected raw profiles/volume facts,
+not a separate fast bound for each core. Auxiliary sums remain unabsorbed.
+
+Execution-side follow-up is necessary: `coreScan_exec` currently uses the
+existing uniform-cost scan theorem and returns `jobCount*(cost+5)+4`. Before
+applying this summed ledger directly to an actual execution, extend the
+structural scan to preserve per-job time allowances and return their sum.
+Do not infer that bound from the uniform-cost theorem. Then absorb complete
+grouped auxiliary work and connect concrete bank readiness, exposure,
+publication and tensor/R4 restoration. S4 is incomplete; kappa unchanged.
+
+Guarded schedule-ledger check passes at 3461.9 MiB. Selected schedule
+dependency build passes (16265 jobs, 3.5 GiB combined peak).
+Expanded compatibility passes (16582 jobs). Guarded selected-bound check
+passes at 3484.7 MiB. Broad axiom audit passes for 342059 declarations at
+3550.1 MiB, permitting only propext, Quot.sound and Classical.choice.
