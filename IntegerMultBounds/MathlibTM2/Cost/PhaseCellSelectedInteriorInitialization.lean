@@ -31,21 +31,22 @@ theorem executionSharedHaloControlCost_congr (p l s t u j k e f a b : ℕ)
     executionSharedHaloControlCost p l s t u j e a b = executionSharedHaloControlCost p l s t u k f a b := by
   simp only [executionSharedHaloControlCost,executionPrecision,executionWidth,hE]
 
-theorem selectedInverseWorkingWidth_le (ct : ℕ) {n : ℕ} (h : Sizes.Big n) (i : Fin (Sizes.d n))
-    [NeZero (Sizes.s n i)] (u target a b : ℕ) (htarget : target ≤ ct*Sizes.p n)
-    (hband : PhaseCellBand.width (Sizes.p n) u ≤ Sizes.s n i) :
+theorem selectedInverseRowWorkingWidth_le (ct : ℕ) {n : ℕ} (h : Sizes.Big n) (i : Fin (Sizes.d n))
+    [NeZero (Sizes.s n i)] (u target rowCount : ℕ) (htarget : target ≤ ct*Sizes.p n)
+    (hband : PhaseCellBand.width (Sizes.p n) u ≤ Sizes.s n i)
+    (hrows : rowCount ≤ Sizes.s n i) :
     let p := Sizes.p n
     let s := Sizes.s n i
     let t := Sizes.t n i
     let l := haloInverseRingLog s t
     let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2
-      (haloBoundary s t (PhaseCellBand.width p u) a b).card
+      rowCount
     executionWidth p l (initialSchurTarget p u bits 2) 2 ≤ (1032+8*ct)*p := by
   let p := Sizes.p n
   let s := Sizes.s n i
   let t := Sizes.t n i
   let l := haloInverseRingLog s t
-  let N := (haloBoundary s t (PhaseCellBand.width p u) a b).card
+  let N := rowCount
   change PhaseCellBand.width p u ≤ s at hband
   have hp : 1 ≤ p := by have := h.thirteen_le_p; dsimp [p]; omega
   have hst : s < t := h.good.lt i
@@ -60,13 +61,27 @@ theorem selectedInverseWorkingWidth_le (ct : ℕ) {n : ℕ} (h : Sizes.Big n) (i
   have htbits := selectedAxisBits_le n i
   have hell : Sizes.ℓ n ≤ p := selectedAxisLog_le_precision h
   have hgeometry : Nat.size (2*s+1) ≤ 2*p := by have := h.thirteen_le_p; dsimp [t,p] at *; omega
-  have hN : N ≤ s := by simpa [N] using Finset.card_le_univ (s := haloBoundary s t (PhaseCellBand.width p u) a b)
+  have hN : N ≤ s := hrows
   have hNlog : Nat.size N ≤ 2*p := (Nat.size_le_size (by omega : N ≤ 2*s+1)).trans hgeometry
   have hBlog : Nat.size (2*PhaseCellBand.width p u+1) ≤ 2*p :=
     (Nat.size_le_size (by omega)).trans hgeometry
   have hw := inverseExecutionWidth_le p l target N (PhaseCellBand.width p u) 20 ct 2 2 hp hl htarget hNlog hBlog
   rw [inverseExecutionExponent_eq p u l target N] at hw
   simpa only [executionWidth,show 16*20+8*ct+8*2+8*2+680 = 1032+8*ct by omega] using hw
+
+theorem selectedInverseWorkingWidth_le (ct : ℕ) {n : ℕ} (h : Sizes.Big n) (i : Fin (Sizes.d n))
+    [NeZero (Sizes.s n i)] (u target a b : ℕ) (htarget : target ≤ ct*Sizes.p n)
+    (hband : PhaseCellBand.width (Sizes.p n) u ≤ Sizes.s n i) :
+    let p := Sizes.p n
+    let s := Sizes.s n i
+    let t := Sizes.t n i
+    let l := haloInverseRingLog s t
+    let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2
+      (haloBoundary s t (PhaseCellBand.width p u) a b).card
+    executionWidth p l (initialSchurTarget p u bits 2) 2 ≤ (1032+8*ct)*p := by
+  apply selectedInverseRowWorkingWidth_le ct h i u target _ htarget hband
+  simpa using Finset.card_le_univ
+    (s := haloBoundary (Sizes.s n i) (Sizes.t n i) (PhaseCellBand.width (Sizes.p n) u) a b)
 
 theorem selectedInteriorSetupControls_fast_le (ct : ℕ) :
     ∃ C : ℕ, ∀ (n : ℕ) (h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],

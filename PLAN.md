@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3940 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3941 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27303,3 +27303,26 @@ execution). Guarded build passes (16067 jobs, 3.5 GiB combined peak); axiom audi
 passes for 339007 declarations at 3466.1 MiB. Next instantiate concrete
 core-class parameters and execute physical input production/publication, then
 compose with tensor/R4 restoration. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: actual common raw-job format has uniform selected width
+
+`selectedInverseRowWorkingWidth_le` factors the existing inverse-format proof
+over an arbitrary boundary row count bounded by s. The prior endpoint theorem
+is a corollary, preserving its interface and avoiding a duplicate bit-size
+argument. `Cost.PhaseCellSelectedPackedHaloCommonWidth` applies this result
+to the actual packedHaloCommonWidth constructor (ambient row count s), giving
+W <= (1032+8*ct)*p. Existing packedHaloCommonWidth_fits therefore supplies
+the per-halo format-fit premises uniformly. Monotonicity in boundary row count
+also bounds every actual boundaryHaloTarget by the same coefficient times p;
+this discharges the numerical-target premise from selected target accuracy.
+
+The next constructor instantiation should choose this common W, use
+RawRecoveryJob.coreClassJobs_profile and selectedHaloGatheredWidths for the
+remaining scalar/metadata bounds, and apply the existing coordinate/span/local
+volume lemmas. Physical descriptor production and output publication, tensor/R4
+composition and restoration remain open. S4 is incomplete; kappa is unchanged.
+
+Guarded checks pass at 3166.6 MiB (refactored initialization) and 3303.4 MiB
+(common format/target bounds). Scoped compatibility build passes (16151 jobs,
+15.6 GiB combined peak); axiom audit passes for 339014 declarations at
+3467.3 MiB.
