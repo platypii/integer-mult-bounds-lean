@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3971 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3973 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27778,3 +27778,31 @@ ordered grouped scan. S4 remains incomplete; kappa is unchanged.
 Guarded module check passes at 3384.7 MiB; compatibility build passes
 (15861 jobs, 3.5 GiB combined peak).
 Broad axiom audit passes for 341643 declarations at 3524.4 MiB.
+
+### S4 checkpoint: complex pairing derives and retires its packet-width header
+
+`Mult.PhaseCellPrepareRecoveryPairWidth` supplies a small eight-register
+program deriving span*(2*q+8) from retained precision/origin/end masters. It
+generates word width, subtracts endpoints, multiplies unary dimensions and
+erases the intermediate width/span headers. Only the packet header changes.
+The placement theorem reuses embOvr_stream and preserves every ambient
+spectator and left stack. Exact setup cost and an eight-push stock bound
+remain explicit; the standalone module checks below 2 GiB.
+
+`Mult.PhaseCellPreparedPairRecoveryOutput` composes this setup with actual
+certified-output pairing and final packet-header retirement. Its final state
+changes only the complex output stream; masters and all scratch restore.
+The time bill includes setup, N*(16*(span*wordWidth)+9)+14 pairing work and
+2*span*wordWidth+2 header cleanup. The same run has stock at most eight times
+this local-volume bill. The target-order equality is the one already proved
+for actual constructors by ofComplexBounds_solutionOrder.
+
+The complete computed call currently retires masters before this suffix.
+Next expose its pre-retirement execution, insert preparedPairRecoveryOutput,
+and retire masters once afterward; avoid regenerating masters or supplying
+a precomputed packet header. Cropping/publication, grouped execution and
+tensor/R4 composition remain open. S4 is incomplete; kappa is unchanged.
+
+Compatibility build passes (15863 jobs, 3.5 GiB combined peak). Expanded
+axiom audit passes for 341657 declarations at 3526.7 MiB.
+Final guarded module checks pass at 1948.2 MiB (setup) and 3388.9 MiB (prepared pairing).
