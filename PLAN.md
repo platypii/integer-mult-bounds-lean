@@ -16607,6 +16607,7 @@ wrappers still need bounded execution certificates before the stage-2 leaf core
 and selected archive transpose have their full space certificates. The remaining
 S4 supplier/readiness, setup reuse, tensor/layout and final audit obligations above
 remain open; S4 is incomplete and kappa is unchanged.
+The scoped axiom audit passes for 326909 declarations at 3174.3 MiB.
 
 ### S4 checkpoint: arbitrary-offset slice calls retain the root workspace bound
 
@@ -21676,3 +21677,38 @@ combined peak). The scoped axiom audit passes for 326892 declarations at
 processing and the loop, then attach retained-width candidate generation and
 zero accumulator initialization. Recovery, global scheduling, tensor/R4 and
 selected acceptance remain open. S4 remains incomplete; kappa is unchanged.
+
+### S4 checkpoint: execute empty and nonempty candidates in the packed key loop
+
+The conditional class now has the full nonempty numerical specification,
+including row witnesses, previous-class preservation and both restored bank
+ABIs. It reuses the existing numerical theorem and concrete page-generation
+trace; execution uniqueness proves that the actual generated count selects that
+branch. Empty/nonempty cost identities keep the numerical reserve opaque during
+resource transport.
+
+`processGeneratedHaloReplicaKey` now executes that conditional program. Its
+nonempty specification retains its existing semantic API. Its new empty
+execution theorem parses the actual binary key, generates and retires the empty
+pages, clears the decoded length and restores every tape except the consumed
+key queue. This path requires no numerical input or accuracy hypotheses.
+
+`replicaHaloLoop_step` handles both branches and preserves the same output rows,
+completed-class accuracy, spectator tapes and released-bank invariant. All loop
+execution theorems now require axis/padding bounds only for nonempty classes;
+positive empty candidates may exceed the axis length. `ReplicaHaloProblem.candidate_bounds`
+discharges the actual six-candidate schedule's interface from shared padding
+and generated metadata width. Final halo-interior accuracy and full gather
+restoration therefore apply to the positive candidate schedule including empty
+classes, once its initial physical queue and accumulator are constructed.
+
+The candidate space envelope charges only control work for empty classes and
+uses the existing linear numerical envelope for nonempty classes. Guarded checks
+pass at 2167.3 MiB (full conditional specification), 2194.1 MiB (actual key
+processing), 2181.4 MiB (conditional loop and candidate bounds) and 3162.0 MiB
+(candidate stock). Compatibility with the older loop passes (14544 jobs,
+3.4 GiB combined peak). Next construct the retained-width positive candidate
+queue and zero accumulator from ordinary inputs, then attach selected resource
+acceptance. Recovery, global scheduling and tensor/R4 restoration remain open;
+S4 is incomplete and kappa is unchanged.
+The scoped axiom audit passes for 326909 declarations at 3174.3 MiB.

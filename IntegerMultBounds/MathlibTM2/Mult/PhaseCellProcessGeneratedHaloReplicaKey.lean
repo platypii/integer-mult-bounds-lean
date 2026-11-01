@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedHaloReplicaClass
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellConditionalGeneratedHaloReplicaClass
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTakeUnaryKey
 public import IntegerMultBounds.MathlibTM2.Host.CountedLoopStock
 
@@ -23,7 +23,7 @@ def replicaLengthKeyParser (plan : ReplicaInteriorPlacement T) : Pr P T Q A U :=
 noncomputable def processGeneratedHaloReplicaKey (plan : ReplicaInteriorPlacement T) (dst : Fin T)
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P T Q A U :=
   .seq (replicaLengthKeyParser plan)
-    (.seq (generatedHaloReplicaClass plan dst hR hQ) (uclear (plan.gather 102)))
+    (.seq (conditionalGeneratedHaloReplicaClass plan dst hR hQ) (uclear (plan.gather 102)))
 
 noncomputable def generatedHaloReplicaKeyStep (plan : ReplicaInteriorPlacement T) (dst : Fin T)
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P T Q A U :=
@@ -36,12 +36,12 @@ noncomputable def generatedHaloReplicaKeyLoop (plan : ReplicaInteriorPlacement T
 def replicaLengthKeyParserCost (V L : ℕ) := 6*L+19*V+14
 
 def processGeneratedHaloReplicaKeyCost (p l N V origin span L s t u target rhsExp : ℕ) :=
-  replicaLengthKeyParserCost V L+(generatedHaloReplicaClassCost p l N V origin span L s t u target rhsExp+(2*L+2))
+  replicaLengthKeyParserCost V L+(conditionalGeneratedHaloReplicaClassCost p l N V origin span L s t u target rhsExp+(2*L+2))
 
 noncomputable def processGeneratedHaloReplicaKeyWorkspace {Q A : ℕ} {U : Type} (hQ : SS.states ≤ Q)
     (R K p l N V origin span L s t u target rhsExp : ℕ) :=
   2*replicaLengthKeyParserCost V L+
-    generatedHaloReplicaClassWorkspace (A := A) (U := U) hQ R K p l N V origin span L s t u target rhsExp
+    conditionalGeneratedHaloReplicaClassWorkspace (A := A) (U := U) hQ R K p l N V origin span L s t u target rhsExp
 
 theorem replicaLengthKeyParser_native (plan : ReplicaInteriorPlacement T) :
     mnNativePushBound 2 (replicaLengthKeyParser (P := P) (Q := Q) (A := A) (U := U) plan) := by
@@ -175,7 +175,7 @@ theorem processGeneratedHaloReplicaKey_exec_within (plan : ReplicaInteriorPlacem
       simpa only [replicaFactoryHeaderValue,hv102,hv116,ite_false] using hmasters r hr h102 h116
   obtain ⟨v₂,F,n₂,replicas,ha,hnrep,hvalid,hrange,hu₂,hn₂,he₂,hgather,hd₂,htail,hi₂,ho₂,
       hlow,hcache,hsolverFresh,herror,hpreserve⟩ :=
-    generatedHaloReplicaClass_exec_within (body := body) plan dst hgd hsd hR hQ hA hp hst hband hu hαu hθ hgap hbudget
+    conditionalGeneratedHaloReplicaClass_exec_within (body := body) plan dst hgd hsd hR hQ hA hp hst hband hu hαu hθ hgap hbudget
       hL hLs hpad V origin span windows hwindow Fs ambientRows hne hspan hwV hcoords hunits
       v₁ M tail borrowed packedBorrowed outputTail R K hpushR hpushK depth
       hC I x hx hint hcell hmax (by rw [hsolver]; exact hbank) hmastersM hwidth
@@ -228,8 +228,8 @@ theorem processGeneratedHaloReplicaKey_exec_within (plan : ReplicaInteriorPlacem
     have hsize₂ := he₂.final
     change ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
       (2*replicaLengthKeyParserCost V L+
-        generatedHaloReplicaClassWorkspace (A := A) (U := U) hQ R K p l Fs.length V origin span L s t u target rhsExp))
-      depth (.seq (replicaLengthKeyParser plan) (.seq (generatedHaloReplicaClass plan dst hR hQ)
+        conditionalGeneratedHaloReplicaClassWorkspace (A := A) (U := U) hQ R K p l Fs.length V origin span L s t u target rhsExp))
+      depth (.seq (replicaLengthKeyParser plan) (.seq (conditionalGeneratedHaloReplicaClass plan dst hR hQ)
         (uclear (plan.gather 102)))) (mk v S) (n₁+(n₂+(2*L+2))) (mk v₃ G)
     refine .seq (he₁'.mono ?_) (.seq (he₂.mono ?_) (he₃'.mono ?_))
     all_goals intro d z hz; omega
@@ -239,6 +239,88 @@ theorem processGeneratedHaloReplicaKey_exec_within (plan : ReplicaInteriorPlacem
   · intro k hk; rw [hGs]; exact hsolverFresh k hk
   · simpa only [hOut] using herror
   · simpa only [hOut,hd] using hpreserve
+
+/-- Empty candidates consume their actual binary key and restore every other
+stack. No numerical input or solver hypotheses are needed on this path. -/
+theorem processGeneratedHaloReplicaKey_empty_exec_within (plan : ReplicaInteriorPlacement T)
+    (dst : Fin T) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
+    (V s t band a b L : ℕ) (hwide : 8*(t+1)^2+2*band+8 < 2^V)
+    (hs : 0 < s) (hst : s < t) (hband : band ≤ s) (hab : a ≤ b) (hbs : b ≤ s)
+    (hL : 0 < L) (hkey : L < 2^V) (hA : 4 ≤ A)
+    (hempty : haloLengthGroup s t band a b L = []) (v : HS T Q A U) (S : Stacks T A)
+    (keyTail : List (Fin (A+4)))
+    (hsSrc : (S.R (plan.gather 97)).length = s) (htSrc : (S.R (plan.gather 98)).length = t)
+    (hbSrc : (S.R (plan.gather 100)).length = band) (haSrc : (S.R (plan.gather 111)).length = a)
+    (hbEndSrc : (S.R (plan.gather 113)).length = b) (hV : (S.R (plan.gather 115)).length = V)
+    (hkeys : S.R (plan.gather 87) = binSyms V L++keyTail)
+    (hfresh : ∀ k ∈ [(102 : Fin 126),104,105,106,116], S.R (plan.gather k) = [])
+    (hblank : ∀ k : Fin 126, k.val < 31 → S.R (plan.gather k) = []) (depth : ℕ) :
+    ∃ v' n, v'.user = v.user ∧
+      n ≤ replicaLengthKeyParserCost V L+(preparedPairedLocalHaloClassCost V s t band a b L+23+(2*L+2)) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+        (2*replicaLengthKeyParserCost V L+3*preparedPairedLocalHaloClassCost V s t band a b L+40)) depth
+        (processGeneratedHaloReplicaKey plan dst hR hQ) (mk v S) n
+        (mk v' {S with R := Function.update S.R (plan.gather 87) keyTail}) := by
+  let M : Stacks T A := {S with R := (Function.update (Function.update S.R (plan.gather 87) keyTail)
+    (plan.gather 102) (List.replicate L tick))}
+  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := takeUnaryKey_exec (body := body)
+    (List.Nodup.map plan.gather_injective (show [(115 : Fin 126),87,102,0,1,2,3].Nodup by decide))
+    V L hkey keyTail v S hV hkeys
+    (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl
+      · exact hfresh _ (by simp)
+      all_goals exact hblank _ (by decide))
+  have he₁' : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+      2*replicaLengthKeyParserCost V L) depth (replicaLengthKeyParser plan) (mk v S) n₁ (mk v₁ M) :=
+    mn_native_exec_within he₁ 2 (replicaLengthKeyParser_native plan) depth _
+      (Nat.add_le_add_left (Nat.mul_le_mul_left 2 hn₁) _)
+  have hM (k : Fin 126) (h87 : k ≠ 87) (h102 : k ≠ 102) : M.R (plan.gather k) = S.R (plan.gather k) := by
+    simp [M,plan.gather_injective.eq_iff,h87,h102]
+  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := conditionalGeneratedHaloReplicaClass_empty_exec_within (body := body)
+    plan dst hR hQ V s t band a b L hwide hs hst hband hab hbs hL hkey hA hempty v₁ M
+    (by rw [hM 97 (by decide) (by decide)]; exact hsSrc)
+    (by rw [hM 98 (by decide) (by decide)]; exact htSrc)
+    (by rw [hM 100 (by decide) (by decide)]; exact hbSrc)
+    (by rw [hM 111 (by decide) (by decide)]; exact haSrc)
+    (by rw [hM 113 (by decide) (by decide)]; exact hbEndSrc)
+    (by simp [M])
+    (by rw [hM 115 (by decide) (by decide)]; exact hV)
+    (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl <;>
+        (rw [hM _ (by decide) (by decide)]; exact hfresh _ (by simp)))
+    (by
+      intro k hk
+      rw [hM k (by intro he; subst k; norm_num at hk) (by intro he; subst k; norm_num at hk)]
+      exact hblank k hk) depth
+  obtain ⟨v₃,hu₃,he₃⟩ := uclear_exec (body := body) (plan.gather 102) v₂ M
+  let G : Stacks T A := {S with R := Function.update S.R (plan.gather 87) keyTail}
+  have hrestore : {M with R := Function.update M.R (plan.gather 102) []} = G := by
+    refine Stacks.ext rfl rfl rfl ?_
+    funext k
+    by_cases hk : k = plan.gather 102
+    · subst k
+      simp [G,plan.gather_injective.eq_iff,hfresh 102 (by simp)]
+    · simp [M,G,hk,Function.update_apply]
+  have h102 : (M.R (plan.gather 102)).length = L := by simp [M]
+  rw [h102,hrestore] at he₃
+  have he₃' : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v₂ M)+depth+0) depth
+      (uclear (plan.gather 102)) (mk v₂ M) (2*L+2) (mk v₃ G) :=
+    mn_native_exec_within he₃ 0 (by simp [uclear,drainR,popDo,peekR,mnNativePushBound,mnActPush])
+      depth _ (by omega)
+  change n₁ ≤ replicaLengthKeyParserCost V L at hn₁
+  refine ⟨v₃,n₁+(n₂+(2*L+2)),hu₃.trans (hu₂.trans hu₁),by omega,?_⟩
+  have hsize₁ := he₁'.final
+  change mnSize (mk v₂ M)+depth ≤ mnSize (mk v S)+depth+2*replicaLengthKeyParserCost V L at hsize₁
+  refine .seq (he₁'.mono ?_) (.seq (he₂.mono ?_) (he₃'.mono ?_))
+  · intro d z hz; omega
+  · intro d z hz
+    change mnSize z+d ≤ mnSize (mk v₂ M)+depth+(3*preparedPairedLocalHaloClassCost V s t band a b L+40) at hz
+    omega
+  · intro d z hz; omega
 
 /-- Instantiate the structural counted loop with the real key-processing body.
 The concrete replica accuracy/metadata invariant must discharge `hstep`. -/

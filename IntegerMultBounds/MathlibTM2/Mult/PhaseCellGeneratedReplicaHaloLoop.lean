@@ -58,13 +58,38 @@ noncomputable def keyWorkspace (H : ReplicaHaloProblem s) (hQ : SS.states ≤ Q)
   processGeneratedHaloReplicaKeyWorkspace (A := A) (U := U) hQ R K H.p H.l H.Fs.length H.metadataWidth
     H.origin H.span L s H.t H.u H.target H.rhsExp
 
+/-- The actual positive candidate schedule satisfies the runtime interface.
+Only numerical padding remains a choice of the selected geometry. -/
+theorem candidate_bounds (H : ReplicaHaloProblem s)
+    (hpad : 2*((s/(H.t-s)+1)-2*H.band) ≤ 2^H.l+1) :
+    ∀ L ∈ haloLengthKeys s H.t H.band H.origin (H.origin+H.span),
+      0 < L ∧ L < 2^H.metadataWidth ∧ (H.offsets L ≠ [] → L ≤ s ∧ L+L ≤ 2^H.l+1) := by
+  intro L hmem
+  obtain ⟨hc,hpositive⟩ := List.mem_filter.mp hmem
+  have hL : 0 < L := of_decide_eq_true hpositive
+  have hcandidate : L ∈ haloLengthCandidates s H.t H.band H.origin (H.origin+H.span) := List.mem_dedup.mp hc
+  have huniform := haloLengthCandidates_uniform H.s_lt_t H.band H.origin (H.origin+H.span) hcandidate
+  have hwide := (weightWorkspaceWidth_control (q := H.precision) (w := H.wordWidth)
+    (by have hp := H.p_pos; norm_num; omega : 13 ≤ 2^15*H.p)
+    (NeZero.pos s) H.s_lt_t H.u_pos H.band_fit).1
+  have hwidth : s+1 < 2^H.metadataWidth := by
+    change 8*(H.t+1)^2+2*H.band+8 < 2^H.metadataWidth at hwide
+    have hst := H.s_lt_t
+    nlinarith only [hwide,hst]
+  have hbound : L ≤ s+1 := huniform.trans ((Nat.sub_le _ _).trans (Nat.add_le_add_right (Nat.div_le_self _ _) 1))
+  refine ⟨hL,hbound.trans_lt hwidth,?_⟩
+  intro hne
+  have hcount : 0 < (H.offsets L).length := List.length_pos_iff_ne_nil.mpr hne
+  have hfit := (haloReplicaClassOrigin_geometry H.s_lt_t H.band H.origin H.span L ⟨0,hcount⟩).2.1
+  exact ⟨by omega,haloLengthKeys_pad H.s_lt_t H.band H.origin (H.origin+H.span) H.l hpad L hmem⟩
+
 end ReplicaHaloProblem
 
 theorem replicaHaloLoop_step (H : ReplicaHaloProblem s) (plan : ReplicaInteriorPlacement T) (dst : Fin T)
     (hgd : ∀ i, plan.gather i ≠ dst) (hsd : ∀ i, plan.solver i ≠ dst)
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (buffers : ReplicaLoopBuffers A) (allKeys : List ℕ)
-    (hbounds : ∀ L ∈ allKeys, 0 < L ∧ L ≤ s ∧ L+L ≤ 2^H.l+1 ∧ L < 2^H.metadataWidth ∧ H.offsets L ≠ [])
+    (hbounds : ∀ L ∈ allKeys, 0 < L ∧ L < 2^H.metadataWidth ∧ (H.offsets L ≠ [] → L ≤ s ∧ L+L ≤ 2^H.l+1))
     (R K : ℕ)
     (hpushR : mnProgPush (rpProg (P := Empty) (Q := Q) (A := A) (U := U)
       Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR) ≤ R)
@@ -77,7 +102,7 @@ theorem replicaHaloLoop_step (H : ReplicaHaloProblem s) (plan : ReplicaInteriorP
         mnSize (mk v {S with R := Function.update S.R (plan.gather 119) (List.replicate keys.length (tick : Fin (A+4)))})+
           depth+H.keyWorkspace (A := A) (U := U) hQ R K L) depth (processGeneratedHaloReplicaKey plan dst hR hQ)
         (mk v {S with R := Function.update S.R (plan.gather 119) (List.replicate keys.length (tick : Fin (A+4)))}) n (mk v' F) := by
-  obtain ⟨hL,hLs,hpad,hkey,hne⟩ := hbounds L (hInv.remaining L (by simp))
+  obtain ⟨hL,hkey,hgeometry⟩ := hbounds L (hInv.remaining L (by simp))
   let W := H.windows L hL
   let S₀ : Stacks T A := {S with R := Function.update S.R (plan.gather 119) (List.replicate keys.length (tick : Fin (A+4)))}
   have hg₀ (k : Fin 126) (hk : k ≠ 119) : S₀.R (plan.gather k) = S.R (plan.gather k) := by
@@ -91,6 +116,75 @@ theorem replicaHaloLoop_step (H : ReplicaHaloProblem s) (plan : ReplicaInteriorP
   have hsR₀ (k : Fin 121) : S₀.R (plan.solver k) = S.R (plan.solver k) :=
     congrFun (congrArg Stacks.R hs₀) k
   have hd₀ : S₀.R dst = S.R dst := by simp [S₀,(hgd 119).symm]
+  by_cases hempty : H.offsets L = []
+  · have hgroup : haloLengthGroup s H.t H.band H.origin (H.origin+H.span) L = [] := by
+      apply List.length_eq_zero_iff.mp
+      have hh : (H.offsets L).length = 0 := by rw [hempty]; rfl
+      simpa only [ReplicaHaloProblem.offsets,haloPackedOffsets_length] using hh
+    have hwide : 8*(H.t+1)^2+2*H.band+8 < 2^H.metadataWidth :=
+      (weightWorkspaceWidth_control (q := H.precision) (w := H.wordWidth)
+        (by have hp := H.p_pos; norm_num; omega : 13 ≤ 2^15*H.p)
+        (NeZero.pos s) H.s_lt_t H.u_pos H.band_fit).1
+    obtain ⟨v',n,hu,hn,he⟩ := processGeneratedHaloReplicaKey_empty_exec_within (body := body)
+      plan dst hR hQ H.metadataWidth s H.t H.band H.origin (H.origin+H.span) L
+      hwide (NeZero.pos s) H.s_lt_t H.band_fit (by omega) H.span_fit hL hkey (by omega) hgroup
+      v S₀ (keys.flatMap (binSyms H.metadataWidth)++buffers.keyTail)
+      (by simpa [replicaFactoryHeaderValue] using headers₀.masters (97,97) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide))
+      (by simpa [replicaFactoryHeaderValue] using headers₀.masters (98,98) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide))
+      (by simpa [replicaFactoryHeaderValue] using headers₀.masters (100,100) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide))
+      headers₀.origin headers₀.endpoint headers₀.width
+      (by rw [hg₀ 87 (by decide),hInv.packets]; simp [List.flatMap_cons,List.append_assoc])
+      (by
+        intro k hk
+        simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+        rcases hk with rfl | rfl | rfl | rfl | rfl <;> exact headers₀.fresh _ (by simp)) headers₀.blank depth
+    let F : Stacks T A := {S₀ with R := (Function.update S₀.R (plan.gather 87)
+      (keys.flatMap (binSyms H.metadataWidth)++buffers.keyTail))}
+    have hg (k : Fin 126) (h87 : k ≠ 87) (h119 : k ≠ 119) : F.R (plan.gather k) = S.R (plan.gather k) := by
+      simp [F,S₀,plan.gather_injective.eq_iff,h87,h119]
+    have hsolverF : embStk plan.solver F = embStk plan.solver S := by
+      refine Stacks.ext rfl rfl rfl ?_
+      funext k
+      simp [F,S₀,embStk,(plan.disjoint 87 k).symm,(plan.disjoint 119 k).symm]
+    have hdF : F.R dst = S.R dst := by simp [F,S₀,(hgd 87).symm,(hgd 119).symm]
+    refine ⟨v',F,n,hu,?_,?_,?_⟩
+    · change n ≤ replicaLengthKeyParserCost H.metadataWidth L+
+        (conditionalGeneratedHaloReplicaClassCost H.p H.l H.Fs.length H.metadataWidth H.origin H.span L s H.t H.u H.target H.rhsExp+(2*L+2))
+      rw [conditionalGeneratedHaloReplicaClassCost_empty _ _ _ _ _ _ _ _ _ _ _ _ hgroup]
+      exact hn
+    · refine ⟨fun J hJ => hInv.remaining J (by simp [hJ]),hInv.headers.of_frame hg,?_,?_,?_,
+        hInv.input,hInv.output,hInv.gatherLeft,?_,?_,?_,?_,?_⟩
+      · rw [hsolverF]; exact hInv.bank
+      · exact (congrFun (congrArg Stacks.R hsolverF) 117).trans hInv.cache
+      · intro k hk
+        exact (congrFun (congrArg Stacks.R hsolverF) k).trans (hInv.solverFresh k hk)
+      · intro k h87 h119
+        exact (hg k h87 h119).trans (hInv.gatherFrame k h87 h119)
+      · simp [F]
+      · simp [F,S₀,plan.gather_injective.eq_iff]
+      · rw [hdF]; exact hInv.rows
+      · intro J hJ hnot
+        rw [hdF]
+        by_cases hJL : J = L
+        · subst J
+          intro r j
+          have hj := j.isLt
+          have hzero : (H.offsets L).length = 0 := by rw [hempty]; rfl
+          omega
+        · apply hInv.accuracy J hJ
+          intro hmem
+          rcases List.mem_cons.mp hmem with heq | hmem
+          · exact hJL heq
+          · exact hnot hmem
+    · change ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S₀)+depth+
+        (2*replicaLengthKeyParserCost H.metadataWidth L+
+          conditionalGeneratedHaloReplicaClassWorkspace (A := A) (U := U) hQ R K H.p H.l H.Fs.length H.metadataWidth
+            H.origin H.span L s H.t H.u H.target H.rhsExp)) depth
+          (processGeneratedHaloReplicaKey plan dst hR hQ) (mk v S₀) n (mk v' F)
+      rw [conditionalGeneratedHaloReplicaClassWorkspace_empty hQ _ _ _ _ _ _ _ _ _ _ _ _ _ _ hgroup]
+      simpa only [F,ReplicaHaloProblem.band,Nat.add_assoc] using he
+  have hne : H.offsets L ≠ [] := hempty
+  obtain ⟨hLs,hpad⟩ := hgeometry hne
   obtain ⟨rows,hrows,hlen,hrange,hdst⟩ := hInv.rows
   obtain ⟨hwV,hcoords,hunits⟩ := H.metadataWidth_fits
   have hgeom (j : Fin (H.offsets L).length) :=
@@ -147,7 +241,7 @@ theorem replicaHaloLoop_exec_within (H : ReplicaHaloProblem s) (plan : ReplicaIn
     (hgd : ∀ i, plan.gather i ≠ dst) (hsd : ∀ i, plan.solver i ≠ dst)
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (buffers : ReplicaLoopBuffers A) (allKeys : List ℕ)
-    (hbounds : ∀ L ∈ allKeys, 0 < L ∧ L ≤ s ∧ L+L ≤ 2^H.l+1 ∧ L < 2^H.metadataWidth ∧ H.offsets L ≠ [])
+    (hbounds : ∀ L ∈ allKeys, 0 < L ∧ L < 2^H.metadataWidth ∧ (H.offsets L ≠ [] → L ≤ s ∧ L+L ≤ 2^H.l+1))
     (R K : ℕ)
     (hpushR : mnProgPush (rpProg (P := Empty) (Q := Q) (A := A) (U := U)
       Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR) ≤ R)
@@ -177,7 +271,7 @@ theorem runReplicaHaloLoop_exec_within (H : ReplicaHaloProblem s) (plan : Replic
     (hgd : ∀ i, plan.gather i ≠ dst) (hsd : ∀ i, plan.solver i ≠ dst)
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (buffers : ReplicaLoopBuffers A) (allKeys : List ℕ)
-    (hbounds : ∀ L ∈ allKeys, 0 < L ∧ L ≤ s ∧ L+L ≤ 2^H.l+1 ∧ L < 2^H.metadataWidth ∧ H.offsets L ≠ [])
+    (hbounds : ∀ L ∈ allKeys, 0 < L ∧ L < 2^H.metadataWidth ∧ (H.offsets L ≠ [] → L ≤ s ∧ L+L ≤ 2^H.l+1))
     (R K : ℕ)
     (hpushR : mnProgPush (rpProg (P := Empty) (Q := Q) (A := A) (U := U)
       Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR) ≤ R)

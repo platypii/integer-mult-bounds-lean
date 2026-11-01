@@ -30,6 +30,11 @@ theorem replicaHaloKeyWorkspace_le_linear (H : ReplicaHaloProblem s) (hQ : SS.st
     simpa only [ReplicaHaloProblem.offsets,haloPackedOffsets_length] using hh
   have hc := generatedHaloReplicaClassWorkspace_le_linear (A := A) (U := U) hQ
     R K H.p H.l H.Fs.length H.metadataWidth H.origin H.span L s H.t H.u H.target H.rhsExp cV hB (by omega) hV
+  have hBne : (haloLengthGroup s H.t H.band H.origin (H.origin+H.span) L).length ≠ 0 := by omega
+  change 2*replicaLengthKeyParserCost H.metadataWidth L+
+    conditionalGeneratedHaloReplicaClassWorkspace (A := A) (U := U) hQ R K H.p H.l H.Fs.length H.metadataWidth
+      H.origin H.span L s H.t H.u H.target H.rhsExp ≤ _
+  rw [conditionalGeneratedHaloReplicaClassWorkspace_nonempty hQ _ _ _ _ _ _ _ _ _ _ _ _ _ _ hBne]
   exact Nat.add_le_add_left hc _
 
 theorem replicaHaloLoopWorkspace_le_linear (H : ReplicaHaloProblem s) (hQ : SS.states ≤ Q)
@@ -60,5 +65,43 @@ theorem runReplicaHaloLoop_within_linear {T : ℕ} {P : Type} {body : P → Pr P
   intro d state hs
   have hb := replicaHaloLoopWorkspace_le_linear (A := A) (U := U) H hQ R K cV keys hbounds hV
   omega
+
+/-- Empty candidates pay only the executed control path. Numerical reserves
+are used only for candidates with actual cells. -/
+noncomputable def replicaHaloCandidateLinearWorkspace (H : ReplicaHaloProblem s) (hQ : SS.states ≤ Q)
+    (R K L cV : ℕ) :=
+  if H.offsets L = [] then
+    2*replicaLengthKeyParserCost H.metadataWidth L+
+      (3*preparedPairedLocalHaloClassCost H.metadataWidth s H.t H.band H.origin (H.origin+H.span) L+40)
+  else replicaHaloKeyLinearWorkspace (A := A) (U := U) H hQ R K L cV
+
+theorem replicaHaloCandidateWorkspace_le_linear (H : ReplicaHaloProblem s) (hQ : SS.states ≤ Q)
+    (R K L cV : ℕ) (hL : 0 < L) (hV : H.metadataWidth ≤ cV*H.wordWidth) :
+    H.keyWorkspace (A := A) (U := U) hQ R K L ≤
+      replicaHaloCandidateLinearWorkspace (A := A) (U := U) H hQ R K L cV := by
+  by_cases hempty : H.offsets L = []
+  · have hgroup : haloLengthGroup s H.t H.band H.origin (H.origin+H.span) L = [] := by
+      apply List.length_eq_zero_iff.mp
+      have hh : (H.offsets L).length = 0 := by rw [hempty]; rfl
+      simpa only [ReplicaHaloProblem.offsets,haloPackedOffsets_length] using hh
+    simp only [replicaHaloCandidateLinearWorkspace,hempty,ite_true,
+      ReplicaHaloProblem.keyWorkspace,processGeneratedHaloReplicaKeyWorkspace]
+    rw [conditionalGeneratedHaloReplicaClassWorkspace_empty hQ _ _ _ _ _ _ _ _ _ _ _ _ _ _ hgroup]
+    exact Nat.le_refl _
+  · simp only [replicaHaloCandidateLinearWorkspace,hempty,ite_false]
+    exact replicaHaloKeyWorkspace_le_linear H hQ R K L cV hL hempty hV
+
+theorem replicaHaloCandidateLoopWorkspace_le_linear (H : ReplicaHaloProblem s) (hQ : SS.states ≤ Q)
+    (R K cV : ℕ) (keys : List ℕ) (hpositive : ∀ L ∈ keys, 0 < L)
+    (hV : H.metadataWidth ≤ cV*H.wordWidth) :
+    (keys.map (H.keyWorkspace (A := A) (U := U) hQ R K)).sum ≤
+      (keys.map (fun L => replicaHaloCandidateLinearWorkspace (A := A) (U := U) H hQ R K L cV)).sum := by
+  induction keys with
+  | nil => simp
+  | cons L keys ih =>
+    have hh := replicaHaloCandidateWorkspace_le_linear (A := A) (U := U) H hQ R K L cV
+      (hpositive L (by simp)) hV
+    have ht := ih (fun J hJ => hpositive J (by simp [hJ]))
+    simpa only [List.map_cons,List.sum_cons] using Nat.add_le_add hh ht
 
 end IntegerMultBounds.MathlibTM2.Cost
