@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3571 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3572 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22129,3 +22129,38 @@ open. Boundary recovery and the second interior pass, global endpoint schedule,
 tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
 The scoped axiom audit passes for 329023 declarations at 3232.9 MiB.
+
+
+### S4 checkpoint: an actual replica coupling cursor transition restores the shared bank
+
+`PhaseCellReplicaCouplingTransition` composes the existing paired staging,
+placed local coupling and residual cleanup programs into one executable row
+transition. `ReplicaCouplingCursor.couple` obtains the actual matching field and
+original RHS from the cursor, transports readiness and binary geometry through
+staging, invokes the existing coupling computation, and archives the resulting
+guarded residual. No per-replica execution premise is assumed.
+
+The theorem advances both input queues once, retains the field's original real,
+fit, stable-norm and interior-accuracy specification and the RHS replica identity,
+and returns the actual encoded residual on the archive. It proves restoration
+of the complete shared coupling bank, every left tape and both streams. Every
+right tape outside the two input queues and archive is preserved as well. These
+contracts let the next replica reuse the original page, geometry and counters.
+The time bill is exactly the staging allowance plus the existing coupling and
+cleanup allowances. This is the concrete body needed by a structural counted
+replica loop.
+
+`ReplicaCouplingCursor.stage` now exposes its already proved left/stream frame,
+avoiding any reconstruction of staging execution when transporting readiness.
+
+Guarded checks pass at 2170.7 MiB (stronger staging frame) and 2201.8 MiB
+(composed cursor transition). Compatibility with initialized runtime and selected
+row resources passes (14841 jobs, 4.6 GiB combined peak).
+
+Next instantiate the existing counted-loop theorem with this actual transition,
+tracking the accumulated residual rows and unchanged shared bank, and generate
+its count from the retained replica master. The local arithmetic workspace
+certificate remains open. Boundary recovery and the second interior pass,
+global endpoint schedule, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 329027 declarations at 3233.2 MiB.

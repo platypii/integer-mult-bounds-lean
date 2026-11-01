@@ -71,7 +71,8 @@ theorem ReplicaCouplingCursor.stage (H : ReplicaHaloProblem s)
       G.R rhsDst = cstream A H.wordWidth (packedInterval H.origin H.span R)++S.R rhsDst ∧
       ReplicaHaloRowSpec H r C ∧ R = H.Fs.reverse.getD r (fun _ => 0) ∧
       (∀ i, ‖value H.precision (R i)‖ ≤ (2 : ℝ)^H.rhsExp) ∧
-      (∀ k, k ∉ [output,rhs,fieldDst,rhsDst] → G.R k = S.R k) := by
+      (∀ k, k ∉ [output,rhs,fieldDst,rhsDst] → G.R k = S.R k) ∧
+      G.L = S.L ∧ G.inp = S.inp ∧ G.out = S.out := by
   have hregs := hreg
   regs_ne hregs
   obtain ⟨fields,hlen,houtput,hgood⟩ := h.output
@@ -104,7 +105,7 @@ theorem ReplicaCouplingCursor.stage (H : ReplicaHaloProblem s)
     ((H.Fs.reverse.drop (r+1)).flatMap (fun F => cstream A H.wordWidth (packedInterval H.origin H.span F))++rhsTail))
     rhsDst (cstream A H.wordWidth (packedInterval H.origin H.span R)++S.R rhsDst))}
   have hR : R = H.Fs.reverse.getD r (fun _ => 0) := by rw [List.getD_eq_getElem _ _ hri]
-  refine ⟨C,R,v',G,hu,he,?_,?_,?_,hC,hR,?_,?_⟩
+  refine ⟨C,R,v',G,hu,he,?_,?_,?_,hC,hR,?_,?_,rfl,rfl,rfl⟩
   · refine ⟨by omega,⟨fields,by simp only [List.length_cons] at hlen; omega,?_,?_⟩,?_⟩
     · simp [G,‹output ≠ rhsDst›,‹output ≠ rhs›,‹output ≠ fieldDst›]
     · intro j
