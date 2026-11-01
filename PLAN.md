@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3895 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3897 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26749,3 +26749,34 @@ Next compose physical normalized input production with these descriptor jobs
 and discharge schedule budgets via the shared-setup/replica-row ledger.
 Tensor/R4 composition, layout restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: physical normalization composes with complete recovery
+
+`Mult.PhaseCellNormalizeRecoveryInput` constructs an ordinary raw-input bank
+with the existing recovery headers, a common-width packed field archive and two
+disposable p/width headers. It executes `preparedPackedInput` directly on the
+392-register caller, then pays to clear both disposable headers. A structural
+three-port frame proof identifies its endpoint exactly with
+`generatedRecoveryInput H inp out` when H's field family is the normalized raw
+fields. Conversion scratch and future factor storage are restored; no ready
+normalized archive is assumed. The existing packed-batch map identity supplies
+the exact archive equation.
+
+The closed normalization program has a named irreducible atomic-push coefficient
+and an actual `ExecWithin` certificate charging its established conversion cost.
+`Mult.PhaseCellNormalizedGeneratedRecovery` sequences that same execution with
+the complete physical factor/first-pass/recovery/assembly caller. Its theorem
+starts from raw packed, already component-ordered fields and returns actual
+assembled-output certificates and preserved host tapes, paying normalization,
+factor generation and cached recovery. The stock allowance includes normalization
+and the explicit private input reserve; the host input/output frame is counted
+once through the raw initial store.
+
+Guarded checks pass at 3393.8 MiB (normalization, exact endpoint and stock) and
+3393.9 MiB (combined execution). The scoped compatibility build passes (16102
+jobs, 3.5 GiB combined peak); the axiom audit passes for 338741 declarations at
+3459.6 MiB. Next use the raw descriptor words and combined closed program in the
+restoring job scheduler, preserving the existing component-expansion order and
+paying its input production. Schedule budgets still need the affine setup/row
+ledger; tensor/R4 composition, layout restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
