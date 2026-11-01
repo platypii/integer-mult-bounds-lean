@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3785 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3790 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25048,3 +25048,38 @@ RHS), 3299.8 MiB (collection), 3325.1 MiB (complete row), 3241.4 MiB
 (mask readiness/length) and 3288.3 MiB (selected initialization cost).
 Compatibility build passes (15692 jobs, 5.8 GiB combined peak).
 Scoped axiom audit passes for 336329 declarations at 3389.1 MiB.
+
+
+### S4 checkpoint: cached traversal and complete second-pass recovery caller execute
+
+`PhaseCellCachedReplicaRecoveryPreparationLoop` installs the cached row in
+the existing counted-bank traversal. The existing frame invariant supplies
+cache readiness at every iteration; no extra cursor or archive language is
+introduced. Exact row stock equality permits one shared row workspace reserve
+for the entire traversal, independent of replica count.
+
+`PhaseCellPlacedCachedReplicaRecoveryPreparation` places that traversal in
+the common 392-register caller. `PhaseCellCachedBatchedReplicaRecovery`
+composes it with the existing shared second interior pass and final assembly.
+Its bounded execution returns the actual batch, assembled output certificates
+and output tape, with explicit cached time and workspace bounds. This is a
+complete cached recovery caller from supplied initialized masks; it does not
+yet execute mask initialization itself. The generated-mask caller is retained.
+
+`PhaseCellInitializeRecoveryMasksStock` supplies bounded execution for shared
+mask generation using its closed-program push bound. `PhaseCellRecoveryMaskFrame`
+proves that installing only cache ports 159 and 161 preserves the retained
+recovery core and complete preparation readiness, including factors, physical
+headers and both cursor archives. These are the entry transport rules needed
+to put initialization before the actual cached traversal.
+
+Next compose initialization outside the cached caller and price its full
+selected time/workspace. The one-core setup bound is established, but counting
+and scheduling distinct cores remains open. First-pass/generated-factory
+execution, tensor/R4 restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
+Guarded checks pass at 3314.8 MiB (cached loop), 3314.2 MiB (placed
+preparation), 3318.1 MiB (complete cached caller), 2081.8 MiB (bounded
+initialization) and 3300.1 MiB (readiness frame transport). Compatibility
+build passes (15689 jobs, 7.0 GiB combined peak). Scoped axiom audit passes
+for 336354 declarations at 3385.3 MiB.
