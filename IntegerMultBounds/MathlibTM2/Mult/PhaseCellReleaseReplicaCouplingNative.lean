@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupOps
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaRecoveryReady
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaRecoveryPlacement
 
 /-! Retire the coupling-owned native arithmetic bank before recovery. Payload
 ports survive, high shared pages stay fixed, and every erased symbol is paid. -/
@@ -60,6 +61,65 @@ theorem releaseReplicaCouplingNative_exec (v : HS 248 Q A U) (S : Stacks 248 A) 
   obtain ⟨v',hu,he⟩ := clearWords_exec (body := body) replicaCouplingNativePorts hnd v S
   exact ⟨v',hu,by simpa only [releaseReplicaCouplingNative,releaseReplicaCouplingNativeCost,
     releasedReplicaCouplingNative,mem_replicaCouplingNativePorts] using he⟩
+
+theorem releaseReplicaCouplingNativeCost_eq_of_native_frame (S F : Stacks 248 A)
+    (hframe : ∀ i : Fin 117, F.R ⟨i.val,by omega⟩ = S.R ⟨i.val,by omega⟩) :
+    releaseReplicaCouplingNativeCost F = releaseReplicaCouplingNativeCost S := by
+  have hmap : replicaCouplingNativePorts.map (fun k => (F.R k).length) =
+      replicaCouplingNativePorts.map (fun k => (S.R k).length) := by
+    apply List.map_congr_left
+    intro k hk
+    have hlow := (mem_replicaCouplingNativePorts k).mp hk
+    exact congrArg List.length (hframe ⟨k.val,hlow.1⟩)
+  unfold releaseReplicaCouplingNativeCost
+  rw [hmap]
+
+
+theorem releaseReplicaCouplingNativeCost_eq_of_coupling_frame {T : ℕ}
+    {plan : ReplicaInteriorPlacement T} (placement : ReplicaCouplingPlacement plan)
+    (e : Fin 248 → Fin T)
+    (hnative : ∀ i : Fin 117, e ⟨i.val,by omega⟩ = placement.bank (Fin.castLE (by decide) i))
+    (S F : Stacks T A) (hbank : embStk placement.bank F = embStk placement.bank S) :
+    releaseReplicaCouplingNativeCost (embStk e F) = releaseReplicaCouplingNativeCost (embStk e S) := by
+  apply releaseReplicaCouplingNativeCost_eq_of_native_frame
+  intro i
+  change F.R (e ⟨i.val,by omega⟩) = S.R (e ⟨i.val,by omega⟩)
+  rw [hnative i]
+  exact congrArg (fun B : Stacks 168 A => B.R (Fin.castLE (by decide) i)) hbank
+
+theorem releaseReplicaCouplingNativeCost_eq_of_caller_frame (S F : Stacks 389 A)
+    (hbank : embStk ReplicaCouplingPlacement.standard.bank (embStk (Fin.castLE (by decide : 300 ≤ 389)) F) =
+      embStk ReplicaCouplingPlacement.standard.bank (embStk (Fin.castLE (by decide : 300 ≤ 389)) S)) :
+    releaseReplicaCouplingNativeCost (embStk (fun i : Fin 248 => replicaRecoveryCallerReg (Fin.castLE (by decide) i)) F) =
+      releaseReplicaCouplingNativeCost (embStk (fun i : Fin 248 => replicaRecoveryCallerReg (Fin.castLE (by decide) i)) S) := by
+  apply releaseReplicaCouplingNativeCost_eq_of_native_frame
+  intro i
+  have hi := replicaRecoveryCallerReg_native (Fin.castLE (by decide : 117 ≤ 168) i)
+  change F.R (replicaRecoveryCallerReg (Fin.castLE (by decide) i)) =
+    S.R (replicaRecoveryCallerReg (Fin.castLE (by decide) i))
+  have hi' : replicaRecoveryCallerReg (Fin.castLE (by decide : 117 ≤ 259) i) =
+      Fin.castLE (by decide : 300 ≤ 389) (ReplicaCouplingPlacement.standard.bank (Fin.castLE (by decide) i)) := hi
+  rw [hi']
+  exact congrArg (fun B : Stacks 168 A => B.R (Fin.castLE (by decide) i)) hbank
+
+theorem releaseReplicaCouplingNative_after_frame {T : ℕ} {body' : P → Pr P T Q A U}
+    (e : Fin 248 → Fin T) (he : Function.Injective e) (p : Pr P T Q A U)
+    (v vi : HS T Q A U) (S J : Stacks T A) (m : ℕ)
+    (hex : Exec body' p (mk v S) m (mk vi J))
+    (hframe : ∀ i : Fin 117, J.R (e ⟨i.val,by omega⟩) = S.R (e ⟨i.val,by omega⟩)) :
+    ∃ v' F, v'.user = vi.user ∧
+      Exec body' (.seq p (embProg e Empty.elim (releaseReplicaCouplingNative (P := Empty))))
+        (mk v S) (m+releaseReplicaCouplingNativeCost (embStk e S)) (mk v' F) ∧
+      embStk e F = releasedReplicaCouplingNative (embStk e J) ∧
+      (∀ k, (∀ i, e i ≠ k) → F.L k = J.L k ∧ F.R k = J.R k) := by
+  obtain ⟨vf,hu,hrelease⟩ := releaseReplicaCouplingNative_exec (body := fun z : Empty => nomatch z)
+    (embDn e vi) (embStk e J)
+  obtain ⟨v',hv,hu',hlift⟩ := exec_emb_ovr (body' := body') (ι := Empty.elim)
+    he (fun z => nomatch z) hrelease vi rfl J rfl
+  have hcost := releaseReplicaCouplingNativeCost_eq_of_native_frame (embStk e S) (embStk e J) hframe
+  rw [hcost] at hlift
+  exact ⟨v',_,hu'.trans hu,Exec.seq hex hlift,embStk_ovr he _ J,
+    fun k hk => embOvr_off _ J hk⟩
 
 theorem ReplicaRecoveryCoreReady.of_coupling_release {s : ℕ} [NeZero s]
     (H : ReplicaHaloProblem s) (W : ℕ) (S : Stacks 248 A)

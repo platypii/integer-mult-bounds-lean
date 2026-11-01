@@ -23168,3 +23168,27 @@ also join the trace. Complete workspace/selected bounds, global scheduling,
 tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
 The combined scoped axiom audit passes for 333404 declarations at 3315.9 MiB.
+
+### S4 checkpoint: native cleanup is paid once from the restored shared bank
+
+`releaseReplicaCouplingNativeCost_eq_of_native_frame` proves cleanup cost depends
+only on the owned native right stacks. The coupling-bank and concrete caller
+corollaries obtain this equality directly from the whole-bank frame already
+returned by the actual replica loop. Thus cleanup after all replicas has exactly
+the same cost as cleanup of the initial shared bank.
+
+`releaseReplicaCouplingNative_after_frame` appends the actual placed cleanup to
+an executed trace with that native frame, charges the initial-bank cost, returns
+the exact released worker view, and preserves all off-bank stacks. Its proof is
+structural over arbitrary executions and placements, with no replica cases.
+
+Inspection also showed that `RetainedCouplingReady` alone does not bound every
+unused native port. The uniform cleanup estimate must therefore come from the
+actual setup bank or its stronger stock certificate, rather than be inferred
+from readiness. That initial native-word bound remains open. The guarded check
+passes at 3265.2 MiB under default limits, and compatibility with initialized
+recovery and actual interior/coupling passes (15171 jobs, 3.5 GiB combined peak).
+Connecting cleanup/core setup to the actual caller, factory input production,
+complete resources, global scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 333411 declarations at 3313.8 MiB.
