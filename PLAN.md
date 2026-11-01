@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4009 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4011 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28340,3 +28340,42 @@ Guarded file check passes at 3442.0 MiB; expanded compatibility passes
 (16572 jobs, 3.5 GiB combined peak). Broad axiom audit passes for 342012
 declarations at 3546.1 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+
+### S4 checkpoint: actual routed computed call and endpoint-reading core step
+
+`Mult.PhaseCellRoutedComputedRecovery.routed_exec` transfers an owned halo
+prefix from the routed archive directly into recovery work port 124, then
+executes the complete computed ordered call. The exact final frame restores
+the full local work bank and every other tape while consuming that archive
+prefix and prepending the certified output to the existing result suffix.
+The payload is moved, not copied with the remaining archive retained locally.
+Its same-run time/stock bills include the prefix transfer.
+
+`Mult.PhaseCellComputedCoreStep.core_exec` uses the existing structural
+endpoint reader before that routed call. It reads one binary origin, generates
+the ordinary unary a/b inputs from origin and retained halo length, executes
+computed recovery, and erases both generated endpoint words afterward. The
+exact frame changes only the origins stream, halo archive and accumulated
+result. All other tapes restore, including both endpoint ports, recovery
+work, normalization source/queue and master bank. Output satisfies the
+unchanged ordered `PackedNormalizedJob.output` contract.
+
+This is a fixed runtime core step independent of the mathematical job. Its
+readiness premise is ordinary input readiness at the explicitly defined
+post-reader/post-transfer state; no computed numerical data, output or
+execution witness is supplied. Separations ensure transfer headers retain
+their values through endpoint generation. The same returned execution has
+all-depth stock with endpoint-reader, transfer and computed-call allowances;
+endpoint erasure adds its exact time without extra stock.
+
+Next lift this actual step through the existing counted scan with per-job
+ordinary readiness, matching origin/payload consumption and preserving the
+reserved banks. Sum complete grouped bills before selected-axis absorption;
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa unchanged.
+
+Guarded checks pass at 3430.7 MiB (routed call) and 3442.6 MiB (complete core
+step). Expanded compatibility passes (16574 jobs, 3.6 GiB combined peak).
+Broad axiom audit passes for 342025 declarations at 3546.9 MiB, permitting
+only propext, Quot.sound and Classical.choice.
