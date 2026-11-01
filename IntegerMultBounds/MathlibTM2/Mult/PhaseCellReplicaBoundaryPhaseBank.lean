@@ -42,6 +42,30 @@ theorem boundaryPhaseFactorPages {A : ℕ} (S : Stacks 255 A) {bo hf df : List (
   change S.R (Fin.castLE (by decide) k) = S.R (replicaBoundaryPhaseReg k)
   rw [replicaBoundaryPhaseReg_factor_fixed k (Or.inr hk)]
 
+theorem preparedBoundaryPhaseBank_of_native {A q w W N : ℕ} (S : Stacks 255 A)
+    (h : PackedPreparedBank q w W N (embStk (Fin.castLE (by decide : 242 ≤ 255)) S))
+    (hleft : ∀ i : Fin 242, S.L (Fin.castLE (by decide) i) = S.L (replicaBoundaryPhaseReg i)) :
+    PackedPreparedBank q w W N (embStk replicaBoundaryPhaseReg S) := by
+  apply h.of_runtime_frame (F := embStk replicaBoundaryPhaseReg S)
+  · funext i; exact (hleft i).symm
+  · intro k hk
+    change S.R (replicaBoundaryPhaseReg k) = S.R (Fin.castLE (by decide) k)
+    rw [replicaBoundaryPhaseReg_factor_fixed k (Or.inl hk)]
+  · change S.R (replicaBoundaryPhaseReg 119) = S.R 119
+    rw [replicaBoundaryPhaseReg_fixed _ (by decide)]
+    rfl
+  · intro k hk _
+    change S.R (replicaBoundaryPhaseReg k) = S.R (Fin.castLE (by decide) k)
+    rw [replicaBoundaryPhaseReg_factor_fixed k (Or.inr hk)]
+
+theorem boundaryPhaseFactorPages_of_native {A : ℕ} (S : Stacks 255 A) {bo hf df : List (Fin (A+4))}
+    (h : PackedBoundaryFactorPages bo hf df (embStk (Fin.castLE (by decide : 242 ≤ 255)) S)) :
+    PackedBoundaryFactorPages bo hf df (embStk replicaBoundaryPhaseReg S) := by
+  apply h.of_solution_frame
+  intro k hk _
+  change S.R (replicaBoundaryPhaseReg k) = S.R (Fin.castLE (by decide) k)
+  rw [replicaBoundaryPhaseReg_factor_fixed k (Or.inr hk)]
+
 private theorem seedRecovery_factor_frame {A : ℕ} (S : Stacks 255 A) (k : Fin 242)
     (hk : k.val < 64 ∨ 168 ≤ k.val) :
     (seededReplicaRecoveryState S).R (Fin.castLE (by decide) k) = S.R (Fin.castLE (by decide) k) := by

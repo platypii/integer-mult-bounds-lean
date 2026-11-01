@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3616 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3618 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22762,3 +22762,28 @@ residual/original-RHS pair. Shared factor generation, global archive loading,
 workspace/selected resources, global scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 332388 declarations at 3294.4 MiB.
+
+### S4 checkpoint: complete residual-to-recovered-output replica row
+
+`PhaseCellRetainedReplicaBoundaryRow` lifts the actual boundary-row solver into
+its static retained placement. The exact post-state changes only archive 238
+and the empty RHS port 143. Reverse bank-view bridges reuse the native factor
+and prepared-bank contracts without copying physical pages.
+
+`PhaseCellCompleteReplicaRow.completeReplicaRow_exec` composes this solve with
+finished recovery. Its input is an actual residual witness and matching original
+RHS, rather than a supplied boundary solution. It advances both queues, archives
+a fitted recovered field with full-halo error `1/2^target`, restores borrowed
+suffixes and both readiness contracts, and preserves shared factor pages and
+persistent headers. Its time is the sum of the existing boundary and recovery
+bills; numerical error proofs are reused unchanged.
+
+Guarded checks pass at 3275.0 MiB (retained boundary row) and 3282.1 MiB
+(complete row), with default limits. Compatibility with the initialized replica
+interior/coupling path passes (15144 jobs). Next instantiate the structural
+replica cursor with this complete transition, then connect actual shared-factor
+production and archive loading. Workspace/selected resources, global scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+The scoped axiom audit passes for 332404 declarations at 3295.5 MiB; retained
+initialized boundary setup compatibility also passes.
