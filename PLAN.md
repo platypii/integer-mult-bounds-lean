@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3790 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3793 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25083,3 +25083,36 @@ preparation), 3318.1 MiB (complete cached caller), 2081.8 MiB (bounded
 initialization) and 3300.1 MiB (readiness frame transport). Compatibility
 build passes (15689 jobs, 7.0 GiB combined peak). Scoped axiom audit passes
 for 336354 declarations at 3385.3 MiB.
+
+
+### S4 checkpoint: actual cached caller initializes masks once; native traffic loses table factor
+
+`PhaseCellPlacedInitializeRecoveryMasks` executes bounded shared mask generation
+in the common caller, deriving its geometry and scratch premises from the
+retained recovery core. Its exact state changes only the two cache tapes.
+Frame rules preserve all worker ports outside those caches, the ordinary gather
+bank and off-worker spectators, so existing readiness transport applies.
+
+`PhaseCellInitializedCachedBatchedReplicaRecovery` now composes that actual
+initializer before the complete cached recovery caller. It starts with empty
+cache tapes, initializes once, prepares every replica, runs the shared second
+interior solve, and returns assembled output certificates and the actual output
+tape. Setup time/workspace are explicitly added once, outside the replica bill.
+Initialized cache contents are no longer assumed as an entry oracle.
+
+`Cost.PhaseCellCachedRecoveryNativeTraffic` bounds the actual cached prepared
+coupling and complete preparation row. After separating the unchanged boundary
+solve, scalar-counter setup and numerical interval loop, native traffic is at
+most `300000*(t+(t-s)*band^2)*(wordWidth+metadataWidth+1)`. The old per-replica
+`tblC metadataWidth 1` factor is absent. This reuses the existing sparse page
+length and family kernel-volume proofs; it is a bound on the executed cached
+row's time certificate, not merely an isolated replacement worker.
+
+Next combine cached native traffic, scalar-counter setup and numerical estimates
+into total selected caller time, and establish selected caller workspace. Counting
+and scheduling distinct cores, first-pass/generated-factory execution, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Guarded checks pass at 3292.5 MiB (placed initialization), 3307.8 MiB
+(initialized complete caller) and 3389.3 MiB (cached native sparse traffic).
+Compatibility build passes (15742 jobs, 5.9 GiB combined peak). Scoped
+axiom audit passes for 336380 declarations at 3386.6 MiB.
