@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4005 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4006 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28237,4 +28237,38 @@ peak). Final guarded checks pass at 2077.5 MiB (whole-packet reversal),
 2041.1 MiB (ambient embedding), 3306.1 MiB (output certificate) and
 3308.6 MiB (ordered publication).
 Broad axiom audit passes for 341961 declarations at 3545.3 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: complete computed local recovery produces ordered publication
+
+`Mult.PhaseCellComputedOrderedRecovery.ordered_exec` composes the complete
+normalized recovery execution with the physical whole-packet replica-order
+pass. It starts from the same ordinary unary dimensions, original complex
+halo payload and scalar/work readiness as `normalized_exec`; no recovered
+fields, computed headers, numerical output or execution witnesses are inputs.
+The returned bytes satisfy the unchanged `PackedNormalizedJob.output` contract
+in original replica order. The program depends on fixed placement and program
+bounds, independently of the mathematical job.
+
+The reversal uses an injective ambient map, retained row/width/replica counters
+and scratch either cleared by recovery or initially empty. `orderedFinal`
+exposes the exact final frame: the recovery work bank is empty, the normalized
+intermediate source returns to its original suffix, and only the ordered
+destination receives the certified prefix. All other tapes restore. Expensive
+master generation still runs once. Time is the sum of normalized recovery and
+whole-packet reversal; the same returned execution has the sum of the earlier
+stock allowance and twice the reversal time allowance at every depth.
+
+The remaining placement hypotheses describe ordinary tapes and register
+separation; this does not yet instantiate the concrete supplier bank or run
+ordered groups. Next instantiate that placement and use the existing
+supplier/scan/publication interfaces, then sum complete grouped bills before
+selected-axis absorption. Tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa unchanged.
+
+Guarded file check passes at 3439.4 MiB. The local dependency build passes
+(15916 jobs, 3.5 GiB combined peak), and expanded compatibility passes
+(16569 jobs).
+Broad axiom audit passes for 341966 declarations at 3545.6 MiB, permitting
 only propext, Quot.sound and Classical.choice.
