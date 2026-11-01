@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3759 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3760 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24644,3 +24644,30 @@ integration also remain open. S4 is incomplete; kappa is unchanged.
 The revised uniform fast module passes at 3347.5 MiB. Compatibility
 with the bounded caller passes (15547 jobs, 3.4 GiB combined peak).
 Scoped axiom audit passes for 335455 declarations at 3353.6 MiB.
+
+
+### S4 checkpoint: actual recovery caller retains fast boundary-solve scaling
+
+`Cost.PhaseCellReplicaRecoveryPreparationFast` splits the actual preparation
+row into its prepared residual solve and `replicaRecoveryPreparationNonSolveCost`
+(boundary RHS construction plus collected recovery RHS work).
+`replicaRecoveryPreparationRow_fast_le` reuses `preparedResidual_fast_le`
+at the actual execution precision. The repeated numerical solve is bounded
+by boundary-row count times bandwidth times `p^(129/128)`, with no factor
+construction or per-row numerical setup charged.
+
+`batchedReplicaRecovery_boundary_fast_le` combines that row estimate with
+the actual caller's shared interior fast estimate. The resulting numerical
+coefficient is the sum of local interior coordinates and boundary rows times
+bandwidth, multiplied by replica count only once. Native/retained coupling
+work and shared setup remain explicit for their own estimates. The proof
+uses the existing kernel theorem; linear arithmetic avoids expensive
+elaboration through the unchanged compound cost term.
+
+Guarded check passes at 3335.1 MiB. Sharp retained coupling/native estimates,
+selected whole-caller space, first-pass/generated-factory execution,
+scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+Compatibility with the bounded caller passes (15548 jobs, 3.5 GiB
+combined peak). Scoped axiom audit passes for 335467 declarations at
+3353.9 MiB.
