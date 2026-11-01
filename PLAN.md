@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3618 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3619 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22787,3 +22787,23 @@ tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
 The scoped axiom audit passes for 332404 declarations at 3295.5 MiB; retained
 initialized boundary setup compatibility also passes.
+
+### S4 checkpoint: structural recovery cursor matches residual and original RHS order
+
+`PhaseCellReplicaRecoveryCursor` defines the paired residual/original-RHS queues
+and recovered output archive. Its head lemma converts the ordinary RHS order to
+the reverse index used by each residual witness. Initialization accepts the
+actual coupling archive contract; advancement consumes both prefixes and checks
+the new output predicate once; completion gives exhausted queues and the exact
+reversed output order. A frame lemma permits independent controller updates.
+These are arbitrary-list proofs, with no replica-specific checks.
+
+The cursor deliberately abstracts its output predicate so numerical error is
+supplied by the complete row theorem. Its narrow import closure excludes the
+boundary/recovery solver: the guarded check passes at 2193.2 MiB with default
+limits, and the module build passes. The actual counted recovery loop is still
+open: connect the complete row execution to cursor advancement and place its
+controller outside the worker bank. Shared-factor production, global loading,
+workspace/selected resources, scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 332424 declarations at 3296.2 MiB.
