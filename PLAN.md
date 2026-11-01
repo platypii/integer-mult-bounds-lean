@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3833 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3836 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25828,3 +25828,39 @@ volume/density estimates before combining with the closed recovery bound.
 Physical factory input-header integration, combined first-pass/preparation
 workspace, distinct-core amortization, tensor/R4 composition, layout restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: remove the repeated quadratic geometry charge from the first-pass path
+
+Reviewing the remaining first-pass native bill found that
+`replicaLocalCouplingCost` still includes `tblC V 1` inside every replica row.
+`tblC V 1` is quadratic in metadata width. The existing uncached composed caller
+and its partial selected arithmetic estimate are valid execution/cost results,
+but this repeated native charge is not justified by the desired fast bound.
+Do not try to hide it with polynomial volume absorption multiplied by replicas.
+The first-pass coupling implementation must use shared geometry caches.
+
+`Mult.PhaseCellCachedReplicaLocalCoupling` places the existing cached local
+interval solver in an arbitrary replica coupling bank. Its execution theorem
+works for either boundary mask, preserves both cache streams, and has exactly
+the original row's RHS/result endpoint. It derives the local count encoding
+from the existing geometry metadata, without evaluating geometry tables per row.
+
+`Cost.PhaseCellCachedReplicaCouplingTraffic` bounds its native traffic by the
+sparse halo volume times word/metadata width.
+`cachedReplicaLocalCoupling_fast_le` combines that bound with the existing
+active-row arithmetic estimate for either mask, obtaining the full per-row
+`(t+(t-s)*band^2)*p^(129/128)` cost at linear selected widths. No squared-axis
+premise or repeated scalar-counter preparation is needed. Shared cache
+generation is not included in that per-row bill and must be paid once.
+
+Guarded checks pass at 2134.2 MiB (cached row execution), 3368.8 MiB
+(native traffic) and 3370.5 MiB (full fast row). Compatibility build passes
+(15822 jobs, 3.5 GiB combined peak). The scoped axiom audit passes for
+336555 declarations at 3390.7 MiB. Next generalize the existing replica
+transition/loop over a row executor with this common endpoint, instantiate the
+cached row, and generate masks once outside that loop (false-source ribbon for
+the first pass; the guard mask is shared). Preserve the existing uncached
+execution theorem as a compatibility reference. Factory/header integration,
+combined workspace, distinct-core amortization, tensor/R4 composition, layout
+restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
