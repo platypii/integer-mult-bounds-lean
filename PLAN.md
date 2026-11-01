@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3619 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3620 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22807,3 +22807,25 @@ controller outside the worker bank. Shared-factor production, global loading,
 workspace/selected resources, scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 332424 declarations at 3296.2 MiB.
+
+### S4 checkpoint: actual complete row advances the accurate recovery cursor
+
+`PhaseCellReplicaRecoveryTransition` instantiates the cursor with fitted,
+full-halo accurate recovered fields. `ReplicaRecoveryCursor.execute` extracts
+the matched actual residual/original-RHS prefixes, runs `completeReplicaRow`,
+and advances the cursor. It preserves shared readiness, factor pages, persistent
+headers and borrowed suffixes. The solution family is indexed by processing
+order; its principal-system premise refers to the matching reverse-indexed RHS.
+
+`RecoveredReplicaRowSpec` measures the owned encoded field without an archive
+suffix. The existing suffix-read lemma transfers the actual machine-output
+error to this persistent witness, so later prepends do not require repeating
+any numerical proof. The execution has the same per-row cost as before.
+
+The guarded check passes at 3268.7 MiB with default limits; compatibility with
+the initialized replica interior/coupling path passes (15146 jobs, 3.5 GiB
+combined peak). Next lift this transition into the counted-loop controller
+outside the 255-register worker bank. Shared-factor production, global loading,
+workspace/selected resources, global scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 332429 declarations at 3296.8 MiB.
