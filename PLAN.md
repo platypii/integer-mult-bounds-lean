@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3836 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3837 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25864,3 +25864,32 @@ the first pass; the guard mask is shared). Preserve the existing uncached
 execution theorem as a compatibility reference. Factory/header integration,
 combined workspace, distinct-core amortization, tensor/R4 composition, layout
 restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: reusable residual finishing contract supports cached coupling
+
+`replicaCouplingResidual_finish` factors archiving and retirement over an
+arbitrary local worker. Its premises concern only the exact RHS/result endpoint,
+field/result word lengths and register separation. The existing uncached
+`replicaCouplingResidual_exec` now delegates its finishing proof to this rule;
+its program and theorem statement are unchanged.
+
+`Mult.PhaseCellCachedReplicaCouplingResidual` composes the checked cached local
+worker with the same finishing rule. It returns the identical
+`replicaResidualState` contract and exact cached-row-plus-retirement time bound
+for either boundary mask. Retained masks and pages survive because the final
+state changes only the field, RHS and external archive ports. Numerical
+correctness and the cached interval implementation are reused.
+
+Guarded checks pass at 2135.6 MiB (generic finishing/original compatibility)
+and 2124.8 MiB (cached residual). Compatibility build passes (15817 jobs,
+23.3 GiB combined peak); additional scoped-audit dependencies also build
+(15665 jobs, 5.9 GiB combined peak). The complete audit import closure builds
+(15896 jobs, 24.8 GiB combined peak). The scoped axiom audit passes for
+336559 declarations at 3393.3 MiB. Next generalize the staging/transition proof
+over a residual executor with this common endpoint, then reuse the counted
+replica loop and its accuracy/archive induction. The complete first-pass loop
+still uses the uncached worker until that substitution and shared mask
+initialization are proved. Factory/header integration, combined workspace,
+distinct-core amortization, tensor/R4 composition, layout restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
