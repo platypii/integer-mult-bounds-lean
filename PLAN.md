@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3968 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3969 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27711,3 +27711,22 @@ axiom audit passes for 341617 declarations at 3525.5 MiB. Next connect the
 returned raw output to complex pairing/cropping, then lift the actual step
 through the generic scan with unabsorbed grouped bills. S4 remains incomplete;
 kappa is unchanged.
+
+### S4 checkpoint: recovery certificates expose the encoded scalar fields
+
+`Mult.PhaseCellRecoveryOutputFields` extracts fitted scalar fields from
+GeneratedRecoveryOutput together with the exact encoded tape equation and
+each field's numerical error certificate. Reverse replica order remains
+explicit. The argument uses structural Forall₂ reasoning, without expanding
+concrete register banks or introducing a decoded-output assumption.
+
+RawRecoveryJob.output_fields_read transfers this same certificate to actual
+packed-interval reads with any following suffix. Thus complex assembly can
+consume the fields produced by recovery, rather than assuming an unrelated
+scalar output list. Pairing and target-order identification remain to be
+connected, followed by cropping, grouped execution and tensor restoration.
+S4 remains incomplete; kappa is unchanged.
+
+Guarded file check passes at 3376.7 MiB; compatibility build passes (15858
+jobs, 3.5 GiB combined peak); broad axiom audit passes for 341619 declarations
+at 3525.6 MiB.
