@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3593 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3597 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22521,3 +22521,34 @@ before the next row. The second interior pass, workspace/selected resources,
 global scheduling, tensor/R4 restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331365 declarations at 3268.1 MiB.
+
+### S4 checkpoint: generate the shared boundary mask and all RHS counters
+
+`PhaseCellReplicaBoundaryMask` embeds the existing metadata mask generator at
+the concrete boundary bank and counts its actual selectors. Geometry-width
+conditions follow from `ReplicaHaloProblem.coupling_geometry`; support follows
+from the halo boundary definition. The result contains the actual mask on 167
+and the computed boundary count on 116, with every other stack restored.
+
+`PhaseCellReplicaBoundaryFoldCounters` reuses the existing structural counter
+generator through the compatible fold placement, producing counters on
+117/118/120. `PhaseCellReplicaBoundaryCounters` also generates the retained
+boundary-symbol volume on 124 from count and width, restoring its work tapes.
+
+`PhaseCellInitializeReplicaBoundaryRhs` composes these actual programs once.
+From retained interval geometry/volume/width and fresh counters, it returns
+`ReplicaBoundaryRhsReady` for every subsequent row. Its structural frame changes
+only 116/117/118/120/124/167; low scratch and all streams/left tapes survive.
+There is no repeated mask, count or fold setup in the row controller.
+
+Guarded checks pass at 2074.3 MiB (placed fold counters), 2075.2 MiB (symbol
+volume composition), 2182.3 MiB (mask/count) and 2182.7 MiB (shared initializer).
+Compatibility with the concrete boundary row and initialized interior/coupling
+path passes (14845 jobs, 2.8 GiB combined peak). Default proof limits are unchanged.
+
+Next transport numerical readiness/factor pages through the initializer and
+compose the first actual initialized boundary row. Generating the shared factor
+setup, loading the residual archive, recovery, the second interior pass,
+workspace/selected resources, global scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331424 declarations at 3269.9 MiB.
