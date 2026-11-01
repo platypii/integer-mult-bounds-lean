@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3673 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3677 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23669,3 +23669,44 @@ full preparation/assembly time and workspace bounds. Generated-factory
 composition, scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 333975 declarations at 3329.7 MiB.
+
+### S4 checkpoint: execute the shared recovery interior and select packed outputs
+
+`PhaseCellReplicaRecoveryInteriorExec` composes the installed recovery source
+with the existing initialized replica interior controller and its paid real
+projection. Starting from ordinary original-format gather headers, the actual
+recovery RHS archive and released solver readiness, it returns the actual
+encoded second-pass output fields and an `ExecWithin` trace. Source installation
+constructs the new saved gather bank and borrowed suffix; all solver and
+initializer premises are transported through its exact one-port frame. No
+scalar interior pass is introduced.
+
+`PhaseCellReplicaRecoveryInteriorFast` proves the estimate for this executed
+program, including source reorder and real projection. Its exact bill is the
+existing initialized batch bill plus `N*(28*rowVolume+28)+18`. The fast estimate
+therefore has the same once-only shared interior setup, linear row traffic
+`N*(38*rowVolume+37)+18`, the existing linear publication term, and the existing
+`p^(129/128)` term. This closes the earlier gap between the proposed batch's
+estimate and the actual second-pass program; it is not yet the whole optimized
+recovery caller's bill.
+
+`PhaseCellReplicaRecoveryInteriorFields` applies the recovery acceptance rule
+to the actual `RealReplicaHaloOutput` rows. Selecting each computed interior
+field together with its retained boundary field gives fitting full-halo outputs
+at the final target, with no new numerical argument needed at assembly.
+`PhaseCellPackedPublicationMerge` specializes the existing word-selection loop
+to packed intervals. It consumes two aligned prefixes and a selection mask,
+restores their suffixes, and prepends the exact selected field in word order.
+Its bill is `span*(12*wordWidth+15)+4`; its native push bound is proved. Traffic
+uses the stored halo interval rather than the full ambient period.
+
+All four new modules pass guarded checks under default limits: 3263.5 MiB
+(executed second pass), 3238.4 MiB (actual-field acceptance), 2090.5 MiB (packed
+selector) and 3273.5 MiB (executed fast estimate). Compatibility with preparation,
+the generated baseline and periodic factor setup passes (15431 jobs, 7.5 GiB
+combined peak). Next supply reusable working masks, execute assembly over the
+actual interior/boundary archives, and join preparation and the second pass at
+a common physical placement. Full preparation/assembly time and workspace
+bounds, generated-factory composition, scheduling, tensor/R4 restoration and
+outer integration remain open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334002 declarations at 3327.5 MiB.
