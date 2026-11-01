@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3575 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3577 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22233,3 +22233,40 @@ certificate and selected coupling resource ledger remain open. Boundary
 recovery and the second interior pass, global endpoint scheduling, tensor/R4
 restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 329041 declarations at 3233.6 MiB.
+
+
+### S4 checkpoint: connect the actual initialized interior pass to residual coupling
+
+`PhaseCellReleasedReplicaCoupling` prepends the existing actual header reload
+to shared setup and the complete coupling loop. It derives ordinary coupling
+readiness from the released numerical bank and retained `ReplicaLoopHeaders`.
+The width and count masters, blank controls and native low scratch follow from
+that state; the execution-width inequalities are discharged from the existing
+sizing definitions. No independently prepared coupling header bank is assumed.
+
+The caller uses gather 123 for symbol volume, 104/105 for scratch, 122 for the
+private clock and fresh gather 125 for the residual archive. A static placement
+lemma proves all controls distinct using the existing gather/bank injections
+and disjointness. The original packed RHS at gather 124 is preserved. The
+archive is exactly the encoded residual rows, without a new tape allocation.
+
+`PhaseCellInitializedReplicaInteriorCoupling` finishes an actual initialized
+interior trace with real projection, matching RHS queue construction, header
+reload, shared setup and all-replica residual coupling. It transports the
+released numerical bank and retained headers through the actual row-construction
+frame. Its output releases both queue suffixes and retains residual witnesses,
+page, geometry, counters and recovery scratch. Its time bill is the original
+interior trace plus projection, reverse-copy and released coupling bills.
+
+Guarded checks pass at 2234.0 MiB (released-bank caller) and 2207.7 MiB
+(interior-to-coupling bridge). The bridge supplies the explicit list-index proof
+to avoid unnecessary index automation under the large trace context; default
+proof limits are unchanged. Compatibility with native setup and selected row
+resources passes (14849 jobs, 2.8 GiB combined peak).
+
+Next discharge the remaining geometry/coefficient-fit and fresh extended-bank
+conditions from the initialized layout, attach the local arithmetic workspace
+and selected coupling ledger, and feed the residual archive to boundary recovery
+and the second interior pass. Global endpoint scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 329048 declarations at 3239.8 MiB.
