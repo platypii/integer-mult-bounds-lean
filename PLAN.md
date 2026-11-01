@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3658 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3664 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23545,7 +23545,47 @@ factor execution), 3333.3 MiB (coupled caller), 3328.8 MiB (interior composition
 and 3472.2 MiB (complete generated execution); remaining modified-module peaks
 are below these. Scoped compatibility passes (15460 jobs, 3.7 GiB combined
 peak), and the axiom audit passes for 333837 declarations at 3324.8 MiB.
-Next close selected fast time and complete workspace bounds for this exact
-trace, reusing the existing interior/coupling and factor resource language,
-then finish scheduling, tensor/R4 restoration and outer integration. S4 is
-incomplete; kappa is unchanged.
+This trace is a correctness baseline. The subsequent cost audit found that
+its scalar recovery repeats interior weight setup per replica; the intended
+fast bound requires a batched second interior pass (see the next checkpoint).
+Complete workspace bounds, scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: batch the recovery interior at the original word format
+
+The exact `PhaseCellGeneratedReplicaRecoveryTime` audit splits the executed
+baseline into the first batched interior/coupling bill, once-only factory and
+header work, and a per-replica bill containing scalar recovery. That scalar
+recovery runs keyed interior setup again for every replica. The baseline is
+correct, but its fast resource bound is not established by the prior composition.
+
+`PhaseCellReplicaRecoveryProblem` packages the existing boundary-format recovery
+lemma as an arbitrary-row contract and builds a second `ReplicaHaloProblem` from
+its computed recovery RHS rows. Precision, stage, word width, metadata width,
+geometry and replica count agree with the first pass. The existing interior
+controller and approximation contract therefore apply directly. Boundary values
+are retained separately and the generic acceptance rule proves the final splice.
+`PhaseCellReplicaRecoveryBatchData` constructs these contracts from actual
+residual specifications and generated boundary factor data; it assumes no
+computed recovery RHS or execution witness. `PhaseCellReplicaRecoveryBatchFast`
+instantiates the existing batch estimate, paying shared setup once for this
+second pass. This is an estimate for the proposed batched interior, not for the
+old scalar baseline or the complete optimized caller.
+
+`PhaseCellReplicaRecoveryRhs` executes only boundary unfolding and recovery RHS
+construction, with an exact poststate and preserved factor/coupling core.
+`PhaseCellPreparedReplicaRecoveryRhs` composes physical source preparation and
+that execution in the retained caller. It advances the original RHS queue and
+returns the computed boundary and modified RHS prefixes with their borrowed
+suffixes, releasing disposable count/mask data and preserving all other ports.
+It deliberately stops before the scalar interior solve.
+
+All six new modules pass guarded checks under default limits; peaks range from
+3255.2 to 3312.2 MiB. The prepared caller peaks at 3275.8 MiB. Compatibility with
+the generated baseline and periodic factor setup passes (15428 jobs, 3.4 GiB
+combined peak). The scoped axiom audit passes for 333914 declarations at
+3326.5 MiB. Next implement collection/retirement of these actual prefixes over
+all replicas, bound simultaneous archives and the full preparation/assembly
+bill, execute the existing second batch controller, and compose the factory.
+Complete workspace bounds, scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
