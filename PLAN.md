@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3815 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3816 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25418,3 +25418,26 @@ amortization using structural schedule lemmas. Reuse existing execution and
 frame contracts rather than build another generic execution framework. Tensor/R4
 composition, restored layouts and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
+
+
+### S4 checkpoint: execute first interior pass and residual coupling directly
+
+`Mult.PhaseCellExecutedReplicaInteriorCoupling.initializedReplicaInteriorCoupling_exec`
+starts from ordinary loop headers, the released numerical bank and fresh cache
+ports. It executes the generated halo-key interior loop, then applies the
+existing residual-coupling continuation. Callers no longer supply a completed
+interior trace. The total time bound includes accumulator allocation, key
+generation, every interior key, real-row projection, RHS copying and coupling.
+
+The result retains the actual residual archive, its per-replica numerical
+contracts, the restored RHS port, coupling readiness, metadata and recovery RHS
+headers. A structural frame composes both stages and preserves right registers
+outside their combined footprint. This is an execution theorem; it does not
+yet establish a combined workspace bound for the coupling stage.
+
+Guarded module check passes at 3272.6 MiB. Compatibility build passes
+(15794 jobs, 3.5 GiB combined peak). The scoped axiom audit passes for
+336453 declarations at 3388.3 MiB. Next connect these outputs and the generated
+boundary factor pages to `ReplicaRecoveryPreparationReady` in the common caller;
+retain a shared factory across replicas. Distinct-core amortization, tensor/R4
+composition, layout restoration and outer integration remain open. S4 is incomplete.
