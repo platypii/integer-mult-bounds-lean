@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3729 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3732 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24302,3 +24302,38 @@ Whole-caller workspace, selected resource bounds, first-pass/generated-factory
 integration, scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334261 declarations at 3335.7 MiB.
+
+
+### S4 checkpoint: complete retained spatial coupling steps have bounded workspace
+
+`PhaseCellRetainedPageSpatialCouplingRowStock` composes coefficient-prefix
+copying, counted input preparation and the bounded retained arithmetic row.
+The exact coefficient page, source suffix and geometry are restored while the
+computed result word is appended. Native copying/preparation certificates are
+structural in arbitrary register maps and data.
+
+`PhaseCellRetainedMaskedSpatialRowStock` includes coefficient-page advancement,
+the active/skip branch and actual guard-symbol consumption. An inactive row
+uses its existing RHS-copy trace; an active row uses the bounded numerical
+trace. An explicit bound on the zero-push guard read avoids expensive resource
+inference without raising proof limits.
+
+`PhaseCellRetainedSpatialRowStepStock.retainedPageSpatialCouplingRowStep_list_exec_within`
+now covers the complete spatial step, including RHS-prefix consumption,
+source-cursor advancement and coordinate increment. Its workspace allowance
+is `realWeightWorkspace K w (2*band+1)+13000*(band+1)*(w+1)`, independent of
+interval/replica counts. The original numerical output, cursor/page state and
+time bill are retained. The existing source-index hypothesis is passed
+explicitly to avoid automatic index-proof search through the larger contract.
+
+Guarded checks pass at 2118.0 MiB (spatial arithmetic/supply), 2118.4 MiB
+(guarded/masked row) and 2117.7 MiB (complete spatial step). Compatibility with
+the actual batched recovery bill and generated baseline passes (15458 jobs,
+2.8 GiB combined peak). Next formalize the complete step's endpoint storage
+balance: guard consumption pays for the coordinate tick, and the RHS/result,
+source/saved-source and coefficient/saved-page transfers balance. Use it to
+share the step reserve through the interval loop and recovery RHS lifecycle.
+Whole-caller workspace, selected resource bounds, first-pass/generated-factory
+integration, scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334274 declarations at 3335.9 MiB.
