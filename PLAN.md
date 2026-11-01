@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3568 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3571 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22093,3 +22093,39 @@ remain outside the replica loop. Boundary recovery and the second interior
 pass, global endpoint scheduling, tensor/R4 restoration and outer integration
 remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 328824 declarations at 3226.9 MiB.
+
+
+### S4 checkpoint: execute local replica coupling and archive its residual
+
+`PhaseCellReplicaLocalCoupling` embeds the existing packed local coupling interval
+in the disjoint replica bank. Its actual trace restores the coefficient page,
+geometry and all spectators; the exact final state changes only RHS port 93 and
+residual port 110. The numerical output is the existing guarded coupling field.
+Its time bill is named once as `replicaLocalCouplingCost`.
+
+`PhaseCellFinishReplicaCouplingRow` composes existing counted-prefix discard and
+transfer operations. It retires the owned field prefix, archives the residual
+prefix in word order and restores both source suffixes and scratch. Its exact
+native time is `12*V+12`, with workspace allowance twice that bill.
+
+`PhaseCellReplicaCouplingResidual` executes local coupling followed by that
+cleanup. Its exact final state changes only the released field port, consumed
+RHS port and residual archive; the borrowed residual source is restored. The
+`replicaResidualState_native` projection and readiness theorem prove that an
+archive outside the native bank preserves retained scalar counters and ordinary
+headers. This supplies a reusable mathematical and physical row operation,
+without assuming a per-replica coupling execution.
+
+Guarded checks pass at 2124.5 MiB (placed local coupling), 1941.9 MiB (native
+cleanup) and 2138.9 MiB (coupling, cleanup and retained readiness). Compatibility
+with initialized runtime and selected replica row resources passes
+(14840 jobs, 2.7 GiB combined peak).
+
+Next connect this operation to `ReplicaCouplingCursor.stage`, preserving the
+cursor and restored shared bank across the archive transition, and lift the
+result structurally over replicas. The local arithmetic step currently has
+an actual execution and time bound; its combined workspace certificate remains
+open. Boundary recovery and the second interior pass, global endpoint schedule,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+The scoped axiom audit passes for 329023 declarations at 3232.9 MiB.
