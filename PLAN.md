@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3762 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3763 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24731,3 +24731,27 @@ kappa is unchanged.
 Compatibility with the bounded caller passes (15550 jobs, 3.5 GiB
 combined peak). Scoped axiom audit passes for 335486 declarations at
 3353.7 MiB.
+
+
+### S4 checkpoint: actual active coupling count reuses the ambient geometry cover
+
+`Cost.PhaseCellReplicaRecoveryGeometryFast.retainedCouplingActiveRows_le_geometry`
+injects shifted interval indices into ambient active guard indices. The
+existing exact guard count and `couplingGuard_full_count_le` then bound
+active work by `haloBoundaryCountBound s t (2*band) a b+4*band`.
+No new geometric cover or individual mask cases are proved.
+
+`batchedReplicaRecovery_geometry_fast_le` substitutes this active-row bound
+and the existing boundary cardinality estimate into the actual complete
+caller numerical estimate. All numerical coefficients are now expressed
+in the existing halo geometry language: local interior coordinates,
+boundary-count times bandwidth, and enlarged-boundary/guard-strip count
+times bandwidth. Native preparation and shared setup remain explicit.
+
+Guarded module check passes at 3340.9 MiB. Next discharge selected geometry
+volume and remaining native traffic bounds. Selected whole-caller space,
+first-pass/generated-factory execution, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Compatibility with the bounded caller passes (15551 jobs, 3.5 GiB
+combined peak). Scoped axiom audit passes for 335488 declarations at
+3354.3 MiB.
