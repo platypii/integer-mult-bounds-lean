@@ -65,11 +65,10 @@ theorem recovery_active_cover (band a b : ℕ) :
     omega
   exact hzero (Finset.mem_union.mpr (Or.inr hext))
 
-theorem recovery_active_card_le (hst : s < t) (band a b : ℕ) :
+theorem recovery_active_card_le_boundary (band a b : ℕ) :
     (Finset.univ \ recoveryZeroRows s t band a b).card ≤
-      haloBoundaryCountBound s t (2*band) a b+4*band := by
+      (haloBoundary s t (2*band) a b).card+4*band := by
   have hc := Finset.card_le_card (recovery_active_cover (s := s) (t := t) band a b)
-  have hB := haloBoundary_card_bound hst (2*band) a b
   have h0 := haloVertices_card_le s 0 band
   have hs := haloVertices_card_le s (s-band) s
   have ha := haloVertices_card_le s (a-band) a
@@ -79,6 +78,12 @@ theorem recovery_active_card_le (hst : s < t) (band a b : ℕ) :
   have h3 := Finset.card_union_le ((haloBoundary s t (2*band) a b ∪ haloVertices s 0 band) ∪ haloVertices s (s-band) s) (haloVertices s (a-band) a)
   have h4 := Finset.card_union_le (((haloBoundary s t (2*band) a b ∪ haloVertices s 0 band) ∪ haloVertices s (s-band) s) ∪ haloVertices s (a-band) a) (haloVertices s b (b+band))
   omega
+
+theorem recovery_active_card_le (hst : s < t) (band a b : ℕ) :
+    (Finset.univ \ recoveryZeroRows s t band a b).card ≤
+      haloBoundaryCountBound s t (2*band) a b+4*band :=
+  (recovery_active_card_le_boundary band a b).trans
+    (Nat.add_le_add_right (haloBoundary_card_bound hst (2*band) a b) _)
 
 theorem haloExterior_active_cover (band a b : ℕ) :
     Finset.univ \ haloExterior s band a b ⊆

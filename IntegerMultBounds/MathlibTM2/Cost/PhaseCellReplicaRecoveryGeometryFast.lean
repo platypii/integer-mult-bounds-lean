@@ -11,10 +11,10 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 
-theorem retainedCouplingActiveRows_le_geometry {s t : ℕ} [NeZero s] (hst : s < t)
+theorem retainedCouplingActiveRows_le_boundary {s t : ℕ} [NeZero s] (hst : s < t)
     (boundary : Bool) (band a b origin N : ℕ) (hb : b ≤ s) (hfit : origin+N ≤ s) :
     retainedCouplingActiveRows boundary s t band a b origin N ≤
-      haloBoundaryCountBound s t (2*band) a b+4*band := by
+      (haloBoundary s t (2*band) a b).card+4*band := by
   have hshift : retainedCouplingActiveRows boundary s t band a b origin N ≤
       ((Finset.range s).filter (fun j => couplingSkipAt boundary s t band a b j = false)).card := by
     apply Finset.card_le_card_of_injOn (fun j => origin+j)
@@ -33,8 +33,22 @@ theorem retainedCouplingActiveRows_le_geometry {s t : ℕ} [NeZero s] (hst : s <
   have hsum : (couplingZeroRows true s t band a b).card+
       ((Finset.range s).filter (fun j => couplingSkipAt boundary s t band a b j = false)).card = s := by
     simpa only [Bool.eq_false_iff,Finset.card_range,htrue] using hpart
-  have hfull := couplingGuard_full_count_le hst boundary band a b
+  have hcomp : (Finset.univ \ couplingZeroRows true s t band a b).card =
+      s-(couplingZeroRows true s t band a b).card := by
+    rw [Finset.card_sdiff_of_subset (Finset.subset_univ _)]
+    simp
+  have hfull : s-(couplingZeroRows true s t band a b).card ≤
+      (haloBoundary s t (2*band) a b).card+4*band := by
+    rw [←hcomp]
+    exact recovery_active_card_le_boundary band a b
   omega
+
+theorem retainedCouplingActiveRows_le_geometry {s t : ℕ} [NeZero s] (hst : s < t)
+    (boundary : Bool) (band a b origin N : ℕ) (hb : b ≤ s) (hfit : origin+N ≤ s) :
+    retainedCouplingActiveRows boundary s t band a b origin N ≤
+      haloBoundaryCountBound s t (2*band) a b+4*band :=
+  (retainedCouplingActiveRows_le_boundary hst boundary band a b origin N hb hfit).trans
+    (Nat.add_le_add_right (haloBoundary_card_bound hst (2*band) a b) _)
 
 theorem batchedReplicaRecovery_geometry_fast_le (cl cw cr cV : ℕ) :
     ∃ C D E : ℝ, 0 ≤ C ∧ 0 ≤ D ∧ 0 ≤ E ∧

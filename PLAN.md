@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3912 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3913 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26956,3 +26956,37 @@ guards, instantiate core-class budgets, and account for descriptor traffic and
 cleanup. Peak stock budgets, physical component production, tensor/R4
 composition, layout restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: sparse core work is counted by pointwise halo overlap
+
+`NLogN.PhaseCellCoreHaloOverlap` proves that every ambient point lies in at
+most six scheduled halos: three fitting quotient neighbours and at most three
+full-line fallbacks. A generic double-counting theorem consequently bounds the
+sum of intersections with any sparse set E by 6*E.card, without charging an
+ambient volume per core. No selected-width or numerical assumptions enter this
+structural overlap proof.
+
+`NLogN.PhaseCellCoreBoundaryVolume` applies the overlap bound to the complement
+of the ambient phase interior. Actual halo boundary counts sum to at most six
+times that sparse ambient boundary plus 2*boundaryBand per core. The boundary
+band is independent of the core-halo construction band, allowing recovery's
+doubled band to reuse the same schedule.
+
+`recovery_active_card_le_boundary` and
+`retainedCouplingActiveRows_le_boundary` preserve actual boundary cardinality
+before the old minimum-bound relaxation; their prior coarse theorems are now
+short corollaries. `Cost.PhaseCellCoreActiveVolume` connects the executed active
+row counters to the overlap estimate. Their sum is at most
+6*ambientBoundary(2*band)+8*band*coreCount. Including stencil width, the total
+is at most 144*(t-s)*band²+24*coreCount*band² for either mask. This separates
+global phase-cut work from the per-core guard bill needed for amortization.
+
+Guarded checks pass at 1878.1 MiB (overlap), 1868.5 MiB (core boundary),
+1913.6 MiB (exterior bridge), 3344.9 MiB (executed geometry bridge), and
+3335.5 MiB (active work). Full scoped compatibility build passes (16120 jobs,
+44.0 GiB combined observed peak); axiom audit passes for 338841 declarations at
+3461.6 MiB. Next sum the full local volume, including scalar preparation and
+normalization payload, apply wider-core guard amortization, and instantiate
+core-class time budgets. Descriptor traffic/cleanup, peak stock budgets,
+physical component production, tensor/R4 composition, layout restoration and
+outer integration remain open. S4 is incomplete; kappa is unchanged.
