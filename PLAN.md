@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3973 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3975 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27806,3 +27806,38 @@ tensor/R4 composition remain open. S4 is incomplete; kappa is unchanged.
 Compatibility build passes (15863 jobs, 3.5 GiB combined peak). Expanded
 axiom audit passes for 341657 declarations at 3526.7 MiB.
 Final guarded module checks pass at 1948.2 MiB (setup) and 3388.9 MiB (prepared pairing).
+
+### S4 checkpoint: one computed call returns paired complex recovery output
+
+`Mult.PhaseCellRetainedComputedRecoveryExec` factors the existing executed
+master-generation/recovery prefix into retainedProgram and exec_retained.
+It returns the same raw output certificate and trace, together with generated
+master lengths and the original frame. The existing ComputedRecoveryPlan.exec
+now reuses this prefix and adds master retirement; its public contract and
+uniform program remain unchanged. The numerical execution proof is not copied.
+
+`Mult.PhaseCellComputedPairedRecoveryExec` inserts preparedPairRecoveryOutput
+before master retirement. Pairing setup uses precision/origin/end masters
+and five already-cleared recovery work registers. No master generation is
+repeated, no computed packet header is supplied, and pairing scratch restores
+before exported masters are erased. The final exact frame is the original
+caller state with the private work bank empty and certified complex output
+prepended to result. Only register placement/separation and the existing pure
+target-order equality supplement the original computed-call inputs.
+
+Time is master setup + raw lifecycle + complete prepared-pairing bill +
+master retirement. The same execution has stock masterInput.stock + raw
+lifecycle stock + eight times the prepared-pairing bill; final master cleanup
+adds time and no stock. Complex error is the sum of the two component errors.
+The actual-constructor target-order theorem already supplies the equality.
+
+Next instantiate the small pairing map/concrete supplier wiring and specialize
+to actual selected core jobs, then connect cropping/publication and ordered
+group execution. Sum complete unabsorbed bills before selected-axis absorption.
+Tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+
+Expanded compatibility build passes (16538 jobs, 5.9 GiB combined peak).
+Guarded file checks pass at 3426.3 MiB (retained prefix), 3424.8 MiB
+(restoring raw call) and 3443.5 MiB (computed complex call). The broad axiom
+audit passes for 341663 declarations at 3527.6 MiB.
