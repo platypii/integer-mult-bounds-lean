@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3797 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3800 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25177,3 +25177,36 @@ remain open. S4 is incomplete; kappa is unchanged.
 Guarded module check passes at 3265.2 MiB. Compatibility build passes
 (15747 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for 336394
 declarations at 3386.7 MiB.
+
+
+### S4 checkpoint: complete initialized recovery time has a closed selected bound
+
+`Cost.PhaseCellReplicaSharedSetupScale` gives a reusable monotonicity rule
+for `PackedHaloPassEnvelope`. A quadratic enlargement bounds both actual
+factory working widths from ordinary pass dimensions, eliminating the extra
+computed-width premises from the shared setup estimate. The resulting bound
+is a fixed constant times the twelfth power of the base envelope.
+
+`Cost.PhaseCellSelectedReplicaSharedSetup` constructs that envelope from
+selected axis size and linear word/metadata precision. It proves that any
+fixed multiple of the complete shared interior setup fits below whole-box
+volume eventually, uniformly in the selected axis. The proof reuses the
+existing selected polynomial-volume theorem; large constants are transported
+through a generic arithmetic identity rather than expanded normalization.
+
+`Cost.PhaseCellSelectedCachedRecoveryTotalFast.selectedInitializedCachedReplicaRecovery_total_fast_le`
+combines this with the actual initialized cached caller estimate and recovery
+batch format equalities. Every step count bounded by that caller's time
+certificate now satisfies `2*T+24 + D*replicas*t*(1+band^2/d)*p^(129/128)`.
+There is no remaining explicit setup or per-replica native residue in this
+selected time bound. The two volume allowances cover mask initialization and
+shared interior setup for one recovery core; counting/scheduling distinct
+core instances remains a separate obligation.
+
+Next establish selected caller workspace and connect first-pass/generated-
+factory execution, the distinct-core schedule, tensor/R4 restoration and outer
+integration. S4 is incomplete; kappa is unchanged.
+Guarded checks pass at 3233.9 MiB (computed-width envelope enlargement),
+3329.2 MiB (selected shared setup) and 3374.6 MiB (complete selected time).
+Compatibility build passes (15750 jobs, 3.5 GiB combined peak). Scoped
+axiom audit passes for 336398 declarations at 3386.9 MiB.
