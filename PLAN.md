@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3888 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3889 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26622,3 +26622,36 @@ restoring descriptor-step/cleanup interface and connection to the existing
 shared-peak descriptor scheduler. The remaining shared bills and row traffic
 must use the same sum-before-absorption ledger. Tensor/R4 composition, layout
 restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: restoring descriptor step for the physical cached caller
+
+The second interior loop's existing input/output invariant and final gather
+view now survive the recovery wrappers. Assembly preserves both streams by
+construction, and the frame is threaded through cached initialization,
+preparation, native release, the first pass, generated factors and explicit
+input execution. No executable program or numerical proof changes. Existing
+uncached clients discard the stronger endpoint fact.
+
+`Mult.PhaseCellGeneratedRecoveryDescriptorStep` uses the established generic
+`descriptorBankStep_exec_restored`: load the ordinary 392-register input packet,
+execute the complete physical cached caller, collect its assembled output on
+391, then clear both sides of the private bank. The exact restored endpoint is
+`dispatchedDescriptorState`, with the descriptor tape/scratch and complementary
+host state restored. `GeneratedRecoveryOutput` retains the actual assembly
+certificates. Mathematical uniform time/stock bounds on the returned recovery
+problem are premises; solver executions and readiness certificates are derived
+from `generatedRecoveryInput_exec_within`, not assumed.
+
+Final private storage follows by cancelling preserved global tapes from the
+actual stock trace. Existing cleanup costs at most `6*stock+2358`. Ambient-depth
+shifting reuses the same execution and endpoint for every depth. The resulting
+step has the existing descriptor scheduler's time/stock/restore contract.
+The raw mathematical budgets remain explicit so subsequent scheduling can
+sum polynomial setup before volume absorption rather than charge T per core.
+
+The guarded descriptor check passes at 3348.6 MiB. The scoped compatibility
+build passes (15963 jobs, 10.8 GiB combined peak); the axiom audit passes for
+336890 declarations at 3405.4 MiB. Next instantiate mathematical job records
+and connect this restoring step to the shared-peak descriptor scheduler, with
+its affine setup/row ledger. Tensor/R4 composition, layout restoration and
+outer integration remain open. S4 is incomplete; kappa is unchanged.

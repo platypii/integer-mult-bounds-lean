@@ -67,7 +67,7 @@ theorem preparedCachedBatchedReplicaRecovery_exec (H : ReplicaHaloProblem s) (ta
       List.Forall₂ (ReplicaRecoveryAssemblyOutput B Ds) (List.finRange H.Fs.length) outputs ∧
       G.R 257 = S.R (replicaRecoveryPreparationCallerWorkerReg 125) ∧ G.R 247 = buffers.accumulatorTail ∧
       G.R 391 = outputs.reverse.flatten ∧
-      Exec body (preparedCachedBatchedReplicaRecovery hR hQ) (mk v S) n (mk v' G) := by
+      Exec body (preparedCachedBatchedReplicaRecovery hR hQ) (mk v S) n (mk v' G) ∧ (G.inp = buffers.input ∧ G.out = buffers.output) := by
   obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hready,hcountJ,hL,hin,hout,h125,hframe,hnative⟩ :=
     preparedReplicaRecoveryArchives_exec (body := body) H target (by omega : 4 ≤ A) X buffers v S
       headers hblank residuals hlen harchive hgood columns hfactor hleftShared hcore hcountEmpty hmask hvolume hblankSetup
@@ -90,14 +90,14 @@ theorem preparedCachedBatchedReplicaRecovery_exec (H : ReplicaHaloProblem s) (ta
       (S.R (replicaRecoveryPreparationCallerWorkerReg 238)) buffers.solverOutputTail
       (J.R (replicaRecoveryPreparationCallerWorkerReg 125)) (J.R (replicaRecoveryPreparationCallerWorkerReg 256))
       (embStk replicaRecoveryPreparationCallerWorkerReg J) := by simpa only [h93] using hready
-  obtain ⟨B,Ds,v',G,n₂,outputs,hlenD,hu₂,hn₂,hcert,h257,h247,h391,he₂⟩ :=
+  obtain ⟨B,Ds,v',G,n₂,outputs,hlenD,hu₂,hn₂,hcert,h257,h247,h391,he₂,hstreams⟩ :=
     initializedCachedBatchedReplicaRecovery_exec_within (body := body) H target hR hQ hA hp hwidth hsep hpad
       htarget columns push c hpush M hpushM X hX R K hpushR hpushK buffers _ _ _ v₁ J hreadyJ
       ((hport 159 (by decide) (by decide)).trans h159) ((hport 161 (by decide) (by decide)).trans h161)
       hperipheralJ (by rw [hcountJ]; exact hcount) (by intro i; rw [hL]; exact hleft i)
       ((hport 110 (by decide) (by decide)).trans h110)
       ((hframe 248 (by decide) h248Off).trans h248) depth
-  refine ⟨B,Ds,v',G,n₁+n₂,outputs,hlenD,hu₂.trans hu₁,by omega,hcert,?_,h247,?_,Exec.seq he₁ he₂.toExec⟩
+  refine ⟨B,Ds,v',G,n₁+n₂,outputs,hlenD,hu₂.trans hu₁,by omega,hcert,?_,h247,?_,Exec.seq he₁ he₂.toExec,hstreams⟩
   · exact h257.trans (hport 125 (by decide) (by decide))
   · simpa only [h391J,List.append_nil] using h391
 

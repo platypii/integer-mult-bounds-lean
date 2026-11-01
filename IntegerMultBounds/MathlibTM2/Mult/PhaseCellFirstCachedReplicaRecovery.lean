@@ -72,7 +72,7 @@ theorem firstCachedReplicaRecovery_exec (H : ReplicaHaloProblem s) (hR : rpState
       Ds.length = H.Fs.length ∧ v'.user = v.user ∧ n ≤ firstCachedReplicaRecoveryTime H (B.problem htarget) ∧
       List.Forall₂ (ReplicaRecoveryAssemblyOutput B Ds) (List.finRange H.Fs.length) outputs ∧
       G.R 257 = S.R (replicaRecoveryPreparationCallerWorkerReg 125) ∧ G.R 247 = buffers.accumulatorTail ∧
-      G.R 391 = outputs.reverse.flatten ∧ Exec body (firstCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) := by
+      G.R 391 = outputs.reverse.flatten ∧ Exec body (firstCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) ∧ (G.inp = buffers.input ∧ G.out = buffers.output) := by
   obtain ⟨v₁,J,n₁,residuals,hu₁,hn₁,he₁,hlen,harchive,hgood,hfactorJ,hshared,hrhsHeaders,h247,h248J,
     hnativeL,hleftFrame,hrightFrame,hperipheral,h93,h110,hshare,hcleanup⟩ :=
     firstCachedReplicaPass_shared_exec (body := body) H hR hQ hA hspan horigin R K hpushR hpushK hpad buffers v S
@@ -137,13 +137,13 @@ theorem firstCachedReplicaRecovery_exec (H : ReplicaHaloProblem s) (hR : rpState
     have hh := hshare 125 (by decide) (by decide)
     norm_num only [replicaRecoveryBatchCoupling_bank,Fin.castLE] at hh
     exact hh
-  obtain ⟨B,Ds,v',G,n₂,outputs,hlenD,hu₂,hn₂,hcert,h257,hout,houtput,he₂⟩ :=
+  obtain ⟨B,Ds,v',G,n₂,outputs,hlenD,hu₂,hn₂,hcert,h257,hout,houtput,he₂,hstreams⟩ :=
     releasedPreparedCachedReplicaRecovery_exec (body := body) H target hR hQ hA hp hwidth hspan hpad htarget
       columns push c hpush M hpushM X hX R K hpushR hpushK buffers v₁ J hrhsHeaders
       ((hhigh 391 (by decide)).trans h391) residuals hlen harchive hgood hfactorJ hleftSharedJ hshared h167J
       hrhsHeaders.volume hblankSetupJ hperipheral h159J h161J
       (by rw [hhigh 390 (by decide)]; exact hcount) hleftJ h93 h110 (h248J.trans h248) depth
-  refine ⟨B,Ds,v',G,n₁+n₂,outputs,hlenD,hu₂.trans hu₁,?_,hcert,h257.trans h125J,hout,houtput,Exec.seq he₁ he₂⟩
+  refine ⟨B,Ds,v',G,n₁+n₂,outputs,hlenD,hu₂.trans hu₁,?_,hcert,h257.trans h125J,hout,houtput,Exec.seq he₁ he₂,hstreams⟩
   have add_cost (a b c d x y z : ℕ) (hx : x ≤ a) (hy : y ≤ z+b+c) (hz : z ≤ d) :
       x+y ≤ a+(d+b+c) := by omega
   exact add_cost _ _ _ _ _ _ _ hn₁ hn₂ hcleanup

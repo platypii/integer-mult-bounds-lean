@@ -63,7 +63,8 @@ theorem replicaRecoveryInterior_exec_within (H : ReplicaHaloProblem s) (target :
       (∀ k : Fin 126, k ≠ 87 → k ≠ 119 → k ≠ 124 → F.R (plan.gather k) = S.R (plan.gather k)) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
         replicaRecoveryInteriorWorkspace (A := A) (U := U) H (B.problem htarget) hQ R K) depth
-        (replicaRecoveryInterior plan source dst hR hQ) (mk v S) n (mk v' F) := by
+        (replicaRecoveryInterior plan source dst hR hQ) (mk v S) n (mk v' F) ∧
+      (F.inp = buffers.input ∧ F.out = buffers.output) := by
   let J := B.problem htarget
   let M := {S with R := Function.update S.R (plan.gather 124) (B.inputs.flatMap
     (fun R => cstream A H.wordWidth (packedInterval H.origin H.span R))++S.R (plan.gather 124))}
@@ -90,7 +91,9 @@ theorem replicaRecoveryInterior_exec_within (H : ReplicaHaloProblem s) (target :
         (J.keyWorkspace (A := A) (U := U) hQ R K)).sum)
   obtain ⟨v₂,G,n₂,hu₂,hn₂,he₂,hfields,hgather⟩ := realInitializedReplicaHaloLoop_finish (body := body)
     J plan dst hgd hR hQ (by omega) nextBuffers v₀ v₁ M F n₁ depth W hu₁ he₁ hstate (J.dominates hp hwidth)
-  refine ⟨v₂,G,n₀+n₂,hu₂.trans hu₀,?_,hfields,?_,?_⟩
+  refine ⟨v₂,G,n₀+n₂,hu₂.trans hu₀,?_,hfields,?_,?_,
+    (congrArg Stacks.inp hgather).trans hstate.input,
+    (congrArg Stacks.out hgather).trans hstate.output⟩
   · change n₀+n₂ ≤ replicaRecoveryInteriorTime H J
     unfold replicaRecoveryInteriorTime
     omega

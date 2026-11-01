@@ -42,7 +42,7 @@ theorem generatedRecoveryInput_exec_within (H : ReplicaHaloProblem s) (hR : rpSt
       G.R 391 = outputs.reverse.flatten ∧
       ExecWithin body (fun d z => mnSize z+d ≤ generatedRecoveryInputStock H inp out+depth+
         generatedFirstCachedReplicaRecoveryWorkspace H (B.problem htarget) target hR hQ push c M R K)
-        depth (generatedFirstCachedReplicaRecovery hR hQ) (mk v (generatedRecoveryInput H inp out)) n (mk v' G) := by
+        depth (generatedFirstCachedReplicaRecovery hR hQ) (mk v (generatedRecoveryInput H inp out)) n (mk v' G) ∧ (G.inp = inp ∧ G.out = out) := by
   let S := generatedRecoveryInput (A := A) H inp out
   have hsetup (i : Fin 255) : S.R (replicaRecoverySetupWorkerReg i) = [] := by
     apply generatedRecoveryInput_off
@@ -70,7 +70,7 @@ theorem generatedRecoveryInput_exec_within (H : ReplicaHaloProblem s) (hR : rpSt
       S.R (replicaRecoveryBatchInterior.gather k) = [] := by
     rw [generatedRecoveryInput_gather H inp out k hk,hz]
     rfl
-  obtain ⟨B,Ds,v',G,n,outputs,hlen,hu,hn,hcert,h257,h247,h391,he⟩ :=
+  obtain ⟨B,Ds,v',G,n,outputs,hlen,hu,hn,hcert,h257,h247,h391,he,hstreams⟩ :=
     generatedFirstCachedReplicaRecovery_exec_within (body := body) H hR hQ hA hspan horigin R K hpushR hpushK
       hpad (generatedRecoveryBuffers H inp out) v S (generatedRecoveryInput_headers H inp out) rfl rfl
       (hsolver 117) (by intro k _; exact hsolver k) rfl rfl rfl
@@ -93,7 +93,7 @@ theorem generatedRecoveryInput_exec_within (H : ReplicaHaloProblem s) (hR : rpSt
       (generatedRecoveryInput_count H inp out)
       (generatedRecoveryInput_off H inp out 391 (by decide) (by decide))
       (generatedRecoveryInput_off H inp out 248 (by decide) (by decide))
-  refine ⟨B,Ds,v',G,n,outputs,hlen,hu,hn,hcert,h257,h247,h391,?_⟩
+  refine ⟨B,Ds,v',G,n,outputs,hlen,hu,hn,hcert,h257,h247,h391,?_,hstreams⟩
   have hinit := generatedRecoveryInput_stock_le H inp out v
   exact he.mono (by intro d z hz; dsimp only [S] at hz; omega)
 

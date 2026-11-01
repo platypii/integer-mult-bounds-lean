@@ -61,7 +61,7 @@ theorem initializedCachedBatchedReplicaRecovery_exec_within (H : ReplicaHaloProb
       G.R 391 = outputs.reverse.flatten++S.R 391 ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
         initializedCachedBatchedReplicaRecoveryWorkspace H (B.problem htarget) hQ push c M R K)
-        depth (initializedCachedBatchedReplicaRecovery hR hQ) (mk v S) n (mk v' G) := by
+        depth (initializedCachedBatchedReplicaRecovery hR hQ) (mk v S) n (mk v' G) ∧ (G.inp = buffers.input ∧ G.out = buffers.output) := by
   obtain ⟨v₀,n₀,hu₀,hn₀,he₀⟩ := placedInitializeRecoveryMasks_exec_within (body := body)
     H (12*H.band+1) v S hready.core h159 h161
   let J := initializedRecoveryMaskState H S
@@ -81,12 +81,12 @@ theorem initializedCachedBatchedReplicaRecovery_exec_within (H : ReplicaHaloProb
     (initializedRecoveryMaskState_worker_frame H S 110 (by decide) (by decide)).trans h110
   have h248J : J.R 248 = [] :=
     (initializedRecoveryMaskState_frame H S 248 (by decide) (by decide)).trans h248
-  obtain ⟨B,Ds,v',G,n,outputs,hlen,hu,hn,hcert,hboundary,h247,h391,he⟩ :=
+  obtain ⟨B,Ds,v',G,n,outputs,hlen,hu,hn,hcert,hboundary,h247,h391,he,hstreams⟩ :=
     cachedBatchedReplicaRecovery_exec_within (body := body) H target hR hQ hA hp hwidth hsep hpad
       htarget columns push c hpush M hpushM X hX R K hpushR hpushK buffers
       residualTail boundaryTail recoveryTail v₀ J hreadyJ (initializedRecoveryMaskState_ready H S)
       hperipheralJ hcountJ hleft h110J h248J depth
-  refine ⟨B,Ds,v',G,n₀+n,outputs,hlen,hu.trans hu₀,?_,hcert,hboundary,h247,?_,?_⟩
+  refine ⟨B,Ds,v',G,n₀+n,outputs,hlen,hu.trans hu₀,?_,hcert,hboundary,h247,?_,?_,hstreams⟩
   · exact Nat.add_le_add hn₀ hn
   · rw [initializedRecoveryMaskState_frame H S 391 (by decide) (by decide)] at h391
     exact h391

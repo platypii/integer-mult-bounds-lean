@@ -72,7 +72,7 @@ theorem firstCachedReplicaRecovery_exec_within (H : ReplicaHaloProblem s) (hR : 
       ExecWithin body
         (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
           firstCachedReplicaRecoveryWorkspace H (B.problem htarget) hQ push c M R K)
-        depth (firstCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) := by
+        depth (firstCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) ∧ (G.inp = buffers.input ∧ G.out = buffers.output) := by
   obtain ⟨v₁,J,n₁,residuals,hu₁,hn₁,he₁,hlen,harchive,hgood,hfactorJ,hshared,hrhsHeaders,h247,h248J,
     hnativeL,hleftFrame,hrightFrame,hperipheral,h93,h110,hshare,hcleanup⟩ :=
     firstCachedReplicaPass_shared_exec_within (body := body) H hR hQ M hpushM hA hspan horigin R K hpushR hpushK hpad buffers v S
@@ -137,13 +137,13 @@ theorem firstCachedReplicaRecovery_exec_within (H : ReplicaHaloProblem s) (hR : 
     have hh := hshare 125 (by decide) (by decide)
     norm_num only [replicaRecoveryBatchCoupling_bank,Fin.castLE] at hh
     exact hh
-  obtain ⟨B,Ds,v',G,n₂,outputs,hlenD,hu₂,hn₂,hcert,h257,hout,houtput,he₂⟩ :=
+  obtain ⟨B,Ds,v',G,n₂,outputs,hlenD,hu₂,hn₂,hcert,h257,hout,houtput,he₂,hstreams⟩ :=
     releasedPreparedCachedReplicaRecovery_exec_within (body := body) H target hR hQ hA hp hwidth hspan hpad htarget
       columns push c hpush M hpushM X hX R K hpushR hpushK buffers v₁ J hrhsHeaders
       ((hhigh 391 (by decide)).trans h391) residuals hlen harchive hgood hfactorJ hleftSharedJ hshared h167J
       hrhsHeaders.volume hblankSetupJ hperipheral h159J h161J
       (by rw [hhigh 390 (by decide)]; exact hcount) hleftJ h93 h110 (h248J.trans h248) depth
-  refine ⟨B,Ds,v',G,n₁+n₂,outputs,hlenD,hu₂.trans hu₁,?_,hcert,h257.trans h125J,hout,houtput,?trace⟩
+  refine ⟨B,Ds,v',G,n₁+n₂,outputs,hlenD,hu₂.trans hu₁,?_,hcert,h257.trans h125J,hout,houtput,?trace,hstreams⟩
   · have add_cost (a b c d x y z : ℕ) (hx : x ≤ a) (hy : y ≤ z+b+c) (hz : z ≤ d) :
         x+y ≤ a+(d+b+c) := by omega
     exact add_cost _ _ _ _ _ _ _ hn₁ hn₂ hcleanup

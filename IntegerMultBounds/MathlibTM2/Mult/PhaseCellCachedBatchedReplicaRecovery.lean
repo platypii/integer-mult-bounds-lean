@@ -66,7 +66,7 @@ theorem cachedBatchedReplicaRecovery_exec_within (H : ReplicaHaloProblem s) (tar
       G.R 391 = outputs.reverse.flatten++S.R 391 ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
         cachedBatchedReplicaRecoveryWorkspace H (B.problem htarget) hQ push c M R K)
-        depth (cachedBatchedReplicaRecovery hR hQ) (mk v S) n (mk v' G) := by
+        depth (cachedBatchedReplicaRecovery hR hQ) (mk v S) n (mk v' G) ∧ (G.inp = buffers.input ∧ G.out = buffers.output) := by
   obtain ⟨v₀,F,n₀,B,hu₀,hn₀,he₀,h390,hboundary,hsource,hgather,hinp,hout,
     hfactor,hcore,hphysical,h238,h93,h116,h167,hL,h110F,hstockF,hoff⟩ := placedCachedReplicaRecoveryPreparation_exec_within
     (body := body) H target hQ hA hp hwidth hsep htarget columns push c hpush M hpushM X hX
@@ -95,16 +95,17 @@ theorem cachedBatchedReplicaRecovery_exec_within (H : ReplicaHaloProblem s) (tar
         have hh := replicaRecoveryPreparationCallerReg_gap i
         change (replicaRecoveryPreparationCallerReg i).val = 248 at hv
         omega)).2.trans h248
-  obtain ⟨vi,I,n₁,hu₁,hn₁,hfields,hgatherI,hspectator,he₁⟩ := placedReplicaRecoveryInterior_exec
+  obtain ⟨vi,I,n₁,hu₁,hn₁,hfields,hgatherI,hspectator,he₁,hinteriorStreams⟩ := placedReplicaRecoveryInterior_exec
     (body := body) H target X B htarget hR hQ hA hp hwidth hpad R K hpushR hpushK buffers recoveryTail
       v₀ F hperipheralF hsource hbank depth
-  obtain ⟨Ds,v',G,m,outputs,hlen,hu,hm,hcert,hboundaryG,h247,h391,he⟩ := placedReplicaRecoveryFinish_exec
+  obtain ⟨Ds,v',G,m,outputs,hlen,hu,hm,hcert,hboundaryG,h247,h391,he,hfinishStreams⟩ := placedReplicaRecoveryFinish_exec
     (body := body) H target X B htarget hR hQ (by omega) buffers boundaryTail
       v₀ vi F I n₁ depth (replicaRecoveryInteriorWorkspace (A := A) (U := U) H (B.problem htarget) hQ R K)
       hperipheralF hboundary hmask hfresh hu₁ he₁ hfields hgatherI hspectator
   have h391F : F.R 391 = S.R 391 := (hoff 391 replicaRecoveryPreparationCallerReg_output_disjoint).2
   refine ⟨B,Ds,v',G,n₀+m,outputs,hlen,hu.trans hu₀,?_,hcert,hboundaryG,h247,
-    h391.trans (congrArg (fun tail => outputs.reverse.flatten++tail) h391F),mn_seq_within_add (a := cachedReplicaRecoveryPreparationRowWorkspace H hQ push c M) (b := (replicaRecoveryInteriorWorkspace (A := A) (U := U) H (B.problem htarget) hQ R K+2*retainedPackedPublicationMergeCost H.span H.wordWidth)) (he₀ depth) he⟩
+    h391.trans (congrArg (fun tail => outputs.reverse.flatten++tail) h391F),mn_seq_within_add (a := cachedReplicaRecoveryPreparationRowWorkspace H hQ push c M) (b := (replicaRecoveryInteriorWorkspace (A := A) (U := U) H (B.problem htarget) hQ R K+2*retainedPackedPublicationMergeCost H.span H.wordWidth)) (he₀ depth) he,
+    hfinishStreams.1.trans hinteriorStreams.1,hfinishStreams.2.trans hinteriorStreams.2⟩
   unfold cachedBatchedReplicaRecoveryTime
   omega
 

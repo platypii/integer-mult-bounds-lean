@@ -41,7 +41,8 @@ theorem placedReplicaRecoveryFinish_exec (H : ReplicaHaloProblem s) (target : �
       G.R 257 = tailY ∧ G.R 247 = buffers.accumulatorTail ∧ G.R 391 = outputs.reverse.flatten++S.R 391 ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
         (W+2*retainedPackedPublicationMergeCost H.span H.wordWidth)) depth
-        (placedReplicaRecoveryFinish hR hQ) (mk v S) m (mk v' G) := by
+        (placedReplicaRecoveryFinish hR hQ) (mk v S) m (mk v' G) ∧
+      (G.inp = F.inp ∧ G.out = F.out) := by
   have hwidth : (S.R 94).length = H.wordWidth := by
     simpa [replicaFactoryHeaderValue] using hready.headers.masters (94,94)
       (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide)
@@ -66,7 +67,7 @@ theorem placedReplicaRecoveryFinish_exec (H : ReplicaHaloProblem s) (target : �
     ((congrArg List.length (show F.R 121 = S.R 121 from hgather 121 (by decide) (by decide) (by decide))).trans hcount) depth
   let G := {F with R := (Function.update (Function.update (Function.update F.R 257 tailY)
     247 buffers.accumulatorTail) 391 (outputs.reverse.flatten++F.R 391))}
-  refine ⟨Ds,v',G,n+m,outputs,hlen,hu'.trans hu,by omega,hcert,?_,?_,?_,?_⟩
+  refine ⟨Ds,v',G,n+m,outputs,hlen,hu'.trans hu,by omega,hcert,?_,?_,?_,?_,rfl,rfl⟩
   · simp [G]
   · simp [G]
   · simp [G,(hspectator 391 (by decide) (by decide)).2]

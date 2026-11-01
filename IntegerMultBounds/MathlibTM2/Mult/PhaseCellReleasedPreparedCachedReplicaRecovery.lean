@@ -66,7 +66,7 @@ theorem releasedPreparedCachedReplicaRecovery_exec (H : ReplicaHaloProblem s) (t
       List.Forall₂ (ReplicaRecoveryAssemblyOutput B Ds) (List.finRange H.Fs.length) outputs ∧
       G.R 257 = S.R (replicaRecoveryPreparationCallerWorkerReg 125) ∧ G.R 247 = buffers.accumulatorTail ∧
       G.R 391 = outputs.reverse.flatten ∧
-      Exec body (releasedPreparedCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) := by
+      Exec body (releasedPreparedCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) ∧ (G.inp = buffers.input ∧ G.out = buffers.output) := by
   obtain ⟨v₁,J,hu₁,he₁,hfactorJ,hcoreJ,hL,hin,hout,hkeep,hoff,h116⟩ :=
     placedReplicaCouplingRelease_exec (body := body) H target columns v S hfactor hshared
   have hg (j : Fin 126) : J.R (replicaRecoveryBatchInterior.gather j) = S.R (replicaRecoveryBatchInterior.gather j) :=
@@ -119,7 +119,7 @@ theorem releasedPreparedCachedReplicaRecovery_exec (H : ReplicaHaloProblem s) (t
     change (replicaRecoveryCallerReg (Fin.castLE (by decide : 248 ≤ 259) i)).val = 248 at hv
     omega
   have h123 : J.R 123 = S.R 123 := hg 123
-  obtain ⟨B,Ds,v',G,n,outputs,hlenD,hu₂,hn,hcert,h257,h247,h391,he₂⟩ :=
+  obtain ⟨B,Ds,v',G,n,outputs,hlenD,hu₂,hn,hcert,h257,h247,h391,he₂,hstreams⟩ :=
     preparedCachedBatchedReplicaRecovery_exec (body := body) H target hR hQ hA hp hwidth hsep hpad htarget
       columns push c hpush M hpushM X hX R K hpushR hpushK buffers v₁ J hheaders hblankJ
       residuals hlen ((hg 125).trans harchive) hgood hfactorJ (by intro i; rw [hL]; exact hleftShared i)
@@ -130,7 +130,7 @@ theorem releasedPreparedCachedReplicaRecovery_exec (H : ReplicaHaloProblem s) (t
       ((hkeep 93 (Or.inr (Or.inl rfl))).trans h93) ((hkeep 110 (Or.inr (Or.inr rfl))).trans h110)
       ((hoff 248 h248Off).2.trans h248) depth
   refine ⟨B,Ds,v',G,releaseReplicaCouplingNativeCost (embStk replicaRecoveryPreparationNativeReg S)+n,outputs,
-    hlenD,hu₂.trans hu₁,?_,hcert,h257.trans (hkeep 125 (Or.inl (by decide))),h247,h391,Exec.seq he₁ he₂⟩
+    hlenD,hu₂.trans hu₁,?_,hcert,h257.trans (hkeep 125 (Or.inl (by decide))),h247,h391,Exec.seq he₁ he₂,hstreams⟩
   have hc := Nat.add_le_add_left hn (releaseReplicaCouplingNativeCost (embStk replicaRecoveryPreparationNativeReg S))
   simpa only [Nat.add_assoc] using hc
 

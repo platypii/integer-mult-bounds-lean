@@ -85,10 +85,10 @@ theorem batchedReplicaRecovery_exec_within (H : ReplicaHaloProblem s) (target : 
         have hh := replicaRecoveryPreparationCallerReg_gap i
         change (replicaRecoveryPreparationCallerReg i).val = 248 at hv
         omega)).2.trans h248
-  obtain ⟨vi,I,n₁,hu₁,hn₁,hfields,hgatherI,hspectator,he₁⟩ := placedReplicaRecoveryInterior_exec
+  obtain ⟨vi,I,n₁,hu₁,hn₁,hfields,hgatherI,hspectator,he₁,_⟩ := placedReplicaRecoveryInterior_exec
     (body := body) H target X B htarget hR hQ hA hp hwidth hpad R K hpushR hpushK buffers recoveryTail
       v₀ F hperipheralF hsource hbank depth
-  obtain ⟨Ds,v',G,m,outputs,hlen,hu,hm,hcert,hboundaryG,h247,h391,he⟩ := placedReplicaRecoveryFinish_exec
+  obtain ⟨Ds,v',G,m,outputs,hlen,hu,hm,hcert,hboundaryG,h247,h391,he,_⟩ := placedReplicaRecoveryFinish_exec
     (body := body) H target X B htarget hR hQ (by omega) buffers boundaryTail
       v₀ vi F I n₁ depth (replicaRecoveryInteriorWorkspace (A := A) (U := U) H (B.problem htarget) hQ R K)
       hperipheralF hboundary hmask hfresh hu₁ he₁ hfields hgatherI hspectator

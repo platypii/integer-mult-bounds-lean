@@ -40,7 +40,8 @@ theorem placedReplicaRecoveryInterior_exec (H : ReplicaHaloProblem s) (target : 
       (∀ k : Fin 392, 248 ≤ k.val → k ≠ 389 → F.L k = S.L k ∧ F.R k = S.R k) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
         replicaRecoveryInteriorWorkspace (A := A) (U := U) H (B.problem htarget) hQ R K) depth
-        (placedReplicaRecoveryInterior hR hQ) (mk v S) n (mk v' F) := by
+        (placedReplicaRecoveryInterior hR hQ) (mk v S) n (mk v' F) ∧
+      (F.inp = buffers.input ∧ F.out = buffers.output) := by
   let e := replicaRecoveryInteriorCallerReg
   let C := embStk e S
   have hs (k : Fin 121) : C.R (replicaRecoverySmallInterior.solver k) = S.R (replicaRecoveryBatchInterior.solver k) :=
@@ -65,7 +66,7 @@ theorem placedReplicaRecoveryInterior_exec (H : ReplicaHaloProblem s) (target : 
     change 126+k.val = 247 at hv
     have hk := k.isLt
     omega
-  obtain ⟨vi,G,n,hu,hn,hfields,hgframe,he⟩ := replicaRecoveryInterior_exec_within
+  obtain ⟨vi,G,n,hu,hn,hfields,hgframe,he,hstreams⟩ := replicaRecoveryInterior_exec_within
     (body := fun z : Empty => nomatch z) H target X B htarget replicaRecoverySmallInterior 248 247
     hsourceSep hgd hsd hR hQ hA hp hwidth hpad R K hpushR hpushK buffers borrowed (embDn e v) C
     (hready.small_headers H buffers S) hsource
@@ -76,7 +77,9 @@ theorem placedReplicaRecoveryInterior_exec (H : ReplicaHaloProblem s) (target : 
   obtain ⟨v',F,hv,hu',he',hproj,hoff⟩ := exec_emb_within_stock (body' := body) (e := e) (ι := Empty.elim)
     replicaRecoveryInteriorCallerReg_injective (fun z => nomatch z) he v rfl S rfl
   have hread (i : Fin 249) : F.R (e i) = G.R i := congrFun (congrArg Stacks.R hproj) i
-  refine ⟨v',F,n,hu'.trans hu,hn,?_,?_,?_,he'⟩
+  refine ⟨v',F,n,hu'.trans hu,hn,?_,?_,?_,he',
+    (congrArg Stacks.inp hproj).trans hstreams.1,
+    (congrArg Stacks.out hproj).trans hstreams.2⟩
   · obtain ⟨Ds,hlen,hencoded,hrows⟩ := hfields
     exact ⟨Ds,hlen,(show F.R 247 = G.R 247 from hread 247).trans hencoded,hrows⟩
   · intro k h87 h119 h124

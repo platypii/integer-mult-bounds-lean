@@ -71,7 +71,7 @@ theorem generatedFirstCachedReplicaRecovery_exec_within (H : ReplicaHaloProblem 
       G.R 391 = outputs.reverse.flatten ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
         generatedFirstCachedReplicaRecoveryWorkspace H (B.problem htarget) target hR hQ push c M R K)
-        depth (generatedFirstCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) := by
+        depth (generatedFirstCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) ∧ (G.inp = buffers.input ∧ G.out = buffers.output) := by
   obtain ⟨v₁,F,n₁,columns,hu₁,hn₁,he₁,hdata,hmasters,hstage,hlevel,hgeometry,hgather,hin,hout,hoff,hwork,hmasks⟩ :=
     placedGeneratedReplicaBoundaryFactory_exec (body := body) H target hR hQ hA hp hwidth hpad htarget
       buffers v S headers h119 hblank hleft
@@ -136,7 +136,7 @@ theorem generatedFirstCachedReplicaRecovery_exec_within (H : ReplicaHaloProblem 
     rw [replicaRecoverySetupWorkerReg_eq]
     exact (hoff _ (hworkerOff _ (by change 242 ≤ i.val; omega))).2.trans
       (by simpa only [replicaRecoverySetupWorkerReg_eq] using hblankSetup i hi)
-  obtain ⟨B,Ds,v',G,n₂,outputs,hlen,hu₂,hn₂,hcert,h257,h247,h391G,he₂⟩ :=
+  obtain ⟨B,Ds,v',G,n₂,outputs,hlen,hu₂,hn₂,hcert,h257,h247,h391G,he₂,hstreams⟩ :=
     firstCachedReplicaRecovery_exec_within (body := body) H hR hQ hA hspan horigin R K hpushR hpushK hpad buffers v₁ F
       (headers.of_gather_view hgather)
       (by rw [hraw,hresult]; exact hdata.initial_native_bank H target columns hwork)
@@ -164,7 +164,7 @@ theorem generatedFirstCachedReplicaRecovery_exec_within (H : ReplicaHaloProblem 
       (by rw [(hoff 390 (hhigh 390 (by decide))).2]; exact hcount)
       ((hoff 391 (hhigh 391 (by decide))).2.trans h391)
       ((hoff 248 (hgap 248 (by decide))).2.trans h248)
-  refine ⟨B,Ds,v',G,n₁+n₂,outputs,hlen,hu₂.trans hu₁,by omega,hcert,?_,h247,h391G,mn_seq_within_add heFactory he₂⟩
+  refine ⟨B,Ds,v',G,n₁+n₂,outputs,hlen,hu₂.trans hu₁,by omega,hcert,?_,h247,h391G,mn_seq_within_add heFactory he₂,hstreams⟩
   exact h257.trans (hwork.scratch 125 (by decide))
 
 theorem generatedFirstCachedReplicaRecovery_exec (H : ReplicaHaloProblem s) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
@@ -207,12 +207,12 @@ theorem generatedFirstCachedReplicaRecovery_exec (H : ReplicaHaloProblem s) (hR 
       Ds.length = H.Fs.length ∧ v'.user = v.user ∧ n ≤ generatedReplicaBoundaryFactoryCost H target+firstCachedReplicaRecoveryTime H (B.problem htarget) ∧
       List.Forall₂ (ReplicaRecoveryAssemblyOutput B Ds) (List.finRange H.Fs.length) outputs ∧
       G.R 257 = [] ∧ G.R 247 = buffers.accumulatorTail ∧
-      G.R 391 = outputs.reverse.flatten ∧ Exec body (generatedFirstCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) := by
-  obtain ⟨B,Ds,v',G,n,outputs,hlen,hu,hn,hcert,h257,h247,h391G,he⟩ :=
+      G.R 391 = outputs.reverse.flatten ∧ Exec body (generatedFirstCachedReplicaRecovery hR hQ) (mk v S) n (mk v' G) ∧ (G.inp = buffers.input ∧ G.out = buffers.output) := by
+  obtain ⟨B,Ds,v',G,n,outputs,hlen,hu,hn,hcert,h257,h247,h391G,he,hstreams⟩ :=
     generatedFirstCachedReplicaRecovery_exec_within (body := body) H hR hQ hA hspan horigin R K hpushR hpushK
       hpad buffers v S headers hraw hresult hcache hsolverFresh hinput houtputStream hsaved hkeys hdst
       h86 h119 depth hp hwidth target hblank hleft hprivateLeft hprivate push c hpush M hpushM X hX
       htarget hblankSetup hcount h391 h248
-  exact ⟨B,Ds,v',G,n,outputs,hlen,hu,hn,hcert,h257,h247,h391G,he.toExec⟩
+  exact ⟨B,Ds,v',G,n,outputs,hlen,hu,hn,hcert,h257,h247,h391G,he.toExec,hstreams⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
