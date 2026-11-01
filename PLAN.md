@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3540 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3545 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21830,3 +21830,45 @@ with the actual global distinct-key schedule, and compose coupling/recovery,
 boundary solve and the second pass. Tensor/R4 restoration and outer integration
 remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327140 declarations at 3181.0 MiB.
+
+### S4 checkpoint: actual replica fields and paid real projection for coupling
+
+`PhaseCellPackedReplicaFields` lifts the existing single-row encoded-field
+lemma structurally over arbitrary uniform rows. It supplies actual bounded,
+fitting ambient fields and exact physical reads inside each owned interval,
+with arbitrary borrowed suffixes and no ambient-sized tape allocation.
+`PhaseCellReplicaHaloFields` instantiates this bridge with the final all-key
+loop invariant, transferring halo-interior accuracy to those exact fields.
+
+The coupling audit identified a necessary runtime step: the interior contract
+bounds real-part error, so a stable complex magnitude cannot be inferred for
+unprojected arithmetic output. `PhaseCellRealReplicaRows` reuses `realPrefix`
+to project the owned rectangular output to real words. It generates its count
+from the retained row/symbol-volume headers, retires that count and restores
+all headers and scratch. Its time is `N*(12*V+9)+12`, and its certified native
+workspace allowance is twice that bill. The arbitrary output suffix survives.
+
+`PhaseCellRealReplicaHaloOutput` applies that actual projection to the completed
+accumulator and composes it after an initialized-pass execution. The resulting
+physical output is represented by fitting real Gaussian-integer fields with
+unchanged interior accuracy and the precision-independent stable solve norm.
+Every gather tape, left tape and stream is preserved by projection; only the
+owned output prefix changes. The matrix dominance fact is discharged by the
+existing matrix-gap theorem from p >= 2 and the usual truncation-width condition:
+the fixed analytic budget itself implies the lower theta bound, and using
+absolute alpha avoids an unnecessary sign assumption.
+
+`Cost/PhaseCellRealReplicaResources` includes the projection in selected time
+and local workspace ledgers. The same fast arithmetic constant and exponent
+129/128 suffice; projection adds only linear native rectangular traffic and
+an explicit endpoint constant. Shared factories remain separate.
+
+Guarded checks pass at 2041.6 MiB (row/field bridge), 2163.0 MiB (actual loop
+fields, dominance and stable norms), 2065.1 MiB (runtime projection), 2162.2 MiB
+(composed projected pass) and 3204.9 MiB (selected resources). Compatibility
+with the older loop passes (14643 jobs, 3.4 GiB combined peak). Next stage
+individual projected rows and the matching preserved RHS into the shared
+coupling/boundary bank, then compose recovery and the second interior pass.
+The global endpoint/supplier schedule, tensor/R4 restoration and outer
+integration remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327580 declarations at 3204.0 MiB.
