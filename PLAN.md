@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3581 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3583 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22357,3 +22357,33 @@ connect boundary solve/recovery and the second interior pass, then close local
 workspace and selected resources. Global scheduling, tensor/R4 restoration and
 outer integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 330278 declarations at 3248.6 MiB.
+
+### S4 checkpoint: reusable boundary kernel accepts actual replica residual witnesses
+
+`PhaseCellReplicaBoundarySolution` defines the normalized/unscaled boundary
+solution directly from the folded archived residual. Its shared sizing lemma
+aligns precision, stage precision and word width when the interior target is
+`boundaryHaloTarget`. The row theorem reuses `haloBoundary_solution_accuracy`
+and the existing guarded boundary-fold identity to prove length, word fits,
+stability and error at most `3/2^target` relative to any exact principal-system
+solution. Computed columns, their factor invariant and table accuracy remain
+shared setup obligations, not per-replica computations.
+
+`PhaseCellReplicaBoundarySolve` invokes the existing packed residual kernel on
+that same row and returns exactly `replicaBoundarySolution` on the solution
+stack, preserving the rest of the bank through the existing result update.
+It assumes the folded RHS has been staged and the reusable factor pages are
+present. There is no new numerical implementation, assumed execution, or
+per-replica factor generation.
+
+Guarded checks pass at 3222.3 MiB (numerical/sizing adapter) and 3209.3 MiB
+(execution adapter). Compatibility with the initialized interior/coupling path
+and selected row resources passes (15027 jobs, 3.4 GiB combined peak). Default
+proof limits are unchanged.
+
+Next connect physical extraction/folding of each archived row to the prepared
+RHS bank while retaining shared factors, then boundary recovery and the second
+interior pass. Generating the shared boundary setup from the current released
+bank, local workspace, selected resources, global scheduling, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331136 declarations at 3264.8 MiB.
