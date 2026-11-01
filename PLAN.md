@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3945 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3948 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27386,3 +27386,42 @@ need to be connected. Output pairing/cropping/publication and tensor/R4
 restoration remain open. S4 is incomplete; kappa is unchanged.
 Scoped compatibility build passes (16155 jobs, 1.1 GiB combined observed peak,
 mostly replayed).
+
+### S4 checkpoint: physical component production serializes exact raw descriptors
+
+`prepareDescriptorBank_prepend_exec` generalizes the existing serializer to
+retain an arbitrary clock suffix while prepending one tick. The previous
+empty-clock theorem remains a corollary with its original interface.
+
+`Mult.PhaseCellSerializeOwnedDescriptorBank` composes the existing serializer
+with structural clearWords over the owned bank. It prepends the physical
+descriptor and clock, erases the owned right stacks and preserves spectators.
+The complete operation takes at most 13*tape.length+3 steps and has native
+push bound two, hence trace allowance 2*(13*tape.length+3). This operation is
+generic in bank size, contents and placement and supports repeated prepend.
+
+`Mult.PhaseCellComplexRecoveryDescriptor` places the physical complex-input
+producer, serializes its actual resulting bank and erases that bank. The final
+tape is precisely the placed descriptor of rawRecoveryInput H W
+(complexComponentFields Fs). The allowance and time include both component
+production and serialization/retirement. Source suffix, existing clock and
+spectator storage survive; the producer's initially blank left stacks remain
+blank. No pre-serialized descriptor premise is used.
+
+`Mult.PhaseCellRawRecoveryDescriptorProduction` connects this physical run to
+RawRecoveryJob.words directly. Replica cardinality follows from the job's
+normalization relation and component-field length, without a supplied count
+identity. Actual ofComplexBounds jobs have the required component-input
+equality definitionally.
+
+The placed initial complex bank still supplies numerical headers and ordinary
+local span metadata. Their generation, ordered supplier/schedule composition,
+and absorption of the producer bill into the selected total bounds remain
+open, as do output pairing/cropping/publication and tensor/R4 restoration.
+S4 is incomplete; kappa is unchanged.
+
+Guarded checks pass at 3028.7 MiB (clock-preserving serializer), 3053.5 MiB
+(serialize/retire), 3389.4 MiB (placed complex producer) and 3372.5 MiB
+(raw-job descriptor bridge). Scoped compatibility build passes (16161 jobs,
+3.5 GiB combined observed peak); axiom audit passes for 339087 declarations
+at 3467.7 MiB.
