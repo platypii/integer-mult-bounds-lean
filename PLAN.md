@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4032 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4034 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28827,4 +28827,39 @@ Expanded compatibility passes (16595 jobs, 3.6 GiB combined peak). Guarded
 checks pass at 3401.6 MiB (raw constructor bridge), 3445.8 MiB (derived setup
 widths) and 3452.5 MiB (class profile). Broad axiom audit passes for 342104
 declarations at 3554.8 MiB, permitting only propext, Quot.sound and
+Classical.choice.
+
+
+### S4 checkpoint: full computed class bill includes preparation and cleanup
+
+`Cost.PhaseCellComputedCoreClassControl.computedClassTimeBill_eq` identifies
+the exact non-core bill used by `classRun_sum_exec`: generated origins plus
+`H*(6*W+9)+7*jobCount+19+N*(6*(H*W)+9)`. This includes both ordinary unary
+products, temporary symbol-counter erasure, scan control and final erasure
+of the restored loop/payload counters.
+
+`selectedComputedClassControlTime_le` reuses the existing origin-generation
+polynomial estimate. Fixed class controls use one shared setup allowance;
+replica control/cleanup work is linear in local halo symbols and is bounded
+by the selected p^(129/128) scale. It never treats a restored generated
+counter as free to erase.
+
+`Cost.PhaseCellSelectedComputedCoreClassBill.selectedComputedCoreClassBill_time_le`
+combines this control estimate with the actual proper-core family's complete
+core bill. The full preparation/scan/recovery/cleanup bill is eventually at
+most `7*T+F*N*t*(1+band^2/d)*p^(129/128)`, under ordinary mathematical halo
+and geometry hypotheses (including the class halo length fitting the axis).
+All width and summed-volume profiles are derived, not supplied. This is the
+same complete bill bounding the restoring execution already returned by
+`classRun_sum_exec`; concrete ordinary-bank readiness remains to be instantiated.
+
+Next connect that actual run and its stock trace to generated ordinary bank
+readiness and the exposed supplier stream, then publish/scatter the certified
+cores and restore tensor/R4 layouts. A full S4 execution theorem is still
+open; kappa unchanged.
+
+Guarded full class-bill check passes at 3502.4 MiB.
+Expanded compatibility passes (16598 jobs, 3.5 GiB combined peak). Guarded
+class-control check passes at 3413.7 MiB. Broad axiom audit passes for
+342114 declarations at 3550.3 MiB, permitting only propext, Quot.sound and
 Classical.choice.
