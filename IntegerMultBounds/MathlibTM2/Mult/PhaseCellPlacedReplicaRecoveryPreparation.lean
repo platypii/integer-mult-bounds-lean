@@ -9,6 +9,7 @@ headers are spectators, while the produced archives occupy their final roles. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.NLogN.SchurDominance IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -61,10 +62,13 @@ theorem placedReplicaRecoveryPreparation_exec (H : ReplicaHaloProblem s) (target
       W.R 238 = residualTail ∧ W.R 93 = rhsTail ∧ W.R 116 = [] ∧ W.R 167 = [] ∧
       W.L = (embStk replicaRecoveryPreparationCallerWorkerReg S).L ∧
       W.R 110 = S.R (replicaRecoveryPreparationCallerWorkerReg 110) ∧
+      mnSize (mk (embDn replicaRecoveryPreparationCallerWorkerReg v') W) =
+        mnSize (mk (embDn replicaRecoveryPreparationCallerWorkerReg v)
+          (embStk replicaRecoveryPreparationCallerWorkerReg S)) ∧
       (∀ k : Fin 392, (∀ i, replicaRecoveryPreparationCallerReg i ≠ k) → F.L k = S.L k ∧ F.R k = S.R k) := by
   let e := replicaRecoveryPreparationCallerReg
   obtain ⟨vi,G,n,B,hu,hn,he,hcounter,h238,h93,h125,h256,hfactor,hcore,hphysical,
-    h116,h167,hL,hinp,hout,h110,h132,hframe⟩ := replicaRecoveryPreparationLoop_exec
+    h116,h167,hL,hinp,hout,h110,h132,hframe,hstock⟩ := replicaRecoveryPreparationLoop_exec
     (body := fun z : Empty => nomatch z) H target hQ hA hp hwidth hsep htarget columns X hX
       residualTail rhsTail boundaryTail recoveryTail (embDn e v) (embStk e S)
       (by change (S.R 390).length = _; exact hcount) hready.cursor hready.factor hready.left hready.physical
@@ -91,6 +95,6 @@ theorem placedReplicaRecoveryPreparation_exec (H : ReplicaHaloProblem s) (target
   · exact (show F.R 257 = G.R 125 from hget 125).trans h125
   · exact (show F.R 389 = G.R 256 from hget 256).trans h256
   · rw [hworker]
-    exact ⟨hfactor,hcore,hphysical,h238,h93,h116,h167,hL,h110,hoff⟩
+    exact ⟨hfactor,hcore,hphysical,h238,h93,h116,h167,hL,h110,hstock,hoff⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

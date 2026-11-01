@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCollectedReplicaRecoveryRhs
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedReplicaBoundaryRow
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaBoundaryFactory
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaRecoveryPreparationStock
 
 /-! One amortized recovery-preparation row: solve the actual residual using
 retained factors, construct the modified RHS, and move both results to archives. -/
@@ -10,6 +11,7 @@ retained factors, construct the modified RHS, and move both results to archives.
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.NLogN.SchurDominance
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
@@ -59,7 +61,7 @@ theorem replicaRecoveryPreparationRow_exec (H : ReplicaHaloProblem s) (target : 
       ReplicaBoundaryRhsReady H (embStk replicaBoundaryPhaseReg (embStk (Fin.castLE (by decide : 255 ≤ 257)) F)) ∧
       F.R 116 = [] ∧ F.R 167 = [] ∧
       (∀ k : Fin 257, k ∉ [93,110,116,125,132,143,167,238,256] → F.R k = S.R k) ∧
-      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out := by
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧ mnSize (mk v' F) = mnSize (mk v S) := by
   dsimp only
   let solution := replicaBoundarySolution H (12*H.band+1) columns D
   obtain ⟨hlen,hfits,haccuracy⟩ := ReplicaCouplingResidualSpec.boundary_solution H A
@@ -99,6 +101,32 @@ theorem replicaRecoveryPreparationRow_exec (H : ReplicaHaloProblem s) (target : 
       ((hframeT 116 (by decide)).trans h116) ((hframeT 167 (by decide)).trans h167)
       ((hframeT 93 (by decide)).trans hsource) (by simp [T,words])
   have hL : F.L = S.L := hLF
+  have hframeAll (k : Fin 257) (hk : k ∉ [93,238,125,256]) : F.R k = S.R k := by
+    simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hk
+    by_cases h110k : k = 110
+    · subst k; exact h110.trans (hframeT 110 (by decide))
+    by_cases h132k : k = 132
+    · subst k; exact h132.trans (hframeT 132 (by decide))
+    by_cases h116k : k = 116
+    · subst k; exact h116F.trans h116.symm
+    by_cases h167k : k = 167
+    · subst k; exact h167F.trans h167.symm
+    by_cases h143k : k = 143
+    · subst k
+      rw [hframeF 143 (by decide)]
+      change [] = S.R 143
+      exact hcore.rhs.symm
+    apply (hframeF k ?_).trans (hframeT k ?_)
+    · simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
+      exact ⟨hk.1,h110k,h116k,hk.2.2.1,h132k,h167k,hk.2.1,hk.2.2.2⟩
+    · simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
+      exact ⟨h143k,hk.2.1⟩
+  have hstock : mnSize (mk v₂ F) = mnSize (mk v S) := by
+    apply replicaRecoveryPreparation_stock H r D
+      (boundarySolutionField (haloBoundary s H.t H.band H.origin (H.origin+H.span)) solution)
+      rhsQueueTail residualTail v v₂ S F hsource hresidual h93 h238 ?_ ?_ hframeAll hL hinp hout
+    · rw [h125,hframeT 125 (by decide)]
+    · rw [h256,hframeT 256 (by decide)]
   have hhigh (k : Fin 242) (hk : 168 ≤ k.val) (h238 : k ≠ 238) :
       F.R (Fin.castLE (by decide : 242 ≤ 257) k) = S.R (Fin.castLE (by decide : 242 ≤ 257) k) := by
     apply (hframeF _ ?_).trans (hframeT _ ?_)
@@ -110,7 +138,7 @@ theorem replicaRecoveryPreparationRow_exec (H : ReplicaHaloProblem s) (target : 
   refine ⟨v₂,F,m+n,hu₂.trans (hu₁.trans hu),by unfold replicaRecoveryPreparationRowCost; omega,
     Exec.seq (he₁.cast rfl (congrArg (mk v₁) ht)) he₂,h93,h238,
     h110.trans (hframeT 110 (by decide)),h132.trans (hframeT 132 (by decide)),?_,?_,?_,hcoreF,hphysicalF,
-    h116F,h167F,?_,hL,hinp,hout⟩
+    h116F,h167F,?_,hL,hinp,hout,hstock⟩
   · rw [h125,hframeT 125 (by decide)]
   · rw [h256,hframeT 256 (by decide)]
   · apply ReplicaBoundaryFactorData.of_runtime_frame H target columns hfactor

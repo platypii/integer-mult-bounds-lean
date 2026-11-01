@@ -10,6 +10,7 @@ and both aligned archives are consequences of the executed row transition. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.NLogN.SchurDominance IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -54,7 +55,9 @@ theorem replicaRecoveryPreparationLoop_exec (H : ReplicaHaloProblem s) (target :
       ReplicaBoundaryRhsReady H (embStk replicaBoundaryPhaseReg (embStk (Fin.castLE (by decide : 255 ≤ 257)) F)) ∧
       F.R 116 = [] ∧ F.R 167 = [] ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       F.R 110 = S.R 110 ∧ F.R 132 = S.R 132 ∧
-      (∀ k : Fin 257, k ∉ [93,110,116,125,132,143,167,238,256] → F.R k = S.R k) := by
+      (∀ k : Fin 257, k ∉ [93,110,116,125,132,143,167,238,256] → F.R k = S.R k) ∧
+      mnSize (mk (embDn replicaRecoveryPreparationWorkerReg v') F) =
+        mnSize (mk (embDn replicaRecoveryPreparationWorkerReg v) S) := by
   dsimp only
   intro hcount hcursor hfactor hleft hphysical hcore h116 h167
   let S := embStk replicaRecoveryPreparationWorkerReg G
@@ -65,15 +68,17 @@ theorem replicaRecoveryPreparationLoop_exec (H : ReplicaHaloProblem s) (target :
     ReplicaBoundaryRhsReady H (embStk replicaBoundaryPhaseReg (embStk (Fin.castLE (by decide : 255 ≤ 257)) F)) ∧
     F.R 116 = [] ∧ F.R 167 = [] ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
     F.R 110 = S.R 110 ∧ F.R 132 = S.R 132 ∧
-    (∀ k : Fin 257, k ∉ [93,110,116,125,132,143,167,238,256] → F.R k = S.R k)
+    (∀ k : Fin 257, k ∉ [93,110,116,125,132,143,167,238,256] → F.R k = S.R k) ∧
+    mnSize (mk (embDn replicaRecoveryPreparationWorkerReg v) F) =
+      mnSize (mk (embDn replicaRecoveryPreparationWorkerReg v) S)
   have hstep : ∀ r < H.Fs.length, ∀ (vi : HS 257 Q A U) F, Inv r F →
       ∃ vf J n, vf.user = vi.user ∧ n ≤ replicaRecoveryPreparationRowCost H ∧
         Exec (fun z : Empty => nomatch z) (replicaRecoveryPreparationRow hQ) (mk vi F) n (mk vf J) ∧ Inv (r+1) J := by
     intro r hr vi F hI
-    obtain ⟨hc,hfactorF,hcoreF,hphysicalF,h116F,h167F,hL,hinp,hout,h110,h132,hframe⟩ := hI
+    obtain ⟨hc,hfactorF,hcoreF,hphysicalF,h116F,h167F,hL,hinp,hout,h110,h132,hframe,hstockF⟩ := hI
     obtain ⟨D,Ds,hlen,hD,hres,hgood,hrhs⟩ := hc.head hr
     obtain ⟨hY,vf,J,n,hu,hn,he,h93,h238,h110J,h132J,h125,h256,hfactorJ,hcoreJ,hphysicalJ,
-      h116J,h167J,hframeJ,hLJ,hinpJ,houtJ⟩ :=
+      h116J,h167J,hframeJ,hLJ,hinpJ,houtJ,hstockJ⟩ :=
       (show Nonempty (ReplicaRecoveryRow H target (H.Fs.length-1-r)
           (boundarySolutionField (haloBoundary s H.t H.band H.origin (H.origin+H.span))
             (replicaBoundarySolution H (12*H.band+1) columns D)) (X (H.Fs.length-1-r))) ∧ _ from
@@ -85,17 +90,17 @@ theorem replicaRecoveryPreparationLoop_exec (H : ReplicaHaloProblem s) (target :
     have hcJ := hc.advance hr Ds hlen hgood _ hY J h238 h93 h125 h256
     exact ⟨vf,J,n,hu,hn,he,hcJ,hfactorJ,hcoreJ,hphysicalJ,h116J,h167J,
       hLJ.trans hL,hinpJ.trans hinp,houtJ.trans hout,h110J.trans h110,h132J.trans h132,
-      fun k hk => (hframeJ k hk).trans (hframe k hk)⟩
+      (fun k hk => (hframeJ k hk).trans (hframe k hk)),hstockJ.trans hstockF⟩
   have hinitial : Inv 0 S :=
-    ⟨hcursor,hfactor,hcore,hphysical,h116,h167,rfl,rfl,rfl,rfl,rfl,fun _ _ => rfl⟩
+    ⟨hcursor,hfactor,hcore,hphysical,h116,h167,rfl,rfl,rfl,rfl,rfl,(fun _ _ => rfl),rfl⟩
   obtain ⟨v',G',n,hu,hn,he,hcountF,hfinal⟩ := countedBankLoop_exec (body := body)
     replicaRecoveryPreparationWorkerReg (by intro i j he; exact Fin.ext (congrArg (fun k : Fin 258 => k.val) he))
     257 (by intro i he; have hh := congrArg (fun k : Fin 258 => k.val) he; have hi := i.isLt
             change i.val = 257 at hh; omega)
     (replicaRecoveryPreparationRow hQ) H.Fs.length (replicaRecoveryPreparationRowCost H) Inv hstep v G hcount hinitial
-  obtain ⟨hc,hfactorF,hcoreF,hphysicalF,h116F,h167F,hL,hinp,hout,h110,h132,hframe⟩ := hfinal
+  obtain ⟨hc,hfactorF,hcoreF,hphysicalF,h116F,h167F,hL,hinp,hout,h110,h132,hframe,hstock⟩ := hfinal
   obtain ⟨h238,h93,B,h125,h256⟩ := hc.finished
   exact ⟨v',G',n,B,hu,hn,he,hcountF,h238,h93,h125,h256,hfactorF,hcoreF,hphysicalF,
-    h116F,h167F,hL,hinp,hout,h110,h132,hframe⟩
+    h116F,h167F,hL,hinp,hout,h110,h132,hframe,hstock⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

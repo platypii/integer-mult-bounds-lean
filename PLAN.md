@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3691 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3693 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23895,3 +23895,38 @@ bounds and join this optimized trace to actual first-pass coupling and the
 generated shared factory. Scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334137 declarations at 3329.9 MiB.
+
+### S4 checkpoint: executed preparation rows preserve iteration-boundary stock
+
+`Host.ExchangePairStock.mn_exchange_pair_size` proves a generic structural
+storage equality: consume two prefixes and archive two equally sized prefixes,
+with arbitrary retained source suffixes and archive tails. Four stack-update
+identities and the existing append-stock lemma suffice; no numerical data or
+case index enters the proof. Its import closure stays small.
+
+`PhaseCellReplicaRecoveryPreparationStock` instantiates this rule for the two
+original input rows and the computed boundary/recovery-RHS rows. The executed
+preparation row now derives its stronger restored right-bank frame (only the
+four queue/archive roles differ) and returns exact total endpoint stock
+equality. Disposable count, mask and empty RHS roles cancel using actual entry
+and exit readiness, rather than counting their temporary contents as retained.
+
+The counted preparation traversal carries this equality in its invariant.
+After all replicas, the worker-bank stock equals its initial stock; the loop's
+separate consumed counter is outside that bank. Placed preparation exports the
+same worker-stock equality in the common caller. The complete batched recovery
+trace remains compatible with the stronger row/loop contracts. This is the
+iteration-boundary fact needed to share one scratch reserve across all rows;
+peak storage inside the retained-factor solve and RHS construction still needs
+its own `ExecWithin` proof. No whole-preparation workspace claim is made yet.
+
+Guarded checks pass under default limits: 1391.2 MiB (generic exchange),
+3241.4 MiB (recovery stock rule), 3315.1 MiB (actual row), 3304.1 MiB (counted
+traversal), 3303.1 MiB (placed traversal) and 3310.3 MiB (complete batched trace).
+Compatibility with the exact batched bill, generated scalar recovery and
+periodic factor setup passes (15450 jobs, 3.4 GiB combined peak). Next bound the
+numerical subroutine peaks and use this invariant for the preparation loop's
+shared reserve. Whole-caller resource bounds, actual first-pass/generated-factory
+integration, scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334139 declarations at 3331.0 MiB.

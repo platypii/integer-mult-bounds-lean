@@ -51,7 +51,7 @@ theorem batchedReplicaRecovery_exec (H : ReplicaHaloProblem s) (target : ℕ)
       G.R 391 = outputs.reverse.flatten++S.R 391 ∧
       Exec body (batchedReplicaRecovery hR hQ) (mk v S) n (mk v' G) := by
   obtain ⟨v₀,F,n₀,B,hu₀,hn₀,he₀,h390,hboundary,hsource,hgather,hinp,hout,
-    hfactor,hcore,hphysical,h238,h93,h116,h167,hL,h110F,hoff⟩ := placedReplicaRecoveryPreparation_exec
+    hfactor,hcore,hphysical,h238,h93,h116,h167,hL,h110F,hstockF,hoff⟩ := placedReplicaRecoveryPreparation_exec
     (body := body) H target hQ hA hp hwidth hsep htarget columns X hX
       residualTail buffers.solverOutputTail boundaryTail recoveryTail v S hcount hready
   have hperipheralF := hperipheral.of_preparation_frame H buffers hgather hoff
