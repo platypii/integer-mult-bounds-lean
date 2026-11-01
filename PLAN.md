@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3880 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3883 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26507,3 +26507,34 @@ build passes (15940 jobs, 3.5 GiB combined peak); the axiom audit passes for
 336766 declarations at 3403.1 MiB. Selected factory absorption, initial storage,
 distinct-core scheduling/amortization, tensor/R4 composition, layout restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: selected physical factory time and stock are absorbed once
+
+`Cost.PhaseCellGeneratedReplicaFactoryControls` separates the numerical factor
+bill from all actual ordinary-header installation, geometry, width and
+retirement controls, bounding the latter by `10000*Z^2` under a common parameter
+envelope. Its import closure excludes the complete recovery caller.
+`Cost.PhaseCellSelectedGeneratedReplicaFactory` reuses the established selected
+constructed-factor bound and boundary widths to prove the complete executed
+factory cost is at most `C*t^6*p^4`. The existing axis-polynomial absorption
+then bounds any fixed multiple of that cost by `T`, including the irreducible
+closed factory's push coefficient. No factorization-loop workspace proof is
+needed.
+
+`Cost.PhaseCellSelectedGeneratedFirstCachedRecovery` connects those bounds to
+the full physical caller's actual time and named intermediate-stock allowance.
+For normalized RHS exponent two and positive recovery target `target+1`, with
+linear bounds on both target and the corresponding halo target, selected time
+is at most `6*T+48+F*N*t*(1+band^2/d)*p^(129/128)` and additional workspace is
+at most `10*T+C*N*t*p`. These include physical factor generation and retained
+factor storage; coefficients are independent of the selected axis/problem.
+The earlier generic execution/stock theorem still permits arbitrary RHS
+exponents and targets. This selected specialization does not establish a
+general-exponent factory absorption theorem.
+
+Guarded checks pass at 3344.1 MiB (controls), 3394.5 MiB (selected factory) and
+3398.3 MiB (complete selected time/space). The final scoped compatibility build
+passes (15945 jobs, 3.5 GiB combined peak); the axiom audit passes for 336781
+declarations at 3402.4 MiB. Next connect initial ordinary-header/input storage
+and distinct-core scheduling/amortization, then tensor/R4 composition, layout
+restoration and outer integration. S4 is incomplete; kappa is unchanged.
