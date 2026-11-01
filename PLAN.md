@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3893 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3895 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26716,3 +26716,36 @@ shared-peak job schedule on these core classes, discharging its mathematical
 time/stock bounds with the affine setup/row ledger. Tensor/R4 composition,
 layout restoration and outer integration remain open. S4 is incomplete; kappa
 is unchanged.
+
+### S4 checkpoint: normalized component fields construct ordinary core jobs
+
+`Mult.PhaseCellNormalizedRecoveryFields` names the exact field map
+`F i ↦ 2^(q-p-1)*F i` used by the executed packed input conversion. Its
+magnitude proof reuses `packedBatch_shift_bound`, and its packet identity reuses
+the structural packed-batch map lemma. `packedKeyRecoveryFields_exec` gives the
+existing `packedKeyInput` execution with precisely this field archive as its
+endpoint, including its established time bill, restored conversion scratch and
+remaining input queue. No normalization algorithm or error estimate is repeated.
+
+`GeneratedRecoveryJob.ofNormalizedBounds` derives the packed-precision magnitude
+hypothesis from an ordinary unit p-grid input bound and canonical precision.
+`ofComplexBounds` first uses the established ordered real/imaginary component
+fields; its field/count theorem proves that the recovery problem contains the
+normalized component family and exactly `2*Fs.length` real rows. Both constructors
+reuse the existing dominance-based solution construction.
+
+`Mult.PhaseCellComplexRecoveryCoreClassJobs` now constructs jobs in the manuscript
+movement-class order from ordinary unit-grid complex fields. Each core uses its
+actual halo precision and the existing core-class parameter bounds. The previous
+per-core quantized-field magnitude premise is no longer required for this input
+path. This is a mathematical job/physical normalization-stage bridge; transfer
+from that stage into the 392-register ordinary-header recovery descriptor bank
+and its complete paid composition remain to be connected explicitly.
+
+Guarded checks pass at 3385.8 MiB (field/normalization bridge) and 3377.2 MiB
+(complex core jobs). The scoped compatibility build passes (16100 jobs, 3.5 GiB
+combined peak); the axiom audit passes for 338724 declarations at 3458.9 MiB.
+Next compose physical normalized input production with these descriptor jobs
+and discharge schedule budgets via the shared-setup/replica-row ledger.
+Tensor/R4 composition, layout restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
