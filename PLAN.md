@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3758 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3759 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24620,3 +24620,27 @@ open. S4 is incomplete; kappa is unchanged.
 Compatibility with the bounded batched recovery caller passes
 (15545 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
 335453 declarations at 3355.2 MiB.
+
+
+### S4 checkpoint: selected dimensions discharge actual recovery fast-time premises
+
+`Cost.PhaseCellSelectedBatchedReplicaRecoveryFast.selectedBatchedReplicaRecovery_fast_le`
+applies the complete caller's fast estimate to actual selected axes and any
+executed step count below its time bill. It reuses `selectedHaloGatheredWidths`
+for the ring, execution word and metadata widths, and the established selected
+axis gap. Shared setup, preparation rows and actual linear archive/assembly
+traffic remain explicit; the fixed caller overhead is retained.
+
+`batchedReplicaRecovery_fast_le` now quantifies dimensions inside the
+existential fast constant, matching the already uniform interior estimate.
+This makes the same constant apply to every selected axis. No new numerical
+case checks or selected width arithmetic are introduced.
+
+The selected module passes its guarded check at 3322.5 MiB. The complete
+preparation term still needs a sharp selected estimate where the coarse
+polynomial bound is insufficient; selected whole-caller space, first-pass/
+generated-factory execution, scheduling, tensor/R4 restoration and outer
+integration also remain open. S4 is incomplete; kappa is unchanged.
+The revised uniform fast module passes at 3347.5 MiB. Compatibility
+with the bounded caller passes (15547 jobs, 3.4 GiB combined peak).
+Scoped axiom audit passes for 335455 declarations at 3353.6 MiB.

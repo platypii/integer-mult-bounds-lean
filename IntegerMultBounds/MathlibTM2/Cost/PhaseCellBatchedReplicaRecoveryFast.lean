@@ -71,7 +71,7 @@ theorem batchedReplicaRecoveryTime_preparation_poly (H : ReplicaHaloProblem s) (
         (replicaRecoveryPreparationRowCost_poly H hZ hq hw hband hV) _) _) _)) _) _
 
 theorem batchedReplicaRecovery_fast_le (cl cw cr cV : ℕ) :
-    ∃ D : ℝ, 0 ≤ D ∧ ∀ (H : ReplicaHaloProblem s) (target : ℕ)
+    ∃ D : ℝ, 0 ≤ D ∧ ∀ {s : ℕ} [NeZero s] (H : ReplicaHaloProblem s) (target : ℕ)
       (X : ℕ → ZMod s → ℝ) (B : ReplicaRecoveryBatch H target X)
       (htarget : H.target = boundaryHaloTarget H.p H.u (boundaryRecoveryTarget H.p target) H.rhsExp
         (haloBoundary s H.t H.band H.origin (H.origin+H.span)).card),
@@ -84,7 +84,7 @@ theorem batchedReplicaRecovery_fast_le (cl cw cr cV : ℕ) :
         D*H.Fs.length*(replicaHaloLocalCoordinates H : ℕ)*(H.p : ℝ)^(129/128 : ℝ) := by
   obtain ⟨D,hD,hfast⟩ := replicaRecoveryBatchInterior_fast_le cl cw cr cV
   refine ⟨D,hD,?_⟩
-  intro H target X B htarget hl hw hr hV hgap hring
+  intro s _ H target X B htarget hl hw hr hV hgap hring
   have hh := hfast H target X B htarget hl hw hr hV hgap hring
   rw [batchedReplicaRecoveryTime_affine H target X B htarget]
   push_cast at hh ⊢
