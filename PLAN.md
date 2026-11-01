@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3842 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3845 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25982,3 +25982,36 @@ before recovery must be executed and charged. The existing complete caller still
 uses uncached first-pass coupling. Factory/header integration, combined
 workspace, distinct-core amortization, tensor/R4 composition, layout restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: execute shared masks before counters and the cached replica loop
+
+`Mult.PhaseCellPlacedInitializeCouplingMasks` embeds the common mask generator
+in any injective bank. Its exact endpoint updates only mask ports 159 and 161,
+so caller-layout frames follow from one generic rule. The execution includes
+native intermediate-workspace accounting and preserves every spectator stack.
+
+`Mult.PhaseCellInitializeCachedReplicaCouplingRuntime` executes shared geometry
+and coefficient-page construction, false-source/true-target masks, then scalar
+counters. Generating masks before counters supplies the required empty low
+scratch bank from ordinary coupling readiness. The returned retained readiness,
+metadata, page, row counts, generated masks, gather frame, native counter state
+and external frame are proved from those executions. Shared-header restoration
+explicitly excludes the two new mask ports. Time pays mask generation once;
+workspace adds its native push allowance to the existing page/counter allowance.
+
+`Mult.PhaseCellPreparedCachedReplicaCoupling` composes that runtime with the
+initialized cached traversal. It starts with empty cache ports, generates actual
+resources once, executes every replica, returns ordered accurate residuals and
+retains both generated masks. Its cost is one shared setup plus clock-copy and
+cached per-transition/control charges; no mask setup is multiplied by replicas.
+
+Guarded file checks pass at 2088.2 MiB (placed masks), 2173.4 MiB (cached
+runtime) and 2225.0 MiB (prepared cached traversal). The complete scoped
+compatibility build passes (15904 jobs, 2.9 GiB combined peak); the axiom audit
+passes for 336604 declarations at 3395.5 MiB. Next connect the released numerical
+bank/header loader to this prepared cached traversal and replace the first-pass
+caller branch. Explicit cache retirement before recovery is still required.
+Factory/header integration, combined caller workspace, distinct-core
+amortization, tensor/R4 composition, layout restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
