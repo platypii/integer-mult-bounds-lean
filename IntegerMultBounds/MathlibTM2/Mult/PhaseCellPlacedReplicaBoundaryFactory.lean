@@ -41,7 +41,7 @@ theorem placedReplicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target : �
       F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, (∀ i, replicaRecoveryBoundaryFactoryReg i ≠ k) → F.L k = S.L k ∧ F.R k = S.R k) := by
   let e := replicaRecoveryBoundaryFactoryReg
-  obtain ⟨vi,G,n,columns,hu,hn,he,hfactor,hbetween,hin,hout,hworkspace⟩ :=
+  obtain ⟨vi,G,n,columns,hu,hn,he,hfactor,hbetween,hin,hout,hworkspace,_⟩ :=
     replicaBoundaryFactory_exec (body := fun f : Empty => nomatch f) H target hR hQ hA hp hwidth
       hpad htarget (embDn e v) base
   have he' : Exec (fun f : Empty => nomatch f) (packedBoundaryFactoryGeometry hR hQ)

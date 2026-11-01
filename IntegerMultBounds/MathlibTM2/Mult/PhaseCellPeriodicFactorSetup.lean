@@ -50,7 +50,7 @@ theorem periodicFactorSetup_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (h
       CouplingIntervalMetadata V s t band 0 s 0 s
         (embStk (Fin.castLE (by decide : 168 ≤ 242)) F) := by
   dsimp only
-  obtain ⟨v₁,F,n,columns,hu₁,hn,he₁,_,_,_,_,hcolumns,_,hpages,hbetween,_,_⟩ :=
+  obtain ⟨v₁,F,n,columns,hu₁,hn,he₁,_,_,_,_,hcolumns,_,hpages,hbetween,_,_,_⟩ :=
     packedFactoryInputBank_factor_exec (body := body) (target := target) (rhsExp := 2) (a := 0) (b := s)
       hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband (by omega) (by omega) hpad v H
   have hview : embStk packedRecoveryRuntimeReg (extendStacks (by decide : 242 ≤ 248) F) =

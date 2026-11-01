@@ -145,7 +145,7 @@ theorem packedHaloInitializedBatch_exec
   obtain ⟨hq,hstage,hw⟩ := boundaryHaloTarget_sizing p u l boundaryTarget rhsExp
     (haloBoundary s t (PhaseCellBand.width p u) a b).card
   rw [←hcell] at hq hstage hw
-  obtain ⟨vf,M,n₁,columns,hu₁,hn₁,he₁,hinputFrame,houtputFrame,hsrc,hout,hcolumns,htable,hpages,hbetween,hraw,hstock,_,_⟩ :=
+  obtain ⟨vf,M,n₁,columns,hu₁,hn₁,he₁,hinputFrame,houtputFrame,hsrc,hout,hcolumns,htable,hpages,hbetween,hraw,hstock,_,_,_⟩ :=
     packedBoundaryFactoryGeometry_between_exec (body := body) hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget
       hband has hbs hpad (embDn packedBoundaryRecoveryBase (embDn packedHaloBatchReg v)) S
       ((inputs.map (fun x => cstream A (executionWidth p l target rhsExp) (packedInterval a (b-a) x.1))).flatten++tail)

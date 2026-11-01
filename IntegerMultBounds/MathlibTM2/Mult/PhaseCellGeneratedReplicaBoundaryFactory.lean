@@ -44,11 +44,12 @@ theorem generatedReplicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target 
       embStk replicaRecoveryCallerInterior.gather F = embStk replicaRecoveryCallerInterior.gather S ∧
       F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, (∀ i, replicaRecoveryCallerFactoryReg i ≠ k) → F.L k = S.L k ∧ F.R k = S.R k) ∧
-      ReplicaFactoryWorkspace (embStk replicaRecoveryCallerFactoryReg F) := by
+      ReplicaFactoryWorkspace (embStk replicaRecoveryCallerFactoryReg F) ∧
+      (F.R (replicaRecoveryCallerFactoryReg 159) = [] ∧ F.R (replicaRecoveryCallerFactoryReg 161) = []) := by
   obtain ⟨v₁,n₁,hu₁,hn₁,hview,he₁⟩ := prepareReplicaBoundaryFactory_exec (body := body)
     H buffers v S headers h119 hblank hleft 0
   let M := preparedReplicaBoundaryFactoryInput H S
-  obtain ⟨vn,B,n₂,columns,hun,hn₂,hen,hdata,hmasters,hstage,hlevel,hgeometry,hinp,hout,hwork⟩ :=
+  obtain ⟨vn,B,n₂,columns,hun,hn₂,hen,hdata,hmasters,hstage,hlevel,hgeometry,hinp,hout,hwork,hmasks⟩ :=
     replicaBoundaryFactoryForCoupling_exec (body := fun f : Empty => nomatch f) H target
       hR hQ hA hp hwidth hpad htarget (embDn replicaRecoveryCallerFactoryReg v₁)
       (embStk replicaRecoveryCallerFactoryReg S)
@@ -81,7 +82,7 @@ theorem generatedReplicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target 
       embStk replicaRecoveryCallerCoupling.bank F := replicaRecoveryCallerCoupling_runtime_view F
   refine ⟨v',F,n₁+(n₂+(2*publicationGeometryWidth H.t H.band+2)),columns,
     hu₃.trans (hu₂.trans (hun.trans hu₁)),by unfold generatedReplicaBoundaryFactoryCost; omega,
-    Exec.seq he₁.toExec (Exec.seq he₂ he₃),?_,?_,?_,?_,?_,?_,hinput,houtput,hoff,?_⟩
+    Exec.seq he₁.toExec (Exec.seq he₂ he₃),?_,?_,?_,?_,?_,?_,hinput,houtput,hoff,?_,?_⟩
   · rw [hbankF]
     exact hdata
   · rw [←hbank,hbankF]
@@ -101,5 +102,7 @@ theorem generatedReplicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target 
     · exact (hoff _ (fun i => replicaRecoveryCallerFactoryReg_gather i k)).2
   · rw [hbankF]
     exact hwork
+  · exact ⟨(congrArg (fun C : Stacks 242 A => C.R 159) hbankF).trans hmasks.1,
+      (congrArg (fun C : Stacks 242 A => C.R 161) hbankF).trans hmasks.2⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

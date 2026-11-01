@@ -26434,3 +26434,21 @@ build passes (15939 jobs, 3.5 GiB combined peak); the axiom audit passes for
 initial-bank storage, distinct-core scheduling/amortization, tensor/R4
 composition, layout restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: executed factory supplies cached-mask freshness
+
+The packed factory's existing auxiliary right-frame now survives the factor,
+replica, width, geometry-retirement, generated and placed factory interfaces.
+Canonical factory installation clears the unused mask ports 159 and 161;
+width generation and geometry retirement preserve them. The complete executed
+factory in the cached caller bank therefore returns both mask ports empty,
+without extra runtime clearing or another numerical proof. Existing consumers
+have been updated for the stronger result.
+
+The scoped compatibility build passes (15939 jobs, 22.5 GiB combined peak).
+The axiom audit passes for 336759 declarations at 3402.9 MiB. Next compose
+physical factor generation with the complete cached caller, deriving the
+remaining initial bank and left-frame obligations from the canonical initial
+state. Factory resources/initial storage, distinct-core amortization,
+tensor/R4 composition, layout restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.

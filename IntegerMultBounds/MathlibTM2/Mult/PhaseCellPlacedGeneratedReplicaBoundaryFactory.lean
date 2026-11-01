@@ -110,13 +110,14 @@ theorem placedGeneratedReplicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (t
       embStk replicaRecoveryBatchInterior.gather F = embStk replicaRecoveryBatchInterior.gather S ∧
       F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, (∀ i, replicaRecoveryBoundaryFactoryReg i ≠ k) → F.L k = S.L k ∧ F.R k = S.R k) ∧
-      ReplicaFactoryWorkspace (embStk replicaRecoveryBoundaryFactoryReg F) := by
+      ReplicaFactoryWorkspace (embStk replicaRecoveryBoundaryFactoryReg F) ∧
+      (F.R (replicaRecoveryBoundaryFactoryReg 159) = [] ∧ F.R (replicaRecoveryBoundaryFactoryReg 161) = []) := by
   let e := Fin.castLE (by decide : 389 ≤ 392)
   have hgather (B : Stacks 392 A) : embStk replicaRecoveryBatchInterior.gather B =
       embStk replicaRecoveryCallerInterior.gather (embStk e B) := rfl
   have hreg (i : Fin 242) : replicaRecoveryBoundaryFactoryReg i = e (replicaRecoveryCallerFactoryReg i) :=
     replicaRecoveryBoundaryFactoryReg_reindex i
-  obtain ⟨vi,G,n,columns,hu,hn,hex,hdata,hmasters,hstage,hlevel,hgeometry,hg,hin,hout,hoff,hwork⟩ :=
+  obtain ⟨vi,G,n,columns,hu,hn,hex,hdata,hmasters,hstage,hlevel,hgeometry,hg,hin,hout,hoff,hwork,hmasks⟩ :=
     generatedReplicaBoundaryFactory_exec (body := fun f : Empty => nomatch f) H target hR hQ hA hp hwidth hpad htarget
       buffers (embDn e v) (embStk e S) (headers.of_gather_view (hgather S).symm) h119
       (by intro i; change S.R (e (replicaRecoveryCallerFactoryReg i)) = []; rw [←hreg]; exact hblank i)
@@ -131,7 +132,7 @@ theorem placedGeneratedReplicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (t
     rw [replicaRecoveryBatchCoupling_reindex_view,hview]
   have hbankR (i : Fin 168) : F.R (replicaRecoveryBatchCoupling.bank i) = G.R (replicaRecoveryCallerCoupling.bank i) :=
     congrFun (congrArg Stacks.R hbank) i
-  refine ⟨v',F,n,columns,hu'.trans hu,hn,hePlaced,?_,?_,?_,?_,?_,?_,hin,hout,?_,?_⟩
+  refine ⟨v',F,n,columns,hu'.trans hu,hn,hePlaced,?_,?_,?_,?_,?_,?_,hin,hout,?_,?_,?_⟩
   · rw [hfactory]; exact hdata
   · rw [hbank]; exact hmasters
   · rw [hbankR 118]; exact hstage
@@ -153,5 +154,7 @@ theorem placedGeneratedReplicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (t
       exact ⟨hL.trans (hoff j ho).1,hR.trans (hoff j ho).2⟩
     · exact embOvr_off G.get S (by intro j he; have hh := congrArg Fin.val he; change j.val = k.val at hh; have := j.isLt; omega)
   · rw [hfactory]; exact hwork
+  · exact ⟨(congrArg (fun C : Stacks 242 A => C.R 159) hfactory).trans hmasks.1,
+      (congrArg (fun C : Stacks 242 A => C.R 161) hfactory).trans hmasks.2⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

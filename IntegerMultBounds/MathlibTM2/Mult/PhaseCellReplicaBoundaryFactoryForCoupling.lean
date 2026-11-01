@@ -31,8 +31,8 @@ theorem replicaBoundaryFactoryForCoupling_exec (H : ReplicaHaloProblem s) (targe
         (embStk (Fin.castLE (by decide : 168 ≤ 242)) F) ∧
       (F.R 118).length = H.stage+1 ∧ (F.R 120).length = H.l ∧
       (∀ k ∈ replicaFactoryGeometryPorts, F.R (Fin.castLE (by decide : 168 ≤ 242) k) = []) ∧
-      F.inp = S.inp ∧ F.out = S.out ∧ ReplicaFactoryWorkspace F := by
-  obtain ⟨v₁,J,n₁,columns,hu₁,hn₁,he₁,hdata,hheaders,hcursor,hinp,hout,hwork⟩ :=
+      F.inp = S.inp ∧ F.out = S.out ∧ ReplicaFactoryWorkspace F ∧ (F.R 159 = [] ∧ F.R 161 = []) := by
+  obtain ⟨v₁,J,n₁,columns,hu₁,hn₁,he₁,hdata,hheaders,hcursor,hinp,hout,hwork,hmasks⟩ :=
     replicaBoundaryFactoryWithWidth_exec (body := body) H target hR hQ hA hp hwidth hpad htarget v S
   have hview : embStk packedRecoveryRuntimeReg (extendStacks (by decide : 242 ≤ 248) J) =
       embStk (Fin.castLE (by decide : 168 ≤ 242)) J := by
@@ -45,6 +45,8 @@ theorem replicaBoundaryFactoryForCoupling_exec (H : ReplicaHaloProblem s) (targe
     retireReplicaFactoryGeometry_exec (body := body) H target (publicationGeometryWidth H.t H.band)
       columns v₁ J hdata hheaders hcursor hwork
   exact ⟨v₂,retiredReplicaFactoryGeometry J,n₁+n₂,columns,hu₂.trans hu₁,by omega,
-    Exec.seq he₁ he₂,hdataF,hmasters,hstage,hlevel,retiredReplicaFactoryGeometry_blank J,hinp,hout,hworkF⟩
+    Exec.seq he₁ he₂,hdataF,hmasters,hstage,hlevel,retiredReplicaFactoryGeometry_blank J,hinp,hout,hworkF,
+    (retiredReplicaFactoryGeometry_frame J 159 (by decide)).trans hmasks.1,
+    (retiredReplicaFactoryGeometry_frame J 161 (by decide)).trans hmasks.2⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

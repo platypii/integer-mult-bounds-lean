@@ -80,7 +80,7 @@ theorem generatedReplicaRecovery_exec (H : ReplicaHaloProblem s)
       ReplicaRecoveryCoreReady H (12*H.band+1) (embStk replicaRecoveryCallerNativeReg G) ∧
       ReplicaBoundaryRhsReady H (embStk replicaBoundaryPhaseReg (embStk replicaRecoveryCallerWorkerReg G)) ∧
       ReplicaBoundaryFactorData H target columns (embStk replicaRecoveryCallerFactoryReg G) := by
-  obtain ⟨v₁,F,n₁,columns,hu₁,hn₁,he₁,hdata,hmasters,hstage,hlevel,hgeometry,hgather,hinp,hout,hoff,hwork⟩ :=
+  obtain ⟨v₁,F,n₁,columns,hu₁,hn₁,he₁,hdata,hmasters,hstage,hlevel,hgeometry,hgather,hinp,hout,hoff,hwork,_⟩ :=
     generatedReplicaBoundaryFactory_exec (body := body) H target hR hQ hA hp hwidth hpad htarget
       buffers v S headers h119 hblank hleft
   have hg (k : Fin 126) : F.R (replicaRecoveryCallerInterior.gather k) = S.R (replicaRecoveryCallerInterior.gather k) :=

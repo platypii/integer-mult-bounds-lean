@@ -112,13 +112,13 @@ theorem replicaBoundaryFactoryWithWidth_exec (H : ReplicaHaloProblem s) (target 
         H.origin (H.origin+H.span) (publicationGeometryWidth H.t H.band) H.wordWidth
         (embStk packedRecoveryRuntimeReg (extendStacks (by decide) F)) ∧
       (F.R 157).length ≤ publicationGeometryWidth H.t H.band ∧ F.inp = S.inp ∧ F.out = S.out ∧
-      ReplicaFactoryWorkspace F := by
-  obtain ⟨v₁,J,m,columns,hu₁,hm,he₁,hdata,hbetween,hinp,hout,hwork⟩ := replicaBoundaryFactory_exec (body := body)
+      ReplicaFactoryWorkspace F ∧ (F.R 159 = [] ∧ F.R 161 = []) := by
+  obtain ⟨v₁,J,m,columns,hu₁,hm,he₁,hdata,hbetween,hinp,hout,hwork,hmasks⟩ := replicaBoundaryFactory_exec (body := body)
     H target hR hQ hA hp hwidth hpad htarget v S
   obtain ⟨v₂,hu₂,he₂,hdataF,hheaders,hcursor,hworkF⟩ := replicaBoundaryFactoryWidth_exec (body := body)
     H target columns v₁ J hdata hbetween hwork
   exact ⟨v₂,replicaBoundaryFactoryWidthState H J,m+(8*H.precision+9),columns,
-    hu₂.trans hu₁,by omega,Exec.seq he₁ he₂,hdataF,hheaders,hcursor,hinp,hout,hworkF⟩
+    hu₂.trans hu₁,by omega,Exec.seq he₁ he₂,hdataF,hheaders,hcursor,hinp,hout,hworkF,by simpa [replicaBoundaryFactoryWidthState] using hmasks⟩
 
 end ScalarPlacement
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
