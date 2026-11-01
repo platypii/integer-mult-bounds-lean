@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3597 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3598 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22552,3 +22552,29 @@ setup, loading the residual archive, recovery, the second interior pass,
 workspace/selected resources, global scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331424 declarations at 3269.9 MiB.
+
+### S4 checkpoint: shared physical setup composes with the first boundary row
+
+`PhaseCellInitializedReplicaBoundaryRow` transports the full prepared numerical
+bank and factor pages through shared mask/counter initialization using its
+structural frame. `initializedReplicaBoundaryRow_exec` then composes the actual
+initializer and concrete boundary row from the original input state. Its cost
+is shared setup plus row preparation and the existing packed solve. It returns
+physical readiness, numerical readiness and the unchanged shared factor pages
+with the solved row above the remaining archive. Factor generation remains an
+input obligation; there is no assumed setup or row execution.
+
+The guarded check passes at 3218.9 MiB. Compatibility with the initialized
+interior/coupling path passes (14846 jobs, 3.4 GiB combined peak). Default proof
+limits are unchanged.
+
+Recovery integration exposed a physical phase boundary that must be resolved:
+its masters occupy 117/118/120/123/124, which this boundary-row layout uses for
+fold counters and volumes. The current theorem establishes a boundary phase,
+not recovery-compatible retained masters. Next settle the common phase layout
+or prove and price an explicit master-preserving handoff before composing
+recovery. Do not assume these ports match. Shared factor generation, loading the
+residual archive, recovery, the second interior pass, workspace/selected
+resources, global scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331429 declarations at 3270.0 MiB.
