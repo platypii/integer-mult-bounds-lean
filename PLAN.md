@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4012 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4014 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28417,4 +28417,41 @@ integration remain open. S4 is incomplete; kappa unchanged.
 Guarded file check passes at 3449.1 MiB.
 Expanded compatibility passes (16575 jobs, 3.5 GiB combined peak). Broad
 axiom audit passes for 342031 declarations at 3547.4 MiB, permitting only
+propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: computed class controls come from ordinary dimensions
+
+`Mult.PhaseCellRecoveryPayloadCount` generates the shared payload count
+`N*(H*W)` from retained ordinary replica, halo-length and word-width tapes.
+It composes two existing structural unary products and erases the temporary
+`H*W` counter. The exact final frame changes only the output counter; all
+source dimensions and scratch restore. The same execution has an all-depth
+stock allowance twice its explicit time bill. For positive W the time is
+at most `20*((N+1)*(H*W+1))`.
+
+`Mult.PhaseCellPrepareComputedCoreClass` composes that generator with the
+existing placed ordered-origin pass. Its fixed program generates the binary
+origin stream, restored scan count and halo-payload count directly from
+ordinary geometry and dimensions. Its exact frame changes only those three
+registers, with time and stock allowances added once per class. No old
+SupplierInputPlan, ClassReady bank, prepared numerical header or execution
+witness is required.
+
+A broad propositional tactic initially expanded the live origin program and
+exceeded default limits. The proof now establishes the four scratch-role
+memberships directly; no proof limits were changed. Structural bank framing
+and the existing execution lemmas do the remaining work.
+
+This prepares the controls but is not yet composed around `coreScan_exec`.
+Next execute preparation, the computed scan and final count erasure as one
+class lifecycle; match actual class streams and sum complete grouped bills
+before selected-axis absorption. Exposure/publication fusion, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa
+unchanged.
+
+Guarded checks pass at 2952.8 MiB (payload counter) and 3068.3 MiB
+(computed class preparation).
+Expanded compatibility passes (16577 jobs, 3.4 GiB combined peak). Broad
+axiom audit passes for 342040 declarations at 3549.0 MiB, permitting only
 propext, Quot.sound and Classical.choice.
