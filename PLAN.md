@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3640 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3641 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23274,3 +23274,30 @@ supply the shared-bank master/factor readiness from actual setup. Factory input
 production, complete resources, scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 333450 declarations at 3314.9 MiB.
+
+### S4 checkpoint: actual factory generates the complete retained master bank
+
+Inspection showed the factory already supplies precision, stage, level and
+geometry masters, but its between-input bank deliberately stores a zero width
+header. `PhaseCellReplicaBoundaryFactoryWidth` fills only that missing header
+with the existing `generateWordWidth 119 130 135`, costing `8*precision+9`.
+The proof uses the execution-width identity `wordWidth=2*precision+8`, preserves
+all numerical certificates/factor pages/workspace, and returns the complete
+retained header language with the correct word width.
+
+`replicaBoundaryFactoryWithWidth_exec` composes actual factor generation and
+that width step in one native trace. `replicaBoundaryFactory_exec` now also
+retains its existing physical between-input certificate, rather than discarding
+native/scratch/freshness information needed by the following phases. A structural
+`ReplicaBoundaryFactorData.of_runtime_frame` transports generated numerical data
+through low runtime/header operations without repeating accuracy arguments.
+
+Guarded checks pass at 3303.1 MiB (factory with retained physical output) and
+3287.8 MiB (width generation/composed factory), with default limits. Compatibility
+with actual coupling and released recovery passes (15299 jobs, 3.5 GiB combined
+peak). Next transport these generated masters/factors through interior/coupling,
+combine them with the actual coupling geometry/page and clean shared workspace,
+and join the complete trace. Factory input production, complete resources,
+scheduling, tensor/R4 restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 333460 declarations at 3315.1 MiB.

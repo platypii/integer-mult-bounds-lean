@@ -37,6 +37,15 @@ structure ReplicaBoundaryFactorData (H : ReplicaHaloProblem s) (target : ℕ)
   bank : PackedPreparedBank H.precision H.wordWidth (12*H.band+1)
     (haloBoundary s H.t H.band H.origin (H.origin+H.span)).card F
 
+theorem ReplicaBoundaryFactorData.of_runtime_frame (H : ReplicaHaloProblem s) (target : ℕ)
+    (columns : List (ZMod s → GaussianInt)) {S F : Stacks 242 A}
+    (h : ReplicaBoundaryFactorData H target columns S) (hL : F.L = S.L)
+    (hlow : ∀ k : Fin 242, k.val < 64 → F.R k = S.R k)
+    (hq : F.R 119 = S.R 119)
+    (hhigh : ∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) :
+    ReplicaBoundaryFactorData H target columns F :=
+  ⟨h.prepared,h.error,h.pages.of_solution_frame hhigh,h.bank.of_runtime_frame hL hlow hq hhigh⟩
+
 def replicaBoundaryFactoryInput (H : ReplicaHaloProblem s) (S : Stacks 242 A) : Stacks 242 A :=
   packedFactoryInputBank S (2^15*H.p) (H.stage+1) H.precision H.l s H.t H.u H.band
     H.origin (H.origin+H.span) (publicationGeometryWidth H.t H.band)
@@ -70,7 +79,10 @@ theorem replicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target : ℕ)
     ∃ v' F n, ∃ columns : List (ZMod s → GaussianInt), v'.user = v.user ∧
       n ≤ replicaBoundaryFactoryCost H target ∧
       Exec body (packedBoundaryFactoryGeometry hR hQ) (mk v (replicaBoundaryFactoryInput H S)) n (mk v' F) ∧
-      ReplicaBoundaryFactorData H target columns F := by
+      ReplicaBoundaryFactorData H target columns F ∧
+      PackedHaloBetweenInputs (2^15*H.p) (H.stage+1) H.precision H.l s H.t H.u H.band
+        H.origin (H.origin+H.span) (publicationGeometryWidth H.t H.band) H.wordWidth (12*H.band+1)
+        (haloBoundary s H.t H.band H.origin (H.origin+H.span)).card (extendStacks (by decide) F) := by
   obtain ⟨hq,hstage,hw⟩ := H.boundary_sizing (boundaryRecoveryTarget H.p target) htarget
   simp only [ReplicaHaloProblem.band] at hq hstage hw
   have ha : 0 < |H.α| := abs_pos.mpr (by
@@ -92,10 +104,12 @@ theorem replicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target : ℕ)
     simp only [ReplicaHaloProblem.band] at hin
     exact (congrArg (fun I : Stacks 242 A => Exec body (packedBoundaryFactoryGeometry hR hQ)
       (mk v I) n (mk v' F)) hin).mp he
-  · constructor
-    · simpa only [ReplicaHaloProblem.band,← hq,← hw] using hcolumns
-    · simpa only [ReplicaHaloProblem.band,← hq,← hw] using herror
-    · simpa only [ReplicaHaloProblem.band,← hq,← hw] using hpages
-    · simpa only [ReplicaHaloProblem.band,← hq,← hw,packedBoundaryRecoveryBase,embStk_extendStacks] using hbetween.bank
+  · refine ⟨?_,?_⟩
+    · constructor
+      · simpa only [ReplicaHaloProblem.band,← hq,← hw] using hcolumns
+      · simpa only [ReplicaHaloProblem.band,← hq,← hw] using herror
+      · simpa only [ReplicaHaloProblem.band,← hq,← hw] using hpages
+      · simpa only [ReplicaHaloProblem.band,← hq,← hw,packedBoundaryRecoveryBase,embStk_extendStacks] using hbetween.bank
+    · simpa only [ReplicaHaloProblem.band,← hq,← hw,← hstage] using hbetween
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
