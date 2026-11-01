@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3985 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3988 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27975,3 +27975,38 @@ Guarded checks pass at 3437.7 MiB (retained paired prefix), 3427.8 MiB
 (restoring paired call), 3406.9 MiB (crop placement), 3434.9 MiB (combined
 cropped call) and 3420.1 MiB (actual constructor specialization).
 Axiom audit passed for 341741 declarations. Guarded check peak RSS: 3539.5 MiB.
+
+### S4 checkpoint: crop wiring and raw recovery reuse the ordered core-job language
+
+`Mult.PhaseCellDefaultRecoveryCropPlacement.ofBanks` constructs the full
+crop placement from existing master/control/work banks plus three external
+ports (offset, rows, destination). Injection is proved structurally over
+disjoint sums; only the nineteen-role selector is checked finitely, never
+the full recovery bank. The external-port identity theorem preserves the
+ordinary caller-facing header/stream interface.
+
+`Mult.PhaseCellPackedJobRawRecovery` associates an actual RawRecoveryJob with
+the existing PackedNormalizedJob using its mathematical bounds, field norm
+and common-width sizing. It proves output precision/width and target profiles,
+crop containment, and exact identification of cropped words and vertices
+with ownedCoreWords and ownedCore. No extra format witness is supplied.
+
+`Mult.PhaseCellPackedRecoveryLocality` identifies that constructor's target
+order with a shared localSolution map and proves its principal-system solve
+equation. normalized_recovery_core_accuracy reuses the existing generated-
+window locality theorem to transfer the post-rounding arithmetic certificate
+to precisely the established rowTarget and rowError contract. Locality and
+core geometry are therefore shared with the original ordered supplier path,
+rather than reimplemented for raw recovery.
+
+The post-rounding arithmetic certificate remains a premise of this mathematical
+locality lemma; it is not a final execution theorem. Next execute the existing
+final-rounding conversion on actual cropped output, discharge that premise,
+and lift the restoring step through the ordered core loop/physical exposure.
+Concrete ambient allocation, complete grouped cost absorption, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa unchanged.
+
+Expanded compatibility build passes (16551 jobs, 3.5 GiB combined peak).
+Guarded checks pass at 3438.3 MiB (default crop placement), 3375.3 MiB
+(core-job/raw-job bridge) and 3381.1 MiB (locality bridge). Broad axiom audit
+passes for 341785 declarations at 3539.8 MiB.
