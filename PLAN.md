@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3960 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3963 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27604,3 +27604,43 @@ Guarded checks pass at 1396.1 MiB (generic sparse copier), 3382.6 MiB
 (complete header prefix) and 3422.9 MiB (full lifecycle from seeds). Expanded
 compatibility build passes (16522 jobs, 6.0 GiB combined observed peak);
 axiom audit passes for 341475 declarations at 3523.8 MiB.
+
+### S4 checkpoint: executed master generation establishes all seed sources
+
+`Mult.PhaseCellRestoredInverseMasters` generalizes the existing restored
+supplier-master execution to ordinary inverse parameters and scalar-room
+bounds. The physical program and scalarValueRegs retain their names and
+behavior; the temporary scalar values are erased and the full scalar workspace
+is restored. The publication-specific restoredSupplierMasters_exec is now a
+short compatibility corollary of this shared proof, with its original API.
+
+`Mult.PhaseCellRecoverySeedSources` wires all thirteen seed sources from ten
+computed master ports and the three ordinary p/W/N headers. Readiness splits
+structurally into membership in the arbitrary master list or the three seed
+roles. Concrete port correspondence is checked once. The separation lemma
+recoverySeedSources_ne transfers existing wiring inequalities without repeating
+thirteen role cases in each caller.
+
+`Mult.PhaseCellGenerateRecoverySeedSources` applies the executed restored
+master generator and establishes every seed-header length, while preserving
+p/W/N source words, host tapes, left stacks and all non-master registers. It
+requires only the algebraic identity recoveryMasterValues H =
+inverseMasterValues ..., which RawRecoveryJob.ofComplexBounds_masterValues
+already proves for the actual constructor; no execution or solution premise
+is introduced. Time and stock retain the generic generator's existing bills.
+
+Next compose this prefix with complexRecoveryFromSeeds and erase the ten
+exported masters afterward. A small register-plan abstraction for scalar
+generation and the raw lifecycle can keep the combined signature manageable;
+it should contain wiring/separation facts only. Derive seed-source separation
+using recoverySeedSources_ne, and transfer initial payload/blank readiness
+using the generator's non-master frame. Then compose ordered classes and sum
+exact bills before selected-axis absorption. Output pairing/cropping,
+publication and tensor/R4 restoration remain open. S4 is incomplete; kappa
+is unchanged.
+
+Guarded checks pass at 3221.4 MiB (generic restored generator), 3307.1 MiB
+(publication compatibility corollary), 3397.6 MiB (seed wiring/readiness) and
+3379.8 MiB (executed generator-to-seed bridge). Expanded compatibility build
+passes (16525 jobs, 13.2 GiB combined observed peak); axiom audit passes for
+341487 declarations at 3522.7 MiB.
