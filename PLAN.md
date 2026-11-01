@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3536 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3540 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21791,3 +21791,42 @@ factory charges with the actual global schedule. Recovery/boundary solve,
 second-pass composition, tensor/R4 restoration and outer integration remain
 open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 328871 declarations at 3200.4 MiB.
+
+### S4 checkpoint: fast-time bound for the actual initialized replica pass
+
+`Cost/PhaseCellReplicaHaloFast` lifts the existing released numerical fast-time
+bound through ordinary header reload, paired-page generation/retirement, actual
+binary-key parsing, the nonempty guard and decoded-length erasure. Shared
+factory time is explicit and independent of replica count. Repeated reload is
+linear symbol traffic. Empty candidates use their exact control-only bill and
+require no numerical geometry.
+
+`Cost/AffineSchedule.sum_nat_cost_le_affine` sums arbitrary pointwise shared,
+native-volume and arithmetic-volume bills by structural list induction. The
+key-loop proof instantiates this lemma with the actual cost theorem, rather
+than supplying a per-class runtime oracle. `Cost/PhaseCellInitializedReplicaFast`
+then uses exact halo volume for native payload traffic and the existing local
+padding estimate for arithmetic work. Allocation, key discovery, per-key loop
+tests and both endpoint tests are included in the initialized total.
+
+The resulting bound separates shared setup, native traffic linear in
+`N*(span*w+haloInterior.card*w+1)`, and
+`D*N*(haloInterior.card+8*span+8*(s/(t-s)+1)+6*(span+1))*p^(129/128)`.
+`D` is uniform over dimensions, halos, key schedules and replica count once the
+precision constants are fixed. `Cost/PhaseCellSelectedInitializedReplicaFast`
+discharges ring-size and precision premises from selected sizes and linear
+target/RHS precision, and bounds the actual step count returned by the
+initialized execution theorem. This preserves the arithmetic exponent without
+hiding setup or charging a whole-axis volume for each cell.
+
+Guarded checks pass at 911.1 MiB (generic schedule summation), 3184.8 MiB (actual
+key-body fast bound), 3180.7 MiB (initialized schedule/volume aggregation), and
+3164.6 MiB (selected step-count bound). An elaboration timeout in the volume
+bridge was resolved by explicitly unfolding the small volume definitions
+before rewriting the ring size; default proof limits are unchanged.
+Compatibility with selected initialized stock and the older loop passes
+(14561 jobs, 3.4 GiB combined peak). Next combine the explicit shared factories
+with the actual global distinct-key schedule, and compose coupling/recovery,
+boundary solve and the second pass. Tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327140 declarations at 3181.0 MiB.
