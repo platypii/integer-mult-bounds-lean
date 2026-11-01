@@ -37,6 +37,17 @@ structure ReplicaBoundaryFactorData (H : ReplicaHaloProblem s) (target : ℕ)
   bank : PackedPreparedBank H.precision H.wordWidth (12*H.band+1)
     (haloBoundary s H.t H.band H.origin (H.origin+H.span)).card F
 
+/-- Coupling may change native arithmetic headers. Only restored multiplier
+scratch, precision and the retained factor workspace matter to recovery. -/
+theorem ReplicaBoundaryFactorData.of_recovery_frame (H : ReplicaHaloProblem s) (target : ℕ)
+    (columns : List (ZMod s → GaussianInt)) {S F : Stacks 242 A}
+    (h : ReplicaBoundaryFactorData H target columns S) (hL : F.L = S.L)
+    (hmul : ∀ i : Fin 64, F.R ⟨i.val,by omega⟩ = [])
+    (hq : F.R 119 = S.R 119)
+    (hhigh : ∀ k : Fin 242, 168 ≤ k.val → k ≠ 238 → F.R k = S.R k) :
+    ReplicaBoundaryFactorData H target columns F :=
+  ⟨h.prepared,h.error,h.pages.of_solution_frame hhigh,h.bank.of_recovery_frame hL hmul hq hhigh⟩
+
 theorem ReplicaBoundaryFactorData.of_runtime_frame (H : ReplicaHaloProblem s) (target : ℕ)
     (columns : List (ZMod s → GaussianInt)) {S F : Stacks 242 A}
     (h : ReplicaBoundaryFactorData H target columns S) (hL : F.L = S.L)

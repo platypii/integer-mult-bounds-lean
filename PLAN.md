@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3642 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3643 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23329,3 +23329,26 @@ incomplete; kappa is unchanged.
 Compatibility with actual factory-width generation and released recovery passes
 (15300 jobs, 3.5 GiB combined peak). The combined scoped axiom audit passes for
 333464 declarations at 3315.1 MiB.
+
+### S4 checkpoint: assemble shared recovery bank from coupling and factory frames
+
+`ReplicaBoundaryFactorData.of_recovery_frame` transports the generated column,
+error, factor-page and prepared-bank certificate using restored multiplier
+scratch, retained precision and high factor storage. Native arithmetic headers
+need not equal their factory values, which is essential after actual coupling.
+
+`PhaseCellReplicaCouplingRecoveryBank` assembles `ReplicaRecoverySharedBank`
+from this transported certificate, retained headers, generated coefficient
+page/count/rows and private-bank freshness. Its clean shared workspace combines
+six untouched factory scratch ports with the five fresh coupling setup ports.
+The theorem also returns the complete transported factor certificate, so the
+following boundary solver can reuse its numerical accuracy and actual pages.
+
+Guarded checks pass at 3303.5 MiB (factory transport) and 3283.7 MiB (shared-bank
+assembly). Compatibility with actual interior/coupling, released recovery and
+factory width generation passes (15301 jobs, 5.8 GiB combined peak). The scoped
+axiom audit passes for 333468 declarations at 3315.5 MiB. Next instantiate these
+frames from actual coupling and join its execution to released recovery; this
+assembly theorem alone does not complete that composition. Factory input
+production/old-geometry retirement, complete resources, scheduling, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa unchanged.
