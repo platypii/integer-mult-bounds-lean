@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4025 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4028 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28747,3 +28747,45 @@ Guarded file check passes at 3508.0 MiB.
 Expanded compatibility passes (16588 jobs, 3.6 GiB combined peak). Broad
 axiom audit passes for 342092 declarations at 3550.0 MiB, permitting only
 propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: complete summed core bills satisfy the selected fast bound
+
+`Cost.PhaseCellComputedRecoveryAuxiliarySchedule` combines fixed base setup
+and 44 times shared raw input stock under one whole-class T allowance. It
+sums movement for arbitrary job widths/spans, preserving local halo-volume
+and job-count terms. `computedCoreScheduleTime_le_complete` joins the actual
+full core bills to one raw schedule budget plus that setup allowance and
+explicit non-replica/replica traffic. No numerical setup or execution oracle
+is supplied and no whole-axis allowance is spent per core.
+
+`Cost.PhaseCellComputedCoreTraffic` bounds non-replica traffic by polynomial
+setup and replica traffic by `C*N*t*p`.
+`Cost.PhaseCellSelectedComputedCoreFastTime.selectedComputedCoreSchedule_fast_le`
+then applies the raw schedule theorem once, absorbs the non-replica traffic
+once, and uses the existing p-to-p^(129/128) comparison for replica traffic.
+It proves the complete summed actual core bills are at most
+`6*T + F*N*t*(1+band^2/d)*p^(129/128)` eventually under the selected raw
+profiles, width bounds, core count and summed halo/local-volume hypotheses.
+Here N is the complex replica count; the raw numerical list has 2*N fields.
+F is uniform in the selected axis and mathematical job list.
+
+The bound includes master/scalar generation, seed/header work, descriptor
+production/loading/retirement, raw numerical recovery, pairing, crop/halo
+retirement, normalization, physical replica-order restoration, endpoint
+generation/cleanup and archive transfer. It has no remaining auxiliary sum
+or per-job fast-time hypothesis. The same bills are the ones retained by
+`coreScan_sum_exec` and `classRun_sum_exec`.
+
+Still open: instantiate the selected width/geometry profiles for the generated
+class family, add class preparation, scan and final count-cleanup bills to
+the complete execution bound, discharge concrete ordinary-bank readiness,
+and compose ambient exposure/publication with tensor/R4 restoration. This
+is not a complete S4 execution theorem. S4 remains incomplete; kappa unchanged.
+
+Dependency build passes (16275 jobs, 3.6 GiB combined peak).
+Expanded compatibility passes (16591 jobs). Guarded checks pass at
+3487.3 MiB (combined auxiliary schedule), 3479.6 MiB (traffic comparison)
+and 3507.2 MiB (complete selected fast bound). Broad axiom audit passes
+for 342097 declarations at 3549.7 MiB, permitting only propext, Quot.sound
+and Classical.choice.
