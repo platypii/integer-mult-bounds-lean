@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3827 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3828 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25659,3 +25659,33 @@ to be established before reusing `coupling_recovery_bank` for the complete
 connection. First-pass/factory integration, combined prefix/coupling workspace,
 distinct-core amortization, tensor/R4 composition, layout restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: first interior/coupling pass retains complete factor workspace
+
+`initializedReplicaInteriorCoupling_exec` now exports restoration of the native
+left bank and preservation of left spectators. Native restoration follows from
+the initial released bank and the final interior-loop invariant; coupling's
+existing left-stack restoration completes the argument. The spectator frame
+uses the existing structural interior footprint.
+
+`replicaRecoveryBatchInterior_solver_worker_disjoint` factors the high-worker
+separation argument used by both right and left frames. The complete factor
+left bank is preserved: low indices use native restoration and high indices
+are outside the solver/gather/output footprint.
+
+`ReplicaBoundaryFactorData.after_batch_first_pass` combines those left facts
+with the factor-extension right frame, restored multiplier scratch and retained
+precision header. The same generated columns, factor pages and solve workspace
+survive the actual first interior/coupling pass. The readiness source is an
+arbitrary retained tail, not an assumed empty queue.
+
+Guarded checks pass at 3277.5 MiB (executed left restoration), 3287.0 MiB
+(concrete factor left frame) and 3284.8 MiB (retained factor data). Compatibility
+build passes (15809 jobs, 3.4 GiB combined peak). The scoped axiom audit passes
+for 336524 declarations at 3391.4 MiB. Next assemble the retained
+shared bank from these factor data and the first pass's generated geometry,
+page/count and private-buffer facts, then compose the complete first-pass caller.
+Combined prefix/coupling workspace, distinct-core amortization, tensor/R4
+composition, layout restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.

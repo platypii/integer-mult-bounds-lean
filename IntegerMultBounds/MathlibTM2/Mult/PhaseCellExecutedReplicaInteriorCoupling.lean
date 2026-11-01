@@ -49,6 +49,9 @@ theorem initializedReplicaInteriorCoupling_exec (H : ReplicaHaloProblem s) {plan
       RetainedCouplingReady (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band H.origin (H.origin+H.span) buffers.rhsTail
         (embStk weightCacheCoreReg (embStk plan.solver G)) ∧
       CouplingIntervalMetadata H.metadataWidth s H.t H.band H.origin (H.origin+H.span) H.origin H.span (embStk placement.bank G) ∧
+      (embStk weightCacheCoreReg (embStk plan.solver G)).L =
+        (embStk weightCacheCoreReg (embStk plan.solver S)).L ∧
+      (∀ k, (∀ i, plan.gather i ≠ k) → (∀ i, plan.solver i ≠ k) → output ≠ k → G.L k = S.L k) ∧
       (∀ k, (∀ i, placement.bank i ≠ k) → (∀ i, plan.gather i ≠ k) →
         (∀ i, plan.solver i ≠ k) → output ≠ k → rhs ≠ k → G.R k = S.R k) ∧
       Ds.length = H.Fs.length ∧
@@ -81,12 +84,21 @@ theorem initializedReplicaInteriorCoupling_exec (H : ReplicaHaloProblem s) {plan
     H plan output houtput hsolverOutput hR hQ hA hpad R K hpushR hpushK buffers v S
     headers hbank hcache hsolverFresh hinput houtputStream hsaved hkeys hdst h86 h119 depth
   have hfrhs := initializedReplicaHaloLoop_preserves_right plan output rhs hR hQ hrhs hsolverRhs hsep he₀.toExec
-  obtain ⟨v',G,m,Ds,hu,hm,he,hcount,hout,hrhsF,hready,hmeta,_,_,_,hframe,hrest⟩ :=
+  obtain ⟨v',G,m,Ds,hu,hm,he,hcount,hout,hrhsF,hready,hmeta,hleftF,_,_,hframe,hrest⟩ :=
     initializedReplicaInteriorCoupling_finish (body := body) H placement output rhs houtput hrhs
       hbankOutput hbankRhs hsep hR hQ hA hspan horigin buffers v v₀ S F n depth _
       hu₀ he₀ hstate hp hwidth hblank hfresh
-  refine ⟨v',G,m,Ds,hu,hm.trans ?_,he,hcount,hout,hrhsF.trans hfrhs,hready,hmeta,?_,hrest⟩
+  refine ⟨v',G,m,Ds,hu,hm.trans ?_,he,hcount,hout,hrhsF.trans hfrhs,hready,hmeta,?_,?_,?_,hrest⟩
   · exact Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right hn _) _) _
+  · funext i
+    have hF := congrArg (fun Z : Stacks 117 A => Z.L i) hstate.bank
+    have hS := congrArg (fun Z : Stacks 117 A => Z.L i) hbank
+    change F.L (plan.solver (weightCacheCoreReg i)) = [] at hF
+    change S.L (plan.solver (weightCacheCoreReg i)) = [] at hS
+    exact (congrFun hleftF (plan.solver (weightCacheCoreReg i))).trans (hF.trans hS.symm)
+  · intro k hg hs ho
+    exact (congrFun hleftF k).trans
+      (initializedReplicaHaloLoop_preserves_left plan output k hR hQ hg hs ho he₀.toExec)
   · intro k hbankOff hg hs ho hr
     have hfirst := initializedReplicaHaloLoop_preserves_right plan output k hR hQ hg hs ho he₀.toExec
     have hnot : k ∉ [output,rhs,plan.gather 125] := by

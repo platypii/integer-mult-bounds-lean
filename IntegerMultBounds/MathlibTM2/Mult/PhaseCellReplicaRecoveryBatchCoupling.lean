@@ -38,6 +38,21 @@ theorem replicaRecoveryBatchCoupling_native_view (S : Stacks 392 A) :
   · exact congrArg S.L (replicaRecoveryBatchCoupling_bank (Fin.castLE (by decide : 117 ≤ 168) i))
   · exact congrArg S.R (replicaRecoveryBatchCoupling_bank (Fin.castLE (by decide : 117 ≤ 168) i))
 
+/-- High recovery worker ports are outside both the numerical core and its cache. -/
+theorem replicaRecoveryBatchInterior_solver_worker_disjoint (k : Fin 257) (hk : 117 ≤ k.val)
+    (j : Fin 121) : replicaRecoveryBatchInterior.solver j ≠ replicaRecoveryPreparationCallerWorkerReg k := by
+  have hinj : Function.Injective replicaRecoveryPreparationCallerWorkerReg :=
+    replicaRecoveryPreparationCallerReg_injective.comp (Fin.castLE_injective _)
+  intro he
+  by_cases hj : j.val < 117
+  · have hnative := replicaRecoveryPreparationCallerReg_native (⟨j.val,hj⟩ : Fin 117)
+    have heq : replicaRecoveryPreparationCallerWorkerReg (Fin.castLE (by decide : 117 ≤ 257) ⟨j.val,hj⟩) =
+        replicaRecoveryBatchInterior.solver j := hnative
+    have hv := congrArg (fun i : Fin 257 => i.val) (hinj (heq.trans he))
+    change j.val = k.val at hv
+    omega
+  · exact replicaRecoveryPreparationCallerReg_reserved _ j (by omega) he.symm
+
 /-- Structural spectators for the first interior pass and its residual coupling. -/
 theorem replicaRecoveryBatchCoupling_factor_extension_frame {S F : Stacks 392 A}
     (hframe : ∀ k, (∀ i, replicaRecoveryBatchCoupling.bank i ≠ k) →
@@ -57,16 +72,7 @@ theorem replicaRecoveryBatchCoupling_factor_extension_frame {S F : Stacks 392 A}
     omega
   · intro j he
     exact (replicaRecoveryPreparationCallerReg_gather_disjoint _ j) he.symm
-  · intro j he
-    by_cases hj : j.val < 117
-    · have hnative := replicaRecoveryPreparationCallerReg_native (⟨j.val,hj⟩ : Fin 117)
-      have heq : replicaRecoveryPreparationCallerWorkerReg (Fin.castLE (by decide : 117 ≤ 257) ⟨j.val,hj⟩) =
-          replicaRecoveryBatchInterior.solver j := hnative
-      have hh := hinj (heq.trans he)
-      have hv := congrArg (fun i : Fin 257 => i.val) hh
-      change j.val = k.val at hv
-      omega
-    · exact replicaRecoveryPreparationCallerReg_reserved _ j (by omega) he.symm
+  · exact fun j => replicaRecoveryBatchInterior_solver_worker_disjoint k (by omega) j
   · intro he
     have hv := congrArg Fin.val he
     have hg := replicaRecoveryPreparationCallerReg_gap (Fin.castLE (by decide : 257 ≤ 258) k)
@@ -77,5 +83,28 @@ theorem replicaRecoveryBatchCoupling_factor_extension_frame {S F : Stacks 392 A}
     have hg := replicaRecoveryPreparationCallerReg_gap (Fin.castLE (by decide : 257 ≤ 258) k)
     change 248 = (replicaRecoveryPreparationCallerReg (Fin.castLE (by decide : 257 ≤ 258) k)).val at hv
     omega
+
+/-- Restored native left stacks and structural spectators preserve the complete
+factor workspace through the first interior pass and residual coupling. -/
+theorem replicaRecoveryBatchCoupling_factor_left_frame {S F : Stacks 392 A}
+    (hnative : (embStk weightCacheCoreReg (embStk replicaRecoveryBatchInterior.solver F)).L =
+      (embStk weightCacheCoreReg (embStk replicaRecoveryBatchInterior.solver S)).L)
+    (hframe : ∀ k, (∀ i, replicaRecoveryBatchInterior.gather i ≠ k) →
+      (∀ i, replicaRecoveryBatchInterior.solver i ≠ k) → (247 : Fin 392) ≠ k → F.L k = S.L k) :
+    (embStk replicaRecoveryBoundaryFactoryReg F).L = (embStk replicaRecoveryBoundaryFactoryReg S).L := by
+  rw [replicaRecoveryBatchCoupling_native_view F,replicaRecoveryBatchCoupling_native_view S] at hnative
+  funext k
+  by_cases hk : k.val < 117
+  · exact congrFun hnative ⟨k.val,hk⟩
+  · apply hframe
+    · intro j he
+      exact replicaRecoveryPreparationCallerReg_gather_disjoint _ j he.symm
+    · exact fun j => replicaRecoveryBatchInterior_solver_worker_disjoint
+        (Fin.castLE (by decide : 242 ≤ 257) k) (by change 117 ≤ k.val; omega) j
+    · intro he
+      have hv := congrArg Fin.val he
+      have hg := replicaRecoveryPreparationCallerReg_gap (Fin.castLE (by decide : 242 ≤ 258) k)
+      change 247 = (replicaRecoveryPreparationCallerReg (Fin.castLE (by decide : 242 ≤ 258) k)).val at hv
+      omega
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
