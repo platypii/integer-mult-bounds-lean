@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3551 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3557 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21918,3 +21918,36 @@ per-replica coupling body at the staging cursor. Boundary solve, recovery and
 second-pass composition, global endpoint scheduling, tensor/R4 restoration and
 outer integration remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 328487 declarations at 3218.7 MiB.
+
+
+### S4 checkpoint: coupling native setup reuses the released numerical bank
+
+`PhaseCellReplicaCouplingPlacement` places coupling's native 117 registers in
+released numerical storage and its extended 51 registers in separate storage.
+It proves disjointness from every retained gather tape and reserved solver
+cache tape, with a concrete 300-tape layout. Gather scratch alone is insufficient:
+its spectator registers need not be empty.
+
+`PhaseCellCopyReplicaHeaders` factors the existing factory copier over an
+arbitrary header schedule. Numerical factory reload now uses that theorem;
+`PhaseCellReplicaCouplingHeaderData` and `PhaseCellReloadReplicaCouplingHeaders`
+instantiate it for coupling's nine ordinary headers. Retained masters survive.
+`PhaseCellPrepareReplicaCouplingNative` composes this actual copying trace with
+the existing scalar counter generator, yielding `RetainedCouplingReady` with
+an explicit time bill and a native workspace allowance of three times that bill.
+All left tapes, streams, gather masters, reserved numerical tails and right
+tapes outside the native bank are preserved. No row execution premise is added.
+
+`initializedReplicaCouplingRows_finish` now exposes its components' full frame
+facts, so native-bank preservation can be used directly at the next phase.
+The combined setup and stronger initialized-row contract pass guarded checks
+at 2153.4 and 2153.9 MiB respectively. Compatibility with the selected row
+resources passes (14644 jobs, 5.7 GiB combined peak).
+
+Next generate shared extended geometry/coefficient metadata once, then connect
+one actual staged replica to the existing packed local coupling and cleanup
+before lifting over the cursor. Shared setup must remain outside that loop.
+Boundary recovery and the second interior pass, the global endpoint schedule,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+The scoped axiom audit passes for 327675 declarations at 3203.3 MiB.

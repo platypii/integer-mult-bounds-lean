@@ -34,7 +34,9 @@ theorem initializedReplicaCouplingRows_finish (H : ReplicaHaloProblem s)
         (W+2*realReplicaRowsCost H.Fs.length (H.span*H.wordWidth)+2*reverseCopyRowsCost H.Fs.length (H.span*H.wordWidth))) depth
         (initializedReplicaCouplingRows plan output rhs hR hQ) (mk v S) m (mk v' G) ∧
       ReplicaCouplingCursor H output rhs buffers.accumulatorTail (F.R rhs) 0 G ∧
-      embStk plan.gather G = embStk plan.gather F := by
+      embStk plan.gather G = embStk plan.gather F ∧
+      G.L = F.L ∧ G.inp = F.inp ∧ G.out = F.out ∧
+      (∀ k, k ≠ output → k ≠ rhs → G.R k = F.R k) := by
   obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hfields,hgather₁,hleft₁,hi₁,ho₁,hframe₁⟩ :=
     realReplicaHaloOutput_exec_within (body := body) H plan output houtput hA buffers v₀ F h hdom depth
   have headers : ReplicaLoopHeaders H plan.gather buffers J := by
@@ -44,12 +46,16 @@ theorem initializedReplicaCouplingRows_finish (H : ReplicaHaloProblem s)
   obtain ⟨v₂,G,n₂,hu₂,hn₂,he₂,hrows,hgather₂,hleft,hi,ho,hframe⟩ :=
     prepareReplicaCouplingRows_exec_within (body := body) H plan output rhs hrhs hsep buffers v₁ J headers hfields depth
   have hrhsFrame : J.R rhs = F.R rhs := hframe₁ rhs hsep.symm
-  refine ⟨v₂,G,(n+n₁)+n₂,hu₂.trans (hu₁.trans hu₀),by omega,?_,?_,hgather₂.trans hgather₁⟩
+  refine ⟨v₂,G,(n+n₁)+n₂,hu₂.trans (hu₁.trans hu₀),by omega,?_,?_,hgather₂.trans hgather₁,
+    hleft.trans hleft₁,hi.trans hi₁,ho.trans ho₁,?_⟩
   · have hsize₀ := he₀.final
     have hsize₁ := he₁.final
     refine .seq (.seq (he₀.mono ?_) (he₁.mono ?_)) (he₂.mono ?_)
     all_goals intro d z hz; omega
   · rw [← hrhsFrame]
     exact ReplicaCouplingRows.cursor H output rhs buffers.accumulatorTail (J.R rhs) G hrows
+
+  · intro k houtput hrhs
+    exact (hframe k hrhs).trans (hframe₁ k houtput)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
