@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3598 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3602 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22578,3 +22578,42 @@ residual archive, recovery, the second interior pass, workspace/selected
 resources, global scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331429 declarations at 3270.0 MiB.
+
+### S4 checkpoint: preserve recovery masters and shared boundary data by static placement
+
+`PhaseCellReplicaBoundaryPhasePlacement` embeds the existing 242-register
+boundary phase into 255 registers, relocating only its seven retained roles:
+fold counters 117/118/120 to 248/249/250, volumes 123/124 to 251/252, and boundary
+count/mask 116/167 to 253/254. All other roles stay fixed. The recovery masters
+and native recovery count/mask ports lie outside the phase image, as do recovery
+scratch tapes 242 through 247. Existing numerical and controller proofs are
+reused through the generic embedding theorem; placement adds no runtime steps.
+
+`PhaseCellRetainedInitializedReplicaBoundaryRow` lifts the complete initialized
+row trace with the same time bound. It preserves the original left bank,
+recovery masters and fresh recovery scratch. `PhaseCellReplicaBoundaryPhaseBank`
+transports prepared numerical readiness and factor-page meanings to recovery's
+native view under explicit left-bank agreement. The displaced right-hand
+counter values need not agree with the masters.
+
+The recovery contract also clears native count 116 and mask 167. Their retained
+boundary copies therefore live outside the recovery bank. `PhaseCellSeedReplicaRecovery`
+supplies disposable native copies, preserving the retained sources and restoring
+scratch. Its exact cost is `4*boundaryCount+6*intervalLength+10`; mask order is
+preserved by copying through a restoring buffer. Numerical readiness and factor
+pages survive this seeding operation. Mask/count generation stays shared;
+per-row transfer is explicit and charged.
+
+Guarded checks pass at 1391.6 MiB (placement), 3099.8 MiB (bank compatibility
+and seeding frame), 3215.2 MiB (lifted initialized row) and 1931.8 MiB (seeding).
+The final compatibility build includes the existing packed recovery and actual
+initialized interior/coupling path (15140 jobs, 3.4 GiB combined peak). The first
+build of previously uncached recovery dependencies peaked at 18.5 GiB combined;
+all changed modules remain below 4 GiB. Default proof limits are unchanged.
+
+Next compose disposable-header seeding with the actual recovery call, stage its
+original RHS/output ownership, and align the recovery target. Shared factor
+generation, archive loading, full row/recovery iteration, workspace/selected
+resources, global scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 332310 declarations at 3294.3 MiB.
