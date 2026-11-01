@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3779 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3785 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25012,3 +25012,39 @@ unchanged.
 Compatibility with the existing bounded caller passes (15366 jobs,
 5.2 GiB combined peak). Scoped axiom audit passes for 336101 declarations
 at 3378.7 MiB.
+
+
+### S4 checkpoint: cached recovery prepares and archives a complete replica row
+
+`ReplicaRecoveryMasksReady` records the two shared geometry streams and
+transports them through frame equalities. Their exact combined retained
+length is `2*span+2*band`, independent of replica count and metadata width.
+`PhaseCellCachedReplicaRecoveryRhs`, `PhaseCellCachedPreparedReplicaRecoveryRhs`
+and `PhaseCellCachedCollectedReplicaRecoveryRhs` connect the checked cached
+packed worker through original queue staging and result collection. The
+original output states, shared readiness and frame contracts are reused.
+
+`PhaseCellCachedReplicaRecoveryPreparationRow` composes the retained boundary
+solve with cached RHS construction and archiving. It proves the same actual
+recovery-row certificate and exact endpoint stock equality as the original
+row, with a cached time/workspace bill. Both cache ports survive the frame.
+The bounded preparation traversal can therefore reuse one row reserve.
+
+`Cost.PhaseCellRecoveryMaskInitialization` bounds the one-time mask generator
+by `10000*(N+band+1)*(V+5)^2`, then by the existing polynomial core setup
+allowance when `V <= cV*p`. Its selected corollary puts any fixed multiple
+of one initialization below whole-box volume eventually. This does not count
+distinct core keys or discharge their scheduling/amortization obligation.
+The original selected numerical estimate still leaves native traffic explicit;
+no complete selected recovery-time bound is claimed.
+
+Next replace the actual preparation traversal worker, place initialization
+outside the replica loop, and establish total selected caller time/workspace.
+The existing complete batched caller still generates masks. First-pass/generated-
+factory execution, scheduling, tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+Guarded checks pass at 3265.5 MiB (cached RHS), 3286.6 MiB (prepared
+RHS), 3299.8 MiB (collection), 3325.1 MiB (complete row), 3241.4 MiB
+(mask readiness/length) and 3288.3 MiB (selected initialization cost).
+Compatibility build passes (15692 jobs, 5.8 GiB combined peak).
+Scoped axiom audit passes for 336329 declarations at 3389.1 MiB.
