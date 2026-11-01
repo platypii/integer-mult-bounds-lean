@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3817 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3819 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25468,3 +25468,30 @@ the archive cursor alone does not establish complete preparation readiness.
 Combined coupling workspace, shared boundary factory integration, distinct-core
 amortization, tensor/R4 composition, layout restoration and outer integration
 remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: placed archive handoff supplies complete preparation readiness
+
+`Mult.PhaseCellReplicaRecoveryArchiveReady` proves a queue frame rule: installing
+only the original RHS and residual queues preserves retained boundary factors,
+physical boundary headers, left-stack compatibility, recovery core and empty
+disposable count/mask ports. Together with the executed initial cursor these
+facts establish `ReplicaRecoveryPreparationReady`. The proof reuses the existing
+factor, owned-core and physical-header frame rules.
+
+`Mult.PhaseCellPlacedReplicaRecoveryArchiveHandoff` instantiates the structural
+handoff in the common 392-register caller. All separation premises follow from
+existing placement injectivity/disjointness. Register 391 serves as the restored
+reversal buffer and remains available for final assembly. The theorem returns
+complete preparation readiness from the actual first-pass residual archive and
+retained shared setup, with the previously proved movement bill and exact frame.
+It does not assume a ready preparation cursor.
+
+Guarded checks pass at 3286.8 MiB (queue readiness frame) and 3294.8 MiB
+(placed handoff). Compatibility build passes (15797 jobs, 3.4 GiB combined peak).
+The scoped axiom audit passes for 336470 declarations at 3389.8 MiB.
+Next execute shared boundary factory/setup and native cleanup into these retained
+setup premises, then compose first pass, handoff and recovery as one caller.
+Combined coupling workspace, distinct-core amortization, tensor/R4 composition,
+layout restoration and outer integration remain open. S4 is incomplete; kappa
+is unchanged.
