@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3914 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3917 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27019,3 +27019,32 @@ and list order to this estimate, combine it with the raw-job list ledger and
 shared setup bounds, then price descriptor traffic/cleanup. Peak stock budgets,
 physical component production, tensor/R4 composition, layout restoration and
 outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: actual raw core-class job lists inherit local volume
+
+`Mult.PhaseCellRawRecoveryJobProfiles` exposes the actual ofComplexBounds
+constructor's scalar/geometric profile: p,l,t,u, exponent, origin/span/band,
+normalized and raw replica counts, target, common width and exact halo target.
+The two real components of each complex replica give the uniform count
+2*Fs.length. No solutions or coefficient pages enter these statements.
+
+`Mult.PhaseCellRawRecoveryCoreClassProfiles` lifts that profile to the actual
+coreClassJobs family in the existing coreGatherIndices order.
+`Cost.PhaseCellCoreClassRecoveryVolume` then proves the list-level bridge:
+map the cost over List.ofFn jobs, identify each volume with its indexed core
+geometry, and use the filtered index list's nodup/subset relation to the full
+core schedule. This preserves order and avoids comparing heavy problem data.
+The actual constructor corollary proves that its raw-job list's summed local
+volume is at most 600*(s+(t-s)*band²), under the existing wider-core geometry
+premises. The full schedule bound includes fallbacks, so each fitting class
+inherits it by nonnegative subset summation.
+
+Guarded checks pass at 3374.3 MiB (raw constructor profile), 3376.5 MiB
+(core-class profile), and 3433.1 MiB (actual list volume). Compatibility build
+passes (16125 jobs, 3.5 GiB combined observed peak); axiom audit passes for
+338867 declarations at 3462.5 MiB. Next combine these constructor/list profiles
+with the raw-job cost ledger, shared setup absorption and normalization row
+bounds, then price descriptor traffic/cleanup to discharge actual schedule
+time budgets. Peak stock budgets, physical component production, tensor/R4
+composition, layout restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
