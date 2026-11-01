@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3967 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3968 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27694,3 +27694,20 @@ standard width constructor), 3408.8 MiB (exact bills) and 3426.9 MiB (complete
 computed execution). Expanded compatibility build passes (16529 jobs, 3.5 GiB
 combined observed peak, mostly replayed); axiom audit passes for 341616
 declarations at 3534.8 MiB.
+
+### S4 checkpoint: computed execution specializes to actual complex halo bounds
+
+`Mult.PhaseCellComputedComplexRecoveryExec.exec_ofComplexBounds` connects the
+uniform computed program to `RawRecoveryJob.ofComplexBounds`. The standard
+ambient scalar width derives all format-room premises from ordinary interval
+bounds; the actual constructor's master-value theorem discharges the numerical
+identity. Callers supply ordinary scalar headers and original complex payload,
+with no abstract job, master identity or normalized-field equality premise.
+The proof reuses ComputedRecoveryPlan.exec directly and preserves its exact
+time, stock, output certificate and restoration conclusion.
+
+Guarded module build passes (15857 jobs, 3.5 GiB combined peak); the broad
+axiom audit passes for 341617 declarations at 3525.5 MiB. Next connect the
+returned raw output to complex pairing/cropping, then lift the actual step
+through the generic scan with unabsorbed grouped bills. S4 remains incomplete;
+kappa is unchanged.
