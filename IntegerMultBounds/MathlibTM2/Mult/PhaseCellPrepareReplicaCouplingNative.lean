@@ -1,9 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReloadReplicaCouplingHeaders
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCouplingReadinessStock
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedCouplingCounters
-public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedCouplingCounters
 
 /-! Reload ordinary coupling headers and generate scalar counters once in the
 released numerical bank. All gather masters and reserved cache tails survive. -/
@@ -17,9 +15,7 @@ variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
 def prepareReplicaCouplingNative (plan : ReplicaInteriorPlacement T) : Pr P T Q A U :=
   .seq (reloadReplicaCouplingHeaders plan)
-    (embProg (fun i => plan.solver (weightCacheCoreReg i)) Empty.elim (couplingReadiness (P₀ := Empty)))
-
-def replicaCouplingCountersCost (q w band : ℕ) := prepareCost q w+6*q+4*band+10
+    (placedCouplingCounters (fun i => plan.solver (weightCacheCoreReg i)))
 
 def prepareReplicaCouplingNativeCost (precision q w s t u band a b : ℕ) :=
   replicaCouplingHeaderCost precision q w s t u band a b+replicaCouplingCountersCost q w band
@@ -45,31 +41,23 @@ theorem prepareReplicaCouplingNative_exec_within (plan : ReplicaInteriorPlacemen
   let e := fun i => plan.solver (weightCacheCoreReg i)
   have he : Function.Injective e := plan.solver_injective.comp weightCacheCoreReg_injective
   change CouplingReady precision q w s t u band a b borrowed (embStk e J) at hready
-  obtain ⟨vi,n₂,hu₂,hn₂,hei,hretained⟩ := retainedCouplingCounters_exec (body := fun p : Empty => nomatch p)
-    q w hw5 hqw borrowed (embDn e v₁) (embStk e J) hready
-  have hei' := mn_native_exec_within hei 3 couplingReadiness_native depth _
-    (Nat.add_le_add_left (Nat.mul_le_mul_left 3 hn₂) _)
-  obtain ⟨v₂,hv₂,hu₂',he₂⟩ := exec_emb_ovr_within_stock e he (body' := body) (ι := Empty.elim)
-    (fun p : Empty => nomatch p) hei' v₁ rfl J rfl
-  let F : Stacks T A := embOvr e {embStk e J with R := counterR q w (embStk e J).R}.get J
+  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hretained,_,hleft₂,hi₂,ho₂,hframe₂⟩ :=
+    placedCouplingCounters_exec_within (body := body) e he hw5 hqw borrowed v₁ J hready depth
   have hgather₂ : embStk plan.gather F = embStk plan.gather J := by
-    refine Stacks.ext rfl rfl ?_ ?_ <;> funext k
-    · exact (embOvr_off _ J (fun i => (plan.disjoint k (weightCacheCoreReg i)).symm)).1
-    · exact (embOvr_off _ J (fun i => (plan.disjoint k (weightCacheCoreReg i)).symm)).2
-  refine ⟨v₂,F,replicaCouplingHeaderCost precision q w s t u band a b+n₂,hu₂'.trans (hu₂.trans hu₁),?_,?_,?_,
-    hgather₂.trans hgather₁,?_,rfl,rfl,?_,?_⟩
-  · unfold prepareReplicaCouplingNativeCost replicaCouplingCountersCost
+    refine Stacks.ext hi₂ ho₂ ?_ ?_
+    · exact congrArg (fun L => L ∘ plan.gather) hleft₂
+    · funext k
+      exact hframe₂ _ (fun i => (plan.disjoint k (weightCacheCoreReg i)).symm)
+  refine ⟨v₂,F,replicaCouplingHeaderCost precision q w s t u band a b+n₂,hu₂.trans hu₁,?_,?_,?_,
+    hgather₂.trans hgather₁,hleft₂.trans hleft₁,hi₂,ho₂,?_,?_⟩
+  · unfold prepareReplicaCouplingNativeCost
     omega
   · have hsize := he₁.final
     change mnSize (mk v₁ J)+depth ≤ mnSize (mk v S)+depth+
       2*replicaCouplingHeaderCost precision q w s t u band a b at hsize
     refine .seq (he₁.mono ?_) (he₂.mono ?_)
     all_goals intro d z hz; dsimp only [prepareReplicaCouplingNativeCost,replicaCouplingCountersCost] at *; omega
-  · change RetainedCouplingReady precision q w s t u band a b borrowed (embStk e F)
-    dsimp only [F]
-    rw [embStk_ovr he]
-    exact hretained
-  · exact (embOvr_right_left J _).trans hleft₁
+  · exact hretained
   · intro j hj
     have hsep (i : Fin 117) : e i ≠ plan.solver j := by
       intro h
@@ -77,14 +65,14 @@ theorem prepareReplicaCouplingNative_exec_within (plan : ReplicaInteriorPlacemen
       simp only [weightCacheCoreReg] at hv
       have hi := i.isLt
       omega
-    have hF : F.R (plan.solver j) = J.R (plan.solver j) := (embOvr_off _ J hsep).2
+    have hF : F.R (plan.solver j) = J.R (plan.solver j) := hframe₂ _ hsep
     apply hF.trans
     apply hframe₁
     intro r hr
     exact hsep r.2
 
   · intro k hk
-    apply ((embOvr_off _ J hk).2).trans
+    apply (hframe₂ _ hk).trans
     exact hframe₁ k (fun r _ => hk r.2)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

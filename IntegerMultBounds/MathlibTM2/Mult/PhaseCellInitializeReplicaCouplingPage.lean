@@ -34,7 +34,8 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
       F.R (placement.bank 138) = cstream A w (couplingCoefficientPageInterval precision q s t u band a b a (b-a))++S.R (placement.bank 138) ∧
       embStk plan.gather F = embStk plan.gather S ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (F.R (placement.bank 139)).length = (couplingCoefficientPageInterval precision q s t u band a b a (b-a)).length ∧
-      (F.R (placement.bank 140)).length = 2*band+1 := by
+      (F.R (placement.bank 140)).length = 2*band+1 ∧
+      (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) := by
   have hheaders : ∀ p ∈ couplingGeometryAssignments,
       (S.R (placement.bank p.1)).length = couplingGeometryHeaderValue s t band a b p.1 := by
     intro p hp
@@ -49,13 +50,13 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
     · simpa [embStk,ReplicaCouplingPlacement.bank,weightCacheCoreReg] using hready.lower
     · simpa [embStk,ReplicaCouplingPlacement.bank,weightCacheCoreReg] using hready.upper
   have hbV : b < 2^V := by nlinarith only [hwide,hb,hst]
-  obtain ⟨v₁,G,n₁,hu₁,hn₁,he₁,hmeta,hgather₁,hnative₁,hleft₁,hi₁,ho₁,_,hframe₁⟩ :=
+  obtain ⟨v₁,G,n₁,hu₁,hn₁,he₁,hmeta,hgather₁,hnative₁,hleft₁,hi₁,ho₁,hoff₁,hframe₁⟩ :=
     prepareReplicaCouplingGeometry_exec_within (body := body) placement V s t band a b hab hbV hfitV
       v S hV hheaders hblank htmp 0
   have hreadyG : CouplingReady precision q w s t u band a b raw (embStk weightCacheCoreReg (embStk plan.solver G)) := by
     rw [hnative₁]
     exact hready
-  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hview,hgather₂,hnative₂,hmetaF,hleft₂,hi₂,ho₂,_⟩ :=
+  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hview,hgather₂,hnative₂,hmetaF,hleft₂,hi₂,ho₂,hoff₂⟩ :=
     prepareReplicaCouplingPage_exec (body := body) placement hA hprecision hst hab hb ha hwide hfitV raw v₁ G hreadyG hmeta
       (by rw [hframe₁ 107 (by decide) (by decide)]; exact h107)
       (by intro k hk
@@ -65,7 +66,7 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
           rw [hframe₁ k hn.1 hn.2]
           exact hfresh k hk)
   refine ⟨v₂,F,n₁+n₂,hu₂.trans hu₁,by omega,.seq he₁.toExec he₂,?_,hmetaF,?_,
-    hgather₂.trans hgather₁,hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_⟩
+    hgather₂.trans hgather₁,hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_⟩
   · rw [hnative₂]
     exact hreadyG
   · have hp := congrFun (congrArg Stacks.R hview) 138
@@ -79,5 +80,8 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
     change F.R (placement.bank 140) = _ at hp
     simp only [sharedCouplingPageState,Function.update_apply] at hp
     simp [hp]
+
+  · intro k hk
+    exact (hoff₂ k hk).trans (hoff₁ k hk)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

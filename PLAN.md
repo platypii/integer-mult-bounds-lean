@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3566 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3568 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22059,3 +22059,37 @@ that transition structurally over all replicas. Boundary recovery and the
 second interior pass, global endpoint scheduling, tensor/R4 restoration and
 outer integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 328819 declarations at 3224.5 MiB.
+
+
+### S4 checkpoint: initialize retained coupling counters after shared setup
+
+`PhaseCellPlacedCouplingCounters` lifts the existing actual counter generator
+through any injective native-bank placement. Its theorem returns exact native
+counter state, retained coupling readiness, time and workspace bounds, and full
+left/stream and off-bank preservation. The old header-plus-counter initializer
+now reuses that theorem instead of duplicating the embedding and stock proof.
+
+`PhaseCellInitializeReplicaCouplingRuntime` executes shared geometry and
+coefficient setup first, then initializes counters in released numerical storage.
+Its resulting `RetainedCouplingReady` is accompanied by the unchanged shared
+page, word count, row width and binary geometry. All gather masters, left tapes,
+streams and tapes outside the coupling bank survive. Time is the sum of shared
+setup and counter bills; the existing allowance of 24 times that total bounds
+workspace throughout the actual combined trace.
+
+The page initializer and its workspace theorem now expose off-bank preservation
+already supplied by their components, allowing the replica row queues to survive
+this complete setup phase directly.
+
+Guarded checks pass at 2071.0 MiB (generic placed counters), 2150.8 MiB (refactored
+native initializer), 2171.2 MiB (page queue frame), 2141.2 MiB (page workspace and
+frame) and 2159.4 MiB (combined runtime initializer). Compatibility with native
+setup and selected row resources passes (14802 jobs, 2.8 GiB combined peak).
+
+Next connect the physical staged field/RHS row to the existing local coupling
+interval, archive the residual and retire the staged source prefix, then lift
+that reusable transition over the cursor. Shared pages and scalar counters must
+remain outside the replica loop. Boundary recovery and the second interior
+pass, global endpoint scheduling, tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 328824 declarations at 3226.9 MiB.

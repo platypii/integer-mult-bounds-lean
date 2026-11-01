@@ -42,11 +42,12 @@ theorem initializeReplicaCouplingPage_exec_within {plan : ReplicaInteriorPlaceme
       F.R (placement.bank 138) = cstream A w (couplingCoefficientPageInterval precision q s t u band a b a (b-a))++S.R (placement.bank 138) ∧
       embStk plan.gather F = embStk plan.gather S ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (F.R (placement.bank 139)).length = (couplingCoefficientPageInterval precision q s t u band a b a (b-a)).length ∧
-      (F.R (placement.bank 140)).length = 2*band+1 := by
-  obtain ⟨v',F,n,hu,hn,he,hreadyF,hmeta,hpage,hgather,hleft,hi,ho,hcount,hrows⟩ :=
+      (F.R (placement.bank 140)).length = 2*band+1 ∧
+      (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) := by
+  obtain ⟨v',F,n,hu,hn,he,hreadyF,hmeta,hpage,hgather,hleft,hi,ho,hcount,hrows,hoff⟩ :=
     initializeReplicaCouplingPage_exec (body := body) placement hA hprecision hst hab hb ha hwide hfitV
       raw v S hready hV htmp h107 hblank hfresh
   exact ⟨v',F,n,hu,hn,mn_native_exec_within he 24 (initializeReplicaCouplingPage_native placement) depth _
-    (Nat.add_le_add_left (Nat.mul_le_mul_left 24 hn) _),hreadyF,hmeta,hpage,hgather,hleft,hi,ho,hcount,hrows⟩
+    (Nat.add_le_add_left (Nat.mul_le_mul_left 24 hn) _),hreadyF,hmeta,hpage,hgather,hleft,hi,ho,hcount,hrows,hoff⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
