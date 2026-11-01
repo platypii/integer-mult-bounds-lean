@@ -117,4 +117,38 @@ theorem replicaRecoveryCaller_coupling_view {A : ℕ} (S : Stacks 389 A) :
   refine Stacks.ext rfl rfl ?_ ?_ <;> funext i <;>
     simp only [embStk,Function.comp_apply,replicaRecoveryCallerReg_native]
 
+theorem replicaRecoveryCallerReg_worker_gather_disjoint (i : Fin 255) (j : Fin 126) :
+    replicaRecoveryCallerReg (Fin.castLE (by decide) i) ≠ replicaRecoveryCallerInterior.gather j := by
+  rw [replicaRecoveryCallerInterior_gather]
+  intro heq
+  cases hs : recoveryBankSplit (recoveryPortOrder (Fin.castLE (by decide) i)) with
+  | inl k =>
+    have hh := ReplicaCouplingPlacement.standard.bank_gather_disjoint k j
+    apply hh
+    apply Fin.ext
+    change recoveryBankSum (recoveryBankSplit (recoveryPortOrder (Fin.castLE (by decide) i))) = _ at heq
+    rw [hs] at heq
+    exact congrArg (fun k : Fin 389 => k.val) heq
+  | inr k =>
+    cases k with
+    | inl k =>
+      change recoveryBankSum (recoveryBankSplit (recoveryPortOrder (Fin.castLE (by decide) i))) = _ at heq
+      rw [hs] at heq
+      have hv := congrArg (fun k : Fin 389 => k.val) heq
+      change 300+k.val = j.val at hv
+      have hb := j.isLt
+      omega
+    | inr k =>
+      have hh : replicaRecoveryCallerReg (Fin.castLE (by decide) i) = recoverySource k := by
+        change recoveryBankSum (recoveryBankSplit (recoveryPortOrder (Fin.castLE (by decide) i))) = _
+        rw [hs]
+        rfl
+      fin_cases k
+      all_goals have he : (Fin.castLE (by decide : 255 ≤ 259) i) = _ :=
+        replicaRecoveryCallerReg_injective (hh.trans (by first
+          | exact replicaRecoveryCallerReg_master.symm
+          | exact replicaRecoveryCallerReg_residual.symm))
+      all_goals have hv := congrArg (fun k : Fin 259 => k.val) he
+      all_goals have hb := i.isLt; norm_num at hv; omega
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

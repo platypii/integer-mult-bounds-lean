@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3632 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3633 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23066,3 +23066,29 @@ production, post-factory coupling/core readiness, preceding interior/coupling,
 workspace/selected bounds, global scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 333359 declarations at 3313.4 MiB.
+
+### S4 checkpoint: caller copies the retained volume and executes shared setup
+
+`PhaseCellReplicaRecoveryCallerSetup` copies actual gather row-volume master
+123 into persistent worker 251, borrowing and restoring native 104, then runs
+the proved retained boundary setup. Its trace charges `4*span*wordWidth+4` plus
+the existing shared setup bill. It returns both physical boundary readiness and
+recovery-core readiness, with equality of the complete native 248-register view.
+Only fresh persistent ports are required in addition to the existing core and
+retained row-volume master.
+
+`replicaRecoveryCallerReg_worker_gather_disjoint` proves the complete worker is
+disjoint from every gather port. The caller setup therefore preserves the whole
+gather bank, including raw RHS source, replica count and actual residual archive,
+by one structural frame argument. This also supplies the frame needed when
+joining setup to the placed RHS/recovery caller.
+
+The guarded checks pass under default limits (3261.5 MiB for caller setup).
+Next compose this shared setup with the placed recovery caller, then connect
+post-factory coupling/core readiness and actual factory input production.
+The preceding interior/coupling trace, workspace/selected bounds, global
+scheduling, tensor/R4 restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
+Compatibility with factory and placed recovery passes (15269 jobs, 5.7 GiB
+combined peak). The combined scoped axiom audit passes for 333369 declarations
+at 3313.7 MiB.
