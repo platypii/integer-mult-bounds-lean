@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3709 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3712 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24133,3 +24133,35 @@ and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Compatibility with the actual batched recovery bill and generated baseline
 passes (15462 jobs, 2.8 GiB combined peak). Scoped axiom audit passes for
 334174 declarations at 3333.0 MiB.
+
+
+### S4 checkpoint: generated normalization and unscaling have complete workspace bounds
+
+`PhaseCellBoundaryScalingStock` places the existing in-place scalar reserve
+in the workspace-aware register-file contract, then reuses it for both
+normalization and unscaling. The existing format lemmas, ordered outputs,
+frames and time bills are retained. No second multiplication proof is needed.
+
+`PhaseCellBoundaryPhysicalScalingStock` includes construction of the runtime
+power-of-two scalar, the actual scaling execution and zero-push retirement.
+A structural push-two certificate bounds the power-word header's own linear
+traffic; it does not bound the numerical scaling by its full repeated time.
+Only the designated RHS/solution port changes after private setup is retired.
+
+`PhaseCellGeneratedBoundaryScalingStock` includes generation and retirement
+of the normalization/inverse-scale exponent from the retained precision master.
+Both complete programs now have `ExecWithin` certificates with allowance
+`realScalarWorkspace C (2*q+8) xs.length+1000*(q+1)`, preserving their exact
+existing final states and time bills. Exponent generation uses its actual
+push-three certificate (division may push two parked symbols and one tick).
+
+Guarded module checks pass at 3094.8 MiB (shared scaling contracts),
+3107.4 MiB (physical scaling) and 3113.4 MiB (generated scaling).
+Compatibility with the complete triangular kernel, actual batched recovery
+bill and generated baseline passes (15467 jobs, 3.4 GiB combined peak).
+Next join the bounded triangular kernel through the folded physical solve,
+then compose normalization/solve/unscaling and the prepared recovery row.
+Preparation/whole-caller workspace, selected resource bounds,
+first-pass/generated-factory integration, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334191 declarations at 3333.4 MiB.
