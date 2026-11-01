@@ -81,7 +81,8 @@ theorem releasedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
       (embStk weightCacheCoreReg (embStk plan.solver F)).R =
       counterR H.precision H.wordWidth
         (replicaCouplingUnaryBank A (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band
-          H.origin (H.origin+H.span) raw resultTail S.inp S.out).R := by
+          H.origin (H.origin+H.span) raw resultTail S.inp S.out).R ∧
+      (∀ k : Fin 168, 117 ≤ k.val → k ∉ replicaCouplingSetupPorts → F.R (placement.bank k) = S.R (placement.bank k)) := by
   obtain ⟨v₁,hu₁,he₁,hready,hgather,hL₁,hframe₁,hnativeJ⟩ := reloadReplicaCouplingHeaders_exec_within (body := body)
     plan (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band H.origin (H.origin+H.span) raw resultTail v S hbank
     (hheaders.coupling_masters H plan buffers S) (hheaders.blank 7 (by decide)) 0
@@ -123,7 +124,7 @@ theorem releasedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
       all_goals first | omega | simp
   have hw5 : 5 ≤ H.wordWidth := by unfold ReplicaHaloProblem.wordWidth executionWidth; omega
   have hqw : H.precision+4 ≤ H.wordWidth := by unfold ReplicaHaloProblem.precision ReplicaHaloProblem.wordWidth executionWidth executionPrecision; omega
-  obtain ⟨v₂,F,n₂,Ds,hu₂,hn₂,he₂,hcountF,hout,hrhsF,hreadyF,hmeta,hL₂,hi₂,ho₂,hframe₂,hlen,harchive,hgood,hpage,hcount,hrows,hfreshF,hnativeF⟩ :=
+  obtain ⟨v₂,F,n₂,Ds,hu₂,hn₂,he₂,hcountF,hout,hrhsF,hreadyF,hmeta,hL₂,hi₂,ho₂,hframe₂,hlen,harchive,hgood,hpage,hcount,hrows,hfreshF,hnativeF,hsharedF⟩ :=
     preparedReplicaCoupling_exec (body := body) H placement (plan.gather 123) output rhs (plan.gather 125)
       (plan.gather 104) (plan.gather 105) (plan.gather 122)
       (couplingControls_nodup placement output rhs houtput hrhs hbankOutput hbankRhs hsep)
@@ -146,7 +147,7 @@ theorem releasedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
           exact hfresh k hk)
   refine ⟨v₂,F,replicaCouplingHeaderCost (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band H.origin (H.origin+H.span)+n₂,
     Ds,hu₂.trans hu₁,by unfold releasedReplicaCouplingCost; omega,.seq he₁.toExec he₂,hcountF,hout,hrhsF,
-    hreadyF,hmeta,hL₂.trans hL₁,hi₂,ho₂,?_,hlen,?_,hgood,?_,hcount,hrows,hfreshF,replicaCouplingResiduals_bounds H Ds hlen hgood,?_⟩
+    hreadyF,hmeta,hL₂.trans hL₁,hi₂,ho₂,?_,hlen,?_,hgood,?_,hcount,hrows,hfreshF,replicaCouplingResiduals_bounds H Ds hlen hgood,?_,?_⟩
   · intro k hk hp
     exact (hframe₂ k hk hp).trans (hforeign k hk)
   · simpa only [hheadersJ.fresh 125 (by simp),List.append_nil] using harchive
@@ -155,5 +156,8 @@ theorem releasedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
 
   · rw [hnativeJ] at hnativeF
     exact congrArg Stacks.R hnativeF
+
+  · intro k hk hnot
+    exact (hsharedF k hk hnot).trans (hhigh k hk)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

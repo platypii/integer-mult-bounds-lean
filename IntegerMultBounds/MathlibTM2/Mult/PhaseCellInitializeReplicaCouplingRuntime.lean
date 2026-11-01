@@ -46,8 +46,9 @@ theorem initializeReplicaCouplingRuntime_exec_within {plan : ReplicaInteriorPlac
       (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) ∧
       (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], S.R (placement.bank k) = [] → F.R (placement.bank k) = []) ∧
       embStk weightCacheCoreReg (embStk plan.solver F) =
-        {embStk weightCacheCoreReg (embStk plan.solver S) with R := counterR q w (embStk weightCacheCoreReg (embStk plan.solver S)).R} := by
-  obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hreadyJ,hmeta,hpage,hgather₁,hleft₁,hi₁,ho₁,hcount,hrows,hoff₁,hfreshJ,hnativeJ⟩ :=
+        {embStk weightCacheCoreReg (embStk plan.solver S) with R := counterR q w (embStk weightCacheCoreReg (embStk plan.solver S)).R} ∧
+      (∀ k : Fin 168, 117 ≤ k.val → k ∉ replicaCouplingSetupPorts → F.R (placement.bank k) = S.R (placement.bank k)) := by
+  obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hreadyJ,hmeta,hpage,hgather₁,hleft₁,hi₁,ho₁,hcount,hrows,hoff₁,hfreshJ,hnativeJ,hsharedJ⟩ :=
     initializeReplicaCouplingPage_exec_within (body := body) placement hA hprecision hst hab hb ha hwide hfitV
       raw v S hready hV htmp h107 hblank hfresh depth
   let e := fun i => plan.solver (weightCacheCoreReg i)
@@ -66,7 +67,7 @@ theorem initializeReplicaCouplingRuntime_exec_within {plan : ReplicaInteriorPlac
     · funext k
       exact hframe₂ _ (fun i => (plan.disjoint k (weightCacheCoreReg i)).symm)
   refine ⟨v₂,F,n₁+n₂,hu₂.trans hu₁,?_,?_,hretained,?_,?_,hgather₂.trans hgather₁,
-    hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_,?_,?_⟩
+    hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_,?_,?_,?_⟩
   · unfold initializeReplicaCouplingRuntimeCost
     omega
   · have hsize := he₁.final
@@ -99,5 +100,8 @@ theorem initializeReplicaCouplingRuntime_exec_within {plan : ReplicaInteriorPlac
   · change embStk e F = {embStk e S with R := counterR q w (embStk e S).R}
     have hh : embStk e J = embStk e S := hnativeJ
     rw [hcounter,hh]
+
+  · intro k hk hnot
+    exact (hhigh k hk).trans (hsharedJ k hnot)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

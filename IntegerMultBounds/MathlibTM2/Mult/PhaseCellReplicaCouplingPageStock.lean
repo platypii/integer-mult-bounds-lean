@@ -45,11 +45,12 @@ theorem initializeReplicaCouplingPage_exec_within {plan : ReplicaInteriorPlaceme
       (F.R (placement.bank 140)).length = 2*band+1 ∧
       (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) ∧
       (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], S.R (placement.bank k) = [] → F.R (placement.bank k) = []) ∧
-      embStk weightCacheCoreReg (embStk plan.solver F) = embStk weightCacheCoreReg (embStk plan.solver S) := by
-  obtain ⟨v',F,n,hu,hn,he,hreadyF,hmeta,hpage,hgather,hleft,hi,ho,hcount,hrows,hoff,hfreshF,hnative⟩ :=
+      embStk weightCacheCoreReg (embStk plan.solver F) = embStk weightCacheCoreReg (embStk plan.solver S) ∧
+      (∀ k : Fin 168, k ∉ replicaCouplingSetupPorts → F.R (placement.bank k) = S.R (placement.bank k)) := by
+  obtain ⟨v',F,n,hu,hn,he,hreadyF,hmeta,hpage,hgather,hleft,hi,ho,hcount,hrows,hoff,hfreshF,hnative,hshared⟩ :=
     initializeReplicaCouplingPage_exec (body := body) placement hA hprecision hst hab hb ha hwide hfitV
       raw v S hready hV htmp h107 hblank hfresh
   exact ⟨v',F,n,hu,hn,mn_native_exec_within he 24 (initializeReplicaCouplingPage_native placement) depth _
-    (Nat.add_le_add_left (Nat.mul_le_mul_left 24 hn) _),hreadyF,hmeta,hpage,hgather,hleft,hi,ho,hcount,hrows,hoff,hfreshF,hnative⟩
+    (Nat.add_le_add_left (Nat.mul_le_mul_left 24 hn) _),hreadyF,hmeta,hpage,hgather,hleft,hi,ho,hcount,hrows,hoff,hfreshF,hnative,hshared⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

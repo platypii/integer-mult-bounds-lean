@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingNativeStock
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingRetainedHeaders
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingResidualAccuracy
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaInteriorFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleasedReplicaCoupling
@@ -63,7 +64,13 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
       releaseReplicaCouplingNativeCost (extendStacks (by decide : 117 ≤ 248)
         (embStk weightCacheCoreReg (embStk plan.solver G))) ≤
         replicaCouplingNativeCleanupBound (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band
-          H.origin (H.origin+H.span) := by
+          H.origin (H.origin+H.span) ∧
+      (∀ k : Fin 168, 117 ≤ k.val → k ∉ replicaCouplingSetupPorts → G.R (placement.bank k) = S.R (placement.bank k)) ∧
+      (CouplingMasterHeaders (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band
+        H.origin (H.origin+H.span) (embStk placement.bank S) →
+        (S.R (placement.bank 118)).length = H.stage+1 → (S.R (placement.bank 120)).length = H.l →
+        PackedHaloRetainedHeaders (2^15*H.p) (H.stage+1) H.precision H.l s H.t H.u H.band
+          H.origin (H.origin+H.span) H.metadataWidth H.wordWidth (embStk placement.bank G)) := by
   have hframeInitial (k : Fin 168) (hk : 117 ≤ k.val) :
       F.R (placement.bank k) = S.R (placement.bank k) :=
     placement.interior_preserves_extended output hR hQ hbankOutput k hk he₀.toExec
@@ -101,14 +108,17 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
     apply h.headers.of_frame
     intro k _ _
     exact congrFun (congrArg Stacks.R hgather) k
-  obtain ⟨v₂,G,n₂,Ds,hu₂,hn₂,he₂,hcount,hout,hrhsF,hready,hmeta,hL₂,hi₂,ho₂,hframe₂,hlen,harchive,hgood,hpage,hpageCount,hrows,hfreshF,hDsBounds,hnativeF⟩ :=
+  obtain ⟨v₂,G,n₂,Ds,hu₂,hn₂,he₂,hcount,hout,hrhsF,hready,hmeta,hL₂,hi₂,ho₂,hframe₂,hlen,harchive,hgood,hpage,hpageCount,hrows,hfreshF,hDsBounds,hnativeF,hsharedF⟩ :=
     releasedReplicaCoupling_exec (body := body) H placement output rhs houtput hrhs hbankOutput hbankRhs hsep hQ hA
       hspan horigin buffers.accumulatorTail (F.R rhs) buffers.rhsTail buffers.solverOutputTail
       buffers v₁ J hcursor hheadersJ hreleased
       (by intro k hk; rw [hbankR k]; exact hblankF k hk)
       (by intro k hk; rw [hbankR k]; exact hfreshF₀ k hk)
+  have hsharedFinal (k : Fin 168) (hk : 117 ≤ k.val) (hnot : k ∉ replicaCouplingSetupPorts) :
+      G.R (placement.bank k) = S.R (placement.bank k) :=
+    (hsharedF k hk hnot).trans ((hbankR k).trans (hframeInitial k hk))
   refine ⟨v₂,G,n₁+n₂,Ds,hu₂.trans hu₁,by omega,.seq he₁.toExec he₂,hcount,hout,hrhsF,hready,hmeta,
-    hL₂.trans hL₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,hlen,harchive,hgood,?_,hpageCount,hrows,hfreshF,hDsBounds,replicaCouplingResiduals_accurate H hp hwidth Ds hlen hgood,hnativeF,?_⟩
+    hL₂.trans hL₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,hlen,harchive,hgood,?_,hpageCount,hrows,hfreshF,hDsBounds,replicaCouplingResiduals_accurate H hp hwidth Ds hlen hgood,hnativeF,?_,?_,?_⟩
   · intro k hk hp
     apply (hframe₂ k hk hp).trans
     have hn : k ≠ output ∧ k ≠ rhs := by
@@ -125,5 +135,12 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
     simp only [extendStacks,Fin.coe_castLE,show i.val < 117 from i.isLt,↓reduceDIte]
     change (embStk weightCacheCoreReg (embStk plan.solver G)).R i = _
     exact hh
+
+  · intro k hk hnot
+    exact hsharedFinal k hk hnot
+
+  · intro hmasters hstage hlevel
+    exact PackedHaloRetainedHeaders.of_coupling_setup hmasters hstage hlevel
+      (by simpa only [Nat.add_sub_cancel_left] using hmeta) hsharedFinal
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

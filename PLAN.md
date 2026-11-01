@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3641 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3642 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23301,3 +23301,31 @@ and join the complete trace. Factory input production, complete resources,
 scheduling, tensor/R4 restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 333460 declarations at 3315.1 MiB.
+
+### S4 checkpoint: actual coupling preserves retained masters and regenerates geometry
+
+`replicaCouplingSetupPorts` identifies the finite shared geometry/page writes.
+The actual shared-page setup, runtime setup, prepared replica loop, released
+coupling and initialized interior/coupling now return a frame for every other
+shared port. The proof composes existing exact page state and whole-bank loop
+frames, once over arbitrary ports, covering retained numerical masters and
+untouched shared scratch together.
+
+`PackedHaloRetainedHeaders.of_coupling_setup` combines initial numerical masters,
+stage and level with the actual newly generated geometry. The initialized
+interior/coupling theorem now returns this retained-header contract at
+`H.metadataWidth`. Its input requires only the initial master/stage/level facts;
+it deliberately does not require the old geometry certificate alongside fresh
+geometry ports. Factory geometry will need a paid retirement before regeneration.
+
+Guarded checks pass under default limits: page setup 2177.1 MiB, page workspace
+2141.2 MiB, runtime 2158.5 MiB, prepared loop 2219.6 MiB, released coupling
+2234.2 MiB, generic retained-header assembly 2156.9 MiB and actual complete
+interior/coupling 3278.5 MiB. Next combine retained masters, actual page and shared
+scratch/factor frames into the recovery shared-bank contract and join the actual
+trace. Factory input production/old-geometry retirement, complete resources,
+scheduling, tensor/R4 restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
+Compatibility with actual factory-width generation and released recovery passes
+(15300 jobs, 3.5 GiB combined peak). The combined scoped axiom audit passes for
+333464 declarations at 3315.1 MiB.

@@ -58,9 +58,10 @@ theorem preparedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
       (F.R (placement.bank 140)).length = 2*H.band+1 ∧
       (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], F.R (placement.bank k) = []) ∧
       embStk weightCacheCoreReg (embStk plan.solver F) =
-        {embStk weightCacheCoreReg (embStk plan.solver S) with R := counterR H.precision H.wordWidth (embStk weightCacheCoreReg (embStk plan.solver S)).R} := by
+        {embStk weightCacheCoreReg (embStk plan.solver S) with R := counterR H.precision H.wordWidth (embStk weightCacheCoreReg (embStk plan.solver S)).R} ∧
+      (∀ k : Fin 168, 117 ≤ k.val → k ∉ replicaCouplingSetupPorts → F.R (placement.bank k) = S.R (placement.bank k)) := by
   have hP : 13 ≤ 2^15*H.p := by have hp := H.p_pos; omega
-  obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hreadyJ,hmeta,hpage,hgather,hL₁,hi₁,ho₁,hcount,hrows,hoff,hfreshJ,hnativeJ⟩ :=
+  obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hreadyJ,hmeta,hpage,hgather,hL₁,hi₁,ho₁,hcount,hrows,hoff,hfreshJ,hnativeJ,hsharedJ⟩ :=
     initializeReplicaCouplingRuntime_exec_within (body := body) placement (by omega : 4 ≤ A) hw5 hqw hP H.s_lt_t
       (Nat.le_add_right _ _) H.span_fit horigin hwide (by simpa using hfitV) raw v S hready hV hsetupTmp h107 hblank
       (by intro k hk; apply hfresh; simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
@@ -84,7 +85,7 @@ theorem preparedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
           rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> simp)
   have hbankR (k : Fin 168) : F.R (placement.bank k) = J.R (placement.bank k) := congrFun (congrArg Stacks.R hbank) k
   refine ⟨v₂,F,n₁+n₂,Ds,hu₂.trans hu₁,by unfold preparedReplicaCouplingCost; omega,
-    .seq he₁.toExec he₂,hcountF,hout,hrhsF,?_,?_,hL₂.trans hL₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,hlen,?_,hgood,?_,?_,?_,?_,?_⟩
+    .seq he₁.toExec he₂,hcountF,hout,hrhsF,?_,?_,hL₂.trans hL₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,hlen,?_,hgood,?_,?_,?_,?_,?_,?_⟩
   · have hnative : embStk weightCacheCoreReg (embStk plan.solver F) = embStk weightCacheCoreReg (embStk plan.solver J) := by
       rw [← placement.native_view F,← placement.native_view J,hbank]
     rw [hnative]
@@ -111,5 +112,8 @@ theorem preparedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
 
   · rw [← placement.native_view F,hbank,placement.native_view J]
     exact hnativeJ
+
+  · intro k hk hnot
+    exact (hbankR k).trans (hsharedJ k hk hnot)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

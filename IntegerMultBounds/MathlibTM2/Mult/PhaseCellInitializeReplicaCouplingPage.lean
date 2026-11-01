@@ -12,6 +12,9 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
+def replicaCouplingSetupPorts : List (Fin 168) :=
+  [135,138,139,140,143,145,146,147,148,149,151,154,155,156,163,164,165]
+
 def initializeReplicaCouplingPage {plan : ReplicaInteriorPlacement T}
     (placement : ReplicaCouplingPlacement plan) : Pr P T Q A U :=
   .seq (prepareReplicaCouplingGeometry placement) (prepareReplicaCouplingPage placement)
@@ -37,7 +40,8 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
       (F.R (placement.bank 140)).length = 2*band+1 ∧
       (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) ∧
       (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], S.R (placement.bank k) = [] → F.R (placement.bank k) = []) ∧
-      embStk weightCacheCoreReg (embStk plan.solver F) = embStk weightCacheCoreReg (embStk plan.solver S) := by
+      embStk weightCacheCoreReg (embStk plan.solver F) = embStk weightCacheCoreReg (embStk plan.solver S) ∧
+      (∀ k : Fin 168, k ∉ replicaCouplingSetupPorts → F.R (placement.bank k) = S.R (placement.bank k)) := by
   have hheaders : ∀ p ∈ couplingGeometryAssignments,
       (S.R (placement.bank p.1)).length = couplingGeometryHeaderValue s t band a b p.1 := by
     intro p hp
@@ -68,7 +72,7 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
           rw [hframe₁ k hn.1 hn.2]
           exact hfresh k hk)
   refine ⟨v₂,F,n₁+n₂,hu₂.trans hu₁,by omega,.seq he₁.toExec he₂,?_,hmetaF,?_,
-    hgather₂.trans hgather₁,hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_,?_,hnative₂.trans hnative₁⟩
+    hgather₂.trans hgather₁,hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_,?_,hnative₂.trans hnative₁,?_⟩
   · rw [hnative₂]
     exact hreadyG
   · have hp := congrFun (congrArg Stacks.R hview) 138
@@ -97,5 +101,21 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
     rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;>
       simp [sharedCouplingPageState,embStk_R,hG]
+
+  · intro k hk
+    have hn : k ≠ 163 ∧ k ∉ [145,146,147,148,149,151,154,155,156,164,165] := by
+      simp only [replicaCouplingSetupPorts,List.mem_cons,List.not_mem_nil,or_false,not_or] at hk ⊢
+      tauto
+    have hp := congrArg (fun B : Stacks 168 A => B.R k) hview
+    change F.R (placement.bank k) = _ at hp
+    apply hp.trans
+    have h135 : k ≠ 135 := by intro h; apply hk; simp [replicaCouplingSetupPorts,h]
+    have h138 : k ≠ 138 := by intro h; apply hk; simp [replicaCouplingSetupPorts,h]
+    have h139 : k ≠ 139 := by intro h; apply hk; simp [replicaCouplingSetupPorts,h]
+    have h140 : k ≠ 140 := by intro h; apply hk; simp [replicaCouplingSetupPorts,h]
+    have h143 : k ≠ 143 := by intro h; apply hk; simp [replicaCouplingSetupPorts,h]
+    simp only [sharedCouplingPageState,Function.update_of_ne h135,Function.update_of_ne h138,
+      Function.update_of_ne h139,Function.update_of_ne h140,Function.update_of_ne h143]
+    exact hframe₁ k hn.1 hn.2
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
