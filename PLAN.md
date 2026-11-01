@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3623 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3624 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22880,3 +22880,26 @@ global scheduling, tensor/R4 restoration and outer integration also remain open.
 S4 is incomplete; kappa is unchanged.
 Compatibility passes for 15149 jobs at 3.4 GiB combined peak. The combined
 scoped axiom audit passes for 332451 declarations at 3297.6 MiB.
+
+### S4 checkpoint: paid whole-queue loading establishes the recovery cursor
+
+`PhaseCellLoadReplicaRecoveryQueues` uses the existing `moveRightOrdered` twice
+to load owned residual and matching ordinary-order original-RHS queues from
+external ports 257/258 into worker 238/93. Scratch 104 is restored. The exact
+state clears both sources, prepends the queues above borrowed destination tails,
+and preserves every other port. Equal word volumes give the exact time
+`8*(Fs.length*(span*wordWidth))+8`; no total-volume counter is supplied or built.
+
+The loader accepts the exact residual length/index witness returned by actual
+coupling. It establishes the initial recovery cursor while retaining shared
+core/physical readiness and factor pages. The mathematical proof is over
+arbitrary residual lists. The guarded check passes at 3274.8 MiB with default
+limits. Compatibility with initialized recovery and actual interior/coupling
+passes (15151 jobs, 3.5 GiB combined peak).
+
+Next compose this loader with initialized recovery and produce its owned
+ordinary-order RHS queue from the retained source. Actual shared-factor
+production and the placement connecting the coupling caller remain open, as do
+workspace/selected bounds, global scheduling, tensor/R4 restoration and outer
+integration. S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 332465 declarations at 3295.4 MiB.
