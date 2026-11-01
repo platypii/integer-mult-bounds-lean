@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3809 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3810 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25333,3 +25333,30 @@ Final guarded checks pass at 3141.2 MiB (packed-ring/fixed shared workspace)
 and 3171.4 MiB (zero-replica staged numerical scratch). Compatibility build
 passes (15697 jobs, 3.4 GiB combined peak). Scoped axiom audit passes for
 336431 declarations at 3388.7 MiB.
+
+
+### S4 checkpoint: cached-origin shared setup and arithmetic workspace are polynomial
+
+`Cost.PhaseCellCachedOriginsSharedWorkspace.cachedOriginsWorkspace_zero_le`
+separates the actual zero-replica cached-origin workspace into native
+setup/retirement stock and one staged numerical reserve. The native coefficient
+`cachedOriginsSharedPush` is the sum of actual closed-program push bounds.
+A generic arithmetic composition rule avoids unfolding the numerical worker.
+
+`cachedOriginsWorkspace_zero_poly` combines this rule with the existing shared
+class setup-time polynomial and the checked zero-replica staged arithmetic
+workspace bound. Ordinary pass-envelope dimensions and the actual computed
+factory widths discharge all numerical-format and storage premises. The entire
+cached-origin reserve, including packet retirement, generator/runtime setup,
+staged arithmetic and final runtime release, is polynomial in that envelope.
+Only native setup time is used to price native stock; numerical arithmetic
+scratch remains covered by its dedicated shared workspace theorem.
+
+Next compose this result through the shared interior class and six-key
+schedule, then instantiate selected widths and combine all shared reserve
+pieces into the caller space bound. First-pass/generated-factory integration,
+distinct-core scheduling/amortization, tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+Guarded module check passes at 3272.8 MiB. Compatibility build passes
+(15699 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for 336437
+declarations at 3387.0 MiB.
