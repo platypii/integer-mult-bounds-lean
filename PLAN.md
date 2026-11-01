@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3927 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3930 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27178,3 +27178,39 @@ scheduler, combining the caller, descriptor and cleanup estimates. Final
 constructor-bound instantiation, physical component production, tensor/R4
 composition, layout restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: exact witness-independent budgets instantiate the scheduler
+
+`Mult.PhaseCellRecoveryResourceBudgets` factors second-pass key time/workspace
+and interior resource counters through original geometry, replica count and
+the recovery target/exponent. The actual B.problem key and interior bills equal
+these explicit budgets for every recovery-batch witness, using problem_sizing
+and inputs_length. No solution data is compared and no canonical solution is
+assumed.
+
+`Mult.PhaseCellRawRecoveryResourceBudgets` extracts the additive non-interior
+caller context from the existing bills, avoiding duplicated cost formulas.
+RawRecoveryJob.timeBudget and stockBudget are exact natural-number resource
+bills with no batch argument. runTime_eq_budget and runStock_eq_budget prove
+agreement for every B. The physical normalized caller also proves batch_nonempty
+for every mathematical raw job under the already-used program bounds and a
+host state; this is derived existence, not a new execution or solution oracle.
+It permits existing uniform quantified cost estimates to transfer to budgets.
+
+`Mult.PhaseCellBudgetedRawRecoverySchedule` instantiates the actual restoring
+raw descriptor scheduler with these budgets. Its execution/trace theorem no
+longer takes time/stock functions or a resource-budget hypothesis. It retains
+certified output order, source/private-bank restoration, actual loading and
+cleanup bills, and one peak scratch allowance. All numerical job obligations
+remain supplied by the mathematical raw-job record.
+
+Guarded checks pass at 3381.6 MiB (interior resource identities), 3389.3 MiB
+(exact raw budgets and derived witness existence), and 3399.3 MiB (budgeted
+scheduler). Scoped compatibility build passes (16139 jobs, 1.1 GiB combined
+observed peak, mostly replayed); axiom audit passes for 338955 declarations at
+3464.8 MiB. Next transfer the selected time, stock and cleanup bounds to these
+exact budgets using batch_nonempty/runTime_eq_budget/runStock_eq_budget, then
+reprice the actual scheduler time and peak trace. Final constructor-bound
+instantiation, physical component production, tensor/R4 composition, layout
+restoration and outer integration remain open. S4 is incomplete; kappa is
+unchanged.
