@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3534 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3536 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21757,3 +21757,37 @@ pass, then compose shared coupling/recovery, boundary solve and the second
 interior pass. Global distinct-key scheduling, tensor/R4 restoration and outer
 integration remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327086 declarations at 3179.9 MiB.
+
+### S4 checkpoint: initialized replica stock is shared factories plus local traffic
+
+`Cost/PhaseCellInitializedReplicaStock` factors the complete generated class
+ledger across publication, retirement, numerical staging and header reload.
+Its zero-replica term contains all shared factories and per-class controls; the
+replicated term is a fixed traffic factor times
+`N*(B*(L+2^l)*w+span*w+1)`. This is a bound on the certified workspace, not a
+substitution of numerical runtime for storage. Empty candidates retain only
+their actual control allowance and incur no numerical reserve.
+
+The factorization is summed structurally over arbitrary positive key lists.
+For the actual candidate schedule and the halo inverse ring size, the existing
+local padding theorem bounds the repeated volume by
+`((haloInterior.card+8*span+8*(s/(t-s)+1))*w+6*(span*w+1))`.
+The initialized execution is transported to this ledger with its original
+endpoint and time, retaining both constructor charges. The original whole
+store is counted once.
+
+`Cost/PhaseCellSelectedInitializedReplicaStock` derives the width and gap
+conditions from selected sizes and target/RHS precision bounds. It transports
+the actual initialized trace without a supplied per-class workspace estimate.
+Shared factory allowances remain explicit for global distinct-key amortization;
+this does not yet establish complete global selected acceptance.
+
+Guarded checks pass at 3185.7 MiB (affine decomposition, local aggregation and
+initialized-trace transport) and 3160.6 MiB (selected metadata discharge and
+trace transport). Compatibility with global core local stock and the older
+loop passes (14600 jobs, 5.7 GiB combined peak). Next lift the complete key-loop
+time bill through the existing fast arithmetic bounds, then combine shared
+factory charges with the actual global schedule. Recovery/boundary solve,
+second-pass composition, tensor/R4 restoration and outer integration remain
+open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 328871 declarations at 3200.4 MiB.
