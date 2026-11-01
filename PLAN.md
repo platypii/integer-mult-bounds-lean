@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3609 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3612 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22689,3 +22689,38 @@ generation, global archive loading/iteration, workspace/selected resources,
 global scheduling, tensor/R4 restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 332366 declarations at 3295.6 MiB.
+
+### S4 checkpoint: physical preparation and accurate recovery compose in the retained machine
+
+`PhaseCellReplicaRecoveryCoreFrame` reconstructs shared recovery-core readiness
+from the existing recovery exit frame. Master/header and geometry preservation,
+returned numerical readiness, released scratch and coefficient-page frames are
+handled once, independently of the row's values.
+
+`PhaseCellPreparedReplicaRecovery` composes the actual input preparation trace
+with the existing 248-register recovery kernel embedded in the 255-register
+retained machine. It consumes the boundary solution, advances the original-RHS
+queue, returns an encoded recovered field with full-halo error `1/2^target`,
+and preserves the shared recovery core and factor-page meanings. All seven
+persistent boundary tapes survive outside the recovery image. Disposable count
+and mask are released. The time bill is exactly the proved preparation allowance
+plus the existing recovery bound; no numerical execution is assumed.
+
+`PhaseCellRetireReplicaRecoveryRow` reuses the existing discard/archive
+transition to retire the overwritten residual and original-RHS prefixes and
+archive the recovered output. Borrowed source and output suffixes restore. Its
+exact cost is `18*rowSymbols+18`. This helper is checked; composing it with the
+recovery trace and transferring the read-error guarantee to the archive remains
+the next join.
+
+Guarded checks pass at 3247.9 MiB (core reconstruction), 3290.2 MiB (combined
+retained execution) and 1935.6 MiB (retirement). Compatibility with the retained
+boundary phase and initialized interior/coupling path passes (15150 jobs,
+4.8 GiB combined peak). Default proof limits are unchanged.
+
+Next finish the recovered-row archive transition, restore both readiness
+contracts and lift that transition over the structural replica cursor. Shared
+factor generation, global archive loading, workspace/selected resources, global
+scheduling, tensor/R4 restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
+The scoped axiom audit passes for 332378 declarations at 3294.0 MiB.
