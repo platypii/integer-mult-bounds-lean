@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3755 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3757 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24564,3 +24564,31 @@ remain open. S4 is incomplete; kappa is unchanged.
 Compatibility with the actual batched recovery time theorem passes
 (15446 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
 334349 declarations at 3341.3 MiB.
+
+
+### S4 checkpoint: the actual complete batched recovery caller has bounded execution
+
+`PhaseCellPlacedReplicaRecoveryPreparationStock` lifts the complete bounded
+preparation traversal into the common 392-register caller, preserving the
+computed batch, aligned archives, retained bank, spectator frames and
+iteration-end worker stock equality. Placement adds no reserve.
+
+`PhaseCellBatchedReplicaRecoveryStock.batchedReplicaRecovery_exec_within`
+composes that preparation trace with the existing bounded shared second
+interior pass and certified final assembly. It executes the actual complete
+caller at arbitrary ambient depth and returns the original numerical assembly
+certificates, outputs and time bill. `batchedReplicaRecoveryWorkspace` names
+the complete allowance: one preparation-row reserve, the shared interior
+allowance, and one assembly reserve. No scalar interior execution or supplied
+recovery RHS/boundary result is introduced.
+
+Guarded checks pass at 3310.8 MiB (placed preparation) and 3317.9 MiB
+(complete bounded recovery caller). Whole-caller recovery workspace execution
+is now proved with its explicit allowance; the selected resource inequalities
+for this allowance and the actual time bill remain open. Next bound those
+resources and connect first-pass/generated-factory execution. Scheduling,
+tensor/R4 restoration and outer integration also remain open. S4 is
+incomplete; kappa is unchanged.
+Compatibility with the actual batched recovery time theorem passes
+(15448 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
+334360 declarations at 3341.1 MiB.
