@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3819 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3821 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25495,3 +25495,31 @@ setup premises, then compose first pass, handoff and recovery as one caller.
 Combined coupling workspace, distinct-core amortization, tensor/R4 composition,
 layout restoration and outer integration remain open. S4 is incomplete; kappa
 is unchanged.
+
+
+### S4 checkpoint: generate shared factors and release native coupling in the common caller
+
+`Mult.PhaseCellPlacedReplicaBoundaryFactory` executes the existing shared
+boundary factory in the 392-register caller's actual factor-bank placement.
+It returns the generated columns, `ReplicaBoundaryFactorData`, between-input
+geometry readiness and factory workspace. The input projection must match the
+ordinary factory input bank; the theorem does not silently install headers or
+numerical data. Every tape outside the factor view is preserved.
+
+`Mult.PhaseCellPlacedReplicaCouplingRelease` executes the existing native
+coupling release in the same caller. It charges the actual erased stock once,
+preserves factor data and all high shared pages, and derives
+`ReplicaRecoveryCoreReady` from the retained coupling bank. Left stacks, input,
+output and all registers outside its native view survive. Both proofs instantiate
+existing execution/frame rules rather than unfold numerical implementations.
+
+Guarded checks pass at 3291.9 MiB (placed shared factory) and 3289.8 MiB
+(placed native cleanup). Compatibility build passes (15800 jobs, 3.4 GiB
+combined peak). The scoped axiom audit passes for 336481 declarations at
+3389.9 MiB. Next lift the existing physical boundary-header setup into this
+caller and connect factory, first pass, cleanup, archive handoff and cached
+recovery. The retained coupling bank premises still need to be assembled from
+first-pass outputs; these placed execution theorems alone do not finish that
+connection. Combined coupling workspace, distinct-core amortization, tensor/R4
+composition, layout restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
