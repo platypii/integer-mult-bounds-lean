@@ -27868,3 +27868,29 @@ incomplete; kappa is unchanged.
 Guarded file checks pass at 3421.7 MiB (placement) and 3419.3 MiB (actual
 complex call). Expanded compatibility build passes (16540 jobs); broad axiom
 audit passes for 341675 declarations at 3525.9 MiB.
+
+### S4 checkpoint: existing crop-and-retire loop preserves complex accuracy
+
+`Mult.PhaseCellIntervalArchiveAccuracy.packedInterval_crop_error` transfers
+a complex packed-halo read certificate to any contained cropped interval
+with an arbitrary destination suffix. Both readers reduce to the same ambient
+encoded word, so cropping incurs no numerical error and needs no new fits or
+decode assumption.
+
+packedCoreArchiveLoop_interval_accurate_exec reuses the existing physical
+interval archive loop unchanged. It consumes the actual complex field packets,
+retires each full interval, and returns cropped packets in reverse order with
+a Forall₂ certificate in that exact destination order. Source suffix, left
+stacks and spectators have the original loop's restoring frame. Its original
+time bill is retained. A native push-two theorem yields a same-run stock
+allowance twice that bill, linear in encoded archive volume.
+
+Next compose the actual computed complex call with this crop/archive stage,
+generate the crop controls from retained core geometry, and lift the resulting
+restoring step through ordered core groups. Concrete ambient layout, grouped
+cost absorption, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+
+Guarded module check passes at 2045.5 MiB. Expanded compatibility build passes
+(16541 jobs, 2.7 GiB combined peak).
+Broad axiom audit: Axiom audit passed for 341689 declarations. Guarded check peak RSS: 3525.6 MiB.
