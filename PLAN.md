@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4001 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4005 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28204,3 +28204,37 @@ Expanded compatibility build passes (16564 jobs, 3.5 GiB combined peak).
 Guarded checks pass at 3375.3 MiB (job scalar-width bridge) and 3451.9 MiB
 (complete normalized local execution). Broad axiom audit passes for
 341951 declarations at 3545.0 MiB.
+
+
+### S4 checkpoint: physical replica-order restoration and ordered output certificate
+
+`Mult.PhaseCellRestoreReplicaOrder` reuses the structural crop/archive loop
+on whole packets to reverse replica order without changing packet symbols.
+Rows, word width and replica count are ordinary retained unary inputs; the
+program generates and retires its symbol count and loop clock. Its exact
+frame consumes the source prefix, prepends the reversed packets to the
+destination and restores all other tapes. The same execution has an all-depth
+stock bound twice its explicit time allowance. The time allowance is at most
+`35*((N+1)*(L*W+1))` for positive word width.
+
+`Mult.PhaseCellPlacedRestoreReplicaOrder` embeds that fixed 14-port program
+through an arbitrary injective ambient placement.
+`Mult.PhaseCellPackedRecoveryOutputCertificate` removes the arbitrary suffix
+from packed reads and packages original-order field accuracy into the existing
+`PackedNormalizedJob.output` contract.
+`Mult.PhaseCellOrderedRecoveryPublication` executes the physical reverse pass
+and derives that unchanged output contract from reverse-order recovered fields.
+No permutation or precomputed output witness replaces the actual movement.
+
+This pass is not yet composed with `ComputedRecoveryPlan.normalized_exec`.
+Next compose those executions with concrete compatible wiring, feed the
+existing ordered supplier/scan/publication interfaces, and sum all local bills
+before selected-axis absorption. Tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa unchanged.
+
+The ordered publication dependency build passes (15185 jobs, 3.5 GiB combined
+peak). Final guarded checks pass at 2077.5 MiB (whole-packet reversal),
+2041.1 MiB (ambient embedding), 3306.1 MiB (output certificate) and
+3308.6 MiB (ordered publication).
+Broad axiom audit passes for 341961 declarations at 3545.3 MiB, permitting
+only propext, Quot.sound and Classical.choice.
