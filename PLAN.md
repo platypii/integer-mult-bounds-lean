@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3591 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3593 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22494,3 +22494,30 @@ the owned row stack. Recovery, the second interior pass, workspace/selected
 resources, global scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331338 declarations at 3269.2 MiB.
+
+### S4 checkpoint: execute the concrete physical boundary row without a preparation oracle
+
+`PhaseCellReplicaBoundaryRhs` instantiates the generic archive-to-real-folded-RHS
+trace at the compatible concrete bank. `ReplicaBoundaryRhsReady` records the
+shared interval and boundary volumes, mask, relocated fold counters, width and
+scratch. Geometry supplies the boundary support and interval fit; constant
+register separation is checked once. The actual trace consumes one row on 238
+and supplies the solver RHS on 143, with no assumed preparation execution.
+
+`PhaseCellReplicaBoundaryRow` composes that derived trace with the reusable
+boundary solver. It publishes `replicaBoundarySolution` above the remaining
+residual archive on 238. Both physical header readiness and the full numerical
+prepared bank/factor pages are returned, so subsequent recovery and rows can
+reuse the same setup. The cost is the proved preparation bill plus the existing
+packed solve bill; the numerical implementation is unchanged.
+
+Guarded checks pass at 2151.6 MiB (concrete preparation) and 3214.6 MiB
+(complete row). Compatibility with the initialized interior/coupling path passes
+(14835 jobs, 3.4 GiB combined peak). Default proof limits are unchanged.
+
+Next generate shared mask/fold counters and factor setup from the retained
+masters, load the existing residual archive into this bank, and connect recovery
+before the next row. The second interior pass, workspace/selected resources,
+global scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331365 declarations at 3268.1 MiB.
