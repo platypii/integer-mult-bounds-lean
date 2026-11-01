@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3800 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3802 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25210,3 +25210,33 @@ Guarded checks pass at 3233.9 MiB (computed-width envelope enlargement),
 3329.2 MiB (selected shared setup) and 3374.6 MiB (complete selected time).
 Compatibility build passes (15750 jobs, 3.5 GiB combined peak). Scoped
 axiom audit passes for 336398 declarations at 3386.9 MiB.
+
+
+### S4 checkpoint: initialized recovery workspace separates shared scratch from linear replica payload
+
+`Cost.PhaseCellCachedRecoveryWorkspace` reuses the existing initialized
+interior stock proof and exact recovery-batch format equalities. It bounds the
+actual initialized cached caller reserve by `cachedRecoverySharedWorkspace`
+plus a fixed traffic factor times `replicas*t*wordWidth`. Preparation scratch,
+mask generation, numerical row workspaces and shared interior factories occur
+only in the shared reserve. No numerical multiplication time is used as stock.
+`replicaHaloLocalSymbolVolume_le` connects the existing local interior storage
+formula to `40*t*wordWidth`, reusing the established local-coordinate bound.
+
+`initializedCachedRecovery_within_affine` applies this reserve directly to
+the original executed caller trace using predicate monotonicity. It preserves
+the exact program, step count and output state.
+`Cost.PhaseCellSelectedCachedRecoveryWorkspace` derives the metadata-width
+premise from selected dimensions and replaces `wordWidth` by a fixed multiple
+of `p`. All replica-dependent workspace is therefore linear in
+`replicas*t*p`, with one explicit shared reserve.
+
+Next bound that shared reserve polynomially and absorb it into the selected
+volume allowance. The full selected workspace bound is not yet closed.
+First-pass/generated-factory integration, distinct-core scheduling/amortization,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+Guarded checks pass at 3369.2 MiB (caller affine workspace and trace
+transport) and 3359.1 MiB (selected payload bound). Compatibility build
+passes (15754 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
+336410 declarations at 3388.3 MiB.
