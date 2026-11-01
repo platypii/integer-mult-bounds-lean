@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3677 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3681 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23710,3 +23710,44 @@ a common physical placement. Full preparation/assembly time and workspace
 bounds, generated-factory composition, scheduling, tensor/R4 restoration and
 outer integration remain open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334002 declarations at 3327.5 MiB.
+
+### S4 checkpoint: final assembly reuses the paired consuming scan
+
+`PhaseCellSeedPublicationMask` preserves a retained selector master while making
+paid disposable count/mask copies and restoring coordinate order. Its generic
+supplier costs `10*span+10`. On the stored halo interval, complementing the
+existing boundary mask gives the interior selector; no new geometry table is
+needed per replica.
+
+`PhaseCellRetainedPackedPublicationMerge` joins that supplier to the existing
+packed selector. It consumes aligned interior/boundary prefixes and prepends
+the selected packed field while restoring both suffixes, disposable masks,
+counters and scratch. The retained master survives. Its bill is
+`span*(12*wordWidth+25)+14`, and the native push bound is proved.
+`PhaseCellReplicaRecoveryAssemblyRow` combines this actual execution with the
+recovery acceptance contract, proving that the physically emitted row fits and
+has the final full-halo error bound.
+
+`PhaseCellReplicaRecoveryAssemblyLoop` instantiates the existing
+`Host.consumeScan_exec`, rather than introducing another archive cursor. One
+fixed 12-register assembly bank consumes the two actual row streams. The scan
+returns a reversed output archive with `List.Forall₂` certificates linking each
+emitted packed row to its original replica index, fitting recovered field and
+final error bound. Both borrowed input suffixes, the retained mask/width and
+all other bank roles restore. Its time is bounded by
+`N*(retainedPackedPublicationMergeCost span wordWidth+5)+4`.
+The workspace reserve is only `2*retainedPackedPublicationMergeCost span
+wordWidth` for the entire scan, independent of replica count: the generic scan
+already proves that consuming two rows and publishing one has nonincreasing
+endpoint stock.
+
+All four new modules pass guarded checks under default limits: 2066.6 MiB
+(mask supplier), 2090.3 MiB (retained selector), 3241.4 MiB (certified row) and
+3261.1 MiB (complete assembly scan). Compatibility with preparation, executed
+second-pass fast bounds, generated recovery and periodic factor setup passes
+(15438 jobs, 3.5 GiB combined peak). Next place this small assembly bank beside
+the actual second-pass outputs and retained boundary archive, join preparation,
+second interior and assembly in one physical caller, and close the whole
+caller's resource bounds. Generated-factory composition, scheduling, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa unchanged.
+Scoped axiom audit passes for 334034 declarations at 3329.4 MiB.
