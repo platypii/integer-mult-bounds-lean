@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3651 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3655 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23473,3 +23473,40 @@ retirement), under default limits. Scoped compatibility passes (15411 jobs,
 3316.6 MiB. Next execute factory input production and compose the placed factory
 with the actual caller, then close complete time/workspace bounds, scheduling,
 tensor/R4 restoration and outer integration. S4 is incomplete; kappa unchanged.
+
+### S4 checkpoint: generate the shared factory from actual gather headers
+
+`PhaseCellInstallReplicaBoundaryFactory` instantiates the existing
+`installPackedFactory_exec_within` at recovery's actual 389-register caller.
+Its ten master values come directly from `ReplicaLoopHeaders`, including the
+retained ordinary origin and endpoint. Register disjointness is proved once
+through the injective gather/factory sum. The actual installed view is the
+canonical `replicaBoundaryFactoryInput`; this is now an execution result.
+The installer retains the existing sharp workspace bill, rather than replacing
+it with its larger time bound.
+
+`PhaseCellReplicaFactoryPublicationWidth` reuses the existing publication-width
+generator, placing its disposable width at gather 119 while keeping metadata
+width 115 intact. `PhaseCellPrepareReplicaBoundaryFactory` composes that width
+trace with input installation, with explicit time and workspace bounds.
+
+`PhaseCellGeneratedReplicaBoundaryFactory` then runs the actual factor/width/
+geometry-retirement program in the same caller and clears gather 119. Starting
+from ordinary gather headers and blank factor work storage, it returns generated
+factor data, numerical masters, stage/level, fresh geometry ports and the complete
+restored gather view. Every register outside the factory placement restores on
+both sides, including the temporary width. Host input/output preservation is
+now retained through the native factory wrappers instead of discarded.
+No canonical bank, chosen columns or intermediate execution is assumed at this
+caller boundary.
+
+Guarded checks pass at 3301.7 MiB (native factory host frame), 3290.4 MiB (width),
+3283.2 MiB (native coupling-ready geometry), 3305.5 MiB (placed installer),
+2147.8 MiB (publication width), 3285.9 MiB (input preparation) and 3311.7 MiB
+(generated caller factory). Compatibility with the complete interior/recovery
+caller passes (15423 jobs, 5.8 GiB combined peak), and the scoped axiom audit
+passes for 333594 declarations at 3318.4 MiB. Next retain the factory's existing
+native-bank/scratch facts through these wrappers, discharge the remaining
+initial physical readiness, and join this generated factory to the actual full
+caller. Complete time/workspace bounds, scheduling, tensor/R4 restoration and
+outer integration remain open. S4 is incomplete; kappa is unchanged.

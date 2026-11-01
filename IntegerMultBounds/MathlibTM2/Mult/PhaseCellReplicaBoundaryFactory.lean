@@ -93,7 +93,8 @@ theorem replicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target : ℕ)
       ReplicaBoundaryFactorData H target columns F ∧
       PackedHaloBetweenInputs (2^15*H.p) (H.stage+1) H.precision H.l s H.t H.u H.band
         H.origin (H.origin+H.span) (publicationGeometryWidth H.t H.band) H.wordWidth (12*H.band+1)
-        (haloBoundary s H.t H.band H.origin (H.origin+H.span)).card (extendStacks (by decide) F) := by
+        (haloBoundary s H.t H.band H.origin (H.origin+H.span)).card (extendStacks (by decide) F) ∧
+      F.inp = S.inp ∧ F.out = S.out := by
   obtain ⟨hq,hstage,hw⟩ := H.boundary_sizing (boundaryRecoveryTarget H.p target) htarget
   simp only [ReplicaHaloProblem.band] at hq hstage hw
   have ha : 0 < |H.α| := abs_pos.mpr (by
@@ -110,17 +111,18 @@ theorem replicaBoundaryFactory_exec (H : ReplicaHaloProblem s) (target : ℕ)
       (a := H.origin) (b := H.origin+H.span) (α := |H.α|) (d := H.d)
       hR hQ hA hp hwidth ha H.s_lt_t H.u_pos hα H.theta_lower H.gap hbudget H.band_fit
       (by have hh := H.span_fit; omega) H.span_fit hpad v S
-  refine ⟨v',F,n,columns,hu,hn,?_,?_⟩
+  refine ⟨v',F,n,columns,hu,hn,?_,?_,?_,?_,?_⟩
   · have hin := replicaBoundaryFactoryInput_eq H target htarget S
     simp only [ReplicaHaloProblem.band] at hin
     exact (congrArg (fun I : Stacks 242 A => Exec body (packedBoundaryFactoryGeometry hR hQ)
       (mk v I) n (mk v' F)) hin).mp he
-  · refine ⟨?_,?_⟩
-    · constructor
-      · simpa only [ReplicaHaloProblem.band,← hq,← hw] using hcolumns
-      · simpa only [ReplicaHaloProblem.band,← hq,← hw] using herror
-      · simpa only [ReplicaHaloProblem.band,← hq,← hw] using hpages
-      · simpa only [ReplicaHaloProblem.band,← hq,← hw,packedBoundaryRecoveryBase,embStk_extendStacks] using hbetween.bank
-    · simpa only [ReplicaHaloProblem.band,← hq,← hw,← hstage] using hbetween
+  · constructor
+    · simpa only [ReplicaHaloProblem.band,← hq,← hw] using hcolumns
+    · simpa only [ReplicaHaloProblem.band,← hq,← hw] using herror
+    · simpa only [ReplicaHaloProblem.band,← hq,← hw] using hpages
+    · simpa only [ReplicaHaloProblem.band,← hq,← hw,packedBoundaryRecoveryBase,embStk_extendStacks] using hbetween.bank
+  · simpa only [ReplicaHaloProblem.band,← hq,← hw,← hstage] using hbetween
+  · exact hinp
+  · exact hout
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
