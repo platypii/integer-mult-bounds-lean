@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3851 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3854 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26089,3 +26089,40 @@ fast estimate using the existing cached loop bound and shared setup accounting,
 and combine caller workspace. Physical factory/header integration, distinct-core
 amortization, tensor/R4 composition, layout restoration and outer integration
 remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: complete selected fast time for the executed cached first pass
+
+`Cost.PhaseCellSelectedFirstCachedReplicaPass` splits the actual
+`firstCachedReplicaPassTime` into the existing initialized interior/RHS time,
+one shared coupling setup bill, cached transition work and clock-copy/control.
+The native replica traffic and local-coordinate numerical work are absorbed in
+the same sparse gap volume as cached coupling. The resulting fast theorem
+leaves only shared setup outside the replica-multiplied fast term; no
+per-replica geometry table or residual native cost remains explicit.
+
+`Cost.PhaseCellSelectedCachedCouplingSetup` bounds the actual shared bill,
+including header reload, geometry, coefficient generation, masks, counters and
+retirement, by `20000000*Z^5` for a common parameter envelope. Selected width
+bounds give `Z=(2*cw+cV+500000)*t*p`; the existing polynomial volume theorem then
+pays any fixed multiple of this shared setup below `T`, once per core. Small
+scalar/width lemmas avoid repeated concrete normalization. The coefficient
+comparison is proved after a separate power evaluation, keeping the kernel
+within default depth limits.
+
+`Cost.PhaseCellSelectedFirstCachedReplicaPassTotal` combines this with the
+existing interior shared-setup volume bound and axis-gap density inequality.
+For selected widths the executed first pass costs at most
+`2*T+24+F*replicaCount*t*(1+band^2/d)*p^(129/128)` eventually, with a constant
+independent of the selected axis and problem. This theorem applies to the
+cached time allowance now used by the complete first-pass/recovery caller.
+
+Guarded checks pass at 3392.1 MiB (replica fast bound), 3393.7 MiB (selected
+shared setup) and 3381.9 MiB (complete first-pass time). The complete scoped
+compatibility build passes (15913 jobs, 3.5 GiB combined peak); the axiom audit
+passes for 336645 declarations at 3397.6 MiB. Next combine this first-pass bill
+with executed cleanup/preparation and the established recovery total bound,
+and close combined caller workspace. Physical factory/header integration,
+distinct-core scheduling/amortization, tensor/R4 composition, layout restoration
+and outer integration remain open. Per-core setup absorption does not discharge
+the distinct-core scheduling obligation. S4 is incomplete; kappa is unchanged.
