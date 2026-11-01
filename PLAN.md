@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3923 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3927 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27143,3 +27143,38 @@ discharge uniform schedule time/peak-stock budgets. Final constructor-bound
 instantiation, physical component production, tensor/R4 composition, layout
 restoration and outer integration remain open. S4 is incomplete; kappa is
 unchanged.
+
+### S4 checkpoint: summed raw workspace and cleanup have one shared reserve
+
+`Cost.PhaseCellRecoverySharedWorkspacePolynomial` extracts uniform polynomial
+bounds for shared interior storage and cached recovery-preparation scratch,
+before selected volume absorption. The old per-core selected theorems now
+reuse these estimates as short corollaries, preserving their statements and
+removing duplicated envelope proofs.
+
+`Cost.PhaseCellRecoverySharedWorkspaceSchedule` lifts the uniform estimates
+over arbitrary distinct-core lists. It combines both interior passes,
+preparation, recovery masks, coupling/handoff and fixed native controls in one
+shared workspace reserve. Its raw-job corollary transfers original widths to
+recovery problems through problem_sizing.
+
+`Cost.PhaseCellRawRecoverySharedWorkspaceSchedule` adds initial raw/canonical
+storage, normalization and factory workspace, proving that the full shared
+part of runStock sums below T at any fixed scale. All setup is summed before
+absorption. `Cost.PhaseCellRawRecoveryScheduleStock` combines this with the
+linear local replica allowance: scaled summed runStock is bounded by
+T+C*N*totalLocalVolume*p. The actual restoring cleanup bill 6*runStock+2358
+obeys the same form, with fixed controls absorbed separately. These estimates
+are uniform over recovery-batch witness families and keep precision exponent
+one in storage and cleanup.
+
+Guarded checks pass at 3380.6 MiB (uniform polynomials), 3463.6 MiB (complete
+shared schedule), 3453.0 MiB (full raw shared schedule), and 3452.8 MiB (summed
+stock/cleanup). Refactored per-core checks pass at 3351.0 and 3357.7 MiB. Scoped
+compatibility build passes (16136 jobs, 5.9 GiB combined observed peak); axiom
+audit passes for 338920 declarations at 3464.1 MiB. Next construct witness-
+independent per-job budgets and instantiate the actual restoring descriptor
+scheduler, combining the caller, descriptor and cleanup estimates. Final
+constructor-bound instantiation, physical component production, tensor/R4
+composition, layout restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.
