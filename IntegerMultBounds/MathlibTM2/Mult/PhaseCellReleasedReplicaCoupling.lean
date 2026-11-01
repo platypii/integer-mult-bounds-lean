@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedReplicaCoupling
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingResidualBounds
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReloadReplicaCouplingHeaders
 
 /-! Reuse released numerical storage and retained gather controls. Gather 125
@@ -52,9 +53,6 @@ theorem releasedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
     (hbankOutput : ∀ k, placement.bank k ≠ output) (hbankRhs : ∀ k, placement.bank k ≠ rhs)
     (hsep : output ≠ rhs) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (hspan : H.span+H.band ≤ s) (horigin : H.origin < s)
-    (hwide : 8*(H.t+1)^2+4*H.band+8 < 2^H.metadataWidth)
-    (hfitV : H.origin+(H.span+2*H.band)+s < 2^H.metadataWidth)
-    (has : ∀ j < H.span, ∀ z ∈ couplingCoefficientWords (2^15*H.p) H.precision s H.t H.u H.band (H.origin+j), Fits H.wordWidth z ∧ z.im = 0)
     (outputTail rhsTail raw resultTail : List (Fin (A+4))) (buffers : ReplicaLoopBuffers A)
     (v : HS T Q A U) (S : Stacks T A)
     (h : ReplicaCouplingCursor H output rhs outputTail rhsTail 0 S)
@@ -78,7 +76,8 @@ theorem releasedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
       (F.R (placement.bank 139)).length =
         (couplingCoefficientPageInterval (2^15*H.p) H.precision s H.t H.u H.band H.origin (H.origin+H.span) H.origin H.span).length ∧
       (F.R (placement.bank 140)).length = 2*H.band+1 ∧
-      (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], F.R (placement.bank k) = []) := by
+      (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], F.R (placement.bank k) = []) ∧
+      (∀ D ∈ Ds, (∀ i, ‖value H.precision (D i)‖ ≤ (2 : ℝ)^replicaResidualExponent H) ∧ (∀ i, Fits H.wordWidth (D i))) := by
   obtain ⟨v₁,hu₁,he₁,hready,hgather,hL₁,hframe₁⟩ := reloadReplicaCouplingHeaders_exec_within (body := body)
     plan (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band H.origin (H.origin+H.span) raw resultTail v S hbank
     (hheaders.coupling_masters H plan buffers S) (hheaders.blank 7 (by decide)) 0
@@ -128,7 +127,8 @@ theorem releasedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
           simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
           rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl
           all_goals first | exact placement.bank_gather_disjoint _ _ | exact hbankOutput _ | exact hbankRhs _)
-      hQ hA hw5 hqw hspan horigin H.metadataWidth hwide hfitV has outputTail rhsTail raw v₁ J
+      hQ hA hw5 hqw hspan horigin H.metadataWidth H.coupling_geometry.2 H.coupling_geometry.1
+      (fun j _ => H.coupling_coefficients (H.origin+j)) outputTail rhsTail raw v₁ J
       (ReplicaCouplingCursor.of_frame H output rhs outputTail rhsTail 0 S J h (hforeign output hbankOutput) (hforeign rhs hbankRhs))
       (hheadersJ.fresh 122 (by simp))
       (by simpa [replicaFactoryHeaderValue] using hheadersJ.masters (121,113) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide))
@@ -142,7 +142,7 @@ theorem releasedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
           exact hfresh k hk)
   refine ⟨v₂,F,replicaCouplingHeaderCost (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band H.origin (H.origin+H.span)+n₂,
     Ds,hu₂.trans hu₁,by unfold releasedReplicaCouplingCost; omega,.seq he₁.toExec he₂,hcountF,hout,hrhsF,
-    hreadyF,hmeta,hL₂.trans hL₁,hi₂,ho₂,?_,hlen,?_,hgood,?_,hcount,hrows,hfreshF⟩
+    hreadyF,hmeta,hL₂.trans hL₁,hi₂,ho₂,?_,hlen,?_,hgood,?_,hcount,hrows,hfreshF,replicaCouplingResiduals_bounds H Ds hlen hgood⟩
   · intro k hk hp
     exact (hframe₂ k hk hp).trans (hforeign k hk)
   · simpa only [hheadersJ.fresh 125 (by simp),List.append_nil] using harchive

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3577 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3579 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22270,3 +22270,34 @@ and selected coupling ledger, and feed the residual archive to boundary recovery
 and the second interior pass. Global endpoint scheduling, tensor/R4 restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 329048 declarations at 3239.8 MiB.
+
+
+### S4 checkpoint: derive coupling sizing and archived residual bounds
+
+`PhaseCellReplicaCouplingBounds` instantiates the existing packed geometry-width
+and analytic coefficient-word theorems from `ReplicaHaloProblem`. The retained
+metadata width covers the complete coupling interval geometry, and the selected
+execution word width fits every generated coefficient. The released-bank caller
+and interior-to-coupling bridge no longer accept separate geometry-fit or
+coefficient-fit premises. The bridge also derives matrix dominance through the
+existing `H.dominates` theorem from the manuscript's precision/width inequalities.
+
+`PhaseCellReplicaCouplingResidualBounds` proves a uniform dyadic stencil count
+using the executable square-root band, then applies the existing guarded-row
+norm theorem to each actual residual witness. Every archived field has norm
+at most `2^(rhsExp+32*p+6)` and fits the unchanged execution word width. A
+structural lemma lifts this over the arbitrary residual list; the caller
+returns these facts for the entire physical archive. No arithmetic code or
+precision choice changes, and no replica-specific finite checks are added.
+
+Guarded checks pass at 2138.5 MiB (derived geometry/coefficient fits), 2188.6 MiB
+(residual norm and word fits), 2232.3 MiB (released caller with derived bounds)
+and 2206.1 MiB (interior bridge). Compatibility with native setup and selected
+row resources passes (14852 jobs, 2.8 GiB combined peak).
+
+Next transport fresh extended tapes from the initialized layout rather than
+requiring final-bank freshness, attach the local arithmetic workspace and
+selected coupling ledger, and use the bounded residual archive for boundary
+recovery and the second interior pass. Global endpoint scheduling, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 329058 declarations at 3234.4 MiB.
