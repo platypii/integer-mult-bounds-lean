@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3845 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3848 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26012,6 +26012,42 @@ compatibility build passes (15904 jobs, 2.9 GiB combined peak); the axiom audit
 passes for 336604 declarations at 3395.5 MiB. Next connect the released numerical
 bank/header loader to this prepared cached traversal and replace the first-pass
 caller branch. Explicit cache retirement before recovery is still required.
+Factory/header integration, combined caller workspace, distinct-core
+amortization, tensor/R4 composition, layout restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: released first-pass bank feeds cached coupling and mask retirement
+
+`Mult.PhaseCellReleasedCachedReplicaCoupling` reloads coupling headers from the
+actual retained masters and runs prepared cached coupling in the released
+numerical bank. The control-register separation theorem is now shared with the
+original released caller. This cached execution returns the same ordered
+residual archive, per-row specification, residual size bounds, native counter
+state and external frames, plus the actual generated cache masks. Its shared
+setup bill includes header loading once and uses the cached transition cost.
+
+`Mult.PhaseCellInitializedCachedReplicaInteriorCoupling` composes the actual
+initialized interior trace, real projection/RHS construction and that cached
+released caller. Existing row accuracy and residual/native-cleanup bounds are
+reused. The retained-header transport rule now permits writes to the two cache
+ports, with the old uncached rule a specialization of the common proof. Empty
+initial masks are transported through the interior trace rather than assumed
+again at coupling entry. The resulting masks remain live at this endpoint.
+
+`Mult.PhaseCellRetireCouplingMasks` supplies the explicit cleanup operation for
+that endpoint: clear the two masks once, with exact cost equal to the sum of
+`2*streamLength+2` for each stream. Its native push bound is zero, so retirement
+needs no additional intermediate workspace. The exact state and spectator
+frame support restoration of the empty-cache recovery interface.
+
+Guarded checks pass at 2238.5 MiB (released cached coupling), 2159.1 MiB
+(retained-header rule), 3287.5 MiB (initialized cached interior composition) and
+2086.7 MiB (retirement with workspace). Complete scoped compatibility builds
+pass (15906 jobs, 10.7 GiB combined peak; final retirement closure 15907 jobs,
+2.7 GiB). The axiom audit passes for 336623 declarations at 3396.6 MiB. Next
+compose retirement with the executed cached first pass, restore its shared-bank
+interface and substitute it into the complete first-pass/recovery caller.
 Factory/header integration, combined caller workspace, distinct-core
 amortization, tensor/R4 composition, layout restoration and outer integration
 remain open. S4 is incomplete; kappa is unchanged.

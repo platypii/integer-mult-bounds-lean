@@ -9,12 +9,12 @@ master language. The actual setup frame transports every master once. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host ScalarPlacement
 
-theorem PackedHaloRetainedHeaders.of_coupling_setup
+theorem PackedHaloRetainedHeaders.of_cached_coupling_setup
     {A P stage q l s t u band a b V' w : ℕ} {S F : Stacks 168 A}
     (hmasters : CouplingMasterHeaders P q w s t u band a b S)
     (hstage : (S.R 118).length = stage) (hlevel : (S.R 120).length = l)
     (hgeometry : CouplingIntervalMetadata V' s t band a b a (b-a) F)
-    (hframe : ∀ k : Fin 168, 117 ≤ k.val → k ∉ replicaCouplingSetupPorts → F.R k = S.R k) :
+    (hframe : ∀ k : Fin 168, 117 ≤ k.val → k ∉ replicaCouplingSetupPorts → k ≠ 159 → k ≠ 161 → F.R k = S.R k) :
     PackedHaloRetainedHeaders P stage q l s t u band a b V' w F := by
   constructor
   · apply hmasters.of_frame
@@ -26,8 +26,22 @@ theorem PackedHaloRetainedHeaders.of_coupling_setup
     · simp only [couplingMasterPorts,replicaCouplingSetupPorts,List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff] at hk ⊢
       norm_num at hk ⊢
       omega
+    all_goals
+      simp only [couplingMasterPorts,List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff] at hk ⊢
+      norm_num at hk ⊢
+      omega
   · exact hgeometry
-  · rw [hframe 118 (by decide) (by decide)]; exact hstage
-  · rw [hframe 120 (by decide) (by decide)]; exact hlevel
+  · rw [hframe 118 (by decide) (by decide) (by decide) (by decide)]; exact hstage
+  · rw [hframe 120 (by decide) (by decide) (by decide) (by decide)]; exact hlevel
+
+theorem PackedHaloRetainedHeaders.of_coupling_setup
+    {A P stage q l s t u band a b V' w : ℕ} {S F : Stacks 168 A}
+    (hmasters : CouplingMasterHeaders P q w s t u band a b S)
+    (hstage : (S.R 118).length = stage) (hlevel : (S.R 120).length = l)
+    (hgeometry : CouplingIntervalMetadata V' s t band a b a (b-a) F)
+    (hframe : ∀ k : Fin 168, 117 ≤ k.val → k ∉ replicaCouplingSetupPorts → F.R k = S.R k) :
+    PackedHaloRetainedHeaders P stage q l s t u band a b V' w F := by
+  exact PackedHaloRetainedHeaders.of_cached_coupling_setup hmasters hstage hlevel hgeometry
+    (fun k hk hnot _ _ => hframe k hk hnot)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

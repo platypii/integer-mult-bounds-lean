@@ -13,7 +13,7 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {s T Q A : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T Q A U}
 
-private theorem couplingControls_nodup {plan : ReplicaInteriorPlacement T}
+theorem replicaCouplingControls_nodup {plan : ReplicaInteriorPlacement T}
     (placement : ReplicaCouplingPlacement plan) (output rhs : Fin T)
     (houtput : ∀ k, plan.gather k ≠ output) (hrhs : ∀ k, plan.gather k ≠ rhs)
     (hbankOutput : ∀ k, placement.bank k ≠ output) (hbankRhs : ∀ k, placement.bank k ≠ rhs)
@@ -127,7 +127,7 @@ theorem releasedReplicaCoupling_exec (H : ReplicaHaloProblem s) {plan : ReplicaI
   obtain ⟨v₂,F,n₂,Ds,hu₂,hn₂,he₂,hcountF,hout,hrhsF,hreadyF,hmeta,hL₂,hi₂,ho₂,hframe₂,hlen,harchive,hgood,hpage,hcount,hrows,hfreshF,hnativeF,hsharedF⟩ :=
     preparedReplicaCoupling_exec (body := body) H placement (plan.gather 123) output rhs (plan.gather 125)
       (plan.gather 104) (plan.gather 105) (plan.gather 122)
-      (couplingControls_nodup placement output rhs houtput hrhs hbankOutput hbankRhs hsep)
+      (replicaCouplingControls_nodup placement output rhs houtput hrhs hbankOutput hbankRhs hsep)
       (by intro i k hk
           simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
           rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl
