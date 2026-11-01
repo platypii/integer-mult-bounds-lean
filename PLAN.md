@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3887 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3888 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26595,3 +26595,30 @@ stock passes at 3386.4 MiB. The scoped compatibility build passes (15949 jobs,
 3402.1 MiB. Next connect distinct-core scheduling/amortization and reuse these
 per-core certificates, followed by tensor/R4 composition, layout restoration
 and outer integration. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: sum distinct-core setup before volume absorption
+
+`Cost.PhaseCellDistinctCoreSetup.selectedDistinctCoreSetup_volume_le` proves a
+structural list estimate: if an axis schedule has at most `2*t` records and each
+setup costs `C*t^e*p^k`, the total, with any fixed scale, is eventually at most
+`T`. The proof sums the uniform polynomial first, increasing its axis exponent
+once, then applies existing axis-polynomial absorption. It does not multiply
+an already-absorbed per-core `T` bound by the number of cores. Filtered/grouped
+schedules can reuse the same list statement with their own count bound.
+
+`selectedCoreFactorySchedule_volume_le` instantiates the actual executed
+ordinary-header factory bill on every `coreIndices` entry. Existing core-slot
+geometry bounds the count, including the short final core, by `2*s ≤ 2*t`.
+The numerical factor construction is reused through its established selected
+polynomial estimate. `selectedCoreCachedCouplingSchedule_volume_le` applies the
+same abstraction to the complete cached coupling shared bill, including
+headers, coefficients, masks and retirement. Each total shared bill fits one
+volume reserve, independent of the replica count.
+
+The guarded check passes at 3388.8 MiB. The scoped compatibility build passes
+(15955 jobs, 3.5 GiB combined peak); the axiom audit passes for 336834 declarations
+at 3406.0 MiB. Executable scheduling of the new cached caller still needs its
+restoring descriptor-step/cleanup interface and connection to the existing
+shared-peak descriptor scheduler. The remaining shared bills and row traffic
+must use the same sum-before-absorption ledger. Tensor/R4 composition, layout
+restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
