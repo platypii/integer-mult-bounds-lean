@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3839 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3841 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25922,3 +25922,35 @@ transported by its restored bank frame. Shared mask generation, full cached
 first-pass integration, factory/header integration, combined workspace,
 distinct-core amortization, tensor/R4 composition, layout restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: cached counted coupling loop and its full fast bound
+
+`replicaCouplingTraversal_exec` factors the existing counted replica proof over
+a row-transition executor with the common cursor, residual endpoint and bank
+frame. The archive/order/accuracy induction is proved once. The established
+uncached loop now instantiates that generic theorem, retaining its program and
+statement.
+
+`Mult.PhaseCellCachedReplicaCouplingLoop` instantiates the same traversal with
+`ReplicaCouplingCursor.couple_cached`. Full shared-bank restoration transports
+both cached mask streams through each replica automatically. The returned
+residual ordering, per-replica accuracy, restored input queues and spectator
+frames are the same as the existing traversal.
+
+`Cost.PhaseCellCachedReplicaCouplingLoopFast` includes staging, retirement and
+counted control overhead in the per-transition bound. The complete loop costs
+at most `2+D*replicaCount*(t+(t-s)*band^2)*p^(129/128)` at linear word and metadata
+widths. No repeated geometry-table charge or squared-axis premise is used.
+Shared mask generation remains outside the loop and is not assumed free.
+
+Guarded checks pass at 2217.8 MiB (generic/original traversal), 2200.0 MiB
+(cached execution) and 3361.0 MiB (full cached-loop fast bound). The complete
+scoped compatibility build passes (15900 jobs, 36.9 GiB combined peak). The axiom
+audit passes for 336583 declarations at 3396.8 MiB. Next
+generate the first-pass masks once, connect cached runtime initialization and
+loop execution, and handle mask retirement/switching before recovery's mask
+initialization. The existing complete caller still uses uncached first-pass
+coupling until that integration is proved. Factory/header integration, combined
+workspace, distinct-core amortization, tensor/R4 composition, layout restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
