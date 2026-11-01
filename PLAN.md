@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3602 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3606 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22617,3 +22617,38 @@ generation, archive loading, full row/recovery iteration, workspace/selected
 resources, global scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 332310 declarations at 3294.3 MiB.
+
+### S4 checkpoint: stage the original RHS and all owned recovery input prefixes
+
+`PhaseCellStageReplicaRecoveryRhs` consumes one original-RHS prefix from the
+queue on 93 into the recovery bank on 110. Recovery's existing contract only
+requires lengths for the old residual and output prefixes: it overwrites their
+contents. Two counted allocations therefore supply these owned prefixes on
+110 and 132 without retaining or copying discarded numerical fields. Borrowed
+suffixes and scratch are preserved. The exact cost is `14*rowSymbols+14`.
+
+`PhaseCellPrepareReplicaRecoveryInputs` composes this staging with the proved
+disposable count/mask seeding. Only the RHS queue, owned prefixes and disposable
+headers change. `PhaseCellReplicaRecoveryInputBank` transports the prepared
+factor bank/pages, coupling masters and interval metadata through this frame.
+
+`PhaseCellReplicaRecoveryInputs` specializes the structural trace to the actual
+encoded RHS and the retained boundary headers. It derives all dimensions and
+scratch facts from `ReplicaBoundaryRhsReady`, installs the exact unary boundary
+count and common mask required by recovery, and returns numerical readiness.
+Its exact cost is `14*span*wordWidth+4*boundaryCount+6*span+24`. This is physical
+preparation; the principal-system RHS accuracy still comes from the problem's
+matching row witness when the recovery theorem is applied.
+
+Guarded checks pass at 1935.3 MiB (RHS staging), 1934.9 MiB (complete preparation),
+3148.6 MiB (bank/masters/geometry frame) and 3196.8 MiB (concrete input caller).
+Compatibility with the retained boundary row and existing packed recovery passes
+(15112 jobs, 3.4 GiB combined peak). Default proof limits are unchanged.
+
+Next instantiate the existing recovery theorem on this prepared state, align
+its target with the actual boundary solution, and retire/archive the recovered
+row before advancing the original-RHS cursor. Shared factor generation, global
+archive loading/row iteration, workspace/selected resources, global scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+The scoped axiom audit passes for 332330 declarations at 3295.1 MiB.
