@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3681 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3683 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23751,3 +23751,33 @@ second interior and assembly in one physical caller, and close the whole
 caller's resource bounds. Generated-factory composition, scheduling, tensor/R4
 restoration and outer integration remain open. S4 is incomplete; kappa unchanged.
 Scoped axiom audit passes for 334034 declarations at 3329.4 MiB.
+
+### S4 checkpoint: place final assembly and extend the established recovery caller
+
+`PhaseCellPlacedReplicaRecoveryAssembly` places the checked 12-role assembly
+scan in a 392-register caller. It consumes the actual `RealReplicaHaloOutput`
+at 247 and boundary archive at 257, using the retained geometry mask at 386
+and width/count masters at 94/121. Disposable count 390 and mask 299 are kept
+separate from the output archive at fresh register 391. The theorem derives
+row specifications from actual second-pass fields, executes the full selector
+scan and returns exact restored input suffixes and the certified output archive.
+Stock-aware embedding preserves the single-row workspace reserve while counting
+all spectator storage once; no intermediate small-bank execution is assumed.
+
+`PhaseCellReplicaRecoveryBatchPlacement` extends the old caller map rather than
+replacing its numerical/factor placement. Preparation's original 255-role worker
+retains its existing image. The computed RHS archive uses new register 389 and
+the preparation loop counter uses 390. Its mask and boundary archive are proved
+to coincide with assembly's 386/257 inputs. The map is structurally injective,
+and preparation cannot touch the fresh assembled-output register 391. Only
+the small fixed assembly port map uses a finite kernel check.
+
+Both new modules pass guarded checks under default limits: 3262.5 MiB (placed
+assembly) and 3256.7 MiB (extended preparation map). Compatibility with actual
+preparation, executed second-pass fast bounds and generated recovery passes
+(15439 jobs, 5.8 GiB combined peak). Next lift preparation into this common
+caller, transport its actual gather/solver and retained archive frames through
+the second pass, and compose the three traces. Whole-caller resource bounds,
+generated-factory composition, scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334053 declarations at 3336.6 MiB.
