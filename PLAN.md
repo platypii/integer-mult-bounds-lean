@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3999 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4001 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28161,3 +28161,46 @@ Expanded compatibility build passes (16562 jobs, 3.5 GiB combined peak).
 Guarded checks pass at 3391.9 MiB (readiness/frame language) and
 3400.8 MiB (composed crop/normalization, including the exact cost identity).
 Broad axiom audit passes for 341937 declarations at 3545.1 MiB.
+
+### S4 checkpoint: complete computed normalized local recovery execution
+
+`Mult.PhaseCellPackedJobMasterInput` derives InverseMasterInput directly
+from the existing core job's Bcore and fit/room proofs. Recovery and
+normalization can therefore share the scalar width and bank without an
+additional width choice. The actual raw constructor's master values are
+identified with this input.
+
+`Mult.PhaseCellComputedNormalizedRecovery.normalized_exec` closes the local
+execution chain: ordinary unary dimensions and original complex halo payload
+feed master generation, raw recovery, real/imaginary pairing, generated crop
+controls, crop/archive retirement, generated normalization parameter queue,
+final rounding/common-width publication and final master erasure. Expensive
+master generation runs once. The program is independent of the mathematical
+job; only its fixed wiring and numerical program bounds enter the syntax.
+
+The normalization support/frame language preserves ordinary readiness through
+master setup and recovery, including supported private work registers that
+were initially blank. The actual output has the existing global rowTarget
+and rowError at the job's p/W format, in explicit reverse replica order. The
+exact final state has the recovery work bank empty and normalized output
+prepended only to the designated destination; the intermediate result source,
+parameter queue, crop controls, normalization controls and master bank restore.
+No computed factor/header, prepared parameter packet, numerical output or
+execution witness is supplied.
+
+normalizedTimeCost and normalizedStock retain all setup, raw, pairing, crop,
+queue, normalization and retirement bills. The same returned execution has
+the stock trace. Final master cleanup adds time without stock. These are
+local exact bills, not yet the grouped S4 asymptotic bound.
+
+Next reconcile reverse replica order with the publication contract, instantiate
+concrete ambient wiring, and use the existing structural scan/exposure
+interfaces to execute ordered groups. Sum the complete per-job setup and
+workspace bills before any selected-axis absorption; do not spend a shared
+T allowance independently per record. Tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa unchanged.
+
+Expanded compatibility build passes (16564 jobs, 3.5 GiB combined peak).
+Guarded checks pass at 3375.3 MiB (job scalar-width bridge) and 3451.9 MiB
+(complete normalized local execution). Broad axiom audit passes for
+341951 declarations at 3545.0 MiB.
