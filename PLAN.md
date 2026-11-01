@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4023 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4024 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28682,3 +28682,34 @@ Guarded file check passes at 3480.5 MiB.
 Expanded compatibility passes (16586 jobs, 3.6 GiB combined peak). Broad
 axiom audit passes for 342086 declarations at 3549.1 MiB, permitting only
 propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: fixed postprocessing setup has one selected-axis allowance
+
+`Cost.PhaseCellComputedRecoverySharedPostprocess.recoveryPostprocessTime_zero_poly`
+reuses `preparedNormalizePackedBatchCost_zero_poly` for scalar rounding and
+publication, and adds actual pairing-width generation, crop/archive controls,
+retirement, ordinary normalization queue generation and scalar cleanup.
+For ordinary dimensions and native/common/scalar widths bounded by Z, the
+complete zero-replica postprocessing bill is at most `2000000*t*Z^3`.
+Endpoint/core/halo containment and the actual computed precision discharge
+the geometric and normalization-width premises.
+
+`selectedRecoveryPostprocessSetup_volume_le` applies the existing structural
+`selectedDistinctCoreSetup_volume_le` theorem to the whole job list. Under
+linear selected width bounds `Z=cZ*p` and the existing class-size bound, any
+fixed multiple of the summed zero-replica postprocessing bill is eventually
+at most one shared T allowance. This is a bound on actual computed caller
+costs, not a prepared setup or execution premise. Replicas do not multiply
+this setup allowance, and no allowance is spent independently per job.
+
+Remaining scalar/master base work and shared raw input stock still need to
+be combined with this bound and the grouped traffic/numerical estimates for
+a full fast execution theorem. Next finish master/seed/header setup estimates
+and instantiate the complete class cost profile. Concrete ordinary-bank
+readiness, ambient exposure/publication, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa unchanged.
+Guarded file check passes at 3501.9 MiB. Expanded compatibility passes
+(16587 jobs, 3.6 GiB combined peak). Broad axiom audit passes for 342089
+declarations at 3549.2 MiB, permitting only propext, Quot.sound and
+Classical.choice.
