@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4021 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4022 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28606,3 +28606,41 @@ Expanded compatibility passes (16584 jobs, 5.9 GiB combined parallel peak).
 Guarded checks pass at 3457.6 MiB (summed computed scan) and 3468.4 MiB
 (summed class lifecycle). Broad axiom audit passes for 342065 declarations
 at 3548.9 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: postprocessing replica work is bounded by total halo symbols
+
+`Cost.PhaseCellComputedRecoveryPostprocess` reuses the existing
+`preparedNormalizePackedBatchCost_affine` and
+`normalizePackedReplicaCost_le_volume` language. The actual job's computed
+precision identifies the native normalization width; no independent width
+or affine certificate is assumed. `recoveryPostprocessTime_affine` gives
+an exact zero-replica plus N-times-replica decomposition for physical pairing,
+generated crop controls, crop/archive retirement, scalar normalization and
+common-width publication.
+
+`recoveryPostprocessReplicaTime_le` proves the full repeated charge is at
+most `138*((b-a)*W)+62`, using actual halo/core containment, native-width fit
+and rounded-width fit. `recoveryPostprocessScheduleTime_le` sums by the
+actual encoded halo volumes, giving
+`sum(postprocess r Fs.length) ≤ sum(postprocess r 0) +
+ N*(138*sum((b-a)*W)+62*jobCount)` for a shared replica count.
+
+`computedRecoveryAuxiliaryTime_eq` connects this directly to the complete
+auxiliary ledger. `computedRecoveryAuxiliaryScheduleTime_le` retains all
+remaining preparation and zero-replica postprocessing bills while replacing
+the repeated pairing/crop/normalization cost by the grouped volume bound.
+The remaining preparation includes master generation, seed/header work,
+descriptor production/traffic and master retirement; its descriptor and seed
+terms may still depend on replica count and have not yet been bounded or
+asymptotically absorbed. No shared T charge is spent per core.
+
+Next bound those remaining preparation/scalar/descriptor sums, then apply
+selected class volume/setup estimates to the actual summed-time execution.
+Concrete ordinary-bank readiness, ambient exposure/publication and tensor/R4
+restoration remain open. S4 is incomplete; kappa unchanged.
+
+Guarded file check passes at 3477.5 MiB.
+Expanded compatibility passes (16585 jobs, 3.6 GiB combined peak). Broad
+axiom audit passes for 342077 declarations at 3550.5 MiB, permitting only
+propext, Quot.sound and Classical.choice.
