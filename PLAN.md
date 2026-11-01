@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3963 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3967 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27644,3 +27644,53 @@ Guarded checks pass at 3221.4 MiB (generic restored generator), 3307.1 MiB
 3379.8 MiB (executed generator-to-seed bridge). Expanded compatibility build
 passes (16525 jobs, 13.2 GiB combined observed peak); axiom audit passes for
 341487 declarations at 3522.7 MiB.
+
+### S4 checkpoint: one uniform computed recovery call restores all setup banks
+
+`Mult.PhaseCellComputedRecoveryPlan` packages scalar/master and raw-recovery
+register wiring. Both plans contain maps, injectivity and separation facts
+only, never solutions, numerical batches or execution premises. Explicit
+separation protects scalar registers, ordinary parameters, auxiliary scratch
+and p/W/N seeds from the private bank and output register. The program
+is independent of the mathematical job and input list: it generates/restores
+scalar masters, runs complexRecoveryFromSeeds and erases the exported masters.
+
+`Mult.PhaseCellInverseMasterInput` packages ordinary scalar dimensions and
+format bounds separately. Its ofCuts constructor derives every room/fit
+premise from inverseCallerWordWidth_fits_cuts and inverseInputScalars_fit,
+using the standard ambient scalar width uniformly over local endpoints.
+
+`Mult.PhaseCellComputedRecoveryBudgets` names state-independent lifecycle
+bills. recoverySeedCopyCost_eq transfers the actual temporary-state copying
+cost to the geometric seed-value function, avoiding repeated concrete bank
+expansion. Exported-master retirement costs exactly
+2*sum(masterValues)+21; numerical program constants remain symbolic.
+
+`Mult.PhaseCellComputedRecoveryExec` proves the complete actual call: eight
+ordinary scalar inputs, p/W/N seeds, one original complex payload and blank
+owned storage suffice. Generated master values establish seed readiness;
+header arithmetic, normalization, factor generation, recovery and descriptor
+retirement execute through the existing physical theorems. The exported master
+bank is then erased. The result has certified RawRecoveryJob.output data;
+scalar workspace, masters, source, clock and spectators restore, while the
+private bank is empty and output is prepended to result. The only master
+identity premise is algebraic and is supplied by the existing actual
+ofComplexBounds_masterValues theorem. No computed header, factor, serialized
+descriptor or execution witness is supplied by the caller.
+
+Time is masterInput.timeCost + recoveryLifecycleTime + master retirement.
+The entire same execution has stock allowance masterInput.stock +
+recoveryLifecycleStock; push-free final cleanup adds time without additional
+stock. Traces are composed over the original ambient state.
+
+Next instantiate the wiring in the supplier layout, lift this uniform call
+through ordered core classes with the existing supplier-loop pattern, and
+sum unabsorbed bills before selected-axis absorption. Connect physical
+exposure and output pairing/cropping/publication, then tensor/R4 restoration
+and outer integration. S4 is incomplete; kappa is unchanged.
+
+Guarded checks pass at 3418.5 MiB (wiring), 3218.1 MiB (scalar input and
+standard width constructor), 3408.8 MiB (exact bills) and 3426.9 MiB (complete
+computed execution). Expanded compatibility build passes (16529 jobs, 3.5 GiB
+combined observed peak, mostly replayed); axiom audit passes for 341616
+declarations at 3534.8 MiB.
