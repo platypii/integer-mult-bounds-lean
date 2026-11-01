@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3816 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3817 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25441,3 +25441,30 @@ Guarded module check passes at 3272.6 MiB. Compatibility build passes
 boundary factor pages to `ReplicaRecoveryPreparationReady` in the common caller;
 retain a shared factory across replicas. Distinct-core amortization, tensor/R4
 composition, layout restoration and outer integration remain open. S4 is incomplete.
+
+
+### S4 checkpoint: actual residual and RHS archives initialize recovery preparation
+
+`Mult.PhaseCellReplicaRecoveryArchiveHandoff` composes the existing restoring
+RHS scan with an ordered residual transfer. It copies the retained original RHS
+into the worker queue and moves the first-pass residual archive into its worker
+port without changing row order. The resulting
+`ReplicaRecoveryPreparationCursor` is proved at index zero from the actual
+residual list and its per-replica accuracy contract. Both preexisting queue tails
+and the boundary/recovery output tails are retained.
+
+The execution bound charges the restoring RHS scan and four operations per
+residual byte plus the transfer overhead. Its exact final bank changes only the
+RHS queue, residual queue and consumed source archive; left stacks, input/output
+and other right registers are preserved. The theorem is structural over an
+injective worker placement and uses existing scans, with no per-replica proof
+unrolling.
+
+Guarded module check passes at 3249.1 MiB. Compatibility build passes
+(15787 jobs, 3.5 GiB combined peak). The scoped axiom audit passes for
+336459 declarations at 3394.0 MiB. Next instantiate the handoff in the common
+392-register caller and carry factor/core readiness through its explicit frame;
+the archive cursor alone does not establish complete preparation readiness.
+Combined coupling workspace, shared boundary factory integration, distinct-core
+amortization, tensor/R4 composition, layout restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
