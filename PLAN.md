@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3528 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3534 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21712,3 +21712,48 @@ queue and zero accumulator from ordinary inputs, then attach selected resource
 acceptance. Recovery, global scheduling and tensor/R4 restoration remain open;
 S4 is incomplete and kappa is unchanged.
 The scoped axiom audit passes for 326909 declarations at 3174.3 MiB.
+
+### S4 checkpoint: construct the physical key queue and packed accumulator
+
+`PhaseCellRetainedHaloLengthKeys` composes existing candidate discovery and
+positive/deduplicating selection using retained metadata width. It preserves
+all existing headers, borrows the queue suffix, emits the actual positive key
+count and retires the private table. The older `prepareHaloLengthKeys` now calls
+this same operation after its width generation; its signature and final bank
+are preserved. `PhaseCellOriginLoadStock` shares the structural native bound
+for arbitrary header-load schedules between key discovery and paired-page
+preparation. Key discovery has native push bound three and a checked workspace
+allowance from its own control-work bill.
+
+`PhaseCellPlacedHaloLengthKeys` embeds that operation into the gather bank and
+moves its generated count from 86 to the real loop's port 119. Port 86 is
+restored, and only the physical queue and loop count change. Selection has at
+most six keys, so the count transfer adds at most fourteen steps. No widths,
+length schedule, or per-key readiness witnesses are provided by the caller.
+
+`PhaseCellReplicaAccumulator` reuses the ordinary zero-line allocator with the
+retained replica count and per-row symbol volume. It constructs exact bounded
+encoded zero rows, preserving the borrowed output suffix and original RHS.
+Its time is `allocateZeroLineCost N (span*w)` and its workspace is twice that
+native bill. Zero-row length, encoded range and flattening are structural facts
+used by the actual initialization invariant.
+
+`PhaseCellInitializedReplicaHaloLoop` composes accumulator initialization,
+physical key discovery and the conditional all-key loop from ordinary headers
+and released numerical banks. It constructs the full initial loop invariant;
+no supplied key queue, output-row witnesses or per-class execution contract
+remains. Its final invariant supplies existing halo-interior accuracy and full
+gather restoration. Time includes both constructors and the full key-loop sum;
+stock counts the initial store once plus the native constructor allowances and
+actual per-key allowances. Shared padding remains a selected-geometry fact.
+
+Guarded checks pass at 1990.1 MiB (retained selection), 1975.9 MiB (old API
+refactor), 1958.3 MiB (shared header-load bound), 1963.0 MiB (key control stock),
+2100.0 MiB (physical key/count placement), 2080.3 MiB (accumulator), 2163.0 MiB
+(initialized pass) and 2094.4 MiB (paired-page stock refactor). Compatibility
+with the older loop and current linear ledgers passes (14552 jobs, 7.6 GiB
+combined peak). Next attach selected time/stock acceptance to this initialized
+pass, then compose shared coupling/recovery, boundary solve and the second
+interior pass. Global distinct-key scheduling, tensor/R4 restoration and outer
+integration remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 327086 declarations at 3179.9 MiB.

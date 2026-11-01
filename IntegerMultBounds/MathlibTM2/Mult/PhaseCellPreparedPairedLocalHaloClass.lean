@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloClassLoad
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPairedLocalHaloController
-public import IntegerMultBounds.MathlibTM2.Mult.ChirpBankLoadStock
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginLoadStock
 
 /-! Generate both origin pages from ordinary retained unary geometry, then release
 all private table state. The scan is restricted to the current halo. -/
@@ -23,16 +23,6 @@ def preparedPairedLocalHaloClass : Pr P₀ 117 Q A U :=
 def preparedPairedLocalHaloClassCost (V s t band a b L : ℕ) :=
   (104*V+137)+haloClassHeadersCost s t band a b L V+
     pairedLocalHaloControllerCost V s t band a b L+(62*V+63)
-
-private theorem loadOriginList_native (rs : List (Fin 117 × Fin 16)) :
-    mnNativePushBound 3 (loadOriginList (P₀ := P₀) (Q := Q) (A := A) (U := U) rs) := by
-  induction rs with
-  | nil => simp [loadOriginList,mnNativePushBound,mnActPush]
-  | cons r rs ih =>
-    refine ⟨?_,ih⟩
-    simp [tblLoad1,bclear,toBinary,bzero,zeroBits,umulSym,scanR,keepIn,eachSym,countIter,incrField,incStep,setCarry,
-      moveR,moveStep,whileR,popPush,uclear,drainR,popDo,pushN,peekR,
-      mnNativePushBound,mnActPush]
 
 theorem preparedPairedLocalHaloClass_native :
     mnNativePushBound 3 (preparedPairedLocalHaloClass (P₀ := P₀) (Q := Q) (A := A) (U := U)) := by
