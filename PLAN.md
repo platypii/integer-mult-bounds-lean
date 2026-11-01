@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3545 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3551 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21872,3 +21872,49 @@ coupling/boundary bank, then compose recovery and the second interior pass.
 The global endpoint/supplier schedule, tensor/R4 restoration and outer
 integration remain open. S4 remains incomplete; kappa is unchanged.
 The scoped axiom audit passes for 327580 declarations at 3204.0 MiB.
+
+### S4 checkpoint: aligned physical coupling rows and a proved staging cursor
+
+`PhaseCellReverseCopyRows` instantiates the existing `restoringRowScan` with
+native prefix copy and archive operations. It copies uniform rows in reverse
+row order, preserving each row's symbol order, restores the complete original
+source and releases all scratch. Its time is `N*(16*V+19)+6`; its certified
+workspace allowance is twice that native bill. This avoids separate full-stream
+copy/reversal passes and exactly matches the interior solver's publication
+order.
+
+`PhaseCellPrepareReplicaCouplingRows` applies this scan to the retained original
+RHS at gather 124, using the existing replica-count and row-volume headers.
+It produces an actual RHS queue in `Fs.reverse` order alongside the projected
+output, preserving all gather headers, the original RHS and the bounded real
+output. Both queues have arbitrary borrowed suffixes.
+
+`PhaseCellStageReplicaCouplingRow` uses the retained volume header twice to
+consume matching field/RHS row prefixes into coupling destinations, preserving
+symbol order and restoring counters and scratch. Its exact cost is `12*V+12`
+and its workspace is certified from native pushes. `PhaseCellReplicaCouplingCursor`
+tracks actual remaining row queues and the replica index. Its concrete staging
+transition advances both queues once, returns the matching original RHS with
+its proved magnitude bound, and retains the field's realness, fit, stable
+magnitude and original accuracy target. Frame transport supports the intervening
+coupling computation; the final cursor proves both borrowed queue suffixes are
+released exactly. No per-row execution oracle remains in this staging theorem.
+
+`PhaseCellInitializedReplicaCouplingRows` composes real projection and RHS queue
+construction after an actual initialized interior trace and constructs cursor
+zero. `Cost/PhaseCellReplicaCouplingRowsResources` includes this work in selected
+fast-time and local-stock ledgers. The arithmetic constant/exponent are unchanged;
+only explicit linear native traffic and endpoint constants are added.
+
+Guarded checks pass at 1960.8 MiB (restoring reverse copy), 2163.9 MiB (aligned
+RHS preparation), 1941.5 MiB (paired staging), 2170.5 MiB (cursor transition,
+frame transport and release), 2153.9 MiB (composed initialized constructor), and
+3205.7 MiB (selected resources). Compatibility with retained page coupling and
+the older loop passes (14758 jobs, 3.4 GiB combined peak). Next place coupling's
+extended workspace in released numerical storage, preserving gather 121/123/124;
+its old logical extended registers overlap these retained inputs if used in place.
+Then prepare shared coupling headers/counters/pages and instantiate the actual
+per-replica coupling body at the staging cursor. Boundary solve, recovery and
+second-pass composition, global endpoint scheduling, tensor/R4 restoration and
+outer integration remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 328487 declarations at 3218.7 MiB.
