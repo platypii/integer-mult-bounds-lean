@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3821 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3823 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25523,3 +25523,29 @@ first-pass outputs; these placed execution theorems alone do not finish that
 connection. Combined coupling workspace, distinct-core amortization, tensor/R4
 composition, layout restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: execute physical setup and archive installation together
+
+`Mult.PhaseCellPlacedReplicaRecoverySetup` lifts the existing physical boundary
+setup into the 392-register caller. A proved placement identity identifies its
+worker with the preparation worker. Setup preserves the complete native bank,
+the full gather bank, left stacks and the three new archive/control ports.
+Its numerical implementation and cost proof are reused unchanged.
+
+`Mult.PhaseCellPreparedReplicaRecoveryArchives` composes this setup with the
+placed archive handoff. Complete preparation readiness now follows from actual
+execution, retained factor/core data and the first-pass residual contract; the
+physical boundary readiness premise is discharged by setup. Original queue
+tails remain the caller's tails and the preparation count at port 390 survives.
+The combined time bound includes both setup and archive movement.
+
+Guarded checks pass at 3292.8 MiB (placed setup) and 3297.9 MiB (composed
+setup/handoff). Compatibility build passes (15802 jobs, 3.4 GiB combined peak).
+The scoped axiom audit passes for 336495 declarations at 3390.0 MiB.
+Next compose this executed prefix with cached recovery and assembly, preserving
+the peripheral gather language. First-pass/factory integration must still
+provide the retained shared bank and compatible ordinary headers. Combined
+coupling workspace, distinct-core amortization, tensor/R4 composition, layout
+restoration and outer integration remain open. S4 is incomplete; kappa is
+unchanged.
