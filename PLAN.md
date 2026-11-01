@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3830 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3831 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25768,3 +25768,36 @@ ordinary-header premises through the frames. Physical factory input-header
 integration, combined prefix/coupling workspace, distinct-core amortization,
 tensor/R4 composition, layout restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: first pass and cached recovery execute as one caller
+
+`Mult.PhaseCellFirstCachedReplicaRecovery.firstCachedReplicaRecovery_exec`
+executes the initialized first interior pass, residual coupling, native cleanup,
+physical setup, archive installation, cached boundary/recovery preparation,
+the shared second interior pass and final assembly as one 392-register program.
+The first pass supplies its actual residual archive, factor/shared-bank data
+and peripheral readiness to recovery. No residual or post-first-pass recovery
+readiness is assumed at that boundary. Generated factor data remain an initial
+premise pending composition with the shared factory.
+
+The theorem returns actual output words and the existing per-replica assembly
+certificates. `firstCachedReplicaRecoveryTime` gives one closed time allowance,
+including the generated native-cleanup bound instead of a cost depending on
+an existential intermediate machine state. The preparation count, queue tails,
+mask ports, left compatibility and private setup buffers are transported through
+existing structural frames.
+
+The first-pass result now exposes the two actual retained queue tails, shared
+header frame and native-cleanup bound. `firstReplicaPassTime` names its existing
+bill. A generic worker-left restoration lemma combines native restoration with
+high spectators; this supplies the complete preparation worker's left language.
+
+Guarded checks pass at 3288.0 MiB (worker-left restoration), 3316.0 MiB
+(first-pass join facts) and 3340.4 MiB (composed caller). Compatibility build
+passes (15813 jobs, 3.5 GiB combined peak). The scoped axiom audit passes for
+336540 declarations at 3391.6 MiB. Combined first-pass/preparation
+workspace and selected time for the composed caller remain open. Physical
+factory input-header integration, distinct-core amortization, tensor/R4
+composition, layout restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.

@@ -115,4 +115,18 @@ theorem replicaRecoveryBatchCoupling_factor_left_frame {S F : Stacks 392 A}
   · exact replicaRecoveryBatchCoupling_worker_left_frame hframe
       (Fin.castLE (by decide : 242 ≤ 257) k) (by change 117 ≤ k.val; omega)
 
+/-- The complete preparation worker's left bank is restored by the first pass. -/
+theorem replicaRecoveryBatchCoupling_worker_left_restored {S F : Stacks 392 A}
+    (hnative : (embStk weightCacheCoreReg (embStk replicaRecoveryBatchInterior.solver F)).L =
+      (embStk weightCacheCoreReg (embStk replicaRecoveryBatchInterior.solver S)).L)
+    (hframe : ∀ k, (∀ i, replicaRecoveryBatchInterior.gather i ≠ k) →
+      (∀ i, replicaRecoveryBatchInterior.solver i ≠ k) → (247 : Fin 392) ≠ k → F.L k = S.L k) :
+    (embStk replicaRecoveryPreparationCallerWorkerReg F).L =
+      (embStk replicaRecoveryPreparationCallerWorkerReg S).L := by
+  rw [replicaRecoveryBatchCoupling_native_view F,replicaRecoveryBatchCoupling_native_view S] at hnative
+  funext k
+  by_cases hk : k.val < 117
+  · exact congrFun hnative ⟨k.val,hk⟩
+  · exact replicaRecoveryBatchCoupling_worker_left_frame hframe k (by omega)
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -16,6 +16,12 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {s Q A : ℕ} [NeZero s] {P U : Type} {body : P → Pr P 392 Q A U}
 
+def firstReplicaPassTime {s : ℕ} [NeZero s] (H : ReplicaHaloProblem s) : ℕ :=
+  (allocateZeroLineCost H.Fs.length (H.span*H.wordWidth)+
+        (placedHaloLengthKeysCost s H.t H.band H.origin (H.origin+H.span) H.metadataWidth+
+          (((haloLengthKeys s H.t H.band H.origin (H.origin+H.span)).map (fun L => H.keyCost L+3)).sum+2)))+
+        realReplicaRowsCost H.Fs.length (H.span*H.wordWidth)+reverseCopyRowsCost H.Fs.length (H.span*H.wordWidth)+releasedReplicaCouplingCost H
+
 theorem firstReplicaPass_shared_exec (H : ReplicaHaloProblem s) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (hspan : H.span+H.band ≤ s) (horigin : H.origin < s)
     (R K : ℕ)
@@ -47,10 +53,7 @@ theorem firstReplicaPass_shared_exec (H : ReplicaHaloProblem s) (hR : rpStates �
     (hprivate : ∀ k : Fin 248, 242 ≤ k.val →
       S.L (replicaRecoveryPreparationNativeReg k) = [] ∧ S.R (replicaRecoveryPreparationNativeReg k) = []) :
     ∃ v' F m, ∃ Ds : List (ZMod s → GaussianInt), v'.user = v.user ∧
-      m ≤ (allocateZeroLineCost H.Fs.length (H.span*H.wordWidth)+
-        (placedHaloLengthKeysCost s H.t H.band H.origin (H.origin+H.span) H.metadataWidth+
-          (((haloLengthKeys s H.t H.band H.origin (H.origin+H.span)).map (fun L => H.keyCost L+3)).sum+2)))+
-        realReplicaRowsCost H.Fs.length (H.span*H.wordWidth)+reverseCopyRowsCost H.Fs.length (H.span*H.wordWidth)+releasedReplicaCouplingCost H ∧
+      m ≤ firstReplicaPassTime H ∧
       Exec body (initializedReplicaInteriorCoupling replicaRecoveryBatchCoupling 247 248 hR hQ) (mk v S) m (mk v' F) ∧
       Ds.length = H.Fs.length ∧ F.R 125 = Ds.flatMap (fun D => cstream A H.wordWidth (packedInterval H.origin H.span D)) ∧
       (∀ j : Fin Ds.length, ReplicaCouplingResidualSpec H (H.Fs.length-1-j.val) (Ds[j.val]'j.isLt)) ∧
@@ -66,7 +69,14 @@ theorem firstReplicaPass_shared_exec (H : ReplicaHaloProblem s) (hR : rpStates �
         (∀ i, replicaRecoveryBatchInterior.gather i ≠ k) →
         (∀ i, replicaRecoveryBatchInterior.solver i ≠ k) →
         (247 : Fin 392) ≠ k → (248 : Fin 392) ≠ k → F.R k = S.R k) ∧
-      ReplicaRecoveryPeripheralReady H buffers {F with R := Function.update F.R 125 []} := by
+      ReplicaRecoveryPeripheralReady H buffers {F with R := Function.update F.R 125 []} ∧
+      F.R (replicaRecoveryPreparationCallerWorkerReg 93) = buffers.solverOutputTail ∧
+      F.R (replicaRecoveryPreparationCallerWorkerReg 110) = buffers.rhsTail ∧
+      (∀ k : Fin 168, 117 ≤ k.val → k ∉ replicaCouplingSetupPorts →
+        F.R (replicaRecoveryBatchCoupling.bank k) = S.R (replicaRecoveryBatchCoupling.bank k)) ∧
+      releaseReplicaCouplingNativeCost (embStk replicaRecoveryPreparationNativeReg F) ≤
+        replicaCouplingNativeCleanupBound (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band
+          H.origin (H.origin+H.span) := by
   have hg (k : Fin 126) : replicaRecoveryBatchInterior.gather k ≠ (247 : Fin 392) ∧
       replicaRecoveryBatchInterior.gather k ≠ (248 : Fin 392) := by
     constructor <;> intro he <;> have hv := congrArg Fin.val he <;>
@@ -90,7 +100,22 @@ theorem firstReplicaPass_shared_exec (H : ReplicaHaloProblem s) (hR : rpStates �
       hp hwidth hblank hfresh
   obtain ⟨hdata,hshared⟩ := hfactor.batch_first_pass_shared_bank H target columns buffers.rhsTail
     hnative hleft hright hready hshare hwork (hretained hmasters hstage hlevel) hprivate hfreshF hrows hpage hcount
-  refine ⟨v',F,m,Ds,hu,hm,he,hlen,harchive,hgood,hdata,hshared,hrhsHeaders,hout,hrhs,hnative,hleft,hright,?_⟩
+  have h93 : F.R (replicaRecoveryPreparationCallerWorkerReg 93) = buffers.solverOutputTail := by
+    rw [replicaRecoveryBatchCoupling_native_view F] at hcounter
+    have hh := congrFun hcounter 93
+    simpa [counterR,cr,OutputPlacement.code,replicaCouplingUnaryBank,unaryCopiesR,replicaCouplingHeaderCopies,releasedCellBank,embStk,replicaRecoveryPreparationNativeReg,Function.update_apply,Fin.ext_iff] using hh
+  have h110 : F.R (replicaRecoveryPreparationCallerWorkerReg 110) = buffers.rhsTail := by
+    rw [replicaRecoveryBatchCoupling_native_view F] at hready
+    exact hready.source
+  have hcleanupF : releaseReplicaCouplingNativeCost (embStk replicaRecoveryPreparationNativeReg F) ≤
+      replicaCouplingNativeCleanupBound (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band
+        H.origin (H.origin+H.span) := by
+    apply releaseReplicaCouplingNativeCost_le_of_generated _ (2^15*H.p) H.precision H.wordWidth
+      s H.t H.u H.band H.origin (H.origin+H.span) buffers.rhsTail buffers.solverOutputTail S.inp S.out
+    rw [replicaRecoveryBatchCoupling_native_view F] at hcounter
+    intro i
+    exact congrFun hcounter i
+  refine ⟨v',F,m,Ds,hu,hm,he,hlen,harchive,hgood,hdata,hshared,hrhsHeaders,hout,hrhs,hnative,hleft,hright,?_,h93,h110,hshare,hcleanupF⟩
   have hgClear (k : Fin 126) :
       ({F with R := Function.update F.R 125 []} : Stacks 392 A).R (replicaRecoveryBatchInterior.gather k) =
         S.R (replicaRecoveryBatchInterior.gather k) := by
