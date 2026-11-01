@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3645 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3648 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23408,3 +23408,35 @@ combined execution and transport the factory data through that prefix. Executed
 factory input production, old-geometry retirement, complete time/workspace
 bounds, scheduling, tensor/R4 restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: initialized interior trace finishes through complete recovery
+
+`PhaseCellInitializedReplicaInteriorRecovery` attaches actual real-row projection
+and aligned RHS construction to the shared coupling/recovery caller. Its finish
+theorem consumes the existing initialized interior `ExecWithin` witness and loop
+state, then returns one execution from the original state through accurate
+full-halo recovery. Numerical factors, retained masters, shared scratch and
+private-bank freshness are supplied only in the original state, and transported
+through the executed prefix. No intermediate factor certificate, residual archive,
+coupling cursor or recovery readiness is assumed. The output retains both recovery
+readiness certificates and reusable factor data, with the sum of the existing
+interior, real-row, reverse-copy and coupling/recovery time bills.
+
+`Host.RegisterFrame` introduces register ownership over both left and right
+stacks and monotonicity of structural footprints. The generated gather/interior
+footprints are generalized once to this language, retaining their used right-side
+interfaces. `PhaseCellReplicaInteriorRecoveryFrame` proves the shared/factor caller
+registers lie beyond the interior controller, then derives both stack frames.
+The loop's actual released-native-bank certificate supplies restored low scratch;
+there is no second per-replica preservation proof. The unused handoff right-only
+wrapper has a restore note pointing to a2bf2c9e.
+
+Guarded checks pass at 1390.5 MiB (register frame), 2121.7 MiB (generated gather
+footprint), 2140.9 MiB (interior footprint), 3259.2 MiB (caller spectator frame)
+and 3322.4 MiB (complete prefix composition), under default limits. The scoped
+compatibility build passes (15408 jobs, 14.0 GiB combined peak), and the axiom
+audit passes for 333514 declarations at 3316.0 MiB. Next instantiate the finish
+theorem with `initializedReplicaHaloLoop_exec_within` and carry the complete
+resource bounds. Executed factory input production, old-geometry retirement,
+complete time/workspace bounds, scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
