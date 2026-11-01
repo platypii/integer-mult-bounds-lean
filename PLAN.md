@@ -26479,3 +26479,31 @@ The guarded check passes at 3377.6 MiB. The scoped compatibility build passes
 declarations at 3401.8 MiB. Next account for factory resources and initial
 storage, then distinct-core scheduling/amortization, tensor/R4 composition,
 layout restoration and outer integration. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: physical factory and cached caller share one stock trace
+
+`generatedFirstCachedReplicaRecovery_exec_within` now proves the complete
+physical execution's intermediate-store bound, including factory setup and
+retained generated factor storage. The factory is a closed program, so its
+actual fixed atomic-push coefficient times its one-time time bill supplies a
+stock allowance through `mn_native_exec_within`. `mn_seq_within_add` joins that
+allowance to the existing cached caller workspace. The repeated numerical
+caller retains its structural shared-reserve proof; its time is not charged as
+workspace. The fixed factory push coefficient is irreducible to avoid repeated
+expansion of the large program.
+
+The original correctness theorem is now a direct projection of the stronger
+resource theorem, with the same assembly certificates, endpoints and time bill.
+The named full allowance is factory push times `generatedReplicaBoundaryFactoryCost`
+plus `firstCachedReplicaRecoveryWorkspace`. This accounts for factor production
+and storage relative to the ordinary-header initial store, but selected-size
+absorption of the complete factory bill and the initial input-store bound still
+need to be connected. The existing selected packed-factor polynomial/volume
+estimates offer the direct route, avoiding a separate workspace induction through
+every factorization loop.
+
+The guarded file check passes at 3388.4 MiB. The complete scoped compatibility
+build passes (15940 jobs, 3.5 GiB combined peak); the axiom audit passes for
+336766 declarations at 3403.1 MiB. Selected factory absorption, initial storage,
+distinct-core scheduling/amortization, tensor/R4 composition, layout restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
