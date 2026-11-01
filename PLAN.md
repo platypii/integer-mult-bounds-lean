@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3739 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3743 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24417,3 +24417,31 @@ Whole-caller workspace, selected resource inequalities, first-pass/generated
 factory integration, scheduling, tensor/R4 restoration and outer integration
 remain open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334296 declarations at 3338.8 MiB.
+
+
+### S4 checkpoint: generated interval guards and row counts have bounded execution
+
+`PhaseCellCountedRestoredCouplingIntervalStock` includes the native binary-to-unary
+row count before the bounded restored interval, preserving the original
+exact output and time bill. Its reserve adds three times the linear count
+setup bill to the established interval reserve.
+
+`PhaseCellIntervalGuardStock` obtains the closed guard generator's atomic
+push bound and transfers it through register placement. No procedure-body
+resource assumption is needed. `PhaseCellGeneratedRestoredCouplingIntervalStock`
+composes guard generation, row counting and the complete restored interval.
+`PhaseCellGeneratedRestoredPackedCouplingIntervalStock` specializes that trace
+to the actual packed source and RHS fields using the existing window and
+output identities. The numerical reserve is still charged once per interval;
+only native setup/restoration traffic contributes the additional terms.
+
+Guarded checks pass at 2070.6 MiB (closed guard certificate), 2105.1 MiB
+(counted interval), 2122.3 MiB (generated interval) and 2102.6 MiB (packed
+field specialization). Next bound local ribbon setup/release and result
+feeding, then carry the shared interface into packed recovery RHS and
+preparation. Whole-caller workspace, selected resource inequalities,
+first-pass/generated-factory integration, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Compatibility with the actual batched recovery time theorem passes
+(15404 jobs, 2.7 GiB combined peak). Scoped axiom audit passes for
+334304 declarations at 3339.2 MiB.
