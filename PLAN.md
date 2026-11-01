@@ -23048,3 +23048,21 @@ production, post-factory coupling/core readiness, preceding interior/coupling,
 workspace/selected bounds, global scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 333358 declarations at 3314.5 MiB.
+
+### S4 checkpoint: recovery core discharges shared boundary setup geometry and scratch
+
+`retainedReplicaBoundarySetup_of_core_exec` derives phase geometry, word width,
+all low multiplier/mask scratch and native temporaries from the existing
+`ReplicaRecoveryCoreReady`. The only extra physical premises are row-volume
+251 and fresh persistent 248/249/250/252/253/254. Its actual setup execution
+returns both boundary RHS readiness and the unchanged recovery-core contract.
+No numerical factor, coefficient page or geometry certificate is reconstructed.
+
+The guarded file check passes at 3277.4 MiB with default limits; compatibility
+with the executed factory and placed recovery caller passes (15268 jobs,
+3.5 GiB combined peak). Next copy the actual gather row-volume master once into
+the retained extension and compose shared setup with the caller. Factory input
+production, post-factory coupling/core readiness, preceding interior/coupling,
+workspace/selected bounds, global scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 333359 declarations at 3313.4 MiB.

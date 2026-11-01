@@ -79,4 +79,56 @@ theorem retainedReplicaBoundarySetup_exec (H : ReplicaHaloProblem s) (hA : 4 ≤
   rw [embStk_ovr replicaBoundaryPhaseReg_injective]
   exact hready
 
+theorem retainedReplicaBoundarySetup_of_core_exec (H : ReplicaHaloProblem s) (W : ℕ) (hA : 4 ≤ A)
+    (v : HS 255 Q A U) (S : Stacks 255 A)
+    (hcore : ReplicaRecoveryCoreReady H W (embStk (Fin.castLE (by decide : 248 ≤ 255)) S))
+    (hvolume : (S.R 251).length = H.span*H.wordWidth)
+    (hblank : ∀ k ∈ ([248,249,250,252,253,254] : List (Fin 255)), S.R k = []) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ initializeReplicaBoundaryRhsCost H ∧
+      Exec body retainedReplicaBoundarySetup (mk v S) n (mk v' (retainedReplicaBoundarySetupState H S)) ∧
+      ReplicaBoundaryRhsReady H (embStk replicaBoundaryPhaseReg (retainedReplicaBoundarySetupState H S)) ∧
+      ReplicaRecoveryCoreReady H W
+        (embStk (Fin.castLE (by decide : 248 ≤ 255)) (retainedReplicaBoundarySetupState H S)) := by
+  have hfixed (i : Fin 242) (hi : i ∉ [116,117,118,120,123,124,167]) :
+      (embStk replicaBoundaryPhaseReg S).R i = S.R (Fin.castLE (by decide) i) := by
+    change S.R (replicaBoundaryPhaseReg i) = _
+    rw [replicaBoundaryPhaseReg_fixed i hi]
+  have hmeta : CouplingIntervalMetadata H.metadataWidth s H.t H.band H.origin (H.origin+H.span) H.origin H.span
+      (embStk (Fin.castLE (by decide : 168 ≤ 242)) (embStk replicaBoundaryPhaseReg S)) := by
+    apply hcore.geometry.of_frame
+    · exact hfixed 163 (by decide)
+    · intro k hk
+      apply hfixed
+      simp only [couplingIntervalPorts,List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff,Fin.castLE] at hk ⊢
+      norm_num at hk ⊢
+      omega
+  have hnative (i : Fin 242) (hi : i.val < 117) (h93 : i.val ≠ 93) (h110 : i.val ≠ 110)
+      (h116 : i.val ≠ 116) : S.R (Fin.castLE (by decide) i) = [] :=
+    hcore.native ⟨i.val,hi⟩ (by intro h; exact h93 (congrArg Fin.val h))
+      (by intro h; exact h110 (congrArg Fin.val h)) (by intro h; exact h116 (congrArg Fin.val h))
+  obtain ⟨v',n,hu,hn,he,hphysical,hview⟩ := retainedReplicaBoundarySetup_exec (body := body) H hA v S
+    hmeta (by change (S.R (replicaBoundaryPhaseReg 123)).length = _; simpa using hvolume)
+    (by rw [hfixed 130 (by decide)]; exact hcore.masters.width)
+    (by
+      intro k hk
+      rw [hfixed k (by
+        simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff]
+        norm_num
+        omega)]
+      exact hnative k (by omega) (by omega) (by omega) (by omega))
+    (by
+      intro k hk
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+      · rw [hfixed 104 (by decide)]; exact hnative 104 (by decide) (by decide) (by decide) (by decide)
+      · rw [hfixed 105 (by decide)]; exact hnative 105 (by decide) (by decide) (by decide) (by decide)
+      · exact hblank 253 (by decide)
+      · exact hblank 248 (by decide)
+      · exact hblank 249 (by decide)
+      · exact hblank 250 (by decide)
+      · exact hblank 252 (by decide)
+      · rw [hfixed 143 (by decide)]; exact hcore.rhs
+      · exact hblank 254 (by decide))
+  exact ⟨v',n,hu,hn,he,hphysical,by rw [hview]; exact hcore⟩
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
