@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3952 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3955 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27490,3 +27490,46 @@ Guarded checks pass at 3380.8 MiB (sparse header interface), 3388.6 MiB
 (installer) and 3421.2 MiB (full lifecycle from retained headers). Scoped
 compatibility build passes (16167 jobs, 1.1 GiB combined observed peak, mostly
 replayed); axiom audit passes for 339125 declarations at 3470.4 MiB.
+
+### S4 checkpoint: inverse master generation is reusable by raw recovery
+
+`Mult.PhaseCellGenerateInverseMasters` extracts the existing physical inverse
+master generator from the publication-job interface. Eight ordinary parameter
+headers, blank storage and scalar-room inequalities now suffice to generate
+the ten numerical masters, with the original exact time/stock bounds, table
+fits and spectator frame. The program and native-bound declarations retain
+their original names; the existing generateSupplierMasters_exec API is a
+short specialization using PackedNormalizedJob.factoryMasters_eq_inverse.
+The binary table generation and master-copy execution proof is shared, not
+repeated for raw jobs.
+
+`Mult.PhaseCellInverseInputScalarFits` moves the existing scalar-fit theorem
+unchanged into a lower module shared by master generation and final rounding.
+This removes the generic generator's dependency on the full publication caller.
+PhaseCellDerivedInverseRoundBatch re-exports the same theorem through its new
+import; its rounding proof is unchanged.
+
+`Mult.PhaseCellRawRecoveryMasterValues` identifies the actual mathematical
+RawRecoveryJob.ofComplexBounds numerical masters with inverseMasterValues.
+The proof uses the constructor profile and boundaryHaloTarget_sizing before
+unfolding execution precision, preserving the extra component accuracy bit.
+The ten master roles are identified with the corresponding live complex
+recovery header ports. Thus the existing executed scalar generator computes
+the correct values for raw jobs, without a publication-job conversion.
+
+Next physically assemble these ten computed masters with geometry metadata,
+word width, local volume, precision p, common packet width, span and replica
+counts into the retained-header installer. The standard
+inverseCallerWordWidth_fits_cuts theorem supplies scalar-room premises; its
+use in PackedCoreJob gives the existing pattern. Then compose ordered classes
+and sum exact lifecycle bills before selected-axis absorption. Output pairing,
+cropping/publication and tensor/R4 restoration remain open. S4 is incomplete;
+kappa is unchanged.
+
+Guarded checks pass at 3228.8 MiB (shared scalar fits), 3219.2 MiB (generic
+master generation), 3309.4 MiB (publication specialization), 3296.9 MiB
+(existing rounding module) and 3383.6 MiB (actual raw-master identification).
+Expanded compatibility build passes (16517 jobs, 37.1 GiB combined observed
+peak), including the older exposed-core supplier and selected body-budget
+modules. The correspondingly expanded axiom audit passes for 341444
+declarations at 3519.6 MiB.
