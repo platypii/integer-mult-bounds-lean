@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3634 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3635 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23142,3 +23142,29 @@ factory input production and the preceding interior/coupling trace. Complete
 workspace/selected bounds, global scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 333387 declarations at 3313.8 MiB.
+
+### S4 checkpoint: paid native coupling cleanup supplies recovery's native language
+
+`PhaseCellReleaseReplicaCouplingNative` clears the coupling-owned native ports
+below 117 while retaining payload ports 93/110. Its structural `clearWords`
+execution has the exact actual-symbol cost
+`2*sum(nativeWordLengths)+2*ownedPortCount+1`; no large finite certificate or
+parameter-dependent program is introduced. Every right port at or above 117
+and all left/host tapes remain unchanged. The existing prepared-bank recovery
+frame proves generated factors/workspace survive even as native counters clear.
+
+`ReplicaRecoveryCoreReady.of_coupling_release` assembles recovery readiness from
+the retained master/geometry headers, actual shared coefficient page/count,
+clean shared workspace/private temporaries and numerical factor bank. The native
+blankness field comes from the actual cleanup, rather than an assumed transition
+from coupling's live arithmetic headers. Port 116 is cleared as well.
+
+The guarded check passes at 3258.5 MiB with default limits. Compatibility with
+shared factory and initialized recovery caller passes (15271 jobs, 3.5 GiB
+combined peak). Next place cleanup between the actual coupling loop and shared
+boundary/recovery setup, and bound its native-word sum from the actual coupling
+bank. Actual factory input/header production and remaining shared readiness must
+also join the trace. Complete workspace/selected bounds, global scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+The combined scoped axiom audit passes for 333404 declarations at 3315.9 MiB.
