@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3802 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3804 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25240,3 +25240,30 @@ Guarded checks pass at 3369.2 MiB (caller affine workspace and trace
 transport) and 3359.1 MiB (selected payload bound). Compatibility build
 passes (15754 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
 336410 declarations at 3388.3 MiB.
+
+
+### S4 checkpoint: retained boundary numerical scratch fits selected volume
+
+`Cost.PhaseCellRecoveryNumericalWorkspace` proves uniform polynomial scratch
+bounds for `realWeightWorkspace`, `realScalarWorkspace` and the complete
+`preparedResidualSolveWorkspace`. One common envelope bounds widths, dimensions
+and the fixed push coefficients. Existing multiplication cost growth is used
+only to bound the scalar worker's shared scratch certificate; it is not
+multiplied by the replica count. Normalization, unscaling, reciprocal and
+band-column workspaces are all included.
+
+`Cost.PhaseCellSelectedRecoveryNumericalWorkspace.selectedBoundarySolveWorkspace_volume_le`
+instantiates the actual retained recovery boundary solver and its
+`BoundarySolvePushBounds`. Its ordinary format, boundary cardinality and
+`12*band+1` width are derived from selected geometry. Any fixed multiple of
+this real numerical scratch bill fits below whole-box volume eventually,
+uniformly in the selected axis and without a workspace-value oracle.
+
+Next price cached coupling/preparation scratch and shared interior factory
+storage, then close the complete selected workspace bound. First-pass/generated-
+factory integration, distinct-core scheduling/amortization, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Guarded checks pass at 3159.7 MiB (generic numerical scratch bounds) and
+3323.5 MiB (selected actual boundary workspace). Compatibility build passes
+(15745 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for 336414
+declarations at 3388.0 MiB.
