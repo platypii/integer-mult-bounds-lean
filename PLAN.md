@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3736 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3737 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24373,3 +24373,23 @@ Whole-caller workspace, selected resource bounds, first-pass/generated-factory
 integration, scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334287 declarations at 3336.8 MiB.
+
+
+### S4 checkpoint: register placement preserves the complete interval reserve
+
+`PhaseCellPlacedRetainedCouplingIntervalStock.placedRetainedCouplingIntervalLoop_exec_within`
+lifts the complete bounded spatial interval into the actual 168-register
+lifecycle. The original time bill and exact output, cursor, mask and page
+archives are retained. The reserve remains
+`realWeightWorkspace K w (2*band+1)+13000*(band+1)*(w+1)`, independent
+of interval length. The generic embedding/trace-uniqueness helper transfers
+the local bound; the original endpoint rewrite handles register placement.
+
+Guarded single-file check passes at 2098.3 MiB. Compatibility with the actual
+batched recovery time theorem passes (15398 jobs, 2.8 GiB combined peak).
+Next bound native interval restoration and setup, then connect recovery RHS
+collection and the preparation traversal. Whole-caller workspace, selected
+resource inequalities, first-pass/generated-factory integration, scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+Scoped axiom audit passes for 334289 declarations at 3338.7 MiB.
