@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3630 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3631 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22999,3 +22999,30 @@ integration remain open. S4 is incomplete; kappa is unchanged.
 Compatibility with actual initialized interior/coupling passes (15157 jobs,
 3.4 GiB combined peak). The combined scoped axiom audit passes for 332529
 declarations at 3296.7 MiB.
+
+### S4 checkpoint: actual shared factory supplies the replica numerical contract
+
+`PhaseCellReplicaBoundaryFactory.replicaBoundaryFactory_exec` specializes the
+existing executed factory to the replica problem and recovery target. Its
+`ReplicaBoundaryFactorData` contains exactly the prepared-column certificate,
+Schur table error, concrete factor-page meanings and reusable numerical bank
+required by the recovery caller. Width is the factory's `12*band+1`. The proved
+boundary sizing aligns factory precision/word width with the actual interior
+and residual words; the numerical proof is reused unchanged. Analytic factory
+premises follow from the replica problem, using `abs α` to provide the positive
+square root already determined by its hypotheses.
+
+The factory runs from `replicaBoundaryFactoryInput`, the canonical ordinary
+master/geometry bank. `replicaBoundaryFactoryInput_eq` factors the sizing
+transport separately so the execution proof avoids traversing the large program
+with simplification. The guarded check passes at 3303.2 MiB under default limits.
+Compatibility with the placed recovery caller passes (15263 jobs, 3.5 GiB combined
+peak).
+
+This supplies actual generated numerical certificates, but physical production
+of the canonical input bank and composition of factory cleanup with coupling
+page/geometry and recovery readiness are still open. The preceding actual
+interior/coupling execution must also join the caller. Workspace/selected bounds,
+global scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 333352 declarations at 3313.2 MiB.
