@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4028 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4032 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28789,3 +28789,42 @@ Expanded compatibility passes (16591 jobs). Guarded checks pass at
 and 3507.2 MiB (complete selected fast bound). Broad axiom audit passes
 for 342097 declarations at 3549.7 MiB, permitting only propext, Quot.sound
 and Classical.choice.
+
+
+### S4 checkpoint: actual proper-core families discharge the complete cost profiles
+
+`Mult.PhaseCellCoreJobRawRecovery.ofCoreCommon_rawRecoveryJob` identifies
+the proper-core job's raw recovery constructor with the established
+`RawRecoveryJob.ofComplexBounds` construction. It is a structural equality
+of arbitrary jobs, not a concrete tape-bank comparison.
+
+`Cost.PhaseCellSelectedComputedCoreWidths.selectedComputedCoreSetup_profile`
+derives all nine setup-width facts from ordinary selected p/u/l/target,
+canonical scalar width and common packet width. It reuses the existing
+selected caller/common-width bounds, ring-log bound, actual native fit and
+a structural band-width estimate.
+
+`selectedCoreClassComputed_profile` transports the existing seven raw
+class profile/geometry/volume estimates through the constructor equality.
+A generic mapped-list sum equality carries coordinate, halo and sparse-local
+volumes without repeating those geometry proofs. It also supplies the common
+replica fields and newly derived scalar/common/native-width profile.
+
+`Cost.PhaseCellSelectedComputedCoreClassTime.selectedComputedCoreClass_time_le`
+instantiates the complete `6*T+F*N*t*(1+band^2/d)*p^(129/128)` summed core
+bound for the actual indexed proper-core family built from mathematical halo
+bounds. It derives binary caller-width fit as well. There is no supplied
+raw profile, setup-width bound, summed volume bound or per-core fast estimate;
+only the established mathematical halo/geometry hypotheses remain.
+
+Next pay class preparation, scan and final count cleanup and lift this
+family cost theorem to the actual restoring execution. Concrete ordinary-bank
+readiness and ambient exposure/publication still need composition with
+tensor/R4 restoration. S4 is incomplete; kappa unchanged.
+
+Guarded specialized class-cost check passes at 3491.8 MiB.
+Expanded compatibility passes (16595 jobs, 3.6 GiB combined peak). Guarded
+checks pass at 3401.6 MiB (raw constructor bridge), 3445.8 MiB (derived setup
+widths) and 3452.5 MiB (class profile). Broad axiom audit passes for 342104
+declarations at 3554.8 MiB, permitting only propext, Quot.sound and
+Classical.choice.
