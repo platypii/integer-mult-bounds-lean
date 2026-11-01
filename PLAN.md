@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3948 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3949 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27425,3 +27425,32 @@ Guarded checks pass at 3028.7 MiB (clock-preserving serializer), 3053.5 MiB
 (raw-job descriptor bridge). Scoped compatibility build passes (16161 jobs,
 3.5 GiB combined observed peak); axiom audit passes for 339087 declarations
 at 3467.7 MiB.
+
+### S4 checkpoint: complete single-job physical complex recovery lifecycle
+
+`Mult.PhaseCellComplexRecoveryRun` composes physical complex descriptor
+production, the existing budgeted restoring raw scheduler on [r], and physical
+descriptor/clock retirement. The theorem starts with the ordinary complex
+input bank, not a pre-serialized source tape. It returns certified
+RawRecoveryJob.output data, restores the original source suffix and empty
+clock, erases the private bank, preserves spectators and prepends only the
+recovery output to the result register.
+
+Time includes the exact production bill, the exact singleton scheduler budget
+and 9*tape.length+5 for retirement. The same execution has simultaneous-space
+allowance 2*production + (Cprog+1)*schedulerWorkspace + retirement. Each stage's
+trace is transferred to the original ambient bank using intermediate endpoint
+bounds; private/spectator stock is not silently dropped. The proof reuses the
+three existing physical execution theorems and structural frame equalities,
+without changed proof limits or concrete-register case enumeration.
+
+The remaining initial-bank premise includes numerical headers and local span
+metadata. Next generate these from retained supplier metadata, lift this exact
+lifecycle through an ordered class, and sum its unabsorbed bills before the
+selected-axis estimates (do not charge a separate T reserve per job). Output
+pairing/cropping/publication and tensor/R4 restoration remain open. S4 is
+incomplete; kappa is unchanged.
+
+Guarded check passes at 3441.2 MiB. Scoped compatibility build passes
+(16164 jobs, 3.5 GiB combined observed peak).
+Axiom audit passes for 339111 declarations at 3468.0 MiB.
