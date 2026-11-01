@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3620 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3622 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22829,3 +22829,31 @@ outside the 255-register worker bank. Shared-factor production, global loading,
 workspace/selected resources, global scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 332429 declarations at 3296.8 MiB.
+
+### S4 checkpoint: execute every complete recovery row in one counted trace
+
+`PhaseCellCountedBankLoop.countedBankLoop_exec` factors the structural controller
+argument for a closed worker embedded beside an external counter. Counter
+updates leave the entire worker view unchanged; lifting the worker trace
+preserves that counter. The lemma is over arbitrary programs and invariants.
+
+`PhaseCellReplicaRecoveryLoop.replicaRecoveryLoop_exec` instantiates it with the
+actual complete boundary-solve/recovery row and the matched recovery cursor.
+The worker occupies the first 255 registers, with controller 255 outside its
+image. Every residual and original-RHS prefix is consumed. The final recovered
+archive has the exact reversed processing order, fitted words and full-halo
+error `1/2^target` for each matching principal-system solution. Shared factor
+pages, readiness, persistent headers and borrowed suffixes survive the entire
+loop. The time bound is
+`Fs.length*(completeReplicaRowCost H target W+3)+2`.
+
+The guarded checks pass at 1382.1 MiB (generic placed-bank controller) and
+3275.1 MiB (actual recovery loop), with default limits. The loop's result archive
+predicate keeps the exposed statement shallow rather than raising recursion
+limits. Compatibility with initialized replica interior/coupling passes.
+Next generate the controller count and connect actual archive loading and shared
+factor production to this loop. Workspace/selected resources, global scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+Compatibility passes for 15148 jobs at 3.4 GiB combined peak. The combined
+scoped axiom audit passes for 332441 declarations at 3297.5 MiB.
