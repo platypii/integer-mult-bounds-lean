@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3765 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3766 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24804,3 +24804,28 @@ unchanged.
 Compatibility with the bounded caller passes (15682 jobs, 3.5 GiB
 combined peak). Scoped axiom audit passes for 336043 declarations at
 3374.5 MiB.
+
+
+### S4 checkpoint: actual native recovery preparation has an explicit traffic bound
+
+`Cost.PhaseCellRecoveryNativeTraffic.retainedCouplingIntervalNativeCost_le`
+uses the exact numerical/native lifecycle split to bound native coupling by
+scalar-counter preparation, row/guard traffic, and retained-page traffic.
+The bound keeps `prepareCost`, `tblC` and actual coefficient-page length
+explicit; no numerical row multiplication is hidden in a polynomial.
+
+`replicaRecoveryPreparationNativeCost_le` adds actual boundary RHS staging,
+queue allocation, boundary unfolding, collection and mask traffic. Its
+complete allowance is scalar-counter setup plus a product of actual row,
+band and boundary counts with word/metadata/control widths, plus sparse-page
+length times word width. The proof reuses the established lifecycle split
+and expands only native traffic bills.
+
+Guarded module check passes at 3355.3 MiB. Next substitute sparse-page and
+selected width/control estimates, then finish selected time and workspace
+resource bounds. First-pass/generated-factory execution, scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+Compatibility with the bounded caller passes (15551 jobs, 3.5 GiB
+combined peak). Scoped axiom audit passes for 336045 declarations at
+3376.8 MiB.
