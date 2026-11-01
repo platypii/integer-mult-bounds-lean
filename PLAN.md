@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3718 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3724 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24233,3 +24233,40 @@ Whole-caller workspace, selected resource bounds, first-pass/generated-factory
 integration, scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334206 declarations at 3338.1 MiB.
+
+
+### S4 checkpoint: the retained replica boundary row has bounded execution
+
+`BoundarySolvePushBounds` bundles the four shared numerical push certificates
+and exposes their prepared-solve workspace allowance. Packed, halo and replica
+wrappers carry this one contract instead of repeating the individual program
+hypotheses. The bundle supplies resource facts only, never an execution witness.
+
+`PhaseCellPackedPreparedResidualSolveStock` places the bounded complete solve
+beside packed geometry and archives and derives entry readiness from the
+ordinary reusable bank contract. `PhaseCellPackedHaloResidualSolveStock`
+derives the actual residual's numerical input bound; `PhaseCellReplicaBoundarySolveStock`
+identifies its boundary fold and original sizing. All retain the existing
+output and time bill and count the entire placed bank once.
+
+`PhaseCellReplicaBoundaryRowStock` composes a bounded archive-to-RHS prefix
+with that actual replica solve. Its generic finishing rule reuses numerical
+bank replacement/publication facts. The complete physical row's workspace is
+`c*replicaBoundaryRhsCost H+push.workspace q w B.card W`, where `c` is the
+state-independent native-prefix push bound.
+
+`PhaseCellRetainedReplicaBoundaryRowStock` lifts the complete row beside the
+retained recovery masters. Its bounded trace returns the existing exact
+solution/archive state, core readiness, factor pages and physical headers.
+No spectator stock is charged again when lifting the trace.
+
+Guarded checks pass at 3102.6 MiB (push bundle), 3105.3 MiB (packed solve),
+3123.4 MiB (halo residual), 3211.7 MiB (replica solve), 3218.8 MiB (complete
+boundary row), and 3278.1 MiB (retained row). Compatibility with the actual
+batched recovery bill and generated baseline passes (15479 jobs, 3.4 GiB
+combined peak). Next bound recovery RHS construction/collection, compose the
+preparation row and share its reserve through the stock-preserving traversal.
+Whole-caller workspace, selected resource bounds, first-pass/generated-factory
+integration, scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334240 declarations at 3334.6 MiB.

@@ -1,0 +1,70 @@
+module
+
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedPreparedResidualSolveStock
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellHaloResidualNormalization
+public import IntegerMultBounds.NLogN.PhaseCellBoundaryFold
+
+/-! The actual halo residual supplies the complete numerical kernel's input bound. -/
+
+@[expose] public section
+namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
+open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
+  IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host
+  IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.NLogN IntegerMultBounds.NLogN.SchurDominance
+  IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
+  IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
+
+variable {Q A : ℕ} {P U : Type} {body : P → Pr P 242 Q A U}
+
+theorem packedHaloResidualSolve_exec_within (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    (p u l target rhsExp : ℕ) {s : ℕ} [NeZero s] (B : Finset (ZMod s)) (W : ℕ)
+    (columns : List (ZMod s → GaussianInt)) (hp : 2 ≤ p)
+    (a b cellTarget : ℕ) {t : ℕ} {α d : ℝ}
+    (hst : s < t) (hαu : α^2 = (u : ℝ)) (hθ : 0 < (t : ℝ)/s-1)
+    (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1)) (hbudget : α^2*d ≤ p)
+    (hdom : DominatesOn (realMatrix s t p u) Finset.univ (1/(8*(p : ℝ))))
+    (push : BoundarySolvePushBounds (A := A) (U := U) hQ) :
+    let bits := boundaryTableBits p target rhsExp B.card
+    let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+    let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+    let K := factorNewtonSteps p q
+    let AZ := factorRankIntegerMatrix B W columns
+    let Lc := naturalLineLc q K W B.card AZ
+    let Uc := naturalLineUc q K W B.card AZ
+    let rcs := naturalLineRcs q K W B.card AZ
+    PreparedBoundaryColumns A p bits q w W B columns →
+    ∀ (C D : ZMod s → GaussianInt) (x : ZMod s → ℝ),
+    (∀ i, ‖value q (C i)‖ ≤ (2 : ℝ)^rhsExp) →
+    Solves (realMatrix s t p u) (haloInterior s t (PhaseCellBand.width p u) a b) x
+      (fun i => (value q (C i)).re) →
+    PhaseCellInterface.ErrorOn (haloInterior s t (PhaseCellBand.width p u) a b)
+      (fun i => (value q (D i)).re) x (1/(2 : ℝ)^cellTarget) →
+    let b := (bFoldOrder s B).map (fun i => realPartWord
+      (couplingRowField (2^15*p) q t u (PhaseCellBand.width p u) a b false D C i))
+    ∀ (v : HS 242 Q A U) (S : Stacks 242 A),
+    let T := embStk preparedBoundaryCoreReg (embStk packedBoundaryFactorReg S)
+    let σ := boundaryFactorState T
+    PackedPreparedBank q w W B.card S →
+    σ .vk = cstream A w b →
+    PackedBoundaryFactorPages (cstream A w (Lc.map colC).flatten)
+      (cstream A w (Uc.map colC).flatten)
+      (cstream A w (rcs.map fun x => (⟨x,0⟩ : GaussianInt))) S →
+    ∃ v' n, v'.user = v.user ∧ n ≤ preparedResidualSolveCost q w B.card W ∧
+      ∀ depth, ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+        push.workspace q w B.card W) depth (packedPreparedResidualSolve hQ) (mk v S) n
+        (mk v' {S with R := (Function.update (Function.update S.R 143 []) 238
+          (cstream A w ((bandSolveVec q W Lc Uc rcs (b.map (normalizeBoundaryWord q (q/2-1)))).map
+            (unscaleBoundaryWord q))++S.R 238))}) := by
+  dsimp only
+  intro hcolumns C D x hC hx herror v S hbank hvk hpages
+  apply packedPreparedResidualSolve_bank_exec_within (body := body) hQ hA p u l target rhsExp B W columns hp push
+    hcolumns _ (by simp only [List.length_map,bFoldOrder_length]) ?_
+    v S hbank hvk hpages
+  intro z hz
+  obtain ⟨i,hi,rfl⟩ := List.mem_map.mp hz
+  have hn := haloResidual_norm_bound (by omega : 0 < p) hst hαu hθ hgap hbudget
+    a b hdom C D hC x hx herror i
+  exact ⟨(Complex.abs_re_le_norm _).trans hn,(Complex.abs_im_le_norm _).trans hn⟩
+
+end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
