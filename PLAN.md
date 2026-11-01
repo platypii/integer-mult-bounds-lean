@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3829 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3830 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25715,3 +25715,29 @@ with the cleanup/preparation/cached-recovery caller. The physical factory input
 header connection, combined prefix/coupling workspace, distinct-core amortization,
 tensor/R4 composition, layout restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: concrete executed first pass produces the retained recovery bank
+
+`Mult.PhaseCellFirstReplicaPassShared.firstReplicaPass_shared_exec` instantiates
+the actual initialized interior/coupling program in the 392-register placement
+and applies the shared-bank assembler to its returned facts. The initial
+generated factors/workspace, ordinary coupling masters and fresh private buffers
+produce both retained factor data and `ReplicaRecoverySharedBank` at the same
+endpoint as the actual residual archive and its per-replica accuracy contract.
+No post-pass shared-bank readiness or residual archive is assumed.
+
+The result also retains recovery RHS headers, the restored output/RHS ports,
+native left restoration and structural left/right frames for the next caller
+composition. All register-separation facts are discharged from the placements
+and output gap. Time includes allocation, key generation, the interior keys,
+real-row projection, RHS copying and residual coupling.
+
+Guarded check passes at 3305.9 MiB. Compatibility build passes
+(15812 jobs, 3.5 GiB combined peak). The scoped axiom audit passes for
+336529 declarations at 3393.9 MiB. Next carry the restored gather/cache
+peripheral language through this first pass and compose its produced residuals
+and shared bank with the cleanup/preparation/cached-recovery caller. Physical
+factory input-header integration, combined prefix/coupling workspace,
+distinct-core amortization, tensor/R4 composition, layout restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
