@@ -1,7 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareRecoveryCropHeaders
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellIntervalArchiveAccuracy
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryCropArchive
 public import IntegerMultBounds.MathlibTM2.Host.NativePushBoundMono
 
 /-! A generated crop/archive lifecycle from numerical masters and ordinary
@@ -16,8 +15,7 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
 variable {Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P 19 Q A U}
 
 def generatedRecoveryCrop : Pr P 19 Q A U :=
-  .seq prepareRecoveryCropHeaders
-    (.seq (packedCoreArchiveLoop 10 8 9 11 12 13 14 15 7 6 16 17 18) (clearWords [6,7,8,9]))
+  .seq recoveryCropArchive (clearWords [6,7,8,9])
 
 def generatedRecoveryCropCost (q a b offset rows N : ℕ) : ℕ :=
   prepareRecoveryCropHeadersCost q a b offset rows N+
@@ -43,23 +41,9 @@ theorem generatedRecoveryCrop_exec (q a b offset rows : ℕ)
       List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn (haloVertices s (a+offset) (a+offset+rows))
         (packedIntervalRead q (2*q+8) (a+offset)
           (cstream A (2*q+8) (packedInterval (a+offset) rows D)++S.R 12)) z ε) Zs.reverse Ds.reverse := by
-  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := prepareRecoveryCropHeaders_exec (body := body)
-    q a b offset rows Ds.length v S hq ha hb hoffset hrows hN
-    (by intro k hk; apply hblank; simp only [List.mem_cons,List.not_mem_nil,or_false] at hk ⊢; tauto)
+  obtain ⟨v₂,G,n₂,hu₂,hn₂,he₂,hs,hd,hc,hI,hO,hL,hframe,haccuracy⟩ := recoveryCropArchive_exec
+    (body := body) q a b offset rows hfit hpart Zs Ds ε tail v S hq ha hb hoffset hrows hN hblank hsrc hgood
   let F := recoveryCropHeaderState q a b offset rows Ds.length S
-  obtain ⟨v₂,G,n₂,hu₂,hn₂,he₂,hs,hd,hc,hI,hO,hL,hframe,haccuracy⟩ :=
-    packedCoreArchiveLoop_interval_accurate_exec (body := body) 10 8 9 11 12 13 14 15 7 6 16 17 18
-      (by decide) v₁ F q (2*q+8) a (b-a) offset rows hfit hpart Zs Ds ε tail hgood
-      (by simpa [F,recoveryCropHeaderState] using hsrc)
-      (by simp [F,recoveryCropHeaderState]) (by simp [F,recoveryCropHeaderState])
-      (by simp [F,recoveryCropHeaderState]) (by simp [F,recoveryCropHeaderState])
-      (by simp [F,recoveryCropHeaderState])
-      (by
-        intro k hk
-        simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-        rcases hk with rfl | rfl | rfl | rfl | rfl | rfl
-        all_goals simp [F,recoveryCropHeaderState,hblank 13 (by simp),hblank 14 (by simp),
-          hblank 15 (by simp),hblank 16 (by simp),hblank 17 (by simp),hblank 18 (by simp)])
   have hG (k : Fin 19) (hk : k ∈ ([(6 : Fin 19),7,8,9])) : G.R k = F.R k := by
     apply hframe
     all_goals
@@ -97,19 +81,22 @@ theorem generatedRecoveryCrop_exec (q a b offset rows : ℕ)
           · subst k; simpa [hblank 10 (by simp)] using hc
           · rw [hframe k hs' hd' hc']
             simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hk
-            simp [F,recoveryCropHeaderState,Function.update_of_ne hk.1,Function.update_of_ne hk.2.1,
+            simp [recoveryCropHeaderState,Function.update_of_ne hk.1,Function.update_of_ne hk.2.1,
               Function.update_of_ne hk.2.2.1,Function.update_of_ne hk.2.2.2,Function.update_of_ne hc']
   rw [hfinal] at he₃
-  refine ⟨v₃,n₁+(n₂+(2*((2*q+8)+(b-a)+offset*(2*q+8)+rows*(2*q+8))+9)),
-    hu₃.trans (hu₂.trans hu₁),?_,Exec.seq he₁ (Exec.seq he₂ he₃),?_⟩
+  refine ⟨v₃,n₂+(2*((2*q+8)+(b-a)+offset*(2*q+8)+rows*(2*q+8))+9),
+    hu₃.trans hu₂,?_,Exec.seq he₂ he₃,?_⟩
   · unfold generatedRecoveryCropCost
+    unfold recoveryCropArchiveCost at hn₂
     omega
   · simpa [F,recoveryCropHeaderState] using haccuracy
 
 omit [NeZero s] in
 theorem generatedRecoveryCrop_native :
     mnNativePushBound 8 (generatedRecoveryCrop (P := P) (Q := Q) (A := A) (U := U)) := by
-  refine ⟨prepareRecoveryCropHeaders_native,?_,?_⟩
+  change mnNativePushBound 8 (.seq (.seq prepareRecoveryCropHeaders
+    (packedCoreArchiveLoop 10 8 9 11 12 13 14 15 7 6 16 17 18)) (clearWords [6,7,8,9]))
+  refine ⟨⟨prepareRecoveryCropHeaders_native,?_⟩,?_⟩
   · exact mnNativePushBound_mono (by decide : 2 ≤ 8)
       (packedCoreArchiveLoop_interval_native 10 8 9 11 12 13 14 15 7 6 16 17 18)
   · simp [clearWords,uclear,drainR,popDo,peekR,mnNativePushBound,mnActPush]
