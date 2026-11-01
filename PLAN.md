@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4014 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4015 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28454,4 +28454,43 @@ Guarded checks pass at 2952.8 MiB (payload counter) and 3068.3 MiB
 (computed class preparation).
 Expanded compatibility passes (16577 jobs, 3.4 GiB combined peak). Broad
 axiom audit passes for 342040 declarations at 3549.0 MiB, permitting only
+propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: complete computed movement-class lifecycle
+
+`Mult.PhaseCellComputedCoreClassRun.classRun_exec` composes ordinary-dimension
+class preparation, the actual computed counted core scan and final erasure of
+both restored counters. One fixed runtime program generates ordered origins,
+loop count and payload count, reads each origin into ordinary endpoint
+headers, consumes the corresponding halo, executes computed normalized
+ordered recovery, and retires all per-job and per-class temporary storage.
+No prepared numerical setup, output or execution witness is an input.
+
+The proof transports ordinary readiness through the preparation frame and
+uses generated counts to discharge scan readiness. Actual origin-stream and
+payload-volume equalities connect the job list to the movement class.
+Register/support separation preserves source dimensions, reserved banks and
+loop scratch. A structural lemma over arbitrary registers and streams handles
+control erasure independently of numerical execution; it replaces repeated
+large-context cleanup reasoning. All default proof limits remain unchanged.
+
+The exact final state changes only the halo archive (consumed to its supplied
+tail) and accumulated result (actual reversed stack order). The original
+origins suffix and all other tapes restore. `Forall₂ PackedNormalizedJob.output`
+certifies job outputs in their original list order. The same returned run
+has the sum of preparation and shared scan stock; final counter erasure
+adds its explicit time without extra stock. Time charges preparation once,
+the full per-core scan bill and both counter retirements.
+
+This lifecycle still assumes ordinary per-job readiness, compatible ambient
+placement, actual class stream identities and uniform full-cost inequalities.
+Next discharge those for the generated core classes and connect ambient
+exposure/publication. Compare complete grouped bills before spending a shared
+selected-axis T allowance; tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa unchanged.
+
+Guarded file check passes at 3453.9 MiB.
+Expanded compatibility passes (16578 jobs, 3.6 GiB combined peak). Broad
+axiom audit passes for 342046 declarations at 3549.5 MiB, permitting only
 propext, Quot.sound and Classical.choice.
