@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3732 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3736 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24337,3 +24337,39 @@ Whole-caller workspace, selected resource bounds, first-pass/generated-factory
 integration, scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334274 declarations at 3335.9 MiB.
+
+
+### S4 checkpoint: the complete spatial interval loop shares one row reserve
+
+`Host.ExchangeFourStock.mn_exchange_four_size` composes two existing paired
+prefix exchanges over an arbitrary injective eight-role map. Only consumed
+and emitted lengths matter. `PhaseCellSpatialRowStepStockBalance` instantiates
+it for the actual spatial step: guard to coordinate tick, coefficient page to
+restoration archive, RHS to result word, and source word to saved source.
+Their endpoint storage is exactly equal, with arbitrary archive/source tails.
+
+`PhaseCellCountedLoopSharedStock` supplies the workspace-aware counterpart of
+the existing relational counted-loop contract. An arbitrary iteration
+invariant, per-index time bill and bounded nonincreasing body suffice. The
+loop consumes its counter while reusing one body reserve, retaining its
+existing time bound and final invariant. Variable/header changes do not
+contribute stack storage.
+
+`PhaseCellRetainedSpatialIntervalStock.retainedPageSpatialCouplingRowLoop_interval_exec_within`
+now executes the complete interval of actual guarded spatial steps within
+`realWeightWorkspace K w (2*band+1)+13000*(band+1)*(w+1)`, independent of
+interval length. The proof reuses the original numerical/cursor invariant
+and returns the original output, source, guard and coefficient-page archives.
+The new generic exchange theorem provides each completed step's stock fact;
+no numerical reserve is accumulated per spatial row.
+
+Guarded checks pass at 1385.6 MiB (generic four-exchange balance), 2098.3 MiB
+(actual spatial balance), 1406.3 MiB (shared counted-loop rule), and 2128.4 MiB
+(complete spatial interval). Compatibility with the actual batched recovery
+bill and generated baseline passes (15462 jobs, 2.8 GiB combined peak).
+Next lift the bounded interval through the setup/restoration lifecycle and
+packed recovery RHS, then collection and the preparation traversal.
+Whole-caller workspace, selected resource bounds, first-pass/generated-factory
+integration, scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334287 declarations at 3336.8 MiB.
