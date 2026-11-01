@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3627 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3629 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22949,3 +22949,28 @@ one caller placement, then discharge shared-factor production. Workspace/selecte
 bounds, global scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 332481 declarations at 3298.2 MiB.
+
+### S4 checkpoint: recovery and RHS production share the actual coupling placement
+
+`PhaseCellReplicaRecoveryPlacement` gives an injective 259-to-389 caller map
+built structurally from disjoint native/extension/source banks. Its first 168
+ports are exactly the existing standard coupling bank, proved as equality of
+whole stack views. Recovery master 256 maps directly to retained gather 121;
+residual source 257 maps directly to the actual gather-125 coupling archive.
+Controller 255 and RHS source 258 use fresh caller 387/388. There is no runtime
+copy to reconcile the coupling bank, master or residual archive.
+
+`PhaseCellPrepareReplicaRecoveryCallerRhs` instantiates the actual retained-source
+producer in this placement. It uses the future loop controller as restored
+reversal scratch and fills the initially blank owned RHS queue at 388. The
+entire 255-register recovery-worker view remains unchanged. This discharges the
+RHS/gather disjointness and queue ownership requirements concretely rather than
+adding them as caller assumptions.
+
+Guarded checks pass at 2099.0 MiB (placement) and 2150.0 MiB (placed RHS producer),
+with default limits. Compatibility with loaded recovery and actual initialized
+interior/coupling passes (15156 jobs, 2.7 GiB combined peak). Next compose the
+placed RHS producer and loaded recovery, and connect actual shared-factor
+production/readiness. Workspace/selected bounds, global scheduling, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 332523 declarations at 3296.1 MiB.
