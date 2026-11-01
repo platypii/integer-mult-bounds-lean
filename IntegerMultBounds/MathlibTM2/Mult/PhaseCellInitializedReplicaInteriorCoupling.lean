@@ -6,6 +6,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingResidual
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaInteriorFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleasedReplicaCoupling
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInitializedReplicaCouplingRows
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareReplicaRecoveryRhs
 
 /-! Finish an actual initialized interior trace with real row projection,
 matching RHS construction, shared setup and all-replica residual coupling. -/
@@ -70,7 +71,8 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
         H.origin (H.origin+H.span) (embStk placement.bank S) →
         (S.R (placement.bank 118)).length = H.stage+1 → (S.R (placement.bank 120)).length = H.l →
         PackedHaloRetainedHeaders (2^15*H.p) (H.stage+1) H.precision H.l s H.t H.u H.band
-          H.origin (H.origin+H.span) H.metadataWidth H.wordWidth (embStk placement.bank G)) := by
+          H.origin (H.origin+H.span) H.metadataWidth H.wordWidth (embStk placement.bank G)) ∧
+      ReplicaRecoveryRhsHeaders H plan.gather buffers G := by
   have hframeInitial (k : Fin 168) (hk : 117 ≤ k.val) :
       F.R (placement.bank k) = S.R (placement.bank k) :=
     placement.interior_preserves_extended output hR hQ hbankOutput k hk he₀.toExec
@@ -117,8 +119,16 @@ theorem initializedReplicaInteriorCoupling_finish (H : ReplicaHaloProblem s) {pl
   have hsharedFinal (k : Fin 168) (hk : 117 ≤ k.val) (hnot : k ∉ replicaCouplingSetupPorts) :
       G.R (placement.bank k) = S.R (placement.bank k) :=
     (hsharedF k hk hnot).trans ((hbankR k).trans (hframeInitial k hk))
+  have hrhsHeaders : ReplicaRecoveryRhsHeaders H plan.gather buffers G := by
+    apply (hheadersJ.recovery_rhs H plan.gather buffers J).of_archive_frame H plan.gather buffers J G
+    intro k hk
+    apply hframe₂
+    · intro i
+      exact placement.bank_gather_disjoint i k
+    · simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
+      exact ⟨houtput k,hrhs k,plan.gather_injective.ne hk⟩
   refine ⟨v₂,G,n₁+n₂,Ds,hu₂.trans hu₁,by omega,.seq he₁.toExec he₂,hcount,hout,hrhsF,hready,hmeta,
-    hL₂.trans hL₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,hlen,harchive,hgood,?_,hpageCount,hrows,hfreshF,hDsBounds,replicaCouplingResiduals_accurate H hp hwidth Ds hlen hgood,hnativeF,?_,?_,?_⟩
+    hL₂.trans hL₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,hlen,harchive,hgood,?_,hpageCount,hrows,hfreshF,hDsBounds,replicaCouplingResiduals_accurate H hp hwidth Ds hlen hgood,hnativeF,?_,?_,?_,hrhsHeaders⟩
   · intro k hk hp
     apply (hframe₂ k hk hp).trans
     have hn : k ≠ output ∧ k ≠ rhs := by

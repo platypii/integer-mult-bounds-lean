@@ -39,6 +39,23 @@ theorem ReplicaRecoveryRhsHeaders.of_frame (H : ReplicaHaloProblem s) (gather : 
   · rw [hf]; exact h.source
   · intro k hk; rw [hf]; exact h.fresh k hk
 
+/-- Publishing the residual archive does not change the retained RHS language. -/
+theorem ReplicaRecoveryRhsHeaders.of_archive_frame (H : ReplicaHaloProblem s)
+    (gather : Fin 126 → Fin T) (buffers : ReplicaLoopBuffers A) (S F : Stacks T A)
+    (h : ReplicaRecoveryRhsHeaders H gather buffers S)
+    (hf : ∀ k, k ≠ 125 → F.R (gather k) = S.R (gather k)) :
+    ReplicaRecoveryRhsHeaders H gather buffers F := by
+  constructor
+  · rw [hf 121 (by decide)]; exact h.count
+  · rw [hf 123 (by decide)]; exact h.volume
+  · rw [hf 124 (by decide)]; exact h.source
+  · intro k hk
+    have hne : k ≠ 125 := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl <;> decide
+    rw [hf k hne]
+    exact h.fresh k hk
+
 theorem ReplicaRecoveryRhsHeaders.update_archive (H : ReplicaHaloProblem s)
     (plan : ReplicaInteriorPlacement T) (buffers : ReplicaLoopBuffers A) (S : Stacks T A)
     (h : ReplicaRecoveryRhsHeaders H plan.gather buffers S) (words : List (Fin (A+4))) :

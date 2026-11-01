@@ -23352,3 +23352,28 @@ frames from actual coupling and join its execution to released recovery; this
 assembly theorem alone does not complete that composition. Factory input
 production/old-geometry retirement, complete resources, scheduling, tensor/R4
 restoration and outer integration remain open. S4 is incomplete; kappa unchanged.
+
+### S4 checkpoint: actual coupling returns recovery RHS headers in the shared caller
+
+`ReplicaRecoveryRhsHeaders.of_archive_frame` transports only the retained RHS
+language while allowing gather 125 to change. The actual
+`initializedReplicaInteriorCoupling_finish` theorem now derives and returns
+these recovery headers from its executed coupling frame. Recovery no longer
+needs a separately supplied proof of the retained count, row volume, original
+RHS queue or its scratch after residual publication.
+
+`ReplicaCouplingPlacement.reindex` transports a placement structurally through
+an injective register map. `replicaRecoveryCallerCoupling` instantiates it in
+recovery's 389-register caller, with a proved equality between its coupling
+bank and the existing recovery bank. Actual coupling can therefore execute in
+the common caller without relocating the shared numerical storage.
+
+Guarded checks pass at 2165.0 MiB (RHS language), 2094.2 MiB (generic placement),
+2103.9 MiB (common caller placement) and 3278.7 MiB (actual coupling theorem).
+The coupling/recovery/factory compatibility build passes (15301 jobs, 13.7 GiB
+combined peak); rebuilding all scoped-audit imports passes (15403 jobs, 3.4 GiB).
+The next step remains instantiating the factor/private-bank frames and composing
+the actual coupling and released recovery traces. Factory input production,
+old-geometry retirement, full resources, scheduling, tensor/R4 restoration and
+outer integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 333477 declarations at 3316.0 MiB.

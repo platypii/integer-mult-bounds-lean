@@ -108,6 +108,17 @@ def replicaRecoveryCallerInterior : ReplicaInteriorPlacement 389 :=
   ReplicaCouplingPlacement.standardInterior.reindex (Fin.castLE (by decide : 300 ≤ 389))
     (Fin.castLE_injective _)
 
+/-- Run actual coupling directly in recovery's caller, retaining the shared
+bank placement instead of copying the numerical data between phases. -/
+def replicaRecoveryCallerCoupling : ReplicaCouplingPlacement replicaRecoveryCallerInterior :=
+  ReplicaCouplingPlacement.standard.reindex (Fin.castLE (by decide : 300 ≤ 389))
+    (Fin.castLE_injective _)
+
+theorem replicaRecoveryCallerCoupling_bank (i : Fin 168) :
+    replicaRecoveryCallerCoupling.bank i = replicaRecoveryCallerReg (Fin.castLE (by decide) i) := by
+  rw [replicaRecoveryCallerReg_native]
+  exact ReplicaCouplingPlacement.reindex_bank _ _ _ i
+
 @[simp] theorem replicaRecoveryCallerInterior_gather (i : Fin 126) :
     replicaRecoveryCallerInterior.gather i = Fin.castLE (by decide : 126 ≤ 389) i := rfl
 

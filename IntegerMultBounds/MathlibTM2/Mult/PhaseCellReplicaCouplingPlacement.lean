@@ -28,9 +28,23 @@ structure ReplicaCouplingPlacement (plan : ReplicaInteriorPlacement T) where
 namespace ReplicaCouplingPlacement
 variable {plan : ReplicaInteriorPlacement T}
 
+def reindex (placement : ReplicaCouplingPlacement plan)
+    (e : Fin T → Fin T') (he : Function.Injective e) :
+    ReplicaCouplingPlacement (plan.reindex e he) where
+  extra := e ∘ placement.extra
+  extra_injective := he.comp placement.extra_injective
+  extra_gather_disjoint i j h := placement.extra_gather_disjoint i j (he h)
+  extra_solver_disjoint i j h := placement.extra_solver_disjoint i j (he h)
+
 def bank (placement : ReplicaCouplingPlacement plan) (i : Fin 168) : Fin T :=
   if h : i.val < 117 then plan.solver ⟨i.val,by omega⟩
   else placement.extra ⟨i.val-117,by omega⟩
+
+@[simp] theorem reindex_bank (placement : ReplicaCouplingPlacement plan)
+    (e : Fin T → Fin T') (he : Function.Injective e) (i : Fin 168) :
+    (placement.reindex e he).bank i = e (placement.bank i) := by
+  unfold bank
+  split <;> rfl
 
 theorem bank_injective (placement : ReplicaCouplingPlacement plan) : Function.Injective placement.bank := by
   intro i j h
