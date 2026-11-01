@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3517 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3520 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21539,3 +21539,48 @@ halo loop does, and carry all replica accuracy/range invariants structurally.
 The actual key loop, full halo recovery, global scheduling, tensor/R4 restoration
 and selected acceptance remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331829 declarations at 3272.0 MiB.
+
+### S4 checkpoint: consume actual length keys and factor counted-loop execution
+
+`PhaseCellProcessGeneratedHaloReplicaKey.processGeneratedHaloReplicaKey_exec_within`
+consumes one binary key from gather 87 using the existing generic `takeUnaryKey`,
+loads the ordinary length master at 102, executes the complete generated replica
+class and clears 102. Its exact gather endpoint changes only the consumed key
+queue; all other gather registers, including prospective class counter 119,
+retain their entry values. Numerical released-bank/cache contracts, bounded
+output, new class accuracy and earlier disjoint-core accuracy all survive.
+The common master contract excludes the generated count and decoded length,
+using zero placeholders only for these ignored fields, so it is independent
+of the current key. No caller-supplied decoded length header or origin page
+is required. Parsing costs at most `6*L+19*V+14`; clearing costs `2*L+2`, and
+only twice the native parser bill is added to the existing class workspace.
+
+`Host/CountedStepStock` proves the actual pop/body/peek execution pattern for
+arbitrary native registers and bodies: it adds exactly two steps and no stock
+allowance. `Host/CountedLoopStock` proves a structural induction over an
+arbitrary list schedule and stack invariant. Loop time is bounded by the sum
+of body bills plus three per entry and one final test; workspace is the sum
+of the supplied body workspace bills, on the same execution. No finite
+schedule enumeration or numerical-time stock estimate is used.
+The real key-step and key-loop programs use gather 119 for their counter.
+`generatedHaloReplicaKeyLoop_of_invariant` connects them to this language;
+its concrete accuracy/range/metadata step invariant is still an explicit
+obligation, not a completed traversal proof or a selected execution oracle.
+
+An initial integrated proof hit the default heartbeat limit while inferring
+nested resource composition around zero-stock erasure. Explicit sequence
+constructors with the existing stages' final stock bounds avoid that reduction.
+The final guarded key check takes 2.94 seconds at 2182.1 MiB, with default proof
+limits intact. Generic counted-step and counted-loop checks pass at 1387.9 and
+1391.6 MiB. Compatibility with generated-class resources, the retained-header
+installer and global core local stock passes: 15084 jobs, 2.8 GiB combined peak.
+
+Next instantiate the loop invariant with the actual replica accuracy, output
+row ranges and metadata. Reuse the existing exact positive `haloLengthKeys`
+schedule (rather than adding empty-candidate branches to this nonempty-class
+contract), identify generated windows, and carry earlier-class errors using
+cross-class disjointness. Verify the physical key/count generator and initial
+flag test and charge that setup explicitly. The concrete all-class traversal,
+full halo recovery, global scheduling, tensor/R4 restoration and selected
+acceptance remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331855 declarations at 3272.4 MiB.
