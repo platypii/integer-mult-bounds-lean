@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3643 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3645 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23377,3 +23377,34 @@ the actual coupling and released recovery traces. Factory input production,
 old-geometry retirement, full resources, scheduling, tensor/R4 restoration and
 outer integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 333477 declarations at 3316.0 MiB.
+
+### S4 checkpoint: actual coupling and complete recovery execute in one caller
+
+`PhaseCellCoupledReplicaRecoveryCaller` composes actual released coupling with
+paid native cleanup, shared physical setup, boundary solves and complete replica
+recovery. Its execution theorem starts from the pre-coupling row cursor, retained
+gather headers and prepared factory certificate; it assumes neither a residual
+archive nor recovery readiness at the intermediate state. Actual coupling
+constructs the residual rows, and its output supplies their matching numerical
+specifications directly to recovery.
+
+`PhaseCellReplicaCouplingRecoveryFrame` proves the common caller's row queues
+are disjoint from recovery storage and transports every factor/private extension
+port through the coupling frame. Structural runtime/native view equalities keep
+large concrete register maps out of definitional comparison. The composed proof
+uses the existing factory-certificate/shared-bank assembly once, derives cleanup
+cost from the generated native bank, and reuses the complete recovery theorem.
+It returns the accurate full-halo archive, cleared source/controller queues,
+preserved count master, both recovery readiness certificates and the reusable
+factory factor certificate. The time bill is the sum of the proved coupling and
+released-recovery bills.
+
+Guarded checks pass at 3258.1 MiB (structural frames) and 3331.1 MiB (composed
+execution), under default limits. Compatibility with actual initialized
+interior/coupling and factory width generation passes (15303 jobs, 3.5 GiB
+combined peak). The scoped axiom audit passes for 333489 declarations at
+3315.7 MiB. Next attach actual initialized interior/real-row preparation to this
+combined execution and transport the factory data through that prefix. Executed
+factory input production, old-geometry retirement, complete time/workspace
+bounds, scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
