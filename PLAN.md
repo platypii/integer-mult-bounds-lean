@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3867 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3870 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26289,6 +26289,41 @@ scoped compatibility build passes (15927 jobs, 5.1 GiB combined peak); the
 axiom audit passes for 336690 declarations at 3400.2 MiB. Next compose this trace
 with the initialized interior/RHS prefix and then the complete first-pass and
 recovery caller. Numerical reserve absorption and complete-caller workspace,
+physical factory/header integration, distinct-core scheduling/amortization,
+tensor/R4 composition, layout restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: executed first-pass shared bank carries intermediate workspace
+
+`Mult.PhaseCellInitializedCachedReplicaInteriorCouplingStock` composes the
+actual initialized halo trace, real projection and matching RHS construction
+with the released/retired cached coupling resource trace. Its finishing
+allowance adds the existing linear projection/RHS reserves and one released
+coupling reserve to the supplied halo allowance, retaining the full cursor,
+accuracy, native-cleanup and recovery-header contract.
+
+`Mult.PhaseCellExecutedCachedReplicaInteriorCouplingStock` executes the halo
+prefix from ordinary headers and names the complete first-pass allowance
+`initializedCachedReplicaInteriorWorkspace H hQ R K M`. It retains all existing
+left/right frames, queue tails, residual ordering and numerical guarantees.
+The resource theorem accepts the same multiplication-push bound already needed
+by the recovery caller, without altering the executable or its cost allowance.
+
+`Mult.PhaseCellFirstCachedReplicaPassSharedStock` joins this resource execution
+to the existing concrete first-pass shared-bank theorem by execution
+uniqueness. Generated factor retention, recovery shared-bank assembly,
+peripheral readiness and cleanup bounds therefore remain the established
+proofs for the same final state; they are not rederived for a resource-only
+variant. The complete first-pass endpoint now supplies both those bank facts
+and an actual intermediate-workspace trace.
+
+Guarded checks pass at 3301.1 MiB (interior finishing), 3286.1 MiB (executed
+interior) and 3321.2 MiB (shared first-pass endpoint). The complete scoped
+compatibility build passes (15930 jobs, 3.5 GiB combined peak); the axiom audit
+passes for 336704 declarations at 3400.4 MiB. Next retain workspace through the
+native cleanup/preparation/archive handoff prefix and compose established
+cached recovery space into the complete caller. Selected reserve absorption,
 physical factory/header integration, distinct-core scheduling/amortization,
 tensor/R4 composition, layout restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
