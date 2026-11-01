@@ -23219,3 +23219,28 @@ production, remaining shared readiness, complete resources, scheduling,
 tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
 The combined scoped axiom audit passes for 333423 declarations at 3318.5 MiB.
+
+### S4 checkpoint: the actual interior/coupling trace returns its cleanup bound
+
+Executed header reload now exposes its exact canonical unary bank. Shared page
+setup exposes its unchanged native view; runtime setup exposes the three exact
+counter updates. The complete prepared replica loop transports that equality
+through its whole-bank frame, and released coupling carries the generated native
+register file to the initialized interior/coupling caller.
+
+`initializedReplicaInteriorCoupling_finish` now returns the uniform native
+cleanup bound directly for its actual output. It no longer needs a separately
+assumed generated-bank shape. The bound is independent of replica count and
+payload sizes; it follows from the structural word-stock lemmas and actual
+setup/loop equalities. No execution or error proof is repeated.
+
+Next append the placed cleanup and initialized recovery caller to this actual
+trace. Factory input production, remaining shared factor/master/core readiness,
+complete workspace/selected bounds, global scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Guarded checks pass with default limits: header reload 2151.7 MiB, shared page
+2176.2 MiB, page workspace 2140.1 MiB, runtime setup 2156.1 MiB, prepared loop
+2219.7 MiB, released coupling 2232.4 MiB, native setup compatibility 2150.4 MiB,
+and actual initialized interior/coupling 3276.3 MiB. Compatibility with initialized
+recovery passes (15174 jobs, 3.5 GiB combined peak).
+The combined scoped axiom audit passes for 333424 declarations at 3316.0 MiB.

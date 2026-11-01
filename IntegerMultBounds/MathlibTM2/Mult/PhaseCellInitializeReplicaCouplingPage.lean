@@ -36,7 +36,8 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
       (F.R (placement.bank 139)).length = (couplingCoefficientPageInterval precision q s t u band a b a (b-a)).length ∧
       (F.R (placement.bank 140)).length = 2*band+1 ∧
       (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) ∧
-      (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], S.R (placement.bank k) = [] → F.R (placement.bank k) = []) := by
+      (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], S.R (placement.bank k) = [] → F.R (placement.bank k) = []) ∧
+      embStk weightCacheCoreReg (embStk plan.solver F) = embStk weightCacheCoreReg (embStk plan.solver S) := by
   have hheaders : ∀ p ∈ couplingGeometryAssignments,
       (S.R (placement.bank p.1)).length = couplingGeometryHeaderValue s t band a b p.1 := by
     intro p hp
@@ -67,7 +68,7 @@ theorem initializeReplicaCouplingPage_exec {plan : ReplicaInteriorPlacement T}
           rw [hframe₁ k hn.1 hn.2]
           exact hfresh k hk)
   refine ⟨v₂,F,n₁+n₂,hu₂.trans hu₁,by omega,.seq he₁.toExec he₂,?_,hmetaF,?_,
-    hgather₂.trans hgather₁,hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_,?_⟩
+    hgather₂.trans hgather₁,hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_,?_,hnative₂.trans hnative₁⟩
   · rw [hnative₂]
     exact hreadyG
   · have hp := congrFun (congrArg Stacks.R hview) 138

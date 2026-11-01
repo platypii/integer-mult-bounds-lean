@@ -44,13 +44,15 @@ theorem initializeReplicaCouplingRuntime_exec_within {plan : ReplicaInteriorPlac
       (F.R (placement.bank 139)).length = (couplingCoefficientPageInterval precision q s t u band a b a (b-a)).length ∧
       (F.R (placement.bank 140)).length = 2*band+1 ∧
       (∀ k, (∀ i : Fin 168, placement.bank i ≠ k) → F.R k = S.R k) ∧
-      (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], S.R (placement.bank k) = [] → F.R (placement.bank k) = []) := by
-  obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hreadyJ,hmeta,hpage,hgather₁,hleft₁,hi₁,ho₁,hcount,hrows,hoff₁,hfreshJ⟩ :=
+      (∀ k ∈ [(127 : Fin 168),143,166,158,135,167], S.R (placement.bank k) = [] → F.R (placement.bank k) = []) ∧
+      embStk weightCacheCoreReg (embStk plan.solver F) =
+        {embStk weightCacheCoreReg (embStk plan.solver S) with R := counterR q w (embStk weightCacheCoreReg (embStk plan.solver S)).R} := by
+  obtain ⟨v₁,J,n₁,hu₁,hn₁,he₁,hreadyJ,hmeta,hpage,hgather₁,hleft₁,hi₁,ho₁,hcount,hrows,hoff₁,hfreshJ,hnativeJ⟩ :=
     initializeReplicaCouplingPage_exec_within (body := body) placement hA hprecision hst hab hb ha hwide hfitV
       raw v S hready hV htmp h107 hblank hfresh depth
   let e := fun i => plan.solver (weightCacheCoreReg i)
   have he : Function.Injective e := plan.solver_injective.comp weightCacheCoreReg_injective
-  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hretained,_,hleft₂,hi₂,ho₂,hframe₂⟩ :=
+  obtain ⟨v₂,F,n₂,hu₂,hn₂,he₂,hretained,hcounter,hleft₂,hi₂,ho₂,hframe₂⟩ :=
     placedCouplingCounters_exec_within (body := body) e he hw5 hqw raw v₁ J hreadyJ depth
   have hhigh (k : Fin 168) (hk : 117 ≤ k.val) : F.R (placement.bank k) = J.R (placement.bank k) := by
     apply hframe₂
@@ -64,7 +66,7 @@ theorem initializeReplicaCouplingRuntime_exec_within {plan : ReplicaInteriorPlac
     · funext k
       exact hframe₂ _ (fun i => (plan.disjoint k (weightCacheCoreReg i)).symm)
   refine ⟨v₂,F,n₁+n₂,hu₂.trans hu₁,?_,?_,hretained,?_,?_,hgather₂.trans hgather₁,
-    hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_,?_⟩
+    hleft₂.trans hleft₁,hi₂.trans hi₁,ho₂.trans ho₁,?_,?_,?_,?_,?_⟩
   · unfold initializeReplicaCouplingRuntimeCost
     omega
   · have hsize := he₁.final
@@ -93,5 +95,9 @@ theorem initializeReplicaCouplingRuntime_exec_within {plan : ReplicaInteriorPlac
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
       rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> decide)]
     exact hfreshJ k hk hkS
+
+  · change embStk e F = {embStk e S with R := counterR q w (embStk e S).R}
+    have hh : embStk e J = embStk e S := hnativeJ
+    rw [hcounter,hh]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

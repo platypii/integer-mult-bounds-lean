@@ -35,7 +35,7 @@ theorem prepareReplicaCouplingNative_exec_within (plan : ReplicaInteriorPlacemen
       embStk plan.gather F = embStk plan.gather S ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ j : Fin 121, 117 ≤ j.val → F.R (plan.solver j) = S.R (plan.solver j)) ∧
       (∀ k, (∀ i : Fin 117, plan.solver (weightCacheCoreReg i) ≠ k) → F.R k = S.R k) := by
-  obtain ⟨v₁,hu₁,he₁,hready,hgather₁,hleft₁,hframe₁⟩ := reloadReplicaCouplingHeaders_exec_within (body := body)
+  obtain ⟨v₁,hu₁,he₁,hready,hgather₁,hleft₁,hframe₁,_⟩ := reloadReplicaCouplingHeaders_exec_within (body := body)
     plan precision q w s t u band a b borrowed output v S hbank hmasters htmp depth
   let J : Stacks T A := {S with R := unaryCopiesR (fun k => (S.R k).length) S.R (placedReplicaHeaderCopies plan replicaCouplingHeaderCopies)}
   let e := fun i => plan.solver (weightCacheCoreReg i)

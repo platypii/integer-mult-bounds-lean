@@ -49,7 +49,9 @@ theorem reloadReplicaCouplingHeaders_exec_within (plan : ReplicaInteriorPlacemen
         (reloadReplicaCouplingHeaders plan) (mk v S) (replicaCouplingHeaderCost P q w s t u band a b) (mk v' F) ∧
       CouplingReady P q w s t u band a b borrowed (embStk weightCacheCoreReg (embStk plan.solver F)) ∧
       embStk plan.gather F = embStk plan.gather S ∧ F.L = S.L ∧
-      ∀ k, (∀ r ∈ replicaCouplingHeaderCopies, plan.solver (weightCacheCoreReg r.2) ≠ k) → F.R k = S.R k := by
+      (∀ k, (∀ r ∈ replicaCouplingHeaderCopies, plan.solver (weightCacheCoreReg r.2) ≠ k) → F.R k = S.R k) ∧
+      embStk weightCacheCoreReg (embStk plan.solver F) =
+        replicaCouplingUnaryBank A P q w s t u band a b borrowed output S.inp S.out := by
   dsimp only
   have havoid : ∀ r ∈ replicaCouplingHeaderCopies, r.1 ≠ 7 := by
     intro r hr
@@ -61,8 +63,10 @@ theorem reloadReplicaCouplingHeaders_exec_within (plan : ReplicaInteriorPlacemen
     (replicaCouplingMasterValue P q w s t u band a b) S hmasters).trans
       (replicaCouplingHeaderCopies_cost P q w s t u band a b)
   rw [hc] at he
-  refine ⟨v',hu,he,?_,hgather,funext hleft,hframe⟩
-  rw [hview,hbank]
-  exact replicaCouplingUnaryBank_ready A P q w s t u band a b borrowed output S.inp S.out
+  refine ⟨v',hu,he,?_,hgather,funext hleft,hframe,?_⟩
+  · rw [hview,hbank]
+    exact replicaCouplingUnaryBank_ready A P q w s t u band a b borrowed output S.inp S.out
+  · rw [hview,hbank]
+    rfl
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
