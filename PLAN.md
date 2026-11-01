@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3664 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3669 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23589,3 +23589,43 @@ all replicas, bound simultaneous archives and the full preparation/assembly
 bill, execute the existing second batch controller, and compose the factory.
 Complete workspace bounds, scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: solve and collect actual recovery pairs without scalar interior work
+
+`PhaseCellCollectRecoveryPrefixes` proves one generic, register-parametric
+collection transition. It moves the computed recovery RHS to an archive,
+discards the consumed original RHS, and moves the boundary field to a separate
+archive. Both borrowed suffixes and scratch stacks are restored. Its exact
+cost is `18*rowVolume+18`, with a native execution workspace envelope.
+`PhaseCellRecoveryCollectionStock` proves that endpoint stack stock decreases
+by exactly the consumed original RHS length, independently of archive sizes.
+No extra copy of either retained row is made.
+
+`PhaseCellCollectReplicaRecoveryRhs` places this transition beside the existing
+worker: boundary rows use register 125 and recovery RHS rows use new register
+256. The old worker and register 255's loop counter are untouched. The shared
+recovery core survives. `PhaseCellCollectedReplicaRecoveryRhs` joins actual
+source preparation/RHS construction to collection; the source queue advances,
+original borrowed RHS/output suffixes restore, and shared physical readiness
+is returned for the next row.
+
+`PhaseCellReplicaRecoveryPreparationRow` composes the actual retained-factor
+boundary solve with that collected execution. It starts from an archived
+residual and original RHS, constructs the boundary solution and its numerical
+recovery-row contract, and archives the computed boundary/RHS pair. It returns
+the factor certificate, recovery core and boundary readiness; no supplied
+boundary solution, modified RHS or scalar second interior execution is needed.
+The row theorem is arbitrary in the replica index.
+
+All five new modules pass guarded checks under default proof limits. Peaks
+are 1954.4 MiB (generic collection), 1937.8 MiB (endpoint stock), 3258.5 MiB
+(placed collection), 3290.5 MiB (production/collection) and 3312.5 MiB (complete
+preparation row). Compatibility with the generated baseline, batch fast bound
+and periodic factor setup passes (15424 jobs, 4.8 GiB combined peak).
+Next lift this transition through the counted traversal, prove archive order
+and its paid transport into the second batch controller, then splice the
+boundary archive into the actual second-pass outputs. Full preparation/assembly
+time and workspace bounds, generated-factory composition, scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+Scoped axiom audit passes for 333945 declarations at 3326.3 MiB.
