@@ -20,9 +20,18 @@ def pairedLocalHaloControllerCost (V s t band a b L : ℕ) :=
   (37*haloPhaseCount s t a b+16)*tblC V V+
     (haloLengthGroup s t band a b L).length*(12*V+6)+10
 
-theorem pairedLocalHaloController_exec_within {V s t band a b L : ℕ}
+private theorem haloRawState_bounded_width {A V s t band a b L : ℕ}
+    (ha : a ≤ s) (hb : b ≤ s) (hL : L < 2^V) (hst : s < t) (hband : band ≤ s)
+    (hwide : 8*(t+1)^2+2*band+8 < 2^V) :
+    ∀ k, (haloClassRawState A s t band a b L).val k < 2^V := by
+  have ht : t < 2^V := by nlinarith only [hwide]
+  intro k
+  simp only [haloClassRawState,Function.update_apply]
+  split_ifs <;> omega
+
+theorem pairedLocalHaloController_exec_width {V s t band a b L : ℕ}
     (hs : 0 < s) (hst : s < t) (hband : band ≤ s) (hab : a ≤ b) (hbs : b ≤ s)
-    (hL : 0 < L) (hLs : L ≤ s) (hwide : 8*(t+1)^2+2*band+8 < 2^V) (hA : 4 ≤ A)
+    (hL : 0 < L) (hLwidth : L < 2^V) (hwide : 8*(t+1)^2+2*band+8 < 2^V) (hA : 4 ≤ A)
     (v : HS 117 Q A U) (S : Stacks 117 A)
     (hS : tblHolds originReg S (tblRho V (List.replicate V tick) (List.replicate V tick)
       (haloClassRawState A s t band a b L)))
@@ -58,7 +67,7 @@ theorem pairedLocalHaloController_exec_within {V s t band a b L : ℕ}
   obtain ⟨v',F,m,st',hu,hm,he,hambient,hlocal,hcount,hh,hbound,hi,ho,hl,hframe⟩ :=
     countedPairedOriginHost_exec (body := body) xs pairedLocalHaloClassCode
       (haloClassRawState A s t band a b L) hc' hfit le_rfl hA hV
-      (haloClassRawState_bounded (hab.trans hbs) hbs hLs hst hband hwide) rfl v S hS h104 h106 h116
+      (haloRawState_bounded_width (hab.trans hbs) hbs hLwidth hst hband hwide) rfl v S hS h104 h106 h116
   have hcost : m ≤ pairedLocalHaloControllerCost V s t band a b L := by
     simpa [pairedLocalHaloControllerCost,xs] using hm
   refine ⟨v',F,m,st',hu,hcost,?_,?_,?_,?_,hh,hbound,hi,ho,hl,hframe⟩
@@ -67,5 +76,29 @@ theorem pairedLocalHaloController_exec_within {V s t band a b L : ℕ}
   · simpa [xs,haloOrigins,haloOriginPackets,List.flatMap_map] using hambient
   · simpa [xs,haloPackedOffsets,List.flatMap_map] using hlocal
   · simpa [xs] using hcount
+
+theorem pairedLocalHaloController_exec_within {V s t band a b L : ℕ}
+    (hs : 0 < s) (hst : s < t) (hband : band ≤ s) (hab : a ≤ b) (hbs : b ≤ s)
+    (hL : 0 < L) (hLs : L ≤ s) (hwide : 8*(t+1)^2+2*band+8 < 2^V) (hA : 4 ≤ A)
+    (v : HS 117 Q A U) (S : Stacks 117 A)
+    (hS : tblHolds originReg S (tblRho V (List.replicate V tick) (List.replicate V tick)
+      (haloClassRawState A s t band a b L)))
+    (h104 : S.R 104 = []) (h106 : S.R 106 = []) (h116 : S.R 116 = []) (depth : ℕ) :
+    ∃ v' F m, ∃ st' : TblSt 16 A, v'.user = v.user ∧
+      m ≤ pairedLocalHaloControllerCost V s t band a b L ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+        3*pairedLocalHaloControllerCost V s t band a b L) depth pairedLocalHaloController
+        (mk v S) m (mk v' F) ∧
+      F.R 113 = haloOriginPackets A V s t band a b L++S.R 113 ∧
+      F.R 109 = (haloPackedOffsets s t band a b L).flatMap (binSyms V)++S.R 109 ∧
+      F.R 116 = List.replicate (haloLengthGroup s t band a b L).length tick ∧
+      tblHolds originReg F (tblRho V (List.replicate V tick) (List.replicate V tick) ⟨st'.val,[]⟩) ∧
+      (∀ j, st'.val j < 2^V) ∧ F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
+      ∀ k, k ≠ 109 → k ≠ 113 → k ≠ 116 → (∀ r, originReg r ≠ k) → F.R k = S.R k := by
+  have hLwidth : L < 2^V := by
+    have ht : t < 2^V := by nlinarith only [hwide]
+    omega
+  exact pairedLocalHaloController_exec_width hs hst hband hab hbs hL hLwidth hwide hA
+    v S hS h104 h106 h116 depth
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

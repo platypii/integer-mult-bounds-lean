@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3525 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3528 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21646,3 +21646,33 @@ and initialize the independent accumulator (zeros suffice) before the loop.
 Full halo recovery, global scheduling, tensor/R4 restoration and selected
 acceptance remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 332143 declarations at 3278.0 MiB.
+
+### S4 checkpoint: skip empty replica candidates after one page generation
+
+`Host.FirstAction` transports an existing execution across an initial control
+state change when the first action overwrites that state. `Host.WhenRightNonempty`
+uses it to insert an actual count test without replaying the numerical proof:
+nonempty execution retains its exact endpoint and workspace with two extra
+steps; empty execution takes three steps and preserves every tape.
+
+The paired local halo controller, preparation and placement now accept a fitting
+binary length instead of requiring that length to fit the axis. Existing APIs
+remain as corollaries. This permits positive candidates with no cells, including
+lengths larger than the axis, without inventing numerical geometry for them.
+
+`PhaseCellConditionalGeneratedHaloReplicaClass` generates paired pages once,
+guards the repeatable numerical class by the generated count, and shares page
+retirement. Its empty execution restores the entire input bank with no numerical
+bank or accuracy assumptions. Its nonempty trace transport discharges the guard
+from the concrete generated-page endpoint using execution uniqueness, preserving
+all existing numerical postconditions. The full numerical specification still
+needs to instantiate that transport and join the two branches before key/loop
+integration; the old loop still requires nonempty classes.
+
+The conditional module passes its guarded check at 2147.6 MiB. Compatibility
+with the concrete loop and linear resource theorem passes (14514 jobs, 8.2 GiB
+combined peak). The scoped axiom audit passes for 326892 declarations at
+3174.0 MiB. Next finish the unified conditional specification, update actual key
+processing and the loop, then attach retained-width candidate generation and
+zero accumulator initialization. Recovery, global scheduling, tensor/R4 and
+selected acceptance remain open. S4 remains incomplete; kappa is unchanged.

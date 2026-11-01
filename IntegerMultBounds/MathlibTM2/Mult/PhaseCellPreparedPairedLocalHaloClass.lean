@@ -39,9 +39,9 @@ theorem preparedPairedLocalHaloClass_native :
   refine ⟨chirpBankLoad_native _ _ _ _,loadOriginList_native _,countedPairedOriginHost_native _,
     clearWords_native_three _⟩
 
-theorem preparedPairedLocalHaloClass_exec_within (V s t band a b L : ℕ)
+theorem preparedPairedLocalHaloClass_exec_width (V s t band a b L : ℕ)
     (hwide : 8*(t+1)^2+2*band+8 < 2^V)
-    (hs : 0 < s) (hst : s < t) (hband : band ≤ s) (hab : a ≤ b) (hbs : b ≤ s) (hL : 0 < L) (hLs : L ≤ s) (hA : 4 ≤ A)
+    (hs : 0 < s) (hst : s < t) (hband : band ≤ s) (hab : a ≤ b) (hbs : b ≤ s) (hL : 0 < L) (hLwidth : L < 2^V) (hA : 4 ≤ A)
     (v : HS 117 Q A U) (S : Stacks 117 A)
     (hsSrc : (S.R 97).length = s) (htSrc : (S.R 98).length = t) (hbSrc : (S.R 100).length = band)
     (haSrc : (S.R 111).length = a) (hbEndSrc : (S.R 113).length = b) (hLSrc : (S.R 102).length = L)
@@ -79,7 +79,7 @@ theorem preparedPairedLocalHaloClass_exec_within (V s t band a b L : ℕ)
   have hoff₂ (k : Fin 117) (hk : 31 ≤ k.val) : S₂.R k = S.R k :=
     (hf₂.2.2.2 k (hhigh k hk)).trans (hoff₁ k hk)
   obtain ⟨v₃, S₃, n₃, st₃, hu₃, hn₃, he₃, hambient₃, hout₃, hcount₃, hh₃, hb₃, hi₃, ho₃, hl₃, hf₃⟩ :=
-    pairedLocalHaloController_exec_within (body := body) hs hst hband hab hbs hL hLs hwide hA v₂ S₂ hh₂
+    pairedLocalHaloController_exec_width (body := body) hs hst hband hab hbs hL hLwidth hwide hA v₂ S₂ hh₂
       (by rw [hoff₂ 104 (by decide)]; exact h104)
       (by rw [hoff₂ 106 (by decide)]; exact h106)
       (by rw [hoff₂ 116 (by decide)]; exact h116) 0
@@ -105,5 +105,29 @@ theorem preparedPairedLocalHaloClass_exec_within (V s t band a b L : ℕ)
     by_cases hk : k.val < 31
     · simp [S₄, hk, hk109, hblank k hk,hk113,hk116]
     simp [S₄, hk, hk109,hk113,hk116, hoff₃ k (by omega) hk109 hk113 hk116]
+
+theorem preparedPairedLocalHaloClass_exec_within (V s t band a b L : ℕ)
+    (hwide : 8*(t+1)^2+2*band+8 < 2^V)
+    (hs : 0 < s) (hst : s < t) (hband : band ≤ s) (hab : a ≤ b) (hbs : b ≤ s) (hL : 0 < L) (hLs : L ≤ s) (hA : 4 ≤ A)
+    (v : HS 117 Q A U) (S : Stacks 117 A)
+    (hsSrc : (S.R 97).length = s) (htSrc : (S.R 98).length = t) (hbSrc : (S.R 100).length = band)
+    (haSrc : (S.R 111).length = a) (hbEndSrc : (S.R 113).length = b) (hLSrc : (S.R 102).length = L)
+    (hV : (S.R 115).length = V) (h104 : S.R 104 = []) (h106 : S.R 106 = []) (h116 : S.R 116 = [])
+    (hblank : ∀ k : Fin 117, k.val < 31 → S.R k = []) (depth : ℕ) :
+    ∃ v' S' n, v'.user = v.user ∧
+      n ≤ preparedPairedLocalHaloClassCost V s t band a b L ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+        3*preparedPairedLocalHaloClassCost V s t band a b L) depth preparedPairedLocalHaloClass
+        (mk v S) n (mk v' S') ∧
+      S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧
+      S'.R = Function.update (Function.update (Function.update S.R 109
+        ((ScalarPlacement.haloPackedOffsets s t band a b L).flatMap (binSyms V)++S.R 109))
+        113 (haloOriginPackets A V s t band a b L++S.R 113))
+        116 (List.replicate (haloLengthGroup s t band a b L).length tick) := by
+  have hLwidth : L < 2^V := by
+    have ht : t < 2^V := by nlinarith only [hwide]
+    omega
+  exact preparedPairedLocalHaloClass_exec_width V s t band a b L hwide hs hst hband hab hbs hL hLwidth hA
+    v S hsSrc htSrc hbSrc haSrc hbEndSrc hLSrc hV h104 h106 h116 hblank depth
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

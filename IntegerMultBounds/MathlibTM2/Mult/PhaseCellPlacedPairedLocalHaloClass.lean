@@ -50,10 +50,10 @@ theorem pairedLocalHaloClassBank_restore (plan : ReplicaInteriorPlacement T) (S 
   · subst k; simp [plan.gather_injective.eq_iff]
   simp [pairedLocalHaloClassBank,h116,h109,h113]
 
-theorem placedPairedLocalHaloClass_exec_within (plan : ReplicaInteriorPlacement T)
+theorem placedPairedLocalHaloClass_exec_width (plan : ReplicaInteriorPlacement T)
     (V s t band a b L : ℕ) (hwide : 8*(t+1)^2+2*band+8 < 2^V)
     (hs : 0 < s) (hst : s < t) (hband : band ≤ s) (hab : a ≤ b) (hbs : b ≤ s)
-    (hL : 0 < L) (hLs : L ≤ s) (hA : 4 ≤ A) (v : HS T Q A U) (S : Stacks T A)
+    (hL : 0 < L) (hLwidth : L < 2^V) (hA : 4 ≤ A) (v : HS T Q A U) (S : Stacks T A)
     (hsSrc : (S.R (plan.gather 97)).length = s) (htSrc : (S.R (plan.gather 98)).length = t)
     (hbSrc : (S.R (plan.gather 100)).length = band) (haSrc : (S.R (plan.gather 111)).length = a)
     (hbEndSrc : (S.R (plan.gather 113)).length = b) (hLSrc : (S.R (plan.gather 102)).length = L)
@@ -66,8 +66,8 @@ theorem placedPairedLocalHaloClass_exec_within (plan : ReplicaInteriorPlacement 
         (mk v S) n (mk v' (pairedLocalHaloClassBank plan S V s t band a b L)) := by
   let e := fun i : Fin 117 => plan.gather (Fin.castLE (by decide) i)
   have he : Function.Injective e := plan.gather_injective.comp (Fin.castLE_injective (by decide))
-  obtain ⟨vi,F,n,hu,hn,hei,hi,ho,hl,hr⟩ := preparedPairedLocalHaloClass_exec_within (body := fun p : Empty => nomatch p)
-    V s t band a b L hwide hs hst hband hab hbs hL hLs hA (embDn e v) (embStk e S)
+  obtain ⟨vi,F,n,hu,hn,hei,hi,ho,hl,hr⟩ := preparedPairedLocalHaloClass_exec_width (body := fun p : Empty => nomatch p)
+    V s t band a b L hwide hs hst hband hab hbs hL hLwidth hA (embDn e v) (embStk e S)
     hsSrc htSrc hbSrc haSrc hbEndSrc hLSrc hV
     (hfresh _ (by simp)) (hfresh _ (by simp)) (hfresh _ (by simp))
     (fun k hk => hblank (Fin.castLE (by decide) k) hk) depth
@@ -93,5 +93,25 @@ theorem placedPairedLocalHaloClass_exec_within (plan : ReplicaInteriorPlacement 
     rfl
   rw [hbank] at hei'
   exact ⟨v',n,hu'.trans hu,hn,hei'⟩
+
+theorem placedPairedLocalHaloClass_exec_within (plan : ReplicaInteriorPlacement T)
+    (V s t band a b L : ℕ) (hwide : 8*(t+1)^2+2*band+8 < 2^V)
+    (hs : 0 < s) (hst : s < t) (hband : band ≤ s) (hab : a ≤ b) (hbs : b ≤ s)
+    (hL : 0 < L) (hLs : L ≤ s) (hA : 4 ≤ A) (v : HS T Q A U) (S : Stacks T A)
+    (hsSrc : (S.R (plan.gather 97)).length = s) (htSrc : (S.R (plan.gather 98)).length = t)
+    (hbSrc : (S.R (plan.gather 100)).length = band) (haSrc : (S.R (plan.gather 111)).length = a)
+    (hbEndSrc : (S.R (plan.gather 113)).length = b) (hLSrc : (S.R (plan.gather 102)).length = L)
+    (hV : (S.R (plan.gather 115)).length = V)
+    (hfresh : ∀ k ∈ [(104 : Fin 126),106,116], S.R (plan.gather k) = [])
+    (hblank : ∀ k : Fin 126, k.val < 31 → S.R (plan.gather k) = []) (depth : ℕ) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ preparedPairedLocalHaloClassCost V s t band a b L ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+        3*preparedPairedLocalHaloClassCost V s t band a b L) depth (placedPairedLocalHaloClass plan)
+        (mk v S) n (mk v' (pairedLocalHaloClassBank plan S V s t band a b L)) := by
+  have hLwidth : L < 2^V := by
+    have ht : t < 2^V := by nlinarith only [hwide]
+    omega
+  exact placedPairedLocalHaloClass_exec_width plan V s t band a b L hwide hs hst hband hab hbs hL hLwidth hA
+    v S hsSrc htSrc hbSrc haSrc hbEndSrc hLSrc hV hfresh hblank depth
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
