@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3698 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3699 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24007,3 +24007,29 @@ Preparation/whole-caller workspace, selected resource bounds,
 first-pass/generated-factory integration, scheduling, tensor/R4 restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334148 declarations at 3330.9 MiB.
+
+
+### S4 checkpoint: native triangular bookkeeping has structural storage bounds
+
+`Fast.BandLineNativeStock` proves uniform push-two certificates for counted
+record movement, band head/column extraction, pending-word subtraction,
+record copying, and counted repetition of a push-two body. Subtraction reuses
+the generic word-automaton push certificate, independent of automaton states
+or concrete data. No numerical multiplication is included in these native
+certificates.
+
+`RsbRuns.exec_within_native` lifts an existing register-file contract to an
+`ExecWithin` certificate using that native phase's own traffic bill. Its
+returned valuation, complete frame, user preservation and time bound are the
+original contract's facts. This lets triangular row composition reuse the
+existing native correctness contracts, while the numerical product separately
+uses the previously established shared stream reserve.
+
+The guarded module check passes at 1911.1 MiB. Compatibility with band-step
+storage, numerical streams and the complete batched recovery bill passes
+(15388 jobs, 2.6 GiB combined peak). Full row/pass peak composition is still
+required; these structural certificates do not establish it on their own.
+Preparation/whole-caller workspace, selected resource bounds,
+first-pass/generated-factory integration, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334157 declarations at 3333.1 MiB.
