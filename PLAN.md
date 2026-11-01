@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3757 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3758 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24592,3 +24592,31 @@ incomplete; kappa is unchanged.
 Compatibility with the actual batched recovery time theorem passes
 (15448 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
 334360 declarations at 3341.1 MiB.
+
+
+### S4 checkpoint: actual batched recovery time reuses existing kernel estimates
+
+`Cost.PhaseCellBatchedReplicaRecoveryFast.replicaRecoveryPreparationRowCost_poly`
+bounds the actual preparation row by `10000000*(ssMulConst+1)*H.t*Z^4`
+when precision, word width, bandwidth and metadata width are at most Z.
+It reuses the existing prepared residual solve, retained coupling and packed
+input conversion polynomial estimates. Native staging, collection and queue
+setup are bounded together by linear traffic; no numerical kernel is repriced.
+`batchedReplicaRecoveryTime_preparation_poly` substitutes this estimate
+into the exact amortized caller bill.
+
+`batchedReplicaRecovery_fast_le` transfers the established shared interior
+fast estimate to the actual complete caller. The preparation cost remains
+explicit in this sharper estimate, while archive/assembly traffic is
+collected into its actual linear coefficients. This is a checked resource
+bridge, not the final selected S4 inequality: the coarse polynomial estimate
+still needs selected sizing/sharper amortization where required, and the
+whole-caller workspace allowance still needs its selected resource bound.
+
+Guarded module check passes at 3347.3 MiB. The first build refreshed stale
+resource dependencies; no proof limits changed. First-pass/generated-factory
+execution, scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+Compatibility with the bounded batched recovery caller passes
+(15545 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
+335453 declarations at 3355.2 MiB.
