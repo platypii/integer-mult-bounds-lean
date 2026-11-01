@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3949 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3952 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27454,3 +27454,39 @@ incomplete; kappa is unchanged.
 Guarded check passes at 3441.2 MiB. Scoped compatibility build passes
 (16164 jobs, 3.5 GiB combined observed peak).
 Axiom audit passes for 339111 declarations at 3468.0 MiB.
+
+### S4 checkpoint: retained headers replace the prepared complex-bank premise
+
+`Mult.PhaseCellComplexRecoveryHeaders` identifies the 18 live unary header
+ports and the separate complex payload register. Its symbolic right-bank
+formula reuses generatedRecoveryHeader with the four raw/complex overrides;
+its support theorem proves all other header values zero. No 392-register
+case enumeration or generated certificate is used.
+
+`Mult.PhaseCellInstallComplexRecoveryHeaders` applies the structural ordinary
+header copier to this sparse support. Retained header lengths, an exposed
+complex payload, blank owned storage and ordinary separation premises imply
+the exact complexRecoveryInput bank. Borrowed source words and spectators
+are preserved. The actual copying cost and twice-cost native trace allowance
+are retained explicitly.
+
+`Mult.PhaseCellComplexRecoveryFromHeaders` composes this installer with the
+verified complete recovery lifecycle. It starts from retained ordinary unary
+header values and the original complex payload; no prepared-bank equality or
+serialized-source premise remains. It returns certified recovery outputs,
+restores source/clock and spectators, and empties the private bank. Time and
+simultaneous-space bounds include header copying, complex expansion, descriptor
+serialization, the numerical scheduler and descriptor retirement. The proof
+uses endpoint stock bounds to compose traces over the original ambient state.
+
+Upstream construction of the retained numerical scalar values from compact
+supplier/master metadata still needs to be connected to this interface. Next
+compose the actual ordered class and sum its exact lifecycle bills before
+selected-axis absorption; do not introduce a per-job shared T reserve. Output
+pairing/cropping/publication and tensor/R4 restoration remain open. S4 is
+incomplete; kappa is unchanged.
+
+Guarded checks pass at 3380.8 MiB (sparse header interface), 3388.6 MiB
+(installer) and 3421.2 MiB (full lifecycle from retained headers). Scoped
+compatibility build passes (16167 jobs, 1.1 GiB combined observed peak, mostly
+replayed); axiom audit passes for 339125 declarations at 3470.4 MiB.
