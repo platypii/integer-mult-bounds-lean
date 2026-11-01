@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3828 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3829 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25689,3 +25689,29 @@ page/count and private-buffer facts, then compose the complete first-pass caller
 Combined prefix/coupling workspace, distinct-core amortization, tensor/R4
 composition, layout restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: assemble the retained shared bank from first-pass facts
+
+`ReplicaBoundaryFactorData.batch_first_pass_shared_bank` reuses the existing
+`coupling_recovery_bank` assembly theorem in the actual 392-register placement.
+The initial generated factor data/workspace, first-pass left/right frames,
+restored multiplier scratch, retained ordinary headers and generated coupling
+page/counts yield both final factor data and `ReplicaRecoverySharedBank`.
+Untouched factory scratch is transported by the shared-header frame; generated
+fresh ports are supplied by the actual pass contract. The initial empty page
+from factory workspace cancels the retained page tail.
+
+The high-worker left-spectator rule now covers private recovery buffers as well
+as factor ports. Their final emptiness follows from initial emptiness and the
+structural left/right frames, with no new post-execution assumption.
+
+Guarded checks pass at 3287.3 MiB (general high-worker left frame) and
+3337.6 MiB (shared-bank assembly). Compatibility build passes (15811 jobs,
+3.5 GiB combined peak). The scoped axiom audit passes for 336526 declarations
+at 3391.6 MiB. Next instantiate this assembler directly in the
+first-pass execution theorem, then compose its actual residuals and shared bank
+with the cleanup/preparation/cached-recovery caller. The physical factory input
+header connection, combined prefix/coupling workspace, distinct-core amortization,
+tensor/R4 composition, layout restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
