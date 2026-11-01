@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3995 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3997 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28090,3 +28090,38 @@ Expanded compatibility build passes (16558 jobs). Guarded checks pass at
 (retained-width crop), 2045.2 MiB (placed retained crop), 3141.7 MiB
 (normalization plan), 3143.8 MiB (native stock) and 3412.1 MiB (finished
 normalization). Broad axiom audit passes for 341864 declarations at 3545.0 MiB.
+
+### S4 checkpoint: normalization builds its parameter packet from unary inputs
+
+`Mult.PhaseCellRecoveryParameterQueue` packages only the eight parameter
+ports and binary-queue scratch wiring for a RecoveryNormalizePlan. Its fixed
+program reuses binaryHeaderQueue; it neither stores a prepared packet nor
+assumes an execution.
+
+`Mult.PhaseCellNormalizeRecoveryFromUnary.fromUnary_exec` executes that queue
+prefix from retained unary p/u/l/target/s/t/a/b inputs, then the existing
+finished normalization routine. The exact parameter-word packet is derived
+from the actual input lengths. Normalization consumes those words and returns
+the queue to its original suffix. The final frame changes only the normalized
+output stream and clears the owned packet-width header. The same run has
+global rowTarget/rowError accuracy in the actual reverse replica order.
+
+Queue time is the state-independent sum of eight scalar values times
+4*Bcore+10, plus eight width overheads and one. Its stock is 8*(2*(4*Bcore+4));
+normalization's existing complete time/stock bills are added over the same
+ambient initial state. No parameter-packet or numerical magnitude oracle is
+supplied by the caller.
+
+The retained crop-width and unary-input normalization stages are still
+separate. Next compose their exact frames, taking normalization inputWidth
+from crop port 9 and normalization source from crop destination, then combine
+with the retained paired-recovery prefix and final master cleanup. Reconcile
+reverse replica order with publication before claiming the ordered job's
+complete output contract. Ordered groups, physical exposure, concrete ambient
+allocation, grouped bill absorption, tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+
+Expanded compatibility build passes (16560 jobs, 3.6 GiB combined peak).
+Guarded checks pass at 3140.7 MiB (queue wiring) and 3431.7 MiB
+(unary-input normalization). Broad axiom audit passes for 341893 declarations
+at 3544.2 MiB.
