@@ -26,15 +26,20 @@ theorem computedClassTimeBill_eq (V s width radius H W N coreTime : ℕ) :
   unfold computedClassControlTime recoveryPayloadCountCost
   ring
 
-theorem selectedComputedClassControlTime_le (cB cW : ℕ) :
-    ∀ᶠ n : ℕ in atTop, ∀ (_h : Sizes.Big n) (i : Fin (Sizes.d n)) (V width radius H W N band : ℕ),
+theorem computedClassPreparationStock_le (V s width radius H W N : ℕ) :
+    3*preparedCoreOriginsCost V s width radius H+2*recoveryPayloadCountCost N H W ≤
+      3*computedClassControlTime V s width radius H W N := by
+  unfold computedClassControlTime recoveryPayloadCountCost
+  nlinarith only [Nat.zero_le (H*W),Nat.zero_le (N*(H*W))]
+
+theorem selectedComputedClassControlTime_linear_le (cB cW : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ (_h : Sizes.Big n) (i : Fin (Sizes.d n)) (V width radius H W N : ℕ),
       0 < width → V ≤ cB*Sizes.p n → W ≤ cW*Sizes.p n → H ≤ Sizes.s n i →
-      (computedClassControlTime V (Sizes.s n i) width radius H W N : ℝ) ≤
-        Sizes.T n+(6*cW+9 : ℕ)*N*(Sizes.t n i : ℝ)*(1+(band : ℝ)^2/Sizes.d n)*
-          (Sizes.p n : ℝ)^(129/128 : ℝ) := by
+      computedClassControlTime V (Sizes.s n i) width radius H W N ≤
+        Sizes.T n+(6*cW+9)*N*Sizes.t n i*Sizes.p n := by
   obtain ⟨C,hOrigins⟩ := selectedCoreOriginsCost_poly_le cB
   filter_upwards [selectedAxisPolynomial_le_volume (C+6*cW+35) 0 3] with n hpoly
-  intro h i V width radius H W N band hw hV hW hH
+  intro h i V width radius H W N hw hV hW hH
   have hp1 : 1 ≤ Sizes.p n := by have := h.thirteen_le_p; omega
   have hpt := selectedPrecision_le_axis h i
   have ht1 : 1 ≤ Sizes.t n i := hp1.trans hpt
@@ -62,6 +67,19 @@ theorem selectedComputedClassControlTime_le (cB cW : ℕ) :
     have hm := Nat.mul_le_mul_left N (show 6*(H*W)+9 ≤ (6*cW+9)*Sizes.t n i*Sizes.p n by
       nlinarith only [hHW,htp])
     nlinarith only [hm]
+  unfold computedClassControlTime
+  nlinarith only [hfixed,hrep]
+
+theorem selectedComputedClassControlTime_le (cB cW : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ (_h : Sizes.Big n) (i : Fin (Sizes.d n)) (V width radius H W N band : ℕ),
+      0 < width → V ≤ cB*Sizes.p n → W ≤ cW*Sizes.p n → H ≤ Sizes.s n i →
+      (computedClassControlTime V (Sizes.s n i) width radius H W N : ℝ) ≤
+        Sizes.T n+(6*cW+9 : ℕ)*N*(Sizes.t n i : ℝ)*(1+(band : ℝ)^2/Sizes.d n)*
+          (Sizes.p n : ℝ)^(129/128 : ℝ) := by
+  filter_upwards [selectedComputedClassControlTime_linear_le cB cW] with n hlinear
+  intro h i V width radius H W N band hw hV hW hH
+  have htime := hlinear h i V width radius H W N hw hV hW hH
+  have hp1 : 1 ≤ Sizes.p n := by have := h.thirteen_le_p; omega
   have hpR : (1 : ℝ) ≤ Sizes.p n := by exact_mod_cast hp1
   have hpPow := Real.self_le_rpow_of_one_le hpR (by norm_num : (1 : ℝ) ≤ 129/128)
   have hnonneg : (0 : ℝ) ≤ (band : ℝ)^2/Sizes.d n := by positivity
@@ -70,10 +88,8 @@ theorem selectedComputedClassControlTime_le (cB cW : ℕ) :
   have hlinear := mul_le_mul htR hpPow (by positivity)
     (by positivity : (0 : ℝ) ≤ (Sizes.t n i : ℝ)*(1+(band : ℝ)^2/Sizes.d n))
   have hlin := mul_le_mul_of_nonneg_left hlinear (by positivity : (0 : ℝ) ≤ (6*cW+9 : ℕ)*N)
-  have hfixedR := (Nat.cast_le (α := ℝ)).mpr hfixed
-  have hrepR := (Nat.cast_le (α := ℝ)).mpr hrep
-  unfold computedClassControlTime
-  push_cast at hfixedR hrepR hlin ⊢
-  nlinarith only [hfixedR,hrepR,hlin]
+  have htimeR := (Nat.cast_le (α := ℝ)).mpr htime
+  push_cast at htimeR hlin ⊢
+  nlinarith only [htimeR,hlin]
 
 end IntegerMultBounds.MathlibTM2.Cost

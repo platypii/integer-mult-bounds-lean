@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4043 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4047 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28960,4 +28960,42 @@ Guarded common-family execution and selected fast-execution checks pass at
 3476.6 MiB and 3514.8 MiB. Expanded compatibility passes (16607 jobs,
 3.6 GiB combined peak).
 Broad axiom audit passes for 342454 declarations at 3552.5 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: actual fast class run derives its complete linear stock allowance
+
+`Cost.computedNormalizedStock_le` separates the existing numerical workspace
+from actual preparation and postprocessing stock, bounding the latter by 18
+times the auxiliary bill. Master generation and crop/normalization use their
+actual stock formulas; ordinary queue setup and every restoring step remain
+charged. `computedCoreStock_sum_le` adds endpoint, payload and replica-order
+movement structurally over arbitrary job lists.
+
+`rawRecoverySingletonWorkspaceBudgets_sum_le` reconciles singleton schedulers
+with whole-class descriptor/output sums and records their entry overhead
+explicitly. `selectedRawRecoverySingletonWorkspaceBudgets_sum_le` reuses the
+coordinate-based raw workspace bounds, paying the shared allowance once. No
+numerical time exponent or sparse-density factor is used to price storage.
+
+`selectedComputedCoreStock_sum_le` proves complete summed core stock at most
+`(39+3*Cprog)*T+C*(Cprog+1)*N*t*p`. The actual proper-core family discharges all
+profiles in `selectedComputedCoreClassStock_sum_le`. Every call's stock is at
+most this sum, so the class scan no longer needs a per-job reserve premise.
+
+The class-control proof now exposes its natural linear bound before applying
+the real fast-time comparison. This also bounds actual class preparation
+stock. `selectedComputedCoreClassBankRun_exec` is strengthened to return the
+same actual run with complete stock allowance
+`(42+3*Cprog)*T+C*(Cprog+1)*N*t*p`, alongside the existing full fast-time bound,
+output certificates, unchanged user state and exact restoring frame. Callers
+supply the fixed program/body push cap, but no stock reserve or job profiles.
+
+Ordinary input generation and ambient exposure/publication still need to be
+composed with this restoring class execution, followed by tensor/R4 layout
+restoration and outer integration. S4 remains incomplete; kappa unchanged.
+
+Guarded selected full-stock execution and linear class-control checks pass at
+3529.8 MiB and 3410.5 MiB. Expanded compatibility passes (16611 jobs,
+3.6 GiB combined peak).
+Broad axiom audit passes for 342465 declarations at 3553.1 MiB, permitting
 only propext, Quot.sound and Classical.choice.
