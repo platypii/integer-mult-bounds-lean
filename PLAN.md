@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3624 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3625 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22903,3 +22903,26 @@ production and the placement connecting the coupling caller remain open, as do
 workspace/selected bounds, global scheduling, tensor/R4 restoration and outer
 integration. S4 is incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 332465 declarations at 3295.4 MiB.
+
+### S4 checkpoint: paid queue loading and initialized full recovery compose
+
+`PhaseCellLoadedReplicaRecoveryLoop.loadedReplicaRecoveryLoop_exec` now executes
+loading, retained-count initialization and the complete counted recovery loop
+in one 259-register trace. Inputs are the actual owned residual and matching
+ordinary-order RHS queues, with the archived residual length/index certificate.
+There is no supplied cursor or per-row execution premise. Both source queues
+and the private controller end empty; the retained count master and borrowed
+238/93 suffixes restore. The output archive has fitted fields in the proved
+order, each with full-halo error `1/2^target`, and all shared readiness and factor
+pages survive. The total cost adds the existing loading and initialized-loop
+bills exactly.
+
+`ReplicaRecoveryResidualRows` packages the actual coupling archive certificate
+and keeps the exposed composed statement shallow under default recursion
+limits. The guarded check passes at 3282.0 MiB. Next produce the owned ordinary
+RHS queue from its retained source and connect caller placement/shared-factor
+production. Workspace/selected bounds, global scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Compatibility with actual initialized interior/coupling passes (15152 jobs,
+3.5 GiB combined peak). The combined scoped axiom audit passes for 332474
+declarations at 3297.5 MiB. Default proof limits are unchanged.
