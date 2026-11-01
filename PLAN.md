@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3906 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3907 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26869,3 +26869,28 @@ declarations at 3458.4 MiB. Next sum this ledger over actual core-class jobs,
 include descriptor traffic/cleanup, and discharge time and peak stock budgets.
 Physical component production, tensor/R4 composition, layout restoration and
 outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: sum complete shared setup over raw-job schedules
+
+`initializedReplicaHaloSharedTime_axis_poly_le` extracts the polynomial already
+proved inside the selected interior volume estimate. The previous theorem now
+reuses this uniform polynomial, preserving its public statement. Generic
+polynomial identities keep large implementation constants out of ring
+normalization; both declarations check at 3332.6 MiB.
+
+`Cost.PhaseCellRecoverySharedSchedule` sums actual interior, coupling and mask
+setup bills structurally over arbitrary record lists. Its complete shared
+schedule theorem includes both interior setups, handoff, mask initialization
+and constant overheads in one T reserve after summing all cores. The raw-job
+corollary transfers the original width profile to the recovery problems using
+problem_sizing; callers need not separately establish recovery widths. The
+replica count does not multiply shared setup, and no per-core T is summed.
+
+Guarded schedule check passes at 3453.3 MiB, compatibility build passes (16112
+jobs, 8.4 GiB combined observed peak), and the axiom audit passes for 338818
+declarations at 3457.9 MiB. Next refine repeated-work estimates from whole-axis
+gap volume to actual local halo volume before summing core-class jobs; directly
+summing the current whole-axis bound would introduce an unwanted core-count
+factor. Descriptor traffic/cleanup, time and peak stock budgets, physical
+component production, tensor/R4 composition, layout restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.

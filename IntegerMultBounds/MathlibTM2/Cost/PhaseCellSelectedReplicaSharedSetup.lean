@@ -11,15 +11,17 @@ open Filter IntegerMultBounds IntegerMultBounds.MathlibTM2.Host IntegerMultBound
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 
-theorem selectedReplicaHaloSharedTime_volume_le (cl cw cr cV scale : ℕ) :
-    ∀ᶠ n : ℕ in atTop, ∀ (_h : Sizes.Big n) (i : Fin (Sizes.d n)) [NeZero (Sizes.s n i)],
-      ∀ H : ReplicaHaloProblem (Sizes.s n i), H.p = Sizes.p n → H.t = Sizes.t n i →
-      H.u ≤ H.p → H.l ≤ cl*H.p → H.wordWidth ≤ cw*H.p → 2^H.l ≤ cr*H.p →
-      H.metadataWidth ≤ cV*H.p → scale*initializedReplicaHaloSharedTime H ≤ Sizes.T n := by
+/-- A uniform polynomial before any whole-box volume absorption. This can be
+summed over distinct cores, including recovery problems with the same widths. -/
+theorem initializedReplicaHaloSharedTime_axis_poly_le (cl cw cr cV : ℕ)
+    {s : ℕ} [NeZero s] (H : ReplicaHaloProblem s)
+    (hu : H.u ≤ H.p) (hl : H.l ≤ cl*H.p) (hw : H.wordWidth ≤ cw*H.p)
+    (hr : 2^H.l ≤ cr*H.p) (hV : H.metadataWidth ≤ cV*H.p) :
+    initializedReplicaHaloSharedTime H ≤
+      (((6*(1000000*(ssMulConst+1)+8*mtCvKf 10+4100000)+400000)*64^6)*
+        (32768+cl+cw+cr+cV+10)^12)*H.t^12*H.p^12 := by
   let C := 32768+cl+cw+cr+cV+10
   let K := (6*(1000000*(ssMulConst+1)+8*mtCvKf 10+4100000)+400000)*64^6
-  filter_upwards [selectedAxisPolynomial_le_volume (scale*K*C^12) 12 12] with n hn
-  intro h i _ H hp ht hu hl hw hr hV
   let Y := C*H.t*H.p
   have htpos : 1 ≤ H.t := by have := H.s_lt_t; omega
   have hppos := H.p_pos
@@ -51,17 +53,29 @@ theorem selectedReplicaHaloSharedTime_volume_le (cl cw cr cV scale : ℕ) :
       unfold ReplicaHaloProblem.stage ReplicaHaloProblem.wordWidth executionStagePrecision executionWidth
       omega
     exact hh.trans hwY
-  have hbandY : H.band ≤ Y := by have hh : H.band ≤ Sizes.s n i := H.band_fit; have := H.s_lt_t; omega
+  have hbandY : H.band ≤ Y := by have hh : H.band ≤ s := H.band_fit; have := H.s_lt_t; omega
   have hE := PackedHaloPassEnvelope.of_bounds H.s_lt_t (Nat.le_add_right H.origin H.span)
     H.span_fit htY hPY hstageY hqY hlY huY hwY hbandY hVY hVY
   have hc := initializedReplicaHaloSharedTime_envelope_le H hE htY hrY
-  have hscaled := Nat.mul_le_mul_left scale hc
-  have hpoly : scale*initializedReplicaHaloSharedTime H ≤
-      (scale*K*C^12)*H.t^12*H.p^12 := by
-    have heq (a b c d e : ℕ) : a*(b*(c*d*e)^12) = (a*b*c^12)*d^12*e^12 := by ring
-    change scale*initializedReplicaHaloSharedTime H ≤ scale*(K*(C*H.t*H.p)^12) at hscaled
-    rw [heq] at hscaled
-    exact hscaled
-  exact hpoly.trans (by simpa only [hp,ht] using hn i)
+  have heq (a b c d : ℕ) : a*(b*c*d)^12 = (a*b^12)*c^12*d^12 := by ring
+  change initializedReplicaHaloSharedTime H ≤ K*(C*H.t*H.p)^12 at hc
+  rw [heq] at hc
+  exact hc
+
+theorem selectedReplicaHaloSharedTime_volume_le (cl cw cr cV scale : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ (_h : Sizes.Big n) (i : Fin (Sizes.d n)) [NeZero (Sizes.s n i)],
+      ∀ H : ReplicaHaloProblem (Sizes.s n i), H.p = Sizes.p n → H.t = Sizes.t n i →
+      H.u ≤ H.p → H.l ≤ cl*H.p → H.wordWidth ≤ cw*H.p → 2^H.l ≤ cr*H.p →
+      H.metadataWidth ≤ cV*H.p → scale*initializedReplicaHaloSharedTime H ≤ Sizes.T n := by
+  let C := 32768+cl+cw+cr+cV+10
+  let K := (6*(1000000*(ssMulConst+1)+8*mtCvKf 10+4100000)+400000)*64^6
+  filter_upwards [selectedAxisPolynomial_le_volume (scale*K*C^12) 12 12] with n hn
+  intro _h i _ H hp ht hu hl hw hr hV
+  have hc := initializedReplicaHaloSharedTime_axis_poly_le cl cw cr cV H hu hl hw hr hV
+  have hs := Nat.mul_le_mul_left scale hc
+  have heq (a b c d e : ℕ) : a*((b*c^12)*d^12*e^12) = (a*b*c^12)*d^12*e^12 := by ring
+  change scale*initializedReplicaHaloSharedTime H ≤ scale*((K*C^12)*H.t^12*H.p^12) at hs
+  rw [heq] at hs
+  exact hs.trans (by simpa only [hp,ht] using hn i)
 
 end IntegerMultBounds.MathlibTM2.Cost
