@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3810 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3812 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25360,3 +25360,36 @@ remain open. S4 is incomplete; kappa is unchanged.
 Guarded module check passes at 3272.8 MiB. Compatibility build passes
 (15699 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for 336437
 declarations at 3387.0 MiB.
+
+
+### S4 checkpoint: complete shared interior workspace is polynomial
+
+`Cost.PhaseCellReplicaClassSharedWorkspace` bounds the real zero-replica
+interior class reserve by one cached-origin numerical reserve plus a fixed
+native push factor times shared class setup. Native origin generation,
+page release/reload, weight-page creation, publication controls and retirement
+are included. Existing shared setup and cached-origin workspace estimates then
+provide the class polynomial bound.
+
+A direct proof that simplified concrete compiled push coefficients hit a
+normalization timeout and then the single-check memory guard. The final
+`classSharedStock_zero_le` proves the full zero-replica arithmetic identity and
+inequality over abstract scalar components, instantiating actual programs
+last. This avoids compiled-program reduction and preserves the default limits.
+
+`Cost.PhaseCellReplicaInteriorSharedWorkspace` covers the actual key workspace,
+including its empty-group branch, and sums the existing six-key schedule.
+Length-key generation and all shared class factories are included in
+`replicaInteriorSharedWorkspace_poly`. Its envelope premises concern ordinary
+dimensions, actual computed factory widths and fixed native push coefficients;
+no shared workspace value is assumed.
+
+Next derive those envelope premises from selected dimensions, absorb shared
+interior storage into volume, and combine the initialization/preparation/interior
+pieces with the proved linear replica payload allowance. First-pass/generated-
+factory integration, distinct-core scheduling/amortization, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Final guarded checks pass at 3287.5 MiB (shared class composition/polynomial)
+and 3367.4 MiB (complete shared interior schedule). Compatibility build
+passes (15701 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
+336444 declarations at 3388.4 MiB.
