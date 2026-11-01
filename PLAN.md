@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3669 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3673 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23629,3 +23629,43 @@ time and workspace bounds, generated-factory composition, scheduling,
 tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
 Scoped axiom audit passes for 333945 declarations at 3326.3 MiB.
+
+### S4 checkpoint: counted recovery preparation returns the actual second-pass batch
+
+`PhaseCellReplicaRecoveryPreparationCursor` describes both archives by one
+list of indexed boundary fields. Each RHS is the recovery RHS determined by
+that same list entry. Head extraction reuses the existing paired input cursor;
+advancement prepends one pair and proves its index once. At termination, the
+cursor constructs a `ReplicaRecoveryBatch` from the computed row contracts and
+identifies the exact physical boundary and recovery-RHS archives. They contain
+original replica indices in increasing order; the RHS archive is therefore
+`B.inputs.reverse`, not the second controller's source order.
+
+`PhaseCellReplicaRecoveryPreparationLoop` lifts the checked preparation row
+through the existing counted-bank loop. It consumes every residual/original-RHS
+pair, constructs the numerical batch from actual execution, and returns both
+archives, factor data, recovery core and boundary readiness. Its bill is
+`N*(replicaRecoveryPreparationRowCost H+3)+2`. A counter outside the worker bank
+is consumed; native borrowed RHS/output suffixes restore and the bank's other
+ports and left stacks retain their proved frames. No per-replica scalar interior
+solve is executed.
+
+`PhaseCellReplicaRecoveryBatchSource` reuses the existing restoring reverse-row
+scan to install `B.inputs` from the actual reversed archive. The explicit bill
+is `N*(16*rowVolume+19)+6`, with the existing native workspace envelope; the
+archive is restored. `PhaseCellReplicaRecoveryBatchHeaders` transports ordinary
+headers to the recovery problem using the proved common precision, stage,
+widths, geometry and replica count. The source execution returns these actual
+headers with the new source suffix and saved gather bank. The existing source
+bank is retained as a borrowed suffix rather than silently discarded.
+
+All four new modules pass guarded checks under default limits: 3267.2 MiB
+(cursor), 3305.8 MiB (counted traversal), 3246.2 MiB (header transport) and
+3248.6 MiB (source/header execution). Compatibility with generated recovery,
+the batch fast estimate and periodic factor setup passes (15427 jobs, 3.4 GiB
+combined peak). Next join this installed source to the existing batched interior
+execution, splice the boundary archive into its actual outputs, and finish
+full preparation/assembly time and workspace bounds. Generated-factory
+composition, scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 333975 declarations at 3329.7 MiB.
