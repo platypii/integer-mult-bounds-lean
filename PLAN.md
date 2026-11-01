@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4019 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4021 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28567,3 +28567,42 @@ dependency build passes (16265 jobs, 3.5 GiB combined peak).
 Expanded compatibility passes (16582 jobs). Guarded selected-bound check
 passes at 3484.7 MiB. Broad axiom audit passes for 342059 declarations at
 3550.1 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: actual scan and class execution retain summed time bills
+
+`Node.ScanPTimeInvariant` extends the structural counted-scan invariant to
+index-dependent body time allowances. The same fixed runtime scan restores
+its counters, carries semantic certificates and shares one stock reserve;
+time is the sum of indexed allowances plus `5*N+4`. No numerical program or
+concrete register bank is expanded.
+
+`Host.ConsumeTimeScan.consumeTimeScan_exec` assigns each iteration the next
+job's actual allowance. The done/todo invariant identifies that job at the
+current index; a structural list lemma identifies the indexed sum with the
+job-list sum. Ordered origin/payload consumption, output certificates, exact
+restoring frame and shared workspace remain on the same returned execution.
+
+`ComputedRecoveryPlan.coreScan_sum_exec` now proves the actual computed scan
+runs within `sum(coreTimeCost)+5*jobCount+4`, retaining its previous exact frame
+and shared stock. `classRun_sum_exec` composes preparation and final count
+retirement around that summed-time execution. It no longer assumes a uniform
+per-core time bound. The old uniform `coreScan_exec` and `classRun_exec`
+interfaces are corollaries of these summed proofs, so their structural
+execution proofs are not duplicated. A shared uniform-sum lemma supplies
+compatibility for those callers.
+
+This closes the execution-versus-ledger gap recorded at the previous
+checkpoint: the whole-class raw fast bound can now be compared with the
+actual summed core execution time, adding class preparation, scan overhead
+and cleanup explicitly. Full grouped auxiliary-cost absorption, concrete
+ordinary-bank readiness, ambient exposure/publication and tensor/R4
+restoration remain open. S4 is incomplete; kappa unchanged.
+
+Guarded checks pass at 1407.7 MiB (indexed-time scan invariant) and 1413.8 MiB
+(queue-consuming summed-time scan). Computed scan/class dependency build
+passes (15930 jobs, 3.6 GiB combined peak).
+Expanded compatibility passes (16584 jobs, 5.9 GiB combined parallel peak).
+Guarded checks pass at 3457.6 MiB (summed computed scan) and 3468.4 MiB
+(summed class lifecycle). Broad axiom audit passes for 342065 declarations
+at 3548.9 MiB, permitting only propext, Quot.sound and Classical.choice.
