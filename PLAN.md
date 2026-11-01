@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3941 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3944 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27326,3 +27326,37 @@ Guarded checks pass at 3166.6 MiB (refactored initialization) and 3303.4 MiB
 (common format/target bounds). Scoped compatibility build passes (16151 jobs,
 15.6 GiB combined peak); axiom audit passes for 339014 declarations at
 3467.3 MiB.
+
+### S4 checkpoint: constructed ordered core jobs inherit actual fast execution
+
+`Cost.PhaseCellSelectedRawRecoveryJobProfile` instantiates all selected scheduler
+scalar bounds on RawRecoveryJob.ofComplexBounds with packedHaloCommonWidth.
+Numerical target and common W come from the selected constructor bounds;
+selectedHaloGatheredWidths supplies ring, word and metadata widths, including
+the metadata-to-word ratio. Replica count is derived as 2*Fs.length from
+complex-component expansion. There are no supplied execution, solution or
+resource-bound premises.
+
+`Cost.PhaseCellSelectedCoreClassRawRecoveryProfile` builds the ordered List.ofFn
+of these jobs from a family of mathematical PackedHaloParameterBounds at the
+actual core endpoints. It discharges all seven scheduler premises together:
+job count, scalar profile, metadata/replica profile, coordinate sum, span sum,
+numerical target and sparse numerical volume. It reuses the existing core
+geometry arguments; coreClassJobSpan_le is now public for this reuse.
+
+`Cost.PhaseCellSelectedCoreClassRawRecoveryExec` applies the existing joint
+scheduler theorem to exactly this constructed list. Constants and thresholds
+are uniform in the mathematical data and register placement. Fast time uses
+2*Fs.length replicas and the actual band; linear-space execution, certified
+outputs and private/source restoration hold for that same run. Physical
+descriptor-source readiness is still an explicit premise. The next integration
+step is to construct that source from actual exposed complex inputs, then pair,
+crop and publish results and compose tensor/R4 restoration. The geometric
+width/guard/cell/preparation inequalities remain mathematical premises to
+instantiate with the selected amortized width. S4 is incomplete; kappa unchanged.
+
+Guarded checks pass at 3389.0 MiB (single constructor profile), 3444.4 MiB
+(ordered core profile) and 3464.7 MiB (actual core execution). Axiom audit passes
+for 339022 declarations at 3466.3 MiB.
+Scoped compatibility build passes (16154 jobs, 1.1 GiB combined observed peak,
+mostly replayed).

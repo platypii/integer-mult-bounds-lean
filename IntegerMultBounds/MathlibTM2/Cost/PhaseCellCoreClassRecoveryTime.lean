@@ -11,7 +11,7 @@ open Filter IntegerMultBounds IntegerMultBounds.MathlibTM2.Mult IntegerMultBound
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 
-private theorem coreClassJobSpan_le {s : ℕ} [NeZero s] (width band n L : ℕ)
+theorem coreClassJobSpan_le {s : ℕ} [NeZero s] (width band n L : ℕ)
     (hwidth : width ≤ s) (hr : n*band ≤ width)
     (jobs : Fin (coreGatherIndices s width (n*band) L).length → RawRecoveryJob s)
     (hspan : ∀ i, let k := (coreGatherIndices s width (n*band) L)[i.val]
