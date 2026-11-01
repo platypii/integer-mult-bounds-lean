@@ -34,6 +34,38 @@ theorem retainedPageSpatialIntervalLoopCost_le (boundary : Bool) (q w s t band a
       exact Nat.add_le_add_right (retainedPageSpatialGuardedStepCost_le _ q w band) 3
     _ = _ := by simp
 
+def retainedCouplingActiveRows (boundary : Bool) (s t band a b origin N : ℕ) : ℕ :=
+  ((Finset.range N).filter (fun j => couplingSkipAt boundary s t band a b (origin+j) = false)).card
+
+theorem retainedPageSpatialGuardedStepCost_mask_le (skip : Bool) (q w band : ℕ) :
+    retainedPageSpatialGuardedStepCost skip q w band ≤ 20*w+23+
+      (if skip = false then 1000*(band+1)*(rmulCost w+w+1) else 0) := by
+  cases skip with
+  | false =>
+    have h := retainedPageSpatialGuardedStepCost_le false q w band
+    simp only [ite_true]
+    exact h.trans (Nat.le_add_left _ _)
+  | true =>
+    simp [retainedPageSpatialGuardedStepCost,retainedGuardedPageSpatialCouplingRowCost]
+    omega
+
+theorem retainedPageSpatialIntervalLoopCost_mask_le (boundary : Bool) (q w s t band a b origin N : ℕ) :
+    retainedPageSpatialIntervalLoopCost boundary q w s t band a b origin N ≤
+      N*(20*w+26)+retainedCouplingActiveRows boundary s t band a b origin N*
+        (1000*(band+1)*(rmulCost w+w+1))+2 := by
+  unfold retainedPageSpatialIntervalLoopCost
+  apply Nat.add_le_add_right
+  calc
+    _ ≤ (Finset.range N).sum (fun j => (20*w+26)+
+        (if couplingSkipAt boundary s t band a b (origin+j) = false then
+          1000*(band+1)*(rmulCost w+w+1) else 0)) := by
+      apply Finset.sum_le_sum
+      intro j hj
+      have h := retainedPageSpatialGuardedStepCost_mask_le
+        (couplingSkipAt boundary s t band a b (origin+j)) q w band
+      omega
+    _ = _ := by simp [Finset.sum_add_distrib,←Finset.sum_filter,retainedCouplingActiveRows]
+
 theorem retainedPageSpatialIntervalLoopCost_fast_le (cw : ℕ) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ (p q w s t band a b origin N : ℕ) (boundary : Bool),
       1 ≤ p → 1 ≤ w → w ≤ cw*p →
@@ -56,6 +88,31 @@ theorem retainedPageSpatialIntervalLoopCost_fast_le (cw : ℕ) :
       N*(1000*((band+1 : ℕ) : ℝ)*((rmulCost w+w+1 : ℕ) : ℝ)+3)+2 := by
     exact_mod_cast retainedPageSpatialIntervalLoopCost_le boundary q w s t band a b origin N
   have hs := mul_le_mul_of_nonneg_left hscalar (by positivity : (0 : ℝ) ≤ (N : ℝ)*1000*(band+1))
+  push_cast at hloop hs ⊢
+  nlinarith only [hloop,hs]
+
+theorem retainedPageSpatialIntervalLoopCost_mask_fast_le (cw : ℕ) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (p q w s t band a b origin N : ℕ) (boundary : Bool),
+      1 ≤ p → 1 ≤ w → w ≤ cw*p →
+      (retainedPageSpatialIntervalLoopCost boundary q w s t band a b origin N : ℝ) ≤
+        N*(20*w+26)+2+C*(retainedCouplingActiveRows boundary s t band a b origin N)*((band+1 : ℕ) : ℝ)*(p : ℝ)^(129/128 : ℝ) := by
+  obtain ⟨K,hK,hproduct⟩ := chirp_rmul_le cw
+  refine ⟨1000*(K+(cw : ℝ)+1),by positivity,?_⟩
+  intro p q w s t band a b origin N boundary hp hw hwidth
+  have hp1 : (1 : ℝ) ≤ p := by exact_mod_cast hp
+  have hpow : (p : ℝ) ≤ (p : ℝ)^(129/128 : ℝ) :=
+    Real.self_le_rpow_of_one_le hp1 (by norm_num)
+  have hone : (1 : ℝ) ≤ (p : ℝ)^(129/128 : ℝ) := Real.one_le_rpow hp1 (by norm_num)
+  have hwidthR : (w : ℝ) ≤ (cw : ℝ)*(p : ℝ) := by exact_mod_cast hwidth
+  have hwPow := hwidthR.trans (mul_le_mul_of_nonneg_left hpow (Nat.cast_nonneg cw))
+  have hscalar : ((rmulCost w+w+1 : ℕ) : ℝ) ≤ (K+(cw : ℝ)+1)*(p : ℝ)^(129/128 : ℝ) := by
+    push_cast
+    have hh := add_le_add (add_le_add (hproduct p w hp hw hwidth) hwPow) hone
+    nlinarith only [hh]
+  have hloop : (retainedPageSpatialIntervalLoopCost boundary q w s t band a b origin N : ℝ) ≤
+      N*(20*w+26)+(retainedCouplingActiveRows boundary s t band a b origin N)*(1000*((band+1 : ℕ) : ℝ)*((rmulCost w+w+1 : ℕ) : ℝ))+2 := by
+    exact_mod_cast retainedPageSpatialIntervalLoopCost_mask_le boundary q w s t band a b origin N
+  have hs := mul_le_mul_of_nonneg_left hscalar (by positivity : (0 : ℝ) ≤ (retainedCouplingActiveRows boundary s t band a b origin N : ℝ)*1000*(band+1))
   push_cast at hloop hs ⊢
   nlinarith only [hloop,hs]
 

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3761 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3762 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24700,3 +24700,34 @@ S4 is incomplete; kappa is unchanged.
 Compatibility with the bounded caller passes (15447 jobs, 3.5 GiB
 combined peak). Scoped axiom audit passes for 335477 declarations at
 3354.1 MiB.
+
+
+### S4 checkpoint: complete caller numerical time charges only active coupling rows
+
+`Cost.PhaseCellRetainedCouplingFast` now counts actual active rows with
+`retainedCouplingActiveRows`. `retainedPageSpatialIntervalLoopCost_mask_le`
+proves a structural finite-sum bound: linear copy/control traffic for all
+rows, plus multiplication streams only where the guard is false. Its fast
+counterpart reuses the scalar multiplication estimate. No concrete mask
+or numerical cases are enumerated.
+
+`Cost.PhaseCellReplicaRecoveryNumericalFast` defines the actual native
+preparation bill, including guard/row traffic, separately from numerical
+work. `replicaRecoveryPreparationNonSolve_fast_le` bounds retained coupling
+by the active-row count times bandwidth and the fast scalar factor.
+`batchedReplicaRecovery_numerical_fast_le` combines this with the boundary
+solve and shared interior estimates for the actual complete caller.
+Its numerical coefficient contains interior coordinates, boundary rows
+times bandwidth, and active coupling rows times bandwidth; replica count
+is applied once. This improves the earlier bound charging every spatial
+row for numerical coupling.
+
+Guarded checks pass at 3275.2 MiB (mask-sensitive coupling) and 3341.5 MiB
+(complete numerical caller estimate). Next bound the actual active-row
+geometry and native traffic, then discharge selected resource inequalities.
+Selected space, first-pass/generated-factory execution, scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+Compatibility with the bounded caller passes (15550 jobs, 3.5 GiB
+combined peak). Scoped axiom audit passes for 335486 declarations at
+3353.7 MiB.
