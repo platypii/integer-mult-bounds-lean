@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3743 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3746 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24445,3 +24445,31 @@ and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Compatibility with the actual batched recovery time theorem passes
 (15404 jobs, 2.7 GiB combined peak). Scoped axiom audit passes for
 334304 declarations at 3339.2 MiB.
+
+
+### S4 checkpoint: local ribbon lifecycle and shared result feeding have workspace bounds
+
+`PhaseCellLocalCouplingIntervalStock.localCouplingInterval_exec_within`
+bounds native ribbon preparation, the generated restored numerical interval,
+and ribbon release as one actual execution. `localCouplingWorkspace` names
+the resulting allowance. Native setup/release use the atomic push bounds of
+the closed programs against their existing traffic bills; numerical scratch
+is still charged once. This local contract is specialized to the closed
+worker actually used by the shared-header placement.
+
+`PhaseCellLocalFeedCouplingIntervalStock` adds reversal into natural solver
+input order and releases the reversed intermediate.
+`PhaseCellSharedLocalFeedCouplingIntervalStock` lifts that bounded closed
+worker through the existing shared-header register permutation to an arbitrary
+caller body. The exact original output state, time bill, master headers and
+borrowed suffixes are preserved. No new resource oracle is assumed.
+
+Guarded checks pass at 2178.8 MiB (complete local lifecycle), 2149.1 MiB
+(result feeding), and 2149.1 MiB (shared placement). Next add private scalar
+counter preparation/release, then packed recovery RHS and preparation.
+Whole-caller workspace, selected resource inequalities, first-pass/generated
+factory integration, scheduling, tensor/R4 restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.
+Compatibility with the actual batched recovery time theorem passes
+(15407 jobs, 2.8 GiB combined peak). Scoped axiom audit passes for
+334311 declarations at 3340.0 MiB.
