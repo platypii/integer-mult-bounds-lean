@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3812 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3815 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25393,3 +25393,28 @@ Final guarded checks pass at 3287.5 MiB (shared class composition/polynomial)
 and 3367.4 MiB (complete shared interior schedule). Compatibility build
 passes (15701 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for
 336444 declarations at 3388.4 MiB.
+
+
+### S4 checkpoint: selected cached recovery has a complete workspace bound
+
+`PackedHaloPassEnvelope.factoryWidths` now supplies the computed setup and
+coefficient widths to both time and workspace proofs. The shared interior
+workspace is polynomial in the ordinary pass envelope; selected dimensions
+absorb this polynomial into one volume allowance.
+
+`selectedInitializedCachedRecoveryWorkspace_total_le` combines mask initialization,
+cached preparation, shared interior scratch and publication merge storage. The
+complete caller reserve is at most `4*T` plus the established linear replica
+payload allowance. No shared workspace value is assumed or multiplied by the
+replica count. The selected recovery time theorem remains compatible.
+
+The total workspace theorem checks at 3380.4 MiB; the selected shared interior
+lemma checks at 3382.4 MiB. Compatibility build passes (15766 jobs, 5.9 GiB
+combined peak). The scoped axiom audit passes for 336449 declarations.
+
+Next prioritize the grouped execution boundary: connect first-pass generated
+inputs to recovery and publication, then discharge distinct-core scheduling and
+amortization using structural schedule lemmas. Reuse existing execution and
+frame contracts rather than build another generic execution framework. Tensor/R4
+composition, restored layouts and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
