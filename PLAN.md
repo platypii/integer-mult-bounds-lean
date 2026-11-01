@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3970 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3971 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27754,3 +27754,27 @@ scan. S4 remains incomplete; kappa is unchanged.
 Guarded module check passes at 3379.4 MiB; build passes (15629 jobs, 3.5 GiB
 combined peak); expanded axiom audit passes for 341633 declarations at
 3526.2 MiB.
+
+### S4 checkpoint: actual complex constructor discharges pairing target order
+
+`Mult.PhaseCellRecoverySolutionOrder` identifies the constructor's chosen
+solution as a shared field-indexed solutionMap. The equality with ofBounds
+is definitional; solutionMap_solves proves the active-system equation. A
+structural reverse-index enumeration lemma then restores original field
+order, and componentSolution_targets identifies the real/imaginary halves.
+No second uniqueness argument or concrete index enumeration is needed.
+
+RawRecoveryJob.ofComplexBounds_solutionOrder proves precisely the mathematical
+equality required by pair_output_exec. Its ofComplexBounds_pair_output_exec
+specialization removes that premise: actual halo bounds, original complex
+fields and their recovery-output certificate suffice for executed pairing
+with complex accuracy, fitted scalar fields derived internally and a linear
+time bill. Existing pairRecoveryOutput_within_stock bounds that same run.
+
+Next compose computed recovery with this actual pairing theorem, paying
+header preparation and cleanup, then crop/publish and lift through the
+ordered grouped scan. S4 remains incomplete; kappa is unchanged.
+
+Guarded module check passes at 3384.7 MiB; compatibility build passes
+(15861 jobs, 3.5 GiB combined peak).
+Broad axiom audit passes for 341643 declarations at 3524.4 MiB.
