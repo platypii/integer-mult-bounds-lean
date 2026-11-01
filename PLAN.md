@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3683 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3685 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23781,3 +23781,37 @@ the second pass, and compose the three traces. Whole-caller resource bounds,
 generated-factory composition, scheduling, tensor/R4 restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334053 declarations at 3336.6 MiB.
+
+### S4 checkpoint: preparation executes in the common caller and releases its native bank
+
+`PhaseCellPlacedReplicaRecoveryPreparation` lifts the actual counted preparation
+trace into the common 392-register caller. Its entry record contains only the
+starting paired cursor, generated factor data and physical worker readiness.
+The executed trace constructs the recovery batch and returns the boundary/RHS
+archives directly at 257/389, consumes counter 390 and restores the original
+source suffixes. It returns factor data, recovery core, boundary readiness and
+worker left-stack agreement. The whole ordinary gather bank is preserved,
+including its headers, source and left stacks; arbitrary spectator registers
+outside the preparation image retain their complete frame.
+
+`PhaseCellReplicaRecoveryBatchPlacement` now proves structural separation of
+the entire preparation image from gather roles and identifies the shared
+interior placement. A native-bank equality proves that preparation's original
+117 arithmetic roles coincide with the second interior solver's core.
+`PhaseCellReplicaRecoveryReleasedBank` reconstructs the ordinary released-cell
+initializer from the returned recovery core, restored native left stacks and
+the two actual suffixes. It keeps those suffixes explicit rather than requiring
+them to be blank. The placed version transports this fact to the exact solver
+view, removing an independent numerical-bank readiness premise from the
+upcoming composition.
+
+Guarded checks pass under default limits: 3305.0 MiB (placed preparation),
+3262.0 MiB (placement/native equality) and 3253.2 MiB (released-bank bridge).
+Compatibility with placed assembly, executed second-pass fast bounds and the
+generated baseline passes (15441 jobs, 5.7 GiB combined peak). Next transport
+the reserved solver/cache and scratch frames, use the returned bank/gather
+facts to execute the second pass, and join its actual output with placed
+assembly. Whole-caller resource bounds, generated-factory composition,
+scheduling, tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334087 declarations at 3329.6 MiB.

@@ -62,4 +62,49 @@ theorem replicaRecoveryPreparationCallerReg_output_disjoint (i : Fin 258) :
     change 389+(i.val-256) = 391 at hv
     omega
 
+theorem replicaRecoveryPreparationCallerReg_gather_disjoint (i : Fin 258) (j : Fin 126) :
+    replicaRecoveryPreparationCallerReg i ≠ Fin.castLE (by decide : 126 ≤ 392) j := by
+  by_cases hi : i.val < 255
+  · have heq : i = Fin.castLE (by decide : 255 ≤ 258) (⟨i.val,hi⟩ : Fin 255) := Fin.ext rfl
+    rw [heq,replicaRecoveryPreparationCallerReg_worker]
+    intro he
+    apply replicaRecoveryCallerReg_worker_gather_disjoint ⟨i.val,hi⟩ j
+    apply Fin.ext
+    exact congrArg (fun k : Fin 392 => k.val) he
+  by_cases h255 : i.val = 255
+  · have heq : i = 255 := Fin.ext h255
+    subst i
+    intro he
+    have hv := congrArg (fun k : Fin 392 => k.val) he
+    have hj := j.isLt
+    change 387 = j.val at hv
+    omega
+  · intro he
+    have h256 : ¬i.val < 256 := by omega
+    have hv := congrArg (fun k : Fin 392 => k.val) he
+    simp only [replicaRecoveryPreparationCallerReg,dif_neg h256] at hv
+    change 389+(i.val-256) = j.val at hv
+    have hj := j.isLt
+    omega
+
+def replicaRecoveryBatchInterior : ReplicaInteriorPlacement 392 :=
+  replicaRecoveryCallerInterior.reindex (Fin.castLE (by decide : 389 ≤ 392)) (Fin.castLE_injective _)
+
+@[simp] theorem replicaRecoveryBatchInterior_gather (i : Fin 126) :
+    replicaRecoveryBatchInterior.gather i = Fin.castLE (by decide : 126 ≤ 392) i := rfl
+
+theorem replicaRecoveryPreparationCallerReg_native (i : Fin 117) :
+    replicaRecoveryPreparationCallerReg (Fin.castLE (by decide : 117 ≤ 258) i) =
+      replicaRecoveryBatchInterior.solver (Fin.castLE (by decide : 117 ≤ 121) i) := by
+  have hi : (Fin.castLE (by decide : 117 ≤ 258) i).val < 256 := by have hh := i.isLt; dsimp; omega
+  simp only [replicaRecoveryPreparationCallerReg,dif_pos hi]
+  change Fin.castLE (by decide : 389 ≤ 392)
+    (replicaRecoveryCallerReg (Fin.castLE (by decide : 168 ≤ 259) (Fin.castLE (by decide : 117 ≤ 168) i))) = _
+  rw [replicaRecoveryCallerReg_native]
+  change Fin.castLE (by decide : 300 ≤ 392)
+    (ReplicaCouplingPlacement.standard.bank (Fin.castLE (by decide : 117 ≤ 168) i)) = _
+  unfold ReplicaCouplingPlacement.bank
+  rw [dif_pos (show (Fin.castLE (by decide : 117 ≤ 168) i).val < 117 from i.isLt)]
+  rfl
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
