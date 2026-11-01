@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3583 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3584 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22387,3 +22387,29 @@ interior pass. Generating the shared boundary setup from the current released
 bank, local workspace, selected resources, global scheduling, tensor/R4
 restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331136 declarations at 3264.8 MiB.
+
+### S4 checkpoint: consume a residual archive row into the boundary RHS
+
+`PhaseCellStageReplicaBoundaryRhs` composes the existing counted prefix
+transfer, arbitrary-placement halo gather and prefix retirement. Its structural
+contract consumes exactly one encoded residual interval from an archive,
+selects the boundary RHS in `bOrder`, and restores the borrowed staging suffix,
+shared mask, all counters and scratch. Only the archive tail and selected RHS
+stack change. The shared boundary mask is an input retained across rows; it is
+not generated anew per replica.
+
+The theorem is over arbitrary register placement and arbitrary residual field,
+so it can be instantiated for every row witness without numerical replay or
+case-specific certificates. Its time bound sums the two transfers and existing
+gather bound. The fit hypothesis supplies the exact physical interval length.
+
+The guarded single-file check passes at 2088.3 MiB. Compatibility with the
+replica boundary solver and initialized interior/coupling caller passes
+(14822 jobs, 2.7 GiB combined peak). Default proof limits are unchanged.
+
+Next compose the existing retained fold with this physical extraction to put
+the selected RHS in `bFoldOrder` at the prepared solver bank. Shared mask,
+fold-counter and factor setup generation, boundary recovery, the second interior
+pass, workspace/selected resources, global scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331256 declarations at 3266.6 MiB.
