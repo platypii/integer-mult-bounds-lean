@@ -43,20 +43,20 @@ private theorem generatedRecoveryHeaderStock_le {s : ℕ} [NeZero s] (H : Replic
   norm_num only [show 2^15 = 32768 by norm_num]
   nlinarith only [hq,hstage,hs,hab,ha,hl,hu,hw,hV,hb,hvolume,htp,htt,hcw,hcv]
 
-theorem selectedGeneratedRecoveryInput_stock_le (ct ce : ℕ) :
+theorem selectedGeneratedRecoveryInputStock_le (ct ce : ℕ) :
     ∃ C : ℕ, ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)) [NeZero (Sizes.s n i)]
       (H : ReplicaHaloProblem (Sizes.s n i)), H.p = Sizes.p n → H.t = Sizes.t n i →
       H.l = haloInverseRingLog (Sizes.s n i) (Sizes.t n i) → H.u ≤ Sizes.p n →
       H.target ≤ ct*Sizes.p n → H.rhsExp ≤ ce*Sizes.p n →
-      ∀ (inp : List (Bool ⊕ Bool)) (out : List Bool) (v : HS 392 Q A U),
-      mnSize (mk v (generatedRecoveryInput (A := A) H inp out)) ≤
+      ∀ (inp : List (Bool ⊕ Bool)) (out : List Bool),
+      generatedRecoveryInputStock H inp out ≤
         inp.length+out.length+Sizes.T n+C*H.Fs.length*H.t*H.p := by
   let cw := 16*20+8*ct+8*ce+128
   let cV := (2*cw+426009)*cw
   let cHead := 50000+4*cw+cV
   refine ⟨392+cw,?_⟩
   filter_upwards [selectedAxisPolynomial_le_volume (392*cHead) 1 1] with n hv
-  intro h i _ H hp ht hl hu htarget hrhs inp out v
+  intro h i _ H hp ht hl hu htarget hrhs inp out
   obtain ⟨_,_,hw,hV⟩ := selectedHaloGatheredWidths ct ce h i H.u H.target H.rhsExp hu htarget hrhs
   have hwH : H.wordWidth ≤ cw*H.p := by simpa only [ReplicaHaloProblem.wordWidth,hp,hl,cw] using hw
   have hVH : H.metadataWidth ≤ cV*H.p := by
@@ -72,8 +72,23 @@ theorem selectedGeneratedRecoveryInput_stock_le (ct ce : ℕ) :
   have hspan : H.span ≤ H.t := by have := H.span_fit; have := H.s_lt_t; omega
   have hpayload := Nat.mul_le_mul_left H.Fs.length (Nat.mul_le_mul hspan hwH)
   have hcount := Nat.mul_le_mul_left H.Fs.length (show 1 ≤ H.t*H.p from Nat.mul_pos ht1 hp1)
-  have hinit := generatedRecoveryInput_stock_le H inp out v
   change generatedRecoveryHeaderStock H ≤ cHead*H.t*H.p+H.Fs.length at hheaders
-  nlinarith only [hinit,hheaders,hshared,hpayload,hcount]
+  unfold generatedRecoveryInputStock
+  nlinarith only [hheaders,hshared,hpayload,hcount]
+
+theorem selectedGeneratedRecoveryInput_stock_le (ct ce : ℕ) :
+    ∃ C : ℕ, ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)) [NeZero (Sizes.s n i)]
+      (H : ReplicaHaloProblem (Sizes.s n i)), H.p = Sizes.p n → H.t = Sizes.t n i →
+      H.l = haloInverseRingLog (Sizes.s n i) (Sizes.t n i) → H.u ≤ Sizes.p n →
+      H.target ≤ ct*Sizes.p n → H.rhsExp ≤ ce*Sizes.p n →
+      ∀ (inp : List (Bool ⊕ Bool)) (out : List Bool) (v : HS 392 Q A U),
+      mnSize (mk v (generatedRecoveryInput (A := A) H inp out)) ≤
+        inp.length+out.length+Sizes.T n+C*H.Fs.length*H.t*H.p := by
+  obtain ⟨C,hC⟩ := selectedGeneratedRecoveryInputStock_le ct ce
+  refine ⟨C,?_⟩
+  filter_upwards [hC] with n hc
+  intro h i _ H hp ht hl hu htarget hrhs inp out v
+  exact (generatedRecoveryInput_stock_le H inp out v).trans
+    (hc h i H hp ht hl hu htarget hrhs inp out)
 
 end IntegerMultBounds.MathlibTM2.Cost

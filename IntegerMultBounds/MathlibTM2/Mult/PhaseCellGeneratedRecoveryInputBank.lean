@@ -100,11 +100,13 @@ theorem generatedRecoveryHeader_le_stock (H : ReplicaHaloProblem s) (k : Fin 126
     generatedRecoveryHeader H k ≤ generatedRecoveryHeaderStock H :=
   recoveryHeader_le_sum _ _ _ _ _ _ _ _ _ _ _ _ _ _ k
 
+def generatedRecoveryInputStock (H : ReplicaHaloProblem s) (inp : List (Bool ⊕ Bool)) (out : List Bool) : ℕ :=
+  inp.length+out.length+392*generatedRecoveryHeaderStock H+H.Fs.length*(H.span*H.wordWidth)
+
 theorem generatedRecoveryInput_stock_le (H : ReplicaHaloProblem s) (inp : List (Bool ⊕ Bool)) (out : List Bool)
     (v : HS 392 Q A U) :
     mnSize (mk v (generatedRecoveryInput (A := A) H inp out)) ≤
-      inp.length+out.length+392*generatedRecoveryHeaderStock H+
-        H.Fs.length*(H.span*H.wordWidth) := by
+      generatedRecoveryInputStock H inp out := by
   have hlen : (H.Fs.flatMap (fun F => cstream A H.wordWidth (packedInterval H.origin H.span F))).length =
       H.Fs.length*(H.span*H.wordWidth) := by
     simp [List.length_flatMap,length_cstream,packedInterval_length _ H.span_fit,
@@ -128,7 +130,7 @@ theorem generatedRecoveryInput_stock_le (H : ReplicaHaloProblem s) (inp : List (
   simp only [Finset.sum_add_distrib,Finset.sum_const,Finset.card_univ,Fintype.card_fin,smul_eq_mul,
     Finset.sum_ite_eq',Finset.mem_univ,ite_true] at hsum
   rw [mnSize_mk_registerBankStock,registerBankStock_eq_right_sum _ (by intro i; rfl)]
-  change inp.length+out.length+_ ≤ _
+  change inp.length+out.length+_ ≤ inp.length+out.length+392*generatedRecoveryHeaderStock H+H.Fs.length*(H.span*H.wordWidth)
   omega
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

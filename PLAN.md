@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3885 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3887 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26566,3 +26566,32 @@ remaining workspace/cache/peripheral premises, and combine initial stock with
 the existing selected extra-workspace certificate. Distinct-core scheduling,
 tensor/R4 composition, layout restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: explicit input-to-output execution and absolute stock
+
+`Mult.PhaseCellGeneratedRecoveryInputExec.generatedRecoveryInput_exec_within`
+instantiates the complete physical factory/first-pass/recovery/assembly caller
+on `generatedRecoveryInput`. The theorem has mathematical parameter, solution
+and program-push bounds, but no register-readiness or generated-factor premises.
+Placement injectivity and existing gather separation establish the initially
+empty setup/factor/private banks; the direct numerical placement supplies empty
+cache/solver ports. Canonical buffers, retained gather headers and the explicit
+count discharge all peripheral premises. It returns actual execution, assembly
+certificates and empty final accumulator/RHS-tail ports.
+
+`generatedRecoveryInputStock` names the explicit initial allowance. The selected
+input theorem now bounds this allowance directly, and its previous actual-stock
+interface is a projection. `Cost.PhaseCellSelectedGeneratedRecoveryInputStock`
+combines it with the complete physical caller workspace: the exact budget in
+the input-to-output execution theorem is at most
+`inp.length+out.length+11*T+C*N*t*p`, plus ambient call depth. This selected
+absolute bound uses the normalized RHS/positive-target setting of the factory
+absorption theorem. The generic input-to-output execution remains available
+for arbitrary target and RHS exponent under its mathematical sizing equation.
+
+The guarded concrete execution check passes at 3327.6 MiB; selected absolute
+stock passes at 3386.4 MiB. The scoped compatibility build passes (15949 jobs,
+3.5 GiB combined peak); the axiom audit passes for 336804 declarations at
+3402.1 MiB. Next connect distinct-core scheduling/amortization and reuse these
+per-core certificates, followed by tensor/R4 composition, layout restoration
+and outer integration. S4 is incomplete; kappa is unchanged.
