@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3905 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3906 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26849,3 +26849,23 @@ caller's shared and replica bills, descriptor traffic and cleanup in the same
 ledger, and discharge the raw schedule's mathematical time/stock budgets for
 core classes. Physical component production, tensor/R4 composition, layout
 restoration and outer integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: complete raw caller retains all shared bills
+
+`Cost.PhaseCellCompleteCachedRecoveryLedger` combines the existing first-pass,
+archive-copy and cached recovery estimates without absorbing any shared setup
+into a per-core T allowance. `completeCachedRecoverySharedTime` retains both
+interior setups, cached coupling setup, handoff, recovery-mask initialization
+and the two constant overheads. `selectedCompleteCachedRecovery_ledger_le`
+bounds the complete executed caller by that shared bill plus one uniform
+replica gap-volume term. `selectedRawRecoveryJob_ledger_le` connects this
+estimate to actual raw-job runTime, retaining factory setup and the affine
+normalization shared/row split. The actual schedule can therefore sum shared
+costs before volume absorption; no new execution premise is introduced.
+
+Guarded checks pass at 3452.3 MiB; the compatibility build passes (16111 jobs,
+3.5 GiB combined observed peak), and the axiom audit passes for 338811
+declarations at 3458.4 MiB. Next sum this ledger over actual core-class jobs,
+include descriptor traffic/cleanup, and discharge time and peak stock budgets.
+Physical component production, tensor/R4 composition, layout restoration and
+outer integration remain open. S4 is incomplete; kappa is unchanged.
