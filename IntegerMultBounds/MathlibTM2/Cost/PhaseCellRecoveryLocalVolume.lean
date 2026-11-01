@@ -13,27 +13,41 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 
 /-- Scalar preparation is paid by p² local coordinates, and numerical work by
-actual boundary rows and the sparse active-row envelope. -/
+actual boundary rows and the actual sparse active rows. -/
 def replicaRecoveryLocalVolume {s : ℕ} [NeZero s] (H : ReplicaHaloProblem s) : ℕ :=
   replicaHaloLocalCoordinates H+H.p^2+H.span+H.band+
     (haloBoundary s H.t H.band H.origin (H.origin+H.span)).card+1+
     ((haloBoundary s H.t H.band H.origin (H.origin+H.span)).card+1)*(12*H.band+1)+
-    (haloBoundaryCountBound s H.t (2*H.band) H.origin (H.origin+H.span)+4*H.band)*(2*H.band+1)
+    (retainedCouplingActiveRows true s H.t H.band H.origin (H.origin+H.span) H.origin H.span+
+      retainedCouplingActiveRows false s H.t H.band H.origin (H.origin+H.span) H.origin H.span)*(2*H.band+1)
 
 theorem replicaRecoveryLocalVolume_bounds {s : ℕ} [NeZero s] (H : ReplicaHaloProblem s) :
     H.p^2 ≤ replicaRecoveryLocalVolume H ∧
     H.span+H.band+(haloBoundary s H.t H.band H.origin (H.origin+H.span)).card+1 ≤ replicaRecoveryLocalVolume H ∧
     ((haloBoundary s H.t H.band H.origin (H.origin+H.span)).card+1)*(12*H.band+1) ≤ replicaRecoveryLocalVolume H ∧
-    (haloBoundaryCountBound s H.t (2*H.band) H.origin (H.origin+H.span)+4*H.band)*(2*H.band+1)+1 ≤
+    (retainedCouplingActiveRows true s H.t H.band H.origin (H.origin+H.span) H.origin H.span+
+      retainedCouplingActiveRows false s H.t H.band H.origin (H.origin+H.span) H.origin H.span)*(2*H.band+1)+1 ≤
       replicaRecoveryLocalVolume H := by
   unfold replicaRecoveryLocalVolume
+  omega
+
+theorem replicaRecoveryLocalVolume_active_le {s : ℕ} [NeZero s] (H : ReplicaHaloProblem s)
+    (boundary : Bool) :
+    retainedCouplingActiveRows boundary s H.t H.band H.origin (H.origin+H.span)
+      H.origin H.span*(2*H.band+1)+1 ≤ replicaRecoveryLocalVolume H := by
+  have ha : retainedCouplingActiveRows boundary s H.t H.band H.origin (H.origin+H.span) H.origin H.span ≤
+      retainedCouplingActiveRows true s H.t H.band H.origin (H.origin+H.span) H.origin H.span+
+      retainedCouplingActiveRows false s H.t H.band H.origin (H.origin+H.span) H.origin H.span := by
+    cases boundary <;> omega
+  have hm := Nat.mul_le_mul_right (2*H.band+1) ha
+  obtain ⟨_,_,_,hv⟩ := replicaRecoveryLocalVolume_bounds H
   omega
 
 /-- The older whole-axis estimate follows from the local one, for callers
 that have not yet exposed their interval overlap. -/
 theorem replicaRecoveryLocalVolume_gap_le {s : ℕ} [NeZero s] (H : ReplicaHaloProblem s)
     (haxis : H.p^2 ≤ H.t) :
-    replicaRecoveryLocalVolume H ≤ 300*(H.t+(H.t-s)*H.band^2) := by
+    replicaRecoveryLocalVolume H ≤ 500*(H.t+(H.t-s)*H.band^2) := by
   have hcoords := replicaHaloLocalCoordinates_le H
   have hspan := H.span_fit
   have hband : H.band ≤ s := H.band_fit
@@ -45,8 +59,13 @@ theorem replicaRecoveryLocalVolume_gap_le {s : ℕ} [NeZero s] (H : ReplicaHaloP
   change familyKernelVolume s H.t H.band H.origin (H.origin+H.span) ≤
     200*(H.t+(H.t-s)*H.band^2) at hk
   unfold familyKernelVolume at hk
+  have htrue := retainedCouplingActiveRows_le_geometry H.s_lt_t true H.band H.origin
+    (H.origin+H.span) H.origin H.span H.span_fit H.span_fit
+  have hfalse := retainedCouplingActiveRows_le_geometry H.s_lt_t false H.band H.origin
+    (H.origin+H.span) H.origin H.span H.span_fit H.span_fit
+  have hm := Nat.mul_le_mul_right (2*H.band+1) (Nat.add_le_add htrue hfalse)
   unfold replicaRecoveryLocalVolume
-  omega
+  nlinarith only [hcoords,hspan,hband,hs,hN,haxis,hk,hm]
 
 /-- The actual cached preparation row has a local bound with no ambient-axis
 lower bound: scalar preparation is retained in the local volume. -/
@@ -76,12 +95,10 @@ theorem cachedReplicaRecoveryPreparationRow_local_fast_le (cw cV : ℕ) :
   have hwidth' : H.wordWidth+1 ≤ (cw+1)*H.p := by
     have := H.p_pos
     nlinarith only [hw,this]
-  have hpage := couplingCoefficientPageInterval_length_geometry H.s_lt_t (2^15*H.p) H.precision H.u H.band
-    H.origin (H.origin+H.span) H.origin H.span H.span_fit H.span_fit
   have hpageV : (couplingCoefficientPageInterval (2^15*H.p) H.precision s H.t H.u H.band
       H.origin (H.origin+H.span) H.origin H.span).length+1 ≤ V := by
-    dsimp only [V]
-    omega
+    rw [couplingCoefficientPageInterval_length_active]
+    exact replicaRecoveryLocalVolume_active_le H true
   have hlineWidth : 20*H.wordWidth+26 ≤ (20*cw+26)*H.p := by
     have := H.p_pos
     nlinarith only [hw,this]
@@ -103,11 +120,12 @@ theorem cachedReplicaRecoveryPreparationRow_local_fast_le (cw cV : ℕ) :
   rw [←hword] at hb
   have hl := hloop H.p H.precision H.wordWidth s H.t H.band H.origin
     (H.origin+H.span) H.origin H.span true H.p_pos hwpos hw
-  have hactive := retainedCouplingActiveRows_le_geometry H.s_lt_t true H.band H.origin
-    (H.origin+H.span) H.origin H.span H.span_fit H.span_fit
   have hactiveProduct : retainedCouplingActiveRows true s H.t H.band H.origin (H.origin+H.span)
       H.origin H.span*(H.band+1) ≤ V := by
-    have hh := Nat.mul_le_mul hactive (by omega : H.band+1 ≤ 2*H.band+1)
+    have hh := Nat.mul_le_mul_left
+      (retainedCouplingActiveRows true s H.t H.band H.origin (H.origin+H.span) H.origin H.span)
+      (by omega : H.band+1 ≤ 2*H.band+1)
+    have ha := replicaRecoveryLocalVolume_active_le H true
     dsimp only [V]
     omega
   have hbV : ((((haloBoundary s H.t H.band H.origin (H.origin+H.span)).card+1)*(12*H.band+1) : ℕ) : ℝ) ≤ V := by

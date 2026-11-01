@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3908 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3912 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26920,3 +26920,39 @@ the complete raw caller and sum local volumes using core overlap and guard
 amortization. Descriptor traffic/cleanup, time and peak stock budgets, physical
 component production, tensor/R4 composition, layout restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: full raw-job list has a local-volume cost ledger
+
+`Cost.PhaseCellCachedCouplingLocalFast` bounds either cached source mask and the
+actual counted coupling transition by replicaRecoveryLocalVolume, using exact
+coefficient-page length and local stream traffic. The selected first-pass
+local theorem retains its shared setup and bounds all repeated work in that
+same volume. `Cost.PhaseCellCompleteCachedRecoveryLocalLedger` composes first
+pass, archive copying, handoff and complete cached recovery, then connects the
+result to the actual raw-job runTime. Unlike the earlier whole-axis ledger,
+these selected local bounds hold for every Big instance without an additional
+eventual p² ≤ t threshold.
+
+`Cost.PhaseCellRawRecoveryScheduleLocalLedger` sums the actual runTime bills
+structurally over arbitrary raw-job lists. It retains the sum of shared setup
+and factory costs, a single replica factor times summed normalization row cost,
+and a single replica factor times summed local volumes. This is the estimate
+to combine with shared setup absorption and core geometry; whole-axis gap
+volume is not charged separately at every core.
+
+Before summing geometry, replicaRecoveryLocalVolume was tightened further to
+retain the actual active-row counts for both source masks. The earlier
+min(interval span, ambient boundary bound) envelope discards row positions and
+would overcount across many cores. The actual counts support overlap counting;
+coefficient-page length now uses its exact active-row identity. The previous
+gap-volume compatibility estimate remains a corollary, with constant 500.
+
+Guarded checks pass at 3390.3 MiB (exact local volume), 3381.4 MiB (coupling),
+3396.3 MiB (first pass), 3455.0 MiB (complete local caller), and 3436.4 MiB
+(raw-job list). Compatibility build passes (16117 jobs, 8.4 GiB combined observed
+peak); axiom audit passes for 338832 declarations at 3461.7 MiB. Next bound
+actual boundary/active-row sums over the core halos using overlap and amortized
+guards, instantiate core-class budgets, and account for descriptor traffic and
+cleanup. Peak stock budgets, physical component production, tensor/R4
+composition, layout restoration and outer integration remain open. S4 is
+incomplete; kappa is unchanged.

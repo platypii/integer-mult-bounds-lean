@@ -92,11 +92,11 @@ theorem cachedBatchedReplicaRecovery_fast_le (cl cw cr cV : ℕ) :
         (initializedReplicaHaloSharedTime (B.problem htarget)+24 : ℕ)+
         F*H.Fs.length*((H.t+(H.t-s)*H.band^2 : ℕ) : ℝ)*(H.p : ℝ)^(129/128 : ℝ) := by
   obtain ⟨C,hC,hlocal⟩ := cachedBatchedReplicaRecovery_local_fast_le cl cw cr cV
-  refine ⟨300*C,by positivity,?_⟩
+  refine ⟨500*C,by positivity,?_⟩
   intro s _ H target X B htarget hl hw hr hV hgap hring haxis
   have hc := hlocal H target X B htarget hl hw hr hV hgap hring
   have hv : (replicaRecoveryLocalVolume H : ℝ) ≤
-      300*((H.t+(H.t-s)*H.band^2 : ℕ) : ℝ) := by
+      500*((H.t+(H.t-s)*H.band^2 : ℕ) : ℝ) := by
     exact_mod_cast replicaRecoveryLocalVolume_gap_le H haxis
   have hs := mul_le_mul_of_nonneg_left hv
     (by positivity : (0 : ℝ) ≤ C*H.Fs.length*(H.p : ℝ)^(129/128 : ℝ))
