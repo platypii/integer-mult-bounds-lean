@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3944 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3945 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27359,4 +27359,30 @@ Guarded checks pass at 3389.0 MiB (single constructor profile), 3444.4 MiB
 (ordered core profile) and 3464.7 MiB (actual core execution). Axiom audit passes
 for 339022 declarations at 3466.3 MiB.
 Scoped compatibility build passes (16154 jobs, 1.1 GiB combined observed peak,
+mostly replayed).
+
+### S4 checkpoint: physical complex archive produces the raw component bank
+
+`Mult.PhaseCellPrepareComplexRecoveryInput` defines complexRecoveryInput using
+the ordinary complex payload, the original replica count, local unary span,
+and the existing numerical headers. prepareComplexRecoveryInput generates the
+packet width span*W with unaryProduct, invokes the existing counted complex
+expansion once on the entire local archive, and erases the product, local span
+and retained original-count controls. Its actual final bank is exactly
+rawRecoveryInput H W (complexComponentFields Fs), including the doubled cursor
+count. Thus the component order used by constructed jobs now has physical
+input-production evidence; no component archive witness is supplied.
+
+The time bound is N*(26*span*W+19)+span*(6*W+11)+44. A structural native push
+bound of two gives an intermediate ExecWithin allowance twice this bill over
+the initial bank. Guarded check passes at 3408.3 MiB; axiom audit passes for
+339033 declarations at 3465.2 MiB. The preparation proof reuses the existing
+complex expansion, packed-batch identity and native-stock machinery.
+
+This is not yet descriptor-source production: numerical-header generation,
+embedding the prepared bank into supplier storage, serialization with the
+existing prepareDescriptorBank, and repeated ordered-class composition still
+need to be connected. Output pairing/cropping/publication and tensor/R4
+restoration remain open. S4 is incomplete; kappa is unchanged.
+Scoped compatibility build passes (16155 jobs, 1.1 GiB combined observed peak,
 mostly replayed).
