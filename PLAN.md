@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3956 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3960 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27563,3 +27563,44 @@ kappa is unchanged.
 Guarded check passes at 3410.3 MiB; expanded compatibility build passes
 (16518 jobs, 1.1 GiB combined observed peak, mostly replayed); axiom audit
 passes for 341461 declarations at 3521.7 MiB.
+
+### S4 checkpoint: full recovery starts from seed metadata only
+
+`Mult.PhaseCellInstallSparseUnaryHeaders` factors the existing copier proof
+over an arbitrary finite bank, sparse support, scalar value function and one
+live payload. It proves the installed words, spectator frame, execution and
+twice-copy-cost stock trace structurally. The old full-header installer is now
+a short corollary, preserving its public interface.
+
+`Mult.PhaseCellInstallRecoverySeedHeaders` instantiates this shared proof on
+the 13 seed ports: ten numerical masters plus p, W and the original replica
+count. The five derived ports are excluded from the copy list and start blank;
+no zero-valued placeholder headers are copied. Its result is exactly
+complexRecoverySeedInput, with borrowed metadata and spectators preserved.
+
+`Mult.PhaseCellPrepareRecoveryHeaders` composes this installer with the placed
+physical header-completion block. It produces exactly complexRecoveryInput,
+preserves host tapes, left stacks and all registers outside work, and combines
+copying and arithmetic costs over the original ambient state.
+
+`Mult.PhaseCellComplexRecoveryFromSeeds` connects that prefix to the complete
+recovery lifecycle. The end-to-end theorem now requires only seed-header
+lengths, ordinary complex payload and blank owned storage: word width, geometry
+width, local span, local word volume and doubled replica count are all generated
+inside the executed program. The same run has certified outputs and restores
+the source/clock and spectator frame, leaving only the result and cleared
+owned bank. Both time and peak trace include the full header prefix.
+
+Next connect the generic executed inverse-master generator to the ten seed
+sources (reuse the existing restored-master cleanup pattern with generic
+parameters), preserve the three ordinary p/W/N seeds, and retire generated
+masters after the run. Then lift through the ordered supplier class and sum
+exact lifecycle bills before selected-axis absorption. Output pairing/cropping,
+publication and tensor/R4 restoration remain open. S4 is incomplete; kappa
+is unchanged.
+
+Guarded checks pass at 1396.1 MiB (generic sparse copier), 3382.6 MiB
+(full-header compatibility corollary), 3384.8 MiB (seed installer), 3383.3 MiB
+(complete header prefix) and 3422.9 MiB (full lifecycle from seeds). Expanded
+compatibility build passes (16522 jobs, 6.0 GiB combined observed peak);
+axiom audit passes for 341475 declarations at 3523.8 MiB.
