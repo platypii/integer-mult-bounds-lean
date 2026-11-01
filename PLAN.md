@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3917 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3919 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27048,3 +27048,36 @@ bounds, then price descriptor traffic/cleanup to discharge actual schedule
 time budgets. Peak stock budgets, physical component production, tensor/R4
 composition, layout restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
+
+### S4 checkpoint: complete raw core-class caller has the fast time sum
+
+`Cost.PhaseCellRawRecoveryScheduleTime` combines the complete raw-job local
+ledger with the existing shared setup and normalization bounds. Factory setup,
+normalization headers and the complete recovery shared bills are each summed
+before absorption; three scaled bounds place their combined total below one T
+reserve. All widths are derived once from the selected original problem
+profile and transferred to recovery by the existing shared-schedule theorem.
+The factory uses the actual positive target minus one and the job's sizing
+identity, with no execution premise.
+
+The resulting time estimate retains separate total span and total local volume.
+Its density corollary uses the core bounds 9*s and 600*(s+(t-s)*band²), promotes
+normalization p-work to p^(129/128), and applies axisGapVolume_le. Thus the sum
+of actual runTime bills is at most T+F*N*t*(1+band²/d)*p^(129/128), with F
+uniform in axes, core lists and replica counts.
+
+`Cost.PhaseCellCoreClassRecoveryTime` applies this estimate to ordered indexed
+raw-job families. It discharges the filtered-list count from coreSlots_le_two,
+total span by core-halo subset summation, and total numerical volume by the
+actual core-class volume theorem. Constructor numerical profiles and geometric
+endpoint equalities are the remaining mathematical inputs. This prices the
+complete raw caller, not yet descriptor loading or restoring cleanup.
+
+Guarded checks pass at 3466.4 MiB (schedule time/density) and 3443.8 MiB
+(core-class caller time). Scoped compatibility build passes (16127 jobs,
+1.1 GiB combined observed peak, mostly replayed); axiom audit passes for
+338871 declarations at 3462.5 MiB. Next retain unabsorbed stock bills through
+raw-job runStock, sum descriptor loading and cleanup, and discharge peak stock
+budgets. Final constructor-bound instantiation, physical component production,
+tensor/R4 composition, layout restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
