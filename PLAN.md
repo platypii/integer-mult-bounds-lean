@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3563 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3566 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22022,3 +22022,40 @@ loop. Boundary recovery and the second interior pass, global endpoint schedule,
 tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
 The scoped axiom audit passes for 328776 declarations at 3224.1 MiB.
+
+
+### S4 checkpoint: shared coefficient-page setup has a native workspace bound
+
+`Host/NativePushBoundMono` proves structurally over arbitrary programs that a
+native push certificate remains valid with a larger allowance. This lets the
+page setup reuse existing table compiler and bank loader certificates rather
+than reprove their internals.
+
+`PhaseCellCouplingCoefficientPageStock` factors certificates for marked packet
+construction, marked row coefficient generation, interval guard generation and
+page traversal. The ordinary page initializer has a fixed native push bound
+of 24, independent of dimensions and page length. The larger allowance is
+necessary because lifted coefficient-width setup emits a fixed 24-symbol header
+in a single action; the table compiler's existing allowance remains three.
+No machine code, proof limits or numerical parameters change.
+
+`PhaseCellReplicaCouplingPageStock` transports the certificate through the actual
+replica embeddings and combines it with geometry setup. Its
+`initializeReplicaCouplingPage_exec_within` strengthens the existing actual
+execution to an explicit workspace allowance of 24 times the shared setup time
+bill, retaining readiness, geometry, actual page, word count, row width, gather
+masters and stream/left preservation. It obtains that trace from the existing
+execution theorem and generic native-stock lifting, without duplicating the
+coefficient execution proof.
+
+Guarded checks pass at 1379.3 MiB (generic monotonicity), 2149.7 MiB (coefficient
+certificates) and 2139.9 MiB (placed combined setup workspace). Compatibility
+with ordinary native setup and selected replica resources passes
+(14800 jobs, 2.7 GiB combined peak).
+
+Next initialize retained scalar counters after this shared setup, then compose
+staging, existing local coupling and cleanup into one cursor transition. Lift
+that transition structurally over all replicas. Boundary recovery and the
+second interior pass, global endpoint scheduling, tensor/R4 restoration and
+outer integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 328819 declarations at 3224.5 MiB.
