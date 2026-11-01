@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3969 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3970 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27730,3 +27730,27 @@ S4 remains incomplete; kappa is unchanged.
 Guarded file check passes at 3376.7 MiB; compatibility build passes (15858
 jobs, 3.5 GiB combined peak); broad axiom audit passes for 341619 declarations
 at 3525.6 MiB.
+
+### S4 checkpoint: certified recovery output feeds actual complex pairing
+
+`Mult.PhaseCellPairRecoveryOutput.RawRecoveryJob.pair_output_exec` consumes
+the original recovery output certificate and executes pairComplexKey on that
+exact tape. Fitted fields and scalar read accuracy are derived internally via
+output_fields_read; no independent scalar output list or accuracy premise is
+supplied. The returned complex fields have the expected count and error twice
+the real-component error, with the arbitrary source suffix preserved. Time
+is at most N*(16*(span*wordWidth)+9)+14.
+
+`pairRecoveryOutput_within_stock` bounds the same pairing trace by twice that
+linear bill. It derives the native push bound from the existing complex-finish
+proof, avoiding a duplicate structural program analysis.
+
+A pure mathematical equality still identifies reverse-indexed recovery
+solutions with complexComponentTargets. This has not yet been discharged for
+the actual constructor; do that before claiming a complete complex caller.
+Then compose with computed recovery, crop/publish and lift through the grouped
+scan. S4 remains incomplete; kappa is unchanged.
+
+Guarded module check passes at 3379.4 MiB; build passes (15629 jobs, 3.5 GiB
+combined peak); expanded axiom audit passes for 341633 declarations at
+3526.2 MiB.
