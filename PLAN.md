@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3934 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3938 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -27248,3 +27248,39 @@ at width one, price output volume, and combine the transferred estimates with
 the actual scheduler bills. Final constructor-bound instantiation, physical
 component production, tensor/R4 composition, layout restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: actual restoring scheduler has linear packed-axis space
+
+The raw row-workspace proof now retains replicaHaloLocalCoordinates; its prior
+replicaRecoveryLocalVolume bound is a short corollary. This removes sparse
+boundary products from the storage estimate while preserving all existing
+interfaces. `Cost.PhaseCellRawRecoveryCoordinateStock` sums exact stock and
+cleanup budgets against coordinate volume, with the host-state witness
+quantified after the uniform eventual bound.
+
+`Cost.PhaseCellCoreClassRecoveryStorage` identifies local coordinates with
+haloLocalNativeVolume at unit symbol width. Ordered core-class lists therefore
+have coordinate sum at most 163*s, by the existing overlap/cell-padding
+estimate. Output volume is bounded separately by uniform replica count, word
+width and total halo span. Neither bound has a numerical-density multiplier.
+
+`Cost.PhaseCellSelectedRawRecoveryScheduleWorkspace` combines scaled coordinate
+stock, descriptor traffic, output volume and fixed controls. The actual named
+scheduler workspace bill is at most 3*T+C*N*s*p. Its constant and threshold are
+uniform in host state and register placement. `Cost.PhaseCellSelectedRawRecoveryScheduleExec`
+applies this bound to the actual restoring execution: all intermediate states
+satisfy the original relative size trace with extra allowance
+(Cprog+1)*(3*T+C*N*s*p), while certified outputs and source/private-bank
+restoration remain intact. Execution time is still bounded by the exact named
+time bill, ready for the final fast-time repricing.
+
+Guarded checks pass at 3451.3 MiB (row-coordinate refinement), 3449.5 MiB
+(coordinate stock/cleanup), 3453.1 MiB (core storage/output volume), 3459.9 MiB
+(selected workspace bill), and 3443.7 MiB (actual selected execution). Scoped
+compatibility build passes (16147 jobs, 3.5 GiB combined observed peak); axiom
+audit passes for 339005 declarations at 3466.6 MiB. Next make the time-budget
+transfer uniform in host state in the same way, combine caller, coordinate
+cleanup, descriptor and fixed controls into the actual fast-time bound, and
+join it to this trace. Final constructor-bound instantiation, physical component
+production, tensor/R4 composition, layout restoration and outer integration
+remain open. S4 is incomplete; kappa is unchanged.

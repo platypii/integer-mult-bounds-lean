@@ -57,17 +57,16 @@ theorem rawRecoveryJob_runStock_le_affine (r : RawRecoveryJob s)
 
 /-- The repeated workspace has exponent one in precision; the fast-time
 p^(129/128) factor never enters the space bound. -/
-theorem rawRecoveryJobRowWorkspace_local_le (r : RawRecoveryJob s) (hQ : SS.states ≤ Q)
+theorem rawRecoveryJobRowWorkspace_coordinates_le (r : RawRecoveryJob s) (hQ : SS.states ≤ Q)
     (R cV cw cW : ℕ) (hw : r.problem.wordWidth ≤ cw*r.problem.p) (hW : r.W ≤ cW*r.problem.p) :
     rawRecoveryJobRowWorkspace (A := A) (U := U) r hQ R cV ≤
       (2*(392+cw+cW)+normalizeRecoveryInputPush (Q := Q) (A := A) (U := U)*(4*cW+12*cw+28)+
         completeCachedRecoveryTrafficFactor (A := A) (U := U) hQ R cV*cw)*
-          replicaRecoveryLocalVolume r.problem*r.problem.p := by
+          replicaHaloLocalCoordinates r.problem*r.problem.p := by
   let H := r.problem
-  let V := replicaRecoveryLocalVolume H
-  obtain ⟨_,hrows,_,_⟩ := replicaRecoveryLocalVolume_bounds H
-  have hspan : H.span ≤ V := by dsimp only [V]; omega
-  have hvolume : 1 ≤ V := by dsimp only [V]; omega
+  let V := replicaHaloLocalCoordinates H
+  have hspan : H.span ≤ V := by unfold V replicaHaloLocalCoordinates; omega
+  have hvolume : 1 ≤ V := by unfold V replicaHaloLocalCoordinates; omega
   have hunit : 1 ≤ V*H.p := Nat.mul_pos hvolume H.p_pos
   have hspanp := Nat.mul_le_mul_right H.p hspan
   have hi := rawRecoveryJobRowInputStock_le r cw cW hw hW
@@ -76,7 +75,7 @@ theorem rawRecoveryJobRowWorkspace_local_le (r : RawRecoveryJob s) (hQ : SS.stat
   have hn := normalizeRecoveryInputRowTime_le H r.W cw cW hw hW
   have hnorm : normalizeRecoveryInputRowTime H r.W ≤ (4*cW+12*cw+28)*V*H.p := by
     nlinarith only [hn,Nat.mul_le_mul_left (4*cW+12*cw+28) hspanp]
-  have hcoords : replicaHaloLocalCoordinates H ≤ V := by unfold V replicaRecoveryLocalVolume; omega
+  have hcoords : replicaHaloLocalCoordinates H ≤ V := le_refl _
   have hc : replicaHaloLocalCoordinates H*H.wordWidth ≤ cw*V*H.p := by
     nlinarith only [Nat.mul_le_mul hcoords hw]
   have hnorm' := Nat.mul_le_mul_left (normalizeRecoveryInputPush (Q := Q) (A := A) (U := U)) hnorm
@@ -85,5 +84,17 @@ theorem rawRecoveryJobRowWorkspace_local_le (r : RawRecoveryJob s) (hQ : SS.stat
   change _ ≤ (2*(392+cw+cW)+normalizeRecoveryInputPush (Q := Q) (A := A) (U := U)*(4*cW+12*cw+28)+
     completeCachedRecoveryTrafficFactor (A := A) (U := U) hQ R cV*cw)*V*H.p
   nlinarith only [hinput,hnorm',hc']
+
+theorem rawRecoveryJobRowWorkspace_local_le (r : RawRecoveryJob s) (hQ : SS.states ≤ Q)
+    (R cV cw cW : ℕ) (hw : r.problem.wordWidth ≤ cw*r.problem.p) (hW : r.W ≤ cW*r.problem.p) :
+    rawRecoveryJobRowWorkspace (A := A) (U := U) r hQ R cV ≤
+      (2*(392+cw+cW)+normalizeRecoveryInputPush (Q := Q) (A := A) (U := U)*(4*cW+12*cw+28)+
+        completeCachedRecoveryTrafficFactor (A := A) (U := U) hQ R cV*cw)*
+          replicaRecoveryLocalVolume r.problem*r.problem.p := by
+  have hc : replicaHaloLocalCoordinates r.problem ≤ replicaRecoveryLocalVolume r.problem := by
+    unfold replicaRecoveryLocalVolume
+    omega
+  apply (rawRecoveryJobRowWorkspace_coordinates_le r hQ R cV cw cW hw hW).trans
+  exact Nat.mul_le_mul_right r.problem.p (Nat.mul_le_mul_left _ hc)
 
 end IntegerMultBounds.MathlibTM2.Cost
