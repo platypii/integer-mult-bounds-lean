@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3879 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3880 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -26452,3 +26452,30 @@ remaining initial bank and left-frame obligations from the canonical initial
 state. Factory resources/initial storage, distinct-core amortization,
 tensor/R4 composition, layout restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
+
+### S4 checkpoint: physical factory composes with the complete cached caller
+
+`Mult.PhaseCellGeneratedFirstCachedReplicaRecovery` executes ordinary-header
+factor generation followed by the complete cached first pass, recovery and
+certified assembly. Its theorem starts with blank factor storage rather than
+assumed factor data. Existing factory workspace supplies the released numerical
+bank and coupling scratch; generated masters and retired geometry supply the
+first-pass headers. The existing `replicaBoundaryPhase_left_of_bank` supplies
+the shared left-bank condition after an explicit setup/factor view equality.
+Structural injectivity, reserved-port and bank-gap facts transport the private
+workspace, saved gather, cache and peripheral controls through the factory.
+Mask freshness comes from the executed factory interface. No numerical proof,
+replica induction or runtime clearing is duplicated.
+
+The result returns the complete assembly certificates and actual execution,
+with time at most `generatedReplicaBoundaryFactoryCost H target +
+firstCachedReplicaRecoveryTime H (B.problem htarget)`. The RHS tail is empty
+from factory workspace. This closes physical factory/caller correctness
+composition; it does not yet extend the complete caller's relative workspace
+certificate through factory execution or absorb the factory cost.
+
+The guarded check passes at 3377.6 MiB. The scoped compatibility build passes
+(15940 jobs, 3.6 GiB combined peak), and the axiom audit passes for 336763
+declarations at 3401.8 MiB. Next account for factory resources and initial
+storage, then distinct-core scheduling/amortization, tensor/R4 composition,
+layout restoration and outer integration. S4 is incomplete; kappa is unchanged.
