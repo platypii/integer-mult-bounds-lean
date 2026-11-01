@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3588 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3591 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22464,3 +22464,33 @@ boundary solve. Shared boundary setup generation, recovery, the second interior
 pass, workspace/selected resources, global scheduling, tensor/R4 restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
 The scoped axiom audit passes for 331317 declarations at 3267.9 MiB.
+
+### S4 checkpoint: retain the factor bank through RHS preparation and boundary solve
+
+`PhaseCellPreparedBoundaryRhsFrame` proves that replacing the current RHS on
+143 and the owned solution/archive stack on 238 preserves the complete prepared
+bank and all factor pages. `PhaseCellPreparedReplicaBoundaryRow` finishes an
+actual `prepareReplicaBoundaryRhs` trace with the existing packed solver. It
+derives the solver RHS premise and shared readiness from that trace's exact
+result and publishes `replicaBoundarySolution` above the remaining residual
+archive on 238. Prepared readiness and factor pages are returned for recovery
+and the next row. No independent boundary-solve execution is assumed.
+
+`PhaseCellReplicaBoundaryFoldPlacement` resolves a concrete compatibility
+issue: native multiplier scratch must be blank, but the fold retains counters
+at logical 0, 2 and 3. A permutation relocates these to physical 117, 118 and
+120; all scratch 6 through 76 stays fixed, and the whole bank avoids 238.
+The physical placement is ready for caller instantiation; setup generation and
+loading the existing archive into that bank remain open.
+
+Guarded checks pass at 3092.2 MiB (prepared frame), 3210.9 MiB (row composition)
+and 2073.1 MiB (fold placement). Compatibility with the initialized interior and
+coupling path passes (14833 jobs, 2.7 GiB combined peak). Default proof limits
+are unchanged.
+
+Next instantiate the preparation contract with this placement, generate the
+shared mask/fold counters and factor setup, and connect the residual archive to
+the owned row stack. Recovery, the second interior pass, workspace/selected
+resources, global scheduling, tensor/R4 restoration and outer integration remain
+open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 331338 declarations at 3269.2 MiB.
