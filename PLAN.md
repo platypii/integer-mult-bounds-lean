@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3633 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3634 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23118,3 +23118,27 @@ S4 is incomplete; kappa is unchanged.
 Compatibility with shared factory and caller setup passes (15269 jobs, 3.5 GiB
 combined peak). The combined scoped axiom audit passes for 333382 declarations
 at 3313.4 MiB.
+
+### S4 checkpoint: shared boundary setup and complete recovery compose in the caller
+
+`PhaseCellInitializedReplicaRecoveryCaller` now runs paid row-volume copying,
+shared boundary mask/counter setup, retained-source RHS production, queue loading,
+controller initialization and every complete recovery row in one 389-register
+trace. The caller no longer assumes physical boundary readiness. It uses the
+corrected narrow RHS-header contract, which permits the actual residual archive.
+Whole-native and whole-gather equalities transport factors, input queues and
+headers across shared setup; the numerical error proof is unchanged.
+
+The output has the accurate fitted archive, restored borrowed queue/RHS/output
+suffixes, released controller and owned queue, preserved replica-count master,
+and both reusable readiness contracts. Persistent setup headers are generated,
+so their final equality with the initially blank ports is deliberately not
+claimed. The time bill adds the existing shared setup and recovery-caller costs.
+
+The guarded check passes at 3279.7 MiB under default limits. Compatibility with
+the executed shared factory passes (15270 jobs, 3.5 GiB combined peak). Next join
+post-coupling native cleanup and shared-factor/core readiness, then actual
+factory input production and the preceding interior/coupling trace. Complete
+workspace/selected bounds, global scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 333387 declarations at 3313.8 MiB.
