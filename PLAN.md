@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3766 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3767 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24829,3 +24829,29 @@ kappa is unchanged.
 Compatibility with the bounded caller passes (15551 jobs, 3.5 GiB
 combined peak). Scoped axiom audit passes for 336045 declarations at
 3376.8 MiB.
+
+
+### S4 checkpoint: sparse retained-page restoration fits the native phase-gap bill
+
+`Cost.PhaseCellRecoveryNativeGeometry.couplingCoefficientPageInterval_length_active`
+proves the exact arbitrary-interval page length: active guard rows times
+`2*band+1`. It uses the existing chunk-length and interval concatenation
+identities and a finite filtered sum. The resulting geometry theorem reuses
+the established active-row injection and halo count bound.
+
+`replicaRecoveryPreparationNativeCost_geometry` removes actual page length
+and boundary cardinality from the native traffic estimate.
+`replicaRecoveryPreparationNativeCost_gap` then reuses `familyKernelVolume_le`
+to bound complete native preparation by scalar-counter setup plus
+`300000*(t+(t-s)*band^2)*(wordWidth+metadataWidth+tblC metadataWidth 1+1)`.
+This explicitly retains metadata-control work for its selected estimate;
+no numerical multiplication or implicit resource oracle is introduced.
+
+Guarded final module check passes at 3359.6 MiB. Next price the remaining
+selected counter setup and metadata-control factors, and establish selected
+whole-caller space. First-pass/generated-factory execution, scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+Compatibility with the bounded caller passes (15682 jobs, 3.5 GiB
+combined peak). Scoped axiom audit passes for 336049 declarations at
+3376.2 MiB.
