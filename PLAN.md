@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3699 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3704 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -24033,3 +24033,37 @@ Preparation/whole-caller workspace, selected resource bounds,
 first-pass/generated-factory integration, scheduling, tensor/R4 restoration
 and outer integration remain open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334157 declarations at 3333.1 MiB.
+
+
+### S4 checkpoint: complete triangular rows have bounded workspace
+
+`Fast.ResampBRunStock.RsbRunsWithin` adds a local workspace allowance to the
+existing register-file contract. Its sequence, valuation congruence and bound
+weakening rules preserve the original execution witnesses, frames and time
+bills. `PhaseCellBandProductRunsStock` installs the existing shared numerical
+stream reserve in that contract by attaching it to the original product trace.
+
+`PhaseCellBandForwardStepStock.band_fwdStep_runs_within` now composes a full
+forward column, including head extraction, publication, replication, column
+movement, actual multiplication, cleanup and pending-row subtraction. Its
+workspace is `realWeightWorkspace C w B+1000*(B+1)*(w+1)`: one numerical
+reserve plus linear native traffic, independent of the number of columns.
+Its time and final valuation remain those of the existing band-step theorem.
+
+`PhaseCellBandReciprocalStock.band_recip_runs_within` similarly bounds the
+complete reciprocal row by `realWeightWorkspace C w 1+1000*(w+1)`.
+`PhaseCellBandBackwardStepStock.band_bwdStep_runs_within` composes that row
+with the bounded forward step, preserving the existing backward-step bill and
+valuation. The multiplication correctness and native phase contracts are
+reused; their full numerical step counts are not charged as repeated scratch.
+
+Guarded module checks pass at 1910.3 MiB (workspace contract), 2042.0 MiB
+(product contract), 2103.8 MiB (forward row), 2076.3 MiB (reciprocal row), and
+2056.2 MiB (backward row). Compatibility with the actual batched recovery bill
+and generated baseline passes (15456 jobs, 2.7 GiB combined peak).
+Next lift these row bounds through the counted triangular passes using the
+nonincreasing endpoint stock invariants, so numerical reserves are shared
+across columns. Preparation/whole-caller workspace, selected resource bounds,
+first-pass/generated-factory integration, scheduling, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Scoped axiom audit passes for 334166 declarations at 3333.4 MiB.
