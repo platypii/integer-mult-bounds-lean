@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3804 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3807 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25267,3 +25267,36 @@ Guarded checks pass at 3159.7 MiB (generic numerical scratch bounds) and
 3323.5 MiB (selected actual boundary workspace). Compatibility build passes
 (15745 jobs, 3.5 GiB combined peak). Scoped axiom audit passes for 336414
 declarations at 3388.0 MiB.
+
+
+### S4 checkpoint: complete cached preparation scratch fits selected volume
+
+`Cost.PhaseCellCachedCouplingWorkspacePolynomial` bounds the full cached local
+coupling lifecycle and prepared shared feed workspace, including replay,
+numerical row scratch, counter construction, source release and result feeding.
+A common physical envelope covers dimensions and the actual fixed program push
+coefficients; the bound is polynomial and independent of replica count.
+
+`Cost.PhaseCellCachedPreparationWorkspacePolynomial` combines this with the
+retained boundary numerical workspace and original packed input-staging bounds.
+It covers the entire `cachedReplicaRecoveryPreparationRowWorkspace`, including
+all private preparation, boundary solves, RHS construction and archiving. The
+named finite `recoveryPreparationPushCoefficients` bank records actual program
+coefficients once. A quadratic envelope enlargement derives both the band-row
+width and coefficient-page length from base dimensions, removing a separate
+page-size premise.
+
+`Cost.PhaseCellSelectedCachedPreparationWorkspace` constructs the envelope from
+selected axis size, linear word/metadata widths and the fixed coefficient bank.
+Any fixed multiple of the complete preparation scratch reserve fits below
+whole-box volume eventually, uniformly in the selected axis. This reserve is
+shared by the complete replica traversal and is not charged once per replica.
+
+Next price shared interior factory storage and combine the established shared
+reserve pieces into the complete selected workspace bound. First-pass/generated-
+factory integration, distinct-core scheduling/amortization, tensor/R4 restoration
+and outer integration remain open. S4 is incomplete; kappa is unchanged.
+Guarded checks pass at 3208.2 MiB (cached coupling scratch), 3344.8 MiB
+(complete preparation envelope) and 3374.8 MiB (selected preparation volume).
+Compatibility build passes (15747 jobs, 3.5 GiB combined peak). Scoped
+axiom audit passes for 336422 declarations at 3387.6 MiB.
