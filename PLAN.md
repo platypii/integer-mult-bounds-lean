@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3631 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3632 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23026,3 +23026,25 @@ interior/coupling execution must also join the caller. Workspace/selected bounds
 global scheduling, tensor/R4 restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
 The combined scoped axiom audit passes for 333352 declarations at 3313.2 MiB.
+
+### S4 checkpoint: initialize shared boundary readiness without changing the recovery bank
+
+`PhaseCellRetainedReplicaBoundarySetup` lifts only the shared mask/count/fold
+setup into the displaced boundary-phase placement. It executes once and returns
+physical boundary readiness without solving a first residual row. The generic
+post-state theorem proves equality of the complete native 248-register stack
+view before and after setup: all six changed boundary ports map into the
+persistent extension, and native scratch restores. Generated numerical factors,
+workspace and any existing recovery-core contract therefore survive by equality,
+without another field-by-field frame proof.
+
+The guarded check passes at 3263.6 MiB under default limits. Compatibility with
+the actual factory and placed recovery caller passes (15268 jobs, 3.4 GiB combined
+peak). The retained volume port and initial blank persistent ports remain
+explicit setup preconditions. Next generate that volume from the actual gather
+row-volume master and derive the phase geometry/scratch premises from the
+recovery core, then join shared physical setup to the caller. Factory input
+production, post-factory coupling/core readiness, preceding interior/coupling,
+workspace/selected bounds, global scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 333358 declarations at 3314.5 MiB.
