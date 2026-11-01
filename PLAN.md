@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3988 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3992 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28010,3 +28010,41 @@ Expanded compatibility build passes (16551 jobs, 3.5 GiB combined peak).
 Guarded checks pass at 3438.3 MiB (default crop placement), 3375.3 MiB
 (core-job/raw-job bridge) and 3381.1 MiB (locality bridge). Broad axiom audit
 passes for 341785 declarations at 3539.8 MiB.
+
+### S4 checkpoint: cropped recovery packets execute common-format normalization
+
+`Mult.PhaseCellPackedRecoveryMagnitude` derives the local complex target's
+normalization magnitude from existing principal-system stability and proves
+the common publication-width premise from the core job's precision sizing.
+No additional numerical magnitude or output-fit witness is supplied.
+
+`Mult.PhaseCellRecoveryNormalizePlan` packages only register wiring, injections
+and separation for the existing ordinaryNormalizePackedBatch program.
+`Mult.PhaseCellNormalizeRecoveryOutput.exec` specializes the actual native
+normalization execution to cropped raw-recovery packets in their real reverse
+replica order. It executes final rounding, normalization scaling and widening
+to the established p/W publication format; local-solution stability discharges
+magnitude, and the existing locality theorem yields exactly rowTarget and
+rowError for Fs.reverse. The parameter-queue suffix and all unrelated registers
+restore, and the output keeps its arbitrary later-key suffix.
+
+`Mult.PhaseCellRecoveryNormalizeStock` proves native push thirteen for this
+program, handling word/header lists structurally and reusing abstract table
+compile/copy bounds. The same executed normalization has stock allowance
+thirteen times its complete explicit time bill.
+
+The normalization theorem still requires the actual ordinary parameter-word
+queue and the generated native packet-width header. Cropping already computes
+that row-symbol header and currently clears it. Next retain it until
+normalization consumes it, then complete cleanup once; do not supply a
+precomputed header or repeat numerical master generation. Compose recovery,
+crop and normalization, then lift through the ordered supplier loop and
+physical exposure. Concrete ambient allocation, grouped cost absorption,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+
+Expanded compatibility build passes (16555 jobs).
+Guarded checks pass at 3382.0 MiB (magnitude/width), 3142.0 MiB
+(normalization wiring), 3143.8 MiB (native stock) and 3388.8 MiB
+(executed normalization). Broad axiom audit passes for 341850 declarations
+at 3541.4 MiB.
