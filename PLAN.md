@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3637 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3640 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23244,3 +23244,33 @@ Guarded checks pass with default limits: header reload 2151.7 MiB, shared page
 and actual initialized interior/coupling 3276.3 MiB. Compatibility with initialized
 recovery passes (15174 jobs, 3.5 GiB combined peak).
 The combined scoped axiom audit passes for 333424 declarations at 3316.0 MiB.
+
+### S4 checkpoint: paid coupling cleanup and complete initialized recovery share one caller
+
+`PhaseCellReleaseReplicaCouplingCaller` places native cleanup in the common
+389-register caller. It returns the exact released native view, preserves the
+complete gather bank, left/host tapes, high worker ports and both payload ports,
+and frames all stacks outside the native placement.
+
+`ReplicaRecoverySharedBank` packages the shared numerical bank, master/geometry
+headers, coefficient page/count and clean shared workspace while native
+arithmetic is still live. Its `released` theorem derives the full recovery core
+from the actual native cleanup, avoiding a clean-native input assumption.
+
+`PhaseCellReleasedReplicaRecoveryCaller` composes placed cleanup with initialized
+recovery. One trace now clears native coupling arithmetic, generates shared
+physical boundary readiness, produces/loads the RHS queue, initializes the loop
+and recovers every actual residual. The cleanup time is charged by the uniform
+canonical-bank bound returned by the actual coupling theorem. It returns fitted
+full-halo accurate fields, released controller/queues, restored borrowed tails,
+preserved count master and reusable factors/readiness. No per-replica numerical
+argument or execution premise is introduced.
+
+Guarded checks pass at 3256.6 MiB (placed release), 3245.8 MiB (shared-bank
+language) and 3282.4 MiB (complete cleanup/recovery caller), under default limits.
+Compatibility with actual interior/coupling and shared factory passes (15298
+jobs, 3.5 GiB combined peak). Next join the preceding coupling execution and
+supply the shared-bank master/factor readiness from actual setup. Factory input
+production, complete resources, scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+The combined scoped axiom audit passes for 333450 declarations at 3314.9 MiB.
