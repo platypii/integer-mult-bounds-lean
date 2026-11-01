@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3837 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3839 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -25891,5 +25891,34 @@ over a residual executor with this common endpoint, then reuse the counted
 replica loop and its accuracy/archive induction. The complete first-pass loop
 still uses the uncached worker until that substitution and shared mask
 initialization are proved. Factory/header integration, combined workspace,
+distinct-core amortization, tensor/R4 composition, layout restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: cached transition reuses a structural staging/cursor contract
+
+`Mult.PhaseCellReplicaCouplingStageFrame` packages the exact staging footprint:
+left stacks and input/output are preserved, and only the two queues and two
+numerical input ports can change. Its reusable rules transport native arithmetic
+readiness and geometry metadata. `finish_residual` proves cursor advancement,
+archive ownership, complete shared-bank restoration and the final spectator
+frame for an arbitrary residual word stream at the common endpoint.
+
+The existing `ReplicaCouplingCursor.couple` now delegates its readiness and
+endpoint proofs to these rules; the program and statement remain unchanged.
+`Mult.PhaseCellCachedReplicaCouplingTransition` stages the matching row, invokes
+the cached residual worker and uses the same structural finishing theorem.
+Its returned cursor, archive semantics and full bank frame match the original
+transition, so cache masks survive every replica without a second induction
+for numerical correctness. No repeated geometry-table execution is in its row
+program or cost.
+
+Guarded checks pass at 2179.1 MiB (shared stage-frame language), 2197.2 MiB
+(original transition) and 2199.3 MiB (cached transition). The complete scoped
+compatibility build passes (15898 jobs, 37.1 GiB combined peak). The axiom audit
+passes for 336576 declarations at 3395.9 MiB. Next connect this
+transition to the existing counted replica traversal, with mask readiness
+transported by its restored bank frame. Shared mask generation, full cached
+first-pass integration, factory/header integration, combined workspace,
 distinct-core amortization, tensor/R4 composition, layout restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.

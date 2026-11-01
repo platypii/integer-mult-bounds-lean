@@ -1,7 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingCursor
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingResidual
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingStageFrame
 
 /-! One replica transition stages matching inputs, computes and archives the
 residual, and restores the complete shared bank before advancing the cursor. -/
@@ -55,31 +54,10 @@ theorem ReplicaCouplingCursor.couple (H : ReplicaHaloProblem s) {plan : ReplicaI
   obtain ⟨C,R,v₁,J,hu₁,he₁,hcursor,hfield,hrhsRow,hC,hR,_,hframe,hleft,hi,ho⟩ :=
     ReplicaCouplingCursor.stage (body := body) H volume output rhs (placement.bank 132) (placement.bank 93) saved tmp
       (by regs_nodup) outputTail rhsTail r v S h hr hvolume hsaved htmp 0
-  have hbankFrame (k : Fin 168) (h132 : k ≠ 132) (h93 : k ≠ 93) : J.R (placement.bank k) = S.R (placement.bank k) := by
-    apply hframe
-    simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
-    exact ⟨houtput k,hrhs k,placement.bank_injective.ne h132,placement.bank_injective.ne h93⟩
-  have hreadyJ : RetainedCouplingReady (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band H.origin (H.origin+H.span) raw
-      (embStk weightCacheCoreReg (embStk plan.solver J)) := by
-    apply hready.of_frame (S' := embStk weightCacheCoreReg (embStk plan.solver J))
-    · exact congrArg (fun L => L ∘ plan.solver ∘ weightCacheCoreReg) hleft
-    · intro k h93 _ _
-      change J.R (plan.solver (weightCacheCoreReg k)) = S.R (plan.solver (weightCacheCoreReg k))
-      rw [← placement.bank_native k]
-      apply hbankFrame
-      · intro hh
-        have hv : k.val = 132 := congrArg Fin.val hh
-        have hk := k.isLt
-        omega
-      · intro hh
-        apply h93
-        exact Fin.ext (congrArg (fun j : Fin 168 => j.val) hh)
-  have hgeometryJ : CouplingIntervalMetadata V s H.t H.band H.origin (H.origin+H.span) H.origin H.span (embStk placement.bank J) := by
-    apply hgeometry.of_frame (hbankFrame 163 (by decide) (by decide))
-    intro k hk
-    apply hbankFrame
-    all_goals simp only [couplingIntervalPorts,List.mem_cons,List.not_mem_nil,or_false] at hk
-    all_goals rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+  have hstage : ReplicaCouplingStageFrame placement output rhs S J := ⟨hleft,hi,ho,hframe⟩
+  have hbankFrame := hstage.bank_right houtput hrhs
+  have hreadyJ := hstage.ready houtput hrhs raw hready
+  have hgeometryJ := hstage.geometry houtput hrhs hgeometry
   have hfreshJ (k : Fin 168) (hk : k ∈ [(127 : Fin 168),143,166,158,135,167]) : J.R (placement.bank k) = [] := by
     have hn : k ≠ 132 ∧ k ≠ 93 := by
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
@@ -101,34 +79,9 @@ theorem ReplicaCouplingCursor.couple (H : ReplicaHaloProblem s) {plan : ReplicaI
   let ys := cstream A H.wordWidth (packedInterval H.origin H.span
     (guardedCouplingRowField (2^15*H.p) H.precision H.t H.u H.band H.origin (H.origin+H.span) false C R))
   let F := replicaResidualState placement dst (S.R (placement.bank 132)) (S.R (placement.bank 93)) ys J
-  have hRbank (k : Fin 168) : F.R (placement.bank k) = S.R (placement.bank k) := by
-    by_cases h132 : k = 132
-    · subst k
-      simp [F,replicaResidualState,hdst 132,placement.bank_injective.ne (by decide : (132 : Fin 168) ≠ 93)]
-    by_cases h93 : k = 93
-    · subst k
-      simp [F,replicaResidualState,hdst 93]
-    simp only [F,replicaResidualState,Function.update_of_ne (hdst k),
-      Function.update_of_ne (placement.bank_injective.ne h93),Function.update_of_ne (placement.bank_injective.ne h132)]
-    exact hbankFrame k h132 h93
-  refine ⟨C,R,v₂,F,stageReplicaCouplingRowCost (H.span*H.wordWidth)+n₂,hu₂.trans hu₁,by omega,
-    .seq he₁.toExec he₂,?_,hC,hR,?_,?_,hleft,hi,ho,?_⟩
-  · apply ReplicaCouplingCursor.of_frame H output rhs outputTail rhsTail (r+1) J F hcursor
-    · simp [F,replicaResidualState,‹output ≠ dst›,(houtput 132).symm,(houtput 93).symm]
-    · simp [F,replicaResidualState,‹rhs ≠ dst›,(hrhs 132).symm,(hrhs 93).symm]
-  · simp only [F,replicaResidualState,Function.update_self]
-    rw [hframe dst (by simp [‹output ≠ dst›.symm,‹rhs ≠ dst›.symm,(hdst 132).symm,(hdst 93).symm])]
-  · exact Stacks.ext hi ho (congrArg (fun L => L ∘ placement.bank) hleft) (funext hRbank)
-
-  · intro k hk
-    by_cases h132 : k = placement.bank 132
-    · subst k; exact hRbank 132
-    by_cases h93 : k = placement.bank 93
-    · subst k; exact hRbank 93
-    have hn : k ≠ output ∧ k ≠ rhs ∧ k ≠ dst := by simpa using hk
-    simp only [F,replicaResidualState,Function.update_of_ne hn.2.2,
-      Function.update_of_ne h93,Function.update_of_ne h132]
-    apply hframe
-    simpa using ⟨hn.1,hn.2.1,h132,h93⟩
+  obtain ⟨hcursorF,harchive,hbankF,hleftF,hinF,houtF,hframeF⟩ :=
+    hstage.finish_residual H houtput hrhs hdst ‹output ≠ dst› ‹rhs ≠ dst› outputTail rhsTail ys r hcursor
+  exact ⟨C,R,v₂,F,stageReplicaCouplingRowCost (H.span*H.wordWidth)+n₂,hu₂.trans hu₁,by omega,
+    .seq he₁.toExec he₂,hcursorF,hC,hR,harchive,hbankF,hleftF,hinF,houtF,hframeF⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
