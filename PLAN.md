@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3685 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3687 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23815,3 +23815,39 @@ assembly. Whole-caller resource bounds, generated-factory composition,
 scheduling, tensor/R4 restoration and outer integration remain open.
 S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334087 declarations at 3329.6 MiB.
+
+### S4 checkpoint: preserve peripheral readiness and isolate the second-pass bank
+
+`PhaseCellReplicaRecoveryBatchPlacement` proves a structural image bound for
+the old caller and preparation extension: their images avoid registers
+243--248. It follows that preparation preserves the second solver's reserved
+cache/scratch roles and both interior output roles. The proof follows the
+existing sum placement and native/extension split; it does not enumerate the
+full register bank.
+
+`PhaseCellReplicaRecoveryPeripheralReady` packages the ordinary gather headers,
+cache, solver scratch, input/output, key queue and accumulator premises needed
+by the second pass. Its frame rule transports all these facts from the actual
+preparation exit's gather equality and spectator frame. Native numerical-bank
+release remains the separate previously proved core fact. The certificate also
+supplies ordinary headers to the smaller second-pass bank.
+
+`PhaseCellReplicaRecoveryInteriorPlacement` isolates that pass in 249 roles:
+the original gather/solver/output prefix through 247 and source role 248,
+placed at the computed RHS archive 389. Structural injectivity and exact
+gather/solver view equalities identify it with the shared caller's existing
+interior placement. All registers at least 248 other than 389 are spectators;
+this includes the retained boundary and mask, preparation counter and final
+assembled output. The stock-aware embedding theorem can therefore provide
+these frames and count spectator storage once when the pass is lifted.
+
+All modified/new modules pass guarded checks under default limits: 3269.5 MiB
+(preparation image bound), 3255.4 MiB (small interior placement) and 3256.0 MiB
+(peripheral readiness/header transfer). Compatibility with placed preparation,
+placed assembly, executed fast bounds and generated recovery passes (15442
+jobs, 5.7 GiB combined peak). Next lift the actual second-pass execution through
+this small bank, retain its internal gather frame for assembly's width/count
+and scratch facts, and compose preparation/interior/assembly. Whole-caller
+resource bounds, generated-factory composition, scheduling, tensor/R4
+restoration and outer integration remain open. S4 is incomplete; kappa unchanged.
+Scoped axiom audit passes for 334123 declarations at 3330.0 MiB.

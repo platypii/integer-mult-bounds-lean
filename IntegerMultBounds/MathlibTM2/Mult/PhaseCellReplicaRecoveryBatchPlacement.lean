@@ -107,4 +107,44 @@ theorem replicaRecoveryPreparationCallerReg_native (i : Fin 117) :
   rw [dif_pos (show (Fin.castLE (by decide : 117 ≤ 168) i).val < 117 from i.isLt)]
   rfl
 
+theorem replicaRecoveryCallerReg_gap (i : Fin 259) :
+    (replicaRecoveryCallerReg i).val < 243 ∨ 249 ≤ (replicaRecoveryCallerReg i).val := by
+  change (recoveryBankSum (recoveryBankSplit (recoveryPortOrder i))).val < 243 ∨
+    249 ≤ (recoveryBankSum (recoveryBankSplit (recoveryPortOrder i))).val
+  cases hs : recoveryBankSplit (recoveryPortOrder i) with
+  | inl k =>
+    change (ReplicaCouplingPlacement.standard.bank k).val < 243 ∨
+      249 ≤ (ReplicaCouplingPlacement.standard.bank k).val
+    unfold ReplicaCouplingPlacement.bank
+    split
+    · left
+      change 126+k.val < 243
+      omega
+    · right
+      change 249+(k.val-117) ≥ 249
+      omega
+  | inr k =>
+    cases k with
+    | inl k => right; change 249 ≤ 300+k.val; omega
+    | inr k => fin_cases k <;> left <;> decide
+
+theorem replicaRecoveryPreparationCallerReg_gap (i : Fin 258) :
+    (replicaRecoveryPreparationCallerReg i).val < 243 ∨ 249 ≤ (replicaRecoveryPreparationCallerReg i).val := by
+  by_cases hi : i.val < 256
+  · simpa only [replicaRecoveryPreparationCallerReg,dif_pos hi,Fin.val_castLE] using
+      replicaRecoveryCallerReg_gap ⟨i.val,by omega⟩
+  · right
+    change 249 ≤ (replicaRecoveryPreparationCallerReg i).val
+    simp only [replicaRecoveryPreparationCallerReg,dif_neg hi]
+    omega
+
+theorem replicaRecoveryPreparationCallerReg_reserved (i : Fin 258) (j : Fin 121) (hj : 117 ≤ j.val) :
+    replicaRecoveryPreparationCallerReg i ≠ replicaRecoveryBatchInterior.solver j := by
+  intro he
+  have hv := congrArg (fun k : Fin 392 => k.val) he
+  change (replicaRecoveryPreparationCallerReg i).val = 126+j.val at hv
+  have hg := replicaRecoveryPreparationCallerReg_gap i
+  have hb := j.isLt
+  omega
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
