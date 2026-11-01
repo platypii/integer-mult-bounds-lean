@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedReplicaInteriorCoupling
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaRecoveryBatchSharedBank
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaRecoveryPeripheralReady
 
 /-! Execute the first interior/coupling pass and derive the retained shared bank.
 The residual archive, factors and recovery workspace come from the same trace. -/
@@ -64,7 +65,8 @@ theorem firstReplicaPass_shared_exec (H : ReplicaHaloProblem s) (hR : rpStates �
       (∀ k, (∀ i, replicaRecoveryBatchCoupling.bank i ≠ k) →
         (∀ i, replicaRecoveryBatchInterior.gather i ≠ k) →
         (∀ i, replicaRecoveryBatchInterior.solver i ≠ k) →
-        (247 : Fin 392) ≠ k → (248 : Fin 392) ≠ k → F.R k = S.R k) := by
+        (247 : Fin 392) ≠ k → (248 : Fin 392) ≠ k → F.R k = S.R k) ∧
+      ReplicaRecoveryPeripheralReady H buffers {F with R := Function.update F.R 125 []} := by
   have hg (k : Fin 126) : replicaRecoveryBatchInterior.gather k ≠ (247 : Fin 392) ∧
       replicaRecoveryBatchInterior.gather k ≠ (248 : Fin 392) := by
     constructor <;> intro he <;> have hv := congrArg Fin.val he <;>
@@ -79,7 +81,7 @@ theorem firstReplicaPass_shared_exec (H : ReplicaHaloProblem s) (hR : rpStates �
       replicaRecoveryBatchInterior.solver k ≠ (248 : Fin 392) := by
     constructor <;> intro he <;> have hv := congrArg Fin.val he <;>
       change 126+k.val = _ at hv <;> have hk := k.isLt <;> omega
-  obtain ⟨v',F,m,Ds,hu,hm,he,h122,hout,hrhs,hready,hmeta,hnative,hleft,hright,
+  obtain ⟨v',F,m,Ds,hu,hm,he,h122,hout,hrhs,hready,hmeta,hinFinal,houtFinal,hgatherLeft,hgatherR,hcacheFinal,hfreshSolver,hnative,hleft,hright,
     hlen,harchive,hgood,hpage,hcount,hrows,hfreshF,hbounds,haccurate,hcounter,hcleanup,hshare,hretained,hrhsHeaders⟩ :=
     initializedReplicaInteriorCoupling_exec (body := body) H replicaRecoveryBatchCoupling 247 248
       (fun k => (hg k).1) (fun k => (hg k).2) (fun k => (hb k).1) (fun k => (hb k).2)
@@ -88,6 +90,41 @@ theorem firstReplicaPass_shared_exec (H : ReplicaHaloProblem s) (hR : rpStates �
       hp hwidth hblank hfresh
   obtain ⟨hdata,hshared⟩ := hfactor.batch_first_pass_shared_bank H target columns buffers.rhsTail
     hnative hleft hright hready hshare hwork (hretained hmasters hstage hlevel) hprivate hfreshF hrows hpage hcount
-  exact ⟨v',F,m,Ds,hu,hm,he,hlen,harchive,hgood,hdata,hshared,hrhsHeaders,hout,hrhs,hnative,hleft,hright⟩
+  refine ⟨v',F,m,Ds,hu,hm,he,hlen,harchive,hgood,hdata,hshared,hrhsHeaders,hout,hrhs,hnative,hleft,hright,?_⟩
+  have hgClear (k : Fin 126) :
+      ({F with R := Function.update F.R 125 []} : Stacks 392 A).R (replicaRecoveryBatchInterior.gather k) =
+        S.R (replicaRecoveryBatchInterior.gather k) := by
+    by_cases hk : k = 125
+    · subst k
+      change Function.update F.R 125 [] 125 = S.R 125
+      rw [Function.update_self]
+      exact (headers.fresh 125 (by simp)).symm
+    · change Function.update F.R 125 [] (replicaRecoveryBatchInterior.gather k) = _
+      rw [Function.update_of_ne (by
+        intro he
+        exact hk (Fin.ext (congrArg (fun j : Fin 392 => j.val) he)))]
+      exact hgatherR k hk
+  constructor
+  · exact headers.of_frame (fun k _ _ => hgClear k)
+  · change Function.update F.R 125 [] (replicaRecoveryBatchInterior.solver 117) = buffers.cacheTail
+    rw [Function.update_of_ne (by decide)]
+    exact hcacheFinal
+  · intro k hk
+    change Function.update F.R 125 [] (replicaRecoveryBatchInterior.solver k) = []
+    have hneq : replicaRecoveryBatchInterior.solver k ≠ (125 : Fin 392) := by
+      intro he
+      have hv := congrArg Fin.val he
+      change 126+k.val = 125 at hv
+      omega
+    rw [Function.update_of_ne hneq]
+    exact hfreshSolver k hk
+  · exact hinFinal.trans hinput
+  · exact houtFinal.trans houtputStream
+  · exact (hgClear 87).trans hkeys
+  · change Function.update F.R 125 [] 247 = _
+    rw [Function.update_of_ne (by decide : (247 : Fin 392) ≠ 125)]
+    exact hout
+  · exact (hgClear 86).trans h86
+  · exact (hgClear 119).trans h119
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

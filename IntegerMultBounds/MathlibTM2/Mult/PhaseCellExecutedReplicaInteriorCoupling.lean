@@ -49,6 +49,11 @@ theorem initializedReplicaInteriorCoupling_exec (H : ReplicaHaloProblem s) {plan
       RetainedCouplingReady (2^15*H.p) H.precision H.wordWidth s H.t H.u H.band H.origin (H.origin+H.span) buffers.rhsTail
         (embStk weightCacheCoreReg (embStk plan.solver G)) ∧
       CouplingIntervalMetadata H.metadataWidth s H.t H.band H.origin (H.origin+H.span) H.origin H.span (embStk placement.bank G) ∧
+      G.inp = S.inp ∧ G.out = S.out ∧
+      (embStk plan.gather G).L = (embStk plan.gather S).L ∧
+      (∀ k : Fin 126, k ≠ 125 → G.R (plan.gather k) = S.R (plan.gather k)) ∧
+      G.R (plan.solver 117) = buffers.cacheTail ∧
+      (∀ k ∈ [(118 : Fin 121),119,120], G.R (plan.solver k) = []) ∧
       (embStk weightCacheCoreReg (embStk plan.solver G)).L =
         (embStk weightCacheCoreReg (embStk plan.solver S)).L ∧
       (∀ k, (∀ i, plan.gather i ≠ k) → (∀ i, plan.solver i ≠ k) → output ≠ k → G.L k = S.L k) ∧
@@ -84,12 +89,50 @@ theorem initializedReplicaInteriorCoupling_exec (H : ReplicaHaloProblem s) {plan
     H plan output houtput hsolverOutput hR hQ hA hpad R K hpushR hpushK buffers v S
     headers hbank hcache hsolverFresh hinput houtputStream hsaved hkeys hdst h86 h119 depth
   have hfrhs := initializedReplicaHaloLoop_preserves_right plan output rhs hR hQ hrhs hsolverRhs hsep he₀.toExec
-  obtain ⟨v',G,m,Ds,hu,hm,he,hcount,hout,hrhsF,hready,hmeta,hleftF,_,_,hframe,hrest⟩ :=
+  obtain ⟨v',G,m,Ds,hu,hm,he,hcount,hout,hrhsF,hready,hmeta,hleftF,hinF,houtF,hframe,hrest⟩ :=
     initializedReplicaInteriorCoupling_finish (body := body) H placement output rhs houtput hrhs
       hbankOutput hbankRhs hsep hR hQ hA hspan horigin buffers v v₀ S F n depth _
       hu₀ he₀ hstate hp hwidth hblank hfresh
-  refine ⟨v',G,m,Ds,hu,hm.trans ?_,he,hcount,hout,hrhsF.trans hfrhs,hready,hmeta,?_,?_,?_,hrest⟩
+  have hcacheFrame (j : Fin 121) (hj : 117 ≤ j.val) : G.R (plan.solver j) = F.R (plan.solver j) := by
+    apply hframe
+    · intro i
+      unfold ReplicaCouplingPlacement.bank
+      split
+      · rename_i hi
+        intro he
+        have hv := congrArg (fun k : Fin 121 => k.val) (plan.solver_injective he)
+        change i.val = j.val at hv
+        omega
+      · exact placement.extra_solver_disjoint _ j
+    · simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
+      exact ⟨hsolverOutput j,hsolverRhs j,(plan.disjoint 125 j).symm⟩
+  refine ⟨v',G,m,Ds,hu,hm.trans ?_,he,hcount,hout,hrhsF.trans hfrhs,hready,hmeta,
+    hinF.trans (hstate.input.trans hinput.symm),houtF.trans (hstate.output.trans houtputStream.symm),
+    ?_,?_,(hcacheFrame 117 (by decide)).trans hstate.cache,?_,?_,?_,?_,hrest⟩
   · exact Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right hn _) _) _
+  · funext k
+    have hs := congrArg (fun Z : Stacks 126 A => Z.L k) hsaved
+    exact (congrFun hleftF (plan.gather k)).trans ((congrFun hstate.gatherLeft k).trans hs.symm)
+  · intro k hk
+    have hf : G.R (plan.gather k) = F.R (plan.gather k) := by
+      apply hframe _ (fun i => placement.bank_gather_disjoint i k)
+      simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]
+      exact ⟨houtput k,hrhs k,plan.gather_injective.ne hk⟩
+    apply hf.trans
+    by_cases h87 : k = 87
+    · subst k
+      have hh : F.R (plan.gather 87) = buffers.keyTail := by simpa using hstate.packets
+      exact hh.trans hkeys.symm
+    by_cases h119k : k = 119
+    · subst k
+      have hh : F.R (plan.gather 119) = [] := by simpa using hstate.count
+      exact hh.trans h119.symm
+    exact (hstate.gatherFrame k h87 h119k).trans (congrArg (fun Z : Stacks 126 A => Z.R k) hsaved).symm
+  · intro k hk
+    have hkBound : 117 ≤ k.val := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl <;> decide
+    exact (hcacheFrame k hkBound).trans (hstate.solverFresh k hk)
   · funext i
     have hF := congrArg (fun Z : Stacks 117 A => Z.L i) hstate.bank
     have hS := congrArg (fun Z : Stacks 117 A => Z.L i) hbank

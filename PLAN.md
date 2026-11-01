@@ -25741,3 +25741,30 @@ and shared bank with the cleanup/preparation/cached-recovery caller. Physical
 factory input-header integration, combined prefix/coupling workspace,
 distinct-core amortization, tensor/R4 composition, layout restoration and outer
 integration remain open. S4 is incomplete; kappa is unchanged.
+
+
+### S4 checkpoint: first-pass execution supplies second-pass peripheral readiness
+
+`initializedReplicaInteriorCoupling_exec` now returns input/output restoration,
+the gather left frame, the gather right frame outside its residual archive,
+restored numerical cache and fresh solver cache-control ports. The final
+interior-loop invariant supplies the restored gather/key/count data. Coupling's
+existing frame protects the cache because its high bank is disjoint from solver
+cache ports and its low bank lies below them. No program implementation changes.
+
+`firstReplicaPass_shared_exec` uses these execution facts to return
+`ReplicaRecoveryPeripheralReady` at its actual endpoint with the residual
+archive port 125 cleared. The source, ordinary headers, key packet suffix,
+cache, accumulator suffix and input/output all match the recovery caller's
+peripheral contract. The archive is still present in the actual endpoint; the
+cleared-port view is exactly the existing preparation caller's initial language.
+
+Guarded checks pass at 3275.5 MiB (general execution frames) and 3315.8 MiB
+(concrete peripheral result). Compatibility build passes (15812 jobs, 3.5 GiB
+combined peak). The scoped axiom audit passes for 336529 declarations at
+3391.4 MiB. Next compose this actual first-pass result with cleanup,
+preparation and cached recovery, carrying retained queue tails and remaining
+ordinary-header premises through the frames. Physical factory input-header
+integration, combined prefix/coupling workspace, distinct-core amortization,
+tensor/R4 composition, layout restoration and outer integration remain open.
+S4 is incomplete; kappa is unchanged.
