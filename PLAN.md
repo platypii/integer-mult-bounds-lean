@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4034 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4039 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28862,4 +28862,36 @@ Guarded full class-bill check passes at 3502.4 MiB.
 Expanded compatibility passes (16598 jobs, 3.5 GiB combined peak). Guarded
 class-control check passes at 3413.7 MiB. Broad axiom audit passes for
 342114 declarations at 3550.3 MiB, permitting only propext, Quot.sound and
+Classical.choice.
+
+### S4 checkpoint: shared ordinary banks derive endpoint-staged recovery readiness
+
+`RecoveryBanks` supplies master generation, recovery, crop, normalization and
+parameter queue placements from one injective map of named banks. Constructor
+separation replaces enumeration over the 392-register work bank. Normalization
+shares the scalar and eight parameter tapes and borrows cleared work registers
+200–210; its support avoids live masters and the halo payload.
+
+`RecoveryBanks.localReady` derives complete local readiness from ordinary
+unary parameters, scalar width, seeds, crop dimensions and blank workspace.
+`RecoveryBanks.ordered_exec` instantiates the complete ordered recovery run,
+including its output certificate, exact frame, time and all-depth stock trace;
+placement and normalization-link obligations are discharged internally.
+
+`RecoveryBanks.stagedReady` now derives the readiness at the state used inside
+`classRun_sum_exec`: endpoint reading supplies parameters 6 and 7 and routing
+supplies the original complex halo payload. The other six ordinary parameters
+and all retained scalar/control inputs survive structurally. Caller source and
+origin tapes are outside the shared bank. This removes the need to assume
+already staged local input data; it does not yet instantiate all class controls
+or produce the exposed supplier stream.
+
+Next instantiate the complete proper-core class with these ordinary bank facts,
+attach the existing complete class bill and stock bound, then connect actual
+exposure/publication and tensor/R4 restoration. S4 remains incomplete; kappa
+unchanged.
+
+Guarded staged-readiness check passes at 3424.8 MiB. Expanded compatibility
+passes (16603 jobs, 3.5 GiB combined peak). Broad axiom audit passes for
+342330 declarations at 3551.7 MiB, permitting only propext, Quot.sound and
 Classical.choice.
