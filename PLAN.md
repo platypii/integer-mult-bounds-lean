@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3693 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3695 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -23930,3 +23930,29 @@ shared reserve. Whole-caller resource bounds, actual first-pass/generated-factor
 integration, scheduling, tensor/R4 restoration and outer integration remain
 open. S4 is incomplete; kappa is unchanged.
 Scoped axiom audit passes for 334139 declarations at 3331.0 MiB.
+
+
+### S4 checkpoint: boundary scaling shares one numerical workspace reserve
+
+`PhaseCellBandScaleStock.bandScaleP_exec_within` reuses the existing real
+scalar-stream bound for an arbitrary input list and real scalar. Clearing the
+restored source has native push zero and adds no reserve. The bound retains
+the existing scalar-stream workspace, rather than charging all numerical steps
+as simultaneously live storage.
+
+`PhaseCellBoundaryScalarInPlaceStock.boundaryScalarInPlaceP_within` upgrades
+an existing in-place scaling execution with that same workspace bound.
+Determinism identifies its numerical phase with the bounded scalar execution;
+the two order-restoring moves use the existing storage-preserving move rule.
+This is the common peak-storage interface for boundary normalization and
+unscaling, without duplicating either numerical correctness proof.
+
+Guarded single-file checks pass at 2048.5 MiB (band scaling) and 2044.8 MiB
+(in-place scaling). Compatibility with the complete batched recovery bill and
+generated scalar baseline passes (15451 jobs, 2.7 GiB combined peak).
+Preparation still needs triangular-pass and RHS-construction peak bounds and
+their composition through the row-stock invariant. Whole-caller selected
+resource bounds, first-pass/generated-factory integration, scheduling,
+tensor/R4 restoration and outer integration remain open. S4 is incomplete;
+kappa is unchanged.
+Scoped axiom audit passes for 334142 declarations at 3331.0 MiB.
