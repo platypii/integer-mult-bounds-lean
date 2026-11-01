@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3612 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3616 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -22724,3 +22724,41 @@ factor generation, global archive loading, workspace/selected resources, global
 scheduling, tensor/R4 restoration and outer integration remain open. S4 is
 incomplete; kappa is unchanged.
 The scoped axiom audit passes for 332378 declarations at 3294.0 MiB.
+
+### S4 checkpoint: archive an accurate recovered row and restore both shared contracts
+
+`PhaseCellFinishedReplicaRecovery` composes the proved preparation/recovery
+trace and retirement into one actual 255-register execution. It advances the
+original-RHS queue, consumes the boundary-solution prefix, restores borrowed
+110/132 suffixes, and prepends the recovered encoded field to output archive
+125. The archive prefix retains the full-halo error bound and word fits.
+The returned state has both `ReplicaRecoveryCoreReady` and
+`ReplicaBoundaryRhsReady`, released disposable count/mask, unchanged persistent
+tapes and preserved factor-page meanings. The time bill adds the exact
+`18*rowSymbols+18` retirement cost to the recovery bound.
+
+`PhaseCellPackedIntervalSuffix` proves once that a read inside the owned encoded
+interval is independent of the borrowed suffix. Archive accuracy uses this
+storage equality; no numerical proof is repeated. The recovery theorem now
+exposes preservation of archive 125 so the final prefix is relative to the
+original archive.
+
+`PhaseCellReplicaRecoveryOwnedFrame` supplies a generic shared-core rule for
+owned queue/RHS/output updates. Preparation now uses this same rule, replacing
+its longer field-by-field frame proof. `PhaseCellReplicaRecoveryBoundaryFrame`
+derives physical boundary readiness from a restored recovery core and persistent
+headers. These statements are over arbitrary states and rows.
+
+Guarded checks pass at 3265.0 MiB (ownership frame), 3262.1 MiB (boundary
+readiness frame), 2030.8 MiB (suffix read equality), 3256.5 MiB (shortened
+preparation proof), 3283.1 MiB (recovery/archive frame), 1935.9 MiB (retirement
+frame), and 3283.9 MiB (complete recovery/archive trace). Compatibility with the
+retained initialized boundary phase and initialized interior/coupling path
+passes (15154 jobs, 3.5 GiB combined peak). Default proof limits are unchanged.
+
+Next prepend the actual shared-factor boundary-row solve to this restored
+recovery transition, then instantiate the structural cursor loop for every
+residual/original-RHS pair. Shared factor generation, global archive loading,
+workspace/selected resources, global scheduling, tensor/R4 restoration and outer
+integration remain open. S4 is incomplete; kappa is unchanged.
+The scoped axiom audit passes for 332388 declarations at 3294.4 MiB.

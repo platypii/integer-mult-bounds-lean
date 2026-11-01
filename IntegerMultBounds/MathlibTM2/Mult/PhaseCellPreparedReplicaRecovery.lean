@@ -56,7 +56,7 @@ theorem preparedReplicaRecovery_exec (H : ReplicaHaloProblem s)
       F.R 116 = [] ∧ F.R 167 = [] ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k : Fin 255, 248 ≤ k.val → F.L k = S.L k ∧ F.R k = S.R k) ∧
       (∀ bo hf df, PackedBoundaryFactorPages bo hf df (embStk (Fin.castLE (by decide : 242 ≤ 255)) S) →
-        PackedBoundaryFactorPages bo hf df (embStk (Fin.castLE (by decide : 242 ≤ 255)) F)) := by
+        PackedBoundaryFactorPages bo hf df (embStk (Fin.castLE (by decide : 242 ≤ 255)) F)) ∧ F.R 125 = S.R 125 := by
   dsimp only
   intro htarget hcolumns htable r hr D hD x hx rhsQueueTail solutionTail v S
     hphysical hcore h116 h167 hsource hsolution
@@ -97,7 +97,7 @@ theorem preparedReplicaRecovery_exec (H : ReplicaHaloProblem s)
   have hread93 : G.R 93 = T.R 93 := hget 93
   have hread132 : G.R 132 = T.R 132 := hget 132
   refine ⟨v',G,replicaRecoveryInputsCost H+n,E,hu'.trans (hu.trans hu₀),by unfold replicaRecoveryRowCost; omega,
-    Exec.seq he₀ he',?_,?_,?_,hfits,?_,?_,?_,?_,?_,?_,hinp,hout,?_,?_⟩
+    Exec.seq he₀ he',?_,?_,?_,hfits,?_,?_,?_,?_,?_,?_,hinp,hout,?_,?_,?_⟩
   · rw [hread93,h93]; simp [embStk,e,J,preparedReplicaRecoveryInputState,seededReplicaRecoveryState,stagedReplicaRecoveryRhsState]
   · exact (hget 238).trans h238
   · exact (hget 132).trans h132
@@ -125,5 +125,7 @@ theorem preparedReplicaRecovery_exec (H : ReplicaHaloProblem s)
     change PackedBoundaryFactorPages bo hf df (embStk packedBoundaryRecoveryBase (embStk e G))
     rw [embStk_ovr hinj]
     exact hpages bo hf df (factorPages_prepare_recovery_inputs S xs rhsQueueTail hpage)
+  · exact ((hget 125).trans (hretained 125 (by decide))).trans
+      (preparedReplicaRecoveryInputState_frame S xs rhsQueueTail 125 (by decide))
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

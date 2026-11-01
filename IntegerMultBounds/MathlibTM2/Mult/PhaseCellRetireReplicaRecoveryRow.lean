@@ -17,6 +17,12 @@ def retiredReplicaRecoveryState (S : Stacks 255 A) (rhsTail outputTail words : L
   {S with R := (Function.update (Function.update (Function.update S.R 110 rhsTail) 132 outputTail)
     125 (words++S.R 125))}
 
+theorem retiredReplicaRecoveryState_frame (S : Stacks 255 A) (rhsTail outputTail words : List (Fin (A+4)))
+    (k : Fin 255) (hk : k ∉ [110,125,132]) :
+    (retiredReplicaRecoveryState S rhsTail outputTail words).R k = S.R k := by
+  simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hk
+  simp [retiredReplicaRecoveryState,hk.1,hk.2.1,hk.2.2]
+
 theorem retireReplicaRecoveryRow_exec (V : ℕ) (xs rhs words rhsTail outputTail : List (Fin (A+4)))
     (hxs : xs.length = V) (hrhs : rhs.length = V) (hwords : words.length = V)
     (v : HS 255 Q A U) (S : Stacks 255 A) (hV : (S.R 251).length = V)

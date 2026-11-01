@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaRecoveryInputs
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaRecoveryReady
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaRecoveryOwnedFrame
 
 /-! Physical preparation supplies the disposable part of recovery readiness;
 the shared core is transported through the exact owned-input frame. -/
@@ -17,42 +17,13 @@ theorem ReplicaRecoveryCoreReady.prepare_inputs (H : ReplicaHaloProblem s) (W : 
     (S : Stacks 255 A) (xs tail : List (Fin (A+4)))
     (h : ReplicaRecoveryCoreReady H W (embStk (Fin.castLE (by decide : 248 ≤ 255)) S)) :
     ReplicaRecoveryCoreReady H W (embStk (Fin.castLE (by decide : 248 ≤ 255)) (preparedReplicaRecoveryInputState S xs tail)) := by
-  have hframe (k : Fin 248) (hk : k ∉ [93,110,116,132,167]) :
-      (embStk (Fin.castLE (by decide : 248 ≤ 255)) (preparedReplicaRecoveryInputState S xs tail)).R k =
-        (embStk (Fin.castLE (by decide : 248 ≤ 255)) S).R k := by
-    apply preparedReplicaRecoveryInputState_frame
-    simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff,Fin.castLE] at hk ⊢
-    norm_num at hk ⊢
-    all_goals exact hk
-  constructor
-  · exact preparedBank_prepare_recovery_inputs S xs tail h.bank
-  · exact (hframe 143 (by decide)).trans h.rhs
-  · exact h.freshLeft
-  · intro i hi
-    rw [hframe i (by
-      simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff]
-      norm_num
-      omega)]
-    exact h.freshRight i hi
-  · exact couplingMasters_prepare_recovery_inputs S xs tail h.masters
-  · rw [hframe 118 (by decide)]; exact h.stage
-  · rw [hframe 120 (by decide)]; exact h.level
-  · intro i h93 h110 h116
-    rw [hframe ⟨i.val,by omega⟩ (by
-      simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff] at h93 h110 h116 ⊢
-      have hi := i.isLt
-      omega)]
-    exact h.native i h93 h110 h116
-  · intro k hk
-    rw [hframe k (by
-      simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff] at hk ⊢
-      norm_num at hk ⊢
-      omega)]
-    exact h.clean k hk
-  · rw [hframe 140 (by decide)]; exact h.rows
-  · exact (hframe 138 (by decide)).trans h.page
-  · rw [hframe 139 (by decide)]; exact h.pageCount
-  · exact couplingGeometry_prepare_recovery_inputs S xs tail h.geometry
+  apply ReplicaRecoveryCoreReady.of_owned_frame H W h
+    (F := embStk (Fin.castLE (by decide : 248 ≤ 255)) (preparedReplicaRecoveryInputState S xs tail)) rfl
+  intro k hk
+  apply preparedReplicaRecoveryInputState_frame
+  simp only [List.mem_cons,List.not_mem_nil,or_false,Fin.ext_iff,Fin.castLE] at hk ⊢
+  norm_num at hk ⊢
+  tauto
 
 theorem prepareReplicaRecoveryReady_exec (H : ReplicaHaloProblem s) (W : ℕ)
     (C : ZMod s → GaussianInt) (tail : List (Fin (A+4))) (v : HS 255 Q A U) (S : Stacks 255 A)
