@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3557 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 3560 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -21951,3 +21951,38 @@ Boundary recovery and the second interior pass, the global endpoint schedule,
 tensor/R4 restoration and outer integration remain open. S4 is incomplete;
 kappa is unchanged.
 The scoped axiom audit passes for 327675 declarations at 3203.3 MiB.
+
+
+### S4 checkpoint: generate shared coupling geometry from retained endpoints
+
+`PhaseCellGenerateCouplingGeometry` converts the ordinary coupling headers to
+binary with the structural `binaryHeaderBank`, computes the interval length
+as the binary difference of upper and lower endpoints, releases its temporary
+endpoint and invokes `completeCouplingIntervalMetadata`. Its result is actual
+`CouplingIntervalMetadata` for origin `a` and length `b-a`; all native tapes,
+streams and left tapes are restored. The cost is
+`(s+t+band+2*a+2*b)*(4*V+10)+74*V+103`.
+
+`PhaseCellCouplingGeometryStock` proves one native push bound over arbitrary
+binary header schedules and instantiates it for this geometry program.
+`PhaseCellPrepareReplicaCouplingGeometry` copies the existing gather width
+master into coupling's extended width tape and embeds the generator through
+the disjoint replica placement. Its execution theorem includes actual geometry,
+unchanged native numerical storage, unchanged gather masters, unchanged left
+tapes and streams, and preservation outside the coupling bank. Workspace is
+bounded by three times its explicit native time bill. No geometry oracle or
+new unary interval-length master is required.
+
+Guarded single-file checks pass at 2135.5 MiB (generator), 2085.7 MiB
+(native stock) and 2135.7 MiB (placed setup). Compatibility with native setup
+and selected replica resources passes (14740 jobs, 2.8 GiB combined peak).
+
+The composition order must be header reload, geometry and coefficient-page
+generation, then scalar counters: the existing coefficient generator requires
+empty arithmetic scratch. The previously checked combined native initializer
+remains available but cannot precede that generator. Next connect the interval
+coefficient page through the same placement, retain it outside the replica loop,
+then close the staged local coupling and cleanup transition. Boundary recovery,
+second interior pass, global endpoint scheduling, tensor/R4 restoration and
+outer integration remain open. S4 remains incomplete; kappa is unchanged.
+The scoped axiom audit passes for 328469 declarations at 3217.5 MiB.
