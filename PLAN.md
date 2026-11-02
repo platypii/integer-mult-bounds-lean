@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4102 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4106 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29776,3 +29776,44 @@ Guarded generic publication, metadata-fit and combined host checks pass at
 2563.7 MiB. Dependency build passes (13497 jobs, 2.9 GiB combined peak).
 Expanded axiom audit passes for 343234 declarations at 3561.1 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: generated metadata matches worker inputs, with stock and external frames
+
+`PhaseCellDyadicScheduleStream` identifies the arithmetic selector's row list
+with the canonical plan's wired stages. A structural flat-map lemma proves the
+published forward binary stream is exactly `StreamedChunkBank.scheduleStream`;
+count length and every worker field-fit premise follow from the same generator
+gates. No stage-index case enumeration is used.
+
+`PhaseCellGeneratedDyadicTranspose.generatedDyadicTranspose_exec_within`
+executes the fixed streamed transpose from that generated-format stream and
+computed count, deriving per-stage fit, plan schedule identity and count
+matching internally. It retains the exact transposed payload, consumed counter,
+queue tail and stage time/stock bounds of the existing structural worker.
+This is the worker-side interface; it does not yet compose the physical publisher
+and worker under a concrete register placement.
+
+`PhaseCellCountedEmbeddedFrame` proves structural register ownership of a
+consuming loop and preservation of both stacks of every register outside the
+embedded worker and counter. The generated transpose theorem now returns this
+ambient register frame in addition to the exact embedded worker final state.
+
+`PhaseCellGeneratedDyadicScheduleStock` certifies native push bound 3 for the
+generic counted publisher and every intermediate configuration of the complete
+schedule generator/publisher. The same execution witness works at every depth,
+with time at most `32921*(W+1)^5` and stock allowance `98763*(W+1)^5` above the
+initial machine. This conservative polynomial reserve includes table execution,
+count export, publication and release; table setup and selected absorption are
+still open.
+
+Next choose compatible generator/worker register placement, transfer readiness
+through publication and compose their executions. Pay initial table setup and
+absorb the polynomial generator reserve into the selected budget. Selected
+geometry, actual gather/compute/restoration integration and grouped tensor/error
+composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded stream bridge, counted external-frame, generated transpose and publisher
+stock checks pass at 2958.5, 1389.2, 2961.4 and 2975.2 MiB. Dependency build
+passes (13668 jobs, 5.2 GiB combined peak). Expanded axiom audit passes for
+343263 declarations at 3561.5 MiB, permitting only propext, Quot.sound and
+Classical.choice.
