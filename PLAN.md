@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4170 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4171 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30618,3 +30618,31 @@ Final class dependency build passes (16558 jobs, 3.6 GiB combined peak). The
 expanded audit dependency refresh passes (16737 jobs, 13.4 GiB combined peak).
 Expanded axiom audit passes for 343766 declarations at 3575.7 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: derive generated routing readiness from the raw bank
+
+`PhaseCellRawGeometryGatherReady.geometryReady_of_raw` removes the supplied
+readiness certificate for the generated intermediate state. Eight ordinary
+retained geometry/count facts, a fresh non-live register bank and empty local
+left stacks imply the complete `GeometryReady` contract. The proof derives
+both generated dimensions and codec/worker freshness through injective placement
+and exact record-update frames; it does not enumerate the concrete bank.
+
+`geometryReady_of_raw_placed` carries the construction over arbitrary ambient
+spectators. `rawGeometryGather_exec_within` invokes the complete physical placed
+router directly from those raw conditions, with the existing source-only final
+update and time/stock bounds. No generated-boundary readiness or execution
+callback is supplied to this frontend. Retained input headers remain ordinary
+inputs; constructing/loading the final selected layout is still separate.
+
+This follows the revised integration priority by removing a concrete readiness
+assumption rather than adding a different routing algorithm. Next instantiate
+the ambient layout and connect the raw-bank certificate to the selected
+amortized-width numerical caller, then close publication/support and full-tensor
+composition. S4 remains incomplete; kappa unchanged.
+
+Guarded raw construction, ambient construction and execution frontend check
+passes at 3130.3 MiB.
+Dependency build passes (14117 jobs, 3.4 GiB combined peak). Expanded axiom audit
+passes for 343775 declarations at 3575.9 MiB, permitting only propext, Quot.sound
+and Classical.choice.
