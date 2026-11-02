@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4178 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4180 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30757,3 +30757,34 @@ check passes at 3105.8 MiB; new exposure/routing execution check passes at
 passes (16745 jobs, 6.0 GiB combined peak). Expanded axiom audit passes
 for 343900 declarations at 3577.6 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+
+### S4 checkpoint: consume the fresh-bank supplier in actual numerical execution
+
+`PhaseCellPreparedInputClassRun.preparedInputClassRun_exec` factors the existing
+structural supplier-consumption argument over an arbitrary alphabet and an
+executed preparation trace. It transfers input readiness through the source-only
+update, runs the existing generated-input numerical class, restores the temporary
+supplier source and retains only certified numerical output. The existing
+geometry-exposed caller now uses this shared lemma rather than repeating the
+frame/restoration proof.
+
+`PhaseCellAllocatedExposedInputClassRun.allocatedExposedInputClassRun_exec`
+instantiates that argument with the actual ambient exposure, metadata loading,
+geometry routing and header-retirement trace. The numerical bank is the preserved
+caller prefix of the extended layout. Its exact final state changes only the
+result register, preserving ambient lines, borrowed tail, caller metadata and the
+routing suffix. The same execution has the sum of complete gather and numerical
+time/stock bills and `Forall₂ PackedNormalizedJob.output` for its returned outputs.
+
+The job stream agreement and ordinary numerical input-readiness assumptions are
+still explicit. Next specialize to generated common-format core jobs, reusing
+the existing payload/origin identities, then selected amortized-width costs.
+Concrete exposure initialization, publication/cropping/support, locality and
+full-tensor composition remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded shared consumption check passes at 3431.0 MiB, the retained-header caller
+refactor at 3463.7 MiB, and the allocated numerical caller at 3462.4 MiB.
+Dependency build including selected amortized execution passes (16747 jobs,
+6.0 GiB combined peak). Expanded axiom audit passes for 343906 declarations
+at 3577.9 MiB, permitting only propext, Quot.sound and Classical.choice.

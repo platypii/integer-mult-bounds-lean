@@ -1,5 +1,5 @@
 module
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReadyInputClassRun
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedInputClassRun
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryRealGatherData
 /-! Actual ambient exposure feeds generated-input class execution. The exact
 frame restores the temporary supplier stream and retains certified output. -/
@@ -59,32 +59,14 @@ theorem geometryExposedInputClassRun_exec (b : RawRecoveryProgramBounds Q (prime
         (.seq g.program (inputClassProgram bank hinj b rg)) (Host.mk v S) n
         (Host.mk v' {S with R := (Function.update S.R (plan bank hinj).result
           (outputs.reverse.flatten++S.R (plan bank hinj).result))}) := by
-  obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := g.exec body v depth
-  rw [hArchiveSource,←hstream] at he₁
-  let F : Stacks T (prime+K) := {S with R := Function.update S.R (control bank .source) (jobs.flatMap routedPayload)}
-  have hreadyF : InputReady bank hinj rg V D s coreWidth radius H st F := hready.of_frame
-    (by intro k hk; exact Function.update_of_ne hk _ _)
-    (by intro i; rfl) (fun r => hoff r (.control .source))
-  obtain ⟨v₂,n₂,outputs,hu₂,hn₂,houtputs,he₂⟩ := inputClassRun_exec_of_ready (body := body) bank hinj b jobs
-    V D Cprog reserve depth rg hrg hoff st hfitValues hwl hfit hstock hpush hbody
-    coreWidth radius H N W hcoreWidth hwide hHfit hA hV hlen horiginJobs hvolume v₁ F []
-    hjobHalo hvalues hprecision hparameters hjobRadius hjobRows hjobWord hjobFields hreadyF
-    (by simp [F])
-  have hne : control bank .source ≠ (plan bank hinj).result := by
-    simp [control,plan,RecoveryBanks.plan,recovery,hinj.eq_iff]
-  have hsourceBlank : S.R (control bank .source) = [] := by rw [←hArchiveSource]; exact g.houtput
-  have hend : {F with R := (Function.update (Function.update F.R (control bank .source) [])
-      (plan bank hinj).result (outputs.reverse.flatten++F.R (plan bank hinj).result))} =
-      {S with R := Function.update S.R (plan bank hinj).result (outputs.reverse.flatten++S.R (plan bank hinj).result)} := by
-    refine Stacks.ext rfl rfl rfl ?_
-    funext k
-    by_cases hr : k = (plan bank hinj).result
-    · subst k; simp [F,hne.symm]
-    · by_cases hs : k = control bank .source
-      · subst k; simp [F,hr,hsourceBlank]
-      · simp [F,hr,hs]
-  rw [hend] at he₂
-  exact ⟨v₂,n₁+n₂,outputs,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,houtputs,mn_seq_within_add he₁ he₂⟩
+  apply preparedInputClassRun_exec (body := body) bank hinj b jobs V D Cprog reserve depth
+    rg hrg hoff st hfitValues hwl hfit hstock hpush hbody coreWidth radius H N W hcoreWidth hwide
+    hHfit hA hV hlen horiginJobs hvolume v S hjobHalo hvalues hprecision hparameters hjobRadius
+    hjobRows hjobWord hjobFields g.program g.timeCost g.stockAllowance
+    (by rw [←hArchiveSource]; exact g.houtput) ?_ hready
+  obtain ⟨v',n,hu,hn,he⟩ := g.exec body v depth
+  rw [hArchiveSource,←hstream] at he
+  exact ⟨v',n,hu,hn,he⟩
 
 end ComputedClassBanks
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
