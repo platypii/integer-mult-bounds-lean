@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4149 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4152 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30341,4 +30341,38 @@ Guarded packet producer, complete packet-prepared route and budget checks pass
 at 3114.3, 3930.5 and 3123.7 MiB respectively.
 Final dependency build passes (14164 jobs, 3.4 GiB combined peak). Expanded axiom
 audit passes for 343598 declarations at 3571.9 MiB, permitting only propext,
+Quot.sound and Classical.choice.
+
+### S4 checkpoint: complete geometry-driven routing and ambient placement
+
+`PhaseCellGeometryDyadicGather.geometryGather_exec_within` composes the checked
+core-count producer with packet-prepared count-driven routing and executed count
+retirement. Binary geometry and retained replica data replace the supplied
+real-core count. The exact final state changes only the supplier source. All
+generated core count, packet width, dimensions, capacity, binary headers, queues
+and scratch are restored or retired. Readiness remains ordinary workspace data
+at the explicit generated boundary; no execution callback is assumed.
+
+`PhaseCellPlacedGeometryDyadicGather.placedGeometryGather_exec_within` embeds
+this whole physical call in arbitrary injective ambient register placement,
+using the existing owned-update stock lemma. Spectator storage is preserved and
+the additive stock allowance is unchanged.
+
+`PhaseCellGeometryGatherBudget.geometryGatherCosts_le` absorbs count movement,
+origin-queue retirement and final count retirement into one additional existing
+geometry-pass bill. Complete time is bounded by twice the origin-pass bill plus
+500*volume+200 and twice the restoring-kernel time. Stock is bounded by four
+times the origin-pass bill plus 700*volume+300 and the restoring-kernel reserve.
+The previously proved sharp transpose charge remains available for that kernel.
+
+Next connect this placed complete route to ambient exposure and numerical class
+execution, prove initial workspace readiness from the actual selected layout,
+and absorb geometry/setup/routing bills into selected sizes. Publication and
+grouped tensor/error composition also remain open. S4 is incomplete; kappa
+unchanged.
+
+Guarded geometry-driven routing, ambient placement and complete-budget checks
+pass at 3932.8, 3098.2 and 3124.1 MiB respectively.
+Final dependency build passes (14172 jobs, 5.7 GiB combined peak). Expanded axiom
+audit passes for 343610 declarations at 3572.4 MiB, permitting only propext,
 Quot.sound and Classical.choice.
