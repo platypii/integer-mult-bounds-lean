@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4145 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4146 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30289,3 +30289,25 @@ Guarded complete count-driven execution and budget checks pass at 3939.3 and
 Final dependency build passes (14161 jobs, 3.4 GiB combined peak). Expanded axiom
 audit passes for 343580 declarations at 3570.1 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+### S4 checkpoint: derive the retained real-core count from binary geometry
+
+`PhaseCellDyadicGatherCoreCount.gatherCoreCount_exec_within` reuses the existing
+placed origin/count generator in the router bank. From retained binary ambient
+size, core width, radius and group length, it computes the actual fitting-core
+count, moves its unary word into `realRows`, and erases the temporary origin
+queue. The exact final record changes only the previously blank count port.
+Binary geometry, all table scratch, stage-count port and queue are restored.
+No core-count word is supplied as input, and no new geometry enumeration is
+implemented. The execution includes the generator cost, 2*rows+2 for the move
+and 2*rows*V+2 for queue retirement; the latter has zero extra stock allowance.
+
+Next compose this producer and packet-width setup with count-driven routing,
+retire the generated count, and place the combined call in ambient exposure and
+numerical class execution. Selected resource absorption, publication and grouped
+tensor/error composition remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded core-count production check passes at 3105.9 MiB.
+Dependency build passes (14106 jobs, 3.4 GiB combined peak). Expanded axiom audit
+passes for 343584 declarations at 3572.2 MiB, permitting only propext, Quot.sound
+and Classical.choice.
