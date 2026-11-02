@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4171 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4172 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30645,4 +30645,32 @@ Guarded raw construction, ambient construction and execution frontend check
 passes at 3130.3 MiB.
 Dependency build passes (14117 jobs, 3.4 GiB combined peak). Expanded axiom audit
 passes for 343775 declarations at 3575.9 MiB, permitting only propext, Quot.sound
+and Classical.choice.
+
+### S4 checkpoint: allocate the routing workspace beside the numerical class bank
+
+`PhaseCellAllocatedGatherBank` constructs a concrete ambient layout by extending
+the numerical bank with one private routing suffix. Existing register redirection
+maps only the router source into the numerical supplier-source control. Injectivity
+and an exact intersection theorem prove that the two banks meet at precisely
+that register; every other routing port is private. No concrete Fin enumeration
+or supplied placement/separation proof is needed.
+
+`allocatedGeometryReady` derives the complete readiness certificate from retained
+suffix headers, fresh non-live suffix storage, empty suffix left stacks and the
+numerical source's empty left stack. `allocatedGeometryGather_exec_within` runs
+the actual complete router through that placement and returns the supplier stream
+directly at the numerical class source. Its exact final record preserves all
+other caller storage and the routing suffix, with unchanged complete time and
+stock allowances. Header loading/exposure and connection to the selected
+amortized-width class remain to be composed; this checkpoint does not claim a
+complete initial tensor loader.
+
+Next connect ambient exposure and metadata loading to this allocated bank,
+instantiate numerical input readiness, and compose publication/support and
+full-tensor error guarantees. S4 remains incomplete; kappa unchanged.
+
+Guarded layout/readiness/execution check passes at 3461.9 MiB.
+Dependency build passes (16162 jobs, 3.5 GiB combined peak). Expanded axiom audit
+passes for 343788 declarations at 3580.2 MiB, permitting only propext, Quot.sound
 and Classical.choice.
