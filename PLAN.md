@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4061 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4062 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29238,3 +29238,28 @@ Guarded generalized execution and stock checks pass at 2939.0 MiB and
 2963.1 MiB. Final expanded compatibility passes (16625 jobs, 3.3 GiB
 combined peak). Broad axiom audit passes for 342659 declarations at
 3556.6 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: rectangular schedules have structural layout and inverse laws
+
+`PhaseCellRectangularChunkLayout` factors the full replica/key transpose over
+an arbitrary list of replica radices. Each stage records its prefix, both
+field widths and suffix block width. `runRectangularChunkSwaps_eq` identifies
+the resulting complete rectangle; `_words` gives exactly the existing
+`replicaKeyWords` to `keyReplicaWords` interface. The reverse schedule exchanges
+both widths of each stage, and `_inverse_words` restores replica-major order
+for arbitrary new numerical output values.
+
+The proof reuses `replicaKey_swap_factor` and `swapList_involution`. The stage
+count is the factor-list length, every stage touches exactly the original
+volume, and their summed volume is stage count times tile volume. No concrete
+address enumeration, padding or symbol reversal is introduced. Positivity is
+derived from the factors. This is the value-level schedule, not yet a physical
+execution or a selected cost bound: the actual factorization still must make
+each generated stage balanced, control padding and match the outer tensor
+geometry. Those gates, publication and grouped tensor composition remain open;
+S4 is incomplete and kappa unchanged.
+
+Guarded rectangular layout check passes at 2549.6 MiB. Expanded compatibility
+passes (16626 jobs, 3.0 GiB combined peak). Broad axiom audit passes for 342713
+declarations at 3560.9 MiB, permitting only propext, Quot.sound and
+Classical.choice.
