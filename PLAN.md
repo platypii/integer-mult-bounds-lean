@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4128 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4133 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30088,3 +30088,34 @@ pass at 1381.2, 1384.9, 2986.7, 2989.1/2996.4, 3007.7, 2988.8 and 3107.0 MiB.
 Final dependency build passes (13995 jobs, 3.4 GiB combined peak). Expanded axiom
 audit passes for 343431 declarations at 3564.7 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+### S4 checkpoint: actual dyadic gather route and linear padded core volume
+
+`PhaseCellDyadicGatherRows` identifies existing padded core payloads with the
+replica-major dyadic rectangle and identifies every returned real-core batch
+with its existing supplier stream. `PhaseCellDyadicGatherTranspose` executes
+the packed coefficient router on these rows without caller-supplied row data.
+`PhaseCellDyadicGatherProgram` reuses the codec scratch for the existing
+prefix-padding and dummy-retirement programs; four retained unary dimensions
+occupy unused generator ports. `PhaseCellDyadicGatherRouting.gatherRoute_exec_within`
+composes actual padding, routing and retirement, returning exactly
+`coreSupplierStream` with the surrounding stack restored. Time and stock bills
+include all three physical passes. The final time proof is addition of the
+three component bounds, without arithmetic automation over the register frame.
+
+`PhaseCellCoreGatherVolume.coreGather_volume_le_six` bounds each fitting length
+group's volume by 6*s when radius <= width <= s. The proof uses the generated
+core count and L <= 3*width, including clipped cores. For nonempty groups,
+`PhaseCellDyadicGatherVolume.dyadicGatherVolume_le` bounds minimal dyadic core
+padding by 12*replicas*s*w. Empty groups are skipped. This avoids an unwanted
+extra halo-length factor in the selected resource estimate.
+
+Next produce retained dimensions in the actual ambient gather caller, replace
+the old replica-radix archive route, and absorb complete setup/routing costs.
+Selected gather/compute/restoration/publication and grouped tensor/error
+composition remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded gather execution check passes at 3116.2 MiB; core-volume and padded-volume
+checks pass at 1874.2 and 1873.9 MiB. Final dependency build passes (14099 jobs,
+2.5 GiB combined peak). Expanded axiom audit passes for 343462 declarations at
+3567.7 MiB, permitting only propext, Quot.sound and Classical.choice.
