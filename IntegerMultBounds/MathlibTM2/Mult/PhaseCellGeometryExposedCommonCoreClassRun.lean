@@ -1,6 +1,6 @@
 module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeometryExposedInputClassRun
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCommonInputCoreClassRun
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedCommonCoreClassRun
 /-! Actual common-format proper-core jobs consume the physical ambient gather
 stream with its explicit reversed replica order. -/
 @[expose] public section
@@ -59,46 +59,12 @@ theorem geometryExposedCommonCoreClassRun_exec (b : RawRecoveryProgramBounds Q (
           (outputs.reverse.flatten++S.R (plan bank hinj).result))}) := by
   intro B W radius indices jobs st D Cprog reserve depth rg hrg hoff hfitValues hstock hpush hbody
     hcoreWidth hwide hHfit hA hB v S Vg a Dg borrowed g hArchiveSource hready
-  have hwidthJob : ∀ i : Fin indices.length, (jobs i).coreWidth = width := fun _ => rfl
-  have hk : ∀ i : Fin indices.length, (jobs i).k = indices[i.val]'i.isLt := fun _ => rfl
-  have hradius : ∀ i : Fin indices.length, (jobs i).radius = radius := fun _ => rfl
-  have hword : ∀ i : Fin indices.length, (jobs i).W = W := fun _ => rfl
-  have hFs : ∀ i : Fin indices.length, (jobs i).Fs = Fs.reverse := fun _ => rfl
-  have hlength (i : Fin indices.length) : (jobs i).b-(jobs i).a = L := by
-    have hg := (coreGatherIndices_spec s width radius L (jobs i).k
-      (by rw [hk i]; exact List.getElem_mem i.isLt)).2.2
-    have hh := (jobs i).haloLength
-    rw [hwidthJob i,hradius i] at hh
-    exact hh.trans hg
-  have horigin := coreJobs_origins width radius L B jobs hwidthJob hradius hk
-  have hpayload := coreJobs_payloads width radius L W Fs.reverse jobs hwidthJob hradius hk hword hFs
-  have hvolume := coreJobs_payload_length width radius L W Fs.reverse jobs hwidthJob hradius hk hword hFs
-  have hcoreLength := coreJobs_core_length width radius L jobs hwidthJob hk
-  apply geometryExposedInputClassRun_exec bank hinj b (List.ofFn jobs) B D Cprog reserve depth rg hrg hoff st hfitValues
-    (by intro r hr; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hr; rfl)
-    (by intro r hr; have := r.bounds.hab; have := r.bounds.hbs; omega)
-    hstock hpush hbody width radius L Fs.length W hcoreWidth hwide hHfit hA hB
-    (List.length_ofFn) horigin
-    (by intro r hr; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hr
-        simpa only [ComputedRecoveryPlan.routedPayload,PackedNormalizedJob.inputPayload,Nat.mul_assoc,List.length_reverse] using hvolume i)
-    v S
-    (by intro r hr; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hr; exact (hlength i).symm)
-    (by simp [st,commonInputValues,Matrix.vecAppend_eq_ite])
-    (by intro r hr; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hr
-        change commonInputValues p u l target s t B W Fs.length radius L 0 = p
-        simp [commonInputValues])
-    (by intro r hr; obtain ⟨j,rfl⟩ := List.mem_ofFn.mp hr
-        intro i
-        change commonInputValues p u l target s t B W Fs.length radius L _ = _
-        rw [commonInputValues_prefix,masterInput_prefix]; rfl)
-    (by intro r hr; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hr; rfl)
-    (by intro r hr; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hr
-        change commonInputValues p u l target s t B W Fs.length radius L 10 = _
-        simpa [commonInputValues,Matrix.vecAppend_eq_ite] using (hcoreLength i).symm)
-    (by intro r hr; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hr; exact (hword i).symm)
-    (by intro r hr; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hr; rw [hFs i,List.length_reverse])
-    Vg a Dg Fs borrowed g hArchiveSource
-    (by change (List.ofFn jobs).flatMap PackedNormalizedJob.inputPayload = _; exact hpayload) hready
+  apply preparedCommonCoreClassRun_exec (body := body) bank hinj b p u l target t width L α gap C V bounds Fs hF
+    D Cprog reserve depth rg hrg hoff hfitValues hstock hpush hbody hcoreWidth hwide hHfit hA hB v S
+    g.program g.timeCost g.stockAllowance (by rw [←hArchiveSource]; exact g.houtput) ?_ hready
+  obtain ⟨v',n,hu,hn,he⟩ := g.exec body v depth
+  rw [hArchiveSource] at he
+  exact ⟨v',n,hu,hn,he⟩
 
 end ComputedClassBanks
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

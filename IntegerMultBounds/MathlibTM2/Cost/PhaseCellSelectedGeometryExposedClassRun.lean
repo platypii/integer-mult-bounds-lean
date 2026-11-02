@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPreparedClassRun
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedComputedCoreClassBill
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCommonInputCost
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedComputedCoreClassStock
@@ -82,58 +83,18 @@ theorem selectedGeometryExposedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type
         (.seq g.program (inputClassProgram bank hinj b rg)) (Host.mk v S) n
         (Host.mk v' {S with R := (Function.update S.R (plan bank hinj).result
           (outputs.reverse.flatten++S.R (plan bank hinj).result))}) := by
-  obtain ⟨F,hF,hbill⟩ := selectedComputedCoreClassBill_time_le (T := T) b ct
-  obtain ⟨Cstock,hstockBound⟩ := selectedComputedCoreClassStock_sum_le (T := T) b ct
-  let cB := 2*(ct+21)+22
-  let cW := 1032+8*ct
-  refine ⟨F,hF,Cstock+3*(6*cW+9),?_⟩
-  filter_upwards [hbill,hstockBound,selectedComputedClassControlTime_linear_le cB cW,selectedCommonInputCost_le ct] with n₀ hn hstockAt hcontrolAt hinputAt
+  obtain ⟨F,hF,Cstock,hclass⟩ := selectedPreparedComputedCoreClassRun_exec (body := body) bank hinj b ct
+  refine ⟨F,hF,Cstock,?_⟩
+  filter_upwards [hclass] with n₀ hn
   intro h i _ u target width L hu htarget hw hwidth hL hguard hcell hprepare α gap C V bounds Fs hFs
   intro B W radius indices jobs st D Cprog depth rg hrg hoff hfitValues hpush hbody hwide hHfit hA hB
     v S Vg a Dg borrowed g hArchiveSource hready
-  have hFreverse : ∀ F ∈ Fs.reverse, ∀ j, ‖value (Sizes.p n₀) (F j)‖ ≤ 1 := by
-    intro F hmem j; exact hFs F (List.mem_reverse.mp hmem) j
-  let raw : HS 392 Q (prime+K) U := ⟨v.flag,v.sym,v.st,fun _ => 0,none,v.user⟩
-  let reserve := (39+3*Cprog)*Sizes.T n₀+Cstock*(Cprog+1)*Fs.length*Sizes.t n₀ i*Sizes.p n₀
-  have hsum := hstockAt h i u target width L hu htarget hw hwidth hguard hcell hprepare
-    α gap C V bounds Fs.reverse hFreverse raw (plan bank hinj) Cprog
-  simp only [List.length_reverse] at hsum
-  have hstock (r : PackedNormalizedJob (prime+K) (Sizes.s n₀ i)) (hr : r ∈ List.ofFn jobs) :
-      (plan bank hinj).coreStock b B r Cprog ≤ reserve :=
-    (List.le_sum_of_mem (List.mem_map.mpr ⟨r,hr,rfl⟩)).trans hsum
-  obtain ⟨v',m,outputs,huser,htime,houtputs,hexec⟩ := geometryExposedCommonCoreClassRun_exec (body := body) bank hinj b
-    (Sizes.p n₀) u (haloInverseRingLog (Sizes.s n₀ i) (Sizes.t n₀ i)) target (Sizes.t n₀ i)
-    width L α gap C V bounds Fs hFs D Cprog reserve depth rg hrg hoff hfitValues hstock hpush hbody
-    hw hwide hHfit hA hB v S Vg a Dg borrowed g hArchiveSource hready
-  have hcost := hn h i u target width L hu htarget hw hwidth hL hguard hcell hprepare
-    α gap C V bounds Fs.reverse hFreverse raw (plan bank hinj)
-  simp only [List.length_reverse] at hcost
-  have hband : PhaseCellBand.width (Sizes.p n₀) u ≤ Sizes.s n₀ i := by
-    have hsquare := Nat.le_self_pow (by decide : (2 : ℕ) ≠ 0) (PhaseCellBand.width (Sizes.p n₀) u)
-    omega
-  have hscalar := selectedInverseCallerWordWidth_le ct h i hu htarget hband
-  have hpacket := selectedPackedHaloCommonWidth_le ct h i u target htarget hband
-  have hinputBound : 165*D+8*inputVolume st.val+122 ≤ Sizes.T n₀+165*D+8*Fs.length :=
-    hinputAt h i u target B W Fs.length radius L D hu htarget hscalar hpacket (hguard.trans hwidth) hL
-  have hinputCost := inputLifecycleCost_eq bank D st.val
-  refine ⟨v',m,outputs,huser,?_,houtputs,?_⟩
-  · have ht := (Nat.cast_le (α := ℝ)).mpr htime
-    have hc := congrArg (fun x : ℕ => (x : ℝ)) hinputCost
-    have hi := (Nat.cast_le (α := ℝ)).mpr hinputBound
-    push_cast at ht hc hcost hi ⊢
-    nlinarith only [ht,hc,hcost,hi]
-  · apply hexec.mono
-    intro d z hz
-    have hcontrol := hcontrolAt h i B width radius L W Fs.length hw hscalar hpacket hL
-    have hprep := computedClassPreparationStock_le B (Sizes.s n₀ i) width radius L W Fs.length
-    have hscaled := Nat.mul_le_mul_left 3 hcontrol
-    have hpad : 3*(6*cW+9)*Fs.length*Sizes.t n₀ i*Sizes.p n₀ ≤
-        3*(6*cW+9)*(Cprog+1)*Fs.length*Sizes.t n₀ i*Sizes.p n₀ := by
-      have hh := Nat.mul_le_mul_left (3*(6*cW+9)*Fs.length*Sizes.t n₀ i*Sizes.p n₀)
-        (show 1 ≤ Cprog+1 by omega)
-      nlinarith only [hh]
-    dsimp only [reserve] at hz
-    nlinarith only [hz,hprep,hscaled,hpad,hinputCost,hinputBound]
+  apply hn h i u target width L hu htarget hw hwidth hL hguard hcell hprepare α gap C V bounds Fs hFs
+    D Cprog depth rg hrg hoff hfitValues hpush hbody hwide hHfit hA hB v S
+    g.program g.timeCost g.stockAllowance (by rw [←hArchiveSource]; exact g.houtput) ?_ hready
+  obtain ⟨v',n,hu,hn,he⟩ := g.exec body v depth
+  rw [hArchiveSource] at he
+  exact ⟨v',n,hu,hn,he⟩
 
 
 end IntegerMultBounds.MathlibTM2.Cost

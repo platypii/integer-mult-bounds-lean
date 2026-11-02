@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4180 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4185 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30788,3 +30788,37 @@ refactor at 3463.7 MiB, and the allocated numerical caller at 3462.4 MiB.
 Dependency build including selected amortized execution passes (16747 jobs,
 6.0 GiB combined peak). Expanded axiom audit passes for 343906 declarations
 at 3577.9 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: selected common-format execution through the fresh routing bank
+
+`PhaseCellPreparedCommonCoreClassRun` factors the common-job proof over an
+executed supplier preparation. Existing `coreJobs_*` identities discharge origin,
+payload, halo length, word width, replica count and master-input agreements once.
+Both the retained-header and allocated callers instantiate that same proof.
+`allocatedExposedCommonCoreClassRun_exec` therefore no longer asks its caller for
+job stream agreement or individual job metadata equalities.
+
+`PhaseCellSelectedPreparedClassRun` similarly shares the existing selected
+numerical time/stock argument. The old geometry endpoint and the new
+`selectedAllocatedExposedComputedCoreClassRun_exec` are small instantiations;
+there is no second numerical estimate. The latter executes exposure, metadata
+loading, routing, retirement and numerical recovery in one trace, with certified
+common-job outputs and an exact result-only final update.
+
+`selectedAmortizedAllocatedExposedComputedCoreClassRun_exec` specializes this
+fresh-bank trace to the existing `amortizedCoreWidth`, deriving all width gates
+from the selected geometry theorem and generated halo-length membership.
+Complete physical gather costs remain explicit. Next absorb metadata and gather
+costs for this trace and construct the exposure/numerical initial bank.
+Publication/cropping/support, locality and full-tensor composition remain open;
+these modules alone are not a root-reachable S4 endpoint. S4 remains incomplete;
+kappa unchanged.
+
+Guarded shared common-job proof passes at 3618.6 MiB, retained/allocated common
+wrappers at 3505.8/3505.9 MiB, shared selected estimates at 3552.5 MiB,
+retained/allocated selected wrappers at 3556.6/3557.4 MiB and the allocated
+amortized-width specialization at 3557.0 MiB. Dependency build passes
+(16752 jobs, 6.1 GiB combined peak). Expanded axiom audit passes for 343921
+declarations at 3578.5 MiB, permitting only propext, Quot.sound and
+Classical.choice.
