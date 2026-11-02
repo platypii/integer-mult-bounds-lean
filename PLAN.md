@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4074 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4076 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29448,3 +29448,32 @@ Guarded row-frame, scope and actual streamed-stage checks pass at 1972.1 MiB,
 1935.2 MiB and 2951.5 MiB. Expanded compatibility passes (16638 jobs, 3.3 GiB
 combined peak). Broad axiom audit passes for 342970 declarations at 3558.5 MiB,
 permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: streamed stages carry same-run stock and non-growing boundaries
+
+`PhaseCellDimensionRowScopeStock.withDimensionRow_exec_within` composes the
+binary row reader's native stock bound, a transformation reserve measured from
+the prepared state, and non-growing master erasure. It carries the same paid
+time bill and exact frame as the read/use/release execution. Row preparation
+contributes `3*readDimensionRowCost`; the transformation reserve is additional,
+so allocated masters are never treated as free initial stock.
+
+`PhaseCellStreamedChunkInterchangeStock.streamedChunkInterchange_exec_within`
+instantiates that scope with the actual generated interchange's simultaneous
+stock theorem. Its returned execution has the complete time bill, exact queue/
+payload frame and every-configuration stock bound. `queuePayloadFrame_stock_le`
+proves the final configuration has no more stock than the initial one: payload
+length is preserved, the schedule queue shrinks, and all masters/scratch restore.
+That inequality is returned for this same execution, ready for the existing
+counted-loop shared-reserve theorem.
+
+The reserve is `3*readDimensionRowCost` plus the generated interchange's header
+and placed-swap allowance. Next compose the counted schedule loop and generate
+its binary rows from retained selected dimensions. Initial routed-bank bounds,
+selected capacity rounding/routing absorption, archive replacement, publication
+and grouped tensor composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded scope-stock and streamed-stage stock checks pass at 2938.3 MiB and
+2964.4 MiB. Expanded compatibility passes (16640 jobs, 3.3 GiB combined peak).
+Broad axiom audit passes for 342975 declarations at 3558.9 MiB, permitting
+only propext, Quot.sound and Classical.choice.
