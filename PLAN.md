@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4085 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4088 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29607,3 +29607,37 @@ Guarded fixed count-step and initialized count-loop checks pass at 2537.0 MiB
 and 2556.1 MiB. Expanded compatibility passes (16649 jobs, 3.0 GiB combined peak).
 Broad axiom audit passes for 343141 declarations at 3558.7 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: fixed row-selector descent and leaf operations execute exactly
+
+`PhaseCellTableScalePow2.tblScalePow2_do` reuses the existing certified
+power-of-two loop and an exact multiplication to update the packet width.
+The generic macro preserves its accumulator and every spectator, changes
+only its destination/power/index slots and costs at most `4*E+6` atoms.
+
+`PhaseCellDyadicSelectorFinishCode` supplies the common selected-leaf macro
+for either orientation. It captures the field exponent, computes the exact
+prefix multiplicity, clears the selector guard and preserves all other slots.
+Its cost is at most `4*(m-n)+8`, with explicit subtraction and exponent-fit gates.
+
+`PhaseCellDyadicSelectorDescendCode` implements both arithmetic descents. The
+left descent scales the packet by `2^b`, replaces `a` by `a-b`, and decrements
+the requested index and remaining count, in at most `4*b+10` atoms. The right
+descent scales by `2^a`, replaces the exponents by `(b-a,a)`, and computes the
+reversed residual index `n-2-i`, in at most `4*a+13` atoms. Each proof checks
+no-wrap/no-underflow conditions structurally and preserves retained inputs
+and the accumulator. The right descent reuses the captured exponent instead
+of allocating a separate saved operand.
+
+Next compose these verified operations with the orientation/index tests into
+the selector while loop, then emit the five-field rows and publish the stream
+with the computed count. The individual operations are proved; the full
+selector loop and host schedule generator remain open. Selected bounds,
+archive replacement, publication and grouped tensor composition remain open.
+S4 is incomplete; kappa unchanged.
+
+Guarded packet-scaler, selected-leaf and two-orientation descent checks pass
+at 1395.8 MiB, 1400.1 MiB and 1425.6 MiB. Expanded compatibility passes
+(16652 jobs, 3.3 GiB combined peak). Broad axiom audit passes for 343151
+declarations at 3560.4 MiB, permitting only propext, Quot.sound and
+Classical.choice.
