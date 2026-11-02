@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4114 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4118 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29955,3 +29955,48 @@ Guarded worker preparation and initialized-caller checks pass at 3002.7 and
 2999.1 MiB. Dependency build passes (13678 jobs, 3.3 GiB combined peak).
 Expanded axiom audit passes for 343353 declarations at 3563.4 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: complete first-call routing time/stock and dyadic sizing
+
+`PhaseCellStreamedDyadicBudget` closes a cost-ledger gap: the sharp earlier
+bound covered the generated interchange, whereas the executed stage also reads
+binary metadata, retires unary masters and pays loop overhead. With word width
+at most payload volume, these lifecycle costs plus loop overhead are at most
+300 times volume. The full stage retains the width-sensitive
+`(generatedDyadicStageCoeff+300)*volume*(k^tau+1)` bound. A separate linear
+stock coefficient bounds the actual reader/generated-interchange reserve.
+
+`PhaseCellStreamedDyadicTransposeBudget` sums complete stage bills through the
+existing weighted-charge abstraction and shares the stock bound through the
+schedule maximum. The canonical plan's full stage/loop time is bounded by
+`(generatedDyadicStageCoeff+300)*volume*((a/b)*(b^tau+1)+4*b)+2` for positive b.
+The existing structural weighted-list summation lemma is reused by both the
+old primitive-stage and new complete-stage ledgers.
+
+`PhaseCellDyadicRectangleSizing` uses minimal capacities `2^(clog 2 n)`.
+Each contains its axis and is at most `2*max 1 n`; the padded rectangle has at
+most four times the product of the two real axis bounds. In particular a key
+count bounded by a positive source axis gives padded volume at most
+`4*max 1 rows*axis*packet`, independent of the other axis's radix. The metadata
+width `a+b+size packet` satisfies both generator arithmetic-fit gates and is
+at most payload volume for positive packet width.
+
+`PhaseCellInitializedTransposeBudget.initializedTranspose_sized_exec_within`
+applies these bounds to the actual initialized fixed caller. A fresh swap bank
+contains exactly its payload, so the stock multiplier is 1, derived rather than
+assumed. Its contract includes all first-call setup/generation time plus the
+sharp complete routing charge, and a polynomial setup reserve plus constant
+times payload volume. Exact output, cleanup, retained/external frames and
+returned readiness are preserved. No supplied arithmetic-fit or bank-stock
+bound remains in this sized execution theorem.
+
+Next instantiate padded source/replica geometry in the actual selected gather
+route and absorb the logarithmic-width polynomial setup and full routing bills
+into the selected asymptotic bounds. Gather/compute/restoration/publication and
+grouped tensor/error integration remain open. S4 is incomplete; kappa unchanged.
+
+Guarded complete-stage, schedule, rectangle-sizing and initialized-execution
+budget checks pass at 3077.4, 3063.3, 935.8 and 3101.2 MiB. Dependency build
+passes (13974 jobs, 3.4 GiB combined peak). Expanded axiom audit passes for
+343373 declarations at 3563.4 MiB, permitting only propext, Quot.sound and
+Classical.choice.

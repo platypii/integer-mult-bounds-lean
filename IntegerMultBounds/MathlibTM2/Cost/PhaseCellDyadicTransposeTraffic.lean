@@ -10,7 +10,7 @@ namespace IntegerMultBounds.MathlibTM2.Cost
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 
-private theorem sum_map_le_mul_sum {α : Type*} (rs : List α) (g f : α → ℝ) (C : ℝ)
+theorem sum_map_le_mul_sum {α : Type*} (rs : List α) (g f : α → ℝ) (C : ℝ)
     (h : ∀ r ∈ rs, g r ≤ C*f r) : (rs.map g).sum ≤ C*(rs.map f).sum := by
   revert h
   induction rs with
