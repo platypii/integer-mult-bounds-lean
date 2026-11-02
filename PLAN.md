@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4059 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4061 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29170,3 +29170,44 @@ pass at 3645.3 MiB and 3576.9 MiB. Expanded compatibility passes (16623 jobs,
 3.7 GiB combined peak).
 
 Broad axiom audit: Axiom audit passed for 342643 declarations. Guarded check peak RSS: 3555.7 MiB. Only propext, Quot.sound and Classical.choice are permitted.
+
+### S4 checkpoint: physical gather traffic is linear once padding is controlled
+
+`Cost.PhaseCellRealGatherTraffic` separates the advertised physical gather
+bill from `ArchiveTilePlan.inverseCost` / `inverseStockAllowance`. It pays
+counter setup, replica copying, padding and dummy retirement explicitly.
+With capacity A and packet length P, the non-routing time is bounded by
+`6*A*P+34*A+64+N*(step+2*s*w+16*A*P+6*P+27)`; the corresponding stock bound
+is also affine in N and padded packet volume. The replica count is matched
+to the actual route dimension, not assumed interchangeable with row count.
+
+`replicaCoreGatherStepCost_eq` identifies the actual controller cost.
+`replicaCoreGatherStepCost_le` amortizes its quadratic table work using
+`p^2 ≤ coreWidth`, `V ≤ cV*p` and `w ≤ cW*p`. The real core count is bounded
+by the complete core sweep, and the sweep count times core width is at most
+`2*s`. One actual replica sweep is therefore bounded by
+`coreGatherTrafficFactor cV cW*(s*w)+20*(capacity*L*w)`. This proof is structural;
+no selected finite-case certificates or raised limits are used.
+
+The resulting `realGather*_le_volume` theorems give non-routing time and stock
+linear in `s*w` and replica count under the explicit geometric padding gate
+`capacity*L ≤ cPad*s`. Inverse routing stays visible. Mere row fit does not
+establish this gate: the current archive capacity is `(2^d)^c` while its replica
+count is `2^d`. `paddedVolume_le_realGatherTimeCost` proves that the current
+advertised bill already contains at least `6*N*capacity*L*w`. This is a fact
+about the bill, not a lower bound on the machine's actual execution time.
+
+Before attempting final absorption, the actual selected batch/layout choice
+must justify controlled padding, or the routing/padding construction and its
+bill must change. The low-level placed interchange supports neighboring bit
+widths; the current generated chunk/ArchiveTilePlan layer specializes to equal
+widths. A manuscript-aligned mixed-axis route is a candidate to inspect, not
+an established replacement. Next check that layout gate against the actual
+outer replica geometry and R4 contracts, then close inverse routing costs,
+publication and tensor restoration. S4 remains incomplete; kappa unchanged.
+
+Guarded gather-traffic/controller check passes at 3140.6 MiB. Expanded
+compatibility passes (16625 jobs, 3.4 GiB combined peak).
+Guarded complete physical-gather ledger check passes at 3111.8 MiB. Broad
+axiom audit passes for 342654 declarations at 3556.6 MiB, permitting only
+propext, Quot.sound and Classical.choice.
