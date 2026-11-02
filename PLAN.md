@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4174 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4176 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30702,3 +30702,28 @@ Guarded allocated loader/readiness check passes at 3475.8 MiB.
 Guarded structural word-copy check passes at 1887.6 MiB. Dependency build passes
 (16164 jobs, 3.6 GiB combined peak). Expanded axiom audit passes for 343829
 declarations at 3577.3 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: restore the allocated routing suffix after actual execution
+
+`PhaseCellRestoringAllocatedGather.restoringAllocatedGather_exec_within` composes
+actual metadata loading, the complete allocated geometry router and retirement
+of all eight copied headers. Its final state changes only the numerical supplier
+source; the caller prefix outside that source and the entire initially fresh
+routing suffix are restored exactly. Metadata sources may coincide. The complete
+additional metadata time is 8*metadataVolume+66, and its stock allowance is twice
+the loading cost; routing retains its existing complete bill.
+
+`PhaseCellGatherHeaderRetirement` isolates the retirement proof and metadata
+volume accounting from the main execution theorem. It reuses structural
+`clearWords` execution and prefix/suffix separation instead of eight separate
+execution proofs. The theorem still assumes the exposed source stream and caller
+metadata words: ambient exposure, selected numerical execution/publication,
+locality and full-tensor composition remain open. This is not a root-reachable
+S4 endpoint, and S4 remains incomplete; kappa unchanged.
+
+Guarded retirement check passes at 3464.9 MiB; the combined execution check passes
+at 4285.3 MiB (slightly above the approximate 4 GiB module target). Dependency
+build passes (16743 jobs, 4.3 GiB combined peak). Expanded axiom audit passes
+for 343835 declarations at 3577.5 MiB, permitting only propext, Quot.sound and
+Classical.choice.
