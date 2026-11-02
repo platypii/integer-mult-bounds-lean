@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4190 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4194 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30889,3 +30889,36 @@ Guarded exposure allocation check passes at 2077.5 MiB and raw readiness
 constructor at 2099.9 MiB. Dependency build passes (16757 jobs, 2.7 GiB
 combined peak). Expanded axiom audit passes for 343994 declarations at
 3580.5 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: execute restoring exposure from caller metadata
+
+`PhaseCellAllocatedExposureHeaders` instantiates the existing structural word
+copier for six exposure headers and two counters, using private scratch 166/167.
+Caller metadata sources may coincide. All prefix words are preserved and exact
+readbacks are proved for every destination. `PhaseCellLoadedExposureReady`
+constructs the allocated scan contract for the actual returned state, using only
+caller metadata, the ambient source/tail and an initially fresh private suffix.
+
+`PhaseCellExposureHeaderRetirement` reuses structural `clearWords` execution to
+restore all eight destinations while preserving a changed caller output.
+`PhaseCellRestoringAllocatedExposure.restoringAllocatedExposure_exec_within`
+composes loading, the full replica scan and retirement. The program starts with
+no exposure metadata in private storage; it returns precisely the reverse-replica
+gathered payload at the caller output and restores every other register, including
+the original ambient source and its arbitrary borrowed tail. The initially fresh
+private suffix is fresh again. No preloaded exposure readiness assumption remains.
+
+The actual trace pays loading 6*metadataVolume+49 and retirement
+2*metadataVolume+17, plus the existing complete replica-scan bill. Its stock
+allowance is twice the loading cost plus the existing exposure allowance.
+Next embed this restoring exposure beside the routing/numerical bank and compose
+the complete selected caller. Numerical initial readiness, combined selected
+bills, publication/cropping/support, locality and full-tensor composition remain
+open. S4 remains incomplete; kappa unchanged.
+
+Guarded metadata loader check passes at 2078.9 MiB, loaded readiness at
+2076.6 MiB, header retirement at 3072.4 MiB and complete restoring exposure at
+3073.0 MiB. Dependency build passes (16761 jobs, 3.3 GiB combined peak).
+Expanded axiom audit passes for 344039 declarations at 3581.1 MiB, permitting
+only propext, Quot.sound and Classical.choice.
