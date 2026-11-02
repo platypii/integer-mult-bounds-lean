@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4135 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4137 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30147,3 +30147,31 @@ Guarded placement and complete-budget checks pass at 3095.8 and 3133.3 MiB.
 Dependency build passes (14152 jobs, 5.6 GiB combined peak).
 Expanded axiom audit passes for 343469 declarations at 3569.5 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: restoring ambient exposure feeds the dyadic supplier route
+
+`PhaseCellDyadicGatherReady.GatherReady` groups only ordinary retained headers,
+unary dimensions and fresh workspace facts, independently of the source word.
+Its frame lemma transfers readiness across arbitrary changes to the source and
+preserved local left stacks. Its execution method invokes the actual placed
+padding/router/retirement program, with no supplied execution callback.
+
+`PhaseCellExposeDyadicGather.exposeDyadicGather_exec_within` composes the actual
+`replicaCoreGatherLoop` with that router. Starting from the ambient replica
+lines and borrowed source tail, it returns exactly the real supplier stream in
+reverse replica order. The exact ambient final state changes only the supplier
+source: original replica lines, borrowed tail, retained dimensions, all scratch
+and left stacks are restored. The two physical time and stock bounds add. No
+old replica-radix archive plan or padding capacity appears in this composition.
+
+Retained dimensions remain initial ordinary data. Next generate them in the
+selected caller and connect this exposure to numerical class execution. Existing
+`preparedCoreOrigins` produces the real-core unary count; canonical unary-header
+and binary ceil-log programs provide reusable dimension machinery. Singleton and
+empty groups still need selected handling. Resource absorption, publication and
+grouped tensor/error composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded readiness and ambient composition checks pass at 3099.8 and 3099.4 MiB.
+Dependency build passes (14109 jobs, 3.3 GiB combined peak). Expanded axiom audit
+passes for 343493 declarations at 3569.9 MiB, permitting only propext, Quot.sound
+and Classical.choice.
