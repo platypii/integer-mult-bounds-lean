@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4214 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4218 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3896,12 +3896,13 @@ remain available for the S2–S3 callers.
 
 **S4 execution priorities after approach review:** Reuse the existing
 `amortizedCoreWidth`; stop extending the routing framework unless a concrete
-selected-caller obligation requires it. Next instantiate that width and remove
-independent geometry assumptions from selected numerical execution, construct
-the actual initial register layout/readiness, and apply the complete gather
-bill in that trace. Then close publication/cropping/layout restoration with
-reserved-coordinate and untouched-suffix guarantees, followed by locality/error
-and full-tensor composition proving that exposure is not repaid per axis.
+selected-caller obligation requires it. The selected per-class trace now uses
+that width, initializes and retires its input table and numerical geometry,
+restores exposure/routing workspace and includes complete phase bills. Next
+construct the grouped caller from retained masters and close publication/cropping
+with reserved-coordinate and untouched-suffix guarantees, followed by
+locality/error and full-tensor composition proving that setup/exposure is not
+repaid per axis. Keep further class-wrapper expansion tied to those obligations.
 Completion requires the resulting S4 endpoint to be reachable from the root
 build and covered by its proof-integrity checks; targeted helper builds alone
 are not an S4 completion gate. Measure progress by caller assumptions removed
@@ -31164,3 +31165,41 @@ at 3533.8 MiB, polynomial specialization at 3515.6 MiB and combined selected
 execution at 3621.7 MiB. Dependency build passes (16781 jobs, 3.7 GiB
 combined peak). Expanded axiom audit passes for 344168 declarations at
 3583.2 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: execute external input-table initialization and retirement
+
+`PhaseCellInputTableLoad` reuses `chirpBankLoad` for retained fixed-width caller
+words, a borrowed width counter and an empty zero source. Caller words survive;
+all table variables, the unary width and scratch invariants are established by
+actual execution from fresh storage. For n variables the exact load cost is
+(8*n+4)*D+8*n+9, with a paid native stock allowance of three times that cost.
+
+`PhaseCellInputTableRetirement` clears only the n variable words and width header;
+other table roles are already empty. It preserves an external numerical result
+and restores the original table exactly at cost (2*n+2)*D+2*n+3, with no extra
+stock. `PhaseCellInputTableClassRun` shares the full load/run/retire composition
+for a real-valued certified class bound, adding no ceiling slack.
+
+`selectedTableRestoringComputedCoreClassRun_exec` instantiates this lifecycle
+with the already paid selected restoring class theorem. The initialized
+`tblHolds` premise is removed: retained caller masters and their value agreements
+construct it in the actual loaded state. Numerical geometry words and freshness
+are transported through table loading; the result register is outside the table.
+The one trace initializes the table, executes all geometry/exposure/routing/
+numerical phases and retires the table. For its 12 variables the added time is
+126*D+132 and added stock is 300*D+315. The exact final state changes only the
+numerical result and retains the existing output certificate; all caller master
+words and the original table are restored.
+
+Caller master words and the preparation's ordinary state facts remain explicit.
+Next compose grouped caller construction and publication/cropping/support,
+locality and full-tensor guarantees, including setup/exposure reuse across axes.
+This selected class endpoint alone is not root-reachable completion of S4.
+S4 remains incomplete; kappa unchanged.
+
+Guarded table loader check passes at 1935.5 MiB, retirement at 2940.8 MiB,
+structural class lifecycle at 2943.7 MiB and selected table-initialized execution
+at 3603.8 MiB. Dependency build passes (16785 jobs, 3.6 GiB combined peak).
+Expanded axiom audit passes for 344188 declarations at 3583.7 MiB, permitting
+only propext, Quot.sound and Classical.choice.
