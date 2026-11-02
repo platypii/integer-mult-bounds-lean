@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4099 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4102 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29741,3 +29741,38 @@ Guarded row enumeration, combined generator and budget checks pass at
 (6681 jobs, 2.9 GiB combined peak). Expanded axiom audit passes for 343224
 declarations at 3561.2 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: physical schedule/count publication and table release execute
+
+`PhaseCellTableCountedPacketHost.tableCountedPacketHost_list_exec` is a generic
+host contract for a table computation returning metadata and a retained binary
+count. It reuses `tblUnaryCopies` to export the selected count variable to 116,
+moves the accumulator's real bits into forward reader order at 109, and releases
+the 31-port table bank. Both destination tails are preserved. The exact final
+stack record preserves input/output/left stacks and every other register.
+Runtime is at most `K*tblC W W+(2*metadata.length+73)*W+6*N+72`.
+
+`PhaseCellDyadicScheduleFits` derives metadata fit from the selector's exact
+output contract and the table machine's bounded-value invariant. This reuses
+the checked arithmetic implementation rather than duplicating Euclidean fit
+reasoning, and introduces no new fit assumption on individual rows.
+
+`PhaseCellGeneratedDyadicScheduleHost.generatedDyadicScheduleHost_exec`
+composes the actual generator with that publisher. From a bounded table holding
+the retained exponents and packet seed and an empty accumulator, the fixed host
+program publishes the complete canonical schedule and its computed unary stage
+count, then clears the table. The count is N, not the five-field word count 5N.
+`dyadicGeneratorPublicationTime_le` bounds all generation, publication, count
+export and table release time by `32921*(W+1)^5` when `a+b < W`.
+
+Next connect these outputs to the actual streamed worker bank (with empty
+initial count), pay table setup and intermediate stock, and discharge selected
+resource absorption and geometry. Actual selected gather/compute/restoration
+integration and grouped tensor/error composition remain open. S4 is incomplete;
+kappa unchanged.
+
+Guarded generic publication, metadata-fit and combined host checks pass at
+1982.9, 2539.0 and 2956.6 MiB. The extended runtime-budget check passes at
+2563.7 MiB. Dependency build passes (13497 jobs, 2.9 GiB combined peak).
+Expanded axiom audit passes for 343234 declarations at 3561.1 MiB, permitting
+only propext, Quot.sound and Classical.choice.

@@ -31,4 +31,19 @@ theorem dyadicGeneratorCompiledTime_le (a b W : ℕ) (hbits : a+b < W) :
   have hh := Nat.mul_le_mul (dyadicGeneratorAtoms_le a b W hbits) hC
   nlinarith only [hh]
 
+/-- Include unary stage-count export, binary publication and bank release. -/
+theorem dyadicGeneratorPublicationTime_le (a b W : ℕ) (hbits : a+b < W) :
+    (dyadicStageCount (a+b) a b*((a+b)*(4*(a+b)+19)+27)+13)*tblC W W+
+      (10*dyadicStageCount (a+b) a b+73)*W+6*dyadicStageCount (a+b) a b+72 ≤
+      32921*(W+1)^5 := by
+  have hN : dyadicStageCount (a+b) a b ≤ W :=
+    (dyadicStageCount_le (a+b) a b (by omega)).trans hbits.le
+  have hmul := Nat.mul_le_mul_right W hN
+  have hmeta : (10*dyadicStageCount (a+b) a b+73)*W+
+      6*dyadicStageCount (a+b) a b+72 ≤ 161*(W+1)^2 := by
+    nlinarith only [hN,hmul]
+  have hpow : (W+1)^2 ≤ (W+1)^5 := pow_le_pow_right' (by omega) (by decide)
+  have hcompiled := dyadicGeneratorCompiledTime_le a b W hbits
+  nlinarith only [hcompiled,hmeta,hpow]
+
 end IntegerMultBounds.MathlibTM2.Cost
