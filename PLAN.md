@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4196 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4199 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30954,3 +30954,38 @@ Guarded placed-exposure check passes at 3064.5 MiB and complete exposure/routing
 composition at 3474.7 MiB. Dependency build passes (16763 jobs, 3.5 GiB
 combined peak). Expanded axiom audit passes for 344043 declarations at
 3582.2 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: initialize numerical readiness from caller words and fresh storage
+
+`PhaseCellRawComputedClassInputReady.inputReady_of_raw` derives the complete
+numerical input-readiness record from four binary geometry words, the external
+input table, fresh numerical storage outside the supplier/geometry ports and
+empty work-left stacks. Scratch, scalar, master, reader, preparation and loop
+facts are structural consequences of bank ownership and freshness.
+
+`PhaseCellComputedClassGeometryHeaders` executes the existing structural copier
+for those four geometry destinations using the shared preparation scratch pair.
+Metadata sources are outside the numerical bank and may coincide. The execution
+preserves them and restores both scratch registers. `loadedClassGeometry_ready`
+constructs numerical readiness for its actual returned state from an initially
+fresh bank (supplier source excluded), retained caller geometry and the external
+table. Geometry/table readiness is not assumed after the load.
+
+`PhaseCellExposedClassLayout` places the numerical bank in the original caller
+prefix, before the 175-register exposure suffix and the routing suffix. Injection
+and separation are proved structurally; the numerical supplier source equals the
+exposure destination by the placement definition. This discharges the remaining
+free ownership equality in the combined exposure/routing theorem for this layout.
+
+Next compose numerical geometry initialization with the completely restoring
+exposure/routing preparation, common-job numerical consumption and retirement of
+these four geometry headers. The external input table still needs its actual
+initialization; combined selected bills, publication/cropping/support, locality
+and full-tensor composition remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded raw numerical readiness check passes at 3437.6 MiB, geometry loading and
+loaded readiness at 3430.7 MiB, and canonical layout at 3460.4 MiB. Dependency
+build passes (16766 jobs, 6.0 GiB combined peak). Expanded axiom audit passes
+for 344065 declarations at 3578.7 MiB, permitting only propext, Quot.sound and
+Classical.choice.
