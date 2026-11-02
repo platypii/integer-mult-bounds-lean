@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4218 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4221 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31203,3 +31203,44 @@ structural class lifecycle at 2943.7 MiB and selected table-initialized executio
 at 3603.8 MiB. Dependency build passes (16785 jobs, 3.6 GiB combined peak).
 Expanded axiom audit passes for 344188 declarations at 3583.7 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: derive publication rows from actual outputs and normalize job order
+
+`PhaseCellPackedOutputPublicationRows.rows_of_outputs` converts the actual
+`Forall₂ PackedNormalizedJob.output` certificate into `PackedExactBatch.Rows`.
+Row lists are extracted from the returned words, indexed structurally and given
+the existing exact-inverse/unit-ball certificate. It proves a per-job byte
+identity, stronger than equality of the flattened stream. The reverse-output
+corollary records the physical order used by the new class caller.
+
+The class result tape holds job chunks in reverse order. The existing
+`reverseCopyRows` restores its original source while copying into reverse chunk
+order; `copy_outputs_for_publication_exec_within` applies it to those actual
+reverse-ordered outputs and returns the ordered `Rows.stream` at the publication
+destination. Every copied chunk's length is derived from its numerical output
+certificate and batch metadata. Counts, scratch, original numerical result and
+arbitrary source/destination suffixes are preserved; time and stock use the
+existing paid restoring-copy bound. Replica order is inherited explicitly from
+the jobs.
+
+`PhaseCellGatherPublicationClass` connects the actual fitting-halo keys to the
+publication scheduler. A halo-length H class publishes length H-2*radius cores,
+with the same ordered key list. Its sublist proof uses the gather length identity
+and structural filtering; it does not publish halo margins or assume a row map.
+Existing `Rows.classRows_spec` and subset-publication preservation lemmas can now
+consume this representation.
+
+Next instantiate the common-job batch metadata and connect the ordered stream
+to the fixed-bank publication transpose/scatter and old-result retirement.
+Reserved-coordinate preservation, grouped caller construction, seam fallback,
+locality/error and full-tensor setup/exposure reuse still require composition.
+This is not completed publication or root-reachable S4. S4 remains incomplete;
+kappa unchanged.
+
+Guarded actual-row bridge check passes at 3374.7 MiB, ordered publication copy
+at 3366.0 MiB and gather/publication class construction at 2037.6 MiB.
+Dependency build including existing class-publication specifications passes
+(16800 jobs, 5.8 GiB combined peak). Expanded axiom audit passes for 344390
+declarations at 3584.2 MiB, permitting only propext, Quot.sound and
+Classical.choice.
