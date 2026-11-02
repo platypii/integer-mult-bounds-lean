@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4172 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4174 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30674,3 +30674,31 @@ Guarded layout/readiness/execution check passes at 3461.9 MiB.
 Dependency build passes (16162 jobs, 3.5 GiB combined peak). Expanded axiom audit
 passes for 343788 declarations at 3580.2 MiB, permitting only propext, Quot.sound
 and Classical.choice.
+
+### S4 checkpoint: execute allocated metadata loading from caller words
+
+`PhaseCellCopyWordHeaders` extends the existing structural header-copy pattern
+to actual symbol words. The existing `copyR` reverses its copy, so each copied
+word is moved once more to restore its original order. The program preserves
+sources verbatim, restores both shared scratch registers and costs 6*length+6
+per word. Exact list readback and external-frame lemmas avoid per-header
+execution proofs; the native push bound is 2.
+
+`PhaseCellAllocatedGatherHeaders.loadGatherHeaders_exec_within` instantiates the
+copier for the eight real routing metadata destinations, borrowing seven caller
+words (the width master supplies both width ports). Source and destination
+separation follows from prefix/suffix placement. It executes from a fresh suffix,
+returns exact word readbacks at all destinations and preserves the entire caller
+prefix. `loadedGatherHeaders_ready` proves that its actual returned state meets
+the complete allocated routing readiness contract. Binary words are copied in
+the correct order; unary width/count masters need only their actual lengths.
+
+Next compose this executed load with allocated routing and retirement of the
+copied headers, then place ambient exposure and instantiate the selected
+amortized-width numerical caller. Publication/support and full-tensor error
+composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded allocated loader/readiness check passes at 3475.8 MiB.
+Guarded structural word-copy check passes at 1887.6 MiB. Dependency build passes
+(16164 jobs, 3.6 GiB combined peak). Expanded axiom audit passes for 343829
+declarations at 3577.3 MiB, permitting only propext, Quot.sound and Classical.choice.
