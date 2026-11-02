@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4083 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4085 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29575,4 +29575,35 @@ tensor composition remain open. S4 is incomplete; kappa unchanged.
 Guarded arithmetic count/selector and complete-row enumeration check passes
 at 2547.7 MiB. Expanded compatibility passes (16647 jobs, 3.0 GiB combined peak).
 Broad axiom audit passes for 343130 declarations at 3559.1 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: fixed table code computes the exact Euclidean stage count
+
+`PhaseCellDyadicStageCountCode` implements one Euclidean counting step in the
+existing 16-variable table machine. It updates the remaining exponents,
+increments the count without modular overflow and computes the next minimum
+guard in at most seven atoms. The proof uses the existing exact-arithmetic
+instruction blocks and minimum macro, with the explicit fit gate
+`count+a+b < 2^W`.
+
+`PhaseCellDyadicStageCountLoop.dyadicCountLoopCode_do` proves termination and
+the exact arithmetic stage count by structural fuel induction. Fuel is a proof
+parameter, absent from the physical loop. The same fit invariant survives
+because the positive minimum removed from the exponent sum pays for the count
+increment. All arithmetic scratch and untouched variables have explicit frames.
+
+`generatedDyadicCountCode_do` initializes the working exponents, zero, count and
+guard from retained variables 6 and 7. The fixed code computes N exactly in at
+most `9*N+8` table atoms, preserves the accumulator and every variable outside
+its six control slots, and needs no supplied initial counter or guard. It is
+ready for the existing table compiler/host theorem and unary count export.
+
+Next implement the fixed row-selector loop and five-field emission, prove its
+arithmetic fit/cost and publish the binary stream together with this computed
+count. Selected bounds, archive replacement, publication and grouped tensor
+composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded fixed count-step and initialized count-loop checks pass at 2537.0 MiB
+and 2556.1 MiB. Expanded compatibility passes (16649 jobs, 3.0 GiB combined peak).
+Broad axiom audit passes for 343141 declarations at 3558.7 MiB, permitting
 only propext, Quot.sound and Classical.choice.
