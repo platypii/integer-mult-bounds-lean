@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedDyadicScheduleStock
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLoadedDyadicScheduleHost
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedDyadicTranspose
 public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
 public import IntegerMultBounds.MathlibTM2.StackStockComposition
@@ -18,7 +18,7 @@ variable {t₀ T T' Q K : ℕ} {P U : Type}
 
 noncomputable def generatedTransposeCaller (bank : StreamedChunkBank t₀ T Q)
     (g : Fin 117 → Fin T') (e : Fin T → Fin T') : Pr P T' Q (prime+K) U :=
-  .seq (embProg g Empty.elim (generatedDyadicScheduleHost (P := Empty)))
+  .seq (embProg g Empty.elim (loadedDyadicScheduleHost (P := Empty)))
     (countedLoop (g 116) (embProg e Empty.elim (bank.program (P := Empty))))
 
 theorem generatedTransposeCaller_exec_within (body : P → Pr P T' Q (prime+K) U)
@@ -27,37 +27,39 @@ theorem generatedTransposeCaller_exec_within (body : P → Pr P T' Q (prime+K) U
     (hbankOff : ∀ j : Fin 117, j.val < 31 → ∀ i, g j ≠ e i)
     (hqueue : g 109 = e bank.queue) (hcountOff : ∀ i, e i ≠ g 116)
     (a b C V : ℕ) (hC : 0 < C) (hbits : a+b < V) (hfit : C*2^(a+b) < 2^V)
-    (st : TblSt 16 (prime+K)) (ha : st.val 6 = a) (hb : st.val 7 = b)
-    (hseed : st.val 9 = C) (hacc : st.acc = []) (hbound : ∀ j, st.val j < 2^V)
     (f : Fin (2^a) → Fin (2^b) → Fin C → Bool)
     (v : HS T' Q (prime+K) U) (S : Stacks T' (prime+K))
-    (hS : tblHolds originReg (embStk g S) (tblRho V (List.replicate V tick) (List.replicate V tick) st))
+    (ha : S.R (g 97) = binSyms V a) (hb : S.R (g 98) = binSyms V b)
+    (hseed : S.R (g 102) = binSyms V C) (hz : S.R (g 106) = [])
+    (hwidth : (S.R (g 115)).length = V) (hblank : ∀ r, S.R (g (originReg r)) = [])
     (hcount : S.R (g 116) = []) (hready : bank.Ready V (embStk e S))
     (hsrc : (embStk e S).R (bank.ι (reg bank.pay)) = (replicaKeyWords f).map bitSymbol) :
     let rs := (dyadicTransposePlan (a+b) a b C (by omega)).wiredStages (fun _ => bank.dims)
     ∃ v' F n, v'.user = v.user ∧
-      n ≤ 32921*(V+1)^5+
+      n ≤ (110*V+137+32921*(V+1)^5)+
         (rs.map (fun r => bank.stageTimeCost V (∑ j, ((embStk e S).R (bank.ι j)).length) r+3)).sum+2 ∧
       (∀ depth, ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
-        (98763*(V+1)^5+bank.scheduleStockAllowance V rs)) depth
+        ((330*V+411+98763*(V+1)^5)+bank.scheduleStockAllowance V rs)) depth
         (bank.generatedTransposeCaller g e) (Host.mk v S) n (Host.mk v' F)) ∧
       F.R (g 116) = [] ∧
       embStk e F = bank.scheduleState V [] (keyReplicaWords f) (S.R (g 109)) (embStk e S) ∧
       (∀ j : Fin 117, j.val < 31 → F.R (g j) = []) ∧
+      (∀ j : Fin 117, 31 ≤ j.val → j ≠ 109 → j ≠ 116 → (∀ i, e i ≠ g j) →
+        F.R (g j) = S.R (g j)) ∧
       ∀ outside, (∀ j, g j ≠ outside) → (∀ i, e i ≠ outside) →
         F.L outside = S.L outside ∧ F.R outside = S.R outside := by
   classical
   let Sg := embStk g S
-  obtain ⟨vg,mg,hug,hmg,heg⟩ := generatedDyadicScheduleHost_exec
-    (body := fun z : Empty => nomatch z) st ha hb hseed hacc hbits hfit hbound
+  obtain ⟨vg,mg,hug,hmg,heg⟩ := loadedDyadicScheduleHost_exec
+    (body := fun z : Empty => nomatch z) a b C V hbits hfit
     (by
       have h2 := Networks.le_coefficientExponent
         ((by decide : 2 ≤ 53000).trans (Nat.lt_two_pow_self.le))
       have hh := Networks.two_pow_le_coefficientBound h2
       have hp := Networks.Shared50ModularControl.coefficientBound_lt_prime
       norm_num only [Nat.reducePow] at hh
-      omega) (embDn g v) Sg hS
-  have htime := hmg.trans (Cost.dyadicGeneratorPublicationTime_le a b V hbits)
+      omega) (embDn g v) Sg ha hb hseed hz hwidth hblank
+  have htime := hmg
   obtain ⟨vm,M,hegen,hdn,hum,hM,hMoff⟩ := exec_emb (e := g) (ι := (Empty.elim : Empty → P)) (body' := body) hg (fun z : Empty => nomatch z) heg v rfl S rfl
   have hgenL : ∀ i, M.L i = S.L i := by
     intro i
@@ -100,11 +102,11 @@ theorem generatedTransposeCaller_exec_within (body : P → Pr P T' Q (prime+K) U
     intro j hj
     simp only [embStk_R,hgenR _ (bank.hqueueOff _).symm]
   rw [hstock] at hmw
-  refine ⟨vf,F,mg+mw,huf.trans (hum.trans hug),by omega,?_,hcounter,?_,?_,?_⟩
+  refine ⟨vf,F,mg+mw,huf.trans (hum.trans hug),by omega,?_,hcounter,?_,?_,?_,?_⟩
   · intro depth
     have htg := mn_native_exec_within hegen 3
-      (embProg_native g Empty.elim _ (tableCountedPacketHost_native 3 generatedDyadicScheduleCode))
-      depth (mnSize (Host.mk v S)+depth+98763*(V+1)^5) (by nlinarith only [htime])
+      (embProg_native g Empty.elim _ loadedDyadicScheduleHost_native)
+      depth (mnSize (Host.mk v S)+depth+(330*V+411+98763*(V+1)^5)) (by nlinarith only [htime])
     exact mn_seq_within_add htg (hw depth)
   · rw [hF]
     apply Stacks.ext
@@ -123,6 +125,12 @@ theorem generatedTransposeCaller_exec_within (body : P → Pr P T' Q (prime+K) U
     rw [(hFoff (g j) hgj (fun i => (hbankOff j hj i).symm)).2]
     have hh := congrArg (fun z => z.R j) hM
     simpa only [embStk_R,ite_eq_left hj] using hh
+  · intro j hj hj109 hj116 hoff
+    have hc : g j ≠ g 116 := fun h => hj116 (hg h)
+    rw [(hFoff (g j) hc hoff).2]
+    have hh := congrArg (fun z => z.R j) hM
+    have hj31 : ¬j.val < 31 := by omega
+    simpa only [Sg,embStk_R,hj31,ite_false,hj109,hj116] using hh
   · intro outside hgOff heOff
     have hc : outside ≠ g 116 := (hgOff 116).symm
     exact ⟨((hFoff outside hc heOff).1).trans (hMoff outside hgOff).1,

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4110 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4112 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29882,3 +29882,39 @@ Guarded fixed-bank, placement-map and instantiated-caller checks pass at
 2960.8, 1394.5 and 2985.5 MiB. Dependency build passes (13673 jobs, 3.3 GiB
 combined peak). Expanded axiom audit passes for 343314 declarations at
 3562.2 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: table setup executes from retained binary headers in the main caller
+
+`PhaseCellDyadicScheduleLoad` reuses `chirpBankLoad` to construct the complete
+16-variable table from binary exponents at 97/98, packet seed at 102, empty
+zero source 106 and unary width source 115. All unused variables are padded
+zeros; word counters, accumulator and scratch are established by execution.
+The exact setup cost is `110*V+137`. A structural initial-state lemma derives
+all value bounds from `a+b < V` and `C*2^(a+b) < 2^V`.
+
+`PhaseCellLoadedDyadicScheduleHost` composes this loader with the actual
+schedule/count publisher. It preserves retained sources, constructs the full
+metadata stream and computed unary count, and clears the arithmetic bank.
+Time is at most `110*V+137+32921*(V+1)^5`; its uniform intermediate-stock
+allowance is `330*V+411+98763*(V+1)^5`.
+
+The existing `generatedTransposeCaller` and concrete `FixedStreamedBank.caller`
+now execute this loaded producer directly. Their prepared-table state/holds/
+boundedness premises are replaced by the retained binary headers, width and
+empty arithmetic bank. The previous readiness-transfer and execution proof is
+reused; setup is included in the caller's time/stock bounds. Both caller
+contracts also return preservation of retained generator-side right stacks
+outside the worker, excluding the queue/count outputs. The earlier prepared-
+table caller interface is available at restore commit `98d05500`.
+
+Next execute worker-width preparation from the retained width header and
+establish readiness from ordinary fresh-bank conditions, then discharge
+selected geometry and resource absorption. Actual selected gather/compute/
+restoration integration and grouped tensor/error composition remain open.
+S4 is incomplete; kappa unchanged.
+
+Guarded table-loader, loaded metadata host, updated composed caller and fixed
+caller checks pass at 1957.8, 2984.3, 3014.4 and 2986.0 MiB. Dependency build
+passes (13676 jobs, 3.3 GiB combined peak). Expanded axiom audit passes for
+343332 declarations at 3562.4 MiB, permitting only propext, Quot.sound and
+Classical.choice.
