@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4205 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4207 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31057,3 +31057,37 @@ at 3464.6 MiB and actual preparation after numerical loading at 3468.8 MiB.
 Dependency build passes (16772 jobs, 3.5 GiB combined peak). Expanded axiom
 audit passes for 344086 declarations at 3579.8 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: complete initialized common-job execution with actual preparation
+
+`PhaseCellRestoringGatherData` packages ordinary caller facts for the concrete
+prefix/exposure/routing layout: register choices and separation, metadata words,
+ambient source/tail, arithmetic gates and initial freshness. There is no execution
+callback or supplied worker-readiness field. Its execution method invokes
+`initializedRestoringGather_exec_within` for any numerical geometry source bank
+and host state, retaining the complete physical preparation bill.
+
+`PhaseCellRestoringCommonCoreClassRun.restoringCommonCoreClassRun_exec` discharges
+the initialized common-job wrapper's preparation premise with that actual
+execution method. The resulting one trace loads numerical geometry, loads/exposes/
+retires exposure metadata, loads/routes/retires routing metadata, executes
+common-format numerical recovery and clears numerical geometry. It returns the
+existing `Forall₂ PackedNormalizedJob.output` certificate. The exact final record
+changes only the numerical result register; numerical source, geometry, both
+private suffixes, original ambient lines, borrowed tail and other caller storage
+are restored. Time/stock include every composed phase and both geometry lifecycle
+allowances. Initial external table contents and ordinary input facts remain
+explicit; no numerical readiness or preparation execution premise remains.
+
+Next transfer the shared selected numerical estimates to this fully restoring
+endpoint and combine its actual gather bills. The external input table still
+needs executed initialization; publication/cropping/support, locality and
+full-tensor composition remain open. This endpoint is not yet root-reachable S4
+completion. S4 remains incomplete; kappa unchanged.
+
+Guarded concrete gather data/execution check passes at 3471.4 MiB and complete
+restoring common-job execution at 3508.5 MiB. Dependency build passes
+(16774 jobs, 3.6 GiB combined peak). Expanded axiom audit passes for 344153
+declarations at 3579.6 MiB, permitting only propext, Quot.sound and
+Classical.choice.
