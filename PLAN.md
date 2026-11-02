@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4162 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4164 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30449,3 +30449,33 @@ checks pass at 3088.4, 3131.2, 3402.0 and 3427.9 MiB respectively.
 Final dependency build passes (15927 jobs, 3.5 GiB combined peak). Expanded axiom
 audit passes for 343740 declarations at 3574.4 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+### S4 checkpoint: amortize actual ambient exposure and the complete gather bill
+
+`PhaseCellCoreExposureTraffic.replicaCoreGatherStepCost_le_source` instantiates
+the existing controller bound with the real core count itself. The fitting-core
+volume bound absorbs its local-window term, giving source-linear exposure
+without any archive capacity or padding-factor hypothesis. The actual restoring
+replica loop and its stock allowance inherit linear source bounds; both use
+ordinary positivity and the existing preparation-width hypotheses.
+
+`PhaseCellSelectedGeometryRealGatherBudget.selectedGeometryRealGatherCosts_le`
+combines exposure with selected complete routing. It bounds the actual
+`GeometryRealGatherData.timeCost` and `.stockAllowance`, including all geometry,
+metadata, codec, routing and retirement work. Fixed setup fits in one Sizes.T
+payment; stock is constant times actual source traffic beyond it. Time has
+source-linear work plus the uniform sharp dyadic charge. Exposure width and
+routing metadata width may differ, with separate selected linear bounds.
+The source volume uses the actual Fs.length, identified from its power-of-two
+replica fact; no execution callback or legacy archive plan is assumed.
+
+Next bound the remaining dyadic charge for selected dimensions and apply these
+combined bills to the selected numerical-class trace. Initial selected layout
+construction, publication and grouped tensor/error composition remain open.
+S4 is incomplete; kappa unchanged.
+
+Guarded exposure-traffic check passes at 3109.6 MiB.
+Guarded combined selected gather budget check passes at 3441.1 MiB. Final
+dependency build passes (15972 jobs, 3.5 GiB combined peak). Expanded axiom audit
+passes for 343744 declarations at 3574.7 MiB, permitting only propext, Quot.sound
+and Classical.choice.
