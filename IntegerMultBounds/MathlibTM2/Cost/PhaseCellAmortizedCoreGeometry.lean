@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCoreGeometry
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellHaloRingSizing
 
 /-! Wider exposure cores preserve locality and linear overlap. Their guard
 traffic has the manuscript's five-power saving when cores have width p^8. -/
@@ -50,6 +51,39 @@ theorem amortizedCoreWidth_bounds (ct p u target : ℕ) (hp : 1 ≤ p) (htarget 
   constructor
   · nlinarith
   · nlinarith only [hguard,hscaled,hone]
+
+/-- The existing amortized width meets the numerical caller's preparation
+condition, not only its locality guard. -/
+theorem amortizedCoreWidth_preparation (ct p u : ℕ) (hp : 1 ≤ p) :
+    p^2+(PhaseCellBand.width p u)^2 ≤ amortizedCoreWidth ct p := by
+  have hband : PhaseCellBand.width p u ≤ 17*p := by
+    have hs := Nat.sqrt_le_self (16*p/u)
+    have hd := Nat.div_le_self (16*p) u
+    unfold PhaseCellBand.width
+    omega
+  have hsquare := Nat.pow_le_pow_left hband 2
+  have hpower : p^2 ≤ p^8 := pow_le_pow_right' hp (by decide)
+  have hscaled := Nat.mul_le_mul_left 290 hpower
+  have hcoefficient : 290 ≤ 816*(ct+5)+18 := by omega
+  have hwidth := Nat.mul_le_mul_right (p^8) hcoefficient
+  unfold amortizedCoreWidth
+  nlinarith only [hsquare,hscaled,hwidth]
+
+/-- The selected cell-length lower bound on core width is automatic for the
+same concrete amortized width. -/
+theorem selectedAmortizedCoreWidth_cell {n : ℕ} (h : Sizes.Big n) (i : Fin (Sizes.d n))
+    [NeZero (Sizes.s n i)] (ct : ℕ) :
+    Sizes.s n i/(Sizes.t n i-Sizes.s n i)+1 ≤ amortizedCoreWidth ct (Sizes.p n) := by
+  have hp : 1 ≤ Sizes.p n := by have := h.thirteen_le_p; omega
+  have hcell := phaseGap_cellLength_le hp (h.good.lt i) (h.quarter_p_le_theta i)
+  have hsmall : 4*Sizes.p n+1 ≤ (Sizes.p n)^2 := by
+    have hh := h.thirteen_le_p
+    nlinarith only [hh]
+  have hpower : (Sizes.p n)^2 ≤ (Sizes.p n)^8 := pow_le_pow_right' hp (by decide)
+  have hwidth : (Sizes.p n)^8 ≤ amortizedCoreWidth ct (Sizes.p n) := by
+    unfold amortizedCoreWidth
+    exact Nat.le_mul_of_pos_left _ (by omega)
+  omega
 
 /-- No more than two line-volumes of core slots, including the short last core. -/
 theorem coreSlots_le_two (s width : ℕ) (hw : width ≤ s) :
@@ -117,5 +151,25 @@ theorem selectedAmortizedCoreHalo (ct : ℕ) :
   exact ⟨coreHalo_volume_le_nine _ _ _ hwidth hguard,
     coreHalo_fallback_count _ _ _ hguard,
     coreGuardTraffic_amortized _ _ _ _ _ hwidth hwide (by omega)⟩
+
+/-- The concrete amortized width discharges all core-geometry hypotheses of
+selected numerical class execution. -/
+theorem selectedAmortizedCoreCallerGeometry (ct : ℕ) :
+    ∀ᶠ n : ℕ in atTop, ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)),
+    ∀ [NeZero (Sizes.s n i)], ∀ (u target : ℕ), target ≤ ct*Sizes.p n →
+    let width := amortizedCoreWidth ct (Sizes.p n)
+    let radius := localityCoreWidth (Sizes.p n) u target
+    0 < width ∧ width ≤ Sizes.s n i ∧ radius ≤ width ∧
+      Sizes.s n i/(Sizes.t n i-Sizes.s n i)+1 ≤ width ∧
+      (Sizes.p n)^2+(PhaseCellBand.width (Sizes.p n) u)^2 ≤ width ∧
+      ∀ L ∈ coreGatherLengths (Sizes.s n i) width radius, L ≤ Sizes.s n i := by
+  filter_upwards [selectedAmortizedCoreGeometry ct] with n hn
+  intro h i _ u target htarget
+  dsimp only
+  obtain ⟨hw,hwide,hguard,hroom,hlen⟩ := hn h i u target htarget
+  have hp : 1 ≤ Sizes.p n := by have := h.thirteen_le_p; omega
+  exact ⟨hw,by omega,hguard,selectedAmortizedCoreWidth_cell h i ct,
+    amortizedCoreWidth_preparation ct (Sizes.p n) u hp,
+    fun L hL => (Nat.le_add_right L _).trans (hlen L hL)⟩
 
 end IntegerMultBounds.MathlibTM2.Cost

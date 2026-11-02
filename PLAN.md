@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4169 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4170 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3893,6 +3893,20 @@ remain available for the S2–S3 callers.
 | S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
+
+**S4 execution priorities after approach review:** Reuse the existing
+`amortizedCoreWidth`; stop extending the routing framework unless a concrete
+selected-caller obligation requires it. Next instantiate that width and remove
+independent geometry assumptions from selected numerical execution, construct
+the actual initial register layout/readiness, and apply the complete gather
+bill in that trace. Then close publication/cropping/layout restoration with
+reserved-coordinate and untouched-suffix guarantees, followed by locality/error
+and full-tensor composition proving that exposure is not repaid per axis.
+Completion requires the resulting S4 endpoint to be reachable from the root
+build and covered by its proof-integrity checks; targeted helper builds alone
+are not an S4 completion gate. Measure progress by caller assumptions removed
+and end-to-end obligations closed, not helper-theorem count.
+
 
 **Shared S3–S5 interface pinned (2026-10-24):** The
 [shared contract](IntegerMultBounds/MathlibTM2/NearOne/DESIGN.md#shared-s3s5-interface-pinned-2026-10-24)
@@ -30574,3 +30588,33 @@ checks pass at 1879.1, 3172.0 and 3427.1 MiB respectively.
 Final dependency build passes (15979 jobs, 3.5 GiB combined peak). Expanded axiom
 audit passes for 343760 declarations at 3575.6 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+### S4 checkpoint: instantiate the existing amortized core width in numerical execution
+
+Following the approach review, reuse the existing `amortizedCoreWidth` rather
+than introduce another width policy or routing abstraction.
+`PhaseCellAmortizedCoreGeometry.amortizedCoreWidth_preparation` proves the
+numerical preparation inequality p^2+band^2 <= width. The selected cell-length
+condition is automatic for the same width. `selectedAmortizedCoreCallerGeometry`
+combines these with existing positivity, locality, source-axis room and generated
+length bounds for the actual chosen width.
+
+`PhaseCellSelectedAmortizedExposedClassRun.selectedAmortizedExposedComputedCoreClassRun_exec`
+instantiates the selected numerical class theorem with that width. Callers now
+supply the generated length-class membership instead of an arbitrary width and
+independent positivity, width-fit, locality-guard, cell-size and preparation
+proofs. Actual geometry-driven ambient gathering and numerical execution retain
+their exact certified-output and restoration contracts. No numerical or routing
+proof is duplicated; the existing selected class execution is instantiated.
+
+Next construct the actual initial selected register layout/readiness and apply
+the complete gather bill in this trace, then close publication/cropping and
+full-tensor error/support obligations. The revised priorities are recorded next
+to the S4 acceptance gate above. S4 remains incomplete; kappa unchanged.
+
+Guarded width/caller geometry and concrete-width numerical class checks pass
+at 3150.8 and 3558.1 MiB respectively.
+Final class dependency build passes (16558 jobs, 3.6 GiB combined peak). The
+expanded audit dependency refresh passes (16737 jobs, 13.4 GiB combined peak).
+Expanded axiom audit passes for 343766 declarations at 3575.7 MiB, permitting
+only propext, Quot.sound and Classical.choice.
