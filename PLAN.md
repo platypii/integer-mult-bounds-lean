@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4164 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4166 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30479,3 +30479,35 @@ Guarded combined selected gather budget check passes at 3441.1 MiB. Final
 dependency build passes (15972 jobs, 3.5 GiB combined peak). Expanded axiom audit
 passes for 343744 declarations at 3574.7 MiB, permitting only propext, Quot.sound
 and Classical.choice.
+
+### S4 checkpoint: full-core count lower bounds and selected dyadic charge
+
+The remaining charge estimate needs a real selected core-width upper bound:
+existing numerical-class statements permit arbitrary width <= s, which can
+leave only a few full cores. Such a hypothesis alone does not justify treating
+the key exponent as an axis logarithm. This gate remains explicit.
+
+`PhaseCellCoreGatherCount.fullCoreGather_count_lower` structurally embeds the
+interior quotient cores in the actual fitting full-width group. With radius <=
+width, its count is at least s/width-2. `fullCoreGather_clog_bounds` derives key
+exponent <= ell and ell <= twice that exponent when s <= 2^ell and the quotient
+count exceeds the half-axis exponential scale. No concrete core enumeration.
+
+`PhaseCellDyadicRouteCharge.dyadicRouteCharge_le_axis` bounds the uniform charge
+by 2*d*(ell^tau+1)+4*ell under a <= d*ell and comparable key/axis widths.
+`PhaseCellSelectedCoreRouteCharge` absorbs the remainder using ell <= 16*d^2
+and tau >= 1/2. `selectedFullCoreRouteCharge_le` supplies the manuscript-shaped
+18*d*(ell^tau+1) bound for the actual full-core group, under the explicit
+quotient and replica-exponent gates. It includes zero-axis edge cases through
+the total charge definition, without artificially enlarging the capacity.
+
+Next derive these gates from the final selected tensor/core layout, handle the
+clipped last-core group as a singleton, and apply the bounds to the combined
+actual gather/numerical trace. Publication and grouped tensor/error composition
+remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded generic charge, core-count/log bounds and selected full-core charge
+checks pass at 3091.8, 1878.9 and 3159.2 MiB respectively.
+Final dependency build passes (14408 jobs, 3.4 GiB combined peak). Expanded axiom
+audit passes for 343750 declarations at 3575.0 MiB, permitting only propext,
+Quot.sound and Classical.choice.
