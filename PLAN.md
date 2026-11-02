@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4194 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4196 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30922,3 +30922,35 @@ Guarded metadata loader check passes at 2078.9 MiB, loaded readiness at
 3073.0 MiB. Dependency build passes (16761 jobs, 3.3 GiB combined peak).
 Expanded axiom audit passes for 344039 declarations at 3581.1 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: restore both exposure and routing banks in one actual trace
+
+`PhaseCellPlacedRestoringExposure` embeds the complete load/expose/retire program
+in arbitrary surrounding storage. It reuses `exec_emb_owned_update_within`, so
+its exact caller-output update, prefix/tail restoration and full stock allowance
+survive placement without a new machine simulation.
+
+`PhaseCellRestoringExposedGather.restoringExposedGather_exec_within` places
+exposure in the caller prefix of the allocated routing layout and composes it
+with the actual load/route/retire program. Initial assumptions contain caller
+metadata words and fresh exposure/routing suffixes, not preloaded metadata or
+worker readiness. Output ownership is an explicit register equality linking the
+exposure output to the numerical supplier source; routing metadata sources are
+separated from that source. The exact final state changes only that supplier
+source to `coreSupplierStream ... Fs.reverse`. Both private banks, the original
+ambient source, its borrowed tail and every other caller register are restored.
+The same trace pays both metadata lifecycles, full exposure and complete routing.
+
+The proof uses explicit value equalities for nested `Fin` embeddings to avoid
+recursive unfolding; default proof limits are unchanged. Next instantiate the
+canonical numerical bank ownership, construct numerical initial readiness and
+consume this completely restoring preparation through the shared common-job
+numerical theorem. Selected combined bills, publication/cropping/support,
+locality and full-tensor composition remain open. S4 remains incomplete;
+kappa unchanged.
+
+Guarded placed-exposure check passes at 3064.5 MiB and complete exposure/routing
+composition at 3474.7 MiB. Dependency build passes (16763 jobs, 3.5 GiB
+combined peak). Expanded axiom audit passes for 344043 declarations at
+3582.2 MiB, permitting only propext, Quot.sound and Classical.choice.
