@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4047 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4049 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -28998,4 +28998,42 @@ Guarded selected full-stock execution and linear class-control checks pass at
 3529.8 MiB and 3410.5 MiB. Expanded compatibility passes (16611 jobs,
 3.6 GiB combined peak).
 Broad axiom audit passes for 342465 declarations at 3553.1 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: retained binary dimensions generate and retire actual class inputs
+
+`ComputedClassBanks.inputAssignments` exports the six fixed master parameters,
+precision/packet/replica seeds, crop offset and row count, scalar width, reader
+width/halo and origin-generator width from twelve retained binary dimensions.
+The existing structural `tblUnaryCopies` supplies all fifteen destinations;
+repeated reads of a dimension are intentional. Bank injection proves distinct
+destinations, and table separation preserves the retained binary source.
+
+`input_exec` returns the actual export execution and all-depth stock trace.
+`inputState_at`, `inputState_off` and `inputState_update` describe its exact
+frame. `input_release_output_exec` erases the generated counters after the
+class, preserving the consumed-source tail and produced output. Export plus
+final erasure costs exactly `165*D+8*inputVolume+122`; no generated counter is
+retired for free. The binary dimension width D is independent of the local
+numerical width V, so the replica count need not fit the numerical format.
+
+`ComputedClassBanks.inputClassProgram` is one fixed export/class/release
+program. `inputClassRun_exec` executes it from the retained dimension table
+and blank generated destinations, derives all unary tape facts needed by the
+actual class execution, and restores the initial state except for source
+consumption and certified accumulated output. It retains the exact class
+bill, adds actual export/cleanup bills and composes the same-run stock traces.
+The first-six-parameter fact is mathematical table data, not readiness at an
+intermediate machine state. No 392-register case split is introduced.
+
+This composition currently uses the generic class reserve interface. Next
+instantiate it with the proper-core family and the already-derived selected
+stock/time bounds, absorb the new once-per-class input bill, and compose
+ambient exposure/publication. Retained binary geometry inputs still come
+from the caller. Tensor/R4 restoration and outer integration remain open.
+S4 is incomplete; kappa unchanged.
+
+Guarded generated-input class execution check passes at 3466.7 MiB. Expanded
+compatibility passes (16613 jobs, 3.6 GiB combined peak).
+Broad axiom audit passes for 342502 declarations at 3553.4 MiB, permitting
 only propext, Quot.sound and Classical.choice.
