@@ -35,21 +35,20 @@ theorem generator_injective (queue : Fin T) : Function.Injective (generator queu
 @[simp] theorem generator_queue (queue : Fin T) : generator queue 109 = worker queue := by
   simp [generator]
 
-theorem generator_bank_off (queue : Fin T) (j : Fin 117) (hj : j.val < 31) (i : Fin T) :
+theorem generator_off_worker (queue : Fin T) (j : Fin 117) (hj : j ≠ 109) (i : Fin T) :
     generator queue j ≠ worker i := by
-  have hj109 : j ≠ 109 := by intro h; subst j; norm_num at hj
   intro h
   have hv := congrArg (fun x : Fin (T+117) => x.val) h
   have hi := i.isLt
-  simp [generator,worker,hj109] at hv
+  simp [generator,worker,hj] at hv
   omega
 
-theorem count_off (queue : Fin T) (i : Fin T) : worker i ≠ generator queue 116 := by
-  intro h
-  have hv := congrArg (fun x : Fin (T+117) => x.val) h
-  have hi := i.isLt
-  simp [generator,worker] at hv
-  omega
+theorem generator_bank_off (queue : Fin T) (j : Fin 117) (hj : j.val < 31) (i : Fin T) :
+    generator queue j ≠ worker i :=
+  generator_off_worker queue j (by intro h; subst j; norm_num at hj) i
+
+theorem count_off (queue : Fin T) (i : Fin T) : worker i ≠ generator queue 116 :=
+  (generator_off_worker queue 116 (by decide) i).symm
 
 end TransposeRegisterPlacement
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4112 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4114 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29918,3 +29918,40 @@ caller checks pass at 1957.8, 2984.3, 3014.4 and 2986.0 MiB. Dependency build
 passes (13676 jobs, 3.3 GiB combined peak). Expanded axiom audit passes for
 343332 declarations at 3562.4 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: worker width preparation executes and returns reusable readiness
+
+`PhaseCellFixedWorkerPreparation.prepareWorker_exec` copies the retained width
+header at generator port 115 into the fixed worker's width register, borrowing
+and restoring empty port 106. It executes in exactly `4*V+4` steps and preserves
+all other stacks. `widthState_ready` establishes every streamed-bank readiness
+field from ordinary fresh-bank facts: empty left stacks and empty worker right
+stacks except the payload and arbitrary queue tail. The width no longer needs
+to be prepared as an input. Generic register-placement separation is reused
+for the source, temporary and destination; no finite port enumeration is needed
+for the copy.
+
+`PhaseCellInitializedTransposeCaller.initializedCaller_exec_within` composes
+this preparation with the fixed loaded transpose caller. The complete first
+execution starts with retained binary exponents/packet seed, the width header,
+blank arithmetic and worker scratch, empty count and actual replica-major
+payload. It constructs worker width and table state, generates the full stream
+and count, runs the transpose and releases arithmetic scratch. Its final
+contract returns exact key-major output, the original queue tail, an empty
+count, retained-header/external frames and a ready worker. Subsequent calls can
+reuse the existing `caller` directly without width preparation.
+
+The first-call time allowance is `114*V+141+32921*(V+1)^5` plus the original paid
+stage/loop sum. Its stock allowance is `342*V+423+98763*(V+1)^5` plus the original
+schedule allowance. The initial width is outside the swap bank, so preparation
+does not inflate the routed-bank stock used by the stage cost ledger.
+
+Next discharge selected rectangle geometry and absorb generator, setup and
+stage resources into the selected budget, then replace the actual selected
+archive gather route and compose compute/restoration/publication. Grouped tensor
+and error composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded worker preparation and initialized-caller checks pass at 3002.7 and
+2999.1 MiB. Dependency build passes (13678 jobs, 3.3 GiB combined peak).
+Expanded axiom audit passes for 343353 declarations at 3563.4 MiB, permitting
+only propext, Quot.sound and Classical.choice.
