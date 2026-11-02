@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4062 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4064 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29263,3 +29263,34 @@ Guarded rectangular layout check passes at 2549.6 MiB. Expanded compatibility
 passes (16626 jobs, 3.0 GiB combined peak). Broad axiom audit passes for 342713
 declarations at 3560.9 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: balanced rectangular schedules execute with a shared reserve
+
+`PhaseCellBalancedChunkInterchangeLoop` executes arbitrary balanced dyadic
+field schedules using the existing generated swap program. Each stage supplies
+only its shape and borrowed dimension masters; the theorem assumes ordinary
+initial tape readiness, separation, positivity and a common volume. Later
+readiness and constant payload-bank length are derived from each preceding
+execution. Time is the sum of actual generated stage costs plus the terminal
+instruction. Structural schedule equality connects the physical output to the
+rectangular forward/inverse packed-word laws without per-address certificates.
+
+`PhaseCellBalancedChunkInterchangeLoopStock` bounds all configurations of that
+same execution by the maximum stage reserve, rather than their sum. It derives
+full register-bank stock preservation at stage boundaries. The existing
+equal-width `chunkInterchangeLoop_exec` and `_within` proofs now specialize
+these generic theorems through an equal-width stage view. Original programs,
+equal-width costs and stock definitions are retained; both routes share the
+proof implementation.
+
+This supplies physical execution for balanced rectangular schedules. It does
+not yet construct the selected schedule or its borrowed masters: selected
+factorization, controlled padding, total routing-cost absorption and concrete
+outer tensor wiring remain required, followed by publication and grouped
+tensor error composition. S4 remains incomplete; kappa unchanged.
+
+Guarded generic execution and stock checks pass at 2948.2 MiB and 2962.6 MiB;
+equal-width execution and stock specializations pass at 2942.1 MiB and
+2951.4 MiB. Expanded compatibility passes (16628 jobs, 9.9 GiB combined peak).
+Broad axiom audit passes for 342779 declarations at 3556.6 MiB, permitting
+only propext, Quot.sound and Classical.choice.

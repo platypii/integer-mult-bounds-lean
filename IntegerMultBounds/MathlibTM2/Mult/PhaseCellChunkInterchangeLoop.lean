@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedChunkInterchange
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBalancedChunkInterchangeLoop
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaChunkInverse
 
 @[expose] public section
@@ -77,8 +77,33 @@ noncomputable def chunkInterchangeLoop {t₀ T Q K : ℕ} {U P : Type}
   | r::rs => .seq (generatedChunkInterchange hd pay hi hQ ι hι hT r.dims a half par bits cnt work)
       (chunkInterchangeLoop hd pay hi hQ ι hι hT a half par bits cnt work rs)
 
-/-- All later stage readiness is derived from the preceding actual execution.
-The only supplied stage data are dimension values and a common payload volume. -/
+/-- View the existing equal-width schedule as a balanced schedule. -/
+def ChunkInterchangeStage.balanced {T : ℕ} (d : ℕ)
+    (r : ChunkInterchangeStage T) : BalancedChunkInterchangeStage T :=
+  ⟨r.dims,r.outerCount,r.blockWidth,d,d⟩
+
+theorem balancedChunkStageBits_equalWidth {T : ℕ} (d : ℕ)
+    (rs : List (ChunkInterchangeStage T)) (xs : List Bool) :
+    balancedChunkStageBits (rs.map (ChunkInterchangeStage.balanced d)) xs = chunkStageBits d rs xs := by
+  induction rs generalizing xs with
+  | nil => rfl
+  | cons r rs ih => exact ih _
+
+theorem balancedChunkInterchangeLoop_equalWidth {t₀ T Q K : ℕ} {U P : Type}
+    (hd : Fin 5 → Fin t₀) (pay : Fin t₀) (hi : Function.Injective hd)
+    (hQ : swapStates hd pay hi ≤ Q)
+    (ι : Fin (swapT t₀) → Fin T) (hι : Function.Injective ι) (hT : swapT t₀ ≤ T)
+    (a half par bits cnt work : Fin T) (d : ℕ) (rs : List (ChunkInterchangeStage T)) :
+    balancedChunkInterchangeLoop (K := K) (U := U) (P := P) hd pay hi hQ ι hι hT
+      a half par bits cnt work (rs.map (ChunkInterchangeStage.balanced d)) =
+      chunkInterchangeLoop hd pay hi hQ ι hι hT a half par bits cnt work rs := by
+  induction rs with
+  | nil => rfl
+  | cons r rs ih =>
+    simp only [List.map_cons,balancedChunkInterchangeLoop,chunkInterchangeLoop,
+      ChunkInterchangeStage.balanced]
+    rw [ih]
+
 theorem chunkInterchangeLoop_exec {t₀ T Q K : ℕ} {U P : Type}
     (body : P → Pr P T Q (prime+K) U)
     (hd : Fin 5 → Fin t₀) (pay : Fin t₀) (hi : Function.Injective hd)
@@ -107,74 +132,20 @@ theorem chunkInterchangeLoop_exec {t₀ T Q K : ℕ} {U P : Type}
       Exec body (chunkInterchangeLoop hd pay hi hQ ι hι hT a half par bits cnt work rs)
         (mk v S) n (mk v' {S with L := fun _ => [], R := (Function.update S.R (ι (reg pay))
           ((chunkStageBits d rs xs).map bitSymbol))}) := by
-  induction rs generalizing xs v S with
-  | nil =>
-    refine ⟨v,1,rfl,by simp,?_⟩
-    refine (Exec.act (body := body) .done (mk v S)).cast rfl ?_
-    apply congrArg (mk v)
-    refine Stacks.ext rfl rfl ?_ ?_
-    · funext i; exact hL i
-    · funext i
-      by_cases hi : i = ι (reg pay)
-      · subst i; simpa only [chunkStageBits,Function.update_self] using hsrc
-      · exact (Function.update_of_ne hi _ _).symm
-  | cons r rs ih =>
-    have hr : r ∈ r::rs := by simp
-    have htail : ∀ s ∈ rs, s ∈ r::rs := by intro s hs; simp [hs]
-    have hlen' := hlen.trans (hvolume r hr)
-    obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := generatedChunkInterchange_exec body hd pay hi hpay hQ ι hι hT
-      r.dims a half par bits cnt work (hgen r hr) (hdisjoint r hr) r.outerCount r.blockWidth d
-      (hpositive r hr).1 (hpositive r hr).2 xs hlen' v S hL hpriv (hdims r hr) hhdr hgenBlank hsrc hother
-    let ys := swapList r.outerCount (2^d) 1 (2^d) r.blockWidth false xs
-    let M : Stacks T (prime+K) := {S with L := fun _ => [], R := Function.update S.R (ι (reg pay)) (ys.map bitSymbol)}
-    have hframe (i : Fin T) (hi : i ≠ ι (reg pay)) : M.R i = S.R i := Function.update_of_ne hi _ _
-    have hlenys : ys.length = V := (swapList_bitSymbols_length xs hlen').trans hlen
-    have hstock : (∑ j, (M.R (ι j)).length) = ∑ j, (S.R (ι j)).length := by
-      apply Finset.sum_congr rfl
-      intro j hj
-      by_cases he : ι j = ι (reg pay)
-      · rw [he]
-        simp only [M,Function.update_self,hsrc,List.length_map,hlenys,hlen]
-      · rw [hframe _ he]
-    obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := ih
-      (by intro s hs; exact hgen s (htail s hs))
-      (by intro s hs; exact hdisjoint s (htail s hs))
-      (by intro s hs; exact hmaster s (htail s hs))
-      (by intro s hs; exact hpositive s (htail s hs))
-      (by intro s hs; exact hvolume s (htail s hs)) ys hlenys v₁ M
-      (by intro i; rfl)
-      (by
-        intro j hj
-        rw [hframe]
-        · exact hpriv j hj
-        · intro he
-          have hh := congrArg Fin.val (hι he)
-          change j.val = pay.val at hh
-          have hp := pay.isLt
-          omega)
-      (by intro s hs k; rw [hframe _ (hmaster s (htail s hs) k)]; exact hdims s (htail s hs) k)
-      (by
-        intro k
-        rw [hframe]
-        · exact hhdr k
-        · intro he; exact hpay k (BinaryInterchangeRun.slot_injective (hι he)))
-      (by intro i hi; rw [hframe _ (hscratch i hi)]; exact hgenBlank i hi)
-      (by simp only [M,Function.update_self])
-      (by
-        intro i hip hheads s hs
-        rw [hframe] at hs
-        · exact hother i hip hheads s hs
-        · intro he; exact hip (BinaryInterchangeRun.slot_injective (hι he)))
-    rw [hstock] at hn₂
-    refine ⟨v₂,n₁+n₂,hu₂.trans hu₁,?_,?_⟩
-    · simp only [List.map_cons,List.sum_cons]
-      omega
-    · refine (Exec.seq he₁ he₂).cast rfl ?_
-      apply congrArg (mk v₂)
-      refine Stacks.ext rfl rfl rfl ?_
-      funext i
-      by_cases hi : i = ι (reg pay)
-      · subst i; simp only [Function.update_self,chunkStageBits,ys]
-      · simp only [Function.update_of_ne hi,M]
+  simpa only [balancedChunkInterchangeLoop_equalWidth,balancedChunkStageBits_equalWidth,
+    List.map_map,Function.comp_def,ChunkInterchangeStage.balanced,
+    generatedBalancedChunkInterchangeCost,generatedChunkInterchangeCost] using
+    balancedChunkInterchangeLoop_exec body hd pay hi hpay hQ ι hι hT a half par bits cnt work
+      V (rs.map (ChunkInterchangeStage.balanced d))
+      (by intro r hr; obtain ⟨s,hs,rfl⟩ := List.mem_map.mp hr; exact hgen s hs)
+      (by intro r hr; obtain ⟨s,hs,rfl⟩ := List.mem_map.mp hr; exact hdisjoint s hs)
+      (by intro r hr; obtain ⟨s,hs,rfl⟩ := List.mem_map.mp hr; exact hmaster s hs)
+      hscratch
+      (by intro r hr; obtain ⟨s,hs,rfl⟩ := List.mem_map.mp hr; exact hpositive s hs)
+      (by intro r hr; obtain ⟨s,hs,rfl⟩ := List.mem_map.mp hr; exact ⟨Nat.le_succ d,Nat.le_succ d⟩)
+      (by intro r hr; obtain ⟨s,hs,rfl⟩ := List.mem_map.mp hr; exact hvolume s hs)
+      xs hlen v S hL hpriv
+      (by intro r hr; obtain ⟨s,hs,rfl⟩ := List.mem_map.mp hr; exact hdims s hs)
+      hhdr hgenBlank hsrc hother
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
