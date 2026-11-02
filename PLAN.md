@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4049 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4051 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29036,4 +29036,36 @@ S4 is incomplete; kappa unchanged.
 Guarded generated-input class execution check passes at 3466.7 MiB. Expanded
 compatibility passes (16613 jobs, 3.6 GiB combined peak).
 Broad axiom audit passes for 342502 declarations at 3553.4 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: proper-core families execute the generated-input class lifecycle
+
+`ComputedClassBanks.commonInputValues` constructs the retained dimension table
+from the six fixed mathematical parameters and the common class dimensions.
+`commonInputValues_prefix` and `masterInput_prefix` use the shared vector
+prefix structurally, without comparing expanded eight- or twelve-entry case
+trees. `commonInputVolume_eq` identifies the actual generated tick volume as
+`2*p+u+l+target+s+t+3*B+W+N+radius+(H-2*radius)+H`.
+
+`commonInputCoreClassRun_exec` instantiates `inputClassProgram` with the actual
+`PackedNormalizedJob.ofCoreCommon` family at the ordered core-gather indices.
+The constructor and existing geometry lemmas derive the scalar width, fixed
+parameter prefix, packet and replica profiles, crop length, halo length,
+origin queue, payload volume and exact supplier stream. Callers supply one
+retained binary dimension table and blank generated destinations, rather than
+unary class inputs or per-job readiness. The dimension-table width D stays
+independent of the local numerical width B.
+
+The returned actual export/class/release run has the complete exact time bill,
+same-run stock trace, certified per-job outputs and a frame restoring every
+register except consumed source and accumulated output. The input bill is
+explicit and is not yet absorbed into the selected asymptotic allowance.
+The generic reserve premise is also still present in this new specialization;
+next attach the already-derived selected stock/time bounds to it, then compose
+ambient exposure/publication and tensor/R4 restoration. S4 remains incomplete;
+kappa unchanged.
+
+Expanded compatibility passes (16615 jobs, 3.5 GiB combined peak).
+Guarded proper-core generated-input execution check passes at 3615.5 MiB.
+Broad axiom audit passes for 342513 declarations at 3553.8 MiB, permitting
 only propext, Quot.sound and Classical.choice.
