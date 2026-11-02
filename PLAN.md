@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4088 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4092 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29641,3 +29641,39 @@ at 1395.8 MiB, 1400.1 MiB and 1425.6 MiB. Expanded compatibility passes
 (16652 jobs, 3.3 GiB combined peak). Broad axiom audit passes for 343151
 declarations at 3560.4 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: complete fixed table-machine row selector executes from retained inputs
+
+`PhaseCellDyadicSelectorStep` composes the orientation/index tests with the
+proved descent and selected-leaf macros. One transition contract describes
+found rows and residual queries, preserves the accumulator and every retained
+input, and bounds a step by `4*(a+b)+17` atoms.
+
+`PhaseCellDyadicSelectorProgress` proves that a residual transition preserves
+the selected arithmetic row and full packet-volume bound while reducing the
+remaining exponent sum. `PhaseCellDyadicSelectorLoop` uses this contract to
+prove the actual fixed while loop terminates and returns exactly
+`selectDyadicStage`. Structural fuel is only a proof parameter, absent from the
+physical program. The cost is at most `fuel*(4*B+19)+2` for exponent sum at most
+B and word width greater than B; every subtraction, increment and scaling fit
+is paid and checked through the existing exact-arithmetic macros.
+
+`generatedDyadicSelectorCode_do` initializes the live exponents, remaining
+count, query index, packet width, zero and one from retained variables. It
+returns the correct prefix/packet/field-width masters and leaves zero/one
+available for row emission, preserving the accumulator and all retained
+inputs. With canonical fuel the count is at most
+`(a+b)*(4*(a+b)+19)+10` table atoms. No supplied live selector scratch or
+recursive schedule interpreter is assumed.
+
+Next emit the five fields from each computed row, enumerate the computed
+stage count and publish the resulting binary stream and unary count through
+the existing host machinery. Host generation/resource bounds, selected cost
+absorption, archive replacement, publication and grouped tensor composition
+remain open. S4 is incomplete; kappa unchanged.
+
+Guarded dispatch, arithmetic-progress, selector-loop and initialized-selector
+checks pass at 2555.5 MiB, 2543.4 MiB, 2545.6 MiB and 2541.2 MiB. Expanded
+compatibility passes (16656 jobs, 3.0 GiB combined peak). Broad axiom audit
+passes for 343201 declarations at 3559.7 MiB, permitting only propext,
+Quot.sound and Classical.choice.
