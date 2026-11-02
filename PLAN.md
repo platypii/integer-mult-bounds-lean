@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4199 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4202 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30988,4 +30988,38 @@ Guarded raw numerical readiness check passes at 3437.6 MiB, geometry loading and
 loaded readiness at 3430.7 MiB, and canonical layout at 3460.4 MiB. Dependency
 build passes (16766 jobs, 6.0 GiB combined peak). Expanded axiom audit passes
 for 344065 declarations at 3578.7 MiB, permitting only propext, Quot.sound and
+Classical.choice.
+
+
+### S4 checkpoint: close numerical geometry initialization and retirement
+
+`PhaseCellClassGeometryRetirement` proves that loading four B-symbol geometry
+words costs 24*B+25 and clearing them after computation costs 8*B+9, with zero
+additional clearing stock allowance. Structural `clearWords` execution preserves
+the numerical result and restores the original geometry ports exactly.
+
+`PhaseCellInitializedClassRun` shares the load/run/retire composition for a
+certified numerical trace. It preserves that trace's output predicate and exact
+result-only final update. Added time is 32*B+34 and added stock is 48*B+50;
+no numerical output or retained caller metadata is erased.
+
+`initializedPreparedCommonCoreClassRun_exec` instantiates the wrapper with the
+existing common-format numerical theorem and `loadedClassGeometry_ready`.
+Initial conditions are retained caller geometry words outside the numerical
+bank, a fresh bank, the external input table and empty work-left stacks. The
+supplier preparation is an executed program on the loaded state, uniformly in
+the host state. Numerical readiness is constructed, and all four geometry headers
+are cleared after the returned `Forall₂ PackedNormalizedJob.output` certificate.
+The exact final record changes only the numerical result register.
+
+Next instantiate its preparation premise with the completely restoring
+exposure/routing trace in the canonical prefix layout, transporting ordinary
+input words and freshness through geometry loading. External table initialization,
+combined selected bills, publication/cropping/support, locality and full-tensor
+composition remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded retirement check passes at 3429.4 MiB, shared initialized run at
+3423.8 MiB and initialized common-job execution at 3477.2 MiB. Dependency
+build passes (16769 jobs, 3.5 GiB combined peak). Expanded axiom audit passes
+for 344073 declarations at 3579.1 MiB, permitting only propext, Quot.sound and
 Classical.choice.
