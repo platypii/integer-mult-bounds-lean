@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4079 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4082 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29507,4 +29507,42 @@ Guarded list-loop, external-counter list-bank loop and streamed-bank checks
 pass at 1393.4 MiB, 1389.5 MiB and 2970.3 MiB. Expanded compatibility passes
 (16643 jobs, 3.3 GiB combined peak). Broad axiom audit passes for 343041
 declarations at 3559.6 MiB, permitting only propext, Quot.sound and
+Classical.choice.
+
+### S4 checkpoint: complete fixed-bank streamed schedules and exact dyadic transposes execute
+
+`PhaseCellStreamedScheduleData` defines binary schedule rows, their exact worker
+state and the paid stage ledgers. The schedule reserve is the maximum stage
+allowance. Frame lemmas derive reusable readiness and preserve the routed-bank
+stock when the payload length is unchanged.
+
+`StreamedChunkBank.schedule_exec_within` instantiates the counted external-bank
+loop with an actual queue/payload invariant. A completed prefix and remaining
+suffix identify both the exact consumed row stream and the mathematically
+transformed payload. Every step calls the proved fixed worker, derives its
+next exact frame, preserves the common payload volume and reuses the same
+routed-bank stock ledger. No per-stage readiness or execution is supplied.
+Time is the sum of the actual streamed-stage bills plus three loop steps per
+stage and two terminal steps; all configurations share the maximum reserve.
+The counter is consumed and the final embedded worker state is exact.
+
+`StreamedChunkBank.dyadicTranspose_exec_within` specializes this execution to
+the structural Euclidean dyadic plan. Balance, positivity, common volume and
+packed-word output order follow from the existing plan laws. One fixed worker
+program now executes a complete exact rectangular transpose, including row
+reading and master retirement, from the corresponding binary schedule stream.
+The theorem still takes that stream and its counter as actual initial inputs;
+it does not manufacture them for free.
+
+Next generate the binary schedule and count from retained selected dimensions,
+prove compact field fit and initial routed-bank bounds, then attach selected
+cost absorption and replace the old archive caller. The theorem currently
+specifies the exact embedded worker frame; any required complete ambient frame
+must also be carried through outer integration. Publication and grouped tensor
+composition remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded schedule-data, complete schedule execution and exact dyadic-transpose
+checks pass at 2955.6 MiB, 2967.1 MiB and 2954.6 MiB. Expanded compatibility
+passes (16646 jobs, 3.3 GiB combined peak). Broad axiom audit passes for 343067
+declarations at 3560.9 MiB, permitting only propext, Quot.sound and
 Classical.choice.
