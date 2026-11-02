@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4064 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4066 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29293,4 +29293,35 @@ Guarded generic execution and stock checks pass at 2948.2 MiB and 2962.6 MiB;
 equal-width execution and stock specializations pass at 2942.1 MiB and
 2951.4 MiB. Expanded compatibility passes (16628 jobs, 9.9 GiB combined peak).
 Broad axiom audit passes for 342779 declarations at 3556.6 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: exact Euclidean dyadic transposes avoid replica padding
+
+`PhaseCellDyadicTransposePlan` constructs a transpose for every pair of dyadic
+exponents by structural recursion on fuel. A left step peels an equal-width
+field; a right step inverts a smaller transpose and appends its equal-width
+field swap. Generic structural proofs identify the full rectangular transpose
+and the existing packed-word ordering, including its inverse for arbitrary
+new numerical output. No padding to a power of the key dimension is required.
+
+Every stage has the original volume and swaps equal, positive bit widths no
+larger than the smaller original exponent. The stage count is bounded by
+`widthCharge`, and `widthCharge ≤ a+b`. `PhaseCellDyadicTransposeWiring` attaches
+borrowed dimension ports to this schedule, proves its exact physical shape and
+packed-word law, and derives balance, positivity and common volume. It also
+proves that `widthCharge` is the sum of emitted physical stage bit widths;
+this is the arithmetic measure needed to pay a residual route separately
+from the large equal-width stages.
+
+This resolves the structural remainder problem that the single-key-radix
+factorization leaves: arbitrary dyadic rectangles now have a valid balanced
+schedule. It is not yet the selected routing-cost theorem. Preparing its
+borrowed masters, accounting for the large-width versus residual stage costs,
+matching actual core/replica counts (and any rounding to dyadic capacities),
+replacing the old archive caller and composing publication/tensor restoration
+remain required. S4 is incomplete; kappa unchanged.
+
+Guarded dyadic-plan and physical-wiring checks pass at 2563.3 MiB and
+2934.3 MiB. Expanded compatibility passes (16630 jobs, 3.2 GiB combined peak).
+Broad axiom audit passes for 342878 declarations at 3555.3 MiB, permitting
 only propext, Quot.sound and Classical.choice.
