@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4068 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4070 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29353,4 +29353,34 @@ kappa unchanged.
 Guarded split-plan and weighted-charge checks pass at 2523.5 MiB and
 2948.3 MiB. Expanded compatibility passes (16632 jobs, 3.3 GiB combined peak).
 Broad axiom audit passes for 342918 declarations at 3555.5 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: complete generated routing bills inherit the exact width charge
+
+`Cost.PhaseCellGeneratedDyadicStage` applies the vendored interchange estimate
+to the actual generated equal-field stage, using canonical generated headers.
+It pays header construction, the placed swap and header erasure explicitly.
+For full payload volume V and initial routed-bank stock at most D*V, its cost
+is at most `generatedDyadicStageCoeff T t₀ D * V * (k^tau+1)`. Positivity and
+full-volume arithmetic bound both multiplicities, packet width, bit width
+and header volume; no free metadata lifecycle is assumed.
+
+`Cost.PhaseCellDyadicTransposeTraffic` sums this estimate over the exact emitted
+physical schedule. The structural weighted-charge identity checks the widths
+once, and the quotient/remainder theorem bounds the complete loop's advertised
+stage bill, including its terminal instruction, by
+`generatedDyadicStageCoeff T t₀ D * V * ((a/b)*(b^tau+1)+4*b)+1`.
+The real division and residual term remain explicit. This matches the time
+bill in `balancedChunkInterchangeLoop_exec` and its simultaneous-stock theorem.
+
+The initial bank-stock condition is still a hypothesis. Next construct and
+retire changing dimension masters with a fixed-machine controller and prove
+that stock condition, then absorb the selected geometry and attach the route
+to actual gather/publication. This estimate does not include that master
+preparation or complete S4. Capacity rounding, archive replacement and grouped
+tensor composition remain open; kappa unchanged.
+
+Guarded complete-stage and schedule-traffic checks pass at 3054.9 MiB and
+3041.1 MiB. Expanded compatibility passes (16634 jobs, 3.4 GiB combined peak).
+Broad axiom audit passes for 342923 declarations at 3557.8 MiB, permitting
 only propext, Quot.sound and Classical.choice.
