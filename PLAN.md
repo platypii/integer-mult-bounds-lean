@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4140 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4143 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30227,3 +30227,33 @@ Guarded complete prepared-route check passes at 3111.6 MiB. Dependency build
 passes (14102 jobs, 3.4 GiB combined peak). Expanded axiom audit passes for
 343542 declarations at 3571.3 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: actual count-to-exponent and minimal capacity production
+
+`Host.UnaryBitLength` reuses the existing linear-time halving loop, retaining
+its unary bit-length output and erasing the temporary bits. A borrowed unary
+source is preserved. Optionally removing one copied tick first computes
+size(n-1); the generic identity size(n-1)=clog 2 n identifies the exact minimal
+dyadic exponent, including n=0 and n=1. For a power-of-two replica count,
+ordinary bit length followed by one executed pop gives its exact exponent.
+Both operations have exact single-destination updates and native stock bounds.
+
+`PhaseCellDyadicGatherExponents` derives both exponents at actual generator
+ports 84 and 85 from retained replica/core counts, sharing restored scratch.
+`PhaseCellDyadicGatherCapacity` uses existing `upow2` to construct the unary
+capacity in port 81. Its composed `gatherDimensions_exec_within` derives a,
+clog 2 rows and 2^(clog 2 rows) from actual counts with exact time/stock bills;
+no exponent or capacity word is supplied. Original counts and all scratch are
+restored. Capacity generation takes at most 4*2^b+9*b+5 steps.
+
+Next connect the generated dimensions to prepared routing readiness, generate
+the real-core count from retained ambient geometry and retire owned unary
+metadata after the selected call. Selected class execution, resource absorption,
+publication and grouped tensor/error composition remain open. S4 is incomplete;
+kappa unchanged.
+
+Guarded bit-length, placed exponent and composed capacity checks pass at
+1953.6, 3105.9 and 3105.7 MiB respectively.
+Dependency build passes (14104 jobs, 3.3 GiB combined peak). Expanded axiom audit
+passes for 343568 declarations at 3571.1 MiB, permitting only propext, Quot.sound
+and Classical.choice.
