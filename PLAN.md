@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4072 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4074 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29414,3 +29414,37 @@ Guarded scalar-reader and structural-row checks pass at 1940.5 MiB and
 1972.7 MiB. Expanded compatibility passes (16636 jobs, 2.7 GiB combined peak).
 Broad axiom audit passes for 342960 declarations at 3559.0 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: one fixed streamed stage reads, swaps and releases its masters
+
+`PhaseCellDimensionRowScope.withDimensionRow_exec` composes the actual binary
+row reader, an owned-payload transformation and paid master erasure. Its frame
+lemma commutes the payload update through the structural master assignments.
+The reusable scope restores every master and spectator while advancing the
+schedule queue and changing the payload.
+
+`PhaseCellStreamedChunkInterchange.streamedChunkInterchange_exec` instantiates
+that scope with the actual generated interchange theorem. The five dimensions
+are read from a binary schedule row into one fixed bank; neither numerical
+dimensions nor a list of stage-specific banks occurs in the physical program.
+All swap readiness is derived from ordinary initial tape facts and the row
+reader's exact frame. Dimension masters and the schedule queue sit outside
+the routed bank, so its initial stock and payload contents transfer exactly.
+No supplied stage execution is a premise of the final theorem.
+
+The final state changes only the advanced queue and interchanged payload,
+with empty left tapes. Time includes reading, the actual generated swap and
+master release. Metadata preparation plus release simplifies exactly to
+`95*V+14*(P+1+B+h+d)+132`, where V is the binary row-word width.
+
+Next compose simultaneous stock for this streamed stage, then instantiate a
+counted loop over the schedule stream and generate that stream from retained
+selected dimensions. The current result executes one row, not the complete
+runtime schedule controller. Selected capacities and routing absorption,
+archive replacement, publication and grouped tensor composition remain open.
+S4 is incomplete; kappa unchanged.
+
+Guarded row-frame, scope and actual streamed-stage checks pass at 1972.1 MiB,
+1935.2 MiB and 2951.5 MiB. Expanded compatibility passes (16638 jobs, 3.3 GiB
+combined peak). Broad axiom audit passes for 342970 declarations at 3558.5 MiB,
+permitting only propext, Quot.sound and Classical.choice.

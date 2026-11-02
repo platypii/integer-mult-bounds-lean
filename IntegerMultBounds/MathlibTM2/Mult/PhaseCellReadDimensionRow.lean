@@ -31,6 +31,16 @@ theorem dimensionRowR_off (xs : List (ℕ × Fin T)) (R : Regs T A) (k : Fin T)
     rw [dimensionRowR,ih _ (by intro q hq; exact hoff q (by simp [hq]))]
     exact Function.update_of_ne (Ne.symm (hoff p (by simp))) _ _
 
+theorem dimensionRowR_update_off (xs : List (ℕ × Fin T)) (R : Regs T A) (k : Fin T)
+    (word : List (Fin (A+4))) (hoff : ∀ p ∈ xs, p.2 ≠ k) :
+    dimensionRowR xs (Function.update R k word) = Function.update (dimensionRowR xs R) k word := by
+  induction xs generalizing R with
+  | nil => rfl
+  | cons p xs ih =>
+    simp only [dimensionRowR]
+    rw [Function.update_comm (hoff p (by simp)).symm]
+    exact ih _ (by intro q hq; exact hoff q (by simp [hq]))
+
 theorem dimensionRowR_at (xs : List (ℕ × Fin T)) (R : Regs T A)
     (hds : (xs.map Prod.snd).Nodup) (p : ℕ × Fin T) (hp : p ∈ xs) :
     dimensionRowR xs R p.2 = List.replicate p.1 tick := by
