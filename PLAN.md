@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4167 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4169 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30541,4 +30541,36 @@ Guarded clipped-core, both-class charge and actual both-class budget checks pass
 at 1881.9, 3160.0 and 3435.9 MiB respectively.
 Final dependency build passes (15976 jobs, 3.5 GiB combined peak). Expanded axiom
 audit passes for 343754 declarations at 3575.2 MiB, permitting only propext,
+Quot.sound and Classical.choice.
+
+### S4 checkpoint: discharge quotient/exponent gates from polynomial layout bounds
+
+`PhaseCellCoreQuotient.coreQuotient_large_of_square_width` derives the half-axis
+quotient condition from 128*width^2 <= 2^ell and 2^ell <= 4*s. The proof compares
+natural-number squares and powers, avoiding real logarithms or concrete counts.
+
+`PhaseCellSelectedCoreWidthCharge.selectedAxis_le_four_ambient` obtains the
+required density from actual selected moduli bounds. Existing selected growth
+then proves `selectedPolynomialCoreWidth_quotient`: every fixed polynomial
+width bound C*p^e eventually satisfies the quotient gate. The corresponding
+both-class charge theorem no longer needs that gate supplied separately.
+`selectedReplicaExponent_le` obtains a <= d*ell from the natural tensor-volume
+condition 2^a <= T and the existing padded tensor logarithm bound.
+
+`PhaseCellSelectedPolynomialGatherBudget.selectedPolynomialCoreGroupGatherCosts_le`
+applies these facts to the complete actual gather bill. The previous quotient
+and replica-exponent gates are replaced by width <= C*p^e and Fs.length <= T.
+Time and stock retain the manuscript-shaped dimension/axis bound and linear
+source reserve. Choosing the actual selected core width and constructing the
+initial physical layout remain open; no construction is inferred from these
+inequalities alone.
+
+Next choose that core width, establish its locality/preparation/upper bounds,
+and apply the complete bill to numerical-class execution. Publication and grouped
+tensor/error composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded quotient, selected width/charge and complete polynomial-layout budget
+checks pass at 1879.1, 3172.0 and 3427.1 MiB respectively.
+Final dependency build passes (15979 jobs, 3.5 GiB combined peak). Expanded axiom
+audit passes for 343760 declarations at 3575.6 MiB, permitting only propext,
 Quot.sound and Classical.choice.
