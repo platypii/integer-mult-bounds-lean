@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4097 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4099 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29705,3 +29705,39 @@ Guarded charge and physical-traffic checks pass at 2948.7 and 3037.3 MiB.
 The physical-traffic dependency build passes (13724 jobs, 3.3 GiB combined peak).
 Expanded axiom audit passes for 343207 declarations at 3560.2 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: a fixed table program generates the complete schedule and count
+
+`PhaseCellTableEmitVariables.tblEmitVars_do` emits an arbitrary nonempty list
+of retained variable ports with exact accumulator order, preserving every
+variable. The structural proof permits repeated ports without separate cases.
+`PhaseCellDyadicRowEmitCode` composes the selector with this emitter using
+ports `11,14,9,10,10`, producing exactly the reader's five real metadata fields.
+
+`PhaseCellDyadicScheduleRowsCode` enumerates the computed count using the
+existing fixed `tblFor`. Its invariant tracks the emitted arithmetic-row prefix
+and frames retained inputs. `PhaseCellGeneratedDyadicSchedule` composes count
+computation, saving the packet seed, enumeration and packet-seed restoration.
+It starts with only exponents in variables 6/7 and the packet seed in 9;
+variable 3 returns the exact stage count and the accumulator contains the full
+canonical metadata stream in reverse order. No initial count, selector guard
+or schedule is supplied. The atom bound is
+`N*((a+b)*(4*(a+b)+19)+27)+13`.
+
+`PhaseCellDyadicGeneratorBudget` bounds this by `63*(W+1)^3` atoms and
+`32760*(W+1)^5` compiled host steps when `a+b < W`, using the existing table
+compiler's quadratic atom cost. This is a uniform table-execution bound,
+not yet selected-parameter absorption or a publication/stock bound.
+
+Next export variable 3 directly as the consuming unary stage counter and
+publish the accumulator through the existing bit projection/move machinery,
+release the table, and discharge field fit and selected resource absorption.
+Actual selected gather/compute/restoration integration, full ambient framing,
+publication and grouped tensor/error composition remain open. S4 is incomplete;
+kappa unchanged.
+
+Guarded row enumeration, combined generator and budget checks pass at
+2538.3, 2543.6 and 2557.0 MiB. Dependency builds pass through the budget module
+(6681 jobs, 2.9 GiB combined peak). Expanded axiom audit passes for 343224
+declarations at 3561.2 MiB, permitting only propext, Quot.sound and
+Classical.choice.
