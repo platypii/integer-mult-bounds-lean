@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4051 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4053 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29068,4 +29068,34 @@ kappa unchanged.
 Expanded compatibility passes (16615 jobs, 3.5 GiB combined peak).
 Guarded proper-core generated-input execution check passes at 3615.5 MiB.
 Broad axiom audit passes for 342513 declarations at 3553.8 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: generated-input proper-core runs carry selected time and stock
+
+`Cost.selectedCommonInputCost_le` prices the actual exported tick volume using
+the selected scalar/common-width bounds and class geometry. Shared dimension
+work consumes one setup allowance; the replica counter costs `8*N`. The
+independent retained-table width D stays explicitly charged as `165*D`, rather
+than imposing a numerical-width bound on the replica count.
+
+`Cost.selectedInputComputedCoreClassRun_exec` now attaches the existing
+selected class time and derived core-stock bounds to the actual
+`inputClassProgram` export/class/release run. No caller stock reserve or
+per-job width/volume profiles are supplied. The same returned run has certified
+outputs, unchanged user state and the exact source/result frame, with time
+at most `8*T+F*N*t*(1+band^2/d)*p^(129/128)+165*D+8*N` and stock allowance
+`(45+3*Cprog)*T+C*(Cprog+1)*N*t*p+495*D+24*N`. Both generated inputs and their
+final erasure are included. The fixed program/body push cap is still the
+ordinary execution premise.
+
+The D term is an explicit format charge to be matched to the actual outer
+caller's dimension-table format. Ambient exposure/publication, retained binary
+geometry construction, tensor/R4 restoration and outer integration remain
+open. Next compose the actual ambient gather with this generated-input run,
+using its exact frame and the gather's returned supplier stream. S4 remains
+incomplete; kappa unchanged.
+
+Guarded selected generated-input execution check passes at 3544.3 MiB.
+Expanded compatibility passes (16617 jobs, 3.6 GiB combined peak).
+Broad axiom audit passes for 342516 declarations at 3554.1 MiB, permitting
 only propext, Quot.sound and Classical.choice.
