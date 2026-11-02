@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4057 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4059 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29137,3 +29137,36 @@ Expanded compatibility passes (16621 jobs, 3.5 GiB combined peak).
 Guarded ordinary-readiness frame check passes at 3432.0 MiB. Broad axiom
 audit passes for 342637 declarations at 3556.4 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+### S4 checkpoint: actual exposed proper-core family carries selected class bounds
+
+`ComputedClassBanks.exposedCommonCoreClassRun_exec` instantiates the physical
+ambient gather/class composition with `PackedNormalizedJob.ofCoreCommon` at
+the actual ordered core-gather indices. The jobs use the reversed replica
+list returned by the gather; unit input bounds transfer by list membership.
+Existing constructor and core-queue lemmas derive every mathematical profile,
+including the exact supplier stream, so no stream-alignment premise remains.
+Generated input values still use the original replica count, whose equality
+with the reversed list's length is proved structurally.
+
+`Cost.selectedExposedComputedCoreClassRun_exec` attaches the existing selected
+class time and stock bounds to this actual exposed execution. It removes the
+generic reserve premise and retains the same certified outputs and exact
+result-only frame. Time is bounded by the actual `realGatherTimeCost` plus
+`8*T+F*N*t*(1+band^2/d)*p^(129/128)+165*D+8*N`. Stock is bounded by the actual
+`realGatherStockAllowance` plus
+`(45+3*Cprog)*T+C*(Cprog+1)*N*t*p+495*D+24*N`. Numerical and input work is
+therefore selected and paid; physical exposure is still a visible charge.
+
+No selected estimate for these actual real-gather cost functions was found in
+the current Cost modules. Next bound their controller/padding/retirement
+traffic and match their inverse-route allowance to the R4 resource language,
+then compose certified core publication and tensor restoration. Concrete
+routing-bank wiring, binary geometry preparation and the outer D format
+charge remain open. S4 is incomplete; kappa unchanged.
+
+Guarded proper-core exposed execution and selected exposed execution checks
+pass at 3645.3 MiB and 3576.9 MiB. Expanded compatibility passes (16623 jobs,
+3.7 GiB combined peak).
+
+Broad axiom audit: Axiom audit passed for 342643 declarations. Guarded check peak RSS: 3555.7 MiB. Only propext, Quot.sound and Classical.choice are permitted.
