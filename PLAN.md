@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4202 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4205 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31023,3 +31023,37 @@ Guarded retirement check passes at 3429.4 MiB, shared initialized run at
 build passes (16769 jobs, 3.5 GiB combined peak). Expanded axiom audit passes
 for 344073 declarations at 3579.1 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+
+### S4 checkpoint: execute concrete preparation after numerical initialization
+
+`PhaseCellClassGeometryFrame` gives structural frame rules for geometry loading:
+registers outside the numerical bank and bank ports outside the four geometry
+headers are unchanged. `PhaseCellExposedClassGeometryFrame` specializes those
+rules to the canonical full bank, original caller prefix and both private
+suffixes. Injection and ownership equalities are shared; no finite-register
+execution checks are introduced.
+
+`PhaseCellInitializedRestoringGather.initializedRestoringGather_exec_within`
+now executes the actual exposure/router preparation from the state returned by
+numerical geometry loading. Ordinary initial metadata words and ambient input
+are outside the numerical bank; exposure and routing suffixes start fresh.
+The proof transports their readbacks, freshness and both metadata volumes through
+the numerical load, invokes the complete physical preparation and retains its
+full time/stock bill measured from the original caller words. The exact final
+state preserves the loaded numerical geometry and changes only the supplier
+source to `coreSupplierStream ... Fs.reverse`. Both private banks and the original
+ambient lines/tail are restored.
+
+This is the concrete preparation evidence required by the initialized common-job
+wrapper, uniformly in its starting host state. Next package its ordinary data
+for that wrapper and expose the complete initialized common-job endpoint, then
+apply selected combined costs. External table initialization,
+publication/cropping/support, locality and full-tensor composition remain open.
+S4 remains incomplete; kappa unchanged.
+
+Guarded generic geometry frame check passes at 3418.3 MiB, concrete layout frame
+at 3464.6 MiB and actual preparation after numerical loading at 3468.8 MiB.
+Dependency build passes (16772 jobs, 3.5 GiB combined peak). Expanded axiom
+audit passes for 344086 declarations at 3579.8 MiB, permitting only propext,
+Quot.sound and Classical.choice.
