@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4146 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4149 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30311,3 +30311,34 @@ Guarded core-count production check passes at 3105.9 MiB.
 Dependency build passes (14106 jobs, 3.4 GiB combined peak). Expanded axiom audit
 passes for 343584 declarations at 3572.2 MiB, permitting only propext, Quot.sound
 and Classical.choice.
+
+### S4 checkpoint: packet-width production and restoring count-driven routing
+
+`PhaseCellDyadicGatherPacketWidth.gatherPacketWidth_exec_within` decodes the
+retained binary halo length, multiplies it by a retained unary coefficient
+width using the existing product program, then erases its temporary length.
+Only the previously blank packet-width port changes; binary geometry, width
+master and shared scratch are restored. No packet-width word is supplied.
+
+`PhaseCellPacketPreparedDyadicGather.packetPreparedGather_exec_within` composes
+this producer with count-driven routing and executed packet-master retirement.
+The exact final state changes only the supplier source. Exponents, capacity,
+binary headers and packet width are generated and retired during the call.
+Real-core and replica counts remain retained inputs. The readiness hypothesis
+is ordinary data at the explicit generated boundary, without execution callbacks.
+
+`PhaseCellPacketPreparedGatherBudget.packetPreparedGatherCosts_le` bounds the
+whole call by 500*volume+200 plus twice the restoring-kernel time, and
+700*volume+300 plus its stock allowance, when metadata width <= payload volume.
+Packet production and retirement therefore preserve linear overhead.
+
+Next compose the checked geometry-to-core-count producer ahead of this call,
+retire its owned count, and connect to ambient exposure and numerical class
+execution. Selected resource absorption, publication and grouped tensor/error
+composition remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded packet producer, complete packet-prepared route and budget checks pass
+at 3114.3, 3930.5 and 3123.7 MiB respectively.
+Final dependency build passes (14164 jobs, 3.4 GiB combined peak). Expanded axiom
+audit passes for 343598 declarations at 3571.9 MiB, permitting only propext,
+Quot.sound and Classical.choice.
