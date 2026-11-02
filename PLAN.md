@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4106 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4107 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29817,3 +29817,35 @@ stock checks pass at 2958.5, 1389.2, 2961.4 and 2975.2 MiB. Dependency build
 passes (13668 jobs, 5.2 GiB combined peak). Expanded axiom audit passes for
 343263 declarations at 3561.5 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: one physical caller generates metadata and executes the transpose
+
+`PhaseCellGeneratedTransposeCaller.generatedTransposeCaller_exec_within`
+composes the actual schedule publisher and counted streamed worker under two
+injective register maps. Its compatibility premises state that the 31-port
+arithmetic bank is disjoint from the worker, publisher output 109 is the worker
+queue, and output 116 is an external count. Initial count is empty. The caller
+requires a prepared bounded table containing the two exponents and packet seed,
+a ready worker and the actual replica-major payload; no metadata or stage count
+is supplied.
+
+The proof embeds the closed publisher, transfers readiness using its exact
+frame, derives the generated queue/count inputs, and applies the structural
+worker theorem. Publication preserves the routed bank stock, so stage costs
+remain measured against the original bank. The same complete execution witness
+works at every depth. Time is the polynomial generator bound plus the paid
+stage sum and loop overhead; stock is the generator reserve plus the existing
+schedule allowance. Final state has the exact key-major payload and original
+queue tail, an empty count, all arithmetic-bank right stacks cleared, and both
+stacks preserved outside the generator/worker register images.
+
+Next construct concrete compatible register placement and initial table setup,
+then discharge selected geometry and absorb generator/setup/stock resources.
+Actual selected gather/compute/restoration integration and grouped tensor/error
+composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded composed-caller check passes at 3015.8 MiB. Dependency build passes
+(13670 jobs, 3.2 GiB combined peak). Expanded axiom audit passes for 343267
+declarations at 3561.8 MiB, permitting only propext, Quot.sound and
+Classical.choice. A harmless exponent-evaluation warning leaves the existing
+coefficient-bound tower unevaluated; no proof limits were changed.
