@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4210 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4214 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31127,3 +31127,40 @@ execution at 3603.6 MiB and amortized-width specialization at 3580.0 MiB.
 Dependency build passes (16777 jobs, 3.7 GiB combined peak). Expanded axiom
 audit passes for 344160 declarations at 3583.2 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: combine complete preparation costs with selected numerical execution
+
+`PhaseCellRestoringGatherMetadataCost` derives both exact volumes from actual
+caller readbacks: exposure uses 5*V+w+s*w+Fs.length, while routing uses
+6*D+w+Fs.length. The exposure counter word and its retirement are included.
+
+`selectedRestoringGatherCosts_le` combines their full loading/retirement bills
+with the existing source-linear replica-scan and sharp geometry-route estimates.
+The linear time coefficient is coreExposureTrafficFactor+40*cV+48*cD+6185;
+stock uses 3*coreExposureTrafficFactor+60*cV+72*cD+268 plus the existing routing
+stock coefficient. No metadata adds a dyadic routing factor.
+`selectedPolynomialRestoringGatherCosts_le` reuses the existing exponent,
+polynomial-width quotient and generated-group charge lemmas to obtain the same
+432*(generatedDyadicStageCoeff+300)*source*d*(ell^tau+1) route term for both
+length classes, with one preparation setup allowance and source-linear stock.
+
+`selectedPaidRestoringComputedCoreClassRun_exec` applies that complete bill to
+the already proved selected amortized-width execution. The common word-width
+bound is derived from the existing selected precision estimate. Returned time
+and stock explicitly cover initialization, both metadata lifecycles, exposure,
+routing, recovery and final geometry retirement. The exact result-only final
+record and certified common-job outputs are unchanged. Only ordinary linear
+metadata-width, padded-volume and replica-volume gates are added for preparation
+cost absorption; no supplied execution or worker-readiness premise appears.
+
+Next execute and retire the external input table, then compose
+publication/cropping/support, locality and full-tensor guarantees showing exposure
+is not repaid per axis. The paid class theorem alone is not the complete S4
+endpoint or root integration. S4 remains incomplete; kappa unchanged.
+
+Guarded metadata volume checks pass at 3461.8 MiB, complete preparation budget
+at 3533.8 MiB, polynomial specialization at 3515.6 MiB and combined selected
+execution at 3621.7 MiB. Dependency build passes (16781 jobs, 3.7 GiB
+combined peak). Expanded axiom audit passes for 344168 declarations at
+3583.2 MiB, permitting only propext, Quot.sound and Classical.choice.
