@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4152 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4158 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30376,3 +30376,40 @@ pass at 3932.8, 3098.2 and 3124.1 MiB respectively.
 Final dependency build passes (14172 jobs, 5.7 GiB combined peak). Expanded axiom
 audit passes for 343610 declarations at 3572.4 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+### S4 checkpoint: geometry-driven ambient gather feeds selected numerical classes
+
+`PhaseCellGeometryGatherReady.GeometryReady` packages ordinary initial geometry,
+retained replica data and fresh workspace facts. Its source-independent frame
+transfers them across ambient exposure; generated boundary facts transfer by
+structural record-update reasoning. Its execution method invokes the complete
+placed geometry-driven program, not a supplied execution callback.
+
+`PhaseCellExposeGeometryGather.exposeGeometryGather_exec_within` composes actual
+restoring replica exposure with that complete router. Original ambient lines,
+borrowed tail and spectator storage survive; only the supplier source changes
+to `coreSupplierStream ... Fs.reverse`. All core count, packet, exponent,
+capacity and binary metadata are generated and retired. `GeometryRealGatherData`
+packages the ordinary inputs and provides the exact physical execution method.
+
+`PhaseCellGeometryExposedInputClassRun.geometryExposedInputClassRun_exec` and
+`PhaseCellGeometryExposedCommonCoreClassRun.geometryExposedCommonCoreClassRun_exec`
+feed that actual stream into the existing generated-input numerical class
+runner. They reuse its input-readiness transfer and output proof. The supplier
+source is consumed and restored to its initial blank state; the exact final
+record retains only certified numerical outputs. No old replica-radix archive
+plan is required in this path, and no global empty-left-stack hypothesis is
+added beyond the actual workspace/readiness requirements.
+
+`PhaseCellSelectedGeometryExposedClassRun.selectedGeometryExposedComputedCoreClassRun_exec`
+reuses selected numerical time/stock bounds for this physical route. Gather
+time/stock remain explicit in the same trace. This does not yet absorb those
+bills into the final selected bound or construct the initial ordinary data from
+the final selected layout. Those obligations, publication and grouped
+tensor/error composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded geometry readiness, ambient composition, data execution, numerical class,
+common-format class and selected class checks pass at 3111.8, 3104.5, 3119.2,
+3466.0, 3651.8 and 3589.6 MiB respectively. Final dependency build passes
+(16557 jobs, 3.6 GiB combined peak). Expanded axiom audit passes for 343726
+declarations at 3578.7 MiB, permitting only propext, Quot.sound and Classical.choice.
