@@ -29211,3 +29211,30 @@ compatibility passes (16625 jobs, 3.4 GiB combined peak).
 Guarded complete physical-gather ledger check passes at 3111.8 MiB. Broad
 axiom audit passes for 342654 declarations at 3556.6 MiB, permitting only
 propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: generated routing stages support balanced rectangular fields
+
+The existing physical `generatedChunkInterchange` program already reads both
+field widths from borrowed masters. Its execution and simultaneous-stock proofs
+now handle independent widths `h` and `d`, under the underlying swap machine's
+necessary balance hypotheses `h ≤ d+1` and `d ≤ h+1`.
+`generatedBalancedChunkInterchange_exec` and its `_within` theorem pay header
+generation, the actual placed swap and header erasure for those dimensions.
+The original equal-width interfaces are specializations of these proofs;
+the original program and equal-width cost definition are unchanged.
+
+This removes an artificial equal-width restriction at the generated stage,
+not the archive padding gate. The outer `rsbAxisOp` uses prefix and suffix
+products (`rsbPre`, `rsbSuf`), with `rsbPre_mul` proving their volume identity;
+these are not yet instantiated as the replica list of the S4 archive caller.
+A full rectangular schedule must match that actual geometry, keep each stage
+balanced, pay the total routing traffic and control padded volume before the
+selected exposed-class bound can be absorbed. Do not infer arbitrary-width
+routing from this stage theorem, or infer cheap batching without paying
+repeated setup. Publication, tensor restoration and grouped error composition
+remain open. S4 is incomplete; kappa unchanged.
+
+Guarded generalized execution and stock checks pass at 2939.0 MiB and
+2963.1 MiB. Final expanded compatibility passes (16625 jobs, 3.3 GiB
+combined peak). Broad axiom audit passes for 342659 declarations at
+3556.6 MiB, permitting only propext, Quot.sound and Classical.choice.
