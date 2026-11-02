@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4188 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4190 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30858,3 +30858,34 @@ budget at 3527.6 MiB and polynomial-width specialization at 3510.8 MiB.
 Dependency build passes (16755 jobs, 3.6 GiB combined peak). Expanded axiom
 audit passes for 343924 declarations at 3579.5 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: allocate ambient-exposure storage and derive raw readiness
+
+`PhaseCellAllocatedExposureBank` appends 175 private registers: the existing
+168-port exposure worker and seven loop controls. Worker output 108 is redirected
+to the caller's supplier destination; loop control 1 is redirected to the caller's
+original ambient source. All other ports remain private. Structural injection
+and separation lemmas prove the seven controls are distinct and disjoint from
+the worker, using only distinct caller input/output registers. There is no
+per-register execution certificate or supplied separation predicate.
+
+`PhaseCellAllocatedExposureReady.allocatedExposureReady` constructs the existing
+`RealGatherExposureData` contract for that actual placement. Six retained headers
+and two counters are the only live private ports; one fresh-suffix assumption
+discharges every scratch readiness field. The original caller source contains
+the ambient replica lines followed by an arbitrary borrowed tail. The existing
+exposure execution theorem can therefore be applied to this constructed record,
+with its unchanged source restoration and exact supplier output contract.
+
+This constructor still starts with the eight private metadata destinations
+loaded. Next load them from caller masters using structural word copying, retire
+them after exposure, and place this exposure bank beside the numerical/routing
+layout. Numerical readiness, combined selected bills, publication/cropping,
+locality and full-tensor composition remain open. S4 remains incomplete;
+kappa unchanged.
+
+Guarded exposure allocation check passes at 2077.5 MiB and raw readiness
+constructor at 2099.9 MiB. Dependency build passes (16757 jobs, 2.7 GiB
+combined peak). Expanded axiom audit passes for 343994 declarations at
+3580.5 MiB, permitting only propext, Quot.sound and Classical.choice.
