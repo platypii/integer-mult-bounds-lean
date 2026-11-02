@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4092 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4097 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29677,3 +29677,31 @@ checks pass at 2555.5 MiB, 2543.4 MiB, 2545.6 MiB and 2541.2 MiB. Expanded
 compatibility passes (16656 jobs, 3.0 GiB combined peak). Broad axiom audit
 passes for 343201 declarations at 3559.7 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+### S4 checkpoint: the generated canonical schedule has the sharp physical stage charge
+
+`PhaseCellCanonicalDyadicCharge.dyadicTransposePlan_splitCharge_le` proves
+full-width peeling directly for the canonical fuel-based Euclidean plan:
+`q*f(b)+C*(r+b)` for exponent `q*b+r`, assuming `f(k) ≤ C*k` on positive widths.
+The proof inducts on the number of full-width peels and uses the existing
+structural linear bound for the remainder. It needs no equality between indexed
+plan objects and no equality with the separately constructed split plan.
+
+`dyadicTransposePlan_rpowCharge_le` specializes this to
+`(a/b)*(b^tau+1)+4*b` for every sufficient proof fuel and `tau ≤ 1`.
+`PhaseCellCanonicalDyadicTraffic.dyadicTransposeCanonicalStageCosts_le`
+combines this with the existing complete generated-interchange stage costs,
+under the same explicit bank-stock/volume hypothesis. Thus the arithmetic
+selector's actual canonical plan now has the sharp stage-traffic estimate;
+the split-plan/canonical-plan cost mismatch is closed.
+
+Next discharge metadata generation and selected-parameter resource absorption,
+finish publication of the generated stream/count, and integrate the actual
+selected gather/compute/restoration caller. Full ambient framing, publication
+and grouped tensor/error composition remain open. S4 is incomplete; kappa
+unchanged. Existing row-emission/enumeration work remains outside this chunk.
+
+Guarded charge and physical-traffic checks pass at 2948.7 and 3037.3 MiB.
+The physical-traffic dependency build passes (13724 jobs, 3.3 GiB combined peak).
+Expanded axiom audit passes for 343207 declarations at 3560.2 MiB, permitting
+only propext, Quot.sound and Classical.choice.
