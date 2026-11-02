@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4176 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4178 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30726,4 +30726,34 @@ Guarded retirement check passes at 3464.9 MiB; the combined execution check pass
 at 4285.3 MiB (slightly above the approximate 4 GiB module target). Dependency
 build passes (16743 jobs, 4.3 GiB combined peak). Expanded axiom audit passes
 for 343835 declarations at 3577.5 MiB, permitting only propext, Quot.sound and
+Classical.choice.
+
+
+### S4 checkpoint: actual ambient exposure into the fresh routing bank
+
+`PhaseCellRealGatherExposureData` factors the ordinary ambient-exposure state
+contract and restoring replica scan out of `GeometryRealGatherData`. The existing
+retained-header caller now inherits that same contract; its numerical consumers
+remain unchanged. The common exposure contract works over an arbitrary alphabet.
+
+`PhaseCellRestoringAllocatedRealGather.AllocatedRealGatherData.exec` executes the
+ambient replica scan followed by actual routing metadata loading, geometry
+routing and header retirement. Its initial assumptions are ordinary exposure
+readiness, caller metadata words separated from the numerical source, and a
+fresh routing suffix. No supplied `GeometryReady` or preloaded routing-header
+assumption remains. The exact final state updates only the numerical supplier
+source to the reverse-replica supplier stream. Original ambient lines, borrowed
+tail, metadata words and the initially fresh routing suffix are restored. The
+same trace includes exposure, metadata and complete routing time/stock bills.
+
+Next consume this stream through the selected numerical class and restore its
+supplier source while retaining certified outputs. Concrete exposure-bank
+initialization, publication/cropping/support, locality and full-tensor composition
+remain open. This checkpoint is not root-reachable S4 completion; kappa unchanged.
+
+Guarded shared exposure check passes at 2084.4 MiB; existing gather-data refactor
+check passes at 3105.8 MiB; new exposure/routing execution check passes at
+3472.3 MiB. Dependency build including the selected amortized numerical caller
+passes (16745 jobs, 6.0 GiB combined peak). Expanded axiom audit passes
+for 343900 declarations at 3577.6 MiB, permitting only propext, Quot.sound and
 Classical.choice.
