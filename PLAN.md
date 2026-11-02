@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4207 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4210 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31091,3 +31091,39 @@ restoring common-job execution at 3508.5 MiB. Dependency build passes
 (16774 jobs, 3.6 GiB combined peak). Expanded axiom audit passes for 344153
 declarations at 3579.6 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+
+### S4 checkpoint: selected bounds for the fully initialized restoring caller
+
+`PhaseCellInitializedClassRealBound` transfers real-valued uniform run bounds
+through the existing structural load/run/retire wrapper. A natural ceiling costs
+at most one unit in the upper bound; it does not alter the executed program.
+Thus numerical geometry initialization/retirement add 32*B+35 to the selected
+real time bound and 48*B+50 to stock. Output certificates and the exact final
+result-only record are preserved by the shared wrapper.
+
+`selectedRestoringComputedCoreClassRun_exec` applies the existing
+`selectedPreparedComputedCoreClassRun_exec` to the loaded numerical state,
+constructs readiness from caller words/freshness and supplies the actual
+`RestoringGatherData.exec` preparation. No second numerical estimate or supplied
+execution callback is introduced. The one completely restoring trace has the
+same selected numerical bill, explicit complete physical preparation costs and
+explicit numerical initialization allowances.
+
+`selectedAmortizedRestoringComputedCoreClassRun_exec` specializes that endpoint
+to the existing `amortizedCoreWidth`. Generated halo-length membership and the
+shared selected geometry theorem discharge the independent width gates. Its
+returned outputs retain the same certified common-job contract and all caller
+storage except the result is restored.
+
+Next bound the complete `RestoringGatherData` bill, including exposure metadata
+loading/retirement, and combine it with these selected bounds. External input
+table initialization, publication/cropping/support, locality and full-tensor
+composition remain open. S4 remains incomplete and not yet root-reachable;
+kappa unchanged.
+
+Guarded real-bound adapter check passes at 3432.6 MiB, fully restoring selected
+execution at 3603.6 MiB and amortized-width specialization at 3580.0 MiB.
+Dependency build passes (16777 jobs, 3.7 GiB combined peak). Expanded axiom
+audit passes for 344160 declarations at 3583.2 MiB, permitting only propext,
+Quot.sound and Classical.choice.
