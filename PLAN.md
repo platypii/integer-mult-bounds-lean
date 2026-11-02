@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4185 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4188 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30822,3 +30822,39 @@ amortized-width specialization at 3557.0 MiB. Dependency build passes
 (16752 jobs, 6.1 GiB combined peak). Expanded axiom audit passes for 343921
 declarations at 3578.5 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+
+### S4 checkpoint: pay metadata in the complete fresh-bank gather bill
+
+`PhaseCellAllocatedGatherMetadataCost.metadataVolume_eq` derives the actual
+copied volume from caller readbacks: 6*D+w+Fs.length. The four binary geometry
+words contribute 4*D and the repeated unary router-width master contributes
+2*D. Thus loading and retirement cost 48*D+8*w+8*Fs.length+66 in time and
+72*D+12*w+12*Fs.length+98 in stock.
+
+`selectedAllocatedRealGatherCosts_le` combines those exact costs with the existing
+restoring exposure bound and complete geometry-route bound. Width preparation
+and positive source dimensions absorb all metadata into source-linear traffic;
+metadata adds no dyadic charge. Its linear time coefficient is
+coreExposureTrafficFactor+48*cD+6095, and its linear stock coefficient is
+3*coreExposureTrafficFactor+72*cD+134+12*(streamedDyadicStockCoeff+700).
+
+`selectedPolynomialAllocatedGatherCosts_le` then reuses the existing selected
+replica-exponent, polynomial-width quotient and generated-length route-charge
+lemmas. For either generated length class, the complete fresh-bank gather has
+one global setup allowance, source-linear traffic and the same
+432*(generatedDyadicStageCoeff+300)*source*d*(ell^tau+1) routing term. Replica
+count below tensor volume and polynomial core width discharge the auxiliary
+exponent/quotient gates. This bill applies to the actual `g` used by the selected
+amortized numerical execution theorem.
+
+Next construct exposure/numerical initial readiness and combine these bills with
+the selected numerical trace. Publication/cropping/support, locality and
+full-tensor composition remain open. S4 remains incomplete and not yet
+root-reachable; kappa unchanged.
+
+Guarded metadata-volume check passes at 3463.4 MiB, complete allocated gather
+budget at 3527.6 MiB and polynomial-width specialization at 3510.8 MiB.
+Dependency build passes (16755 jobs, 3.6 GiB combined peak). Expanded axiom
+audit passes for 343924 declarations at 3579.5 MiB, permitting only propext,
+Quot.sound and Classical.choice.
