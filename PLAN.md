@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4066 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4068 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29324,4 +29324,33 @@ remain required. S4 is incomplete; kappa unchanged.
 Guarded dyadic-plan and physical-wiring checks pass at 2563.3 MiB and
 2934.3 MiB. Expanded compatibility passes (16630 jobs, 3.2 GiB combined peak).
 Broad axiom audit passes for 342878 declarations at 3555.3 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: exact routing separates full-width and residual charges
+
+`PhaseCellDyadicTransposeSplitPlan` constructs a plan with exactly `q` full-width
+peel steps followed by a Euclidean remainder. Its quotient/remainder interface
+has precisely the requested exponent `a`, without requiring an exponent-fit
+hypothesis or padding the replica count to a key-radix power.
+
+`Cost.PhaseCellDyadicTransposeCharge` proves width-sensitive bounds over an
+arbitrary plan. The weighted charge is exactly the sum of the weight function
+at the emitted physical stage widths. Any weight bounded by `C*k` costs at
+most `C*(a+b)` on a residual plan. For the interchange weight `k^τ+1`, `τ ≤ 1`,
+the split plan costs at most `q*(b^τ+1)+2*(r+b)`. The exact quotient/remainder
+plan therefore costs at most `(a/b)*(b^τ+1)+4*b`, with real division in that
+last expression. Full-width stages retain their sublinear charge; remainder
+stages are not all priced at the largest original width.
+
+This is the stage-width sum, not the complete physical routing bill. Next apply
+the vendored interchange bound per stage and pay header construction, erasure,
+retained-bank stock and dimension-master preparation. A fixed-machine controller
+must still produce the changing masters; a list of wired stages alone does not
+supply that controller. Actual core/replica capacity rounding, archive caller
+replacement, publication and tensor composition remain open. S4 is incomplete;
+kappa unchanged.
+
+Guarded split-plan and weighted-charge checks pass at 2523.5 MiB and
+2948.3 MiB. Expanded compatibility passes (16632 jobs, 3.3 GiB combined peak).
+Broad axiom audit passes for 342918 declarations at 3555.5 MiB, permitting
 only propext, Quot.sound and Classical.choice.
