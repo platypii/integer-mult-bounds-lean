@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4158 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4162 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30413,3 +30413,39 @@ common-format class and selected class checks pass at 3111.8, 3104.5, 3119.2,
 3466.0, 3651.8 and 3589.6 MiB respectively. Final dependency build passes
 (16557 jobs, 3.6 GiB combined peak). Expanded axiom audit passes for 343726
 declarations at 3578.7 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: singleton routing charge, source volume and selected setup absorption
+
+`PhaseCellTotalDyadicBudget` gives a uniform nonnegative `dyadicRouteCharge`.
+For key exponent zero the structural schedule is empty and its charge is zero;
+otherwise it is the previously proved sharp Euclidean charge. The actual
+restoring-kernel time bound now covers singleton core groups without a positive
+key-exponent assumption or extra padding.
+
+`PhaseCellGeometryGatherSourceBudget` applies the fitting-core volume estimate
+to complete geometry-driven routing. Minimal padding is bounded by
+12*replicas*s*w, including the weighted transpose term by nonnegativity of the
+charge. Full time retains the sharp charge with source volume; full stock is
+polynomial metadata/origin setup plus a constant times source traffic. No old
+replica-radix capacity or supplied padding factor appears.
+
+`PhaseCellSelectedGeometryGatherSetup.selectedGeometryGatherSetup_le` pays both
+complete fixed setup bills from Sizes.T, independently of replica count. It
+reuses the existing polynomial origin bound and selected polynomial-volume
+absorption. A recursion-limit failure in the final generic arithmetic step was
+resolved by direct addition inequalities, without changing proof limits.
+`PhaseCellSelectedGeometryGatherBudget.selectedGeometryGatherCosts_le` composes
+these estimates: selected routing time is at most Sizes.T plus 6000*source
+traffic and the sharp charge term; stock is at most Sizes.T plus constant
+source traffic. These are bounds for the actual complete geometry-driven call.
+
+Next amortize actual ambient exposure, bound the remaining charge at selected
+dimensions, and apply the combined bounds to the selected numerical-class
+trace. Initial selected layout construction, publication and grouped tensor/error
+composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded total charge, source-budget, selected setup and selected complete-budget
+checks pass at 3088.4, 3131.2, 3402.0 and 3427.9 MiB respectively.
+Final dependency build passes (15927 jobs, 3.5 GiB combined peak). Expanded axiom
+audit passes for 343740 declarations at 3574.4 MiB, permitting only propext,
+Quot.sound and Classical.choice.
