@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4082 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4083 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29546,3 +29546,33 @@ checks pass at 2955.6 MiB, 2967.1 MiB and 2954.6 MiB. Expanded compatibility
 passes (16646 jobs, 3.3 GiB combined peak). Broad axiom audit passes for 343067
 declarations at 3560.9 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: arithmetic schedule count and random-access row selector
+
+`PhaseCellDyadicScheduleSelector` supplies the mathematical specification for a
+fixed binary schedule generator. `dyadicStageCount` computes the exact number
+of stages of the canonical Euclidean plan and is bounded by `a+b`.
+`selectDyadicStage` recomputes one requested row by arithmetic descent. In the
+right branch it changes the residual index to `n-2-i`; no recursive schedule
+stack or runtime reversal of a materialized subplan is needed.
+
+The selector returns only the independent unary master values: prefix
+multiplicity, packet width and field bit width. The middle count is one and
+both field widths are equal, so the inverse annotation in a right branch needs
+no extra emitted operation. The lookup theorem proves exact agreement with
+every structural plan stage. Mapping the selector over the stage indices
+reproduces the complete canonical schedule. The flattened value list contains
+exactly five values per stage, in the existing interchange header order.
+
+Next implement the fixed table-machine count/selector loops and emit these
+five values per selected row, with bounded arithmetic and explicit costs.
+The already computed stage count can be exported through the existing unary
+counter conversion rather than recounting individual header words. This file
+is the arithmetic specification and correctness bridge, not yet a host emitter.
+Selected fit/cost absorption, archive replacement, publication and grouped
+tensor composition remain open. S4 is incomplete; kappa unchanged.
+
+Guarded arithmetic count/selector and complete-row enumeration check passes
+at 2547.7 MiB. Expanded compatibility passes (16647 jobs, 3.0 GiB combined peak).
+Broad axiom audit passes for 343130 declarations at 3559.1 MiB, permitting
+only propext, Quot.sound and Classical.choice.
