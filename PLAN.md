@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4143 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4145 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30257,3 +30257,35 @@ Guarded bit-length, placed exponent and composed capacity checks pass at
 Dependency build passes (14104 jobs, 3.3 GiB combined peak). Expanded axiom audit
 passes for 343568 declarations at 3571.1 MiB, permitting only propext, Quot.sound
 and Classical.choice.
+
+### S4 checkpoint: count-driven complete routing with metadata retirement
+
+`PhaseCellCountedDyadicGather.countedGather_exec_within` composes actual
+count-to-exponent/capacity generation, binary header preparation, complete
+padding/routing/dummy retirement and both metadata cleanup passes. Initial
+exponent/capacity/header ports are blank. The original real-core and replica
+counts survive. The exact final record changes only the supplier source; all
+owned unary and binary metadata is retired. The capacity gate follows from
+`le_pow_clog`, rather than remaining a caller hypothesis.
+
+Readiness states ordinary workspace facts at the explicitly generated boundary,
+not supplied executions. The retained real-core count, replica count, packet
+width and metadata width still require production/placement in the selected
+ambient caller; that integration remains open.
+
+`PhaseCellCountedDyadicGatherBudget.countedGatherCosts_le` bounds the entire
+count-driven route by 400*volume+150 plus twice the restoring-kernel time and
+600*volume+256 plus its stock allowance, when metadata width <= payload volume.
+Thus dimension production and both cleanup passes preserve linear overhead
+around the previously proved sharp transpose charge.
+
+Next generate the real-core count from retained ambient geometry, connect this
+count-driven route to ambient exposure and numerical class execution, and absorb
+its bills into selected sizes. Publication and grouped tensor/error composition
+also remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded complete count-driven execution and budget checks pass at 3939.3 and
+3122.6 MiB respectively.
+Final dependency build passes (14161 jobs, 3.4 GiB combined peak). Expanded axiom
+audit passes for 343580 declarations at 3570.1 MiB, permitting only propext,
+Quot.sound and Classical.choice.
