@@ -44,6 +44,7 @@ theorem initializedCaller_exec_within (body : P → Pr P (tapeCount+117) Q (prim
       (∀ j : Fin 117, 31 ≤ j.val → j ≠ 109 → j ≠ 116 → (∀ i, callerWorker i ≠ callerGenerator j) →
         F.R (callerGenerator j) = S.R (callerGenerator j)) ∧
       (bank hstates).Ready V (embStk callerWorker F) ∧
+      F.L = S.L ∧
       ∀ outside, (∀ j, callerGenerator j ≠ outside) → (∀ i, callerWorker i ≠ outside) →
         F.L outside = S.L outside ∧ F.R outside = S.R outside := by
   have hf := hfresh (control 5) (control_ne_workerReg _ _)
@@ -52,7 +53,7 @@ theorem initializedCaller_exec_within (body : P → Pr P (tapeCount+117) Q (prim
   have hp : (widthState V S).R (callerWorker (workerReg (reg pay))) = (replicaKeyWords f).map bitSymbol := by
     simpa only [widthState,callerWorker,Function.update_of_ne
       (TransposeRegisterPlacement.worker_injective.ne (control_ne_workerReg 5 _).symm)] using hsrc
-  obtain ⟨v₂,F,m,hu₂,hm,ht,hcounter,hF,hclear,hretain,hoff⟩ := caller_exec_within body hstates a b C V hC hbits hfit f
+  obtain ⟨v₂,F,m,hu₂,hm,ht,hcounter,hF,hclear,hretain,hleft,hoff⟩ := caller_exec_within body hstates a b C V hC hbits hfit f
     v₁ (widthState V S)
     (by rw [widthState_generator]; exact ha) (by rw [widthState_generator]; exact hb)
     (by rw [widthState_generator]; exact hseed) (by rw [widthState_generator]; exact hz)
@@ -66,7 +67,7 @@ theorem initializedCaller_exec_within (body : P → Pr P (tapeCount+117) Q (prim
     simp only [bank,embStk_R,widthState,callerWorker,Function.update_of_ne
       (TransposeRegisterPlacement.worker_injective.ne (control_ne_workerReg 5 j).symm)]
   rw [hstock] at hm
-  refine ⟨v₂,F,(4*V+4)+m,hu₂.trans hu₁,by omega,?_,hcounter,?_,hclear,?_,?_,?_⟩
+  refine ⟨v₂,F,(4*V+4)+m,hu₂.trans hu₁,by omega,?_,hcounter,?_,hclear,?_,?_,hleft,?_⟩
   · intro depth
     have hp := mn_native_exec_within he₁ 3 prepareWorker_native depth
       (mnSize (Host.mk v S)+depth+(12*V+12)) (by omega)

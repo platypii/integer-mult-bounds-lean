@@ -46,6 +46,7 @@ theorem generatedTransposeCaller_exec_within (body : P → Pr P T' Q (prime+K) U
       (∀ j : Fin 117, j.val < 31 → F.R (g j) = []) ∧
       (∀ j : Fin 117, 31 ≤ j.val → j ≠ 109 → j ≠ 116 → (∀ i, e i ≠ g j) →
         F.R (g j) = S.R (g j)) ∧
+      F.L = S.L ∧
       ∀ outside, (∀ j, g j ≠ outside) → (∀ i, e i ≠ outside) →
         F.L outside = S.L outside ∧ F.R outside = S.R outside := by
   classical
@@ -102,7 +103,16 @@ theorem generatedTransposeCaller_exec_within (body : P → Pr P T' Q (prime+K) U
     intro j hj
     simp only [embStk_R,hgenR _ (bank.hqueueOff _).symm]
   rw [hstock] at hmw
-  refine ⟨vf,F,mg+mw,huf.trans (hum.trans hug),by omega,?_,hcounter,?_,?_,?_,?_⟩
+  have hleft : F.L = S.L := by
+    funext outside
+    by_cases hi : ∃ i, e i = outside
+    · obtain ⟨i,rfl⟩ := hi
+      have hh := congrArg (fun z => z.L i) hF
+      change F.L (e i) = [] at hh
+      exact hh.trans (hready.hL i).symm
+    · exact (countedEmbedded_preserves_external_left e (g 116) outside (bank.program (P := Empty))
+        (by simpa using hi) (hw 0).toExec).trans (hgenL outside)
+  refine ⟨vf,F,mg+mw,huf.trans (hum.trans hug),by omega,?_,hcounter,?_,?_,?_,hleft,?_⟩
   · intro depth
     have htg := mn_native_exec_within hegen 3
       (embProg_native g Empty.elim _ loadedDyadicScheduleHost_native)

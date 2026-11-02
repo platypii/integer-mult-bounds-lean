@@ -58,11 +58,12 @@ theorem initializedTranspose_sized_exec_within (body : P → Pr P (tapeCount+117
       (∀ j : Fin 117, 31 ≤ j.val → j ≠ 109 → j ≠ 116 → (∀ i, callerWorker i ≠ callerGenerator j) →
         F.R (callerGenerator j) = S.R (callerGenerator j)) ∧
       (bank hstates).Ready V (embStk callerWorker F) ∧
+      F.L = S.L ∧
       ∀ outside, (∀ j, callerGenerator j ≠ outside) → (∀ i, callerWorker i ≠ outside) →
         F.L outside = S.L outside ∧ F.R outside = S.R outside := by
   let V := dyadicWordWidth a b C
   obtain ⟨hbits,hfit,hV⟩ := dyadicWordWidth_gates a b C hC
-  obtain ⟨v',F,n,hu,hn,ht,hcounter,hF,hclear,hretain,hready,hoff⟩ := initializedCaller_exec_within body
+  obtain ⟨v',F,n,hu,hn,ht,hcounter,hF,hclear,hretain,hready,hleft,hoff⟩ := initializedCaller_exec_within body
     hstates a b C V hC hbits hfit f v S haSrc hbSrc hseed hz hwidth hblank hcount hL hfresh hsrc
   have hstock : (∑ j, ((embStk callerWorker S).R ((bank hstates).ι j)).length) = 2^a*2^b*C :=
     freshTransposeBankStock_eq a b C f S hfresh hsrc
@@ -70,7 +71,7 @@ theorem initializedTranspose_sized_exec_within (body : P → Pr P (tapeCount+117
   have htime := canonicalDyadicScheduleTime_le (bank hstates) (a+b) a b C V 1 (2^a*2^b*C)
     hb (by omega) hC (by omega) hV
   have hs := dyadicTransposeScheduleStock_le (bank hstates) (dyadicTransposePlan (a+b) a b C (by omega)) V hC hV
-  refine ⟨v',F,n,hu,?_,?_,hcounter,hF,hclear,hretain,hready,hoff⟩
+  refine ⟨v',F,n,hu,?_,?_,hcounter,hF,hclear,hretain,hready,hleft,hoff⟩
   · have hnR : (n : ℝ) ≤ (114*V+141+32921*(V+1)^5 : ℕ)+
         (((dyadicTransposePlan (a+b) a b C (by omega)).wiredStages (fun _ => (bank hstates).dims)).map
           (fun r => (bank hstates).stageTimeCost V (2^a*2^b*C) r+3)).sum+2 := by exact_mod_cast hn

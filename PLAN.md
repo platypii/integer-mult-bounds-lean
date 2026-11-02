@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4118 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4120 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30000,3 +30000,42 @@ budget checks pass at 3077.4, 3063.3, 935.8 and 3101.2 MiB. Dependency build
 passes (13974 jobs, 3.4 GiB combined peak). Expanded axiom audit passes for
 343373 declarations at 3563.4 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: exact restoring bit-plane kernel for the packed gather codec
+
+Reviewing the actual real-gather source confirms it contains packed complex
+symbols, whereas the new dyadic worker routes one Boolean bit plane. The
+existing `packedRouterUsing` codec can handle the split/join structurally, but
+its routing callback needs an exact surrounding-bank restoration contract.
+The existing generic core-row padding/data lemmas already accept arbitrary
+capacity, so they can later use minimal dyadic capacity instead of the old
+replica-radix power.
+
+`PhaseCellCountedEmbeddedFrame.countedEmbedded_preserves_external_left` proves
+that the consuming count touches only its right stack. This closes the
+counter-left exception in the ambient frame. The generated, fixed, initialized
+and sized caller contracts now return preservation of the entire left-stack
+file, in addition to their previous register and output contracts.
+
+`PhaseCellFixedTransposeFrame.initializedCaller_frame` combines worker and
+generator projections into one exact ambient state: only the routed payload
+and prepared width differ. It uses range/ownership reasoning for the register
+maps, including their unused suffix slot; no finite register enumeration.
+
+`PhaseCellRestoringTransposeCaller.restoringCaller_exec_within` adds executed
+retirement of the width. Its exact final stack record changes only the owned
+payload from replica-major to key-major bits; input/output, every left stack,
+retained headers and every other right stack are restored. Retirement costs
+`2*V+2` steps and has zero push allowance, so the restoring kernel time has
+`116*V+143+32921*(V+1)^5` setup/generation/retirement overhead plus the paid
+stage/loop sum, with the existing initialized stock allowance unchanged.
+
+Next instantiate the existing pair codec with actual real/imaginary restoring
+routes, then connect minimal-capacity gathered rows and retire dummy batches.
+Selected resource absorption, gather/compute/restoration/publication and grouped
+tensor/error integration remain open. S4 is incomplete; kappa unchanged.
+
+Guarded exact-frame and restoring-kernel checks pass at 2987.8 and 2996.7 MiB.
+Updated caller/cost dependency chain and final build pass (13976 jobs, 3.3 GiB
+combined peak). Expanded axiom audit passes for 343379 declarations at
+3566.4 MiB, permitting only propext, Quot.sound and Classical.choice.

@@ -26,4 +26,16 @@ theorem countedEmbedded_preserves_external (e : Fin T → Fin T') (count outside
   exact ⟨hex.preserves_stack (HK.lt outside) (registersOn_avoids_left hp outside (by simp)),
     hex.preserves_stack (HK.rt outside) (registersOn_avoids_right hp outside (by simp))⟩
 
+/-- The consuming counter touches only its right stack. -/
+theorem countedEmbedded_preserves_external_left (e : Fin T → Fin T') (count outside : Fin T')
+    (p : Pr Empty T Q A U) (hoff : ∀ i, e i ≠ outside)
+    {body : P → Pr P T' Q A U} {v v' : HS T' Q A U} {S F : Stacks T' A} {n : ℕ}
+    (hex : Exec body (countedLoop count (embProg e Empty.elim p)) (mk v S) n (mk v' F)) :
+    F.L outside = S.L outside := by
+  have hp := embProg_empty_on e (Empty.elim : Empty → P) (fun k => k ≠ HK.lt outside)
+    (by intro k; cases k <;> simp [embK,hoff]) p
+  apply hex.preserves_stack (HK.lt outside)
+  simp only [countedLoop,countedLoopBody,programOn]
+  refine ⟨?_,?_,hp,?_⟩ <;> simp [peekR,actionOn]
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

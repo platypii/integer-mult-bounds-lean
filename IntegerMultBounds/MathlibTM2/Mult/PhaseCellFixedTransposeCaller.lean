@@ -50,6 +50,7 @@ theorem caller_exec_within (body : P → Pr P (tapeCount+117) Q (prime+K) U)
       (∀ j : Fin 117, j.val < 31 → F.R (callerGenerator j) = []) ∧
       (∀ j : Fin 117, 31 ≤ j.val → j ≠ 109 → j ≠ 116 → (∀ i, callerWorker i ≠ callerGenerator j) →
         F.R (callerGenerator j) = S.R (callerGenerator j)) ∧
+      F.L = S.L ∧
       ∀ outside, (∀ j, callerGenerator j ≠ outside) → (∀ i, callerWorker i ≠ outside) →
         F.L outside = S.L outside ∧ F.R outside = S.R outside := by
   exact (bank hstates).generatedTransposeCaller_exec_within body callerGenerator
