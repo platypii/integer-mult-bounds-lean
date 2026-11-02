@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4139 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4140 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30204,3 +30204,26 @@ Guarded generic-header and actual-router header checks pass at 1939.3 and
 3111.3 MiB. Dependency build passes (14101 jobs, 3.3 GiB combined peak).
 Expanded axiom audit passes for 343535 declarations at 3570.4 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: execute and retire routing headers around the gather route
+
+`PhaseCellPreparedDyadicGather.preparedGather_exec_within` composes actual
+three-field header generation, the complete gather router and executed header
+retirement. Starting with blank binary destinations and retained unary masters,
+the exact final state changes only the supplier source; all generated headers
+are erased. Retirement takes 6*V+7 steps and has zero extra stock allowance.
+The total budget includes header generation, complete routing and retirement.
+Three converter size gates follow from the existing routing arithmetic-fit
+conditions and are no longer separate hypotheses.
+
+The readiness hypothesis describes ordinary workspace data at the explicit
+`gatherHeaderState` boundary; no generated header word or execution is supplied
+as initial data. Unary exponents, capacity and group count still require actual
+production and selected-caller integration. This checkpoint does not close that
+gap. Selected class execution, resource absorption, publication and grouped
+tensor/error composition remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded complete prepared-route check passes at 3111.6 MiB. Dependency build
+passes (14102 jobs, 3.4 GiB combined peak). Expanded axiom audit passes for
+343542 declarations at 3571.3 MiB, permitting only propext, Quot.sound and
+Classical.choice.
