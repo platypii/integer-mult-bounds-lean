@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4120 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4128 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30039,3 +30039,52 @@ Guarded exact-frame and restoring-kernel checks pass at 2987.8 and 2996.7 MiB.
 Updated caller/cost dependency chain and final build pass (13976 jobs, 3.3 GiB
 combined peak). Expanded axiom audit passes for 343379 declarations at
 3566.4 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: actual packed Gaussian transpose shares one private worker
+
+`Host.RedirectRegister` redirects a single owned register to a fresh destination
+without moving data. `Host.EmbedOwnedUpdateStock` lifts an actual restoring
+single-register execution over arbitrary spectator storage, preserving its
+exact update and additive stock certificate.
+
+`PhaseCellPlacedRestoringTranspose` applies this to the physical bit-plane
+kernel, with dimension-only time/stock ledgers. The fresh-bank stock fact is
+shared with the existing initialized budget proof rather than proved twice.
+`PhaseCellPackedTransposePlacement` gives seven additional codec registers;
+the real plane uses the original payload and the imaginary run redirects only
+that payload to an extra register. Both runs reuse the same private workspace
+and retained dimension headers. No bit-plane transfer or second swap bank is
+allocated.
+
+`PhaseCellPackedTransposePlanes.planes_exec_within` executes both actual
+routes. Their times add, but the first output has the same length and restores
+the workspace, so its boundary machine size equals its input size. The second
+run therefore shares the same routing reserve instead of adding another one.
+
+`PhaseCellPackedDyadicTranspose` discharges the existing `packedRouterUsing`
+codec callback with those actual routes, then uses `withPayloadCounter` to
+compute the join counter from the actual packed source length. The public
+program theorem requires only fresh buffers and retained headers, with no
+routing callback or precomputed consuming counter. Its exact final record
+changes only the packed source; codec/private scratch and counters are restored.
+Runtime is at most `26*volume+24+2*restoringTimeCost`; stock allowance is
+`40*volume+38+restoringStockAllowance` above initial stock.
+
+`PhaseCellDyadicCoefficientTranspose.coefficient_exec_within` identifies the
+actual input/output with `cstream w (replicaKeyWords f)` and
+`cstream w (keyReplicaWords f)` for Gaussian coefficients and packet width L*w.
+`PhaseCellPackedDyadicBudget` supplies sharp complete time and linear-volume
+stock bounds for the packed program's actual ledgers. This closes the packed
+complex-symbol ABI needed by the existing gather path.
+
+Next connect minimally padded gathered rows to this program, retire dummy core
+batches and replace the old replica-radix-power archive route. Selected header
+production/resource absorption and gather/compute/restoration/publication plus
+grouped tensor/error integration remain open. S4 is incomplete; kappa unchanged.
+
+Guarded owned-update embedding, register redirection, placed kernel, plane
+placement/execution, packed program, coefficient ABI and packed budget checks
+pass at 1381.2, 1384.9, 2986.7, 2989.1/2996.4, 3007.7, 2988.8 and 3107.0 MiB.
+Final dependency build passes (13995 jobs, 3.4 GiB combined peak). Expanded axiom
+audit passes for 343431 declarations at 3564.7 MiB, permitting only propext,
+Quot.sound and Classical.choice.

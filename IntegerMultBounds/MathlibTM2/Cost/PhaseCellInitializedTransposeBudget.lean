@@ -20,15 +20,8 @@ theorem freshTransposeBankStock_eq (a b C : ℕ)
     (f : Fin (2^a) → Fin (2^b) → Fin C → Bool) (S : Stacks (tapeCount+117) (prime+K))
     (hfresh : ∀ i, i ≠ workerReg (reg pay) → i ≠ FixedStreamedBank.control 7 → S.R (callerWorker i) = [])
     (hsrc : S.R (callerWorker (workerReg (reg pay))) = (replicaKeyWords f).map bitSymbol) :
-    (∑ j : Fin (swapT 6), (S.R (callerWorker (workerReg j))).length) = 2^a*2^b*C := by
-  calc
-    _ = (S.R (callerWorker (workerReg (reg pay)))).length := by
-      apply Finset.sum_eq_single (reg pay)
-      · intro j hj hne
-        rw [hfresh _ (workerReg_injective.ne hne) (control_ne_workerReg 7 j).symm]
-        rfl
-      · simp
-    _ = _ := by rw [hsrc]; simp [replicaKeyWords,Nat.mul_assoc]
+    (∑ j : Fin (swapT 6), (S.R (callerWorker (workerReg j))).length) = 2^a*2^b*C :=
+  freshBankStock_eq a b C f S hfresh hsrc
 
 theorem initializedTranspose_sized_exec_within (body : P → Pr P (tapeCount+117) Q (prime+K) U)
     (hstates : FixedStreamedBank.stateCount ≤ Q) (a b C : ℕ) (hb : 0 < b) (hC : 0 < C)

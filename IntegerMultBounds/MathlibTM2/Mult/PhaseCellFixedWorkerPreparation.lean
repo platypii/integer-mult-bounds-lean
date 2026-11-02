@@ -102,6 +102,28 @@ theorem prepareWorker_native : mnNativePushBound 3 (prepareWorker (P := P) (Q :=
   simp [prepareWorker,ucopy,umulSym,scanR,drainR,popDo,whileR,keepIn,pushN,
     moveR,moveStep,peekR,mnNativePushBound,mnActPush]
 
+theorem freshBankStock_eq (a b C : ℕ)
+    (f : Fin (2^a) → Fin (2^b) → Fin C → Bool) (S : Stacks (tapeCount+117) (prime+K))
+    (hfresh : ∀ i, i ≠ workerReg (reg pay) → i ≠ control 7 → S.R (callerWorker i) = [])
+    (hsrc : S.R (callerWorker (workerReg (reg pay))) = (replicaKeyWords f).map bitSymbol) :
+    (∑ j : Fin (swapT 6), (S.R (callerWorker (workerReg j))).length) = 2^a*2^b*C := by
+  calc
+    _ = (S.R (callerWorker (workerReg (reg pay)))).length := by
+      apply Finset.sum_eq_single (reg pay)
+      · intro j hj hne
+        rw [hfresh _ (workerReg_injective.ne hne) (control_ne_workerReg 7 j).symm]
+        rfl
+      · simp
+    _ = _ := by rw [hsrc]; simp [replicaKeyWords,Nat.mul_assoc]
+
+theorem payload_off_generator (j : Fin 117) : callerGenerator j ≠ callerWorker (workerReg (reg pay)) := by
+  change TransposeRegisterPlacement.generator (control 7) j ≠ TransposeRegisterPlacement.worker (workerReg (reg pay))
+  by_cases hj : j = 109
+  · subst j
+    rw [TransposeRegisterPlacement.generator_queue]
+    exact TransposeRegisterPlacement.worker_injective.ne (control_ne_workerReg 7 _)
+  · exact TransposeRegisterPlacement.generator_off_worker (control 7) j hj _
+
 end
 end FixedStreamedBank
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
