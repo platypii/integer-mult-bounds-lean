@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4070 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4072 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29383,4 +29383,34 @@ tensor composition remain open; kappa unchanged.
 Guarded complete-stage and schedule-traffic checks pass at 3054.9 MiB and
 3041.1 MiB. Expanded compatibility passes (16634 jobs, 3.4 GiB combined peak).
 Broad axiom audit passes for 342923 declarations at 3557.8 MiB, permitting
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: binary dimension rows populate and release one reusable master bank
+
+`PhaseCellReadUnaryDimension` reuses the existing binary endpoint reader and
+immediately erases its duplicate output. It consumes exactly one fixed-width
+binary dimension word, emits its unary master and restores all conversion
+scratch. Time is bounded by `19*V+12*x+24`, with the native push bound supplying
+a simultaneous-stock guarantee on the same execution.
+
+`PhaseCellReadDimensionRow` reads an arbitrary structural row into distinct
+fixed destination ports. The program depends only on those ports, not on the
+mathematical dimension values. Exact stream advancement, master values and
+spectator frame follow by structural list induction; scratch is reused after
+every word. `releaseDimensionRow_exec` pays erasure and restores the original
+master bank. A row of m dimensions bounded by N, with binary width at most N
+and N positive, costs at most `55*m*N+1` to prepare. The five interchange
+masters can therefore reuse one fixed bank between stage rows.
+
+This implements the row-consumption/preparation primitive, not the complete
+runtime schedule controller. The source stream still must be generated from
+the selected dimensions, and the counted stage loop must compose row reading,
+the actual swap and master release. It must also prove initial routed-bank
+stock, selected capacities and complete time/stock bounds. Archive replacement,
+publication and grouped tensor composition remain open. S4 remains incomplete;
+kappa unchanged.
+
+Guarded scalar-reader and structural-row checks pass at 1940.5 MiB and
+1972.7 MiB. Expanded compatibility passes (16636 jobs, 2.7 GiB combined peak).
+Broad axiom audit passes for 342960 declarations at 3559.0 MiB, permitting
 only propext, Quot.sound and Classical.choice.
