@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4166 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4167 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30510,4 +30510,35 @@ Guarded generic charge, core-count/log bounds and selected full-core charge
 checks pass at 3091.8, 1878.9 and 3159.2 MiB respectively.
 Final dependency build passes (14408 jobs, 3.4 GiB combined peak). Expanded axiom
 audit passes for 343750 declarations at 3575.0 MiB, permitting only propext,
+Quot.sound and Classical.choice.
+
+### S4 checkpoint: clipped singleton cores and both-class actual gather budget
+
+`PhaseCellCoreGatherCount.clippedCoreGather_index` proves that every fitting
+core in the clipped-length class has index s/width. Its no-duplicates schedule
+therefore has at most one member. The proof uses quotient ownership and the
+actual clipped length, not concrete cases or a generated certificate.
+
+`PhaseCellSelectedCoreRouteCharge.selectedCoreGroupRouteCharge_le` now covers
+both lengths in the actual generated `coreGatherLengths` list. The full group
+uses the dimension-times-axis charge theorem; the clipped group has key exponent
+zero and zero routing charge. Singleton handling no longer requires a positive
+key exponent or enlarged capacity.
+
+`PhaseCellSelectedCoreGroupGatherBudget.selectedCoreGroupRealGatherCosts_le`
+applies that bound to the complete actual `GeometryRealGatherData` bill. Time
+is one Sizes.T setup payment plus source-linear work and a fixed coefficient
+times source traffic*d*(ell^tau+1); stock remains Sizes.T plus source-linear
+traffic. This includes actual exposure, all routing setup and retirement.
+Replica-exponent and quotient gates remain explicit and must be derived from
+the selected tensor/core layout. Their construction is not claimed here.
+
+Next derive those layout gates, apply this bill to selected numerical-class
+execution and complete publication/grouped tensor-error composition. S4 remains
+incomplete; kappa unchanged.
+
+Guarded clipped-core, both-class charge and actual both-class budget checks pass
+at 1881.9, 3160.0 and 3435.9 MiB respectively.
+Final dependency build passes (15976 jobs, 3.5 GiB combined peak). Expanded axiom
+audit passes for 343754 declarations at 3575.2 MiB, permitting only propext,
 Quot.sound and Classical.choice.

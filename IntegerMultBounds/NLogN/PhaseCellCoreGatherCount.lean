@@ -59,4 +59,31 @@ theorem fullCoreGather_clog_bounds (s width radius ell : ℕ) (hw : 0 < width)
   have hupper := (coreGatherIndices_length_le s width radius (width+2*radius) hw).trans hs
   exact ⟨(Nat.clog_le_iff_le_pow (by decide)).mpr hupper,by omega⟩
 
+/-- A clipped-length group contains only the final quotient core. -/
+theorem clippedCoreGather_index (s width radius k : ℕ) (hw : 0 < width)
+    (hk : k ∈ coreGatherIndices s width radius (s%width+2*radius)) : k = s/width := by
+  have hspec := (coreGatherIndices_spec s width radius _ k hk).2.2
+  have hindex : k ∈ coreIndices s width := (List.mem_filter.mp hk).1
+  have hstart := coreIndex_start_lt s width k hw hindex
+  have hmod := Nat.mod_lt s hw
+  have hdiv := Nat.div_add_mod s width
+  have hlen : coreLength s width k = s%width := by omega
+  unfold coreLength coreStart at hlen
+  dsimp only [coreStart] at hstart
+  have htail : s-k*width = s%width := by omega
+  rw [Nat.mul_comm width (s/width)] at hdiv
+  have he : k*width = (s/width)*width := by omega
+  exact mul_right_cancel₀ (by omega : width ≠ 0) he
+
+theorem clippedCoreGather_length_le_one (s width radius : ℕ) (hw : 0 < width) :
+    (coreGatherIndices s width radius (s%width+2*radius)).length ≤ 1 := by
+  have hnd : (coreGatherIndices s width radius (s%width+2*radius)).Nodup := by
+    unfold coreGatherIndices coreIndices
+    exact List.nodup_range.filter _
+  rw [←List.toFinset_card_of_nodup hnd]
+  have hsubset : (coreGatherIndices s width radius (s%width+2*radius)).toFinset ⊆ {s/width} := by
+    intro k hk
+    exact Finset.mem_singleton.mpr (clippedCoreGather_index s width radius k hw (List.mem_toFinset.mp hk))
+  simpa using Finset.card_le_card hsubset
+
 end IntegerMultBounds.NLogN.PhaseCellMatrix

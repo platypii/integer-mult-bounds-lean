@@ -55,4 +55,21 @@ theorem selectedFullCoreRouteCharge_le {n : ℕ} (h : Sizes.Big n) (i : Fin (Siz
   obtain ⟨hb,hell⟩ := fullCoreGather_clog_bounds (Sizes.s n i) width radius (Sizes.ℓ n) hw hr hs hquot
   exact dyadicRouteCharge_le_dimension _ _ _ _ ha hb hell (selectedAxisLog_le_dimension_sq h)
 
+/-- Both generated length classes have the same charge bound. The clipped
+class has at most one core, hence no dyadic routing stages. -/
+theorem selectedCoreGroupRouteCharge_le {n : ℕ} (h : Sizes.Big n) (i : Fin (Sizes.d n))
+    (a width radius L : ℕ) (ha : a ≤ Sizes.d n*Sizes.ℓ n) (hw : 0 < width) (hr : radius ≤ width)
+    (hquot : 2^((Sizes.ℓ n+1)/2)+2 ≤ Sizes.s n i/width)
+    (hL : L ∈ coreGatherLengths (Sizes.s n i) width radius) :
+    dyadicRouteCharge a (Nat.clog 2 (coreGatherIndices (Sizes.s n i) width radius L).length) ≤
+      18*Sizes.d n*((Sizes.ℓ n : ℝ)^Parameters.tau+1) := by
+  simp only [coreGatherLengths,List.mem_dedup,List.mem_cons,List.not_mem_nil,or_false] at hL
+  rcases hL with rfl | rfl
+  · exact selectedFullCoreRouteCharge_le h i a width radius ha hw hr hquot
+  · have hcount := clippedCoreGather_length_le_one (Sizes.s n i) width radius hw
+    have hzero := Nat.clog_of_right_le_one hcount 2
+    rw [hzero]
+    simp only [dyadicRouteCharge,ite_true]
+    positivity
+
 end IntegerMultBounds.MathlibTM2.Cost
