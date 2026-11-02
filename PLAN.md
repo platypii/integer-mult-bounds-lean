@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4053 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4057 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29099,3 +29099,41 @@ Guarded selected generated-input execution check passes at 3544.3 MiB.
 Expanded compatibility passes (16617 jobs, 3.6 GiB combined peak).
 Broad axiom audit passes for 342516 declarations at 3554.1 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: actual ambient gather feeds generated-input computed classes
+
+`ComputedClassBanks.InputReady` packages only ordinary table, geometry and
+blank-bank facts. Its `of_frame` theorem transfers those facts across the
+single source-stream update produced by exposure; the retained dimension
+bank is protected by its existing separation from the class bank.
+`inputClassRun_exec_of_ready` consumes this record using the existing actual
+export/class/release execution theorem.
+
+`ArchiveTilePlan.RealGatherData` packages the existing ambient gather's
+ordinary ports, mathematical geometry and initial tape facts. Its execution
+method invokes `expose_real_gather_exec_within`; it does not contain a supplied
+execution or a guessed output stream.
+
+`ComputedClassBanks.exposedInputClassRun_exec` now executes the physical real
+ambient gather followed by the generated-input computed class. The gather's
+returned stream is matched to the mathematical job payload list, including
+its explicit reversed replica order. Readiness transfers structurally across
+the exact gather frame. The class consumes the temporary routed stream,
+cleans its generated inputs and returns certified per-job output. The final
+state differs from the original only at the accumulated-result register;
+the temporary archive restores to its original empty word. The initial
+left-bank-empty invariant is explicit. Gather and class time/stock allowances
+are composed on this same execution.
+
+The new composition currently uses generic mathematical job profiles and the
+generic class reserve. Next instantiate the proper-core family on the
+reversed replica list, attach the existing selected class bounds and actual
+gather resource estimates, then publish/scatter cores and restore tensor/R4
+layouts. Concrete global wiring and retained binary geometry construction
+remain to be instantiated. S4 remains incomplete; kappa unchanged.
+
+Guarded exposed generated-input class check passes at 3464.0 MiB.
+Expanded compatibility passes (16621 jobs, 3.5 GiB combined peak).
+Guarded ordinary-readiness frame check passes at 3432.0 MiB. Broad axiom
+audit passes for 342637 declarations at 3556.4 MiB, permitting only propext,
+Quot.sound and Classical.choice.
