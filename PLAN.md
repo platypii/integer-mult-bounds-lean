@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4076 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4079 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29477,3 +29477,34 @@ Guarded scope-stock and streamed-stage stock checks pass at 2938.3 MiB and
 2964.4 MiB. Expanded compatibility passes (16640 jobs, 3.3 GiB combined peak).
 Broad axiom audit passes for 342975 declarations at 3558.9 MiB, permitting
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: fixed streamed-bank readiness and structural counted-loop interface
+
+`PhaseCellCountedListLoopStock` presents the existing indexed chronological
+loop theorem over a mathematical list. It sums each stage's own time bill,
+pays three loop steps per stage and two terminal steps, and shares one reserve.
+`PhaseCellCountedListBankLoopStock` embeds a closed fixed worker under an
+external consuming counter. Counter changes cannot affect worker readiness;
+no stage-dependent register bank or program is introduced.
+
+`PhaseCellStreamedChunkBank` packages fixed wiring and ordinary reusable-bank
+readiness. Queue contents and the owned payload are excluded from readiness.
+`Ready.of_frame` derives readiness after a queue/payload-only update. Its actual
+`stage_exec_within` method calls the proved streamed interchange and returns
+restored readiness, same-run time/stock bounds and a non-growing boundary.
+`stage_exec_uniform` uses deterministic execution uniqueness to obtain one
+returned execution carrying the stock bound at every depth, as required by the
+counted shared-reserve interface.
+
+The generic list-loop interface and actual worker-bank step now agree. Next
+instantiate the queue/payload invariant over the mathematical transpose schedule
+and its binary rows; that routed list invariant is not yet proved here. Binary
+schedule generation, initial routed-bank bounds, selected capacities and cost
+absorption, archive replacement, publication and grouped tensor composition
+remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded list-loop, external-counter list-bank loop and streamed-bank checks
+pass at 1393.4 MiB, 1389.5 MiB and 2970.3 MiB. Expanded compatibility passes
+(16643 jobs, 3.3 GiB combined peak). Broad axiom audit passes for 343041
+declarations at 3559.6 MiB, permitting only propext, Quot.sound and
+Classical.choice.
