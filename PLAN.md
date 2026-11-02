@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4137 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4139 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30175,3 +30175,32 @@ Guarded readiness and ambient composition checks pass at 3099.8 and 3099.4 MiB.
 Dependency build passes (14109 jobs, 3.3 GiB combined peak). Expanded axiom audit
 passes for 343493 declarations at 3569.9 MiB, permitting only propext, Quot.sound
 and Classical.choice.
+
+### S4 checkpoint: runtime padded routing headers from unary dimensions
+
+`PhaseCellPaddedHeaderList` mirrors the existing canonical-header-list pattern
+for fixed-width binary words. One structural list induction composes the
+existing linear-time `unaryBinaryWidth` converter with shared restored scratch,
+borrowed unary sources and a retained width. Destinations have exact readback
+and an external frame. Its native push bound is 2, independently of list size.
+
+`PhaseCellDyadicGatherHeaders.gatherHeaders_exec_within` instantiates this
+language for the actual router's exponent-a, exponent-b and packet-width binary
+ports 97, 98 and 102. Unary exponent masters occupy unused generator ports 84
+and 85; packet width reuses port 82. One six-register workspace is shared and
+restored across all three fields. The exact final record changes only the
+three binary destinations. Time is at most 21*(a+b+packet)+36*V+85, with twice
+that amount as an additive stock bound. All register disjointness is proved
+from the injective placement, with no finite bank enumeration.
+
+This executes conversion from unary masters; it does not yet derive the
+exponents or padded core capacity from ambient geometry. Next connect header
+preparation to GatherReady, then produce those unary dimensions from the actual
+core count and replica geometry. Selected class execution, resource absorption,
+publication and grouped tensor/error composition remain open. S4 is incomplete;
+kappa unchanged.
+
+Guarded generic-header and actual-router header checks pass at 1939.3 and
+3111.3 MiB. Dependency build passes (14101 jobs, 3.3 GiB combined peak).
+Expanded axiom audit passes for 343535 declarations at 3570.4 MiB, permitting
+only propext, Quot.sound and Classical.choice.
