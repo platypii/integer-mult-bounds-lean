@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4107 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4110 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -29849,3 +29849,36 @@ Guarded composed-caller check passes at 3015.8 MiB. Dependency build passes
 declarations at 3561.8 MiB, permitting only propext, Quot.sound and
 Classical.choice. A harmless exponent-evaluation warning leaves the existing
 coefficient-bound tower unevaluated; no proof limits were changed.
+
+### S4 checkpoint: concrete fixed streamed bank and caller placement
+
+`PhaseCellFixedStreamedBank` constructs the previously abstract streamed worker
+with six caller tapes: five interchange headers and one payload. It retains the
+existing swap machine's private bank and adds nineteen distinct dimension,
+reader and generator controls. Every injectivity, reader/generator separation,
+protected-register and private-bank condition is proved structurally from
+register ranges. Its size is `swapT 6+19`; its state requirement is the fixed
+`swapStates` for these headers and payload.
+
+`PhaseCellTransposeRegisterPlacement` places a 117-register metadata generator
+beside any T-register worker, using T+117 registers. Only generator output 109
+is redirected into the worker queue. All arithmetic slots and output count 116
+remain outside the worker. Generic range proofs establish both map injections,
+arithmetic-bank separation, queue identity and count separation.
+
+`PhaseCellFixedTransposeCaller.caller_exec_within` instantiates the complete
+physical generator/transpose theorem with these actual data. The caller has
+`swapT 6+136` registers and requires only sufficient state capacity and ordinary
+input contents/readiness; callers no longer supply a streamed-bank record,
+register maps or compatibility proofs. It retains the previous exact output,
+count consumption, arithmetic cleanup, external frame and time/stock bounds.
+
+Next execute initial table/worker setup from retained headers, then prove
+selected geometry and resource absorption. Actual selected gather/compute/
+restoration integration and grouped tensor/error composition remain open.
+S4 is incomplete; kappa unchanged.
+
+Guarded fixed-bank, placement-map and instantiated-caller checks pass at
+2960.8, 1394.5 and 2985.5 MiB. Dependency build passes (13673 jobs, 3.3 GiB
+combined peak). Expanded axiom audit passes for 343314 declarations at
+3562.2 MiB, permitting only propext, Quot.sound and Classical.choice.
