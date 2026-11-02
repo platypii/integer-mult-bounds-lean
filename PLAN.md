@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4133 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4135 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -30119,3 +30119,31 @@ Guarded gather execution check passes at 3116.2 MiB; core-volume and padded-volu
 checks pass at 1874.2 and 1873.9 MiB. Final dependency build passes (14099 jobs,
 2.5 GiB combined peak). Expanded axiom audit passes for 343462 declarations at
 3567.7 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: ambient dyadic gather placement and complete boundary budgets
+
+`PhaseCellPlacedDyadicGather.placedGatherRoute_exec_within` places the complete
+padding/router/retirement program into an arbitrary injective ambient register
+map. The existing owned-update embedding theorem preserves all spectator
+storage and the dimension-only additive stock allowance. Local empty left
+stacks yield an exact ambient final record changing only the supplier source;
+no ambient left-stack clearing or extra bank allocation is performed.
+
+`PhaseCellDyadicGatherBudget` bounds padding and dummy retirement together by
+150 times padded payload volume in time and 260 times volume in stock. The
+complete actual gather route therefore costs at most 176*volume+24 plus twice
+the restoring-kernel time, and 300*volume+38 plus its stock allowance. Sharp
+complete time and polynomial-width-plus-linear-volume stock corollaries reuse
+the existing transpose budget. The sharp time corollary requires positive key
+exponent; the general execution and boundary bounds also cover exponent zero.
+
+Next compose actual ambient exposure with this placed route and produce the
+retained dimensions in the selected caller, handling singleton/empty key groups
+explicitly. Selected resource absorption, compute/restoration/publication and
+grouped tensor/error composition remain open. S4 remains incomplete; kappa
+unchanged.
+
+Guarded placement and complete-budget checks pass at 3095.8 and 3133.3 MiB.
+Dependency build passes (14152 jobs, 5.6 GiB combined peak).
+Expanded axiom audit passes for 343469 declarations at 3569.5 MiB, permitting
+only propext, Quot.sound and Classical.choice.
