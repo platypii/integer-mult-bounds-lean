@@ -56,6 +56,20 @@ theorem copyWordHeadersR_off (value : Fin T → List (Fin (A+4))) (rs : List (Fi
     rw [copyWordHeadersR,ih _ (by intro s hs; exact hi s (by simp [hs]))]
     exact Function.update_of_ne (hi r (by simp)).symm _ _
 
+/-- Loading retained headers commutes with an unrelated data-port update. -/
+theorem copyWordHeadersR_update_off (value R : Regs T A) (rs : List (Fin T × Fin T))
+    (k : Fin T) (xs : List (Fin (A+4)))
+    (hoff : ∀ r ∈ rs, r.1 ≠ k ∧ r.2 ≠ k) :
+    copyWordHeadersR (Function.update value k xs) rs (Function.update R k xs) =
+      Function.update (copyWordHeadersR value rs R) k xs := by
+  induction rs generalizing R with
+  | nil => rfl
+  | cons r rs ih =>
+    have hr := hoff r (by simp)
+    simp only [copyWordHeadersR,Function.update_of_ne hr.1]
+    rw [Function.update_of_ne hr.2,Function.update_comm hr.2.symm]
+    exact ih _ (by intro p hp; exact hoff p (by simp [hp]))
+
 theorem copyWordHeadersR_get (value : Fin T → List (Fin (A+4))) (rs : List (Fin T × Fin T))
     (hnd : (rs.map Prod.snd).Nodup) (R : Regs T A) (r : Fin T × Fin T) (hr : r ∈ rs) :
     copyWordHeadersR value rs R r.2 = value r.1++R r.2 := by

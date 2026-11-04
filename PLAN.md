@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4246 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4248 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31753,3 +31753,39 @@ Guarded dimension-frame check passes at 2730.2 MiB and retained actual-output
 publication at 3920.6 MiB. Expanded dependency build passes (16694 jobs, 4.3 GiB
 combined peak). Axiom audit passes for 344109 declarations at 3155.3 MiB,
 permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: publication metadata after numerical suffix restoration
+
+Contract review found that `RestoringGatherData.hRblank` requires the entire
+routing suffix to start blank. Publication masters therefore cannot be installed
+there before selected numerical execution. Load them after that execution returns;
+then publish and retire them before the next class. This ordering is now an
+explicit prerequisite of the selected numerical/publication composition.
+
+`PhaseCellAllocatedPublicationHeaders` instantiates the existing restoring
+whole-word copier for thirteen retained caller sources: four dimension masters,
+shared core/word/count headers, geometry width, ambient length, origin packet and
+three binary transpose dimensions. It preserves every caller-prefix tape,
+including the actual numerical result. Projected reads match publication's
+redirected data-port placement. The structural `copyWordHeadersR_update_off`
+lemma proves that loading commutes with the numerical-result write when retained
+sources exclude that result; no numerical rerun or duplicate output certificate
+is needed.
+
+`PhaseCellPublicationHeaderRetirement` clears exactly these copied metadata words
+while preserving the published ambient destination. For total copied volume M,
+loading costs 6*M+79 with stock twice that bound; retirement costs 2*M+27 with
+zero additional stock. This copies retained packets; it does not generate the
+caller masters or origin packet yet.
+
+Next derive publication readiness from this loaded bank and join the selected
+numerical trace, loader, retained publication and retirement. Use the selected
+gather's existing power-of-two replica fact and preserve its explicit reversed
+replica order. Caller packet generation, grouped/seam execution, shared tensor
+setup, aggregate costs and root integration remain open. S4 remains incomplete.
+
+Guarded whole-word update check passes at 1752.5 MiB, publication loader at
+3078.6 MiB and metadata retirement at 3079.5 MiB. Expanded dependency build
+passes (16696 jobs, 5.9 GiB combined peak). Axiom audit passes for 344128
+declarations at 3155.9 MiB, permitting only propext, Quot.sound and Classical.choice.
