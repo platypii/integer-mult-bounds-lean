@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedAllocatedPublication
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLoadedPublicationHeaderFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationHeaderRetirement
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationHeaderWords
 
 /-! Actual numerical output is published from a fresh routing suffix. Retained
 caller packets are loaded after numerical execution and retired after scatter. -/
@@ -18,13 +19,6 @@ noncomputable section
 open FixedStreamedBank ScalarPlacement ScalarPlacement.ComputedClassBanks
 variable {T Q K s t width : ℕ} [NeZero s] [NeZero t] {P U : Type}
 
-def publicationHeaderWords (a b L W V s : ℕ) (origins : List ℕ)
-    (originTail : List (Fin (prime+K+4))) : Fin 13 → List (Fin (prime+K+4)) :=
-  ![List.replicate a tick,List.replicate b tick,List.replicate (2^a) tick,
-    List.replicate (2^b) tick,List.replicate L tick,List.replicate W tick,
-    List.replicate origins.length tick,List.replicate V tick,List.replicate s tick,
-    origins.flatMap (binSyms V)++originTail,binSyms V a,binSyms V b,binSyms V (L*W)]
-
 def callerPublicationProgram (src : Fin 13 → Fin T) (inputPort outputPort : Fin T)
     (hstates : FixedStreamedBank.stateCount ≤ Q) : Pr P (T+tapeCount) Q (prime+K) U :=
   .seq (loadPublicationHeaders src) (.seq (retainedPublicationProgram inputPort outputPort hstates)
@@ -39,8 +33,8 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
     (g : CorePublicationClass s width) (hkeys : batch.records.map (fun r => r.k) = g.indices)
     (hcoreWidth : ∀ r ∈ batch.records, r.coreWidth = width) (hw : 0 < width)
     (hlength : L = g.length) (hw1 : 1 ≤ batch.W)
-    (hpacket : 0 < L*batch.W) (hbits : a+b < V) (hfit : (L*batch.W)*2^(a+b) < 2^V) (hA : 4 ≤ prime+K)
-    (hcapacity : batch.records.length ≤ 2^a) (depth : ℕ)
+    (bounds : PublicationShapeBounds a b L batch.W V s batch.records.length)
+    (hA : 4 ≤ prime+K) (depth : ℕ)
     (ambient : Fin (2^b) → List (Fin (prime+K+4))) (hambient : ∀ j, (ambient j).length = s*batch.W)
     (outputTail : List (Fin (prime+K+4)))
     (v : HS (T+tapeCount) Q (prime+K) U) (S : Stacks (T+tapeCount) (prime+K))
@@ -53,7 +47,7 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
     (hleft : ∀ i, (embStk (publicationPlacement inputPort outputPort) S).L i = [])
     (hsource : S.R (Fin.castAdd tapeCount inputPort) = [])
     (hdst : S.R (Fin.castAdd tapeCount outputPort) = (List.ofFn ambient).flatten++outputTail)
-    (hwV : batch.W < 2^V) (hsV : s < 2^V) (hvolume : s*batch.W < 2^V) :
+    :
     ∃ rows : batch.Rows, ∃ v' n, v'.user = v.user ∧
       n ≤ (6*publicationMetadataVolume src S+79)+
         (retainedPublicationTimeCost (K := K) hstates a b L V batch.W batch.records.length g hw outputs.reverse.flatten.length+
@@ -66,6 +60,13 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
         (mk v {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten}) n
         (mk v' {S with R := (Function.update S.R (Fin.castAdd tapeCount outputPort)
           ((List.ofFn fun j => g.output batch.W hw (rows.classRows g hkeys j) (ambient j)).flatten++outputTail))}) := by
+  have hpacket := bounds.packetPositive
+  have hbits := bounds.stageBits
+  have hfit := bounds.volumeFit
+  have hcapacity := bounds.rowCapacity
+  have hwV := bounds.wordFit
+  have hsV := bounds.ambientFit
+  have hvolume := bounds.ambientVolumeFit
   let value (j : Fin tapeCount) := if j = publicationGeometryInput 0 then a else
     if j = publicationGeometryInput 1 then b else L*batch.W
   have hvalues (i : Fin 3) : value (publicationGeometryInput i) = ![a,b,L*batch.W] i := by

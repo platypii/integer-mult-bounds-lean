@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4253 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4255 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31905,3 +31905,46 @@ publication-origin checks pass at 1773.9, 1751.5, 1819.3, 1945.4 and 1912.7 MiB
 respectively. Expanded compatibility build passes (16701 jobs, 32.5 GiB combined
 peak, 6.3 minutes; final artifact refresh 2.6 GiB). Axiom audit passes for 344184
 declarations at 3175.4 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: selected execution generates and retires its origin/count packets
+
+The selected numerical/publication theorem now generates publication's origin
+packet and unary count after numerical execution, feeds them to the actual
+publication trace, and clears the two owned caller words afterward. Source
+positions 9 and 6 start blank; the retained-word premise now covers only the
+other eleven positions. The full endpoint still changes only the ambient caller
+destination. The old selected interface with prebuilt origin/count packets can
+be restored from 9abce1f0.
+
+`PhaseCellOwnedOriginPacket` supplies the common two-register state, its frame,
+commutation with an external numerical-result update, and nonincreasing retirement
+while preserving ambient output. `placedOwnedPublicationOrigins_after_update_exec_within`
+runs the actual restoring scan beside that numerical result; it has no execution
+callback premise. The selected proof uses this small-module endpoint directly.
+Origin generation is charged once per class, with preparedCoreOriginsCost time
+and three times that stock allowance. Retiring the generated caller packet and
+count adds 2*(classCount*V+classCount)+5 time and zero stock, after publication's
+working copies have already been retired.
+
+The thirteen-word layout now lives in `PhaseCellPublicationHeaderWords`, independent
+of numerical producer data and generic in the alphabet. Its structural frame
+derives all thirteen source words from the eleven retained words plus the actual
+generated packet/count. PublicationShapeBounds collects exactly the seven existing
+rectangular/ambient bounds shared by caller and selected execution. PublicationOriginInput
+collects ordinary retained binary geometry and scratch facts for the origin scan;
+it assumes no origin/key list or execution witness. Cost proofs use the scalar
+job-count equality instead of expanding the entire job list.
+
+Next instantiate the origin placement in the existing caller/exposure storage
+and derive its ordinary input facts from retained numerical geometry. Then generate
+the other eleven packet words from shared masters. Grouped/seam execution, outer
+replica order, shared tensor setup, aggregate asymptotic costs and root integration
+remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded owned-packet retirement passes at 2672.4 MiB, shared packet layout at
+2671.8 MiB, placed owned-origin production at 2795.8 MiB, caller publication at
+4019.3 MiB and selected generated-origin composition at 4127.9 MiB (about 4 GiB).
+Expanded dependency build passes (16703 jobs, 4.5 GiB combined peak). Axiom audit
+passes for 344222 declarations at 3176.4 MiB, permitting only propext, Quot.sound
+and Classical.choice. Default proof limits are unchanged.

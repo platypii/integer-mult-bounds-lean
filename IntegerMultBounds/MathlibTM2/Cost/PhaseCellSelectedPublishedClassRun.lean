@@ -5,6 +5,8 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerPublication
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCommonCorePublicationBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBatchReplicaCount
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedPublicationPlacement
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedPublicationOrigins
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOwnedOriginPacket
 
 /-! Selected numerical execution feeds its actual result directly to restoring
 publication. The final state updates only the ambient caller destination. -/
@@ -110,35 +112,44 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
           495*D+24*Fs.length)))
     let runProg : Pr P ((T+175)+PackedTranspose.tapeCount) Q (prime+K) U := (inputTableClassProgram rg masters widthMaster zeroMaster (initializedClassProgram (fullExposedClassBank bank) src
           (.seq g.program (inputClassProgram (fullExposedClassBank bank) (fullExposedClassBank_injective bank hinj) b rg))))
+    let origins := (coreSubsetPublicationWindows (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀))
+      pubClass.length g.hwidth pubClass.indices pubClass.sublist).origins
     ∀ (a Vpub : ℕ) (output : Fin T) (hout : bank (.recovery (.control .result)) ≠ output)
     (pubSrc : Fin 13 → Fin T) (hpubOff : ∀ j, pubSrc j ≠ bank (.recovery (.control .result)))
     (ambient : Fin (2^g.a) → List (Fin (prime+K+4)))
     (hambient : ∀ j, (ambient j).length = Sizes.s n₀ i*W)
-    (outputTail originTail : List (Fin (prime+K+4)))
-    (hpubWords : ∀ j, S.R (classCallerRegister (pubSrc j)) =
+    (outputTail : List (Fin (prime+K+4)))
+    (hpubInj : Function.Injective pubSrc)
+    (hpacketBlank : S.R (classCallerRegister (pubSrc 9)) = [])
+    (hcountBlank : S.R (classCallerRegister (pubSrc 6)) = [])
+    (houtPacket : output ≠ pubSrc 9) (houtCount : output ≠ pubSrc 6)
+    (e : Fin 117 → Fin ((T+175)+PackedTranspose.tapeCount)) (he : Function.Injective e)
+    (he109 : e 109 = classCallerRegister (pubSrc 9)) (he116 : e 116 = classCallerRegister (pubSrc 6))
+    (heOff : ∀ j, e j ≠ classCallerRegister (bank (.recovery (.control .result))))
+    (originInput : PublicationOriginInput e Vpub (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L S)
+    (hpubWords : ∀ j, j ≠ 6 → j ≠ 9 → S.R (classCallerRegister (pubSrc j)) =
       PackedTranspose.publicationHeaderWords a g.a (L-2*radius) W Vpub (Sizes.s n₀ i)
         (coreSubsetPublicationWindows (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀))
-          pubClass.length g.hwidth pubClass.indices pubClass.sublist).origins originTail j)
+          pubClass.length g.hwidth pubClass.indices pubClass.sublist).origins [] j)
     (hpubBlank : ∀ j, S.R (Fin.natAdd (T+175) j) = [])
     (hpubLeft : ∀ j, (embStk (selectedPublicationPlacement bank output) S).L j = [])
     (hdst : S.R (classCallerRegister output) = (List.ofFn ambient).flatten++outputTail)
-    (hcorePacket : 0 < (L-2*radius)*W) (hpubBits : a+g.a < Vpub)
-    (hpubFit : ((L-2*radius)*W)*2^(a+g.a) < 2^Vpub)
-    (hcapacity : indices.length ≤ 2^a)
-    (hwordFit : W < 2^Vpub) (hsFit : Sizes.s n₀ i < 2^Vpub)
-    (hvolume : Sizes.s n₀ i*W < 2^Vpub),
+    (pubBounds : PackedTranspose.PublicationShapeBounds a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) indices.length),
     let pubSources := Fin.castAdd 175 ∘ pubSrc
-    let metadata := publicationMetadataVolume pubSources S
+    let pubBaseline := originPacketState (classCallerRegister (pubSrc 9)) (classCallerRegister (pubSrc 6)) Vpub origins S
+    let metadata := publicationMetadataVolume pubSources pubBaseline
+    let originCost := preparedCoreOriginsCost Vpub (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L
     ∃ v', ∃ n : ℕ, ∃ outputs, ∃ rows : batch.Rows, v'.user = v.user ∧
-      (n : ℝ) ≤ runTime+((6*metadata+79)+
+      (n : ℝ) ≤ runTime+(originCost+((6*metadata+79)+
         (PackedTranspose.retainedPublicationTimeCost (K := K) hstates a g.a (L-2*radius) Vpub
-          W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W)))+(2*metadata+27)) : ℕ) ∧
+          W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W)))+(2*metadata+27))+(2*(origins.length*Vpub+origins.length)+5)) : ℕ) ∧
       List.Forall₂ PackedNormalizedJob.output (List.ofFn jobs) outputs ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
-        (runStock+(2*(6*metadata+79)+PackedTranspose.retainedPublicationStock (K := K) (U := U)
-          hstates a g.a (L-2*radius) Vpub W indices.length pubClass))) depth
-        (.seq runProg (PackedTranspose.callerPublicationProgram pubSources
-          (Fin.castAdd 175 (bank (.recovery (.control .result)))) (Fin.castAdd 175 output) hstates))
+        (runStock+(3*originCost+(2*(6*metadata+79)+PackedTranspose.retainedPublicationStock (K := K) (U := U)
+          hstates a g.a (L-2*radius) Vpub W indices.length pubClass)))) depth
+        (.seq runProg (.seq (placedPublicationOrigins e) (.seq (PackedTranspose.callerPublicationProgram pubSources
+          (Fin.castAdd 175 (bank (.recovery (.control .result)))) (Fin.castAdd 175 output) hstates)
+          (clearWords [classCallerRegister (pubSrc 9),classCallerRegister (pubSrc 6)]))))
         (Host.mk v S) n (Host.mk v' {S with R := (Function.update S.R (classCallerRegister output)
           ((List.ofFn fun j => pubClass.output W g.hwidth (rows.classRows pubClass keys j) (ambient j)).flatten++outputTail))}) := by
   obtain ⟨F,hF,Cstock,hclass⟩ := selectedTableRestoringComputedCoreClassRun_exec (body := body) bank hinj b hstates ct cV cD
@@ -149,8 +160,9 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     v S src hsrc hs hw' hr hL' masters widthMaster zeroMaster value hwidthMaster hzeroMaster hmasterOff
     hgeometryOff hvalues hwidthWord hzeroWord hmasterWords htableBlank Vg borrowed g hExposeWidth hRouteWidth
     hMetadataFit hReplicaVolume hblank hleft hp hprecision J hJ batch pubClass keys runTime runStock runProg
-    a Vpub output hout pubSrc hpubOff ambient hambient outputTail originTail hpubWords hpubBlank hpubLeft
-    hdst hcorePacket hpubBits hpubFit hcapacity hwordFit hsFit hvolume pubSources metadata
+    origins a Vpub output hout pubSrc hpubOff ambient hambient outputTail hpubInj hpacketBlank hcountBlank
+    houtPacket houtCount e he he109 he116 heOff originInput hpubWords hpubBlank hpubLeft
+    hdst pubBounds pubSources pubBaseline metadata originCost
   obtain ⟨v₁,n₁,outputs,hu₁,hn₁,hgood,he₁⟩ := hn h i u target L hu htarget hLengthGroup α gap C V bounds Fs hFs
     D Cprog depth rg hrg hoff hfitValues hpush hbody hwide hHfit hA hB v S src hsrc hs hw' hr hL'
     masters widthMaster zeroMaster value hwidthMaster hzeroMaster hmasterOff hgeometryOff hvalues
@@ -165,33 +177,67 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
   change (n₁ : ℝ) ≤ runTime at hn₁
   have hformat : batch.W = W := rfl
   have hbatch : batch.records = List.ofFn jobs := rfl
+  have hjobCount : batch.records.length = indices.length := by rw [hbatch,List.length_ofFn]
   have hwidth : ∀ r ∈ batch.records, r.coreWidth = amortizedCoreWidth ct (Sizes.p n₀) := by
     rw [hbatch]
     intro r hr
     obtain ⟨j,rfl⟩ := List.mem_ofFn.mp hr
     rfl
+  have hcorePacket := pubBounds.packetPositive
+  have hpubBits := pubBounds.stageBits
   have hW : 1 ≤ batch.W := by
     change 1 ≤ W
     by_contra hz
     have hw : W = 0 := by omega
     simp only [hw,Nat.mul_zero,lt_self_iff_false] at hcorePacket
+  have hcaller : Function.Injective (classCallerRegister : Fin T → Fin ((T+175)+PackedTranspose.tapeCount)) :=
+    (Fin.castAdd_injective _ _).comp (Fin.castAdd_injective _ _)
+  have hsrcSep (j k : Fin 13) (hjk : j ≠ k) :
+      classCallerRegister (pubSrc j) ≠ classCallerRegister (pubSrc k) := hcaller.ne (hpubInj.ne hjk)
+  let numerical := classCallerRegister (bank (.recovery (.control .result)))
+  obtain ⟨vO,nO,huO,hnO,heO⟩ := placedOwnedPublicationOrigins_after_update_exec_within (body := body) e he
+    (classCallerRegister (pubSrc 9)) (classCallerRegister (pubSrc 6)) he109 he116 numerical outputs.reverse.flatten heOff
+    g.hwidth originInput.geometryFit originInput.lengthFit hA (by omega) v₁ S
+    originInput.widthLength originInput.ambientWord originInput.coreWidthWord originInput.radiusWord
+    originInput.haloLengthWord originInput.zero originInput.tableBlank
+    (by rw [he109]; exact hpacketBlank) originInput.savedBlank originInput.tmpBlank
+    (by rw [he116]; exact hcountBlank) depth
+  have hpOff : classCallerRegister (pubSrc 9) ≠ numerical := hcaller.ne (hpubOff 9)
+  have hcOff : classCallerRegister (pubSrc 6) ≠ numerical := hcaller.ne (hpubOff 6)
+  have hDoff (k) (hp : k ≠ classCallerRegister (pubSrc 9)) (hc : k ≠ classCallerRegister (pubSrc 6)) :
+      pubBaseline.R k = S.R k := originPacketState_off _ _ _ _ S k hp hc
+  have hwordsD (j : Fin 13) : pubBaseline.R (classCallerRegister (pubSrc j)) =
+      PackedTranspose.publicationHeaderWords a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) origins [] j :=
+    PackedTranspose.publicationHeaderWords_of_owned_packet (classCallerRegister ∘ pubSrc) (hcaller.comp hpubInj)
+      a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) origins S hpubWords j
+  have hblankD (j) : pubBaseline.R (Fin.natAdd (T+175) j) = [] := by
+    apply (hDoff _ ?_ ?_).trans (hpubBlank j)
+    · simpa only [←hprefix] using (prefix_ne_routing (Fin.castAdd 175 (pubSrc 9)) j).symm
+    · simpa only [←hprefix] using (prefix_ne_routing (Fin.castAdd 175 (pubSrc 6)) j).symm
+  have hsourceD : pubBaseline.R numerical = [] := (hDoff _ hpOff.symm hcOff.symm).trans hsource
+  have hdstD : pubBaseline.R (classCallerRegister output) = (List.ofFn ambient).flatten++outputTail :=
+    (hDoff _ (hcaller.ne houtPacket) (hcaller.ne houtCount)).trans hdst
   obtain ⟨rows,v₂,n₂,hu₂,hn₂,he₂⟩ := PackedTranspose.caller_publish_outputs_exec_within body
     (Fin.castAdd 175 (bank (.recovery (.control .result)))) (Fin.castAdd 175 output)
     ((Fin.castAdd_injective _ _).ne hout) hstates a g.a (L-2*radius) Vpub batch outputs
-    (by rw [hbatch]; exact hgood) pubClass keys hwidth g.hwidth rfl hW hcorePacket hpubBits hpubFit hA
-    (by simpa only [hbatch,List.length_ofFn] using hcapacity) depth ambient hambient outputTail v₁ S
-    originTail pubSources (fun j => (Fin.castAdd_injective _ _).ne (hpubOff j))
-    (by intro j; simpa only [pubSources,Function.comp_apply,hprefix,hformat] using hpubWords j)
-    hpubBlank hpubLeft (by simpa only [hprefix] using hsource)
-    (by simpa only [hprefix] using hdst) hwordFit hsFit hvolume
+    (by rw [hbatch]; exact hgood) pubClass keys hwidth g.hwidth rfl hW (by simpa only [hformat,hjobCount] using pubBounds) hA depth ambient hambient outputTail vO pubBaseline
+    [] pubSources (fun j => (Fin.castAdd_injective _ _).ne (hpubOff j))
+    (by intro j; simpa only [pubSources,Function.comp_apply,hprefix,hformat] using hwordsD j)
+    hblankD hpubLeft (by simpa only [hprefix] using hsourceD)
+    (by simpa only [hprefix] using hdstD)
   have hraw : outputs.reverse.flatten.length = indices.length*(2^g.a*((L-2*radius)*W)) := by
     have hh := batch.outputs_volume outputs (by rw [hbatch]; exact hgood)
-    simpa only [hbatch,hformat,List.length_ofFn] using hh
-  simp only [hformat,hbatch,List.length_ofFn,hraw] at hn₂
-  have hwhole := mn_seq_within_add he₁ he₂
-  refine ⟨v₂,n₁+n₂,outputs,rows,hu₂.trans hu₁,?_,hgood,?_⟩
-  · rw [Nat.cast_add]
-    exact add_le_add hn₁ (by exact_mod_cast hn₂)
-  · simpa only [hprefix,hformat,hbatch,List.length_ofFn] using hwhole
+    simpa only [hjobCount,hformat] using hh
+  simp only [hformat,hjobCount,hraw] at hn₂
+  let ys := (List.ofFn fun j => pubClass.output batch.W g.hwidth (rows.classRows pubClass keys j) (ambient j)).flatten++outputTail
+  obtain ⟨v₃,hu₃,he₃⟩ := retireOriginPacket_exec_within body
+    (classCallerRegister (pubSrc 9)) (classCallerRegister (pubSrc 6)) (hsrcSep 9 6 (by decide)) Vpub origins
+    (classCallerRegister output) (hcaller.ne houtPacket) (hcaller.ne houtCount) ys v₂ S hpacketBlank hcountBlank depth
+  have hwhole := mn_seq_within_add he₁ (mn_seq_within_add heO (mn_seq_within_add he₂ he₃))
+  refine ⟨v₃,n₁+(nO+(n₂+(2*(origins.length*Vpub+origins.length)+5))),outputs,rows,
+    hu₃.trans (hu₂.trans (huO.trans hu₁)),?_,hgood,?_⟩
+  · simp only [Nat.cast_add]
+    exact add_le_add hn₁ (add_le_add (by exact_mod_cast hnO) (add_le_add (by exact_mod_cast hn₂) le_rfl))
+  · simpa only [hprefix,hformat,hjobCount,numerical,ys,Nat.add_zero] using hwhole
 
 end IntegerMultBounds.MathlibTM2.Cost
