@@ -31275,3 +31275,21 @@ remain the next obligation; this does not complete S4.
 Guarded module check passes at 3394.7 MiB. Expanded dependency build passes
 (16801 jobs, 3.5 GiB combined peak); axiom audit passes for 344407 declarations
 at 3584.5 MiB with the existing permitted axioms. Kappa unchanged.
+
+### S4 checkpoint: retire the original computed result after publication copy
+
+`move_outputs_for_publication_exec_within` composes the existing certified
+restoring copy with actual `uclear` execution on the original numerical result.
+Its empty borrowed-suffix premise matches the selected caller's fresh result
+bank. The final state retains the ordered `Rows.stream` and previous destination
+suffix, clears the original result and restores every other register. Retirement
+costs exactly twice the original result length plus two steps; it adds no stock
+allowance, since erasure is nonincreasing and starts from the copy's final bound.
+The arbitrary-suffix restoring-copy theorem remains available separately.
+
+Guarded check passes at 3001.8 MiB. Dependency build covering both publication
+modules and the selected table-restoring caller passes (16665 jobs, 3.5 GiB
+combined peak). The audit of that import closure passes for 343824 declarations
+at 3143.7 MiB, allowing only propext, Quot.sound and Classical.choice.
+Physical fixed-bank transpose/scatter and grouped composition remain open;
+S4 remains incomplete and kappa unchanged.
