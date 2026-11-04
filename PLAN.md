@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4261 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4263 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32168,3 +32168,37 @@ publication (4012.4 MiB) and selected execution (4168.0 MiB, about 4 GiB).
 Guarded build passes (16709 jobs, 4.5 GiB incremental combined peak). Expanded
 axiom audit passes for 344311 declarations at 3195.9 MiB, permitting only propext,
 Quot.sound and Classical.choice. Default proof limits are unchanged.
+
+
+### S4 checkpoint: close the selected publication master lifecycle
+
+The selected actual-output theorem no longer assumes unary core-length or
+ambient-length words. PublicationGeometryControls reuses prepareCoreDimensions
+to decode halo length and remove both radius margins, then toUnary to decode
+ambient length. The radius scratch is cleared during setup. Generic execution,
+external-update framing and two-output retirement proofs account for exact time
+and stock, without duplicating the binary arithmetic proofs.
+
+AllocatedPublicationGeometryControls places the three retained binary inputs
+and two owned outputs in caller storage and four scratch registers in the
+existing routing suffix. Source/output separation follows from binary-word
+nonemptiness and blank owned outputs; it is not an additional disjointness
+premise. Selected execution now composes numerical output, geometry controls,
+owned origins/count, exponents/capacity, publication and the three retirement
+phases. Its endpoint changes only the ambient destination. All seven owned
+metadata fields (0/1/2/4/6/8/9) are generated and retired; the remaining three
+controls are borrowed and preserved. The former two-length-premise interface
+can be restored from d400c75b.
+
+Next close the remaining caller allocation/geometry readiness from the retained
+numerical input record, then compose actual grouped classes and seam/full-line
+execution. Preserve explicit replica ordering, share setup across tensor axes,
+prove aggregate time/stock and connect the result to the root S4 theorem.
+Completing one selected class does not establish this outer execution. S4 remains
+incomplete; kappa unchanged.
+
+Guarded checks pass for geometry setup/framing/retirement (2692.2 MiB), allocated
+geometry placement (2842.4 MiB), and selected execution (4224.7 MiB, about 4 GiB).
+Final guarded build passes (16711 jobs, 4.6 GiB incremental combined peak).
+Expanded axiom audit passes for 344340 declarations at 3199.1 MiB, allowing only
+propext, Quot.sound and Classical.choice. Default proof limits are unchanged.
