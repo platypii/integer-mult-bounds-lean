@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4283 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4284 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32633,4 +32633,37 @@ Its guarded check passes at 3108.7 MiB. The initial dependent rebuild, including
 the selected run, passes (16728 jobs, 8.5 GiB incremental combined peak).
 Final build after frame-proof reuse passes (16728 jobs, 3.5 GiB incremental peak).
 Expanded axiom audit passes for 344585 declarations at 3201.6 MiB, allowing only
+propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: matched setup and retirement for every consumer format
+
+FormattedClassInputs composes actual ordinary-global-word initialization and
+class-master computation with the structural format exporter. Its endpoint
+formattedClassLoaded contains just the two D-bit masters and the listed halo
+formats; seed and copy scratch are restored. Time is bounded by
+prepareMastersTimeCost D+binaryFormatsCost bits rs, with the corresponding
+additive native workspace bill. No execution callback or initialized output word
+is supplied. The source halo is the computed class master.
+
+The same module retires that exact endpoint after publication: clear the listed
+format destinations, then clear the two masters. It restores the original
+baseline except for the unrelated ambient output, with zero additional workspace.
+For the numerical/exposure/routing instance the five owned words are reclaimed
+in 4*D+2*(B+Vg+Vr)+12 steps. The structural bank proof reuses copyWordHeadersR_get
+and copyWordHeadersR_off; there is no per-format or per-bit certificate.
+
+Next derive numerical readiness on formattedClassLoaded and transport the newly
+constructed gather record through the selected table loader (disjoint copies and
+table loads must commute). Instantiate the actual selected run between this
+prefix and suffix and close its class-stage bill. Consolidate the now-specialized
+single-format helpers once their readiness use is replaced. Global input sizing
+and initialization, actual empty-class guard, outer schedule and coverage,
+replica order, shared tensor setup, aggregate bounds and root integration remain
+open. The selected execution has not yet been composed into this matched pair.
+S4 remains incomplete; kappa unchanged.
+
+Guarded single-file check passes at 3084.1 MiB. Integration build with generated
+gather readiness, selected execution and outer class composition passes
+(16726 jobs, 3.5 GiB incremental peak). Default proof limits unchanged.
+Expanded axiom audit passes for 344591 declarations at 3203.2 MiB, allowing only
 propext, Quot.sound and Classical.choice.
