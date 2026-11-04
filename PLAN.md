@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4250 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4252 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31822,3 +31822,43 @@ Guarded loaded-bank frame check passes at 3076.7 MiB, retained publication at
 3919.5 MiB and caller publication at 3982.4 MiB. Expanded dependency build passes
 (16698 jobs, 4.4 GiB combined peak). Axiom audit passes for 344148 declarations
 at 3158.4 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: selected numerical execution feeds ambient publication directly
+
+`PhaseCellSelectedPublishedClassRun.selectedTablePublishedComputedCoreClassRun_exec`
+composes the selected table-loading/restoring numerical theorem with caller
+publication. It uses the exact returned numerical word and its certificate, not
+an execution callback or assumed output rows. The program includes numerical
+setup/exposure/recovery and retirement, then publication packet loading,
+dimension setup, actual-output handoff, transpose, scatter and all publication
+retirements. The endpoint updates only the caller's ambient destination relative
+to the original state; the numerical result and private banks are restored.
+
+The common-core batch is built from the selected jobs over Fs.reverse. The
+small structural `PackedExactBatch.withReplicaCount` uses the gather's existing
+power-of-two replica equality while leaving records, word format and inverse data
+definitionally unchanged. This avoids dependent casts over concrete job lists.
+Key order and core geometry come from the existing common-core constructor.
+Replica order remains explicitly reversed; no identification with Fs order is
+made. The publication geometry-value function and its fit premises are now
+internal consequences of the fixed packet layout and existing geometry bounds.
+
+The result-word volume is derived once from the actual rectangular output
+certificate, giving classCount*(replicaCount*(coreLength*wordWidth)); it is not
+an unconstrained output-dependent cost parameter in the joined theorem. Numerical
+and publication time/stock bounds compose on those same executions.
+
+Remaining caller premises include retained publication packets, numerical input
+preparation, the mathematical inverse and precision assumptions, and ordinary
+geometry/freshness bounds. Next produce the retained caller packets and close
+their lifecycle from the real class inputs. Grouped/seam execution, reconciling
+replica order at the outer caller, shared tensor setup, aggregate asymptotic
+costs and root integration remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded replica-count conversion passes at 3001.4 MiB, certified output-volume
+lemma at 3014.2 MiB, simplified caller publication at 4004.9 MiB and selected
+numerical/publication composition at 3234.7 MiB. Expanded dependency build passes
+(16700 jobs, 3.6 GiB combined peak; dependency refresh 5.8 GiB). Axiom audit passes
+for 344158 declarations at 3158.8 MiB, permitting only propext, Quot.sound and
+Classical.choice.

@@ -78,4 +78,16 @@ theorem rows_of_reversed_outputs (batch : PackedExactBatch A s t B L)
   obtain ⟨rows,hwords⟩ := rows_of_outputs batch outputs hgood
   exact ⟨rows,by rw [hwords]; rfl,by rw [hwords]⟩
 
+/-- The actual result-tape volume is fixed by the certified rectangular batch. -/
+theorem outputs_volume (batch : PackedExactBatch A s t B L)
+    (outputs : List (List (Fin (A+4))))
+    (hgood : List.Forall₂ PackedNormalizedJob.output batch.records outputs) :
+    outputs.reverse.flatten.length = batch.records.length*(B*(L*batch.W)) := by
+  obtain ⟨rows,hflat,_⟩ := rows_of_reversed_outputs batch outputs hgood
+  calc
+    outputs.reverse.flatten.length = outputs.flatten.length := by
+      simp only [List.length_flatten,List.map_reverse,List.sum_reverse]
+    _ = rows.stream.length := congrArg List.length hflat
+    _ = _ := rows.stream_length
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.PackedExactBatch

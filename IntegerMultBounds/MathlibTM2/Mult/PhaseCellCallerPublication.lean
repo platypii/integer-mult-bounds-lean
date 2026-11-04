@@ -43,8 +43,6 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
     (hcapacity : batch.records.length ≤ 2^a) (depth : ℕ)
     (ambient : Fin (2^b) → List (Fin (prime+K+4))) (hambient : ∀ j, (ambient j).length = s*batch.W)
     (outputTail : List (Fin (prime+K+4)))
-    (value : Fin tapeCount → ℕ) (hinputFit : ∀ i, value (publicationGeometryInput i) < 2^V)
-    (hvalues : ∀ i, value (publicationGeometryInput i) = ![a,b,L*batch.W] i)
     (v : HS (T+tapeCount) Q (prime+K) U) (S : Stacks (T+tapeCount) (prime+K))
     (originTail : List (Fin (prime+K+4))) (src : Fin 13 → Fin T)
     (hsrcOff : ∀ i, src i ≠ inputPort)
@@ -68,6 +66,21 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
         (mk v {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten}) n
         (mk v' {S with R := (Function.update S.R (Fin.castAdd tapeCount outputPort)
           ((List.ofFn fun j => g.output batch.W hw (rows.classRows g hkeys j) (ambient j)).flatten++outputTail))}) := by
+  let value (j : Fin tapeCount) := if j = publicationGeometryInput 0 then a else
+    if j = publicationGeometryInput 1 then b else L*batch.W
+  have hvalues (i : Fin 3) : value (publicationGeometryInput i) = ![a,b,L*batch.W] i := by
+    fin_cases i <;> simp [value,publicationGeometryInput,publicationReg_injective.eq_iff]
+  have haFit : a < 2^V := (show a < V by omega).trans Nat.lt_two_pow_self
+  have hbFit : b < 2^V := (show b < V by omega).trans Nat.lt_two_pow_self
+  have hpacketFit : L*batch.W < 2^V := by
+    have hh : 1 ≤ 2^(a+b) := Nat.one_le_two_pow
+    nlinarith
+  have hinputFit (i : Fin 3) : value (publicationGeometryInput i) < 2^V := by
+    rw [hvalues]
+    fin_cases i
+    · exact haFit
+    · exact hbFit
+    · exact hpacketFit
   let M := loadedPublicationHeaders src S
   let F : Stacks (T+tapeCount) (prime+K) := {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten}
   have hread (r : Fin 13 × Fin 117) (hr : r ∈ publicationHeaderAssignments) :
