@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4231 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4232 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31418,4 +31418,32 @@ Guarded placed-page check passes at 1903.0 MiB, generated scatter at 3049.0 MiB
 and the strengthened computed publication at 3068.9 MiB. Expanded dependency
 build passes (16679 jobs, 3.5 GiB combined peak). Axiom audit passes for 343867
 declarations at 3148.8 MiB, permitting only propext, Quot.sound and
+Classical.choice.
+
+### S4 checkpoint: generate and retire working publication dimensions
+
+`PhaseCellPublicationDimensionSetup` reuses `UnarySetup` for the exponent sum,
+packet-width product and replica-clock copy, and `paddingCounterSetup` for the
+missing-row product. Seven retained unary masters describe a,b,core length,
+word width, real row count, dyadic capacity and replica count. An injective
+register map assigns meaningful roles; the program generates exactly four
+working headers: a+b, L*w, B and (C-N)*L. The exact endpoint preserves all masters,
+left stacks and scratch. Time is the sum of the existing structural-operation
+costs; native stock is bounded by twice that time.
+
+The retirement theorem clears exactly those four generated headers while
+preserving two separately owned data tapes and all original state. It restores
+the original blank header bank, costs twice the generated header volume plus
+nine, and requires no additional stock allowance. This supplies the actual
+producer and cleanup needed to discharge the publication endpoint's ordinary
+padding/replica dimension premises; that wiring/composition is still required.
+
+Next compose these generated dimensions with computed publication and the
+selected numerical output handoff. Binary geometry/origin masters, grouped
+caller construction, seam fallback, locality/tensor setup sharing and root
+integration remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded combined setup/retirement check passes at 2700.3 MiB. Expanded dependency
+build passes (16680 jobs, 3.2 GiB combined peak). Axiom audit passes for 343949
+declarations at 3152.9 MiB, permitting only propext, Quot.sound and
 Classical.choice.
