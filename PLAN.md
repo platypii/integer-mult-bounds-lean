@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4222 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4225 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31293,3 +31293,38 @@ combined peak). The audit of that import closure passes for 343824 declarations
 at 3143.7 MiB, allowing only propext, Quot.sound and Classical.choice.
 Physical fixed-bank transpose/scatter and grouped composition remain open;
 S4 remains incomplete and kappa unchanged.
+
+### S4 checkpoint: fixed-bank computed-row transpose and class scatter certificates
+
+`PhaseCellDyadicRowTranspose.rows_exec_within` runs the existing restoring
+fixed-bank coefficient router directly on rectangular list rows. It reuses
+`archiveRows_cstream` and `routedArchiveRows_cstream` to derive the coefficient
+array and the exact replica-major output from row lengths. No row permutation
+or separate bit-plane certificate is assumed.
+
+`PhaseCellDyadicPublicationTranspose.padded_rows_exec_within` accepts arbitrary
+job counts up to a dyadic capacity. Existing `coefficientPadding_view` and
+`paddedCore_entry` turn whole-job zero prefix padding into the router input and
+prove every real computed row is unchanged at its shifted index. The router's
+existing time and execution-wide stock bounds apply to that actual execution;
+the tape bank remains fixed. The physical padding producer and its controls
+still need composition with this theorem.
+
+`PhaseCellPackedClassPublicationReplica` constructs the existing runtime
+`PublicationReplica` from actual batch rows, class keys, transposed padded rows
+and ambient lines. Its validity theorem derives all scatter length and padding
+premises from the transpose's real-row identity. The class length equality is
+explicit, including empty classes where no real row could establish it. Replica
+output is definitionally the mathematical class scatter, and the existing
+subset preservation theorem proves complete words in all unselected cores
+survive. This closes the representation-level reserved-coordinate obligation;
+the complete selected caller trace still needs padding/transpose placement,
+scatter control generation, execution composition and cleanup.
+
+Guarded list-row transpose check passes at 2791.2 MiB, padded transpose at
+2802.2 MiB and class scatter certificates at 3014.2 MiB. Expanded dependency
+build including selected execution and output retirement passes (16668 jobs,
+3.5 GiB combined peak). Axiom audit passes for 343832 declarations at
+3147.3 MiB, permitting only propext, Quot.sound and Classical.choice.
+Grouped caller, seam fallback, tensor/setup sharing and root integration remain
+open. S4 remains incomplete; kappa unchanged.
