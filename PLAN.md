@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4234 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4236 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31505,3 +31505,34 @@ Guarded stream-volume bridge check passes at 3012.6 MiB and numerical-output
 publication at 3099.2 MiB. Expanded dependency build passes (16682 jobs,
 6.0 GiB combined peak). Axiom audit passes for 343953 declarations at
 3150.7 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: place actual-output publication in a larger caller
+
+`Host.EmbedInputOutputStock.exec_emb_input_output_within` places a restoring
+consumer with one input replacement and one output update into an arbitrary
+background. The input projection is the actual live input word; the endpoint
+restores its baseline and writes the computed output. Existing stock embedding
+charges spectator storage once. The restoration proof uses update projection
+and override identities, without tape-index case enumeration.
+
+`PhaseCellPlacedNumericalPublication.placed_publish_outputs_exec_within`
+instantiates this lemma with the actual numerical-output publication program.
+An injective map places the fixed publication bank inside an arbitrary larger
+caller, retaining exactly the existing ordinary projected-state premises.
+Actual returned words still determine the certified rows. The physical final
+state changes only the placed ambient destination; time and stock allowances
+are unchanged, and every spectator is preserved. This removes the fixed total
+caller-tape-count restriction from the numerical-to-publication handoff.
+
+Next install the binary transpose geometry after numerical execution. Reuse the
+existing input-table loader with three variables for a, b and packet width,
+plus its width header, and its existing retirement language. Then select the
+placement sharing the numerical result and ambient destination with the caller.
+Ordinary origin/master generation, retained-dimension handoff composition,
+grouped/seam execution, locality/tensor setup sharing and root integration remain
+open. S4 remains incomplete; kappa unchanged.
+
+Guarded generic embedding check passes at 1294.3 MiB and placed numerical
+publication at 3044.1 MiB. Expanded dependency build passes (16684 jobs,
+3.5 GiB combined peak). Axiom audit passes for 343955 declarations at
+3150.2 MiB, permitting only propext, Quot.sound and Classical.choice.
