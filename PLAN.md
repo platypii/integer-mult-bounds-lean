@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4248 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4250 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31789,3 +31789,36 @@ Guarded whole-word update check passes at 1752.5 MiB, publication loader at
 3078.6 MiB and metadata retirement at 3079.5 MiB. Expanded dependency build
 passes (16696 jobs, 5.9 GiB combined peak). Axiom audit passes for 344128
 declarations at 3155.9 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: actual publication from retained caller packets and a fresh suffix
+
+`PhaseCellCallerPublication.caller_publish_outputs_exec_within` now executes
+metadata loading, retained dimension setup, actual numerical-output publication,
+header retirement and metadata retirement in one trace. Its only right-register
+change relative to the original baseline is the ambient destination. It consumes
+the actual numerical result word and its output certificate; no execution callback
+or fabricated output is a premise.
+
+Publication readiness is derived from thirteen retained caller packets, suffix
+freshness, left-stack readiness and the ordinary ambient/source data-port facts.
+The former per-register working-bank assumptions are discharged inside the proof.
+`PhaseCellLoadedPublicationHeaderFrame` supplies structural assignment-list frames
+and generic generator/worker/extra freshness; only the origin queue is shared
+with the worker. The copy/update commutation lemma connects the numerical result
+write to this lifecycle. Retained publication's program and time/stock bills now
+have shared names, avoiding duplication of the expanded execution syntax in the
+caller composition.
+
+The total bill adds 6*M+79 loading time and 2*M+27 retirement time to retained
+publication, and twice the loading bill to its stock allowance. Caller packets
+are still retained input data: their production is not proved by this theorem.
+Next join the selected numerical theorem directly, using its existing replica
+power fact and matching its common-core batch in reversed replica order. Then
+close caller packet production, grouped/seam execution, shared tensor setup,
+aggregate costs and root integration. S4 remains incomplete; kappa unchanged.
+
+Guarded loaded-bank frame check passes at 3076.7 MiB, retained publication at
+3919.5 MiB and caller publication at 3982.4 MiB. Expanded dependency build passes
+(16698 jobs, 4.4 GiB combined peak). Axiom audit passes for 344148 declarations
+at 3158.4 MiB, permitting only propext, Quot.sound and Classical.choice.

@@ -26,6 +26,31 @@ noncomputable section
 open FixedStreamedBank ScalarPlacement
 variable {T Q K s t width : ℕ} [NeZero s] [NeZero t] {P U : Type}
 
+def retainedPublicationProgram (inputPort outputPort : Fin T)
+    (hstates : FixedStreamedBank.stateCount ≤ Q) : Pr P (T+tapeCount) Q (prime+K) U :=
+  (.seq (PublicationDimensionReg.program (publicationPlacement inputPort outputPort ∘ publicationDimensionBank))
+          (.seq (embProg (publicationPlacement inputPort outputPort) Empty.elim (.seq (chirpBankLoad publicationGeometryBank publicationGeometryInput (publicationReg 35) (publicationReg 106))
+          (.seq (.seq (PackedExactBatch.generatedOutputCopyProgram (publicationDimensionBank .clock) (publicationDimensionBank .packet) (publicationDimensionBank .rowCount) (publicationReg 69) (publicationReg 68) numericalPort (publicationReg 70) (extra 1) (publicationReg 71) (publicationReg 72)) (.seq (.seq (ownedPrefixPadding (publicationDimensionBank .exponent) (publicationDimensionBank .packet) (extra 1) (publicationReg 58) (publicationReg 65) (publicationReg 66) (pairSym (prime+K) false false))
+          (program hstates))
+          (.seq (embProg publicationPageBank Empty.elim (prepareReplicaPublicationPages (P := Empty)))
+            (.seq (restoringReplicaPublication (publicationDimensionBank .clock) (publicationReg 67) (publicationDimensionBank .padding) (publicationDimensionBank .wordWidth) (publicationReg 73) (publicationPageBank 92) (publicationReg 74) (publicationReg 75) (publicationPageBank 103) (extra 1) ambientPort (publicationReg 76) (publicationReg 77) (publicationReg 78) (publicationReg 79) (publicationReg 80) (publicationReg 81))
+              (clearWords [publicationPageBank 103,publicationPageBank 92]))))) (clearWords (inputTableWords publicationGeometryBank))))) (clearWords (PublicationDimensionReg.outputs.map (publicationPlacement inputPort outputPort ∘ publicationDimensionBank)))))
+
+def retainedPublicationTimeCost (hstates : FixedStreamedBank.stateCount ≤ Q) (a b L V W N : ℕ)
+    (g : CorePublicationClass s width) (hw : 0 < width) (oldVolume : ℕ) : ℕ :=
+  (PublicationDimensionReg.timeCost a b L W N (2^a) (2^b)+(((28*V+33)+((PackedExactBatch.generatedOutputCopyTimeCost N (2^b) L W oldVolume)+(((6*(2^(a+b)*(L*W))+4*(N*((2^b)*(L*W)))+4*(L*W)+9*(a+b)+14)+
+        (26*(2^a*(2^b*(L*W)))+24+2*restoringTimeCost hstates a b (L*W) V))+
+        ((prepareReplicaPublicationPagesCost V s g.length W g.indices.length+
+          (replicaPublicationCost (2^b) s (2^a-N) g.length W+6*(2^b)+6))+
+          (2*(g.length*W+(gatherControls (prime+K) ((coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).gaps W)).length)+5)))))+(8*V+9)))+(2*((a+b)+L*W+(2^b)+((2^a)-N)*L)+9)
+
+def retainedPublicationStock (hstates : FixedStreamedBank.stateCount ≤ Q) (a b L V W N : ℕ)
+    (g : CorePublicationClass s width) : ℕ :=
+  (2*PublicationDimensionReg.timeCost a b L W N (2^a) (2^b)+(3*(28*V+33)+PackedExactBatch.generatedOutputCopyStock N (2^b) L W+((2*(6*(2^(a+b)*(L*W))+4*(N*((2^b)*(L*W)))+4*(L*W)+9*(a+b)+14)+
+          (40*(2^a*(2^b*(L*W)))+38+restoringStockAllowance hstates a b (L*W) V))+
+          (mnProgPush (prepareReplicaPublicationPages (P := Empty) (Q := Q) (A := prime+K) (U := U))*
+            prepareReplicaPublicationPagesCost V s g.length W g.indices.length+2*(replicaPublicationCost (2^b) s (2^a-N) g.length W+6*(2^b)+6)))))
+
 theorem retained_allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (prime+K) U)
     (inputPort outputPort : Fin T) (hports : inputPort ≠ outputPort)
     (hstates : FixedStreamedBank.stateCount ≤ Q) (a b L V : ℕ)
@@ -81,26 +106,14 @@ theorem retained_allocated_publish_outputs_exec_within (body : P → Pr P (T+tap
     (_ : ∀ i ∈ [(publicationReg 73),(publicationReg 74),(publicationReg 75),(publicationReg 76),(publicationReg 77),(publicationReg 78),(publicationReg 81)], (embStk (publicationPlacement inputPort outputPort) S).R i = [])
     (_ : (embStk (publicationPlacement inputPort outputPort) S).R (publicationReg 80) = []),
     ∃ rows : batch.Rows, ∃ v' n, v'.user = v.user ∧
-      n ≤ (PublicationDimensionReg.timeCost a b L batch.W batch.records.length (2^a) (2^b)+(((28*V+33)+((PackedExactBatch.generatedOutputCopyTimeCost batch.records.length (2^b) L batch.W outputs.reverse.flatten.length)+(((6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
-        (26*(2^a*(2^b*(L*batch.W)))+24+2*restoringTimeCost hstates a b (L*batch.W) V))+
-        ((prepareReplicaPublicationPagesCost V s g.length batch.W g.indices.length+
-          (replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6))+
-          (2*(g.length*batch.W+(gatherControls (prime+K) ((coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).gaps batch.W)).length)+5)))))+(8*V+9)))+(2*((a+b)+L*batch.W+(2^b)+((2^a)-batch.records.length)*L)+9) ∧
+      n ≤ retainedPublicationTimeCost (K := K) hstates a b L V batch.W batch.records.length g hw outputs.reverse.flatten.length ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten})+depth+
-        (2*PublicationDimensionReg.timeCost a b L batch.W batch.records.length (2^a) (2^b)+(3*(28*V+33)+PackedExactBatch.generatedOutputCopyStock batch.records.length (2^b) L batch.W+((2*(6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
-          (40*(2^a*(2^b*(L*batch.W)))+38+restoringStockAllowance hstates a b (L*batch.W) V))+
-          (mnProgPush (prepareReplicaPublicationPages (P := Empty) (Q := Q) (A := prime+K) (U := U))*
-            prepareReplicaPublicationPagesCost V s g.length batch.W g.indices.length+2*(replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6)))))) depth
-        (.seq (PublicationDimensionReg.program (publicationPlacement inputPort outputPort ∘ publicationDimensionBank))
-          (.seq (embProg (publicationPlacement inputPort outputPort) Empty.elim (.seq (chirpBankLoad publicationGeometryBank publicationGeometryInput (publicationReg 35) (publicationReg 106))
-          (.seq (.seq (PackedExactBatch.generatedOutputCopyProgram (publicationDimensionBank .clock) (publicationDimensionBank .packet) (publicationDimensionBank .rowCount) (publicationReg 69) (publicationReg 68) numericalPort (publicationReg 70) (extra 1) (publicationReg 71) (publicationReg 72)) (.seq (.seq (ownedPrefixPadding (publicationDimensionBank .exponent) (publicationDimensionBank .packet) (extra 1) (publicationReg 58) (publicationReg 65) (publicationReg 66) (pairSym (prime+K) false false))
-          (program hstates))
-          (.seq (embProg publicationPageBank Empty.elim (prepareReplicaPublicationPages (P := Empty)))
-            (.seq (restoringReplicaPublication (publicationDimensionBank .clock) (publicationReg 67) (publicationDimensionBank .padding) (publicationDimensionBank .wordWidth) (publicationReg 73) (publicationPageBank 92) (publicationReg 74) (publicationReg 75) (publicationPageBank 103) (extra 1) ambientPort (publicationReg 76) (publicationReg 77) (publicationReg 78) (publicationReg 79) (publicationReg 80) (publicationReg 81))
-              (clearWords [publicationPageBank 103,publicationPageBank 92]))))) (clearWords (inputTableWords publicationGeometryBank))))) (clearWords (PublicationDimensionReg.outputs.map (publicationPlacement inputPort outputPort ∘ publicationDimensionBank)))))
+        (retainedPublicationStock (K := K) (U := U) hstates a b L V batch.W batch.records.length g)) depth
+        (retainedPublicationProgram inputPort outputPort hstates)
         (mk v {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten}) n
         (mk v' {S with R := (Function.update S.R (Fin.castAdd tapeCount outputPort)
           ((List.ofFn fun j => g.output batch.W hw (rows.classRows g hkeys j) (ambient j)).flatten++outputTail))}) := by
+  unfold retainedPublicationProgram retainedPublicationTimeCost retainedPublicationStock
   intro hpad htmp hsaved hz hblank hstageCount hL hfresh hsourceBlank hcopyBlank hcopyFresh
     hcount hcodec hdst hclockSave hlineRows hwV hsV hvolume originTail hpageWidth hpageLength
     hOrigins hpageCount hpageBlank hpageFresh hclean houtAcc
