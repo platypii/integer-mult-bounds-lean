@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4277 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4278 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32482,3 +32482,27 @@ The new module passes its guarded single-file check at 3074.4 MiB. Integration
 build with selected execution passes (16719 jobs, 3.5 GiB incremental peak).
 Expanded axiom audit passes for 344519 declarations at 3200.4 MiB, permitting
 only propext, Quot.sound and Classical.choice. Default proof limits unchanged.
+
+### S4 checkpoint: independent table and geometry binary formats
+
+Inspection does not justify requiring every global table scalar to fit the
+selected inverse-caller geometry width. BinaryHeaderFormat instead reuses the
+existing counted-prefix copier: for B <= D it exports binSyms B x from a retained
+binSyms D x source in 10*B+10 steps. Its actual execution preserves the source,
+length ruler, both scratch words and all other storage; only the blank destination
+changes. The native workspace bill is 3*(10*B+10). The bit-prefix identity uses
+TableVM.tbl_take_binSyms, with no per-bit or per-width case enumeration.
+
+This supports a wider table format while retaining the selected theorem's fixed
+geometry format. It does not require x to fit B to prove the low-bit copy; the
+selected caller must still prove the ordinary geometry fit bound before treating
+those bits as the intended natural value. Next compose this export for the halo
+geometry header with generated masters and readiness, choosing a table width
+large enough for all global scalars. The same-format readiness theorem remains a
+valid specialization, not a completed global sizing argument. Actual selected
+execution, retirement and outer schedule integration remain open; S4 incomplete.
+
+Guarded adapter check passes at 1795.2 MiB. Integration build including generated
+readiness and selected execution passes (16720 jobs, 2.6 GiB incremental peak).
+Expanded axiom audit passes for 344521 declarations at 3200.5 MiB, allowing only
+propext, Quot.sound and Classical.choice. Default proof limits unchanged.
