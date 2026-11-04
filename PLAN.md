@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4255 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4257 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31948,3 +31948,39 @@ Guarded owned-packet retirement passes at 2672.4 MiB, shared packet layout at
 Expanded dependency build passes (16703 jobs, 4.5 GiB combined peak). Axiom audit
 passes for 344222 declarations at 3176.4 MiB, permitting only propext, Quot.sound
 and Classical.choice. Default proof limits are unchanged.
+
+
+### S4 checkpoint: concrete origin allocation reuses the routing suffix
+
+`PhaseCellAllocatedPublicationOrigins` fixes the origin generator's private
+workspace in the existing routing suffix. Seven semantic shared roles occupy
+retained caller ports: s, core width, radius, halo length, binary width, origin
+packet and count. Every other origin register uses the existing publication
+register injection. No tapes are added. The local role decoder recovers its
+seven labels, giving injectivity without enumerating all register pairs.
+
+`Host.SharedRegisterPlacement` proves once that an injective private bank plus
+an injective, disjoint shared bank gives an injective partial placement. The
+origin allocation instantiates it and derives the frame against an external
+numerical-result port. Its input theorem derives zero/table/saved/temporary
+freshness from routing-suffix freshness; callers supply only the actual retained
+binary geometry, its width and mathematical fit bounds.
+
+The selected numerical/publication theorem now instantiates this concrete origin
+placement. Its former arbitrary 117-register embedding, embedding injectivity,
+all-register result separation and assembled PublicationOriginInput premise are
+removed. The origin/count roles are tied to the generated publication source
+slots. Ordinary source-bank injectivity and source/result separation remain
+caller facts, as do the five retained geometry/width words.
+
+Next reuse the canonical publication width source for the origin scan and derive
+its retained geometry from the numerical caller's existing inputs. Generate the
+remaining eleven publication packet words from shared masters. Grouped/seam
+execution, outer replica order, shared tensor setup, aggregate costs and root
+integration remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded shared-placement check passes at 1293.9 MiB, concrete origin allocation
+at 3098.3 MiB and selected allocated-origin composition at 4124.6 MiB (about
+4 GiB). Expanded dependency build passes (16705 jobs, 4.5 GiB combined peak).
+Axiom audit passes for 344240 declarations at 3178.5 MiB, permitting only propext,
+Quot.sound and Classical.choice. Default proof limits are unchanged.

@@ -7,6 +7,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBatchReplicaCount
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedPublicationPlacement
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedPublicationOrigins
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOwnedOriginPacket
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAllocatedPublicationOrigins
 
 /-! Selected numerical execution feeds its actual result directly to restoring
 publication. The final state updates only the ambient caller destination. -/
@@ -123,10 +124,14 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     (hpacketBlank : S.R (classCallerRegister (pubSrc 9)) = [])
     (hcountBlank : S.R (classCallerRegister (pubSrc 6)) = [])
     (houtPacket : output ≠ pubSrc 9) (houtCount : output ≠ pubSrc 6)
-    (e : Fin 117 → Fin ((T+175)+PackedTranspose.tapeCount)) (he : Function.Injective e)
-    (he109 : e 109 = classCallerRegister (pubSrc 9)) (he116 : e 116 = classCallerRegister (pubSrc 6))
-    (heOff : ∀ j, e j ≠ classCallerRegister (bank (.recovery (.control .result))))
-    (originInput : PublicationOriginInput e Vpub (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L S)
+    (originSources : Fin 7 → Fin T) (hOriginInj : Function.Injective originSources)
+    (hOriginPacket : originSources 5 = pubSrc 9) (hOriginCount : originSources 6 = pubSrc 6)
+    (hOriginOff : ∀ j, originSources j ≠ bank (.recovery (.control .result)))
+    (hOriginWide : Sizes.s n₀ i+amortizedCoreWidth ct (Sizes.p n₀)+2*radius < 2^Vpub)
+    (hOriginLength : L < 2^Vpub)
+    (hOriginWords : ∀ j : Fin 4, S.R (classCallerRegister (originSources (Fin.castAdd 3 j))) =
+      binSyms Vpub (![Sizes.s n₀ i,amortizedCoreWidth ct (Sizes.p n₀),radius,L] j))
+    (hOriginWidth : (S.R (classCallerRegister (originSources 4))).length = Vpub)
     (hpubWords : ∀ j, j ≠ 6 → j ≠ 9 → S.R (classCallerRegister (pubSrc j)) =
       PackedTranspose.publicationHeaderWords a g.a (L-2*radius) W Vpub (Sizes.s n₀ i)
         (coreSubsetPublicationWindows (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀))
@@ -135,6 +140,7 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     (hpubLeft : ∀ j, (embStk (selectedPublicationPlacement bank output) S).L j = [])
     (hdst : S.R (classCallerRegister output) = (List.ofFn ambient).flatten++outputTail)
     (pubBounds : PackedTranspose.PublicationShapeBounds a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) indices.length),
+    let e := publicationOriginPlacement (Fin.castAdd 175 ∘ originSources)
     let pubSources := Fin.castAdd 175 ∘ pubSrc
     let pubBaseline := originPacketState (classCallerRegister (pubSrc 9)) (classCallerRegister (pubSrc 6)) Vpub origins S
     let metadata := publicationMetadataVolume pubSources pubBaseline
@@ -161,8 +167,9 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     hgeometryOff hvalues hwidthWord hzeroWord hmasterWords htableBlank Vg borrowed g hExposeWidth hRouteWidth
     hMetadataFit hReplicaVolume hblank hleft hp hprecision J hJ batch pubClass keys runTime runStock runProg
     origins a Vpub output hout pubSrc hpubOff ambient hambient outputTail hpubInj hpacketBlank hcountBlank
-    houtPacket houtCount e he he109 he116 heOff originInput hpubWords hpubBlank hpubLeft
-    hdst pubBounds pubSources pubBaseline metadata originCost
+    houtPacket houtCount originSources hOriginInj hOriginPacket hOriginCount hOriginOff hOriginWide hOriginLength
+    hOriginWords hOriginWidth hpubWords hpubBlank hpubLeft
+    hdst pubBounds e pubSources pubBaseline metadata originCost
   obtain ⟨v₁,n₁,outputs,hu₁,hn₁,hgood,he₁⟩ := hn h i u target L hu htarget hLengthGroup α gap C V bounds Fs hFs
     D Cprog depth rg hrg hoff hfitValues hpush hbody hwide hHfit hA hB v S src hsrc hs hw' hr hL'
     masters widthMaster zeroMaster value hwidthMaster hzeroMaster hmasterOff hgeometryOff hvalues
@@ -195,6 +202,23 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
   have hsrcSep (j k : Fin 13) (hjk : j ≠ k) :
       classCallerRegister (pubSrc j) ≠ classCallerRegister (pubSrc k) := hcaller.ne (hpubInj.ne hjk)
   let numerical := classCallerRegister (bank (.recovery (.control .result)))
+  have he : Function.Injective e := publicationOriginPlacement_injective _ ((Fin.castAdd_injective _ _).comp hOriginInj)
+  have he109 : e 109 = classCallerRegister (pubSrc 9) := by
+    have hh := publicationOriginPlacement_shared (Fin.castAdd 175 ∘ originSources) 5
+    rw [show publicationOriginIndex 5 = (109 : Fin 117) from rfl] at hh
+    simpa only [Function.comp_apply,hprefix,hOriginPacket] using hh
+  have he116 : e 116 = classCallerRegister (pubSrc 6) := by
+    have hh := publicationOriginPlacement_shared (Fin.castAdd 175 ∘ originSources) 6
+    rw [show publicationOriginIndex 6 = (116 : Fin 117) from rfl] at hh
+    simpa only [Function.comp_apply,hprefix,hOriginCount] using hh
+  have heOff (j : Fin 117) : e j ≠ numerical := by
+    simpa only [hprefix] using publicationOriginPlacement_off_prefix (Fin.castAdd 175 ∘ originSources)
+      (Fin.castAdd 175 (bank (.recovery (.control .result))))
+      (fun k => (Fin.castAdd_injective _ _).ne (hOriginOff k)) j
+  have originInput : PublicationOriginInput e Vpub (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L S :=
+    publicationOriginPlacement_input _ S Vpub _ _ _ _ hOriginWide hOriginLength
+      (by intro j; simpa only [Function.comp_apply,hprefix] using hOriginWords j)
+      (by simpa only [Function.comp_apply,hprefix] using hOriginWidth) hpubBlank
   obtain ⟨vO,nO,huO,hnO,heO⟩ := placedOwnedPublicationOrigins_after_update_exec_within (body := body) e he
     (classCallerRegister (pubSrc 9)) (classCallerRegister (pubSrc 6)) he109 he116 numerical outputs.reverse.flatten heOff
     g.hwidth originInput.geometryFit originInput.lengthFit hA (by omega) v₁ S
