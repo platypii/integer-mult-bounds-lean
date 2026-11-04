@@ -1,10 +1,9 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRestoringGatherData
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBinaryHeaderFormats
 
-/-! Retained gather inputs do not include initialized class halo words. Complete
-them from the actual three-format export of the computed halo scalar. -/
+/-! Frame ordinary retained gather inputs while generated class headers are
+written. The initialized setup supplies the class-specific halo fields. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
@@ -76,57 +75,6 @@ def reframe (g : RestoringGatherSeed (Q := Q) bank V s width radius L w Fs borro
     hRleft := by intro i; rw [hL]; exact g.hRleft i
     hsourceLeft := by rw [hL]; exact g.hsourceLeft}
 
-/-- This runs the exporter; the two class-specific readiness fields come from
-its actual endpoint, rather than from retained input hypotheses. -/
-theorem exportHalo_exec_within {P U : Type}
-    (body : P → Pr P ((T+175)+tapeCount) Q (prime+K) U)
-    (g : RestoringGatherSeed (Q := Q) bank V s width radius L w Fs borrowed S)
-    (src saved tmp : Fin ((T+175)+tapeCount))
-    (count : Fin 3 → Fin ((T+175)+tapeCount)) (dst : Fin 3 → Fin T)
-    (hregs : ∀ j, [count j,src,classCallerRegister (dst j),saved,tmp].Nodup)
-    (hsep : ∀ i j, classCallerRegister (dst i) ≠ count j) (hdst : Function.Injective dst)
-    (sourceWidth : ℕ) (bits : Fin ((T+175)+tapeCount) → ℕ)
-    (hfit : ∀ j, bits (count j) ≤ sourceWidth)
-    (hV : bits (count 1) = V) (hD : bits (count 2) = g.D)
-    (hExposeHalo : g.exposeSrc 3 = dst 1) (hRouteHalo : g.routeSrc 3 = dst 2)
-    (hExpose : ∀ j, j ≠ 3 → ∀ i, g.exposeSrc j ≠ dst i)
-    (hInput : ∀ i, g.input ≠ dst i)
-    (hRoute : ∀ j, j ≠ 3 → ∀ i, g.routeSrc j ≠ dst i)
-    (hOutput : ∀ i, bank (.control .source) ≠ dst i)
-    (v : HS ((T+175)+tapeCount) Q (prime+K) U)
-    (hsrc : S.R src = binSyms sourceWidth L)
-    (hcount : ∀ j, (S.R (count j)).length = bits (count j))
-    (hblank : ∀ j, S.R (classCallerRegister (dst j)) = [])
-    (hsaved : S.R saved = []) (htmp : S.R tmp = []) (depth : ℕ) :
-    let F := {S with R := (copyWordHeadersR (fun k => binSyms (bits k) L)
-      (classHaloFormats count (classCallerRegister ∘ dst)) S.R)}
-    let cost := 10*(bits (count 0)+bits (count 1)+bits (count 2))+31
-    ∃ v', ∃ ready : RestoringGatherData (Q := Q) bank V s width radius L w Fs borrowed F,
-      v'.user = v.user ∧ ready.exposeSrc = g.exposeSrc ∧ ready.routeSrc = g.routeSrc ∧
-      ready.input = g.input ∧ ready.D = g.D ∧ ready.a = g.a ∧
-      F.R (classCallerRegister (dst 0)) = binSyms (bits (count 0)) L ∧
-      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+3*cost) depth
-        (copyBinaryFormats src saved tmp (classHaloFormats count (classCallerRegister ∘ dst)))
-        (Host.mk v S) cost (Host.mk v' F) := by
-  dsimp only
-  obtain ⟨v',hu,hheaders,hframe,he⟩ := classHaloFormats_exec_within body src saved tmp count
-    (classCallerRegister ∘ dst) hregs hsep (classCallerRegister_injective.comp hdst)
-    sourceWidth L bits hfit v S hsrc hcount hblank hsaved htmp depth
-  let F : Stacks ((T+175)+tapeCount) (prime+K) := {S with R := (copyWordHeadersR
-    (fun k => binSyms (bits k) L) (classHaloFormats count (classCallerRegister ∘ dst)) S.R)}
-  let seed := g.reframe F (List.ofFn dst)
-    (by intro k hk; exact hframe k (fun j => (hk (dst j) (List.mem_ofFn.mpr ⟨j,rfl⟩)).symm)) rfl
-    (by intro j hj output ho; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp ho; exact hExpose j hj i)
-    (by intro output ho; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp ho; exact hInput i)
-    (by intro j hj output ho; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp ho; exact hRoute j hj i)
-    (by intro output ho; obtain ⟨i,rfl⟩ := List.mem_ofFn.mp ho; exact hOutput i)
-  let ready : RestoringGatherData (Q := Q) bank V s width radius L w Fs borrowed F :=
-    {toRestoringGatherSeed := seed
-     hL := by change F.R (classCallerRegister (g.exposeSrc 3)) = binSyms V L
-              rw [hExposeHalo]; simpa only [F,Function.comp_apply,hV] using hheaders 1
-     hRL := by change F.R (classCallerRegister (g.routeSrc 3)) = binSyms g.D L
-               rw [hRouteHalo]; simpa only [F,Function.comp_apply,hD] using hheaders 2}
-  exact ⟨v',ready,hu,rfl,rfl,rfl,rfl,rfl,hheaders 0,he⟩
 
 end
 end RestoringGatherSeed

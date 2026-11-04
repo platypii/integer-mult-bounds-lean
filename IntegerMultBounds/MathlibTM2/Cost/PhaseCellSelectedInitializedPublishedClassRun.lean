@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPublishedClassRun
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFormattedClassExecution
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSetupNumericalReadiness
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSetupGatherReadiness
 
 /-! Execute ordinary-input setup, the selected numerical/publication run and
 owned-word cleanup. Every stage receives the preceding actual host state; the
@@ -28,8 +29,6 @@ theorem selectedInitializedPublishedClassRun_exec {T Q K : ℕ} {U : Type} {P : 
     ∃ F : ℝ, 0 ≤ F ∧ ∃ Cstock : ℕ, ∀ᶠ n₀ : ℕ in Filter.atTop, ∀ (h : Sizes.Big n₀)
     (i : Fin (Sizes.d n₀)) [NeZero (Sizes.s n₀ i)] [NeZero (Sizes.t n₀ i)] (u target L : ℕ)
     (hu : u ≤ Sizes.p n₀) (htarget : target ≤ ct*Sizes.p n₀)
-    (hLengthGroup : L ∈ coreGatherLengths (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀))
-      (localityDepth (Sizes.p n₀) target*PhaseCellBand.width (Sizes.p n₀) u))
     (α gap : ℝ) (C : ZMod (Sizes.s n₀ i) → GaussianInt)
     (V : Fin (coreGatherIndices (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀))
       (localityDepth (Sizes.p n₀) target*PhaseCellBand.width (Sizes.p n₀) u) L).length → ℕ)
@@ -58,26 +57,25 @@ theorem selectedInitializedPublishedClassRun_exec {T Q K : ℕ} {U : Type} {P : 
         (plan (fullExposedClassBank bank) (fullExposedClassBank_injective bank hinj)).work (plan (fullExposedClassBank bank) (fullExposedClassBank_injective bank hinj)).src (plan (fullExposedClassBank bank) (fullExposedClassBank_injective bank hinj)).saved (plan (fullExposedClassBank bank) (fullExposedClassBank_injective bank hinj)).count (plan (fullExposedClassBank bank) (fullExposedClassBank_injective bank hinj)).tmp (plan (fullExposedClassBank bank) (fullExposedClassBank_injective bank hinj)).spare (plan (fullExposedClassBank bank) (fullExposedClassBank_injective bank hinj)).result b.hR b.hQ)) ≤ Cprog)
     (hbody : ∀ f, mnProgPush (body f) ≤ Cprog)
     (hwide : (Sizes.s n₀ i)+(amortizedCoreWidth ct (Sizes.p n₀))+2*radius < 2^B)
-    (hHfit : L < 2^B) (hA : 4 ≤ (prime+K)) (hV : 0 < B)
+    (hA : 4 ≤ (prime+K))
     (v : HS ((T+175)+PackedTranspose.tapeCount) Q (prime+K) U) (base : Stacks ((T+175)+PackedTranspose.tapeCount) (prime+K))
     (setup : FormattedClassSetup D (Sizes.p n₀) u
       (haloInverseRingLog (Sizes.s n₀ i) (Sizes.t n₀ i)) target (Sizes.s n₀ i) (Sizes.t n₀ i)
       B W Fs.length radius (amortizedCoreWidth ct (Sizes.p n₀)) base),
-    let S := setup.loaded
     ∀ (src : Fin 4 → Fin ((T+175)+PackedTranspose.tapeCount))
     (hsrc : ∀ i k, src i ≠ fullExposedClassBank bank k)
     (masters : Fin 12 → Fin ((T+175)+PackedTranspose.tapeCount))
     (caller : setup.NumericalInput (fullExposedClassBank bank) rg src masters),
     let widthMaster := setup.widthMaster
     let zeroMaster := setup.zero
-    let value := setup.classValues
     ∀ (hwidthMaster : ∀ r, rg r ≠ widthMaster) (hzeroMaster : ∀ r, rg r ≠ zeroMaster)
     (hmasterOff : ∀ j r, rg r ≠ masters j) (hgeometryOff : ∀ j r, rg r ≠ src j)
     (Vg : ℕ) (borrowed : List (Fin (prime+K+4)))
-    (g : RestoringGatherData (Q := Q) bank Vg (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L W Fs borrowed (loadedInputTable rg masters D value S))
-    (layout : setup.ConsumerLayout masters (src 3) (classCallerRegister (g.exposeSrc 3))
-      (classCallerRegister (g.routeSrc 3)) Vg g.D L)
-    (hExposeWidth : Vg ≤ cV*Sizes.p n₀) (hRouteWidth : g.D ≤ cD*Sizes.p n₀)
+    (seed : RestoringGatherSeed (Q := Q) bank Vg (Sizes.s n₀ i)
+      (amortizedCoreWidth ct (Sizes.p n₀)) radius L W Fs borrowed base)
+    (gatherInput : setup.GatherInput seed rg masters (src 3)),
+    let g := gatherInput.ready
+    ∀ (hExposeWidth : Vg ≤ cV*Sizes.p n₀) (hRouteWidth : g.D ≤ cD*Sizes.p n₀)
     (hMetadataFit : g.D ≤ 2^g.a*2^Nat.clog 2 (coreGatherIndices (Sizes.s n₀ i)
       (amortizedCoreWidth ct (Sizes.p n₀)) radius L).length*(L*W))
     (hReplicaVolume : Fs.length ≤ Sizes.T n₀)
@@ -125,7 +123,6 @@ theorem selectedInitializedPublishedClassRun_exec {T Q K : ℕ} {U : Type} {P : 
     (hOriginInj : Function.Injective originSources)
     (hPubWidth : pubSrc 7 = originSources 4)
     (hPubReplica : pubSrc 3 = g.routeSrc 6) (hPubWord : pubSrc 5 = g.routeSrc 5)
-    (hRouteTableOff : ∀ j r, rg r ≠ classCallerRegister (g.routeSrc j))
     (houtGeometry : ∀ j ∈ [(4 : Fin 10),8], output ≠ pubSrc j)
     (pubInput : PublicationCallerReady (classCallerRegister ∘ pubSrc) (selectedPublicationPlacement bank output) base)
     (hpubOwnedOff : ∀ j ∈ [(0 : Fin 10),1,2,4,6,8,9],
@@ -166,15 +163,36 @@ theorem selectedInitializedPublishedClassRun_exec {T Q K : ℕ} {U : Type} {P : 
     (body := body) bank hinj b hstates ct cV cD
   refine ⟨F,hF,Cstock,?_⟩
   filter_upwards [hclass] with n₀ hn
-  intro h i _ _ u target L hu htarget hLengthGroup α gap C V bounds Fs hFs
-  intro B W radius indices jobs D Cprog depth rg hrg hoff hpush hbody hwide hHfit hA hB
-    v base setup S src hsrc masters caller widthMaster zeroMaster value hwidthMaster hzeroMaster hmasterOff
-    hgeometryOff Vg borrowed g layout hExposeWidth hRouteWidth
+  intro h i _ _ u target L hu htarget α gap C V bounds Fs hFs
+  intro B W radius indices jobs D Cprog depth rg hrg hoff hpush hbody hwide hA
+    v base setup src hsrc masters caller widthMaster zeroMaster hwidthMaster hzeroMaster hmasterOff
+    hgeometryOff Vg borrowed seed gatherInput g hExposeWidth hRouteWidth
     hMetadataFit hReplicaVolume hp hprecision J hJ batch pubClass keys runTime runStock runProg
     origins replica a Vpub output hout pubSrc hpubOff originSources ambient hambient outputTail hpubInj
-    houtPacket houtCount houtMasters hOriginInj hPubWidth hPubReplica hPubWord hRouteTableOff houtGeometry pubInput hpubOwnedOff
+    houtPacket houtCount houtMasters hOriginInj hPubWidth hPubReplica hPubWord houtGeometry pubInput hpubOwnedOff
     hdstBase hPublicationVolume houtCore houtHalo houtFormats geometryCost
     retireGeometryCost dimensionCost retireDimensionCost metadata originCost
+  let S := setup.loaded
+  let value := setup.classValues
+  have layout : setup.ConsumerLayout masters (src 3) (classCallerRegister (g.exposeSrc 3))
+      (classCallerRegister (g.routeSrc 3)) Vg g.D L := gatherInput.consumers
+  have hLengthGroup : L ∈ coreGatherLengths (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius := by
+    rw [layout.classLength]
+    exact CommonClassGeometry.haloRows_mem setup.clipped _ _ _
+  have hcore := CommonClassGeometry.coreRows_le setup.clipped (Sizes.s n₀ i)
+    (amortizedCoreWidth ct (Sizes.p n₀)) setup.widthPositive
+  have hHfit : L < 2^B := by
+    rw [layout.classLength]
+    dsimp only [CommonClassGeometry.haloRows]
+    omega
+  have hB : 0 < B := by
+    by_contra hn
+    have hB0 : B = 0 := by omega
+    have hw := setup.widthPositive
+    have hwide0 := hwide
+    rw [hB0,pow_zero] at hwide0
+    omega
+  have hRouteTableOff := gatherInput.routeTableOff
   let st : TblSt 12 (prime+K) := ⟨commonInputValues (Sizes.p n₀) u (haloInverseRingLog (Sizes.s n₀ i) (Sizes.t n₀ i)) target (Sizes.s n₀ i) (Sizes.t n₀ i) B W Fs.length radius L,[]⟩
   have hdst : S.R (classCallerRegister output) = (List.ofFn ambient).flatten++outputTail :=
     (setup.loaded_off (classCallerRegister output) houtCore houtHalo houtFormats).trans hdstBase

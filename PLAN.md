@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4288 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4289 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32788,3 +32788,44 @@ initialized selected execution 3285.4 MiB. Combined build passes (16734 jobs,
 3.7 GiB incremental peak). Expanded axiom audit passes for 344711 declarations
 at 3205.6 MiB, allowing only propext, Quot.sound and Classical.choice. Default
 proof limits unchanged.
+
+### S4 checkpoint: gather readiness derives from the baseline seed
+
+SetupGatherReadiness reads each exported halo format from the actual initialized
+endpoint and transports the ordinary RestoringGatherSeed fields from the original
+baseline. Explicit caller-prefix coverage of the two masters and every format
+destination preserves private exposure/routing blankness automatically. The two
+class halo fields are filled from the generated exports and ConsumerLayout.
+
+GatherInput bundles that static coverage/separation with numerical-table coverage.
+Its ready method constructs the complete gather record on the table-loaded setup
+endpoint. GatherInputTable now accepts physical table ports with caller-prefix
+coverage witnesses; it no longer requires a particular syntactic embedding. The
+route/table separation proof follows from that coverage, so the initialized
+selected theorem no longer takes it separately.
+
+The initialized selected theorem now takes a baseline seed and GatherInput instead
+of a complete post-setup gather record and separate consumer layout. It derives
+candidate membership, numerical halo fit and positive numerical word width from
+the computed geometry and existing room bound. Setup state and scalar assignment
+are proof-local. Actual setup/run/cleanup, accuracy, prices and boundary restoration
+are preserved. The seed still carries class eligibility/fit facts; establishing
+those facts under an actual empty-class guard remains open.
+
+The superseded standalone three-format gather-export execution wrapper is removed;
+it can be restored from 3827acd5. Its seed-frame proof remains shared by baseline
+construction and output/table transport. The initialized setup supplies the actual
+export trace once.
+
+Next construct the concrete ordinary caller layout, retained global words/rulers
+and coefficient input, and instantiate the baseline numerical/publication/gather
+contracts. Transport that construction after equal-length ambient updates and
+instantiate actual nonempty/empty stages in the outer schedule. Packed/seam/full-
+line coverage, replica order, shared tensor setup, aggregate bounds and root
+integration remain open. S4 remains incomplete; kappa unchanged.
+
+Final guarded checks pass for baseline-to-gather construction (3122.1 MiB) and
+initialized selected execution (3299.0 MiB). Combined build passes (16736 jobs,
+5.9 GiB incremental combined peak). Expanded axiom audit passes for 344751
+declarations at 3205.9 MiB, allowing only propext, Quot.sound and Classical.choice.
+Default proof limits unchanged.

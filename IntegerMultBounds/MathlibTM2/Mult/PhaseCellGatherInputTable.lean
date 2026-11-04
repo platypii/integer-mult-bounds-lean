@@ -18,7 +18,8 @@ namespace RestoringGatherData
 noncomputable section
 
 def loadInputTable (g : RestoringGatherData (Q := Q) bank V s width radius L w Fs borrowed S)
-    (rg : TblR n → Fin T) (ports : List (Fin T)) (hcover : ∀ r, rg r ∈ ports)
+    (rg : TblR n → Fin ((T+175)+tapeCount)) (ports : List (Fin T))
+    (hcover : ∀ r, ∃ output ∈ ports, classCallerRegister output = rg r)
     (input : Fin n → Fin ((T+175)+tapeCount)) (D : ℕ)
     (value : Fin ((T+175)+tapeCount) → ℕ)
     (hExpose : ∀ j output, output ∈ ports → g.exposeSrc j ≠ output)
@@ -26,10 +27,13 @@ def loadInputTable (g : RestoringGatherData (Q := Q) bank V s width radius L w F
     (hRoute : ∀ j output, output ∈ ports → g.routeSrc j ≠ output)
     (hOutput : ∀ output ∈ ports, bank (.control .source) ≠ output) :
     RestoringGatherData (Q := Q) bank V s width radius L w Fs borrowed
-      (loadedInputTable (classCallerRegister ∘ rg) input D value S) := by
-  let F := loadedInputTable (classCallerRegister ∘ rg) input D value S
+      (loadedInputTable rg input D value S) := by
+  let F := loadedInputTable rg input D value S
   have hR (k) (hk : ∀ output ∈ ports, k ≠ classCallerRegister output) : F.R k = S.R k :=
-    loadedInputTable_off _ input D value S k (fun r => hk (rg r) (hcover r))
+    loadedInputTable_off _ input D value S k (by
+      intro r
+      obtain ⟨output,ho,heq⟩ := hcover r
+      simpa only [heq] using hk output ho)
   have hc (k : Fin T) (hk : ∀ output ∈ ports, k ≠ output) : F.R (classCallerRegister k) = S.R (classCallerRegister k) :=
     hR _ (fun output ho => classCallerRegister_injective.ne (hk output ho))
   let seed := g.toRestoringGatherSeed.reframe F ports hR rfl
@@ -41,7 +45,8 @@ def loadInputTable (g : RestoringGatherData (Q := Q) bank V s width radius L w F
 
 theorem loadInputTable_program {P U : Type}
     (g : RestoringGatherData (Q := Q) bank V s width radius L w Fs borrowed S)
-    (rg : TblR n → Fin T) (ports : List (Fin T)) (hcover : ∀ r, rg r ∈ ports)
+    (rg : TblR n → Fin ((T+175)+tapeCount)) (ports : List (Fin T))
+    (hcover : ∀ r, ∃ output ∈ ports, classCallerRegister output = rg r)
     (input : Fin n → Fin ((T+175)+tapeCount)) (D : ℕ)
     (value : Fin ((T+175)+tapeCount) → ℕ)
     (hExpose : ∀ j output, output ∈ ports → g.exposeSrc j ≠ output)
