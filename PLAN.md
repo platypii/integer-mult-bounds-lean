@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4245 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4246 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31724,3 +31724,32 @@ Guarded generated-copy check passes at 3028.0 MiB, geometry-loaded publication a
 passes (16693 jobs, 1.1 GiB incremental combined peak; focused build 4.3 GiB).
 Axiom audit passes for 344093 declarations at 3154.1 MiB, permitting only propext,
 Quot.sound and Classical.choice.
+
+### S4 checkpoint: retained dimensions through actual-output publication
+
+`PhaseCellRetainedAllocatedPublication.retained_allocated_publish_outputs_exec_within`
+now composes dimension setup, generated copy width, geometry loading, actual
+numerical-output publication, scatter and header retirement. Its final state
+changes only the ambient destination relative to the original bank. Four working
+header length assumptions are replaced by retained masters and blank scratch;
+core length, word width and row count reuse the canonical page sources.
+`PhaseCellPublicationDimensionFrame` proves the projection and preservation facts
+structurally and checks concrete index separation once.
+
+Removed the unused row-only retained-dimension wrapper; restore commit ae45cb59
+if that interface becomes necessary.
+
+The reviewed plan prioritizes closing execution dependencies over adding helper
+interfaces. Next compose selected numerical execution directly with this endpoint,
+using the common-core batch and resolving replica order explicitly. Then generate
+the remaining origin/master packets and close their caller lifecycle. After that,
+close grouped/seam execution, locality/tensor setup sharing, aggregate costs and
+root integration. Avoid further routing abstractions unless this composition
+requires them. Measure progress by removed caller assumptions and root-reachable
+execution, not helper count. S4 remains incomplete; no reliable completion date
+or percentage follows from the current helper coverage. Kappa is unchanged.
+
+Guarded dimension-frame check passes at 2730.2 MiB and retained actual-output
+publication at 3920.6 MiB. Expanded dependency build passes (16694 jobs, 4.3 GiB
+combined peak). Axiom audit passes for 344109 declarations at 3155.3 MiB,
+permitting only propext, Quot.sound and Classical.choice.
