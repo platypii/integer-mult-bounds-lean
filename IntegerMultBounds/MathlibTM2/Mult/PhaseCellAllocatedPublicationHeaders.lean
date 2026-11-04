@@ -16,23 +16,23 @@ noncomputable section
 variable {T Q A : ℕ} {P U : Type}
 
 /-- Sources: a, b, capacity, replicas, core length, word width, row count,
-geometry width, ambient length, origins, and three binary transpose dimensions. -/
-def publicationHeaderAssignments : List (Fin 13 × Fin 117) :=
+geometry width, ambient length and origins. Binary dimensions are generated later. -/
+def publicationHeaderAssignments : List (Fin 10 × Fin 117) :=
   [(0,61),(1,62),(2,60),(3,59),(4,33),(5,34),(6,36),
-   (7,35),(8,79),(9,109),(10,82),(11,83),(12,84)]
+   (7,35),(8,79),(9,109)]
 
-def publicationHeaderCopies (src : Fin 13 → Fin T) : List (Fin (T+PackedTranspose.tapeCount) × Fin (T+PackedTranspose.tapeCount)) :=
+def publicationHeaderCopies (src : Fin 10 → Fin T) : List (Fin (T+PackedTranspose.tapeCount) × Fin (T+PackedTranspose.tapeCount)) :=
   publicationHeaderAssignments.map fun r => (Fin.castAdd PackedTranspose.tapeCount (src r.1),Fin.natAdd T (publicationReg r.2))
 
-def loadPublicationHeaders (src : Fin 13 → Fin T) : Pr P (T+PackedTranspose.tapeCount) Q A U :=
+def loadPublicationHeaders (src : Fin 10 → Fin T) : Pr P (T+PackedTranspose.tapeCount) Q A U :=
   copyWordHeaders (Fin.natAdd T (publicationReg 112)) (Fin.natAdd T (publicationReg 113)) (publicationHeaderCopies src)
 
-def loadedPublicationHeaders (src : Fin 13 → Fin T) (S : Stacks (T+PackedTranspose.tapeCount) A) :=
+def loadedPublicationHeaders (src : Fin 10 → Fin T) (S : Stacks (T+PackedTranspose.tapeCount) A) :=
   {S with R := copyWordHeadersR S.R (publicationHeaderCopies src) S.R}
 
-theorem loadedPublicationHeaders_read (src : Fin 13 → Fin T)
+theorem loadedPublicationHeaders_read (src : Fin 10 → Fin T)
     (S : Stacks (T+PackedTranspose.tapeCount) A)
-    (hblank : ∀ i, S.R (Fin.natAdd T i) = []) (r : Fin 13 × Fin 117) (hr : r ∈ publicationHeaderAssignments) :
+    (hblank : ∀ i, S.R (Fin.natAdd T i) = []) (r : Fin 10 × Fin 117) (hr : r ∈ publicationHeaderAssignments) :
     (loadedPublicationHeaders src S).R (Fin.natAdd T (publicationReg r.2)) =
       S.R (Fin.castAdd PackedTranspose.tapeCount (src r.1)) := by
   have hnd : ((publicationHeaderCopies src).map Prod.snd).Nodup := by
@@ -42,7 +42,7 @@ theorem loadedPublicationHeaders_read (src : Fin 13 → Fin T)
   simpa only [loadedPublicationHeaders,hblank _,List.append_nil] using hh
 
 theorem loadPublicationHeaders_exec_within
-    (body : P → Pr P (T+PackedTranspose.tapeCount) Q A U) (src : Fin 13 → Fin T)
+    (body : P → Pr P (T+PackedTranspose.tapeCount) Q A U) (src : Fin 10 → Fin T)
     (v : HS (T+PackedTranspose.tapeCount) Q A U) (S : Stacks (T+PackedTranspose.tapeCount) A)
     (hblank : ∀ i, S.R (Fin.natAdd T i) = []) (depth : ℕ) :
     let cost := ((publicationHeaderCopies src).map (fun r => 6*(S.R r.1).length+6)).sum+1
@@ -59,10 +59,10 @@ theorem loadPublicationHeaders_exec_within
     obtain ⟨p,hp,rfl⟩ := List.mem_map.mp hr
     have h112 : p.2 ≠ 112 := by
       simp only [publicationHeaderAssignments,List.mem_cons,List.not_mem_nil,or_false] at hp
-      rcases hp with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+      rcases hp with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
     have h113 : p.2 ≠ 113 := by
       simp only [publicationHeaderAssignments,List.mem_cons,List.not_mem_nil,or_false] at hp
-      rcases hp with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+      rcases hp with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
     simp [List.nodup_cons,prefix_ne_routing,publicationReg_injective.eq_iff,h112,h113]
   have hsep : ∀ r ∈ publicationHeaderCopies src, ∀ p ∈ publicationHeaderCopies src, r.2 ≠ p.1 := by
     intro r hr p hp
@@ -81,16 +81,16 @@ theorem loadPublicationHeaders_exec_within
     exact (prefix_ne_routing _ _).symm
 
 /-- Publication masters never occupy either data port. -/
-theorem publicationHeaderAssignments_off_ports (r : Fin 13 × Fin 117)
+theorem publicationHeaderAssignments_off_ports (r : Fin 10 × Fin 117)
     (hr : r ∈ publicationHeaderAssignments) : r.2 ≠ 95 ∧ r.2 ≠ 96 := by
   simp only [publicationHeaderAssignments,List.mem_cons,List.not_mem_nil,or_false] at hr
-  rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+  rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
 
 /-- The loader supplies the exact projected bank read by publication, even
 when its two data ports are redirected into the caller prefix. -/
-theorem loadedPublicationHeaders_project_read (src : Fin 13 → Fin T)
+theorem loadedPublicationHeaders_project_read (src : Fin 10 → Fin T)
     (S : Stacks (T+tapeCount) A) (hblank : ∀ i, S.R (Fin.natAdd T i) = [])
-    (inputPort outputPort : Fin T) (r : Fin 13 × Fin 117)
+    (inputPort outputPort : Fin T) (r : Fin 10 × Fin 117)
     (hr : r ∈ publicationHeaderAssignments) :
     (embStk (publicationPlacement inputPort outputPort) (loadedPublicationHeaders src S)).R
       (publicationReg r.2) = S.R (Fin.castAdd tapeCount (src r.1)) := by
@@ -102,7 +102,7 @@ theorem loadedPublicationHeaders_project_read (src : Fin 13 → Fin T)
   exact loadedPublicationHeaders_read src S hblank r hr
 
 /-- Numerical output may be written before loading the publication bank. -/
-theorem loadedPublicationHeaders_update_prefix (src : Fin 13 → Fin T)
+theorem loadedPublicationHeaders_update_prefix (src : Fin 10 → Fin T)
     (S : Stacks (T+tapeCount) A) (k : Fin T) (xs : List (Fin (A+4)))
     (hoff : ∀ i, src i ≠ k) :
     loadedPublicationHeaders src {S with R := Function.update S.R (Fin.castAdd tapeCount k) xs} =

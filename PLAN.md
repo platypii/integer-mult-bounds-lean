@@ -32023,3 +32023,56 @@ MiB. Caller publication passes at 4004.2 MiB and selected execution at 4128.8
 MiB (about 4 GiB). Expanded dependency build passes (16707 jobs, 5.7 GiB combined
 peak). Axiom audit passes for 344266 declarations at 3177.4 MiB, permitting only
 propext, Quot.sound and Classical.choice. Default proof limits are unchanged.
+
+
+### S4 checkpoint: generate binary geometry inside the selected publication trace
+
+Retained actual-output publication now executes dimension setup, binary generation,
+geometry load / actual publication, binary retirement, then dimension retirement.
+The converter borrows the packet counter produced by setup; L*W is not recomputed.
+The three binary-source premises are replaced by freshness of slots 82/83/84.
+The geometry value function and fit facts are internal consequences of a, b,
+packet width and the existing rectangular bounds, not caller-supplied parameters.
+
+The retained packet layout and loader shrink from thirteen words to ten: the
+three binary source entries are removed. Source-word positions 6/9 are still
+generated origin/count, leaving eight supplied unary master words. The selected
+execution uses this shorter interface and still restores every register except
+its ambient destination. Metadata loading now costs 6*M+61 and working-copy
+retirement 2*M+21. Binary generation adds 21*(a+b+L*W)+36*V+85 time and twice that
+stock allowance; binary cleanup adds 6*V+7 time and zero stock. The stock bill is
+written in execution order to avoid reordering dependent tape indices.
+
+The integration uses the generic binary projection, external-update and frame
+lemmas. Profiling found that broad contradiction search on a small membership
+fact and unification of two names for the numerical port expanded unrelated
+control lists. Direct list inclusion and explicit port normalization remove
+both expansions, with no raised proof limits. Scalar time-bound reassociation is
+proved over arbitrary natural bills before instantiation. The prebuilt-binary
+retained interface can be restored from ce15ae01.
+
+Next generate the unary exponents/capacity from the actual class count and replica
+count, reuse existing width and geometry masters, and close the remaining master
+lifecycle. Grouped/seam execution, outer replica order, shared tensor setup,
+aggregate costs and root integration remain open. S4 remains incomplete; kappa
+unchanged.
+
+The next producer already exists: PhaseCellDyadicGatherCapacity's
+`gatherDimensions_exec_within` derives both exponents and minimal row capacity
+from the actual replica count and class count. Reuse its existing upow2/halving
+proofs. Redirect replicaCount to caller source 3 and realRows to generated source
+6; redirect headerReg 84 (replica exponent) to source 1, headerReg 85 (class
+exponent) to source 0, and capacityRows to source 2. Use SharedRegisterPlacement
+for these five shared ports and the existing routing suffix for private scratch.
+Run after origin/count generation, before metadata copying, then retire caller
+sources 0/1/2 together with 6/9 after publication. This should leave five supplied
+fundamental unary masters: replicas, core length, word width, binary width and
+ambient length. Choose the class exponent as Nat.clog 2 classCount rather than
+introducing another assumed exponent equality.
+
+Guarded retained generated-binary publication passes at 3966.1 MiB, ten-word
+caller publication at 3996.9 MiB and selected execution at 4131.2 MiB (about
+4 GiB). Expanded dependency build passes (16707 jobs, 4.5 GiB incremental combined
+peak; full integration refresh 11.2 GiB). Axiom audit passes for 344266 declarations
+at 3177.0 MiB, permitting only propext, Quot.sound and Classical.choice. Default
+proof limits are unchanged.

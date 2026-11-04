@@ -116,7 +116,7 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     let origins := (coreSubsetPublicationWindows (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀))
       pubClass.length g.hwidth pubClass.indices pubClass.sublist).origins
     ∀ (a Vpub : ℕ) (output : Fin T) (hout : bank (.recovery (.control .result)) ≠ output)
-    (pubSrc : Fin 13 → Fin T) (hpubOff : ∀ j, pubSrc j ≠ bank (.recovery (.control .result)))
+    (pubSrc : Fin 10 → Fin T) (hpubOff : ∀ j, pubSrc j ≠ bank (.recovery (.control .result)))
     (ambient : Fin (2^g.a) → List (Fin (prime+K+4)))
     (hambient : ∀ j, (ambient j).length = Sizes.s n₀ i*W)
     (outputTail : List (Fin (prime+K+4)))
@@ -146,12 +146,12 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     let metadata := publicationMetadataVolume pubSources pubBaseline
     let originCost := preparedCoreOriginsCost Vpub (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L
     ∃ v', ∃ n : ℕ, ∃ outputs, ∃ rows : batch.Rows, v'.user = v.user ∧
-      (n : ℝ) ≤ runTime+(originCost+((6*metadata+79)+
+      (n : ℝ) ≤ runTime+(originCost+((6*metadata+61)+
         (PackedTranspose.retainedPublicationTimeCost (K := K) hstates a g.a (L-2*radius) Vpub
-          W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W)))+(2*metadata+27))+(2*(origins.length*Vpub+origins.length)+5)) : ℕ) ∧
+          W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W)))+(2*metadata+21))+(2*(origins.length*Vpub+origins.length)+5)) : ℕ) ∧
       List.Forall₂ PackedNormalizedJob.output (List.ofFn jobs) outputs ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
-        (runStock+(3*originCost+(2*(6*metadata+79)+PackedTranspose.retainedPublicationStock (K := K) (U := U)
+        (runStock+(3*originCost+(2*(6*metadata+61)+PackedTranspose.retainedPublicationStock (K := K) (U := U)
           hstates a g.a (L-2*radius) Vpub W indices.length pubClass)))) depth
         (.seq runProg (.seq (placedPublicationOrigins e) (.seq (PackedTranspose.callerPublicationProgram pubSources
           (Fin.castAdd 175 (bank (.recovery (.control .result)))) (Fin.castAdd 175 output) hstates)
@@ -199,7 +199,7 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     simp only [hw,Nat.mul_zero,lt_self_iff_false] at hcorePacket
   have hcaller : Function.Injective (classCallerRegister : Fin T → Fin ((T+175)+PackedTranspose.tapeCount)) :=
     (Fin.castAdd_injective _ _).comp (Fin.castAdd_injective _ _)
-  have hsrcSep (j k : Fin 13) (hjk : j ≠ k) :
+  have hsrcSep (j k : Fin 10) (hjk : j ≠ k) :
       classCallerRegister (pubSrc j) ≠ classCallerRegister (pubSrc k) := hcaller.ne (hpubInj.ne hjk)
   let numerical := classCallerRegister (bank (.recovery (.control .result)))
   have he : Function.Injective e := publicationOriginPlacement_injective _ ((Fin.castAdd_injective _ _).comp hOriginInj)
@@ -230,7 +230,7 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
   have hcOff : classCallerRegister (pubSrc 6) ≠ numerical := hcaller.ne (hpubOff 6)
   have hDoff (k) (hp : k ≠ classCallerRegister (pubSrc 9)) (hc : k ≠ classCallerRegister (pubSrc 6)) :
       pubBaseline.R k = S.R k := originPacketState_off _ _ _ _ S k hp hc
-  have hwordsD (j : Fin 13) : pubBaseline.R (classCallerRegister (pubSrc j)) =
+  have hwordsD (j : Fin 10) : pubBaseline.R (classCallerRegister (pubSrc j)) =
       PackedTranspose.publicationHeaderWords a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) origins [] j :=
     PackedTranspose.publicationHeaderWords_of_owned_packet (classCallerRegister ∘ pubSrc) (hcaller.comp hpubInj)
       a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) origins S hpubWords j

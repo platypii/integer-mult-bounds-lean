@@ -15,18 +15,18 @@ open ScalarPlacement.ComputedClassBanks PackedTranspose
 noncomputable section
 variable {T Q A : ℕ} {P U : Type}
 
-def publicationMetadataVolume (src : Fin 13 → Fin T) (S : Stacks (T+PackedTranspose.tapeCount) A) : ℕ :=
+def publicationMetadataVolume (src : Fin 10 → Fin T) (S : Stacks (T+PackedTranspose.tapeCount) A) : ℕ :=
   ((publicationHeaderCopies src).map (fun r => (S.R r.1).length)).sum
 
-theorem publicationHeaderLoadCost_eq (src : Fin 13 → Fin T)
+theorem publicationHeaderLoadCost_eq (src : Fin 10 → Fin T)
     (S : Stacks (T+PackedTranspose.tapeCount) A) :
     ((publicationHeaderCopies src).map (fun r => 6*(S.R r.1).length+6)).sum+1 =
-      6*publicationMetadataVolume src S+79 := by
+      6*publicationMetadataVolume src S+61 := by
   simp [publicationHeaderCopies,publicationHeaderAssignments,publicationMetadataVolume]
   omega
 
 theorem retirePublicationHeaders_exec_within
-    (body : P → Pr P (T+PackedTranspose.tapeCount) Q A U) (src : Fin 13 → Fin T)
+    (body : P → Pr P (T+PackedTranspose.tapeCount) Q A U) (src : Fin 10 → Fin T)
     (k : Fin T) (ys : List (Fin (A+4)))
     (v : HS (T+PackedTranspose.tapeCount) Q A U) (S : Stacks (T+PackedTranspose.tapeCount) A)
     (hblank : ∀ i, S.R (Fin.natAdd T i) = []) (depth : ℕ) :
@@ -34,7 +34,7 @@ theorem retirePublicationHeaders_exec_within
     let F : Stacks (T+PackedTranspose.tapeCount) A := {M with R := Function.update M.R (Fin.castAdd PackedTranspose.tapeCount k) ys}
     ∃ v', v'.user = v.user ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v F)+depth+0) depth
-        (clearWords ((publicationHeaderCopies src).map Prod.snd)) (mk v F) (2*publicationMetadataVolume src S+27)
+        (clearWords ((publicationHeaderCopies src).map Prod.snd)) (mk v F) (2*publicationMetadataVolume src S+21)
         (mk v' {S with R := Function.update S.R (Fin.castAdd PackedTranspose.tapeCount k) ys}) := by
   dsimp only
   let M := loadedPublicationHeaders src S
@@ -56,7 +56,7 @@ theorem retirePublicationHeaders_exec_within
     rw [show F.R r.2 = M.R r.2 from Function.update_of_ne (hoff r hr) _ _]
     obtain ⟨p,hp,rfl⟩ := List.mem_map.mp hr
     exact congrArg List.length (loadedPublicationHeaders_read src S hblank p hp)
-  have hlen : regs.length = 13 := by simp [regs,publicationHeaderCopies,publicationHeaderAssignments]
+  have hlen : regs.length = 10 := by simp [regs,publicationHeaderCopies,publicationHeaderAssignments]
   rw [hvolume,hlen] at he
   have hend : {F with R := fun j => if j ∈ regs then [] else F.R j} = {S with R := Function.update S.R source ys} := by
     refine Stacks.ext rfl rfl rfl ?_

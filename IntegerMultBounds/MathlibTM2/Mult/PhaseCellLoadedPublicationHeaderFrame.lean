@@ -12,7 +12,7 @@ open FixedStreamedBank PackedTranspose
 noncomputable section
 variable {T A : ℕ}
 
-theorem loadedPublicationHeaders_off (src : Fin 13 → Fin T) (S : Stacks (T+PackedTranspose.tapeCount) A)
+theorem loadedPublicationHeaders_off (src : Fin 10 → Fin T) (S : Stacks (T+PackedTranspose.tapeCount) A)
     (k : Fin PackedTranspose.tapeCount) (hoff : ∀ r ∈ publicationHeaderAssignments, publicationReg r.2 ≠ k) :
     (loadedPublicationHeaders src S).R (Fin.natAdd T k) = S.R (Fin.natAdd T k) := by
   apply copyWordHeadersR_off
@@ -20,7 +20,7 @@ theorem loadedPublicationHeaders_off (src : Fin 13 → Fin T) (S : Stacks (T+Pac
   obtain ⟨p,hp,rfl⟩ := List.mem_map.mp hr
   exact (Fin.natAdd_injective _ _).ne (hoff p hp)
 
-theorem loadedPublicationHeaders_project_fresh (src : Fin 13 → Fin T)
+theorem loadedPublicationHeaders_project_fresh (src : Fin 10 → Fin T)
     (S : Stacks (T+PackedTranspose.tapeCount) A) (hblank : ∀ i, S.R (Fin.natAdd T i) = [])
     (inputPort outputPort : Fin T) (k : Fin PackedTranspose.tapeCount)
     (hnum : k ≠ numericalPort) (hout : k ≠ ambientPort)
@@ -29,7 +29,7 @@ theorem loadedPublicationHeaders_project_fresh (src : Fin 13 → Fin T)
   change (loadedPublicationHeaders src S).R (publicationPlacement inputPort outputPort k) = []
   rw [publicationPlacement_private _ _ _ hnum hout,loadedPublicationHeaders_off src S k hoff,hblank]
 
-theorem loadedPublicationHeaders_generator_fresh (src : Fin 13 → Fin T)
+theorem loadedPublicationHeaders_generator_fresh (src : Fin 10 → Fin T)
     (S : Stacks (T+PackedTranspose.tapeCount) A) (hblank : ∀ i, S.R (Fin.natAdd T i) = [])
     (inputPort outputPort : Fin T) (i : Fin 117) (hnum : i ≠ 95) (hout : i ≠ 96)
     (hoff : ∀ r ∈ publicationHeaderAssignments, r.2 ≠ i) :
@@ -38,12 +38,12 @@ theorem loadedPublicationHeaders_generator_fresh (src : Fin 13 → Fin T)
     (publicationReg_injective.ne hnum) (publicationReg_injective.ne hout)
     (fun r hr => publicationReg_injective.ne (hoff r hr))
 
-theorem publicationHeaderAssignments_lower (r : Fin 13 × Fin 117)
+theorem publicationHeaderAssignments_lower (r : Fin 10 × Fin 117)
     (hr : r ∈ publicationHeaderAssignments) : 33 ≤ r.2.val := by
   simp only [publicationHeaderAssignments,List.mem_cons,List.not_mem_nil,or_false] at hr
-  rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+  rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
 
-theorem loadedPublicationHeaders_small_fresh (src : Fin 13 → Fin T)
+theorem loadedPublicationHeaders_small_fresh (src : Fin 10 → Fin T)
     (S : Stacks (T+PackedTranspose.tapeCount) A) (hblank : ∀ i, S.R (Fin.natAdd T i) = [])
     (inputPort outputPort : Fin T) (i : Fin 117) (hi : i.val < 33) :
     (embStk (publicationPlacement inputPort outputPort) (loadedPublicationHeaders src S)).R (publicationReg i) = [] := by
@@ -55,14 +55,14 @@ theorem loadedPublicationHeaders_small_fresh (src : Fin 13 → Fin T)
     rw [he] at hb
     omega
 
-theorem loadedPublicationHeaders_extra_fresh (src : Fin 13 → Fin T)
+theorem loadedPublicationHeaders_extra_fresh (src : Fin 10 → Fin T)
     (S : Stacks (T+PackedTranspose.tapeCount) A) (hblank : ∀ i, S.R (Fin.natAdd T i) = [])
     (inputPort outputPort : Fin T) (i : Fin 7) :
     (embStk (publicationPlacement inputPort outputPort) (loadedPublicationHeaders src S)).R (extra i) = [] :=
   loadedPublicationHeaders_project_fresh src S hblank inputPort outputPort _
     (base_extra _ _).symm (base_extra _ _).symm (fun _ _ => base_extra _ _)
 
-theorem loadedPublicationHeaders_worker_fresh (src : Fin 13 → Fin T)
+theorem loadedPublicationHeaders_worker_fresh (src : Fin 10 → Fin T)
     (S : Stacks (T+PackedTranspose.tapeCount) A) (hblank : ∀ i, S.R (Fin.natAdd T i) = [])
     (inputPort outputPort : Fin T) (i : Fin FixedStreamedBank.tapeCount) (hi : i ≠ FixedStreamedBank.control 7) :
     (embStk (publicationPlacement inputPort outputPort) (loadedPublicationHeaders src S)).R (base (callerWorker i)) = [] := by

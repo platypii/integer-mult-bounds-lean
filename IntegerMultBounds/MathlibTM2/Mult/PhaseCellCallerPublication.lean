@@ -4,7 +4,6 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedAllocatedPublic
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLoadedPublicationHeaderFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationHeaderRetirement
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationHeaderWords
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationBinaryDimensions
 
 /-! Actual numerical output is published from a fresh routing suffix. Retained
 caller packets are loaded after numerical execution and retired after scatter. -/
@@ -20,7 +19,7 @@ noncomputable section
 open FixedStreamedBank ScalarPlacement ScalarPlacement.ComputedClassBanks
 variable {T Q K s t width : ℕ} [NeZero s] [NeZero t] {P U : Type}
 
-def callerPublicationProgram (src : Fin 13 → Fin T) (inputPort outputPort : Fin T)
+def callerPublicationProgram (src : Fin 10 → Fin T) (inputPort outputPort : Fin T)
     (hstates : FixedStreamedBank.stateCount ≤ Q) : Pr P (T+tapeCount) Q (prime+K) U :=
   .seq (loadPublicationHeaders src) (.seq (retainedPublicationProgram inputPort outputPort hstates)
     (clearWords ((publicationHeaderCopies src).map Prod.snd)))
@@ -39,7 +38,7 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
     (ambient : Fin (2^b) → List (Fin (prime+K+4))) (hambient : ∀ j, (ambient j).length = s*batch.W)
     (outputTail : List (Fin (prime+K+4)))
     (v : HS (T+tapeCount) Q (prime+K) U) (S : Stacks (T+tapeCount) (prime+K))
-    (originTail : List (Fin (prime+K+4))) (src : Fin 13 → Fin T)
+    (originTail : List (Fin (prime+K+4))) (src : Fin 10 → Fin T)
     (hsrcOff : ∀ i, src i ≠ inputPort)
     (hmasters : ∀ i, S.R (Fin.castAdd tapeCount (src i)) =
       publicationHeaderWords a b L batch.W V s
@@ -50,12 +49,12 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
     (hdst : S.R (Fin.castAdd tapeCount outputPort) = (List.ofFn ambient).flatten++outputTail)
     :
     ∃ rows : batch.Rows, ∃ v' n, v'.user = v.user ∧
-      n ≤ (6*publicationMetadataVolume src S+79)+
+      n ≤ (6*publicationMetadataVolume src S+61)+
         (retainedPublicationTimeCost (K := K) hstates a b L V batch.W batch.records.length g hw outputs.reverse.flatten.length+
-          (2*publicationMetadataVolume src S+27)) ∧
+          (2*publicationMetadataVolume src S+21)) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v
           {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten})+depth+
-        (2*(6*publicationMetadataVolume src S+79)+
+        (2*(6*publicationMetadataVolume src S+61)+
           retainedPublicationStock (K := K) (U := U) hstates a b L V batch.W batch.records.length g)) depth
         (callerPublicationProgram src inputPort outputPort hstates)
         (mk v {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten}) n
@@ -68,20 +67,9 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
   have hwV := bounds.wordFit
   have hsV := bounds.ambientFit
   have hvolume := bounds.ambientVolumeFit
-  let value (j : Fin tapeCount) := if j = publicationGeometryInput 0 then a else
-    if j = publicationGeometryInput 1 then b else L*batch.W
-  have hvalues (i : Fin 3) : value (publicationGeometryInput i) = ![a,b,L*batch.W] i := by
-    fin_cases i <;> simp [value,publicationGeometryInput,publicationReg_injective.eq_iff]
-  have hbinaryFits := PublicationBinaryDimensions.fits_of_rectangle a b (L*batch.W) V hbits hfit
-  have hinputFit (i : Fin 3) : value (publicationGeometryInput i) < 2^V := by
-    rw [hvalues]
-    fin_cases i
-    · exact hbinaryFits.1
-    · exact hbinaryFits.2.1
-    · exact hbinaryFits.2.2
   let M := loadedPublicationHeaders src S
   let F : Stacks (T+tapeCount) (prime+K) := {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten}
-  have hread (r : Fin 13 × Fin 117) (hr : r ∈ publicationHeaderAssignments) :
+  have hread (r : Fin 10 × Fin 117) (hr : r ∈ publicationHeaderAssignments) :
       (embStk (publicationPlacement inputPort outputPort) M).R (publicationReg r.2) =
         publicationHeaderWords a b L batch.W V s
           (coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).origins originTail r.1 :=
@@ -102,7 +90,7 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
     simpa only [embStk,Function.comp_apply,publicationPlacement_numerical,hprefix] using hsource
   have hdstM : (embStk (publicationPlacement inputPort outputPort) M).R ambientPort = (List.ofFn ambient).flatten++outputTail := by
     simpa only [embStk,Function.comp_apply,publicationPlacement_ambient,hprefix] using hdst
-  have hmaster (j : Fin 13) (i : Fin 117) (hi : (j,i) ∈ publicationHeaderAssignments) := hread (j,i) hi
+  have hmaster (j : Fin 10) (i : Fin 117) (hi : (j,i) ∈ publicationHeaderAssignments) := hread (j,i) hi
   obtain ⟨v₁,hu₁,he₁,_,_⟩ := loadPublicationHeaders_exec_within body src v F
     (by intro i; simpa only [F,Function.update_of_ne (prefix_ne_routing inputPort i).symm] using hblank i) depth
   have hloadEnd : loadedPublicationHeaders src F =
@@ -110,7 +98,7 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
     loadedPublicationHeaders_update_prefix src S inputPort outputs.reverse.flatten hsrcOff
   rw [hloadEnd] at he₁
   have hloadCost : ((publicationHeaderCopies src).map (fun r => 6*(F.R r.1).length+6)).sum+1 =
-      6*publicationMetadataVolume src S+79 := by
+      6*publicationMetadataVolume src S+61 := by
     have hreadSrc (r) (hr : r ∈ publicationHeaderCopies src) : F.R r.1 = S.R r.1 := by
       obtain ⟨p,hp,rfl⟩ := List.mem_map.mp hr
       exact Function.update_of_ne ((Fin.castAdd_injective _ _).ne (hsrcOff p.1)) _ _
@@ -124,7 +112,7 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
   rw [hloadCost] at he₁
   obtain ⟨rows,v₂,n₂,hu₂,hn₂,he₂⟩ := retained_allocated_publish_outputs_exec_within body inputPort outputPort hports
     hstates a b L V batch outputs hgood g hkeys hcoreWidth hw hlength hw1 hpacket hbits hfit hA hcapacity depth
-    ambient hambient outputTail value hinputFit hvalues v₁ M
+    ambient hambient outputTail v₁ M
     (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using congrArg List.length (hmaster 0 61 (by decide +kernel)))
     (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using congrArg List.length (hmaster 1 62 (by decide +kernel)))
     (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using congrArg List.length (hmaster 2 60 (by decide +kernel)))
@@ -145,12 +133,7 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
       | z i => fin_cases i <;> exact hgen _ (by decide +kernel))
     (by simpa [publicationHeaderWords] using congrArg List.length (hmaster 7 35 (by decide +kernel)))
     (hgen 106 (by decide +kernel))
-    (by
-      intro i
-      fin_cases i
-      · rw [hvalues]; simpa [publicationGeometryInput,publicationHeaderWords] using hmaster 10 82 (by decide +kernel)
-      · rw [hvalues]; simpa [publicationGeometryInput,publicationHeaderWords] using hmaster 11 83 (by decide +kernel)
-      · rw [hvalues]; simpa [publicationGeometryInput,publicationHeaderWords] using hmaster 12 84 (by decide +kernel))
+    (by intro i; fin_cases i <;> exact hgen _ (by decide +kernel))
     (hgen 58 (by decide +kernel)) (hgen 65 (by decide +kernel)) (hgen 66 (by decide +kernel))
     (hgen 106 (by decide +kernel))
     (by intro r; exact hsmall _ (by have := originReg_range r; omega))
@@ -191,7 +174,7 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
   let ys := (List.ofFn fun j => g.output batch.W hw (rows.classRows g hkeys j) (ambient j)).flatten++outputTail
   obtain ⟨v₃,hu₃,he₃⟩ := retirePublicationHeaders_exec_within body src outputPort ys v₂ S hblank depth
   have hwhole := mn_seq_within_add he₁ (mn_seq_within_add he₂ he₃)
-  refine ⟨rows,v₃,(6*publicationMetadataVolume src S+79)+(n₂+(2*publicationMetadataVolume src S+27)),
+  refine ⟨rows,v₃,(6*publicationMetadataVolume src S+61)+(n₂+(2*publicationMetadataVolume src S+21)),
     hu₃.trans (hu₂.trans hu₁),?_,?_⟩
   · exact Nat.add_le_add_left (Nat.add_le_add_right hn₂ _) _
   · simpa only [callerPublicationProgram,F,M,ys,Nat.add_zero] using hwhole
