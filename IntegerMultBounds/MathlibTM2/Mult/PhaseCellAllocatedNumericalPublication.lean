@@ -53,7 +53,7 @@ theorem allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q
     (_ : (embStk (publicationPlacement inputPort outputPort) S).R (base (callerGenerator 116)) = []) (_ : ∀ i, (embStk (publicationPlacement inputPort outputPort) S).L i = [])
     (_ : ∀ i, i ≠ workerReg (reg pay) → i ≠ FixedStreamedBank.control 7 → (embStk (publicationPlacement inputPort outputPort) S).R (base (callerWorker i)) = [])
     (_ : (embStk (publicationPlacement inputPort outputPort) S).R (extra 1) = [])
-    (_ : ((embStk (publicationPlacement inputPort outputPort) S).R (publicationReg 68)).length = (2^b)*L*batch.W)
+    (_ : (embStk (publicationPlacement inputPort outputPort) S).R (publicationReg 68) = [])
     (_ : ∀ i ∈ [(publicationReg 69),(publicationReg 70),(publicationReg 71),(publicationReg 72)], (embStk (publicationPlacement inputPort outputPort) S).R i = [])
     (_ : (embStk (publicationPlacement inputPort outputPort) S).R (extra 4) = [])
     (_ : ∀ i ∈ [planeReg false,planeReg true,extra 2,extra 3,extra 5,extra 6], (embStk (publicationPlacement inputPort outputPort) S).R i = [])
@@ -74,19 +74,18 @@ theorem allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q
     (_ : ∀ i ∈ [(publicationReg 73),(publicationReg 74),(publicationReg 75),(publicationReg 76),(publicationReg 77),(publicationReg 78),(publicationReg 81)], (embStk (publicationPlacement inputPort outputPort) S).R i = [])
     (_ : (embStk (publicationPlacement inputPort outputPort) S).R (publicationReg 80) = []),
     ∃ rows : batch.Rows, ∃ v' n, v'.user = v.user ∧
-      n ≤ ((28*V+33)+((reverseCopyRowsCost batch.records.length ((2^b)*L*batch.W)+2*outputs.reverse.flatten.length+2)+(((6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
+      n ≤ ((28*V+33)+((PackedExactBatch.generatedOutputCopyTimeCost batch.records.length (2^b) L batch.W outputs.reverse.flatten.length)+(((6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
         (26*(2^a*(2^b*(L*batch.W)))+24+2*restoringTimeCost hstates a b (L*batch.W) V))+
         ((prepareReplicaPublicationPagesCost V s g.length batch.W g.indices.length+
           (replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6))+
           (2*(g.length*batch.W+(gatherControls (prime+K) ((coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).gaps batch.W)).length)+5)))))+(8*V+9) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten})+depth+
-        (3*(28*V+33)+2*reverseCopyRowsCost batch.records.length ((2^b)*L*batch.W)+((2*(6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
+        (3*(28*V+33)+PackedExactBatch.generatedOutputCopyStock batch.records.length (2^b) L batch.W+((2*(6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
           (40*(2^a*(2^b*(L*batch.W)))+38+restoringStockAllowance hstates a b (L*batch.W) V))+
           (mnProgPush (prepareReplicaPublicationPages (P := Empty) (Q := Q) (A := prime+K) (U := U))*
             prepareReplicaPublicationPagesCost V s g.length batch.W g.indices.length+2*(replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6))))) depth
         (embProg (publicationPlacement inputPort outputPort) Empty.elim (.seq (chirpBankLoad publicationGeometryBank publicationGeometryInput (publicationReg 35) (publicationReg 106))
-          (.seq (.seq (.seq (reverseCopyRows (publicationDimensionBank .rowCount) (publicationReg 69) (publicationReg 68) numericalPort (publicationReg 70) (extra 1) (publicationReg 71) (publicationReg 72))
-          (uclear numericalPort)) (.seq (.seq (ownedPrefixPadding (publicationDimensionBank .exponent) (publicationDimensionBank .packet) (extra 1) (publicationReg 58) (publicationReg 65) (publicationReg 66) (pairSym (prime+K) false false))
+          (.seq (.seq (PackedExactBatch.generatedOutputCopyProgram (publicationDimensionBank .clock) (publicationDimensionBank .packet) (publicationDimensionBank .rowCount) (publicationReg 69) (publicationReg 68) numericalPort (publicationReg 70) (extra 1) (publicationReg 71) (publicationReg 72)) (.seq (.seq (ownedPrefixPadding (publicationDimensionBank .exponent) (publicationDimensionBank .packet) (extra 1) (publicationReg 58) (publicationReg 65) (publicationReg 66) (pairSym (prime+K) false false))
           (program hstates))
           (.seq (embProg publicationPageBank Empty.elim (prepareReplicaPublicationPages (P := Empty)))
             (.seq (restoringReplicaPublication (publicationDimensionBank .clock) (publicationReg 67) (publicationDimensionBank .padding) (publicationDimensionBank .wordWidth) (publicationReg 73) (publicationPageBank 92) (publicationReg 74) (publicationReg 75) (publicationPageBank 103) (extra 1) ambientPort (publicationReg 76) (publicationReg 77) (publicationReg 78) (publicationReg 79) (publicationReg 80) (publicationReg 81))
@@ -94,7 +93,7 @@ theorem allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q
         (mk v {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten}) n
         (mk v' {S with R := (Function.update S.R (Fin.castAdd tapeCount outputPort)
           ((List.ofFn fun j => g.output batch.W hw (rows.classRows g hkeys j) (ambient j)).flatten++outputTail))}) := by
-  intro hexponent hpacketWidth hpad htmp hsaved hz hblank hstageCount hL hfresh hsourceBlank hcopyWidth hcopyFresh
+  intro hexponent hpacketWidth hpad htmp hsaved hz hblank hstageCount hL hfresh hsourceBlank hcopyBlank hcopyFresh
     hcount hcodec hdst hclock hclockSave hpadRows hlineRows hwV hsV hvolume originTail
     hpageWidth hpageLength hOrigins hpageCount hpageBlank hpageFresh hclean houtAcc
   let B := embStk (publicationPlacement inputPort outputPort) S
@@ -115,6 +114,14 @@ theorem allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q
     have hc := congrArg List.length hpageCount
     simpa only [publicationPageBank_count,publicationDimensionBank,publicationDimensionIndex,
       List.length_replicate,hN] using hc
+  have hcopyReplicas : (M.R (publicationDimensionBank .clock)).length = 2^b := by
+    change (M.R (publicationReg 54)).length = 2^b
+    rw [hcontrolFrame 54 (by decide +kernel)]
+    exact hclock
+  have hcopyPacket : (M.R (publicationDimensionBank .packet)).length = L*batch.W := by
+    change (M.R (publicationReg 52)).length = L*batch.W
+    rw [hcontrolFrame 52 (by decide +kernel)]
+    exact hpacketWidth
   have hlist (ks : List (Fin 117)) (hks : ∀ i ∈ ks, 51 ≤ i.val ∧ i.val ≤ 84) :
       ∀ k ∈ ks.map publicationReg, M.R k = B.R k := by
     intro k hk
@@ -134,7 +141,7 @@ theorem allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q
   simpa only [publicationPlacement_numerical,publicationPlacement_ambient] using
     placed_publish_outputs_exec_within body (publicationPlacement inputPort outputPort)
       (publicationPlacement_injective inputPort outputPort hports)
-      hstates a b L V batch outputs hgood (publicationDimensionBank .rowCount) (publicationReg 69) (publicationReg 68) numericalPort (publicationReg 70) (publicationReg 71) (publicationReg 72) publicationCopy_registers
+      hstates a b L V batch outputs hgood (publicationDimensionBank .clock) (publicationDimensionBank .packet) (publicationDimensionBank .rowCount) (publicationReg 69) (publicationReg 68) numericalPort (publicationReg 70) (publicationReg 71) (publicationReg 72) publicationCopy_registers
       g hkeys hcoreWidth hw hlength hw1 hpacket hbits hfit hA (publicationDimensionBank .exponent) (publicationDimensionBank .packet) (publicationReg 58) (publicationReg 65) (publicationReg 66) publicationPadding_registers hcapacity depth
       ambient hambient publicationPageBank publicationPageBank_injective publicationPageBank_off_payload
       (publicationDimensionBank .clock) (publicationReg 67) (publicationDimensionBank .padding) (publicationDimensionBank .wordWidth) (publicationReg 73) (publicationReg 74) (publicationReg 75) ambientPort (publicationReg 76) (publicationReg 77) (publicationReg 78) (publicationReg 79) (publicationReg 80) (publicationReg 81)
@@ -148,10 +155,7 @@ theorem allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q
       (by
         change (M.R (publicationReg 51)).length = a+b
         rw [hcontrolFrame 51 (by decide +kernel)]
-        exact hexponent) (by
-        change (M.R (publicationReg 52)).length = L*batch.W
-        rw [hcontrolFrame 52 (by decide +kernel)]
-        exact hpacketWidth) (by
+        exact hexponent) hcopyPacket (by
         change M.R (publicationReg 58) = []
         rw [hcontrolFrame 58 (by decide +kernel)]
         exact hpad) (by
@@ -179,23 +183,21 @@ theorem allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q
         rw [publicationGeometryLoad_worker publicationGeometryInput V value B i]
         exact hfresh i hi hj)
       (by rw [publicationGeometryLoad_extra publicationGeometryInput V value B 1]; exact hsourceBlank)
+      hcopyReplicas hcopyPacket
       (by
         change (M.R (publicationReg 36)).length = batch.records.length
         rw [hcontrolFrame 36 (by decide +kernel)]
         exact hcopyCount) (by
-        change (M.R (publicationReg 68)).length = (2^b)*L*batch.W
+        change M.R (publicationReg 68) = []
         rw [hcontrolFrame 68 (by decide +kernel)]
-        exact hcopyWidth) (by
+        exact hcopyBlank) (by
         intro i hi
         rw [hcopies i hi]
         exact hcopyFresh i hi)
       (by rw [publicationGeometryLoad_extra publicationGeometryInput V value B 4]; exact hcount)
       (by intro i hi; rw [publicationGeometryLoad_codec publicationGeometryInput V value B i hi]; exact hcodec i hi)
       (by rw [publicationGeometryLoad_ambient publicationGeometryInput V value B]; exact hdst)
-      (by
-        change (M.R (publicationReg 54)).length = 2^b
-        rw [hcontrolFrame 54 (by decide +kernel)]
-        exact hclock) (by
+      hcopyReplicas (by
         change M.R (publicationReg 67) = []
         rw [hcontrolFrame 67 (by decide +kernel)]
         exact hclockSave) (by

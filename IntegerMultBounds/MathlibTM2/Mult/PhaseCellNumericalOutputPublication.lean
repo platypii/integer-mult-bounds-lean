@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComputedClassPublication
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedOutputPublicationCopy
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedOutputPublicationCopy
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedClassScatter
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOwnedPrefixPaddingStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPaddedArchiveTileData
@@ -26,8 +26,8 @@ theorem publish_outputs_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
     (batch : PackedExactBatch (prime+K) s t (2^b) L)
     (outputs : List (List (Fin (prime+K+4))))
     (hgood : List.Forall₂ PackedNormalizedJob.output batch.records outputs)
-    (copyCount copySavedCount copyWidth numerical archive copySaved copyTmp : Fin tapeCount)
-    (hcopyReg : [copyCount,copySavedCount,copyWidth,numerical,archive,extra 1,copySaved,copyTmp].Nodup)
+    (copyReplicas copyPacket copyCount copySavedCount copyWidth numerical archive copySaved copyTmp : Fin tapeCount)
+    (hcopyReg : [copyReplicas,copyPacket,copyCount,copySavedCount,copyWidth,numerical,archive,extra 1,copySaved,copyTmp].Nodup)
     (g : CorePublicationClass s width) (hkeys : batch.records.map (fun r => r.k) = g.indices)
     (hcoreWidth : ∀ r ∈ batch.records, r.coreWidth = width) (hw : 0 < width)
     (hlength : L = g.length) (hw1 : 1 ≤ batch.W)
@@ -52,8 +52,10 @@ theorem publish_outputs_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
     (hstageCount : S.R (base (callerGenerator 116)) = []) (hL : ∀ i, S.L i = [])
     (hfresh : ∀ i, i ≠ workerReg (reg pay) → i ≠ FixedStreamedBank.control 7 → S.R (base (callerWorker i)) = [])
     (hsourceBlank : S.R (extra 1) = []) (hnumericalBlank : S.R numerical = [])
+    (hcopyReplicas : (S.R copyReplicas).length = 2^b)
+    (hcopyPacket : (S.R copyPacket).length = L*batch.W)
     (hcopyCount : (S.R copyCount).length = batch.records.length)
-    (hcopyWidth : (S.R copyWidth).length = (2^b)*L*batch.W)
+    (hcopyBlank : S.R copyWidth = [])
     (hcopyFresh : ∀ i ∈ [copySavedCount,archive,copySaved,copyTmp], S.R i = [])
     (hcount : S.R (extra 4) = [])
     (hcodec : ∀ i ∈ [planeReg false,planeReg true,extra 2,extra 3,extra 5,extra 6], S.R i = [])
@@ -74,18 +76,17 @@ theorem publish_outputs_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
     (hclean : ∀ i ∈ [retireCount,savedControl,gap,acc,trash,pubTmp,pubSaved], S.R i = [])
     (houtAcc : S.R outAcc = []) :
     ∃ rows : batch.Rows, ∃ v' n, v'.user = v.user ∧
-      n ≤ (reverseCopyRowsCost batch.records.length ((2^b)*L*batch.W)+2*outputs.reverse.flatten.length+2)+(((6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
+      n ≤ (PackedExactBatch.generatedOutputCopyTimeCost batch.records.length (2^b) L batch.W outputs.reverse.flatten.length)+(((6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
         (26*(2^a*(2^b*(L*batch.W)))+24+2*restoringTimeCost hstates a b (L*batch.W) V))+
         ((prepareReplicaPublicationPagesCost V s g.length batch.W g.indices.length+
           (replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6))+
           (2*(g.length*batch.W+(gatherControls (prime+K) ((coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).gaps batch.W)).length)+5))) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v {S with R := Function.update S.R numerical outputs.reverse.flatten})+depth+
-        (2*reverseCopyRowsCost batch.records.length ((2^b)*L*batch.W)+((2*(6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
+        (PackedExactBatch.generatedOutputCopyStock batch.records.length (2^b) L batch.W+((2*(6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
           (40*(2^a*(2^b*(L*batch.W)))+38+restoringStockAllowance hstates a b (L*batch.W) V))+
           (mnProgPush (prepareReplicaPublicationPages (P := Empty) (Q := Q) (A := prime+K) (U := U))*
             prepareReplicaPublicationPagesCost V s g.length batch.W g.indices.length+2*(replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6))))) depth
-        (.seq (.seq (reverseCopyRows copyCount copySavedCount copyWidth numerical archive (extra 1) copySaved copyTmp)
-          (uclear numerical)) (.seq (.seq (ownedPrefixPadding exponent packet (extra 1) pad tmp saved (pairSym (prime+K) false false))
+        (.seq (PackedExactBatch.generatedOutputCopyProgram copyReplicas copyPacket copyCount copySavedCount copyWidth numerical archive (extra 1) copySaved copyTmp) (.seq (.seq (ownedPrefixPadding exponent packet (extra 1) pad tmp saved (pairSym (prime+K) false false))
           (program hstates))
           (.seq (embProg e Empty.elim (prepareReplicaPublicationPages (P := Empty)))
             (.seq (restoringReplicaPublication clock clockSave padRows wordWidth retireCount (e 92) savedControl gap (e 103) (extra 1) dst acc trash pubTmp lineRows outAcc pubSaved)
@@ -96,10 +97,12 @@ theorem publish_outputs_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
   let F : Stacks tapeCount (prime+K) := {S with R := Function.update S.R numerical outputs.reverse.flatten}
   have hc := hcopyReg
   regs_ne hc
-  obtain ⟨rows,v₁,n₁,hu₁,hn₁,he₁⟩ := PackedExactBatch.move_outputs_for_publication_exec_within body batch outputs hgood
-    copyCount copySavedCount copyWidth numerical archive (extra 1) copySaved copyTmp hcopyReg v F
+  obtain ⟨rows,v₁,n₁,hu₁,hn₁,he₁⟩ := PackedExactBatch.generated_move_outputs_exec_within body batch outputs hgood
+    copyReplicas copyPacket copyCount copySavedCount copyWidth numerical archive (extra 1) copySaved copyTmp hcopyReg v F
+    (by simpa only [F,Function.update_of_ne ‹copyReplicas ≠ numerical›] using hcopyReplicas)
+    (by simpa only [F,Function.update_of_ne ‹copyPacket ≠ numerical›] using hcopyPacket)
     (by simpa only [F,Function.update_of_ne ‹copyCount ≠ numerical›] using hcopyCount)
-    (by simpa only [F,Function.update_of_ne ‹copyWidth ≠ numerical›] using hcopyWidth)
+    (by simpa only [F,Function.update_of_ne ‹copyWidth ≠ numerical›] using hcopyBlank)
     (by simp only [F,Function.update_self])
     (by
       intro i hi

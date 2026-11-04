@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4244 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4245 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31695,3 +31695,32 @@ Guarded control placement passes at 2738.1 MiB, expanded frame at 2728.5 MiB and
 allocated publication at 3066.5 MiB. Expanded dependency build passes (16692 jobs,
 3.5 GiB combined peak). Axiom audit passes for 344086 declarations at 3160.3 MiB,
 permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: generate copy width inside the actual numerical handoff
+
+`PhaseCellGeneratedOutputPublicationCopy` borrows replica and packet counters,
+executes the existing unary product, runs the restoring actual-output handoff,
+and clears the generated copy-width counter before returning. It restores both
+borrowed counters and all scratch. The exact endpoint remains the ordered stream
+plus retirement of the original numerical result. One shared program definition
+and named time/stock bills replace repeated expanded handoff syntax.
+
+The numerical, geometry-loaded, placed and allocated entry points now use this
+program. The concrete caller reuses its replica clock and existing packet width;
+no new retained master is introduced. The prebuilt copy-width length premise is
+replaced by blank-counter freshness. Copy separation now covers these two
+borrowed dimensions through the same generic port-injectivity proof.
+
+Setup adds B*(4*(L*w)+9)+4 steps; clearing the generated width adds 2*(B*(L*w))+2.
+Setup stock is twice its time bound, and clearing adds none. Actual numerical
+output certificates, both temporary data-port restorations, ambient suffix and
+replica order retain their previous contracts. Next compose the retained working
+header lifecycle with this concrete handoff and selected numerical execution;
+origin/master production, grouped/seam execution, locality/tensor setup sharing
+and root integration remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded generated-copy check passes at 3028.0 MiB, geometry-loaded publication at
+3891.5 MiB and allocated publication at 3064.5 MiB. Expanded dependency build
+passes (16693 jobs, 1.1 GiB incremental combined peak; focused build 4.3 GiB).
+Axiom audit passes for 344093 declarations at 3154.1 MiB, permitting only propext,
+Quot.sound and Classical.choice.

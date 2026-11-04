@@ -30,8 +30,8 @@ theorem placed_publish_outputs_exec_within (body : P → Pr P T Q (prime+K) U)
     (batch : PackedExactBatch (prime+K) s t (2^b) L)
     (outputs : List (List (Fin (prime+K+4))))
     (hgood : List.Forall₂ PackedNormalizedJob.output batch.records outputs)
-    (copyCount copySavedCount copyWidth numerical archive copySaved copyTmp : Fin tapeCount)
-    (hcopyReg : [copyCount,copySavedCount,copyWidth,numerical,archive,extra 1,copySaved,copyTmp].Nodup)
+    (copyReplicas copyPacket copyCount copySavedCount copyWidth numerical archive copySaved copyTmp : Fin tapeCount)
+    (hcopyReg : [copyReplicas,copyPacket,copyCount,copySavedCount,copyWidth,numerical,archive,extra 1,copySaved,copyTmp].Nodup)
     (g : CorePublicationClass s width) (hkeys : batch.records.map (fun r => r.k) = g.indices)
     (hcoreWidth : ∀ r ∈ batch.records, r.coreWidth = width) (hw : 0 < width)
     (hlength : L = g.length) (hw1 : 1 ≤ batch.W)
@@ -68,8 +68,9 @@ theorem placed_publish_outputs_exec_within (body : P → Pr P T Q (prime+K) U)
     (_ : M.R (base (callerGenerator 116)) = []) (_ : ∀ i, M.L i = [])
     (_ : ∀ i, i ≠ workerReg (reg pay) → i ≠ FixedStreamedBank.control 7 → M.R (base (callerWorker i)) = [])
     (_ : M.R (extra 1) = [])
+    (_ : (M.R copyReplicas).length = 2^b) (_ : (M.R copyPacket).length = L*batch.W)
     (_ : (M.R copyCount).length = batch.records.length)
-    (_ : (M.R copyWidth).length = (2^b)*L*batch.W)
+    (_ : M.R copyWidth = [])
     (_ : ∀ i ∈ [copySavedCount,archive,copySaved,copyTmp], M.R i = [])
     (_ : M.R (extra 4) = [])
     (_ : ∀ i ∈ [planeReg false,planeReg true,extra 2,extra 3,extra 5,extra 6], M.R i = [])
@@ -90,19 +91,18 @@ theorem placed_publish_outputs_exec_within (body : P → Pr P T Q (prime+K) U)
     (_ : ∀ i ∈ [retireCount,savedControl,gap,acc,trash,pubTmp,pubSaved], M.R i = [])
     (_ : M.R outAcc = []),
     ∃ rows : batch.Rows, ∃ v' n, v'.user = v.user ∧
-      n ≤ ((28*V+33)+((reverseCopyRowsCost batch.records.length ((2^b)*L*batch.W)+2*outputs.reverse.flatten.length+2)+(((6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
+      n ≤ ((28*V+33)+((PackedExactBatch.generatedOutputCopyTimeCost batch.records.length (2^b) L batch.W outputs.reverse.flatten.length)+(((6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
         (26*(2^a*(2^b*(L*batch.W)))+24+2*restoringTimeCost hstates a b (L*batch.W) V))+
         ((prepareReplicaPublicationPagesCost V s g.length batch.W g.indices.length+
           (replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6))+
           (2*(g.length*batch.W+(gatherControls (prime+K) ((coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).gaps batch.W)).length)+5)))))+(8*V+9) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v {S with R := Function.update S.R (placement numerical) outputs.reverse.flatten})+depth+
-        (3*(28*V+33)+2*reverseCopyRowsCost batch.records.length ((2^b)*L*batch.W)+((2*(6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
+        (3*(28*V+33)+PackedExactBatch.generatedOutputCopyStock batch.records.length (2^b) L batch.W+((2*(6*(2^(a+b)*(L*batch.W))+4*(batch.records.length*((2^b)*(L*batch.W)))+4*(L*batch.W)+9*(a+b)+14)+
           (40*(2^a*(2^b*(L*batch.W)))+38+restoringStockAllowance hstates a b (L*batch.W) V))+
           (mnProgPush (prepareReplicaPublicationPages (P := Empty) (Q := Q) (A := prime+K) (U := U))*
             prepareReplicaPublicationPagesCost V s g.length batch.W g.indices.length+2*(replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6))))) depth
         (embProg placement Empty.elim (.seq (chirpBankLoad rg input loadWidth loadZero)
-          (.seq (.seq (.seq (reverseCopyRows copyCount copySavedCount copyWidth numerical archive (extra 1) copySaved copyTmp)
-          (uclear numerical)) (.seq (.seq (ownedPrefixPadding exponent packet (extra 1) pad tmp saved (pairSym (prime+K) false false))
+          (.seq (.seq (PackedExactBatch.generatedOutputCopyProgram copyReplicas copyPacket copyCount copySavedCount copyWidth numerical archive (extra 1) copySaved copyTmp) (.seq (.seq (ownedPrefixPadding exponent packet (extra 1) pad tmp saved (pairSym (prime+K) false false))
           (program hstates))
           (.seq (embProg e Empty.elim (prepareReplicaPublicationPages (P := Empty)))
             (.seq (restoringReplicaPublication clock clockSave padRows wordWidth retireCount (e 92) savedControl gap (e 103) (extra 1) dst acc trash pubTmp lineRows outAcc pubSaved)
@@ -111,14 +111,14 @@ theorem placed_publish_outputs_exec_within (body : P → Pr P T Q (prime+K) U)
         (mk v' {S with R := (Function.update S.R (placement dst)
           ((List.ofFn fun j => g.output batch.W hw (rows.classRows g hkeys j) (ambient j)).flatten++outputTail))}) := by
   dsimp only
-  intro hexponent hpacketWidth hpad htmp hsaved hz hblank hstageCount hL hfresh hsourceBlank hcopyCount hcopyWidth hcopyFresh hcount hcodec hdst hclock hclockSave hpadRows hwordWidth hlineRows hwV hsV hvolume originTail hV hpageWidth hpageLength hOrigins hpageCount hpageBlank hpageFresh hclean houtAcc
+  intro hexponent hpacketWidth hpad htmp hsaved hz hblank hstageCount hL hfresh hsourceBlank hcopyReplicas hcopyPacket hcopyCount hcopyBlank hcopyFresh hcount hcodec hdst hclock hclockSave hpadRows hwordWidth hlineRows hwV hsV hvolume originTail hV hpageWidth hpageLength hOrigins hpageCount hpageBlank hpageFresh hclean houtAcc
   obtain ⟨rows,vi,n,hu,hn,hex⟩ := geometry_loaded_publish_outputs_exec_within (fun p : Empty => nomatch p)
-    hstates a b L V batch outputs hgood copyCount copySavedCount copyWidth numerical archive copySaved copyTmp hcopyReg
+    hstates a b L V batch outputs hgood copyReplicas copyPacket copyCount copySavedCount copyWidth numerical archive copySaved copyTmp hcopyReg
     g hkeys hcoreWidth hw hlength hw1 hpacket hbits hfit hA exponent packet pad tmp saved hpadReg hcapacity depth
     ambient hambient e he hoff clock clockSave padRows wordWidth retireCount savedControl gap dst acc trash pubTmp lineRows outAcc pubSaved
     hreg outputTail rg hrg input loadWidth loadZero hloadWidth hloadZero hloadInput htableNumerical htableDst hreadOff
     value hinputFit hvars hvalues hwr (embDn placement v) (embStk placement S)
-    hnumericalBlank htableBlank hwLoad hzLoad hsrcLoad hexponent hpacketWidth hpad htmp hsaved hz hblank hstageCount hL hfresh hsourceBlank hcopyCount hcopyWidth hcopyFresh hcount hcodec hdst hclock hclockSave hpadRows hwordWidth hlineRows hwV hsV hvolume originTail hV hpageWidth hpageLength hOrigins hpageCount hpageBlank hpageFresh hclean houtAcc
+    hnumericalBlank htableBlank hwLoad hzLoad hsrcLoad hexponent hpacketWidth hpad htmp hsaved hz hblank hstageCount hL hfresh hsourceBlank hcopyReplicas hcopyPacket hcopyCount hcopyBlank hcopyFresh hcount hcodec hdst hclock hclockSave hpadRows hwordWidth hlineRows hwV hsV hvolume originTail hV hpageWidth hpageLength hOrigins hpageCount hpageBlank hpageFresh hclean houtAcc
   let ys := (List.ofFn fun j => g.output batch.W hw (rows.classRows g hkeys j) (ambient j)).flatten++outputTail
   obtain ⟨v',hu',ht⟩ := exec_emb_input_output_within placement hplacement (body' := body) (ι := Empty.elim)
     (fun p : Empty => nomatch p) numerical dst outputs.reverse.flatten ys v S hex

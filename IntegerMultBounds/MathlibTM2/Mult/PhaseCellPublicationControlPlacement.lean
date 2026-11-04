@@ -48,9 +48,9 @@ theorem publicationPort_injective : Function.Injective publicationPort := by
   simp [publicationPageBank,publicationPageIndex,Equiv.trans_apply,Equiv.swap_apply_def]
 
 theorem publicationCopy_registers :
-    [publicationReg 36,publicationReg 69,publicationReg 68,numericalPort,publicationReg 70,extra 1,
+    [publicationReg 54,publicationReg 52,publicationReg 36,publicationReg 69,publicationReg 68,numericalPort,publicationReg 70,extra 1,
       publicationReg 71,publicationReg 72].Nodup := by
-  have h : ([some 36,some 69,some 68,some 95,some 70,none,some 71,some 72] : List (Option (Fin 117))).Nodup := by decide +kernel
+  have h : ([some 54,some 52,some 36,some 69,some 68,some 95,some 70,none,some 71,some 72] : List (Option (Fin 117))).Nodup := by decide +kernel
   simpa only [List.map_cons,List.map_nil,publicationPort,publicationReg,numericalPort] using h.map publicationPort_injective
 
 theorem publicationPadding_registers :
