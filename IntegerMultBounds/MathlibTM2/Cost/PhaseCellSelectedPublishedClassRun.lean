@@ -9,6 +9,9 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedPublicationOrigin
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOwnedOriginPacket
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedPublicationMasterWords
 public import IntegerMultBounds.MathlibTM2.Host.RestoringSequence
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellClassCallerReady
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationCallerReady
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationMetadataVolume
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGatherPublicationBounds
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAllocatedPublicationGeometryControls
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAllocatedPublicationOrigins
@@ -72,25 +75,20 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     (v : HS ((T+175)+PackedTranspose.tapeCount) Q (prime+K) U) (S : Stacks ((T+175)+PackedTranspose.tapeCount) (prime+K)) 
     (src : Fin 4 → Fin ((T+175)+PackedTranspose.tapeCount))
     (hsrc : ∀ i k, src i ≠ fullExposedClassBank bank k)
-    (hs : S.R (src 0) = binSyms B (Sizes.s n₀ i)) (hw' : S.R (src 1) = binSyms B (amortizedCoreWidth ct (Sizes.p n₀)))
-    (hr : S.R (src 2) = binSyms B radius) (hL' : S.R (src 3) = binSyms B L)
     (masters : Fin 12 → Fin ((T+175)+PackedTranspose.tapeCount))
     (widthMaster zeroMaster : Fin ((T+175)+PackedTranspose.tapeCount))
     (value : Fin ((T+175)+PackedTranspose.tapeCount) → ℕ)
     (hwidthMaster : ∀ r, rg r ≠ widthMaster) (hzeroMaster : ∀ r, rg r ≠ zeroMaster)
     (hmasterOff : ∀ j r, rg r ≠ masters j) (hgeometryOff : ∀ j r, rg r ≠ src j)
     (hvalues : ∀ j, value (masters j) = st.val j)
-    (hwidthWord : (S.R widthMaster).length = D) (hzeroWord : S.R zeroMaster = [])
-    (hmasterWords : ∀ j, S.R (masters j) = binSyms D (value (masters j)))
-    (htableBlank : ∀ r, S.R (rg r) = [])
+    (inputReady : ClassCallerReady (fullExposedClassBank bank) rg src masters widthMaster zeroMaster
+      B D (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L value S)
     (Vg : ℕ) (borrowed : List (Fin (prime+K+4)))
     (g : RestoringGatherData (Q := Q) bank Vg (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L W Fs borrowed (loadedInputTable rg masters D value S))
     (hExposeWidth : Vg ≤ cV*Sizes.p n₀) (hRouteWidth : g.D ≤ cD*Sizes.p n₀)
     (hMetadataFit : g.D ≤ 2^g.a*2^Nat.clog 2 (coreGatherIndices (Sizes.s n₀ i)
       (amortizedCoreWidth ct (Sizes.p n₀)) radius L).length*(L*W))
     (hReplicaVolume : Fs.length ≤ Sizes.T n₀)
-    (hblank : ∀ j, j ≠ .control .source → S.R (fullExposedClassBank bank j) = [])
-    (hleft : ∀ j, S.L (recovery (fullExposedClassBank bank) (.work j)) = [])
     (hp : 4 ≤ Sizes.p n₀) (hprecision : Sizes.p n₀+2 ≤ target)
     (J : (ZMod (Sizes.s n₀ i) → ℂ) →L[ℂ] (ZMod (Sizes.s n₀ i) → ℂ))
     (hJ : J ∘L PhaseCellOperator.exact (Sizes.s n₀ i) (Sizes.t n₀ i) α = 1),
@@ -130,33 +128,26 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     (hambient : ∀ j, (ambient j).length = Sizes.s n₀ i*W)
     (outputTail : List (Fin (prime+K+4)))
     (hpubInj : Function.Injective pubSrc)
-    (hpacketBlank : S.R (classCallerRegister (pubSrc 9)) = [])
-    (hcountBlank : S.R (classCallerRegister (pubSrc 6)) = [])
     (houtPacket : output ≠ pubSrc 9) (houtCount : output ≠ pubSrc 6)
-    (hmastersBlank : ∀ j ∈ [(0 : Fin 10),1,2], S.R (classCallerRegister (pubSrc j)) = [])
     (houtMasters : ∀ j ∈ [(0 : Fin 10),1,2], output ≠ pubSrc j)
     (hOriginInj : Function.Injective originSources)
     (hPubWidth : pubSrc 7 = originSources 4)
     (hPubReplica : pubSrc 3 = g.routeSrc 6) (hPubWord : pubSrc 5 = g.routeSrc 5)
     (hRouteTableOff : ∀ j r, rg r ≠ classCallerRegister (g.routeSrc j))
-    (hgeometryBlank : ∀ j ∈ [(4 : Fin 10),8], S.R (classCallerRegister (pubSrc j)) = [])
     (houtGeometry : ∀ j ∈ [(4 : Fin 10),8], output ≠ pubSrc j)
-    (hpubLeft : ∀ j, (embStk (selectedPublicationPlacement bank output) S).L j = [])
+    (pubReady : PublicationCallerReady (classCallerRegister ∘ pubSrc) (selectedPublicationPlacement bank output) S)
     (hdst : S.R (classCallerRegister output) = (List.ofFn ambient).flatten++outputTail)
     (hPublicationVolume : Sizes.s n₀ i*W < 2^Vpub),
     let e := publicationOriginPlacement (Fin.castAdd 175 ∘ originSources)
     let pubSources := Fin.castAdd 175 ∘ pubSrc
     let geometrySources := PackedTranspose.publicationGeometrySources (Fin.castAdd 175 ∘ originSources) pubSources
     let geometryPlacement := PackedTranspose.publicationGeometryPlacement geometrySources
-    let geometryBaseline := PublicationGeometryControls.loaded geometryPlacement (Sizes.s n₀ i) (L-2*radius) S
     let geometryCost := PublicationGeometryControls.timeCost Vpub (Sizes.s n₀ i) L radius
     let retireGeometryCost := 2*((L-2*radius)+Sizes.s n₀ i)+5
-    let originBaseline := originPacketState (classCallerRegister (pubSrc 9)) (classCallerRegister (pubSrc 6)) Vpub origins geometryBaseline
     let dimensionSources := PackedTranspose.publicationDimensionSources pubSources
-    let pubBaseline := PackedTranspose.publicationDimensionsLoaded dimensionSources g.a indices.length originBaseline
     let dimensionCost := PackedTranspose.publicationDimensionsTimeCost g.a indices.length
     let retireDimensionCost := 2*(g.a+a+2^a)+7
-    let metadata := publicationMetadataVolume pubSources pubBaseline
+    let metadata := PackedTranspose.publicationHeaderVolume a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) indices.length
     let originCost := preparedCoreOriginsCost Vpub (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L
     ∃ v', ∃ n : ℕ, ∃ outputs, ∃ rows : batch.Rows, v'.user = v.user ∧
       (n : ℝ) ≤ runTime+(geometryCost+(originCost+(dimensionCost+((6*metadata+61)+
@@ -189,12 +180,34 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
   filter_upwards [hclass] with n₀ hn
   intro h i _ _ u target L hu htarget hLengthGroup α gap C V bounds Fs hFs
   intro B W radius indices jobs st D Cprog depth rg hrg hoff hfitValues hpush hbody hwide hHfit hA hB
-    v S src hsrc hs hw' hr hL' masters widthMaster zeroMaster value hwidthMaster hzeroMaster hmasterOff
-    hgeometryOff hvalues hwidthWord hzeroWord hmasterWords htableBlank Vg borrowed g hExposeWidth hRouteWidth
-    hMetadataFit hReplicaVolume hblank hleft hp hprecision J hJ batch pubClass keys runTime runStock runProg
-    origins replica a Vpub output hout pubSrc hpubOff originSources ambient hambient outputTail hpubInj hpacketBlank hcountBlank
-    houtPacket houtCount hmastersBlank houtMasters hOriginInj hPubWidth hPubReplica hPubWord hRouteTableOff hgeometryBlank houtGeometry hpubLeft
-    hdst hPublicationVolume e pubSources geometrySources geometryPlacement geometryBaseline geometryCost retireGeometryCost originBaseline dimensionSources pubBaseline dimensionCost retireDimensionCost metadata originCost
+    v S src hsrc masters widthMaster zeroMaster value hwidthMaster hzeroMaster hmasterOff
+    hgeometryOff hvalues inputReady Vg borrowed g hExposeWidth hRouteWidth
+    hMetadataFit hReplicaVolume hp hprecision J hJ batch pubClass keys runTime runStock runProg
+    origins replica a Vpub output hout pubSrc hpubOff originSources ambient hambient outputTail hpubInj
+    houtPacket houtCount houtMasters hOriginInj hPubWidth hPubReplica hPubWord hRouteTableOff houtGeometry pubReady
+    hdst hPublicationVolume e pubSources geometrySources geometryPlacement geometryCost retireGeometryCost dimensionSources dimensionCost retireDimensionCost metadata originCost
+  let geometryBaseline := PublicationGeometryControls.loaded geometryPlacement (Sizes.s n₀ i) (L-2*radius) S
+  let originBaseline := originPacketState (classCallerRegister (pubSrc 9)) (classCallerRegister (pubSrc 6)) Vpub origins geometryBaseline
+  let pubBaseline := PackedTranspose.publicationDimensionsLoaded dimensionSources g.a indices.length originBaseline
+  have hs := inputReady.geometryWords 0
+  have hw' := inputReady.geometryWords 1
+  have hr := inputReady.geometryWords 2
+  have hL' := inputReady.geometryWords 3
+  have hwidthWord := inputReady.widthWord
+  have hzeroWord := inputReady.zeroWord
+  have hmasterWords := inputReady.masterWords
+  have htableBlank := inputReady.tableBlank
+  have hblank := inputReady.numericalBlank
+  have hleft := inputReady.leftBlank
+  have hpacketBlank : S.R (classCallerRegister (pubSrc 9)) = [] := pubReady.ownedBlank 9 (by simp)
+  have hcountBlank : S.R (classCallerRegister (pubSrc 6)) = [] := pubReady.ownedBlank 6 (by simp)
+  have hmastersBlank (j : Fin 10) (hj : j ∈ [(0 : Fin 10),1,2]) : S.R (classCallerRegister (pubSrc j)) = [] :=
+    pubReady.ownedBlank j (List.mem_append_left [4,6,8,9] hj)
+  have hgeometryBlank (j : Fin 10) (hj : j ∈ [(4 : Fin 10),8]) : S.R (classCallerRegister (pubSrc j)) = [] := by
+    apply pubReady.ownedBlank j
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hj
+    rcases hj with rfl | rfl <;> simp
+  have hpubLeft := pubReady.leftBlank
   obtain ⟨v₁,n₁,outputs,hu₁,hn₁,hgood,he₁⟩ := hn h i u target L hu htarget hLengthGroup α gap C V bounds Fs hFs
     D Cprog depth rg hrg hoff hfitValues hpush hbody hwide hHfit hA hB v S src hsrc hs hw' hr hL'
     masters widthMaster zeroMaster value hwidthMaster hzeroMaster hmasterOff hgeometryOff hvalues
@@ -436,6 +449,11 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
         · simpa [pubSources,Function.comp_apply,hprefix,PackedTranspose.publicationHeaderWords] using hpubAmbient)
     simpa only [PackedTranspose.publicationGeneratedMasterState,pubBaseline,dimensionSources,originBaseline,a,
       pubSources,Function.comp_def,hprefix,hN] using hh
+  have hmetadataVolume : publicationMetadataVolume pubSources pubBaseline = metadata := by
+    have hh := PackedTranspose.publicationMetadataVolume_of_input pubSources a g.a (L-2*radius) W Vpub
+      (Sizes.s n₀ i) origins [] pubBaseline
+      (by simpa only [pubSources,Function.comp_def,hprefix] using hinputD)
+    simpa only [List.length_nil,Nat.add_zero,hN] using hh
   have hDoff (k) (h0 : k ≠ classCallerRegister (pubSrc 0)) (h1 : k ≠ classCallerRegister (pubSrc 1))
       (h2 : k ≠ classCallerRegister (pubSrc 2)) (h9 : k ≠ classCallerRegister (pubSrc 9))
       (h6 : k ≠ classCallerRegister (pubSrc 6)) : pubBaseline.R k = geometryBaseline.R k := by
@@ -458,6 +476,7 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     (by simpa only [pubSources,Function.comp_def,hprefix,hformat] using hinputD)
     hblankD hpubLeft (by simpa only [hprefix] using hsourceD)
     (by simpa only [hprefix] using hdstD)
+  rw [hmetadataVolume] at hn₂ he₂
   have hraw : outputs.reverse.flatten.length = indices.length*(2^g.a*((L-2*radius)*W)) := by
     have hh := batch.outputs_volume outputs (by rw [hbatch]; exact hgood)
     simpa only [hjobCount,hformat] using hh

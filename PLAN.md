@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4268 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4271 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32350,3 +32350,41 @@ selected execution and semantic class composition passes (16716 jobs, 3.5 GiB
 incremental combined peak). Expanded axiom audit passes for 344412 declarations
 at 3200.3 MiB, permitting only propext, Quot.sound and Classical.choice. Default
 proof limits are unchanged.
+
+
+### S4 checkpoint: complete caller readiness has structural output frames
+
+ClassCallerReady bundles the retained geometry/master words, width/zero words,
+fresh input table, numerical-bank blankness and left-stack readiness.
+PublicationCallerReady bundles the seven fresh owned words and placed left stacks.
+Both transport across an output-only right-bank frame with unchanged left stacks,
+and both have concrete output-update instances over arbitrary alphabets.
+The selected execution theorem now consumes these records directly, extracting
+the old facts once for its existing actual execution proof. Together with
+RestoringGatherData.updateTableOutput, these give transport for the state-dependent
+readiness of the selected call under the stated physical port separations.
+
+PublicationMetadataVolume derives a closed header bill from PublicationHeaderInput:
+a+b+2^a+2^b+coreLength+wordWidth+rowCount+binaryWidth+ambientLength+
+rowCount*binaryWidth (plus any explicit origin tail). The selected theorem now
+uses this scalar bill, so costs do not depend on ambient contents. Its actual
+loader/publication trace is rewritten using the proved volume equality.
+Intermediate geometry/origin/dimension baseline states are proof-local rather
+than exposed lets in the theorem statement. Actual program, row certificate,
+endpoint restoration and peak-stock contract are preserved. The former separate
+readiness-premise interface can be restored from 9eea4e70.
+
+Next construct and instantiate the concrete packed class stages in the outer
+semantic fold, using these frames after each equal-length ambient update. The
+class-specific geometry/master setup must be generated and retired, or borrowed
+from an actually constructed shared bank; do not assume all class-specific words
+are simultaneously ready. Instantiate seam/full-line execution, handle empty
+classes and computed coverage, reconcile replica order, and close shared tensor
+setup, aggregate fast bounds and root integration. The generic stage premise is
+still not a concrete outer schedule. S4 remains incomplete; kappa unchanged.
+
+Guarded checks pass: numerical caller readiness 3069.2 MiB, publication readiness
+3100.5 MiB, canonical metadata volume 3099.6 MiB and selected execution 4228.9 MiB
+(about 4 GiB). Combined build passes (16719 jobs, 4.6 GiB incremental peak).
+Expanded axiom audit passes for 344440 declarations at 3201.4 MiB, permitting only
+propext, Quot.sound and Classical.choice. Default proof limits are unchanged.
