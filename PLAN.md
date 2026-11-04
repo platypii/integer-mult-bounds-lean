@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4238 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4241 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31571,3 +31571,38 @@ publication at 3890.9 MiB and the upgraded placed entry point at 3046.8 MiB.
 Expanded dependency build passes (16686 jobs, 3.5 GiB combined peak).
 Axiom audit passes for 343957 declarations at 3151.7 MiB, permitting only
 propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: allocate publication in the selected caller's existing suffix
+
+`PhaseCellAllocatedPublicationBank` assigns two concrete local ports in the
+fixed routing bank: a numerical-result port and an ambient-output port. Two
+applications of the existing register redirection map them into the caller
+prefix; every other publication register remains at its original suffix index.
+Injectivity follows structurally from fresh prefix/suffix separation and distinct
+caller ports. There is no tape move and no new parameter-dependent tape bank.
+
+`PhaseCellAllocatedNumericalPublication.allocated_publish_outputs_exec_within`
+instantiates the geometry-loading actual-output publication endpoint with this
+allocation. Its actual input is the caller-prefix numerical result, its exact
+final update is the caller-prefix ambient destination, and all other prefix and
+suffix storage survives. The generic placement/injectivity premise is removed.
+
+`PhaseCellSelectedPublicationPlacement` identifies the same allocation in the
+selected class layout. Its numerical port is exactly
+`plan (fullExposedClassBank bank) ... .result`; its ambient port is exactly
+`classCallerRegister output`. All other ports use `Fin.natAdd (T+175)`, reusing
+the existing routing suffix. These are the register equalities needed to compose
+the selected numerical theorem and allocated publication directly.
+
+Next choose the concrete header/page sub-bank maps and generate retained
+origin/master packets, then compose selected numerical execution with this
+allocated endpoint and the retained working-dimension lifecycle. Avoid identifying
+unary core-length/page-count roles with binary router packet/count roles when
+choosing those maps. Grouped/seam execution, locality/tensor setup sharing and
+root integration remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded allocation check passes at 2713.1 MiB, allocated publication at
+3051.0 MiB and selected port identification at 3069.5 MiB. Expanded dependency
+build passes (16689 jobs, 5.9 GiB combined peak). Axiom audit passes for 343974
+declarations at 3152.7 MiB, permitting only propext, Quot.sound and
+Classical.choice.
