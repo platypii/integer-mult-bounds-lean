@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4278 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4279 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32505,4 +32505,30 @@ execution, retirement and outer schedule integration remain open; S4 incomplete.
 Guarded adapter check passes at 1795.2 MiB. Integration build including generated
 readiness and selected execution passes (16720 jobs, 2.6 GiB incremental peak).
 Expanded axiom audit passes for 344521 declarations at 3200.5 MiB, allowing only
+propext, Quot.sound and Classical.choice. Default proof limits unchanged.
+
+### S4 checkpoint: actual halo export returns selected readiness
+
+GeneratedClassHeaderReady composes the binary-format export with the generated
+master-word ABI and returns ClassCallerReady for independent geometry width B
+and table width D, with B <= D. Its initial state is masterLoaded from the proved
+setup. The actual copyPrefix trace writes only the fourth geometry source,
+preserves both generated master words and scratch, and derives all seven caller
+readiness fields on its endpoint. The halo word is copied from the generated
+master, not supplied as an initialized geometry header. The remaining three
+geometry headers are retained global B-bit words; common inputs are retained
+D-bit words. Physical separation is explicit and the program has no semantic
+readiness premise or assumed execution callback.
+
+This closes the format/readiness bridge; it does not yet compose seed loading and
+class generation with the selected numerical/publication execution. Next connect
+those actual traces and retire the halo header plus two owned masters after
+publication. Prove global sizing/initialization for the retained ordinary words,
+then instantiate empty-class guards and the outer packed/seam/full-line schedule.
+Coverage, replica order, shared tensor setup, aggregate bounds and root integration
+remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded single-file check passes at 3073.7 MiB. Integration build with allocated
+class setup and selected execution passes (16724 jobs, 3.5 GiB incremental peak).
+Expanded axiom audit passes for 344522 declarations at 3200.8 MiB, allowing only
 propext, Quot.sound and Classical.choice. Default proof limits unchanged.
