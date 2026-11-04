@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4267 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4268 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32312,3 +32312,41 @@ composition (1894.9 MiB), and selected execution with actual row certificates
 combined peak; final composition-only refresh 2.7 GiB). Expanded axiom audit passes
 for 344373 declarations at 3200.7 MiB, permitting only propext, Quot.sound and
 Classical.choice. Default proof limits are unchanged.
+
+
+### S4 checkpoint: retained numerical readiness survives ambient updates
+
+RestoringGatherOutputFrame transports RestoringGatherData across any right-bank
+frame that changes only the ambient caller output and preserves left stacks.
+Separation from exposure sources, coefficient input, routing sources and numerical
+bank derives every transported readiness field. Both private suffixes remain
+fresh by address separation. The record copies its mathematical and allocation
+data directly; no cast of a large state or concrete program is introduced.
+
+The transported program is definitionally the original program. Time and stock
+bills are unchanged by the existing exposure/routing metadata-volume identities.
+Ordinary output replacement and output replacement before table initialization
+are concrete instances; loadedInputTable_update_off supplies the latter frame.
+exec_reframe applies the actual exposure/routing execution theorem to the
+transported readiness, with the original program and original bills. This closes
+the retained numerical preparation's readiness obligation without an assumed
+intermediate-state execution.
+
+A concrete-alphabet update fact hit the default recursion-depth limit. Factoring
+that fact over arbitrary stacks/alphabet avoids dependent-family elaboration of
+the concrete alphabet, with no raised limits. The generic frame proof and actual
+preparation execution then pass together.
+
+Next transport the remaining physical premises of the complete selected-class
+call (table/geometry/publication ports), and instantiate the outer theorem's
+packed-stage premise from that call. The present result covers RestoringGatherData
+and its preparation program, not the full selected caller yet. Then instantiate
+seam/full-line stages, handle empty classes, computed coverage and replica order,
+and close shared tensor setup, aggregate fast bounds and root integration. S4
+remains incomplete; kappa unchanged.
+
+Guarded readiness/output-frame check passes at 3110.0 MiB. Integration build with
+selected execution and semantic class composition passes (16716 jobs, 3.5 GiB
+incremental combined peak). Expanded axiom audit passes for 344412 declarations
+at 3200.3 MiB, permitting only propext, Quot.sound and Classical.choice. Default
+proof limits are unchanged.
