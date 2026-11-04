@@ -4,6 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedAllocatedPublic
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellLoadedPublicationHeaderFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationHeaderRetirement
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationHeaderWords
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationBinaryDimensions
 
 /-! Actual numerical output is published from a fresh routing suffix. Retained
 caller packets are loaded after numerical execution and retired after scatter. -/
@@ -71,17 +72,13 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
     if j = publicationGeometryInput 1 then b else L*batch.W
   have hvalues (i : Fin 3) : value (publicationGeometryInput i) = ![a,b,L*batch.W] i := by
     fin_cases i <;> simp [value,publicationGeometryInput,publicationReg_injective.eq_iff]
-  have haFit : a < 2^V := (show a < V by omega).trans Nat.lt_two_pow_self
-  have hbFit : b < 2^V := (show b < V by omega).trans Nat.lt_two_pow_self
-  have hpacketFit : L*batch.W < 2^V := by
-    have hh : 1 ≤ 2^(a+b) := Nat.one_le_two_pow
-    nlinarith
+  have hbinaryFits := PublicationBinaryDimensions.fits_of_rectangle a b (L*batch.W) V hbits hfit
   have hinputFit (i : Fin 3) : value (publicationGeometryInput i) < 2^V := by
     rw [hvalues]
     fin_cases i
-    · exact haFit
-    · exact hbFit
-    · exact hpacketFit
+    · exact hbinaryFits.1
+    · exact hbinaryFits.2.1
+    · exact hbinaryFits.2.2
   let M := loadedPublicationHeaders src S
   let F : Stacks (T+tapeCount) (prime+K) := {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten}
   have hread (r : Fin 13 × Fin 117) (hr : r ∈ publicationHeaderAssignments) :

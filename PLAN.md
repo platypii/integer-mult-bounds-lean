@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4257 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4259 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31984,3 +31984,42 @@ at 3098.3 MiB and selected allocated-origin composition at 4124.6 MiB (about
 4 GiB). Expanded dependency build passes (16705 jobs, 4.5 GiB combined peak).
 Axiom audit passes for 344240 declarations at 3178.5 MiB, permitting only propext,
 Quot.sound and Classical.choice. Default proof limits are unchanged.
+
+
+### S4 checkpoint: restoring binary dimensions from existing unary controls
+
+`PhaseCellPublicationBinaryDimensions.exec_within` reuses paddedHeaderList for
+three conversions with one restored scratch set. It borrows unary a, b and the
+already-generated packet counter L*W, together with width V, and writes exactly
+the three fixed-width binary geometry words. This avoids introducing a second
+unary product or separate conversion proofs per dimension. The fixed roles use
+source registers 61/62/52, outputs 82/83/84, width 35 and restored scratch
+55/56/57/58/65/66 in the existing generator bank.
+
+The producer costs 21*(a+b+L*W)+36*V+85 with stock allowance twice that bound.
+Its retirement theorem clears the three generated words while preserving an
+external ambient destination, costing 6*V+7 with zero additional stock. Generic
+projection and external-update commutation lemmas connect it to the physical
+caller placement without comparing expanded banks. Rectangle bit/volume bounds
+supply all three conversion fits; caller publication now reuses this one proof
+in place of its separate arithmetic fit proofs.
+
+`PhaseCellPublicationBinaryFrame` derives preservation of the generator outside
+82..84, all workers, extras and codec tapes. It checks page and geometry-index
+separation once. These are the frame facts needed to insert conversion directly
+after dimension setup, where packet 52 already exists.
+
+Next insert this producer between retained dimension setup and actual publication,
+then clear its three words before retiring dimensions. Replace prebuilt binary
+source readiness with freshness, remove the last three source assignments, and
+shrink the retained packet interface from thirteen words to ten (eight supplied
+plus the generated origin/count). The selected execution still assumes the three
+binary words until that composition is finished. Other unary master production,
+grouped/seam execution, outer replica order, shared tensor setup, aggregate costs
+and root integration remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded binary producer check passes at 2701.4 MiB and binary frame at 2724.0
+MiB. Caller publication passes at 4004.2 MiB and selected execution at 4128.8
+MiB (about 4 GiB). Expanded dependency build passes (16707 jobs, 5.7 GiB combined
+peak). Axiom audit passes for 344266 declarations at 3177.4 MiB, permitting only
+propext, Quot.sound and Classical.choice. Default proof limits are unchanged.
