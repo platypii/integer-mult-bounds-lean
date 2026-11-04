@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4276 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4277 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32460,3 +32460,25 @@ Integration build with selected execution and restoring class composition passes
 (16723 jobs, 3.5 GiB incremental combined peak). Expanded axiom audit passes for
 344517 declarations at 3202.3 MiB, allowing only propext, Quot.sound and
 Classical.choice. Default proof limits are unchanged.
+
+### S4 checkpoint: derive readiness from generated class words
+
+GeneratedClassCallerReady derives the selected numerical caller's readiness on
+masterLoaded. It uses masterLoaded_words for the twelve common inputs and reuses
+the generated halo output as the fourth geometry source. The first three geometry
+words and ten unchanged common inputs are global retained words. Width/zero
+sources, numerical/table blankness and worker-left blankness are preserved by the
+exact two-word setup frame. Neither generated core nor generated halo word is a
+premise. The scalar value assignment and physical separation remain explicit.
+
+This bridge uses one binary format for geometry and table inputs (D = B). The
+selected theorem permits that specialization, but its concrete global fit bounds
+have not yet been discharged; this is not a proof that the format choice suffices
+for the outer schedule. Next prove those bounds or provide the necessary format
+adapter, then compose actual setup, selected execution and owned-word retirement.
+The concrete outer schedule and final S4 theorem remain open.
+
+The new module passes its guarded single-file check at 3074.4 MiB. Integration
+build with selected execution passes (16719 jobs, 3.5 GiB incremental peak).
+Expanded axiom audit passes for 344519 declarations at 3200.4 MiB, permitting
+only propext, Quot.sound and Classical.choice. Default proof limits unchanged.
