@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4221 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4222 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3895,18 +3895,32 @@ remain available for the S2–S3 callers.
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
 
 **S4 execution priorities after approach review:** Reuse the existing
-`amortizedCoreWidth`; stop extending the routing framework unless a concrete
-selected-caller obligation requires it. The selected per-class trace now uses
-that width, initializes and retires its input table and numerical geometry,
-restores exposure/routing workspace and includes complete phase bills. Next
-construct the grouped caller from retained masters and close publication/cropping
-with reserved-coordinate and untouched-suffix guarantees, followed by
-locality/error and full-tensor composition proving that setup/exposure is not
-repaid per axis. Keep further class-wrapper expansion tied to those obligations.
-Completion requires the resulting S4 endpoint to be reachable from the root
-build and covered by its proof-integrity checks; targeted helper builds alone
-are not an S4 completion gate. Measure progress by caller assumptions removed
-and end-to-end obligations closed, not helper-theorem count.
+`amortizedCoreWidth`; freeze routing and class-wrapper expansion unless a concrete
+caller obligation requires it. The selected per-class trace initializes and
+retires its input table and numerical geometry, restores exposure/routing
+workspace and includes complete phase bills. Actual outputs now yield certified
+publication rows, and the restoring copy resolves reverse job order.
+
+Close the remaining obligations in this order:
+
+1. Instantiate the common-job publication batch from existing metadata; connect
+   its computed rows to the fixed-bank transpose/scatter and retire the old
+   numerical result. Reuse subset-publication preservation for reserved
+   coordinates and untouched suffixes, keeping replica order explicit.
+2. Construct the grouped caller from retained masters, including seam fallback
+   and ordinary control/header generation. Remove caller premises by executing
+   their producers, using the existing restoration and cost contracts.
+3. Compose locality/error and full-tensor guarantees along the manuscript's
+   core/halo decomposition. Prove setup/exposure is shared across axes and
+   charge each lifecycle once.
+4. Connect the S4 endpoint to the root build and run its proof-integrity checks.
+
+Keep new abstractions tied to the next concrete composition; reuse structural
+list, row and window lemmas before introducing case-specific proofs. Measure
+progress by caller assumptions removed and end-to-end obligations closed.
+Targeted helper builds alone do not establish S4 completion. S4 remains
+incomplete; the earlier additional-line estimate is historical and is not a
+reliable completion forecast.
 
 
 **Shared S3–S5 interface pinned (2026-10-24):** The
@@ -31244,3 +31258,20 @@ Dependency build including existing class-publication specifications passes
 (16800 jobs, 5.8 GiB combined peak). Expanded axiom audit passes for 344390
 declarations at 3584.2 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: instantiate the common-job publication certificate
+
+`PhaseCellCommonCorePublicationBatch.ofCommonCoreClass` constructs the exact
+batch directly from the common fitting-halo jobs. Uniform word widths, numerical
+parameters, replica counts and inverse operators follow structurally from the
+job constructor. Core lengths follow from gather membership; the ordered key
+list is exactly the gather publication class. `ofCommonCoreClass_rows_spec`
+discharges all metadata premises of the existing class-row theorem, giving
+unit-ball and 3/2^p exact-inverse accuracy on owned cores in the actual job replica
+order. Together with `rows_of_outputs`, these facts require no assumed computed
+row certificate. Physical transpose/scatter and original-result retirement
+remain the next obligation; this does not complete S4.
+
+Guarded module check passes at 3394.7 MiB. Expanded dependency build passes
+(16801 jobs, 3.5 GiB combined peak); axiom audit passes for 344407 declarations
+at 3584.5 MiB with the existing permitted axioms. Kappa unchanged.
