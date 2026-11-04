@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4232 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4233 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31447,3 +31447,30 @@ Guarded combined setup/retirement check passes at 2700.3 MiB. Expanded dependenc
 build passes (16680 jobs, 3.2 GiB combined peak). Axiom audit passes for 343949
 declarations at 3152.9 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: compose retained dimensions around actual publication
+
+`PhaseCellRetainedDimensionPublication.retained_dimensions_publish_class_exec_within`
+executes dimension generation, computed publication and dimension retirement in
+one trace. Seven retained unary master lengths replace the four prebuilt working
+header premises. The exponent sum, packet product, replica clock and missing-row
+product follow from the concrete `loaded` state; the existing publication
+execution consumes those facts directly. Retirement then restores the original
+header bank while retaining the exact source/destination update and all original
+left stacks. Time and stock include setup, publication and cleanup.
+
+The remaining ordinary geometry/origin/header and scratch facts are stated on
+the explicitly defined loaded bank. They are not an execution witness or callback;
+no computed working-header values are assumed. Concrete bank placement and
+master generation must still establish those facts. This composition has not
+yet been attached to the selected numerical output copy/retirement.
+
+Next close that numerical-to-publication handoff and supply the retained binary
+geometry/origin masters. Grouped caller construction, seam fallback,
+locality/tensor composition with setup/exposure sharing and root integration
+remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded module check passes at 3888.0 MiB, under the 4 GiB module target.
+Expanded dependency build passes (16681 jobs, 4.3 GiB combined peak).
+Axiom audit passes for 343950 declarations at 3150.1 MiB, permitting only
+propext, Quot.sound and Classical.choice.
