@@ -13,6 +13,20 @@ open PackedTranspose
 noncomputable section
 variable {T A : ℕ}
 
+/-- Borrow the numerical geometry and use the owned publication packet ports. -/
+def publicationRetainedOriginSources (routeSrc : Fin 7 → Fin T) (pubSrc : Fin 10 → Fin T) : Fin 7 → Fin T :=
+  ![routeSrc 0,routeSrc 1,routeSrc 2,routeSrc 3,routeSrc 4,pubSrc 9,pubSrc 6]
+
+theorem publicationRetainedOriginSources_route (routeSrc : Fin 7 → Fin T) (pubSrc : Fin 10 → Fin T) (j : Fin 5) :
+    publicationRetainedOriginSources routeSrc pubSrc (Fin.castAdd 2 j) = routeSrc (Fin.castAdd 2 j) := by
+  fin_cases j <;> rfl
+
+theorem publicationRetainedOriginSources_packet (routeSrc : Fin 7 → Fin T) (pubSrc : Fin 10 → Fin T) :
+    publicationRetainedOriginSources routeSrc pubSrc 5 = pubSrc 9 := rfl
+
+theorem publicationRetainedOriginSources_count (routeSrc : Fin 7 → Fin T) (pubSrc : Fin 10 → Fin T) :
+    publicationRetainedOriginSources routeSrc pubSrc 6 = pubSrc 6 := rfl
+
 def publicationOriginIndex (j : Fin 7) : Fin 117 := ![32,33,34,35,37,109,116] j
 
 def publicationOriginRole (i : Fin 117) : Option (Fin 7) :=

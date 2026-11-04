@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4263 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4264 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32202,3 +32202,37 @@ geometry placement (2842.4 MiB), and selected execution (4224.7 MiB, about 4 GiB
 Final guarded build passes (16711 jobs, 4.6 GiB incremental combined peak).
 Expanded axiom audit passes for 344340 declarations at 3199.1 MiB, allowing only
 propext, Quot.sound and Classical.choice. Default proof limits are unchanged.
+
+
+### S4 checkpoint: publication readiness comes from retained numerical geometry
+
+The selected theorem now fixes publication width to g.D and derives its binary
+geometry words, width length, geometry fit bounds and numerical-port separation
+from RestoringGatherData. The origin-source map is concrete: its first five
+ports borrow g.routeSrc and its last two are publication's owned packet/count
+ports. The caller no longer supplies an arbitrary origin-source map, its mapping
+identities or duplicate word/fit witnesses. Explicit route/table separation
+allows the same retained reads before and after table retirement.
+
+GatherPublicationBounds proves the shape arithmetic once: nonempty fitting
+classes have a positive owned core, and their publication rectangle is bounded
+by the existing halo rectangle. The selected theorem therefore derives all
+PublicationShapeBounds fields from numerical bounds plus the ambient-volume fit.
+Routing-suffix freshness follows from g.hRblank, loadedInputTable_off and original
+table blankness, so that duplicate caller premise is also removed. Time, stock,
+program and restored ambient-output endpoint retain their previous contracts,
+with publication using the canonical numerical width. Restore the older explicit
+geometry-readiness interface from 2eccbec6.
+
+Next compose actual selected classes into the outer grouped execution, including
+seam/full-line handling and replica order. Discharge concrete allocation and
+ambient-volume fit when constructing the shared caller bank; share tensor setup,
+prove aggregate time/stock and integrate the root S4 theorem. Do not count this
+single-class readiness closure as outer execution. S4 remains incomplete; kappa
+unchanged.
+
+Guarded checks pass for the generic publication bounds (2679.7 MiB) and selected
+execution (4235.3 MiB, about 4 GiB). Final guarded build passes (16712 jobs,
+4.6 GiB incremental combined peak). Expanded axiom audit passes for 344346
+declarations at 3200.1 MiB, allowing only propext, Quot.sound and Classical.choice.
+Default proof limits are unchanged.
