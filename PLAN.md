@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4279 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4281 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32532,3 +32532,36 @@ Guarded single-file check passes at 3073.7 MiB. Integration build with allocated
 class setup and selected execution passes (16724 jobs, 3.5 GiB incremental peak).
 Expanded axiom audit passes for 344522 declarations at 3200.8 MiB, allowing only
 propext, Quot.sound and Classical.choice. Default proof limits unchanged.
+
+### S4 checkpoint: one initialized prefix and exact three-word retirement
+
+PrepareClassInputs now composes the actual global-word seed loader, class
+computation/export, seed retirement and narrow halo-header copy. It starts from
+eleven ordinary global D-bit words, a B-length ruler and blank work/output ports;
+its endpoint classInputsLoaded changes exactly the two D-bit masters and one
+B-bit geometry header. The seed bank and copy scratch are restored. Its time
+bound is prepareMastersTimeCost D+10*B+10, with additive workspace
+prepareMastersStock D+3*(10*B+10). B <= D permits independent formats.
+
+GeneratedClassRetirement consumes that same classInputsLoaded endpoint after
+an unrelated ambient output update. One clearWords over the three distinct owned
+ports restores the original baseline except for the published ambient output,
+in exactly 4*D+2*B+7 steps with zero additional workspace. No output data or
+class-specific binary word is assumed as a setup input. All scalar fit and
+physical separation hypotheses remain explicit.
+
+The selected publication theorem's endpoint already restores its own input
+baseline except for ambient output, so it matches this retirement contract.
+The remaining composition must instantiate its readiness and retained gather
+record at classInputsLoaded, run the selected execution between these actual
+prefix/suffix programs, and prove the resulting class-stage bill. This matching
+endpoint is not yet that composed stage theorem. Global sizing/initialization,
+empty-class guard, concrete outer schedule, coverage, replica order, shared tensor
+setup, aggregate bounds and root integration remain open. S4 is incomplete.
+
+Guarded checks pass for initialized prefix (3073.6 MiB) and three-word retirement
+(3076.8 MiB before endpoint naming). Final integration build checks both with the
+shared endpoint, generated readiness and selected execution (16725 jobs,
+3.5 GiB incremental peak). Default proof limits unchanged.
+Expanded axiom audit passes for 344525 declarations at 3200.5 MiB, allowing only
+propext, Quot.sound and Classical.choice.
