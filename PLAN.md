@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4252 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4253 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31862,3 +31862,46 @@ numerical/publication composition at 3234.7 MiB. Expanded dependency build passe
 (16700 jobs, 3.6 GiB combined peak; dependency refresh 5.8 GiB). Axiom audit passes
 for 344158 declarations at 3158.8 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+
+### S4 checkpoint: generate publication core origins and count with the shared scan
+
+The exposure origin generator emits coreStart-radius. Publication needs coreStart;
+using exposure's packet unchanged would scatter into halo starts. The core emitter,
+class scan, counted host and restoring preparation now share one coordinate flag:
+true selects halo starts, false selects owned core starts. Both modes use the same
+fitting-halo predicate, length test, descriptor enumeration and count proof, with
+identical step and stock bounds. Original exposure program definitions and public
+contracts are preserved; their proofs instantiate the shared mode. Small true-mode
+program identities are proved once and reused by the compatibility proofs.
+
+`PhaseCellPlacedPublicationOrigins.placedPublicationOrigins_exec_within` executes
+the publication mode on an arbitrary injective placement. From retained binary
+s/width/radius/halo-length geometry and width, it produces exactly the origin
+packet and canonical unary count used by gatherPublicationClass's publication
+windows. Table and arithmetic workspace are restored; only the origin packet
+(prepended to its original tail) and count change. No origin list, key list or
+execution callback is supplied as a premise. Cost is the existing
+preparedCoreOriginsCost, with stock allowance three times that cost.
+
+Next place this producer into the selected caller and retire its owned packet
+and count after publication, replacing the corresponding two retained-packet
+premises. Generate the other retained dimensions/binary packets from existing
+masters, then close grouped/seam execution, outer replica order, shared tensor
+setup, aggregate costs and root integration. The selected joined theorem still
+assumes its retained packets until this producer is composed into that path.
+S4 remains incomplete; kappa unchanged.
+
+Composition detail: map generator outputs 109/116 to retained packet sources
+9/6, initially blank, and keep the generator placement off the numerical result.
+Run it after numerical execution, derive the other eleven source words by its
+two-register frame, publish from that generated baseline, then clear the two
+owned caller packets while preserving the ambient destination. Charge their
+retirement once as 2*(classCount*V+classCount)+5, with zero extra stock. This avoids
+retaining a second copy of the origin packet or requiring a borrowed packet tail.
+
+Guarded emitter, enumeration, counted-host, restoring preparation and placed
+publication-origin checks pass at 1773.9, 1751.5, 1819.3, 1945.4 and 1912.7 MiB
+respectively. Expanded compatibility build passes (16701 jobs, 32.5 GiB combined
+peak, 6.3 minutes; final artifact refresh 2.6 GiB). Axiom audit passes for 344184
+declarations at 3175.4 MiB, permitting only propext, Quot.sound and Classical.choice.

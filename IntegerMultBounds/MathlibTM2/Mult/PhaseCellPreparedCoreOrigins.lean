@@ -21,23 +21,23 @@ def coreOriginBits (V : ℕ) (k : Fin 117) : ℕ := if k = 36 then 0 else V
 def coreOriginValue (s width radius L : ℕ) (k : Fin 117) : ℕ :=
   if k = 32 then s else if k = 33 then width else if k = 34 then radius else if k = 35 then L else 0
 
-def preparedCoreOrigins : Pr P 117 Q A U :=
+def preparedCoreOriginsFor (halo : Bool) : Pr P 117 Q A U :=
   .seq (chirpBankLoad originReg coreOriginSource 37 37)
-    (.seq generatedCoreCountedHost releaseOriginBank)
+    (.seq (generatedCoreCountedHostFor halo) releaseOriginBank)
 
 def preparedCoreOriginsCost (V s width radius L : ℕ) : ℕ :=
   (112*V+137)+((18*((s+width-1)/width)+9)*tblC V V+
     (coreGatherIndices s width radius L).length*(8*V+6)+6)+(62*V+63)
 
-theorem preparedCoreOrigins_native :
-    mnNativePushBound 3 (preparedCoreOrigins (P := P) (Q := Q) (A := A) (U := U)) := by
-  simp only [preparedCoreOrigins,generatedCoreCountedHost,countedOriginHost,mnNativePushBound]
+theorem preparedCoreOriginsFor_native (halo : Bool) :
+    mnNativePushBound 3 (preparedCoreOriginsFor (P := P) (Q := Q) (A := A) (U := U) halo) := by
+  simp only [preparedCoreOriginsFor,generatedCoreCountedHostFor,countedOriginHost,mnNativePushBound]
   refine ⟨chirpBankLoad_native _ _ _ _,⟨tblCompile_native _ _,?_,?_⟩,clearWords_native_three _⟩
   all_goals simp [countWords,countWordsBody,moveR,moveStep,whileR,peekR,
     transfer,transferAct,scanR,drainR,popDo,keepIn,pushN,
     mnNativePushBound,mnActPush]
 
-theorem preparedCoreOrigins_exec_within {V s width radius L : ℕ}
+theorem preparedCoreOriginsFor_exec_within (halo : Bool) {V s width radius L : ℕ}
     (hwidth : 0 < width) (hwide : s+width+2*radius < 2^V) (hLfit : L < 2^V)
     (hA : 4 ≤ A) (hV : 0 < V) (v : HS 117 Q A U) (S : Stacks 117 A)
     (h37 : (S.R 37).length = V)
@@ -47,9 +47,9 @@ theorem preparedCoreOrigins_exec_within {V s width radius L : ℕ}
     (h104 : S.R 104 = []) (h106 : S.R 106 = []) (h116 : S.R 116 = []) (depth : ℕ) :
     ∃ v' n, v'.user = v.user ∧ n ≤ preparedCoreOriginsCost V s width radius L ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
-        3*preparedCoreOriginsCost V s width radius L) depth preparedCoreOrigins (Host.mk v S) n
+        3*preparedCoreOriginsCost V s width radius L) depth (preparedCoreOriginsFor halo) (Host.mk v S) n
         (Host.mk v' {S with R := (Function.update (Function.update S.R 109
-          ((coreGatherIndices s width radius L).flatMap (fun k => binSyms V (coreStart width k-radius))++S.R 109))
+          ((coreGatherIndices s width radius L).flatMap (fun k => binSyms V (coreStart width k-(if halo then radius else 0)))++S.R 109))
           116 (List.replicate (coreGatherIndices s width radius L).length tick))}) := by
   let value := coreOriginValue s width radius L
   let bits := coreOriginBits V
@@ -81,7 +81,7 @@ theorem preparedCoreOrigins_exec_within {V s width radius L : ℕ}
   have hframe (k : Fin 117) (hk : 31 ≤ k.val) : B.R k = S.R k :=
     chirpBankLoad_off originReg coreOriginSource V V value S.R k (fun r => (hoff k hk r).symm)
   obtain ⟨v₂,F,n₂,st₂,hu₂,hn₂,he₂,hqueue,hcount,hholds,hbound,hin,hout,hleft,hrest⟩ :=
-    generatedCoreCountedHost_exec (body := body) (W := V) (V := V) (s := s) (width := width) (radius := radius) (L := L) st
+    generatedCoreCountedHostFor_exec (body := body) (W := V) (V := V) (s := s) (width := width) (radius := radius) (L := L) halo st
       (by simp [st,value,coreOriginSource,coreOriginValue])
       (by simp [st,value,coreOriginSource,coreOriginValue])
       (by simp [st,value,coreOriginSource,coreOriginValue])
@@ -98,7 +98,7 @@ theorem preparedCoreOrigins_exec_within {V s width radius L : ℕ}
   have hwhole := Exec.seq he₁ (Exec.seq he₂ he₃)
   have hend : {F with R := fun k => if k.val < 31 then [] else F.R k} =
       {S with R := (Function.update (Function.update S.R 109
-        ((coreGatherIndices s width radius L).flatMap (fun k => binSyms V (coreStart width k-radius))++S.R 109))
+        ((coreGatherIndices s width radius L).flatMap (fun k => binSyms V (coreStart width k-(if halo then radius else 0)))++S.R 109))
         116 (List.replicate (coreGatherIndices s width radius L).length tick))} := by
     refine Stacks.ext hin hout hleft ?_
     funext k
@@ -115,10 +115,37 @@ theorem preparedCoreOrigins_exec_within {V s width radius L : ℕ}
   rw [hend] at hwhole
   refine ⟨v₃,(112*V+137)+(n₂+n₃),hu₃.trans (hu₂.trans hu₁),?_,?_⟩
   · dsimp only [preparedCoreOriginsCost]; omega
-  · exact mn_native_exec_within hwhole 3 preparedCoreOrigins_native depth _ (by
+  · exact mn_native_exec_within hwhole 3 (preparedCoreOriginsFor_native halo) depth _ (by
       have ht : (112*V+137)+(n₂+n₃) ≤ preparedCoreOriginsCost V s width radius L := by
         dsimp only [preparedCoreOriginsCost]; omega
       have hm := Nat.mul_le_mul_left 3 ht
       omega)
+
+def preparedCoreOrigins : Pr P 117 Q A U :=
+  .seq (chirpBankLoad originReg coreOriginSource 37 37)
+    (.seq generatedCoreCountedHost releaseOriginBank)
+
+
+@[simp] theorem preparedCoreOriginsFor_halo : preparedCoreOriginsFor (P := P) (Q := Q) (A := A) (U := U) true = preparedCoreOrigins := rfl
+
+theorem preparedCoreOrigins_native :
+    mnNativePushBound 3 (preparedCoreOrigins (P := P) (Q := Q) (A := A) (U := U)) := by
+  exact preparedCoreOriginsFor_native true
+
+theorem preparedCoreOrigins_exec_within {V s width radius L : ℕ}
+    (hwidth : 0 < width) (hwide : s+width+2*radius < 2^V) (hLfit : L < 2^V)
+    (hA : 4 ≤ A) (hV : 0 < V) (v : HS 117 Q A U) (S : Stacks 117 A)
+    (h37 : (S.R 37).length = V)
+    (hs : S.R 32 = binSyms V s) (hw : S.R 33 = binSyms V width)
+    (hr : S.R 34 = binSyms V radius) (hL : S.R 35 = binSyms V L) (hz : S.R 36 = [])
+    (hblank : ∀ k : Fin 117, k.val < 31 → S.R k = [])
+    (h104 : S.R 104 = []) (h106 : S.R 106 = []) (h116 : S.R 116 = []) (depth : ℕ) :
+    ∃ v' n, v'.user = v.user ∧ n ≤ preparedCoreOriginsCost V s width radius L ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
+        3*preparedCoreOriginsCost V s width radius L) depth preparedCoreOrigins (Host.mk v S) n
+        (Host.mk v' {S with R := (Function.update (Function.update S.R 109
+          ((coreGatherIndices s width radius L).flatMap (fun k => binSyms V (coreStart width k-radius))++S.R 109))
+          116 (List.replicate (coreGatherIndices s width radius L).length tick))}) := by
+  simpa using preparedCoreOriginsFor_exec_within true hwidth hwide hLfit hA hV v S h37 hs hw hr hL hz hblank h104 h106 h116 depth
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
