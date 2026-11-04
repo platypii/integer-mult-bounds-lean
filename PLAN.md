@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4271 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4273 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32388,3 +32388,45 @@ Guarded checks pass: numerical caller readiness 3069.2 MiB, publication readines
 (about 4 GiB). Combined build passes (16719 jobs, 4.6 GiB incremental peak).
 Expanded axiom audit passes for 344440 declarations at 3201.4 MiB, permitting only
 propext, Quot.sound and Classical.choice. Default proof limits are unchanged.
+
+
+### S4 checkpoint: generate class masters while restoring the shared seed
+
+CommonClassGeometry computes either full-width or clipped core rows from s and
+width, then forms halo rows by adding both radius margins. The actual table
+program has three atoms (copy/mod, radius doubling, addition). The two candidates
+are exactly coreGatherLengths; this is movement geometry, not an assertion of
+phase-dependent setup-key reuse. Arithmetic and the exact two-word host frame
+are proved generically using the existing table compiler and native stock bound.
+
+The shared seed has thirteen table values: the existing ten common scalar inputs,
+two zero-initialized owned slots and a read-only core width. After generation,
+its first twelve values are exactly commonInputValues for the computed class.
+Keeping width in its own slot allows both owned slots to be cleared after export;
+the same seed can serve the next movement class without losing width or reloading
+the prefix.
+
+CommonClassMasterSetup composes that actual computation, the existing two-header
+copy language and two zero instructions. It exports only core/halo binary words
+and restores the entire seed table, scratch and host frame. Its time is bounded
+by 5*tblC D 0+12*D+13, with an explicit phase-composed stock bill. masterLoaded_words
+proves that these outputs complete the existing twelve-master ABI from the shared
+prefix. master_retire_exec_within clears the two owned words in 4*D+5 steps with
+zero additional workspace, preserving a separately updated ambient destination.
+No class-specific core or halo word is an input to this setup execution.
+
+Next construct/load the actual shared seed bank from global retained parameters,
+choose and prove compatible binary formats, then compose this restoring setup,
+selected numerical/publication execution and owned-word retirement. Derive the
+selected readiness records from the generated words, rather than supplying them
+again. Handle empty candidates with an actual count/guard, then instantiate the
+outer packed and seam/full-line schedule, computed coverage and replica order.
+Shared tensor setup, aggregate fast bounds and root integration remain open.
+This component is not yet composed into that concrete outer schedule. S4 remains
+incomplete; kappa unchanged.
+
+Guarded checks pass for class geometry (3095.8 MiB) and restoring master setup /
+retirement (3091.1 MiB). Integration build with selected execution and semantic
+class composition passes (16720 jobs, 3.5 GiB incremental combined peak). Expanded
+axiom audit passes for 344472 declarations at 3201.8 MiB, permitting only propext,
+Quot.sound and Classical.choice. Default proof limits are unchanged.
