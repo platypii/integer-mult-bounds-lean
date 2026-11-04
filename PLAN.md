@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4273 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4276 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32430,3 +32430,33 @@ retirement (3091.1 MiB). Integration build with selected execution and semantic
 class composition passes (16720 jobs, 3.5 GiB incremental combined peak). Expanded
 axiom audit passes for 344472 declarations at 3201.8 MiB, permitting only propext,
 Quot.sound and Classical.choice. Default proof limits are unchanged.
+
+### S4 checkpoint: initialized class setup and revised integration priorities
+
+CommonClassSeedLoad now loads the thirteen-slot seed from eleven ordinary global
+binary words and an empty zero source. It reuses chirpBankLoad and
+loadedInputTable, including the existing retirement theorem. Its actual load
+cost is 104*D+113; seed retirement costs 28*D+29. Seed values and their fit bounds
+are derived from the global words rather than assumed as class-specific inputs.
+
+PrepareCommonClassMasters composes loading, the existing class geometry/export
+program and seed retirement. Its final state changes only the two owned core and
+halo words. AllocatedCommonClassMasters places this temporary seed in the
+existing routing suffix and restores that suffix before numerical execution;
+no additional caller seed bank is required.
+
+The revised priority is to complete one concrete restoring class stage before
+adding further general abstractions: choose and prove compatible binary formats,
+derive selected-run readiness from these generated words, compose the selected
+numerical/publication execution, then retire the two owned words. The next
+acceptance criterion is an actual execution theorem from ordinary global inputs
+to a published class with all temporary storage restored. Thereafter handle empty
+candidates with an actual guard and instantiate the outer packed/seam/full-line
+schedule, computed coverage and replica order. Shared tensor setup, aggregate
+fast bounds and root integration remain open. S4 is incomplete; kappa unchanged.
+
+Guarded single-file checks pass at 3109.8, 3090.1 and 3108.1 MiB respectively.
+Integration build with selected execution and restoring class composition passes
+(16723 jobs, 3.5 GiB incremental combined peak). Expanded axiom audit passes for
+344517 declarations at 3202.3 MiB, allowing only propext, Quot.sound and
+Classical.choice. Default proof limits are unchanged.
