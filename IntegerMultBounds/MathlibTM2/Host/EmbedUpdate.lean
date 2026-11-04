@@ -38,6 +38,22 @@ theorem embOvr_updateR_updateR {e : Fin T → Fin T'} (he : Function.Injective e
   dsimp only [B₁,B]
   rw [embOvr_updR he,embOvr_stk]
 
+/-- Transport three right-bank writes structurally through an injective placement. -/
+theorem embOvr_updateR_updateR_updateR {e : Fin T → Fin T'} (he : Function.Injective e)
+    (S : Stacks T' A) (x y z : Fin T) (xs ys zs : List (Fin (A+4))) :
+    embOvr e {embStk e S with R :=
+      (Function.update (Function.update (Function.update (embStk e S).R x xs) y ys) z zs)}.get S =
+      {S with R := (Function.update (Function.update (Function.update S.R (e x) xs) (e y) ys) (e z) zs)} := by
+  let B := embStk e S
+  let B₁ : Stacks T A := {B with R := Function.update B.R x xs}
+  let B₂ : Stacks T A := {B₁ with R := Function.update B₁.R y ys}
+  change embOvr e {B₂ with R := Function.update B₂.R z zs}.get S = _
+  rw [embOvr_updR he]
+  dsimp only [B₂]
+  rw [embOvr_updR he]
+  dsimp only [B₁,B]
+  rw [embOvr_updR he,embOvr_stk]
+
 /-- Overriding only the placed right bank leaves every left stack unchanged. -/
 theorem embOvr_right_left {e : Fin T → Fin T'} (S : Stacks T' A) (R : Fin T → List (Fin (A+4))) :
     (embOvr e {embStk e S with R := R}.get S).L = S.L := by

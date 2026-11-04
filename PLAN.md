@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4259 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4261 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32076,3 +32076,65 @@ caller publication at 3996.9 MiB and selected execution at 4131.2 MiB (about
 peak; full integration refresh 11.2 GiB). Axiom audit passes for 344266 declarations
 at 3177.0 MiB, permitting only propext, Quot.sound and Classical.choice. Default
 proof limits are unchanged.
+
+
+### S4 revised implementation order after approach review
+
+Prioritize the dependency chain into the selected execution theorem over new
+standalone interfaces. Reuse existing structural producers and their frame,
+stock and retirement proofs; instantiate concrete register roles only at the
+boundary. Judge progress by removed caller premises and root-reachable execution,
+not by helper count.
+
+1. Generate the class/replica exponents and row capacity with the existing
+   gatherDimensions producer, after actual origin counting. The redirected
+   producer, external numerical-write frame and three-output retirement now
+   pass guarded checks. Canonicalize the class exponent as Nat.clog 2 classCount.
+2. Integrate this producer and retirement into the selected publication trace.
+   Replace the three prebuilt master-word premises with generated outputs,
+   leaving five fundamental unary masters. The generated-word bridge is being
+   checked; selected-trace integration is still pending.
+3. Derive or reuse those five masters from numerical inputs and close their
+   lifecycle before expanding the outer class scheduler.
+4. Complete grouped classes and seam/full-line execution, reconcile replica
+   order, share setup across tensor axes, and aggregate time/stock bounds.
+5. Connect the complete execution to the root theorem and run integrity gates.
+
+Keep commits at verified semantic boundaries. S4 is incomplete: the selected
+class publication path is substantial progress, but it does not yet establish
+outer scheduling or the final S4 theorem. No completion percentage is justified.
+
+
+### S4 checkpoint: selected publication generates and retires dimension masters
+
+The selected actual-output execution now runs the existing gatherDimensions
+producer after owned origin/count generation. A five-port SharedRegisterPlacement
+redirects the actual replica count and generated class count to its inputs and
+its three outputs to caller words 1/0/2. All private scratch stays in the restored
+routing suffix. The class exponent is canonically Nat.clog 2 indices.length;
+there is no supplied exponent equality or prebuilt exponent/capacity word.
+
+PhaseCellAllocatedPublicationDimensions proves execution, an external numerical
+write frame and retirement generically. PhaseCellGeneratedPublicationMasterWords
+bridges these outputs and owned origins to the ten-word publication layout.
+The selected theorem composes numerical execution, origin generation, dimension
+generation, publication, dimension retirement and origin retirement. Exact time
+and stock include generation and both cleanups. Its endpoint still changes only
+the ambient destination and preserves the user's state. The older eight-word
+caller interface can be restored from 1122735d.
+
+Only five fundamental unary words remain supplied: replica count, core length,
+word width, binary width and ambient length. Next borrow retained numerical
+count/width words where possible and derive the remaining values using existing
+structural producers, then close their lifecycle. Do not introduce duplicate
+geometry assumptions merely to satisfy the publication interface. Grouped/seam
+execution, outer replica order, shared tensor setup, aggregate costs and root
+integration remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded single-file checks pass: dimension producer/retirement 2832.1 MiB,
+generated-word bridge 2816.7 MiB, selected execution 4165.7 MiB (about 4 GiB).
+The complete dependency refresh used 41.7 GiB combined peak and reached only four
+small normalization errors in the selected theorem, subsequently fixed. The
+final guarded build passes (16709 jobs, 4.5 GiB incremental combined peak).
+Expanded axiom audit passes for 344301 declarations at 3195.3 MiB, allowing only
+propext, Quot.sound and Classical.choice. Default proof limits are unchanged.
