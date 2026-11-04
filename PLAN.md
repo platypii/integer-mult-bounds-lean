@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4284 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4283 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32667,3 +32667,39 @@ gather readiness, selected execution and outer class composition passes
 (16726 jobs, 3.5 GiB incremental peak). Default proof limits unchanged.
 Expanded axiom audit passes for 344591 declarations at 3203.2 MiB, allowing only
 propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: common endpoint readiness and numerical table transport
+
+FormattedClassCallerReady derives the selected numerical readiness directly on
+formattedClassLoaded, using the exported B-bit halo destination and the generated
+D-bit masters. Its frame excludes both masters and every format destination;
+ordinary geometry words, width/zero controls, table/numerical blankness and
+worker-left blankness are retained. This handles independent formats without
+assuming any initialized class output word.
+
+InputTableFormats proves table loading commutes with a disjoint structural
+header-copy list. GatherInputTable then transports a constructed complete gather
+record to the selected theorem's loadedInputTable baseline: the numerical table
+is placed in the caller prefix, its ports are covered by an explicit finite list,
+and retained gather ports lie outside that list. The existing seed-frame proof
+preserves private exposure/routing blankness automatically. The gather program
+is definitionally unchanged; no execution callback is introduced.
+
+The four superseded single-format setup/readiness/retirement modules are removed;
+they can be restored from fb0e2634. Their shared multi-format replacements now
+cover setup, numerical readiness, actual gather-record construction and cleanup.
+
+Next instantiate the selected numerical/publication theorem with these generated
+records and compose its actual trace between formatted setup and retirement,
+closing the class-stage bill. Physical caller layout/global initialization and
+sizing still need construction. Empty-class guard, concrete outer schedule,
+coverage/replica order, shared tensor setup, aggregate bounds and root integration
+remain open. S4 is incomplete; the final class-stage composition is not yet proved.
+
+Guarded checks pass: formatted numerical readiness 3074.1 MiB, disjoint table /
+format commutation 1794.8 MiB, and gather readiness through the table loader
+3102.5 MiB. Initial integration build passes (16728 jobs, 4.8 GiB incremental
+combined peak). Default proof limits unchanged.
+Final combined build passes (16729 jobs, 3.5 GiB incremental peak). Expanded
+axiom audit passes for 344598 declarations at 3201.0 MiB, allowing only propext,
+Quot.sound and Classical.choice.
