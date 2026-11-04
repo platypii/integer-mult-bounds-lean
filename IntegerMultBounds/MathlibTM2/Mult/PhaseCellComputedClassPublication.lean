@@ -1,13 +1,13 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedPublicationTranspose
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedClassScatter
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedClassScatter
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOwnedPrefixPaddingStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPaddedArchiveTileData
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCoefficientPaddingData
 
 /-! One physical execution pads and transposes the computed class rows,
-then scatters them into ambient replica lines with restored borrowed controls. -/
+generates scatter pages, publishes ambient replica lines and retires the pages. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
@@ -31,8 +31,9 @@ theorem publish_class_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
     (hpadReg : [exponent,packet,extra 1,pad,tmp,saved].Nodup)
     (hcapacity : batch.records.length ≤ 2^a) (depth : ℕ)
     (ambient : Fin (2^b) → List (Fin (prime+K+4))) (hambient : ∀ j, (ambient j).length = s*batch.W)
-    (clock clockSave padRows wordWidth retireCount control savedControl gap window dst acc trash pubTmp lineRows outAcc pubSaved : Fin tapeCount)
-    (hreg : [clock,clockSave,padRows,wordWidth,retireCount,control,savedControl,gap,window,extra 1,dst,acc,trash,pubTmp,lineRows,outAcc,pubSaved].Nodup)
+    (e : Fin 117 → Fin tapeCount) (he : Function.Injective e) (hoff : ∀ i, e i ≠ extra 1)
+    (clock clockSave padRows wordWidth retireCount savedControl gap dst acc trash pubTmp lineRows outAcc pubSaved : Fin tapeCount)
+    (hreg : [clock,clockSave,padRows,wordWidth,retireCount,(e 92),savedControl,gap,(e 103),extra 1,dst,acc,trash,pubTmp,lineRows,outAcc,pubSaved].Nodup)
     (outputTail : List (Fin (prime+K+4)))
     (v : HS tapeCount Q (prime+K) U) (S : Stacks tapeCount (prime+K))
     (hexponent : (S.R exponent).length = a+b) (hpacketWidth : (S.R packet).length = L*batch.W)
@@ -53,21 +54,34 @@ theorem publish_class_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
     (hclock : (S.R clock).length = 2^b) (hclockSave : S.R clockSave = [])
     (hpadRows : (S.R padRows).length = (2^a-batch.records.length)*g.length)
     (hwordWidth : (S.R wordWidth).length = batch.W) (hlineRows : (S.R lineRows).length = s)
-    (hc : S.R control = gatherControls (prime+K) ((coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).gaps batch.W))
-    (hwindow : (S.R window).length = g.length*batch.W)
+    (hwV : batch.W < 2^V) (hsV : s < 2^V) (hvolume : s*batch.W < 2^V)
+    (originTail : List (Fin (prime+K+4)))
+    (hV : (S.R (e 115)).length = V) (hpageWidth : (S.R (e 94)).length = batch.W)
+    (hpageLength : (S.R (e 102)).length = g.length)
+    (hOrigins : S.R (e 109) =
+      (coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).origins.flatMap (binSyms V)++originTail)
+    (hpageCount : S.R (e 116) = List.replicate
+      (coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).origins.length tick)
+    (hpageBlank : ∀ i : Fin 117, i.val < 19 → S.R (e i) = [])
+    (hpageFresh : ∀ i ∈ [(88 : Fin 117),89,90,91,92,103,104,105,106,107], S.R (e i) = [])
     (hclean : ∀ i ∈ [retireCount,savedControl,gap,acc,trash,pubTmp,pubSaved], S.R i = [])
     (houtAcc : S.R outAcc = []) :
     ∃ v' n, v'.user = v.user ∧
       n ≤ ((6*(2^(a+b)*(L*batch.W))+4*(S.R (extra 1)).length+4*(L*batch.W)+9*(a+b)+14)+
         (26*(2^a*(2^b*(L*batch.W)))+24+2*restoringTimeCost hstates a b (L*batch.W) V))+
-        (replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6) ∧
+        ((prepareReplicaPublicationPagesCost V s g.length batch.W g.indices.length+
+          (replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6))+
+          (2*(g.length*batch.W+(gatherControls (prime+K) ((coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).gaps batch.W)).length)+5)) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
         ((2*(6*(2^(a+b)*(L*batch.W))+4*(S.R (extra 1)).length+4*(L*batch.W)+9*(a+b)+14)+
           (40*(2^a*(2^b*(L*batch.W)))+38+restoringStockAllowance hstates a b (L*batch.W) V))+
-          2*(replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6))) depth
+          (mnProgPush (prepareReplicaPublicationPages (P := Empty) (Q := Q) (A := prime+K) (U := U))*
+            prepareReplicaPublicationPagesCost V s g.length batch.W g.indices.length+2*(replicaPublicationCost (2^b) s (2^a-batch.records.length) g.length batch.W+6*(2^b)+6)))) depth
         (.seq (.seq (ownedPrefixPadding exponent packet (extra 1) pad tmp saved (pairSym (prime+K) false false))
           (program hstates))
-          (restoringReplicaPublication clock clockSave padRows wordWidth retireCount control savedControl gap window (extra 1) dst acc trash pubTmp lineRows outAcc pubSaved))
+          (.seq (embProg e Empty.elim (prepareReplicaPublicationPages (P := Empty)))
+            (.seq (restoringReplicaPublication clock clockSave padRows wordWidth retireCount (e 92) savedControl gap (e 103) (extra 1) dst acc trash pubTmp lineRows outAcc pubSaved)
+              (clearWords [e 103,e 92]))))
         (mk v S) n
         (mk v' {S with L := (fun _ => []), R := (Function.update (Function.update S.R (extra 1) []) dst
           ((List.ofFn fun j => g.output batch.W hw (rows.classRows g hkeys j) (ambient j)).flatten++outputTail))}) := by
@@ -79,9 +93,9 @@ theorem publish_class_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
   have hstable (i : Fin tapeCount) (hi : i ≠ extra 1) : M.R i = S.R i := by simp only [M,Function.update_of_ne hi]
   have hr := hreg
   regs_ne hr
-  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := rows.scatter_exec_within body g hkeys hcoreWidth hw hlength hw1
+  obtain ⟨v₂,n₂,hu₂,hn₂,he₂⟩ := rows.generated_scatter_exec_within body g hkeys hcoreWidth hw hlength hw1
     hcapacity padded hp hreal ambient hambient
-    clock clockSave padRows wordWidth retireCount control savedControl gap window (extra 1) dst acc trash pubTmp lineRows outAcc pubSaved
+    e he V clock clockSave padRows wordWidth retireCount savedControl gap (extra 1) dst acc trash pubTmp lineRows outAcc pubSaved
     hreg [] outputTail v₁ M
     (by simp only [M,Function.update_self,List.append_nil])
     (by rw [hstable _ ‹extra 1 ≠ dst›.symm]; exact hdst)
@@ -90,8 +104,14 @@ theorem publish_class_exec_within (body : P → Pr P tapeCount Q (prime+K) U)
     (by rw [hstable _ ‹padRows ≠ extra 1›]; exact hpadRows)
     (by rw [hstable _ ‹wordWidth ≠ extra 1›]; exact hwordWidth)
     (by rw [hstable _ ‹extra 1 ≠ lineRows›.symm]; exact hlineRows)
-    (by rw [hstable _ ‹control ≠ extra 1›]; exact hc)
-    (by rw [hstable _ ‹window ≠ extra 1›]; exact hwindow)
+    hwV hsV hvolume originTail
+    (by rw [hstable _ (hoff _)]; exact hV)
+    (by rw [hstable _ (hoff _)]; exact hpageWidth)
+    (by rw [hstable _ (hoff _)]; exact hpageLength)
+    (by rw [hstable _ (hoff _)]; exact hOrigins)
+    (by rw [hstable _ (hoff _)]; exact hpageCount)
+    (by intro i hi; rw [hstable _ (hoff _)]; exact hpageBlank i hi)
+    (by intro i hi; rw [hstable _ (hoff _)]; exact hpageFresh i hi)
     (by
       intro i hi
       have hoff : i ≠ extra 1 := by

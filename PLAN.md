@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4229 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4231 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31385,3 +31385,37 @@ Guarded scatter check passes at 3034.4 MiB and the composed execution at
 3064.1 MiB. Expanded dependency build passes (16677 jobs, 3.5 GiB combined peak).
 Axiom audit passes for 343865 declarations at 3149.1 MiB, permitting only
 propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: generate and retire the actual scatter pages
+
+`PhaseCellPlacedPublicationPages` places the existing two-page generator through
+an arbitrary injective 117-register map. It reuses the existing closed-program
+stock certificate and two-update embedding lemma; the only changed registers
+are the window-volume counter and scatter controls. Retained binary origins,
+counts, dimensions and origin suffix are restored.
+
+`PhaseCellGeneratedClassScatter.Rows.generated_scatter_exec_within` executes
+page generation, the actual computed-row restoring scatter and retirement of
+both generated pages. All scatter readiness follows from the two-write setup
+frame. Retirement clears only those pages and adds no stock allowance. The
+exact endpoint restores the original blank page registers and every spectator,
+consumes the selected source prefix and preserves the output suffix.
+
+The existing `ComputedClassPublication.publish_class_exec_within` now uses
+this lifecycle. Its prebuilt scatter-control and window-volume premises are
+removed. One trace pads and transposes the actual computed rows, generates
+pages from retained origins, publishes the ambient replicas and retires the
+pages. Time and stock cover all five phases. Ordinary origin/count/width headers
+and padding/replica dimensions still require grouped-caller generation; the
+page-bank map is injective and disjoint from the owned temporary source.
+
+Next supply those retained masters and compose publication after the selected
+numerical output copy/retirement. Seam fallback, grouped/tensor locality/error,
+setup/exposure reuse and root integration remain open. S4 remains incomplete;
+kappa unchanged.
+
+Guarded placed-page check passes at 1903.0 MiB, generated scatter at 3049.0 MiB
+and the strengthened computed publication at 3068.9 MiB. Expanded dependency
+build passes (16679 jobs, 3.5 GiB combined peak). Axiom audit passes for 343867
+declarations at 3148.8 MiB, permitting only propext, Quot.sound and
+Classical.choice.
