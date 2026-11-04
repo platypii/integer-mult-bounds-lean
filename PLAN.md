@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4281 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4282 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32565,3 +32565,35 @@ shared endpoint, generated readiness and selected execution (16725 jobs,
 3.5 GiB incremental peak). Default proof limits unchanged.
 Expanded axiom audit passes for 344525 declarations at 3200.5 MiB, allowing only
 propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: three consumer formats for one computed halo
+
+Inspection of RestoringGatherData identifies an additional composition obligation:
+its exposure halo has width Vg and its routing halo has width g.D, independently
+of the numerical geometry width B and table width D. The previous single-header
+prefix/readiness bridge covers numerical initialization only. It must not be used
+to assume that the retained gather record is already constructed for the class.
+
+BinaryHeaderFormats proves a structural counted-prefix export over a list of
+(width-ruler,destination) pairs, all borrowing one computed binary source. It
+reuses copyWordHeadersR for the endpoint and its existing read/frame lemmas.
+classHaloFormats_exec_within instantiates exactly three consumers: numerical,
+exposure and routing. Each header has its own retained ruler and width <= D;
+the computed source, rulers, scratch and all unrelated stacks are restored.
+The three exports cost 10*(B+Vg+Vr)+31 with workspace three times that bill.
+No width or per-bit case enumeration and no initialized halo output is required.
+
+Next use these exports in the initialized class prefix and construct the retained
+gather readiness from global inputs plus the generated exposure/routing halos.
+Then instantiate the selected run and retire all owned words (two masters and
+three headers). The earlier three-word retirement remains the valid single-format
+specialization; the full independently formatted stage needs five-word cleanup.
+Global sizing, empty-class guard, outer schedule/coverage/replica order, shared
+tensor setup, aggregate fast bounds and root integration remain open. S4 is
+incomplete; the selected theorem has not yet been applied to a generated gather
+record, and kappa is unchanged.
+
+Guarded check passes at 1809.9 MiB. Integration build with initialized class setup,
+readiness and selected execution passes (16725 jobs, 2.6 GiB incremental peak).
+Expanded axiom audit passes for 344545 declarations at 3201.3 MiB, allowing only
+propext, Quot.sound and Classical.choice. Default proof limits unchanged.
