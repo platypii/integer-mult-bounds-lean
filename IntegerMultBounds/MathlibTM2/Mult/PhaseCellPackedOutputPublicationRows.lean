@@ -10,6 +10,21 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.Mathl
   IntegerMultBounds.NLogN.PhaseCellMatrix
 variable {A s t B L : ℕ} [NeZero s] [NeZero t]
 
+
+/-- The physical handoff volume follows from the certified rectangular shape. -/
+theorem Rows.stream_length {batch : PackedExactBatch A s t B L} (rows : batch.Rows) :
+    rows.stream.length = batch.records.length*(B*(L*batch.W)) := by
+  have hrow (i : Fin batch.records.length) :
+      ((List.ofFn fun j => cstream A batch.W (rows.values i j)).flatten).length = B*(L*batch.W) := by
+    rw [length_flatten_const _ (by
+      intro word hw
+      obtain ⟨j,rfl⟩ := List.mem_ofFn.mp hw
+      rw [length_cstream,rows.length]),List.length_ofFn]
+  rw [Rows.stream,length_flatten_const _ (by
+    intro word hw
+    obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hw
+    exact hrow i),List.length_ofFn]
+
 theorem rows_of_outputs (batch : PackedExactBatch A s t B L)
     (outputs : List (List (Fin (A+4))))
     (hgood : List.Forall₂ PackedNormalizedJob.output batch.records outputs) :

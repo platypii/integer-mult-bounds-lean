@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4233 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4234 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31474,3 +31474,34 @@ Guarded module check passes at 3888.0 MiB, under the 4 GiB module target.
 Expanded dependency build passes (16681 jobs, 4.3 GiB combined peak).
 Axiom audit passes for 343950 declarations at 3150.1 MiB, permitting only
 propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: publish the actual reversed numerical result
+
+`PhaseCellNumericalOutputPublication.publish_outputs_exec_within` starts from
+an actual returned `Forall₂ PackedNormalizedJob.output` certificate and the
+physical reverse-job numerical tape. The baseline bank has blank numerical and
+publication-temporary ports. Existing restoring copy/result retirement derives
+certified rows from those words, normalizes job order and clears the original
+result. The existing computed publication lifecycle then pads/transposes those
+same rows, generates scatter pages, publishes and cleans up.
+
+The exact final state changes only the ambient destination relative to the
+baseline bank: both temporary data ports, all controls/scratch and all left
+stacks are restored, and the destination suffix survives. Replica order remains
+that of the numerical jobs. No caller-supplied row map, intermediate readiness
+witness or execution callback is required. `Rows.stream_length` derives the
+handoff volume structurally from the certified shape, so the bill does not
+assume a computed output length.
+
+This joins actual numerical output words to the physical publication path.
+Ordinary initial metadata, copy counts/widths and working publication dimensions
+remain premises here. The retained-dimension lifecycle is separately verified;
+its composition around this handoff and placement after the selected numerical
+caller remain next. Retained binary geometry/origin construction, grouped/seam
+execution, locality/tensor setup sharing and root integration remain open.
+S4 remains incomplete; kappa unchanged.
+
+Guarded stream-volume bridge check passes at 3012.6 MiB and numerical-output
+publication at 3099.2 MiB. Expanded dependency build passes (16682 jobs,
+6.0 GiB combined peak). Axiom audit passes for 343953 declarations at
+3150.7 MiB, permitting only propext, Quot.sound and Classical.choice.
