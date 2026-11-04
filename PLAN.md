@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4283 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4287 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32703,3 +32703,49 @@ combined peak). Default proof limits unchanged.
 Final combined build passes (16729 jobs, 3.5 GiB incremental peak). Expanded
 axiom audit passes for 344598 declarations at 3201.0 MiB, allowing only propext,
 Quot.sound and Classical.choice.
+
+### S4 checkpoint: actual initialized selected class execution
+
+Cost/PhaseCellSelectedInitializedPublishedClassRun now composes the actual
+ordinary-input setup, selected numerical/publication execution and owned-word
+retirement. Each stage receives the preceding returned host state, rather than
+identifying host registers merely because user state agrees. The final state is
+the original pre-setup baseline with only ambient output changed. The theorem
+retains the actual numerical output relation, row unit-ball/error certificate,
+replica interpretation and exact boundary-size equality. Time includes setup,
+selected execution and retirement; workspace includes setup plus the selected
+allowance, with zero additional retirement stock.
+
+FormattedClassSetup bundles ordinary retained words, bounds and physical layout;
+its program and execution/retirement proofs are derived, with no execution field.
+Its ConsumerLayout ties the selected ten-word global prefix, two masters, computed
+class length and numerical/exposure/routing headers to those generated outputs.
+Numerical/publication readiness and the constructed gather record are still
+explicit contracts on the setup endpoint; their generic derivation/transport
+lemmas exist, but concrete global caller assembly is not yet instantiated here.
+
+PublishedClassProgram names the existing actual numerical-to-publication
+continuation. The original selected theorem uses that program, moving its five
+placement aliases out of the exposed statement and into the proof. Its accuracy
+and resource contracts are preserved.
+
+FormattedClassExecution proves initialization/retirement composition once for an
+arbitrary restoring run and certificate witness, including host-state threading,
+time/workspace addition and boundary-size restoration. The initialized selected
+theorem instantiates that lemma with the actual selected execution; it has no
+execution-callback premise. This structural abstraction reduced its measured
+check peak from 4817.6 to 3285.4 MiB without raising proof limits.
+
+Next assemble the ordinary global caller layout/words and derive all three
+readiness contracts from that construction, then instantiate the concrete outer
+class stages. Empty-class guards, packed/seam/full-line coverage, replica order,
+shared tensor setup, aggregate fast bounds and root integration remain open.
+The initialized proper-class stage theorem is proved; S4 as a whole is not.
+Kappa is unchanged.
+
+Guarded checks pass: publication continuation 3131.7 MiB, generic class composition
+3079.3 MiB, original selected execution 4237.0 MiB (about 4 GiB), and initialized
+selected execution 3285.4 MiB. Combined build passes (16732 jobs, 3.7 GiB
+incremental combined peak). Expanded axiom audit passes for 344686 declarations
+at 3204.9 MiB, allowing only propext, Quot.sound and Classical.choice. Default
+proof limits unchanged.

@@ -15,6 +15,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationMetadataVolu
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGatherPublicationBounds
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAllocatedPublicationGeometryControls
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAllocatedPublicationOrigins
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublishedClassProgram
 
 /-! Selected numerical execution feeds its actual result directly to restoring
 publication. The final state updates only the ambient caller destination. -/
@@ -138,13 +139,8 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     (pubReady : PublicationCallerReady (classCallerRegister ∘ pubSrc) (selectedPublicationPlacement bank output) S)
     (hdst : S.R (classCallerRegister output) = (List.ofFn ambient).flatten++outputTail)
     (hPublicationVolume : Sizes.s n₀ i*W < 2^Vpub),
-    let e := publicationOriginPlacement (Fin.castAdd 175 ∘ originSources)
-    let pubSources := Fin.castAdd 175 ∘ pubSrc
-    let geometrySources := PackedTranspose.publicationGeometrySources (Fin.castAdd 175 ∘ originSources) pubSources
-    let geometryPlacement := PackedTranspose.publicationGeometryPlacement geometrySources
     let geometryCost := PublicationGeometryControls.timeCost Vpub (Sizes.s n₀ i) L radius
     let retireGeometryCost := 2*((L-2*radius)+Sizes.s n₀ i)+5
-    let dimensionSources := PackedTranspose.publicationDimensionSources pubSources
     let dimensionCost := PackedTranspose.publicationDimensionsTimeCost g.a indices.length
     let retireDimensionCost := 2*(g.a+a+2^a)+7
     let metadata := PackedTranspose.publicationHeaderVolume a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) indices.length
@@ -167,12 +163,7 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
         (runStock+(3*geometryCost+(3*originCost+(2*dimensionCost+(2*(6*metadata+61)+PackedTranspose.retainedPublicationStock (K := K) (U := U)
           hstates a g.a (L-2*radius) Vpub W indices.length pubClass)))))) depth
-        (.seq runProg (.seq (PublicationGeometryControls.program geometryPlacement) (.seq (placedPublicationOrigins e) (.seq (PackedTranspose.publicationDimensionsProgram dimensionSources) (.seq (PackedTranspose.callerPublicationProgram pubSources
-          (Fin.castAdd 175 (bank (.recovery (.control .result)))) (Fin.castAdd 175 output) hstates)
-          (.seq (clearWords [Fin.castAdd PackedTranspose.tapeCount (dimensionSources 2),
-            Fin.castAdd PackedTranspose.tapeCount (dimensionSources 3),Fin.castAdd PackedTranspose.tapeCount (dimensionSources 4)])
-            (.seq (clearWords [classCallerRegister (pubSrc 9),classCallerRegister (pubSrc 6)])
-              (clearWords [geometryPlacement 3,geometryPlacement 4]))))))))
+        (publishedClassProgram runProg g.routeSrc pubSrc (bank (.recovery (.control .result))) output hstates)
         (Host.mk v S) n (Host.mk v' {S with R := (Function.update S.R (classCallerRegister output)
           ((List.ofFn fun j => pubClass.output W g.hwidth (rows.classRows pubClass keys j) (ambient j)).flatten++outputTail))}) := by
   obtain ⟨F,hF,Cstock,hclass⟩ := selectedTableRestoringComputedCoreClassRun_exec (body := body) bank hinj b hstates ct cV cD
@@ -185,7 +176,12 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     hMetadataFit hReplicaVolume hp hprecision J hJ batch pubClass keys runTime runStock runProg
     origins replica a Vpub output hout pubSrc hpubOff originSources ambient hambient outputTail hpubInj
     houtPacket houtCount houtMasters hOriginInj hPubWidth hPubReplica hPubWord hRouteTableOff houtGeometry pubReady
-    hdst hPublicationVolume e pubSources geometrySources geometryPlacement geometryCost retireGeometryCost dimensionSources dimensionCost retireDimensionCost metadata originCost
+    hdst hPublicationVolume geometryCost retireGeometryCost dimensionCost retireDimensionCost metadata originCost
+  let e := publicationOriginPlacement (Fin.castAdd 175 ∘ originSources)
+  let pubSources := Fin.castAdd 175 ∘ pubSrc
+  let geometrySources := PackedTranspose.publicationGeometrySources (Fin.castAdd 175 ∘ originSources) pubSources
+  let geometryPlacement := PackedTranspose.publicationGeometryPlacement geometrySources
+  let dimensionSources := PackedTranspose.publicationDimensionSources pubSources
   let geometryBaseline := PublicationGeometryControls.loaded geometryPlacement (Sizes.s n₀ i) (L-2*radius) S
   let originBaseline := originPacketState (classCallerRegister (pubSrc 9)) (classCallerRegister (pubSrc 6)) Vpub origins geometryBaseline
   let pubBaseline := PackedTranspose.publicationDimensionsLoaded dimensionSources g.a indices.length originBaseline
@@ -541,6 +537,6 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     exact add_le_add hn₁ (add_le_add (by exact_mod_cast hnG) (add_le_add (by exact_mod_cast hnO) (add_le_add (by exact_mod_cast hnD) (add_le_add (by exact_mod_cast hn₂) le_rfl))))
   · simpa only [hformat] using hrowSpec
   · simpa only [ys,hformat] using hsize
-  · simpa only [hprefix,hformat,hjobCount,numerical,ys,Nat.add_zero,retireDimensionCost,retireGeometryCost,a] using hwhole
+  · simpa only [publishedClassProgram,hprefix,hformat,hjobCount,numerical,ys,Nat.add_zero,retireDimensionCost,retireGeometryCost,a] using hwhole
 
 end IntegerMultBounds.MathlibTM2.Cost
