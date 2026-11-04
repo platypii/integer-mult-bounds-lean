@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedNumericalPublication
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationHeaderPlacement
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationHeaderFrame
 public import IntegerMultBounds.MathlibTM2.Host.EmbedInputOutputStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInputTableUpdate
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInputTableRetirement
@@ -60,30 +60,30 @@ theorem allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q
     let M := loadedInputTable publicationGeometryBank input V value (embStk (publicationPlacement inputPort outputPort) S)
     ∀ (_ : (M.R exponent).length = a+b) (_ : (M.R packet).length = L*batch.W)
     (_ : M.R pad = []) (_ : M.R tmp = []) (_ : M.R saved = [])
-    (_ : M.R (base (callerGenerator 106)) = [])
-    (_ : ∀ r, M.R (base (callerGenerator (originReg r))) = [])
-    (_ : M.R (base (callerGenerator 116)) = []) (_ : ∀ i, M.L i = [])
-    (_ : ∀ i, i ≠ workerReg (reg pay) → i ≠ FixedStreamedBank.control 7 → M.R (base (callerWorker i)) = [])
-    (_ : M.R (extra 1) = [])
+    (_ : (embStk (publicationPlacement inputPort outputPort) S).R (base (callerGenerator 106)) = [])
+    (_ : ∀ r, (embStk (publicationPlacement inputPort outputPort) S).R (base (callerGenerator (originReg r))) = [])
+    (_ : (embStk (publicationPlacement inputPort outputPort) S).R (base (callerGenerator 116)) = []) (_ : ∀ i, (embStk (publicationPlacement inputPort outputPort) S).L i = [])
+    (_ : ∀ i, i ≠ workerReg (reg pay) → i ≠ FixedStreamedBank.control 7 → (embStk (publicationPlacement inputPort outputPort) S).R (base (callerWorker i)) = [])
+    (_ : (embStk (publicationPlacement inputPort outputPort) S).R (extra 1) = [])
     (_ : (M.R copyCount).length = batch.records.length)
     (_ : (M.R copyWidth).length = (2^b)*L*batch.W)
     (_ : ∀ i ∈ [copySavedCount,archive,copySaved,copyTmp], M.R i = [])
-    (_ : M.R (extra 4) = [])
-    (_ : ∀ i ∈ [planeReg false,planeReg true,extra 2,extra 3,extra 5,extra 6], M.R i = [])
-    (_ : M.R ambientPort = (List.ofFn ambient).flatten++outputTail)
+    (_ : (embStk (publicationPlacement inputPort outputPort) S).R (extra 4) = [])
+    (_ : ∀ i ∈ [planeReg false,planeReg true,extra 2,extra 3,extra 5,extra 6], (embStk (publicationPlacement inputPort outputPort) S).R i = [])
+    (_ : (embStk (publicationPlacement inputPort outputPort) S).R ambientPort = (List.ofFn ambient).flatten++outputTail)
     (_ : (M.R clock).length = 2^b) (_ : M.R clockSave = [])
     (_ : (M.R padRows).length = (2^a-batch.records.length)*g.length)
     (_ : (M.R wordWidth).length = batch.W) (_ : (M.R lineRows).length = s)
     (_ : batch.W < 2^V) (_ : s < 2^V) (_ : s*batch.W < 2^V)
     (originTail : List (Fin (prime+K+4)))
-    (_ : (M.R (publicationPageBank 115)).length = V) (_ : (M.R (publicationPageBank 94)).length = batch.W)
-    (_ : (M.R (publicationPageBank 102)).length = g.length)
-    (_ : M.R (publicationPageBank 109) =
+    (_ : ((embStk (publicationPlacement inputPort outputPort) S).R (publicationPageBank 94)).length = batch.W)
+    (_ : ((embStk (publicationPlacement inputPort outputPort) S).R (publicationPageBank 102)).length = g.length)
+    (_ : (embStk (publicationPlacement inputPort outputPort) S).R (publicationPageBank 109) =
       (coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).origins.flatMap (binSyms V)++originTail)
-    (_ : M.R (publicationPageBank 116) = List.replicate
+    (_ : (embStk (publicationPlacement inputPort outputPort) S).R (publicationPageBank 116) = List.replicate
       (coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).origins.length tick)
-    (_ : ∀ i : Fin 117, i.val < 19 → M.R (publicationPageBank i) = [])
-    (_ : ∀ i ∈ [(88 : Fin 117),89,90,91,92,103,104,105,106,107], M.R (publicationPageBank i) = [])
+    (_ : ∀ i : Fin 117, i.val < 19 → (embStk (publicationPlacement inputPort outputPort) S).R (publicationPageBank i) = [])
+    (_ : ∀ i ∈ [(88 : Fin 117),89,90,91,92,103,104,105,106,107], (embStk (publicationPlacement inputPort outputPort) S).R (publicationPageBank i) = [])
     (_ : ∀ i ∈ [retireCount,savedControl,gap,acc,trash,pubTmp,pubSaved], M.R i = [])
     (_ : M.R outAcc = []),
     ∃ rows : batch.Rows, ∃ v' n, v'.user = v.user ∧
@@ -107,6 +107,17 @@ theorem allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q
         (mk v {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten}) n
         (mk v' {S with R := (Function.update S.R (Fin.castAdd tapeCount outputPort)
           ((List.ofFn fun j => g.output batch.W hw (rows.classRows g hkeys j) (ambient j)).flatten++outputTail))}) := by
+  dsimp only
+  intro hexponent hpacketWidth hpad htmp hsaved hz hblank hstageCount hL hfresh hsourceBlank hcopyCount hcopyWidth hcopyFresh
+    hcount hcodec hdst hclock hclockSave hpadRows hwordWidth hlineRows hwV hsV hvolume originTail
+    hpageWidth hpageLength hOrigins hpageCount hpageBlank hpageFresh hclean houtAcc
+  let B := embStk (publicationPlacement inputPort outputPort) S
+  let M := loadedInputTable publicationGeometryBank input V value B
+  have hframe (i : Fin 117) (hi : publicationRetainedIndex (publicationPageIndex i)) :
+      M.R (publicationPageBank i) = B.R (publicationPageBank i) :=
+    publicationGeometryLoad_page input V value B i hi
+  have hV : (M.R (publicationPageBank 115)).length = V :=
+    publicationGeometryLoad_pageWidth input V value B htableBlank
   simpa only [publicationPlacement_numerical,publicationPlacement_ambient] using
     placed_publish_outputs_exec_within body (publicationPlacement inputPort outputPort)
       (publicationPlacement_injective inputPort outputPort hports)
@@ -118,6 +129,43 @@ theorem allocated_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q
       (fun r => (publicationGeometryBank_off_ports r).1) (fun r => (publicationGeometryBank_off_ports r).2) hreadOff
       value hinputFit (fun i => publicationGeometryBank_variables i) hvalues publicationGeometryBank_width
       v S hnumericalBlank htableBlank hwLoad hzLoad hsrcLoad
+      hexponent hpacketWidth hpad htmp hsaved
+      (by
+        change M.R (publicationReg 106) = []
+        rw [publicationGeometryLoad_generator input V value B 106 (by decide +kernel)]
+        exact hz)
+      (by
+        intro r
+        change M.R (publicationReg (originReg r)) = []
+        rw [publicationGeometryLoad_generator input V value B (originReg r) (Or.inl (originReg_range r))]
+        exact hblank r)
+      (by
+        change M.R (publicationReg 116) = []
+        rw [publicationGeometryLoad_generator input V value B 116 (by decide +kernel)]
+        exact hstageCount) hL
+      (by
+        intro i hi hj
+        rw [publicationGeometryLoad_worker input V value B i]
+        exact hfresh i hi hj)
+      (by rw [publicationGeometryLoad_extra input V value B 1]; exact hsourceBlank)
+      hcopyCount hcopyWidth hcopyFresh
+      (by rw [publicationGeometryLoad_extra input V value B 4]; exact hcount)
+      (by intro i hi; rw [publicationGeometryLoad_codec input V value B i hi]; exact hcodec i hi)
+      (by rw [publicationGeometryLoad_ambient input V value B]; exact hdst)
+      hclock hclockSave hpadRows hwordWidth hlineRows hwV hsV hvolume originTail hV
+      (by rw [hframe 94 (by decide +kernel)]; exact hpageWidth)
+      (by rw [hframe 102 (by decide +kernel)]; exact hpageLength)
+      (by rw [hframe 109 (by decide +kernel)]; exact hOrigins)
+      (by rw [hframe 116 (by decide +kernel)]; exact hpageCount)
+      (by
+        intro i hi
+        rw [hframe i (by rw [publicationPageIndex_small i (by omega)]; exact Or.inl (by omega))]
+        exact hpageBlank i hi)
+      (by
+        intro i hi
+        rw [hframe i (publicationPageIndex_fresh i hi)]
+        exact hpageFresh i hi)
+      hclean houtAcc
 
 end
 end PackedTranspose

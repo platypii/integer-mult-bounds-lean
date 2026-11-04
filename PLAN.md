@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4242 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4243 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31639,3 +31639,30 @@ Guarded concrete-header check passes at 2729.0 MiB and the specialized allocated
 publication at 3052.4 MiB. Expanded dependency build passes (16690 jobs,
 3.5 GiB combined peak). Axiom audit passes for 344016 declarations at
 3152.1 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: derive publication readiness from pre-load retained words
+
+`PhaseCellPublicationHeaderFrame` factors the concrete geometry-loader frame.
+A structural retained-index predicate covers page dimension sources, origins,
+table slots and scratch; the fixed fresh-role check is proved once. Generic
+worker ownership and extra-register separation cover both codec planes, payload,
+ambient output and router workspace without enumerating the worker bank.
+The shared page V fact follows from the loaded table width header.
+
+The allocated publication endpoint now derives that V fact rather than assuming
+it. Page dimensions, origin words/counts and page scratch are premises on the
+pre-load retained bank, transported by the frame theorem. Router origin-table,
+stage-count, left-stack, worker/codec scratch, source and ambient facts are also
+read directly before loading. Remaining loaded-bank premises concern working
+headers and copy/scatter controls whose concrete roles are not yet instantiated.
+The actual program and its time/stock bills are unchanged.
+
+Next instantiate those working/control roles and join retained dimension setup
+to the actual-output handoff, then compose selected numerical execution and
+origin/master generation. Grouped/seam execution, locality/tensor setup sharing
+and root integration remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded frame check passes at 2728.8 MiB and allocated publication at 3051.5 MiB.
+Expanded dependency build passes (16691 jobs, 1.1 GiB incremental combined peak;
+focused build 3.5 GiB). Axiom audit passes for 344030 declarations at 3151.7 MiB,
+permitting only propext, Quot.sound and Classical.choice.
