@@ -32138,3 +32138,33 @@ small normalization errors in the selected theorem, subsequently fixed. The
 final guarded build passes (16709 jobs, 4.5 GiB incremental combined peak).
 Expanded axiom audit passes for 344301 declarations at 3195.3 MiB, allowing only
 propext, Quot.sound and Classical.choice. Default proof limits are unchanged.
+
+
+### S4 checkpoint: publication borrows three retained numerical controls
+
+PublicationHeaderInput states the actual input contract: header lengths plus the
+exact row counter and binary origin packet. The caller theorem now uses this
+contract instead of requiring canonical tick contents for every unary word.
+The generated-master bridge proves the contract structurally; its old exact-word
+version can be restored from b9b583b2.
+
+The selected theorem identifies publication source 3 with g.routeSrc 6 (replica
+count), source 5 with g.routeSrc 5 (word width), and source 7 with originSources 4
+(binary width). The first two are read through loadedInputTable_off, with explicit
+separation from the temporary table. Binary width uses the existing origin-width
+fact. These are borrowed words, preserved by the same actual program, without
+new setup or cleanup cost. Only core length and ambient length remain supplied
+as unary length facts; the five exact canonical word premises are gone.
+
+Next reuse prepareCoreDimensions (binary halo length minus two radius margins)
+and toUnary (binary ambient length) to produce these final two controls in the
+existing suffix/caller storage, retire them after publication and remove the two
+length premises. Then complete grouped/seam execution, outer replica ordering,
+shared tensor setup, aggregate costs and root integration. S4 remains incomplete;
+kappa unchanged.
+
+Guarded checks pass for the generated input bridge (2816.5 MiB), caller
+publication (4012.4 MiB) and selected execution (4168.0 MiB, about 4 GiB).
+Guarded build passes (16709 jobs, 4.5 GiB incremental combined peak). Expanded
+axiom audit passes for 344311 declarations at 3195.9 MiB, permitting only propext,
+Quot.sound and Classical.choice. Default proof limits are unchanged.

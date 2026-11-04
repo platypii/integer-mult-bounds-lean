@@ -136,10 +136,11 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     (hOriginWords : ∀ j : Fin 4, S.R (classCallerRegister (originSources (Fin.castAdd 3 j))) =
       binSyms Vpub (![Sizes.s n₀ i,amortizedCoreWidth ct (Sizes.p n₀),radius,L] j))
     (hOriginWidth : (S.R (classCallerRegister (originSources 4))).length = Vpub)
-    (hpubWords : ∀ j, j ∉ [(0 : Fin 10),1,2,6,9] → S.R (classCallerRegister (pubSrc j)) =
-      PackedTranspose.publicationHeaderWords a g.a (L-2*radius) W Vpub (Sizes.s n₀ i)
-        (coreSubsetPublicationWindows (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀))
-          pubClass.length g.hwidth pubClass.indices pubClass.sublist).origins [] j)
+    (hPubWidth : pubSrc 7 = originSources 4)
+    (hPubReplica : pubSrc 3 = g.routeSrc 6) (hPubWord : pubSrc 5 = g.routeSrc 5)
+    (hPubTableOff : ∀ j ∈ [(3 : Fin 10),5], ∀ r, rg r ≠ classCallerRegister (pubSrc j))
+    (hpubCore : (S.R (classCallerRegister (pubSrc 4))).length = L-2*radius)
+    (hpubAmbient : (S.R (classCallerRegister (pubSrc 8))).length = Sizes.s n₀ i)
     (hpubBlank : ∀ j, S.R (Fin.natAdd (T+175) j) = [])
     (hpubLeft : ∀ j, (embStk (selectedPublicationPlacement bank output) S).L j = [])
     (hdst : S.R (classCallerRegister output) = (List.ofFn ambient).flatten++outputTail)
@@ -178,7 +179,7 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     hMetadataFit hReplicaVolume hblank hleft hp hprecision J hJ batch pubClass keys runTime runStock runProg
     origins a Vpub output hout pubSrc hpubOff ambient hambient outputTail hpubInj hpacketBlank hcountBlank
     houtPacket houtCount hmastersBlank houtMasters originSources hOriginInj hOriginPacket hOriginCount hOriginOff hOriginWide hOriginLength
-    hOriginWords hOriginWidth hpubWords hpubBlank hpubLeft
+    hOriginWords hOriginWidth hPubWidth hPubReplica hPubWord hPubTableOff hpubCore hpubAmbient hpubBlank hpubLeft
     hdst pubBounds e pubSources originBaseline dimensionSources pubBaseline dimensionCost retireDimensionCost metadata originCost
   obtain ⟨v₁,n₁,outputs,hu₁,hn₁,hgood,he₁⟩ := hn h i u target L hu htarget hLengthGroup α gap C V bounds Fs hFs
     D Cprog depth rg hrg hoff hfitValues hpush hbody hwide hHfit hA hB v S src hsrc hs hw' hr hL'
@@ -262,26 +263,44 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     apply (hOoff _ ?_ ?_).trans (hpubBlank j)
     · simpa only [←hprefix] using (prefix_ne_routing (Fin.castAdd 175 (pubSrc 9)) j).symm
     · simpa only [←hprefix] using (prefix_ne_routing (Fin.castAdd 175 (pubSrc 6)) j).symm
+  have hreplicaLength : (S.R (classCallerRegister (pubSrc 3))).length = 2^g.a := by
+    have hh := g.hRrep
+    rw [←hPubReplica,loadedInputTable_off rg masters D value S _
+      (fun r => (hPubTableOff 3 (by simp) r).symm)] at hh
+    exact hh
+  have hwordLength : (S.R (classCallerRegister (pubSrc 5))).length = W := by
+    have hh := g.hRword
+    rw [←hPubWord,loadedInputTable_off rg masters D value S _
+      (fun r => (hPubTableOff 5 (by simp) r).symm)] at hh
+    exact hh
   obtain ⟨vD,nD,huD,hnD,heD⟩ := PackedTranspose.publicationDimensions_after_update_exec_within body
     dimensionSources hdimInj g.a indices.length depth
     (Fin.castAdd 175 (bank (.recovery (.control .result)))) outputs.reverse.flatten hdimOff vO originBaseline
     (by
       rw [hdimPort]
       change (originBaseline.R (classCallerRegister (pubSrc 3))).length = _
-      rw [hOoff _ (hsrcSep 3 9 (by decide)) (hsrcSep 3 6 (by decide)),hpubWords 3 (by decide)]
-      simp [PackedTranspose.publicationHeaderWords])
+      rw [hOoff _ (hsrcSep 3 9 (by decide)) (hsrcSep 3 6 (by decide))]
+      exact hreplicaLength)
     (by
       rw [hdimPort]
       change (originBaseline.R (classCallerRegister (pubSrc 6))).length = _
       simp [originBaseline,originPacketState,hN])
     hdimBlank hblankO
   simp only [hprefix] at heD
-  have hwordsD (j : Fin 10) : pubBaseline.R (classCallerRegister (pubSrc j)) =
-      PackedTranspose.publicationHeaderWords a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) origins [] j := by
-    have hh := PackedTranspose.publicationHeaderWords_of_generated_masters pubSources
+  have hinputD : PackedTranspose.PublicationHeaderInput (classCallerRegister ∘ pubSrc)
+      a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) origins [] pubBaseline := by
+    have hh := PackedTranspose.publicationHeaderInput_of_generated_masters pubSources
       ((Fin.castAdd_injective _ _).comp hpubInj) g.a (L-2*radius) W Vpub (Sizes.s n₀ i) origins S
-      (by intro k hk; simpa only [pubSources,Function.comp_apply,hprefix,hN] using hpubWords k hk) j
-    simpa only [PackedTranspose.publicationGeneratedMasterState,pubSources,Function.comp_apply,hprefix,hN] using hh
+      (by
+        intro k hk
+        rcases PackedTranspose.publicationFundamentalIndex_cases k hk with rfl | rfl | rfl | rfl | rfl
+        · simpa [pubSources,Function.comp_apply,hprefix,PackedTranspose.publicationHeaderWords] using hreplicaLength
+        · simpa [pubSources,Function.comp_apply,hprefix,PackedTranspose.publicationHeaderWords] using hpubCore
+        · simpa [pubSources,Function.comp_apply,hprefix,PackedTranspose.publicationHeaderWords] using hwordLength
+        · simpa [pubSources,Function.comp_apply,hprefix,hPubWidth,PackedTranspose.publicationHeaderWords] using hOriginWidth
+        · simpa [pubSources,Function.comp_apply,hprefix,PackedTranspose.publicationHeaderWords] using hpubAmbient)
+    simpa only [PackedTranspose.publicationGeneratedMasterState,pubBaseline,dimensionSources,originBaseline,a,
+      pubSources,Function.comp_def,hprefix,hN] using hh
   have hDoff (k) (h0 : k ≠ classCallerRegister (pubSrc 0)) (h1 : k ≠ classCallerRegister (pubSrc 1))
       (h2 : k ≠ classCallerRegister (pubSrc 2)) (h9 : k ≠ classCallerRegister (pubSrc 9))
       (h6 : k ≠ classCallerRegister (pubSrc 6)) : pubBaseline.R k = S.R k := by
@@ -301,7 +320,7 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     ((Fin.castAdd_injective _ _).ne hout) hstates a g.a (L-2*radius) Vpub batch outputs
     (by rw [hbatch]; exact hgood) pubClass keys hwidth g.hwidth rfl hW (by simpa only [hformat,hjobCount] using pubBounds) hA depth ambient hambient outputTail vD pubBaseline
     [] pubSources (fun j => (Fin.castAdd_injective _ _).ne (hpubOff j))
-    (by intro j; simpa only [pubSources,Function.comp_apply,hprefix,hformat] using hwordsD j)
+    (by simpa only [pubSources,Function.comp_def,hprefix,hformat] using hinputD)
     hblankD hpubLeft (by simpa only [hprefix] using hsourceD)
     (by simpa only [hprefix] using hdstD)
   have hraw : outputs.reverse.flatten.length = indices.length*(2^g.a*((L-2*radius)*W)) := by

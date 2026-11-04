@@ -40,9 +40,8 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
     (v : HS (T+tapeCount) Q (prime+K) U) (S : Stacks (T+tapeCount) (prime+K))
     (originTail : List (Fin (prime+K+4))) (src : Fin 10 → Fin T)
     (hsrcOff : ∀ i, src i ≠ inputPort)
-    (hmasters : ∀ i, S.R (Fin.castAdd tapeCount (src i)) =
-      publicationHeaderWords a b L batch.W V s
-        (coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).origins originTail i)
+    (hmasters : PublicationHeaderInput (Fin.castAdd tapeCount ∘ src) a b L batch.W V s
+      (coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).origins originTail S)
     (hblank : ∀ i, S.R (Fin.natAdd T i) = [])
     (hleft : ∀ i, (embStk (publicationPlacement inputPort outputPort) S).L i = [])
     (hsource : S.R (Fin.castAdd tapeCount inputPort) = [])
@@ -69,11 +68,14 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
   have hvolume := bounds.ambientVolumeFit
   let M := loadedPublicationHeaders src S
   let F : Stacks (T+tapeCount) (prime+K) := {S with R := Function.update S.R (Fin.castAdd tapeCount inputPort) outputs.reverse.flatten}
-  have hread (r : Fin 10 × Fin 117) (hr : r ∈ publicationHeaderAssignments) :
-      (embStk (publicationPlacement inputPort outputPort) M).R (publicationReg r.2) =
-        publicationHeaderWords a b L batch.W V s
-          (coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).origins originTail r.1 :=
-    (loadedPublicationHeaders_project_read src S hblank inputPort outputPort r hr).trans (hmasters r.1)
+  have hread (r : Fin 10 × Fin 117) (hr : r ∈ publicationHeaderAssignments) :=
+    loadedPublicationHeaders_project_read src S hblank inputPort outputPort r hr
+  have hheaderLength (j : Fin 10) (i : Fin 117) (hi : (j,i) ∈ publicationHeaderAssignments) :
+      ((embStk (publicationPlacement inputPort outputPort) M).R (publicationReg i)).length =
+        (publicationHeaderWords a b L batch.W V s
+          (coreSubsetPublicationWindows s width g.length hw g.indices g.sublist).origins originTail j).length := by
+    rw [hread (j,i) hi]
+    exact hmasters.lengths j
   have hgen (i : Fin 117) (hi : i ≠ 95 ∧ i ≠ 96 ∧ i ∉ publicationHeaderAssignments.map Prod.snd) :
       (embStk (publicationPlacement inputPort outputPort) M).R (publicationReg i) = [] :=
     loadedPublicationHeaders_generator_fresh src S hblank inputPort outputPort i hi.1 hi.2.1
@@ -90,7 +92,6 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
     simpa only [embStk,Function.comp_apply,publicationPlacement_numerical,hprefix] using hsource
   have hdstM : (embStk (publicationPlacement inputPort outputPort) M).R ambientPort = (List.ofFn ambient).flatten++outputTail := by
     simpa only [embStk,Function.comp_apply,publicationPlacement_ambient,hprefix] using hdst
-  have hmaster (j : Fin 10) (i : Fin 117) (hi : (j,i) ∈ publicationHeaderAssignments) := hread (j,i) hi
   obtain ⟨v₁,hu₁,he₁,_,_⟩ := loadPublicationHeaders_exec_within body src v F
     (by intro i; simpa only [F,Function.update_of_ne (prefix_ne_routing inputPort i).symm] using hblank i) depth
   have hloadEnd : loadedPublicationHeaders src F =
@@ -113,10 +114,10 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
   obtain ⟨rows,v₂,n₂,hu₂,hn₂,he₂⟩ := retained_allocated_publish_outputs_exec_within body inputPort outputPort hports
     hstates a b L V batch outputs hgood g hkeys hcoreWidth hw hlength hw1 hpacket hbits hfit hA hcapacity depth
     ambient hambient outputTail v₁ M
-    (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using congrArg List.length (hmaster 0 61 (by decide +kernel)))
-    (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using congrArg List.length (hmaster 1 62 (by decide +kernel)))
-    (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using congrArg List.length (hmaster 2 60 (by decide +kernel)))
-    (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using congrArg List.length (hmaster 3 59 (by decide +kernel)))
+    (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using (hheaderLength 0 61 (by decide +kernel)))
+    (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using (hheaderLength 1 62 (by decide +kernel)))
+    (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using (hheaderLength 2 60 (by decide +kernel)))
+    (by simpa [publicationDimensionBank,publicationDimensionIndex,publicationHeaderWords] using (hheaderLength 3 59 (by decide +kernel)))
     (by
       intro r hr
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hr
@@ -131,7 +132,7 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
       | wn => exact hgen _ (by decide +kernel)
       | acc => exact hgen _ (by decide +kernel)
       | z i => fin_cases i <;> exact hgen _ (by decide +kernel))
-    (by simpa [publicationHeaderWords] using congrArg List.length (hmaster 7 35 (by decide +kernel)))
+    (by simpa [publicationHeaderWords] using (hheaderLength 7 35 (by decide +kernel)))
     (hgen 106 (by decide +kernel))
     (by intro i; fin_cases i <;> exact hgen _ (by decide +kernel))
     (hgen 58 (by decide +kernel)) (hgen 65 (by decide +kernel)) (hgen 66 (by decide +kernel))
@@ -152,12 +153,12 @@ theorem caller_publish_outputs_exec_within (body : P → Pr P (T+tapeCount) Q (p
       · exact hworker _ (by decide +kernel)
       all_goals exact hextra _)
     hdstM (hgen 67 (by decide +kernel))
-    (by simpa [publicationHeaderWords] using congrArg List.length (hmaster 8 79 (by decide +kernel)))
+    (by simpa [publicationHeaderWords] using (hheaderLength 8 79 (by decide +kernel)))
     hwV hsV hvolume originTail
-    (by simpa [publicationHeaderWords] using congrArg List.length (hmaster 5 34 (by decide +kernel)))
-    (by simpa [publicationHeaderWords,hlength] using congrArg List.length (hmaster 4 33 (by decide +kernel)))
-    (by simpa [publicationHeaderWords] using hmaster 9 109 (by decide +kernel))
-    (by simpa [publicationHeaderWords] using hmaster 6 36 (by decide +kernel))
+    (by simpa [publicationHeaderWords] using (hheaderLength 5 34 (by decide +kernel)))
+    (by simpa [publicationHeaderWords,hlength] using (hheaderLength 4 33 (by decide +kernel)))
+    (by exact (hread (9,109) (by decide +kernel)).trans hmasters.packet)
+    (by exact (hread (6,36) (by decide +kernel)).trans hmasters.count)
     (by intro i hi; rw [publicationPageBank_small i (by omega)]; exact hsmall i (by omega))
     (by
       intro i hi

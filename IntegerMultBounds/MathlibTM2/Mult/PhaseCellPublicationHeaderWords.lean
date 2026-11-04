@@ -29,6 +29,15 @@ def publicationHeaderWords (a b L W V s : ℕ) (origins : List ℕ)
     List.replicate origins.length tick,List.replicate V tick,List.replicate s tick,
     origins.flatMap (binSyms V)++originTail]
 
+/-- Unary controls are read by length. The row counter and binary origin packet
+retain their exact contents for the destructive publication sweep. -/
+structure PublicationHeaderInput (src : Fin 10 → Fin T) (a b L W V s : ℕ)
+    (origins : List ℕ) (originTail : List (Fin (A+4))) (S : Stacks T A) : Prop where
+  lengths : ∀ j, (S.R (src j)).length =
+    (publicationHeaderWords a b L W V s origins originTail j).length
+  count : S.R (src 6) = List.replicate origins.length tick
+  packet : S.R (src 9) = origins.flatMap (binSyms V)++originTail
+
 theorem publicationHeaderWords_of_owned_packet (src : Fin 10 → Fin T) (hinj : Function.Injective src)
     (a b L W V s : ℕ) (origins : List ℕ) (S : Stacks T A)
     (hwords : ∀ j, j ≠ 6 → j ≠ 9 → S.R (src j) = publicationHeaderWords a b L W V s origins [] j) :
