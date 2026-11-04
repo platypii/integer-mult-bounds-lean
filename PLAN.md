@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4241 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4242 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31606,3 +31606,36 @@ Guarded allocation check passes at 2713.1 MiB, allocated publication at
 build passes (16689 jobs, 5.9 GiB combined peak). Axiom audit passes for 343974
 declarations at 3152.7 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: fix concrete page and geometry header sub-banks
+
+`PhaseCellPublicationHeaderPlacement` supplies the actual sub-bank maps inside
+the existing publication suffix. Three swaps of the 117-register page generator
+move unary core length, word width and row count to generator slots 33, 34 and
+36. The ordinary V header remains shared at 115; the binary router packet and
+stage-count roles stay separate. Injectivity follows by composing the swaps
+with the existing generator placement, rather than checking every tape pair.
+
+The three-variable geometry table is fixed at router exponents 97/98, packet
+102 and width 115, with separate table scratch. Its injection proof is structural
+in the table ownership constructors and small scalar index bounds. Existing
+router-origin table slots below 31, the three remapped unary page sources and
+both shared data ports are proved disjoint from this geometry table.
+
+The allocated actual-output publication endpoint now uses these concrete maps.
+Caller-supplied page/geometry map injections, page/payload separation and router
+header-placement agreements are removed. The generic placed endpoint remains
+available; restore cafaea1a for the former generic allocated interface if needed.
+No program, data move, tape count, numerical claim or asymptotic charge changes.
+
+Next derive the page-source/scratch facts directly from pre-load retained
+metadata using these disjointness results, instantiate the remaining working
+header/control roles, and compose the selected numerical execution with actual
+publication. Origin/master generation, grouped/seam execution, locality/tensor
+setup sharing and root integration remain open. S4 remains incomplete; kappa
+unchanged.
+
+Guarded concrete-header check passes at 2729.0 MiB and the specialized allocated
+publication at 3052.4 MiB. Expanded dependency build passes (16690 jobs,
+3.5 GiB combined peak). Axiom audit passes for 344016 declarations at
+3152.1 MiB, permitting only propext, Quot.sound and Classical.choice.
