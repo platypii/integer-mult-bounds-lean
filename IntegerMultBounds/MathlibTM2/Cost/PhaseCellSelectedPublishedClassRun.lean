@@ -8,6 +8,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedPublicationPlac
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedPublicationOrigins
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOwnedOriginPacket
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedPublicationMasterWords
+public import IntegerMultBounds.MathlibTM2.Host.RestoringSequence
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGatherPublicationBounds
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAllocatedPublicationGeometryControls
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellAllocatedPublicationOrigins
@@ -160,6 +161,9 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
         (PackedTranspose.retainedPublicationTimeCost (K := K) hstates a g.a (L-2*radius) Vpub
           W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W)))+(2*metadata+21))+(retireDimensionCost+((2*(origins.length*Vpub+origins.length)+5)+retireGeometryCost))))) : ℕ) ∧
       List.Forall₂ PackedNormalizedJob.output (List.ofFn jobs) outputs ∧
+      mnSize (Host.mk v' {S with R := (Function.update S.R (classCallerRegister output)
+        ((List.ofFn fun j => pubClass.output W g.hwidth (rows.classRows pubClass keys j) (ambient j)).flatten++outputTail))}) =
+        mnSize (Host.mk v S) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
         (runStock+(3*geometryCost+(3*originCost+(2*dimensionCost+(2*(6*metadata+61)+PackedTranspose.retainedPublicationStock (K := K) (U := U)
           hstates a g.a (L-2*radius) Vpub W indices.length pubClass)))))) depth
@@ -471,11 +475,29 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     (by rw [hgeo4]; exact hcaller.ne (houtGeometry 8 (by simp))) ys v₃ S
     (by rw [hgeo3]; exact hgeometryBlank 4 (by simp))
     (by rw [hgeo4]; exact hgeometryBlank 8 (by simp)) depth
+  have hpublishedLength (j : Fin (2^g.a)) :
+      (pubClass.output batch.W g.hwidth (rows.classRows pubClass keys j) (ambient j)).length = Sizes.s n₀ i*W := by
+    simpa only [hformat] using pubClass.output_length batch.W g.hwidth (rows.classRows pubClass keys j)
+      (rows.classRows_length pubClass keys hwidth j) (ambient j)
+      (by simpa only [hformat] using hambient j)
+  have hysLength : ys.length = (S.R (classCallerRegister output)).length := by
+    have hp : ∀ row ∈ List.ofFn (fun j => pubClass.output batch.W g.hwidth (rows.classRows pubClass keys j) (ambient j)),
+        row.length = Sizes.s n₀ i*W := by
+      intro row hr
+      obtain ⟨j,rfl⟩ := List.mem_ofFn.mp hr
+      exact hpublishedLength j
+    have ha : ∀ row ∈ List.ofFn ambient, row.length = Sizes.s n₀ i*W := by
+      intro row hr
+      obtain ⟨j,rfl⟩ := List.mem_ofFn.mp hr
+      exact hambient j
+    simp only [ys,hdst,List.length_append,Fast.length_flatten_const _ hp,Fast.length_flatten_const _ ha,List.length_ofFn]
+  have hsize := mn_replace_right_size_of_length v v₄ S (classCallerRegister output) ys hysLength
   have hwhole := mn_seq_within_add he₁ (mn_seq_within_add heG (mn_seq_within_add heO (mn_seq_within_add heD (mn_seq_within_add he₂ (mn_seq_within_add heR (mn_seq_within_add he₃ he₄))))))
   refine ⟨v₄,n₁+(nG+(nO+(nD+(n₂+(retireDimensionCost+((2*(origins.length*Vpub+origins.length)+5)+retireGeometryCost)))))),outputs,rows,
-    hu₄.trans (hu₃.trans (huR.trans (hu₂.trans (huD.trans (huO.trans (huG.trans hu₁)))))),?_,hgood,?_⟩
+    hu₄.trans (hu₃.trans (huR.trans (hu₂.trans (huD.trans (huO.trans (huG.trans hu₁)))))),?_,hgood,?_,?_⟩
   · simp only [Nat.cast_add]
     exact add_le_add hn₁ (add_le_add (by exact_mod_cast hnG) (add_le_add (by exact_mod_cast hnO) (add_le_add (by exact_mod_cast hnD) (add_le_add (by exact_mod_cast hn₂) le_rfl))))
+  · simpa only [ys,hformat] using hsize
   · simpa only [hprefix,hformat,hjobCount,numerical,ys,Nat.add_zero,retireDimensionCost,retireGeometryCost,a] using hwhole
 
 end IntegerMultBounds.MathlibTM2.Cost

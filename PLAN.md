@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4264 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4265 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32235,4 +32235,40 @@ Guarded checks pass for the generic publication bounds (2679.7 MiB) and selected
 execution (4235.3 MiB, about 4 GiB). Final guarded build passes (16712 jobs,
 4.6 GiB incremental combined peak). Expanded axiom audit passes for 344346
 declarations at 3200.1 MiB, allowing only propext, Quot.sound and Classical.choice.
+Default proof limits are unchanged.
+
+
+### S4 checkpoint: restoring class sequences share peak workspace
+
+Host.RestoringSequence proves structural execution over an arbitrary list of
+actual stage programs. A remaining-schedule invariant carries readiness and
+semantic progress. Per-stage real time costs add (plus one terminal done step),
+while workspace is the maximum of the stage allowances, provided completed
+stages do not increase boundary stock. A uniform workspace bound therefore costs
+no factor for the number of classes. This avoids pricing shared scratch as a
+fresh allocation at every class.
+
+The selected numerical/publication theorem now returns exact boundary stock
+restoration in addition to its execution. Each published ambient block retains
+its original length by Rows.classRows_length and CorePublicationClass.output_length;
+all other stacks restore. A generic equal-length right-word replacement lemma
+turns this endpoint frame into the size equality. Existing time, stock and program
+contracts are unchanged; the stronger endpoint is ready for the restoring fold.
+
+Next instantiate this fold for actual packed and seam stages. Carry accuracy on
+cores absent from the remaining class list; output_errorOn and output_preserves
+supply the semantic step without accumulating error. Per-stage row witnesses may
+be existential and depend on the actual run; do not assume a precomputed row bank
+or replace concrete selected execution by an uninstantiated step premise. Prove
+readiness remains valid under the equal-length ambient update, then discharge
+coverage, replica ordering and uniform cost bounds. Concrete outer execution,
+shared tensor setup, aggregate fast bounds and root S4 integration remain open.
+This generic fold is proof infrastructure, not a claim of completed outer class
+execution. S4 remains incomplete; kappa unchanged. The older selected endpoint
+without a stock-equality result can be restored from a6c3e854.
+
+Guarded checks pass for the restoring sequence (1312.2 MiB) and strengthened
+selected execution (4234.8 MiB, about 4 GiB). Guarded build passes (16713 jobs,
+4.6 GiB incremental combined peak). Expanded axiom audit passes for 344367
+declarations at 3200.3 MiB, permitting only propext, Quot.sound and Classical.choice.
 Default proof limits are unchanged.
