@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4243 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4244 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31665,4 +31665,33 @@ and root integration remain open. S4 remains incomplete; kappa unchanged.
 Guarded frame check passes at 2728.8 MiB and allocated publication at 3051.5 MiB.
 Expanded dependency build passes (16691 jobs, 1.1 GiB incremental combined peak;
 focused build 3.5 GiB). Axiom audit passes for 344030 declarations at 3151.7 MiB,
+permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: concrete working/control roles and entirely pre-load readiness
+
+`PhaseCellPublicationControlPlacement` fixes the working dimension bank, copy,
+padding and scatter roles in the existing suffix. The dimension map uses the
+existing semantic role type; a generic injective optional-port map handles the
+single extra payload tape in all three separation checks. Concrete short role
+lists are checked last with kernel reduction. Binary geometry sources are fixed
+at three retained words, with explicit width and zero sources.
+
+The allocated publication endpoint now instantiates these roles and derives all
+copy/padding/scatter Nodup and geometry-source separation facts. Caller-supplied
+working register maps and their separation premises are removed. The expanded
+geometry frame covers every working/control source. Consequently the endpoint
+has no remaining readiness premises on the loaded geometry bank: all ordinary
+metadata and scratch facts refer to the actual pre-load bank. Copy count follows
+from the shared canonical page count and job-key identity; scatter word width
+follows from the shared page width, eliminating two duplicate premises.
+
+Next compose retained working-dimension generation with this concrete actual-word
+endpoint; generate the copy-width product from the same masters, then join the
+selected numerical trace and origin/master production. Grouped/seam execution,
+locality/tensor setup sharing and root integration remain open. S4 remains
+incomplete; kappa unchanged.
+
+Guarded control placement passes at 2738.1 MiB, expanded frame at 2728.5 MiB and
+allocated publication at 3066.5 MiB. Expanded dependency build passes (16692 jobs,
+3.5 GiB combined peak). Axiom audit passes for 344086 declarations at 3160.3 MiB,
 permitting only propext, Quot.sound and Classical.choice.

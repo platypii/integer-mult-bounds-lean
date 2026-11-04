@@ -14,10 +14,12 @@ variable {A : ℕ}
 
 def publicationRetainedIndex (i : Fin 117) : Prop :=
   i.val < 31 ∨ i.val = 33 ∨ i.val = 34 ∨ i.val = 36 ∨ i.val = 109 ∨ i.val = 116 ∨
-    (88 ≤ i.val ∧ i.val ≤ 92) ∨ (103 ≤ i.val ∧ i.val ≤ 107)
+    (88 ≤ i.val ∧ i.val ≤ 92) ∨ (103 ≤ i.val ∧ i.val ≤ 107) ∨
+    (51 ≤ i.val ∧ i.val ≤ 84) ∨ i.val = 35
 
-instance (i : Fin 117) : Decidable (publicationRetainedIndex i) :=
-  inferInstanceAs (Decidable (_ ∨ _ ∨ _ ∨ _ ∨ _ ∨ _ ∨ _ ∨ _))
+instance (i : Fin 117) : Decidable (publicationRetainedIndex i) := by
+  unfold publicationRetainedIndex
+  infer_instance
 
 theorem publicationGeometryBank_off_retained (r : TblR 3) (i : Fin 117)
     (hi : publicationRetainedIndex i) : publicationGeometryBank r ≠ publicationReg i := by
