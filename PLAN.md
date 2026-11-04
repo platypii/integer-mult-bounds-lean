@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4287 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4288 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32748,4 +32748,43 @@ Guarded checks pass: publication continuation 3131.7 MiB, generic class composit
 selected execution 3285.4 MiB. Combined build passes (16732 jobs, 3.7 GiB
 incremental combined peak). Expanded axiom audit passes for 344686 declarations
 at 3204.9 MiB, allowing only propext, Quot.sound and Classical.choice. Default
+proof limits unchanged.
+
+### S4 checkpoint: derive numerical/publication readiness from baseline inputs
+
+SetupNumericalReadiness derives the entire retained master prefix from ordinary
+global words and ConsumerLayout. Its canonical classValues assignment changes
+only the two generated scalar slots. The twelve common values and all their
+D-bit fit bounds follow from the global fits and the computed core/halo bound;
+these are no longer supplied to the initialized selected theorem.
+
+NumericalInput records only three baseline geometry words, fresh numerical/table
+storage, worker-left freshness and the remaining physical separations. The fourth
+geometry word and all twelve master words are generated. Positive-length retained
+words cannot occupy initially blank owned ports; one generic lemma uses this to
+derive preservation of geometry/width headers and separation of retained masters
+from format destinations. Only the small fixed ABI prefix identity is checked
+by finite role cases; class geometry and fit arguments remain structural.
+
+The initialized selected theorem now derives ClassCallerReady from NumericalInput
+and ConsumerLayout, fixes its scalar value assignment to setup.classValues, and
+borrows setup's existing width/zero controls. It derives PublicationCallerReady
+from baseline publication freshness plus separation from owned class words.
+Ambient input is also specified on the original baseline and transported through
+setup. The twelve-master fit hypothesis, scalar-value assignment hypothesis and
+post-setup numerical/publication readiness hypotheses are removed from its API.
+The temporary table state is now proof-local.
+
+Next replace the remaining complete gather-record argument by its ordinary
+retained seed and generated halo fields, instantiate its table transport, and
+construct the concrete global caller layout/words. Then instantiate outer class
+stages, including frame transport after ambient updates and actual empty-class
+guards. Packed/seam/full-line coverage, replica order, shared tensor setup,
+aggregate bounds and root integration remain open. S4 remains incomplete; kappa
+unchanged.
+
+Final guarded checks pass: baseline-to-numerical/publication readiness 3126.2 MiB,
+initialized selected execution 3285.4 MiB. Combined build passes (16734 jobs,
+3.7 GiB incremental peak). Expanded axiom audit passes for 344711 declarations
+at 3205.6 MiB, allowing only propext, Quot.sound and Classical.choice. Default
 proof limits unchanged.
