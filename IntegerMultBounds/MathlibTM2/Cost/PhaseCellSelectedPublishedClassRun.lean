@@ -119,6 +119,8 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
           (.seq g.program (inputClassProgram (fullExposedClassBank bank) (fullExposedClassBank_injective bank hinj) b rg))))
     let origins := (coreSubsetPublicationWindows (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀))
       pubClass.length g.hwidth pubClass.indices pubClass.sublist).origins
+    let replica := fun j : Fin (2^g.a) => Fs.reverse[j.val]'(by
+      simpa only [List.length_reverse,g.hpower] using j.isLt)
     let a := Nat.clog 2 indices.length
     let Vpub := g.D
     ∀ (output : Fin T) (hout : bank (.recovery (.control .result)) ≠ output)
@@ -161,6 +163,13 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
         (PackedTranspose.retainedPublicationTimeCost (K := K) hstates a g.a (L-2*radius) Vpub
           W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W)))+(2*metadata+21))+(retireDimensionCost+((2*(origins.length*Vpub+origins.length)+5)+retireGeometryCost))))) : ℕ) ∧
       List.Forall₂ PackedNormalizedJob.output (List.ofFn jobs) outputs ∧
+      (∀ j k, k ∈ pubClass.indices →
+        let out := packedIntervalRead (Sizes.p n₀) W (coreStart (amortizedCoreWidth ct (Sizes.p n₀)) k)
+          (Fast.cstream (prime+K) W (rows.classRows pubClass keys j k))
+        (∀ z ∈ ownedCore (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) k, ‖out z‖ ≤ 1) ∧
+        PhaseCellInterface.ErrorOn (ownedCore (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) k) out
+          ((((2 : ℂ)^inverseNormalizationShift (Sizes.p n₀))⁻¹ • J)
+            ((1/2 : ℂ) • fun z => ShortConv.value (Sizes.p n₀) (replica j z))) (3/(2 : ℝ)^(Sizes.p n₀))) ∧
       mnSize (Host.mk v' {S with R := (Function.update S.R (classCallerRegister output)
         ((List.ofFn fun j => pubClass.output W g.hwidth (rows.classRows pubClass keys j) (ambient j)).flatten++outputTail))}) =
         mnSize (Host.mk v S) ∧
@@ -183,7 +192,7 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     v S src hsrc hs hw' hr hL' masters widthMaster zeroMaster value hwidthMaster hzeroMaster hmasterOff
     hgeometryOff hvalues hwidthWord hzeroWord hmasterWords htableBlank Vg borrowed g hExposeWidth hRouteWidth
     hMetadataFit hReplicaVolume hblank hleft hp hprecision J hJ batch pubClass keys runTime runStock runProg
-    origins a Vpub output hout pubSrc hpubOff originSources ambient hambient outputTail hpubInj hpacketBlank hcountBlank
+    origins replica a Vpub output hout pubSrc hpubOff originSources ambient hambient outputTail hpubInj hpacketBlank hcountBlank
     houtPacket houtCount hmastersBlank houtMasters hOriginInj hPubWidth hPubReplica hPubWord hRouteTableOff hgeometryBlank houtGeometry hpubLeft
     hdst hPublicationVolume e pubSources geometrySources geometryPlacement geometryBaseline geometryCost retireGeometryCost originBaseline dimensionSources pubBaseline dimensionCost retireDimensionCost metadata originCost
   obtain ⟨v₁,n₁,outputs,hu₁,hn₁,hgood,he₁⟩ := hn h i u target L hu htarget hLengthGroup α gap C V bounds Fs hFs
@@ -475,6 +484,20 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
     (by rw [hgeo4]; exact hcaller.ne (houtGeometry 8 (by simp))) ys v₃ S
     (by rw [hgeo3]; exact hgeometryBlank 4 (by simp))
     (by rw [hgeo4]; exact hgeometryBlank 8 (by simp)) depth
+  have hreplicas : Fs.reverse = List.ofFn replica := by
+    apply List.ext_getElem
+    · simp only [List.length_reverse,List.length_ofFn,g.hpower]
+    · intro j hj hj'
+      simp only [List.getElem_ofFn]
+      rfl
+  have hmetadata (r) (hr : r ∈ batch.records) :
+      r.p = Sizes.p n₀ ∧ r.Fs = Fs.reverse ∧ batch.J r = J := by
+    rw [hbatch] at hr
+    obtain ⟨j,rfl⟩ := List.mem_ofFn.mp hr
+    exact ⟨rfl,rfl,rfl⟩
+  have hrowSpec := rows.classRows_spec pubClass keys (Sizes.p n₀) replica J
+    (fun r hr => (hmetadata r hr).1) hwidth
+    (fun r hr => (hmetadata r hr).2.1.trans hreplicas) (fun r hr => (hmetadata r hr).2.2)
   have hpublishedLength (j : Fin (2^g.a)) :
       (pubClass.output batch.W g.hwidth (rows.classRows pubClass keys j) (ambient j)).length = Sizes.s n₀ i*W := by
     simpa only [hformat] using pubClass.output_length batch.W g.hwidth (rows.classRows pubClass keys j)
@@ -494,9 +517,10 @@ theorem selectedTablePublishedComputedCoreClassRun_exec {T Q K : ℕ} {U : Type}
   have hsize := mn_replace_right_size_of_length v v₄ S (classCallerRegister output) ys hysLength
   have hwhole := mn_seq_within_add he₁ (mn_seq_within_add heG (mn_seq_within_add heO (mn_seq_within_add heD (mn_seq_within_add he₂ (mn_seq_within_add heR (mn_seq_within_add he₃ he₄))))))
   refine ⟨v₄,n₁+(nG+(nO+(nD+(n₂+(retireDimensionCost+((2*(origins.length*Vpub+origins.length)+5)+retireGeometryCost)))))),outputs,rows,
-    hu₄.trans (hu₃.trans (huR.trans (hu₂.trans (huD.trans (huO.trans (huG.trans hu₁)))))),?_,hgood,?_,?_⟩
+    hu₄.trans (hu₃.trans (huR.trans (hu₂.trans (huD.trans (huO.trans (huG.trans hu₁)))))),?_,hgood,?_,?_,?_⟩
   · simp only [Nat.cast_add]
     exact add_le_add hn₁ (add_le_add (by exact_mod_cast hnG) (add_le_add (by exact_mod_cast hnO) (add_le_add (by exact_mod_cast hnD) (add_le_add (by exact_mod_cast hn₂) le_rfl))))
+  · simpa only [hformat] using hrowSpec
   · simpa only [ys,hformat] using hsize
   · simpa only [hprefix,hformat,hjobCount,numerical,ys,Nat.add_zero,retireDimensionCost,retireGeometryCost,a] using hwhole
 

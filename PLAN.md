@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4265 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4267 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32272,3 +32272,43 @@ selected execution (4234.8 MiB, about 4 GiB). Guarded build passes (16713 jobs,
 4.6 GiB incremental combined peak). Expanded axiom audit passes for 344367
 declarations at 3200.3 MiB, permitting only propext, Quot.sound and Classical.choice.
 Default proof limits are unchanged.
+
+
+### S4 checkpoint: semantic outer class composition with actual row witnesses
+
+CorePublicationPending carries accuracy on cores absent from the remaining class
+list. Coverage establishes it without assuming anything about the initial output.
+A certified class overwrite and exact preservation of other cores advance it;
+an empty remaining list gives the global error bound. Unit-ball preservation
+reuses this same invariant against zero with error one, rather than duplicating
+the publication argument.
+
+RestoringPublicationClasses instantiates Host.RestoringSequence for a shared
+ambient replica bank. Each stage supplies its actual trace and existential row
+witnesses for that run; there is no precomputed row bank. The theorem returns
+correct ambient block lengths, global error and unit-ball bounds, the exact
+restored metadata frame, additive real time and maximum workspace. The stage
+premise is universal over equal-length ambient updates, so concrete readiness
+transport remains an explicit obligation rather than an intermediate-state oracle.
+
+The selected numerical/publication theorem now returns its class-row certificate
+directly: both the unit-ball property and error 3/2^p follow from Rows.classRows_spec
+and the actual job metadata. Replica indexing explicitly follows Fs.reverse,
+with a structural list-of-function equality handling the existing dyadic index.
+The older selected endpoint without this row certificate is in 224077eb.
+
+Next instantiate the stage premise with concrete selected packed execution:
+prove retained numerical/table/exposure readiness survives an ambient update when
+the output is separate from all borrowed data. Then instantiate seam/full-line
+stages, handle empty classes, discharge computed coverage and reconcile replica
+order. The generic semantic composition theorem does not itself construct this
+concrete schedule or prove setup-key reuse from equal lengths. Shared tensor
+setup, aggregate fast bounds and root S4 integration also remain open. S4 remains
+incomplete; kappa unchanged.
+
+Guarded checks pass for pending-core semantics (1887.9 MiB), restoring class
+composition (1894.9 MiB), and selected execution with actual row certificates
+(4258.6 MiB, about 4 GiB). Guarded integration build passes (16715 jobs, 5.0 GiB
+combined peak; final composition-only refresh 2.7 GiB). Expanded axiom audit passes
+for 344373 declarations at 3200.7 MiB, permitting only propext, Quot.sound and
+Classical.choice. Default proof limits are unchanged.
