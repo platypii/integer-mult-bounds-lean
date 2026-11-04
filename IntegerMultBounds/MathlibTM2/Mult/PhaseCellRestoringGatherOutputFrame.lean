@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRestoringGatherMetadataCost
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInputTableUpdate
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedGatherReadiness
 
 /-! Retained numerical readiness survives a change confined to the ambient output.
 Programs and metadata bills depend only on the borrowed input ports. -/
@@ -26,22 +27,6 @@ private theorem updateR_frame {N A : ℕ} (S : Stacks N A) (output : Fin N)
   exact Function.update_of_ne hk xs S.R
 
 
-private theorem exposurePrivate_ne_caller (i : Fin 175) (output : Fin T) :
-    exposureIntoRouting T (Fin.natAdd T i) ≠ classCallerRegister output := by
-  intro heq
-  have hh := congrArg (fun j : Fin ((T+175)+tapeCount) => j.val) heq
-  simp only [exposureIntoRouting,classCallerRegister,Fin.val_castAdd,Fin.val_natAdd] at hh
-  have := output.isLt
-  omega
-
-private theorem routingPrivate_ne_caller (i : Fin tapeCount) (output : Fin T) :
-    Fin.natAdd (T+175) i ≠ classCallerRegister output := by
-  intro heq
-  have hh := congrArg (fun j : Fin ((T+175)+tapeCount) => j.val) heq
-  simp only [exposureIntoRouting,classCallerRegister,Fin.val_castAdd,Fin.val_natAdd] at hh
-  have := output.isLt
-  omega
-
 def reframe (g : RestoringGatherData (Q := Q) bank V s width radius L w Fs borrowed S)
     (F : Stacks ((T+175)+tapeCount) (prime+K)) (output : Fin T)
     (hR : ∀ k, k ≠ classCallerRegister output → F.R k = S.R k) (hL : F.L = S.L)
@@ -50,35 +35,16 @@ def reframe (g : RestoringGatherData (Q := Q) bank V s width radius L w Fs borro
     RestoringGatherData (Q := Q) bank V s width radius L w Fs borrowed F := by
   have hcaller (k : Fin T) (hk : k ≠ output) : F.R (classCallerRegister k) = S.R (classCallerRegister k) :=
     hR _ (classCallerRegister_injective.ne hk)
-  have hexposed (k : Fin T) (hk : k ≠ output) :
-      (embStk (exposureIntoRouting T) F).R (Fin.castAdd 175 k) =
-        (embStk (exposureIntoRouting T) S).R (Fin.castAdd 175 k) := hcaller k hk
-  exact {g with
-    hs := (hexposed _ (hExpose 0)).trans g.hs
-    hw := (hexposed _ (hExpose 1)).trans g.hw
-    hr := (hexposed _ (hExpose 2)).trans g.hr
-    hL := (hexposed _ (hExpose 3)).trans g.hL
-    hV := (congrArg List.length (hexposed _ (hExpose 4))).trans g.hV
-    hword := (congrArg List.length (hexposed _ (hExpose 5))).trans g.hword
-    hcount := (congrArg List.length (hexposed _ (hExpose 6))).trans g.hcount
-    hreplicas := (congrArg List.length (hexposed _ (hExpose 7))).trans g.hreplicas
-    hsource := (hexposed _ hInput).trans g.hsource
-    hblank := by
-      intro i
-      change F.R (exposureIntoRouting T (Fin.natAdd T i)) = []
-      rw [hR _ (exposurePrivate_ne_caller i output)]
-      exact g.hblank i
-    houtput := (hexposed _ (hBank (.control .source))).trans g.houtput
-    hRs := (hcaller _ (hRoute 0)).trans g.hRs
-    hRw := (hcaller _ (hRoute 1)).trans g.hRw
-    hRr := (hcaller _ (hRoute 2)).trans g.hRr
-    hRL := (hcaller _ (hRoute 3)).trans g.hRL
-    hRV := (congrArg List.length (hcaller _ (hRoute 4))).trans g.hRV
-    hRword := (congrArg List.length (hcaller _ (hRoute 5))).trans g.hRword
-    hRrep := (congrArg List.length (hcaller _ (hRoute 6))).trans g.hRrep
-    hRblank := by intro i; rw [hR _ (routingPrivate_ne_caller i output)]; exact g.hRblank i
-    hRleft := by intro i; rw [hL]; exact g.hRleft i
-    hsourceLeft := by rw [hL]; exact g.hsourceLeft}
+  let seed := g.toRestoringGatherSeed.reframe F [output]
+    (by intro k hk; exact hR k (hk output (by simp))) hL
+    (by intro j _ k hk; have heq : k = output := List.mem_singleton.mp hk; subst k; exact hExpose j)
+    (by intro k hk; have heq : k = output := List.mem_singleton.mp hk; subst k; exact hInput)
+    (by intro j _ k hk; have heq : k = output := List.mem_singleton.mp hk; subst k; exact hRoute j)
+    (by intro k hk; have heq : k = output := List.mem_singleton.mp hk; subst k; exact hBank _)
+  exact {
+    toRestoringGatherSeed := seed
+    hL := (hcaller _ (hExpose 3)).trans g.hL
+    hRL := (hcaller _ (hRoute 3)).trans g.hRL}
 
 theorem reframe_program {P U : Type}
     (g : RestoringGatherData (Q := Q) bank V s width radius L w Fs borrowed S)

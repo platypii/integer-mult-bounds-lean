@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4282 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4283 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32597,3 +32597,40 @@ Guarded check passes at 1809.9 MiB. Integration build with initialized class set
 readiness and selected execution passes (16725 jobs, 2.6 GiB incremental peak).
 Expanded axiom audit passes for 344545 declarations at 3201.3 MiB, allowing only
 propext, Quot.sound and Classical.choice. Default proof limits unchanged.
+
+### S4 checkpoint: construct gather readiness from generated halo headers
+
+RestoringGatherData now extends RestoringGatherSeed: the seed contains the
+ordinary retained input facts and geometric/resource bounds, while the complete
+record adds only the two class-specific halo-word facts hL and hRL. Existing
+execution/program interfaces retain their field names. The seed does not require
+an initialized exposure or routing halo word.
+
+GeneratedGatherReadiness transports that seed across writes to caller-owned
+header ports, preserving all other retained input fields and both private banks.
+Its exportHalo_exec_within runs the actual three-format exporter and constructs
+a complete RestoringGatherData from its endpoint. Exposure and routing halo facts
+come from the exported words; numerical geometry receives the third format.
+The constructed record has the original exposure/routing ports, input port,
+routing width and replica exponent. No execution callback or complete gather
+record is an input. Source halo bits are the computed master's word, and the
+existing static fit/nonempty-class bounds remain explicit.
+
+Next compose class-master generation with this exporter at the table-loaded
+selected baseline, derive numerical/publication readiness there, and instantiate
+the selected run. Retire two masters plus all three halo formats afterwards.
+Global initialization/sizing, empty-class guard, concrete outer schedule,
+coverage/replica order, shared tensor setup, aggregate bounds and root integration
+remain open. This constructed gather record is not yet the final composed class
+stage. S4 remains incomplete; kappa unchanged.
+
+Guarded checks pass for the split retained-data record (3112.4 MiB) and actual
+generated gather readiness (3109.2 MiB). Default proof limits unchanged.
+The existing complete-record output reframe now reuses the new seed-frame proof;
+its two remaining fields transport only the already generated halo headers. This
+removes the duplicated global-field transport and private-bank separation proofs.
+Its guarded check passes at 3108.7 MiB. The initial dependent rebuild, including
+the selected run, passes (16728 jobs, 8.5 GiB incremental combined peak).
+Final build after frame-proof reuse passes (16728 jobs, 3.5 GiB incremental peak).
+Expanded axiom audit passes for 344585 declarations at 3201.6 MiB, allowing only
+propext, Quot.sound and Classical.choice.

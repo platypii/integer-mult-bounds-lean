@@ -14,7 +14,7 @@ open ScalarPlacement ScalarPlacement.ComputedClassBanks PackedTranspose
 open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 variable {T Q K : ℕ}
 
-structure RestoringGatherData (bank : ComputedClassBank → Fin T) (V s width radius L w : ℕ)
+structure RestoringGatherSeed (bank : ComputedClassBank → Fin T) (V s width radius L w : ℕ)
     (Fs : List (ZMod s → GaussianInt)) (borrowed : List (Fin (prime+K+4)))
     (S : Stacks ((T+175)+PackedTranspose.tapeCount) (prime+K)) where
   exposeSrc : Fin 8 → Fin T
@@ -37,7 +37,6 @@ structure RestoringGatherData (bank : ComputedClassBank → Fin T) (V s width ra
   hs : (embStk (exposureIntoRouting T) S).R (Fin.castAdd 175 (exposeSrc 0)) = binSyms V s
   hw : (embStk (exposureIntoRouting T) S).R (Fin.castAdd 175 (exposeSrc 1)) = binSyms V width
   hr : (embStk (exposureIntoRouting T) S).R (Fin.castAdd 175 (exposeSrc 2)) = binSyms V radius
-  hL : (embStk (exposureIntoRouting T) S).R (Fin.castAdd 175 (exposeSrc 3)) = binSyms V L
   hV : ((embStk (exposureIntoRouting T) S).R (Fin.castAdd 175 (exposeSrc 4))).length = V
   hword : ((embStk (exposureIntoRouting T) S).R (Fin.castAdd 175 (exposeSrc 5))).length = w
   hcount : ((embStk (exposureIntoRouting T) S).R (Fin.castAdd 175 (exposeSrc 6))).length = s*w
@@ -55,13 +54,20 @@ structure RestoringGatherData (bank : ComputedClassBank → Fin T) (V s width ra
   hRs : S.R (classCallerRegister (routeSrc 0)) = binSyms D s
   hRw : S.R (classCallerRegister (routeSrc 1)) = binSyms D width
   hRr : S.R (classCallerRegister (routeSrc 2)) = binSyms D radius
-  hRL : S.R (classCallerRegister (routeSrc 3)) = binSyms D L
   hRV : (S.R (classCallerRegister (routeSrc 4))).length = D
   hRword : (S.R (classCallerRegister (routeSrc 5))).length = w
   hRrep : (S.R (classCallerRegister (routeSrc 6))).length = 2^a
   hRblank : ∀ i, S.R (Fin.natAdd (T+175) i) = []
   hRleft : ∀ i, S.L (Fin.natAdd (T+175) i) = []
   hsourceLeft : S.L (control (fullExposedClassBank bank) .source) = []
+
+/-- Global retained readiness plus the two generated class halo headers. -/
+structure RestoringGatherData (bank : ComputedClassBank → Fin T) (V s width radius L w : ℕ)
+    (Fs : List (ZMod s → GaussianInt)) (borrowed : List (Fin (prime+K+4)))
+    (S : Stacks ((T+175)+PackedTranspose.tapeCount) (prime+K))
+    extends RestoringGatherSeed (Q := Q) bank V s width radius L w Fs borrowed S where
+  hL : (embStk (exposureIntoRouting T) S).R (Fin.castAdd 175 (exposeSrc 3)) = binSyms V L
+  hRL : S.R (classCallerRegister (routeSrc 3)) = binSyms D L
 
 namespace RestoringGatherData
 variable {bank : ComputedClassBank → Fin T} {V s width radius L w : ℕ}
