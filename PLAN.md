@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4225 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4227 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31328,3 +31328,31 @@ build including selected execution and output retirement passes (16668 jobs,
 3147.3 MiB, permitting only propext, Quot.sound and Classical.choice.
 Grouped caller, seam fallback, tensor/setup sharing and root integration remain
 open. S4 remains incomplete; kappa unchanged.
+
+### S4 checkpoint: execute physical padding before the fixed-bank transpose
+
+`PhaseCellOwnedPrefixPaddingStock` supplies a narrow native stock certificate
+for the existing `ownedPrefixPadding` program. The resource theorem refers to
+the same execution that restores its dimensions and scratch, with allowance
+twice its existing time bound.
+
+`PhaseCellPreparedPublicationTranspose.prepare_rows_exec_within` now starts
+from the unpadded computed row stream, executes actual zero prefix padding and
+then the fixed-bank publication transpose. Unary exponent/packet dimensions
+remain ordinary initial-state facts. The padding endpoint changes only the
+payload; every transpose metadata, scratch and left-stack premise is transported
+through that exact frame. The combined trace pays both time bounds and both
+stock allowances, returns the actual padded rows and their unchanged-real-row
+identity, and restores all other right registers. No prepared padded stream or
+intermediate execution witness remains a premise.
+
+Next compose replica scatter with this endpoint, generate and retire its controls,
+and place the whole publication lifecycle after the selected numerical caller.
+Grouping, seam fallback, tensor setup/exposure reuse and root integration remain
+open. S4 remains incomplete; kappa unchanged.
+
+Guarded padding stock check passes at 1793.3 MiB and the composed execution at
+2806.9 MiB. Expanded dependency build passes (16670 jobs, 1.1 GiB combined peak
+for this incremental build; initial focused build 3.3 GiB). Axiom audit passes
+for 343842 declarations at 3147.9 MiB, permitting only propext, Quot.sound and
+Classical.choice.
