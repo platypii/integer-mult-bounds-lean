@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4236 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4238 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31536,3 +31536,38 @@ Guarded generic embedding check passes at 1294.3 MiB and placed numerical
 publication at 3044.1 MiB. Expanded dependency build passes (16684 jobs,
 3.5 GiB combined peak). Axiom audit passes for 343955 declarations at
 3150.2 MiB, permitting only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: load and retire publication's binary transpose geometry
+
+`PhaseCellInputTableUpdate.loadedInputTable_update_off` proves initialization
+commutes with an unrelated numerical-result update. It is structural in the
+existing binary-copy list, so no concrete tape cases or new copy language enter
+the publication caller.
+
+`PhaseCellGeometryLoadedNumericalPublication.geometry_loaded_publish_outputs_exec_within`
+reuses the existing table loader with three variables. Retained fixed-width
+binary masters for a, b and L*w supply the router's two exponents and packet
+width; the table width header supplies V. All four prebuilt router-header
+premises are derived from the actual loaded table. The loader preserves the live
+numerical result, the existing handoff publishes its actual words, and the
+existing table retirement preserves the ambient result. Geometry setup and
+retirement add 36*V+42 steps and 3*(28*V+33) stock; retirement adds no stock.
+
+The placed publication entry point now instantiates this geometry-loading
+lifecycle in the larger caller, retaining the exact ambient-only final update
+and spectator preservation. The earlier placed entry point requiring installed
+geometry is replaced; restore f0cf0b5a if that lower-level interface is needed.
+Ordinary remaining readiness is stated on the explicitly loaded bank. Binary
+masters are retained source words, not newly assumed computed row certificates.
+
+Next choose the concrete placement sharing the selected numerical result and
+ambient destination, compose retained working-dimension generation around the
+actual-word handoff, and generate origin/master packets. Grouped/seam execution,
+locality/tensor setup sharing and root integration remain open. S4 remains
+incomplete; kappa unchanged.
+
+Guarded update-commutation check passes at 1789.6 MiB, geometry-loaded numerical
+publication at 3890.9 MiB and the upgraded placed entry point at 3046.8 MiB.
+Expanded dependency build passes (16686 jobs, 3.5 GiB combined peak).
+Axiom audit passes for 343957 declarations at 3151.7 MiB, permitting only
+propext, Quot.sound and Classical.choice.
