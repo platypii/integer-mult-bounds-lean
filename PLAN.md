@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4227 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4229 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -31356,3 +31356,32 @@ Guarded padding stock check passes at 1793.3 MiB and the composed execution at
 for this incremental build; initial focused build 3.3 GiB). Axiom audit passes
 for 343842 declarations at 3147.9 MiB, permitting only propext, Quot.sound and
 Classical.choice.
+
+### S4 checkpoint: execute computed class publication through ambient scatter
+
+`PhaseCellPackedClassScatter.Rows.scatter_exec_within` instantiates the existing
+restoring replica sweep with actual batch rows and the transpose's real-row
+identity. Its exact endpoint consumes the selected source prefix, publishes
+ambient replica lines in forward order, preserves both borrowed suffixes and
+restores every other register, including the shared replica clock. The runtime
+replicas and all validity premises are derived, not supplied as row certificates.
+
+`PhaseCellComputedClassPublication.publish_class_exec_within` composes physical
+padding, the fixed-bank transpose and that scatter execution. Starting from the
+un-padded certified `Rows.stream`, one trace clears the temporary source and
+updates only the ambient destination among right registers. All scatter
+readiness is transported from the original state through the transpose's exact
+frame. Time and execution-wide stock charge each of the three actual phases.
+The output is the existing mathematical class scatter on those same computed
+rows, so the earlier accuracy and reserved-coordinate language applies.
+
+Scatter controls and ordinary unary dimensions remain initial-state premises.
+Next execute their generators and retirement, then place this lifecycle after
+the selected numerical output copy/retirement. Grouped caller construction,
+seam fallback, locality/tensor composition with setup/exposure sharing and root
+integration remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded scatter check passes at 3034.4 MiB and the composed execution at
+3064.1 MiB. Expanded dependency build passes (16677 jobs, 3.5 GiB combined peak).
+Axiom audit passes for 343865 declarations at 3149.1 MiB, permitting only
+propext, Quot.sound and Classical.choice.
