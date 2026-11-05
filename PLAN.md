@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4294 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4295 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32949,3 +32949,30 @@ incremental peak). Expanded axiom audit passes for 345106 declarations at
 baseline scalar/ruler/coefficient producers,
 empty-class guard, full schedule, tensor/locality composition and root resource
 integration remain open. S4 remains incomplete.
+
+### S4 checkpoint: execute the retained global scalar conversion
+
+CallerGlobals places ordinary unary parameter sources in the existing caller
+prefix and executes the existing structural binaryHeaderBank converter into the
+eleven fixed scalar roles. Source/width and source/scratch separation follow from
+prefix placement; no pairwise finite certificate is introduced. The exact
+produced endpoint preserves the unary sources, all non-scalar header roles and
+routing scratch. Scalar sources may alias when their lengths agree; only the
+conversion width source must be distinct from each scalar source.
+
+The explicit time bound is the sum over the eleven parameter values x of
+x*(4*D+10)+4*D+8, plus one. The actual execution has a stock bound of three times
+that bill. setupInput_of_globalsLoaded derives the complete scalar-word portion
+of the fixed setup input contract from that endpoint, preserving the supplied
+ruler lengths and owned/routing blankness. Ordinary generated scalar words are
+no longer a premise of this producer. Retained unary input lengths and the D-bit
+width ruler remain raw input obligations; their ultimate outer caller and fast
+aggregate bounds still require integration.
+
+Guarded CallerGlobals check passes at 3121.4 MiB. Combined build with concrete
+consumer geometry and initialized selected execution passes (16740 jobs, 3.5 GiB
+combined incremental peak). Expanded axiom audit passes for 345118 declarations
+at 3206.4 MiB, allowing only propext, Quot.sound and Classical.choice.
+Ruler production, coefficient production, empty-class
+control, concrete outer schedule, tensor/locality composition and root resource
+integration remain open. S4 remains incomplete; kappa unchanged.
