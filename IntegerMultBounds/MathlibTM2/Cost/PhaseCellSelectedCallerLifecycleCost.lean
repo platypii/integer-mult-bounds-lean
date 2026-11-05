@@ -96,7 +96,7 @@ theorem selectedCallerLifecycleCosts_of_volume_le (ct cFormat : ℕ) :
       ∀ u target formatWidth x N Vg Vr : ℕ,
       u ≤ Sizes.p n → target ≤ ct*Sizes.p n →
       PhaseCellBand.width (Sizes.p n) u ≤ Sizes.s n i →
-      formatWidth ≤ cFormat*Sizes.p n → x ≤ Sizes.T n →
+      formatWidth ≤ cFormat*Sizes.p n → x ≤ (Sizes.T n)^2 →
       let p := Sizes.p n
       let s := Sizes.s n i
       let t := Sizes.t n i

@@ -5,7 +5,8 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerSharedBoundaryExe
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerRawProgram
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerSharedBoundaryVolume
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSharedPreparationCost
-public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellBoundaryControlCost
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCallerFormat
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedClassSetupCost
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFullLineLifecycle
 
 /-! Execute paid shared initialization, the selected proper/boundary run, and
@@ -63,7 +64,8 @@ noncomputable def SelectedRawPublishedBoundaryRun {T Q K : ℕ} {U : Type} {P : 
     let t := Sizes.t n₀ i
     let l := haloInverseRingLog s t
     let coreWidth := amortizedCoreWidth ct p
-    ∀ (D Cprog depth Vg Vr replicaExp : ℕ),
+    ∀ (Cprog depth Vg Vr replicaExp : ℕ),
+    let D := canonicalCallerFormat p u l target s t B W Fs.length radius coreWidth Vg Vr
     ∀
     (_hpush : mnProgPush (descriptorSolverSchedule (plan (fullExposedClassBank physicalBank) (fullExposedClassBank_injective physicalBank physicalInj)).src (plan (fullExposedClassBank physicalBank) (fullExposedClassBank_injective physicalBank physicalInj)).saved (plan (fullExposedClassBank physicalBank) (fullExposedClassBank_injective physicalBank physicalInj)).tmp (plan (fullExposedClassBank physicalBank) (fullExposedClassBank_injective physicalBank physicalInj)).clock (plan (fullExposedClassBank physicalBank) (fullExposedClassBank_injective physicalBank physicalInj)).savedClock
       (normalizedRecoveryDescriptorStep (P := P) (U := U) (A := (prime+K))
@@ -110,7 +112,7 @@ noncomputable def SelectedRawPublishedBoundaryRun {T Q K : ℕ} {U : Type} {P : 
     (_hbudget : (u : ℝ)*d ≤ p) (hband : PhaseCellBand.width p u ≤ s)
     (_hpad : 2*((s/(t-s)+1)-2*PhaseCellBand.width p u) ≤ 2^l+1)
     (_hroom : 3*coreWidth < s) (_hr : 0 < radius) (_hrw : radius ≤ coreWidth)
-    (_hW : 2*p+13 ≤ W) (_hvolumeFit : s*W < 2^D)
+    (_hW : 2*p+13 ≤ W)
     (X Y : (ZMod s → GaussianInt) → ZMod s → ℝ)
     (_hX : ∀ F ∈ Fs, Solves (realMatrix s t p u) Finset.univ (X F) (fun j => ((1/2 : ℂ)*value p (F j)).re))
     (_hY : ∀ F ∈ Fs, Solves (realMatrix s t p u) Finset.univ (Y F) (fun j => ((1/2 : ℂ)*value p (F j)).im))
@@ -118,7 +120,8 @@ noncomputable def SelectedRawPublishedBoundaryRun {T Q K : ℕ} {U : Type} {P : 
       (P := P) (U := U) (A := prime+K) recovery) ≤ Cprog),
     let prepTime := sharedBoundaryPreparationTime p u l target s t D Fs.length radius coreWidth Vg Vr
     let prepStock := sharedBoundaryPreparationStock p u l target s t D Fs.length radius coreWidth Vg Vr
-    let prepBudget := sharedPreparationAllowance ct (Sizes.T n₀) p s t D Fs.length
+    let prepBudget := 2*Sizes.T n₀+
+      (60*(1032+8*ct)+4*(callerFormatFactor ct cV cD+1)+14)*(Fs.length*s*p)
     prepTime ≤ prepBudget ∧ prepStock ≤ 8*prepBudget ∧
     ∃ prepared : Stacks (MachineTapes (T+solverRegisterCount)) (prime+K),
     ∃ input : SetupInput (T+solverRegisterCount) (prime+K) D p u l target s t B W Fs.length radius coreWidth Vg Vr prepared,
@@ -143,22 +146,24 @@ noncomputable def SelectedRawPublishedBoundaryRun {T Q K : ℕ} {U : Type} {P : 
     let retireDimensionCost := 2*(g.a+a+2^a)+7
     let metadata := PackedTranspose.publicationHeaderVolume a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) indices.length
     let originCost := preparedCoreOriginsCost Vpub (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L
-    let properTime := initializedPublishedTime setup.timeCost runTime (geometryCost+(originCost+(dimensionCost+((6*metadata+61)+
+    let properPublicationTime := (geometryCost+(originCost+(dimensionCost+((6*metadata+61)+
         (PackedTranspose.retainedPublicationTimeCost (K := K) hstates a g.a (L-2*radius) Vpub
-          W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W)))+(2*metadata+21))+(retireDimensionCost+((2*(origins.length*Vpub+origins.length)+5)+retireGeometryCost))))) : ℕ) setup.retireCost
-    let properStock := (setup.stock+(runStock+(3*geometryCost+(3*originCost+(2*dimensionCost+(2*(6*metadata+61)+PackedTranspose.retainedPublicationStock (K := K) (U := U)
-          hstates a g.a (L-2*radius) Vpub W indices.length pubClass))))))
+          W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W)))+(2*metadata+21))+(retireDimensionCost+((2*(origins.length*Vpub+origins.length)+5)+retireGeometryCost))))) : ℕ)
+    let properPublicationStock := (3*geometryCost+(3*originCost+(2*dimensionCost+(2*(6*metadata+61)+PackedTranspose.retainedPublicationStock (K := K) (U := U)
+          hstates a g.a (L-2*radius) Vpub W indices.length pubClass))))
+    let properTime := initializedPublishedTime (Sizes.T n₀) runTime properPublicationTime (Sizes.T n₀)
+    let properStock := Sizes.T n₀+(runStock+properPublicationStock)
     let solveTime := 2624001*(Sizes.T n₀ : ℝ)+(Fs.length : ℝ)*G*t*
       (1+(PhaseCellBand.width p u : ℝ)^2/Sizes.d n₀)*(p : ℝ)^(129/128 : ℝ)+410
     let solveStock := (Cprog+1)*(((1312000+756)*(1032+8*ct)+504)*(Fs.length*s*p)+2*Sizes.T n₀)
     let volume := Fs.length*s*(2*p+13)
-    let generateTime := boundaryControlTimeBound p D s
-    let generateStock := boundaryControlStockBound p D s
+    let generateTime := Sizes.T n₀
+    let generateStock := Sizes.T n₀
     let prepareTime := (((4*p+5)+generateTime+(4*B+5)+(242*volume+45)+(2*B+3) : ℕ) : ℝ)+solveTime
     let prepareStock := 13*(4*(Sizes.p n₀)+5)+(generateStock+(2*(4*B+5)+(solveStock+(480*volume+86))))
-    let publicationTime := boundaryPublicationTimeBound Fs.length D s W
-    let publicationStock := boundaryPublicationStockBound Fs.length D s W
-    let retireSetupCost := sharedBoundaryRetireAllowance W Fs.length s D B Vg Vr
+    let publicationTime := Sizes.T n₀+(1335*(1032+8*ct))*(Fs.length*s*p)
+    let publicationStock := Sizes.T n₀+(5597*(1032+8*ct))*(Fs.length*s*p)
+    let retireSetupCost := Sizes.T n₀+(2*headerCount+2*(1032+8*ct))*(Fs.length*s*p)
     ∃ finalLines : List (List (Fin ((prime+K)+4))),
       List.Forall₂ (fun target line => line.length = (Sizes.s n₀ i)*W ∧
         (∀ i : ZMod (Sizes.s n₀ i), ‖pairedCellRead (Sizes.p n₀) W line i‖ ≤ 1) ∧
@@ -182,20 +187,31 @@ theorem selectedRawPublishedBoundaryRun_exec {T Q K : ℕ} {U P : Type}
   obtain ⟨G,hG,hboundaryTime⟩ := selectedFullLineLifecycleTime_fast_le ct
   refine ⟨F,hF,Cstock,G,hG,?_⟩
   filter_upwards [hclass,selectedSharedBoundaryPreparationTime_le ct,
-    selectedFullLineLifecycleStock_le ct,hboundaryTime] with n₀ hn hprep hboundaryStock hboundaryTime
+    selectedFullLineLifecycleStock_le ct,hboundaryTime,selectedCanonicalCallerCosts_le ct cV cD,
+    selectedCallerFormat_profile ct cV cD,selectedClassSetupBounds_le (callerFormatFactor ct cV cD+1)]
+    with n₀ hn hprep hboundaryStock hboundaryTime hprices hformats hsetupPrices
   intro h i _ _ u target L hu htarget gap C V bounds Fs hFs
-  intro B W radius indices p s t l coreWidth D Cprog depth Vg Vr replicaExp hpush hbody hwide hA
+  intro B W radius indices p s t l coreWidth Cprog depth Vg Vr replicaExp D hpush hbody hwide hA
     v S borrowed rawSrc hrawSrc widthSource widths raw hword hreplicas hvolume hsource hexposure houtput
     hroutingLeft hsourceLeft htable hbank hleft hpubBlank hresultLeft hambientLeft hsolver hsolverLeft
     movement hExposeWidth hRouteWidth hMetadataFit hReplicaVolume hp hprecision J hJ ambient hambient
     outputTail hdst hPublicationVolume recovery hAlphabet d hst huPositive hwidth hθ hgap hbudget hband
-    hpad hroom hr hrw hW hvolumeFit X Y hX hY hboundaryPush
+    hpad hroom hr hrw hW X Y hX hY hboundaryPush
     prepTime prepStock prepBudget
   have hcore : coreWidth ≤ s := by omega
-  have hprepTime : prepTime ≤ prepBudget := hprep h i u target D Fs.length radius coreWidth Vg Vr
-    hu htarget hband (hrw.trans hcore) hcore
-    (by simpa [formatWidths] using raw.bitsFit 1)
-    (by simpa [formatWidths] using raw.bitsFit 2)
+  have hcanonicalFits := canonicalCallerFormat_fits p u l target s t B W Fs.length radius coreWidth Vg Vr
+    (NeZero.one_le) (by omega)
+  have hvolumeFit : s*W < 2^D := hcanonicalFits.2.2.2
+  obtain ⟨hprepPrice,hretirePrice,hcontrolTimePrice,hcontrolStockPrice,hpubTimePrice,hpubStockPrice⟩ :=
+    hprices h i u target Fs.length radius coreWidth Vg Vr hu htarget hband
+      (hrw.trans hcore) hcore hExposeWidth hRouteWidth hReplicaVolume
+  obtain ⟨_,_,hDsize⟩ := hformats h i u target Fs.length radius coreWidth Vg Vr hu htarget hband
+    (hrw.trans hcore) hcore hExposeWidth hRouteWidth hReplicaVolume
+  obtain ⟨hsetupTimePrice,hsetupStockPrice,hsetupRetirePrice⟩ := hsetupPrices h i D hDsize
+  have hprepTime : prepTime ≤ prepBudget :=
+    (hprep h i u target D Fs.length radius coreWidth Vg Vr hu htarget hband (hrw.trans hcore) hcore
+      (by simpa [formatWidths] using raw.bitsFit 1)
+      (by simpa [formatWidths] using raw.bitsFit 2)).trans hprepPrice
   have hprepStock : prepStock ≤ 8*prepBudget :=
     (sharedBoundaryPreparationStock_le_time p u l target t D Fs.length radius coreWidth Vg Vr).trans
       (Nat.mul_le_mul_left 8 hprepTime)
@@ -210,7 +226,23 @@ theorem selectedRawPublishedBoundaryRun_exec {T Q K : ℕ} {U P : Type}
   refine ⟨prepared,input,hwords,retained,?_⟩
   intro setup gatherInput g pubClass runTime runStock
     origins a Vpub geometryCost retireGeometryCost dimensionCost retireDimensionCost metadata originCost
-    properTime properStock
+    properPublicationTime properPublicationStock properTime properStock
+  have hcount : setup.formats.length ≤ 3 := by
+    change (formats (T+solverRegisterCount)).length ≤ 3
+    simpa only [formats,List.length_ofFn] using Nat.le_refl 3
+  obtain ⟨hsetupTime,hsetupStock,hsetupRetire⟩ := formattedClassSetupCosts_le setup hcount
+  have htSetup := hsetupTime.trans hsetupTimePrice
+  have hsSetup := hsetupStock.trans hsetupStockPrice
+  have hrSetup := hsetupRetire.trans hsetupRetirePrice
+  let oldProperTime := initializedPublishedTime setup.timeCost runTime properPublicationTime setup.retireCost
+  let oldProperStock := setup.stock+(runStock+properPublicationStock)
+  have hproperTime : oldProperTime ≤ properTime := by
+    have ht : (setup.timeCost : ℝ) ≤ Sizes.T n₀ := by exact_mod_cast htSetup
+    have hr : (setup.retireCost : ℝ) ≤ Sizes.T n₀ := by exact_mod_cast hrSetup
+    dsimp only [oldProperTime,properTime,initializedPublishedTime]
+    linarith only [ht,hr]
+  have hproperStock : oldProperStock ≤ properStock :=
+    Nat.add_le_add_right hsSetup (runStock+properPublicationStock)
   have hpreparedOutput : prepared.R (fullHeader _ .output) = S.R (fullHeader _ .output) := by
     apply hframe
     · exact (solverRegister_ne_header T (.scratch 4) .output).symm
@@ -259,8 +291,10 @@ theorem selectedRawPublishedBoundaryRun_exec {T Q K : ℕ} {U P : Type}
     boundaryCountExportCost D s coreWidth (2*p+13)+(2*D+2)
   let oldGenerateStock := 2*(4*D+4)+3*boundaryCountExportCost D s coreWidth (2*p+13)
   have hcontrols := boundaryControlCosts_le p D s coreWidth movement.widthPositive hroom
-  have hgenerateTime : (oldGenerateTime : ℝ) ≤ generateTime := by exact_mod_cast hcontrols.1
-  have hgenerateStock : oldGenerateStock ≤ generateStock := hcontrols.2
+  have hgenerateTime : (oldGenerateTime : ℝ) ≤ generateTime := by
+    have ht := hcontrols.1.trans hcontrolTimePrice
+    exact_mod_cast ht
+  have hgenerateStock : oldGenerateStock ≤ generateStock := hcontrols.2.trans hcontrolStockPrice
   let oldPrepareTime := (4*p+5)+(oldGenerateTime+((4*B+5)+((oldSolveTime+(242*volume+45))+(2*B+3))))
   let oldPrepareStock := 13*(4*p+5)+(oldGenerateStock+(2*(4*B+5)+(oldSolveStock+(480*volume+86))))
   have hprepareTime : (oldPrepareTime : ℝ) ≤ prepareTime := by
@@ -276,8 +310,8 @@ theorem selectedRawPublishedBoundaryRun_exec {T Q K : ℕ} {U P : Type}
   let oldPublicationTime := (loadCost+(3*boundarySeamBudget r.inputs.length D s W+1)+retireCost)+clearCost
   have hpublication := boundaryPublicationCosts_le p s coreWidth W D Fs.length
     (NeZero.one_le) movement.widthPositive hroom hW
-  have hpublicationTime : oldPublicationTime ≤ publicationTime := hpublication.1
-  have hpublicationStock : 2*loadCost+13*boundarySeamBudget r.inputs.length D s W ≤ publicationStock := hpublication.2
+  have hpublicationTime : oldPublicationTime ≤ publicationTime := hpublication.1.trans hpubTimePrice
+  have hpublicationStock : 2*loadCost+13*boundarySeamBudget r.inputs.length D s W ≤ publicationStock := hpublication.2.trans hpubStockPrice
   let boundaryState := callerPreparedBoundaryState (solverSource widthSource) p s coreWidth M
   let pairs := boundarySeamMasterCopies (boundaryArchiveSource (T+solverRegisterCount))
     (boundaryArchiveDestination (T+solverRegisterCount))
@@ -295,14 +329,14 @@ theorem selectedRawPublishedBoundaryRun_exec {T Q K : ℕ} {U P : Type}
     (boundaryArchiveDestination (T+solverRegisterCount)) M readyM.raw readyM.arithmeticWidth readyM.scalars
   have hload : oldLoadCost = loadCost := hcopies.1
   have hretireCopies : oldRetireCost = retireCost := hcopies.2
-  have htime : (n₂ : ℝ) ≤ properTime+
+  have htime : (n₂ : ℝ) ≤ oldProperTime+
       ((oldPrepareTime+((oldLoadCost+(3*boundarySeamBudget r.inputs.length D s W+1)+oldRetireCost)+oldClearCost) : ℕ) : ℝ) := hn₂
   rw [hload,hretireCopies,hclear] at htime
   have htimeBound : (n₂ : ℝ) ≤ properTime+(prepareTime+(publicationTime : ℝ)) := by
-    change (n₂ : ℝ) ≤ properTime+((oldPrepareTime+oldPublicationTime : ℕ) : ℝ) at htime
+    change (n₂ : ℝ) ≤ oldProperTime+((oldPrepareTime+oldPublicationTime : ℕ) : ℝ) at htime
     rw [Nat.cast_add] at htime
     have hpub : (oldPublicationTime : ℝ) ≤ publicationTime := by exact_mod_cast hpublicationTime
-    linarith only [htime,hprepareTime,hpub]
+    linarith only [htime,hproperTime,hprepareTime,hpub]
   let ys := finalLines.flatten++outputTail
   obtain ⟨v₃,m,hu₃,htime,hsize,he⟩ := finishSharedBoundaryCaller_exec
     (T := T) (Q := Q) (A := prime+K) (P := P) (U := U) body S prepared hI hO hL hframe
@@ -317,12 +351,14 @@ theorem selectedRawPublishedBoundaryRun_exec {T Q K : ℕ} {U P : Type}
     (he₂.mono (by
       intro k z hz
       change mnSize z+k ≤ mnSize (mk v₁ prepared)+depth+
-        max properStock (oldPrepareStock+(2*oldLoadCost+13*boundarySeamBudget r.inputs.length D s W)) at hz
+        max oldProperStock (oldPrepareStock+(2*oldLoadCost+13*boundarySeamBudget r.inputs.length D s W)) at hz
       rw [hload] at hz
       exact hz.trans (Nat.add_le_add_left
-        (max_le_max_left properStock (add_le_add hprepareStock hpublicationStock)) _)))
+        (max_le_max hproperStock (add_le_add hprepareStock hpublicationStock)) _)))
   refine ⟨finalLines,haccuracy,v₃,m,hu₃,?_,hsize,he⟩
-  have hretireR : (sharedBoundaryRetireCost prepared : ℝ) ≤ retireSetupCost := by exact_mod_cast hretire
+  have hretireR : (sharedBoundaryRetireCost prepared : ℝ) ≤ retireSetupCost := by
+    have hr := hretire.trans hretirePrice
+    exact_mod_cast hr
   change (m : ℝ) ≤ (prepBudget : ℝ)+(properTime+(prepareTime+(publicationTime : ℝ)))+
     (sharedBoundaryRetireCost prepared : ℝ) at htime
   linarith only [htime,hretireR]

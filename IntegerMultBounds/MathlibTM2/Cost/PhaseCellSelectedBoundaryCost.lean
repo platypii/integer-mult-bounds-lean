@@ -54,19 +54,21 @@ theorem volumeCounterFormat_fits (B x : ℕ) :
   exact hv.trans_lt ((Nat.lt_size_self x).trans_le
     (Nat.pow_le_pow_right (by decide : 1 ≤ 2) (le_max_right B (Nat.size x))))
 
-/-- A counter for data bounded by root volume fits within selected precision. -/
-theorem selectedVolumeCounterWidth_le {n x : ℕ} (h : Sizes.Big n) (hx : x ≤ Sizes.T n) :
+/-- Counters up to quadratic root volume fit within selected precision. -/
+theorem selectedVolumeCounterWidth_le {n x : ℕ} (h : Sizes.Big n) (hx : x ≤ (Sizes.T n)^2) :
     Nat.size x ≤ Sizes.p n := by
-  have hlog : Sizes.logT n < Sizes.p n := by
+  have hlog : 2*Sizes.logT n < Sizes.p n := by
     have hb := h.logT_bounds.2
     unfold Sizes.p
     omega
   apply Nat.size_le.mpr
+  change x ≤ (2^Sizes.logT n)^2 at hx
+  rw [← pow_mul,Nat.mul_comm (Sizes.logT n) 2] at hx
   exact hx.trans_lt (Nat.pow_lt_pow_right (by decide : 1 < 2) hlog)
 
 /-- Combine the data-format width and a generated volume counter. -/
 theorem selectedDimensionWidth_le_precision (cFormat : ℕ) {n B x : ℕ} (h : Sizes.Big n)
-    (hB : B ≤ cFormat*Sizes.p n) (hx : x ≤ Sizes.T n) :
+    (hB : B ≤ cFormat*Sizes.p n) (hx : x ≤ (Sizes.T n)^2) :
     max B (Nat.size x) ≤ (cFormat+1)*Sizes.p n := by
   have hcounter := selectedVolumeCounterWidth_le h hx
   apply max_le
@@ -74,7 +76,7 @@ theorem selectedDimensionWidth_le_precision (cFormat : ℕ) {n B x : ℕ} (h : S
   · nlinarith only [hcounter]
 
 theorem selectedDimensionWidth_le_axis (cFormat : ℕ) {n B x : ℕ} (h : Sizes.Big n)
-    (i : Fin (Sizes.d n)) (hB : B ≤ cFormat*Sizes.p n) (hx : x ≤ Sizes.T n) :
+    (i : Fin (Sizes.d n)) (hB : B ≤ cFormat*Sizes.p n) (hx : x ≤ (Sizes.T n)^2) :
     max B (Nat.size x) ≤ (cFormat+1)*Sizes.t n i :=
   (selectedDimensionWidth_le_precision cFormat h hB hx).trans
     (Nat.mul_le_mul_left _ (selectedPrecision_le_axis h i))
@@ -131,7 +133,7 @@ theorem selectedBoundaryCosts_of_volume_le (ct cFormat : ℕ) :
     ∀ᶠ n : ℕ in atTop, ∀ (_h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],
       ∀ u target B x N : ℕ, target ≤ ct*Sizes.p n →
       PhaseCellBand.width (Sizes.p n) u ≤ Sizes.s n i →
-      B ≤ cFormat*Sizes.p n → x ≤ Sizes.T n →
+      B ≤ cFormat*Sizes.p n → x ≤ (Sizes.T n)^2 →
       let p := Sizes.p n
       let s := Sizes.s n i
       let D := max B (Nat.size x)

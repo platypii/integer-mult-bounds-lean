@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4453 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4457 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -34001,10 +34001,49 @@ The boundary/profile and shared-preparation modules check at 3189.2 and
 audit passes for 346742 declarations at 3246.0 MiB. This work is collected
 with the boundary allowance changes as one larger local checkpoint.
 
-Next instantiate the actual raw caller with this profile: choose the maximum
-of its data-format widths and a volume bound covering its counters, establish
-the selected format/volume bounds, and apply the combined six-part estimate.
-Proper-publication aggregates and selected geometry/locality remain to be closed.
+callerCounterBound and canonicalCallerFormat now choose one concrete format
+from the dimensions. canonicalCallerFormat_fits proves the raw scalar,
+geometry, retained-format and boundary-volume inequalities once, independently
+of tape contents; its check peaks at 3139.5 MiB.
+selectedCallerFormat_profile derives the chosen width's selected precision
+bound from the existing replica-count and Vg/Vr bounds. Replica count <= T
+and scalar stream volume <= T give counter volume <= T^2. The generalized
+counter-width lemma proves that even quadratic root volume fits within p;
+this avoids requiring the encoded source itself to fit below T.
+selectedCanonicalCallerCosts_le specializes all six lifecycle estimates to
+this actual format and the existing replica-count hypothesis (3211.0 MiB).
+
+SelectedRawPublishedBoundaryRun now chooses canonicalCallerFormat directly.
+Its actual trace uses root-volume plus linear-replica allowances for preparation,
+control generation, publication and final erasure. Boundary-volume fitting is
+a conclusion of the canonical construction, so that extra input premise is
+removed. The updated raw theorem checks at 3361.2 MiB. Integration passes
+at 3.7 GiB aggregate; the counter-width module checks at 3189.2 MiB. The
+expanded axiom audit passes for 346749 declarations at 3242.7 MiB. These
+changes remain local for the next larger checkpoint. The generic raw-entry
+interface can be restored from 96be3a8a if needed; lower preparation and execution
+lemmas remain generic.
+
+formattedClassSetupCosts_le structurally prices any shared setup with at
+most three exported formats. A generic list bound checks the width hypothesis
+once per exported word; scalar values and numerical row banks do not enter
+these bills. Time, stock and retirement have proof-independent scalar bounds.
+The generic module checks at 3098.4 MiB. selectedClassSetupBounds_le absorbs
+all three bounds into root volume under the canonical precision profile
+(3118.1 MiB).
+
+The actual raw trace now charges these root-volume setup and retirement bills.
+Its remaining proper publication time and workspace are named separately, so
+further estimates can target their aggregate without re-expanding setup or
+execution witnesses. Actual sequential execution is related to the priced
+trace by local time/stock monotonicity; final numerical accuracy and restoration
+are unchanged. The updated raw declaration checks at 3367.8 MiB. Integration
+passes at 3.8 GiB aggregate; the expanded axiom audit passes for 346754
+declarations at 3247.8 MiB. This is collected with canonical entry selection
+as one local checkpoint; no push is authorized.
+
+Next close the named proper-publication aggregates and selected geometry/locality
+in the composed trace using existing selected estimates.
 Compiler/lowering, tensor/fused and root acceptance gates remain.
 Full S4 remains incomplete.
 The accumulated caller-control, shared-solver/crop and restoring-completion
