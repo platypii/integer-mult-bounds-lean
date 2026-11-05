@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4289 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4291 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32829,3 +32829,45 @@ initialized selected execution (3299.0 MiB). Combined build passes (16736 jobs,
 5.9 GiB incremental combined peak). Expanded axiom audit passes for 344751
 declarations at 3205.9 MiB, allowing only propext, Quot.sound and Classical.choice.
 Default proof limits unchanged.
+
+### S4 checkpoint: finite typed caller layout and readiness factories
+
+CallerLayout allocates one fixed finite header bank outside an existing numerical
+bank. Constructors distinguish global scalars, three geometry formats/rulers,
+class masters/halo exports, publication controls, numerical table roles and
+stream/ambient ports. A generic injective placement proves header/numerical-bank
+separation. Table and owned-word classifiers prove whole families of exclusions;
+source-map injectivity uses partial index inverses, not pairwise address checks.
+
+CallerPorts embeds these roles in the actual exposure/routing machine and borrows
+the existing routing suffix for the thirteen-slot seed and copy scratch. A shared
+sum allocation proves header/private injectivity once. The module provides the
+fixed globals, masters, numerical table, geometry/exposure/routing/publication
+sources and three format pairs, with copy-register nodup, destination nodup and
+caller-prefix coverage. Required publication width/word/replica aliases and origin
+source injectivity are compatible by construction.
+
+The concrete roles now construct ConsumerLayout, NumericalInput and GatherInput.
+Numerical/gather address-separation obligations follow from typed ownership;
+remaining hypotheses concern actual ordinary words, work freshness, retained seed
+contents and the setup record's matching fields. This is the fixed address ABI
+and its contract construction, not an execution that produces the global word
+bank. Building that ordinary bank and the concrete FormattedClassSetup record
+remains the next step.
+
+A direct vector equality hit kernel checking limits. Reusing Fin.comp_cons proves
+the origin-source map identity structurally before instantiating the finite
+placement; no proof limits were raised and no finite address certificate was added.
+The light role module has a narrow import closure.
+
+Next construct/load the ordinary global words/rulers and coefficient input for
+this ABI, instantiate the setup/readiness records, and frame them across ambient
+updates. Actual empty-class guards, packed/seam/full-line outer schedule and
+coverage, replica order, shared tensor setup, aggregate fast bounds and root
+integration remain open. S4 remains incomplete; kappa unchanged.
+
+Final guarded checks pass for caller roles (1357.3 MiB) and concrete caller ports /
+readiness factories (3120.0 MiB). Combined build passes (16738 jobs, 3.5 GiB
+incremental peak). Expanded axiom audit passes for 345007 declarations at
+3205.1 MiB, allowing only propext, Quot.sound and Classical.choice. Default proof
+limits unchanged.
