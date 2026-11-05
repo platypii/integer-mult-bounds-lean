@@ -13,6 +13,9 @@ noncomputable section
 def sharedBoundaryRetireCost (S : Stacks (MachineTapes (T+solverRegisterCount)) A) : ℕ :=
   2*((sharedBoundaryHeaders T).map (fun i => (S.R i).length)).sum+2*(sharedBoundaryHeaders T).length+1
 
+def sharedBoundaryRetireAllowance (W N s D B Vg Vr : ℕ) : ℕ :=
+  2*(headerCount*(W+N+s*W+D+B+Vg+Vr)+N*s*W)+2*(headerCount+1)+1
+
 theorem sharedPreparationRoles_length_le : sharedPreparationRoles.length ≤ headerCount := by
   simpa only [sharedPreparationRoles,Finset.length_toList,headerCount,Finset.card_univ] using
     (Finset.card_filter_le (s := (Finset.univ : Finset Role)) (p := fun r => sharedPreparationRole r = true))
@@ -31,7 +34,7 @@ theorem sharedBoundaryRetireCost_le
     (ready : BoundaryCallerReady src widthSource p u l target t W D radius width Fs S)
     (hwidth : inverseFullInputWidth p u l target s t ≤ W) :
     sharedBoundaryRetireCost S ≤
-      2*(headerCount*(W+Fs.length+s*W+D+B+Vg+Vr)+Fs.length*s*W)+2*(headerCount+1)+1 := by
+      sharedBoundaryRetireAllowance W Fs.length s D B Vg Vr := by
   let V := W+Fs.length+s*W+D+B+Vg+Vr
   have hformat (f : Fin 3) : formatWidths B Vg Vr f ≤ V := by
     fin_cases f <;> simp [formatWidths, V] <;> omega
@@ -65,7 +68,7 @@ theorem sharedBoundaryRetireCost_le
     simp only [length_cstream,List.length_flatten,List.map_map,Function.comp_def,length_chirpLine,
       List.map_const',List.sum_replicate,smul_eq_mul]
   have hrhsBound := Nat.mul_le_mul_left (Fs.length*s) hwidth
-  unfold sharedBoundaryRetireCost
+  unfold sharedBoundaryRetireCost sharedBoundaryRetireAllowance
   simp only [sharedBoundaryHeaders,List.map_append,List.map_map,Function.comp_def,List.map_cons,List.map_nil,
     List.sum_append,List.sum_cons,List.sum_nil,Nat.add_zero,List.length_append,List.length_map,
     List.length_cons,List.length_nil,hrhs]

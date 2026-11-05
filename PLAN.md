@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4449 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4453 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33947,10 +33947,65 @@ The raw declaration checks at 3350.2 MiB; the integration build passes at
 at 3246.3 MiB. This completes the local initialization and restoring-boundary
 resource checkpoint, collected with the preceding gather/header pricing work.
 
-Next absorb boundary control/publication scalar terms into the root ledger,
-simplify remaining proper-publication aggregates, and instantiate selected
-geometry/locality uniformly.
-The fixed-program/compiler, tensor/fused and root acceptance gates remain.
+BoundaryPublicationCost now bounds the complete boundary loader, publisher,
+retirement and erasure bills by scalar table work plus (N+1)*s*W traffic.
+The crop-schedule specification supplies one generic start bound for all slots;
+shared crop-volume bounds price both loaded and temporary headers. The
+publication module checks at 3175.6 MiB.
+BoundaryControlCost uses one uniform export-slot bound and sums it for the
+three-slot controller. Its generated time/stock allowances separate table work
+from linear narrow-word traffic; it checks at 3177.4 MiB.
+
+The raw trace now charges these control/publication allowances directly.
+sharedBoundaryRetireAllowance replaces its last state-dependent outer cleanup
+bill, using the existing ownership-based volume theorem (3188.3 MiB). Unneeded
+intermediate readiness/cleanup certificates and the full-line descriptor are
+removed from the public contract. Final accuracy names inversePublicationTargets
+directly; the internal trace and numerical proof are preserved. The raw theorem
+checks at 3352.5 MiB. The integration build passes at 3.7 GiB aggregate;
+the caller-header module checks at 3172.1 MiB. The expanded axiom audit passes
+for 346732 declarations at 3245.7 MiB. These changes remain local for the next
+larger checkpoint.
+
+selectedBoundaryCosts_le now absorbs boundary control time and stock into
+one Sizes.T allowance each, and publication time/stock into one Sizes.T plus
+linear N*s*p traffic. A single structural polynomial estimate bounds the
+scalar table work and fixed stream traffic by a constant times t^2; existing
+selected-axis polynomial absorption supplies the eventual threshold. The
+threshold is uniform in replicas and format width within its stated profile.
+
+volumeCounterFormat_fits proves that max B (Nat.size x) fits both a data format
+and all counter values bounded by x. selectedVolumeCounterWidth_le derives its
+selected size from x <= Sizes.T; selectedDimensionWidth_le_axis combines this
+with the data-format bound. selectedBoundaryCosts_of_volume_le therefore
+prices that canonical width using ordinary format and loaded-volume facts,
+without a separate dimension-width oracle. The module checks at 3195.4 MiB;
+the integration build passes at 3.6 GiB aggregate. The expanded axiom audit
+passes for 346737 declarations at 3245.9 MiB. These changes remain local.
+
+sharedPreparationAllowance names the budget already charged by the raw trace.
+selectedSharedPreparationAllowance_le absorbs its scalar term into a second
+root-volume payment and keeps the replica term linear in N*s*p.
+selectedSharedBoundaryRetireAllowance_le uses the same precision profile to
+absorb owned-header scalar work into one root-volume payment, plus linear
+replica traffic. Both estimates reuse existing selected-axis absorption.
+selectedDimensionWidth_le_precision strengthens the canonical-format sizing
+interface, so preparation, retirement and boundary completion share one width.
+
+selectedCallerLifecycleCosts_of_volume_le combines all six costs under one
+canonical width D = max formatWidth (Nat.size x). Its assumptions are the
+ordinary format, loaded-volume and retained ruler bounds. It checks at
+3200.8 MiB; the raw trace with the shared named allowance checks at 3353.3 MiB.
+The boundary/profile and shared-preparation modules check at 3189.2 and
+3208.7 MiB. Integration passes at 6.2 GiB aggregate, and the expanded axiom
+audit passes for 346742 declarations at 3246.0 MiB. This work is collected
+with the boundary allowance changes as one larger local checkpoint.
+
+Next instantiate the actual raw caller with this profile: choose the maximum
+of its data-format widths and a volume bound covering its counters, establish
+the selected format/volume bounds, and apply the combined six-part estimate.
+Proper-publication aggregates and selected geometry/locality remain to be closed.
+Compiler/lowering, tensor/fused and root acceptance gates remain.
 Full S4 remains incomplete.
 The accumulated caller-control, shared-solver/crop and restoring-completion
 chunk passes its integration builds and an axiom audit over 346242 declarations

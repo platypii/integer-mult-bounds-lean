@@ -60,17 +60,28 @@ theorem boundarySeamMasterCopyCosts_eq {T : ℕ} (source destination : Fin T)
   · simp only [boundarySeamMasterCopies,List.map_ofFn,Function.comp_def,List.length_ofFn]
     rw [boundarySeamHeaderVolume_eq seedValue _ h]
 
-theorem boundarySeamHeaderVolume_le (p s width W D N : ℕ) :
-    boundarySeamHeaderVolume p s width W D N ≤ N+s+W+(2*p+13)+4*D+3*s*(2*p+13) := by
+theorem boundaryCropStart_le (s width : ℕ) (hw : 0 < width) (hroom : 3*width < s) (slot : Fin 3) :
+    coreStart width (boundaryCropIndex s width slot) ≤ s := by
+  have hm : boundaryCropIndex s width slot ∈ boundaryCropSchedule s width := by
+    rw [boundaryCropSchedule_eq_reverse_slots,List.mem_reverse]
+    exact List.mem_ofFn.mpr ⟨slot,rfl⟩
+  exact ((boundaryCropSchedule_spec s width hw hroom).2.2 _ hm).2.1.le
+
+theorem boundaryCropHeaderVolume_le (p s width : ℕ) :
+    boundaryCropHeaderVolume p s width ≤ 3*s*(2*p+13) := by
   have hc (slot : Fin 3) : coreLength s width (boundaryCropIndex s width slot) ≤ s :=
     (Nat.min_le_right _ _).trans (Nat.sub_le _ _)
   have hm (slot : Fin 3) := Nat.mul_le_mul_right (2*p+13) (hc slot)
-  dsimp only [boundarySeamHeaderVolume,boundaryCropHeaderVolume]
+  dsimp only [boundaryCropHeaderVolume]
   norm_num [List.ofFn_succ,List.ofFn_zero,List.sum_cons,List.sum_nil,Fin.succ]
   have h₀ := hm 0
   have h₁ := hm 1
   have h₂ := hm 2
   simp only [Nat.mul_assoc]
   omega
+
+theorem boundarySeamHeaderVolume_le (p s width W D N : ℕ) :
+    boundarySeamHeaderVolume p s width W D N ≤ N+s+W+(2*p+13)+4*D+3*s*(2*p+13) := by
+  exact Nat.add_le_add_left (boundaryCropHeaderVolume_le p s width) _
 
 end IntegerMultBounds.MathlibTM2.Cost

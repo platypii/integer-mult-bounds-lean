@@ -18,6 +18,10 @@ def gatherPreparationScalarFactor (ct : ℕ) : ℕ :=
   let cW := 1032+8*ct
   10*(ct+26+cB+cW)+34*cB+8*cW+330
 
+/-- Shared scalar setup is charged once, independently of payload traffic. -/
+def sharedPreparationAllowance (ct volume p s t D N : ℕ) : ℕ :=
+  volume+gatherPreparationScalarFactor ct*t*(D+p)+(60*(1032+8*ct))*(N*s*p)+N*(4*D+14)
+
 theorem selectedGatherPreparationCost_le (ct : ℕ) {n : ℕ} (h : Sizes.Big n)
     (i : Fin (Sizes.d n)) [NeZero (Sizes.s n i)] (u target D N radius width Vg Vr : ℕ)
     (hu : u ≤ Sizes.p n) (htarget : target ≤ ct*Sizes.p n)
@@ -83,14 +87,13 @@ theorem selectedSharedBoundaryPreparationTime_le (ct : ℕ) :
       radius ≤ Sizes.s n i → width ≤ Sizes.s n i → Vg ≤ D → Vr ≤ D →
       sharedBoundaryPreparationTime (Sizes.p n) u (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) target
         (Sizes.s n i) (Sizes.t n i) D N radius width Vg Vr ≤
-        Sizes.T n+gatherPreparationScalarFactor ct*Sizes.t n i*(D+Sizes.p n)+
-          (60*(1032+8*ct))*(N*Sizes.s n i*Sizes.p n)+N*(4*D+14) := by
+        sharedPreparationAllowance ct (Sizes.T n) (Sizes.p n) (Sizes.s n i) (Sizes.t n i) D N := by
   filter_upwards [selectedCanonicalInputPreparationTime_le ct] with n hn
   intro h i _ u target D N radius width Vg Vr hu htarget hband hradius hwidth hVg hVr
   have hc := hn h i u target N hu htarget hband
   have hg := selectedGatherPreparationCost_le ct h i u target D N radius width Vg Vr
     hu htarget hband hradius hwidth hVg hVr
-  dsimp only [sharedBoundaryPreparationTime]
+  dsimp only [sharedBoundaryPreparationTime,sharedPreparationAllowance]
   omega
 
 end IntegerMultBounds.MathlibTM2.Cost

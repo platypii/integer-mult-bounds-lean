@@ -21,6 +21,17 @@ def boundaryTemporaryHeaderVolume (p s width : ℕ) : ℕ :=
     coreStart width (boundaryCropIndex s width 1)*(2*p+13)+
     coreStart width (boundaryCropIndex s width 2)*(2*p+13)
 
+theorem boundaryTemporaryHeaderVolume_le (p s width : ℕ) (hs : 1 ≤ s)
+    (hw : 0 < width) (hroom : 3*width < s) :
+    boundaryTemporaryHeaderVolume p s width ≤ 6*s*(2*p+13) := by
+  have hc := boundaryCropHeaderVolume_le p s width
+  have h₁ := Nat.mul_le_mul_right (2*p+13) (boundaryCropStart_le s width hw hroom 1)
+  have h₂ := Nat.mul_le_mul_right (2*p+13) (boundaryCropStart_le s width hw hroom 2)
+  have hw := Nat.le_mul_of_pos_left (2*p+13) hs
+  unfold boundaryTemporaryHeaderVolume
+  simp only [Nat.mul_assoc] at hc ⊢
+  omega
+
 private theorem callerBoundaryGeometrySkip_length (widthSource : Fin T) (s width w : ℕ)
     (S : Stacks (MachineTapes T) A) (slot : Fin 3) :
     ((callerBoundaryGeometryState widthSource s width w S).R
