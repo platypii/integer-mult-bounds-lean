@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4295 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4296 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32976,3 +32976,32 @@ at 3206.4 MiB, allowing only propext, Quot.sound and Classical.choice.
 Ruler production, coefficient production, empty-class
 control, concrete outer schedule, tensor/locality composition and root resource
 integration remain open. S4 remains incomplete; kappa unchanged.
+
+### S4 checkpoint: executed scalar/ruler baseline preparation
+
+CallerRulers instantiates the existing structural unary header copier for the
+three fixed format rulers. The source bank lies in the retained caller prefix;
+header/source and header/scratch separation follow from typed allocation. Sources,
+non-ruler headers and routing workspace are preserved. Fresh destinations acquire
+exactly the three required ruler lengths. Ruler time is 4*(B+Vg+Vr)+13.
+
+baselineProgram sequences that copier with the existing global scalar conversion.
+prepareBaseline_exec_within threads the actual returned host state into conversion
+and proves the combined time bound and intermediate stock bound (three times the
+combined bill). baselineSetupInput establishes the fixed setup contract on that
+exact baselineLoaded endpoint from retained raw counter lengths, blank scalar and
+ruler destinations, and fresh owned/routing storage. Neither initialized scalar
+words nor populated consumer rulers are supplied as premises. Reusing the existing
+list programs avoids nine or eleven independent address proofs.
+
+This closes binary scalar/ruler production at the retained-counter interface.
+It does not establish the root supplier of those raw counters, coefficient input,
+consumer geometry lifecycle for the complete outer schedule, empty-class guard,
+packed/seam/full-line coverage, tensor/locality composition or aggregate fast
+resource bounds. Those remain on the root integration path; S4 is incomplete.
+
+Guarded CallerRulers check passes at 3120.7 MiB. Combined build with geometry,
+initialized selected execution and restoring publication fold passes (16743 jobs,
+3.5 GiB incremental combined peak). Default proof limits unchanged.
+Expanded axiom audit passes for 345133 declarations at 3206.0 MiB, allowing
+only propext, Quot.sound and Classical.choice.
