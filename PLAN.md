@@ -3890,7 +3890,7 @@ remain available for the S2–S3 callers.
 | S1 shared short convolution | ✅ | `ShortConv.Fixed.closed_exec` executes a fixed 117-tape batch program from raw blocks and unary dimensions. Packing, one shared ring-product call, exact coefficient extraction/decoding, rounding error, costs and scratch restoration are proved. Shared by S2 and S3. | Implemented |
 | S2 fast forward map | ✅ | `closedGroup_exec`: fixed 640-tape raw-input caller, generated coefficient tables, overlapping windows, decoded error ≤4 and exact restoration except output. Uniform costs and eventual O(M(p)) per output for complete live-axis batches at executable sizes are proved. | Implemented |
 | S3 fast inverse map | ✅ | `PhaseCellS3.selectedGridFamilyDispatch_operator_spec` combines actual restored production execution, normalized exact-inverse error at most `3/2^p`, unit-ball preservation, selected `p^(129/128)` fast time and a bound on every compiled configuration for the same returned outputs. The 303-register caller generates and releases interior, coupling and computed-Schur data, shares setup across replicas and both real components, converts p-grid inputs exactly, and executes scaling/final rounding. Arbitrary cut/halo batches retain their principal-system error contract. Complete-key setup, scalar/header work, transfers and erasure are paid. `executed_dispatch_resampB₀_spec` supplies the normalized `B₀` `ApproxMap` with uniform scaled error 10 and unit-ball preservation from actual dispatcher outputs, including input quantization and proved smallness. The full real `SolveSpec` is also proved. S4 owns halo locality, exposure/publication and tensor composition. Kappa is unchanged. | Implemented |
-| S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | 8–16k |
+| S4 grouped/fused execution | ⬜ | Ordered core/halo neighborhoods, overlap/cropping, reusable setup, error composition and full-tensor support. Combine S2–S3 with R4 so exposure is not repaid per axis. Preserve reserved chunks and restore layouts before subsequent phases. | Earlier 8–16k estimate retired; no reliable forecast |
 | S5 boundary work | ⬜ | Fast boundary matrix operations required by the new parameter regime, including numerical stability, coefficient widths and actual tape costs. Shared prepared-boundary interface pinned; implement its stability, precision, storage and paid setup/solve/release contracts. The old band solve alone does not establish it. | 4–10k |
 | S6 outer integration | ⬜ | New sizing and precision, both resampling directions, bulk CRT/exposure and every changed cost matched into the final machine. Depends on R4, S4–S5 and M4; closes M11 with M9–M10. | 3–6k |
 
@@ -33373,3 +33373,35 @@ and shared full-line seam execution passes (15631 jobs, 2.6 GiB aggregate peak).
 Default proof limits are unchanged.
 Expanded axiom audit passes for 345559 declarations at 3210.4 MiB, allowing
 only propext, Quot.sound and Classical.choice.
+
+
+### S4 critical-path review: require the first connected axis endpoint
+
+Current source inspection finds no downstream consumers of
+selectedInitializedPublishedClassRun_exec, runSeamCrops_exec, or the new
+BoundaryCropMetadata.counters_exec. Their checked local traces are useful, but
+they do not yet constitute a connected grouped axis execution. The main risk is
+continued helper expansion before resolving incompatible physical interfaces.
+The historical 8–16k S4 estimate is retired in the package table as well.
+
+The singleton proper movement class, one shared full-line solve, structural crop
+executor and existing table/unary exporter are the right local reuse decisions.
+Keep these. The next acceptance gate is one actual axis execution from ordinary
+caller inputs through both proper and seam publication, with all temporary
+production/erasure charged and exact restoration outside the allowed ambient
+output. Implement only helpers required by that concrete composition.
+
+Before expanding counter wrappers, settle its two interface risks: the caller
+input packet versus full-line input format, and the 2*p+13-bit seam result versus
+the ambient publication format. Fix replica/crop order at the same boundary.
+Check the three-slot superset against the actual publication fold: it can overlap
+the proper sweep, so a fold requiring disjoint ownership cannot be reused without
+a proved overwrite-preservation argument or an exact fallback selection. The
+geometric coverage theorem alone does not settle that execution obligation.
+
+Once this axis endpoint is connected, compose locality/error and tensor/axis
+semantics, prove the fused R4 exposure lifecycle and aggregate fast resource
+ledger, and connect the S4 root with full integrity verification. These are still
+substantial open gates. No percentage, remaining line count or calendar ETA is
+supported by the current evidence. Passing helper audits is not a substitute for
+these acceptance gates; S4 remains incomplete.
