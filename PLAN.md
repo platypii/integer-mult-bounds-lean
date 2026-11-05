@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4336 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4362 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33528,3 +33528,73 @@ and compose the solver/crop archive with the boundary loop. Then complete the
 proper/seam axis, locality/tensor and fused R4/root cost obligations. S4 remains
 incomplete. This accumulated checkpoint is committed locally; no push is
 authorized until the user explicitly requests one.
+
+### S4 physical seam preparation: current local integration
+
+The prepared plan and full restoring seam wiring now have a concrete assignment
+inside the existing 117-register bank and an injective embedding into the caller's
+routing allocation. All static port/separation proofs are discharged by structural
+mapping. Widening and singleton setup share retained common-width master 17;
+there is no separate master 25 or duplicate width-length premise.
+
+Dynamic boundary preparation now loads a canonical nine-variable table from
+retained binary dimensions 55--57, ruler 58 and empty zero source 59. It computes
+and exports skip/core-bit masters 26/24, restores working variables, and retires
+the loaded table. Only those exported masters differ from the initial state.
+The seed-load bill is 64*D+81; restored export adds
+16*tblC D 0+6*(s*W)+22*D+13; retirement adds 20*D+21.
+
+standardBoundaryMasterPreparation additionally borrows the retained narrow crop
+count into 54 and multiplies it by replica clock 15 to generate widening count
+19. Its named exact endpoint, generated-length, frame and publication-freshness
+lemmas are checked. Its native push bound is three. A separate checked cleanup
+restores all four generated masters after source/output changes, with zero
+additional stock. The metadata table uses 30--53 and does not require a new bank.
+
+Verification: combined preparation/retirement/allocated-stage/numerical-loop
+build passes (15576 jobs, 3.3 GiB aggregate peak). Expanded axiom audit passes
+for 345841 declarations at 3220.0 MiB with only the approved axioms.
+
+The composed dynamicStandardSeamPublication trace now generates controls,
+publishes one of the final two boundary cores, and retires all four generated
+masters. Its endpoint restores every register except the source/output ports;
+the selected-core numerical guarantee survives composition. An explicit
+aggregate cost and native push bound 13 are proved. The trace also exports
+conditional numerical archive progress, nonincreasing endpoint stock, and a
+uniform workspace bound of 13 times its explicit aggregate cost. The guarded
+single-file check passes at 3029.9 MiB.
+
+The archive sequence now has a generic cost/workspace theorem; its former
+publication-only constants are a corollary. This admits physical preparation
+costs without duplicating the structural execution or numerical completion
+argument. The sequence check passes at 3001.4 MiB.
+
+The first-core master preparation now converts retained binary width 56 into
+unary 54, forms wide count 24 with the common-width master, releases temporary
+54, and reuses narrow-count preparation. It reaches the same named master state
+at core zero, with native push bound three and an explicit cost. Binary inputs
+and scratch are restored. Its guarded check passes at 2799.4 MiB.
+
+The shared preparedStandardSeamPublication continuation now accepts any
+three-push-bounded preparation reaching the named master state. The final-core
+API is a corollary. boundarySlotMasterPreparation dispatches the three fixed
+slots, and boundarySlotSeamPublication executes each slot through the shared
+continuation, carrying exact restored framing, stock, explicit cost/workspace,
+and numerical archive progress. The redundant first-core publication wrapper
+was removed. The slot theorem checks at 3002.0 MiB; integration with the existing
+numerical sequence passes (15390 jobs, 3.4 GiB aggregate peak).
+
+boundarySeamPublication now executes the complete three-slot loop in physical
+archive order [0,1,2], with control readiness transported through the exact
+frame. It instantiates the physical stage executor rather than assuming a step
+trace. Its result includes source exhaustion, full-line target accuracy and
+unit-ball bounds, nonincreasing stock, and shared workspace 13*C with time
+3*C+1, where C is the maximum of the three explicit stage bills. The guarded
+sequence check passes at 3017.7 MiB; integration with allocated publication
+passes (15582 jobs, 3.5 GiB aggregate peak).
+
+Next: load caller-prefix masters, align proper publication and the solver's
+actual archive handoff with the loop invariant, and prove the manuscript's
+aggregate S4 cost/locality bounds. Full S4 remains incomplete. This physical
+preparation/publication/loop work is one accumulated local checkpoint. No push
+is authorized until explicitly requested.
