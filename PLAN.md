@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4305 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4307 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33256,4 +33256,52 @@ selected schedule (2836.6 MiB), and actual singleton class execution (3284.1 MiB
 Combined build with shared preparation and restoring publication fold passes
 (16757 jobs, 3.7 GiB incremental combined peak). Default proof limits unchanged.
 Expanded axiom audit passes for 345332 declarations at 3208.9 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: one full-line solve followed by structural seam crops
+
+SeamCropPlan packages the existing retained crop executor and proves that its
+program depends only on the list of skip/count ports. Mathematical core indices
+are specification data, not compiled control flow. The structural archive/retire
+lemma executes all requested crops, restores their counters and scratch, and then
+erases the shared full-line result once. Its endpoint is exactly the original
+baseline except for the destination archive.
+
+PreparedFullLineSeamRun connects actual ordinary-input preparation, the existing
+S3 full-line producer, retained crops and result retirement in one execution
+trace, with no execution callback premise. For at most three crops, its additional
+time is at most 242*volume+45 and stock at most 480*volume+86, where
+volume = replica count * s * (2*p+13). Accuracy is inherited from the certified
+full-line inverse and the existing crop theorem.
+
+Revised remaining implementation order:
+
+1. Instantiate this execution at the fixed caller. Generate a fixed three-slot
+   boundary schedule using reusable unary arithmetic and the port-list lemma;
+   prove that it covers the selected fallback cores. Use one full-line solve.
+2. Close the concrete format interfaces: prepare the full-line input packet from
+   the caller packet, convert the 2*p+13-bit crop archive to the publication
+   format, reconcile crop/replica order once, and charge every temporary's
+   production and retirement. A ready-state theorem alone does not close these
+   machine-production obligations.
+3. Compose the proper-class run and fallback publication through the restoring
+   fold. Prove coverage and exact ambient restoration, retire shared banks, and
+   preserve phase-key-dependent arithmetic setup separately from movement reuse.
+4. Connect root raw-counter/coefficient suppliers, locality/error and tensor/axis
+   composition, then discharge aggregate fast time/stock bounds and the root
+   reachable theorem.
+
+Prioritize a connected execution theorem at each step. Add an abstraction only
+when it removes repeated reasoning on this path; avoid generic empty-class
+machinery, per-core numerical solves and generated case certificates. The selected
+proper movement class is already nonempty, and the shared fallback has at most
+three crops. This checkpoint closes the reusable solve/crop/retire composition,
+not its fixed-caller instantiation or ambient publication. S4 remains incomplete.
+
+Guarded checks pass for SeamCropPlan (3022.7 MiB) and
+PreparedFullLineSeamRun (3036.8 MiB). Combined build with selected class execution,
+selected gather schedule, shared preparation and restoring publication passes
+(16774 jobs, 3.5 GiB incremental peak). Default proof limits are unchanged.
+Expanded axiom audit passes for 345530 declarations at 3210.9 MiB, allowing
 only propext, Quot.sound and Classical.choice.
