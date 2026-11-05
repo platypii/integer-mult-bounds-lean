@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4383 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4408 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33566,8 +33566,91 @@ and source-contract proof 3163.0 MiB. All remain below the 4 GiB module target.
 Expanded integration passes (16539 jobs, 3.5 GiB aggregate peak). The expanded
 axiom audit passes for 346066 declarations at 3225.5 MiB, with only approved axioms.
 
-Next: compose header preparation with caller publication and retire its four
-prefix headers; connect actual proper-publication and shared-solver crop
-execution to this pipeline; prove full S4 aggregate/asymptotic/locality bounds
-and tensor/fused/root acceptance. Full S4 remains incomplete. Preserve unrelated
-periodic-recovery work. No push is authorized until explicitly requested.
+callerSeamCompletion_exec now composes original-header preparation,
+private-master loading, actual boundary publication, private-master retirement
+and retirement of all four generated prefix headers. It restores the original
+caller frame except source/output, preserves global accuracy/unit bounds, and
+proves nonincreasing final stock plus total time/shared workspace. The numerical
+inputs remain proper-core accuracy and certified physical-order crops.
+
+Retirement is proved structurally for any generated header frame via
+retireHeaderFrame_pair_exec. The large composition was split into a checked
+preparation/publication declaration and a final retirement declaration; the
+reusable two-phase workspace lemma keeps each proof within default limits.
+Integration passes (16525 jobs, 3.5 GiB aggregate peak).
+
+Rows.published_seam_bank_good now derives the precise seam-completion bank
+contract from actual PackedExactBatch.Rows and its class-scatter endpoint.
+It reuses classRows_spec/classRows_length and class publication preservation,
+including the unit-ball guarantee, then matches the exact normalized target
+list in reversed replica order. No computed-row accuracy assumption is added.
+The narrow structural bank module checks at 1891.2 MiB; the actual packed-row
+seam handoff checks at 3030.8 MiB.
+
+Crop endpoint inspection confirms the shared solver already returns the
+certified archive in the required physical order. Its physical crop readiness
+also needs narrow skip controls, in addition to the generated counts. Export
+the existing metadata computation's skip outputs into retained crop controls
+before composing that actual solver/crop trace; do not treat count preparation
+alone as complete crop readiness.
+
+exportSlotBoundaryGeometry_exec now retains both crop skip and count outputs
+from one restored metadata computation. Both temporary export registers and
+the arithmetic bank restore. It has the same charged time bill as the previous
+count-only exporter, since moving the skip costs the same as clearing it.
+The first slot uses its existing count construction and a retained zero skip.
+Each slot's skip/count ports are separated; its native push bound is three.
+The unified joint-control theorem checks at 3034.0 MiB. MoveGeneratedWord/Pair
+prove fresh retained-port transfer structurally for arbitrary generated words.
+
+The joint skip/count list executor now has exact per-slot values, static
+cross-port separation, an untouched-register frame and native push bound three.
+generateBoundaryGeometry_exec composes narrow binary-seed creation, all joint
+exports and seed cleanup on one local bank (3038.4 MiB guarded check).
+
+generatedBoundaryCropPlan_ready derives a concrete crop plan's complete
+readiness from those generated values, retained replica/line/word rulers and
+fresh crop scratch. All static port checks are discharged once, and the core
+index-to-slot selector is proved through schedule injectivity (3057.4 MiB).
+
+generatedBoundaryCropRun_exec executes that fixed crop program from a certified
+full-line output, produces the exact reversed-schedule SeamCropRows archive,
+and erases the full-line result. It costs at most 242*volume+45 and uses
+480*volume+86 extra stock. Its instruction stream is independent of s/width;
+geometry changes only header values. The check passes at 3031.4 MiB.
+
+Joint-control generation is now placed in the actual caller bank:
+boundaryGeometryRegister extends the existing count placement with shared
+publication headers 4/5 and the caller zero port, adding no tapes. A structural
+rightUpdates transport lemma replaces concrete six-write endpoint expansion.
+callerBoundaryGeometry_exec derives all skips/counts from retained dimensions
+and rulers, restores private scratch, and preserves the local generator's time
+and workspace bounds (3192.3 MiB guarded check). The placement, generic transport,
+and caller endpoint checks also pass below 3.2 GiB.
+
+The fixed crop executor is now placed in the caller bank as well.
+boundaryCropRegister shares retained replica/line rulers directly, avoiding
+extra copies, and shares exactly the generator's control ports. A structural
+map_boundaryGeometryWrites lemma proves both placements have the same generated
+endpoint. embeddedGeneratedBoundaryCropRun_exec transports the physical crop
+execution with exact source retirement, archive output and spectator frame.
+callerGeneratedBoundaryCropRun_exec derives readiness from the generated caller
+state, retained rulers and blank private storage, retaining the 242*volume+45
+time and 480*volume+86 workspace bounds (3174.5 MiB guarded check).
+callerSolveBoundaryCrops_exec now composes the actual full-line solver with
+the caller crop program. Its produced-word certificate comes from run_exec,
+and the solver result port is retired after cropping. FullLineInputPlan.Ready.of_frame
+transports ordinary readiness across generated controls from static separation
+of the six control ports from solver/input support; generated-state solver
+readiness is no longer an extra premise. Time/workspace compose through the
+existing sequential-stock lemma (3170.7 MiB guarded check). The input/producer
+plans and their static separation still require a concrete caller instantiation.
+
+Next: instantiate the caller's full-line input/producer plans and static
+separation, then compose actual proper-publication and shared-solver execution with
+this fully restoring caller seam pipeline; simplify aggregate/asymptotic/locality
+bounds and discharge tensor/fused/root acceptance. Full S4 remains incomplete.
+The accumulated caller-control, shared-solver/crop and restoring-completion
+chunk passes its integration builds and an axiom audit over 346242 declarations
+(3232.4 MiB peak). Preserve unrelated periodic-recovery work.
+No push is authorized until explicitly requested.
