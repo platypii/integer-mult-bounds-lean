@@ -33173,3 +33173,43 @@ and restoring publication fold passes (16751 jobs, 3.5 GiB incremental combined
 peak). Default proof limits unchanged.
 Expanded axiom audit passes for 345256 declarations at 3207.9 MiB, allowing
 only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: specialize the actual initialized class execution to the fixed caller
+
+selectedInitializedPublishedClassRun_exec now runs on CallerLayout.MachineTapes
+with the typed numerical bank, table, geometry/master sources, publication source
+map and ambient output. Its setup is constructed from SetupInput, and its gather
+seed from produced geometry, retained inputs and mathematical GatherBounds. It
+no longer accepts arbitrary setup/seed records or register maps. Table/bank and
+source separation, publication source injectivity, origin aliases, output
+exclusions and owned-publication/class-output separation are derived in the
+actual selected execution proof from the shared caller layout.
+
+Numerical readiness, retained gather inputs, publication readiness and geometry
+words are precisely the contracts returned by prepareSharedPublishedCaller.
+The Type-valued GatherInput remains an explicit argument from the proved fixed
+factory: fully inlining that data constructor in the theorem statement exceeded
+default elaboration limits. It contains layout/coverage data, not an assumed
+execution. Keeping this interface abstract avoids expanding that data repeatedly.
+The former general initialized theorem can be restored from fb081f1a; generic
+setup/run/cleanup composition remains in FormattedClassExecution.
+
+The actual setup -> selected numerical/gather/publication -> cleanup trace is
+preserved, including returned rows, normalized inverse error 3/2^p, unit-ball
+preservation, exact baseline restoration outside output, exact boundary mnSize
+and complete time/stock bills. Named scalar price functions and a row-accuracy /
+normalized-target predicate replace deeply nested mixed real/natural and complex
+expressions in the specialized statement. This avoids free-variable/elaboration
+failures without changing the mathematical bill or raising proof limits.
+
+Next compose this concrete nonempty-class execution with the runtime guard and
+outer publication fold, sharing the prepared baseline across classes. The guard,
+coverage/replica order, final shared-bank retirement, root raw-counter/coefficient
+suppliers, locality/tensor composition and aggregate fast/root resource integration
+remain open. The initialized theorem's new fixed ABI is integrated; full S4 is not.
+
+Guarded specialized class check passes at 3273.1 MiB. Final combined build with
+shared published preparation and restoring publication fold passes (16751 jobs,
+3.6 GiB incremental combined peak). Default proof limits unchanged; S4 incomplete.
+Expanded axiom audit passes for 345274 declarations at 3209.0 MiB, allowing
+only propext, Quot.sound and Classical.choice.
