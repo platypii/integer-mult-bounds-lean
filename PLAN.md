@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4304 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4305 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33212,4 +33212,48 @@ Guarded specialized class check passes at 3273.1 MiB. Final combined build with
 shared published preparation and restoring publication fold passes (16751 jobs,
 3.6 GiB incremental combined peak). Default proof limits unchanged; S4 incomplete.
 Expanded axiom audit passes for 345274 declarations at 3209.0 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+### S4 approach correction: prove the selected schedule instead of scanning for empty fitting classes
+
+CoreGatherEligibility proves that a positive guard makes the clipped final core
+ineligible for a fitting interval: it ends at s, so a positive right guard cannot
+fit. With radius at most width and room for three widths, the full-width gather
+is nonempty. The live movement-length list is therefore exactly [width+2*radius].
+This is a mathematical selector theorem; the implementation uses the singleton
+directly rather than evaluating that selector or a count scan at runtime.
+
+CoreGatherSupplier connects this movement group to the existing complete endpoint-
+key supplier schedule. Under strict three-core room, coreBulkIndices equals the
+full gather list. Its complement is the one full-period setup group, which contains
+the first owned core when the guard is positive. The two groups are disjoint and
+cover every owned core. This groups movement only: distinct proper interval keys
+still retain their separate phase-dependent arithmetic setup.
+
+selectedAmortizedGatherSchedule derives these conditions from the existing selected
+core geometry/halo theorems. It also proves that the nonempty full-period group has
+at most three cores. Thus the selected asymptotic schedule needs one nonempty
+proper movement batch and one nonempty shared full-period fallback task. The
+planned generic empty-class scan is unnecessary for these numerical tasks. This
+claim uses the proved positive-guard/room regime, not arbitrary finite geometries;
+optional clipped-tail publication still needs its existing remainder handling.
+
+The actual selectedInitializedPublishedClassRun_exec now fixes L to full width plus
+twice the radius and constructs the unclipped setup directly. Its length-class
+membership is justified by the selected singleton theorem; there is no runtime
+choice of clipped fitting class. The preceding general fixed-class statement can
+be restored from 23ad70bf. All execution, accuracy, restoration and resource claims
+are preserved for the selected proper class.
+
+Next execute the unique shared full-period fallback and connect its cropped rows
+with this proper-class run through the publication fold. Shared-bank retirement,
+root raw-counter/coefficient suppliers, publication/replica order, locality/tensor
+composition and aggregate fast/root resource integration remain open. S4 is not
+complete; this removes a redundant planned guard, not the remaining fallback work.
+
+Guarded checks pass for eligibility (1735.0 MiB), supplier partition (1736.0 MiB),
+selected schedule (2836.6 MiB), and actual singleton class execution (3284.1 MiB).
+Combined build with shared preparation and restoring publication fold passes
+(16757 jobs, 3.7 GiB incremental combined peak). Default proof limits unchanged.
+Expanded axiom audit passes for 345332 declarations at 3208.9 MiB, allowing
 only propext, Quot.sound and Classical.choice.

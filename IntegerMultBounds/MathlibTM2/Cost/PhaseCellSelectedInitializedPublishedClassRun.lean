@@ -5,6 +5,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFormattedClassExecution
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSetupNumericalReadiness
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSetupGatherReadiness
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerPublishedPreparation
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
 
 /-! Execute the fixed typed caller's class setup, selected numerical/publication
 run and owned-word cleanup. Setup and seed come from the produced ordinary-input
@@ -69,8 +70,10 @@ theorem selectedInitializedPublishedClassRun_exec {T Q K : ℕ} {U : Type} {P : 
     let physicalBank := CallerLayout.bank bank
     let physicalInj := bank_injective bank hinj
     ∃ F : ℝ, 0 ≤ F ∧ ∃ Cstock : ℕ, ∀ᶠ n₀ : ℕ in Filter.atTop, ∀ (_h : Sizes.Big n₀)
-    (i : Fin (Sizes.d n₀)) [NeZero (Sizes.s n₀ i)] [NeZero (Sizes.t n₀ i)] (u target L : ℕ)
-    (_hu : u ≤ Sizes.p n₀) (_htarget : target ≤ ct*Sizes.p n₀)
+    (i : Fin (Sizes.d n₀)) [NeZero (Sizes.s n₀ i)] [NeZero (Sizes.t n₀ i)] (u target : ℕ),
+    let L := amortizedCoreWidth ct (Sizes.p n₀)+
+      2*(localityDepth (Sizes.p n₀) target*PhaseCellBand.width (Sizes.p n₀) u)
+    ∀ (_hu : u ≤ Sizes.p n₀) (_htarget : target ≤ ct*Sizes.p n₀)
     (α gap : ℝ) (C : ZMod (Sizes.s n₀ i) → GaussianInt)
     (V : Fin (coreGatherIndices (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀))
       (localityDepth (Sizes.p n₀) target*PhaseCellBand.width (Sizes.p n₀) u) L).length → ℕ)
@@ -110,20 +113,18 @@ theorem selectedInitializedPublishedClassRun_exec {T Q K : ℕ} {U : Type} {P : 
     (hfit : ∀ j, globalValues (Sizes.p n₀) u (haloInverseRingLog (Sizes.s n₀ i) (Sizes.t n₀ i))
       target (Sizes.s n₀ i) (Sizes.t n₀ i) B W Fs.length radius (amortizedCoreWidth ct (Sizes.p n₀)) j < 2^D)
     (hbits : ∀ f, formatWidths B Vg Vr f ≤ D)
-    (clipped : Bool) (hLength : L = haloRows clipped (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius)
     (movement : GatherBounds Q Vg Vr (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L W replicaExp Fs)
     (hwords : ∀ f j, base.R (fullHeader T (.geometry f j)) =
       binSyms (formatWidths B Vg Vr f) (![Sizes.s n₀ i,amortizedCoreWidth ct (Sizes.p n₀),radius] j))
     (retained : GatherRetainedInput T K (Sizes.s n₀ i) W bank Fs borrowed base),
-    let setup := makeSetup input clipped movement.widthPositive hgeometry hfit hbits
+    let setup := makeSetup input false movement.widthPositive hgeometry hfit hbits
     let src := geometrySources T
     let masters := masterSources T
     ∀ (_caller : setup.NumericalInput (fullExposedClassBank physicalBank) rg src masters),
     let widthMaster := setup.widthMaster
     let zeroMaster := setup.zero
     let seed := makeGatherSeed input hwords bank retained movement
-      (le_of_eq_of_le hLength (Nat.add_le_add_right
-        (coreRows_le clipped (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) movement.widthPositive) (2*radius))) hA
+      (Nat.le_refl _) hA
     ∀ (gatherInput : setup.GatherInput seed rg masters (src 3)),
     let g := gatherInput.ready
     ∀ (_hExposeWidth : Vg ≤ cV*Sizes.p n₀) (_hRouteWidth : g.D ≤ cD*Sizes.p n₀)
@@ -187,10 +188,10 @@ theorem selectedInitializedPublishedClassRun_exec {T Q K : ℕ} {U : Type} {P : 
   obtain ⟨F,hF,Cstock,hclass⟩ := selectedTablePublishedComputedCoreClassRun_exec
     (body := body) physicalBank physicalInj b hstates ct cV cD
   refine ⟨F,hF,Cstock,?_⟩
-  filter_upwards [hclass] with n₀ hn
+  filter_upwards [hclass,selectedAmortizedGatherSchedule ct] with n₀ hn hschedule
   intro h i _ _ u target L hu htarget α gap C V bounds Fs hFs
   intro B W radius indices jobs D Cprog depth Vg Vr replicaExp rg hpush hbody hwide hA
-    v base borrowed input hgeometry hfit hbits clipped hLength movement hwords retained setup src masters caller
+    v base borrowed input hgeometry hfit hbits movement hwords retained setup src masters caller
     widthMaster zeroMaster seed gatherInput g hExposeWidth hRouteWidth
     hMetadataFit hReplicaVolume hp hprecision J hJ batch pubClass keys runTime runStock runProg
     origins replica a Vpub output pubSrc ambient hambient outputTail pubInput
@@ -233,8 +234,11 @@ theorem selectedInitializedPublishedClassRun_exec {T Q K : ℕ} {U : Type} {P : 
   have layout : setup.ConsumerLayout masters (src 3) (classCallerRegister (g.exposeSrc 3))
       (classCallerRegister (g.routeSrc 3)) Vg g.D L := gatherInput.consumers
   have hLengthGroup : L ∈ coreGatherLengths (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius := by
-    rw [layout.classLength]
-    exact CommonClassGeometry.haloRows_mem setup.clipped _ _ _
+    have hsingleton := (hschedule h i u target htarget).2.2.1
+    have hm : L ∈ liveCoreGatherLengths (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius := by
+      rw [hsingleton]
+      exact List.mem_singleton.mpr rfl
+    exact (List.mem_filter.mp hm).1
   have hcore := CommonClassGeometry.coreRows_le setup.clipped (Sizes.s n₀ i)
     (amortizedCoreWidth ct (Sizes.p n₀)) setup.widthPositive
   have hHfit : L < 2^B := by
