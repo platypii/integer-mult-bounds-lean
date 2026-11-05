@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4307 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4309 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33304,4 +33304,36 @@ PreparedFullLineSeamRun (3036.8 MiB). Combined build with selected class executi
 selected gather schedule, shared preparation and restoring publication passes
 (16774 jobs, 3.5 GiB incremental peak). Default proof limits are unchanged.
 Expanded axiom audit passes for 345530 declarations at 3210.9 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: fixed three-slot boundary crop schedule
+
+BoundaryCropSchedule proves that the reversed list [last,penultimate,first]
+contains three distinct, positive-length scheduled cores when 3*width<s. Every
+owned core belongs to the proper fitting sweep or to this boundary list, by the
+existing fallback-index theorem. BoundaryCropIndex names its three slots by
+Fin 3; slot indices are injective and the execution list is the reverse of the
+slot list. This reversal compensates for the crop executor's prepending archive.
+An extra fitting boundary core may be republished from the certified full-line
+inverse; this avoids a separate runtime eligibility decision.
+
+SelectedBoundaryCropSchedule derives these facts in the selected asymptotic
+regime from selectedAmortizedCoreGeometry. BoundarySeamCropPorts proves that,
+when the slot metadata uses fixed skip/count ports, the actual crop program is
+boundaryProgram on those three port pairs. The physical code has no s or width
+parameter. Thus geometry is metadata, with no per-core program generation.
+
+Next produce the actual slot counters and instantiate the caller placement,
+then close the input/output format adapters and ambient publication. The new
+schedule and code equality do not yet produce initialized counters or establish
+a complete fixed-caller execution. Outer restoring composition, shared-bank
+retirement, root suppliers, locality/tensor composition and aggregate resource
+bounds remain open. S4 remains incomplete.
+
+Guarded checks pass for boundary geometry (1749.6 MiB), selected boundary
+geometry (2835.0 MiB), and physical program equality (2982.2 MiB). Combined build
+with the shared full-line seam execution passes (15627 jobs, 5.7 GiB aggregate
+peak across concurrent modules). Default proof limits are unchanged.
+Expanded axiom audit passes for 345543 declarations at 3210.6 MiB, allowing
 only propext, Quot.sound and Classical.choice.
