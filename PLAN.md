@@ -33452,3 +33452,21 @@ remain open. Guarded check passes at 2801.0 MiB; dependency build passes
 (8532 jobs, 3.3 GiB aggregate peak). Default proof limits are unchanged.
 Expanded axiom audit passes for 345567 declarations at 3209.1 MiB, allowing
 only propext, Quot.sound and Classical.choice.
+
+
+### S4 format handoff: preserve decoded core accuracy when widening
+
+packedIntervalRead_widenEncoded proves identical active interval reads between
+the narrow bytes and their widened signed canonical encoding, with independent
+borrowed suffixes. widenedCoreRow_accurate transfers both unit-ball preservation
+and the same absolute target/error contract to the common-width row. This uses
+existing signed decoding and fit monotonicity; no numerical error is added.
+Together with widenEncodedPrefix_exec this closes the semantic and execution
+signed-format interface. Concrete control production and archive/scatter
+composition still need to instantiate it on the axis trace.
+
+Guarded check passes at 2807.3 MiB; build passes (8572 jobs, 3.3 GiB aggregate
+peak). Complete axis execution, tensor/fused exposure and aggregate root bounds
+remain open. S4 remains incomplete; default proof limits unchanged.
+Expanded axiom audit passes for 345569 declarations at 3212.1 MiB, allowing
+only propext, Quot.sound and Classical.choice.
