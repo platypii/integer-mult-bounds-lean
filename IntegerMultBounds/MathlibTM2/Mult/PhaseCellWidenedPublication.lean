@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellWidenEncodedPrefix
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedPublicationPlan
+public import IntegerMultBounds.MathlibTM2.Host.NativePushBoundMono
 
 /-! Compose actual signed widening with prepared scatter. No intermediate
 readiness or execution premise is supplied by the caller. -/
@@ -54,5 +55,31 @@ theorem widenedPublication_exec (body : P → Pr P T Q A U)
   · simp only [Nat.zero_mul] at hn₂
     omega
   · simpa only [M,Function.update_idem,hflat] using Exec.seq he₁' he₂
+
+
+open IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast.Main
+
+theorem widenPackedPrefix_native (wide width count src work saved tmp extra : Fin T) :
+    mnNativePushBound 13 (widenPackedPrefix (P := P) (Q := Q) (A := A) (U := U)
+      wide width count src work saved tmp extra) := by
+  simp [widenPackedPrefix,generatedWidenPackets,withWidthDifference,transformPrefix,
+    topPass,topWords,topWidenWord,topDupF,Shift.counted,Shift.copyStep,ucopy,usub,dropTop,umulSym,transfer,transferAct,
+    moveR,moveStep,uclear,scanR,drainR,popDo,keepIn,whileR,peekR,pushN,
+    mnNativePushBound,mnActPush]
+
+/-- Widening and scatter share one bound on every intermediate configuration. -/
+theorem widenedPublication_within (body : P → Pr P T Q A U)
+    (plan : PreparedPublicationPlan T src dst) (wide width count work saved tmp extra : Fin T)
+    (v v' : HS T Q A U) (S F : Stacks T A) (n bill depth : ℕ)
+    (he : Exec body (.seq (widenPackedPrefix wide width count src work saved tmp extra) plan.program)
+      (mk v S) n (mk v' F)) (hn : n ≤ bill) :
+    ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+13*bill) depth
+      (.seq (widenPackedPrefix wide width count src work saved tmp extra) plan.program)
+      (mk v S) n (mk v' F) := by
+  have hp : mnNativePushBound 2 (plan.program (P := P) (Q := Q) (A := A) (U := U)) :=
+    preparedWindowPublication_native _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+  exact mn_native_exec_within he 13
+    ⟨widenPackedPrefix_native _ _ _ _ _ _ _ _,mnNativePushBound_mono (by decide) hp⟩
+    depth _ (by omega)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

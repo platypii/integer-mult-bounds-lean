@@ -43,4 +43,18 @@ theorem proper_boundaryPublicationClasses_cover (s width band n : ℕ)
   · obtain ⟨g,hg,hk⟩ := boundaryPublicationClasses_cover s width k hw hroom hb
     exact ⟨g,List.mem_cons_of_mem _ hg,hk⟩
 
+/-- Proper publication initializes the remaining boundary accuracy invariant. -/
+theorem boundaryPublication_pending_of_proper {A s : ℕ} [NeZero s]
+    (width band n q W : ℕ) (hw : 0 < width) (hr : 0 < n*band)
+    (hrw : n*band ≤ width) (hroom : 3*width < s)
+    (proper : CorePublicationClass s width)
+    (hproper : proper.indices = coreGatherIndices s width (n*band) (width+2*(n*band)))
+    (ambient : List (Fin (A+4))) (target : ZMod s → ℂ) (error : ℝ)
+    (hgood : ∀ k ∈ proper.indices,
+      PhaseCellInterface.ErrorOn (ownedCore s width k)
+        (pairedCellRead q W ambient) target error) :
+    CorePublicationPending (boundaryPublicationClasses s width hw hroom) q W ambient target error :=
+  CorePublicationPending.of_covered_class proper _ q W ambient target error
+    (proper_boundaryPublicationClasses_cover s width band n hw hr hrw hroom proper hproper) hgood
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

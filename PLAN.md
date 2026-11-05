@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4314 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4336 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33490,3 +33490,41 @@ Guarded check passes at 2816.9 MiB; build passes (8659 jobs, 3.3 GiB aggregate
 peak). Default proof limits are unchanged.
 Expanded axiom audit passes for 345635 declarations at 3212.0 MiB, allowing
 only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: restoring seam publication and numerical archive composition
+
+The concrete restoringSeamArchivePublication_exec now executes singleton control
+setup, canonical common-width widening, replica scatter, advance retirement and
+dimension retirement. It consumes the next certified archive bank and restores
+the caller baseline except source consumption and published output. Readiness
+is derived from retained unary masters and fresh controls. Source/output facts
+refer to the initial caller state; setup frame transport is proved once.
+
+The returned trace includes exact restoringSeamCost time, a volume bound of
+250*(replicas+1)*(s*W), uniform workspace 3250*(replicas+1)*(s*W), and final stock
+no larger than initial stock. The at-most-three boundary schedule has movement
+time at most 750*(replicas+1)*(s*W), before the sequence's final done step.
+Canonical widening preserves existing numerical error without a coefficient-fit
+oracle. Singleton replica output is identified with the existing class fold.
+
+SeamArchiveNumericalState ties certified remaining banks, pending accuracy and
+unit-ball facts to one ambient witness and exact caller frame. Its step,
+common-baseline rebase and terminal global-accuracy proofs reuse existing class
+publication lemmas. seamArchiveSequence_exec uses the existing structural uniform
+executor and returns terminal global line guarantees and resource bounds. Its
+physical hstep remains an explicit premise; this is not a completed axis run.
+Proper-class accuracy initializes the boundary pending invariant by coverage.
+The shared solver/crop theorem now returns witnesses in physical archive order.
+
+Verification: combined solver/stage/loop build passes (15683 jobs, 3.4 GiB
+aggregate peak). Expanded axiom audit passes for 345739 declarations at
+3217.0 MiB, allowing only propext, Quot.sound and Classical.choice. Individual
+checked proof modules remain below 4 GiB. Default proof limits are unchanged.
+
+Next: instantiate physical seam stages/master production across the fixed
+boundary schedule, connect initial pending facts to the actual proper trace,
+and compose the solver/crop archive with the boundary loop. Then complete the
+proper/seam axis, locality/tensor and fused R4/root cost obligations. S4 remains
+incomplete. This accumulated checkpoint is committed locally; no push is
+authorized until the user explicitly requests one.

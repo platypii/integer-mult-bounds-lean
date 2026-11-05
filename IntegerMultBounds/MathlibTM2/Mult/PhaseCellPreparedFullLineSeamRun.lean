@@ -54,11 +54,11 @@ theorem runSeamCrops_exec (input : FullLineInputPlan T) (producer : PackedProduc
     ∃ v' : HS T Q A U, ∃ n : ℕ, ∃ output : List (Fin (A+4)), ∃ rss : List (List (List GaussianInt)),
       v'.user = v.user ∧ n ≤ solveTime+(242*volume+45) ∧
       ExactCoreProduced p s (fun _ => 0) (fun _ => J) r output ∧
-      List.Forall₂ (SeamCropRows p coreWidth r (fun _ => J)) ks rss ∧
+      List.Forall₂ (SeamCropRows p coreWidth r (fun _ => J)) ks.reverse rss ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+(solveStock+(480*volume+86))) depth
         (input.runSeamCrops producer crops recovery ks) (Host.mk v S) n
         (Host.mk v' {S with R := (Function.update S.R crops.dst
-          ((rss.reverse.map (fun rs => cstream A (2*p+13) rs.flatten)).flatten++S.R crops.dst))}) := by
+          ((rss.map (fun rs => cstream A (2*p+13) rs.flatten)).flatten++S.R crops.dst))}) := by
   dsimp only
   let r := fullLineGridRecord (A := A) p u l target t Fs
   let tape := descriptorScheduleTape producer.gridWork FamilyDispatchInput.words [r]
@@ -72,7 +72,8 @@ theorem runSeamCrops_exec (input : FullLineInputPlan T) (producer : PackedProduc
   have hcropTime := hn₂.trans hextra.1
   dsimp only [r] at hextra
   have hpoint := he₁.final
-  refine ⟨v₂,n₁+n₂,output,rss,hu₂.trans hu₁,Nat.add_le_add hn₁ hcropTime,hproduced,hgood,?_⟩
+  refine ⟨v₂,n₁+n₂,output,rss.reverse,hu₂.trans hu₁,Nat.add_le_add hn₁ hcropTime,hproduced,
+    List.rel_reverse hgood,?_⟩
   apply ExecWithin.seq
   · exact he₁.mono (by intro d z hz; omega)
   · exact he₂.mono (by intro d z hz; omega)

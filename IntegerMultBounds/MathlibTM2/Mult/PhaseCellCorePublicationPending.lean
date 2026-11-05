@@ -25,6 +25,20 @@ theorem of_cover (gs : List (CorePublicationClass s width)) (q w : ℕ)
   obtain ⟨g,hg,hmem⟩ := hcover k hk
   exact False.elim (hnot g hg hmem)
 
+/-- Once one covering class is accurate, only the remaining classes are pending. -/
+theorem of_covered_class (g : CorePublicationClass s width)
+    (gs : List (CorePublicationClass s width)) (q w : ℕ)
+    (E : List (Fin (A+4))) (target : ZMod s → ℂ) (error : ℝ)
+    (hcover : ∀ k ∈ coreIndices s width, ∃ c ∈ g::gs, k ∈ c.indices)
+    (hgood : ∀ k ∈ g.indices, PhaseCellInterface.ErrorOn (ownedCore s width k)
+      (pairedCellRead q w E) target error) :
+    CorePublicationPending gs q w E target error := by
+  intro k hk hnot
+  obtain ⟨c,hc,hkc⟩ := hcover k hk
+  rcases List.mem_cons.mp hc with rfl | hc
+  · exact hgood k hkc
+  · exact False.elim (hnot c hc hkc)
+
 theorem step (g : CorePublicationClass s width) (gs : List (CorePublicationClass s width))
     (q w : ℕ) (hw : 0 < width) (rows : ℕ → List GaussianInt)
     (hrows : ∀ k ∈ g.indices, (rows k).length = g.length)
