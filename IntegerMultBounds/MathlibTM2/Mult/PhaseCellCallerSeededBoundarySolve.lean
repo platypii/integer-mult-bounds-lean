@@ -50,9 +50,9 @@ theorem callerSeededBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src 8 �
     (hraw : ∀ i, (S.R (unarySource _ (solverSource (src i)))).length =
       globalValues p u l target s t (inverseCallerWordWidth p u l target s t) W Fs.length radius coreWidth i)
     (hzero : S.R (fullHeader _ .zero) = [])
-    (hblank : ∀ r : SolverRole, S.R (solverRegister T r) = [])
+    (hblank : ∀ r : SolverRole, r ≠ .scratch 4 → S.R (solverRegister T r) = [])
     (hleft : ∀ r : SolverRole, S.L (solverRegister T r) = [])
-    (hambient : S.R (fullHeader _ .input) =
+    (hambient : S.R (solverRegister T (.scratch 4)) =
       cstream A (inverseFullInputWidth p u l target s t) (Fs.map (chirpLine s)).flatten)
     (hword : (S.R (fullHeader _ (.publication 3))).length = 2*p+13)
     (hprivate : ∀ i : Fin tapeCount, S.R (Fin.natAdd (((T+solverRegisterCount)+headerCount)+175) i) = [])
@@ -88,8 +88,9 @@ theorem callerSeededBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src 8 �
       (hk : k ≠ solverRegister T (.input (familyInverseScalarReg .wr))) : M.R k = S.R k := by
     dsimp only [M,callerSolverWidthState]
     exact Function.update_of_ne hk _ _
-  have hrole (r : SolverRole) (hr : r ≠ .input (familyInverseScalarReg .wr)) : M.R (solverRegister T r) = [] :=
-    (hread _ ((solverRegister_injective T).ne hr)).trans (hblank r)
+  have hrole (r : SolverRole) (hr : r ≠ .input (familyInverseScalarReg .wr))
+      (hc : r ≠ .scratch 4) : M.R (solverRegister T r) = [] :=
+    (hread _ ((solverRegister_injective T).ne hr)).trans (hblank r hc)
   have hrawM (i : Fin 11) : (M.R (unarySource _ (solverSource (src i)))).length =
       globalValues p u l target s t B W Fs.length radius coreWidth i := by
     rw [hread _ (solverRegister_ne_source T (.input (familyInverseScalarReg .wr)) (src i)).symm]
@@ -106,14 +107,14 @@ theorem callerSeededBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src 8 �
     (callerFullLine_result T cropSources) recovery hA hp hst hu hwidth hθ hgap hbudget hband hpad htarget
     Fs hFs X Y hX hY J hJ v M hreadyM hzeroM
     (callerFullLine_controls_separated T Q src hR hQ widthSource)
-    (fun i => hrole (.worker (Fin.castLE (by decide : 303 ≤ 325) i)) (by simp))
+    (fun i => hrole (.worker (Fin.castLE (by decide : 303 ≤ 325) i)) (by simp) (by simp))
     (fun i => hleft (.worker (Fin.castLE (by decide : 303 ≤ 325) (familyInverseCoreReg i))))
     (by
       intro k hk
       change k ∈ [solverRegister T (.control 2),solverRegister T (.control 3),solverRegister T (.control 4),
         solverRegister T (.control 5),solverRegister T (.control 1),solverRegister T (.control 6)] at hk
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> exact hrole _ (by simp))
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> exact hrole _ (by simp) (by simp))
     (by simpa [cropSources,callerSolverCropSources,globalValues] using hrawM 8)
     (by simpa [cropSources,callerSolverCropSources,globalValues] using hrawM 4)
     (by rw [hread _ (solverRegister_ne_header T (.input (familyInverseScalarReg .wr)) (.publication 3)).symm]; exact hword)

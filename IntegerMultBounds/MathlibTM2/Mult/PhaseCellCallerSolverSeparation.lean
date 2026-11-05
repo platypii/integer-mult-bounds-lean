@@ -26,7 +26,7 @@ theorem solverHeader_ne_source (T : ℕ) (r : Role) (i : Fin T) :
   exact header_ne_bank id r (solverSource i) (classCallerRegister_injective he)
 
 theorem callerFullLineInput_off_header (T : ℕ) (src : Fin 11 → Fin T) (r : Role)
-    (hz : r ≠ .zero) (hi : r ≠ .input) :
+    (hz : r ≠ .zero) :
     fullHeader (T+solverRegisterCount) r ∉ (callerFullLineInput T src).support := by
   simp only [FullLineInputPlan.support,List.mem_append,List.mem_ofFn,List.mem_cons,
     List.not_mem_nil,or_false,not_or,not_exists]
@@ -37,7 +37,7 @@ theorem callerFullLineInput_off_header (T : ℕ) (src : Fin 11 → Fin T) (r : R
   · exact (solverRegister_ne_header T (.scratch 1) r).symm
   · exact (solverRegister_ne_header T (.scratch 2) r).symm
   · exact (solverRegister_ne_header T (.scratch 3) r).symm
-  · exact (fullHeader_injective _).ne hi
+  · exact (solverRegister_ne_header T (.scratch 4) r).symm
   · exact solverHeader_ne_source T r (src 8)
 
 theorem callerFullLineProducer_off_header (T Q : ℕ) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q)
@@ -56,11 +56,11 @@ theorem callerFullLine_controls_separated (T Q : ℕ) (src : Fin 11 → Fin T)
       (callerFullLineInput T src).support++(callerFullLineProducer T Q hR hQ).support) ∧
     boundaryGeometryRegister (T+solverRegisterCount) widthSource (boundarySeamCropCount slot) ∉
       (callerFullLineInput T src).support++(callerFullLineProducer T Q hR hQ).support := by
-  have hoff (r : Role) (hz : r ≠ .zero) (hi : r ≠ .input) :
+  have hoff (r : Role) (hz : r ≠ .zero) :
       fullHeader (T+solverRegisterCount) r ∉
         (callerFullLineInput T src).support++(callerFullLineProducer T Q hR hQ).support := by
     rw [List.mem_append]
-    exact not_or.mpr ⟨callerFullLineInput_off_header T src r hz hi,
+    exact not_or.mpr ⟨callerFullLineInput_off_header T src r hz,
       callerFullLineProducer_off_header T Q hR hQ r⟩
   constructor
   · intro hs
@@ -68,12 +68,12 @@ theorem callerFullLine_controls_separated (T Q : ℕ) (src : Fin 11 → Fin T)
     · exact (hs rfl).elim
     · change boundaryGeometryRegister (T+solverRegisterCount) widthSource (boundarySeamCropSkip 1) ∉ _
       rw [boundaryGeometryRegister_skip_one]
-      exact hoff _ (by simp) (by simp)
+      exact hoff _ (by simp)
     · change boundaryGeometryRegister (T+solverRegisterCount) widthSource (boundarySeamCropSkip 2) ∉ _
       rw [boundaryGeometryRegister_skip_two]
-      exact hoff _ (by simp) (by simp)
+      exact hoff _ (by simp)
   · rw [boundaryGeometryRegister_count]
-    exact hoff _ (by simp) (by simp)
+    exact hoff _ (by simp)
 
 theorem callerFullLine_result (T : ℕ) (cropSources : Fin 2 → Fin (T+solverRegisterCount)) :
     callerFullLineResult T = boundaryCropRegister (T+solverRegisterCount) cropSources 94 := by

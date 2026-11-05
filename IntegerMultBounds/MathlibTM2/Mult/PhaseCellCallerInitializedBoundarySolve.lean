@@ -42,9 +42,9 @@ theorem callerInitializedBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src
     (hraw : ∀ i, (S.R (unarySource _ (solverSource (src i)))).length =
       globalValues p u l target s t (inverseCallerWordWidth p u l target s t) W Fs.length radius coreWidth i)
     (hzero : S.R (fullHeader _ .zero) = [])
-    (hblank : ∀ r : SolverRole, S.R (solverRegister T r) = [])
+    (hblank : ∀ r : SolverRole, r ≠ .scratch 4 → S.R (solverRegister T r) = [])
     (hleft : ∀ r : SolverRole, S.L (solverRegister T r) = [])
-    (hambient : S.R (fullHeader _ .input) =
+    (hambient : S.R (solverRegister T (.scratch 4)) =
       cstream A (inverseFullInputWidth p u l target s t) (Fs.map (chirpLine s)).flatten)
     (hword : (S.R (fullHeader _ (.publication 3))).length = 2*p+13)
     (hprivate : ∀ i : Fin tapeCount, S.R (Fin.natAdd (((T+solverRegisterCount)+headerCount)+175) i) = [])
@@ -75,17 +75,17 @@ theorem callerInitializedBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src
   have hB : (F.R (unarySource _ (solverSource (src 6)))).length = B := by
     rw [callerSolverGeometry_off_source]
     simpa [globalValues,B] using hraw 6
-  have hblankF (r : SolverRole) : F.R (solverRegister T r) = [] :=
-    (callerSolverGeometry_off_register widthSource s coreWidth (2*p+13) S r).trans (hblank r)
+  have hblankF (r : SolverRole) (hr : r ≠ .scratch 4) : F.R (solverRegister T r) = [] :=
+    (callerSolverGeometry_off_register widthSource s coreWidth (2*p+13) S r).trans (hblank r hr)
   obtain ⟨v₁,hu₁,he₁⟩ := callerSolverWidth_exec body src B v F hB
-    (hblankF (.input (familyInverseScalarReg .wr))) (hblankF (.scratch 0)) depth
+    (hblankF (.input (familyInverseScalarReg .wr)) (by intro he; cases he)) (hblankF (.scratch 0) (by decide)) depth
   obtain ⟨v₂,n₂,output,banks,hu₂,hn₂,hproduced,hbanks,he₂⟩ := callerSeededBoundarySolve_exec
     src hsrc hR hQ widthSource coreWidth hw hroom recovery hA hp hst hu hwidth hθ hgap hbudget hband hpad htarget
     Fs hFs X Y hX hY J hJ W radius v₁ S hraw hzero hblank hleft hambient hword hprivate C hpush hbody depth
   rw [callerSolverGeometry_width] at he₂
   let ys := (banks.map (fun rows => cstream A (2*p+13) rows.flatten)).flatten++S.R (fullHeader (T+solverRegisterCount) (.publication 6))
   obtain ⟨v₃,hu₃,he₃⟩ := callerSolverWidthRetire_exec body B F
-    (hblankF (.input (familyInverseScalarReg .wr))) (port (publicationReg 94)) (fullHeader _ (.publication 6))
+    (hblankF (.input (familyInverseScalarReg .wr)) (by intro he; cases he)) (port (publicationReg 94)) (fullHeader _ (.publication 6))
     (solverRegister_ne_routing T (.input (familyInverseScalarReg .wr)) (publicationReg 94)).symm
     (solverRegister_ne_header T (.input (familyInverseScalarReg .wr)) (.publication 6)).symm
     (F.R (port (publicationReg 94))) ys v₂ depth

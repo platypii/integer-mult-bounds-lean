@@ -47,9 +47,9 @@ theorem callerSolverWidthState_ready {s : ℕ} [NeZero s] (src : Fin 11 → Fin 
     (hraw : ∀ i, (S.R (unarySource _ (solverSource (src i)))).length =
       globalValues p u l target s t (inverseCallerWordWidth p u l target s t) W Fs.length radius width i)
     (hzero : S.R (fullHeader _ .zero) = [])
-    (hblank : ∀ r : SolverRole, S.R (solverRegister T r) = [])
+    (hblank : ∀ r : SolverRole, r ≠ .scratch 4 → S.R (solverRegister T r) = [])
     (hleft : ∀ i, S.L (solverRegister T (.input i)) = [])
-    (hambient : S.R (fullHeader _ .input) =
+    (hambient : S.R (solverRegister T (.scratch 4)) =
       cstream A (inverseFullInputWidth p u l target s t) (Fs.map (chirpLine s)).flatten) :
     (callerFullLineInput T src).Ready p u l target t Fs
       (callerSolverWidthState (inverseCallerWordWidth p u l target s t) S) := by
@@ -67,11 +67,18 @@ theorem callerSolverWidthState_ready {s : ℕ} [NeZero s] (src : Fin 11 → Fin 
   · dsimp only [M,callerSolverWidthState]
     exact Function.update_self _ _ _
   · intro i hi
-    apply (hoff _ ?_).trans (hblank (.input i))
+    apply (hoff _ ?_).trans (hblank (.input i) (by intro he; cases he))
     exact (solverRegister_injective T).ne (by intro he; exact hi (SolverRole.input.inj he))
   · intro i
-    exact (hoff _ ((solverRegister_injective T).ne (by intro he; cases he))).trans (hblank (.scratch i))
-  · exact (hoff _ (solverRegister_ne_header T (.input (familyInverseScalarReg .wr)) .input).symm).trans hambient
+    have hn : SolverRole.scratch (Fin.castAdd 1 i) ≠ .scratch 4 := by
+      intro he
+      have hv := congrArg Fin.val (SolverRole.scratch.inj he)
+      change i.val = 4 at hv
+      have := i.isLt
+      omega
+    exact (hoff _ ((solverRegister_injective T).ne (by intro he; cases he))).trans
+      (hblank (.scratch (Fin.castAdd 1 i)) hn)
+  · exact (hoff _ ((solverRegister_injective T).ne (by intro he; cases he))).trans hambient
 
 /-- Retire the borrowed width after its consumer, retaining both physical
 data-port updates. The generic generated-header frame lemma supplies cleanup. -/

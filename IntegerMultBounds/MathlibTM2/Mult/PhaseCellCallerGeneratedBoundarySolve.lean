@@ -43,9 +43,9 @@ theorem callerGeneratedBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src 8
     (hraw : ∀ i, (S.R (unarySource _ (solverSource (src i)))).length =
       globalValues p u l target s t (inverseCallerWordWidth p u l target s t) W Fs.length radius coreWidth i)
     (hzero : S.R (fullHeader _ .zero) = [])
-    (hblank : ∀ r : SolverRole, S.R (solverRegister T r) = [])
+    (hblank : ∀ r : SolverRole, r ≠ .scratch 4 → S.R (solverRegister T r) = [])
     (hleft : ∀ r : SolverRole, S.L (solverRegister T r) = [])
-    (hambient : S.R (fullHeader _ .input) =
+    (hambient : S.R (solverRegister T (.scratch 4)) =
       cstream A (inverseFullInputWidth p u l target s t) (Fs.map (chirpLine s)).flatten)
     (hword : (S.R (fullHeader _ (.publication 3))).length = 2*p+13)
     (hprivate : ∀ i : Fin tapeCount, S.R (Fin.natAdd (((T+solverRegisterCount)+headerCount)+175) i) = [])

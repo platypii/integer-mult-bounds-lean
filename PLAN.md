@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4423 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4435 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33719,9 +33719,67 @@ off the archive write, so the composed bound does not depend on an intermediate
 solver/archive witness. The integration build passes (3.6 GiB aggregate), and
 the expanded axiom audit passes for 346417 declarations at 3233.7 MiB.
 
-Next: connect this completion theorem to actual proper-core publication
-execution and simplify aggregate/asymptotic/locality
-bounds and discharge tensor/fused/root acceptance. Full S4 remains incomplete.
+BoundaryCallerReady now packages ordinary retained inputs and fresh storage,
+excluding the output bank. Its update_output theorem transports all readiness
+through the exact one-port frame returned by proper publication.
+callerBoundaryCompletion_of_publishedRows_exec derives initial proper-core
+accuracy from the producer's typed batch.Rows and consumes the exact physical
+class-scatter endpoint, with no separately supplied accuracy premise. It
+returns global accuracy and the original caller frame except for output
+(3191.9 MiB guarded check). The general completion theorem also now proves
+exact equality of final and initial live stock, reusing the fixed bank lengths
+and the existing one-port replacement lemma (3211.6 MiB guarded check).
+The combined build passes (3.6 GiB aggregate) and the expanded axiom audit
+passes for 346434 declarations at 3233.9 MiB. This handoff work remains local
+and uncommitted pending a larger execution-composition chunk.
+
+The execution-composition review found a real input-format mismatch: proper
+publication retains a common-width input with a borrowed suffix, whereas the
+full-line inverse expects an isolated canonical-width RHS. The concrete solver
+now keeps that RHS in its existing carry register (scratch 4), which parameter
+generation preserves for arbitrary contents. No additional tape is allocated;
+freshness now excludes only that live carry register. The proper input header
+and publication headers remain available to the proper caller.
+
+callerPublishedBoundaryExecution_exec composes a proper execution certificate
+with the typed-row boundary handoff and uses restored live stock to take the
+maximum of phase workspace bounds. This is still a generic composition lemma:
+the eventual selected proper executor has not yet been instantiated here.
+
+Input preparation now reuses UnarySetup for the two retained-dimension
+products, then copies and narrows exactly that prefix and retires both generated
+counters. The source, including any borrowed suffix, survives verbatim.
+generatedCopyNarrowPrefixCost_le bounds this work by
+60*N*L*W + 8*W + 37. fullLineInputWidth_exec derives the canonical RHS width
+from the existing inverse precision master using affineHeader 2 8. These are
+executed primitives. Their concrete caller composition now exists:
+callerInputMasters_exec uses the existing inverse master slots and restores
+the scalar table; callerCanonicalInputCopy_exec uses the existing control and
+scratch slots. A single port-parametric copy/cleanup proof avoids elaborating
+the whole concrete bank during intermediate-state framing.
+callerSeededInputPreparation_exec generates the masters, copies the canonical
+RHS, and retires all ten masters. callerCanonicalInputPreparation_exec also
+borrows and retires the scalar-width ruler, so it starts from ordinary raw
+caller rulers, a common-width input with arbitrary suffix, and fresh solver
+storage. Its exact endpoint changes only the carry register to the isolated
+canonical RHS. callerCanonicalInputRetire_exec retires that RHS after the
+restoring consumer and retains just its output update, with no added stock.
+These initialization and retirement executions still need to surround the
+actual selected proper/boundary execution in the final S4 caller theorem.
+
+The combined input-copy / execution-handoff integration build passes
+(6.0 GiB aggregate). The expanded axiom audit passes for 346471 declarations
+at 3234.3 MiB peak. The generated-count copy execution checks at 2788.7 MiB;
+its final native-bound and linear-cost additions pass the guarded build.
+The complete concrete input preparation checks at 3312.3 MiB. Its combined
+integration build with the published boundary execution passes (6.0 GiB
+aggregate), and the expanded axiom audit passes for 346506 declarations at
+3239.1 MiB. This forms the larger local initialization/composition checkpoint;
+no push is authorized.
+
+Next: compose the paid input initialization/cleanup around the actual selected
+proper execution and boundary completion, then simplify aggregate/asymptotic/locality bounds.
+Then discharge tensor/fused/root acceptance. Full S4 remains incomplete.
 The accumulated caller-control, shared-solver/crop and restoring-completion
 chunk passes its integration builds and an axiom audit over 346242 declarations
 (3232.4 MiB peak). Preserve unrelated periodic-recovery work.

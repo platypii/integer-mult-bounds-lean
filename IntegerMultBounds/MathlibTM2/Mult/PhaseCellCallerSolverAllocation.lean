@@ -96,19 +96,19 @@ def callerFullLineInput (T : ℕ) (src : Fin 11 → Fin T) : FullLineInputPlan (
   tmp := solverRegister T (.scratch 2)
   queue := solverRegister T (.scratch 3)
   carry := solverRegister T (.scratch 4)
-  ambient := fullHeader _ .input
+  -- Parameter generation restores carry for arbitrary contents; borrow it as
+  -- the isolated canonical RHS instead of aliasing the proper caller's input.
+  ambient := solverRegister T (.scratch 4)
   replicas := unarySource _ (solverSource (src 8))
   parameterRegs i := by
     have hp := solverParameter_ne_register T src i
     simp only [List.nodup_cons,List.not_mem_nil,List.mem_cons,not_or,not_false_eq_true,and_true]
     simp [hp,(solverRegister_injective T).eq_iff]
-  copyRegs := by
-    have hh := fun r => (solverRegister_ne_header T r .input).symm
-    simp [hh,(solverRegister_injective T).eq_iff]
+  copyRegs := by simp [(solverRegister_injective T).eq_iff]
   countRegs := by
     have hs := fun r => (solverRegister_ne_source T r (src 8)).symm
     simp [hs,(solverRegister_injective T).eq_iff]
-  ambientOff i := (solverRegister_ne_header T (.input i) .input).symm
+  ambientOff i := (solverRegister_injective T).ne (by simp)
   replicasOff i := (solverRegister_ne_source T (.input i) (src 8)).symm
   scratchOff k hk i := by
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hk

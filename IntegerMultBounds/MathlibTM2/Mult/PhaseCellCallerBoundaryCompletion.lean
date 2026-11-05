@@ -44,9 +44,9 @@ theorem callerBoundaryCompletion_exec (src : Fin 11 → Fin T) (hsrc : src 8 ≠
     (hraw : ∀ i, (S.R (unarySource _ (solverSource (src i)))).length =
       globalValues p u l target s t (inverseCallerWordWidth p u l target s t) W Fs.length radius coreWidth i)
     (hzero : S.R (fullHeader _ .zero) = [])
-    (hblank : ∀ r : SolverRole, S.R (solverRegister T r) = [])
+    (hblank : ∀ r : SolverRole, r ≠ .scratch 4 → S.R (solverRegister T r) = [])
     (hleft : ∀ r : SolverRole, S.L (solverRegister T r) = [])
-    (hambient : S.R (fullHeader _ .input) =
+    (hambient : S.R (solverRegister T (.scratch 4)) =
       cstream A (inverseFullInputWidth p u l target s t) (Fs.map (chirpLine s)).flatten)
     (hheaders : ∀ i : Fin 6, S.R (fullHeader _ (.publication (Fin.castAdd 1 i))) = [])
     (hprivate : ∀ i : Fin tapeCount, S.R (Fin.natAdd (((T+solverRegisterCount)+headerCount)+175) i) = [])
@@ -94,6 +94,8 @@ theorem callerBoundaryCompletion_exec (src : Fin 11 → Fin T) (hsrc : src 8 ≠
         (∀ i : ZMod s, ‖pairedCellRead p W line i-target i‖ ≤ 3/(2:ℝ)^p))
         (seamPublicationTargets p r (fun _ => J)) output ∧
       ∃ v' m, v'.user = v.user ∧ m ≤ prepareTime+publicationTime ∧
+        mnSize (mk v' {S with R := Function.update S.R (fullHeader _ .output) (output.flatten++outputTail)}) =
+          mnSize (mk v S) ∧
         ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+(prepareStock+publicationStock)) depth
           (callerBoundaryCompletion src hR hQ widthSource recovery) (mk v S) m
           (mk v' {S with R := Function.update S.R (fullHeader _ .output) (output.flatten++outputTail)}) := by
@@ -124,7 +126,17 @@ theorem callerBoundaryCompletion_exec (src : Fin 11 → Fin T) (hsrc : src 8 ≠
     W D radius coreWidth band n (by omega) hW hw hroom hvolumeFit seedValue hvalues hfit
     r (fun _ => J) proper hr hrw hproper outputTail S hraw hD hscalars hzero hheaders hprivate
     banks hbanks ambient hgood hdst depth v₁
-  refine ⟨output,haccuracy,v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,?_⟩
+  have hrowCount : output.length = ambient.length := haccuracy.length_eq.symm.trans hgood.length_eq
+  have houtputLength : ∀ line ∈ output, line.length = s*W :=
+    (List.forall₂_and_left _ _).mp haccuracy.flip |>.1
+  have hambientLength : ∀ line ∈ ambient, line.length = s*W :=
+    (List.forall₂_and_left _ _).mp hgood.flip |>.1
+  have hlength : (output.flatten++outputTail).length = (S.R (fullHeader _ .output)).length := by
+    rw [hdst]
+    simp only [List.length_append,length_flatten_const _ houtputLength,
+      length_flatten_const _ hambientLength,hrowCount]
+  have hstock := mn_replace_right_size_of_length v v₂ S (fullHeader _ .output) (output.flatten++outputTail) hlength
+  refine ⟨output,haccuracy,v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,hstock,?_⟩
   have hpoint := he₁.final
   apply ExecWithin.seq
   · exact he₁.mono (by intro d z hz; omega)

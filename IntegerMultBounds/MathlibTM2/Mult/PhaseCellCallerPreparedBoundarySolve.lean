@@ -43,9 +43,9 @@ theorem callerPreparedBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src 8 
     (hraw : ∀ i, (S.R (unarySource _ (solverSource (src i)))).length =
       globalValues p u l target s t (inverseCallerWordWidth p u l target s t) W Fs.length radius coreWidth i)
     (hzero : S.R (fullHeader _ .zero) = [])
-    (hblank : ∀ r : SolverRole, S.R (solverRegister T r) = [])
+    (hblank : ∀ r : SolverRole, r ≠ .scratch 4 → S.R (solverRegister T r) = [])
     (hleft : ∀ r : SolverRole, S.L (solverRegister T r) = [])
-    (hambient : S.R (fullHeader _ .input) =
+    (hambient : S.R (solverRegister T (.scratch 4)) =
       cstream A (inverseFullInputWidth p u l target s t) (Fs.map (chirpLine s)).flatten)
     (hblankNarrow : S.R (fullHeader _ (.publication 3)) = [])
     (hprivate : ∀ i : Fin tapeCount, S.R (Fin.natAdd (((T+solverRegisterCount)+headerCount)+175) i) = [])
@@ -103,8 +103,8 @@ theorem callerPreparedBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src 8 
     Fs hFs X Y hX hY J hJ W radius v₁ M
     (by intro i; rw [hsource]; exact hraw i)
     ((hheader .zero (by simp)).trans hzero)
-    (fun r => (hread _ (solverRegister_ne_header T r (.publication 3))).trans (hblank r))
-    hleft ((hheader .input (by simp)).trans hambient)
+    (fun r hr => (hread _ (solverRegister_ne_header T r (.publication 3))).trans (hblank r hr))
+    hleft ((hread _ (solverRegister_ne_header T (.scratch 4) (.publication 3))).trans hambient)
     (by simp [M]) hprivateM hvolumeFit
     (by rw [hsource]; exact hD)
     ((hheader (.scalar 4) (by simp)).trans hlineBinary)
