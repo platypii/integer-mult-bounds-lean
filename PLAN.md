@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4298 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4299 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33038,4 +33038,35 @@ input preparation (3122.4 MiB). Combined build with initialized selected executi
 and restoring publication fold passes (16745 jobs, 3.5 GiB incremental combined
 peak). Default proof limits unchanged; S4 remains incomplete.
 Expanded axiom audit passes for 345156 declarations at 3203.8 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: fixed gather seed from produced geometry
+
+CallerGatherSeed constructs RestoringGatherSeed for the typed physical ABI from
+SetupInput, the nine actual geometry words, ordinary retained stream/count data
+and mathematical eligibility bounds. Fixed exposure/routing/input maps and all
+bank separation follow from typed placement. Exposure/routing scalar words and
+ruler widths are derived, not supplied as seed fields. The computed halo/core
+length bound implies both class-length fits. A single retained replica count
+supplies both consumers via the power-of-two replica equality.
+
+GatherRetainedInput contains only the ordinary word/volume/replica lengths,
+input stream and fresh private storage/left stacks. Its reframe theorem transports
+that contract through the full caller-input preparation frame, so the seed can
+be constructed on the actual returned endpoint. makeGatherInput connects this
+constructed seed to fixed makeSetup directly, eliminating arbitrary seed and
+source-map matching premises from that factory. No generated halo word is assumed.
+
+GatherBounds states only mathematical class eligibility and fit conditions.
+Its nonempty field is still a premise, not an executed guard. Production of the
+retained movement controls, runtime empty/nonempty class control, publication
+readiness on the same endpoint, and instantiation of the actual selected run and
+outer schedule remain next. Root raw-counter/coefficient suppliers, locality,
+tensor composition and aggregate resource integration remain open. S4 remains
+incomplete; kappa unchanged.
+
+Guarded CallerGatherSeed check passes at 3125.5 MiB. Combined build with connected
+caller preparation, initialized selected execution and restoring publication fold
+passes (16746 jobs, 3.5 GiB incremental combined peak). Default proof limits unchanged.
+Expanded axiom audit passes for 345215 declarations at 3207.1 MiB, allowing
 only propext, Quot.sound and Classical.choice.
