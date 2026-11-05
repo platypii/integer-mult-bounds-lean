@@ -7,7 +7,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerSolverWidth
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.CallerLayout
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node
-  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main
+  IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Fast.Main IntegerMultBounds.MathlibTM2.Fast.TableVM
   IntegerMultBounds.MathlibTM2.Mult.ShortConv ScalarPlacement CommonClassGeometry
   IntegerMultBounds.NLogN
 variable {T Q A s : ℕ} [NeZero s] {P U : Type}
@@ -17,10 +17,36 @@ def callerCanonicalInputPreparation (src : Fin 11 → Fin T) : Pr P (MachineTape
   .seq (callerSolverWidthProgram src) (.seq (callerSeededInputPreparation src)
     (clearWords [solverRegister T (.input (familyInverseScalarReg .wr))]))
 
+noncomputable def canonicalInputPreparationTime (p u l target s t N : ℕ) [NeZero s] : ℕ :=
+  let B := inverseCallerWordWidth p u l target s t
+  (4*B+5)+(generateInverseMastersCost B p u l target s t 0 s+(50*B+51)+
+    callerCanonicalInputCopyCost p u l target s t N+callerInputMasterRetireCost p u l target s t)+(2*B+3)
+
+noncomputable def canonicalInputPreparationStock (p u l target s t N : ℕ) [NeZero s] : ℕ :=
+  let B := inverseCallerWordWidth p u l target s t
+  2*(4*B+5)+((392*B+396)+3*(inverseScalarAtoms p s t u 0 s*tblC B 0+
+    inverseMasterCopyCost B (inverseMasterValues p u l target s t 0 s)))+
+    8*callerCanonicalInputCopyCost p u l target s t N
+
+theorem canonicalInputPreparationTime_eq_input (p u l target t N : ℕ)
+    (hst : s < t) (hband : PhaseCellBand.width p u ≤ s) :
+    canonicalInputPreparationTime p u l target s t N =
+      let B := inverseCallerWordWidth p u l target s t
+      let d := InverseMasterInput.ofCuts p u l target t 0 s hst (Nat.zero_le _) le_rfl hband
+      (4*B+5)+(d.timeCost+callerCanonicalInputCopyCost p u l target s t N+
+        callerInputMasterRetireCost p u l target s t)+(2*B+3) := rfl
+
+theorem canonicalInputPreparationStock_eq_input (p u l target t N : ℕ)
+    (hst : s < t) (hband : PhaseCellBand.width p u ≤ s) :
+    canonicalInputPreparationStock p u l target s t N =
+      let B := inverseCallerWordWidth p u l target s t
+      let d := InverseMasterInput.ofCuts p u l target t 0 s hst (Nat.zero_le _) le_rfl hband
+      2*(4*B+5)+d.stock+8*callerCanonicalInputCopyCost p u l target s t N := rfl
+
 /-- Initialize the canonical RHS from the ordinary common input and retained
 rulers. Every generated scalar, master and control retires; the carry contains
 the sole surviving copy required by the restoring boundary solver. -/
-theorem callerCanonicalInputPreparation_exec
+private theorem callerCanonicalInputPreparation_unfolded_exec
     (body : P → Pr P (MachineTapes (T+solverRegisterCount)) Q A U)
     (src : Fin 11 → Fin T) (hs : Function.Injective src)
     (p u l target t radius width : ℕ) (hst : s < t)
@@ -89,6 +115,37 @@ theorem callerCanonicalInputPreparation_exec
     omega)
   exact ⟨v₃,_,hu₃.trans (hu₂.trans hu₁),by dsimp only [B,d,copyCost] at *; omega,
     ExecWithin.seq e₁ (ExecWithin.seq e₂ e₃)⟩
+
+theorem callerCanonicalInputPreparation_exec
+    (body : P → Pr P (MachineTapes (T+solverRegisterCount)) Q A U)
+    (src : Fin 11 → Fin T) (hs : Function.Injective src)
+    (p u l target t radius width : ℕ) (hst : s < t)
+    (hband : PhaseCellBand.width p u ≤ s) (Fs : List (ZMod s → GaussianInt))
+    (tail : List (Fin (A+4))) (v : HS (MachineTapes (T+solverRegisterCount)) Q A U)
+    (S : Stacks (MachineTapes (T+solverRegisterCount)) A)
+    (hraw : ∀ i, (S.R (unarySource _ (solverSource (src i)))).length =
+      globalValues p u l target s t (inverseCallerWordWidth p u l target s t)
+        (packedHaloCommonWidth p l s u (target+1) 2) Fs.length radius width i)
+    (hzero : S.R (fullHeader _ .zero) = [])
+    (hblank : ∀ r : SolverRole, S.R (solverRegister T r) = [])
+    (hsrc : S.R (fullHeader _ .input) = cstream A (packedHaloCommonWidth p l s u (target+1) 2)
+      (Fs.map (chirpLine s)).flatten++tail) (depth : ℕ) :
+    ∃ v' n, v'.user = v.user ∧
+      n ≤ canonicalInputPreparationTime p u l target s t Fs.length ∧
+      ExecWithin body (fun k z => mnSize z+k ≤ mnSize (mk v S)+depth+
+        canonicalInputPreparationStock p u l target s t Fs.length) depth
+        (callerCanonicalInputPreparation src) (mk v S) n
+        (mk v' {S with R := (Function.update S.R (solverRegister T (.scratch 4))
+          (cstream A (inverseFullInputWidth p u l target s t) (Fs.map (chirpLine s)).flatten))}) := by
+  obtain ⟨v',n,hu,hn,he⟩ := callerCanonicalInputPreparation_unfolded_exec body src hs p u l target t radius width
+    hst hband Fs tail v S hraw hzero hblank hsrc depth
+  refine ⟨v',n,hu,?_,he.mono ?_⟩
+  · rw [canonicalInputPreparationTime_eq_input p u l target t Fs.length hst hband]
+    exact hn
+  · intro k z hz
+    rw [canonicalInputPreparationStock_eq_input p u l target t Fs.length hst hband]
+    dsimp only
+    omega
 
 /-- After the restoring solver/publication consumer, retire the isolated RHS
 while retaining the single final output update. Cleanup allocates no stock. -/

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4437 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4445 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33838,10 +33838,63 @@ The integration build with the actual selected proper/boundary run passes
 at 3240.5 MiB. These changes form a larger local selected-caller preparation
 and retirement checkpoint; no push is authorized.
 
-Next surround selectedPublishedBoundaryRun_exec with these preparation and
-retirement executions (using makeGatherInput for the returned shared setup),
-then simplify aggregate/asymptotic/locality bounds.
-Then discharge tensor/fused/root acceptance. Full S4 remains incomplete.
+SelectedRawPublishedBoundaryRun and selectedRawPublishedBoundaryRun_exec now
+state and prove the complete raw-input lifecycle: actual canonical/shared
+preparation produces the prepared state and all four consumer contracts;
+makeGatherInput constructs the proper gather input; the selected proper and
+boundary program executes on that state; and owned-header retirement returns
+exactly the original caller with only the output bank replaced. Global
+norm/error guarantees and equality of final/initial live stock are conclusions.
+The actual sequential execution includes every initialization and retirement
+step, with their time and stock charged. Prepared states and row banks are
+execution witnesses, not input oracles.
+
+finishSharedBoundaryCaller_exec factors the state/stock bracket away from the
+selected dimensions and numerical metadata. mn_replace_right_length_of_size
+reuses restored live stock to establish output-length equality before final
+cleanup. Preparation time/stock now have shared named, proof-independent
+budgets. Their interface uses a grouped sum consistently; arithmetic
+reassociation is proved explicitly rather than asking definitional reduction
+to compare huge natural-number cost terms. Default proof limits are unchanged.
+The raw-entry declaration checks at 3335.9 MiB, the named canonical-budget
+interface checks at 3315.6 MiB, and the clean integration build passes at
+3.7 GiB aggregate. The expanded axiom audit passes for 346586 declarations
+at 3238.5 MiB. This raw-entry/resource-interface work remains local and
+uncommitted until a larger fixed-program/resource checkpoint; no push is authorized.
+
+The composed rawBoundaryProgram now depends only on fixed ports, recovery
+bounds and recovery mode. sharedProperProgram_eq identifies the witness-built
+proper code with that fixed syntax, using generic gather-input interfaces to
+avoid reducing concrete geometry witnesses. The raw execution theorem names
+this fixed program directly; no dimensions, numerical inputs or prepared
+states occur in its program arguments.
+
+sharedBoundaryRetireCost_le bounds cleanup structurally over the generated
+header roles and canonical RHS. The raw theorem returns this bound, linear
+in encoded volume and scalar widths and independent of the borrowed suffix.
+The volume module checks at 3187.1 MiB and the strengthened raw execution
+theorem at 3330.2 MiB. The integration build passes at 3.7 GiB
+aggregate, and the expanded axiom audit passes for 346604 declarations
+at 3240.9 MiB. These changes remain local for the larger resource checkpoint.
+
+canonicalInputCopyCost_le now reuses generatedCopyNarrowPrefixCost_le and
+the canonical-width master identity: payload work is at most 60*N*s*W,
+with only a linear width overhead. canonicalInputPreparationTime_le separates
+this traffic from the one-time master generation and retirement. Both canonical
+and shared preparation stock are at most eight times their own preparation
+time; this concerns scalar construction and tape movement only.
+selectedCanonicalInputPreparationTime_le absorbs the one-time setup into
+Sizes.T n using the existing selected raw-header and axis-polynomial bounds.
+The remaining copy charge is at most 60*(1032+8*ct)*(N*s*p), uniformly over
+selected u and target. No borrowed-tail length enters the charge. The canonical
+cost module checks at 3189.7 MiB; the selected bound checks at 3194.4 MiB.
+The integration build passes at 3.6 GiB aggregate. The expanded axiom
+audit passes for 346613 declarations at 3241.7 MiB.
+
+Next bound shared gather/header conversion, simplify inner aggregate resource
+bounds, and instantiate the selected geometry/locality premises uniformly.
+The fixed-program/compiler, tensor/fused and root acceptance gates remain.
+Full S4 remains incomplete.
 The accumulated caller-control, shared-solver/crop and restoring-completion
 chunk passes its integration builds and an axiom audit over 346242 declarations
 (3232.4 MiB peak). Preserve unrelated periodic-recovery work.

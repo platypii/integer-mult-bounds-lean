@@ -17,6 +17,16 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 noncomputable section
 variable {T Q K D p u l target s t radius width Vg Vr : ℕ} [NeZero s] {P U : Type}
 
+noncomputable def sharedBoundaryPreparationTime (p u l target s t D N radius width Vg Vr : ℕ) [NeZero s] : ℕ :=
+  canonicalInputPreparationTime p u l target s t N+
+    gatherPreparationCost D p u l target s t (inverseCallerWordWidth p u l target s t)
+      (packedHaloCommonWidth p l s u (target+1) 2) N radius width Vg Vr
+
+noncomputable def sharedBoundaryPreparationStock (p u l target s t D N radius width Vg Vr : ℕ) [NeZero s] : ℕ :=
+  canonicalInputPreparationStock p u l target s t N+
+    3*gatherPreparationCost D p u l target s t (inverseCallerWordWidth p u l target s t)
+      (packedHaloCommonWidth p l s u (target+1) 2) N radius width Vg Vr
+
 /-- Prepare both consumers from raw caller rulers and the common input stream.
 The canonical RHS is copied first into reserved carry; shared caller setup then
 produces numerical, gather, publication and boundary readiness together. -/
@@ -43,13 +53,9 @@ theorem prepareSharedBoundaryCaller_exec_within
     (hband : PhaseCellBand.width p u ≤ s)
     (hsolver : ∀ r : SolverRole, S.R (solverRegister T r) = [])
     (hsolverLeft : ∀ r : SolverRole, S.L (solverRegister T r) = []) (depth : ℕ) :
-    let B := inverseCallerWordWidth p u l target s t
     let W := packedHaloCommonWidth p l s u (target+1) 2
-    let d := InverseMasterInput.ofCuts p u l target t 0 s hst (Nat.zero_le _) le_rfl hband
-    let copyCost := callerCanonicalInputCopyCost p u l target s t Fs.length
-    let initTime := (4*B+5)+(d.timeCost+copyCost+callerInputMasterRetireCost p u l target s t)+(2*B+3)
-    let initStock := 2*(4*B+5)+d.stock+8*copyCost
-
+    let prepTime := sharedBoundaryPreparationTime p u l target s t D Fs.length radius width Vg Vr
+    let prepStock := sharedBoundaryPreparationStock p u l target s t D Fs.length radius width Vg Vr
     ∃ v' F, ∃ input : SetupInput (T+solverRegisterCount) (prime+K) D p u l target s t (inverseCallerWordWidth p u l target s t) (packedHaloCommonWidth p l s u (target+1) 2) Fs.length radius width Vg Vr F,
       v'.user = v.user ∧
       (∀ clipped, (makeSetup input clipped raw.widthPositive raw.geometryFit raw.fit raw.bitsFit).NumericalInput
@@ -63,15 +69,12 @@ theorem prepareSharedBoundaryCaller_exec_within
       (∀ k, k ≠ solverRegister T (.scratch 4) → k ≠ fullHeader (T+solverRegisterCount) .word → k ≠ fullHeader (T+solverRegisterCount) .replicas → k ≠ fullHeader (T+solverRegisterCount) .volume →
         (∀ i, k ≠ globals (T+solverRegisterCount) i) → (∀ f, k ≠ rulers (T+solverRegisterCount) f) →
         (∀ f i, k ≠ fullHeader (T+solverRegisterCount) (.geometry f i)) → F.R k = S.R k) ∧
-      ∃ n, n ≤ initTime+gatherPreparationCost D p u l target s t (inverseCallerWordWidth p u l target s t) (packedHaloCommonWidth p l s u (target+1) 2) Fs.length radius width Vg Vr ∧
+      ∃ n, n ≤ prepTime ∧
         ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
-          initStock+3*gatherPreparationCost D p u l target s t (inverseCallerWordWidth p u l target s t) (packedHaloCommonWidth p l s u (target+1) 2) Fs.length radius width Vg Vr) depth
+          prepStock) depth
           (.seq (callerCanonicalInputPreparation src)
             (gatherPreparationProgram (solverSource ∘ src) (solverSource widthSource) (solverSource ∘ widths))) (Host.mk v S) n (Host.mk v' F) := by
-  let B := inverseCallerWordWidth p u l target s t
   let W := packedHaloCommonWidth p l s u (target+1) 2
-  let d := InverseMasterInput.ofCuts p u l target t 0 s hst (Nat.zero_le _) le_rfl hband
-  let copyCost := callerCanonicalInputCopyCost p u l target s t Fs.length
   let rhs := cstream (prime+K) (inverseFullInputWidth p u l target s t) (Fs.map (chirpLine s)).flatten
   let M := solverCarryState S rhs
   have hstream : ∀ Gs : List (ZMod s → GaussianInt),
@@ -126,15 +129,15 @@ theorem prepareSharedBoundaryCaller_exec_within
   have hMsize := he₁.final
   let bound := fun (k : ℕ) (z : Store (HΓ (T := MachineTapes (T+solverRegisterCount)) (prime+K))
     (HS (MachineTapes (T+solverRegisterCount)) Q (prime+K) U)) =>
-      mnSize z+k ≤ mnSize (mk v S)+depth+(2*(4*B+5)+d.stock+8*copyCost)+
-        3*gatherPreparationCost D p u l target s t B W Fs.length radius width Vg Vr
+      mnSize z+k ≤ mnSize (mk v S)+depth+
+        sharedBoundaryPreparationStock p u l target s t D Fs.length radius width Vg Vr
   have e₁ : ExecWithin body bound depth _ _ _ _ := he₁.mono (by
     intro k z hz
-    dsimp only [bound,B,d,copyCost]
+    dsimp only [bound,sharedBoundaryPreparationStock]
     omega)
   have e₂ : ExecWithin body bound depth _ _ _ _ := he₂.mono (by
     intro k z hz
-    dsimp only [bound,B,W,d,copyCost,M,solverCarryState,rhs] at hz ⊢
+    dsimp only [bound,sharedBoundaryPreparationStock,W,M,solverCarryState,rhs] at hz ⊢
     omega)
   refine ⟨v₂,F,input,hu₂.trans hu₁,numerical,retained,pubReady,hwords,boundary,hL,hI,hO,?_,n₁+n₂,?_,ExecWithin.seq e₁ e₂⟩
   · intro k hk hw hr hv hs hf hg
@@ -142,8 +145,7 @@ theorem prepareSharedBoundaryCaller_exec_within
       dsimp only [M,solverCarryState]
       exact Function.update_of_ne hk _ _
     exact (hframe k hw hr hv hs hf hg).trans hoff
-  · dsimp only [B,W,d,copyCost] at *
-    omega
+  · exact Nat.add_le_add hn₁ hn₂
 
 end
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.CallerLayout

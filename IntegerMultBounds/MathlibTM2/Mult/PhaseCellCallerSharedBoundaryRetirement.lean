@@ -28,6 +28,24 @@ def sharedPreparationRoles : List Role :=
 def sharedBoundaryHeaders (T : ℕ) : List (Fin (MachineTapes (T+solverRegisterCount))) :=
   sharedPreparationRoles.map (fullHeader (T+solverRegisterCount))++[solverRegister T (.scratch 4)]
 
+theorem RawInput.sharedPreparationHeaders_blank
+    {T A D p u l target s t B W N radius width Vg Vr : ℕ}
+    {src : Fin 11 → Fin T} {widthSource : Fin T} {widths : Fin 3 → Fin T}
+    {S : Stacks (MachineTapes T) A}
+    (raw : RawInput T A D p u l target s t B W N radius width Vg Vr src widthSource widths S)
+    (hword : S.R (fullHeader T .word) = []) (hreplicas : S.R (fullHeader T .replicas) = [])
+    (hvolume : S.R (fullHeader T .volume) = []) :
+    ∀ r, sharedPreparationRole r = true → S.R (fullHeader T r) = [] := by
+  intro r hr
+  cases r with
+  | scalar i => exact raw.scalarBlank i
+  | ruler f => exact raw.rulerBlank f
+  | geometry f i => exact raw.geometryBlank f i
+  | word => exact hword
+  | replicas => exact hreplicas
+  | volume => exact hvolume
+  | _ => simp [sharedPreparationRole] at hr
+
 theorem sharedBoundaryHeaders_nodup (T : ℕ) : (sharedBoundaryHeaders T).Nodup := by
   have hroles : sharedPreparationRoles.Nodup := Finset.nodup_toList _
   have hheaders := hroles.map (fullHeader_injective (T+solverRegisterCount))
