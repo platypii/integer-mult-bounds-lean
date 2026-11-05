@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4457 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4463 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -34042,11 +34042,93 @@ passes at 3.8 GiB aggregate; the expanded axiom audit passes for 346754
 declarations at 3247.8 MiB. This is collected with canonical entry selection
 as one local checkpoint; no push is authorized.
 
-Next close the named proper-publication aggregates and selected geometry/locality
-in the composed trace using existing selected estimates.
+PublicationMetadataCost separates publicationHeaderVolume into two
+replica-sized words and shared scalar setup. The padding estimate for
+2^clog(2,k) includes empty core groups. Existing core-group cardinality bounds
+and selected-axis absorption give metadata <= T+2*N; the module checks at
+3136.1 MiB. The bound also supports arbitrary fixed scaling.
+SelectedPublicationControls reuses coreIndices_length_le and
+coreGatherIndices_length_le to bound the actual origin-generation loop by a
+scalar polynomial of degree three. Its selected time fits one T payment,
+independent of replicas and coefficient contents (3140.7 MiB).
+
+The composed raw trace now charges the metadata and origin allowances directly
+in proper publication time and workspace. Actual metadata/queue generation
+remains in the internal trace. Local monotonicity avoids rewriting dependent
+row-bank expressions. The updated raw declaration checks at 3382.2 MiB.
+Integration passes at 3.7 GiB aggregate. The expanded axiom audit passes for
+346757 declarations at 3248.8 MiB. These changes remain local for a larger
+publication-control checkpoint.
+
+selectedPublicationControlCosts_le now prices geometry, dimensions and both
+retirement passes uniformly in core count and replicas. Existing core-count
+and clog-padding facts give scalar root-volume payments plus explicit 19*N
+and 2*N dimension charges. No per-core numerical case analysis is introduced.
+The combined control module checks at 3150.9 MiB.
+
+The actual raw theorem now exposes one proper-publication time bill and one
+workspace bill: 14*T+37*N+82 plus retainedPublicationTimeCost, and
+20*T+62*N+122 plus retainedPublicationStock. Intermediate origin queues,
+geometry controls, metadata words and retirement expressions are internal
+proof objects. Their actual trace is bounded by local arithmetic monotonicity.
+The simplified raw declaration checks at 3390.2 MiB. Integration passes at
+3.8 GiB aggregate, and the expanded axiom audit passes for 346757 declarations
+at 3246.7 MiB. These changes remain local with the preceding metadata/origin
+work for a larger checkpoint.
+
+Next bound the retained publication wrapper by linear payload work and the
+existing sharp restoring-transpose time/workspace estimates. Reuse the counted
+gather budget pattern, then apply selected core-volume and routing bounds.
+Selected geometry/locality and final acceptance remain open.
 Compiler/lowering, tensor/fused and root acceptance gates remain.
 Full S4 remains incomplete.
 The accumulated caller-control, shared-solver/crop and restoring-completion
 chunk passes its integration builds and an axiom audit over 346242 declarations
 (3232.4 MiB peak). Preserve unrelated periodic-recovery work.
 No push is authorized until explicitly requested.
+
+### S4 retained-publication wrapper and padded volume
+
+`PhaseCellRetainedPublicationBudget` bounds dimension generation, numerical
+handoff, scatter and retirement structurally over a publication class. The
+remaining terms are linear padded payload/ambient traffic, one shared page
+preparation bill, and the existing restoring-transpose time/workspace charges.
+No coefficient data or per-core case enumeration enters these bounds.
+
+Disjoint publication windows bound their padded rectangle by three times the
+replica output span, including the empty class. The actual raw boundary theorem
+now uses retained time `1700*N*s*W+100*V+500+pages+2*transposeTime` and retained
+workspace `3200*N*s*W+200*V+800+pagesPush*pages+transposeStock`.
+The structural module checks at 3179.9 MiB and the integrated raw declaration
+checks at 3413.3 MiB, under the existing proof limits. The integration build
+passes at 3.8 GiB aggregate; the axiom audit passes for 346760 declarations
+at 3247.7 MiB.
+
+Next absorb shared page preparation into T and instantiate the sharp transpose
+charge with selected routing/core-volume estimates. Selected geometry/locality,
+compiler/lowering, tensor/fused and root acceptance remain open. S4 is incomplete.
+These changes remain local; no push is authorized.
+
+### S4 shared page setup and transpose symmetry
+
+`selectedPublicationPagesCost_le` bounds the executed page generator by a
+cubic scalar polynomial and absorbs any fixed multiple into T. The raw boundary
+execution now pays T for both page-generation time and its fixed-program stock
+charge, using one common eventual bound. Publication page/control data has
+therefore disappeared from the public cost statement. The scalar module checks
+at 3150.0 MiB and the actual boundary declaration at 3420.2 MiB.
+
+`dyadicTransposePlan_weightedCharge_swap` proves that exchanging rectangle axes
+preserves the canonical schedule's weighted charge. This needs only the two
+structural branches, without comparing concrete plans or enumerating rectangles.
+`restoringTimeCost_swap_le` transfers the existing sharp time estimate to the
+opposite orientation, including the zero axis. They check at 2681.1 and
+2825.3 MiB. This addresses publication's reversed orientation and lets the next
+step reuse the selected core-count routing estimate already used by gathering.
+The combined integration build passes at 3.4 GiB aggregate; the axiom audit
+passes for 346765 declarations at 3250.0 MiB.
+
+Next supply the selected counter-width/padded-volume premises and apply the
+reversed-axis sharp estimate, then absorb its shared polynomial setup. Selected
+geometry/locality, compiler/lowering, tensor/fused and root acceptance remain
+open. S4 remains incomplete. No push is authorized.

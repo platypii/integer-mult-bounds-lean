@@ -7,6 +7,9 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerSharedBoundaryVol
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedSharedPreparationCost
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedCallerFormat
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedClassSetupCost
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPublicationControls
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPublicationPages
+public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellRetainedPublicationBudget
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedFullLineLifecycle
 
 /-! Execute paid shared initialization, the selected proper/boundary run, and
@@ -136,21 +139,14 @@ noncomputable def SelectedRawPublishedBoundaryRun {T Q K : ℕ} {U : Type} {P : 
     let pubClass := gatherPublicationClass (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L
     let runTime := initializedPublishedRunTime F n₀ ct cV cD (Sizes.p n₀) u (Sizes.s n₀ i) (Sizes.t n₀ i) D B W Fs.length
     let runStock := initializedPublishedRunStock Cstock Cprog n₀ ct cV cD (Sizes.p n₀) (Sizes.s n₀ i) (Sizes.t n₀ i) D B W Fs.length
-    let origins := (coreSubsetPublicationWindows (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀))
-      pubClass.length g.hwidth pubClass.indices pubClass.sublist).origins
     let a := Nat.clog 2 indices.length
     let Vpub := g.D
-    let geometryCost := PublicationGeometryControls.timeCost Vpub (Sizes.s n₀ i) L radius
-    let retireGeometryCost := 2*((L-2*radius)+Sizes.s n₀ i)+5
-    let dimensionCost := PackedTranspose.publicationDimensionsTimeCost g.a indices.length
-    let retireDimensionCost := 2*(g.a+a+2^a)+7
-    let metadata := PackedTranspose.publicationHeaderVolume a g.a (L-2*radius) W Vpub (Sizes.s n₀ i) indices.length
-    let originCost := preparedCoreOriginsCost Vpub (Sizes.s n₀ i) (amortizedCoreWidth ct (Sizes.p n₀)) radius L
-    let properPublicationTime := (geometryCost+(originCost+(dimensionCost+((6*metadata+61)+
-        (PackedTranspose.retainedPublicationTimeCost (K := K) hstates a g.a (L-2*radius) Vpub
-          W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W)))+(2*metadata+21))+(retireDimensionCost+((2*(origins.length*Vpub+origins.length)+5)+retireGeometryCost))))) : ℕ)
-    let properPublicationStock := (3*geometryCost+(3*originCost+(2*dimensionCost+(2*(6*metadata+61)+PackedTranspose.retainedPublicationStock (K := K) (U := U)
-          hstates a g.a (L-2*radius) Vpub W indices.length pubClass))))
+    let retainedTime := 1700*(Fs.length*(s*W))+100*Vpub+500+Sizes.T n₀+
+      2*FixedStreamedBank.restoringTimeCost hstates a g.a ((L-2*radius)*W) Vpub
+    let retainedStock := 3200*(Fs.length*(s*W))+200*Vpub+800+
+      Sizes.T n₀+FixedStreamedBank.restoringStockAllowance hstates a g.a ((L-2*radius)*W) Vpub
+    let properPublicationTime := 14*Sizes.T n₀+37*Fs.length+82+retainedTime
+    let properPublicationStock := 20*Sizes.T n₀+62*Fs.length+122+retainedStock
     let properTime := initializedPublishedTime (Sizes.T n₀) runTime properPublicationTime (Sizes.T n₀)
     let properStock := Sizes.T n₀+(runStock+properPublicationStock)
     let solveTime := 2624001*(Sizes.T n₀ : ℝ)+(Fs.length : ℝ)*G*t*
@@ -186,10 +182,12 @@ theorem selectedRawPublishedBoundaryRun_exec {T Q K : ℕ} {U P : Type}
   obtain ⟨F,hF,Cstock,hclass⟩ := selectedPublishedBoundaryRun_exec (body := body) bank hinj b hstates ct cV cD
   obtain ⟨G,hG,hboundaryTime⟩ := selectedFullLineLifecycleTime_fast_le ct
   refine ⟨F,hF,Cstock,G,hG,?_⟩
+  let pagesPush := mnProgPush (prepareReplicaPublicationPages (P := Empty) (Q := Q) (A := prime+K) (U := U))
   filter_upwards [hclass,selectedSharedBoundaryPreparationTime_le ct,
     selectedFullLineLifecycleStock_le ct,hboundaryTime,selectedCanonicalCallerCosts_le ct cV cD,
-    selectedCallerFormat_profile ct cV cD,selectedClassSetupBounds_le (callerFormatFactor ct cV cD+1)]
-    with n₀ hn hprep hboundaryStock hboundaryTime hprices hformats hsetupPrices
+    selectedCallerFormat_profile ct cV cD,selectedClassSetupBounds_le (callerFormatFactor ct cV cD+1),
+    selectedPublicationMetadata_le cD (1032+8*ct) 1,selectedPreparedCoreOriginsCost_le cD,selectedPublicationControlCosts_le cD,selectedPublicationPagesCost_le cD (1032+8*ct) (pagesPush+1)]
+    with n₀ hn hprep hboundaryStock hboundaryTime hprices hformats hsetupPrices hmetadataPrice horiginsPrice hcontrolPrices hpagesPrice
   intro h i _ _ u target L hu htarget gap C V bounds Fs hFs
   intro B W radius indices p s t l coreWidth Cprog depth Vg Vr replicaExp D hpush hbody hwide hA
     v S borrowed rawSrc hrawSrc widthSource widths raw hword hreplicas hvolume hsource hexposure houtput
@@ -224,9 +222,19 @@ theorem selectedRawPublishedBoundaryRun_exec {T Q K : ℕ} {U P : Type}
     retained.replicaLength retained.volumeLength rawSrc (solverSource widthSource) ready
     (inverseFullInputWidth_le_common p u l target t)
   refine ⟨prepared,input,hwords,retained,?_⟩
-  intro setup gatherInput g pubClass runTime runStock
-    origins a Vpub geometryCost retireGeometryCost dimensionCost retireDimensionCost metadata originCost
-    properPublicationTime properPublicationStock properTime properStock
+  intro setup gatherInput g runTime runStock
+    a Vpub retainedTime retainedStock properPublicationTime properPublicationStock properTime properStock
+  let pubClass := gatherPublicationClass s coreWidth radius L
+  let publicationPages := prepareReplicaPublicationPagesCost Vpub s pubClass.length W pubClass.indices.length
+  let publicationPagesPush := pagesPush
+  let origins := (coreSubsetPublicationWindows s coreWidth pubClass.length g.hwidth
+    pubClass.indices pubClass.sublist).origins
+  let geometryCost := PublicationGeometryControls.timeCost Vpub s L radius
+  let retireGeometryCost := 2*((L-2*radius)+s)+5
+  let dimensionCost := PackedTranspose.publicationDimensionsTimeCost g.a indices.length
+  let retireDimensionCost := 2*(g.a+a+2^a)+7
+  let metadata := Sizes.T n₀+2*Fs.length
+  let originCost := Sizes.T n₀
   have hcount : setup.formats.length ≤ 3 := by
     change (formats (T+solverRegisterCount)).length ≤ 3
     simpa only [formats,List.length_ofFn] using Nat.le_refl 3
@@ -234,15 +242,104 @@ theorem selectedRawPublishedBoundaryRun_exec {T Q K : ℕ} {U P : Type}
   have htSetup := hsetupTime.trans hsetupTimePrice
   have hsSetup := hsetupStock.trans hsetupStockPrice
   have hrSetup := hsetupRetire.trans hsetupRetirePrice
-  let oldProperTime := initializedPublishedTime setup.timeCost runTime properPublicationTime setup.retireCost
-  let oldProperStock := setup.stock+(runStock+properPublicationStock)
+  let oldMetadata := PackedTranspose.publicationHeaderVolume a g.a (L-2*radius) W Vpub s indices.length
+  have hkeys : indices.length ≤ s := coreGatherIndices_length_le s coreWidth radius L movement.widthPositive
+  have hspan : L = coreWidth+2*radius := rfl
+  have hlength : L-2*radius ≤ 3*s := by omega
+  have hwideWord := selectedPackedHaloCommonWidth_le ct h i u target htarget hband
+  have hmetadata : oldMetadata ≤ metadata := by
+    simpa only [one_mul] using hmetadataPrice h i indices.length g.a Fs.length (L-2*radius) W Vpub
+      hkeys g.hpower.symm hlength hwideWord hRouteWidth
+  let oldOriginCost := preparedCoreOriginsCost Vpub s coreWidth radius L
+  have hOrigin : oldOriginCost ≤ originCost :=
+    horiginsPrice h i Vpub coreWidth radius L movement.widthPositive hRouteWidth
+  have hspanBound : L ≤ 3*s := by omega
+  obtain ⟨hGeometry,hRetireGeometry,hDimension,hRetireDimension,hRetireOrigins⟩ :=
+    hcontrolPrices h i Vpub indices.length g.a Fs.length L radius hkeys g.hpower.symm
+      hspanBound (hrw.trans hcore) hRouteWidth
+  change geometryCost ≤ Sizes.T n₀ at hGeometry
+  change retireGeometryCost ≤ Sizes.T n₀ at hRetireGeometry
+  change dimensionCost ≤ Sizes.T n₀+19*Fs.length at hDimension
+  change retireDimensionCost ≤ Sizes.T n₀+2*Fs.length at hRetireDimension
+  have hOriginCount : origins.length = indices.length := by
+    change (pubClass.indices.map (coreStart coreWidth)).length = indices.length
+    rw [List.length_map]
+    rfl
+  have hOriginRetire : 2*(origins.length*Vpub+origins.length)+5 ≤ Sizes.T n₀ := by
+    simpa only [hOriginCount] using hRetireOrigins
+  have hpacketRows : 1 ≤ L-2*radius := by have hh := g.hwidth; omega
+  have hpacketSpan : L-2*radius ≤ s := by omega
+  have hwordPos : 1 ≤ W := by omega
+  have hpagePrice := hpagesPrice h i Vpub pubClass.length W indices.length
+    hRouteWidth hwideWord hpacketSpan hkeys
+  change (publicationPagesPush+1)*publicationPages ≤ Sizes.T n₀ at hpagePrice
+  have hpagesTime : publicationPages ≤ Sizes.T n₀ := by
+    nlinarith only [hpagePrice,Nat.zero_le (publicationPagesPush*publicationPages)]
+  have hpagesStock : publicationPagesPush*publicationPages ≤ Sizes.T n₀ := by
+    nlinarith only [hpagePrice,Nat.zero_le publicationPages]
+  have hcapacity : indices.length ≤ 2^a := Nat.le_pow_clog (by decide) indices.length
+  let paddedVolume := 2^a*2^g.a*((L-2*radius)*W)
+  have hOldVolume : indices.length*(2^g.a*((L-2*radius)*W)) ≤ paddedVolume := by
+    have hh := Nat.mul_le_mul_right (2^g.a*((L-2*radius)*W)) hcapacity
+    simpa only [paddedVolume,Nat.mul_assoc] using hh
+  have hretained := retainedPublicationCosts_le (K := K) (U := U) hstates a g.a (L-2*radius) Vpub W
+    indices.length pubClass g.hwidth rfl hpacketSpan hpacketRows hwordPos hcapacity _ hOldVolume
+  have hPaddedVolume : paddedVolume ≤ 3*(Fs.length*(s*W)) := by
+    have hh := publicationPaddedVolume_le
+      (coreSubsetPublicationWindows s coreWidth pubClass.length g.hwidth pubClass.indices pubClass.sublist)
+      hpacketSpan g.a W
+    have hc : (coreSubsetPublicationWindows s coreWidth pubClass.length g.hwidth pubClass.indices
+      pubClass.sublist).origins.length = indices.length := by
+      change (pubClass.indices.map (coreStart coreWidth)).length = indices.length
+      rw [List.length_map]
+      rfl
+    rw [hc] at hh
+    change 2^a*2^g.a*((L-2*radius)*W) ≤ 3*(2^g.a*(s*W)) at hh
+    simpa only [paddedVolume,g.hpower] using hh
+  have hRetainedTime : PackedTranspose.retainedPublicationTimeCost (K := K) hstates a g.a (L-2*radius) Vpub
+      W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W))) ≤ retainedTime := by
+    have hh := hretained.1
+    change _ ≤ 500*paddedVolume+200*(2^g.a*(s*W))+100*Vpub+500+publicationPages+
+      2*FixedStreamedBank.restoringTimeCost hstates a g.a ((L-2*radius)*W) Vpub at hh
+    change _ ≤ 1700*(Fs.length*(s*W))+100*Vpub+500+Sizes.T n₀+
+      2*FixedStreamedBank.restoringTimeCost hstates a g.a ((L-2*radius)*W) Vpub
+    apply hh.trans
+    rw [← g.hpower]
+    dsimp only [s,Vpub,publicationPages] at hPaddedVolume hpagesTime hpagesStock ⊢
+    omega
+  have hRetainedStock : PackedTranspose.retainedPublicationStock (K := K) (U := U) hstates a g.a
+      (L-2*radius) Vpub W indices.length pubClass ≤ retainedStock := by
+    have hh := hretained.2
+    change _ ≤ 1000*paddedVolume+200*(2^g.a*(s*W))+200*Vpub+800+
+      publicationPagesPush*publicationPages+
+      FixedStreamedBank.restoringStockAllowance hstates a g.a ((L-2*radius)*W) Vpub at hh
+    change _ ≤ 3200*(Fs.length*(s*W))+200*Vpub+800+Sizes.T n₀+
+      FixedStreamedBank.restoringStockAllowance hstates a g.a ((L-2*radius)*W) Vpub
+    apply hh.trans
+    rw [← g.hpower]
+    dsimp only [s,Vpub,publicationPages] at hPaddedVolume hpagesTime hpagesStock ⊢
+    omega
+  let oldProperPublicationTime := (geometryCost+(oldOriginCost+(dimensionCost+((6*oldMetadata+61)+
+        (PackedTranspose.retainedPublicationTimeCost (K := K) hstates a g.a (L-2*radius) Vpub
+          W indices.length pubClass g.hwidth (indices.length*(2^g.a*((L-2*radius)*W)))+(2*oldMetadata+21))+(retireDimensionCost+((2*(origins.length*Vpub+origins.length)+5)+retireGeometryCost))))) : ℕ)
+  let oldProperPublicationStock := (3*geometryCost+(3*oldOriginCost+(2*dimensionCost+(2*(6*oldMetadata+61)+PackedTranspose.retainedPublicationStock (K := K) (U := U)
+          hstates a g.a (L-2*radius) Vpub W indices.length pubClass))))
+  have hproperPubTime : oldProperPublicationTime ≤ properPublicationTime := by
+    dsimp only [oldProperPublicationTime,properPublicationTime]
+    omega
+  have hproperPubStock : oldProperPublicationStock ≤ properPublicationStock := by
+    dsimp only [oldProperPublicationStock,properPublicationStock]
+    omega
+  let oldProperTime := initializedPublishedTime setup.timeCost runTime oldProperPublicationTime setup.retireCost
+  let oldProperStock := setup.stock+(runStock+oldProperPublicationStock)
   have hproperTime : oldProperTime ≤ properTime := by
     have ht : (setup.timeCost : ℝ) ≤ Sizes.T n₀ := by exact_mod_cast htSetup
     have hr : (setup.retireCost : ℝ) ≤ Sizes.T n₀ := by exact_mod_cast hrSetup
+    have hpub : (oldProperPublicationTime : ℝ) ≤ properPublicationTime := by exact_mod_cast hproperPubTime
     dsimp only [oldProperTime,properTime,initializedPublishedTime]
-    linarith only [ht,hr]
+    linarith only [ht,hr,hpub]
   have hproperStock : oldProperStock ≤ properStock :=
-    Nat.add_le_add_right hsSetup (runStock+properPublicationStock)
+    add_le_add hsSetup (Nat.add_le_add_left hproperPubStock runStock)
   have hpreparedOutput : prepared.R (fullHeader _ .output) = S.R (fullHeader _ .output) := by
     apply hframe
     · exact (solverRegister_ne_header T (.scratch 4) .output).symm
