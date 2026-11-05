@@ -43,8 +43,9 @@ theorem callerSolveBoundaryCrops_exec
     (hJ : J ∘L PhaseCellOperator.exact s t (Real.sqrt (u : ℝ)) = 1)
     (v : HS (MachineTapes T) Q A U) (S : Stacks (MachineTapes T) A)
     (hready : input.Ready p u l target t Fs S)
+    (hzero : S.R (fullHeader T .zero) = [])
     (hsep : ∀ slot : Fin 3,
-      boundaryGeometryRegister T widthSource (boundarySeamCropSkip slot) ∉ input.support++producer.support ∧
+      (slot ≠ 0 → boundaryGeometryRegister T widthSource (boundarySeamCropSkip slot) ∉ input.support++producer.support) ∧
       boundaryGeometryRegister T widthSource (boundarySeamCropCount slot) ∉ input.support++producer.support)
     (hblank : ∀ i, S.R (producer.gridWork i) = [])
     (hleft : ∀ i, S.L (producer.gridWork (familyInverseCoreReg i)) = [])
@@ -75,8 +76,16 @@ theorem callerSolveBoundaryCrops_exec
   let F := callerBoundaryGeometryState widthSource s coreWidth (2*p+13) S
   let r := fullLineGridRecord (A := A) p u l target t Fs
   have hread (k : Fin (MachineTapes T)) (hk : k ∈ input.support++producer.support) : F.R k = S.R k := by
+    by_cases hz : k = fullHeader T .zero
+    · subst k
+      exact callerBoundaryGeometryState_zero widthSource s coreWidth (2*p+13) S hzero
     apply callerBoundaryGeometryState_off
-    · intro slot he; exact (hsep slot).1 (he.symm ▸ hk)
+    · intro slot he
+      by_cases hs : slot = 0
+      · subst slot
+        rw [boundaryGeometryRegister_zero] at he
+        exact hz he.symm
+      · exact (hsep slot).1 hs (he.symm ▸ hk)
     · intro slot he; exact (hsep slot).2 (he.symm ▸ hk)
   have hreadyF := hready.of_frame (F := F)
     (fun k hk => hread k (List.mem_append_left _ hk)) (fun _ => rfl)

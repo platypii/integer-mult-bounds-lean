@@ -51,6 +51,30 @@ theorem rightUpdates_boundaryGeometryWrites_off (e : Fin 117 → Fin T)
     exact (Function.update_of_ne (hcount slot).symm ..).trans
       (Function.update_of_ne (hskip slot).symm ..)
 
+theorem rightUpdates_boundaryGeometryWrites_updateR (e : Fin 117 → Fin T)
+    (s width w : ℕ) (slots : List (Fin 3)) (S : Stacks T A) (i : Fin T) (xs : List (Fin (A+4)))
+    (hskip : ∀ slot, e (boundarySeamCropSkip slot) ≠ i)
+    (hcount : ∀ slot, e (boundarySeamCropCount slot) ≠ i) :
+    rightUpdates ((boundaryGeometryWrites s width w slots).map (fun (j,ys) => (e j,ys)))
+        {S with R := Function.update S.R i xs} =
+      {rightUpdates ((boundaryGeometryWrites s width w slots).map (fun (j,ys) => (e j,ys))) S with
+        R := Function.update
+          (rightUpdates ((boundaryGeometryWrites s width w slots).map (fun (j,ys) => (e j,ys))) S).R i xs} := by
+  have hoff : ∀ a ∈ boundaryGeometryWrites (A := A) s width w slots, e a.1 ≠ i := by
+    induction slots with
+    | nil => simp [boundaryGeometryWrites]
+    | cons slot slots ih =>
+      intro a ha
+      simp only [boundaryGeometryWrites,List.mem_cons] at ha
+      rcases ha with rfl | rfl | ha
+      · exact hskip slot
+      · exact hcount slot
+      · exact ih a ha
+  apply rightUpdates_updateR
+  intro a ha
+  obtain ⟨b,hb,rfl⟩ := List.mem_map.mp ha
+  exact hoff b hb
+
 /-- The endpoint of joint control generation transports through any injective
 placement, including placements sharing the caller's retained headers. -/
 theorem embOvr_exportBoundaryGeometryState (e : Fin 117 → Fin T) (he : Function.Injective e)

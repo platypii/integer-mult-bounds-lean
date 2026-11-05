@@ -23,6 +23,34 @@ theorem callerBoundaryGeometryState_off (widthSource : Fin T) (s width w : ℕ)
     (callerBoundaryGeometryState widthSource s width w S).R i = S.R i :=
   rightUpdates_boundaryGeometryWrites_off _ _ _ _ _ _ _ hskip hcount
 
+theorem callerBoundaryGeometryState_updateR (widthSource : Fin T) (s width w : ℕ)
+    (S : Stacks (MachineTapes T) A) (i : Fin (MachineTapes T)) (xs : List (Fin (A+4)))
+    (hskip : ∀ slot, boundaryGeometryRegister T widthSource (boundarySeamCropSkip slot) ≠ i)
+    (hcount : ∀ slot, boundaryGeometryRegister T widthSource (boundarySeamCropCount slot) ≠ i) :
+    callerBoundaryGeometryState widthSource s width w {S with R := Function.update S.R i xs} =
+      {callerBoundaryGeometryState widthSource s width w S with R :=
+        (Function.update (callerBoundaryGeometryState widthSource s width w S).R i xs)} :=
+  rightUpdates_boundaryGeometryWrites_updateR _ _ _ _ _ _ _ _ hskip hcount
+
+theorem callerBoundaryGeometryState_zero (widthSource : Fin T) (s width w : ℕ)
+    (S : Stacks (MachineTapes T) A) (hzero : S.R (fullHeader T .zero) = []) :
+    (callerBoundaryGeometryState widthSource s width w S).R (fullHeader T .zero) =
+      S.R (fullHeader T .zero) := by
+  simp only [callerBoundaryGeometryState,boundaryGeometryWrites,List.map_cons,List.map_nil,
+    rightUpdates]
+  change (Function.update (Function.update (Function.update (Function.update (Function.update
+    (Function.update S.R (boundaryGeometryRegister T widthSource (boundarySeamCropSkip 0)) _)
+      (boundaryGeometryRegister T widthSource (boundarySeamCropCount 0)) _)
+      (boundaryGeometryRegister T widthSource (boundarySeamCropSkip 1)) _)
+      (boundaryGeometryRegister T widthSource (boundarySeamCropCount 1)) _)
+      (boundaryGeometryRegister T widthSource (boundarySeamCropSkip 2)) _)
+      (boundaryGeometryRegister T widthSource (boundarySeamCropCount 2)) _) (fullHeader T .zero) = _
+  rw [boundaryGeometryRegister_zero,boundaryGeometryRegister_skip_one,
+    boundaryGeometryRegister_skip_two,boundaryGeometryRegister_count,
+    boundaryGeometryRegister_count,boundaryGeometryRegister_count]
+  simp [(fullHeader_injective T).eq_iff,IntegerMultBounds.NLogN.PhaseCellMatrix.coreStart,
+    IntegerMultBounds.NLogN.PhaseCellMatrix.boundaryCropIndex,hzero]
+
 theorem callerBoundaryGeometryState_private (widthSource : Fin T) (s width w : ℕ)
     (S : Stacks (MachineTapes T) A) (i : Fin tapeCount) :
     (callerBoundaryGeometryState widthSource s width w S).R

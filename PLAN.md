@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4408 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4415 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33644,10 +33644,41 @@ transports ordinary readiness across generated controls from static separation
 of the six control ports from solver/input support; generated-state solver
 readiness is no longer an extra premise. Time/workspace compose through the
 existing sequential-stock lemma (3170.7 MiB guarded check). The input/producer
-plans and their static separation still require a concrete caller instantiation.
+plans now have a concrete caller instantiation. SolverRole reserves 640 fixed
+registers for the 303-word input bank, 325-register worker, five scratch and
+seven controls, with constructor-based separation. callerFullLineInput and
+callerFullLineProducer are compatible and share their result port with the
+crop source. callerFullLine_controls_separated discharges control separation
+structurally. The zero skip is an identity write on the shared empty zero
+header; the composition now permits this harmless overlap. Ordinary rulers,
+borrowed width, fresh storage and live RHS data imply concrete input readiness.
+These guarded checks pass below 3.2 GiB without raised proof limits. The combined
+build passes (6.0 GiB aggregate); the expanded axiom audit passes for 346357
+declarations at 3231.1 MiB. These allocation changes remain local.
 
-Next: instantiate the caller's full-line input/producer plans and static
-separation, then compose actual proper-publication and shared-solver execution with
+callerSolverWidth_exec now executes canonical scalar-width initialization from
+global 6 (B), independently of payload width W at global 7. It reuses affineHeader,
+retains the source verbatim, restores scratch, and costs 4*B+5 time with
+2*(4*B+5) extra stock. callerSolverWidthState_ready derives concrete input
+readiness from ordinary rulers, live RHS data and fresh solver storage, without
+an assumed preloaded width word. callerSolverWidthRetire_exec reuses the generic
+generated-header frame theorem to clear the borrowed width after its consumer,
+retaining both data updates in 2*B+3 time and no extra stock. The module passes
+its guarded check at 3159.8 MiB.
+
+callerInitializedBoundarySolve_exec now composes width initialization, the
+concrete full-line solver/crop execution, and width retirement. It begins on
+the actual generated-control state and returns that state with only its archive
+port updated. No preloaded width word, abstract solver execution or supplied
+produced-word certificate is assumed. Generic write-list commutation transports
+the width initialization across control generation. Splitting seeded solver
+execution from lifecycle composition keeps default proof limits; a shared
+invariant avoids expensive inferred intermediate-size comparisons. The full
+lifecycle checks at 3330.6 MiB. Its integration build passes (6.1 GiB aggregate),
+and the expanded axiom audit passes for 346380 declarations at 3231.7 MiB.
+
+Next: compose actual proper-publication and joint control generation with the
+initialized shared solver and
 this fully restoring caller seam pipeline; simplify aggregate/asymptotic/locality
 bounds and discharge tensor/fused/root acceptance. Full S4 remains incomplete.
 The accumulated caller-control, shared-solver/crop and restoring-completion
