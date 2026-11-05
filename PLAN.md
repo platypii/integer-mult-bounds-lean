@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4291 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4292 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32871,3 +32871,55 @@ readiness factories (3120.0 MiB). Combined build passes (16738 jobs, 3.5 GiB
 incremental peak). Expanded axiom audit passes for 345007 declarations at
 3205.1 MiB, allowing only propext, Quot.sound and Classical.choice. Default proof
 limits unchanged.
+
+### S4 revised execution plan after approach review
+
+The initialized proper-class execution is a reusable proved component, not the
+completion criterion. Prioritize removing its remaining construction hypotheses
+and connecting it to the manuscript schedule. Avoid adding helper abstractions
+unless they discharge a named obligation in that connection.
+
+1. Finish the fixed caller setup constructor and its ambient-output frame law.
+   Distinguish the ordinary-word input contract from an actual machine execution
+   that produces those words. Check and commit this bounded interface chunk.
+2. Reuse existing scalar/ruler/coefficient preparation to produce the concrete
+   baseline, then instantiate numerical, publication and gather readiness from
+   that baseline. Do not replace production with assumed initialized state.
+3. Implement the actual empty-class guard and prove both branches through one
+   structural stage interface. Derive nonempty eligibility in the executing
+   branch rather than making it an outer assumption.
+4. Instantiate the existing restoring class fold with the concrete stage and
+   ambient frame laws. Establish packed/seam/full-line coverage and reconcile
+   replica order once at the schedule boundary. Equal movement lengths alone do
+   not justify reusing phase-dependent coefficient preparation.
+5. Connect shared tensor preparation, locality/error composition and aggregate
+   resource bounds to the root theorem, then run the guarded integration and
+   proof-integrity checks on that reachable implementation.
+
+Use structural list/schedule lemmas and typed ownership to share proofs; avoid
+per-address or per-class generated certificates. At each checkpoint report which
+construction hypotheses were removed and what remains on the root dependency
+path. Commit and push independently checked chunks. S4 remains incomplete;
+there is no defensible completion percentage or wall-time estimate yet.
+
+### S4 checkpoint: fixed caller setup and ambient frame
+
+CallerSetup constructs FormattedClassSetup on the typed physical bank from eleven
+ordinary scalar words, three retained ruler lengths and fresh owned storage. It
+reuses the routing seed/scratch suffix and closes the three-format export bill as
+10*(B+Vg+Vr)+31. The inherited actual setup execution has that explicit time and
+stock contribution; no generated core or halo word is supplied as an input.
+Concrete consumer, numerical and gather factories now use this setup directly.
+The routing width is derived from the retained ruler, rather than supplied as a
+separate matching premise.
+
+Publishing to the ambient output preserves SetupInput, and the setup program is
+definitionally identical after that update. This closes the setup part of the
+outer fold's frame obligation. The baseline scalar/ruler words themselves are
+still an input contract: this checkpoint does not claim their machine production,
+coefficient generation, an empty-class branch or a full outer schedule.
+
+Guarded CallerSetup check passes at 3130.6 MiB. Combined build of concrete setup,
+initialized selected execution, gather readiness and restoring publication fold
+passes (16739 jobs, 3.5 GiB combined incremental peak). Default proof limits and
+proof-integrity requirements are unchanged. S4 remains incomplete.
