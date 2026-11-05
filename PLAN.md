@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4299 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4300 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33069,4 +33069,37 @@ Guarded CallerGatherSeed check passes at 3125.5 MiB. Combined build with connect
 caller preparation, initialized selected execution and restoring publication fold
 passes (16746 jobs, 3.5 GiB incremental combined peak). Default proof limits unchanged.
 Expanded axiom audit passes for 345215 declarations at 3207.1 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: execute retained movement control production
+
+CallerMovementControls executes the existing structural unary header copier for
+word width and replica count, then the existing unary product for line volume.
+The product reads the newly copied word control, so no distinctness assumption
+between the original scalar source addresses is needed. Typed placement proves
+all destination/scratch separation. Only word, replicas and volume change; source
+counters, input stream, private work, left stacks and all other headers survive.
+
+Time is (4*(W+N)+9)+(s*(4*W+9)+4), and the actual execution has an intermediate
+stock bound of twice that bill. prepareGatherControls_exec_within returns
+GatherRetainedInput on the actual endpoint from raw source lengths, fresh control
+storage and the original stream/private-storage contract. The three initialized
+movement counts are conclusions, not execution premises. The retained contract
+can then be transported through caller scalar/ruler/geometry preparation using
+its existing reframe theorem.
+
+Next sequence this retained-control producer with callerInputProgram and construct
+both numerical readiness and the fixed gather input on their common actual
+endpoint, then instantiate the selected stage and empty-class lifecycle. Charge
+these retained controls once for the shared caller baseline, rather than once per
+class. Their final retirement, root raw-counter/coefficient suppliers, outer
+coverage/replica order, locality/tensor composition and aggregate fast bounds
+remain open. S4 remains incomplete; kappa unchanged.
+
+Final guarded movement-control check passes at 3131.0 MiB. Combined build with
+caller preparation, initialized selected execution and restoring publication fold
+passes (16747 jobs, 3.5 GiB incremental combined peak). After adding the retained-
+contract execution wrapper, its module rebuild also passes (16255 jobs, 3.5 GiB).
+Default proof limits unchanged.
+Expanded axiom audit passes for 345224 declarations at 3207.6 MiB, allowing
 only propext, Quot.sound and Classical.choice.
