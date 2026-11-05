@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4292 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4294 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -32923,3 +32923,29 @@ Guarded CallerSetup check passes at 3130.6 MiB. Combined build of concrete setup
 initialized selected execution, gather readiness and restoring publication fold
 passes (16739 jobs, 3.5 GiB combined incremental peak). Default proof limits and
 proof-integrity requirements are unchanged. S4 remains incomplete.
+
+### S4 checkpoint: execute ordinary consumer geometry export
+
+CopyBinaryHeaderBank exports an arbitrary list of retained binary scalars through
+one counted-prefix copier and two shared scratch registers. Its structural proof
+reuses the existing copyWordHeadersR endpoint, read/frame lemmas and native-stock
+composition. Time is list length times (10*consumerWidth+10), plus one; stock is
+three times that bill. No per-address certificate or raised proof limit is used.
+
+CallerGeometry instantiates that exporter for s, width and radius at any of the
+three consumer formats on the fixed typed bank. It proves the actual execution,
+exact generated words, source/scratch restoration and preservation of SetupInput.
+The numerical readiness factory now takes fresh geometry storage on the original
+baseline and derives the three ordinary words on the produced state, removing
+those word hypotheses from that factory. This is execution from retained wide
+scalars, not production of those scalars or of the retained rulers themselves.
+The existing unary-to-binary BinaryHeaderBank module remains unchanged.
+
+Guarded checks pass for the structural exporter (1805.6 MiB) and concrete geometry
+producer/readiness factory (3126.2 MiB). Combined build with initialized selected
+execution and the restoring publication fold passes (16741 jobs, 3.6 GiB combined
+incremental peak). Expanded axiom audit passes for 345106 declarations at
+3206.8 MiB, allowing only propext, Quot.sound and Classical.choice. The remaining
+baseline scalar/ruler/coefficient producers,
+empty-class guard, full schedule, tensor/locality composition and root resource
+integration remain open. S4 remains incomplete.
