@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4463 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4468 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -34132,3 +34132,83 @@ Next supply the selected counter-width/padded-volume premises and apply the
 reversed-axis sharp estimate, then absorb its shared polynomial setup. Selected
 geometry/locality, compiler/lowering, tensor/fused and root acceptance remain
 open. S4 remains incomplete. No push is authorized.
+
+### S4 sharp publication cost in the raw execution theorem
+
+`publicationTransposeCosts_le` combines schedule-charge symmetry with disjoint
+window volume. `selectedPublicationTransposeCosts_le` absorbs the shared fifth-
+degree setup into T. `selectedPublicationCounterFits` derives counter fit from
+p^2 <= packet length and linear precision width. Finally,
+`selectedPolynomialPublicationCosts_le` reuses the existing selected polynomial-
+core route-charge theorem, with no new execution or cost oracle. These modules
+check at 3153.5, 3163.9 and 3154.9 MiB respectively.
+
+The actual raw boundary theorem instantiates the full core group and the chosen
+amortized core width. Its retained-publication time is now
+2*T+1700*N*s*W+108*stageCoeff*N*s*W*d*(ell^tau+1), and workspace is
+2*T+(3200+3*(streamedStockCoeff+40))*N*s*W. Restoring-transpose and
+page-generator expressions are internal proof objects only. Counter fit comes
+from the actual core-width preparation bound. The declaration passes at
+3439.5 MiB with default proof limits. Reducing the window-count equality before
+applying the scalar bound avoids expanding the full prepared state. The
+integration build passes at 3.8 GiB aggregate, and the axiom audit passes for
+346771 declarations at 3250.4 MiB.
+
+Next consolidate the complete raw caller budget and discharge selected
+geometry/locality obligations at its physical caller. Compiler/lowering,
+tensor/fused and root acceptance gates remain open. Full S4 is incomplete.
+Keep this next chunk local; no push is authorized.
+
+### S4 complete raw caller budget
+
+`PhaseCellRawCallerBudget` bounds scalar traffic once, combines the proper and
+full-line numerical terms using F+G, and combines gather/publication routing
+using the common stage coefficient. `rawCallerTimeBudget` exposes only
+2624033*T, a fixed multiple of N*s*p, the sharp routing term
+540*stageCoeff*(1032+8*ct)*N*s*p*d*(ell^tau+1), and the combined numerical
+fast-work term. Scalar width hypotheses are used before replication.
+
+`rawCallerStockBudget` is a fixed coefficient times
+(Cprog+1)*(T+N*t*p). The structural proof bounds the maximum of the proper and
+boundary phases and uses s <= t. All arithmetic is over generic dimensions,
+without concrete schedules or generated certificates. The accounting module
+checks at 3280.9 MiB.
+
+The actual raw boundary execution theorem now exposes these two budgets. Its
+preparation and retirement, proper publication, full-line solve and phase stock
+ledgers are internal proof objects. The complete declaration checks at
+3417.6 MiB under default proof limits. The integration build passes at
+3.8 GiB aggregate, and the axiom audit passes for 346775 declarations at
+3250.0 MiB.
+
+Next discharge selected geometry/locality obligations at the physical caller
+and connect the compact budgets to the outer execution/cost theorem.
+Compiler/lowering, tensor/fused and root acceptance gates remain open.
+S4 remains incomplete. Preserve unrelated periodic-recovery changes.
+This accumulated chunk stays local; no push is authorized.
+
+### S4 derived raw caller geometry and reference solutions
+
+`selectedRawCallerGeometry` reuses selected amortized core geometry and ordinary
+word/ring sizing. It derives precision, source/target separation, phase gap,
+band fit, padding, strict core room, positive/bounded radius, scalar geometry
+fit and output width. The profile checks at 3004.1 MiB. These ten premises have
+been removed from `SelectedRawPublishedBoundaryRun` and are constructed inside
+its actual execution proof.
+
+The proper class is nonempty by the chosen core geometry. Its existing analytic
+parameter bounds therefore provide global matrix dominance and the positive-u,
+bandwidth, gap and error-budget facts. A single abstract real solve operator is
+chosen using `SchurDominance.solves_exists`; its real/imaginary specializations
+supply the reference solutions for every input replica. X/Y and their solution
+premises are removed from the caller interface. The separate full-line gap
+parameter is removed as well; the proof uses the same gap as the proper class.
+No numerical reference enters the emitted program. The declaration passes at
+3421.1 MiB with default proof limits. The integration build passes at
+3.8 GiB aggregate; the axiom audit passes for 346791 declarations at 3251.0 MiB.
+
+Next construct the remaining ordinary physical caller/routing widths and
+instantiate the analytic class bounds from the selected global data; connect
+these contracts and the compact budgets to the outer execution theorem.
+Compiler/lowering, tensor/fused and root acceptance remain open. S4 remains
+incomplete. Do not push without an explicit request.
