@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4313 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4314 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33469,4 +33469,24 @@ Guarded check passes at 2807.3 MiB; build passes (8572 jobs, 3.3 GiB aggregate
 peak). Complete axis execution, tensor/fused exposure and aggregate root bounds
 remain open. S4 remains incomplete; default proof limits unchanged.
 Expanded axiom audit passes for 345569 declarations at 3212.1 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+
+### S4 connected trace: encoded widening followed by prepared scatter
+
+widenedPublication_exec composes widenEncodedPrefix_exec with the existing
+PreparedPublicationPlan.exec. It consumes unpadded narrow rows, publishes their
+signed canonical common-width encoding and restores the original state except
+for source consumption and the scattered destination. The widening frame derives
+publication readiness on its actual endpoint; no intermediate readiness or
+execution callback is assumed. The full time bill is the existing widening bill
+plus retireCountedLineCost 0 W+72*s*W+31. The preceding reader theorem transfers
+the same row accuracy to the published encoding.
+
+This is one ambient line's publication trace. Replica repetition, concrete
+control/header production, stock composition and connection to the shared seam
+producer remain necessary for the complete axis endpoint. S4 remains incomplete.
+Guarded check passes at 2816.9 MiB; build passes (8659 jobs, 3.3 GiB aggregate
+peak). Default proof limits are unchanged.
+Expanded axiom audit passes for 345635 declarations at 3212.0 MiB, allowing
 only propext, Quot.sound and Classical.choice.
