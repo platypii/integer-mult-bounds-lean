@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4302 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4304 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33139,4 +33139,37 @@ preparation (3125.3 MiB). Combined build with initialized selected execution and
 restoring publication fold passes (16749 jobs, 3.5 GiB incremental combined peak).
 Default proof limits unchanged.
 Expanded axiom audit passes for 345248 declarations at 3208.1 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: publication readiness on the shared prepared endpoint
+
+CallerPublicationPorts identifies the seven owned publication source positions
+with typed publication roles once. These roles are disjoint from computed class
+outputs, and the ambient role is outside every publication source. Publication
+placement left-stack freshness is derived from just numerical-result, ambient and
+private-routing left stacks. A global all-left-stacks-blank premise is not needed.
+The static publication-port module imports only caller setup and publication
+readiness; it does not depend on the full raw preparation implementation.
+
+publicationReady_of_prepared transports the original seven blank publication
+roles and the left-stack facts through the actual shared preparation frame.
+prepareSharedPublishedCaller_exec_within reuses that execution to return numerical
+readiness for either class shape, retained gather inputs, PublicationCallerReady
+and all nine geometry words on the same actual returned state. Publication adds
+no new execution and no new time/stock bill. Neither initialized publication
+readiness nor a nonempty-class hypothesis is an execution premise.
+
+The existing makeGatherSeed/makeGatherInput constructors can now consume the same
+returned state after class eligibility, while publicationOwned_off_class supplies
+the selected stage's setup/output separation premise. Next instantiate the actual
+selected class theorem with these fixed caller products and then integrate the
+runtime guard and outer fold. Shared-bank retirement, root raw-counter/coefficient
+suppliers, coverage/replica order, locality/tensor composition and aggregate fast
+resource integration remain open. S4 remains incomplete; kappa unchanged.
+
+Guarded checks pass for publication ports (3116.0 MiB) and connected published
+preparation (3115.3 MiB). Final combined build with initialized selected execution
+and restoring publication fold passes (16751 jobs, 3.5 GiB incremental combined
+peak). Default proof limits unchanged.
+Expanded axiom audit passes for 345256 declarations at 3207.9 MiB, allowing
 only propext, Quot.sound and Classical.choice.
