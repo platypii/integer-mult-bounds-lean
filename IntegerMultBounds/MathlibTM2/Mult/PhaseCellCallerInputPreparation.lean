@@ -65,7 +65,7 @@ theorem prepareCallerInputs_exec_within {Q : ℕ} {P U : Type}
       (makeSetup input clipped hcoreWidth hgeometry hfit hbits).NumericalInput
         (fullExposedClassBank (bank b)) (numericTable T) (geometrySources T) (masterSources T) ∧
       (∀ f i, F.R (fullHeader T (.geometry f i)) = binSyms (formatWidths B Vg Vr f) (![s,width,radius] i)) ∧
-      F.L = S.L ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, (∀ i, k ≠ globals T i) → (∀ f, k ≠ rulers T f) →
         (∀ f i, k ≠ fullHeader T (.geometry f i)) → F.R k = S.R k) ∧
       ∃ n, n ≤ callerInputCost D p u l target s t B W N radius width Vg Vr ∧
@@ -77,7 +77,7 @@ theorem prepareCallerInputs_exec_within {Q : ℕ} {P U : Type}
     baselineSetupInput src widths S hvalues hwidths hrulerBlank howned hzero hrouting
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := prepareBaseline_exec_within body src widthSource widths hwidthOff v S
     hwidth hvalues hwidths hscalarBlank hrouting 0
-  obtain ⟨v₂,F,hu₂,hi,hwords,hL,hframe,he₂⟩ := prepareAllGeometry_exec_within body M input hbits
+  obtain ⟨v₂,F,hu₂,hi,hwords,hL,hI,hO,hframe,he₂⟩ := prepareAllGeometry_exec_within body M input hbits
     (by
       intro f i
       rw [baselineLoaded_off src widths S _]
@@ -109,7 +109,7 @@ theorem prepareCallerInputs_exec_within {Q : ℕ} {P U : Type}
   have hnative : mnNativePushBound 3 (callerInputProgram (Q := Q) (P := P) (A := A) (U := U) src widthSource widths) :=
     ⟨⟨mnNativePushBound_mono (by decide) (copyUnaryHeaders_native _ _),binaryHeaderBank_native _ _ _ _ _⟩,
       geometryBankProgram_native _ _⟩
-  refine ⟨v₂,F,hi,hu₂.trans hu₁,hready,hwords,hL,?_,_,hn,?_⟩
+  refine ⟨v₂,F,hi,hu₂.trans hu₁,hready,hwords,hL,hI,hO,?_,_,hn,?_⟩
   · intro k hs hr hg
     exact (hframe k hg).trans (baselineLoaded_off src widths S k hs hr)
   · exact mn_native_exec_within he 3 hnative depth _ (by omega)

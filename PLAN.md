@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4435 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4437 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33777,8 +33777,70 @@ aggregate), and the expanded axiom audit passes for 346506 declarations at
 3239.1 MiB. This forms the larger local initialization/composition checkpoint;
 no push is authorized.
 
-Next: compose the paid input initialization/cleanup around the actual selected
-proper execution and boundary completion, then simplify aggregate/asymptotic/locality bounds.
+The selected initialized producer now returns accuracy for its exact published
+encoded bank, not only the individual numerical rows. CorePublicationClass.BankAccurate
+is the common proper-bank contract; inversePublicationTargets records the
+producer's reversed replica order and normalized inverse target list. The
+seam target list is definitionally the same list. Boundary completion and its
+execution-composition entry now consume that shared contract directly. The
+execution-composition theorem no longer takes a batch, replica function, row
+metadata equalities, or a separate per-job width/input/inverse certificate:
+the selected executor itself establishes the bank contract from its actual rows.
+
+Removed the superseded typed-row boundary wrapper and seam-target adapter;
+restore PhaseCellCallerPublishedRowsBoundaryCompletion.lean and
+PhaseCellPackedPublishedSeamBank.lean from d92c89cc if needed.
+
+The strengthened selected executor checks at 3286.9 MiB; the simplified
+execution-composition entry checks at 3209.1 MiB. Their combined guarded
+build passes (6.1 GiB aggregate), and the expanded axiom audit passes for
+346511 declarations at 3235.0 MiB. This follow-up remains local and uncommitted
+until the next larger selected-caller integration checkpoint.
+
+selectedPublishedBoundaryRun_exec now instantiates the selected initialized
+producer on solverSource ∘ bank in the extended caller machine and composes
+its actual returned execution with boundary completion. Its inputs contain no
+proper execution or output-accuracy oracle: the selected theorem provides the
+proper rows, exact physical bank, user/state frame and restored stock. The
+result is an actual sequential program with global norm/error guarantees,
+exact output-only frame, a real total-time bound, and the maximum of proper
+and boundary workspace allowances. The inverse parameter is fixed to sqrt u,
+matching the boundary solver directly. The proof reuses the two producer and
+consumer execution theorems; no numerical case split is added.
+The declaration checks at 3297.7 MiB; the guarded build passes at 3.6 GiB
+aggregate. The expanded axiom audit passes for 346515 declarations at
+3239.2 MiB. This selected-run integration remains local and uncommitted for
+the next larger caller-initialization checkpoint.
+
+The shared preparation layer now exposes its actual input/output tape frame,
+in addition to left stacks and right-port framing. These equalities already
+follow from the record-update executions; exposing them through movement,
+geometry and caller preparation is necessary for exact outer retirement.
+solverCarryState and RawInput.solverCarry express the isolated RHS reservation
+without unfolding the concrete bank. Structural separation proves that raw
+sources, caller headers, the proper numerical bank, exposure and routing
+survive that reservation.
+
+prepareSharedBoundaryCaller_exec_within now executes canonical RHS preparation
+followed by shared numerical/gather/publication setup, starting from raw caller
+rulers, the common input with its arbitrary borrowed suffix, and fresh storage.
+It returns all four ordinary readiness contracts, including BoundaryCallerReady,
+on the same actual endpoint, with the complete tape frame. No initialized
+inverse width/count/RHS or generated class header is an input premise.
+retireSharedBoundaryCaller_exec uses a constructor-defined ownership boundary
+to clear just the generated shared headers and RHS after the consumer restores
+its prepared caller. It restores the original caller exactly except for the
+final output, and allocates no further stock.
+The combined preparation checks at 3192.9 MiB; ownership-based retirement
+checks at 3182.3 MiB, and the reserved-carry frame module at 3158.1 MiB.
+The integration build with the actual selected proper/boundary run passes
+(6.1 GiB aggregate). The expanded axiom audit passes for 346555 declarations
+at 3240.5 MiB. These changes form a larger local selected-caller preparation
+and retirement checkpoint; no push is authorized.
+
+Next surround selectedPublishedBoundaryRun_exec with these preparation and
+retirement executions (using makeGatherInput for the returned shared setup),
+then simplify aggregate/asymptotic/locality bounds.
 Then discharge tensor/fused/root acceptance. Full S4 remains incomplete.
 The accumulated caller-control, shared-solver/crop and restoring-completion
 chunk passes its integration builds and an axiom audit over 346242 declarations

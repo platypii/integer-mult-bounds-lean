@@ -1,6 +1,7 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerPublishedRowsBoundaryCompletion
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerBoundaryCompletion
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryCallerReady
 
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.CallerLayout
@@ -14,7 +15,8 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
 variable {T Q A s : ℕ} [NeZero s] {P U : Type} {body : P → Pr P (MachineTapes (T+solverRegisterCount)) Q A U}
 noncomputable section
 
-/-- Compose a published class-run certificate with actual boundary completion.
+/-- Compose the exact published bank and execution returned by a selected class run
+with actual boundary completion. No per-job metadata is assumed here.
 The producer's stock equality lets both phases share one maximum allowance. -/
 theorem callerPublishedBoundaryExecution_exec (src : Fin 11 → Fin T) (hsrc : src 8 ≠ src 4)
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (widthSource : Fin (T+solverRegisterCount))
@@ -39,14 +41,8 @@ theorem callerPublishedBoundaryExecution_exec (src : Fin 11 → Fin T) (hsrc : s
     (band n : ℕ) (proper : CorePublicationClass s coreWidth)
     (hr : 0 < n*band) (hrw : n*band ≤ coreWidth)
     (hproper : proper.indices = coreGatherIndices s coreWidth (n*band) (coreWidth+2*(n*band)))
-    (N L : ℕ) (batch : PackedExactBatch A s t N L) (rows : batch.Rows)
-    (hbatchWidth : batch.W = W) (hkeys : batch.records.map (fun job => job.k) = proper.indices)
-    (F : Fin N → ZMod s → GaussianInt) (hinputs : List.ofFn F = Fs.reverse)
-    (hpJobs : ∀ job ∈ batch.records, job.p = p)
-    (hwidthJobs : ∀ job ∈ batch.records, job.coreWidth = coreWidth)
-    (hFsJobs : ∀ job ∈ batch.records, job.Fs = Fs.reverse)
-    (hJJobs : ∀ job ∈ batch.records, batch.J job = J)
-    (ambient : Fin N → List (Fin (A+4))) (hlen : ∀ j, (ambient j).length = s*W)
+    (properLines : List (List (Fin (A+4))))
+    (hgood : proper.BankAccurate p W (inversePublicationTargets p Fs J) properLines (3/(2:ℝ)^p))
     (outputTail : List (Fin (A+4)))
     (C : ℕ) (hpush : mnProgPush ((callerFullLineProducer T Q hR hQ).gridProgram (P := P) (U := U) (A := A) recovery) ≤ C)
     (hbody : ∀ f, mnProgPush (body f) ≤ C) (depth : ℕ)
@@ -54,17 +50,14 @@ theorem callerPublishedBoundaryExecution_exec (src : Fin 11 → Fin T) (hsrc : s
     (properSteps properStock : ℕ) (properVar : HS (MachineTapes (T+solverRegisterCount)) Q A U)
     (hproperUser : properVar.user = v.user)
     (hproperStock :
-      let properLines := List.ofFn (fun j => proper.output W hw (rows.classRows proper hkeys j) (ambient j))
       let M : Stacks (MachineTapes (T+solverRegisterCount)) A :=
         {S with R := Function.update S.R (fullHeader _ .output) (properLines.flatten++outputTail)}
       mnSize (mk properVar M) = mnSize (mk v S))
     (hproperExec :
-      let properLines := List.ofFn (fun j => proper.output W hw (rows.classRows proper hkeys j) (ambient j))
       let M : Stacks (MachineTapes (T+solverRegisterCount)) A :=
         {S with R := Function.update S.R (fullHeader _ .output) (properLines.flatten++outputTail)}
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+properStock) depth
         properProgram (mk v S) properSteps (mk properVar M)) :
-    let properLines := List.ofFn (fun j => proper.output W hw (rows.classRows proper hkeys j) (ambient j))
     let M : Stacks (MachineTapes (T+solverRegisterCount)) A :=
       {S with R := Function.update S.R (fullHeader _ .output) (properLines.flatten++outputTail)}
     let B := inverseCallerWordWidth p u l target s t
@@ -101,15 +94,26 @@ theorem callerPublishedBoundaryExecution_exec (src : Fin 11 → Fin T) (hsrc : s
           (.seq properProgram (callerBoundaryCompletion src hR hQ widthSource recovery)) (mk v S) m
           (mk v' {S with R := Function.update S.R (fullHeader _ .output) (output.flatten++outputTail)}) := by
   dsimp only at hproperStock hproperExec ⊢
-  obtain ⟨output,haccuracy,v',m,hu,hm,hstock,he⟩ := callerBoundaryCompletion_of_publishedRows_exec
+  let M : Stacks (MachineTapes (T+solverRegisterCount)) A :=
+    {S with R := Function.update S.R (fullHeader _ .output) (properLines.flatten++outputTail)}
+  have readyM := ready.update_output (properLines.flatten++outputTail)
+  obtain ⟨output,haccuracy,v',m,hu,hm,hstock,he⟩ := callerBoundaryCompletion_exec
     src hsrc hR hQ widthSource D coreWidth hw hroom recovery hA hp hst hu hwidth hθ hgap hbudget hband hpad htarget
-    Fs hFs X Y hX hY J hJ W radius properVar S ready hW hvolumeFit band n proper hr hrw hproper
-    N L batch rows hbatchWidth hkeys F hinputs hpJobs hwidthJobs hFsJobs hJJobs ambient hlen outputTail C hpush hbody depth
+    Fs hFs X Y hX hY J hJ W radius properVar M readyM.raw readyM.zero readyM.blank readyM.left readyM.input
+    readyM.headers readyM.privateBank hW hvolumeFit readyM.arithmeticWidth readyM.scalars
+    band n proper hr hrw hproper outputTail properLines hgood (by simp [M]) C hpush hbody depth
+  have hfinal (xs : List (Fin (A+4))) : {M with R := Function.update M.R (fullHeader _ .output) xs} =
+      {S with R := Function.update S.R (fullHeader _ .output) xs} := by
+    simp only [M,Function.update_idem]
+  rw [hfinal] at he hstock
   refine ⟨output,haccuracy,v',properSteps+m,hu.trans hproperUser,Nat.add_le_add_left hm properSteps,
     hstock.trans hproperStock,?_⟩
   apply ExecWithin.seq
   · exact hproperExec.mono (by intro d z hz; omega)
-  · exact he.mono (by intro d z hz; omega)
+  · exact he.mono (by
+      intro d z hz
+      dsimp only [M] at hz
+      omega)
 
 end
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.CallerLayout

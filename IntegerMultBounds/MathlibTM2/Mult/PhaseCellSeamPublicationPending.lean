@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSingletonPublicationClass
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCorePublicationPending
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProperPublicationBank
 
 /-! A certified seam overwrite advances both accuracy and unit-ball pending
 invariants through the existing class proof, with no extra error term. -/
@@ -106,6 +107,10 @@ noncomputable def seamPublicationTargets (p : ℕ) (r : FamilyDispatchInput s A)
     (J : FamilyDispatchInput s A → (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ)) :=
   r.inputs.reverse.map (fun input =>
     (((2 : ℂ)^inverseNormalizationShift p)⁻¹ • J r) ((1/2 : ℂ) • fun i => value p (input i)))
+
+theorem seamPublicationTargets_eq_inversePublicationTargets (p : ℕ) (r : FamilyDispatchInput s A)
+    (J : FamilyDispatchInput s A → (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ)) :
+    seamPublicationTargets p r J = inversePublicationTargets p r.inputs (J r) := rfl
 
 /-- Numerical preservation instantiated from the actual retained seam rows. -/
 theorem seamPublication_bank_pending (hw : 0 < width) (hk : k ∈ coreIndices s width)

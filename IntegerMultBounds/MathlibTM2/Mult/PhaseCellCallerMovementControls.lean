@@ -38,7 +38,7 @@ theorem prepareMovementControls_exec_within {Q : ℕ} {P U : Type}
     ∃ v' F n, v'.user = v.user ∧
       (F.R (fullHeader T .word)).length = W ∧
       (F.R (fullHeader T .replicas)).length = N ∧
-      (F.R (fullHeader T .volume)).length = s*W ∧ F.L = S.L ∧
+      (F.R (fullHeader T .volume)).length = s*W ∧ F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, k ≠ fullHeader T .word → k ≠ fullHeader T .replicas → k ≠ fullHeader T .volume → F.R k = S.R k) ∧
       n ≤ movementControlCost s W N ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+2*movementControlCost s W N) depth
@@ -109,7 +109,7 @@ theorem prepareMovementControls_exec_within {Q : ℕ} {P U : Type}
   have hnative : mnNativePushBound 2 (movementControlProgram (Q := Q) (P := P) (A := A) (U := U) src) :=
     ⟨copyUnaryHeaders_native _ _,unaryProduct_native _ _ _ _ _⟩
   have he := Exec.seq he₁ he₂'
-  refine ⟨v₂,F,_,hu₂.trans hu₁,?_,?_,?_,rfl,?_,Nat.add_le_add_left hn₂ _,?_⟩
+  refine ⟨v₂,F,_,hu₂.trans hu₁,?_,?_,?_,rfl,rfl,rfl,?_,Nat.add_le_add_left hn₂ _,?_⟩
   · simpa [F,(fullHeader_injective T).eq_iff] using congrArg List.length hwordM
   · simpa [F,(fullHeader_injective T).eq_iff] using congrArg List.length hrepM
   · simp [F]
@@ -179,15 +179,15 @@ theorem prepareGatherControls_exec_within {Q K : ℕ} {P U : Type}
     (hroutingLeft : ∀ i : Fin tapeCount, S.L (Fin.natAdd ((T+headerCount)+175) i) = [])
     (hsourceLeft : S.L (control (fullExposedClassBank (bank b)) .source) = []) (depth : ℕ) :
     ∃ v' F n, v'.user = v.user ∧ GatherRetainedInput T K s W b Fs borrowed F ∧
-      F.L = S.L ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, k ≠ fullHeader T .word → k ≠ fullHeader T .replicas → k ≠ fullHeader T .volume → F.R k = S.R k) ∧
       n ≤ movementControlCost s W Fs.length ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+2*movementControlCost s W Fs.length) depth
         (movementControlProgram src) (Host.mk v S) n (Host.mk v' F) := by
-  obtain ⟨v',F,n,hu,hw,hn,hv,hL,hframe,hcost,he⟩ :=
+  obtain ⟨v',F,n,hu,hw,hn,hv,hL,hI,hO,hframe,hcost,he⟩ :=
     prepareMovementControls_exec_within body src v S hs hW hN hword hreplicas hvolume hsaved htmp depth
   exact ⟨v',F,n,hu,movementRetainedInput b S F hw hn hv hL hframe hsource hexposure houtput hroutingLeft hsourceLeft,
-    hL,hframe,hcost,he⟩
+    hL,hI,hO,hframe,hcost,he⟩
 
 end
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.CallerLayout

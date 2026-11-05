@@ -41,13 +41,13 @@ theorem prepareGeometryBank_exec {Q : ℕ} {P U : Type}
     ∃ v' F, v'.user = v.user ∧
       SetupInput T A D p u l target s t B W N radius width Vg Vr F ∧
       (∀ f ∈ fs, ∀ i, F.R (fullHeader T (.geometry f i)) = binSyms (formatWidths B Vg Vr f) (![s,width,radius] i)) ∧
-      F.L = S.L ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, (∀ f ∈ fs, ∀ i, k ≠ fullHeader T (.geometry f i)) → F.R k = S.R k) ∧
       Exec body (geometryBankProgram T fs) (Host.mk v S)
         (geometryBankCost (formatWidths B Vg Vr) fs) (Host.mk v' F) := by
   induction fs generalizing v S with
   | nil =>
-    refine ⟨v,S,rfl,input,by simp,rfl,fun _ _ => rfl,?_⟩
+    refine ⟨v,S,rfl,input,by simp,rfl,rfl,rfl,fun _ _ => rfl,?_⟩
     simpa [geometryBankProgram,geometryBankCost] using Exec.act (body := body) .done (Host.mk v S)
   | cons f fs ih =>
     have hn := List.nodup_cons.mp hnd
@@ -60,7 +60,7 @@ theorem prepareGeometryBank_exec {Q : ℕ} {P U : Type}
       intro q hq
       obtain ⟨i,rfl⟩ := List.mem_ofFn.mp hq
       exact (hk i).symm
-    obtain ⟨v₂,F,hu₂,hinput,hwords,hleft,hframe,he₂⟩ := ih hn.2 M (input.prepareGeometry f)
+    obtain ⟨v₂,F,hu₂,hinput,hwords,hleft,hI,hO,hframe,he₂⟩ := ih hn.2 M (input.prepareGeometry f)
       (fun g hg => hbits g (by simp [hg]))
       (by
         intro g hg i
@@ -69,7 +69,7 @@ theorem prepareGeometryBank_exec {Q : ℕ} {P U : Type}
         · intro j he
           have hgf := (Role.geometry.inj (fullHeader_injective T he)).1
           exact hn.1 (hgf ▸ hg)) v₁
-    refine ⟨v₂,F,hu₂.trans hu₁,hinput,?_,hleft,?_,?_⟩
+    refine ⟨v₂,F,hu₂.trans hu₁,hinput,?_,hleft,hI,hO,?_,?_⟩
     · intro g hg i
       rcases List.mem_cons.mp hg with hg | hg
       · subst g
@@ -94,14 +94,14 @@ theorem prepareGeometryBank_exec_within {Q : ℕ} {P U : Type}
     ∃ v' F, v'.user = v.user ∧
       SetupInput T A D p u l target s t B W N radius width Vg Vr F ∧
       (∀ f ∈ fs, ∀ i, F.R (fullHeader T (.geometry f i)) = binSyms (formatWidths B Vg Vr f) (![s,width,radius] i)) ∧
-      F.L = S.L ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, (∀ f ∈ fs, ∀ i, k ≠ fullHeader T (.geometry f i)) → F.R k = S.R k) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
         3*geometryBankCost (formatWidths B Vg Vr) fs) depth
         (geometryBankProgram T fs) (Host.mk v S)
         (geometryBankCost (formatWidths B Vg Vr) fs) (Host.mk v' F) := by
-  obtain ⟨v',F,hu,hi,hw,hL,hframe,he⟩ := prepareGeometryBank_exec body fs hnd S input hbits hblank v
-  exact ⟨v',F,hu,hi,hw,hL,hframe,mn_native_exec_within he 3 (geometryBankProgram_native _ _) depth _ (by omega)⟩
+  obtain ⟨v',F,hu,hi,hw,hL,hI,hO,hframe,he⟩ := prepareGeometryBank_exec body fs hnd S input hbits hblank v
+  exact ⟨v',F,hu,hi,hw,hL,hI,hO,hframe,mn_native_exec_within he 3 (geometryBankProgram_native _ _) depth _ (by omega)⟩
 
 /-- All nine geometry words are produced together; the witness F is the state
 returned by this actual execution, with its retained setup contract. -/
@@ -115,7 +115,7 @@ theorem prepareAllGeometry_exec_within {Q : ℕ} {P U : Type}
     ∃ v' F, v'.user = v.user ∧
       SetupInput T A D p u l target s t B W N radius width Vg Vr F ∧
       (∀ f i, F.R (fullHeader T (.geometry f i)) = binSyms (formatWidths B Vg Vr f) (![s,width,radius] i)) ∧
-      F.L = S.L ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, (∀ f i, k ≠ fullHeader T (.geometry f i)) → F.R k = S.R k) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+3*(30*(B+Vg+Vr)+94)) depth
         (geometryBankProgram T (List.finRange 3)) (Host.mk v S)
@@ -123,10 +123,10 @@ theorem prepareAllGeometry_exec_within {Q : ℕ} {P U : Type}
   have hcost : geometryBankCost (formatWidths B Vg Vr) (List.finRange 3) = 30*(B+Vg+Vr)+94 := by
     simp [geometryBankCost,List.finRange_succ,formatWidths]
     omega
-  obtain ⟨v',F,hu,hi,hw,hL,hframe,he⟩ := prepareGeometryBank_exec_within body (List.finRange 3)
+  obtain ⟨v',F,hu,hi,hw,hL,hI,hO,hframe,he⟩ := prepareGeometryBank_exec_within body (List.finRange 3)
     (List.nodup_finRange 3) S input (fun f _ => hbits f) (fun f _ => hblank f) v depth
   rw [hcost] at he
-  exact ⟨v',F,hu,hi,(fun f => hw f (List.mem_finRange f)),hL,
+  exact ⟨v',F,hu,hi,(fun f => hw f (List.mem_finRange f)),hL,hI,hO,
     (fun k hk => hframe k (fun f _ => hk f)),he⟩
 
 /-- Instantiate numerical readiness on a returned whole-geometry endpoint.

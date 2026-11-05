@@ -58,11 +58,7 @@ theorem callerBoundaryCompletion_exec (src : Fin 11 → Fin T) (hsrc : src 8 ≠
     (hr : 0 < n*band) (hrw : n*band ≤ coreWidth)
     (hproper : proper.indices = coreGatherIndices s coreWidth (n*band) (coreWidth+2*(n*band)))
     (outputTail : List (Fin (A+4))) (ambient : List (List (Fin (A+4))))
-    (hgood : List.Forall₂ (fun target line => line.length = s*W ∧
-      ∀ k ∈ proper.indices,
-        (∀ i ∈ ownedCore s coreWidth k, ‖pairedCellRead p W line i‖ ≤ 1) ∧
-        PhaseCellInterface.ErrorOn (ownedCore s coreWidth k) (pairedCellRead p W line) target (3/(2:ℝ)^p))
-      (seamPublicationTargets p (fullLineGridRecord (A := A) p u l target t Fs) (fun _ => J)) ambient)
+    (hgood : proper.BankAccurate p W (inversePublicationTargets p Fs J) ambient (3/(2:ℝ)^p))
     (hdst : S.R (fullHeader _ .output) = ambient.flatten++outputTail)
     (C : ℕ) (hpush : mnProgPush ((callerFullLineProducer T Q hR hQ).gridProgram (P := P) (U := U) (A := A) recovery) ≤ C)
     (hbody : ∀ f, mnProgPush (body f) ≤ C) (depth : ℕ) :
@@ -99,6 +95,7 @@ theorem callerBoundaryCompletion_exec (src : Fin 11 → Fin T) (hsrc : src 8 ≠
         ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+(prepareStock+publicationStock)) depth
           (callerBoundaryCompletion src hR hQ widthSource recovery) (mk v S) m
           (mk v' {S with R := Function.update S.R (fullHeader _ .output) (output.flatten++outputTail)}) := by
+  dsimp only [CorePublicationClass.BankAccurate] at hgood
   dsimp only
   let r := fullLineGridRecord (A := A) p u l target t Fs
   let seedValue := fun i : Fin 117 => if i = 55 then s else if i = 56 then coreWidth else W

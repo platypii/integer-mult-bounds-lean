@@ -6,6 +6,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSetupNumericalReadiness
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSetupGatherReadiness
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerPublishedPreparation
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProperPublicationBank
 
 /-! Execute the fixed typed caller's class setup, selected numerical/publication
 run and owned-word cleanup. Setup and seed come from the produced ordinary-input
@@ -175,6 +176,10 @@ theorem selectedInitializedPublishedClassRun_exec {T Q K : ℕ} {U : Type} {P : 
       List.Forall₂ PackedNormalizedJob.output (List.ofFn jobs) outputs ∧
       publishedCoreRowsAccurate (prime+K) (Sizes.p n₀) W pubClass (rows.classRows pubClass keys)
         (publishedInverseTarget (Sizes.p n₀) J replica) (publishedInverseError (Sizes.p n₀)) ∧
+      pubClass.BankAccurate (Sizes.p n₀) W
+        (inversePublicationTargets (Sizes.p n₀) Fs J)
+        (List.ofFn (fun j => pubClass.output W g.hwidth (rows.classRows pubClass keys j) (ambient j)))
+        (publishedInverseError (Sizes.p n₀)) ∧
       mnSize (Host.mk v' {base with R := (Function.update base.R (classCallerRegister output)
         ((List.ofFn fun j => pubClass.output W g.hwidth (rows.classRows pubClass keys j) (ambient j)).flatten++outputTail))}) =
         mnSize (Host.mk v base) ∧
@@ -287,6 +292,26 @@ theorem selectedInitializedPublishedClassRun_exec {T Q K : ℕ} {U : Type} {P : 
           ambient hambient outputTail hpubInj houtPacket houtCount houtMasters hOriginInj hPubWidth hPubReplica
           hPubWord hRouteTableOff houtGeometry pubReady hdst hPublicationVolume
       exact ⟨v₂,n₂,(outputs,rows),hu₂,hn₂,⟨hgood,hrows⟩,hsize,he₂⟩) v
-  exact ⟨v',n,outputs,rows,hu,ht,hcert.1,hcert.2,hsize,hx⟩
+  have hrowsLength : ∀ j k, k ∈ pubClass.indices →
+      (rows.classRows pubClass keys j k).length = pubClass.length := by
+    apply rows.classRows_length
+    intro job hj
+    change job ∈ List.ofFn jobs at hj
+    obtain ⟨j,rfl⟩ := List.mem_ofFn.mp hj
+    rfl
+  have hbank := pubClass.output_bank_good (Sizes.p n₀) W g.hwidth
+    (publishedInverseTarget (Sizes.p n₀) J replica) (publishedInverseError (Sizes.p n₀))
+    (rows.classRows pubClass keys) ambient hrowsLength hambient hcert.2
+  have hreplica : List.ofFn replica = Fs.reverse := by
+    apply List.ext_getElem
+    · simp only [List.length_ofFn,List.length_reverse]
+      exact g.hpower.symm
+    · intro j hj hk
+      simp only [List.getElem_ofFn,replica]
+  have htargets : List.ofFn (publishedInverseTarget (Sizes.p n₀) J replica) =
+      inversePublicationTargets (Sizes.p n₀) Fs J := by
+    exact (inversePublicationTargets_eq_ofFn (Sizes.p n₀) Fs J replica hreplica).symm
+  rw [htargets] at hbank
+  exact ⟨v',n,outputs,rows,hu,ht,hcert.1,hcert.2,hbank,hsize,hx⟩
 
 end IntegerMultBounds.MathlibTM2.Cost

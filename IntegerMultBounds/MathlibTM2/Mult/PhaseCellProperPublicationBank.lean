@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCorePublicationGroups
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoundDimensions
 
 /-! The actual class publication endpoint supplies the bank contract consumed
 by boundary completion. This is structural in the replica list and class. -/
@@ -9,6 +10,31 @@ namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 variable {A s width : ℕ} [NeZero s]
+
+/-- Publication emits replicas in reverse input order. Both the selected
+proper producer and seam completion use these same normalized inverse targets. -/
+noncomputable def inversePublicationTargets (p : ℕ) (Fs : List (ZMod s → GaussianInt))
+    (J : (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ)) : List (ZMod s → ℂ) :=
+  Fs.reverse.map (fun F => (((2 : ℂ)^inverseNormalizationShift p)⁻¹ • J)
+    ((1/2 : ℂ) • fun i => value p (F i)))
+
+theorem inversePublicationTargets_eq_ofFn {N : ℕ} (p : ℕ)
+    (Fs : List (ZMod s → GaussianInt)) (J : (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ))
+    (F : Fin N → ZMod s → GaussianInt) (hF : List.ofFn F = Fs.reverse) :
+    inversePublicationTargets p Fs J = List.ofFn (fun j =>
+      (((2 : ℂ)^inverseNormalizationShift p)⁻¹ • J) ((1/2 : ℂ) • fun i => value p (F j i))) := by
+  rw [inversePublicationTargets,←hF,List.map_ofFn]
+  rfl
+
+/-- Accuracy of the complete encoded bank on the cores owned by one class.
+The row lengths also certify the physical frame needed by later publication. -/
+def CorePublicationClass.BankAccurate (g : CorePublicationClass s width) (p W : ℕ)
+    (targets : List (ZMod s → ℂ)) (lines : List (List (Fin (A+4)))) (error : ℝ) : Prop :=
+  List.Forall₂ (fun target line => line.length = s*W ∧
+    ∀ k ∈ g.indices,
+      (∀ i ∈ ownedCore s width k, ‖pairedCellRead p W line i‖ ≤ 1) ∧
+      PhaseCellInterface.ErrorOn (ownedCore s width k) (pairedCellRead p W line) target error)
+    targets lines
 
 theorem CorePublicationClass.output_norm_le (g : CorePublicationClass s width) (p W : ℕ) (hw : 0 < width)
     (rows : ℕ → List GaussianInt) (hrows : ∀ k ∈ g.indices, (rows k).length = g.length)

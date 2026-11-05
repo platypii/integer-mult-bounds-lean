@@ -46,7 +46,7 @@ theorem prepareSharedGatherCaller_exec_within
         (fullExposedClassBank (bank b)) (numericTable T) (geometrySources T) (masterSources T)) ∧
       GatherRetainedInput T K s W b Fs borrowed F ∧
       (∀ f i, F.R (fullHeader T (.geometry f i)) = binSyms (formatWidths B Vg Vr f) (![s,width,radius] i)) ∧
-      F.L = S.L ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, k ≠ fullHeader T .word → k ≠ fullHeader T .replicas → k ≠ fullHeader T .volume →
         (∀ i, k ≠ globals T i) → (∀ f, k ≠ rulers T f) →
         (∀ f i, k ≠ fullHeader T (.geometry f i)) → F.R k = S.R k) ∧
@@ -54,7 +54,7 @@ theorem prepareSharedGatherCaller_exec_within
         ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
           3*gatherPreparationCost D p u l target s t B W Fs.length radius width Vg Vr) depth
           (gatherPreparationProgram src widthSource widths) (Host.mk v S) n (Host.mk v' F) := by
-  obtain ⟨v₁,M,n₁,hu₁,retained,hL₁,hframe₁,hn₁,he₁⟩ := prepareGatherControls_exec_within body src b v S
+  obtain ⟨v₁,M,n₁,hu₁,retained,hL₁,hI₁,hO₁,hframe₁,hn₁,he₁⟩ := prepareGatherControls_exec_within body src b v S
     (raw.values 4) (raw.values 7) (raw.values 8) hword hreplicas hvolume (raw.routingBlank _) (raw.routingBlank _)
     hsource hexposure houtput hroutingLeft hsourceLeft 0
   have rawM := raw.reframeMovement hframe₁
@@ -73,7 +73,7 @@ theorem prepareSharedGatherCaller_exec_within
     · exact (fullHeader_ne_numerical b .word j).symm
     · exact (fullHeader_ne_numerical b .replicas j).symm
     · exact (fullHeader_ne_numerical b .volume j).symm
-  obtain ⟨v₂,F,input,hu₂,baseNumerical,hwords,hL₂,hframe₂,n₂,hn₂,he₂⟩ :=
+  obtain ⟨v₂,F,input,hu₂,baseNumerical,hwords,hL₂,hI₂,hO₂,hframe₂,n₂,hn₂,he₂⟩ :=
     prepareCallerInputs_exec_within body src widthSource widths rawM.widthOff v₁ M rawM.widthLength rawM.values rawM.widths
       rawM.scalarBlank rawM.rulerBlank rawM.geometryBlank rawM.ownedBlank rawM.zeroBlank rawM.routingBlank
       false rawM.widthPositive rawM.geometryFit rawM.fit rawM.bitsFit b htableM hbankM
@@ -93,7 +93,7 @@ theorem prepareSharedGatherCaller_exec_within
         (show mnNativePushBound 2 (movementControlProgram src) from ⟨copyUnaryHeaders_native _ _,unaryProduct_native _ _ _ _ _⟩)
     · exact ⟨mnNativePushBound_mono (by decide) (copyUnaryHeaders_native _ _),binaryHeaderBank_native _ _ _ _ _⟩
     · exact geometryBankProgram_native _ _
-  refine ⟨v₂,F,input,hu₂.trans hu₁,numerical,retainedF,hwords,hL₂.trans hL₁,?_,_,hn,?_⟩
+  refine ⟨v₂,F,input,hu₂.trans hu₁,numerical,retainedF,hwords,hL₂.trans hL₁,hI₂.trans hI₁,hO₂.trans hO₁,?_,_,hn,?_⟩
   · intro k hw hr hv hs hf hg
     exact (hframe₂ k hs hf hg).trans (hframe₁ k hw hr hv)
   · exact mn_native_exec_within (Exec.seq he₁.toExec he₂.toExec) 3 hnative depth _ (by omega)

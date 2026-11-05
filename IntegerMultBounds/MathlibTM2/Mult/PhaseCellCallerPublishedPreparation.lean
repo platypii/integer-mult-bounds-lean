@@ -44,7 +44,7 @@ theorem prepareSharedPublishedCaller_exec_within
       PublicationCallerReady (classCallerRegister ∘ publication T)
         (selectedPublicationPlacement (bank b) (header T .output)) F ∧
       (∀ f i, F.R (fullHeader T (.geometry f i)) = binSyms (formatWidths B Vg Vr f) (![s,width,radius] i)) ∧
-      F.L = S.L ∧
+      F.L = S.L ∧ F.inp = S.inp ∧ F.out = S.out ∧
       (∀ k, k ≠ fullHeader T .word → k ≠ fullHeader T .replicas → k ≠ fullHeader T .volume →
         (∀ i, k ≠ globals T i) → (∀ f, k ≠ rulers T f) →
         (∀ f i, k ≠ fullHeader T (.geometry f i)) → F.R k = S.R k) ∧
@@ -52,11 +52,11 @@ theorem prepareSharedPublishedCaller_exec_within
         ExecWithin body (fun d z => mnSize z+d ≤ mnSize (Host.mk v S)+depth+
           3*gatherPreparationCost D p u l target s t B W Fs.length radius width Vg Vr) depth
           (gatherPreparationProgram src widthSource widths) (Host.mk v S) n (Host.mk v' F) := by
-  obtain ⟨v',F,input,hu,numerical,retained,hwords,hL,hframe,n,hn,he⟩ :=
+  obtain ⟨v',F,input,hu,numerical,retained,hwords,hL,hI,hO,hframe,n,hn,he⟩ :=
     prepareSharedGatherCaller_exec_within body src widthSource widths b Fs borrowed v S raw hword hreplicas hvolume
       hsource hexposure houtput hroutingLeft hsourceLeft htable hbank hleft depth
   have publicationReady := publicationReady_of_prepared b S F hpubBlank hresultLeft hambientLeft hroutingLeft hL hframe
-  exact ⟨v',F,input,hu,numerical,retained,publicationReady,hwords,hL,hframe,n,hn,he⟩
+  exact ⟨v',F,input,hu,numerical,retained,publicationReady,hwords,hL,hI,hO,hframe,n,hn,he⟩
 
 end
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.CallerLayout
