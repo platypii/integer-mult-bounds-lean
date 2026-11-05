@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4312 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4313 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33431,4 +33431,24 @@ actual proper and seam traces to these classes. The complete axis endpoint,
 tensor/fused exposure composition and aggregate root bounds remain open; S4 is
 incomplete. Default proof limits are unchanged.
 Expanded axiom audit passes for 345566 declarations at 3211.4 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+
+### S4 format handoff: widen encoded archive witnesses
+
+The existing widenPackedPrefix executor already supplies the required signed
+packet conversion with retained controls, exact suffix preservation and a paid
+linear pass. Its signed-fit premise is not present in SeamCropRows or
+ExactCoreProduced: those predicates certify decoded bytes and permit arbitrary
+coefficient witnesses. WidenEncodedPrefix removes this mismatch by applying
+cstream_symZ and topFitsZ_symZ before invoking the existing executor. It returns
+the common-width encoding of the signed canonical values of the narrow words,
+with the same cost and exact frame. No new packet traversal is introduced.
+
+This closes the execution-side signed-fit obligation. Still required are the
+reader/accuracy handoff at the new width, actual caller width/count generation,
+archive-order instantiation and scatter composition. The complete axis and S4
+remain open. Guarded check passes at 2801.0 MiB; dependency build passes
+(8532 jobs, 3.3 GiB aggregate peak). Default proof limits are unchanged.
+Expanded axiom audit passes for 345567 declarations at 3209.1 MiB, allowing
 only propext, Quot.sound and Classical.choice.
