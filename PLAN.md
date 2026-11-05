@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4309 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4311 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33336,4 +33336,40 @@ geometry (2835.0 MiB), and physical program equality (2982.2 MiB). Combined buil
 with the shared full-line seam execution passes (15627 jobs, 5.7 GiB aggregate
 peak across concurrent modules). Default proof limits are unchanged.
 Expanded axiom audit passes for 345543 declarations at 3210.6 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+
+### S4 checkpoint: execute boundary bit-count production
+
+BoundaryCropMetadata uses the existing table instruction compiler rather than
+introducing unary division. Its fixed ten-atom program computes (s-1)/width,
+then the penultimate or final core's start and length, and multiplies by the
+packet word width. This handles exact divisibility without a runtime branch.
+The Boolean selects a fixed physical slot. index_eq_boundary identifies the
+computed index with the corresponding Fin 3 boundary slot. All arithmetic
+fits follow from positive widths, 3*width<s and s*W<2^D.
+
+BoundaryCropCounters executes that program and the existing structural
+ChirpUnaryCopies exporter. The actual output counters are coreStart*W and
+coreLength*W, prepended to their original suffixes. Its complete time bill is
+at most 10*tblC D 0+6*(s*W)+22*D+13. A native push bound gives stock at most
+three times that bill. Input/output streams, left stacks and all registers
+outside the table and two destination ports are restored. Scalar inputs s,
+width,W and the table accumulator are preserved; all resulting metadata fits
+D bits, so the same live bank can supply both final slots. Computed table
+metadata remains live and will be retired once after both slots.
+
+Next load the scalar header copies at the fixed caller placement, sequence the
+two final-slot producers with the first slot's zero skip / width*W count, and
+connect their readiness to the full-line seam executor. Final table retirement,
+input/output format adapters, ambient publication, restoring outer composition,
+root suppliers, locality/tensor composition and aggregate resource bounds remain
+open. This is actual counter production from binary headers, not yet a complete
+raw-caller fallback trace. S4 remains incomplete.
+
+Guarded checks pass for metadata arithmetic (1793.0 MiB) and actual counter
+export (1758.9 MiB). Combined build with fixed boundary ports, selected geometry
+and shared full-line seam execution passes (15631 jobs, 2.6 GiB aggregate peak).
+Default proof limits are unchanged.
+Expanded axiom audit passes for 345559 declarations at 3210.4 MiB, allowing
 only propext, Quot.sound and Classical.choice.
