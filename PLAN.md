@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4296 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4298 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33004,4 +33004,38 @@ Guarded CallerRulers check passes at 3120.7 MiB. Combined build with geometry,
 initialized selected execution and restoring publication fold passes (16743 jobs,
 3.5 GiB incremental combined peak). Default proof limits unchanged.
 Expanded axiom audit passes for 345133 declarations at 3206.0 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: connect raw baseline preparation to numerical readiness
+
+CallerGeometryBank executes an arbitrary distinct list of consumer formats using
+one structural induction. Its endpoint is the actual returned state, with a
+SetupInput contract, exact geometry words, left-stack restoration and a frame
+outside the listed geometry destinations. No expanded nine-word model state or
+per-format execution certificate is needed. Instantiating the three formats
+produces all nine words in 30*(B+Vg+Vr)+94 steps with three times that stock bill.
+The numerical readiness factory accepts this returned-state contract and frames
+original table/bank freshness through it.
+
+CallerInputPreparation connects baselineProgram to that whole geometry run.
+prepareCallerInputs_exec_within starts from retained raw counter lengths and fresh
+scalar/ruler/geometry/work storage; it returns the actual host state, SetupInput,
+all nine geometry words and NumericalInput for the fixed makeSetup on that state.
+Neither initialized setup nor numerical readiness is an execution premise. The
+actual preceding host state is threaded through both programs, with additive time
+and a native intermediate-stock bound. Its frame covers every register outside
+the produced scalar/ruler/geometry roles, including the ordinary input stream.
+
+Next construct the concrete gather seed from these produced exposure/routing
+words and retained stream/count controls, then connect the nonempty/empty class
+lifecycle to the selected execution and outer publication fold. Root suppliers
+of retained counters, coefficient preparation, class coverage/replica order,
+tensor/locality composition and aggregate fast bounds remain open. This connected
+caller preparation is not the full initialized selected run or S4 completion.
+
+Guarded checks pass for the whole geometry bank (3128.1 MiB) and connected caller
+input preparation (3122.4 MiB). Combined build with initialized selected execution
+and restoring publication fold passes (16745 jobs, 3.5 GiB incremental combined
+peak). Default proof limits unchanged; S4 remains incomplete.
+Expanded axiom audit passes for 345156 declarations at 3203.8 MiB, allowing
 only propext, Quot.sound and Classical.choice.
