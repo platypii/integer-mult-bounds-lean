@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4300 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4302 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33102,4 +33102,41 @@ passes (16747 jobs, 3.5 GiB incremental combined peak). After adding the retaine
 contract execution wrapper, its module rebuild also passes (16255 jobs, 3.5 GiB).
 Default proof limits unchanged.
 Expanded axiom audit passes for 345224 declarations at 3207.6 MiB, allowing
+only propext, Quot.sound and Classical.choice.
+
+### S4 checkpoint: shared raw preparation before class eligibility
+
+RawInput packages retained counter lengths, conversion width, fit facts and fresh
+scalar/ruler/geometry/owned storage. Its reframeMovement theorem preserves that
+contract through the actual movement-control frame, proving prefix and typed role
+separation once for the connected execution.
+
+CallerGatherPreparation sequences movementControlProgram and callerInputProgram.
+prepareSharedGatherCaller_exec_within threads their actual returned host states
+and returns SetupInput, all nine geometry words, GatherRetainedInput and numerical
+readiness for either clipped/full class shape on the same actual endpoint. No
+initialized movement controls, scalar/ruler/geometry words, setup record,
+numerical readiness or seed record is an execution premise. The trace preserves
+left stacks and every right register outside its produced roles. Numerical
+readiness is reused across shapes by copying its unchanged proof fields.
+
+Shared preparation has no nonempty-class or GatherBounds premise. The existing
+makeGatherSeed/makeGatherInput constructors consume its returned retained and
+geometry contracts after class eligibility is established. This places shared
+preparation before the future runtime guard and avoids requiring a nonempty class
+merely to allocate the shared bank. Time is the sum of the movement-control and
+caller-input bills; intermediate stock is bounded by three times that total.
+The program is independent of the class shape and is paid once per baseline.
+
+Next derive publication readiness on the same returned state, instantiate the
+actual selected class run, and integrate runtime empty/nonempty control with the
+outer fold. Final shared-bank retirement, root raw-counter/coefficient suppliers,
+coverage/replica order, locality/tensor composition and aggregate fast resource
+integration remain open. S4 remains incomplete; kappa unchanged.
+
+Final guarded checks pass for RawInput/frame (3116.3 MiB) and shared gather
+preparation (3125.3 MiB). Combined build with initialized selected execution and
+restoring publication fold passes (16749 jobs, 3.5 GiB incremental combined peak).
+Default proof limits unchanged.
+Expanded axiom audit passes for 345248 declarations at 3208.1 MiB, allowing
 only propext, Quot.sound and Classical.choice.
