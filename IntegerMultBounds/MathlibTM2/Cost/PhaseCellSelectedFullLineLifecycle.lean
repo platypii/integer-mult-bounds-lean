@@ -19,7 +19,7 @@ private theorem lifecycleStock (setup tape stock payload replicas scalar volume 
       (1312000*(C+1)+756)*payload+504*replicas+2*volume := by
   nlinarith only [hl,hg,hs]
 
-theorem selectedFullLineLifecycleStock_le (ct C : ℕ) :
+private theorem selectedFullLineLifecycleStock_base_le (ct : ℕ) :
     ∀ᶠ n : ℕ in atTop,
       ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],
       ∀ (T Q A : ℕ) (U : Type) (input : FullLineInputPlan T) (producer : PackedProducerPlan T Q)
@@ -33,9 +33,9 @@ theorem selectedFullLineLifecycleStock_le (ct C : ℕ) :
       let r := fullLineGridRecord (A := A) (Sizes.p n) u (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) target (Sizes.t n i) Fs
       let tape := descriptorScheduleTape producer.gridWork FamilyDispatchInput.words [r]
       setupStock (Sizes.p n) u (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) target (Sizes.s n i) (Sizes.t n i) Fs.length+
-        (31*tape.length+9+(C+1)*producer.gridStock (Sizes.p n) (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) (Sizes.t n i) r) ≤
-      ((1312000*(C+1)+756)*(1032+8*ct)+504)*(Fs.length*Sizes.s n i*Sizes.p n)+2*Sizes.T n := by
-  filter_upwards [selectedFullLineGridStock_scaled_volume_le ct (C+1),
+        (31*tape.length+9+(0+1)*producer.gridStock (Sizes.p n) (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) (Sizes.t n i) r) ≤
+      ((1312000+756)*(1032+8*ct)+504)*(Fs.length*Sizes.s n i*Sizes.p n)+2*Sizes.T n := by
+  filter_upwards [selectedFullLineGridStock_scaled_volume_le ct (0+1),
     selectedFullLineScalars_scaled_volume_le ct 1] with n hg hs
   intro h i _ T Q A U input producer d u target Fs v S hu htarget hband hready hr
   dsimp only
@@ -45,14 +45,14 @@ theorem selectedFullLineLifecycleStock_le (ct C : ℕ) :
   let l := haloInverseRingLog s t
   let r := fullLineGridRecord (A := A) p u l target t Fs
   let payload := Fs.length*s*inverseFullInputWidth p u l target s t
-  have hl := (fullLineLifecycleCosts_le input producer C Fs v S hready (h.good.lt i)).2
+  have hl := (fullLineLifecycleCosts_le input producer 0 Fs v S hready (h.good.lt i)).2
   have hgrid := hg h i T Q A producer d u target Fs hu htarget hr
   have hscalar : fullLineStockScalar p u l target s t ≤ Sizes.T n :=
     (le_max_right _ _).trans (by simpa only [one_mul] using hs h i u target hu htarget hband)
   have hb := lifecycleStock (setupStock p u l target s t Fs.length)
     (descriptorScheduleTape producer.gridWork FamilyDispatchInput.words [r]).length
     (producer.gridStock p l t r) payload Fs.length (fullLineStockScalar p u l target s t)
-    (Sizes.T n) C hl hgrid hscalar
+    (Sizes.T n) 0 hl hgrid hscalar
   have hp : 1 ≤ p := by have := h.thirteen_le_p; dsimp [p]; omega
   have hspos : 1 ≤ s := Nat.one_le_iff_ne_zero.mpr (NeZero.ne s)
   have hw := selectedFullLineWidth_le ct h i u target htarget hband
@@ -61,9 +61,42 @@ theorem selectedFullLineLifecycleStock_le (ct C : ℕ) :
     simpa only [payload,Nat.mul_assoc,Nat.mul_comm,Nat.mul_left_comm] using hb
   have hn : Fs.length ≤ Fs.length*s*p :=
     (Nat.le_mul_of_pos_right _ hspos).trans (Nat.le_mul_of_pos_right _ hp)
-  have hpayScaled := Nat.mul_le_mul_left (1312000*(C+1)+756) hpay
+  have hpayScaled := Nat.mul_le_mul_left (1312000*(0+1)+756) hpay
   have hnScaled := Nat.mul_le_mul_left 504 hn
   exact hb.trans (by nlinarith only [hpayScaled,hnScaled])
+
+/-- The threshold is independent of the fixed machine's push bound. -/
+theorem selectedFullLineLifecycleStock_le (ct : ℕ) :
+    ∀ᶠ n : ℕ in atTop,
+      ∀ (h : Sizes.Big n) (i : Fin (Sizes.d n)), ∀ [NeZero (Sizes.s n i)],
+      ∀ (T Q A C : ℕ) (U : Type) (input : FullLineInputPlan T) (producer : PackedProducerPlan T Q)
+        (d : ℝ) (u target : ℕ) (Fs : List (ZMod (Sizes.s n i) → GaussianInt))
+        (v : HS T Q A U) (S : Stacks T A),
+      u ≤ Sizes.p n → target ≤ ct*Sizes.p n →
+      PhaseCellBand.width (Sizes.p n) u ≤ Sizes.s n i →
+      input.Ready (Sizes.p n) u (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) target (Sizes.t n i) Fs S →
+      GridDispatchReady (Sizes.p n) (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) (Sizes.t n i) d
+        (fullLineGridRecord (A := A) (Sizes.p n) u (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) target (Sizes.t n i) Fs) →
+      let r := fullLineGridRecord (A := A) (Sizes.p n) u (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) target (Sizes.t n i) Fs
+      let tape := descriptorScheduleTape producer.gridWork FamilyDispatchInput.words [r]
+      setupStock (Sizes.p n) u (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) target (Sizes.s n i) (Sizes.t n i) Fs.length+
+        (31*tape.length+9+(C+1)*producer.gridStock (Sizes.p n) (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) (Sizes.t n i) r) ≤
+      (C+1)*(((1312000+756)*(1032+8*ct)+504)*(Fs.length*Sizes.s n i*Sizes.p n)+2*Sizes.T n) := by
+  filter_upwards [selectedFullLineLifecycleStock_base_le ct] with n hn
+  intro h i _ T Q A C U input producer d u target Fs v S hu htarget hband hready hr
+  have hb := hn h i T Q A U input producer d u target Fs v S hu htarget hband hready hr
+  have hs := Nat.mul_le_mul_left (C+1) hb
+  dsimp only at hs ⊢
+  let setup := setupStock (Sizes.p n) u (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) target
+    (Sizes.s n i) (Sizes.t n i) Fs.length
+  let r := fullLineGridRecord (A := A) (Sizes.p n) u
+    (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) target (Sizes.t n i) Fs
+  let tape := descriptorScheduleTape producer.gridWork FamilyDispatchInput.words [r]
+  let stock := producer.gridStock (Sizes.p n) (haloInverseRingLog (Sizes.s n i) (Sizes.t n i)) (Sizes.t n i) r
+  have hm : setup+(31*tape.length+9+(C+1)*stock) ≤
+      (C+1)*(setup+(31*tape.length+9+stock)) := by
+    nlinarith only [Nat.zero_le (C*setup),Nat.zero_le (C*(31*tape.length+9))]
+  exact hm.trans (by simpa only [Nat.zero_add,Nat.one_mul] using hs)
 
 private theorem linearTraffic_le_fast (N K t p band dim : ℕ) (hp : 1 ≤ p) :
     ((K*N*t*p : ℕ) : ℝ) ≤ (N : ℝ)*K*t*(1+(band : ℝ)^2/dim)*(p : ℝ)^(129/128 : ℝ) := by

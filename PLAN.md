@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4445 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4449 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33891,8 +33891,65 @@ cost module checks at 3189.7 MiB; the selected bound checks at 3194.4 MiB.
 The integration build passes at 3.6 GiB aggregate. The expanded axiom
 audit passes for 346613 declarations at 3241.7 MiB.
 
-Next bound shared gather/header conversion, simplify inner aggregate resource
-bounds, and instantiate the selected geometry/locality premises uniformly.
+globalConversionCost_eq and gatherPreparationCost_eq now sum the fixed scalar
+schema once, keeping replica-count conversion separate from shared setup.
+selectedGatherPreparationCost_le bounds this charge by C*t*(D+p)+N*(4*D+14),
+using the existing selected scalar-width bounds and ordinary radius/core and
+format-width inequalities. Dimension width D remains explicit for root pricing.
+selectedSharedBoundaryPreparationTime_le combines this with canonical setup,
+with no execution or prepared-state premise. Its check peaks at 3207.5 MiB.
+
+SelectedRawPublishedBoundaryRun now returns the uniform preparation allowance
+and its stock consequence. The actual sequential trace uses that allowance
+in both its time conclusion and workspace invariant. The required core/radius
+and format-width facts are derived from the caller's existing geometry and
+RawInput contract; no new resource oracle is introduced. The raw theorem checks
+at 3334.3 MiB. The integration build passes at 3.7 GiB aggregate and the expanded
+axiom audit passes for 346623 declarations at 3242.2 MiB. These changes remain
+local for the next larger resource checkpoint; no push is authorized.
+
+BoundarySeamHeaderWords now has one exact volume identity, with a shared
+three-crop volume. Generic loader and retirement pricing derives 6*V+67 and
+2*V+23 from that identity. callerPreparedBoundaryMasterCopyCosts_eq applies
+it to actual generated controls, for arbitrary archive source/destination ports.
+callerPreparedBoundaryClearCost_eq prices final erasure from the three crop
+counts, narrow word ruler and two skip counters. No numerical archive or
+output-tail length occurs in these formulas.
+
+The raw execution theorem now uses these scalar formulas for loading,
+retirement and erasure. It no longer exposes an intermediate numerical row bank:
+the actual rows remain inside the proof, and only final accuracy/execution and
+resource guarantees are exported. A local arithmetic interface converts the
+already-constructed trace to the new budgets, avoiding deep rewrites through
+indexed row-bank terms. Default proof limits remain unchanged. The generic
+header module checks at 3035.1 MiB, caller pricing at 3169.2 MiB, and the
+simplified raw theorem at 3311.0 MiB. The integration build passes at 3.7 GiB
+aggregate. The expanded axiom audit passes for 346635 declarations at
+3242.8 MiB. These changes remain local for the larger resource checkpoint.
+
+selectedFullLineLifecycleStock_le now has a threshold uniform in the fixed
+machine push bound Cprog. It scales the Cprog=0 lifecycle by Cprog+1 instead
+of asking for a separate eventual threshold for each possible machine bound.
+The full-line module checks at 3056.7 MiB.
+
+The raw caller constructs full-line readiness from BoundaryCallerReady and the
+actual width-borrowing state, and constructs grid readiness from the ordinary
+precision/band/padding and input-norm hypotheses. It applies the existing
+selected full-line fast-time theorem and the uniform stock theorem. Its final
+execution time and workspace now charge those allowances directly: exact
+descriptor tapes, grid bills and intermediate row banks are internal proof
+objects. One additional nonnegative fast-time coefficient is chosen before the
+eventual threshold. Actual solver time/stock are related to their allowances
+through local arithmetic interfaces, then monotonicity changes the composed
+trace's bounds. No execution, numerical-accuracy or resource oracle is added.
+The raw declaration checks at 3350.2 MiB; the integration build passes at
+3.7 GiB aggregate. The expanded axiom audit passes for 346718 declarations
+at 3246.3 MiB. This completes the local initialization and restoring-boundary
+resource checkpoint, collected with the preceding gather/header pricing work.
+
+Next absorb boundary control/publication scalar terms into the root ledger,
+simplify remaining proper-publication aggregates, and instantiate selected
+geometry/locality uniformly.
 The fixed-program/compiler, tensor/fused and root acceptance gates remain.
 Full S4 remains incomplete.
 The accumulated caller-control, shared-solver/crop and restoring-completion
