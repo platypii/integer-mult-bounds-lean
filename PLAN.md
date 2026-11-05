@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4415 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4423 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33677,9 +33677,50 @@ invariant avoids expensive inferred intermediate-size comparisons. The full
 lifecycle checks at 3330.6 MiB. Its integration build passes (6.1 GiB aggregate),
 and the expanded axiom audit passes for 346380 declarations at 3231.7 MiB.
 
-Next: compose actual proper-publication and joint control generation with the
-initialized shared solver and
-this fully restoring caller seam pipeline; simplify aggregate/asymptotic/locality
+callerGeneratedBoundarySolve_exec now connects actual skip/count generation to
+the initialized solver lifecycle, starting from retained dimension words and
+fresh control ports. callerPreparedBoundarySolve_exec also prepares the narrow
+ruler from the retained precision source, so no generated crop controls or
+prepared narrow ruler are assumptions of this stage. The prepared module
+checks at 3208.8 MiB.
+
+The crop archive now goes directly to caller publication header 6. The earlier
+private archive placement did not match the publication loader's prefix source;
+using the existing free header avoids an archive copy and adds no tapes or
+runtime cost. Width retirement now accepts arbitrary data ports with structural
+separation from the borrowed width, covering this prefix archive. The updated
+initialized lifecycle checks at 3326.7 MiB; integration build and expanded axiom
+audit (346388 declarations, 3232.0 MiB) pass. These changes remain local.
+
+The publication handoff now derives all eleven master-word contracts from the
+generated control state. Structural projection reads the computed counts once;
+retained sources/scalars and the narrow ruler keep their exact words.
+callerPreparedBoundaryState_masterWords carries those contracts across narrow
+preparation and the header-6 archive write, with no supplied crop words.
+
+callerPreparedBoundaryPublication_exec consumes the actual prefix archive using
+the existing restoring publisher and proves global norm/error bounds.
+callerPreparedBoundaryRetire_exec releases all six generated control/ruler
+headers through the generic header-frame theorem. Their composition,
+callerRestoringBoundaryPublication_exec, restores the original caller frame
+except for the published output, checks at 3163.3 MiB, and requires no generated
+header-readiness premise. Integration build and the expanded axiom audit pass
+(346414 declarations, 3232.6 MiB peak).
+
+callerBoundaryCompletion_exec now composes actual prepared solver execution
+with restoring publication. It starts from an ordinary retained caller state
+whose output bank is accurate on proper cores, derives all seam metadata fits
+from the wide volume bound, executes the full shared solve and actual crop
+archive, publishes its certified rows, and retires every temporary word.
+The endpoint is exactly the original state with only the output bank replaced,
+with global norm/error guarantees and explicit total time/workspace bounds.
+The declaration checks at 3213.7 MiB. Header loading/retirement costs are framed
+off the archive write, so the composed bound does not depend on an intermediate
+solver/archive witness. The integration build passes (3.6 GiB aggregate), and
+the expanded axiom audit passes for 346417 declarations at 3233.7 MiB.
+
+Next: connect this completion theorem to actual proper-core publication
+execution and simplify aggregate/asymptotic/locality
 bounds and discharge tensor/fused/root acceptance. Full S4 remains incomplete.
 The accumulated caller-control, shared-solver/crop and restoring-completion
 chunk passes its integration builds and an axiom audit over 346242 declarations

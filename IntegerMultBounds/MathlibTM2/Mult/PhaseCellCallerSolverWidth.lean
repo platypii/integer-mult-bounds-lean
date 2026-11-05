@@ -78,16 +78,18 @@ data-port updates. The generic generated-header frame lemma supplies cleanup. -/
 theorem callerSolverWidthRetire_exec (body : P → Pr P (MachineTapes (T+solverRegisterCount)) Q A U)
     (B : ℕ) (S : Stacks (MachineTapes (T+solverRegisterCount)) A)
     (hblank : S.R (solverRegister T (.input (familyInverseScalarReg .wr))) = [])
-    (src dst : Fin PackedTranspose.tapeCount) (xs ys : List (Fin (A+4)))
+    (src dst : Fin (MachineTapes (T+solverRegisterCount)))
+    (hsrc : src ≠ solverRegister T (.input (familyInverseScalarReg .wr)))
+    (hdst : dst ≠ solverRegister T (.input (familyInverseScalarReg .wr)))
+    (xs ys : List (Fin (A+4)))
     (v : HS (MachineTapes (T+solverRegisterCount)) Q A U) (depth : ℕ) :
-    let port := Fin.natAdd (((T+solverRegisterCount)+headerCount)+175)
     let M := callerSolverWidthState B S
-    let F := {M with R := (Function.update (Function.update M.R (port src) xs) (port dst) ys)}
+    let F := {M with R := (Function.update (Function.update M.R src xs) dst ys)}
     ∃ v', v'.user = v.user ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v F)+depth) depth
         (clearWords [solverRegister T (.input (familyInverseScalarReg .wr))])
         (mk v F) (2*B+3)
-        (mk v' {S with R := (Function.update (Function.update S.R (port src) xs) (port dst) ys)}) := by
+        (mk v' {S with R := (Function.update (Function.update S.R src xs) dst ys)}) := by
   dsimp only
   let seed := solverRegister T (.input (familyInverseScalarReg .wr))
   let M := callerSolverWidthState B S
@@ -95,12 +97,11 @@ theorem callerSolverWidthRetire_exec (body : P → Pr P (MachineTapes (T+solverR
     have hn : i ≠ seed := by simpa only [List.mem_singleton] using hi
     dsimp only [M,callerSolverWidthState]
     exact Function.update_of_ne hn _ _
-  have hport (i : Fin PackedTranspose.tapeCount) :
-      Fin.natAdd (((T+solverRegisterCount)+headerCount)+175) i ∉ [seed] := by
-    simpa only [List.mem_singleton] using (solverRegister_ne_routing T (.input (familyInverseScalarReg .wr)) i).symm
+  have hport (i : Fin (MachineTapes (T+solverRegisterCount))) (hi : i ≠ seed) : i ∉ [seed] := by
+    simpa only [List.mem_singleton] using hi
   obtain ⟨v',hu,he⟩ := retireHeaderFrame_pair_exec body [seed] (by simp) S M rfl rfl rfl hframe
     (by intro i hi; simpa only [List.mem_singleton.mp hi] using hblank)
-    _ _ (hport src) (hport dst) xs ys v depth
+    _ _ (hport src hsrc) (hport dst hdst) xs ys v depth
   have hlength : (M.R seed).length = B := by simp [M,callerSolverWidthState,seed]
   refine ⟨v',hu,?_⟩
   simpa only [List.map_cons,List.map_nil,List.sum_cons,List.sum_nil,List.length_cons,List.length_nil,

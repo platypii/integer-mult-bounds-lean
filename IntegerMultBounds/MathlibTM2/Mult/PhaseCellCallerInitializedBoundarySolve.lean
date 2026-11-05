@@ -1,6 +1,5 @@
 module
 
-
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerSeededBoundarySolve
 
 @[expose] public section
@@ -60,7 +59,6 @@ theorem callerInitializedBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src
       ((r.gridCost p l t producer.gridWork+22*tape.length+26)+(2*(∑ i, (r.words i).length)+607))
     let solveStock := setupStock p u l target s t Fs.length+(31*tape.length+9+(C+1)*producer.gridStock p l t r)
     let volume := r.inputs.length*s*(2*p+13)
-    let port : Fin tapeCount → Fin (MachineTapes (T+solverRegisterCount)) := Fin.natAdd (((T+solverRegisterCount)+headerCount)+175)
     ∃ v' n output, ∃ banks : List (List (List GaussianInt)),
       v'.user = v.user ∧ n ≤ (4*B+5)+((solveTime+(242*volume+45))+(2*B+3)) ∧
       ExactCoreProduced p s (fun _ => 0) (fun _ => J) r output ∧
@@ -68,8 +66,8 @@ theorem callerInitializedBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v F)+depth+
         (2*(4*B+5)+(solveStock+(480*volume+86)))) depth
         (callerInitializedBoundarySolve src hR hQ recovery) (mk v F) n
-        (mk v' {F with R := (Function.update F.R (port (publicationReg 95))
-          ((banks.map (fun rows => cstream A (2*p+13) rows.flatten)).flatten++S.R (port (publicationReg 95))))}) := by
+        (mk v' {F with R := (Function.update F.R (fullHeader (T+solverRegisterCount) (.publication 6))
+          ((banks.map (fun rows => cstream A (2*p+13) rows.flatten)).flatten++S.R (fullHeader (T+solverRegisterCount) (.publication 6))))}) := by
   dsimp only
   let B := inverseCallerWordWidth p u l target s t
   let F := callerBoundaryGeometryState widthSource s coreWidth (2*p+13) S
@@ -85,9 +83,11 @@ theorem callerInitializedBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src
     src hsrc hR hQ widthSource coreWidth hw hroom recovery hA hp hst hu hwidth hθ hgap hbudget hband hpad htarget
     Fs hFs X Y hX hY J hJ W radius v₁ S hraw hzero hblank hleft hambient hword hprivate C hpush hbody depth
   rw [callerSolverGeometry_width] at he₂
-  let ys := (banks.map (fun rows => cstream A (2*p+13) rows.flatten)).flatten++S.R (port (publicationReg 95))
+  let ys := (banks.map (fun rows => cstream A (2*p+13) rows.flatten)).flatten++S.R (fullHeader (T+solverRegisterCount) (.publication 6))
   obtain ⟨v₃,hu₃,he₃⟩ := callerSolverWidthRetire_exec body B F
-    (hblankF (.input (familyInverseScalarReg .wr))) (publicationReg 94) (publicationReg 95)
+    (hblankF (.input (familyInverseScalarReg .wr))) (port (publicationReg 94)) (fullHeader _ (.publication 6))
+    (solverRegister_ne_routing T (.input (familyInverseScalarReg .wr)) (publicationReg 94)).symm
+    (solverRegister_ne_header T (.input (familyInverseScalarReg .wr)) (.publication 6)).symm
     (F.R (port (publicationReg 94))) ys v₂ depth
   have hs : (callerSolverWidthState B F).R (port (publicationReg 94)) = F.R (port (publicationReg 94)) := by
     dsimp only [callerSolverWidthState]

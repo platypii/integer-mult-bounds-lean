@@ -67,7 +67,6 @@ theorem callerSeededBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src 8 �
       ((r.gridCost p l t producer.gridWork+22*tape.length+26)+(2*(∑ i, (r.words i).length)+607))
     let solveStock := setupStock p u l target s t Fs.length+(31*tape.length+9+(C+1)*producer.gridStock p l t r)
     let volume := r.inputs.length*s*(2*p+13)
-    let port : Fin tapeCount → Fin (MachineTapes (T+solverRegisterCount)) := Fin.natAdd (((T+solverRegisterCount)+headerCount)+175)
     ∃ v' n output, ∃ banks : List (List (List GaussianInt)),
       v'.user = v.user ∧ n ≤ solveTime+(242*volume+45) ∧
       ExactCoreProduced p s (fun _ => 0) (fun _ => J) r output ∧
@@ -75,8 +74,8 @@ theorem callerSeededBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src 8 �
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v F)+depth+
         (solveStock+(480*volume+86))) depth
         (callerSolveBoundaryCrops (callerFullLineInput T src) producer (callerSolverCropSources src) recovery) (mk v F) n
-        (mk v' {F with R := (Function.update F.R (port (publicationReg 95))
-          ((banks.map (fun rows => cstream A (2*p+13) rows.flatten)).flatten++S.R (port (publicationReg 95))))}) := by
+        (mk v' {F with R := (Function.update F.R (fullHeader (T+solverRegisterCount) (.publication 6))
+          ((banks.map (fun rows => cstream A (2*p+13) rows.flatten)).flatten++S.R (fullHeader (T+solverRegisterCount) (.publication 6))))}) := by
   dsimp only
   let B := inverseCallerWordWidth p u l target s t
   let F := callerBoundaryGeometryState widthSource s coreWidth (2*p+13) S
@@ -119,10 +118,10 @@ theorem callerSeededBoundarySolve_exec (src : Fin 11 → Fin T) (hsrc : src 8 �
     (by simpa [cropSources,callerSolverCropSources,globalValues] using hrawM 4)
     (by rw [hread _ (solverRegister_ne_header T (.input (familyInverseScalarReg .wr)) (.publication 3)).symm]; exact hword)
     hprivateM C hpush hbody depth
-  have harc : boundaryCropRegister (T+solverRegisterCount) cropSources 95 = port (publicationReg 95) :=
-    boundaryCropRegister_private _ _ 95 (by decide +kernel)
-  have hreadArc : M.R (port (publicationReg 95)) = S.R (port (publicationReg 95)) :=
-    hread _ (solverRegister_ne_routing T (.input (familyInverseScalarReg .wr)) (publicationReg 95)).symm
+  have harc : boundaryCropRegister (T+solverRegisterCount) cropSources 95 = fullHeader (T+solverRegisterCount) (.publication 6) :=
+    boundaryCropRegister_archive (T+solverRegisterCount) cropSources
+  have hreadArc : M.R (fullHeader (T+solverRegisterCount) (.publication 6)) = S.R (fullHeader (T+solverRegisterCount) (.publication 6)) :=
+    hread _ (solverRegister_ne_header T (.input (familyInverseScalarReg .wr)) (.publication 6)).symm
   rw [harc,hreadArc] at he₂
   exact ⟨v₂,n₂,output,banks,hu₂,hn₂,hproduced,hbanks,he₂⟩
 

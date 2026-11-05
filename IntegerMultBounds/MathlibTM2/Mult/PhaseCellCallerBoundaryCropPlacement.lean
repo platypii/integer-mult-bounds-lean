@@ -12,11 +12,11 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2
 variable {T : ℕ}
 noncomputable section
 
-def boundaryCropKeys : Fin 9 → Fin 117 := ![15,16,17,60,61,62,63,64,65]
-def boundaryCropPortTag : Fin 9 → Role ⊕ Fin 2 :=
+def boundaryCropKeys : Fin 10 → Fin 117 := ![15,16,17,60,61,62,63,64,65,95]
+def boundaryCropPortTag : Fin 10 → Role ⊕ Fin 2 :=
   ![.inr 0,.inr 1,.inl (.publication 3),.inl (.publication 0),
     .inl (.publication 1),.inl (.publication 2),.inl (.publication 4),
-    .inl (.publication 5),.inl .zero]
+    .inl (.publication 5),.inl .zero,.inl (.publication 6)]
 
 theorem boundaryCropKeys_injective : Function.Injective boundaryCropKeys := by decide +kernel
 
@@ -42,17 +42,17 @@ theorem boundaryCropPort_injective (T : ℕ) (src : Fin 2 → Fin T)
       exact False.elim (header_ne_bank id k (src r) ((Fin.castAdd_injective _ _) he.symm))
     | inr k => exact congrArg Sum.inr (hsrc ((bank_injective id Function.injective_id) ((Fin.castAdd_injective _ _) he)))
 
-noncomputable def boundaryCropRole (i : Fin 117) : Option (Fin 9) := by
+noncomputable def boundaryCropRole (i : Fin 117) : Option (Fin 10) := by
   classical
   exact if h : ∃ j, boundaryCropKeys j = i then some h.choose else none
 
-theorem boundaryCropRole_key (j : Fin 9) : boundaryCropRole (boundaryCropKeys j) = some j := by
+theorem boundaryCropRole_key (j : Fin 10) : boundaryCropRole (boundaryCropKeys j) = some j := by
   classical
   have h : ∃ k, boundaryCropKeys k = boundaryCropKeys j := ⟨j,rfl⟩
   simp only [boundaryCropRole,dite_eq_left h]
   exact congrArg some (boundaryCropKeys_injective h.choose_spec)
 
-theorem boundaryCropRole_recovers (i : Fin 117) (j : Fin 9) (h : boundaryCropRole i = some j) :
+theorem boundaryCropRole_recovers (i : Fin 117) (j : Fin 10) (h : boundaryCropRole i = some j) :
     boundaryCropKeys j = i := by
   classical
   unfold boundaryCropRole at h
@@ -75,7 +75,7 @@ theorem boundaryCropRegister_injective (T : ℕ) (src : Fin 2 → Fin T)
   · intro i k j hi hk
     exact (boundaryCropRole_recovers i j hi).symm.trans (boundaryCropRole_recovers k j hk)
 
-theorem boundaryCropRegister_shared (T : ℕ) (src : Fin 2 → Fin T) (i : Fin 9) :
+theorem boundaryCropRegister_shared (T : ℕ) (src : Fin 2 → Fin T) (i : Fin 10) :
     boundaryCropRegister T src (boundaryCropKeys i) =
       Fin.castAdd tapeCount (boundaryCropPort T src (boundaryCropPortTag i)) := by
   simp only [boundaryCropRegister,sharedRegisterPlacement,boundaryCropRole_key]
@@ -130,6 +130,10 @@ theorem boundaryCropRegister_count_agrees (T : ℕ) (src : Fin 2 → Fin T)
     boundaryCropRegister T src (boundarySeamCropCount slot) =
       boundaryGeometryRegister T widthSource (boundarySeamCropCount slot) := by
   rw [boundaryCropRegister_count,boundaryGeometryRegister_count]
+
+@[simp] theorem boundaryCropRegister_archive (T : ℕ) (src : Fin 2 → Fin T) :
+    boundaryCropRegister T src 95 = fullHeader T (.publication 6) :=
+  boundaryCropRegister_shared T src 9
 
 end
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.CallerLayout
