@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4311 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4312 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -33405,3 +33405,30 @@ ledger, and connect the S4 root with full integrity verification. These are stil
 substantial open gates. No percentage, remaining line count or calendar ETA is
 supported by the current evidence. Passing helper audits is not a substitute for
 these acceptance gates; S4 remains incomplete.
+
+
+### S4 interface resolution: overlapping boundary publication is supported
+
+Inspection of CorePublicationPending.step and
+restoringPublicationClasses_exec_within confirms that the existing execution
+fold already permits overlapping classes. Every overwrite carries the same
+absolute target/error guarantee; no pairwise class-disjointness premise occurs.
+The overlap concern in the preceding review therefore needs no new selector or
+new overwrite invariant.
+
+BoundaryPublicationClasses now constructs singleton classes for the three
+boundary cores, retaining each core's actual length. Their order is the reverse
+of crop execution, matching the prepended archive order. The proved
+proper_boundaryPublicationClasses_cover supplies exactly the restoring fold's
+coverage premise from the existing fitting-or-boundary theorem. Thus the fixed
+three-slot superset is compatible with this publication interface, including a
+clipped final core. Actual row-format conversion and per-class publication
+execution remain required before instantiating the fold.
+
+Guarded check passes at 1891.9 MiB; dependency build passes (4354 jobs,
+2.6 GiB aggregate peak). Next resolve the packet-format handoff and connect the
+actual proper and seam traces to these classes. The complete axis endpoint,
+tensor/fused exposure composition and aggregate root bounds remain open; S4 is
+incomplete. Default proof limits are unchanged.
+Expanded axiom audit passes for 345566 declarations at 3211.4 MiB, allowing
+only propext, Quot.sound and Classical.choice.
