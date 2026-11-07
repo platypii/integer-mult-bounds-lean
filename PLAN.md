@@ -35032,3 +35032,106 @@ The trimmed final import closure also rebuilds successfully (4005 jobs, 2.6 GiB
 aggregate peak, 0.4 min). Re-running the complete preparation/controller/least-
 capacity axiom audit on that final build again reports only standard axioms
 (3874.9 MiB audit peak). The removed draft wrappers have no code consumers.
+
+### S4 inverse padding correspondence and return continuation
+
+`Routing/PaddedFieldInverseLayout.lean` proves the padded column tail is exactly
+`replicate (2^k-M) (replicate B fill)`, using the structural ordinary-column
+index theorem. Therefore zero-extending the current real column stream produces
+the exact input of the existing inverse dyadic bit loop. No old binary field
+names or supplied layout witness are used. The module also gives structural
+real-row/column count and encoded-length facts for control generation. Its
+guarded check passes at 1937.0 MiB without warnings.
+
+`Routing/PaddedFieldInverseMove.lean` instantiates the actual inverse loop on
+that derived padded stream. `returnPaddedRows_exec` returns the current tensor
+to padded real-row order, with `k*(64*V+3)+2` time and shared stock `200*V`.
+`cropReturnedRows_exec` executes generated row cropping on exactly that output,
+restores the real row-major stream and borrowed suffix, and costs `64*V` with
+stock allowance `128*V`. Guarded check: 1943.7 MiB, no warnings.
+
+`Routing/FieldHeaderCopy.lean` supplies a small reusable replacement operation
+for restoring a retained ordinary width to an obsolete work tape. It uses
+existing cleanup and unary copy, with exact source/scratch restoration and native
+push bound two. Guarded check: 1931.4 MiB, no warnings.
+
+`Routing/MixedRadixReturnFinish.lean` proves the complete return continuation.
+It generates real row volume `M*R` and row clock `P*B` from retained masters,
+executes current-field cropping and retires evolved work headers. It restores
+scratch and masters exactly, with time `128*V` and stock allowance `256*V`.
+The default-limit guarded check passes at 1987.9 MiB without warnings.
+
+`Routing/MixedRadixReturn.lean` now defines the fixed sixteen-tape reverse
+controller. Preparation generates plane width `B*R`, real prefix volume
+`M*(B*R)`, copies the original outer-prefix count for column padding, and uses
+the existing generated pad program. Its padding counter is retired before
+becoming the evolving `P*2^k` header. The real-volume work tape is reset to R,
+and the bit count is copied from the current exponent master. The controller
+then runs the inverse bit loop and the proved return continuation. Definition
+and native-bound checking passes at 1934.6 MiB without warnings.
+
+The next gate is actual `prepareReturn` execution, then full reverse-controller
+composition with a source-only endpoint and least-capacity bounds. The current
+real field length M and its exponent must describe the post-map field; do not
+reuse obsolete forward names after a length-changing local map. Keep this
+inverse chunk uncommitted for that larger proof. No push is authorized. Full
+S4, monotone halo emission, axis/tensor integration and compiler/root acceptance
+remain open. Periodic-recovery work is untouched.
+
+Validation for these return components: guarded import-closure build passes
+(4009 jobs, 2.5 GiB aggregate peak). A temporary guarded axiom audit of inverse
+input correspondence, actual inverse/row-crop traces, return continuation stock
+and preparation native bound reports only standard Lean axioms (3876.0 MiB
+audit peak). Plan and whitespace checks pass. No commits or pushes were made.
+This does not establish the still-open preparation or full return execution.
+
+### S4 complete current-length non-dyadic return execution
+
+`MixedRadixReturn.prepareReturn_exec` now proves every actual preparation stage:
+generate `B*R`, generate `M*(B*R)`, copy the original outer-prefix count, pad
+current real columns, restore block width R, generate evolving prefix count
+`P*2^k`, and copy runtime bit count k. Its exact endpoint changes only the padded
+source and four work headers, with all other tapes restored. The generated
+padding counter is retired before its tape becomes the evolving prefix header.
+The complete guarded check passes at 2013.7 MiB without warnings/default-limit
+changes; preparation costs at most `256*V` in padded payload V.
+
+`Routing/MixedRadixReturnRun.lean` composes that actual preparation with the
+verified inverse bit loop and current-row crop/retirement continuation.
+`returnField_exec` proves a source-only endpoint: ordinary column order becomes
+row order for the current matrices; suffix, user state, retained masters and all
+work tapes are preserved/restored exactly. There is no assumed execution supplier
+or inverse-layout witness. Time is `k*(64*V+3)+384*V+2` and the shared stock
+allowance is `1000*V`.
+
+`returnField_least_exec` specializes the ordinary exponent master to the current
+`Nat.clog 2 M`. By the below-two padding factor, real-volume bounds are
+`(Nat.clog 2 M)*(128*Vreal+3)+768*Vreal+2` time and `2000*Vreal` stock. The
+complete execution proof passes its guarded check at 2027.8 MiB without warnings.
+Both forward and inverse non-dyadic movements are now concrete sixteen-tape
+programs with generated/retired transient controls, exact permutation endpoints,
+`O(V log M)` time and `O(V)` workspace. The return statement is independent of
+old forward values and sizes, so it supports a changed local field length.
+
+This closes the inverse movement component, not S4. The next primary gate is
+monotone halo emission and its integration with these movers into the retained-
+halo axis invariant. Establish movement boundary stock from equal source lengths
+when the outer composition needs it, rather than accumulating per-phase reserves.
+The outer driver still must construct the retained dimension/exponent masters
+from its dimensions. Regular initialization/global routing, complete tensor
+locality/error/support and compiler/root acceptance remain open. Before rebuilding
+generic routing, evaluate the recorded candidate for regular low-bit collection
+using the same short-field moves; no global replacement has yet been proved.
+
+Commit the accumulated inverse layouts, return controller and complete execution
+proof together as one larger local chunk. No push is authorized. Preserve the
+user's periodic-recovery work. Full S4 remains incomplete.
+
+Final return validation: guarded complete import-closure build passes (4011
+jobs, 2.6 GiB aggregate peak). A temporary guarded audit of actual preparation,
+complete return and least-capacity theorem reports only standard Lean axioms
+(3876.8 MiB audit peak). Plan and whitespace checks pass. The periodic source
+extension already has `padPrefixInPlace_exec` in `Mult/PhaseCellPadPrefixInPlace.lean`; inspect
+and reuse its bounded whole-fiber prefix/suffix scans before rebuilding periodic
+halo setup. The new work needed is the monotone window/overlap emission itself
+and its axis invariant, not another general movement or publication branch.
