@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4468 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4472 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -34212,3 +34212,125 @@ instantiate the analytic class bounds from the selected global data; connect
 these contracts and the compact budgets to the outer execution theorem.
 Compiler/lowering, tensor/fused and root acceptance remain open. S4 remains
 incomplete. Do not push without an explicit request.
+
+### S4 approach review: prioritize the outer consumer
+
+The committed caller now has executed proper/seam publication, restoration,
+compact budgets and derived geometry/reference solutions. These are substantive
+local results. They do not establish S4: the latest raw caller still has no outer
+consumer, while tensor/fused sharing, selected-global analytic/physical supplier
+instantiation, compiler/lowering and root acceptance remain open.
+
+The existing review directive to freeze routing/class-wrapper expansion has not
+been enforced strongly enough. Stop measuring progress by additional local
+helpers or successive passing audits of that layer. Finish the current bounded
+canonical-format check, then freeze this interface. The next milestone is one
+outer axis/tensor execution consumer of the current raw caller. Make its actual
+remaining hypotheses explicit and close those producer/locality/error/support
+obligations in dependency order. Add helpers only when that concrete application
+requires them. Preserve manuscript core/halo decomposition and share exposure
+across axes; do not weaken the final S4 target to the local caller.
+
+Acceptance remains: executed selected outer composition with restoration and
+reserved/suffix support; locality/error and full-tensor guarantees; shared
+setup/exposure and combined time/stock bounds; compiler/root integration and
+proof-integrity checks. No percentage or short completion forecast is supported
+by the current evidence. S4 remains incomplete and substantial integration work
+remains. Keep larger local commits; do not push without explicit instruction.
+
+The current canonical gather sizing/precision helpers pass individually. Their
+application to the large raw execution declaration still exceeds the default
+heartbeat limit. Preserve that draft at /tmp/S4RawCanonicalGatherIntegrationDraft.lean;
+the tracked entry point is restored to the verified 1cf624d1 version. Do not spend
+another open-ended local optimization cycle here before establishing the outer
+consumer. No commit or push was made during this review.
+
+### S4 outer consumer: separate fused R4 movement from numerical execution
+
+The revised dependency audit found that the old inverse-axis machine was removed
+with the Neumann implementation (`Fast/ResampBAxis.lean` records the restore
+commit). The structural sequence and count-driven shared-stock proofs already
+exist; neither needs another wrapper proof. A direct counted loop over
+`rawBoundaryProgram` would execute `sharedGatherProgram` on every axis and repay
+exposure, conflicting with S4's fused target. Do not use that non-fused reference
+as the final axis body.
+
+`PhaseCellFusedAxisProgram` now constructs the fixed outer counted program.
+`fusedProperProgram` retains the same scalar/table setup, numerical solver and
+retirement and accepts R4 routing/publication contexts. The equality
+`sharedProperProgram_eq_fusedProperProgram` proves the verified proper program
+is an instance of this exact numerical construction. `fusedAxisStep` composes
+ordinary caller preparation, that proper class, the existing seam fallback,
+owned-header retirement and R4's return to the shared tensor layout.
+`fusedAxesProgram` counts axes from a tape, without unrolling dimension-dependent
+program syntax. The module checks at 3189.3 MiB under default proof limits. Its guarded build
+passes at 3.6 GiB aggregate; the axiom audit passes for 346800 declarations
+at 3250.3 MiB.
+
+This is program construction and a reuse equality, not a closed outer execution
+or shared-exposure theorem. Four executable R4 suppliers (axis preparation,
+proper routing, proper publication, tensor return) still need their actual
+readiness, frame, semantic and cost proofs. Next match the routed-bank endpoint
+to `inputClassProgram`, and the publication endpoint to boundary completion;
+then instantiate the existing count-driven invariant with those actual traces.
+Keep exposure outside the axis loop. Compiler/root acceptance and full tensor
+locality/error/support remain open. S4 is incomplete. No push is authorized.
+
+Unused canonical-gather helper drafts are preserved under /tmp/S4CanonicalGatherDraft/IntegerMultBounds/MathlibTM2; restore only if an outer supplier application requires them.
+
+### S4 executable R4-prefix handoff into the numerical bank
+
+The fused step's concrete handoff needs to consume an R4 output prefix while
+preserving the external borrowed suffix. The old InputReady frame rule fixed
+every non-source register, including the external R4 source. Generalized it to
+`InputReady.of_bank_frame`: only the numerical bank (except source), its retained
+scalar table and the observed left work stacks must agree. The old `of_frame`
+now follows from that rule. This is one shared proof of readiness, not duplicated
+per routing implementation. It checks at 3088.0 MiB.
+
+`PhaseCellRoutedClassInput` implements a counted prefix transfer and restores its
+order in the class source. The exact execution costs 6*payload.length+6, preserves
+the borrowed suffix in the external R4 source, and restores temporary storage.
+`installRoutedClassInput_exec_of_ready` proves readiness at the actual returned
+state, exact boundary-stock equality and a linear stock certificate using the
+existing bounded native-execution theorem. There is no supplied execution
+premise and no term proportional to the borrowed suffix. It checks at 3089.5 MiB.
+The fused axis program now executes this adapter after its R4 route routine.
+Its integration build passes, including the dependent caller modules (19.9 GiB
+aggregate guarded peak, 1.5 minutes). The broader selected-caller integration
+also passes (28.3 GiB aggregate, 1.6 minutes); the axiom audit passes for
+346805 declarations at 3249.8 MiB.
+
+Next instantiate the R4 packet producer's exact ordered-payload/count endpoint,
+then apply the existing `inputClassRun_exec_of_ready` to this returned bank.
+R4 proper publication/tensor return, full outer invariant, shared exposure,
+tensor locality/error/support and compiler/root acceptance remain open. The
+new handoff is not a proof of the entire fused axis or tensor. S4 is incomplete.
+Keep this accumulated chunk local; no push is authorized.
+
+### S4 actual numerical execution from the R4 prefix
+
+`routedInputClassRun_exec` composes the proved owned-prefix handoff with the
+existing `inputClassRun_exec_of_ready`. Its endpoint consumes only the external
+owned prefix, preserves the external borrowed tail and original class-source
+tail, and retains the actual certified numerical outputs. The handoff boundary
+stock equality makes the combined scratch charge the maximum of the two phase
+allowances, rather than their sum. The declaration checks at 3094.1 MiB.
+
+`routedCommonCoreClassRun_exec` instantiates that execution with the same actual
+common-core job constructors as the verified single-axis caller. It derives all
+shared job/header, interval, queue and volume facts using existing structural
+core-job lemmas. `coreJobs_payloads` checks packet order once: the supplied stream
+is `coreSupplierStream ... Fs.reverse`, matching the common jobs. No routing
+execution oracle or supplied numerical trace is a premise. The ordinary stream,
+count, readiness and mathematical data are the R4 producer's remaining endpoint
+obligations. This specialization checks at 3266.1 MiB.
+
+The fused proper program's routing context now places the actual handoff/solver
+sequence directly after the R4 producer, matching this proved program subtree.
+The verified single-axis instance equality still passes; the fused program checks
+at 3193.2 MiB. The combined build passes at 6.0 GiB aggregate; the axiom
+audit passes for 346813 declarations at 3249.5 MiB. Full axis publication/seam
+handoff, concrete R4 packet generation,
+outer counted invariant and tensor/compiler/root acceptance remain open. S4 is
+incomplete. Preserve larger local chunks; no push is authorized.

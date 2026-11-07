@@ -41,16 +41,19 @@ namespace InputReady
 variable {bank : ComputedClassBank → Fin T} {hinj : Function.Injective bank}
   {rg : TblR 12 → Fin T} {B D s width radius L : ℕ} {st : TblSt 12 A} {S F : Stacks T A}
 
-theorem of_frame (h : InputReady bank hinj rg B D s width radius L st S)
-    (hR : ∀ k, k ≠ control bank .source → F.R k = S.R k)
-    (hL : ∀ i, F.L (recovery bank (.work i)) = S.L (recovery bank (.work i)))
-    (hRg : ∀ r, rg r ≠ control bank .source) : InputReady bank hinj rg B D s width radius L st F := by
+/-- External routing registers may change; only the numerical bank and retained
+scalar table are observed by readiness. -/
+theorem of_bank_frame (h : InputReady bank hinj rg B D s width radius L st S)
+    (hbank : ∀ k : ComputedClassBank, k ≠ .control .source → F.R (bank k) = S.R (bank k))
+    (htable : ∀ r, F.R (rg r) = S.R (rg r))
+    (hL : ∀ i, F.L (recovery bank (.work i)) = S.L (recovery bank (.work i))) :
+    InputReady bank hinj rg B D s width radius L st F := by
   have hg (i : Fin 117) : F.R (geometry bank i) = S.R (geometry bank i) :=
-    hR _ (by simp [geometry,control,hinj.eq_iff])
+    hbank (.geometry i) (by intro he; cases he)
   have hn (i : RecoveryBank) : F.R (recovery bank i) = S.R (recovery bank i) :=
-    hR _ (by simp [recovery,control,hinj.eq_iff])
+    hbank (.recovery i) (by intro he; cases he)
   have hc (i : ComputedClassControl) (hi : i ≠ .source) : F.R (control bank i) = S.R (control bank i) :=
-    hR _ (by intro he; exact hi (ComputedClassBank.control.inj (hinj he)))
+    hbank (.control i) (by intro he; exact hi (ComputedClassBank.control.inj he))
   refine ⟨?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · rw [hg]; exact h.hs
   · rw [hg]; exact h.hw
@@ -62,25 +65,28 @@ theorem of_frame (h : InputReady bank hinj rg B D s width radius L st S)
   · rw [hg]; exact h.h106
   · rw [hg]; exact h.h116
   · intro k hk
-    have hne : k ≠ control bank .source := by
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl <;> simp [control,hinj.eq_iff]
-    rw [hR k hne]; exact h.hprepBlank k hk
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl
+    all_goals rw [hc _ (by decide)]; exact h.hprepBlank _ (by simp)
   · intro k hk
-    have hne : k ≠ control bank .source := by
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl
-      all_goals simp [plan,RecoveryBanks.plan,RecoveryBanks.masterPlan,recovery,control,hinj.eq_iff]
-    rw [hR k hne]; exact h.hreaderBlank k hk
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl
+    all_goals first
+      | (rw [hc _ (by decide)]; exact h.hreaderBlank _ (by simp [plan,RecoveryBanks.plan,RecoveryBanks.masterPlan]))
+      | (change F.R (recovery bank _) = []; rw [hn]; exact h.hreaderBlank _ (by simp [plan,RecoveryBanks.plan,RecoveryBanks.masterPlan]))
   · change ∀ r : TblR 12, F.R (rg r) = tblRho D (List.replicate D tick) [] st r
-    intro r
-    rw [hR _ (hRg r)]
-    exact h.hinput r
+    intro r; rw [htable]; exact h.hinput r
   · intro k hk
-    have hne : k ≠ control bank .source := by
-      intro he; subst k
-      exact inputRegisters_off bank hinj _ (by simp [inputAssignments]) hk
-    rw [hR k hne]; exact h.hinputBlank k hk
+    have hregs : inputRegisters bank = (inputAssignments.map Prod.snd).map bank := by
+      simp only [inputRegisters,inputCopies,List.map_map,Function.comp_def]
+    rw [hregs] at hk
+    obtain ⟨role,hrole,rfl⟩ := List.mem_map.mp hk
+    have hne : role ≠ .control .source := by
+      intro he
+      subst role
+      simp [inputAssignments] at hrole
+    rw [hbank role hne]
+    exact h.hinputBlank _ (by rw [hregs]; exact List.mem_map.mpr ⟨role,hrole,rfl⟩)
   · intro i hi; rw [hn]; exact h.hscalar i hi
   · intro i; rw [hn]; exact h.hmasters i
   · intro i hi; rw [hn]; exact h.hcontrols i hi
@@ -89,6 +95,14 @@ theorem of_frame (h : InputReady bank hinj rg B D s width radius L st S)
   · rw [hc .saved (by decide)]; exact h.hsaved
   · rw [hc .tmp (by decide)]; exact h.htmp
   · rw [hc .loopSaved (by decide)]; exact h.hloopSaved
+
+theorem of_frame (h : InputReady bank hinj rg B D s width radius L st S)
+    (hR : ∀ k, k ≠ control bank .source → F.R k = S.R k)
+    (hL : ∀ i, F.L (recovery bank (.work i)) = S.L (recovery bank (.work i)))
+    (hRg : ∀ r, rg r ≠ control bank .source) : InputReady bank hinj rg B D s width radius L st F := by
+  exact h.of_bank_frame
+    (fun k hk => hR _ (by intro he; exact hk (hinj he)))
+    (fun r => hR _ (hRg r)) hL
 
 end InputReady
 end ComputedClassBanks
