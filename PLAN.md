@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4476 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4473 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -34519,3 +34519,57 @@ axis now has only preparation/routing/return program holes. The standard code
 module checks at 3393.0 MiB. Final integration passes (16660 jobs, 6.0 GiB
 aggregate, 0.3 minutes); the combined local axiom audit passes for 483419
 declarations at 10258.3 MiB. All changed production modules stay below 3.6 GiB.
+
+
+### S4 correction: reuse the complete verified publication continuation
+
+The previous three publication chunks rebuilt a lower-level continuation that
+already exists. Comparing the code and endpoint contracts shows that
+`publishedClassProgram` generates geometry/origins/dimensions, loads the retained
+masters, generates binary transpose controls, executes transpose/scatter and
+retires all owned controls. It does not invoke `sharedGatherProgram` or
+`restoringAllocatedExposure`. Both the old and replacement publication cores
+return the same native class-scatter endpoint; the replacement's consuming
+transfer and arbitrary numerical-result suffix are unnecessary for the selected
+caller, whose numerical result starts fresh. Reusing the complete continuation
+therefore preserves the S4 target and avoids duplicating its control proofs.
+
+`fusedProperProgram` now reuses that exact complete publication code, setup,
+solver and retirement. Its only context parameter is input movement. The
+verified old proper program is definitionally the old-input-movement instance,
+proved by `sharedProperProgram_eq_fusedProperProgram`. The fused axis retains
+only preparation, input-routing and tensor-return program suppliers. Shared
+exposure remains an outer obligation; the old full raw caller is not looped.
+
+Removed the now-unused `PhaseCellGeneratedRoutedClassOutput`,
+`PhaseCellRoutedNumericalPublication` and `PhaseCellRoutedPublicationProgram`
+branch; restore from 19b8e368 if an actual caller later needs arbitrary result
+suffixes. This removes roughly 600 lines and three CI modules. Keep the routed
+input handoff and its stock theorem: these address the changed input movement.
+The structural `mn_seq_within_max` rule now simplifies the real proper/seam
+composition in `callerPublishedBoundaryExecution_exec`, rather than serving only
+the removed branch. Both changed production files pass guarded checks at
+3536.8 and 3534.2 MiB under default limits.
+
+The next proof must connect actual R4 input movement to the existing initialized
+and input-table numerical wrappers and publication continuation. A producer that
+adds an owned prefix followed by the routed numerical consumer restores that
+external buffer, so the combined trace can fit those existing single-result
+wrappers. Instantiate the producer with actual R4 code; do not assume its trace
+as a final S4 hypothesis. The ordinary class/readiness and geometry contracts
+already exist. Avoid another publication-format/control reconstruction.
+
+An additional dependency check found the generic `Fast.ResampBAll.rsbAllG`
+outer driver remains intact; only its Neumann instance was removed. Its
+`swapPass` re-exposes native streams, so its concrete cost cannot be substituted
+for the required fused R4 execution. Reuse its tensor indexing/line semantics
+where appropriate, not its per-axis exposure schedule. The remaining actual
+axis invariant, tensor locality/error/support, shared exposure and compiler/root
+acceptance are still open. S4 is incomplete; no push is authorized.
+
+The reuse version's guarded integration build passes for the fused program and
+the complete selected raw published-boundary caller (16955 jobs, 46.7 GiB
+aggregate peak, 4.3 minutes). The local combined-root axiom audit passes for
+485820 declarations at 10363.0 MiB. Removed modules have no remaining code or
+script consumers. No proof limits were raised, and the periodic-recovery work
+remains untouched. Commit this cleanup as one local chunk; do not push.

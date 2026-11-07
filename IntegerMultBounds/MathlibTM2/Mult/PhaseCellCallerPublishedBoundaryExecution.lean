@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.StackStockComposition
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerBoundaryCompletion
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryCallerReady
 
@@ -108,12 +109,7 @@ theorem callerPublishedBoundaryExecution_exec (src : Fin 11 → Fin T) (hsrc : s
   rw [hfinal] at he hstock
   refine ⟨output,haccuracy,v',properSteps+m,hu.trans hproperUser,Nat.add_le_add_left hm properSteps,
     hstock.trans hproperStock,?_⟩
-  apply ExecWithin.seq
-  · exact hproperExec.mono (by intro d z hz; omega)
-  · exact he.mono (by
-      intro d z hz
-      dsimp only [M] at hz
-      omega)
+  exact mn_seq_within_max (le_of_eq hproperStock) hproperExec he
 
 end
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.CallerLayout

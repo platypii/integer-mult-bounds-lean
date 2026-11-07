@@ -3,7 +3,6 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerRawProgram
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedLoopSharedStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoutedClassInput
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoutedPublicationProgram
 
 /-! Outer S4 control separates R4 movement from the numerical core. Calling the
 complete raw caller on every axis would also call sharedGatherProgram on every
@@ -11,9 +10,9 @@ axis, repaying its exposure. Instead R4 routes an already exposed tensor into
 the computed class bank and returns numerical results through its own layout.
 
 The program is fixed: axis count, dimensions and packet widths are tape data.
-Publication has a concrete placed program. Its ordinary readiness, and the
-preparation/routing/tensor-return suppliers, still need an outer execution
-proof. This construction alone is not an outer execution theorem. -/
+Publication reuses the verified full continuation, including ordinary control
+producers. Preparation/routing/tensor-return suppliers still need an outer
+execution proof. This construction alone is not an outer execution theorem. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.CallerLayout
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
@@ -22,15 +21,12 @@ open IntegerMultBounds.Networks.Shared50ModularControl (prime)
 variable {T Q K : ℕ} {P U : Type}
 noncomputable section
 
-/-- Retain the executed numerical/setup/retirement code, with R4 supplying both
-movement directions. In particular this program does not invoke sharedGatherProgram. -/
+/-- Reuse setup, numerical execution, full publication and retirement verbatim.
+R4 supplies only the input movement context; shared exposure stays outside it. -/
 def fusedProperProgram (bank : ComputedClassBank → Fin T) (hinj : Function.Injective bank)
-    (b : RawRecoveryProgramBounds Q (prime+K) U)
+    (b : RawRecoveryProgramBounds Q (prime+K) U) (hstates : FixedStreamedBank.stateCount ≤ Q)
     (routeProper : Pr P (MachineTapes T) Q (prime+K) U →
-      Pr P (MachineTapes T) Q (prime+K) U)
-    (publishProper : Pr P (MachineTapes T) Q (prime+K) U →
-      Pr P (MachineTapes T) Q (prime+K) U) :
-    Pr P (MachineTapes T) Q (prime+K) U :=
+      Pr P (MachineTapes T) Q (prime+K) U) : Pr P (MachineTapes T) Q (prime+K) U :=
   let physicalBank := CallerLayout.bank bank
   let physicalInj := bank_injective bank hinj
   let numerical := inputTableClassProgram (numericTable T) (masterSources T) (globals T 0) (fullHeader T .zero)
@@ -38,51 +34,23 @@ def fusedProperProgram (bank : ComputedClassBank → Fin T) (hinj : Function.Inj
       (routeProper (inputClassProgram (fullExposedClassBank physicalBank)
         (fullExposedClassBank_injective physicalBank physicalInj) b (numericTable T))))
   .seq (sharedClassSetupProgram T)
-    (.seq (publishProper numerical) (sharedClassRetireProgram T))
+    (.seq (publishedClassProgram numerical (routing T) (publication T)
+      (physicalBank (.recovery (.control .result))) (header T .output) hstates)
+      (sharedClassRetireProgram T))
 
-/-- The verified single-axis proper program is an instance of this same
-numerical construction. R4 replaces the movement contexts, not the solver. -/
+/-- The verified proper caller is precisely the old input-movement instance.
+The fused construction changes no publication or numerical code. -/
 theorem sharedProperProgram_eq_fusedProperProgram
     (bank : ComputedClassBank → Fin T) (hinj : Function.Injective bank)
     (b : RawRecoveryProgramBounds Q (prime+K) U) (hstates : FixedStreamedBank.stateCount ≤ Q) :
     sharedProperProgram (P := P) bank hinj b hstates =
-      fusedProperProgram bank hinj b (fun numerical => .seq (sharedGatherProgram bank hstates) numerical)
-        (fun numerical => publishedClassProgram numerical (routing T) (publication T)
-          ((CallerLayout.bank bank) (.recovery (.control .result))) (header T .output) hstates) := by
+      fusedProperProgram bank hinj b hstates (fun numerical => .seq (sharedGatherProgram bank hstates) numerical) := by
   rfl
-
-/-- Reuse the routing suffix, sharing exactly the numerical result and output
-header with the caller. Other caller storage is outside the private bank. -/
-def fusedPublicationPlacement (bank : ComputedClassBank → Fin T) :
-    Fin PackedTranspose.tapeCount → Fin (MachineTapes T) :=
-  PackedTranspose.publicationPlacement
-    (Fin.castAdd 175 ((CallerLayout.bank bank) (.recovery (.control .result))))
-    (Fin.castAdd 175 (header T .output))
-
-theorem fusedPublicationPlacement_injective (bank : ComputedClassBank → Fin T) :
-    Function.Injective (fusedPublicationPlacement bank) := by
-  apply PackedTranspose.publicationPlacement_injective
-  exact (Fin.castAdd_injective _ _).ne (header_ne_bank bank .output (.recovery (.control .result))).symm
-
-theorem fusedPublicationPlacement_numerical (bank : ComputedClassBank → Fin T) :
-    fusedPublicationPlacement bank PackedTranspose.numericalPort =
-      fullExposedClassBank (CallerLayout.bank bank) (.recovery (.control .result)) := by
-  rw [fusedPublicationPlacement,PackedTranspose.publicationPlacement_numerical,fullExposedClassBank_apply]
-  simp only [classCallerRegister,exposureIntoRouting]
-
-theorem fusedPublicationPlacement_ambient (bank : ComputedClassBank → Fin T) :
-    fusedPublicationPlacement bank PackedTranspose.ambientPort = fullHeader T .output := by
-  rw [fusedPublicationPlacement,PackedTranspose.publicationPlacement_ambient]
-  simp only [fullHeader,classCallerRegister,exposureIntoRouting]
-
-def fusedPublicationProgram (bank : ComputedClassBank → Fin T)
-    (hstates : FixedStreamedBank.stateCount ≤ Q) : Pr P (MachineTapes T) Q (prime+K) U :=
-  embProg (fusedPublicationPlacement bank) Empty.elim
-    (PackedTranspose.standardRoutedPublicationProgram (P := Empty) hstates)
 
 /-- Prepare one axis from the shared tensor, execute the proper class and seam
 fallback, retire owned controls, then restore the tensor layout for the next axis.
-Publication uses the checked standard bank, including its consuming export. -/
+Publication reuses the complete verified caller continuation, including control
+generation and retirement. The alternative export branch is in commit 19b8e368. -/
 def fusedAxisStep (bank : ComputedClassBank → Fin T) (hinj : Function.Injective bank)
     (b : RawRecoveryProgramBounds Q (prime+K) U)
     (src : Fin 11 → Fin T) (widthSource : Fin T) (widths : Fin 3 → Fin T) (recovery : Bool)
@@ -95,10 +63,9 @@ def fusedAxisStep (bank : ComputedClassBank → Fin T) (hinj : Function.Injectiv
     (.seq (.seq (callerCanonicalInputPreparation src)
       (gatherPreparationProgram (solverSource ∘ src) (solverSource widthSource) (solverSource ∘ widths)))
       (.seq (fusedProperProgram (solverSource ∘ bank) ((Fin.castAdd_injective _ _).comp hinj)
-        b (fun numerical => .seq routeProper (.seq (installRoutedClassInput
+        b hstates (fun numerical => .seq routeProper (.seq (installRoutedClassInput
           (fullExposedClassBank (CallerLayout.bank (solverSource ∘ bank)))
-          routeCount routeOutput routeSaved routeTmp) numerical))
-        (fun numerical => .seq numerical (fusedPublicationProgram (solverSource ∘ bank) hstates)))
+          routeCount routeOutput routeSaved routeTmp) numerical)))
         (.seq (callerBoundaryCompletion src b.hR b.hQ (solverSource widthSource) recovery)
           (.seq (clearWords (sharedBoundaryHeaders T)) returnAxis))))
 
