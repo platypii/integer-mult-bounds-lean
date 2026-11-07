@@ -60,6 +60,8 @@ theorem routedCommonCoreClassRun_exec (b : RawRecoveryProgramBounds Q A U)
       n ≤ 6*(coreSupplierStream A width radius L W Fs.reverse).length+6+
         inputClassTimeCost bank hinj b (List.ofFn jobs) B D st width radius L Fs.length W ∧
       List.Forall₂ PackedNormalizedJob.output (List.ofFn jobs) outputs ∧
+      mnSize (mk v' {S with R := (Function.update (Function.update S.R src borrowed)
+        (plan bank hinj).result (outputs.reverse.flatten++S.R (plan bank hinj).result))}) ≤ mnSize (mk v S) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
         max ((Cprog+1)*(6*(coreSupplierStream A width radius L W Fs.reverse).length+6))
           (inputClassWorkspace bank s B D st width radius L Fs.length W reserve)) depth

@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCallerRawProgram
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedLoopSharedStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoutedClassInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedRoutedClassOutput
 
 /-! Outer S4 control separates R4 movement from the numerical core. Calling the
 complete raw caller on every axis would also call sharedGatherProgram on every
@@ -50,14 +51,23 @@ theorem sharedProperProgram_eq_fusedProperProgram
   rfl
 
 /-- Prepare one axis from the shared tensor, execute the proper class and seam
-fallback, retire owned controls, then restore the tensor layout for the next axis. -/
+fallback, retire owned controls, then restore the tensor layout for the next axis.
+The proper result export generates its job width and returns forward job order. -/
 def fusedAxisStep (bank : ComputedClassBank → Fin T) (hinj : Function.Injective bank)
     (b : RawRecoveryProgramBounds Q (prime+K) U)
     (src : Fin 11 → Fin T) (widthSource : Fin T) (widths : Fin 3 → Fin T) (recovery : Bool)
     (routeCount routeOutput routeSaved routeTmp : Fin (MachineTapes (T+solverRegisterCount)))
+    (publishRows publishReplicas publishPacket publishClock : Fin (MachineTapes (T+solverRegisterCount)))
+    (publishVolume publishInput publishSaved publishTmp : Fin (MachineTapes (T+solverRegisterCount)))
     (prepareAxis routeProper publishProper returnAxis :
       Pr P (MachineTapes (T+solverRegisterCount)) Q (prime+K) U) :
     Pr P (MachineTapes (T+solverRegisterCount)) Q (prime+K) U :=
+  let liftedBank := solverSource ∘ bank
+  let liftedInj := (Fin.castAdd_injective _ _).comp hinj
+  let physicalBank := CallerLayout.bank liftedBank
+  let physicalInj := bank_injective liftedBank liftedInj
+  let numericalBank := fullExposedClassBank physicalBank
+  let numericalInj := fullExposedClassBank_injective physicalBank physicalInj
   .seq prepareAxis
     (.seq (.seq (callerCanonicalInputPreparation src)
       (gatherPreparationProgram (solverSource ∘ src) (solverSource widthSource) (solverSource ∘ widths)))
@@ -65,7 +75,10 @@ def fusedAxisStep (bank : ComputedClassBank → Fin T) (hinj : Function.Injectiv
         b (fun numerical => .seq routeProper (.seq (installRoutedClassInput
           (fullExposedClassBank (CallerLayout.bank (solverSource ∘ bank)))
           routeCount routeOutput routeSaved routeTmp) numerical))
-        (fun numerical => .seq numerical publishProper))
+        (fun numerical => .seq numerical (.seq
+          (PackedExactBatch.generatedExport numericalBank numericalInj
+            publishRows publishReplicas publishPacket publishClock publishVolume publishInput publishSaved publishTmp)
+          publishProper)))
         (.seq (callerBoundaryCompletion src b.hR b.hQ (solverSource widthSource) recovery)
           (.seq (clearWords (sharedBoundaryHeaders T)) returnAxis))))
 
@@ -76,12 +89,15 @@ def fusedAxesProgram (bank : ComputedClassBank → Fin T) (hinj : Function.Injec
     (b : RawRecoveryProgramBounds Q (prime+K) U)
     (src : Fin 11 → Fin T) (widthSource : Fin T) (widths : Fin 3 → Fin T) (recovery : Bool)
     (routeCount routeOutput routeSaved routeTmp : Fin (MachineTapes (T+solverRegisterCount)))
+    (publishRows publishReplicas publishPacket publishClock : Fin (MachineTapes (T+solverRegisterCount)))
+    (publishVolume publishInput publishSaved publishTmp : Fin (MachineTapes (T+solverRegisterCount)))
     (count : Fin (MachineTapes (T+solverRegisterCount)))
     (prepareAxis routeProper publishProper returnAxis :
       Pr P (MachineTapes (T+solverRegisterCount)) Q (prime+K) U) :
     Pr P (MachineTapes (T+solverRegisterCount)) Q (prime+K) U :=
   countedLoop count (fusedAxisStep bank hinj b src widthSource widths recovery
-    routeCount routeOutput routeSaved routeTmp prepareAxis routeProper publishProper returnAxis)
+    routeCount routeOutput routeSaved routeTmp
+    publishRows publishReplicas publishPacket publishClock publishVolume publishInput publishSaved publishTmp prepareAxis routeProper publishProper returnAxis)
 
 end
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.CallerLayout

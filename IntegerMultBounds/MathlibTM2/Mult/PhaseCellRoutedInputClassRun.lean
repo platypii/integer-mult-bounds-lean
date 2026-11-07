@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoutedClassInput
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReadyInputClassRun
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRoutedClassStock
 
 /-! Execute the numerical class from an owned R4 output prefix. The actual
 handoff consumes that external prefix, preserves its borrowed suffix, and
@@ -71,6 +72,8 @@ theorem routedInputClassRun_exec (b : RawRecoveryProgramBounds Q A U)
       n ≤ 6*(jobs.flatMap routedPayload).length+6+
         inputClassTimeCost bank hinj b jobs V D st coreWidth radius H N W ∧
       List.Forall₂ PackedNormalizedJob.output jobs outputs ∧
+      mnSize (mk v' {S with R := (Function.update (Function.update S.R src borrowed)
+        (plan bank hinj).result (outputs.reverse.flatten++S.R (plan bank hinj).result))}) ≤ mnSize (mk v S) ∧
       ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
         max ((Cprog+1)*(6*(jobs.flatMap routedPayload).length+6))
           (inputClassWorkspace bank s V D st coreWidth radius H N W reserve)) depth
@@ -116,7 +119,8 @@ theorem routedInputClassRun_exec (b : RawRecoveryProgramBounds Q A U)
     by_cases hs : k = control bank .source
     · subst k; simp [M,hr,hsrcSource]
     · simp [M,hr,hs]
-  refine ⟨v₂,(6*payload.length+6)+n₂,outputs,hu₂.trans hu₁,Nat.add_le_add_left hn _,houtputs,?_⟩
+  refine ⟨v₂,(6*payload.length+6)+n₂,outputs,hu₂.trans hu₁,Nat.add_le_add_left hn _,houtputs,
+    routedClass_boundary_size_le bank hinj jobs outputs houtputs src borrowed v v₂ S hsource hsrcBank,?_⟩
   rw [hend] at ht₂
   exact ExecWithin.seq ht₁ ht₂
 

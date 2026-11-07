@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSlice
+public import IntegerMultBounds.MathlibTM2.StackResources
 
 /-! Relocate an owned prefix in natural order, preserving both borrowed suffixes. -/
 
@@ -36,5 +37,27 @@ theorem movePrefix_exec {count src dst saved tmp : Fin T}
   funext k
   by_cases hsrc' : k = src <;> by_cases hdst : k = dst <;> by_cases hsaved' : k = saved <;>
     simp_all [S₁,movedR,ne_comm]
+
+open IntegerMultBounds.MathlibTM2.Fast.Main
+
+theorem movePrefix_preserves_size (src dst : Fin T) (hne : dst ≠ src)
+    (payload tail : List (Fin (A+4))) (v v' : HS T Q A U) (S : Stacks T A)
+    (hsrc : S.R src = payload++tail) :
+    mnSize (mk v' {S with R := (Function.update (Function.update S.R src tail)
+      dst (payload++S.R dst))}) = mnSize (mk v S) := by
+  let M : Stacks T A := {S with R := Function.update S.R src tail}
+  have ha := mn_size_update (mk v S) v (.rt src) tail
+  have hb := mn_size_update (mk v M) v' (.rt dst)
+    (payload++S.R dst)
+  have hbalanceA : mnSize (mk v M)+(S.R src).length = mnSize (mk v S)+tail.length := by
+    simpa only [M,mk,update_rt,get_rt] using ha
+  have hbalanceB : mnSize (mk v' {S with R := (Function.update (Function.update S.R src tail)
+      dst (payload++S.R dst))})+(S.R dst).length =
+      mnSize (mk v M)+(payload++S.R dst).length := by
+    simpa only [M,mk,update_rt,get_rt,Function.update_of_ne hne] using hb
+  rw [hsrc,List.length_append] at hbalanceA
+  rw [List.length_append] at hbalanceB
+  omega
+
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

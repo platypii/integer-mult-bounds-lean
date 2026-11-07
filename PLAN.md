@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4472 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4474 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -34334,3 +34334,97 @@ audit passes for 346813 declarations at 3249.5 MiB. Full axis publication/seam
 handoff, concrete R4 packet generation,
 outer counted invariant and tensor/compiler/root acceptance remain open. S4 is
 incomplete. Preserve larger local chunks; no push is authorized.
+
+### S4 publication-side export and nonaccumulating class stock
+
+The output side reuses the existing `PhaseCellMovePrefix` primitive; removed the
+copied two-pass input implementation and made input/output adapters instances of
+that same program. Added the prefix boundary-stock equality once to the existing
+primitive. Its single-file check passes at 1813.8 MiB.
+
+`exportRoutedClassOutput_exec` transfers exactly the actual reverse-job output
+prefix to R4. The counter is justified by `PackedNormalizedJob.output_length`
+and the actual Forall2 output certificate. The result tail and existing R4
+destination suffix survive unchanged, scratch/count restore, and boundary stock
+is equal. Time and workspace depend only on the owned prefix. It checks at
+3100.6 MiB. `PackedExactBatch.export_rows_exec` derives the publication Rows
+witness from the executed outputs and supplies the exact reversed-key byte
+stream with its rectangular volume. This is not an assumed preloaded row bank.
+It checks at 3121.9 MiB. The fused axis program now executes this export before
+its R4 proper-publication routine (3211.2 MiB).
+
+`outputs_length_le_routedPayload` reuses proper-core/halo geometry to show that
+certified cropped output cannot exceed its input halo payload. Using the existing
+consume-and-append stock lemma, the routed numerical execution and its actual
+common-core specialization now return non-increasing boundary stock. This closes
+that component of the counted outer loop's nonaccumulation premise. The stock,
+generic execution and common specialization checks pass at 3128.6, 3139.0 and
+3284.3 MiB. The refactored input handoff checks at 3099.4 MiB.
+
+The primitive reuse triggered a one-time deeper dependency rebuild; it passes
+at 42.3 GiB aggregate under the guard (8.8 minutes). No proof limits were raised.
+Next discharge the R4 packet/count producers and actual proper scatter into the
+ambient tensor, preserving reserved coordinates; then compose seam completion
+and tensor return in the outer invariant. Full tensor error/locality, shared
+exposure and compiler/root acceptance remain open. S4 is incomplete. Accumulate
+larger local chunks; no push is authorized.
+
+
+### S4 review: verified handoffs, outer execution still the next gate
+
+The final integration build passes (16971 jobs, 48.7 GiB aggregate peak,
+4.0 minutes). The guarded proof-integrity audit passes for 346824 declarations
+at 3268.1 MiB. These verify the current handoffs; they do not establish S4.
+
+The abstraction choices are sound: reuse the numerical construction, the
+existing prefix mover and counted-loop theorem; derive publication rows from
+executed outputs; prove nonaccumulating stock structurally. The execution order
+still needs discipline. The next acceptance milestone is one actual fused-axis
+execution theorem with the R4 packet/count producers, proper scatter, seam
+completion and tensor return discharged. Do not add another generic wrapper or
+repeat whole-layer audits without a concrete change requiring them. Keep the
+four R4 supplier programs and their remaining contracts visible; replacing
+those contracts with assumed execution traces would not close this milestone.
+
+After that gate, instantiate the outer counted invariant, close full-tensor
+locality/error/reserved-support guarantees and shared exposure costs, and connect
+the compiler/root consumer. No credible percentage or completion ETA follows
+from the number of checked helper modules. S4 remains incomplete with substantial
+integration work. Keep larger local commits and do not push.
+
+
+### S4 generated, ordered numerical publication handoff
+
+The fused axis now calls `PackedExactBatch.generatedExport` before its R4
+publication routine. From retained job count, replica count and scalar packet
+width it executes the existing unary product, retained packed-line reversal and
+counter erasure. It consumes the actual certified reverse-job result prefix
+into `Rows.stream` in forward job order, preserving bytes within each job,
+replica order, both borrowed suffixes and all other tapes. Rows are derived from
+the actual output certificate. The generated volume, loop clock and scratch
+return empty, with exact final boundary-stock equality and an execution-wide
+native stock bound. There is no supplied output-volume counter or row bank.
+
+The preceding reverse-order export drafts (`PhaseCellRoutedClassOutput` and
+`PhaseCellRoutedPublicationRows`) are superseded and removed from the worktree;
+reference copies are under `/tmp/S4ReverseOrderExportReference`. Keeping them
+would leave unused movement APIs. The earlier input adapter now reuses the
+existing prefix mover, while routed class execution returns the proved
+non-increasing boundary-stock fact needed by the counted outer invariant.
+
+The new exporter checks at 3161.7 MiB, the revised fused program at 3211.7 MiB,
+and their guarded integration build passes (16657 jobs, 3.6 GiB aggregate,
+0.2 minutes). Default proof limits are unchanged. The export bill includes
+control generation and erasure; for nonempty classes and packets it is bounded
+by `21*payload + 13*jobCount + 12`. The exact formula also handles empty classes;
+an outer empty-class branch has not yet been discharged.
+
+Next apply the existing physical class publication/transpose executor to this
+forward stream, deriving its readiness from the export's exact frame. Then
+close actual R4 scatter support and join seam completion/tensor return for one
+fused-axis execution. The full axis theorem, tensor error/locality/support,
+shared exposure and compiler/root acceptance remain open. S4 is incomplete.
+
+The final guarded proof-integrity audit passes for 346823 declarations at
+3269.0 MiB. Plan-status consistency and whitespace checks pass. Commit this
+combined input-stock/output-producer chunk locally; no push is authorized.

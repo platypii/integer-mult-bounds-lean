@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComputedClassInputReady
-public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSlice
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellMovePrefix
 public import IntegerMultBounds.MathlibTM2.StackLifecycleResources
 
 /-! Move the owned R4 output prefix into the numerical class source. The
@@ -17,7 +17,7 @@ variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
 
 def installRoutedClassInput (bank : ComputedClassBank → Fin T)
     (count src saved tmp : Fin T) : Pr P T Q A U :=
-  .seq (transfer count src saved tmp) (moveR saved (control bank .source) id)
+  movePrefix count src (control bank .source) saved tmp
 
 theorem installRoutedClassInput_exec (bank : ComputedClassBank → Fin T)
     (count src saved tmp : Fin T)
@@ -31,33 +31,8 @@ theorem installRoutedClassInput_exec (bank : ComputedClassBank → Fin T)
           (control bank .source) (payload++S.R (control bank .source)))}) := by
   have hr := hreg
   regs_ne hr
-  obtain ⟨v₁,hu₁,he₁⟩ := transfer_exec (body := body)
-    (show [count,src,saved,tmp].Nodup by regs_nodup) v S payload tail hsrc hcount htmp
-  let M : Stacks T A := {S with R := Function.update (Function.update S.R src tail) saved payload.reverse}
-  have ht : Exec body (transfer count src saved tmp) (mk v S) (4*payload.length+4) (mk v₁ M) := by
-    simpa only [M,hsaved,List.append_nil] using he₁
-  obtain ⟨v₂,hu₂,he₂⟩ := moveR_exec (body := body) saved (control bank .source)
-    (by assumption) id v₁ M
-  have hm : M.R saved = payload.reverse := by simp [M]
-  have hc : M.R (control bank .source) = S.R (control bank .source) := by
-    simp [M,Ne.symm ‹src ≠ control bank .source›,Ne.symm ‹saved ≠ control bank .source›]
-  refine ⟨v₂,hu₂.trans hu₁,?_⟩
-  refine (Exec.seq ht he₂).cast ?_ ?_
-  · simp only [hm,List.length_reverse]
-    omega
-  · apply congrArg (mk v₂)
-    refine Stacks.ext rfl rfl rfl ?_
-    funext k
-    by_cases hsrc : k = src
-    · subst k
-      simp [M,movedR,hsaved,Ne.symm ‹src ≠ saved›,‹src ≠ saved›,‹src ≠ control bank .source›]
-    by_cases hsave : k = saved
-    · subst k
-      simp [M,movedR,hsaved,‹saved ≠ control bank .source›,Ne.symm ‹src ≠ saved›]
-    by_cases hdst : k = control bank .source
-    · subst k
-      simp [M,movedR,hsaved,Ne.symm ‹src ≠ control bank .source›,Ne.symm ‹saved ≠ control bank .source›]
-    · simp [M,movedR,hsrc,hsave,hdst]
+  exact movePrefix_exec (count := count) (src := src) (dst := control bank .source)
+    (saved := saved) (tmp := tmp) (by regs_nodup) payload tail v S hsrc hcount hsaved htmp
 
 theorem InputReady.install_routed_prefix {bank : ComputedClassBank → Fin T}
     {hinj : Function.Injective bank} {rg : TblR 12 → Fin T}
@@ -101,22 +76,8 @@ theorem installRoutedClassInput_exec_of_ready (bank : ComputedClassBank → Fin 
           depth (installRoutedClassInput bank count src saved tmp) (mk v S) (6*payload.length+6) (mk v' F) := by
   dsimp only
   obtain ⟨v',hu,he⟩ := installRoutedClassInput_exec bank count src saved tmp hreg payload tail v S hsrc hcount hsaved htmp
-  let M : Stacks T A := {S with R := Function.update S.R src tail}
-  have ha := mn_size_update (mk v S) v (.rt src) tail
-  have hb := mn_size_update (mk v M) v' (.rt (control bank .source))
-    (payload++S.R (control bank .source))
-  have hne : control bank .source ≠ src := (hsrcBank (.control .source)).symm
-  have hbalanceA : mnSize (mk v M)+(S.R src).length = mnSize (mk v S)+tail.length := by
-    simpa only [M,mk,update_rt,get_rt] using ha
-  have hbalanceB : mnSize (mk v' {S with R := (Function.update (Function.update S.R src tail)
-      (control bank .source) (payload++S.R (control bank .source)))})+(S.R (control bank .source)).length =
-      mnSize (mk v M)+(payload++S.R (control bank .source)).length := by
-    simpa only [M,mk,update_rt,get_rt,Function.update_of_ne hne] using hb
-  have hsize : mnSize (mk v' {S with R := (Function.update (Function.update S.R src tail)
-      (control bank .source) (payload++S.R (control bank .source)))}) = mnSize (mk v S) := by
-    rw [hsrc,List.length_append] at hbalanceA
-    rw [List.length_append] at hbalanceB
-    omega
+  have hsize := movePrefix_preserves_size src (control bank .source)
+    (hsrcBank (.control .source)).symm payload tail v v' S hsrc
   exact ⟨v',hu,h.install_routed_prefix src payload tail hsrcBank hsrcTable hsourceTable,hsize,he,
     mn_bounded_exec_certify he (le_refl _)⟩
 
