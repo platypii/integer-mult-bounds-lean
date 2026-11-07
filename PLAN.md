@@ -34820,3 +34820,215 @@ mover execution theorems reports only Lean's standard axioms (3872.4 MiB audit
 peak). Plan regeneration/check and whitespace checks pass. This is component
 acceptance for complete dyadic movement in both directions, not full S4 or root
 compiler acceptance. No push is authorized.
+
+### S4 ordered padding and cropping of the currently moved field
+
+`Routing/FiberPadding.lean` reuses the structural fiber scanner with the existing
+bounded transfer, unary fill and discard programs. `padFiber` consumes one real
+row into the accumulating archive and emits exactly its trailing zero extension;
+`cropFiber` retains one real prefix and discards the corresponding trailing
+extension. The latter accepts arbitrary discarded symbols and thus also supports
+ordered core crops. Both restore scratch, preserve arbitrary source suffixes and
+all controls, and leave rows in their original order after archive concatenation.
+`padFibers_exec` and `cropFibers_exec` cost at most
+`N*(6*(V+K)+11)+4` and `N*(6*(V+K)+13)+4`, respectively. Guarded check passes at
+1961.9 MiB without warnings under default limits.
+
+`Routing/GeneratedFiberPadding.lean` reuses the existing `ShortConv.padding`
+producer with the retained real-volume header, rather than counting the physical
+source (which includes a borrowed suffix). A shared `withPadding_exec` composition
+lemma generates the missing-symbol header, executes the actual row operation and
+retires that header. Both `generatedPadFibers_exec` and
+`generatedCropFibers_exec` are concrete instantiations, not final assumed
+operation traces. Padding is `2^k*R-V`, derived from ordinary exponent, width and
+real-volume headers; generated controls and scratch are restored at the endpoint.
+
+Generated setup plus operation plus retirement costs at most `64*N*(2^k*R)` on
+nonempty positive-width streams, with an explicit native stock allowance of
+`128*N*(2^k*R)`. Least-dyadic capacity satisfies
+`M ≤ 2^(Nat.clog 2 M) < 2*M` for positive M. The padded complete-field volume
+therefore stays below twice the real volume with all spectator factors unchanged;
+`generatedPaddingCost_le_input` bounds total work by `128*N*(M*R)` in that case.
+The complete generated module passes its guarded check at 1982.0 MiB without
+warnings, no raised limits.
+
+This completes the ordered pad/crop components and their counter generation,
+not the full non-dyadic mixed-radix transpose. Next connect these exact streams
+to the dyadic field representation, supply/restore its initial runtime dimensions
+and bit count, and remove padding at the destination. Then integrate monotone
+halo emission and the retained-halo axis invariant. Do not pad all halo fields
+simultaneously or replace the return for a changed field length with an old-name
+inverse. Global routing, complete axis/tensor execution and compiler/root gates
+remain open. Keep this work uncommitted for the larger composition chunk; no
+push is authorized. Periodic-recovery work remains untouched. Full S4 is incomplete.
+
+Validation: guarded generated-padding import-closure build passes (3992 jobs,
+2.5 GiB aggregate peak). A temporary guarded axiom audit of generated padding and
+cropping execution, both stock traces and the real-volume cost theorem reports
+only Lean's standard axioms (3870.8 MiB audit peak). Plan and whitespace checks
+pass. No commits or pushes were made for these pad/crop components. The checks
+cover their stated contracts, not a completed non-dyadic mover or full S4.
+
+### S4 padded field views and real mixed-radix destination order
+
+`Routing/PaddedFieldLayout.lean` derives the balanced binary view structurally
+from actual row data. `pack` uses take/drop halves; `leaves_pack` recovers every
+exact-capacity row. `paddedField` therefore represents the actual real row plus
+its trailing zero blocks, not a supplied array or permutation witness.
+`word_paddedField` and `paddedFibers_input` identify its encoded stream with the
+actual output of generated row padding, including all spectator/prefix factors.
+
+`columns_getElem?` proves the binary recursion enumerates ordinary column indices
+in increasing order. `columns_padded_take` identifies the destination's real
+prefix with `realColumns`, the explicit ordinary mixed-radix transpose. The
+remaining owned tail is given by `destinationParts`; its real and extra lengths
+are `M*(B*R)` and `(2^k-M)*(B*R)`. `paddedFibers_output` proves this exact per-prefix
+decomposition for the dyadic mover's output. These structural list/product
+proofs use no finite permutation certificates or concrete case enumeration.
+The complete layout check passes at 1945.2 MiB without warnings.
+
+`Routing/PaddedFieldMove.lean` now instantiates actual execution at this derived
+view. `movePaddedRows_exec` accepts the generated padding byte stream directly,
+executes the fixed dyadic bit loop, and returns the proved destination parts,
+with `O(kV)` time and the existing `200*V` shared stock trace. `cropMovedRows_exec`
+executes generated destination cropping on exactly those parts and returns the
+ordinary real-column byte stream, with time `64*V` and stock allowance `128*V`.
+Both are actual tape traces; neither assumes a supplier execution or layout
+witness. The complete execution-view check passes at 1942.9 MiB without warnings.
+
+Next compose these stages into the fixed non-dyadic program with actual control
+preparation. Preserve the original outer-prefix count across the dyadic loop;
+its evolving prefix header is multiplied by `2^k` and cannot be used directly
+as the destination-crop count. Use retained exponent/real-field-length headers
+to prepare full dyadic width and the destination real-volume counter. The old
+block-volume header is no longer needed after the move and can be cleared and
+reused for `M*(B*R)` via `unaryProduct`. The consumed bit counter is empty and
+can serve as the temporary generated crop-padding counter. Zero-bank and
+prefix-clock scratch are empty at the move boundary and can be reused by
+counter generation; keep the crop trash distinct while its operation runs.
+The inverse padded-column input correspondence and non-dyadic return composition
+remain open. This is not yet the complete non-dyadic tape program or S4.
+
+Accumulate these four padding/view modules for the larger composition commit;
+keep this unfinished chunk uncommitted until composition is ready. No push is
+authorized. The user's
+periodic-recovery work remains untouched. Halo emission, retained-halo axis
+execution, global router and compiler/root acceptance remain open.
+
+Validation for the padded data-flow bridge: guarded import-closure build passes
+(4000 jobs, 2.5 GiB aggregate peak). A temporary guarded axiom audit of structural
+packing, real column order, input/output layout equalities and both executable
+view theorems reports only Lean's standard axioms (3873.3 MiB audit peak). Plan
+and whitespace checks pass. No commits or pushes were made for this unfinished
+non-dyadic composition chunk. This acceptance is for the proved interfaces and
+traces, not the complete non-dyadic controller, inverse return or full S4.
+
+### S4 fixed mixed-radix controller and verified destination retirement
+
+`Routing/FieldHeaderSetup.lean` reuses the existing unary product, copy, doubling
+and cleanup proofs to replace an obsolete dimension header by a product or
+`2^k*R`. Both programs accept arbitrary old destination contents, preserve their
+sources exactly and restore scratch. The complete guarded check passes at
+1937.6 MiB without warnings; native push bound is two.
+
+`Routing/MixedRadixFinish.lean` now executes the complete destination continuation.
+It replaces the retired block-width header by `M*(B*R)`, copies the original
+outer-prefix master into the crop clock, runs generated destination cropping,
+and clears volume/fiber/evolving-prefix headers. `finishMove_exec` proves exact
+ordinary mixed-radix output, exact scratch/master frame and header retirement.
+It costs at most `128*V` with native stock allowance `256*V`. Its guarded check
+passes at 1980.3 MiB without warnings. This continuation does not reuse the
+evolved dyadic prefix count as the outer crop count.
+
+`Routing/MixedRadixMove.lean` defines the actual fixed sixteen-tape controller,
+with five retained dimension masters (exponent, outer prefixes, spectators,
+real field length, block width). `prepareMove` first derives the row clock as
+`P*B` and real row volume as `M*R`; generated padding consumes that row clock
+and retires its padding counter. The same padding-counter tape then becomes
+the full dyadic fiber-volume header. The old real-volume tape is reset to
+`2^k*R`, the runtime bit count is copied from the exponent master, and the
+original outer-prefix master is copied to a distinct evolving-prefix tape.
+`moveField` executes this actual preparation, the fixed dyadic bit loop and the
+proved destination continuation. Program size does not depend on k or lengths.
+The complete definition/native-bound check passes at 1931.5 MiB without warnings.
+
+The preparation execution theorem is the next gate; defining the controller is
+not that theorem. Its endpoint should replace only these right tapes:
+`bits = replicate k tick`, `prefixWork = replicate P tick`,
+`volume = replicate (2^k*R) tick`, `fiberVolume = replicate (B*(2^k*R)) tick`,
+and `src = actual generated padded bytes ++ borrowed tail`; all others restore.
+Derive source-row count `P*B` and real row byte length `M*R` structurally from
+`sourceRows` and matrix dimensions. Then compose the three proved traces and
+retire the work headers to obtain the full non-dyadic forward execution theorem.
+Do not leave preparation as an assumed supplier trace in that theorem. The
+inverse padded input correspondence and return controller remain open, as do
+halo emission, full retained-halo axis execution and compiler/root acceptance.
+
+Keep the accumulated padding/controller work uncommitted until that larger
+composition proof is ready. No push is authorized. User periodic-recovery
+changes remain untouched. Full S4 remains incomplete.
+
+Validation: guarded controller import-closure build passes (4003 jobs, 2.5 GiB
+aggregate peak). A temporary guarded axiom audit of both reset operations, full
+destination execution/stock and the preparation native bound reports only
+Lean's standard axioms (3874.3 MiB audit peak). Plan and whitespace checks pass.
+No commits or pushes were made. These checks do not establish the still-missing
+preparation execution or whole-controller correctness theorem.
+
+### S4 complete non-dyadic forward controller execution
+
+`MixedRadixMove.prepareMove_exec` now executes every preparation stage: generated
+row clock, generated real row volume, actual zero padding, replacement dyadic
+width, generated full fiber volume, copied bit count and copied evolving prefix
+count. The row-count and encoded-row-size facts are derived structurally from
+the actual matrices. Its exact endpoint changes only source and four work
+headers; other tapes restore. Time is at most `256*V`, with `V` the padded
+payload. The complete default-limit guarded check passes at 2014.6 MiB without
+warnings. A broad final-state simplification exceeded default heartbeats;
+replacing it with direct changed-tape/frame proofs fixed the cost, without
+raising any proof limit.
+
+`Routing/MixedRadixRun.lean` proves the whole fixed sixteen-tape `moveField`
+program by composing preparation, actual dyadic execution and destination
+retirement. `moveField_exec` has an exact source-only endpoint: real rows become
+ordinary increasing columns, spectator order and arbitrary borrowed suffix are
+preserved, all five dimension masters retain their actual symbols, and every
+work tape returns to its original empty state. No producer execution or array
+view is assumed as a final hypothesis. All control production is actual code.
+
+Time is at most `k*(60*V+3)+384*V+2` and the complete execution carries a shared
+stock allowance `1000*V`. `moveField_least_exec` specializes the ordinary exponent
+master to `Nat.clog 2 M` and uses the proved below-two padding factor to state
+both bounds in the real payload volume: time
+`(Nat.clog 2 M)*(120*Vreal+3)+768*Vreal+2`, additional stock `2000*Vreal`.
+The complete guarded check passes at 2036.1 MiB without warnings. Constants are
+conservative, with no bit-count factor in workspace. Default limits are intact.
+
+This closes the forward non-dyadic field-movement component, not the entire S4
+axis. The retained exponent and dimension masters remain ordinary input metadata;
+the outer S4 driver must construct their values from its dimensions. Next prove
+the inverse padded-column input correspondence and build the reverse controller
+using the current field length, then use both concrete movers in monotone halo
+emission and the retained-halo axis invariant. Before depending on the unfinished
+general router for regular initialization, check whether the same short-field
+moves can realize its low-bit collection permutation within the required cost;
+they already support arbitrary complete spectator products. This is a candidate
+reuse path, not a proved global-routing replacement.
+
+Commit the accumulated padding, views, header setup and complete forward execution
+as one larger local chunk. No push is authorized. Preserve periodic-recovery work.
+Global initialization, inverse return, halo/axis/tensor and compiler/root gates
+remain open. Full S4 remains incomplete.
+
+Validation for complete forward non-dyadic execution: guarded build passes
+(4005 jobs, 2.6 GiB aggregate peak). A temporary guarded axiom audit of actual
+preparation, complete controller and least-capacity theorem reports only Lean's
+standard axioms (3874.9 MiB audit peak). Removed two unused raw-pass stock
+wrappers from the uncommitted padding draft; the generated-pass bounds used by
+the complete theorem are retained. Plan and whitespace checks pass. This is
+component acceptance for the forward field mover, not full S4 acceptance.
+
+The trimmed final import closure also rebuilds successfully (4005 jobs, 2.6 GiB
+aggregate peak, 0.4 min). Re-running the complete preparation/controller/least-
+capacity axiom audit on that final build again reports only standard axioms
+(3874.9 MiB audit peak). The removed draft wrappers have no code consumers.
