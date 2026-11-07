@@ -34623,3 +34623,109 @@ Validation for the complete chunk: the guarded module build passes (3984 jobs,
 execution and stock theorems reports only `propext`, `Classical.choice` and
 `Quot.sound` (3867.8 MiB peak for the audit import). Plan regeneration/check and
 whitespace checks pass. Periodic-recovery changes are excluded from the commit.
+
+### S4 binary passes within arbitrary prefix fibers
+
+`Routing/FiberScan.lean` proves one structural execution theorem for a fixed
+fiber body followed by archive concatenation. It tracks arbitrary fiber inputs
+and outputs, the untouched source suffix and the frame of retained controls.
+The theorem is instantiated by the actual binary tape program: `splitFiber`
+executes `retainedSplitBlockPairs` then advances the complete transformed fiber
+into the archive. `splitFibers` repeats it using a runtime prefix counter;
+`retainedSplitFibers` also restores that counter and changes only the tensor
+source at its endpoint. Its time bound is
+`P * (24 * (B * R) + 15 * B + 21) + 8`, including archive traffic, and its native
+push bound is two. The guarded check passes at 1986.5 MiB without warnings;
+the guarded module build passes (3985 jobs, 2.5 GiB aggregate peak).
+
+`Routing/DyadicFieldLayout.lean` represents the remaining short field as a
+balanced binary product, most significant bit first. `splitFieldLevel_exec`
+instantiates the concrete retained prefix pass and proves its endpoint is the
+next binary frontier: the two halves become successive prefix fibers, preserving
+spectator order. Structural lemmas prove that prefix count doubles, spectator
+row count is unchanged, and tensor volume is unchanged. No finite permutation
+certificate or case enumeration is used. Its guarded check passes at 1943.7 MiB
+without warnings.
+
+These are the manuscript's next-bit-within-preceding-prefix-fibers operation,
+not yet the entire k-bit execution theorem. The next step is to execute the
+header changes (double prefix count, halve remaining block/fiber widths) and
+compose the level invariant through a runtime bit counter, with inverse passes
+in reverse chronology. Reuse `PhaseCellHalfCount.halfCount_exec` for halving.
+Then integrate this concrete movement into the retained-halo axis invariant.
+Keep these files uncommitted until that larger movement chunk is ready. No push
+is authorized. Full S4 remains incomplete; periodic-recovery work is untouched.
+
+The dyadic-level guarded build also passes (3986 jobs, 2.5 GiB aggregate peak).
+A temporary guarded audit of the retained fiber execution/push bound, executable
+level theorem and volume invariant reports only Lean's standard axioms (3870.6
+MiB audit peak). Plan checks and whitespace checks pass. This audit covers these
+new movement components, not the still-open full S4 acceptance gates.
+
+### S4 executable binary-level dimensions
+
+`Routing/FieldMoveHeaders.lean` reuses `halfCount_exec` to replace an even unary
+header by its half, restoring both private tapes (`12*m+8` steps). It also
+implements exact header doubling using the existing copying/movement primitives
+(`6*|count|+6` steps). Its guarded check passes at 1935.0 MiB without warnings.
+
+`Routing/DyadicFieldStep.lean` combines those actual programs with the verified
+prefix-fiber pass. The block width is halved before the pass; the fiber width
+is halved and the prefix count doubled afterward. Scratch reuses the existing
+archive/zero-bank tapes while they are empty, so no additional tapes are needed.
+`fieldStep_exec` gives the exact next binary frontier and all three actual
+header changes, preserving every other stack and user state. On positive prefix,
+spectator and block dimensions, `fieldStep_cost_le_volume` bounds its entire
+execution by 60 times the current payload volume. That volume is invariant
+across levels by `stream_refine_length`. The program's native push bound is three
+(the halving action saves two symbols and emits one).
+
+The complete level module passes its guarded check at 1960.3 MiB without warnings.
+The next gate is now the runtime bit-count loop with an existential binary
+frontier invariant and the concrete terminal column order, followed by reverse
+chronology for the inverse. Do not treat the level theorem as the complete
+multi-bit move or S4. Keep this growing movement chunk local and uncommitted;
+no push is authorized. Periodic-recovery work remains untouched.
+
+The guarded level build passes (3989 jobs, 2.5 GiB aggregate peak). The new
+halving/doubling execution, complete level execution, volume-cost and push-bound
+theorems pass a temporary guarded axiom audit with only Lean's standard axioms
+(3869.5 MiB audit peak). Plan regeneration/check and whitespace checks pass.
+These checks cover the new movement code, not full S4 acceptance.
+
+### S4 forward multi-bit field move: fixed runtime loop
+
+`Routing/DyadicFieldMove.lean` now executes all binary levels using one fixed
+`countedLoop` body, with the number of bits supplied on tape. Its existential
+frontier invariant tracks the remaining dyadic field, complete spectator rows,
+positive prefix count, invariant payload volume, target binary column order,
+actual runtime dimensions and unchanged tapes. `finish_refine` establishes that
+moving the next most-significant bit inside each preceding-bit fiber preserves
+the final target column order. The terminal zero-bit frontier is exactly that
+order, rather than an assumed permutation endpoint.
+
+`fieldMove_exec` proves real execution, preserved arbitrary tensor suffix, exact
+user-state preservation and a frame restoring all tapes except the consumed bit
+counter, three evolving dimension headers and tensor source. Final prefix count
+is the initial prefix count times `2^N`; block and fiber widths are `W` and `B*W`.
+Time is at most `N * (60 * V + 3) + 2`, where `V` is actual payload length.
+The proof uses the previously checked level theorem and structural list/product
+lemmas, without unrolling the executable program or enumerating permutations.
+Its complete guarded check passes at 1980.8 MiB without warnings.
+
+The executable move also has native push bound three and a conservative
+composable `ExecWithin` bound. That stock allowance still includes a bit-count
+factor; removing it by reusing per-level workspace is an explicit remaining space
+obligation. Do not claim manuscript peak-space acceptance from the time bound.
+Next implement inverse prefix passes in reverse binary chronology, then connect
+both moves to the retained-halo axis invariant. Full S4 and compiler/root
+acceptance remain open. Collect the five forward movement modules and prior plan
+updates into one local commit; no push is authorized. Periodic-recovery work is
+excluded.
+
+Validation for the accumulated forward movement chunk: guarded build passes
+(3990 jobs, 2.5 GiB aggregate peak). A guarded axiom audit of complete movement
+execution, push bound and stock theorem reports only `propext`,
+`Classical.choice` and `Quot.sound` (3869.9 MiB audit peak). Plan regeneration/check
+and whitespace checks pass. This verifies the concrete forward mover and its
+stated bounds; it does not close inverse movement, sharp shared workspace or S4.
