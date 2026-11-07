@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4475 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4476 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -34473,3 +34473,49 @@ The combined routed-publication/fused-root local axiom audit passes for 483310
 declarations at 10143.3 MiB under the memory guard. This temporary audit walks
 the combined proof environment; individual CI modules remain below 3.3 GiB.
 No custom axioms, sorry, native_decide or raised proof limits were introduced.
+
+
+### S4 placed publication and concrete fused publication wiring
+
+The actual publication theorem now uses the standard checked publication bank.
+All static register separation, page-bank injectivity and source/destination
+separation are derived once from existing wiring lemmas, instead of being caller
+premises. The arbitrary-port executor is recoverable from 3d395e0c. Shared section
+variables keep ordinary readiness facts common to the fixed and placed proofs;
+there is no second copied header/frame proof or new execution oracle.
+
+`placed_routed_publication_exec` applies the actual standard-bank execution via
+`exec_emb_input_output_within`. It preserves arbitrary spectator storage and the
+numerical suffix, lifts non-increasing boundary stock through the projection,
+and derives `BankAccurate` for the same emitted lines using existing numerical
+row certificates. Replica order is supplied as ordinary metadata, and the target
+is exactly `inversePublicationTargets`, matching seam completion. Its fixed code,
+time and workspace are named once in `PhaseCellRoutedPublicationProgram`.
+
+The fused step no longer accepts an arbitrary proper-publication program or
+extra export ports. `fusedPublicationProgram` embeds the concrete standard code
+using `fusedPublicationPlacement`. Placement injectivity is proved; its numerical
+port is the actual full numerical-bank result and its ambient port is the
+caller's output header. Export is inside that supplier, so it is not executed
+twice. This removes one opaque program argument from the fused construction.
+Preparation, proper routing and tensor return are still program suppliers.
+
+The standard fixed/placed publication check passes at 3487.9 MiB; the concrete
+fused wiring/program check passes at 3539.0 MiB. Default proof limits are
+unchanged. The generic placed draft is preserved at
+/tmp/S4GenericPlacedPublicationReference.lean for reference, not as an alternate
+implementation to expand. The next required work is executing the ordinary
+publication control producers around this core from retained caller masters,
+then joining actual numerical execution, seam completion and tensor return.
+Do not assume the remaining readiness facts or claim the complete fused-axis
+execution from this component. Full tensor locality/error/support, shared
+exposure and compiler/root acceptance remain open. S4 is incomplete; no push
+is authorized.
+
+The final canonical placement is derived from caller ports, not supplied as a
+function parameter: `fusedPublicationPlacement_injective` proves the shared-bank
+wiring and the numerical/ambient lemmas identify its two actual ports. The fused
+axis now has only preparation/routing/return program holes. The standard code
+module checks at 3393.0 MiB. Final integration passes (16660 jobs, 6.0 GiB
+aggregate, 0.3 minutes); the combined local axiom audit passes for 483419
+declarations at 10258.3 MiB. All changed production modules stay below 3.6 GiB.
