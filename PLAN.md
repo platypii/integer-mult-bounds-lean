@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4473 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4475 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -34729,3 +34729,94 @@ execution, push bound and stock theorem reports only `propext`,
 `Classical.choice` and `Quot.sound` (3869.9 MiB audit peak). Plan regeneration/check
 and whitespace checks pass. This verifies the concrete forward mover and its
 stated bounds; it does not close inverse movement, sharp shared workspace or S4.
+
+### S4 inverse multi-bit movement: reverse binary chronology
+
+`Routing/InverseFiberScan.lean` reuses the existing structural fiber scanner.
+Its inner inverse binary move uses the one-bank tape as private scratch, while
+the distinct output archive accumulates earlier fibers. `transferTwice` advances
+a complete two-plane fiber using its existing plane-volume header, avoiding
+another doubled header. `retainedMergeFibers_exec` preserves all controls and
+scratch exactly and changes only the tensor source; time is at most
+`P * (30 * (B * R) + 15 * B + 29) + 8`. Guarded check: 1979.1 MiB, no warnings.
+
+`Routing/DyadicFieldInverseStep.lean` connects that actual inverse pass to the
+structural binary layouts and actual runtime metadata. It halves the prefix
+count before the pass, then doubles the block and plane widths afterward.
+`inverseFieldStep_exec` gives the exact previous frontier and header updates.
+The complete positive-dimension cost is at most 64 times payload volume; native
+push bound is three. Guarded check: 1964.0 MiB, no warnings.
+
+`Routing/DyadicFieldRefinement.lean` supplies a small inductive refinement path:
+each constructor records one complete binary split. It proves terminal column
+order is reachable, row lengths/positivity/volume survive, and equal-level
+frontiers coincide. This lets the inverse read the forward chronology backward
+without inspecting data or enumerating binary cases. Guarded check: 1935.3 MiB.
+
+`Routing/DyadicFieldInverse.lean` now executes all inverse levels with a fixed
+runtime counted loop. Its invariant tracks a reachable forward frontier at the
+current inverse level. Each iteration removes the last split constructor and
+executes the concrete inverse level. `inverseFieldMove_exec` restores the
+original tensor order and dimension lengths, preserves an arbitrary suffix,
+user state and all untouched tapes, and consumes only its owned bit counter.
+Time is at most `N * (64 * V + 3) + 2`. It also has native push bound three and a
+conservative composable stock theorem. Its guarded check passes at 1969.1 MiB
+without warnings.
+
+Both directions are now actual multi-bit tape programs. Their sharp shared
+workspace bound remains open: the present conservative stock allowances carry
+a bit-count factor and must not be claimed as manuscript peak-space acceptance.
+Next discharge that resource obligation and integrate the forward/inverse moves
+into the retained-halo axis schedule. The one-time global router, full axis/tensor
+execution and compiler/root acceptance remain open. Keep the new inverse chunk
+uncommitted for the larger movement/resource commit. No push is authorized, and
+periodic-recovery work remains untouched. Full S4 is incomplete.
+
+Final inverse validation: guarded module build passes (3994 jobs, 2.5 GiB
+aggregate peak). A temporary guarded axiom audit of complete inverse execution,
+push bound and stock theorem reports only `propext`, `Classical.choice` and
+`Quot.sound` (3871.1 MiB audit peak). Plan checks and whitespace checks pass.
+No proof limits were raised; no commits or pushes were made for this inverse
+chunk. These checks verify the stated inverse component, not full S4.
+
+### S4 dyadic movement: shared payload-sized workspace in both directions
+
+Replace the conservative bit-count-dependent stock allowances with complete
+execution theorems carrying `ExecWithin` bounds of initial stock plus `200*V`,
+where `V` is the actual tensor payload length. Time remains
+`N*(60*V+3)+2` forward and `N*(64*V+3)+2` inverse. Thus the concrete movers now
+have the manuscript's `O(NV)` time and `O(V)` additional workspace scaling.
+
+The reusable proof language is small and structural:
+`Host/BoundedHeaderStock` charges a finite header bank once;
+`PhaseCellCountedLoopBoundedStock` shares an absolute reserve across iterations
+whose boundary stock is uniformly bounded (without falsely assuming each stage
+shrinks); `Routing/FieldBoundaryStock` bounds prefix, block, fiber and bit-count
+headers by the complete positive payload volume. Source length is preserved and
+all other tapes form the unchanged frame. Each binary level's native trace uses
+the same reserve, independent of how many levels remain.
+
+The main `fieldMove_exec` and `inverseFieldMove_exec` theorems now include these
+shared stock traces on their actual executions. Removed the unused conservative
+forward `fieldMove_within_stock` helper; restore from 52d74460 if needed for a
+separate arbitrary-trace application. The inverse conservative helper existed
+only in the uncommitted draft and is superseded as well. Do not retain competing
+weaker stock routes. The new resource declarations are used by both movers.
+
+Guarded checks pass without warnings: header-bank stock 1381.3 MiB, bounded loop
+1410.2 MiB, field boundary stock 1936.7 MiB, full forward 1989.7 MiB, full inverse
+1982.1 MiB. No proof limits were raised. These results close the previously
+recorded bit-count-factor workspace gap for dyadic field movement; they do not
+prove the global router, non-dyadic padding/cropping, monotone halo emission,
+retained-halo axis execution, tensor error/support or compiler/root acceptance.
+Those remain the next S4 integration obligations. Commit the accumulated inverse
+and shared-resource chunk together locally; no push is authorized. Preserve
+periodic-recovery work. Full S4 remains incomplete.
+
+Final validation for inverse movement plus shared stock: guarded build of the
+complete inverse import closure passes (3999 jobs, 2.5 GiB aggregate peak).
+A guarded axiom audit of the generic header-bank/loop theorems and both complete
+mover execution theorems reports only Lean's standard axioms (3872.4 MiB audit
+peak). Plan regeneration/check and whitespace checks pass. This is component
+acceptance for complete dyadic movement in both directions, not full S4 or root
+compiler acceptance. No push is authorized.

@@ -1,6 +1,8 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Routing.DyadicFieldStep
+public import IntegerMultBounds.MathlibTM2.Routing.FieldBoundaryStock
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedLoopBoundedStock
 
 /-! Move an entire short dyadic field across complete spectator rows with one
 runtime counted loop. Binary significance and spectator order are structural. -/
@@ -9,7 +11,7 @@ namespace IntegerMultBounds.MathlibTM2.Routing.DyadicFieldMove
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Host IntegerMultBounds.MathlibTM2.Node
   IntegerMultBounds.MathlibTM2.Fast.Main
-  IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz DyadicFieldLayout DyadicFieldStep
+  IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz DyadicFieldLayout DyadicFieldStep FieldBoundaryStock
 variable {T Q A : ℕ} {P U β : Type} {body : P → Pr P T Q A U}
 
 /-- Rows transposed into binary column order, most significant digit first. -/
@@ -71,6 +73,9 @@ theorem fieldMove_exec
     ∃ v' F n, v'.user = v.user ∧ n ≤ N*(60*(stream encode fibers).length+3)+2 ∧
       Exec body (fieldMove bits prefixCount prefixClock count clock volume fiberVolume
         src archive zeroBank oneBank tmp) (mk v S) n (mk v' F) ∧
+      (∀ depth, ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+200*(stream encode fibers).length)
+        depth (fieldMove bits prefixCount prefixClock count clock volume fiberVolume
+          src archive zeroBank oneBank tmp) (mk v S) n (mk v' F)) ∧
       F.R src = (finish fibers).flatMap (fun rows => rows.flatMap encode)++tail ∧
       (F.R prefixCount).length = fibers.length*2^N ∧
       (F.R volume).length = W ∧ (F.R fiberVolume).length = B*W ∧ F.R bits = [] ∧
@@ -85,9 +90,27 @@ theorem fieldMove_exec
     F.R src = stream encode fs++tail ∧ (F.R prefixCount).length = fs.length ∧
     (F.R volume).length = 2^k*W ∧ (F.R fiberVolume).length = B*(2^k*W) ∧
     Frame bits prefixCount volume fiberVolume src S F
-  obtain ⟨v₁,F,n,hu,hn,he,hc,hI⟩ := countedLoop_exec (body := body) bits
+  have hNV : N ≤ V := by
+    dsimp only [V]
+    rw [stream_length encode W B hlen fibers hrows]
+    exact bits_le_volume N fibers.length B W hpositive hB hW
+  have hstock : ∀ j (vi : HS T Q A U) F, Inv j F → (F.R bits).length ≤ N →
+      mnSize (mk vi F) ≤ mnSize (mk v S)+4*V := by
+    intro j vi F hI hb
+    obtain ⟨k,fs,hj,hrowsF,hpos,hV,ht,hs,hp,hv,hf,hi,ho,hl,hframe⟩ := hI
+    have hdims := dimensions_le_volume hpos hB (Nat.mul_pos (Nat.two_pow_pos k) hW)
+    have hd : fs.length*(B*(2^k*W)) = V :=
+      (stream_length encode W B hlen fs hrowsF).symm.trans hV
+    rw [hd] at hdims
+    apply fieldBoundary_stock v vi S F bits prefixCount volume fiberVolume src V hi ho hl hframe
+    · rw [hs,hsrc,List.length_append,List.length_append,hV]
+    · exact hb.trans hNV
+    · rw [hp]; exact hdims.1
+    · rw [hv]; exact hdims.2.1
+    · rw [hf]; exact hdims.2.2
+  obtain ⟨v₁,F,n,hu,hn,he,hc,hI⟩ := countedLoop_exec_bounded_stock (body := body) bits
     (fieldStep prefixCount prefixClock count clock volume fiberVolume src archive zeroBank oneBank tmp)
-    N (60*V) Inv
+    N (60*V) (mnSize (mk v S)+4*V) (180*V) Inv
     (by
       intro j F xs hI
       obtain ⟨k,fs,hj,hrows,hpos,hV,ht,hs,hp,hv,hf,hi,ho,hl,hframe⟩ := hI
@@ -99,8 +122,10 @@ theorem fieldMove_exec
       · intro i hm
         have hib : i ≠ bits := by intro h; subst i; simp at hm
         simpa only [Function.update_of_ne hib] using hframe i hm)
+    hstock
     (by
-      intro j hj vi F hI
+      intro j hj vi F hI hremaining
+      have hb := hstock j vi F hI (by omega)
       obtain ⟨k,fs,hj',hrows,hpos,hV,ht,hs,hp,hv,hf,hi,ho,hl,hframe⟩ := hI
       cases k with
       | zero => omega
@@ -131,9 +156,13 @@ theorem fieldMove_exec
         have hcost := fieldStep_cost_le_volume hpos hB (Nat.mul_pos (Nat.two_pow_pos k) hW) hm
         have hVk : V = 2*(fs.length*(B*(2^k*W))) := by
           rw [←hV,stream_length encode W B hlen fs hrows,Nat.pow_succ]; ring
-        refine ⟨vf,F',m,hu',?_,hex,?_,k,refineFibers fs,?_,
+        refine ⟨vf,F',m,hu',?_,?_,?_,k,refineFibers fs,?_,
           refineFibers_row_length fs B hrows,?_,?_,(finish_refine fs).trans ht,?_,?_,?_,?_,hi,ho,hl,?_⟩
         · rw [hVk]; exact hcost
+        · intro depth
+          have hmV : m ≤ 60*V := by rw [hVk]; exact hcost
+          exact mn_native_exec_within hex 3 (fieldStep_pushBound _ _ _ _ _ _ _ _ _ _ _)
+            depth _ (by omega)
         · simp [F',‹bits ≠ volume›,‹bits ≠ src›,‹bits ≠ fiberVolume›,‹bits ≠ prefixCount›]
         · omega
         · rw [refineFibers_length]; omega
@@ -155,7 +184,13 @@ theorem fieldMove_exec
   subst k
   have hfs : fs = target := (finish_zero fs).symm.trans ht
   subst fs
-  refine ⟨v₁,F,n,hu,hn,he,?_,?_,?_,?_,hc,hframe⟩
+  refine ⟨v₁,F,n,hu,hn,(he 0).toExec,?_,?_,?_,?_,?_,hc,hframe⟩
+  · intro depth
+    exact (he depth).mono (by
+      intro d z hz
+      change mnSize z+d ≤ mnSize (mk v S)+4*V+depth+180*V at hz
+      change mnSize z+d ≤ mnSize (mk v S)+depth+200*V
+      omega)
   · simpa only [stream,word] using hs
   · simpa only [target,finish_length] using hp
   · simpa only [Nat.pow_zero,Nat.one_mul] using hv
@@ -168,19 +203,5 @@ theorem fieldMove_pushBound
   have hp := fieldStep_pushBound (P := P) (Q := Q) (A := A) (U := U)
     prefixCount prefixClock count clock volume fiberVolume src archive zeroBank oneBank tmp
   simpa [fieldMove,countedLoop,countedLoopBody,peekR,mnNativePushBound,mnActPush] using hp
-
-/-- A conservative composable stock bound. Reusing the per-level reserve to
-remove the bit-count factor from this allowance is a separate space obligation. -/
-theorem fieldMove_within_stock
-    {bits prefixCount prefixClock count clock volume fiberVolume src archive zeroBank oneBank tmp : Fin T}
-    {v v' : HS T Q A U} {S F : Stacks T A} {n N V : ℕ}
-    (hex : Exec body (fieldMove bits prefixCount prefixClock count clock volume fiberVolume
-      src archive zeroBank oneBank tmp) (mk v S) n (mk v' F))
-    (hn : n ≤ N*(60*V+3)+2) (depth : ℕ) :
-    ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+3*(N*(60*V+3)+2))
-      depth (fieldMove bits prefixCount prefixClock count clock volume fiberVolume
-        src archive zeroBank oneBank tmp) (mk v S) n (mk v' F) := by
-  exact mn_native_exec_within hex 3 (fieldMove_pushBound _ _ _ _ _ _ _ _ _ _ _ _)
-    depth _ (by omega)
 
 end IntegerMultBounds.MathlibTM2.Routing.DyadicFieldMove
