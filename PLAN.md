@@ -34573,3 +34573,53 @@ aggregate peak, 4.3 minutes). The local combined-root axiom audit passes for
 485820 declarations at 10363.0 MiB. Removed modules have no remaining code or
 script consumers. No proof limits were raised, and the periodic-recovery work
 remains untouched. Commit this cleanup as one local chunk; do not push.
+
+### S4 concrete complete binary-field movement
+
+Implement the manuscript's `[B] × [2] × [R] → [2] × [B] × [R]`
+primitive in `Routing/SmallFieldMove.lean`, using existing bounded transfers,
+counted loops and archive concatenation. The execution theorem is structural
+in arbitrary pairs of equal-length blocks, with an arbitrary preserved source
+suffix. Archives and temporary scratch are restored exactly. The retained
+variant also restores the clock and retains the original count and volume
+controls; its only endpoint change is the source permutation. Time is bounded
+by `B * (12 * R + 15) + 10`; native actions push at most two symbols.
+
+This follows the pinned complete-field tape schedule at manuscript revision
+`0fdd7d82de03e43c9e5a1000dfbcd380d1b687d2`,
+`references/semantic-bulk/rad20/reports/bulk-resampling-tape-transfer.md`.
+The primitive does not solve the full global router. Next implement its inverse
+and compose binary passes into the local field moves required by the retained
+halo axis invariant. Do not replace concrete movement with a final producer
+hypothesis or loop the old per-axis exposure schedule.
+
+The complete new file passes the guarded single-file check under default limits
+at 1971.8 MiB peak, without warnings. Combine it with the inverse for one coherent
+movement chunk. Full S4 remains incomplete; no push is authorized. Unrelated
+periodic-recovery files remain untouched.
+
+### S4 inverse complete binary-field movement
+
+Extend the same structural module with the inverse schedule. `joinBlockPairs`
+interleaves corresponding blocks from two planes into a private reverse archive,
+preserving both arbitrary suffixes. `mergeBlockPairs` extracts the first plane,
+executes that loop and concatenates the archive onto the surviving tensor suffix.
+`generatedMergeBlockPairs` derives the plane-volume counter from the retained
+block-count and width headers using `unaryProduct`, then retires that counter.
+Its exact endpoint changes only the source stream, from the two flattened planes
+to `pairStream rows ++ tail`. All controls, scratch and user state are restored.
+Its execution bound is `B * (24 * R + 24) + 20`. Both forward and generated inverse
+also have constant native push bounds and explicit `ExecWithin` stock bounds.
+
+The complete 517-line forward/inverse module passes its guarded single-file
+check at 2006.2 MiB without warnings and without raised proof limits. This is
+actual tape execution, not an assumed routing trace. The next gate remains
+composition into multi-bit local field movement and the concrete retained-halo
+axis invariant; the module is not yet a complete S4 supplier or root theorem.
+Commit forward/inverse movement together locally; do not push.
+
+Validation for the complete chunk: the guarded module build passes (3984 jobs,
+2.6 GiB aggregate peak). A temporary guarded axiom audit of the forward/inverse
+execution and stock theorems reports only `propext`, `Classical.choice` and
+`Quot.sound` (3867.8 MiB peak for the audit import). Plan regeneration/check and
+whitespace checks pass. Periodic-recovery changes are excluded from the commit.
