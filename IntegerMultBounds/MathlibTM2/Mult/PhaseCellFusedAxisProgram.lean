@@ -76,7 +76,7 @@ def fusedAxisStep (bank : ComputedClassBank → Fin T) (hinj : Function.Injectiv
           (fullExposedClassBank (CallerLayout.bank (solverSource ∘ bank)))
           routeCount routeOutput routeSaved routeTmp) numerical))
         (fun numerical => .seq numerical (.seq
-          (PackedExactBatch.generatedExport numericalBank numericalInj
+          (PackedExactBatch.generatedExport (plan numericalBank numericalInj).result
             publishRows publishReplicas publishPacket publishClock publishVolume publishInput publishSaved publishTmp)
           publishProper)))
         (.seq (callerBoundaryCompletion src b.hR b.hQ (solverSource widthSource) recovery)

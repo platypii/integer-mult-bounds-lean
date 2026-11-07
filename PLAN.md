@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4474 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4475 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -34428,3 +34428,48 @@ shared exposure and compiler/root acceptance remain open. S4 is incomplete.
 The final guarded proof-integrity audit passes for 346823 declarations at
 3269.0 MiB. Plan-status consistency and whitespace checks pass. Commit this
 combined input-stock/output-producer chunk locally; no push is authorized.
+
+
+### S4 actual routed publication composition
+
+`PhaseCellRoutedNumericalPublication` composes the generated consuming export
+with the existing physical padding, transpose, generated scatter pages,
+publication and page retirement. It restores an arbitrary numerical-result
+suffix instead of requiring an empty old result. All publication readiness is
+transported from the baseline by the exact export frame, and actual certified
+outputs supply the existential Rows witness. Existing published-bank accuracy
+and unselected-word lemmas apply to this same endpoint; do not reprove them by
+cases or enumerate concrete jobs.
+
+The initial composed proof reached the default heartbeat limit. Restructured
+the exporter over an arbitrary numerical port (it only uses that port, not the
+full numerical bank), removing an unnecessary import and bank reductions.
+`mn_seq_within_max` now states the structural resource rule for sequencing when
+the first boundary stock does not grow. Its guarded check passes at 1304.1 MiB.
+The routed publication application uses this rule directly, avoiding a repeated
+large arithmetic proof. Default limits remain unchanged. The restructured publication theorem passes under the default limits.
+
+
+`routed_publish_outputs_exec_within` now returns the executed published bank,
+non-increasing final boundary stock, exact restoration of the numerical suffix
+(on its distinct port), and byte-for-byte preservation of every unselected core
+word. The same existential Rows witness supplies the actual transpose and
+scatter. It checks at 3140.4 MiB. The exporter is now port-polymorphic and checks
+at 3082.9 MiB; the fused program checks at 3214.8 MiB. The one-time dependency
+rebuild passes at 36.6 GiB aggregate (8.1 minutes); the final incremental build
+passes at 3.5 GiB (0.2 minutes).
+
+Next place this exact execution with `exec_emb_input_output_within`, which already
+supports an arbitrary baseline source suffix. Do not clone the old sequence of
+geometry-loaded, placed and allocated publication wrappers. Derive the proper
+bank certificate using existing `Rows.published_bank_good` and the common-job
+metadata, then compose with actual seam completion and tensor return. Ordinary
+R4 control producers and their concrete placement/frame obligations still need
+to be discharged. This theorem closes the numerical-to-physical-class-publication
+component, not the fused axis or all of S4. Full tensor locality/error/support,
+shared exposure and compiler/root acceptance remain open. No push is authorized.
+
+The combined routed-publication/fused-root local axiom audit passes for 483310
+declarations at 10143.3 MiB under the memory guard. This temporary audit walks
+the combined proof environment; individual CI modules remain below 3.3 GiB.
+No custom axioms, sorry, native_decide or raised proof limits were introduced.
