@@ -40898,8 +40898,9 @@ passes (15800 jobs, 5.8 GiB combined peak). This closes transport of readiness
 through setup; it does not yet sequence the lifted original-RHS caller and all
 recovery iterations. Next use the actual caller's endpoint equality to obtain
 the old factor and cached bank views, transport private/new blank workspace,
-and run the derived-ready placed stage on each solved-row prefix. Then produce
-both recovery RHS batches and execute the second interior passes. Numerical
+and run the placed complete boundary-row batch (below). Then connect the
+reverse-order original RHS archives to retained coupling and execute the second
+interior passes. Numerical
 precision alignment, publication, uniform resources, geometry fallback and
 broader S4 acceptance remain open.
 
@@ -40912,3 +40913,146 @@ original-RHS caller axiom audit reports only propext, Classical.choice and
 Quot.sound; core-view transport needs no Classical.choice (9580.0 MiB audit
 peak). All 18 checkpoint proof modules pass integrity/whitespace scans; proof
 limits unchanged.
+
+
+### S4 one structural loop projects and retires every solved boundary row
+
+PhaseCellNativeCyclicBoundaryRow composes the checked inverse-fold/two-window
+projection with retireCountedLine on source 224, using retained count 192 and
+width 160. It advances exactly one owned solved-row prefix, restores its private
+controls, and returns the same factor-state and NativeBoundaryUnfoldWorkspace
+contracts for reuse. Source and output borrowed suffixes remain explicit.
+Guard: 3200.8 MiB.
+
+PhaseCellNativeCyclicBoundaryLoop uses the existing countedLoop_exec at 228.
+Its invariant splits an arbitrary solution list into completed/remaining rows;
+the source encodes the remaining list and the output encodes reversed completed
+packed pairs. Counter updates preserve readiness structurally. The one-row
+executor supplies the step, including empty lists and empty pieces; no finite
+replica enumeration or per-index certificate is generated. Guard: 3217.7 MiB.
+PhaseCellNativeCyclicBoundaryBatch copies replica master 229 to private 228 once,
+executes the loop and restores 227/228. Its final state changes only source 224
+and packed-output 132, keeps both masks and shared factors, and returns readiness
+and workspace again. Its cost includes master copying, every row projection,
+every consumed solution prefix and loop control. Packed archive volume is
+proved once as rows.length*(n*w), independent of solution values. Final guard:
+3215.2 MiB.
+
+PhaseCellPlacedNativeCyclicBoundaryBatch embeds that complete traversal in the
+840-tape layout at offset 600. It preserves the native time bill and post-ready
+contracts. Its two-write frame preserves both entire cached pass footprints,
+including all original RHS queues and coefficient caches. Guard: 3267.3 MiB.
+The combined traversal / mask-ready / original-RHS boundary build passes
+(15800 jobs, 3.4 GiB combined peak). Row, loop, batch and placed executor axiom
+audits report only propext, Classical.choice and Quot.sound (9395.2 MiB audit
+peak). This is the native projection batch, not yet the full recovery pipeline.
+
+### S4 original RHS queues copy in matching reverse replica order
+
+Inspection confirmed prepareReplicaRecoveryRhs preserves original row order;
+it cannot be substituted for a reverse-order archive in this phase.
+PhaseCellPrepareReversedReplicaRecoveryRhs instead reuses reverseCopyRows over
+the retained original gather queue, count and volume. It prepends H.Fs.reverse
+packed rows to an arbitrary RHS destination while restoring the original gather
+queue and all recovery headers. All four scratch tapes already follow from
+ReplicaRecoveryRhsHeaders, so no new external temporary or data supplier is
+needed. Its inherited ExecWithin bound charges the complete copy lifecycle.
+Guard: 2148.7 MiB. Its axiom audit uses only propext, Classical.choice and
+Quot.sound (9172.0 MiB audit peak). The final combined build passes (15801 jobs,
+2.8 GiB combined peak). All five new files pass integrity/whitespace scans;
+proof limits unchanged. No commit or push; periodic WIP untouched.
+
+Next connect the packed-pair reverse archive and these reversed original RHS
+queues to the retained coupling banks. Prefer the native 168-register
+cachedLocalFeedCouplingInterval executor, which accepts the existing native
+RetainedCouplingReady contract, consumes one packed RHS prefix on 93 and
+preserves the coefficient page and scalar counters; do not relocate the
+shared factor bank into a separate packed-solver layout. The new reversed RHS
+copier can target the coupling's 93 port once gather/destination separation and
+readiness refill are proved. Prepare recovery selectors once from retained
+metadata. Process left/right prefixes in the same reverse replica order,
+retaining boundary fields for final recovery assembly, then execute the second
+interior passes. Keep the original solver accuracy aligned using structural
+reverse/index lemmas. The lifted original-RHS caller, mask setup and complete
+traversal still need their top-level sequencing proof. Coupling/RHS production,
+second passes, publication, uniform resources, fallback geometry and broader S4
+acceptance remain open.
+
+
+### S4 approach review: prioritize caller closure over helper growth
+
+The structural boundary row/loop/batch and reversed RHS copier are checked,
+but their top-level sequencing with the original-RHS caller remains open.
+At review time the retained RHS loader failed on a Fin-coordinate equality.
+That failure is resolved by the checked continuation below.
+
+Use cachedLocalFeedCouplingInterval for recovery. Its native low-117 readiness
+matches the first-pass endpoint. The prepared/shared-header variant would add
+unnecessary counter preparation or header permutation. Preserve the coefficient
+page and counters across rows; prepare recovery selectors once per phase.
+
+Next acceptance checkpoint: one executed recovery batch from actual first-pass
+and boundary-solve endpoints, with original RHS order, boundary data retention,
+workspace restoration and complete phase cost proved. Restrict new helpers to
+obligations encountered in this composition. Then execute second interior passes
+at the common precision and publish the recovered output. Do not open another
+layout or generic wrapper layer without a concrete unsatisfied caller premise.
+
+Remaining independent gates: geometry fallback, uniform time and structural
+stock, locality/error composition, complex/axis/tensor composition and root
+integration. Checked building blocks are meaningful progress, but do not supply
+an end-to-end S4 theorem. There is no supported completion percentage or ETA.
+Keep larger local checkpoints and do not push without explicit instruction.
+
+
+### S4 recovery input and per-row readiness handoff checked
+
+PhaseCellRetainedReplicaRecoveryRhs now executes the reverse-order original RHS
+copy directly into coupling port 93, preserving both gather recovery headers
+and native RetainedCouplingReady. The Fin 117/168 coordinate proof uses an
+explicit natural-number equality rather than simplification across different
+Fin numerals. Guard: 2142.9 MiB; dependency build succeeds.
+
+PhaseCellRetainedReplicaRecoveryCoupling proves RetainedCouplingReady.feed_frame
+for the exact cachedLocalFeedCouplingInterval endpoint: consume the input prefix
+on 93 and prepend the computed output on 110. All scalar counters and arithmetic
+workspace remain ready for the next replica. It uses the existing source-frame
+lemma, with no generated finite certificate or extra runtime setup. Guard:
+2169.6 MiB. Existing ReplicaCouplingPlacement.native_view already provides the
+placement bridge; no duplicate view abstraction was added.
+
+The combined two-module guarded build succeeds (14575 jobs, 2.7 GiB combined
+peak). Both new files pass integrity/whitespace scans. This closes the loader
+and readiness preservation obligations, not the recovery batch: phase selector
+setup, source/archive advancement, the actual loop, second interior passes and
+top-level sequencing remain open. No commit or push; periodic WIP untouched.
+
+
+### S4 executed recovery preparation from the cached first-pass endpoint
+
+PhaseCellRetainedReplicaRecoveryMasks reuses placedInitializeCouplingMasks.
+It derives all low scratch and retired mask ports from CachedReplicaPassPost
+and the original CachedReplicaPassInput, and both geometry size conditions
+from ReplicaHaloProblem.coupling_geometry. The complete native numerical bank
+is unchanged, so readiness survives with no counter regeneration. Guard:
+3266.9 MiB.
+
+PhaseCellPrepareRetainedReplicaRecovery composes that executed selector setup
+with the checked reversed original-RHS loader. Its exact endpoint prepares
+159/161 and input 93, preserves the original gather recovery headers and returns
+retained readiness. execWithin_seq_two_budget combines the existing phase bounds;
+all setup and reverse-copy steps are included in the time bill. Guard:
+3264.9 MiB. This preparation runs once per phase, outside the replica loop.
+
+The combined nine-module native traversal / reverse archive / retained
+preparation build succeeds (15184 jobs, 3.4 GiB combined peak). All nine files
+pass integrity/whitespace scans, with proof limits unchanged. Collect these
+modules and this plan as one larger local checkpoint; exclude periodic WIP.
+No push is authorized.
+
+Next compose the actual cached coupling row with source advancement. Preserve
+each projected boundary field for final assembly: transfer the used field prefix
+to an archive rather than discard it as the first-pass finish routine does.
+The existing takePrefix lifecycle can perform that transfer with the retained
+symbol-volume header. Then use a structural replica loop and execute second
+interior passes. No complete recovery loop or end-to-end S4 theorem is claimed.
