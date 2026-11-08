@@ -36043,3 +36043,97 @@ self-counted packet parser, concrete three-count producer and full counted
 mixed-axis execution reports only standard Lean axioms (3907.8 MiB peak).
 Plan-status and whitespace checks pass. Commit these six modules as one local
 integration chunk; do not push.
+
+### S4 all per-axis masters read and retired from metadata
+
+`Routing/UnaryHeaderList.lean` proves ordinary header loading once for an
+arbitrary fixed destination list. A structural install function supplies exact
+state semantics, including off-bank preservation and queue commutation. Metadata
+values affect only data; the program depends solely on the destination ports.
+All reader scratch restores, and time is the sum of the existing dimension-reader
+bills plus one terminal action. Guarded check: 1947.5 MiB, no warnings.
+
+`Routing/HaloAxisMasterSetup.lean` instantiates the loader on the seven actual
+N,B,L,H,w,k,r ports. Its metadata packet supplies dimensions and movement
+exponents, while shared width/zero remain on 115/116. `result_holds` derives the
+entire existing Masters interface from this executed setup; no ordinary axis
+header is supplied ready. The program and its ports are fixed, with a small
+kernel-checked separation fact and explicit time/stock guarantees. Guarded
+check: 1974.6 MiB; dependency build passes (4078 jobs, 2.5 GiB peak).
+
+`Routing/HaloMetadataAxis.run_exec` composes master loading, count-packet
+production, the complete mixed-order halo step and retirement of all seven
+masters. It starts with empty per-axis header ports and consumes one complete
+metadata packet. The endpoint changes only source and metadata queue, restoring
+all scratch, generated counters, ordinary masters and preserving borrowed source
+suffix/user state. Neither Masters nor prepared outer-count premises remain.
+The selected exponents are read as ordinary metadata; their capacity and encoded
+fit conditions are explicit mathematical facts, not execution suppliers.
+Guarded complete metadata-axis check: 1997.0 MiB, no warnings/default-limit changes.
+
+Next instantiate the existing bounded-stock counted loop on this fixed program,
+with a prefix-retained tensor invariant and the remaining metadata packets. Use
+the exact partial tensor volume bound to control stage-boundary stock and one
+maximum stage reserve, rather than accumulating workspace per axis. The explicit
+setup bills still require the manuscript's final global resource comparison.
+Forward near-one geometry, numerical locality/error/support, shared initial
+exposure and compiler/root acceptance remain open. S4 remains incomplete.
+Keep these three modules uncommitted for the larger outer-loop integration
+chunk. No push authorized; periodic-recovery work untouched.
+
+Metadata-axis validation: complete import-closure build passes (4112 jobs,
+2.5 GiB aggregate peak), with only existing dependency warnings replayed.
+Temporary guarded audit of generic loading, derived Masters, executed setup and
+complete metadata-driven axis reports only standard Lean axioms (3908.6 MiB
+peak). Plan-status and whitespace checks pass. No commit or push made; retain
+this smaller chunk for outer-loop integration.
+
+### S4 runtime target-halo axis loop with one shared reserve
+
+`Routing/HaloAxisSchedule.lean` defines stage data and metadata from the exact
+current retained set. `after` computes the processed axes structurally;
+`metadata_append` gives the actual remaining queue after a prefix, and
+`after_eq_union` identifies the final retained set with the selected stage axes.
+`Ready` contains only mathematical dimensions/fit/geometry facts, with no
+execution or layout suppliers. Guarded check: 1966.7 MiB.
+
+`Routing/HaloAxesRun.run_exec` instantiates the existing bounded-stock counted
+loop with the actual metadata-driven axis program. Its invariant tracks a
+processed/remaining stage-list split, the encoded retained tensor, remaining
+metadata, and exact frame preservation. Each step derives ready headers and
+executes the existing concrete axis theorem internally. The manuscript's uniform
+`64*d*H ≤ L` bound proves every boundary tensor has less than twice the original
+volume; metadata only shrinks and the count only decreases. Consequently one
+stage reserve is reused: stock is bounded by initial stock plus one original
+tensor byte volume plus R, rather than a reserve multiplied by axis count.
+Time is `stageCount*(C+3)+2`, where C/R are numerical upper bounds on the actual
+stage bills. Guarded check: 1997.5 MiB, no warnings/default-limit changes.
+
+`Routing/PreparedHaloAxes.run_exec` reads the outer count from the metadata,
+executes this fixed loop, and retires its clock. There is no prepared axis count,
+per-axis master, product-count or layout premise. The exact endpoint changes only
+source and metadata, preserving user state, borrowed source suffix and scratch.
+Time includes the actual count parser plus the loop bill; stock adds its one-time
+parser reserve to the shared loop allowance. A definitional-unification recursion
+failure in composing left-associated allowances was resolved by explicitly
+reassociating the predicate before composition, without raising proof limits.
+Final guarded wrapper check: 1983.1 MiB.
+
+The complete target-halo preparation stage is now executable from valid runtime
+metadata. Schedule fit/geometry facts and C/R bounds remain mathematical caller
+obligations; their manuscript-sized asymptotic comparison is not established by
+this loop theorem. Next discharge that sizing/resource comparison and connect the
+haloed tensor to the actual inverse/locality/crop path. Forward near-one source
+geometry, numerical locality/error/support, shared initial exposure and final
+compiler/root acceptance remain open. S4 remains incomplete. Collect these three
+loop/schedule modules with the three previously uncommitted master-loading
+modules as one local integration chunk after final audit. No push authorized;
+periodic-recovery work remains untouched.
+
+Final outer-loop validation: complete import-closure build passes (4116 jobs,
+2.5 GiB aggregate peak), with only existing dependency warnings replayed.
+Temporary guarded audit of master loading, complete metadata axis, final retained
+set, shared-stock axis loop and count-reading wrapper reports only standard Lean
+axioms (3909.9 MiB peak). Plan-status and whitespace checks pass. Commit the six
+accumulated master-loading/schedule/loop modules locally as one integration chunk;
+do not push.
