@@ -17,6 +17,53 @@ noncomputable def cyclicPublicationField {s : ℕ} [NeZero s] (t band a n : ℕ)
   realPartWord (publicationField t band a (a+min n (s-a)) D
     (fun j => realPartWord (publicationField t band 0 (n-min n (s-a)) E Y j)) i)
 
+theorem cyclicPublicationField_fits {s : ℕ} [NeZero s] (t band a n w : ℕ)
+    (D E Y : ZMod s → GaussianInt)
+    (hD : ∀ i, Fits w (D i)) (hE : ∀ i, Fits w (E i)) (hY : ∀ i, Fits w (Y i)) :
+    ∀ i, Fits w (cyclicPublicationField t band a n D E Y i) := by
+  intro i
+  apply (componentWords_fits (z := publicationField t band a (a+min n (s-a)) D
+    (fun j => realPartWord (publicationField t band 0 (n-min n (s-a)) E Y j)) i) ?_).1
+  unfold publicationField
+  split
+  · exact hD i
+  · apply (componentWords_fits (z := publicationField t band 0 (n-min n (s-a)) E Y i) ?_).1
+    unfold publicationField
+    split
+    · exact hE i
+    · exact hY i
+
+theorem cyclicPublicationField_left_of_real {s : ℕ} [NeZero s] (t band a n : ℕ)
+    (ha : a < s) (hn : n ≤ s) (D E Y : ZMod s → GaussianInt)
+    (hD : ∀ i, (D i).im = 0) (hY : ∀ i, (Y i).im = 0)
+    (i : ZMod s) (hi : i ∈ haloVertices s a (a+min n (s-a))) :
+    cyclicPublicationField t band a n D E Y i = publicationField t band a (a+min n (s-a)) D Y i := by
+  have hrealD : realPartWord (D i) = D i := Zsqrtd.ext rfl (hD i).symm
+  have hrealY : realPartWord (Y i) = Y i := Zsqrtd.ext rfl (hY i).symm
+  have hnot : i ∉ haloInterior s t band 0 (n-min n (s-a)) := by
+    intro hr
+    exact Finset.disjoint_left.mp (cyclicPrincipalPieces_disjoint a n ha hn) hi (haloInterior_subset s t band 0 _ hr)
+  by_cases hl : i ∈ haloInterior s t band a (a+min n (s-a))
+  · simpa only [cyclicPublicationField,publicationField,ite_eq_left hl] using hrealD
+  · simpa only [cyclicPublicationField,publicationField,ite_eq_right hl,ite_eq_right hnot] using
+      (congrArg realPartWord hrealY).trans hrealY
+
+theorem cyclicPublicationField_right_of_real {s : ℕ} [NeZero s] (t band a n : ℕ)
+    (ha : a < s) (hn : n ≤ s) (D E Y : ZMod s → GaussianInt)
+    (hE : ∀ i, (E i).im = 0) (hY : ∀ i, (Y i).im = 0)
+    (i : ZMod s) (hi : i ∈ haloVertices s 0 (n-min n (s-a))) :
+    cyclicPublicationField t band a n D E Y i = publicationField t band 0 (n-min n (s-a)) E Y i := by
+  have hrealE : realPartWord (E i) = E i := Zsqrtd.ext rfl (hE i).symm
+  have hrealY : realPartWord (Y i) = Y i := Zsqrtd.ext rfl (hY i).symm
+  have hnot : i ∉ haloInterior s t band a (a+min n (s-a)) := by
+    intro hl
+    exact Finset.disjoint_left.mp (cyclicPrincipalPieces_disjoint a n ha hn) (haloInterior_subset s t band a _ hl) hi
+  by_cases hr : i ∈ haloInterior s t band 0 (n-min n (s-a))
+  · simpa only [cyclicPublicationField,publicationField,ite_eq_right hnot,ite_eq_left hr] using
+      (congrArg realPartWord hrealE).trans hrealE
+  · simpa only [cyclicPublicationField,publicationField,ite_eq_right hnot,ite_eq_right hr] using
+      (congrArg realPartWord hrealY).trans hrealY
+
 theorem cyclicPublicationField_value {s : ℕ} [NeZero s] (q t band a n : ℕ)
     (D E Y : ZMod s → GaussianInt) (i : ZMod s) :
     (value q (cyclicPublicationField t band a n D E Y i)).re =

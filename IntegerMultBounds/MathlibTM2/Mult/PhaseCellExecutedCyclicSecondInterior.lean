@@ -63,6 +63,10 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       RealReplicaHaloOutput L CyclicSecondInteriorPlacement.right.output buffersR.accumulatorTail G ∧
       G.R (CyclicSecondInteriorPlacement.left.plan.gather 125) = rows.reverse.flatMap (fun row => cyclicRecoveryField H row.1)++savedL ∧
       G.R (CyclicSecondInteriorPlacement.right.plan.gather 125) = rows.reverse.flatMap (fun row => cyclicRecoveryField K row.1)++savedR ∧
+      ReplicaAssemblyControls H CyclicSecondInteriorPlacement.left.plan.gather
+        (extendRecovery (CyclicRecoveryPlacement.bank 239)) G ∧
+      ReplicaAssemblyControls K CyclicSecondInteriorPlacement.right.plan.gather
+        (extendRecovery (CyclicRecoveryPlacement.bank 238)) G ∧
       Exec (embTab extendRecovery (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
         (executedCyclicSecondInterior hR hQ)
         (mk v (extendStacks (by decide : 840 ≤ 842) (extendStacks (by decide : 834 ≤ 840) S))) steps (mk vf G) := by
@@ -77,7 +81,7 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
   let K := axis.cyclicRightReplicaProblem cellTarget 2 a n hn Fs hF
   intro buffersL buffersR v S tail pageTail inputsL inputsR factory h226 h229
   obtain ⟨solutions,z,X,m,savedL,savedR,pageL,pageR,hlen,hformat,haccuracy,hmag,hu,hm,he,hclock,
-    hsourceL,hsourceR,harchiveL,harchiveR,hcacheL,hcacheR,hheadersL,hheadersR,hreadyL,hreadyR⟩ :=
+    hsourceL,hsourceR,harchiveL,harchiveR,hcacheL,hcacheR,hheadersL,hheadersR,hreadyL,hreadyR,hcontrolsL,hcontrolsR⟩ :=
     executedCyclicReplicaRecovery_spec (body := body) hR hQ hA axis ha hn hleftRoom hrightRoom
       Fs hF buffersL buffersR (embDn extendRecovery v) S tail pageTail inputsL inputsR factory h226 h229
   have hfitL : a+min n (s-a) ≤ s := by omega
@@ -89,14 +93,14 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
   obtain ⟨zi,hzi,huser,helift⟩ := exec_extendStacks (by decide : 840 ≤ 842) (ι := id)
     (body' := embTab extendRecovery (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
     (fun _ => rfl) he v rfl
-  obtain ⟨vf,G,k,huf,hk,hfieldsL,hfieldsR,harchL,harchR,heSecond⟩ := cyclicSecondInterior_exec
+  obtain ⟨vf,G,k,huf,hk,hfieldsL,hfieldsR,harchL,harchR,heSecond,hcontrolsLF,hcontrolsRF,hframe⟩ := cyclicSecondInterior_exec
     (body := embTab extendRecovery (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body)))
     H K J L layoutL layoutR hR hQ hA axis.hp axis.hpacket axis.hp axis.hpacket axis.hpad axis.hpad
-    buffersL buffersR buffersL.rhsTail buffersR.rhsTail zi X hreadyL hreadyR
+    buffersL buffersR buffersL.rhsTail buffersR.rhsTail zi X hreadyL hreadyR hcontrolsL hcontrolsR
     (hsourceL.trans (congrArg (fun xs => xs++buffersL.rhsTail) hJsource.symm))
     (hsourceR.trans (congrArg (fun xs => xs++buffersR.rhsTail) hLsource.symm))
   exact ⟨solutions,J,L,X,vf,G,m+k,savedL,savedR,hlen,hformat,haccuracy,layoutL,layoutR,hJtarget,hLtarget,hJexp,hLexp,hJFs,hLFs,
     huf.trans (huser.trans hu),Nat.add_le_add hm hk,hfieldsL,hfieldsR,harchL.trans harchiveL,
-    harchR.trans harchiveR,Exec.seq helift heSecond⟩
+    harchR.trans harchiveR,hcontrolsLF,hcontrolsRF,Exec.seq helift heSecond⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

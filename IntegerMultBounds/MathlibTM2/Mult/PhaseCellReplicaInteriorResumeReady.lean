@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedReplicaPassInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedRecoveryAssemblyControls
 
 /-! The first pass retains the peripheral state for another interior solve.
 The saved boundary archive is excluded from disposable gather workspace. -/
@@ -81,5 +82,18 @@ theorem ReplicaInteriorResumeReady.of_frame {s T A : ℕ} {H : ReplicaHaloProble
   h.transport hin hout (fun i _ => (hf _ (.gather i)).2)
     (fun i _ => (hf _ (.solver i)).2) (fun i => (hf _ (.solver (weightCacheCoreReg i))).1)
     (hf _ .output).2
+
+theorem ReplicaInteriorResumeReady.assembly_controls {s T A : ℕ} {H : ReplicaHaloProblem s}
+    {job : CachedReplicaPassPlacement T} {buffers : ReplicaLoopBuffers A} {S : Stacks T A}
+    (h : ReplicaInteriorResumeReady H job buffers S) (master : Fin T)
+    (hmask : S.R master = couplingSourceIntervalMaskSymbols true A s H.t H.band H.origin
+      (H.origin+H.span) H.origin H.span) : ReplicaAssemblyControls H job.plan.gather master S := by
+  refine ⟨hmask,?_,?_⟩
+  · have hw := h.headers.masters (94,94) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide)
+    simpa [Function.update_of_ne (job.plan.gather_injective.ne (by decide : (94 : Fin 126) ≠ 125)),
+      replicaFactoryHeaderValue] using hw
+  · have hn := h.headers.masters (121,113) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide)
+    simpa [Function.update_of_ne (job.plan.gather_injective.ne (by decide : (121 : Fin 126) ≠ 125)),
+      replicaFactoryHeaderValue] using hn
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -3903,24 +3903,17 @@ publication rows, and the restoring copy resolves reverse job order.
 
 Close the remaining obligations in this order:
 
-Current critical path (2026-11-08 review): finish the concrete 834-register
-cached caller before expanding the interface language. Both original-RHS
-passes/masks and canonical placement are checked. The consumer now executes
-retained-master copies, ordered archive handoff, export and one shared
-factor/solve batch. It derives row format/bounds from the cached certificates,
-retains original-system boundary accuracy and preserves both recovery banks
-and RHS queues. The actual producer is now prepended: cachedCyclicReplicaBatch_spec
-starts from ordinary cached-pass inputs and the original factor bank, without
-residual/mask/row-format or post-export readiness suppliers. The ordinary-input
-caller now also executes native projection and paired recovery-RHS coupling,
-preserving boundary accuracy for its actual solved rows. The ordinary-input caller now executes both second interior passes from those
-computed RHS streams, retaining the saved boundary archives and certified real
-interior outputs. Next assemble those outputs with the saved boundary fields,
-prove final cyclic accuracy, and publish at common width. Use the joint boundary
-count in the conserved precision allowance for both pieces; do not require either
-piece's local boundary count to equal the joint count. Judge the next checkpoint
-by the assembled/published recovered solution and the supplier assumptions it
-removes.
+Current critical path (2026-11-08): ordinary-input packed cyclic recovery is
+checked through original RHS passes, one joint Schur solve, native boundary
+projection, recovery RHS coupling, both second interior batches and both packed
+assembly loops. The actual piece streams represent the same full cyclic fields
+with error at most 1/2^target, fitting real words and zero support outside the
+principal window. Retained masks, widths and replica counts come from execution
+frames; assembly adds no repeated setup. Next restore replica order as required
+and connect these two computed piece archives to common-width publication using
+existing metadata, preserving reserved coordinates and suffixes. Keep the joint
+boundary count in both pieces' conserved precision allowance. Judge the next
+checkpoint by actual published recovered rows and eliminated supplier premises.
 Keep geometry fallback and structural stock/uniform time visible as independent
 open gates; functional execution does not close them. No reliable percentage
 or completion-time estimate is available.
@@ -41606,3 +41599,123 @@ ReplicaRecoveryBatch.assemble_row_exec additionally fixes local-halo sizing and
 acceptance, so the cyclic split/shared-target argument should supply numerical
 acceptance separately rather than force those local hypotheses.
 Final format-enriched axiom audit also passes (9594.7 MiB temporary audit peak).
+
+
+### S4 structural assembly loop and actual second-pass cyclic accuracy
+
+PhaseCellPackedRecoveryAssemblyLoop moves the existing 12-tape program into a
+narrow generic module and proves execution for an arbitrary list of paired
+interior/boundary fields. The output archive is exactly the reverse list of
+packed publicationField rows. consumeScan supplies the fixed repeated program,
+complete linear time bill and one-row scratch reserve. Numerical acceptance is
+separate. The old replicaRecoveryAssemblyLoop_exec is now a short specialization
+using ReplicaRecoveryBatch.accept_row; its duplicated consuming-scan proof was
+removed. The original can be restored from 61aed0a9.
+
+cyclicRecovery_pieces_target joins the two guarded recovery RHS solve/error
+certificates with cyclicPrincipalInterior_solves, then applies the existing
+shared-target cyclic budget. It uses the established cyclicPublicationField
+including its real-projection semantics. cyclicBoundaryRecoveryRows_map_read
+proves original replica alignment once for an arbitrary row interpretation;
+cyclicReplica_rhs_read reconciles the old boundary caller's reverse index.
+No replica cases are enumerated.
+
+cyclicSecondInterior_fields_target consumes exactly the layout, explicit RHS
+lists, boundary accuracy/format and RealReplicaHaloOutput certificates returned
+by executedCyclicSecondInterior_spec at boundaryRecoveryTarget. It extracts the
+actual Ds/Es archives and proves, in original replica order, real components,
+Fits for the recovered cyclic field, zero outside the cyclic principal window,
+and error at most 1/2^target against every original principal solution. This is
+acceptance of actual returned second-pass fields, not an executed final assembly
+or publication theorem. The physical assembly connection remains required.
+
+An accidental collision with the existing PhaseCellCyclicPublicationField was
+corrected before this checkpoint: the established definition and all original
+lemmas are restored. Its only final change is a 16-line Fits lemma using
+componentWords_fits. No competing cyclic field definition remains.
+The restored-field / new cyclic accuracy / old batched recovery / old physical
+cyclic publication integration build passes (15865 jobs, 5.4 GiB combined peak).
+The earlier wider assembly-definition rebuild also passes its old batched
+recovery branch; after fixes the actual-fields accuracy build passes. The new
+supported accuracy theorem passes a single-file guard at 3419.0 MiB. Proof
+limits are unchanged; no sorry, new axioms or native_decide.
+
+Next derive the retained mask masters and gather width/replica/volume controls
+at the actual second-pass endpoint, using its structural tape frames. Embed and
+sequence the generic consuming merge loops beside both saved boundary archives;
+share their scratch and preserve explicit replica order. D/E are already real
+from RealReplicaHaloOutput and Y is real from boundarySolutionField_im, so the
+packed merges need no additional real-projection pass. Prove their piecewise
+agreement with the existing cyclicPublicationField and use the checked accuracy
+certificate, then connect common-width publication. Whole-prefix/global stock,
+uniform time, geometry fallback, locality/tensor composition and root acceptance
+remain open. Keep this uncommitted work for the larger physical-assembly chunk;
+periodic WIP remains untouched and no push is authorized.
+
+Six final single-file checks pass: generic packed assembly 2075.1 MiB, old local
+wrapper 3242.5 MiB, established cyclic field plus Fits 2069.8 MiB, piecewise cyclic
+accuracy 3384.0 MiB, structural row reader 3261.0 MiB and actual second-pass field
+acceptance 3419.2 MiB. The guarded temporary audit of the generic loop, old wrapper,
+piecewise target and actual-field theorem reports only propext, Classical.choice
+and Quot.sound (9593.5 MiB temporary audit peak; not a production module).
+Final integrity/whitespace scans pass. No commit or push in this checkpoint.
+
+
+### S4 ordinary-input packed assembly with certified emitted cyclic fields
+
+ReplicaAssemblyControls is the small physical contract read by assembly: a
+retained boundary mask, word width and replica count. Resume headers derive
+width/count once; resumedReplicaInterior_exec returns their read frame. Both
+second passes transport these controls and preserve every native factor-bank
+spectator. The ordinary recovery caller derives masks 238/239 from its exact
+cursor/preparation/projection state, and the ordinary second-interior endpoint
+now returns both assembly-control certificates. No runtime setup is added.
+
+placedPackedRecoveryAssembly_exec lifts the generic consuming merge to any
+injective placement using exec_emb_ovr_within_stock. It preserves the one-row
+reserve and describes exactly the two consumed sources and output prefix.
+cyclicPackedAssembly_exec runs the two physical pieces in 850 tapes, using six
+shared blank scratch tapes and two separate result tapes. It restores both
+borrowed source suffixes and retains all other tapes. Its time bill is linear
+in the two row lists; its scratch reserve is the sum of two row reserves,
+independent of replica count. Only the fixed 12-register ABI maps use small
+kernel checks; all row-list execution is structural.
+
+The established cyclicPublicationField now has exact left/right piece agreement
+lemmas when the actual fields are real. RealReplicaHaloOutput supplies D/E
+reality, and boundarySolutionField_im supplies Y reality, so the existing packed
+merges need no additional real projection. These lemmas retain all original
+field semantics and declarations.
+
+executedCyclicPackedRecovery_spec invokes the ordinary second-interior caller
+at boundaryRecoveryTarget, consumes its actual real output and boundary format
+certificates, and runs both placed assembly loops. One structural enumeration
+lemma and the arbitrary row-interpretation reader establish replica alignment.
+Its actual output tapes 848/849 contain the two packed restrictions of the same
+returned full cyclic fields, in reverse replica order. Each field is real,
+Fits the shared width, vanishes outside the principal window and has error at
+most 1/2^target against the original principal solution. The complete Exec and
+time bill include every preceding phase and both assembly loops; input/source
+suffixes are restored. This still requires common-width publication, full-prefix
+stock and uniform time, fallback geometry, locality/tensor composition and root
+acceptance before S4 is complete.
+
+The ordinary packed-recovery / old batched recovery / old physical cyclic
+publication integration build passes (15869 jobs, 5.8 GiB combined peak). The
+wider strengthened control rebuild passes (15853 jobs, 17.6 GiB combined peak).
+The first single-file check of the complete packed caller passes at 3436.7 MiB;
+the standalone paired physical assembly check passes at 3292.5 MiB. No raised
+proof limits. Collect the preceding generic assembly/numerical-acceptance work
+and this executed physical connection in one larger local checkpoint, excluding
+periodic WIP; never push without instruction.
+
+All fifteen final single-file checks pass below 3.5 GiB (largest 3446.4 MiB;
+complete ordinary packed recovery 3438.2 MiB; paired assembly 3290.9 MiB). The
+guarded temporary audit of the ordinary packed caller, paired assembly, generic
+placement and old local wrapper reports only propext, Classical.choice and
+Quot.sound (9594.9 MiB temporary audit peak; not a production module). Final
+integrity/whitespace scans pass. This checkpoint covers executed packed recovery,
+not the remaining common-format publication or full S4 resource/tensor gates.
+Next reuse PackedExactBatch.ofCommonCoreClass_rows_spec and existing selected
+publication machinery, deriving its Rows from these actual fields and metadata;
+keep routing/class-wrapper expansion frozen unless this concrete caller needs it.

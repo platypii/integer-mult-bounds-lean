@@ -81,7 +81,9 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
       ReplicaRecoveryRhsHeaders H CyclicRecoveryPlacement.leftJob.plan.gather leftBuffers X ∧
       ReplicaRecoveryRhsHeaders K CyclicRecoveryPlacement.rightJob.plan.gather rightBuffers X ∧
       ReplicaInteriorResumeReady H CyclicRecoveryPlacement.leftJob leftBuffers X ∧
-      ReplicaInteriorResumeReady K CyclicRecoveryPlacement.rightJob rightBuffers X := by
+      ReplicaInteriorResumeReady K CyclicRecoveryPlacement.rightJob rightBuffers X ∧
+      ReplicaAssemblyControls H CyclicRecoveryPlacement.leftJob.plan.gather (CyclicRecoveryPlacement.bank 239) X ∧
+      ReplicaAssemblyControls K CyclicRecoveryPlacement.rightJob.plan.gather (CyclicRecoveryPlacement.bank 238) X := by
   dsimp only
   let band := PhaseCellBand.width p u
   let B := cyclicPrincipalBoundary s t band a n
@@ -186,8 +188,26 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
       cstream A w (packedInterval 0 (n-min n (s-a)) (boundarySolutionField B solution)))) hresumeL hresumeR
   have hpreparedResume := prepareCyclicRecoveryCoupling_resume hprojected.1 hprojected.2
   have hresumeX := hcursor.resume hpreparedResume.1 hpreparedResume.2
+  have hmaskL : X.R (CyclicRecoveryPlacement.bank 239) = couplingSourceIntervalMaskSymbols true A s
+      H.t H.band H.origin (H.origin+H.span) H.origin H.span := by
+    have hh := hcursor.frame (CyclicRecoveryPlacement.bank 239) (by decide)
+    rw [prepareCyclicRecoveryCouplingState_native] at hh
+    simpa only [placedNativeCyclicBoundaryBatchState,cyclicRecoveryMaskState,
+      Function.update_of_ne (CyclicRecoveryPlacement.bank_injective.ne (by decide : (239 : Fin 240) ≠ 224)),
+      Function.update_of_ne (CyclicRecoveryPlacement.bank_injective.ne (by decide : (239 : Fin 240) ≠ 132)),
+      Function.update_of_ne (CyclicRecoveryPlacement.bank_injective.ne (by decide : (239 : Fin 240) ≠ 238)),
+      Function.update_self] using hh
+  have hmaskR : X.R (CyclicRecoveryPlacement.bank 238) = couplingSourceIntervalMaskSymbols true A s
+      K.t K.band K.origin (K.origin+K.span) K.origin K.span := by
+    have hh := hcursor.frame (CyclicRecoveryPlacement.bank 238) (by decide)
+    rw [prepareCyclicRecoveryCouplingState_native] at hh
+    simpa only [placedNativeCyclicBoundaryBatchState,cyclicRecoveryMaskState,
+      Function.update_of_ne (CyclicRecoveryPlacement.bank_injective.ne (by decide : (238 : Fin 240) ≠ 224)),
+      Function.update_of_ne (CyclicRecoveryPlacement.bank_injective.ne (by decide : (238 : Fin 240) ≠ 132)),
+      Function.update_self] using hh
   refine ⟨solutions,zf,X,m,_,_,_,_,hlen,hformats,hboundary,hmag,hu,?_,he,hclock,?_,?_,hcursor.archiveL,hcursor.archiveR,
-    hcursor.cacheL,hcursor.cacheR,hcursor.headersL,hcursor.headersR,hresumeX.1,hresumeX.2⟩
+    hcursor.cacheL,hcursor.cacheR,hcursor.headersL,hcursor.headersR,hresumeX.1,hresumeX.2,
+    hresumeX.1.assembly_controls _ hmaskL,hresumeX.2.assembly_controls _ hmaskR⟩
   · have hbill : m₀ ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n target q w B.card W Fs.length := hm₀
     exact hm.trans (Nat.add_le_add_right hbill _)
   · have hh := hcursor.cacheL.ready.source

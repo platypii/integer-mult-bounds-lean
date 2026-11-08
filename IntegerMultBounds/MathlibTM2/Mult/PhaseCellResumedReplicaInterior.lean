@@ -37,7 +37,8 @@ theorem resumedReplicaInterior_exec (H J : ReplicaHaloProblem s) (layout : H.Sam
       G.R (job.plan.gather 125) = S.R (job.plan.gather 125) ∧
       (G.inp = S.inp ∧ G.out = S.out) ∧
       Exec body (resumedReplicaInterior job fresh hg hs hR hQ) (mk v S) n (mk v' G) ∧
-      (∀ k, ¬job.Owns k → k ≠ fresh → G.L k = S.L k ∧ G.R k = S.R k) := by
+      (∀ k, ¬job.Owns k → k ≠ fresh → G.L k = S.L k ∧ G.R k = S.R k) ∧
+      (∀ i ∈ [(94 : Fin 126),121], G.R (job.plan.gather i) = S.R (job.plan.gather i)) := by
   let plan := job.plan.reserveArchive fresh hg hs
   let F := releasedReplicaInteriorBank job.plan S
   let nextBuffers := {buffers with rhsTail := S.R (job.plan.solver 110), solverOutputTail := S.R (job.plan.solver 93)}
@@ -76,7 +77,7 @@ theorem resumedReplicaInterior_exec (H J : ReplicaHaloProblem s) (layout : H.Sam
     (job.gather_output 125).symm he.toExec
   refine ⟨v',G,releaseReplicaInteriorBankCost job.plan S+m,hu.trans hu₀,
     Nat.add_le_add_left hm _,hfields,?_,⟨hstreams.1.trans ready.input.symm,hstreams.2.trans ready.output.symm⟩,
-    Exec.seq he₀ he.toExec,?_⟩
+    Exec.seq he₀ he.toExec,?_,?_⟩
   · exact harchive.2.trans (ite_eq_right (replicaInteriorReleasePorts_gather job.plan 125))
   · intro k hk hkfresh
     have hgk : ∀ i, plan.gather i ≠ k := by
@@ -96,5 +97,12 @@ theorem resumedReplicaInterior_exec (H J : ReplicaHaloProblem s) (layout : H.Sam
       obtain ⟨i,_,heq⟩ := List.mem_map.mp hmem
       exact hk (heq ▸ CachedReplicaPassPlacement.Owns.solver (weightCacheCoreReg i))
     exact ⟨hframe.1,hframe.2.trans (ite_eq_right hnot)⟩
+  · intro i hi
+    have hindices : i = 94 ∨ i = 121 := by simpa only [List.mem_cons,List.not_mem_nil,or_false] using hi
+    have havoid : i ≠ 87 ∧ i ≠ 119 ∧ i ≠ 124 ∧ i ≠ 125 := by rcases hindices with rfl | rfl <;> decide
+    have hh := hgather i havoid.1 havoid.2.1 havoid.2.2.1
+    have hreg : plan.gather i = job.plan.gather i := Function.update_of_ne havoid.2.2.2 _ _
+    rw [hreg] at hh
+    exact hh.trans (ite_eq_right (replicaInteriorReleasePorts_gather job.plan i))
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
