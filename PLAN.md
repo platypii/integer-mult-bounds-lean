@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4688 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4693 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -40056,3 +40056,62 @@ Quot.sound (9580.2 MiB temporary audit peak). Source integrity and whitespace
 checks pass; no proof limits changed. Collect the disjoint layout, generated
 width/controls, physical normalization, common-width adapter and full normalized
 caller as one larger local checkpoint. No push; periodic WIP untouched.
+
+### S4 common-width publication shares one scalar setup and disposal
+
+PhaseCellPreparedCyclicRounding factors the executed setup/rounding prefix out
+of normalization. It returns the actual computed scalar bank, exact external
+frame, fitting rounded words and decoded error. No second setup or execution
+supplier is introduced. Guarded check: 3153.7 MiB. The narrow normalization
+contract was first rechecked against the prefix (3137.7 MiB), then retired once
+the common-width caller replaced it.
+
+PhaseCellPublishRoundedScalar exports p directly from that retained scalar bank,
+generates its temporary one-replica header, reuses publishRoundedKey to widen
+the coefficient packet, and clears both exported headers. Its bill includes
+conversion, generation, widening and erasure. Register disjointness uses direct
+Nodup inequalities instead of simp_all over the full execution context; the
+scalar module build dropped from 11 seconds to 2.1 seconds after that proof
+change. The executor changes only the actual packet prefix.
+
+PhaseCellNormalizePublishCyclicInterval composes the prepared prefix, that
+publication executor and one scalar-bank disposal. The same initial numerical
+certificate derives every strict signed fit and the final common-width decoded
+error. No publication-count or seam factor is added. Guarded check: 3156.9 MiB.
+
+PhaseCellWithCyclicNormalizationControls owns generation and retirement of the
+physical scalar-width, row-count and word-width rulers around any restoring
+packet operation. Its exact frame theorem lets the common-width physical path
+reuse all dimension/cleanup reasoning. Check: 1951.2 MiB.
+PhaseCellPhysicalCyclicCommonNormalization instantiates it with the combined
+lifecycle: precision 278 and replica 0 are temporary, router width 279 is
+borrowed, and all other extra registers restore. It pays the previous physical
+normalization bill plus publishRoundedScalarCost, with no repeated scalar
+setup. Guarded check: 3190.9 MiB.
+
+The existing PhaseCellInitializedCyclicNormalizedRecovery now executes this
+common-width path directly after the actual embedded cropped solver. Its inputs
+include the ordinary unary router width W on 279 and room 2*p+13 ≤ W; initial
+blank workspace excludes that borrowed header. It returns exactly n*W symbols,
+normalized decoded accuracy against every exact principal solution, preservation
+of original RHS/ambient/table/external streams and restoration of every added
+register, including the borrowed width. Canonical normalized accuracy was
+generalized to W rather than proving a separate numerical theorem. Guarded
+caller check: 3430.7 MiB. The complete build passes (15813 jobs, 3.5 GiB peak).
+
+Retired the unused narrow-only normalizeCyclicInterval lifecycle, narrow physical
+executor, and standalone cyclic publication adapter; each source leaves a
+one-line restore note for 4c755426. Shared physical ports/cost remain in the
+small physical-normalization module. No other repository caller used those
+retired declarations. This avoids retaining duplicate proof paths.
+
+Next close setup reuse across RHS replicas and the uniform scalar time /
+structural workspace ledger, using the retained boundary-factor interface and
+existing generic list schedules. Broader S4 locality, complex/axis/tensor/forward/
+error/support and final compiler acceptance remain open. Do not count format
+publication as full S4. No push; periodic WIP untouched.
+The full common-width ordinary-input caller and physical executor axiom audit
+reports only propext, Classical.choice and Quot.sound (9581.5 MiB temporary audit
+peak). Source integrity and whitespace checks pass; no proof limits changed.
+Collect this common-width integration and removal of duplicate narrow proof
+paths as one larger local checkpoint; no push.

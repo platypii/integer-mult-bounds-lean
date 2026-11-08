@@ -1,11 +1,12 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInitializedCyclicCroppedRecovery
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPhysicalCyclicNormalization
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPhysicalCyclicCommonNormalization
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicNormalizedRecoveryAccuracy
 public import IntegerMultBounds.MathlibTM2.Host.EmbedUpdate
 
-/-! Ordinary cyclic recovery executes normalization at the solver's retained precision. -/
+/-! Ordinary cyclic recovery normalizes and publishes at the router's common width.
+The former narrow-only caller is restorable from commit 4c755426. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
@@ -16,11 +17,11 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
 variable {Q A : ℕ} {U P₀ : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
 noncomputable def initializedCyclicNormalizedRecovery (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P₀ 280 Q A U :=
-  .seq (embProg cyclicSolverReg id (initializedCyclicCroppedRecovery hR hQ)) physicalCyclicNormalization
+  .seq (embProg cyclicSolverReg id (initializedCyclicCroppedRecovery hR hQ)) physicalCyclicCommonNormalization
 
 theorem initializedCyclicNormalizedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
-    {p l s t u target a n : ℕ} [NeZero s] {α d : ℝ}
-    (axis : RecoveryAxisBounds s t p u l α d) (has : a < s) (hbs : n ≤ s)
+    {p l s t u target a n W : ℕ} [NeZero s] {α d : ℝ}
+    (axis : RecoveryAxisBounds s t p u l α d) (has : a < s) (hbs : n ≤ s) (hW : 2*p+13 ≤ W)
     (rhs : ZMod s → GaussianInt)
     (hrhs : ∀ i, ‖value (executionPrecision p l (initialSchurTarget p u
       (boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 (cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n).card) 2) 2) (rhs i)‖ ≤ (2 : ℝ)^2)
@@ -35,7 +36,9 @@ theorem initializedCyclicNormalizedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.
     (h139 : S.R 139 = [])
     (h127 : S.R 127 = []) (h138 : S.R 138 = []) (h143 : S.R 143 = []) (h147 : S.R 147 = [])
     (h151 : S.R 151 = []) (h152 : S.R 152 = []) (h153 : S.R 153 = [])
-    (hleft : ∀ i : Fin 280, S.L i = []) (hnew : ∀ i : Fin 280, 154 ≤ i.val → S.R i = []) :
+    (hleft : ∀ i : Fin 280, S.L i = [])
+    (hwide : (S.R 279).length = W)
+    (hnew : ∀ i : Fin 280, 154 ≤ i.val → i ≠ 279 → S.R i = []) :
     let band := PhaseCellBand.width p u
     let B := cyclicPrincipalBoundary s t band a n
     let bits := boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 B.card
@@ -45,23 +48,23 @@ theorem initializedCyclicNormalizedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.
       Exec (embTab cyclicSolverReg (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
         (embTab componentReg (embTab groupReg body))))))
         (embProg cyclicSolverReg id (initializedCyclicCroppedRecovery hR hQ)) (mk v S) m₀ (mk v₀ S₀) ∧
-      m ≤ m₀+physicalCyclicNormalizationCost p q a n ∧ v'.user = v.user ∧
+      m ≤ m₀+physicalCyclicCommonNormalizationCost p q a n W ∧ v'.user = v.user ∧
       Exec (embTab cyclicSolverReg (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
         (embTab componentReg (embTab groupReg body)))))) (initializedCyclicNormalizedRecovery hR hQ)
         (mk v S) m (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧ S'.R 110 = S.R 110 ∧
       (∀ k : Fin 280, 224 ≤ k.val → S'.R k = S.R k) ∧
       S'.R 132 = cstream A w (chirpLine s G)++(bandTableWords A w B (24*band+1) columns 0++S.R 132) ∧
-      S'.R 147 = cstream A (2*p+13) (cyclicInterval a n
+      S'.R 147 = cstream A W (cyclicInterval a n
         (fun i => finalRoundWord w q p (inverseNormalizationShift p) (G i))) ∧
-      (S'.R 147).length = n*(2*p+13) ∧
+      (S'.R 147).length = n*W ∧
       (∀ x ∈ cyclicInterval a n (fun i => finalRoundWord w q p (inverseNormalizationShift p) (G i)),
         Fits (2*p+13) x) ∧
       ∀ x : ZMod s → ℝ,
         SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
           (fun i => (value q (rhs i)).re) →
         PhaseCellInterface.ErrorOn (cyclicPrincipalVertices s a n)
-          (cyclicIntervalRead p (2*p+13) a (S'.R 147))
+          (cyclicIntervalRead p W a (S'.R 147))
           (fun i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*(x i : ℂ))
           (2/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p) := by
   dsimp only
@@ -87,7 +90,13 @@ theorem initializedCyclicNormalizedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.
           · simpa [embStk,cyclicSolverReg] using hfresh 146 (by simp))
       h0 h139 h127 h138 h143 h147 h151 h152 h153
       (by intro i; exact hleft (cyclicSolverReg i))
-      (by intro i hi; exact hnew (cyclicSolverReg i) hi)
+      (by intro i hi
+          apply hnew (cyclicSolverReg i) hi
+          intro heq
+          have hv := congrArg Fin.val heq
+          have hi := i.isLt
+          simp only [cyclicSolverReg] at hv
+          omega)
   obtain ⟨vc,hvc,huC,heC⟩ := exec_emb_ovr (e := cyclicSolverReg) (ι := id)
     cyclicSolverReg_injective (body := native) (body' := embTab cyclicSolverReg native)
     (by intro f; rfl) heb v rfl S rfl
@@ -140,8 +149,8 @@ theorem initializedCyclicNormalizedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.
     rw [hv,←Complex.ofReal_sub,Complex.norm_real]
     exact herror x₀ hx₀ i hi
   have hdim := cyclicRound_dimensions p u l target B.card
-  obtain ⟨vd,md,hvd,hmd,hed,hrounded,_⟩ := physicalCyclicNormalization_exec
-    (body := embTab cyclicSolverReg native) (by omega) p q a n hdim.1 hdim.2.2 has hbs G
+  obtain ⟨vd,md,hvd,hmd,hed,hrounded,_⟩ := physicalCyclicCommonNormalization_exec
+    (body := embTab cyclicSolverReg native) (by omega) p q a n W hW hdim.1 hdim.2.2 has hbs G
     (fun i => (x₀ i : ℂ)) _ ((div_le_one (by positivity)).mpr (one_le_pow₀ (by norm_num))) hmag [] [] hgood vc Sc
     (by simpa [hread 117 (by decide)] using hP)
     (by simpa [hread 119 (by decide)] using hq)
@@ -156,11 +165,12 @@ theorem initializedCyclicNormalizedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.
         apply hfreshB
         simp only [List.mem_cons,List.not_mem_nil,or_false] at hk ⊢
         rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp)
-    (by intro k hk; rw [hhigh k hk]; exact hnew k (by omega))
+    (by intro k hk hne; rw [hhigh k hk]; exact hnew k (by omega) hne)
+    (by rw [hhigh 279 (by decide)]; exact hwide)
     (by simpa [←hw,hread 147 (by decide)] using h147)
   let F : Stacks 280 A := {Sc with R := (Function.update Sc.R 147
-    (cstream A (2*p+13) (cyclicInterval a n (fun i => finalRoundWord w q p (inverseNormalizationShift p) (G i)))))}
-  have hed' : Exec (embTab cyclicSolverReg native) physicalCyclicNormalization (mk vc Sc) md (mk vd F) := by
+    (cstream A W (cyclicInterval a n (fun i => finalRoundWord w q p (inverseNormalizationShift p) (G i)))))}
+  have hed' : Exec (embTab cyclicSolverReg native) physicalCyclicCommonNormalization (mk vc Sc) md (mk vd F) := by
     simpa only [F,hw,List.append_nil] using hed
   refine ⟨vc,Sc,mb,vd,F,mb+md,columns,G,heC,Nat.add_le_add_left hmd mb,
     hvd.trans (huC.trans hvb),Exec.seq heC hed',hinp,hout,?_,?_,?_,?_,?_,?_,?_,?_⟩
@@ -175,14 +185,14 @@ theorem initializedCyclicNormalizedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.
   · simpa only [←hw] using hrounded
   · intro x hx
     change PhaseCellInterface.ErrorOn (cyclicPrincipalVertices s a n)
-      (cyclicIntervalRead p (2*p+13) a
-        (cstream A (2*p+13) (cyclicInterval a n (fun i => finalRoundWord w q p (inverseNormalizationShift p) (G i)))))
+      (cyclicIntervalRead p W a
+        (cstream A W (cyclicInterval a n (fun i => finalRoundWord w q p (inverseNormalizationShift p) (G i)))))
       (fun i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*(x i : ℂ)) _
     have h : PhaseCellInterface.ErrorOn (cyclicPrincipalVertices s a n)
-      (cyclicIntervalRead p (2*p+13) a
-        (cstream A (2*p+13) (cyclicInterval a n (fun i => finalRoundWord (2*q+8) q p (inverseNormalizationShift p) (G i)))++[]))
+      (cyclicIntervalRead p W a
+        (cstream A W (cyclicInterval a n (fun i => finalRoundWord (2*q+8) q p (inverseNormalizationShift p) (G i)))++[]))
       (fun i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*(x i : ℂ))
-      (2/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p) := cyclicPrincipal_finalRound_accuracy (A := A) (l := l) (target := target) (by omega) hp has axis.hdom rhs G hreal x []
+      (2/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p) := cyclicPrincipal_finalRound_accuracy (A := A) (l := l) (target := target) (by omega) hp has W hW axis.hdom rhs G hreal x []
       hrhs hfits' hx (herror x hx)
     simpa only [List.append_nil,←hw] using h
 

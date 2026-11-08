@@ -35,7 +35,7 @@ theorem cyclicPrincipal_round_magnitude {s t p u q a n : ℕ} [NeZero s]
   exact h.trans (by simpa only [mul_comm] using hscale)
 
 theorem cyclicPrincipal_finalRound_accuracy {A s t p u l target a n : ℕ} [NeZero s]
-    (hA : 4 ≤ A) (hp : 0 < p) (ha : a < s)
+    (hA : 4 ≤ A) (hp : 0 < p) (ha : a < s) (W : ℕ) (hW : 2*p+13 ≤ W)
     (hdom : SchurDominance.DominatesOn (realMatrix s t p u) Finset.univ (1/(8*(p : ℝ))))
     (rhs G : ZMod s → GaussianInt) (hreal : ∀ i, (G i).im = 0)
     (x : ZMod s → ℝ) (tail : List (Fin (A+4))) :
@@ -50,7 +50,7 @@ theorem cyclicPrincipal_finalRound_accuracy {A s t p u l target a n : ℕ} [NeZe
     PhaseCellInterface.ErrorOn (cyclicPrincipalVertices s a n)
       (fun i => (value q (G i)).re) x (1/(2 : ℝ)^(target+1)) →
     PhaseCellInterface.ErrorOn (cyclicPrincipalVertices s a n)
-      (cyclicIntervalRead p (2*p+13) a (cstream A (2*p+13)
+      (cyclicIntervalRead p W a (cstream A W
         (cyclicInterval a n (fun i => finalRoundWord w q p (inverseNormalizationShift p) (G i)))++tail))
       (fun i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*(x i : ℂ))
       (2/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p) := by
