@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryInteriorCore
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInitializedInterior
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRestoredCouplingPass
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoverySizing
@@ -97,17 +98,12 @@ theorem recoveryInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
   let band := PhaseCellBand.width p u
   let cExp := recoveryRhsExponent p rhsExp boundaryExp countExp
   let R := couplingRowField (2^15*p) q t u band a b true C B
-  obtain ⟨hq,hstage,hw⟩ := recovery_execution_sizes p l target rhsExp boundaryExp countExp
   have hp0 : 0 < p := by omega
   have hpR : (0 : ℝ) < p := by exact_mod_cast hp0
   have hθ0 : 0 < (t : ℝ)/s-1 := lt_of_lt_of_le (by positivity) hθ
   let : NeZero t := ⟨by omega⟩
   have hdom := matrix_gap s t hst hα p u hp hwidth hαu hθ hgap hbudget
-  have hAI := SchurDominance.dominates_mono _ Finset.univ (haloInterior s t band a b) _
-    (Finset.subset_univ _) hdom
   have hμ : (0 : ℝ) < 1/(8*(p : ℝ)) := by positivity
-  obtain ⟨xI,hxI⟩ := SchurDominance.solves_exists _ (haloInterior s t band a b) _ hμ hAI
-    (fun i => (value q (R i)).re)
   have hwq : 2*q+8 = w := by dsimp [q,w,executionPrecision,executionWidth]; omega
   let original := cstream A w (chirpLine s B)++tail
   let S₀ : Stacks 144 A := {S with R := Function.update S.R 110 original}
@@ -121,40 +117,21 @@ theorem recoveryInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
   have hready₀ : LengthKeyReady (2^15*p)
       (executionStagePrecision p l (recoveryFirstTarget p target rhsExp boundaryExp countExp) rhsExp+1)
       q l s t u band 0 0 original S₀ := hready.update_source original
-  have hreadyq : LengthKeyReady (2^15*p)
-      (executionStagePrecision p l (recoveryFirstTarget p target rhsExp boundaryExp countExp) rhsExp+1)
-      q l s t u band 0 0 (cstream A (2*q+8) (chirpLine s B)++tail) S₀ := by
-    rw [hwq]
-    exact hready₀
-  have hsourceq : S₀.R 132 = cstream A (2*q+8) (chirpLine s C)++sourceTail := by
-    rw [hwq]
-    simpa [S₀] using hsource
-  obtain ⟨v₁,n₁,hu₁,hn₁,he₁,hready₁,hRnorm,hRerror⟩ := restoredCouplingPass_spec (body := body)
-    (q := q) (N := executionStagePrecision p l (recoveryFirstTarget p target rhsExp boundaryExp countExp) rhsExp+1)
-    (l := l)
-    hQ hA hp0 hst hαu hθ0 hgap hbudget (recovery_coupling_width p l target rhsExp boundaryExp countExp)
-    has hbs hband rfl C B x (fun i => (value q (B i)).re) 2 ε 0 hε hcount hB hC hxB hmass
-    (by intro i; simp) tail sourceTail v₀ S₀ hreadyq (by simpa [S₀] using haMaster)
-    (by simpa [S₀] using hbMaster) hsourceq (by simpa [S₀] using h143)
-  simp only [hwq] at he₁ hready₁
-  let S₁ : Stacks 144 A := {S₀ with R := Function.update S₀.R 110 (cstream A w (chirpLine s R)++S₀.R 110)}
-  have hready₁' : LengthKeyReady (2^15*p) (executionStagePrecision p l target cExp+1)
-      (executionPrecision p l target cExp) l s t u band 0 0
-      (cstream A (executionWidth p l target cExp) (chirpLine s R)++S₀.R 110) S₁ := by
-    simpa only [S₁,R,q,w,band,cExp,hq,hstage,hw] using hready₁
-  obtain ⟨v₂,n₂,D,hu₂,hn₂,hlen,he₂,hDnorm,hDerror⟩ := initializedInterior_spec (body := body)
-    hR hQ hA hp0 hst hu hαu hθ0 hgap hbudget hband has hbs hpad R
-    (by simpa only [R,q,band,cExp,hq,recoveryRhsExponent] using hRnorm) xI
-    (by simpa only [R,q,band,cExp,hq] using hxI) v₁ S₁ (S₀.R 110)
-    (by simpa [S₁,S₀] using h127) (by simpa [S₁,S₀] using h138)
-    (by simpa [S₁,S₀] using haMaster) (by simpa [S₁,S₀] using hbMaster) hready₁'
+  obtain ⟨v₂,n₂,D,xI,hu₂,hn₂,he₂,hRnorm,hDnorm,hxI,hDerror⟩ := recoveryInteriorCore_spec (body := body)
+    hR hQ hA hp hwidth hα hst hu hαu hθ hgap hbudget hband has hbs hpad C B hB hC
+    v₀ S₀ tail sourceTail hready₀ (by simpa [S₀] using haMaster) (by simpa [S₀] using hbMaster)
+    (by simpa [S₀] using hsource) (by simpa [S₀] using h127) (by simpa [S₀] using h138)
+    (by simpa [S₀] using h143)
+  have hRerror := couplingRowField_error (A := A) true hA hp0 hst hαu hθ0 hgap hbudget
+    (recovery_coupling_width p l target rhsExp boundaryExp countExp) C B x
+    (fun i => (value q (B i)).re) 2 ε 0 hε hcount hB hC hxB hmass (by intro i; simp [q])
   have hcore : PhaseCellInterface.ErrorOn (haloInterior s t band a b)
       (fun i => (value q (D i)).re) x
       (1/(2 : ℝ)^target+8*p*((2*band+1)*(2/(2 : ℝ)^q)+
         (2*band+1)*((2 : ℝ)^boundaryExp*(1/(2 : ℝ)^q))+2*ε)) := by
     have hDerror' : PhaseCellInterface.ErrorOn (haloInterior s t band a b)
         (fun i => (value q (D i)).re) xI (1/(2 : ℝ)^target) := by
-      simpa only [q,cExp,hq] using hDerror
+      exact hDerror
     have hfull : SchurDominance.Solves (realMatrix s t p u)
         (haloInterior s t band a b ∪ haloBoundary s t band a b) x (fun i => (value q (B i)).re) := by
       rw [haloInterior_union_boundary]
@@ -180,17 +157,15 @@ theorem recoveryInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA :
     rw [sub_add_sub_cancel] at ht
     nlinarith only [hh,hd,ht]
 
-  refine ⟨v₂,n₀+(n₁+n₂),D,hu₂.trans (hu₁.trans hu₀),Nat.add_le_add hn₀ (Nat.add_le_add hn₁ hn₂),
-    (Exec.seq he₀ (Exec.seq he₁ he₂)).cast rfl ?_,hRnorm,?_,hcore,?_,?_⟩
+  refine ⟨v₂,n₀+n₂,D,hu₂.trans hu₀,Nat.add_le_add hn₀ hn₂,
+    (Exec.seq he₀ he₂).cast rfl ?_,hRnorm,?_,hcore,?_,?_⟩
   · apply congrArg (mk v₂)
-    have hw' : executionWidth p l target cExp = w := hw.symm
-    simp only [S₁,hw']
     refine Stacks.ext rfl rfl rfl ?_
     funext k
     by_cases hk110 : k = 110 <;> by_cases hk132 : k = 132 <;>
-      simp [S₀,original,hk110,hk132,q,w,R,band,countExp]
+      simp [S₀,original,hk110,hk132,w,countExp]
 
-  · simpa only [q,cExp,hq,countExp] using hDnorm
+  · exact hDnorm
   · rw [← haloInterior_union_boundary s t band a b]
     exact hcore.union_ite (by
       intro i hi

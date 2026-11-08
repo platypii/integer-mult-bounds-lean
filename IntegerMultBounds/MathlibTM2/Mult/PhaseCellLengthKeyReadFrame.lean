@@ -43,4 +43,17 @@ theorem LengthKeyReady.of_read_frame {A P N q l s t u band V w : ℕ}
     rw [hR k hbound]
     exact h.fresh k hk
 
+/-- The output accumulator is not read by the arithmetic readiness invariant. -/
+theorem LengthKeyReady.of_read_frame_except_output {A P N q l s t u band V w : ℕ}
+    {input : List (Fin (A+4))} {S S' : Stacks 144 A}
+    (h : LengthKeyReady P N q l s t u band V w input S)
+    (hL : S'.L = S.L)
+    (hR : ∀ k : Fin 144, k.val < 141 → k ≠ 132 → S'.R k = S.R k) :
+    LengthKeyReady P N q l s t u band V w input S' := by
+  apply (h.update_output (S'.R 132)).of_read_frame hL
+  intro k hk
+  by_cases h132 : k = 132
+  · subst k; simp
+  · simpa only [Function.update_of_ne h132] using hR k hk h132
+
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

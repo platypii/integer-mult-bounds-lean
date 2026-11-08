@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4647 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4654 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -39420,3 +39420,99 @@ Targeted guarded build passes (15697 jobs, 3.4 GiB aggregate); the complete
 field-producer axiom audit reports only propext, Classical.choice and Quot.sound
 (9275.3 MiB temporary audit peak). Source/whitespace checks pass; default proof
 limits remain unchanged.
+
+### S4 initialized cyclic caller publishes the actual boundary field
+
+PhaseCellInitializedCyclicBoundaryField composes initializedCyclicUnscaledSolve
+with solvedBoundaryField. All publication dimensions, folded coordinates and
+row counts come from the executed page producer's exact legacy frame; geometry
+room follows from publicationGeometryWidth_fits and s<t. Its ordinary caller
+premises are unchanged. The emitted tape 132 contains the real ambient
+boundarySolutionField above the actual computed packed factor table and the
+original tail. RHS 110 is preserved; coordinate/solution ports 109/204/217 are
+consumed. The exact unscaled list's format, error and magnitude, prepared factor
+certificate and projected field accuracy are retained for recovery.
+
+LengthKeyReady.of_read_frame_except_output observes structurally that output
+132 is not read by arithmetic readiness. cyclicRecoveryReady_of_frame applies
+this through the existing relocated arithmetic bank, allowing the consumed
+coordinate page and generated endpoint headers. The initialized field caller
+uses the actual solve/publication frame to retain LengthKeyReady for the
+original input stream. No scratch or arithmetic readiness is assumed at its
+intermediate endpoint. Its runtime theorem records the actual intermediate
+solve execution and cost, plus the complete publication bill evaluated at that
+solved state; a scalar uniform resource bound is still open.
+
+Initial guarded build passes (15767 jobs, 3.6 GiB aggregate); complete caller
+check passes at 3434.3 MiB before retaining the already-proved list accuracy
+conjunction. Next execute cyclic recovery coupling rows and second interior
+passes from the emitted field and retained arithmetic state, then combine with
+the existing cyclic recovery RHS/stability and accuracy-budget lemmas. Full S4
+resource/composition/acceptance gates remain open. Collect for a larger local
+checkpoint; no push. Unrelated periodic WIP untouched.
+The final caller including retained list accuracy checks without warnings at
+3434.5 MiB; targeted guarded build passes (15767 jobs, 3.5 GiB aggregate).
+
+### S4 second interior execution is reusable independently of halo boundary equations
+
+PhaseCellRecoveryInteriorCore factors the actual restoredCouplingPass followed
+by initializedInterior from recoveryInterior. It starts with the original RHS
+and boundary field, and returns its computed coupling RHS, computed interior
+words, an exact interior solution and the allocated 1/2^target interior error.
+Dominance supplies the exact interior solution internally. It needs boundary
+magnitude but no standalone halo-system solution or boundary error comparator.
+This is the execution contract required by the cyclic joint system: the joint
+solution need not solve either standalone physical halo's boundary rows.
+
+The existing recoveryInterior_spec now calls this shared core after its legacy
+residual retirement. Its original statement/program and numerical bounds remain
+unchanged; the remaining halo argument applies the existing pure coupling error
+and Schur stability lemmas. The execution proof is shared instead of duplicating
+the two machine passes. Guarded checks pass without warnings at 2163.9 MiB for
+the core and 2176.5 MiB for the original halo wrapper.
+
+Next window/embed this core using retained cyclic endpoints, preserve the
+published boundary stream while retiring each generated RHS prefix, and execute
+the second physical interval. Combine the returned exact interior solves via
+cyclicPrincipalInterior_solves, and the existing cyclic RHS/error budget with
+cyclicRecovery_interior_error. Full S4 remains open; keep this with initialized
+field integration for the next larger local checkpoint. No push.
+Compatibility build of physicalRecoveryPublishedHalo and the initialized cyclic
+field caller passes (15768 jobs, 17.7 GiB combined peak, 2.9 minutes). Axiom
+audits for the shared execution core and original halo wrapper report only
+propext, Classical.choice and Quot.sound (7122.4 MiB temporary audit peak).
+Source-integrity and whitespace checks pass; default proof limits unchanged.
+
+### S4 one recovery pass restores both shared streams and archives only its output
+
+PhaseCellRetainedRecoveryInteriorCore lifts the shared 144-tape execution core
+through the existing component placement. PhaseCellWindowedRecoveryInteriorCore
+borrows arbitrary retained endpoint rulers into private 141/142, executes the
+core, and clears the window. It retains the computed RHS and interior norm,
+exact interior solution and allocated error. The endpoint changes only 110
+(computed RHS above original input) and 132 (computed interior above boundary
+field); endpoint rulers and every other tape are restored.
+
+PhaseCellArchiveRecoveryOutput uses the existing generated original-input byte
+clock and movePrefix to park the interior prefix on 147, exposing the boundary
+field on 132. PhaseCellFinishRecoveryPass then embeds retireAmbientSource to
+remove the generated recovery RHS from 110. It restores both shared streams and
+retains only the archived result. PhaseCellArchivedWindowedRecovery composes
+windowed execution and this cleanup: its exact final state differs only by one
+computed ambient interior line prepended to archive 147. Thus a second physical
+interval can reuse the same original RHS and joint boundary field, with no new
+source or readiness supplier. All endpoint copying, clock generation, cleanup,
+archiving and interior execution are billed.
+
+Guarded checks pass without warnings: retained core 2147.7 MiB, windowed core
+2164.9 MiB, output archive 2108.2 MiB, stream cleanup 2100.6 MiB and archived
+windowed pass 2163.2 MiB. Next compose the two physical interval executions using
+144/145 and zero/146, embed them into the initialized cyclic physical bank, and
+combine their local exact solves and error bounds through cyclic recovery
+stability. This completes one reusable actual pass, not the two-pass cyclic
+caller or full S4. No push; periodic WIP untouched.
+Targeted guarded build passes (15773 jobs, 2.7 GiB aggregate). The archived
+windowed pass axiom audit reports only propext, Classical.choice and Quot.sound
+(7134.2 MiB temporary audit peak); source-integrity checks pass and proof limits
+are unchanged. Collected with initialized boundary-field integration and shared
+core extraction as one larger local checkpoint; no push.
