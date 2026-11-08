@@ -35638,3 +35638,52 @@ prepare/scan/retire source-only theorem reports only standard Lean axioms
 accumulated view/field/prefix integration locally; no push is authorized. This
 establishes the concrete ordered target-halo scan from retained dimensions,
 not the remaining logical tensor invariant or full S4 acceptance.
+
+### S4 periodic coordinate semantics and retained-halo induction
+
+`Routing/PeriodicHaloIndex.lean` proves periodic indexing structurally through
+extension and window slicing; `FixedWidthIndex.lean` gives division/remainder
+indexing for arbitrary fixed-width concatenations. `RectangularHaloCoordinates`
+uses these facts to prove the exact expose/halo/return coordinate action, including
+wraparound and unchanged prefix/spectator coordinates. No finite window cases
+or concrete tensor certificates are enumerated.
+
+`HaloAxisCoordinates.run_exec` connects the existing actual prepared-prefix
+program to this logical transformation, retaining its source-only endpoint,
+restored scratch, cost and shared-stock guarantees. `RetainedHaloTensor` defines
+per-axis retained widths and periodic projections, proves the one-axis insertion
+rule and validity transport, and gives the exact integer volume recurrence.
+`HaloAxisTensorInvariant.transform_pullback` lifts any valid input tensor
+invariant through the actual logical output, retaining all previously extended
+axes. `RetainedHaloInduction.extendAxes_pullback` iterates this rule over an
+arbitrary distinct axis list, requiring the initial invariant only at valid
+coordinates. This is the logical induction, not yet the executable outer loop.
+
+`RetainedHaloVolume` proves that any partial tensor has volume less than twice
+its original volume when the sum of relative halo widths is below one half.
+The manuscript's uniform large-core condition `64*d*H ≤ L` implies the bound.
+The proof uses a finite-product inequality and the exact volume recurrence,
+without exponential estimates or case enumeration. Real-valued overhead is
+noncomputable; no executable data depends on it.
+
+Guarded volume check passes at 1960.2 MiB; axis-list induction at 1940.6 MiB.
+The combined coordinate/invariant/volume import-closure build passes (4080 jobs,
+4.0 GiB aggregate peak); existing dependency warnings replay, with no new module
+warnings. Default proof limits and proof-integrity restrictions are unchanged.
+
+Next connect the actual stored mixed tensor layout and initial encoding to the
+logical invariant, then execute the axis induction with ordinary dimension and
+exponent master production. Keep routing abstractions frozen unless this concrete
+composition requires a missing lemma. Forward near-one source-window geometry
+is distinct from these regular target halos and remains open, together with
+numerical locality/error/support composition, regular initialization/shared
+exposure and final compiler/root acceptance. S4 remains incomplete. Batch these
+semantic modules into one local integration commit after the final induction
+build and axiom audit; no push is authorized. Periodic-recovery work is untouched.
+
+Final semantic validation: the induction import-closure build passes (4023 jobs,
+2.5 GiB aggregate peak). A temporary guarded audit of the actual coordinate
+execution theorem, one-axis invariant, distinct-axis induction and manuscript
+volume corollary reports only standard Lean axioms (3900.6 MiB peak). Plan-status
+and whitespace checks pass. Collect the eight semantic modules and this plan
+update as one local chunk; do not push.
