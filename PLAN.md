@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4697 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4703 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -40199,3 +40199,85 @@ only propext, Classical.choice and Quot.sound (9567.6 MiB temporary audit peak).
 Source integrity and whitespace checks pass; no proof limits changed. Collect
 these four source modules and their plan updates as one larger local checkpoint;
 no push; periodic WIP untouched.
+
+### S4 cached cyclic replicas reuse axis problems and linear boundary staging
+
+PhaseCellReplicaProblemOfAxis constructs the existing ReplicaHaloProblem from
+RecoveryAxisBounds, a window and the original RHS list bounds. Diagonal dominance
+supplies one exact interior inverse and all replica reference solutions; no
+solution supplier or new execution language is introduced. RHS lookup remains
+in the existing reverse.getD convention. Guarded check: 3379.6 MiB.
+
+PhaseCellCyclicReplicaProblems instantiates this constructor for both physical
+pieces of every cyclic window n≤s. Cached-driver eligibility is separate: each
+piece needs its own span+band≤s and origin<s. The exact two-piece conditions are
+proved, with n+band≤s as a sufficient bulk condition, not a restriction on the
+constructor or the S4 contract. Both pieces share the original RHS archive,
+precision, word width, stage and metadata width definitionally, including empty
+pieces. Guarded check: 3377.8 MiB.
+
+PhaseCellCyclicReplicaResidualAccuracy joins the existing cached accuracy
+certificates for arbitrary equal-length archives. It constructs one joint
+interior inverse and proves the selected real residual field has the same
+haloResidualError, without doubling the allowance. The actual archive index j
+retains the source lookup Fs.length-1-j; no case enumeration or repeated
+interior solve is used. Its order theorem identifies the natural cyclic
+boundary row as right-piece rows followed by left-piece rows. Guarded check:
+3384.3 MiB; guarded build passes (15697 jobs, 3.5 GiB).
+
+Next physical integration should reuse stageReplicaBoundaryRhs for each packed
+piece, staging left first and prepending right, then packedBoundaryRhsFold once
+for the joint boundary. The existing cyclicPrincipalBoundary_order and linear
+fold avoid ambient scans and per-coordinate random access. Cached archives are
+packedInterval streams, whereas cyclicBoundaryRhsPhysical expects ambient
+chirpLine streams; do not connect those incompatible storage contracts or
+expand the packed rows back to ambient size. Verify the real-word conversion,
+retained masks, exact two-archive consumption and structural stock in that
+composition before plugging its rows into the prepared shared-factor batch.
+Full replica execution, geometry fallback outside cached conditions, uniform
+resources and the broader S4 acceptance gates remain open. Keep these changes
+for a larger local integration checkpoint; no commit or push; periodic WIP
+untouched.
+The constructor, cached geometry, natural-order bridge and full archive accuracy
+axiom audit reports only propext, Classical.choice and Quot.sound (9554.2 MiB
+temporary audit peak). Production modules remain below 3.4 GiB. Source integrity
+and tracked/untracked whitespace checks pass; proof limits unchanged.
+
+### S4 packed cyclic replica rows execute real folded boundary staging
+
+PhaseCellStageCyclicReplicaBoundaryRhs composes the existing retained-mask
+stageReplicaBoundaryRhs twice. It consumes the left packed row, then the right
+packed row, so prepending produces the canonical natural cyclic boundary order.
+The exact endpoint changes only the two archive tails and the gathered output;
+headers, masks, borrowed staging source, external streams and all left stacks
+restore. It covers empty pieces without cases and scans only packed row volume.
+Guarded check: 2097.9 MiB.
+
+Staging preserves complex word values: pairRe is the mask predicate, not a
+numerical real projection. PhaseCellRealPackedBoundaryRhsFold therefore composes
+the existing realReplicaRows with packedBoundaryRhsFold. Both use retained count
+and width headers; the temporary product clock is generated and cleared. This
+geometry-independent executor returns exactly the folded realPartWord field and
+restores its private registers. Guarded check: 2069.2 MiB.
+
+PhaseCellFoldCyclicReplicaBoundaryRhs connects these two executors in a concrete
+176-register bank. It needs no ambient residual expansion, coordinate random
+access, extra interior solve or factor setup. It consumes exactly one packed row
+from each archive, returns the real folded joint cyclic row on port 6, and
+restores everything else, including the natural-row port 143 and all controls.
+The joint fold counters are retained inputs for reuse across replicas. Its cost
+is stageReplicaBoundaryRhsCost n w+28+realPackedBoundaryRhsFoldCost N w, with
+N the joint boundary cardinality; the extra 28 accounts for the second staging
+lifecycle, not another packed scan. Guarded check: 2098.2 MiB; guarded build
+passes (9667 jobs, 2.7 GiB).
+
+The new execution theorems' axiom audit reports only propext, Classical.choice
+and Quot.sound (7008.5 MiB temporary audit peak). Integrity and whitespace checks
+pass; proof limits unchanged. Next use the existing relational countedLoop
+invariant to consume the two complete archives and preserve replica order,
+archive the folded rows, then connect that actual stream to the shared-factor
+batch. Generate/retire joint counters once per key and account for owned archive
+volumes structurally. Full replica traversal/recovery/publication, geometry
+fallback, uniform resources and broader S4 acceptance remain open. Collect this
+physical staging work with the preceding cached-axis/accuracy bridge as one
+larger local checkpoint. No push; periodic WIP untouched.
