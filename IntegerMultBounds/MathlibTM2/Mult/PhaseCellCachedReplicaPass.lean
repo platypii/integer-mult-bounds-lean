@@ -58,8 +58,16 @@ theorem cachedReplicaPass_exec (H : ReplicaHaloProblem s) (job : CachedReplicaPa
       rcases hi with rfl | rfl | rfl <;> decide
     rw [hbankFrame i hlarge hoff]
     exact inputs.couplingWork i hi
+  have hresume : ReplicaInteriorResumeReady H job buffers F := by
+    refine ⟨inputs.headers.of_archive_frame job.plan.gather_injective hgR,hcache,hsFresh,
+      hinp.trans inputs.input,hout.trans inputs.outputStream,
+      (hgR 87 (by decide)).trans inputs.keys,hout₀,
+      (hgR 86 (by decide)).trans (inputs.gatherFresh 86 (by simp)),
+      (hgR 119 (by decide)).trans (inputs.gatherFresh 119 (by simp)),?_⟩
+    intro i
+    exact (congrFun hnatL i).trans (congrArg (fun B : Stacks 117 A => B.L i) inputs.bank)
   refine ⟨vf,F,m,Ds,hu,hm,he,⟨hclock,hout₀,hrhs,hready,hmeta,hinp,hout,hgL,hgR,hcache,hsFresh,hnatL,
-    hlen,harch,hgood,hcoeff,hcoeffW,hcoeffRows,hfresh,hformat,haccurate,hnativeR,hcleanup,hbankFrame,hretained,hrecRhs,hrecWork⟩,?_⟩
+    hlen,harch,hgood,hcoeff,hcoeffW,hcoeffRows,hfresh,hformat,haccurate,hnativeR,hcleanup,hbankFrame,hretained,hrecRhs,hrecWork,hresume⟩,?_⟩
   intro k hk
   have off {N : ℕ} (f : Fin N → Fin T) (howns : ∀ i, job.Owns (f i)) : ∀ i, f i ≠ k := by
     intro i hi

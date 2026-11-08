@@ -3913,12 +3913,14 @@ and RHS queues. The actual producer is now prepended: cachedCyclicReplicaBatch_s
 starts from ordinary cached-pass inputs and the original factor bank, without
 residual/mask/row-format or post-export readiness suppliers. The ordinary-input
 caller now also executes native projection and paired recovery-RHS coupling,
-preserving boundary accuracy for its actual solved rows. Next execute the second
-interior passes from those computed RHS streams and publish at common width.
-Use the joint boundary count in the conserved precision allowance for both
-pieces; do not require either piece's local boundary count to equal the joint
-count. Judge the next checkpoint by the executed final recovered solution and
-the supplier assumptions it removes.
+preserving boundary accuracy for its actual solved rows. The ordinary-input caller now executes both second interior passes from those
+computed RHS streams, retaining the saved boundary archives and certified real
+interior outputs. Next assemble those outputs with the saved boundary fields,
+prove final cyclic accuracy, and publish at common width. Use the joint boundary
+count in the conserved precision allowance for both pieces; do not require either
+piece's local boundary count to equal the joint count. Judge the next checkpoint
+by the assembled/published recovered solution and the supplier assumptions it
+removes.
 Keep geometry fallback and structural stock/uniform time visible as independent
 open gates; functional execution does not close them. No reliable percentage
 or completion-time estimate is available.
@@ -41532,3 +41534,75 @@ problems. Carry the necessary retained gather/cache/left-frame facts from the
 producer instead of adding external suppliers. Both complete second-pass traces,
 final assembly/publication and the global stock/time/fallback/tensor/root gates
 remain open. These checks do not establish full S4 completion.
+
+
+### S4 ordinary-input execution through both second interior solves
+
+ReplicaInteriorResumeReady retains the first pass's peripheral headers, cache,
+reserved solver blanks, streams, destination and completely blank native left
+stacks. Its gather headers exclude the archive on tape 125. The actual cached
+pass derives this certificate once from its inputs and execution frames and
+returns it in CachedReplicaPassPost; Post.of_frame transports it. It adds no
+executed instructions. Cross-layout transport uses only the peripheral reads
+and native left stacks, not the active coupling right controls.
+
+releaseReplicaInteriorBank reuses the structural native-control index list and
+clearWords. It pays the actual release bill once, keeps payload ports 93/110 and
+all gather/cache/spectator tapes, and supplies the ordinary releasedCellBank.
+ReplicaInteriorPlacement.reserveArchive redirects only disposable gather 125 to
+a fresh tape, leaving the saved boundary archive in place. Structural program
+footprints prove preservation through the complete second-pass program.
+resumedReplicaInterior_exec composes release with the existing shared interior
+batch and real projection; it returns actual output, streams, archive and a
+spectator frame. Its full-prefix ExecWithin bound remains open.
+
+CyclicReplicaResumeReady preserves resume certificates through original residual
+export. PreparedInteriorResume and CyclicInteriorResume transport them through
+mask setup, boundary projection, RHS preparation and the final recovery cursor.
+The ordinary executed caller now returns both resume certificates at its actual
+endpoint, without any hidden first-pass input or additional endpoint suppliers.
+A recursion-depth failure in nested state projection was resolved by proving
+stream/left preservation once for an arbitrary preparation state; limits remain
+unchanged.
+
+cyclicSecondInterior_exec executes both physical second passes in 842 tapes.
+Extension supplies one blank gather scratch tape per piece; both saved boundary
+archives stay at their original addresses. The left pass's spectator frame
+supplies the right pass's input and unchanged release bill. Each pass executes
+one whole shared batch, not separate setup for each replica.
+executedCyclicSecondInterior_spec starts from the same ordinary 834-tape inputs
+as the original caller, derives both actual recovery problems using the joint
+boundary count and exact RHS stream equalities, lifts the complete caller trace,
+and executes both second passes. It returns both certified RealReplicaHaloOutput
+archives, explicit recovery RHS lists, original boundary accuracy, saved boundary
+prefixes and the complete time bill including both native releases. The final
+solutions are not yet assembled or published.
+
+The updated original-caller / resumed-interior / export / old recovery-finish
+integration build passes (15845 jobs, 17.6 GiB combined peak). The ordinary
+resume-endpoint build passes (15843 jobs, 3.5 GiB combined peak). The complete
+ordinary second-interior / old batched-recovery build passes (15851 jobs,
+3.5 GiB combined peak). The guarded temporary audit of the ordinary full trace,
+paired phase, resumed executor and strengthened cached pass reports only
+propext, Classical.choice and Quot.sound (9590.2 MiB audit peak; not a production
+module). No changed proof limits or prohibited proof constructs.
+
+Next merge each piece's actual real interior outputs with its retained boundary
+archive using the existing packed publication merge. Preserve explicit replica
+order, join the two interior solve/error certificates with the cyclic split
+lemmas, and apply cyclicRecovery_solution_shared_target at the published target.
+Then connect common-width publication. Global stock/uniform time, geometry
+fallback, locality/error/tensor composition and root acceptance remain open.
+S4 remains incomplete; periodic WIP is untouched and no push is authorized.
+
+All thirteen fresh checks of the new/changed production modules pass below
+3.5 GiB (largest measured 3444.5 MiB). The ordinary second-interior endpoint also
+retains solved-row length/Fits and both recovery RHS exponents, so assembly and
+uniform sizing can consume the already-proved facts directly.
+
+The final format-enriched ordinary theorem builds and passes a fresh guard at
+3425.9 MiB. For assembly, reuse retainedPackedPublicationMerge_exec directly;
+ReplicaRecoveryBatch.assemble_row_exec additionally fixes local-halo sizing and
+acceptance, so the cyclic split/shared-target argument should supply numerical
+acceptance separately rather than force those local hypotheses.
+Final format-enriched axiom audit also passes (9594.7 MiB temporary audit peak).

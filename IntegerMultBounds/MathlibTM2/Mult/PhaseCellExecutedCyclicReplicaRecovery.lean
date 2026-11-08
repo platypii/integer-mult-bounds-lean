@@ -2,6 +2,8 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedCyclicReplicaRecovery
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedBatchInputData
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicReplicaResumeReady
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicInteriorResume
 
 /-! Ordinary original-RHS inputs execute the cached boundary caller and recovery
 coupling. The caller's own solved rows supply all recovery format/control facts. -/
@@ -77,7 +79,9 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
       CachedRecoveryCouplingReady K (rows.reverse.flatMap (cyclicRecoveryOutputR K)++rightBuffers.rhsTail)
         pageR (embStk CyclicRecoveryPlacement.rightJob.coupling.bank X) ∧
       ReplicaRecoveryRhsHeaders H CyclicRecoveryPlacement.leftJob.plan.gather leftBuffers X ∧
-      ReplicaRecoveryRhsHeaders K CyclicRecoveryPlacement.rightJob.plan.gather rightBuffers X := by
+      ReplicaRecoveryRhsHeaders K CyclicRecoveryPlacement.rightJob.plan.gather rightBuffers X ∧
+      ReplicaInteriorResumeReady H CyclicRecoveryPlacement.leftJob leftBuffers X ∧
+      ReplicaInteriorResumeReady K CyclicRecoveryPlacement.rightJob rightBuffers X := by
   dsimp only
   let band := PhaseCellBand.width p u
   let B := cyclicPrincipalBoundary s t band a n
@@ -119,6 +123,26 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
     obtain ⟨row,hr,rfl⟩ := List.mem_map.mp hs
     exact hformat row hr
   have hview : embStk factorReg G = F := embStk_ovr factorReg_injective _ _
+  have hresumeE := cyclicReplicaConsumerExport_resume postL.resume postR.resume (cstream A w rows.flatten)
+  have hpass (k : Fin 834) (hk : left.Owns k ∨ right.Owns k) : G.L k = E.L k ∧ G.R k = E.R k := by
+    apply embOvr_off
+    intro j he
+    rcases hk with hk | hk
+    · exact (factor_disjoint j).1 (he.symm ▸ hk)
+    · exact (factor_disjoint j).2 (he.symm ▸ hk)
+  have hresumeGL : ReplicaInteriorResumeReady H left leftBuffers G :=
+    hresumeE.1.of_frame hinp houtp (fun k hk => hpass k (Or.inl hk))
+  have hresumeGR : ReplicaInteriorResumeReady K right rightBuffers G :=
+    hresumeE.2.of_frame hinp houtp (fun k hk => hpass k (Or.inr hk))
+  let extended := extendStacks (by decide : 834 ≤ 840) G
+  have hreadR (k : Fin 834) : extended.R (extendCaller k) = G.R k :=
+    congrArg (fun C : Stacks 834 A => C.R k) (embStk_extendStacks (by decide : 834 ≤ 840) G)
+  have hreadL (k : Fin 834) : extended.L (extendCaller k) = G.L k :=
+    congrArg (fun C : Stacks 834 A => C.L k) (embStk_extendStacks (by decide : 834 ≤ 840) G)
+  have hresumeL : ReplicaInteriorResumeReady H CyclicRecoveryPlacement.leftJob leftBuffers extended :=
+    hresumeGL.transport rfl rfl (fun i _ => hreadR _) (fun i _ => hreadR _) (fun i => hreadL _) (hreadR _)
+  have hresumeR : ReplicaInteriorResumeReady K CyclicRecoveryPlacement.rightJob rightBuffers extended :=
+    hresumeGR.transport rfl rfl (fun i _ => hreadR _) (fun i _ => hreadR _) (fun i => hreadL _) (hreadR _)
   have hsource : G.R (factorReg 224) = solutions.flatMap (cstream A w)++page.R 224 := by
     have hh := congrArg (fun T : Stacks 234 A => T.R 224) hview
     simpa only [F,solutions,Function.update_self,cstream_flatten,List.flatMap_def,embStk,Function.comp_apply] using hh
@@ -156,8 +180,14 @@ theorem executedCyclicReplicaRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states
     hleftRoom hrightRoom leftBuffers rightBuffers S S mid producer G Cs Ds (embDn extendCaller z) vf m₀
     he₀ hu₀ postL postR hbankL hbankR hrhsL hrhsR (page.R 224)
     (by rw [hview]; exact hworkspace) hready hsource (by rw [hview]; exact hprojection) z rfl
+  have hprojected := cyclicBoundaryProjection_resume H K leftBuffers rightBuffers extended (page.R 224)
+    (solutions.reverse.flatMap (fun solution =>
+      cstream A w (packedInterval a (min n (s-a)) (boundarySolutionField B solution))++
+      cstream A w (packedInterval 0 (n-min n (s-a)) (boundarySolutionField B solution)))) hresumeL hresumeR
+  have hpreparedResume := prepareCyclicRecoveryCoupling_resume hprojected.1 hprojected.2
+  have hresumeX := hcursor.resume hpreparedResume.1 hpreparedResume.2
   refine ⟨solutions,zf,X,m,_,_,_,_,hlen,hformats,hboundary,hmag,hu,?_,he,hclock,?_,?_,hcursor.archiveL,hcursor.archiveR,
-    hcursor.cacheL,hcursor.cacheR,hcursor.headersL,hcursor.headersR⟩
+    hcursor.cacheL,hcursor.cacheR,hcursor.headersL,hcursor.headersR,hresumeX.1,hresumeX.2⟩
   · have hbill : m₀ ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n target q w B.card W Fs.length := hm₀
     exact hm.trans (Nat.add_le_add_right hbill _)
   · have hh := hcursor.cacheL.ready.source
