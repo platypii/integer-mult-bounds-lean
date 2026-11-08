@@ -36234,3 +36234,107 @@ Final complete-resource validation: the guarded audit of global movement/count
 geometry, stream/pass/scan bills, setup sizing, full stage estimates and actual
 schedule execution reports only propext, Classical.choice and Quot.sound
 (3915.3 MiB peak). Plan-status and whitespace checks pass.
+
+### S4 manuscript core/halo setup room and least-padding schedule budgets
+
+`Routing/HaloManuscriptSizing.lean` defines the manuscript core as
+2^clog_2(p^8) and halo as 4096*p^3. For p >= 32 it proves 64*d*halo <= core
+when d <= p, and absorbs both concrete setup units into core when V,K,D <= p^2.
+The generic quadratic bound is 100000*q^2; no finite case enumeration or
+raised proof limits are used. Least dyadic forward/return padding satisfies
+the required factor-two bounds and shares return exponent at most p^2.
+The actual movement exponent in the final budget remains the logarithmic
+clog_2(core+2*halo), rather than being replaced by its coarse p^2 upper bound.
+
+Its stage_budgets theorem applies these facts directly to the existing runtime
+schedule budget theorem, discharging large-core, least-padding and setup-unit
+hypotheses. Ordinary axis metadata still must establish coarse count N >= L,
+encoded width V <= p^2, twice axis-list length <= p^2, and the Ready fit facts.
+These are not claimed proved for the selected root parameters. This closes
+polynomial headroom arithmetic, not all manuscript sizing or S4 assembly.
+Guarded complete-module check passes at 1986.1 MiB, without warnings; full
+closure build passes (4125 jobs, 2.5 GiB peak). Keep this module uncommitted
+for the next larger sizing/inverse integration chunk. No push.
+
+The existing PhaseCellHaloLocalAccuracy bridge already turns computed principal
+halo error into global core error. Reuse it when joining the actual inverse
+continuation; do not reprove locality or duplicate publishedClassProgram.
+Its hypotheses still need matching to the stored tensor windows, and the
+inverse/crop execution remains open. S4 remains incomplete.
+
+Manuscript-sizing validation: guarded audit of core bounds, setup absorption,
+halo room, least padding and instantiated schedule budgets reports only the
+standard Lean axioms (3915.3 MiB peak). Plan-status and whitespace checks pass.
+
+### S4 metadata readiness derived from geometry and global byte capacity
+
+`Routing/HaloMetadataFit.masters_fit` derives fit of N,B,L,H,w directly from
+the existing Parameters.fits contract and positivity; only k/r fit is supplied.
+`ready_of_geometry` derives every packet factor fit from its product, and every
+packet length fit from the fixed mixed-field count. No individual factor or
+master fit supplier is needed. These are structural list/product proofs.
+
+`metadataWidth T w d = clog_2(8*T*w+2*d+1)` is one common encoded width for
+all retained stages. `ready_global` derives the complete Ready contract from
+freshness, the actual selected-axis/spectator identities, current volume <= 2T,
+that common width and least exponents. It proves the exponent fits too. If
+T*w <= 2^n and d <= T*w, `metadataWidth_le` gives width <= n+4. Thus the
+manuscript width obligation reduces to an ordinary total-byte bit bound,
+rather than independent fit checks for every metadata word.
+
+Guarded complete-module check passes at 1979.4 MiB, without warnings; combined
+metadata-fit/manuscript-sizing closure build passes (4126 jobs, 2.5 GiB peak).
+Next construct actual scheduled stage parameters and freshness from a distinct
+axis traversal, apply these two verified modules, and connect the resulting
+halo execution to the existing inverse/locality/crop continuation. Parameter
+construction still must prove Parameters.fits/count_fits and coarse count >= L
+from root sizing. Actual total-byte bit room is not yet proved for root sizes.
+No root acceptance or complete S4 execution is claimed. Keep the two sizing/fit
+modules uncommitted for a larger integration chunk. No push; periodic-recovery
+work remains untouched.
+
+Metadata-fit validation: guarded audit of ordinary masters, derived Ready,
+metadata bit width and global-capacity Ready reports only standard Lean axioms
+(3913.8 MiB peak). Plan-status and whitespace checks pass. No commit or push.
+
+### S4 actual stage construction, traversal and all-axis target-halo execution
+
+`Routing/HaloStageParameters.ofRow` constructs Parameters from positive ordinary
+N,L,H,B,w and row volume <= 2T. One canonical metadata width supplies both
+Parameters.fits and count_fits internally. Least movement exponents supply both
+padding capacities. `parameters` and `stage` instantiate the exact mixed-order
+spectator product; `stage_ready` proves full Ready without a fit supplier.
+Guarded check passes at 1975.1 MiB.
+
+`Routing/HaloTraversal.build` recursively builds metadata for a distinct axis
+traversal, retaining the processed prefix. Its structural proofs identify the
+selected axes exactly, preserve the full manuscript field order, and derive
+Ready at every arbitrary processed/remaining split. Uniform w/V and least
+exponents/coarse sizing are also proved over the traversal. This is runtime
+data for the same fixed program, not an executable program unrolled per axis.
+Guarded check passes at 1965.5 MiB.
+
+`Routing/ManuscriptHaloAxes.run_exec` now executes target-halo preparation for
+all axes from their dimensions and the actual generated metadata. It derives
+large-core room, all stage parameters, encoded fits, freshness, least padding
+and numerical budgets internally. The exact endpoint changes only source and
+metadata and has retained set univ. Time is readCountCost plus
+axisCount*(T*w*(992*clog_2(core+2*halo)+6654)+3)+2; stock is at most
+initialStock+depth+3*readCountCost+17321*T*w. Axis-count room is derived from
+distinct exhaustive traversal and card <= p; it is not a supplied premise.
+Guarded final check passes at 1979.7 MiB without warnings or changed limits.
+
+The root still must establish coarse count >= core and canonical metadata
+width <= p^2 from actual sizes; initial exposure/metadata placement are not
+proved by this theorem. Next join this all-axis halo execution to the existing
+inverse/locality/crop path. Forward near-one geometry, numerical tensor error/
+support and compiler/root acceptance remain open. S4 remains incomplete.
+Collect the five accumulated sizing/fit/stage/traversal/execution modules in
+one larger local integration commit after final build and audit. No push;
+periodic-recovery work remains untouched.
+
+Final generated-traversal validation: complete closure build passes (4129 jobs,
+2.5 GiB aggregate peak). Guarded axiom audit of constructed Parameters, actual
+stage readiness, traversal indices/readiness/sizing and complete all-axis
+execution reports only standard Lean axioms (3916.7 MiB peak). Plan-status and
+whitespace checks pass. Commit the five accumulated modules locally; no push.
