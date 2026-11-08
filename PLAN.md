@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4621 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4627 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -39058,3 +39058,101 @@ LengthKeyReady from the exact legacy factor frame, then retire the two residual
 prefixes. Resident boundary-page/endpoint producer wiring, uniform setup/time/
 structural stock and widened root-width budgets, axis/tensor/forward/error/
 support and final S4 acceptance remain open. No push; periodic WIP untouched.
+
+
+### S4 actual cyclic residual generation composes with the joint boundary solve
+
+PhaseCellEmbeddedOutput provides generic exact single-output projection and
+execution rules for any injective register embedding. PhaseCellCyclicResidualPhysical
+uses these rules at the arithmetic, table and factor-bank layers to lift the
+existing cyclicResidualPasses program unchanged. The original RHS, resident
+boundary page, factor bank and all other tapes are preserved; only accumulator
+132 receives the computed right/left residual prefixes. Both interior solvers,
+residual magnitude/realness and the original joint residual error certificate
+are retained. Guarded check passes without warnings at 3196.2 MiB; build passes.
+
+PhaseCellGeneratedCyclicResidualSolve executes this physical producer followed
+by generatedCyclicBoundaryGatherSolve. The caller supplies the ordinary original
+RHS and the retained computed-factor contract; it does not supply residual
+streams, selected rows, interior solvers or an assumed execution. The selected
+residual's component bounds follow from the two computed norm bounds, without
+adding the streams. Master precision/ambient-size and gather scratch freshness
+are derived from projected LengthKeyReady. The residual prefix lies above an
+arbitrary borrowed tail on 132, so it can be produced after the packed factor
+table without changing that table. The factor state is unchanged during residual
+generation, proved by the existing register-image exclusion lemma.
+
+The composed theorem returns actual execution and full numeric cost, the two
+computed interior solvers, their joint residual-error certificate, the actual
+normalized triangular solution on the factor output, exact legacy frame and
+the two generated residual prefixes. Guarded check passes without warnings at
+3434.5 MiB; build passes (3.6 GiB aggregate). No proof limits were changed.
+
+PhaseCellRetireCyclicResiduals generates one doubled byte clock and discards
+the concatenated right/left prefix with one existing discardPrefix call. It
+restores the original borrowed accumulator tail and all scratch, while leaving
+the original RHS untouched. This avoids copying the three-stream column cleanup
+or generating separate clocks for two equal-length streams. Guarded check
+passes without warnings at 1950.9 MiB; build passes (2.5 GiB aggregate).
+Axiom audits for the generated residual/solve and retirement endpoints report
+only propext, Classical.choice and Quot.sound (9559.2 MiB audit peak).
+Whitespace and proof-source checks pass.
+
+Next compose constructedCyclicFactor with generatedCyclicResidualSolve and
+this cleanup in one original-RHS cyclic caller. Projected LengthKeyReady must
+be recovered from the factorizer's exact legacy frame; source 140 is restored,
+while the packed table update on 132 is allowed by the invariant. The retirement
+program still needs its factor-bank embedding and composition with the solved
+state. Then wire the ordinary resident boundary-page/endpoint producers and
+close full recovery accuracy, total time/structural stock, widened root format
+and remaining geometry room, axis/tensor/forward/error/support/final S4 gates.
+Keep for the next larger local checkpoint; no push. Periodic WIP untouched.
+
+
+### S4 original-RHS cyclic factor/solve/retirement now executes as one caller
+
+PhaseCellRetireCyclicResidualPhysical embeds the two-residual cleanup directly
+in the factor bank. Its exact endpoint changes only accumulator 132, and
+boundaryFactorState_update_accumulator proves the solved factor bank is unchanged.
+Guarded check passes without warnings at 3081.8 MiB; guarded build passes.
+
+PhaseCellRetiredCyclicResidualSolve composes generatedCyclicResidualSolve with
+this physical cleanup. Residual stream lengths, header lengths and all cleanup
+scratch are derived from the actual produced streams, exact legacy frame and
+original LengthKeyReady. The result restores every legacy tape, including the
+borrowed packed-table tail and original RHS, while preserving the actual
+solution and factor pages. The joint residual-error certificate and interior
+solvers remain attached to the executed result. Guarded check passes without
+warnings at 3398.9 MiB; guarded build passes (3.5 GiB aggregate).
+
+PhaseCellConstructedGeneratedCyclicSolve composes constructedCyclicFactor with
+that entire residual/solve/retire lifecycle. factorLegacyReady_of_frame reuses
+tableLoopReady_of_frame to recover arithmetic readiness from the factorizer's
+exact physical legacy frame: source 140 is restored and packed table 132 is
+allowed to change. Factor-table order adapters supply the existing joint
+triangular solver contract. The caller computes its own columns, format and
+stability certificate, physical factor inputs, lower/upper/reciprocal pages,
+two residual streams and interior solvers, selected folded RHS and solution.
+No numerical supplier, computed factor bank, residual stream or execution
+hypothesis is an input.
+
+The exact final state preserves the original RHS, coordinate page and its
+suffix, all retained headers, scratch and other legacy tapes; only packed-table
+accumulator 132 gains the computed table. Factor pages and the actual normalized
+solution on 217 remain available. Accurate joint Schur columns, the computed
+PreparedBoundaryColumns certificate, exact joint interior solve and selected
+residual-error certificate accompany the actual execution and full numeric
+cost. Guarded check passes without warnings at 3414.4 MiB; guarded build passes
+(3.5 GiB aggregate). The full caller axiom audit reports only propext,
+Classical.choice and Quot.sound (9563.1 MiB audit peak). Whitespace and
+proof-source checks pass. Default proof limits remain unchanged.
+
+Removed the unused ambient-residual-only PhaseCellConstructedCyclicSolve wrapper; restore from bd047c23 if needed.
+
+Next generate and retire the ordinary resident joint-boundary coordinate page
+and endpoint rulers at the full caller. Full recovery accuracy still needs the
+joint boundary solution's numerical error/unscaling and interior reconstruction;
+the executed residual certificate alone is not that conclusion. Uniform time/
+structural stock and widened root-format/remaining geometry budgets, axis/tensor/
+forward/error/support and final S4/compiler acceptance remain open. Keep for the
+next larger local checkpoint; no push. Periodic WIP untouched.
