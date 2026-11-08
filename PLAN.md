@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4693 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4697 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -40115,3 +40115,87 @@ reports only propext, Classical.choice and Quot.sound (9581.5 MiB temporary audi
 peak). Source integrity and whitespace checks pass; no proof limits changed.
 Collect this common-width integration and removal of duplicate narrow proof
 paths as one larger local checkpoint; no push.
+
+### S4 cyclic boundary replicas reuse the existing prepared residual batch
+
+The existing preparedResidualBatch already handles arbitrary boundary sets and
+bandwidths: it generates its own byte clock, preserves borrowed residual packets,
+normalizes/solves/unscales every row, archives solutions in source order and
+restores the shared factor bank. Reuse that executor for the cyclic boundary
+and W=24*band+1. No new archive or triangular-batch program is needed.
+
+PhaseCellCyclicPreparedResidualBatch instantiates that structural list theorem
+with the cyclic PreparedBoundaryColumns contract, obtaining length, format and
+stage facts from its fields. The proof is one application, not a replica case
+split. Its check passes at 3379.4 MiB.
+
+PhaseCellPreparedCyclicFactorFactory embeds constructedCyclicFactor in the
+existing reusable 226-register bank. It generates the joint cyclic columns and
+factor tables, derives the canonical natural-line representations using
+boundaryFactor_solve_tables, and returns PreparedBoundaryColumns, column
+accuracy, solve readiness, empty RHS/output ports and the preserved two archive
+ports. Its inputs are the retained cyclic geometry page and ordinary arithmetic
+bank, not supplied factor tables. Guarded check: 3404.9 MiB.
+
+PhaseCellConstructedCyclicResidualBatch executes that factory once and then the
+existing preparedResidualBatch on the entire residual list. The exact time bill
+is one constructedCyclicFactorCost plus preparedResidualBatchCost, whose setup
+term is N*(6*w+9)+16 and per-replica term is
+preparedResidualSolveCost q w N W+22*N*w+25. The final 224 prefix contains all
+unscaled boundary solutions in source order. The theorem explicitly proves the
+final factor bank equals the generated page's factor bank, returns its readiness
+and three canonical factor tables, proves each solution's length and signed word
+fits, and preserves external input/output/left stacks. All borrowed residual
+packets and private batch ports restore. Guarded check: 3407.4 MiB.
+
+This closes actual factor sharing for a batch of already-computed cyclic
+residuals; it does not yet generate that batch from original RHS replicas or
+recover/publish every final principal output. Next connect the cyclic page
+producer and cached residual generation to this batch, then reuse the existing
+recovery and common-width publication contracts per row. Keep setup and owned
+archive volumes explicit in the uniform time/structural-stock ledger. Broader
+S4 locality, complex/axis/tensor/forward/error/support and compiler acceptance
+remain open. Keep these changes for the next larger integration checkpoint;
+no push; periodic WIP untouched.
+The constructed cyclic batch guarded build passes (15745 jobs, 3.5 GiB peak).
+Its full execution/cache-preservation/format axiom audit reports only propext,
+Classical.choice and Quot.sound (9566.2 MiB temporary audit peak). Source integrity
+and whitespace checks pass; no proof limits changed. No new commit or push yet.
+
+### S4 original RHS execution produces the joint cyclic residual row separately
+
+PhaseCellCyclicResidualRow composes the already-executed left/right residual
+passes, cyclicBoundaryRhsPhysical and immediate residual-prefix retirement.
+It executes from the original ambient RHS and retained cyclic geometry and
+changes exactly the raw RHS port 206. The original RHS, packed table, factor
+ports and all other stacks restore. Its cost includes both guarded residual
+passes, the complete cyclic gather and disposal of both ambient residual lines;
+there is no triangular solve or factor setup inside this producer.
+
+The theorem exposes one computed residual field F and one mathematical interior
+solver R, with folded output rows = map (F ∘ bFoldAt) (range B.card). It derives
+row count, realness, the exact coordinate bounds required by preparedResidualBatch
+and the original-system residual error. The two physical pieces C/D and their
+local solvers remain internal witnesses, so downstream batch proofs use the
+manuscript's residual/operator language directly. Guarded check passes without
+warnings at 3437.0 MiB under default proof limits.
+
+Together with the preceding prepared cyclic factor factory and constructed
+residual batch, this removes the numerical-residual-row supplier for one actual
+RHS. The counted traversal still must produce the full ordered residual list
+from original RHS replicas, then connect those exact packets to the shared
+boundary batch and final recovery/publication. Do not implement that traversal
+by rerunning released interior setup per RHS: reuse the existing cached replica
+interior/coupling drivers. Their noncyclic span+band≤s condition needs a proved
+bridge for each cyclic piece under the actual bulk geometry, plus the existing
+fallback for cases outside it; do not narrow the S4 contract silently.
+
+Keep the fixed-key geometry/precision explicit for setup reuse. Uniform scalar
+time/structural-stock accounting and broader locality/complex/axis/tensor/
+forward/error/support/compiler gates remain open. No push; periodic WIP untouched.
+The cyclic residual production/shared-factor batch guarded build passes
+(15752 jobs, 3.6 GiB peak). Both full execution theorems' axiom audit reports
+only propext, Classical.choice and Quot.sound (9567.6 MiB temporary audit peak).
+Source integrity and whitespace checks pass; no proof limits changed. Collect
+these four source modules and their plan updates as one larger local checkpoint;
+no push; periodic WIP untouched.
