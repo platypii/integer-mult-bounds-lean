@@ -9,6 +9,7 @@ shared consumer. Its only factor-bank writes are the two generated masks. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -33,7 +34,9 @@ theorem cachedCyclicReplicaProducer_exec {s t p u l : ℕ} [NeZero s] {α d : �
       vf.user = v.user ∧
       m ≤ (cachedReplicaPassCost H+cachedReplicaPassCost K)+
         (placedReplicaBoundaryMaskCost H+placedReplicaBoundaryMaskCost K) ∧
-      Exec body (cachedReplicaPassMasks left right (factorReg 170) (factorReg 173) hR hQ)
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        cachedReplicaPassMasksWorkspace (A := A) (U := U) H K hR hQ) 0
+        (cachedReplicaPassMasks left right (factorReg 170) (factorReg 173) hR hQ)
         (mk v S) m (mk vf F) ∧
       CachedReplicaPassPost H left leftBuffers S F Cs ∧
       CachedReplicaPassPost K right rightBuffers mid F Ds ∧

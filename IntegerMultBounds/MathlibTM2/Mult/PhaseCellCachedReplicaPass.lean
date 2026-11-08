@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedReplicaPassPost
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedCachedReplicaInteriorCouplingStock
 
 /-! The existing first-pass executor in a composable local contract. Native push
 bounds are instantiated at their actual values, rather than supplied by callers. -/
@@ -23,6 +24,16 @@ def cachedReplicaPassCost (H : ReplicaHaloProblem s) :=
     realReplicaRowsCost H.Fs.length (H.span*H.wordWidth)+reverseCopyRowsCost H.Fs.length (H.span*H.wordWidth)+
     releasedRetiredCachedReplicaCouplingCost H
 
+noncomputable def cachedReplicaPassWorkspace (H : ReplicaHaloProblem s)
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : ℕ :=
+  initializedCachedReplicaInteriorWorkspace (A := A) (U := U) H hQ
+    (mnProgPush (rpProg (P := Empty) (Q := Q) (A := A) (U := U)
+      Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR))
+    (mnProgPush (cmulBlock cr (rmulOne (P := Empty) (Q := Q) (A := A) (U := U)
+      mul mul_injective (by decide) hQ cr)))
+    (mnProgPush (rmulOne (P := Empty) (Q := Q) (A := A) (U := U)
+      mul mul_injective (by decide) hQ cr))
+
 theorem cachedReplicaPass_exec (H : ReplicaHaloProblem s) (job : CachedReplicaPassPlacement T)
     (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
     (hspan : H.span+H.band ≤ s) (horigin : H.origin < s)
@@ -31,18 +42,22 @@ theorem cachedReplicaPass_exec (H : ReplicaHaloProblem s) (job : CachedReplicaPa
     (buffers : ReplicaLoopBuffers A) (v : HS T Q A U) (S : Stacks T A)
     (inputs : CachedReplicaPassInput H job buffers S) :
     ∃ vf F m, ∃ Ds : List (ZMod s → GaussianInt), vf.user = v.user ∧ m ≤ cachedReplicaPassCost H ∧
-      Exec body (cachedReplicaPass job hR hQ) (mk v S) m (mk vf F) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        cachedReplicaPassWorkspace (A := A) (U := U) H hR hQ) 0
+        (cachedReplicaPass job hR hQ) (mk v S) m (mk vf F) ∧
       CachedReplicaPassPost H job buffers S F Ds ∧
       ∀ k, ¬job.Owns k → F.L k = S.L k ∧ F.R k = S.R k := by
   let R := mnProgPush (rpProg (P := Empty) (Q := Q) (A := A) (U := U)
     Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR)
   let K := mnProgPush (cmulBlock cr (rmulOne (P := Empty) (Q := Q) (A := A) (U := U)
     mul mul_injective (by decide) hQ cr))
+  let M := mnProgPush (rmulOne (P := Empty) (Q := Q) (A := A) (U := U)
+    mul mul_injective (by decide) hQ cr)
   obtain ⟨vf,F,m,Ds,hu,hm,he,hclock,hout₀,hrhs,hready,hmeta,hinp,hout,hgL,hgR,hcache,hsFresh,hnatL,
     hframeL,hframeR,hlen,harch,hgood,hcoeff,hcoeffW,hcoeffRows,hfresh,hformat,haccurate,hnativeR,
-    hcleanup,hbankFrame,hretained,hrecRhs⟩ := initializedCachedReplicaInteriorCoupling_exec (body := body)
+    hcleanup,hbankFrame,hretained,hrecRhs⟩ := initializedCachedReplicaInteriorCoupling_exec_within (body := body)
     H job.coupling job.output job.rhs job.gather_output job.gather_rhs job.bank_output job.bank_rhs
-    job.solver_output job.solver_rhs job.output_rhs hR hQ hA hspan horigin R K (le_refl _) (le_refl _) hpad
+    job.solver_output job.solver_rhs job.output_rhs hR hQ M (le_refl _) hA hspan horigin R K (le_refl _) (le_refl _) hpad
     buffers v S inputs.headers inputs.bank inputs.cache inputs.solverFresh inputs.input inputs.outputStream
     inputs.savedGather inputs.keys inputs.destination
     (inputs.gatherFresh 86 (by simp)) (inputs.gatherFresh 119 (by simp)) 0 hp hwidth

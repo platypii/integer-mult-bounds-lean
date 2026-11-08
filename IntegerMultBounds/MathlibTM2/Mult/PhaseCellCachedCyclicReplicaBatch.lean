@@ -158,7 +158,7 @@ theorem cachedCyclicReplicaBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
       leftBuffers rightBuffers S mid Cs Ds v₁ producer (embStk factorReg S) tail pageTail hl hr
       factory hin hout hL hRframe hblank' hmaskL hmaskR hwork' hfresh'
   exact ⟨mid,producer,Cs,Ds,vf,page,m₁+m₂,columns,hl,hr,hu₂.trans hu₁,
-    Nat.add_le_add hm₁ hm₂,Exec.seq he₁ he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
+    Nat.add_le_add hm₁ hm₂,Exec.seq he₁.toExec he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
     hinp,houtp,hleft,h224,hprivate,hframe,hbankL,hbankR,hrhsL,hrhsR,hworkspace,hprojection,haccuracy,hresidual⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

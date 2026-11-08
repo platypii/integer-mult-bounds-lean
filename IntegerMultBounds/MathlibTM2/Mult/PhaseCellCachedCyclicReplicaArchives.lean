@@ -10,6 +10,7 @@ RHS headers, rather than supplied residual archives or certificates, are inputs.
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry IntegerMultBounds.NLogN.SchurDominance
@@ -44,7 +45,9 @@ theorem cachedCyclicReplicaArchives_exec {s t p u l : ℕ} [NeZero s] {α d : �
       let rows := (Cs.zip Ds).map (fun z => cyclicReplicaBoundaryRow t band a n z.1 z.2)
       vf.user = v.user ∧ m ≤ (cachedReplicaPassCost H+cachedReplicaPassCost K)+
         (placedReplicaBoundaryMaskCost H+placedReplicaBoundaryMaskCost K) ∧
-      Exec body (cachedReplicaPassMasks left right leftDst rightDst hR hQ) (mk v S) m (mk vf F) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        cachedReplicaPassMasksWorkspace (A := A) (U := U) H K hR hQ) 0
+        (cachedReplicaPassMasks left right leftDst rightDst hR hQ) (mk v S) m (mk vf F) ∧
       CachedReplicaPassPost H left leftBuffers S F Cs ∧ CachedReplicaPassPost K right rightBuffers mid F Ds ∧
       rows.length = Fs.length ∧ (∀ row ∈ rows, row.length = B.card) ∧
       (∀ row ∈ rows, ∀ z ∈ row, z.im = 0) ∧

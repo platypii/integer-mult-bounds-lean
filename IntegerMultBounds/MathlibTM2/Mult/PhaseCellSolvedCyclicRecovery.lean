@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicRecoveryReadyTransport
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicRecoveryMaskStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedProjectedCyclicRecovery
 
 /-! Recover all RHS rows from a solved joint boundary batch. Native mask setup,
@@ -9,6 +10,7 @@ projection and retained coupling execute in source order with complete time bill
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 local notation "recoveryBank" => CyclicRecoveryPlacement.bank
@@ -20,6 +22,12 @@ noncomputable def solvedCyclicRecovery (hQ : SS.states ≤ Q) : Pr P 840 Q A U :
 def solvedCyclicRecoveryCost (H K : ReplicaHaloProblem s) (replicas N n w : ℕ) : ℕ :=
   (placedReplicaBoundaryMaskCost H+placedReplicaBoundaryMaskCost K)+
     (nativeCyclicBoundaryBatchCost replicas N n w+preparedProjectedCyclicRecoveryCost H K replicas)
+
+noncomputable def solvedCyclicRecoveryWorkspace (H K : ReplicaHaloProblem s) (replicas N n w : ℕ)
+    (hQ : SS.states ≤ Q) : ℕ :=
+  cyclicRecoveryMasksWorkspace (Q := Q) (A := A) (U := U) H K+
+    max (nativeCyclicBoundaryBatchWorkspace replicas N n w)
+      (replicas*(n*w)+preparedProjectedCyclicRecoveryWorkspace (A := A) (U := U) H K replicas hQ)
 
 theorem solvedCyclicRecovery_exec (H K : ReplicaHaloProblem s)
     (t band a n q w W : ℕ) (hst : s < t) (ha : a < s) (hn : n ≤ s)
@@ -55,7 +63,9 @@ theorem solvedCyclicRecovery_exec (H K : ReplicaHaloProblem s)
     let G := prepareCyclicRecoveryCouplingState H K
       (placedNativeCyclicBoundaryBatchState M solveTail (solutions.reverse.flatMap fields))
     ∃ vf X m, vf.user = v.user ∧ m ≤ solvedCyclicRecoveryCost H K Fs.length B.card n w ∧
-      Exec body (solvedCyclicRecovery hQ) (mk v S) m (mk vf X) ∧ X.R (recoveryBank 228) = [] ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        solvedCyclicRecoveryWorkspace (A := A) (U := U) H K Fs.length B.card n w hQ) 0
+        (solvedCyclicRecovery hQ) (mk v S) m (mk vf X) ∧ X.R (recoveryBank 228) = [] ∧
       CyclicRecoveryCouplingCursor H K buffersL buffersR rows [] (M.R (recoveryBank 132))
         (M.R (CyclicRecoveryPlacement.leftJob.coupling.bank 93)) (M.R (CyclicRecoveryPlacement.rightJob.coupling.bank 93))
         buffersL.rhsTail buffersR.rhsTail pageL pageR G X := by
@@ -94,7 +104,23 @@ theorem solvedCyclicRecovery_exec (H K : ReplicaHaloProblem s)
     (by rw [hread 229 (by decide)]; exact hmaster)
     (by rw [hread 228 (by decide)]; exact hclock) (by rw [hread 227 (by decide)]; exact htmp) stateLP stateRP
   have hmP : m₂ ≤ nativeCyclicBoundaryBatchCost Fs.length B.card n w := by simpa only [hlen] using hm₂
+  have heMasks := cyclicRecoveryMasks_exec_within_of_exec H K he₁ hm₁ 0
+  rw [hlen] at he₂
+  let projected := placedNativeCyclicBoundaryBatchState M solveTail (solutions.reverse.flatMap fields)
+  have hsizeEq : mnSize (mk v₂ M) = mnSize (mk v₁ M) := rfl
+  have heCoupling : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v₁ M)+0+
+      (Fs.length*(n*w)+preparedProjectedCyclicRecoveryWorkspace (A := A) (U := U) H K Fs.length hQ)) 0
+      (preparedProjectedCyclicRecovery hQ) (mk v₂ projected) m₃ (mk vf X) := by
+    apply he₃.mono
+    intro d z hz
+    rw [hsizeEq] at hz
+    simpa only [Nat.add_assoc] using hz
+  have he23 := execWithin_seq_common_budget
+    (A := nativeCyclicBoundaryBatchWorkspace Fs.length B.card n w)
+    (B := Fs.length*(n*w)+preparedProjectedCyclicRecoveryWorkspace (A := A) (U := U) H K Fs.length hQ)
+    he₂ heCoupling
+  have hwithin := execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ heMasks he23
   exact ⟨vf,X,m₁+(m₂+m₃),hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hm₁ (Nat.add_le_add hmP hm₃),
-    Exec.seq he₁ (Exec.seq he₂.toExec he₃.toExec),hclockX,hcursor⟩
+    hwithin,hclockX,hcursor⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

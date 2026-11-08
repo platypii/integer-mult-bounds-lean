@@ -94,6 +94,6 @@ theorem cachedCyclicReplicaRecovery_exec (body : P → Pr P 117 Q A U)
     (extendStacks_fresh (by decide : 834 ≤ 840) F _ (by decide)).2
     (extendStacks_fresh (by decide : 834 ≤ 840) F _ (by decide)).2
   have hzUser : v.user = z.user := by rw [← hz]; rfl
-  exact ⟨zf,X,steps+m,hu'.trans (hui.trans (hu.trans hzUser)),Nat.add_le_add_left hm _,Exec.seq hei he,hclockX,hcursor⟩
+  exact ⟨zf,X,steps+m,hu'.trans (hui.trans (hu.trans hzUser)),Nat.add_le_add_left hm _,Exec.seq hei he.toExec,hclockX,hcursor⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

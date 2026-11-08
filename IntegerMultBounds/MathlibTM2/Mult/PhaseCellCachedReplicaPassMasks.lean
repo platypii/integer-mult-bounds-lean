@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedReplicaPassPair
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicReplicaBoundaryMasks
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaBoundaryMaskStock
 
 /-! Actual paired first-pass execution supplies both residual certificates and
 the metadata used to generate the shared boundary masks. -/
@@ -9,6 +9,7 @@ the metadata used to generate the shared boundary masks. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {s T Q A : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T Q A U}
@@ -17,6 +18,13 @@ noncomputable def cachedReplicaPassMasks (left right : CachedReplicaPassPlacemen
     (leftDst rightDst : Fin T) (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : Pr P T Q A U :=
   .seq (cachedReplicaPassPair left right hR hQ)
     (cyclicReplicaBoundaryMasks left.coupling.bank right.coupling.bank leftDst rightDst)
+
+noncomputable def cachedReplicaPassMasksWorkspace (H K : ReplicaHaloProblem s)
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : ℕ :=
+  (cachedReplicaPassWorkspace (A := A) (U := U) H hR hQ+
+    cachedReplicaPassWorkspace (A := A) (U := U) K hR hQ)+
+    replicaBoundaryMaskPush (Q := Q) (A := A) (U := U)*
+      (placedReplicaBoundaryMaskCost H+placedReplicaBoundaryMaskCost K)
 
 theorem cachedReplicaPassMasks_exec (H K : ReplicaHaloProblem s)
     (left right : CachedReplicaPassPlacement T) (hdisjoint : ∀ k, left.Owns k → ¬right.Owns k)
@@ -40,7 +48,9 @@ theorem cachedReplicaPassMasks_exec (H K : ReplicaHaloProblem s)
         (couplingSourceIntervalMaskSymbols true A s K.t K.band K.origin (K.origin+K.span) K.origin K.span))}
       vf.user = v.user ∧ m ≤ (cachedReplicaPassCost H+cachedReplicaPassCost K)+
         (placedReplicaBoundaryMaskCost H+placedReplicaBoundaryMaskCost K) ∧
-      Exec body (cachedReplicaPassMasks left right leftDst rightDst hR hQ) (mk v S) m (mk vf F) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        cachedReplicaPassMasksWorkspace (A := A) (U := U) H K hR hQ) 0
+        (cachedReplicaPassMasks left right leftDst rightDst hR hQ) (mk v S) m (mk vf F) ∧
       CachedReplicaPassPost H left leftBuffers S F Cs ∧
       CachedReplicaPassPost K right rightBuffers mid F Ds ∧
       F.R leftDst = couplingSourceIntervalMaskSymbols true A s H.t H.band H.origin (H.origin+H.span) H.origin H.span ∧
@@ -76,8 +86,14 @@ theorem cachedReplicaPassMasks_exec (H K : ReplicaHaloProblem s)
   have hrightFinal : CachedReplicaPassPost K right rightBuffers mid F Ds :=
     hright.of_frame rfl rfl (fun k hk => hmaskFrame k
       (fun h => hleftSlot.2 (h ▸ hk)) (fun h => hrightSlot.2 (h ▸ hk)))
+  have heMasks := mn_native_exec_within he₂
+    (replicaBoundaryMaskPush (Q := Q) (A := A) (U := U))
+    (cyclicReplicaBoundaryMasks_native _ _ _ _) 0
+    (mnSize (mk v₁ G)+0+replicaBoundaryMaskPush (Q := Q) (A := A) (U := U)*
+      (placedReplicaBoundaryMaskCost H+placedReplicaBoundaryMaskCost K))
+    (Nat.add_le_add_left (Nat.mul_le_mul_left _ hm₂) _)
   refine ⟨vf,mid,G,m₁+m₂,Cs,Ds,hu₂.trans hu₁,Nat.add_le_add hm₁ hm₂,
-    Exec.seq he₁ he₂,hleftFinal,hrightFinal,?_,?_,?_,?_⟩
+    execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ he₁ heMasks,hleftFinal,hrightFinal,?_,?_,?_,?_⟩
   · simp [hsep]
   · simp
   · intro k hkL hkR; exact (hframe k hkL hkR).1

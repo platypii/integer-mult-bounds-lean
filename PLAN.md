@@ -41101,6 +41101,42 @@ peak); all five new files pass integrity/whitespace scans. No new commit/push;
 collect the replica traversal with this row transition as the next larger chunk.
 Periodic WIP remains untouched.
 
+### S4 the ordinary first-pass producer retains its existing space contract
+
+cachedReplicaPass_exec now calls the existing
+initializedCachedReplicaInteriorCoupling_exec_within instead of its execution-only
+counterpart. cachedReplicaPassWorkspace instantiates ring, complex multiplication
+and real multiplication push allowances internally. The caller supplies exactly
+the same ordinary CachedReplicaPassInput and geometry facts as before, with the
+same residual/archive, recovery-readiness and frame conclusions.
+
+cachedReplicaPassPair_exec composes the two disjoint space traces using the
+existing sequential-budget theorem. cachedReplicaPassMasks_exec also retains
+space through both shared masks. The closed mask push certificate was factored
+into ReplicaBoundaryMaskStock, below the cyclic placements, so both original
+and recovery setup reuse it without an import cycle. The arbitrary-register
+mask pair has one geometry setup allowance, independent of replica count.
+
+cachedCyclicReplicaArchives_exec and cachedCyclicReplicaProducer_exec propagate
+the space trace rather than immediately projecting to Exec. The producer has
+the same original component-bank ABI and numerical conclusions. The enclosing
+cached batch currently takes toExec because its export/shared-Schur consumer
+still needs a resource-preserving theorem. No new programs or numerical cases
+were introduced. Full accepted-core integration passes (15903 jobs; 5.8 GiB
+combined peak). Keep the consumer/export/shared-Schur side as the next prefix
+resource obligation; do not claim the complete cached prefix is space-certified.
+No push; preserve unrelated periodic WIP.
+
+The producer-resource checkpoint's final guarded checks pass: low shared mask
+certificate 2142.6 MiB, recovery mask stock 3256.4 MiB, single pass 3278.0 MiB,
+paired passes 3268.5 MiB, paired passes plus masks 3273.2 MiB, cyclic archive
+3391.4 MiB, cyclic producer 3382.8 MiB, solved recovery 3288.6 MiB, complete
+accepted complex caller 3451.2 MiB. The producer and solved-recovery axiom audit
+reports only propext, Classical.choice and Quot.sound (9604.4 MiB temporary
+audit peak, not a production module). Source-integrity and whitespace checks
+pass. Collect the original producer and solved-recovery space work into one
+larger local commit, excluding periodic WIP; do not push.
+
 Next instantiate countedLoop at released gather clock 122. Use an arbitrary
 list of matching boundary/original-RHS pairs, with a completed/remaining split.
 Keep two input queues and two reverse completed archives explicit. Clock writes
@@ -42290,3 +42326,38 @@ prepared coupling 3283.8 MiB, complete accepted complex caller 3451.4 MiB.
 The repeated batch/placed-batch axiom audit passes with only the standard
 three axioms (9406.9 MiB temporary audit peak, not a production module).
 Collect these nine files as one larger local projection-space checkpoint.
+
+### S4 solved recovery retains mask, projection and coupling space together
+
+CyclicRecoveryMaskStock reuses WordCmd.empty_native and embProg_native for the
+existing closed metadata-mask program. Its atomic allowance is opaque to avoid
+reducing the large table program during later comparisons. The complete mask
+setup has a reserve equal to that allowance times its existing shared setup
+bill, with no replica factor and no extra input assumptions.
+
+SequentialBudget.execWithin_seq_common_budget proves once, over arbitrary stores
+and programs, that two phases measured from a common retained-bank baseline
+share the maximum of their allowances. solvedCyclicRecovery_exec now returns
+ExecWithin through masks, boundary projection and retained coupling. The reserve
+is mask setup plus max(projection workspace, window archive + coupling workspace).
+The original numerical, cursor and tape conclusions are retained; the cached
+prefix caller currently uses toExec until its own resource trace is available.
+
+An initial composition grew to about 26 GiB and was deliberately stopped. Keeping
+the large mask allowance opaque and doing scalar budget arithmetic in the generic
+lemma fixed that growth. A subsequent deep-recursion error came from simplifying
+the whole coupling execution type; rewriting only its scalar size inequality
+gives a short proof under default limits. No proof limits were raised.
+
+Full accepted-core integration passes (15902 jobs; 10.6 GiB combined peak).
+Final guarded checks: mask stock 3260.0 MiB, solved recovery 3288.5 MiB, cached
+recovery 3412.5 MiB, complete accepted complex caller 3453.4 MiB. The temporary
+solved-recovery axiom audit reports only propext, Classical.choice and Quot.sound
+(9407.3 MiB audit peak, not a production module). Integrity and whitespace scans
+pass. Keep this work for a larger local prefix-resource checkpoint; no push.
+
+Next resource gap: retain the original cached boundary-producing prefix's
+ExecWithin trace and lift it beside spectators, then join solved recovery and
+the checked second passes. Release-time scratch accounting and uniform
+asymptotic time/space estimates remain open, as do the other full S4 gates.
+Periodic WIP remains untouched.

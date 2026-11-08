@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedReplicaPass
+public import IntegerMultBounds.MathlibTM2.Host.SequentialBudget
 
 /-! Execute two disjoint cached interior/residual passes. Their input and output
 contracts are transported by the tape frame, not re-established per replica. -/
@@ -8,6 +9,7 @@ contracts are transported by the tape frame, not re-established per replica. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {s T Q A : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T Q A U}
@@ -31,7 +33,10 @@ theorem cachedReplicaPassPair_exec (H K : ReplicaHaloProblem s)
     (rightInputs : CachedReplicaPassInput K right rightBuffers S) :
     ∃ vf mid F m, ∃ Cs Ds : List (ZMod s → GaussianInt),
       vf.user = v.user ∧ m ≤ cachedReplicaPassCost H+cachedReplicaPassCost K ∧
-      Exec body (cachedReplicaPassPair left right hR hQ) (mk v S) m (mk vf F) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        (cachedReplicaPassWorkspace (A := A) (U := U) H hR hQ+
+          cachedReplicaPassWorkspace (A := A) (U := U) K hR hQ)) 0
+        (cachedReplicaPassPair left right hR hQ) (mk v S) m (mk vf F) ∧
       CachedReplicaPassPost H left leftBuffers S F Cs ∧
       CachedReplicaPassPost K right rightBuffers mid F Ds ∧
       mid.inp = S.inp ∧ mid.out = S.out ∧
@@ -50,7 +55,7 @@ theorem cachedReplicaPassPair_exec (H K : ReplicaHaloProblem s)
   have hleftFinal : CachedReplicaPassPost H left leftBuffers S F Cs :=
     hleft.of_frame hright.input hright.outputStream (fun k hk => hframe₂ k (hdisjoint k hk))
   refine ⟨vf,mid,F,m₁+m₂,Cs,Ds,hu₂.trans hu₁,Nat.add_le_add hm₁ hm₂,
-    Exec.seq he₁ he₂,hleftFinal,hright,hleft.input,hleft.outputStream,hrightFrame,?_⟩
+    execWithin_seq_two_budget body _ _ _ _ _ _ _ 0 _ _ he₁ he₂,hleftFinal,hright,hleft.input,hleft.outputStream,hrightFrame,?_⟩
   intro k hkL hkR
   exact ⟨(hframe₂ k hkR).1.trans (hframe₁ k hkL).1,
     (hframe₂ k hkR).2.trans (hframe₁ k hkL).2⟩
