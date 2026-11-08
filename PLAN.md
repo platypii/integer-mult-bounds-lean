@@ -35224,3 +35224,92 @@ jobs, 2.5 GiB aggregate peak). Temporary guarded axiom audit of pair execution,
 amortized cost/output length, actual scan, ordinary stream endpoint and stock
 reports only standard Lean axioms (3872.0 MiB audit peak). Plan-status and
 whitespace checks pass. Component acceptance only; full S4 remains incomplete.
+
+### S4 interval geometry instantiated in the actual halo stream
+
+`Routing/HaloIntervalLayout.lean` derives segment lists from arbitrary paired
+interval endpoints. `Valid` records the ordered cuts
+`start1 <= previousEnd <= start2 <= end1 <= followingStart <= end2`, recursively
+carrying end2. These are exactly the adjacent-overlap/nonadjacent-disjointness
+conditions needed to keep the next retained tail in newly read data. Generic
+slice concatenation proves one-pass source coverage and exact requested-window
+output. Final overlap is empty by construction, not a supplied layout witness.
+All four metadata counts are proved equal to the ordinary endpoint differences;
+fit follows from an ordinary binary-width bound on the fiber byte length.
+Guarded check passes at 1954.1 MiB, no warnings/default-limit changes.
+
+`Routing/HaloIntervalStream.lean` instantiates the concrete fixed emitter with
+those derived segments. `emit_intervals_exec` starts from `row.drop start` and
+ordinary binary endpoint-difference metadata, emits exactly the interval windows,
+and preserves `row.drop lastEnd` plus the borrowed suffix. Counts/scratch/overlap
+are restored; only source, consumed clock and metadata queue change. Time is
+`34*(lastEnd-start)+pairCount*(76*V+149)+4`. No assumed per-window execution or
+source/output correspondence remains in this theorem. Guarded check passes at
+1934.1 MiB, no warnings. Complete import-closure build passes (4000 jobs,
+2.5 GiB aggregate peak).
+
+This supplies generic geometry-to-execution, not the concrete S4 geometry or
+metadata producer. The remaining connection is to derive these ordered cuts
+from the manuscript's actual forward/inverse window formulas, scale record
+endpoints by complete spectator width, construct the count words on tape, and
+compose existing bounded periodic-prefix extension. An odd last window may be
+paired with an empty interval at its endpoint; this needs no program variant.
+Then discharge one full retained-halo axis execution theorem. Global initialization,
+tensor locality/error/support and compiler/root gates remain open. Keep these
+geometry modules uncommitted until the next coherent integration chunk; no push
+is authorized. The user's periodic-recovery work is untouched.
+
+Interval validation: temporary guarded axiom audit of source coverage, exact
+windows, final overlap, endpoint metadata and actual emission reports only
+standard Lean axioms (3874.6 MiB audit peak). Plan-status and whitespace checks
+pass. No commit or push was made. Full S4 remains incomplete.
+
+### S4 concrete persistent target halos and current-fiber periodic preparation
+
+`Routing/RegularHaloLayout.lean` instantiates the manuscript's inverse target
+windows `[k*L-H,(k+1)*L+H)` in the H-extended row. The shifted byte intervals
+are `[k*L,(k+1)*L+2*H)`. A structural two-window recursion pairs an odd final
+window with an empty interval at its endpoint. From `2*H <= L` it derives all
+ordered-cut conditions, exact final endpoint and exact increasing window output.
+No supplied overlap correspondence or parity-specific program is needed.
+
+`Routing/RegularHaloStream.lean` executes those concrete windows with the fixed
+emitter. Given a row of length `N*L+2*H`, it consumes that row and returns the
+concatenated increasing windows plus the untouched borrowed suffix. Time is at
+most `34*(N*L+2*H)+N*(76*V+149)+4`. All interval validity is discharged from
+the ordinary gap inequality. Guarded check: 1935.3 MiB, no warnings.
+
+`Routing/PeriodicHaloStream.lean` composes the existing actual
+`padPrefixInPlace_exec` with concrete regular emission. Input is the unextended
+current Gaussian-integer fiber of length `N*L`, encoded at w bytes per
+coefficient. It generates its cyclic suffix/head extension by bounded scans of
+that fiber and then emits the shifted windows. For complete spectator blocks,
+instantiate L and H by their coefficient volumes; byte endpoints are scaled by
+w in the theorem. The program reuses its archive and decoder scratch between
+extension and emission, using seventeen tapes total. Its exact endpoint changes
+only the source, consumed pair clock and metadata queue; retained controls,
+user state and all scratch are restored.
+
+Time is bounded by `(26*xs.length+28*H)*w + 34*((N*L+2*H)*w) +
+N*(76*V+149)+50`. Native push bound three supplies linear stock in the same
+quantity. Guarded check: 1985.0 MiB, no warnings/default-limit changes. This is
+actual periodic preparation and emission, not an assumed preparation supplier.
+It does still take ordinary full/band/skip controls and endpoint-difference
+metadata as machine input; their actual generation must be included by the
+outer axis driver before final S4 acceptance.
+
+Next discharge runtime control/metadata production and assemble the concrete
+periodic halo supplier with forward/current-length return movement into one
+retained-halo axis execution theorem. Forward near-one source windows still
+require their own manuscript endpoint inequalities; the regular target-halo
+construction does not replace that separate geometry. Global initialization,
+tensor numerical locality/error/support and compiler/root gates remain open.
+The five interval/regular/periodic modules form one integration chunk. No push
+is authorized; periodic-recovery work remains untouched. Full S4 is incomplete.
+
+Periodic target-halo validation: complete guarded import-closure build passes
+(4005 jobs, 2.5 GiB aggregate peak). Temporary guarded axiom audit of concrete
+interval validity/output, regular execution, full periodic execution and stock
+reports only standard Lean axioms (3875.7 MiB audit peak). Plan-status and
+whitespace checks pass. Commit this accumulated geometry/preparation chunk
+locally; no push is authorized. This does not establish full axis or S4 acceptance.
