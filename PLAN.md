@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4539 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4566 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -37565,3 +37565,591 @@ execution, tensor continuation, root sizing, forward geometry and accumulated
 error/final acceptance remain open. S4 remains incomplete. Collect the joined
 bulk-publication, numerical bridge and actual shared-page batch traversal as
 one larger local integration commit; do not push. Periodic work untouched.
+
+### S4 publication fits exposed and diagonal output order resolved without a pass
+
+`Mult/PhaseCellPublishedBatchFits.lean` exposes the existing final-rounding fit
+proof per published field, matching diagonalBatch_exec's exact input contract.
+It also proves the local packet reader equals value p of a field from its
+packed-list fits, and converts an entire Forall2 decoded certificate to a
+value-field certificate structurally. No output fits are supplied.
+
+`Mult/PhaseCellBulkPublishedRecovery.lean` now returns both per-field packed
+fits and the actual value-field error certificate in addition to its existing
+physical execution/decoded accuracy/resource result. These derive from the
+incoming raw recovery certificate, computed precision, common width and
+owned-reference magnitude. The concrete diagonal batch therefore does not
+need an independent fit supplier. Final bulk guarded check: 3458.0 MiB;
+fit helper guarded check: 3085.2 MiB, without warnings.
+
+`Mult/PhaseCellDiagonalBatchAccuracy.lean` proves the batch's decoded numerical
+certificate from the published value-field certificate and derived reference
+norm. Its error is 8/2^p+2^(-target)/2^j, with no replica-count loss. Publication
+emits reverse reference order and the diagonal worker prepends each product;
+the two reversals cancel. The final certificate is in the original reference
+order, so no physical reorder pass is required. Guarded check: 3384.1 MiB,
+without warnings. Combined build of strengthened bulk publication, diagonal
+batch execution and batch accuracy succeeds (16013 jobs, 6.0 GiB aggregate peak).
+
+Next physically allocate/load the diagonal role bank from the published packet
+queue, connect these now-matching execution/numerical contracts, and join the
+one-time coefficient-page generation and table release. Cyclic principal
+execution, tensor continuation, root sizing, forward geometry and accumulated
+error/final acceptance remain open. S4 remains incomplete. Keep these changes
+with the larger page-lifecycle integration chunk; no commit or push. Separate
+periodic work untouched.
+
+### S4 fixed diagonal tape allocation within the existing recovery layout
+
+`Mult/PhaseCellLocalDiagonalLayout.lean` reuses cleared recovery work rather
+than extending LocalRecoveryLayout.tapes. It allocates the Rsb role bank below
+work 100, the existing 64-register multiplier in work 100..163, the TblR 48
+page-setup bank starting at work 200 (below 290), and clock/byte/saved/tmp at
+work 300..303. The batch queue is the actual recovery cropDst control port.
+The chosen input/page/output roles are src/df/dst, with RsbFree proved.
+
+Role and table indices use local explicit finite enumerations and equivFin;
+no broad MainRegs import is introduced. Small finite cardinality bounds are
+checked once with decide +kernel; role-map injection and all cross-bank
+separation proved so far use structural injection and index-range arithmetic.
+The module proves role/multiplier injection and disjointness, table injection
+and table/role separation, queue separation and the existing tape count >=64
+from the multiplier injection. No precision-dependent tape count is added.
+
+Final guarded check succeeds without warnings at 3575.5 MiB. Combined build
+with full bulk publication succeeds (16012 jobs, 3.8 GiB aggregate peak;
+new layout build 14 seconds). Next finish the small loop-control/table-multiplier
+separation interface, derive blank diagonal banks from the original raw recovery
+readiness/frame, generate byte/replica/format rulers from retained dimensions,
+and join ordinary one-time coefficient-page setup/release to the actual batch.
+S4 remains incomplete; cyclic principal execution, tensor continuation, root
+sizing, forward geometry and accumulated error/final acceptance remain open.
+Keep this with page-lifecycle integration; no commit or push. Periodic work
+untouched.
+
+### S4 complete loop separation and reused multiplier-header generation
+
+`Mult/PhaseCellLocalDiagonalLayout.lean` now exports structural range separation
+for role/control, multiplier/control and table/control work indices, table versus
+multiplier separation, work versus queue separation, and the exact seven-port
+Nodup certificate required by diagonalBatch_exec. This closes the fixed loop
+allocation interface without adding tapes. Final layout guarded check succeeds
+without warnings at 3585.0 MiB.
+
+`Mult/PhaseCellDiagonalMultiplierSetup.lean` reuses chirpMultiplierSetup rather
+than implementing topN or multiplier readiness again. An injective TblR 5 view
+of the existing TblR 48 diagonal table bank supplies its binary inputs. The
+actual execution computes w, p and topN w unary headers on diagonal CM roles
+and restores the binary bank. diagonalCounter_ready proves the full RsbReady
+contract from the initially blank CM roles. Page storage is outside these CM
+roles, so it can remain live. Exact setup cost is inherited unchanged from
+chirpMultiplierSetupCost. This theorem still starts with an ordinary binary
+p,w table state; loading that state from retained unary inputs remains caller
+work and is not claimed complete here.
+
+Final multiplier-setup guarded check succeeds without warnings at 3425.3 MiB.
+Combined build with full bulk publication succeeds (16013 jobs, 3.5 GiB aggregate
+peak; new setup module 6.3 seconds). Next generate/load the ordinary table
+headers and packet/replica rulers, derive fresh banks from recovery readiness,
+and physically compose one-time page generation, role setup, batch execution
+and release. S4 remains incomplete; cyclic principal execution, tensor
+continuation, root sizing, forward geometry and accumulated error/final
+acceptance remain open. Keep these changes with page-lifecycle integration;
+no commit or push. Separate periodic recovery work untouched.
+
+### S4 diagonal private counters and reusable ordinary scalar loading
+
+`Mult/PhaseCellDiagonalBatchCounts.lean` instantiates the existing counter
+generator on retained recovery replicas/cropRows/packet rulers. It executes
+clock copying and rows*packet byte-ruler generation into the fixed diagonal
+control ports, restores borrowed dimensions and scratch, and retains the exact
+bulkSelectionCountsCost time/native-2 stock contract. Guarded check succeeds
+without warnings at 3407.4 MiB. No supplied replica clock or byte ruler is
+introduced.
+
+`Mult/PhaseCellInstallUnaryScalarInputs.lean` factors a generic ordinary-input
+loader for both multiplier and page scalar banks. Given a list of scalar
+index/unary-port assignments, it generates binaryHeaderQueue, initializes the
+actual fresh scalar bank and installs those words. It returns tblHolds of the
+loaded state whose values are the original ruler lengths, restores the header
+queue tail and conversion scratch, and frames all non-table coordinates.
+Time is the existing conversion bill plus scalar allocation and header-load
+costs. No binary table, preencoded parameter packet or execution is supplied.
+This avoids separate conversion/install proofs for two multiplier parameters
+and the page's geometric inputs. Initial guarded check: 1939.5 MiB; the one
+unused simp argument was removed before the final build.
+
+Combined loader/diagonal-counts/multiplier-setup build succeeds (15893 jobs,
+3.5 GiB aggregate peak). Next instantiate scalar assignments for p,w and for
+s,t,alpha,p,origin/end, borrow the retained binary-width word, and compose the
+actual initialized table through existing setup/page execution and release.
+Also derive all fresh-bank premises from raw recovery readiness and its frame.
+S4 remains incomplete; cyclic principal execution, tensor continuation, root
+sizing, forward geometry and accumulated error/final acceptance remain open.
+Retain these changes with page-lifecycle integration; no commit or push.
+Separate periodic recovery work untouched.
+
+### S4 actual multiplier setup from retained unary precision and width
+
+`Mult/PhaseCellDiagonalMultiplierFromUnary.lean` composes installUnaryScalarInputs
+with the existing diagonalMultiplierSetup. The fixed assignments read the
+recovery precision and packet-width controls. The loaded table is constructed
+as [(0,p),(1,w)], all other values are zero, and value fits derive from p <= w
+and 4*w+2 < 2^B. The loader's non-table frame derives blank multiplier roles
+at the actual intermediate state. The composed program then computes w,p,topN w
+and returns RsbReady, the loaded scalar table and its original-state frame.
+No preencoded packet, binary p/w table or intermediate execution/readiness is
+supplied. The borrowed table-width word and initial blank table remain explicit
+ordinary setup premises; copying that word and final table release still need
+caller composition. The time bill combines actual conversion, five-variable
+allocation, two-word loading and inherited multiplier setup.
+
+Final guarded check succeeds without warnings at 3426.7 MiB. Combined build
+with diagonal batch counts and full bulk publication succeeds (16016 jobs,
+3.5 GiB aggregate peak; new module 5.4 seconds).
+
+Integration audit: RsbClean requires all ambient left stacks blank, whereas
+bulkTargetCoreSpec currently exposes only recovery right-bank preservation.
+The selector's intermediate F is built via embOvr geometry B.get; its left
+frame should be exported from the existing selection/setup proofs, then passed
+through bulk publication. Do not assume left cleanliness at an arbitrary
+intermediate state or introduce it as a numerical supplier. Next expose that
+frame, derive fresh diagonal banks from raw readiness, and finish width copying,
+ordinary page assignments, one-time generation/release and batch composition.
+S4 remains incomplete; cyclic principal execution, tensor continuation, root
+sizing, forward geometry and accumulated error/final acceptance remain open.
+Retain this with page-lifecycle integration; no commit or push. Separate
+periodic work untouched.
+
+### S4 left-stack frame propagated and diagonal freshness derived
+
+`Host/EmbedLeftFrame.lean` proves that a local left-stack frame lifts through
+an injective host embedding. prepareLocalRowControls_exec already returned
+this frame; preparedBulkSelection_exec had discarded it. The prepared selector
+now exposes B.L, the counted selector derives the complete ambient F.L = S.L,
+and bulkTargetCoreSpec/full bulk publication retain that equality. No new
+execution or cleanliness premise is introduced into these existing contracts.
+The strengthened selector/recovery/publication dependency chain builds cleanly.
+
+`Mult/PhaseCellDiagonalFreshBank.lean` packages initial left cleanliness and
+blank diagonal role/multiplier/table/control banks. diagonalFresh_of_cropped
+derives it at the exact published endpoint from original CroppedReady, the
+already-required empty input work tape 124, the actual bank/left frames and
+initial ambient left-stack cleanliness. It handles source clearing and cropDst
+publication structurally. DiagonalFresh.clean then supplies the exact RsbClean
+contract for the concrete diagonal multiplier. Fresh intermediate multiplier
+storage is therefore derived, not supplied independently.
+
+Final fresh-bank guarded check succeeds without warnings at 3408.6 MiB.
+Combined build with strengthened bulk publication and unary multiplier setup
+succeeds (16017 jobs, 3.5 GiB aggregate peak). Next copy/retire the borrowed
+scalar-width word, instantiate ordinary page-header assignments, and compose
+one-time page generation, unary multiplier setup, batch execution and releases
+using these derived frame/freshness facts. S4 remains incomplete; cyclic
+principal execution, tensor continuation, root sizing, forward geometry and
+accumulated error/final acceptance remain open. Retain with page-lifecycle
+integration; no commit or push. Separate periodic recovery work untouched.
+
+### S4 private-ruler lifetime with preserved stage postconditions
+
+`Mult/PhaseCellPrivateRuler.lean` proves a reusable withPrivateRuler execution
+rule: copy a retained ruler's length to blank private storage, execute a stage
+that restores this copy, and retire it with uclear. It retains arbitrary stage
+postconditions stable under ruler retirement, so output/accuracy/frame facts
+are not lost when composing cleanup. The stage's execution and all-depth
+reserve remain explicit generic hypotheses; concrete callers must discharge
+them with their actual stage theorem, not supply unrelated executions.
+
+The actual copy and clear execute in 4*B+4 and 2*B+2 steps. Their composed
+all-depth reserve adds 2*(4*B+4) to the stage reserve; clearing has no pushes.
+The retained ruler is read by the copy, and the stage's own frame accounts for
+its preservation during the body. This pattern applies to the shared scalar
+width used by both page and multiplier setup. Final guarded check succeeds
+without warnings at 1396.3 MiB. Combined build with ordinary unary multiplier
+setup succeeds (15893 jobs, 2.1 GiB aggregate peak).
+
+Next provide the unary-install/setup native or exact workspace certificate,
+apply this lifetime rule to actual scalar-width borrowing, and join scalar
+variable release to page/multiplier setup before batch execution. S4 remains
+incomplete; cyclic principal execution, tensor continuation, root sizing,
+forward geometry and accumulated error/final acceptance remain open. Retain
+with page-lifecycle integration; no commit or push. Periodic work untouched.
+
+### S4 bounded ordinary scalar setup with exact variable retirement
+
+`Mult/PhaseCellScalarHeaderStock.lean` proves structural native push bound 3
+for binaryHeaderQueue, installUnaryScalarInputs and reused chirpMultiplierSetup.
+List-recursive zero allocation and header loading are bounded independently of
+concrete data. These certificates match the existing table VM bound and do not
+raise any proof limits. Guarded check: 1934.2 MiB, no warnings.
+
+`Mult/PhaseCellDiagonalMultiplierFromUnary.lean` now exposes a named complete
+time bill, native-3 program certificate and all-depth trace with reserve three
+times that bill. Guarded check: 3430.5 MiB, no warnings.
+
+`Mult/PhaseCellDiagonalMultiplierRelease.lean` composes this actual ordinary
+setup with scalar-variable release. The exact endpoint is diagonalCounterR p w
+of the original state: only the three readiness counters differ; allocated
+scalar variables, conversion scratch, header queue and borrowed dimension
+rulers restore. The borrowed scalar-width word remains as it started for the
+outer lifetime rule to retire. The proof uses the loader's actual frame and
+unaryCopiesR_congr_base, then releaseScalarBank_to_state_exec; it supplies no
+restored state execution or intermediate readiness. The final theorem includes
+RsbReady, explicit time and native-3 all-depth stock.
+
+Final release guarded check succeeds without warnings at 3411.1 MiB. Combined
+build with private-ruler lifetime and full bulk publication succeeds (16019
+jobs, 3.5 GiB aggregate peak). Next apply private-width copying/retirement around
+this closed setup and instantiate the ordinary page-input assignments, then
+compose the one-time page and batch lifecycles. S4 remains incomplete; cyclic
+principal execution, tensor continuation, root sizing, forward geometry and
+accumulated error/final acceptance remain open. Retain with page-lifecycle
+integration; no commit or push. Separate periodic work untouched.
+
+### S4 complete multiplier width lifetime closed
+
+`Mult/PhaseCellDiagonalMultiplierBorrowed.lean` applies the proved private-ruler
+lifetime to the actual unary setup and scalar-variable release. It starts with
+an ordinary retained width source and a completely blank private scalar bank,
+copies the width ruler, derives every loaded-stage ordinary premise using the
+copy frame, executes the existing setup/release, and retires the width copy.
+A postcondition containing exact non-width register values and I/O/left frames
+is preserved through retirement, then the width-blank fact identifies the
+complete final state with diagonalCounterR p w of the original state.
+
+Thus only the three multiplier readiness counters change; scalar variables,
+private width storage, conversion scratch, header queue and borrowed dimensions
+restore. RsbReady and the actual all-depth trace are retained. If C is the
+verified unary setup plus scalar release bill, time is 4*B+4+C+2*B+2 and the
+reserve is 2*(4*B+4)+3*C. No intermediate table/readiness/execution supplier is
+introduced. Separation and initial fresh-bank premises remain explicit wiring
+facts for the fixed local caller to discharge.
+
+Final guarded check succeeds without warnings at 3419.8 MiB. Combined build
+with actual diagonal batch execution and full bulk publication succeeds
+(16020 jobs, 3.5 GiB aggregate peak). Next specialize conversion ports to the
+fixed work allocation, load the one-time diagonal-page geometry/format inputs,
+and compose page generation, this closed multiplier setup, batch execution
+and page/counter retirement. S4 remains incomplete; cyclic principal execution,
+tensor continuation, root sizing, forward geometry and accumulated error/final
+acceptance remain open. Retain with page-lifecycle integration; no commit or
+push. Separate periodic work untouched.
+
+
+### S4 diagonal page sizing resolved by coefficient-generator reuse
+
+The retained inverse scalar width is Nat.size of a polynomial workspace; its
+contract does not provide the 13*p fractional bits required by the diagonal
+page. Do not borrow that width for page evaluation without widening it.
+PhaseCellDiagonalPageWidth reuses coefficientWorkspaceWidth p w 1 u 0 t,
+plus two bits. The existing coefficient bound and s <= t prove
+u*(s+t)^2*2^(13*p+8) < 2^diagonalPageWidth, as well as w <= that width.
+generateDiagonalPageWidth executes the existing coefficient-width generator
+and pushes two ticks, with its exact output state and inherited time bill
+plus one. Guarded check succeeds without warnings at 1948.8 MiB.
+The generic generator still needs placement on the retained p,w,u,t ports,
+with a private one-tick input and zero band input; generate and retire those
+within the page lifecycle. This settles arithmetic sizing, not the completed
+page caller or its workspace amortization.
+
+Also confirmed the preceding combined page-input/actual-diagonal/accuracy
+build completed successfully (15943 jobs, 8.4 GiB aggregate peak). Current
+page inputs use retained u=alpha^2 directly; scalar setup no longer requires
+an alpha ruler. Fixed conversion placement and multiplier setup are checked.
+Next close the complete publication-to-diagonal lifecycle, then prioritize
+cyclic principal execution and tensor/root composition. Full S4 remains open.
+No commit or push; separate periodic-recovery work untouched.
+
+
+### S4 generated page width placed on retained recovery metadata
+
+PhaseCellDiagonalWidthPlacement embeds generateDiagonalPageWidth into the
+actual local recovery layout. Precision and packet width read retained controls;
+u and t read parameter rulers 1 and 5. Private work 311/312 hold the one/zero
+inputs, 313 receives the width, and 320--325 hold generator scratch. Unused
+local registers map into the geometry bank and remain untouched by the proved
+exact execution endpoint. The embedding is a composition of role swaps, so
+injectivity follows structurally; the first direct case-splitting proof exceeded
+default limits and was replaced rather than raising them.
+
+generateLocalDiagonalWidth_exec lifts actual execution through the injective
+embedding and returns precisely the original state with work 313 replaced by
+the generated ruler. Thus all retained inputs and scratch restore. It assumes
+a one-tick private input and blank zero/scratch, still to be allocated/retired
+inside page setup. It does not assume a generated width or intermediate table.
+Guarded check passes without warnings at 3492.2 MiB. Combined build with full
+bulk publication and diagonal accuracy passes (16027 jobs, 3.6 GiB aggregate).
+Next compose private one allocation, width generation, ordinary scalar loading,
+page evaluation and scalar/ruler release; then join multiplier/batch execution.
+Full S4, cyclic execution, tensor/root/error acceptance remain open. No commit
+or push; separate periodic recovery work untouched.
+
+
+### S4 page-width setup now starts from blank private work
+
+prepareLocalDiagonalWidth allocates its private one-tick input, executes the
+placed coefficient-width generator and clears that input. Its exact endpoint
+changes only work 313 to the page-width ruler; all other private work, retained
+metadata and I/O restore. The ordinary caller premises are retained p,w,u,t
+lengths and DiagonalFresh, with no supplied one-tick input or generated width.
+The time bound is coefficientWidthCost p w 1 u 0 t + 6.
+
+A structural native push bound 16 for the reused generator lifts through the
+injective placement. Allocation and clearing preserve this bound, yielding an
+all-depth ExecWithin certificate with reserve sixteen times the complete setup
+time bill. No proof limits were raised. Guarded check: 3498.6 MiB; unused simp
+argument removed before the final combined build. Combined build with bulk
+publication and diagonal accuracy succeeds (16027 jobs, 3.6 GiB aggregate).
+Next install the generated width and six ordinary page inputs, copy the packet
+ruler into the table stream-width port, execute the page and release its scalar
+bank and private rulers, retaining the coefficient output for the shared batch.
+Full S4 remains incomplete. No commit or push; periodic-recovery work untouched.
+
+
+### S4 page loading derives all scalar fits and stream-width installation
+
+PhaseCellDiagonalPageLoading proves that the six ordinary page inputs fit the
+generated page width using only s <= t and c+n <= s. The complete loaded
+48-variable state fits as well, including all zero variables. Fixed page
+conversion register separation is derived from existing table/work allocation.
+loadDiagonalPageInputs_exec specializes the existing unary scalar loader to
+these six assignments, identifies its exact loaded state, exposes its fits,
+retains the original non-table/I/O/left frame and charges the inherited loader
+bill. It requires actual generated table width, ordinary ruler lengths and
+fresh scalar/scratch storage; no preencoded packet or loaded bank is supplied.
+
+installDiagonalStreamWidth_exec copies the retained packet ruler into the
+loaded table's initially blank wn port, preserving every scalar and returning
+tblHolds with the new stream width. Its exact execution takes 4*w+4 steps and
+changes only that port. Guarded file check succeeds without warnings at
+3431.6 MiB; combined loading/width placement/batch accuracy build succeeds
+(15943 jobs, 3.5 GiB aggregate). Next compose these executions with page
+arithmetic and release, then connect publication and the shared diagonal batch.
+Full S4 and cyclic/tensor/root/error acceptance remain open. No commit or push;
+separate periodic-recovery work untouched.
+
+
+### S4 unary loading through actual shared-page evaluation composed
+
+PhaseCellDiagonalPageFromUnary composes the actual ordinary scalar loader,
+packet-width copy and owned diagonal evaluator in one program. From unary
+s,t,u,p,c,c+n and packet rulers, a generated scalar-width word and blank
+scalar/conversion storage it constructs the coefficient stream on diagonalRole
+df. It derives width room, all initial scalar fits and evaluator state values;
+no binary table, intermediate readiness or execution is supplied. Its endpoint
+retains the loaded table, preserves every coordinate outside that bank and the
+coefficient output, and preserves I/O and left stacks. Named time bill combines
+actual loader/copy/evaluation costs. Structural native-3 gives an all-depth
+reserve of three times that complete bill.
+
+ownedDiagonalPage_exec now retains the empty final accumulator fact already
+proved by tblHost_runs. Previously the stream wrapper discarded it; exposing
+it avoids inventing a cleanup premise when releasing the scalar bank. Its only
+execution consumer is updated. Guarded composed check passes without warnings
+at 3429.7 MiB. Combined unary-page/width-placement/actual-owned-diagonal build
+passes (15946 jobs, 8.4 GiB aggregate). Next clear the copied wn ruler, release
+48 scalar words into the exact original state plus coefficient output, retire
+private scalar width, and join the batch. Ordinary core-start/end ruler
+construction remains to be composed as well. Full S4 remains incomplete.
+No commit or push; separate periodic-recovery work untouched.
+
+
+### S4 page scalar lifetime closed; generated width writes directly to table
+
+PhaseCellDiagonalPageRelease composes actual unary page generation with clearing
+the copied wn ruler and releasing all 48 scalar variables. The final state is
+exactly the initial state with the coefficient page prepended on diagonalRole
+df. Scalar words, stream-width storage, conversion scratch, retained parameters
+and I/O restore; the scalar width remains as initially provided. The proof
+uses the actual empty accumulator/table witness and outside frame, not an
+assumed restored endpoint. Complete time and native-3 all-depth stock include
+evaluation and both cleanup phases. Guarded check: 3426.6 MiB, no warnings.
+
+Simplified width lifetime before further composition: diagonalWidthReg now
+generates directly into diagonalTable.wr, and diagonalPageRuler aliases that
+port. Work 313 is no longer used. This removes an unnecessary generated-width
+copy and the need to maintain two such rulers. The structural swap embedding
+remains injective; index/work separation is proved from the existing allocation
+bound. The ordinary prepareLocalDiagonalWidth endpoint and native/trace proofs
+now construct the actual table width directly. Guarded check: 3496.0 MiB,
+no warnings. Combined release/direct-width/batch-accuracy build succeeds
+(15945 jobs, 8.4 GiB aggregate). This supersedes earlier entries naming work313
+as the generated width. Next join width setup, core-start/end ruler production,
+pageFinished and final width retirement, then shared batch/multiplier lifecycle.
+Full S4 remains incomplete. No commit or push; periodic-recovery work untouched.
+
+
+### S4 owned page endpoints generated from retained recovery inputs
+
+PhaseCellDiagonalCoreInputs introduces a structural copyUnarySum execution rule:
+copy one retained unary ruler and add another into blank storage, preserving
+both sources and scratch. It has native push bound 2. The concrete page caller
+uses it twice to construct c=a+radius and end=c+rows from retained inverse
+parameter 6 (halo start), cropOffset and cropRows. It starts with only three
+blank private work ports and ordinary length facts; no endpoint ruler is
+supplied. The exact endpoint updates work309 and work310 only. Named exact
+time is 8*a+8*radius+4*rows+16 (expressed as the two inherited sum bills), and
+all-depth reserve is twice that time. Guarded check passes without warnings
+at 3427.4 MiB. Combined endpoint/page-release/direct-width build succeeds
+(15942 jobs, 3.5 GiB aggregate). Next compose width generation, these endpoints,
+page evaluation/release and clearing the three generated rulers into one
+ordinary-input caller, then join multiplier and batch execution. Full S4 remains
+incomplete. No commit or push; separate periodic-recovery work untouched.
+
+
+### S4 complete ordinary-input shared-page lifetime composed
+
+PhaseCellOrdinaryDiagonalPage now executes width generation directly into the
+table width port, owned endpoint generation from retained halo/crop rulers,
+unary scalar loading, stream-width installation, page evaluation, scalar release
+and final width/endpoint retirement as one program. Initial premises are only
+ordinary retained ruler lengths, numerical axis/interval inequalities and
+DiagonalFresh. No generated ruler, binary packet, scalar bank, coefficient
+page or intermediate execution is supplied. The exact endpoint changes only
+diagonalRole df, prepending the desired global-index coefficient stream; all
+private storage and original inputs restore. Named cost accounts for every
+phase including clearing all three generated rulers. A conservative structural
+native-16 certificate gives an all-depth reserve of sixteen times the full
+bill; eventual S4 workspace amortization may need sharper page-specific stock.
+
+Guarded check succeeds without warnings at 3441.3 MiB. Combined complete-page,
+full bulk publication and diagonal accuracy build succeeds (16032 jobs,
+3.5 GiB aggregate). This closes the ordinary page lifecycle milestone.
+Next compose page output with multiplier/counter setup and shared batch. The
+local multiplier convenience theorem currently requires DiagonalFresh, which
+is deliberately false after a nonempty page. Use its existing generic setup
+contract with only blank cm/table/conversion storage, deriving those facts
+from the exact page endpoint; do not assume full freshness or discard the page.
+Then retire page/counters and join bulk publication. Cyclic execution,
+tensor/root sizing, forward geometry, accumulated error and final S4 acceptance
+remain open. No commit or push; separate periodic-recovery work untouched.
+
+
+### S4 ordinary page generation joined to actual multiplier readiness
+
+PhaseCellDiagonalPageReady composes ordinaryDiagonalPage and the complete
+retained-unary multiplier setup, including its borrowed-width retirement.
+The generic multiplier contract is specialized to the exact page endpoint:
+only cm/table/conversion storage must be blank, and these facts derive from
+initial DiagonalFresh plus the page-only update. Full freshness is never
+assumed after page generation. prepareDiagonalPage_exec starts from retained
+metadata, blank work and numerical bounds and returns actual execution into
+the exact page-plus-counter state, RsbReady, complete time and all-depth stock.
+Native bounds compose structurally (16 for page, 3 for multiplier), with no
+raised proof limits or precomputed readiness supplier.
+
+Structural counter-frame lemmas additionally prove that the final coefficient
+page is unchanged, source/destination remain blank and the multiplier workspace
+is RsbClean, including ambient left stacks. These are derived handoff facts
+for the batch, not new initial premises. Guarded check passes without warnings
+at 3429.0 MiB. Combined page-readiness/batch-counts/batch-accuracy build succeeds
+(15950 jobs, 5.9 GiB aggregate). Next generate clock/byte rulers at this endpoint,
+invoke diagonalBatch_exec on the normalized publication queue, and retire
+page/counters after the traversal. Full S4 cyclic/tensor/root/error acceptance
+remains open. No commit or push; separate periodic-recovery work untouched.
+
+
+### S4 ordinary setup through actual shared-page batch composed
+
+PhaseCellCountedDiagonalBatch places the generic diagonal traversal in the
+fixed recovery layout and composes actual clock/byte-ruler generation with it.
+The counter generator's exact endpoint derives preservation of every role,
+queue, multiplier workspace and saved/tmp port. Its composed reserve is twice
+the counter setup bill plus the existing shared batch reserve, independent of
+replica count except for the linear setup clock. Guarded check: 3417.9 MiB.
+
+PhaseCellPreparedDiagonalBatch joins the ordinary shared-page lifecycle,
+actual multiplier setup and counted traversal in one executable program.
+Initial premises are retained unary dimensions, a normalized packet queue,
+packet fits, blank recovery work and numerical/width bounds. It supplies no
+page, scalar bank, multiplier readiness, replica clock or byte ruler. The proof
+derives all those intermediates, carries the page into the batch and returns
+the exact product archive (reverse input order), queue tail, empty clock/source
+and preserved coefficient page. All-depth stock composes startup once with
+shared batch workspace rather than multiplying setup by the replica count.
+Guarded check passes without warnings at 3430.4 MiB. Combined prepared batch,
+accuracy and full bulk publication build succeeds (16036 jobs, 3.5 GiB aggregate).
+
+Next preserve the generic batch's final Ready/frame facts (currently discarded
+by its public conclusion) so retirement can clear the page, byte ruler and
+three multiplier counters with a proved final state. Prefer strengthening the
+existing structural loop endpoint over assuming restored spectator tapes.
+Then join full publication, numeric error/order certificate and this actual
+program. Full S4 cyclic/tensor/root/forward/error acceptance remains open.
+No commit or push; separate periodic-recovery work untouched.
+
+
+### S4 shared batch now exposes its exact final machine state
+
+Strengthened packetBatchLoop_exec with a structural spectator frame in its
+processed/remaining invariant. Both clock updates and consuming worker updates
+preserve that frame. The conclusion now identifies the complete final state:
+original state with clock cleared, queue replaced by its tail, and reversed
+product archive prepended to output. This proves preservation of every other
+right tape, all left stacks and I/O; it is not merely a selected-role postcondition.
+The generic proof remains independent of concrete packet data or replica count.
+Guarded generic check: 1941.2 MiB, no warnings.
+
+Propagated exact state through diagonalBatch_exec, countedDiagonalBatch_exec
+and preparedDiagonalBatch_exec. Counter-state and output-state constructors
+keep the exposed endpoint compact; the prepared theorem expresses final state
+as actual page/counter setup, generated private rulers and three traversal
+updates. No restored spectator state is supplied. Dependency build succeeds
+(15948 jobs, 8.4 GiB aggregate); strengthened prepared module guarded check
+passes without warnings at 3430.2 MiB. Next retire exactly the five live shared
+allocations (page, byte ruler and cm wn/pn/nn), using this exact state to prove
+restoration to the original state plus consumed queue and product output.
+Then compose bulk publication and the numerical accuracy/order certificate.
+Full S4 cyclic/tensor/root/forward/error acceptance remains open. No commit
+or push; separate periodic-recovery work untouched.
+
+
+### S4 exact shared-allocation retirement executed
+
+PhaseCellDiagonalBatchRetirement identifies the five live shared allocations:
+diagonalBytes, the df page and cm wn/pn/nn. Their register list is structurally
+nodup via the role embedding and existing work separation. From the prepared
+batch's exact live-state constructor, diagonalBatch_retirement_eq proves that
+clearing precisely these five tapes restores every initial coordinate except
+queue consumption and the product archive. It handles clock restoration using
+its original blank state and proves spectator preservation pointwise; no final
+restoration or readiness is assumed. The proof is generic in page and output
+lists and replica count, independent of numerical coefficient data.
+
+retireDiagonalBatch_exec performs the actual clearWords execution, returns that
+exact restored state, and certifies zero extra workspace (native push bound 0).
+Its exact cost is twice the sum of the five live tape lengths plus eleven;
+a closed dimension-only simplification remains to be added when composing the
+full cost bill. Guarded check succeeds without warnings at 3426.7 MiB. Combined
+retirement/publication/accuracy build succeeds (16037 jobs, 3.5 GiB aggregate).
+Next compose preparedDiagonalBatch with this retirement using its exact final
+state, simplify the cleanup bill, and attach full bulk publication and numeric
+accuracy/order. Full S4 cyclic/tensor/root/forward/error acceptance remains open.
+No commit or push; separate periodic-recovery work untouched.
+
+
+### S4 complete ordinary diagonal batch includes exact retirement
+
+PhaseCellCompleteDiagonalBatch composes preparedDiagonalBatch with actual
+retirement into one program. It starts with retained unary dimensions, a
+normalized packet queue, packet fits and blank recovery work; it generates
+all scalar words, widths, endpoints, coefficients, multiplier and loop rulers,
+executes the shared traversal, and retires its five remaining allocations.
+The exact endpoint is the original state with only the queue replaced by its
+tail and the product archive prepended to diagonalRole dst. All setup storage,
+shared page, counters, spectators, left stacks and I/O restore. The cleanup
+bill is simplified to twice (two n*w streams plus w,p,topN w) plus eleven,
+independent of replica count. Cleanup has native push bound zero and adds no
+reserve to the prepared traversal's existing all-depth bound.
+
+Guarded check succeeds without warnings at 3429.2 MiB; combined complete
+batch/full publication/accuracy build succeeds (16038 jobs, 3.5 GiB aggregate).
+This closes the complete physical diagonal stage lifetime. The current setup
+reserve remains conservative (sixteen times setup time); uniform final S4
+workspace/cost acceptance is not claimed. Next connect bulk publication's exact
+normalized queue, derived fits and freshness to this complete program, then
+attach the existing diagonal error/order certificate. Cyclic principal machine
+execution, tensor continuation, root sizing, forward geometry, accumulated
+error/support and final S4 acceptance remain open. Collect the finished
+publication/diagonal lifecycle in one larger local commit; do not push.
+Separate periodic-recovery work remains outside this chunk.

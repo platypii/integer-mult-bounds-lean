@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellActualBulkTargetCoreRecovery
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOwnedPublicationHandoff
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublishedBatchFits
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTargetOwnedRecoveryJob
 
 /-! The ordinary-header bulk caller instantiated on the actual floor-owned job.
@@ -55,7 +56,8 @@ theorem bulk_published_exec_ofAxisBounds (b : RawRecoveryProgramBounds Q A U)
         plan.result b.hR b.hQ)) ≤ Cprog)
     (_ : ∀ f, mnProgPush (body f) ≤ Cprog),
     ∃ (F : Stacks tapes A) (Gs : List (ZMod s → GaussianInt)), Gs.length = Fs.length ∧
-      F.R (batch 2) = S.R (batch 2) ∧ (∀ i, F.R (recovery i) = S.R (recovery i)) ∧
+      (∀ G ∈ Gs, ∀ x ∈ packedInterval (cut s t L k) (rows s t L k) G, Fits r.W x) ∧
+      F.R (batch 2) = S.R (batch 2) ∧ (∀ i, F.R (recovery i) = S.R (recovery i)) ∧ F.L = S.L ∧
     let output := (Gs.map (fun D => cstream A r.W (packedInterval (cut s t L k) (rows s t L k) D))).flatten++F.R (crop.reg 12)
     let final : Stacks tapes A := {F with R := Function.update (Function.update F.R source []) (crop.reg 12) output}
     ∃ v' n, v'.user = v.user ∧
@@ -65,6 +67,10 @@ theorem bulk_published_exec_ofAxisBounds (b : RawRecoveryProgramBounds Q A U)
       List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn (haloVertices s (cut s t L k) (cut s t L (k+1)))
         (packedIntervalRead p r.W (cut s t L k)
           (cstream A r.W (packedInterval (cut s t L k) (rows s t L k) D)++F.R (crop.reg 12))) z
+        (2/(2 : ℝ)^p+(1/(2 : ℝ)^target)/(2 : ℝ)^(inverseNormalizationShift p)))
+        (Zs.reverse.map (fun z i => ((2 : ℂ)^(inverseNormalizationShift p))⁻¹*z i)) Gs ∧
+      List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn (haloVertices s (cut s t L k) (cut s t L (k+1)))
+        (fun i => value p (D i)) z
         (2/(2 : ℝ)^p+(1/(2 : ℝ)^target)/(2 : ℝ)^(inverseNormalizationShift p)))
         (Zs.reverse.map (fun z i => ((2 : ℂ)^(inverseNormalizationShift p))⁻¹*z i)) Gs ∧
       ExecWithin body (fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+
@@ -82,7 +88,7 @@ theorem bulk_published_exec_ofAxisBounds (b : RawRecoveryProgramBounds Q A U)
     W V targetOrigin targetSpan Fs hF hwide hwindow hwV hspanV hvol hVW hA hVpos wl hwl v S hready
     hheaders hspanRuler tail hqueue harchive hacc hdst hline hinput hblank
   change bulkTargetCoreSpec (body := body) b d r W V L k radius targetSpan Fs Zs v S (1/(2 : ℝ)^target) at hbulk
-  obtain ⟨F,Ds,hDs,hqueueF,hframe,v₁,m₁,hu₁,hm₁,he₁,hgood,htrace₁⟩ := hbulk
+  obtain ⟨F,Ds,hDs,hqueueF,hframe,hleft,v₁,m₁,hu₁,hm₁,he₁,hgood,htrace₁⟩ := hbulk
   let q := packedHaloPrecision p l s t u (target+1) 2
     (cut s t L k-localityDepth p target*PhaseCellBand.width p u)
     (cut s t L (k+1)+localityDepth p target*PhaseCellBand.width p u)
@@ -101,6 +107,23 @@ theorem bulk_published_exec_ofAxisBounds (b : RawRecoveryProgramBounds Q A U)
   obtain ⟨hlen,v₂,m₂,hu₂,hm₂,he₂,haccuracy,htrace₂⟩ := hnormal'
   let Gs := Ds.reverse.map (fun D i => finalRoundWord (2*q+8) q p (inverseNormalizationShift p) (D i))
   have hGs : Gs.length = Fs.length := by simp only [Gs,List.length_map,List.length_reverse]; exact hDs
+  have hmono := cut_mono s t L (show k ≤ k+1 by omega)
+  have hend : cut s t L k+rows s t L k = cut s t L (k+1) := by dsimp only [rows]; omega
+  have hinterval : cut s t L k+rows s t L k ≤ s := by rw [hend]; omega
+  have hcover : ∀ i : ZMod s, cut s t L k ≤ i.val →
+      i.val < cut s t L k+rows s t L k → i ∈ haloVertices s (cut s t L k) (cut s t L (k+1)) := by
+    intro i hi hj; apply (mem_haloVertices _ _ i).mpr; rw [hend] at hj; exact ⟨hi,hj⟩
+  have hpq : p ≤ q := by
+    dsimp [q,packedHaloPrecision,executionPrecision,executionExponent,inputExponent,sourceExponent]
+    omega
+  have hWout : 2*p+13 ≤ r.W := RecoveryAxisBounds.owned_normalization_width (s := s) (p := p) (u := u) (l := l) target
+  have herr : 1/(2 : ℝ)^target ≤ 1 :=
+    (div_le_one (by positivity)).mpr (one_le_pow₀ (by norm_num))
+  have hfits : ∀ G ∈ Gs, ∀ x ∈ packedInterval (cut s t L k) (rows s t L k) G, Fits r.W x :=
+    packedFinalRound_fields_fits hA p q (inverseNormalizationShift p) (2*q+8) r.W (p+8)
+      (cut s t L k) (rows s t L k) hpq (by omega) (by omega) _ hinterval hcover
+      Zs.reverse Ds.reverse _ herr (axis.ownedTargets_round_magnitude target L k hnear hL ha hb hfit Fs hF)
+      (S.R (crop.reg 12)) hgood
   let old := (Ds.reverse.map (fun D => cstream A (2*q+8) (packedInterval (cut s t L k) (rows s t L k) D))).flatten++F.R (crop.reg 12)
   let E : Stacks tapes A := {F with R := Function.update (Function.update F.R source []) (crop.reg 12) old}
   let output := (Gs.map (fun D => cstream A r.W (packedInterval (cut s t L k) (rows s t L k) D))).flatten++F.R (crop.reg 12)
@@ -119,6 +142,11 @@ theorem bulk_published_exec_ofAxisBounds (b : RawRecoveryProgramBounds Q A U)
     simp only [E,Function.update_idem]
   simp only [ht,hword] at he₁
   simp only [←hwidth] at he₂ haccuracy htrace₂ hm₂
+  have hactive : ∀ i ∈ haloVertices s (cut s t L k) (cut s t L (k+1)),
+      cut s t L k ≤ i.val ∧ i.val < cut s t L k+rows s t L k := by
+    intro i hi; rw [hend]; exact (mem_haloVertices _ _ i).mp hi
+  have hvalue := packedIntervalBatch_value_error hA p r.W (cut s t L k) (rows s t L k)
+    (by omega) _ hinterval hactive _ Gs _ hfits (F.R (crop.reg 12)) haccuracy
   change Exec body normalizeQueue.normalizeProgram (Host.mk v₁ E) m₂
     (Host.mk v₂ {E with R := Function.update (Function.update E.R normalize.header []) normalize.src output}) at he₂
   rw [hfinal] at he₂
@@ -131,7 +159,7 @@ theorem bulk_published_exec_ofAxisBounds (b : RawRecoveryProgramBounds Q A U)
   change ExecWithin body _ depth (bulkPublishedProgram b) (Host.mk v S) (m₁+m₂)
     (Host.mk v₂ {E with R := Function.update (Function.update E.R normalize.header []) normalize.src output}) at ht
   rw [hfinal] at ht
-  refine ⟨F,Gs,hGs,hqueueF,hframe,v₂,m₁+m₂,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,haccuracy,?_⟩
+  refine ⟨F,Gs,hGs,hfits,hqueueF,hframe,hleft,v₂,m₁+m₂,hu₂.trans hu₁,?_,Exec.seq he₁ he₂,haccuracy,hvalue,?_⟩
   · change m₂ ≤ RecoveryParameterQueue.prepareTimeCost d+RecoveryNormalizePlan.generatedIntervalTimeCost d r.W (rows s t L k) Ds.reverse.length at hm₂
     rw [List.length_reverse,hDs] at hm₂
     change m₁+m₂ ≤ bulkTargetCoreTime W V targetSpan b d r L k radius Fs.length+

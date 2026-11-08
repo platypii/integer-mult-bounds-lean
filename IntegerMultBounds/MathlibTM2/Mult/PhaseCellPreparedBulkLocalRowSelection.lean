@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Host.EmbedLeftFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedBulkLocalRowSelection
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPrepareLocalRowControls
 public import IntegerMultBounds.MathlibTM2.Host.EmbedStock
@@ -52,9 +53,10 @@ theorem preparedBulkSelection_exec {W V a origin span w n : ℕ}
       F.R rowCount = List.replicate n tick ∧ F.R (batch 2) = S.R (batch 2) ∧
       (∀ i, F.R (recovery i) = S.R (recovery i)) ∧
       (∀ i, F.R (scratch i) = S.R (scratch i)) ∧
+      B.L = (embStk geometry S).L ∧
       ∀ depth, ExecWithin body (fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+
         3*preparedBulkSelectionCost W V span w n Fs.length) depth preparedBulkSelection (Host.mk v S) m (Host.mk v' F) := by
-  obtain ⟨v₁,B,m₁,hu₁,hm₁,he₁,_,_,_,hR⟩ := prepareLocalRowControls_exec
+  obtain ⟨v₁,B,m₁,hu₁,hm₁,he₁,_,_,hleft,hR⟩ := prepareLocalRowControls_exec
     (P := Empty) (body := fun z => nomatch z) hn hwide hwindow hwV hspan hvol hVW hA hVpos
     (embDn geometry v) (embStk geometry S) hheaders
   obtain ⟨v₂,_,hu₂,he₂⟩ := exec_emb_ovr (body' := body) (ι := Empty.elim) geometry_injective
@@ -91,7 +93,7 @@ theorem preparedBulkSelection_exec {W V a origin span w n : ℕ}
     (ready_geometry_ovr hready B)
   have hm : m₁+m₃ ≤ preparedBulkSelectionCost W V span w n Fs.length := Nat.add_le_add hm₁ hm₃
   have hex := Exec.seq he₂ he₃
-  refine ⟨v₃,B,m₁+m₃,hu₃.trans (hu₂.trans hu₁),hm,hex,hr₃,?_,?_,?_,?_,fun depth => ?_⟩
+  refine ⟨v₃,B,m₁+m₃,hu₃.trans (hu₂.trans hu₁),hm,hex,hr₃,?_,?_,?_,?_,hleft,fun depth => ?_⟩
   · change Function.update (Function.update K.R (batch 0) []) source
       (selectedWindowPayload (s := s) A w a n origin span Fs) (geometry 116) = _
     rw [Function.update_of_ne (show geometry 116 ≠ source by exact fun he => (by decide : (116 : Fin 117) ≠ 108) (geometry_injective he)),

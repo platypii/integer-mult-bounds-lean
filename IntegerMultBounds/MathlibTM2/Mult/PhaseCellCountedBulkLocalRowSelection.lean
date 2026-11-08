@@ -62,6 +62,7 @@ theorem countedBulkSelection_exec {W V a origin span w n : ℕ}
       F.R rowCount = List.replicate n tick ∧ F.R (batch 2) = S.R (batch 2) ∧
       (∀ i, F.R (recovery i) = S.R (recovery i)) ∧ (∀ i, F.R (scratch i) = S.R (scratch i)) ∧
       (∀ i ∈ [(0 : Fin 6),1], F.R (batch i) = []) ∧
+      F.L = S.L ∧
       ∀ depth, ExecWithin body (fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+
         3*countedBulkSelectionCost W V span w n Fs.length) depth countedBulkSelection (Host.mk v S) m (Host.mk v' F) := by
   obtain ⟨v₁,m₁,hu₁,hm₁,he₁,_⟩ := bulkSelectionCounts_exec (body := body)
@@ -86,7 +87,7 @@ theorem countedBulkSelection_exec {W V a origin span w n : ℕ}
     apply hready.of_frame
     · intro k hk; obtain ⟨i,rfl⟩ := cropSupport_range k hk; exact hr i
     · intro i; rfl
-  obtain ⟨v₂,B,m₂,hu₂,hm₂,he₂,hr₂,hrows₂,hqueue₂,hrecovery₂,hscratch₂,_⟩ :=
+  obtain ⟨v₂,B,m₂,hu₂,hm₂,he₂,hr₂,hrows₂,hqueue₂,hrecovery₂,hscratch₂,hleftB,_⟩ :=
     preparedBulkSelection_exec (body := body) hn hwide hwindow hwV hspan hvol hVW hA hVpos Fs tail v₁ G
       (by rw [hproject]; exact hheaders)
       (by simp [G,selectionCountsState,batch_injective.eq_iff])
@@ -113,7 +114,7 @@ theorem countedBulkSelection_exec {W V a origin span w n : ℕ}
   have hoff (k : Fin tapes) (hk : k ≠ batch 1) :
       ({H with R := Function.update H.R (batch 1) []} : Stacks tapes A).R k = H.R k :=
     Function.update_of_ne hk _ _
-  refine ⟨v₃,B,_,hu₃.trans (hu₂.trans hu₁),hm,hex,?_,?_,?_,?_,?_,?_,?_,fun depth => ?_⟩
+  refine ⟨v₃,B,_,hu₃.trans (hu₂.trans hu₁),hm,hex,?_,?_,?_,?_,?_,?_,?_,?_,fun depth => ?_⟩
   · apply hr₂.of_frame
     · intro k hk
       obtain ⟨i,rfl⟩ := cropSupport_range k hk
@@ -132,6 +133,7 @@ theorem countedBulkSelection_exec {W V a origin span w n : ℕ}
     · rw [hoff (batch 0) (by simp [batch_injective.eq_iff])]
       simp [H,source,(geometry_ne_batch 108 0).symm]
     · exact Function.update_self _ _ _
+  · exact embOvr_left_eq geometry geometry_injective B G hleftB
   · exact mn_native_exec_within hex 3 countedBulkSelection_native depth _ (by omega)
 
 end

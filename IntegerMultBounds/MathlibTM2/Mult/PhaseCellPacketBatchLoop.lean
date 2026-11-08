@@ -30,41 +30,61 @@ theorem packetBatchLoop_exec (clock queue out : Fin T) (hreg : [clock,queue,out]
       (∀ depth, ExecWithin body (fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+reserve)
         depth (countedLoop clock worker) (Host.mk v S) n (Host.mk v' F)) ∧
       F.R clock = [] ∧ Ready F ∧ F.R queue = tail ∧
-      F.R out = rs.reverse.flatMap output++S.R out := by
+      F.R out = rs.reverse.flatMap output++S.R out ∧
+      F = {S with R := (Function.update (Function.update (Function.update S.R clock []) queue tail)
+        out (rs.reverse.flatMap output++S.R out))} := by
   have hr := hreg
   regs_ne hr
+  let Frame : Stacks T A → Prop := fun F => F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
+    ∀ k, k ≠ clock → k ≠ queue → k ≠ out → F.R k = S.R k
   let Inv : List E → Stacks T A → Prop := fun xs F =>
     ∃ done : List E, rs = done++xs ∧ Ready F ∧ F.R queue = xs.flatMap input++tail ∧
-      F.R out = done.reverse.flatMap output++S.R out
+      F.R out = done.reverse.flatMap output++S.R out ∧ Frame F
   have hstable : ∀ xs F word, Inv xs F → Inv xs {F with R := Function.update F.R clock word} := by
     intro xs F word hI
-    obtain ⟨done,heq,hR,hq,ho⟩ := hI
+    obtain ⟨done,heq,hR,hq,ho,hF⟩ := hI
     exact ⟨done,heq,hclockStable F word hR,by simpa [‹clock ≠ queue›.symm] using hq,
-      by simpa [‹clock ≠ out›.symm] using ho⟩
+      by simpa [‹clock ≠ out›.symm] using ho,hF.1,hF.2.1,hF.2.2.1,
+      fun k hc hq ho => (Function.update_of_ne hc _ _).trans (hF.2.2.2 k hc hq ho)⟩
   have hstep : ∀ r ∈ rs, ∀ xs (vi : HS T Q A U) F, Inv (r::xs) F →
       ∃ vf G n, vf.user = vi.user ∧ n ≤ cost r ∧
         (∀ depth, ExecWithin body (fun j z => mnSize z+j ≤ mnSize (Host.mk vi F)+depth+reserve)
           depth worker (Host.mk vi F) n (Host.mk vf G)) ∧
         G.R clock = F.R clock ∧ Inv xs G ∧ mnSize (Host.mk vf G) ≤ mnSize (Host.mk vi F) := by
     intro r hr xs vi F hI
-    obtain ⟨done,heq,hR,hq,ho⟩ := hI
+    obtain ⟨done,heq,hR,hq,ho,hF⟩ := hI
     have hq' : F.R queue = input r++(xs.flatMap input++tail) := by
       simpa only [List.flatMap_cons,List.append_assoc] using hq
     obtain ⟨vf,n,hu,hn,ht⟩ := hworker r hr vi F (xs.flatMap input++tail) hR hq'
     let G : Stacks T A := {F with R := Function.update (Function.update F.R queue (xs.flatMap input++tail)) out (output r++F.R out)}
     refine ⟨vf,G,n,hu,hn,ht,?_,?_,?_⟩
     · simp [G,‹clock ≠ out›,‹clock ≠ queue›]
-    · refine ⟨done++[r],?_,hpacketStable F _ _ hR,?_,?_⟩
+    · refine ⟨done++[r],?_,hpacketStable F _ _ hR,?_,?_,hF.1,hF.2.1,hF.2.2.1,?_⟩
       · simpa only [List.append_assoc,List.singleton_append] using heq
       · simp [G,‹queue ≠ out›]
       · simp only [G,Function.update_self,ho,List.reverse_append,List.reverse_singleton,
           List.flatMap_append,List.flatMap_cons,List.flatMap_nil,List.append_nil,List.append_assoc]
+      · intro k hc hq ho
+        exact (Function.update_of_ne ho _ _).trans
+          ((Function.update_of_ne hq _ _).trans (hF.2.2.2 k hc hq ho))
     · exact (packet_replace_preserves_size queue out ‹queue ≠ out›.symm (input r) (output r)
         (xs.flatMap input++tail) (hlen r hr) vi vf F hq').le
   obtain ⟨v',F,n,hu,hn,ht,hc,hF⟩ := countedListLoop_exec_within clock worker rs cost Inv reserve hstable hstep
-    v S hcount ⟨[],by simp,hReady,hqueue,by simp⟩
-  obtain ⟨done,heq,hR,hq,ho⟩ := hF
+    v S hcount ⟨[],by simp,hReady,hqueue,by simp,rfl,rfl,rfl,fun _ _ _ _ => rfl⟩
+  obtain ⟨done,heq,hR,hq,ho,hframe⟩ := hF
   have hdone : done = rs := by simpa only [List.append_nil] using heq.symm
-  exact ⟨v',F,n,hu,hn,ht,hc,hR,by simpa using hq,by simpa only [hdone] using ho⟩
+  have hqueueF : F.R queue = tail := by simpa using hq
+  have houtF : F.R out = rs.reverse.flatMap output++S.R out := by simpa only [hdone] using ho
+  refine ⟨v',F,n,hu,hn,ht,hc,hR,hqueueF,houtF,?_⟩
+  refine Stacks.ext hframe.1 hframe.2.1 hframe.2.2.1 ?_
+  funext k
+  by_cases ho : k = out
+  · subst k; simpa only [Function.update_self] using houtF
+  · by_cases hq : k = queue
+    · subst k; simpa only [Function.update_of_ne ho,Function.update_self] using hqueueF
+    · by_cases hk : k = clock
+      · subst k; simpa only [Function.update_of_ne ho,Function.update_of_ne hq,Function.update_self] using hc
+      · simpa only [Function.update_of_ne ho,Function.update_of_ne hq,Function.update_of_ne hk]
+          using hframe.2.2.2 k hk hq ho
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

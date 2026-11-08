@@ -3,7 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Fast.TableDiagonalInterval
 
 /-! One-time ordinary scalar setup for a local D' coefficient page. The pi
-approximation, squared parameter and dyadic divisor are all computed. -/
+approximation and dyadic divisor are computed from the retained squared parameter. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Fast.TableVM
 open IntegerMultBounds.MathlibTM2.Fast.TableNum IntegerMultBounds.Resampling
@@ -13,11 +13,11 @@ open scoped Nat
 
 def tblDiagonalSetup : TblCode 48 :=
   tblPiSetup48 ;;
-    tblBlock 48 [.zero 38,.mul 36 36 41,.add 41 41 43,.mul 34 34 21] (.zero 22) ;;
+    tblBlock 48 [.zero 38,.copy 36 41,.add 41 41 43,.mul 34 34 21] (.zero 22) ;;
     tblPow2 44 43 45
 
 theorem tblDiagonalSetup_do {A W w s t α p : ℕ} (st : TblSt 48 A)
-    (hS : st.val 34 = s) (hT : st.val 35 = t) (hαval : st.val 36 = α) (hpval : st.val 19 = p)
+    (hS : st.val 34 = s) (hT : st.val 35 = t) (huval : st.val 36 = α^2) (hpval : st.val 19 = p)
     (hs : 0 < s) (hp : 13 ≤ p) (hα : 2 ≤ α) (hαp : α^2 ≤ p)
     (hW : α^2*(s+t)^2*2^(13*p+8) < 2^W) :
     TblDo A W w tblDiagonalSetup st (fun F => DiagonalReady s t α p F ∧
@@ -32,17 +32,17 @@ theorem tblDiagonalSetup_do {A W w s t α p : ℕ} (st : TblSt 48 A)
   refine ((tbl_pi48_do (W := W) (w := w) st hpval (by omega) (by omega)).seq
     (K₂ := 5+(4*(α*α+α*α)+5)) (fun H ⟨hpi,hacc,hframe⟩ => ?_)).mono (fun _ h => h) (by omega)
   refine (TblDo.block _ _ ?_ rfl).seq (fun K hK => ?_)
-  · simp [tblFitsList,TblIns.fits,TblIns.exact,hframe (36 : Fin 48) (by decide),hαval,
+  · simp [pow_two,tblFitsList,TblIns.fits,TblIns.exact,hframe (36 : Fin 48) (by decide),huval,
       hframe (34 : Fin 48) (by decide),hS]
     omega
   subst hK
-  let K := tblExactList A w ([.zero 38,.mul 36 36 41,.add 41 41 43,.mul 34 34 21]++[.zero 22]) H
+  let K := tblExactList A w ([.zero 38,.copy 36 41,.add 41 41 43,.mul 34 34 21]++[.zero 22]) H
   have hv : K.val 18 = piN p ∧ K.val 19 = p ∧ K.val 21 = s*s ∧ K.val 22 = 0 ∧
       K.val 34 = s ∧ K.val 35 = t ∧ K.val 41 = α*α ∧ K.val 43 = α*α+α*α ∧
       K.val 38 = 0 ∧ K.acc = st.acc ∧ K.val 37 = st.val 37 ∧ K.val 47 = st.val 47 := by
-    simp [K,tblExactList,TblIns.exact,hpi,hframe (19 : Fin 48) (by decide),
+    simp [pow_two,K,tblExactList,TblIns.exact,hpi,hframe (19 : Fin 48) (by decide),
       hframe (34 : Fin 48) (by decide),hframe (35 : Fin 48) (by decide),hframe (36 : Fin 48) (by decide),
-      hframe (37 : Fin 48) (by decide),hframe (47 : Fin 48) (by decide),hpval,hS,hT,hαval,hacc]
+      hframe (37 : Fin 48) (by decide),hframe (47 : Fin 48) (by decide),hpval,hS,hT,huval,hacc]
   obtain ⟨h18,h19,h21,h22,h34,h35,h41,h43,h38,haccK,h37,h47⟩ := hv
   have hpow := tblPow2_do (A := A) (W := W) (w := w) (c := 44) (e := 43) (i := 45)
     (by decide) (by decide) (by decide) K (by rw [h43]; exact hαW)
@@ -63,14 +63,14 @@ theorem tblDiagonalSetup_do {A W w s t α p : ℕ} (st : TblSt 48 A)
 def tblOwnedDiagonal : TblCode 48 := .seq tblDiagonalSetup tblDiagonalInterval
 
 theorem tblOwnedDiagonal_do {A W w s t α p c n : ℕ} (st : TblSt 48 A)
-    (hS : st.val 34 = s) (hT : st.val 35 = t) (hαval : st.val 36 = α) (hpval : st.val 19 = p)
+    (hS : st.val 34 = s) (hT : st.val 35 = t) (huval : st.val 36 = α^2) (hpval : st.val 19 = p)
     (hc : st.val 37 = c) (hend : st.val 47 = c+n)
     (hs : 0 < s) (hfit : c+n ≤ s) (hp : 13 ≤ p) (hα : 2 ≤ α) (hαp : α^2 ≤ p)
     (hW : α^2*(s+t)^2*2^(13*p+8) < 2^W) :
     TblDo A W w tblOwnedDiagonal st
       (fun F => F.acc = (diagonalInterval A w s t α p c n).reverse++st.acc)
       ((160*p+450)+(n*(310*p+123)+2)) := by
-  refine (tblDiagonalSetup_do st hS hT hαval hpval hs hp hα hαp hW).seq (fun H ⟨hr,h37,h47,hacc⟩ => ?_)
+  refine (tblDiagonalSetup_do st hS hT huval hpval hs hp hα hαp hW).seq (fun H ⟨hr,h37,h47,hacc⟩ => ?_)
   exact (tblDiagonalInterval_do H hr (h37.trans hc) (h47.trans hend) hs hfit hp hα hαp hW).mono
     (fun _ hh => by simpa only [hacc] using hh.1) le_rfl
 

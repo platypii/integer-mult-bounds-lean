@@ -38,7 +38,7 @@ def bulkTargetCoreSpec (b : RawRecoveryProgramBounds Q A U) (d : InverseMasterIn
     (Fs : List (ZMod r.problem.t → GaussianInt)) (Zs : List (ZMod s → ℂ))
     (v : HS tapes Q A U) (S : Stacks tapes A) (error : ℝ) : Prop :=
     ∃ (F : Stacks tapes A) (Gs : List (ZMod s → GaussianInt)), Gs.length = Fs.length ∧
-      F.R (batch 2) = S.R (batch 2) ∧ (∀ i, F.R (recovery i) = S.R (recovery i)) ∧
+      F.R (batch 2) = S.R (batch 2) ∧ (∀ i, F.R (recovery i) = S.R (recovery i)) ∧ F.L = S.L ∧
     ∃ v' m, v'.user = v.user ∧ m ≤ bulkTargetCoreTime W V targetSpan b d r L k radius Fs.length ∧
       Exec body (bulkTargetCoreProgram b) (Host.mk v S) m
         (Host.mk v' {F with R := (Function.update (Function.update F.R source []) (crop.reg 12)
@@ -89,7 +89,7 @@ theorem bulk_target_owned_exec (b : RawRecoveryProgramBounds Q A U)
     intro j hj
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hj
     rcases hj with rfl | rfl | rfl | rfl <;> exact hblank _ (by simp)
-  obtain ⟨v₁,B,m₁,hu₁,hm₁,he₁,hr₁,hpayload,hrows,hqueue₁,hrecovery,hscratch,_,htrace₁⟩ :=
+  obtain ⟨v₁,B,m₁,hu₁,hm₁,he₁,hr₁,hpayload,hrows,hqueue₁,hrecovery,hscratch,_,hleft,htrace₁⟩ :=
     countedBulkSelection_exec (body := body) hn hwide hwindow hwV hspanV hvol hVW hA hVpos Fs tail v S hheaders
       hspanRuler hready.packet hqueue harchive hacc hdst hline hcounts hready
   let G := selectionCountsState Fs.length targetSpan r.W S
@@ -109,7 +109,7 @@ theorem bulk_target_owned_exec (b : RawRecoveryProgramBounds Q A U)
     Fs hfields hwindow Zs hlen htargets wl hwl v₁ F hr₁ rowCount (scratch 0) (scratch 1) source (scratch 2) (scratch 3)
     handoff_regs (geometry_off_support 108) source_ne_output [] (by simpa only [List.append_nil] using hpayload)
     (by rw [hrows,List.length_replicate]) hinputF hblankF
-  refine ⟨F,Gs,hGs,hqueue₁,hrecovery,v₂,m₁+m₂,hu₂.trans hu₁,Nat.add_le_add hm₁ hm₂,
+  refine ⟨F,Gs,hGs,hqueue₁,hrecovery,hleft,v₂,m₁+m₂,hu₂.trans hu₁,Nat.add_le_add hm₁ hm₂,
     Exec.seq he₁ he₂,?_,?_⟩
   · simpa only [htail] using hgood
   · intro Cprog hpush hbody depth

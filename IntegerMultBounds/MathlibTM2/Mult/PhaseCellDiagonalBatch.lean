@@ -40,7 +40,10 @@ theorem diagonalBatch_exec
         (Host.mk v S) steps (Host.mk v' F)) ∧
       F.R clock = [] ∧ F.R queue = tail ∧
       F.R (rg o) = (Ds.reverse.flatMap (fun D => cstream A w (packedInterval c n (diagonalProduct s t α p D))))++S.R (rg o) ∧
-      F.R (rg y) = S.R (rg y) ∧ F.R (rg x) = [] := by
+      F.R (rg y) = S.R (rg y) ∧ F.R (rg x) = [] ∧
+      F = {S with R := (Function.update (Function.update (Function.update S.R clock []) queue tail)
+        (rg o) (Ds.reverse.flatMap (fun D => cstream A w (packedInterval c n
+          (diagonalProduct s t α p D)))++S.R (rg o)))} := by
   have hregs := hreg
   regs_ne hregs
   let Ready : Stacks T A → Prop := fun F => RsbClean ι F ∧
@@ -86,11 +89,12 @@ theorem diagonalBatch_exec
       (by simpa only [σ,Function.update_of_ne hfree.2.2.1] using hy) C hpush vi F tail hq
       hR.2.2.1 ((hR.2.1 x hfree.2.1).trans hin) hR.2.2.2.1 hR.2.2.2.2 hR.1 hh
     exact ⟨vf,steps,hu,hn,ht⟩
-  obtain ⟨v',F,steps,hu,hn,ht,hc,hR,hq,ho⟩ := packetBatchLoop_exec clock queue (rg o) (by regs_nodup)
+  obtain ⟨v',F,steps,hu,hn,ht,hc,hR,hq,ho,hfinal⟩ := packetBatchLoop_exec clock queue (rg o) (by regs_nodup)
     _ Ds input output (fun _ => cost) _ Ready hclockStable hpacketStable
     (by intro D _; simp only [input,output,length_cstream,packedInterval_length _ hfit]) hworker v S tail hclock
     ⟨hclean,(fun r _ => hS r),hcount,hsaved,htmp⟩ hqueue
-  refine ⟨v',F,steps,hu,?_,ht,hc,hq,ho,(hR.2.1 y hfree.2.2.1).trans (hS y).symm,(hR.2.1 x hfree.2.1).trans hin⟩
+  refine ⟨v',F,steps,hu,?_,ht,hc,hq,ho,(hR.2.1 y hfree.2.2.1).trans (hS y).symm,
+    (hR.2.1 x hfree.2.1).trans hin,hfinal⟩
   simpa only [List.map_const',List.sum_replicate,nsmul_eq_mul,Nat.cast_id,cost] using hn
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
