@@ -1,7 +1,6 @@
 module
 
-public import IntegerMultBounds.NLogN.SchurColumns
-public import IntegerMultBounds.NLogN.PhaseCellHaloSchurStability
+public import IntegerMultBounds.NLogN.PhaseCellPrincipalSchurColumns
 
 /-! Local Schur-column error from approximate original-matrix columns. -/
 
@@ -27,32 +26,8 @@ theorem halo_schur_column_error (hst : s < t) {α d : ℝ} (hα : 0 < α)
     ∀ i ∈ haloBoundary s t (PhaseCellBand.width p u) a b,
       |r i-(run (realMatrix s t p u) (haloVertices s a b)
         (haloInterior s t (PhaseCellBand.width p u) a b).toList).1 i j| ≤ E+(1+16*(p : ℝ))*η := by
-  let : NeZero t := ⟨by omega⟩
-  let I := haloInterior s t (PhaseCellBand.width p u) a b
-  let B := haloBoundary s t (PhaseCellBand.width p u) a b
-  have hU : I∪B = haloVertices s a b := haloInterior_union_boundary s t _ a b
-  have hμ : (0 : ℝ) < 1/(8*(p : ℝ)) := by
-    have hpR : (0 : ℝ) < p := by exact_mod_cast (by omega : 0 < p)
-    positivity
-  have hA := dominates_mono (realMatrix s t p u) univ (I∪B) _ (subset_univ _)
-    (matrix_gap s t hst hα p u hp hwidth hαu hθ hgap hbudget)
-  have hmass (i : ZMod s) (_hi : i ∈ B) : ∑ k ∈ I, |realMatrix s t p u i k| ≤ (2 : ℝ) := by
-    calc
-      _ ≤ ∑ k, |realMatrix s t p u i k| := sum_le_sum_of_subset_of_nonneg (subset_univ _) (by intros; positivity)
-      _ = ∑ k, realMatrix s t p u i k := by
-        apply sum_congr rfl
-        intro k _
-        apply abs_of_nonneg
-        unfold realMatrix
-        exact_mod_cast matrix_nonneg s t p u i k
-      _ ≤ 2 := matrix_row_sum_le_two hst hα p u hp hwidth hαu hθ hgap hbudget i
-  have hh := schur_column_error (realMatrix s t p u) I B
-    (haloInterior_disjoint_boundary s t _ a b) _ hμ hA R hR j hj c r η E 2 hη
-    (by simpa only [hU] using hcolumn) hresidual hmass
-  have herror : E+(η+2*(η/(1/(8*(p : ℝ))))) = E+(1+16*(p : ℝ))*η := by
-    field_simp
-    ring
-  rw [hU] at hh
-  simpa only [herror] using hh
+  exact principal_schur_column_error hst hα p u hp hwidth hαu hθ hgap hbudget
+    (haloVertices s a b) (haloInterior s t (PhaseCellBand.width p u) a b)
+    (haloInterior_subset s t _ a b) R hR j hj c r η E hη hcolumn hresidual
 
 end IntegerMultBounds.NLogN.PhaseCellMatrix

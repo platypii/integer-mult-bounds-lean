@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4566 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4588 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -38153,3 +38153,558 @@ execution, tensor continuation, root sizing, forward geometry, accumulated
 error/support and final S4 acceptance remain open. Collect the finished
 publication/diagonal lifecycle in one larger local commit; do not push.
 Separate periodic-recovery work remains outside this chunk.
+
+
+### S4 publication endpoint supplies the complete diagonal caller
+
+PhaseCellPublishedDiagonalHandoff derives every ordinary diagonal input from
+raw CroppedReady, the restored recovery-bank frame and the publication endpoint.
+It reads p,u,s,t,a from retained parameter rulers, precision/packet/replica
+controls from raw readiness, crop offset/rows from the crop controls and B
+from the restored scalar-width word. Initial left cleanliness, the already
+required empty work124 and actual left/bank frames derive DiagonalFresh at
+the published state. The normalized packet list and its fits are exactly the
+ones publication produces. No duplicate ruler-length or intermediate fresh-bank
+premises are introduced. The complete diagonal stage then consumes that queue,
+restores all private storage and returns the reverse product archive.
+
+Guarded check succeeds without warnings at 3422.1 MiB. Combined handoff,
+publication and accuracy build succeeds (16039 jobs, 3.5 GiB aggregate).
+The handoff retains explicit numerical width room 4*r.W+2 < 2^d.B, alongside
+p+2 <= r.W and the axis/interval bounds. Do not silently infer the former from
+d.precision_room: it controls about 8*executionExponent, whereas four times
+the packet width can require about 32*executionExponent. The final ordinary
+root must prove it under its chosen target range or widen multiplier setup's
+private scalar ruler. Page-width sizing is already independently generated.
+Next instantiate actual owned endpoints (a+offset=cut), sequence the actual
+bulk-publication execution with this handoff and attach the numerical error/order
+certificate. Full S4 cyclic/tensor/root/forward/error acceptance remains open.
+Retain with the next larger integration chunk; no commit or push. Separate
+periodic-recovery work untouched.
+
+
+### S4 actual nonwrapping bulk recovery through D-prime execution and accuracy
+
+PhaseCellBulkDiagonalRecovery now sequences the actual bulkPublishedProgram
+with completeDiagonalBatch in one program. The owned master input gives
+haloStart+radius=cut; monotonic cuts identify the exact variable owned interval.
+Publication's produced packet fits, retained readiness, bank/left frames and
+original cleanliness discharge the diagonal handoff. No generated page, ruler,
+intermediate execution or norm certificate is supplied. Time and arbitrary-depth
+workspace include the entire bulk selection/recovery/publication and complete
+shared diagonal setup/traversal/retirement.
+
+The same theorem joins the numerical proof: principal stability derives the
+normalized reference norm <=3/2 on the owned core; publication's value-field
+error feeds diagonalBatch_accuracy. The resulting decoded owned packets have
+error 8/2^p+2^(-target)/2^(inverseNormalizationShift p) against D-prime times
+the normalized principal reference, in original replica order. The physical
+output is exactly Gs.reverse mapped through diagonalProduct; two reversals
+replace a physical reorder pass and no replica-count error factor appears.
+Final diagonal private storage is retired. This is still the nonwrapping
+principal path, with the explicit multiplier-width room requirement inherited
+from the preceding handoff; cyclic execution and root width discharge remain
+open. Principal-reference equality to the manuscript B0, tensor continuation,
+root/forward geometry and accumulated error/support/final S4 acceptance also
+remain open.
+
+Guarded module check passes without warnings at 3455.1 MiB. Build succeeds
+(16040 jobs, 3.5 GiB aggregate). Axiom audit of the complete combined theorem
+reports only propext, Classical.choice and Quot.sound (9635.8 MiB audit peak).
+Retain with the next larger integration chunk; no commit or push. Separate
+periodic-recovery work untouched. Next prioritize identifying the mathematical
+principal reference with the manuscript local B0 and reviewing the cyclic
+execution route, rather than adding more local setup wrappers.
+
+
+### S4 principal references replaced by constructed ambient half-grid targets
+
+PhaseCellOwnedGlobalTargets constructs a real full-matrix solver from the
+proved axis dominance and combines its half-grid real/imaginary solves into
+globalHalfGridTarget. ownedTargets_global_error applies the existing original-
+matrix halo locality theorem to both parts on the exact Jk and proves complex
+error 2/2^target. No ambient solution supplier or machine execution is assumed;
+the ambient target is a mathematical reference, not a full-system machine
+fallback. The original nonwrapping principal machine is unchanged.
+
+PhaseCellOwnedB0Locality propagates that discrepancy through exact normalization
+and contractive D-prime. The loss is (2/2^target)/2^j. Its list theorem transfers
+any decoded packet certificate from owned principal targets to these ambient
+targets, preserving source/replica order. The actual bulk_diagonal_exec_ofAxisBounds
+now uses this bridge, returning Forall2 directly between original Fs and output
+packets, with error 8/2^p+3*(2^(-target)/2^(inverseNormalizationShift p)) against
+D-prime times normalized globalHalfGridTarget. The old local-only public
+reference list was removed from that theorem's exposed statement.
+
+Guarded checks: global target 3389.0 MiB (minor tactic lint removed before
+build), normalized locality 3380.7 MiB, strengthened actual pipeline 3463.7 MiB
+(unused exposed reference binder removed before build). Build succeeds
+(16043 jobs, 3.6 GiB aggregate). Updated complete theorem axiom audit reports
+only propext, Classical.choice and Quot.sound (9640.4 MiB audit peak).
+Next identify globalHalfGridTarget with the rounded operator inverse on the
+half-selected input, then apply rounded-to-exact inverse perturbation to reach
+the manuscript normalized B0 target. Cyclic machine execution, uniform root
+width/stock discharge, tensor continuation, forward geometry, accumulated
+error/support and final S4 acceptance remain open. Retain with the next larger
+integration chunk; no commit or push. Periodic-recovery work untouched.
+
+
+### S4 executed nonwrapping pipeline reaches manuscript normalized B0
+
+PhaseCellOwnedB0Endpoint proves globalHalfGridTarget equals the rounded inverse
+on (1/2) times the nearest-row selected input. The proof reuses inverse_parts
+and the constructed real/imaginary full-matrix solves; it assumes no machine
+execution or solution supplier. A generic perturbation lemma carries an
+operator-norm inverse discrepancy through normalization and contractive D-prime,
+retaining the half-grid factor. rounded_inverse_endpoint supplies the rounded
+inverse and sharp discrepancy 32*p^2/2^(45*p) from any target inverse J of the
+exact operator. The normalized coordinate loss is this discrepancy divided
+by 2 and by 2^j. A list transfer theorem preserves replica/source correspondence.
+
+The actual bulk_diagonal_exec_ofAxisBounds now returns decoded packets directly
+against ((2^inverseNormalizationShift p)^-1) times manuscript resampB0 J on
+original Fs. Its error is 8/2^p+3*(2^(-target)/2^j)+
+((32*p^2/2^(45*p))/2)/2^j. Execution, exact cleanup state, all time phases and
+shared workspace are unchanged. This closes the principal/global/rounded/exact
+reference chain for the actual nonwrapping physical program. The theorem takes
+J and its mathematical exact-inverse identity as the specification target,
+not a precomputed machine solution. Both s and t are now explicit NeZero
+instances in the public operator statement.
+
+Endpoint guarded checks pass without warnings (3394.9 MiB); actual pipeline
+check passes without warnings at 3465.6 MiB. Build succeeds (16047 jobs,
+3.5 GiB aggregate). Updated complete theorem axiom audit reports only propext,
+Classical.choice and Quot.sound (9637.3 MiB audit peak). Next review and implement
+the cyclic principal execution route, then connect the per-axis/tensor/root
+construction. Explicit multiplier scalar-width room and conservative setup
+stock still need uniform root discharge; forward geometry, accumulated error/
+support and final S4 acceptance remain open. Retain with the next larger
+integration chunk; no commit or push. Periodic-recovery work untouched.
+
+
+### S4 cyclic principal route: two physical pieces, one coupled Schur system
+
+Reviewed current interfaces: cyclic nearest-row selection/storage and cyclic
+locality already exist, but GeneratedRecoveryJob and its descriptor/crop setup
+are restricted to one nonwrapping halo. The separate periodic recovery WIP is
+an ambient full-line path and remains untouched; do not use it as a substitute
+for local cyclic principal execution. Reindexing the phase matrix or solving
+the seam pieces independently would change the required system.
+
+PhaseCellCyclicPrincipalGeometry describes the cyclic active set as two physical
+intervals with original coordinates. It proves equality to cyclicHaloLayer,
+disjointness for at-most-one-period windows, a guarded interior/boundary
+partition, boundary cardinality <= min n (4*band*(t-s+2)), and dominance of the
+single joint Schur matrix after eliminating both guarded interiors. Physical
+seam guards may enlarge the boundary by a constant; the matrix is unchanged.
+
+PhaseCellCyclicPrincipalFold reuses halo_same_cell_interval for the two pieces,
+boundary_support for arbitrary active sets and the existing cyclic-rank fold.
+It proves joint rank half-bandwidth 12*band and folded half-bandwidth
+24*band+1, retaining all original seam couplings. No independent piece-solve
+hypothesis is introduced. Guarded checks pass without warnings: geometry
+1885.6 MiB, folded support 1872.6 MiB. Combined cyclic-fold/current nonwrapping
+B0 pipeline build succeeds (16049 jobs, 2.6 GiB aggregate).
+Next generate both pieces' original-phase interior descriptors and one boundary
+column/rank bank, then instantiate existing band-factor/solve machinery at the
+proved folded width. Actual cyclic principal machine execution is still open;
+so are tensor/root width/stock/forward/error acceptance gates. Retain for the
+next larger integration chunk; no commit or push. Periodic WIP untouched.
+
+
+### S4 joint cyclic Schur columns reach the existing factor-input contract
+
+PhaseCellPrincipalSchurColumns factors the phase-cell column-error theorem over
+an arbitrary principal vertex set and chosen interior subset. The interval
+halo theorem now delegates to it; the analytic coefficient/interior/coupling
+budget is shared, E+(1+16*p)*eta. PhaseCellCyclicPrincipalStability supplies
+StageInv for the one joint cyclic Schur matrix and instantiates this generic
+column-error theorem. Its matrix remains the original ambient matrix.
+
+PhaseCellCyclicPreparedBoundaryColumns uses that joint gap/row-mass invariant,
+the proved 24*band+1 fold support, computedBoundaryTable_band_error,
+boundaryTable_stageInv and factorRankMatrix_stageInv to derive the existing
+PreparedBoundaryColumns contract from accurate formatted columns. No separate
+per-piece solve or prepared-factor hypothesis appears. This establishes the
+consumer contract; actual cyclic column production remains to be executed.
+Next prove the two guarded interiors are uncoupled from each other, generate
+both original-phase interior descriptor families, and assemble their responses
+into each joint boundary-column residual before the single factor/solve.
+
+Guarded checks pass without warnings: generic principal columns 1872.9 MiB,
+cyclic stability 1868.2 MiB, prepared-column contract 3380.0 MiB. The old interval
+proof's changed import caused a downstream rebuild (8.0 min, 44.3 GiB aggregate,
+below the guard); its nonwrapping B0 path rebuilt successfully. A namespace
+collision in the new module was fixed by qualifying SchurDominance.run. Final
+combined cyclic-contract/B0 build succeeds (16052 jobs, 3.5 GiB aggregate).
+Full cyclic machine execution and tensor/root/forward/error S4 gates remain
+open. Retain with the next larger integration chunk; no commit or push.
+Separate periodic-recovery WIP untouched.
+
+
+### S4 cyclic guarded interiors reuse interval solves and residual passes
+
+PhaseCellCyclicInteriorSplit proves a generic guarded-row support fact: any
+original matrix coefficient from a halo interior remains inside that physical
+interval. Together with disjoint cyclic storage pieces this proves both
+cross-interior blocks are zero. The seam boundary remains coupled; only the
+guarded interiors are independent. A generic solves_union_of_cross_zero rule
+and its cyclic instances combine the two interval solutions/response operators
+into an exact solver on cyclicPrincipalInterior.
+
+The residual identity is structural: the joint residual equals left residual
+plus right residual minus the once-duplicated original RHS. residual_union_error
+therefore adds their two coordinate error budgets once, without a period,
+window-size or replica-count factor. This gives the reuse interface for two
+existing interior response/coupling passes and one joint boundary column page.
+No full-system machine fallback or independent boundary solve is introduced.
+
+Guarded check passes without warnings at 1875.5 MiB. Combined interior-split/
+cyclic-prepared-column build succeeds (15690 jobs, 2.6 GiB aggregate).
+Next execute ordinary cyclic endpoint construction and reuse halo descriptor
+generation for [a,a+min n(s-a)) and [0,n-min n(s-a)); concatenate their original-
+phase descriptor families, then combine the two residual responses using this
+identity before the single factor/solve. Actual cyclic column production is
+still open, as are tensor/root width/stock/forward/error S4 gates. Retain with
+the next larger integration chunk; no commit or push. Periodic WIP untouched.
+
+
+### S4 cyclic split endpoints computed from ordinary unary dimensions
+
+PhaseCellCyclicSplitCode computes room=s-a, m=min n room, end1=a+m and
+end2=n-m in five table atoms, preserving s,a,n and the accumulator. It retains
+all intermediate values and a frame so every final scalar fit can be derived.
+No phase coordinate is changed. Guarded primitive check: 1397.7 MiB.
+
+PhaseCellCyclicSplitFromUnary composes the existing three-word unary loader
+with actual compiled execution of this code. It begins with retained unary
+s,a,n, a borrowed scalar width satisfying s<2^W, a fresh scalar bank and
+conversion scratch. It constructs the binary input table, computes both
+endpoints, returns their exact values and all scalar fits, and preserves all
+non-table storage and I/O/left stacks. Time includes actual header conversion,
+seven-variable allocation, three-word installation and five compiled atoms.
+It supplies no preencoded endpoint or table. Scalar width borrowing/retirement
+and exporting endpoint values as unary rulers remain caller composition steps.
+
+Guarded composed check passes without warnings at 1973.0 MiB. Combined unary-
+split/cyclic-prepared-column build succeeds (15692 jobs, 2.7 GiB aggregate).
+Next use tblUnaryCopies for end1/end2, release the temporary scalar bank, and
+feed the existing halo descriptor generator on the two original physical
+intervals. Full cyclic producer/solve execution and tensor/root/forward/error
+S4 acceptance remain open. Retain with next larger integration chunk; no commit
+or push. Periodic-recovery work untouched.
+
+### S4 cyclic endpoint rulers exported with exact scalar-bank retirement
+
+PhaseCellCyclicSplitRulers composes the ordinary unary input loader and five-atom
+split computation with the existing tblUnaryCopies exporter and scalar-bank
+release. Its exact final state changes only the two destination rulers; the
+borrowed width and every scalar-bank cell return to their original states.
+The execution bound includes conversion, allocation, arithmetic, export and
+retirement, with a native push bound of three. Destination tails are retained;
+distinct destinations yield the two exact ruler formulas, and a generic frame
+lemma preserves all other ports. These facts supply the endpoint interface for
+the existing halo descriptor generator without exposing temporary binary data.
+
+Fixed a local state-alias mismatch by unfolding the endpoint record in the
+export execution proof. Guarded check passes without warnings at 1959.6 MiB;
+guarded module build succeeds (4014 jobs, 2.5 GiB aggregate). Existing dependency
+linter notices do not affect the new module. Whitespace check passes.
+
+Next compose descriptor generation for the two original-coordinate intervals,
+then actual residual/column production and one joint factor/solve. Uniform root
+scalar-width and setup workspace bounds remain open and should be checked
+alongside this composition; tensor/forward/error/support/final S4 gates remain
+open. No commit or push. Separate periodic-recovery work remains untouched.
+
+### S4 two cyclic descriptor passes reuse the ordinary generator
+
+PhaseCellDescriptorEmbedding packages the ordinary unary descriptor inputs and
+lifts generateHaloDescriptors through an arbitrary injective register map.
+The exact embedded endpoint updates only its descriptor destination. A generic
+input-stability lemma proves that writing this output preserves every ordinary
+input and scratch freshness premise.
+
+cyclicHaloDescriptors uses two such embeddings with one shared output port.
+It executes [0,n-min n(s-a)) first, then [a,a+min n(s-a)), so prepending produces
+the first interval's descriptors followed by the second interval's descriptors
+and the original output tail. cyclicHaloDescriptors_exec proves this exact
+state and the sum of the two existing generator costs, preserving I/O, left
+stacks and every other right stack. All geometry remains in original phase
+coordinates. Neither descriptor streams nor binary geometry tables are caller
+inputs; the program computes the streams from ordinary unary endpoint rulers.
+
+Guarded module check passes without warnings at 1973.7 MiB. Module build passes
+(9315 jobs, 2.6 GiB aggregate); whitespace check passes. The initial checker
+correctly refused an out-of-date dependency before starting Lean; rebuilt that
+dependency under the build guard before checking.
+
+Next choose the concrete two register embeddings and compose the exported
+endpoint rulers with these input contracts. This wiring and borrowed-width
+retirement remain open, as do joint residual/column production and factor/solve,
+uniform resource discharge, tensor/forward/error/support/final S4 acceptance.
+No commit or push. Separate periodic-recovery work remains untouched.
+
+### S4 ordinary dimensions now execute through both cyclic descriptor passes
+
+PhaseCellGenerateCyclicDescriptors chooses a concrete 120-register layout:
+retained dimensions keep their original ports, endpoint rulers use 117/118,
+and 119 supplies the blank zero origin for the second interval. Both embedded
+generators share descriptor output 109. Injectivity follows from the base
+embedding and coordinate swaps. cyclicDescriptorInputs derives both generator
+input contracts from the original unary dimensions and blank extra ports after
+actual cyclic endpoint export; no computed endpoint is a caller premise.
+
+generateCyclicDescriptors_exec sequences the existing unary split/export,
+both descriptor passes, and actual clearing of endpoint rulers 117/118. Its
+exact final state changes only output 109 by prepending the two descriptor
+families. All original dimensions, the scalar bank, supplied width, conversion
+scratch, I/O and left stacks are restored. The bound includes split/export,
+both ordinary generator bills, and endpoint retirement 2*(a+n)+5.
+
+Guarded check passes without warnings at 1982.7 MiB. Guarded build succeeds
+(9342 jobs, 2.6 GiB aggregate). Whitespace check passes. Supplying and retiring
+the borrowed scalar width remains caller work; the theorem restores the supplied
+width rather than claiming to have allocated it. Next reuse the two interior
+response passes to produce one joint cyclic residual/column family and feed
+the existing single boundary factor/solve. Uniform resource discharge and
+axis/tensor/forward/error/support/final S4 acceptance remain open. No commit or
+push. Separate periodic-recovery work remains untouched.
+
+### S4 cyclic residual assembly simplifies to physical row selection
+
+Inspection of the actual column/coupling interfaces exposed a stronger reuse
+route than adding two residual streams. PhaseCellCyclicResidualPieces proves
+column support for every guarded interior: a nonzero original matrix entry
+into that interior must start inside its physical interval. Thus every row in
+one physical piece has zero coupling to the other piece's guarded interior,
+including rows at the original seam. This preserves the joint boundary's seam
+couplings while eliminating the need to add two residual streams.
+
+Generic residual_union_eq_left_of_zero/right_of_zero select the surviving
+interior contribution. cyclicPrincipal_residual_pieces specializes them to the
+two physical pieces. Its boundary error transfer selects the corresponding
+interval row and retains E, rather than adding two error budgets. The composed
+cyclicPrincipal_schur_column_pieces_error reaches the original joint Schur
+matrix with the existing E+(1+16*p)*eta bound from the two interval solvers and
+residual passes. No stream-addition kernel or duplicated-RHS subtraction is
+needed on this route. This supersedes the earlier planned additive residual
+assembly for the cyclic implementation; the generic additive identity remains
+available as its underlying proof lemma.
+
+Guarded check passes without warnings at 1879.9 MiB. The next machine step must
+account for a real restriction: existing releasedSchurColumn/initial coupling
+interfaces require the selected column coordinate to belong to that interval's
+boundary, and mask the unit basis accordingly. A joint cyclic column may lie
+in the other piece. Reusing that mask unchanged would erase cross-piece seam
+entries. Generate the common original-matrix column for an arbitrary joint
+boundary coordinate, then reuse each interval's interior solve/residual pass
+and select the physical output rows. Actual execution of this column producer
+and row selection remains open, as do resource/root/tensor/final S4 gates.
+No commit or push. Separate periodic-recovery work remains untouched.
+
+### S4 arbitrary original column reuses a temporary singleton window
+
+PhaseCellArbitraryOriginalColumn removes the selected-coordinate membership
+restriction without changing or duplicating the coupling mask. Since the
+phase-cell bandwidth is positive, every coordinate j belongs to the boundary
+of [j.val,j.val+1). The original initializer on this temporary singleton window
+therefore retains its unit basis and computes the original ambient matrix
+column at every row, including all seam entries. This replaces the proposed
+joint-mask generalization with an instantiation of the existing initializer.
+
+arbitraryOriginalColumn actually copies the retained coordinate 139 to blank
+window ports 141/142, increments the upper endpoint, runs retainedOriginalColumn,
+and clears both window rulers. LengthKeyReady.update_window proves these
+geometry ports are spectators of solver readiness. arbitraryOriginalColumn_spec
+returns the exact original state with only source 110 updated to the generated
+column, preserved readiness, real-valuedness, global norm and coordinate error,
+and a time bill including both copies, increment, column initialization and
+retirement. No selected-coordinate membership or precomputed column is supplied
+by the caller. Blank window ports are temporarily allocated and fully retired.
+
+Guarded check passes without warnings at 2136.1 MiB. Guarded module build passes
+(10013 jobs, 2.7 GiB aggregate), and whitespace check passes. Next feed this one
+common original column into both interval interior/residual passes and select
+the physical rows using cyclicPrincipal_schur_column_pieces_error. That actual
+two-pass producer, column collection, joint factor/solve and final resource/
+tensor/S4 acceptance remain open. No commit or push; separate periodic WIP
+remains untouched.
+
+### S4 interval residual execution retains the common original column
+
+PhaseCellArchiveResidualPrefix executes the existing runtime byte-clock setup,
+movePrefix from source 110 to output 132, and clock/width retirement. From an
+owned residual prefix of s*(2*q+8) symbols it exposes the original RHS tail and
+prepends the saved residual to the old output bank, changing exactly those two
+ports. Cost is 12*s*(2*q+8)+9*s+12*q+40, including all temporary allocation and
+retirement. The output bank need not be blank.
+
+PhaseCellArchivedSchurResidual composes releasedSchurResidual with that archive.
+Its execution begins with an ordinary formatted RHS, solves the selected
+interval interior, computes its residual and retires the temporary interior
+stream, then saves the residual to output 132. The exact final state changes
+only 132: source 110 is the original RHS again. The theorem retains the actual
+constructed interior solver, real-valuedness, norm, weighted residual accuracy,
+full cost and LengthKeyReady for that original RHS. The next interval solve
+can therefore reuse the same source while preserving this archived result;
+no new register bank or second original-column generation is needed.
+
+Guarded checks pass without warnings: archive primitive 2107.7 MiB; composed
+residual 2159.9 MiB. Archive module build succeeds (9865 jobs, 2.7 GiB aggregate).
+The composed module build also succeeds. Whitespace check passes. Next execute
+both physical intervals with ordinary endpoint installation/retirement, yielding
+their two saved residual streams from the common arbitrary original column;
+then select joint boundary rows using the proved unchanged-error transfer.
+Actual joint column collection/factor/solve and resource/root/tensor/final S4
+acceptance remain open. No commit or push; periodic WIP remains untouched.
+
+### S4 both physical residual passes execute with private window retirement
+
+PhaseCellWindowedSchurResidual borrows lower/upper unary ruler lengths into
+private ports 141/142 using restoring copies, executes archivedSchurResidual,
+and clears both private endpoints. Its exact final state changes only output
+132, preserving the original source and all retained rulers. The theorem
+includes both copies, residual/archive execution and endpoint retirement in
+its time bound, with the same constructed solver, norm and residual accuracy.
+No prepared coupling bank or preinstalled endpoint is a caller premise.
+
+PhaseCellCyclicResidualPasses uses this wrapper for [a,a+min n(s-a)) from
+retained ports 144/145, then [0,n-min n(s-a)) using blank port 138 and retained
+146. The second pass preserves the first archived residual. Its exact output
+is right residual ++ left residual ++ old output, while source 110 remains
+the common original RHS. cyclicResidualPasses_spec composes the two actual
+executions, the joint interior solver and cyclicPrincipal_residual_pieces_error.
+Selecting each row's physical interval gives joint residual accuracy
+(2^(-(recoveryTarget p target+2)))/(8*p), with no doubled error allowance.
+All private windows, conversion scratch and other stacks return exactly.
+
+Guarded checks pass without warnings: window wrapper 2165.7 MiB; two-pass
+execution 2176.5 MiB. Window module build passes (10266 jobs, 2.7 GiB aggregate);
+two-pass module build also passes. Whitespace check passes. Next compose the
+arbitrary original-column initializer with this two-pass program at its
+existing precision/magnitude budget, then physically collect the selected joint
+boundary rows into the factor-input stream. The input theorem here still takes
+the common formatted RHS and retained endpoints; their generated producers
+exist separately and remain to be composed. Joint factor/solve, uniform resource
+bounds and axis/tensor/forward/error/support/final S4 acceptance remain open.
+No commit or push; separate periodic-recovery WIP remains untouched.
+
+### S4 executed original-column generation and both residual passes reach joint Schur accuracy
+
+PhaseCellGeneratedCyclicColumn composes arbitraryOriginalColumn with the actual
+cyclicResidualPasses program. It starts from solver readiness with the original
+source tail, the retained column coordinate and physical interval rulers. The
+common original-matrix column is generated internally using the temporary
+singleton window, then both interval interiors and residuals execute against
+that same generated column. No caller supplies a column, solver or residual.
+
+originalColumn_width discharges the initializer's arithmetic width at the
+existing executed precision. originalColumn_magnitude_budget supplies the
+rhsExp=2 input norm for both residual passes. The global decoded column error
+is transferred to its actual Gaussian field using fits and the encoded-field
+reader theorem. cyclicPrincipal_schur_column_error then combines the constructed
+joint solver and selected physical residual values; originalColumn_schur_budget
+closes accuracy 2^-target against the one original joint cyclic Schur matrix.
+No new precision allowance or doubled residual error is introduced.
+
+The exact final state retains the generated original column on 110 and right
+residual ++ left residual ++ old output on 132; all other stacks and private
+windows are restored. It returns real-valuedness, norm bounds, the complete
+execution/time bill and solver readiness with the generated original column.
+Physical selected-row collection and retirement of these streams remain open;
+the theorem does not claim a formatted joint boundary-factor page yet.
+
+Guarded check passes without warnings at 2167.2 MiB. Guarded module build passes
+(2.7 GiB aggregate). Whitespace check passes. Next collect the selected rows for
+a joint boundary coordinate and instantiate the existing column-family/factor
+contract. Endpoint producer composition, joint solve, uniform resource/root
+bounds and axis/tensor/forward/error/support/final S4 acceptance remain open.
+No commit or push; separate periodic-recovery WIP remains untouched.
+
+### S4 restoring selected-row access reuses the concatenated residual bank
+
+PhaseCellCyclicResidualIndex computes an address into the existing right ++ left
+residual bank: i outside [a,b), s+i inside [a,b). Its five-variable table code
+uses at most three atoms and preserves the accumulator and all input scalars.
+The fit premise s+s <= 2^W covers the doubled source address range explicitly.
+A generic list theorem proves that this address selects the right residual or
+left residual at the original coordinate, including a and b correctly. No
+merged full-line allocation or pointwise arithmetic pass is needed.
+
+PhaseCellCopyCyclicResidualEntry instantiates the existing copyIndexedWord
+execution at that address. From the two saved formatted residual streams it
+copies exactly the selected encoded word, preserving both streams and every
+stack except the destination. It retains the actual restoring lookup time
+bound, including source motion. This gives a concrete consumer for the two
+streams returned by generatedCyclicColumn_spec rather than reimplementing a
+word reader or adding a second table-collection algorithm.
+
+Guarded checks pass without warnings: address code/list theorem 1401.6 MiB;
+restoring entry extraction 1936.4 MiB. Address module build succeeds (2081 jobs,
+2.1 GiB aggregate); extraction module build also passes. Whitespace check passes.
+Next load s/a/b/i from ordinary unary rulers, execute the index code, export its
+address and retire that table bank around the restoring lookup; then reuse the
+folded-row collection loop. The extraction theorem still takes the selected
+unary address and width as inputs, so this ordinary-input composition remains
+open. Full joint page/factor/solve and resource/root/tensor/final S4 acceptance
+remain open. No commit or push; periodic WIP remains untouched.
+
+### S4 selected residual address now executes from ordinary unary inputs
+
+PhaseCellUnaryScalarResult factors the recurring unary-loader/compiled-scalar/
+unary-export/bank-retirement lifecycle into one structural theorem over an
+arbitrary table arity, input assignment list, code, result variable and atom
+bound. The arithmetic proof supplies initial fits and a final value, empty
+accumulator and fits. The generic machine theorem proves the exact final state
+changes only the exported destination, restores the supplied width and all
+scratch, and charges every loader, allocation, arithmetic, export and retirement
+step. A native push bound of three provides its full ExecWithin stock bound.
+This avoids duplicating the cyclic endpoint execution/frame proof for address
+arithmetic or enumerating its scalar-bank cells in the caller.
+
+PhaseCellCyclicResidualIndexFromUnary instantiates this routine with four
+ordinary unary inputs s/a/b/i and the proved five-variable address code. The
+program computes and exports cyclicResidualIndex s a b i and retires its scalar
+bank. Its initial and final fits follow structurally from a,b <= s, i < s and
+s+s <= 2^W. Only the unary address destination changes, retaining its old tail;
+no encoded arithmetic input or precomputed address is supplied.
+
+Guarded checks pass without warnings: generic lifecycle 1949.0 MiB; ordinary
+address 1954.0 MiB. Generic module build passes (4012 jobs, 2.5 GiB aggregate);
+ordinary-address module build also passes. Whitespace check passes. Next compose
+this generated unary address with copyCyclicResidualEntry_exec and clear the
+private address ruler, then lift that entry operation into folded-row collection.
+Width borrowing/retirement at the collection caller and the complete joint
+page/factor/solve/resource/root/tensor/final S4 acceptance remain open.
+No commit or push; separate periodic-recovery WIP remains untouched.
+
+### S4 ordinary geometry executes one selected residual-word read with full cleanup
+
+PhaseCellGeneratedCyclicResidualEntry composes the ordinary unary address
+producer, the existing restoring copyIndexedWord instantiated for the two
+residual streams, and actual unary-address retirement. It starts from retained
+s/a/b/i rulers, a supplied scalar width and word width, and the actual right ++
+left residual bank. It generates the selected address internally, restores the
+scalar bank, copies exactly the selected encoded physical row, and clears its
+private address. The exact final state changes only the destination word
+prefix, preserving both source streams, all ordinary geometry, supplied width,
+conversion scratch, I/O and left stacks. Its time bound includes the complete
+address lifecycle, restoring source lookup and address disposal. No precomputed
+address, mask or selected-row value is supplied by the caller.
+
+Guarded check passes without warnings at 1957.2 MiB. Combined build of generated
+entry, generated cyclic column, ordinary cyclic descriptors, nonwrapping B0
+pipeline and cyclic factor-input contract succeeds (16071 jobs, 2.6 GiB aggregate).
+Axiom audit of generatedCyclicColumn_spec and generatedCyclicResidualEntry_exec
+reports only propext, Classical.choice and Quot.sound (7143.8 MiB audit peak).
+Source integrity and whitespace checks pass. This is a larger local integration
+checkpoint containing the verified nonwrapping B0 endpoint and cyclic descriptor/
+column/entry primitives; no push. Separate periodic-recovery work is excluded.
+
+Next lift the generated entry operation into physical folded-row collection,
+including borrowing/retiring its scalar width and the coordinate cursor. Then
+collect all joint columns and instantiate the existing prepared-boundary factor
+contract and joint solve. Endpoint producer wiring, uniform resource/root bounds,
+axis/tensor/forward/error/support/final S4 acceptance remain open. These modules
+do not yet establish the complete S4 theorem.
