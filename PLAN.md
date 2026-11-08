@@ -35471,3 +35471,170 @@ audit peak: 3887.1 MiB. Complete final build, plan-status and whitespace checks
 pass. This is acceptance of the concrete current-fiber target-halo supplier,
 not full axis/tensor or S4 acceptance. Commit this larger accumulated preparation
 chunk locally; no push is authorized.
+
+### S4 complete-record halo view and actual enlarged-field return
+
+`Routing/FixedWidthSlice.lean` proves structurally that take/drop/slice at byte
+offsets scaled by record width coincide with encoded record slices. Width is
+required only for records in the actual source list, allowing complete spectator
+columns represented by arbitrary rectangular lists. Guarded check: 1933.2 MiB.
+
+`Routing/RectangularColumns.lean` proves `realColumns` is an involutive transpose
+on rectangular lists. `Routing/MixedRadixReturnColumns.lean` uses this to execute
+the existing current-length return directly from supplied columns: its row matrix
+is derived, rather than assumed as an inverse-layout witness. Actual execution,
+source-only endpoint, time and shared-stock bounds are inherited from the
+complete return controller. The original transpose check was 1931.7 MiB; removed
+unused simp arguments before the final successful dependency build.
+
+`Routing/HaloRecordLayout.lean` proves encoding commutes with periodic extension
+and aligned halo windows, independently of record representation. It derives
+window count, each window's length L+2H, and membership in the original source.
+Guarded check: 1950.8 MiB. `Routing/GaussianHaloColumns.lean` instantiates this
+language on complete B-coefficient spectator columns and identifies the generated
+supplier's actual bytes with the resulting window list. Column height B and
+window width L+2H are derived from the source fiber. Reused the generic emission
+identity instead of maintaining a parallel byte-slice proof; removed a redundant
+window-count wrapper. Guarded check before this proof-only cleanup: 1951.6 MiB;
+final dependency build passes without new warnings.
+
+`Routing/HaloFieldReturn.lean` composes the actual generated periodic halo
+supplier with the existing current-length mixed-radix return on one fixed
+117-tape bank. The return is instantiated on the derived rectangular windows,
+with its own current M=L+2H and exponent master. `run_exec` preserves retained
+controls, scratch, user state and the borrowed source suffix, changing only the
+source payload. No assumed post-halo layout or return execution is supplied.
+Time is C + k*(64*W+3)+384*W+2, with C the generated halo cost and
+W=N*(B*(2^k*w)). Shared stock is `3*C+1000*W`, composed from the actual traces,
+not a logarithmic-bit-loop sum. `returned_length` proves exact output volume
+`N*(B*((L+2*H)*w))`, suitable for the persistent-halo tensor volume product.
+Final guarded check: 1973.2 MiB, no warnings/default-limit changes. Final complete
+import-closure build passes (4062 jobs, 2.5 GiB aggregate peak).
+
+Next prepend the actual forward short-field movement from per-coarse rectangular
+rows, deriving the global column fiber with `realColumns`; then lift this complete
+single-prefix-fiber pass through the ordered outer prefix scan. Retained dimension
+master production and the full axis/tensor invariant remain to be connected.
+Forward near-one source-window geometry, regular initialization/global routing,
+tensor numerical locality/error/support and compiler/root gates remain open.
+Keep these six view/return modules uncommitted for the larger field-movement
+integration chunk. No push is authorized; periodic-recovery work remains untouched.
+This is actual halo-plus-return composition, not complete axis or S4 acceptance.
+
+Halo-return validation: temporary guarded axiom audit of aligned record slices,
+rectangular transpose, actual column-input return, generated halo column view,
+exact returned volume and actual composed execution/stock reports only standard
+Lean axioms (3895.5 MiB audit peak). Plan-status and whitespace checks pass.
+No commit or push was made. Full S4 remains incomplete.
+
+### S4 actual forward/halo/current-length-return pass for one prefix fiber
+
+`Routing/HaloFieldPass.lean` now prepends the complete actual forward short-field
+controller to `HaloFieldReturn.run`. Its input is the ordinary per-coarse row
+matrix stream, with N coarse matrices, B spectator rows and local field length L.
+`columns_shape` derives the exposed global fiber's N*L columns, complete height B
+and coefficient volume N*L*B. `columns_bytes` identifies the actual forward
+controller's output with the encoded flattened column fiber. No gathered-layout
+witness is supplied by the caller.
+
+`run_exec` composes the three actual fixed stages on the same 117-tape bank:
+forward movement with its own exponent/length masters, generated periodic halos,
+and return with the current enlarged M=L+2H and return exponent. Both movement
+stages reuse the same work tapes. The exact endpoint changes only the source,
+preserving the borrowed suffix, retained controls and all scratch. Time combines
+the existing forward and reverse cost bounds plus the generated halo cost C;
+stock is `1000*Wforward + (3*C+1000*Wreturn)`, independent of the number of
+binary refinement levels. Guarded check passes at 1977.2 MiB, no warnings or
+proof-limit changes. Final complete import-closure build passes (4067 jobs,
+2.5 GiB aggregate peak).
+
+Next lift this complete one-prefix pass through the ordered outer-prefix scan.
+Reuse `FiberScan.scanFibers` for the source/archive trace. Generate a retained
+output byte counter N*B*(L+2H)*w from ordinary N/B/current-M/word-width masters
+once, and wrap each pass with a counted transfer to a private output archive.
+The exact output volume already follows from `HaloFieldReturn.returned_length`
+and `columns_shape`. Reuse `countedLoop_exec_bounded_stock` for stock: partial
+source and growing archive give a uniform boundary cap by initial stock plus
+total output volume; each stage reuses the proved one-fiber reserve. There is
+no need for a new interpreter or a logarithmic reserve per bit pass. Restore
+output order with the existing final archive transfer and retire generated
+volume controls. Outer retained dimension production and the full axis/tensor
+invariant remain open, as do forward near-one geometry, regular initialization,
+numerical locality/error/support and compiler/root acceptance.
+
+Keep these seven new view/field-pass modules uncommitted until the larger ordered
+prefix integration chunk is ready. No push is authorized. The user's periodic-
+recovery files are untouched. Full S4 remains incomplete.
+
+Forward/halo/return validation: temporary guarded audit of derived column shape,
+byte correspondence and complete actual pass/stock reports only standard Lean
+axioms (3897.0 MiB audit peak). Plan-status and whitespace checks pass. No commit
+or push was made. This closes the one-prefix execution component, not full S4.
+
+### S4 complete ordered prefix halo pass with generated scan controls
+
+`Routing/TensorVolumeHeader.lean` generates N*B*M*w from four retained ordinary
+masters using the existing product kernels, retiring its two intermediate
+products. The final volume word is the only change, all sources/scratch restore,
+time is at most `43*volume+23`, and native push bound is two. Guarded check:
+1961.1 MiB, no warnings/default-limit changes.
+
+`Routing/HaloPassContext.lean` packages the common ordinary dimensions, their
+fit/capacity conditions, rectangular input shape and retained header facts. It
+contains no execution or layout suppliers. Frame lemmas transport headers and
+fresh scratch across changes to source, output archive and the two outer scan
+controls. The existing actual one-fiber execution and exact output-volume facts
+are exposed through this context instead of repeating the leaf theorem's full
+hypothesis list at every loop iteration. Guarded check: 1965.7 MiB, no warnings.
+
+`Routing/HaloArchiveFiber.lean` executes the actual expose/halo/return pass, then
+transfers exactly its derived output volume to the outer archive. Source advances
+to the next fiber, archive accumulates the reversed result, the output-volume
+master is retained and transfer scratch restores. Time is `passCost+4*volume+4`;
+stock reserve is `passStock+8*volume+8`. The corrected final dependency build
+passes without warnings; the initial guarded check peaked at 1952.2 MiB.
+
+`Routing/FiberScanStock.lean` proves a generic stock-aware execution theorem for
+the existing `scanFibers` program, reusing `countedLoop_exec_bounded_stock`.
+A partial source and growing archive give a uniform boundary cap by initial
+stock plus total output volume. One actual stage reserve is reused across all
+iterations. Final ordinary-order archive transfer gives total allowance
+`3*totalOutput+stageReserve+2`; no per-bit-loop or per-prefix accumulation of
+stage scratch is introduced. Guarded check: 1951.8 MiB, no warnings.
+
+`Routing/HaloPrefixScan.lean` instantiates that theorem with the actual halo
+archive body and derives `totalOutput = prefixCount*N*B*(L+2H)*w` from rectangular
+fiber shapes. `Routing/PreparedHaloPrefixScan.lean` generates the retained output
+volume once, copies the actual prefix count to its loop clock, runs the ordered
+scan, and clears the generated volume afterward. Its source-only endpoint
+preserves ordinary dimension masters, input metadata, user state, scratch and
+borrowed source suffix. No prepared scan counter, execution supplier or per-fiber
+layout witness is assumed. The source contains the returned enlarged local field
+for every prefix, with all spectator fields included and kept intact.
+
+For prefix count P and one-fiber output volume U, time is at most
+`45*U+4*P+P*(archiveFiberCost+3)+2*P*U+35`; stock allowance is
+`86*U+8*P+3*P*U+archiveFiberReserve+60`. For nonempty tensor prefix products this
+is linear total payload stock plus one shared stage reserve; field-movement
+scratch is independent of the binary pass count. Final guarded prepared-scan
+check: 1964.6 MiB, no warnings/default-limit changes.
+
+Next establish the logical coordinate action of this target-halo axis pass,
+including periodic wrap and preservation of complete spectator coordinates, then
+connect the retained-halo tensor invariant and its exact product-volume bound.
+Retained dimension/exponent master production from actual axis metadata remains
+an outer-driver obligation. Forward near-one source-window geometry, regular
+initialization/global routing, full numerical locality/error/support and
+compiler/root acceptance remain open. Commit the accumulated thirteen new
+view/field-pass/prefix-scan modules as one coherent integration chunk after final
+validation. No push is authorized; periodic-recovery work is untouched. Full S4
+remains incomplete.
+
+Final prefix validation: complete guarded import-closure build passes (4073 jobs,
+2.5 GiB aggregate peak). Temporary guarded audit of four-factor control generation,
+generic shared-stock scan, actual archive body, concrete ordered scan and full
+prepare/scan/retire source-only theorem reports only standard Lean axioms
+(3898.8 MiB audit peak). Plan-status and whitespace checks pass. Commit the
+accumulated view/field/prefix integration locally; no push is authorized. This
+establishes the concrete ordered target-halo scan from retained dimensions,
+not the remaining logical tensor invariant or full S4 acceptance.
