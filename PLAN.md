@@ -35687,3 +35687,123 @@ execution theorem, one-axis invariant, distinct-axis induction and manuscript
 volume corollary reports only standard Lean axioms (3900.6 MiB peak). Plan-status
 and whitespace checks pass. Collect the eight semantic modules and this plan
 update as one local chunk; do not push.
+
+### S4 explicit stored tensor layouts
+
+`Routing/TensorFiberLayout.lean` constructs the prefix/coarse/spectator/local
+nested list by structural range maps, proves its rectangular shape and indexed
+entries, and proves uniqueness from shape plus entries. This is a generic list
+lemma, with no concrete tensor cases or execution assumptions.
+
+`Routing/HaloAxisTensorLayout.lean` tabulates the retained-halo pullback in this
+storage order. `transform_layout` proves equality of the actual logical halo
+output with the explicitly tabulated enlarged retained layout.
+`run_exec` instantiates the existing prepared-prefix machine directly on that
+stored input and names the exact enlarged stored output in its source-only
+endpoint, preserving all cost, shared-stock, scratch and suffix guarantees.
+It needs no input/output shape witness or entry-invariant supplier: tabulation
+and the existing coordinate theorem discharge them. Ordinary retained dimension
+and binary-header facts remain explicit inputs, as does the enumeration of
+prefix/spectator coordinates by `base`; this does not yet establish axis-to-axis
+physical regrouping or initial global bit collection.
+
+Guarded checks pass at 1937.7 MiB (generic layout) and 1954.2 MiB (actual stored
+layout execution). Complete import-closure build passes (4081 jobs, 2.5 GiB
+aggregate peak), with only existing dependency warnings replayed. Keep these two
+modules uncommitted for the next larger integration chunk. No push is authorized;
+periodic-recovery work is untouched. Next generate the ordinary halo pass headers
+from axis dimensions, then connect the prefix/spectator enumeration and physical
+axis regrouping rather than add more abstract invariant wrappers. Full S4 remains
+incomplete, including forward geometry and numerical/root composition.
+
+Stored-layout validation: a temporary guarded audit of layout uniqueness,
+transformation equality and actual stored-layout execution reports only standard
+Lean axioms (3900.4 MiB peak). Plan-status and whitespace checks pass. No commit
+or push was made for this smaller follow-on chunk.
+
+### S4 header products generated from ordinary dimensions
+
+`Routing/HaloUnaryHeaders.lean` executes the existing unary product kernels to
+produce the required N*L*B and H*B coefficient-volume headers on ports 31/32
+from ordinary N,L,H,B masters (44/55/65/45), then retires its N*L intermediate.
+All other tapes restore exactly. Time is bounded by
+`N*(4*L+9)+(N*L)*(4*B+11)+H*(4*B+9)+20`; its native push bound is two, giving
+an explicit stock bound with default proof limits. Guarded check: 1970.7 MiB.
+
+`Routing/ProductBinaryHeader.lean` composes the existing unary product and
+binary-counter programs, restoring both sources and shared scratch and clearing
+the temporary unary product. For factors x,y and metadata width V its time is
+at most `x*y*(4*V+16)+9*x+4*V+16`. Its stock proof uses the existing width-only
+binary-counter reserve rather than accumulating scratch per increment. Guarded
+check: 1958.5 MiB.
+
+`Routing/HaloBinaryHeaders.lean` uses that producer twice to generate the actual
+count/core-byte-length/overlap-byte-length metadata on ports 97/98/100 from
+ordinary N,L,H,B,w,V masters. It generates the shared B*w word once, constructs
+2*H once, and retires all three intermediates (67/68/69). Its endpoint changes
+only the three metadata words; time and shared-stock bounds are explicit.
+No prepared binary metadata supplier is assumed. Guarded check: 1952.6 MiB.
+The joint import-closure build, including stored-layout execution, passes
+(4087 jobs, 4.1 GiB aggregate peak), with existing dependency warnings replayed
+and no warnings in the new modules.
+
+Next compose the unary and binary producers with generation of the remaining
+copied word-width/current-length headers, then instantiate HaloPassContext.Holds
+from the resulting ordinary dimension state and run the exact stored-layout
+pass. Exponents and dimension masters still require actual outer-axis metadata
+production; physical prefix/spectator enumeration and axis regrouping remain
+open. This is progress on control production, not full S4 acceptance. Keep this
+work with the two preceding stored-layout modules for one larger local chunk;
+do not push. Periodic-recovery work is untouched.
+
+Header validation: temporary guarded audit of the unary producer with stock,
+product-to-binary producer and concrete three-word metadata producer reports only
+standard Lean axioms (3901.1 MiB peak). Plan-status and whitespace checks pass.
+The five accumulated layout/header modules remain uncommitted; no push made.
+
+### S4 complete generated-header stored axis pass
+
+`Routing/HaloWidthHeaders.lean` generates both the copied word width and L+2H
+from ordinary w,L,H masters, preserving the masters and restoring scratch. Time
+is exactly `4*w+4*L+8*H+20`; native push bound is two. Guarded check: 1933.3 MiB.
+
+`Routing/HaloPassHeaderSetup.lean` composes unary coefficient-volume production,
+three binary metadata words and width generation. Its `Masters` structure has
+only ordinary N,B,L,H,w,V dimensions, forward/return exponents and an empty zero
+bank; no products, binary words or enlarged widths are supplied. `result_holds`
+derives every existing `HaloPassContext.Holds` field, and actual setup execution
+has explicit summed time and shared-stock bounds. The new module name avoids
+the existing lower-level `HaloHeaderSetup`, which remains unchanged. Guarded
+check: 1974.4 MiB; complete dependency build passes (4076 jobs, 2.5 GiB peak).
+
+`Routing/HaloAxisFromDimensions.run_exec` executes this setup, the existing
+ordered halo-prefix scan, and retirement of all seven generated headers. The
+endpoint changes only the tensor source, preserving ordinary masters, source
+suffix, user state and all scratch. No derived-header readiness premise remains.
+Its time is setup plus scan plus `2*headerSize+15`; stock is setup reserve plus
+scan reserve, with no retirement allocation. Guarded check peaks at 1978.2 MiB;
+the one linter warning was removed before the dependency build (4086 jobs,
+2.5 GiB peak), which passes with only existing dependency warnings replayed.
+
+The stored-layout theorem `HaloAxisTensorLayout.run_exec` now uses this complete
+program directly, replacing the older prepared-header version. Its exact tape
+endpoint is the tabulated enlarged retained-halo layout. This removes the full
+Holds premise from stored tensor execution instead of keeping a second wrapper.
+
+Next prove actual prefix/spectator coordinate enumeration and physical
+regrouping between successive axes, and produce ordinary dimension/exponent
+masters from the outer metadata. Keep this tied to the manuscript's ordered
+mixed layout; do not introduce another abstract axis driver or assume routing
+execution. Forward near-one source-window geometry, numerical locality/error/
+support, regular initialization/shared exposure and compiler/root acceptance
+remain open. S4 is incomplete. Collect these eight accumulated layout/header/
+complete-axis modules into one local commit after final build and axiom audit.
+No push is authorized; periodic-recovery files remain untouched.
+
+Final complete-axis validation: updated stored-layout check passes at 1953.5 MiB;
+full import-closure build passes (4090 jobs, 2.5 GiB aggregate peak). Temporary
+guarded audit of width production, derived readiness, complete setup, source-only
+setup/run/retire and stored-layout execution reports only standard Lean axioms
+(3903.1 MiB peak). No forbidden proof devices or raised limits occur in these
+eight modules. Plan-status and whitespace checks pass. Commit this accumulated
+integration chunk locally; do not push.
