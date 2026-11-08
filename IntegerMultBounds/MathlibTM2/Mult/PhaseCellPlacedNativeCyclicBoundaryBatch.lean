@@ -9,6 +9,7 @@ The two global writes leave both cached banks and RHS queues untouched. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -60,7 +61,9 @@ theorem placedNativeCyclicBoundaryBatch_exec {s t : ℕ} [NeZero s]
         cstream A w (packedInterval 0 (n-min n (s-a)) (boundarySolutionField B solution))
     let F := placedNativeCyclicBoundaryBatchState S tail (rows.reverse.flatMap fields)
     ∃ vf m, vf.user = v.user ∧ m ≤ nativeCyclicBoundaryBatchCost rows.length B.card n w ∧
-      Exec body placedNativeCyclicBoundaryBatch (mk v S) m (mk vf F) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        nativeCyclicBoundaryBatchWorkspace rows.length B.card n w) 0
+        placedNativeCyclicBoundaryBatch (mk v S) m (mk vf F) ∧
       NativeBoundaryUnfoldWorkspace B.card (embStk (Fin.castLE (by decide : 234 ≤ 240)) (embStk recoveryBank F)) ∧
       BoundarySolveReady (boundaryFactorState (embStk (Fin.castLE (by decide : 224 ≤ 240))
         (embStk recoveryBank F))) q w W B.card := by
@@ -75,8 +78,8 @@ theorem placedNativeCyclicBoundaryBatch_exec {s t : ℕ} [NeZero s]
     (body := fun z : Empty => nomatch z) hst hA band a n ha hn q w W rows hlens
     (embDn recoveryBank v) (embStk recoveryBank S) tail hwork hready hleft hsource hmaskR hmaskL
     hfresh hcount h227 h228
-  obtain ⟨vf,_,hu,he⟩ := exec_emb_ovr (body' := body) (ι := Empty.elim)
-    CyclicRecoveryPlacement.bank_injective (fun z => nomatch z) hei v rfl S rfl
+  obtain ⟨vf,_,hu,he⟩ := exec_emb_ovr_within_stock (body' := body) (ι := Empty.elim)
+    recoveryBank CyclicRecoveryPlacement.bank_injective (fun z => nomatch z) hei v rfl S rfl
   have hfinal : embOvr recoveryBank T.get S = placedNativeCyclicBoundaryBatchState S tail output := by
     dsimp only [T,nativeCyclicBoundaryRowState,nativeCyclicBoundaryRecoveryState]
     simp only [List.nil_append]

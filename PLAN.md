@@ -42198,3 +42198,95 @@ audit of the paired second-pass and accepted-core theorems reports only propext,
 Classical.choice and Quot.sound (9604.7 MiB audit peak, not a production module).
 Whitespace checks pass. Collect this accepted-publication/resource-preservation
 work as one local checkpoint; exclude all periodic WIP and do not push.
+
+### S4 projection stock is charged by archive volume, not elapsed time
+
+Existing Host.ConsumeRuns supplies mn_consume_appendR_size: consuming an arbitrary
+source prefix and prepending an output on a distinct port has exact stock
+balance, with all spectators counted once. CyclicBoundaryProjectionStock applies
+it to the actual placed projection state. The resulting equality charges
+rows.length*(n*w) output words and credits rows.length*(B.card*w) consumed
+boundary words. It uses the existing arbitrary-list archive-length theorem;
+no row enumeration or numerical solution assumptions are needed.
+
+preparedProjectedCyclicRecovery_exec_within now uses that balance to express
+its coupling-space guarantee relative to the pre-projection bank plus explicit
+window archive volume, rather than the opaque projected endpoint. Its source
+and geometry facts are supplied by the existing solved-recovery caller.
+The solved-recovery integration passes (15220 jobs; 3.4 GiB combined peak).
+Guarded single-file checks pass: projection balance 3263.1 MiB, prepared coupling
+3284.2 MiB, solved recovery 3285.3 MiB. Whitespace checks pass.
+
+The projection's intermediate workspace is still open: endpoint balance alone
+does not prove its peak. Next retain a structural per-row projection workspace
+and lift it through the existing arbitrary-list loop using archive-volume
+accounting, then compose masks/projection/coupling into the recovery prefix.
+Do not use the entire projection runtime as its space allowance. Keep these
+changes for a larger local resource checkpoint; no push, periodic WIP untouched.
+
+### S4 single-row projection has a checked linear space reserve
+
+NativeCyclicBoundaryPushBounds proves structural native push bounds for the
+arbitrary-register inverse fold, generated real unfold, its shared placement,
+and the complete nativeCyclicBoundaryRow. Each action pushes at most four
+symbols (the division-control action rules out the initially considered bound
+of two). The proof follows program structure and uses embProg_native for
+placement, without evaluating concrete executions or enumerating replicas.
+
+nativeCyclicBoundaryRow_exec_within_of_exec applies this bound to the actual
+row trace and its existing time certificate at any call depth. Its reserve is
+4*nativeCyclicBoundaryRowCost N n w, proved at most
+1000*(N+n+1)*(w+1). This is linear in one boundary/window row and independent
+of replica count. The guarded module check passes at 3209.1 MiB, with default
+limits and no linter warnings. Whitespace checks pass.
+
+Still required: lift this per-row bound through countedLoop while charging
+archive growth using the exact stock balance. The existing countedLoop_exec
+discards resource traces; use a structural resource-preserving loop contract,
+not replica-count times the full per-row workspace. The batch/whole-prefix
+peak is not established by the new single-row theorem. No commit or push;
+collect with the ongoing projection-resource chunk and preserve periodic WIP.
+
+### S4 the native projection batch shares one row workspace
+
+CountedLoopWithin provides countedLoop_exec_within_remaining_costs, a structural
+counter traversal with a fixed stock cap and arbitrary per-iteration time costs.
+It preserves body ExecWithin traces instead of discarding them; counter pop and
+peek allocate no symbols. The cap is reused, not summed over iterations.
+
+nativeCyclicBoundaryLoop_exec now retains ExecWithin. Its invariant tracks the
+done/todo split, consumed source, accumulated output and remaining count.
+nativeCyclicBoundaryLoopState_size_le bounds iteration-boundary stock by the
+initial bank plus the complete output archive. Each body uses the checked
+four-push native row certificate, giving one shared row reserve. The batch
+adds its linear count-copy setup allowance, and the placed batch transports
+the same stock certificate with exec_emb_ovr_within_stock: spectators are
+included once. No machine program or numerical conclusion changed.
+
+The resulting nativeCyclicBoundaryBatchWorkspace is
+2*(4*replicas+4)+replicas*(n*w)+4*nativeCyclicBoundaryRowCost N n w.
+The final term is at most 1000*(N+n+1)*(w+1), independent of replica count.
+This closes the intermediate peak of boundary projection as well as its
+endpoint volume balance. Existing solved recovery uses toExec until mask setup
+and full prefix composition retain their resource guarantees too.
+
+Broad integration caught an existing mn_consume_appendR_size in Host.ConsumeRuns.
+The initially added duplicate in AppendRuns was removed; projection now imports
+and reuses the existing lemma with its original argument order. AppendRuns has
+no remaining changes. The full accepted-complex-core build passes (15901 jobs;
+32.8 GiB combined peak). New/changed projection modules checked below 3.29 GiB;
+the generic loop checked at 1398.9 MiB. The batch/placed-batch temporary axiom
+audit reports only propext, Classical.choice and Quot.sound. Source-integrity
+and whitespace scans pass, with no proof limits changed.
+
+Next: retain native mask setup space (reuse the existing binary guard setup
+stock pattern), compose masks/projection/coupling into solvedCyclicRecovery,
+then join the original cached prefix and second passes. Release-time scratch
+tracking and uniform asymptotic estimates remain open. This is a local projection
+resource milestone, not full S4. No push; exclude periodic WIP from the checkpoint.
+
+After reusing ConsumeRuns, final checks pass: projection balance 3263.4 MiB,
+prepared coupling 3283.8 MiB, complete accepted complex caller 3451.4 MiB.
+The repeated batch/placed-batch axiom audit passes with only the standard
+three axioms (9406.9 MiB temporary audit peak, not a production module).
+Collect these nine files as one larger local projection-space checkpoint.

@@ -88,12 +88,13 @@ theorem solvedCyclicRecovery_exec (H K : ReplicaHaloProblem s)
   obtain ⟨stateLP,stateRP⟩ := placedNativeCyclicBoundaryBatchState_recoveryReady H K buffersL buffersR pageL pageR
     M solveTail (solutions.reverse.flatMap fields) stateLM stateRM
   obtain ⟨vf,X,m₃,hu₃,hm₃,he₃,hclockX,hcursor⟩ := preparedProjectedCyclicRecovery_exec_within (body := body)
-    H K t band a n w hHL hHN hHW hKL hKN hKW solutions Fs hHF hKF hlen hsolutions
+    H K t band a n w ha hn hHL hHN hHW hKL hKN hKW solutions Fs hHF hKF hlen hsolutions
     hQ hA hsepL hsepR buffersL buffersR pageL pageR M solveTail v₂ 0
+    (by rw [hread 224 (by decide)]; exact hsource)
     (by rw [hread 229 (by decide)]; exact hmaster)
     (by rw [hread 228 (by decide)]; exact hclock) (by rw [hread 227 (by decide)]; exact htmp) stateLP stateRP
   have hmP : m₂ ≤ nativeCyclicBoundaryBatchCost Fs.length B.card n w := by simpa only [hlen] using hm₂
   exact ⟨vf,X,m₁+(m₂+m₃),hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hm₁ (Nat.add_le_add hmP hm₃),
-    Exec.seq he₁ (Exec.seq he₂ he₃.toExec),hclockX,hcursor⟩
+    Exec.seq he₁ (Exec.seq he₂.toExec he₃.toExec),hclockX,hcursor⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

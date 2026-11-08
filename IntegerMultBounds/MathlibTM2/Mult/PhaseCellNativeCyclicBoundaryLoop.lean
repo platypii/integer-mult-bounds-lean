@@ -1,7 +1,9 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNativeCyclicBoundaryRow
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedLoop
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountedLoopWithin
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNativeCyclicBoundaryPushBounds
+public import IntegerMultBounds.MathlibTM2.Host.AppendRuns
 public import IntegerMultBounds.MathlibTM2.Host.EmbedUpdate
 
 /-! Structural replica traversal for native boundary recovery. One shared
@@ -10,6 +12,7 @@ factor page and two retained masks serve every row of an arbitrary list. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 240 Q A U}
@@ -17,6 +20,27 @@ variable {Q A : ℕ} {P U : Type} {body : P → Pr P 240 Q A U}
 def nativeCyclicBoundaryLoopState (S : Stacks 240 A)
     (source output count : List (Fin (A+4))) : Stacks 240 A :=
   {S with R := (Function.update (Function.update (Function.update S.R 224 source) 132 output) 228 count)}
+
+theorem nativeCyclicBoundaryLoopState_size_le (v vf : HS 240 Q A U) (S : Stacks 240 A)
+    (source output count : List (Fin (A+4))) (volume : ℕ)
+    (hsource : source.length ≤ (S.R 224).length)
+    (houtput : output.length ≤ (S.R 132).length+volume)
+    (hcount : count.length ≤ (S.R 228).length) :
+    mnSize (mk vf (nativeCyclicBoundaryLoopState S source output count)) ≤ mnSize (mk v S)+volume := by
+  let F₁ := {S with R := Function.update S.R 224 source}
+  let F₂ := {F₁ with R := Function.update F₁.R 132 output}
+  have h₁ : mnSize (mk v F₁)+(S.R 224).length = mnSize (mk v S)+source.length := by
+    simpa only [F₁,mk,update_rt,get_rt] using mn_size_update (mk v S) v (.rt 224) source
+  have h₂ : mnSize (mk v F₂)+(S.R 132).length = mnSize (mk v F₁)+output.length := by
+    simpa only [F₂,F₁,mk,update_rt,get_rt,Function.update_of_ne (by decide : (132 : Fin 240) ≠ 224)] using
+      mn_size_update (mk v F₁) v (.rt 132) output
+  have h₃ : mnSize (mk vf (nativeCyclicBoundaryLoopState S source output count))+(S.R 228).length =
+      mnSize (mk v F₂)+count.length := by
+    simpa only [nativeCyclicBoundaryLoopState,F₂,F₁,mk,update_rt,get_rt,
+      Function.update_of_ne (by decide : (228 : Fin 240) ≠ 132),
+      Function.update_of_ne (by decide : (228 : Fin 240) ≠ 224)] using
+      mn_size_update (mk v F₂) vf (.rt 228) count
+  omega
 
 theorem nativeCyclicBoundaryLoop_exec {s t : ℕ} [NeZero s]
     (hst : s < t) (hA : 4 ≤ A) (band a n : ℕ) (ha : a < s) (hn : n ≤ s)
@@ -39,13 +63,25 @@ theorem nativeCyclicBoundaryLoop_exec {s t : ℕ} [NeZero s]
       cstream A w (packedInterval a (min n (s-a)) (boundarySolutionField B solution))++
         cstream A w (packedInterval 0 (n-min n (s-a)) (boundarySolutionField B solution))
     ∃ vf m, vf.user = v.user ∧ m ≤ rows.length*(nativeCyclicBoundaryRowCost B.card n w+3)+2 ∧
-      Exec body (countedLoop 228 nativeCyclicBoundaryRow) (mk v S) m
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+rows.length*(n*w)+
+        4*nativeCyclicBoundaryRowCost B.card n w) 0
+        (countedLoop 228 nativeCyclicBoundaryRow) (mk v S) m
         (mk vf (nativeCyclicBoundaryLoopState S tail (rows.reverse.flatMap fields++S.R 132) [])) := by
   dsimp only
   let B := cyclicPrincipalBoundary s t band a n
   let fields := fun solution =>
     cstream A w (packedInterval a (min n (s-a)) (boundarySolutionField B solution))++
       cstream A w (packedInterval 0 (n-min n (s-a)) (boundarySolutionField B solution))
+  let cap := mnSize (mk v S)+rows.length*(n*w)+4*nativeCyclicBoundaryRowCost B.card n w
+  have hfitL : a+min n (s-a) ≤ s := by omega
+  have hfitR : 0+(n-min n (s-a)) ≤ s := by omega
+  have hfield (solution : List GaussianInt) : (fields solution).length = n*w := by
+    simp only [fields,List.length_append,length_cstream,packedInterval_length _ hfitL,
+      packedInterval_length _ hfitR]
+    nlinarith only [congrArg (fun k => k*w) (Nat.sub_add_cancel (Nat.min_le_left n (s-a)))]
+  have harchive (xs : List (List GaussianInt)) : (xs.reverse.flatMap fields).length = xs.length*(n*w) := by
+    rw [List.length_flatMap]
+    simp only [hfield,List.map_const',List.sum_replicate,smul_eq_mul,List.length_reverse]
   let Inv := fun j (F : Stacks 240 A) => ∃ done todo count,
     rows = done++todo ∧ done.length = j ∧
     F = nativeCyclicBoundaryLoopState S (todo.flatMap (cstream A w)++tail)
@@ -71,10 +107,10 @@ theorem nativeCyclicBoundaryLoop_exec {s t : ℕ} [NeZero s]
         change (boundaryFactorReg r).val = 228 at hv
         omega
       rw [hfactor]; exact hrF
-  have hstep : ∀ j < rows.length, ∀ (vi : HS 240 Q A U) F, Inv j F →
+  have hstep : ∀ j < rows.length, ∀ (vi : HS 240 Q A U) F, Inv j F → (F.R 228).length = rows.length-(j+1) →
       ∃ vf G m, vf.user = vi.user ∧ m ≤ nativeCyclicBoundaryRowCost B.card n w ∧
-        Exec body nativeCyclicBoundaryRow (mk vi F) m (mk vf G) ∧ G.R 228 = F.R 228 ∧ Inv (j+1) G := by
-    intro j hj vi F hI
+        ExecWithin body (fun d z => mnSize z+d ≤ cap) 0 nativeCyclicBoundaryRow (mk vi F) m (mk vf G) ∧ G.R 228 = F.R 228 ∧ Inv (j+1) G := by
+    intro j hj vi F hI hremaining
     obtain ⟨done,todo,count,heq,hlen,hstate,hwF,hrF⟩ := hI
     cases todo with
     | nil => simp only [List.append_nil] at heq; have hh := congrArg List.length heq; omega
@@ -93,7 +129,23 @@ theorem nativeCyclicBoundaryLoop_exec {s t : ℕ} [NeZero s]
             simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
             rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl
             all_goals simpa [nativeCyclicBoundaryLoopState] using hfresh _ (by simp))
-      refine ⟨vf,_,m,hu,hm,he,?_,done++[row],todo,count,?_,?_,?_,hwG,hrG⟩
+      have hsize : mnSize (mk vi F) ≤ mnSize (mk v S)+rows.length*(n*w) := by
+        rw [hstate]
+        apply nativeCyclicBoundaryLoopState_size_le v vi S _ _ count (rows.length*(n*w))
+        · rw [hsource,heq,List.flatMap_append,List.length_append,List.length_append]
+          simp only [List.length_append]
+          omega
+        · rw [List.length_append,harchive]
+          have hdone : done.length ≤ rows.length := by rw [heq,List.length_append]; omega
+          have hmul := Nat.mul_le_mul_right (n*w) hdone
+          omega
+        · have hc : (F.R 228).length = count.length := by rw [hstate]; simp [nativeCyclicBoundaryLoopState]
+          rw [hcount] at *
+          omega
+      have heWithin := nativeCyclicBoundaryRow_exec_within_of_exec (N := B.card) (n := n) (w := w) he hm 0
+      have heCap : ExecWithin body (fun d z => mnSize z+d ≤ cap) 0 nativeCyclicBoundaryRow
+          (mk vi F) m _ := heWithin.mono (by intro d z hz; dsimp only [cap]; omega)
+      refine ⟨vf,_,m,hu,hm,heCap,?_,done++[row],todo,count,?_,?_,?_,hwG,hrG⟩
       · simp [nativeCyclicBoundaryRowState,nativeCyclicBoundaryRecoveryState]
       · simpa only [List.append_assoc,List.singleton_append] using heq
       · simp [hlen]
@@ -109,9 +161,9 @@ theorem nativeCyclicBoundaryLoop_exec {s t : ℕ} [NeZero s]
     funext k
     by_cases hk132 : k = 132 <;> by_cases hk224 : k = 224 <;> by_cases hk228 : k = 228 <;>
       simp [nativeCyclicBoundaryLoopState,hk132,hk224,hk228,hsource]
-  obtain ⟨vf,F,m,hu,hm,he,h228,hI⟩ := countedLoop_exec (body := body)
-    228 nativeCyclicBoundaryRow rows.length (nativeCyclicBoundaryRowCost B.card n w) Inv
-    hstable hstep v S hcount hinit
+  obtain ⟨vf,F,m,hu,hm,he,h228,hI⟩ := countedLoop_exec_within_remaining_costs (body := body)
+    228 nativeCyclicBoundaryRow rows.length cap (fun _ => nativeCyclicBoundaryRowCost B.card n w) Inv
+    hstable hstep v S hcount hinit (by dsimp only [cap]; omega)
   obtain ⟨done,todo,count,heq,hlen,hstate,_,_⟩ := hI
   have ht : todo = [] := by
     have hh := congrArg List.length heq
@@ -123,6 +175,6 @@ theorem nativeCyclicBoundaryLoop_exec {s t : ℕ} [NeZero s]
   subst done
   have hc : count = [] := by simpa [hstate,nativeCyclicBoundaryLoopState] using h228
   subst count
-  exact ⟨vf,m,hu,hm,he.cast rfl (congrArg (mk vf) hstate)⟩
+  exact ⟨vf,m,hu,(by simpa using hm),he.cast rfl (congrArg (mk vf) hstate)⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

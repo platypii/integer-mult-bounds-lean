@@ -8,6 +8,7 @@ archive. All private controls restore; factors and masks are shared by the batch
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Node
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 240 Q A U}
@@ -17,6 +18,9 @@ def nativeCyclicBoundaryBatch : Pr P 240 Q A U :=
 
 def nativeCyclicBoundaryBatchCost (replicas N n w : ℕ) : ℕ :=
   (4*replicas+4)+(replicas*(nativeCyclicBoundaryRowCost N n w+3)+2)
+
+def nativeCyclicBoundaryBatchWorkspace (replicas N n w : ℕ) : ℕ :=
+  2*(4*replicas+4)+(replicas*(n*w)+4*nativeCyclicBoundaryRowCost N n w)
 
 /-- Packed archive volume depends only on the window and replica count. -/
 theorem nativeCyclicBoundaryBatch_fields_length {s : ℕ} [NeZero s]
@@ -65,7 +69,9 @@ theorem nativeCyclicBoundaryBatch_exec {s t : ℕ} [NeZero s]
         cstream A w (packedInterval 0 (n-min n (s-a)) (boundarySolutionField B solution))
     let F := nativeCyclicBoundaryRowState S tail (rows.reverse.flatMap fields) []
     ∃ vf m, vf.user = v.user ∧ m ≤ nativeCyclicBoundaryBatchCost rows.length B.card n w ∧
-      Exec body nativeCyclicBoundaryBatch (mk v S) m (mk vf F) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+        nativeCyclicBoundaryBatchWorkspace rows.length B.card n w) 0
+        nativeCyclicBoundaryBatch (mk v S) m (mk vf F) ∧
       NativeBoundaryUnfoldWorkspace B.card (embStk (Fin.castLE (by decide : 234 ≤ 240)) F) ∧
       BoundarySolveReady (boundaryFactorState (embStk (Fin.castLE (by decide : 224 ≤ 240)) F)) q w W B.card := by
   dsimp only
@@ -108,8 +114,21 @@ theorem nativeCyclicBoundaryBatch_exec {s t : ℕ} [NeZero s]
     by_cases hk132 : k = 132 <;> by_cases hk224 : k = 224 <;> by_cases hk228 : k = 228 <;>
       simp [J,nativeCyclicBoundaryLoopState,nativeCyclicBoundaryRowState,
         nativeCyclicBoundaryRecoveryState,hk132,hk224,hk228,h228]
+  have hp : mnNativePushBound 2 (ucopy (P := P) (Q := Q) (A := A) (U := U) (229 : Fin 240) 228 227) := by
+    simp [ucopy,umulSym,scanP,pushN,scanR,drainR,popDo,keepIn,popPush,moveR,whileR,moveStep,peekR,mnNativePushBound,mnActPush]
+  have heCopy := mn_native_exec_within he₁' 2 hp 0 _ (le_refl _)
+  have hsize := heCopy.final
+  have hwithin : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+0+
+      nativeCyclicBoundaryBatchWorkspace rows.length B.card n w) 0
+      nativeCyclicBoundaryBatch (mk v S) ((4*rows.length+4)+m₂)
+      (mk vf (nativeCyclicBoundaryRowState S tail (rows.reverse.flatMap fields) [])) := by
+    refine .seq (heCopy.mono ?_) ((he₂.cast rfl (congrArg (mk vf) hfinal)).mono ?_)
+    all_goals
+      intro d z hz
+      dsimp only [nativeCyclicBoundaryBatchWorkspace,B] at *
+      omega
   refine ⟨vf,_,hu₂.trans hu₁,Nat.add_le_add_left hm₂ (4*rows.length+4),
-    Exec.seq he₁' (he₂.cast rfl (congrArg (mk vf) hfinal)),
+    hwithin,
     nativeCyclicBoundaryRowState_workspace S tail (rows.reverse.flatMap fields) [] hwork,?_⟩
   rw [nativeCyclicBoundaryRowState_factor]
   exact hready

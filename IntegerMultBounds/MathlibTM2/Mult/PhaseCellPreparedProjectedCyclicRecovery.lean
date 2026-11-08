@@ -1,5 +1,6 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicBoundaryProjectionStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellProjectedCyclicRecoveryInputs
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicRecoveryCouplingBatch
 
@@ -30,7 +31,7 @@ noncomputable def preparedProjectedCyclicRecoveryWorkspace (H K : ReplicaHaloPro
       cyclicRecoveryCouplingPieceWorkspace (A := A) (U := U) K hQ))
 
 theorem preparedProjectedCyclicRecovery_exec_within (H K : ReplicaHaloProblem s)
-    (t band a n w : ℕ)
+    (t band a n w : ℕ) (ha : a < s) (hn : n ≤ s)
     (hHL : H.origin = a) (hHN : H.span = min n (s-a)) (hHW : H.wordWidth = w)
     (hKL : K.origin = 0) (hKN : K.span = n-min n (s-a)) (hKW : K.wordWidth = w)
     (solutions : List (List GaussianInt)) (Fs : List (ZMod s → GaussianInt))
@@ -41,6 +42,7 @@ theorem preparedProjectedCyclicRecovery_exec_within (H K : ReplicaHaloProblem s)
     (buffersL buffersR : ReplicaLoopBuffers A) (pageL pageR : List (Fin (A+4)))
     (S : Stacks 840 A) (solveTail : List (Fin (A+4)))
     (v : HS 840 Q A U) (depth : ℕ)
+    (hboundarySource : S.R (recoveryBank 224) = solutions.flatMap (cstream A w)++solveTail)
     (hmaster : (S.R (recoveryBank 229)).length = Fs.length)
     (hclock : S.R (recoveryBank 228) = []) (htmp : S.R (recoveryBank 227) = []) :
     let B := cyclicPrincipalBoundary s t band a n
@@ -52,7 +54,7 @@ theorem preparedProjectedCyclicRecovery_exec_within (H K : ReplicaHaloProblem s)
     RetainedReplicaRecoveryReady H CyclicRecoveryPlacement.leftJob buffersL pageL F →
     RetainedReplicaRecoveryReady K CyclicRecoveryPlacement.rightJob buffersR pageR F →
     ∃ vf X m, vf.user = v.user ∧ m ≤ preparedProjectedCyclicRecoveryCost H K Fs.length ∧
-      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v F)+depth+
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+Fs.length*(n*w)+
         preparedProjectedCyclicRecoveryWorkspace (A := A) (U := U) H K Fs.length hQ)
         depth (preparedProjectedCyclicRecovery hQ) (mk v F) m (mk vf X) ∧ X.R (recoveryBank 228) = [] ∧
       CyclicRecoveryCouplingCursor H K buffersL buffersR rows [] (S.R (recoveryBank 132))
@@ -91,6 +93,17 @@ theorem preparedProjectedCyclicRecovery_exec_within (H K : ReplicaHaloProblem s)
   · simpa only [hrowsCount,preparedProjectedCyclicRecoveryCost] using Nat.add_le_add hm₁ hm₂
   · have hbatch := he₂ depth
     rw [hrowsCount] at hbatch
-    exact execWithin_seq_two_budget body _ _ _ _ _ _ _ depth _ _ he₁ hbatch
+    have hex := execWithin_seq_two_budget body _ _ _ _ _ _ _ depth _ _ he₁ hbatch
+    have hstock := placedNativeCyclicBoundaryBatchState_size t band a n w
+      ha hn solutions (fun row hr => (hsolutions row hr).1)
+      v v S solveTail hboundarySource
+    change mnSize (mk v F)+solutions.length*(B.card*w) =
+      mnSize (mk v S)+solutions.length*(n*w) at hstock
+    rw [hlen] at hstock
+    exact hex.mono (by
+      intro d z hz
+      change mnSize z+d ≤ mnSize (mk v F)+depth+
+        preparedProjectedCyclicRecoveryWorkspace (A := A) (U := U) H K Fs.length hQ at hz
+      omega)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
