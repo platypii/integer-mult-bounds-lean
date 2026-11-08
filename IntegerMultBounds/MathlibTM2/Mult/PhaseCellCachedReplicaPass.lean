@@ -48,8 +48,18 @@ theorem cachedReplicaPass_exec (H : ReplicaHaloProblem s) (job : CachedReplicaPa
     (inputs.gatherFresh 86 (by simp)) (inputs.gatherFresh 119 (by simp)) 0 hp hwidth
     inputs.couplingBlank inputs.couplingFresh
     (inputs.couplingWork 136 (by simp)) (inputs.couplingWork 159 (by simp)) (inputs.couplingWork 161 (by simp))
+  have hrecWork : ∀ i ∈ [(136 : Fin 168),159,161], F.R (job.coupling.bank i) = [] := by
+    intro i hi
+    have hlarge : 117 ≤ i.val := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl <;> decide
+    have hoff : i ∉ replicaCouplingSetupPorts := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl <;> decide
+    rw [hbankFrame i hlarge hoff]
+    exact inputs.couplingWork i hi
   refine ⟨vf,F,m,Ds,hu,hm,he,⟨hclock,hout₀,hrhs,hready,hmeta,hinp,hout,hgL,hgR,hcache,hsFresh,hnatL,
-    hlen,harch,hgood,hcoeff,hcoeffW,hcoeffRows,hfresh,hformat,haccurate,hnativeR,hcleanup,hbankFrame,hretained,hrecRhs⟩,?_⟩
+    hlen,harch,hgood,hcoeff,hcoeffW,hcoeffRows,hfresh,hformat,haccurate,hnativeR,hcleanup,hbankFrame,hretained,hrecRhs,hrecWork⟩,?_⟩
   intro k hk
   have off {N : ℕ} (f : Fin N → Fin T) (howns : ∀ i, job.Owns (f i)) : ∀ i, f i ≠ k := by
     intro i hi

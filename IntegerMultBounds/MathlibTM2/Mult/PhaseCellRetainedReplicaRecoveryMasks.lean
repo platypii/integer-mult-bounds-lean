@@ -1,6 +1,6 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCachedReplicaPassPost
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRetainedReplicaRecoveryReady
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaCouplingBounds
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPlacedInitializeCouplingMasks
 
@@ -16,9 +16,8 @@ variable {s T Q A : ℕ} [NeZero s] {P U : Type} {body : P → Pr P T Q A U}
 
 theorem retainedReplicaRecoveryMasks_exec_within (H : ReplicaHaloProblem s)
     (job : CachedReplicaPassPlacement T) (buffers : ReplicaLoopBuffers A)
-    (S F : Stacks T A) (Ds : List (ZMod s → GaussianInt))
-    (inputs : CachedReplicaPassInput H job buffers S)
-    (post : CachedReplicaPassPost H job buffers S F Ds) (v : HS T Q A U) :
+    (pageTail : List (Fin (A+4))) (F : Stacks T A)
+    (state : RetainedReplicaRecoveryReady H job buffers pageTail F) (v : HS T Q A U) :
     let G := couplingMasksState job.coupling.bank true s H.t H.band H.origin
       (H.origin+H.span) H.origin H.span F
     ∃ vf m, vf.user = v.user ∧ m ≤ initializeRecoveryMasksCost H.metadataWidth H.span H.band ∧
@@ -33,25 +32,14 @@ theorem retainedReplicaRecoveryMasks_exec_within (H : ReplicaHaloProblem s)
   dsimp only
   have hclean : ∀ i : Fin 168, i.val < 63 → F.R (job.coupling.bank i) = [] := by
     intro i hi
-    have hc := (post.ready.clean (⟨i.val,by omega⟩ : Fin 64)).2
-    simpa [embStk,weightCacheCoreReg,mul,ReplicaCouplingPlacement.bank,
-      show i.val < 117 by omega] using hc
-  have hwork : ∀ i ∈ [(136 : Fin 168),159,161], F.R (job.coupling.bank i) = [] := by
-    intro i hi
-    have hlarge : 117 ≤ i.val := by
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
-      rcases hi with rfl | rfl | rfl <;> decide
-    have hoff : i ∉ replicaCouplingSetupPorts := by
-      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
-      rcases hi with rfl | rfl | rfl <;> decide
-    rw [post.bankFrame i hlarge hoff]
-    exact inputs.couplingWork i hi
+    have hc := (state.ready.clean (⟨i.val,by omega⟩ : Fin 64)).2
+    simpa [embStk,groupReg,intervalPageReg,mul] using hc
   obtain ⟨vf,m,hu,hm,he⟩ := placedInitializeCouplingMasks_exec_within (body := body)
     job.coupling.bank job.coupling.bank_injective true H.s_lt_t
     (by have hf := H.span_fit; omega) H.span_fit H.band_fit H.span_fit
-    H.coupling_geometry.2 H.coupling_geometry.1 v F post.metadata hclean
-    (hwork 136 (by simp)) (post.fresh 158 (by simp))
-    (hwork 159 (by simp)) (hwork 161 (by simp))
+    H.coupling_geometry.2 H.coupling_geometry.1 v F state.metadata hclean
+    (state.work 136 (by simp)) (state.fresh 158 (by simp))
+    (state.work 159 (by simp)) (state.work 161 (by simp))
   refine ⟨vf,m,hu,hm,he,?_⟩
   have hcore : embStk weightCacheCoreReg (embStk job.plan.solver
       (couplingMasksState job.coupling.bank true s H.t H.band H.origin
@@ -75,6 +63,6 @@ theorem retainedReplicaRecoveryMasks_exec_within (H : ReplicaHaloProblem s)
       have hi := i.isLt
       omega
   rw [hcore]
-  exact post.ready
+  exact (job.coupling.native_view F) ▸ state.ready
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

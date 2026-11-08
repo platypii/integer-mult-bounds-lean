@@ -41243,3 +41243,135 @@ and root acceptance remain open.
 The guarded temporary audit of cyclicRecoveryCouplingBatch_exec_within and the
 paired stock balance reports only propext, Classical.choice and Quot.sound
 (9396.7 MiB audit peak; temporary audit is outside the production build).
+
+
+### S4 projection/preparation input bridge and archive-safe recovery contract
+
+PhaseCellCyclicRecoveryRows pairs each solved joint boundary row with its original
+RHS before reversing the replica list. Structural map/zip identities identify
+its boundary-field sequence with the native projector's reversed solutions and
+both RHS sequences with Fs.reverse. Length and all ambient boundary Fits follow
+from the solver's existing length/Fits certificates via boundarySolutionField_fits.
+No per-index numerical supplier or finite enumeration is added. Guard: 3263.9 MiB.
+
+PhaseCellPrepareCyclicRecoveryCoupling executes left and right selector/RHS
+preparation while preserving the other bank and the entire native factor bank.
+Its exact RHS endpoints retain Fs.reverse order. A generic disjoint-bank view
+lemma avoids a recursion-depth failure on the concrete nested preparation;
+proof limits were not raised. Final guard: 3268.5 MiB.
+PhaseCellProjectedCyclicRecoveryInputs identifies all three actual streams after
+placedNativeCyclicBoundaryBatchState and paired preparation with those structural
+recovery rows. The piece geometry/common word width are explicit equalities to
+be instantiated by the existing cyclic problems. Guard: 3270.6 MiB.
+
+Integration exposed a real contract mismatch: cyclicReplicaArchiveHandoff empties
+gather 125, while CachedReplicaPassPost.archive describes its earlier residual
+contents. The complete Post cannot be required at the projected state. Added
+PhaseCellRetainedReplicaRecoveryReady: it retains only numerical readiness,
+metadata, coefficient page/counts, scratch/mask ports and original RHS headers.
+It is derived from the original Post/Input and transports through any equal
+coupling-bank view plus restored RHS headers, exactly the facts returned by the
+executed boundary caller. It carries no assertion about consumed archive 125.
+Guard: 3264.6 MiB.
+Refactored RetainedReplicaRecoveryMasks, PrepareRetainedReplicaRecovery and
+PreparedRecoveryCouplingReady to consume this narrower contract; their final
+individual guards are 3262.8, 3262.7 and 3261.3 MiB respectively. This replaces
+the overstrong premise rather than adding another executor path.
+
+PhaseCellCachedReplicaPassReindex supplies structural bank-view and cached
+Input/Post transport through an injective placement. It supports moving the
+834-tape producer certificates into the existing 840-tape recovery jobs without
+regenerating metadata/counters. Guard: 3258.5 MiB.
+
+PhaseCellPreparedProjectedCyclicRecovery composes paired preparation with the
+complete shared-reserve coupling batch. Starting at the projected boundary
+state, it derives row order, all input queues and both field Fits from the
+solver certificates and exact endpoints. The caller supplies archive-safe
+retained recovery contracts, not separate selectors/coefficient fits/queue
+alignment witnesses. Count master, clock and copy scratch are transported from
+the native bank. Both complete phase time/storage bills are included; the
+terminal cursor retains computed RHS and saved boundary archives. Final guard:
+3276.9 MiB.
+
+The corrected composition / original-RHS boundary caller / native projection
+build passes (15826 jobs, 3.5 GiB combined peak). Six fresh individual checks of
+the new contract and affected preparation/composition executors pass below
+3.3 GiB. All nine new/changed proof files pass integrity/whitespace scans; limits
+unchanged. An accidental collision with existing PhaseCellReplicaRecoveryReady
+was corrected immediately: its tracked contents are restored byte-for-byte;
+the new module is PhaseCellRetainedReplicaRecoveryReady. Periodic WIP untouched.
+No commit or push; collect full caller/projection sequencing with this chunk.
+
+Next derive the narrowed 840-tape recovery contracts from the actual producer
+Post certificates, retained bank views and RHS headers returned by
+cachedCyclicReplicaBatch_spec. Sequence its lifted execution, mask setup and
+native projection before preparedProjectedCyclicRecovery. The current theorem
+starts at the projected state and does not yet execute those preceding phases.
+Then instantiate/execute the second interior passes at the common precision.
+Uniform global time/stock, geometry fallback, publication, locality/error/tensor
+composition and root S4 acceptance remain open.
+
+The guarded temporary audit of the corrected composed executor, archive-safe
+bank-frame transport and cached Post reindex reports only propext,
+Classical.choice and Quot.sound (9399.9 MiB audit peak; not a production module).
+
+
+### S4 actual caller readiness and executed solved-state recovery composition
+
+CachedReplicaPassPost now retains recoveryWork for ports 136/159/161. The
+existing cached pass proves these blanks once from its actual input and bank
+frame, and Post.of_frame preserves them. This prevents loss of the right pass's
+hidden intermediate input facts in the top-level caller. It adds no executed
+instructions or cost. Final guards: CachedReplicaPassPost 3267.3 MiB,
+CachedReplicaPass 3275.2 MiB.
+
+RetainedReplicaRecoveryReady.of_bank_frame now transports across different tape
+counts/jobs using only an equal 168-tape bank view and destination RHS headers.
+The redundant full Input/Post reindex prototypes were removed; the reindex module
+keeps only the commuting bank-view lemma actually needed by the caller bridge.
+The earlier full-Post reindex audit above is historical and that prototype is no
+longer part of this checkpoint. Final retained-contract guard: 3265.5 MiB.
+
+PhaseCellCyclicRecoveryCallerReady derives both 840-tape recovery contracts from
+exactly the facts returned by cachedCyclicReplicaBatch_spec: original producer
+Post certificates, retained bank views under the old caller embedding, and RHS
+headers at the actual endpoint. It does not require the old residual archives
+to remain present or reconstruct an intermediate right-pass Input. Guard:
+3263.8 MiB.
+PhaseCellCyclicRecoveryReadyTransport preserves these contracts through native
+mask setup and complete boundary projection via ownership frames. Its mask
+executor accepts the narrowed contracts and reuses existing metadata-driven
+mask generation plus native readiness transport. Guard: 3266.0 MiB.
+
+PhaseCellSolvedCyclicRecovery composes actual native mask setup, the complete
+placed boundary projection batch and preparedProjectedCyclicRecovery. Starting
+from the solved boundary state, it executes every phase and returns the paired
+computed-RHS/saved-boundary cursor. Geometry and word width instantiate the
+existing cyclic piece constructors; solution format/Fits and ordinary retained
+factor/control facts are the preceding caller's proof outputs. All mask,
+projection, preparation and coupling time bills are paid once in the returned
+Exec bound. Guard: 3284.6 MiB. This theorem carries Exec/time; the suffix's shared
+scratch bound is checked separately, while a whole mask/projection-prefix
+ExecWithin bound remains open.
+
+Combined solved-state recovery / original-RHS boundary caller / prepared suffix
+build passes (15832 jobs, 3.5 GiB incremental combined peak). Rebuilding the
+strengthened Post and dependent caller modules also passed under the guard
+(12.8 GiB combined during the broader rebuild). Six fresh single-file checks
+pass below 3.3 GiB. All fourteen new/changed proof modules pass integrity and
+whitespace scans, with no changed proof limits. Collect the previous uncommitted
+projection/preparation bridges and this caller composition in one larger local
+checkpoint; exclude periodic WIP and never push without instruction.
+
+Next lift/sequence the original 834-tape boundary caller's actual trace into 840
+tapes and instantiate solvedCyclicRecovery_exec from its returned solved rows,
+factors, workspace and control frames. This is still required: the composed
+recovery theorem starts at that solved endpoint rather than executing the
+preceding caller itself. Then execute the second interior passes at the common
+precision and assemble/publish their output with saved boundary fields.
+Full-prefix/global stock, uniform time, geometry fallback, locality/error/tensor
+composition and root S4 acceptance remain open.
+
+The guarded temporary audit of solvedCyclicRecovery_exec, the actual-caller
+readiness bridge and cross-bank readiness transport reports only propext,
+Classical.choice and Quot.sound (9404.4 MiB audit peak; not a production module).

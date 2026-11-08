@@ -28,9 +28,8 @@ def prepareRetainedReplicaRecoveryState (H : ReplicaHaloProblem s)
 
 theorem prepareRetainedReplicaRecovery_exec_within (H : ReplicaHaloProblem s)
     (job : CachedReplicaPassPlacement T) (buffers : ReplicaLoopBuffers A)
-    (S F : Stacks T A) (Ds : List (ZMod s → GaussianInt))
-    (inputs : CachedReplicaPassInput H job buffers S)
-    (post : CachedReplicaPassPost H job buffers S F Ds)
+    (pageTail : List (Fin (A+4))) (F : Stacks T A)
+    (state : RetainedReplicaRecoveryReady H job buffers pageTail F)
     (v : HS T Q A U) (depth : ℕ) :
     let G := prepareRetainedReplicaRecoveryState H job F
     ∃ vf m, vf.user = v.user ∧
@@ -49,9 +48,9 @@ theorem prepareRetainedReplicaRecovery_exec_within (H : ReplicaHaloProblem s)
   let M := couplingMasksState job.coupling.bank true s H.t H.band H.origin
     (H.origin+H.span) H.origin H.span F
   obtain ⟨vi,mi,hu₁,hm₁,he₁,hr₁⟩ := retainedReplicaRecoveryMasks_exec_within (body := body)
-    H job buffers S F Ds inputs post v
+    H job buffers pageTail F state v
   have hheaders : ReplicaRecoveryRhsHeaders H job.plan.gather buffers M := by
-    apply post.recoveryRhs.of_frame H job.plan.gather buffers F M
+    apply state.recoveryRhs.of_frame H job.plan.gather buffers F M
     intro k
     exact couplingMasksState_frame job.coupling.bank true s H.t H.band H.origin
       (H.origin+H.span) H.origin H.span F (job.plan.gather k)

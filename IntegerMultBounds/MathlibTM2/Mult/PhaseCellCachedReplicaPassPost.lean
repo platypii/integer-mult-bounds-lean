@@ -58,6 +58,7 @@ structure CachedReplicaPassPost {s T A : ℕ} [NeZero s] (H : ReplicaHaloProblem
     PackedHaloRetainedHeaders (2^15*H.p) (H.stage+1) H.precision H.l s H.t H.u H.band
       H.origin (H.origin+H.span) H.metadataWidth H.wordWidth (embStk job.coupling.bank F)
   recoveryRhs : ReplicaRecoveryRhsHeaders H job.plan.gather buffers F
+  recoveryWork : ∀ i ∈ [(136 : Fin 168),159,161], F.R (job.coupling.bank i) = []
 
 theorem CachedReplicaPassPost.of_frame {s T A : ℕ} [NeZero s] {H : ReplicaHaloProblem s}
     {job : CachedReplicaPassPlacement T} {buffers : ReplicaLoopBuffers A} {S F G : Stacks T A}
@@ -80,7 +81,7 @@ theorem CachedReplicaPassPost.of_frame {s T A : ℕ} [NeZero s] {H : ReplicaHalo
   refine ⟨(hf _ (.gather 122)).2.trans h.clock,(hf _ .output).2.trans h.output,
     (hf _ .rhs).2.trans h.rhs,?_,?_,hin.trans h.input,hout.trans h.outputStream,?_,?_,
     (hf _ (.solver 117)).2.trans h.cache,?_,?_,h.length,(hf _ (.gather 125)).2.trans h.archive,
-    h.residual,?_,?_,?_,?_,h.format,h.accurate,?_,?_,?_,?_,?_⟩
+    h.residual,?_,?_,?_,?_,h.format,h.accurate,?_,?_,?_,?_,?_,?_⟩
   · simpa only [hs] using h.ready
   · simpa only [hb] using h.metadata
   · simpa only [hg] using h.gatherLeft
@@ -97,6 +98,8 @@ theorem CachedReplicaPassPost.of_frame {s T A : ℕ} [NeZero s] {H : ReplicaHalo
   · simpa only [hb] using h.retainedHeaders
   · exact ReplicaRecoveryRhsHeaders.of_frame H job.plan.gather buffers F G h.recoveryRhs
       (fun i => (hf _ (.gather i)).2)
+  · intro i hi
+    exact (hf _ (.bank i)).2.trans (h.recoveryWork i hi)
 
 /-- The retained numerical bank already provides the blank workspace needed by
 metadata-driven mask generation; no extra cleanup premise is required. -/
