@@ -66,6 +66,10 @@ theorem initializedCyclicCroppedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.sta
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧ S'.R 110 = S.R 110 ∧
       S'.R 132 = cstream A w (chirpLine s G)++(bandTableWords A w B (24*band+1) columns 0++S.R 132) ∧
       S'.R 147 = cstream A w (cyclicInterval a n G) ∧ (S'.R 147).length = n*w ∧
+      (S'.R 117).length = 2^15*p ∧ (S'.R 119).length = q ∧
+      (S'.R 144).length = a ∧ (S'.R 145).length = a+min n (s-a) ∧
+      (S'.R 146).length = n-min n (s-a) ∧
+      (∀ k ∈ ([(0 : Fin 224),1,2,3,4,7,94,95]), S'.R k = []) ∧
       (∀ i, (G i).im = 0) ∧ (∀ i, Fits w (G i)) ∧
       ∀ x : ZMod s → ℝ,
         SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
@@ -95,12 +99,25 @@ theorem initializedCyclicCroppedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.sta
   have hec' : Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
       (embTab componentReg (embTab groupReg body))))) preparedCyclicSlice (mk vb Sb) mc (mk vc F) := by
     simpa only [F,hw,h147,List.append_nil] using hec
+  have hP : (Sb.R 117).length = 2^15*p := by
+    simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg,groupHeaderValue] using
+      hreadyB.masters (117,114) (by simp [groupHeaderCopies])
+  have h95 : Sb.R 95 = [] := by
+    simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+      hreadyB.blank 95 (by decide) (by decide) (by decide)
   refine ⟨vb,Sb,mb,vc,F,mb+mc,columns,G,heb,Nat.add_le_add_left hmc mb,hvc.trans hvb,
-    Exec.seq heb hec',hinp,hout,hL,?_,?_,?_,?_,hreal,hfits,?_⟩
+    Exec.seq heb hec',hinp,hout,hL,?_,?_,?_,?_,
+    by simpa [F] using hP,by simpa [F] using hq,
+    by simpa [F] using h144,by simpa [F] using h145,by simpa [F] using h146,
+    ?_,hreal,hfits,?_⟩
   · simpa [F] using h110
   · simpa [F] using hfield
   · simp [F,w,bits,B,band]
   · simp [F,w,bits,B,band]
+  · intro k hk
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    all_goals first | simpa [F] using h95 | simpa [F] using hfreshB _ (by simp)
   · intro x hx
     have h := cyclicIntervalRead_error (A := A) q w a n (by omega) (by dsimp [w,executionWidth]; omega)
       has G hfits [] x (1/(2 : ℝ)^target) (haccuracy x hx).1

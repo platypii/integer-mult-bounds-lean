@@ -11,6 +11,29 @@ open IntegerMultBounds IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.NLogN
   IntegerMultBounds.NLogN.PhaseCellMatrix IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
 
+theorem cyclicPrincipal_round_magnitude {s t p u q a n : ℕ} [NeZero s]
+    (hp : 0 < p)
+    (hdom : SchurDominance.DominatesOn (realMatrix s t p u) Finset.univ (1/(8*(p : ℝ))))
+    (rhs : ZMod s → GaussianInt) (hrhs : ∀ i, ‖value q (rhs i)‖ ≤ (2 : ℝ)^2)
+    (x : ZMod s → ℝ)
+    (hx : SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
+      (fun i => (value q (rhs i)).re)) :
+    ∀ i ∈ cyclicPrincipalVertices s a n, ‖x i‖ ≤ 4*(2 : ℝ)^(p+8) := by
+  have hμ : (0 : ℝ) < 1/(8*(p : ℝ)) := by positivity
+  have hAI := SchurDominance.dominates_mono _ Finset.univ (cyclicPrincipalVertices s a n) _
+    (Finset.subset_univ _) hdom
+  intro i hi
+  have h := SchurDominance.solves_bound _ _ _ hμ hAI x _ hx ((2 : ℝ)^2)
+    (fun j _ => (Complex.abs_re_le_norm _).trans (hrhs j)) i hi
+  rw [div_div_eq_mul_div,div_one] at h
+  have hpPow : (p : ℝ) ≤ (2 : ℝ)^p := by exact_mod_cast (Nat.lt_two_pow_self (n := p)).le
+  rw [Real.norm_eq_abs]
+  have hscale : 8*(p : ℝ)*(2 : ℝ)^2 ≤ 4*(2 : ℝ)^(p+8) := by
+    rw [pow_add]
+    norm_num
+    nlinarith only [hpPow,pow_nonneg (by norm_num : (0 : ℝ) ≤ 2) p]
+  exact h.trans (by simpa only [mul_comm] using hscale)
+
 theorem cyclicPrincipal_finalRound_accuracy {A s t p u l target a n : ℕ} [NeZero s]
     (hA : 4 ≤ A) (hp : 0 < p) (ha : a < s)
     (hdom : SchurDominance.DominatesOn (realMatrix s t p u) Finset.univ (1/(8*(p : ℝ))))
@@ -35,21 +58,7 @@ theorem cyclicPrincipal_finalRound_accuracy {A s t p u l target a n : ℕ} [NeZe
   intro hrhs hfits hx herror
   have hdim := cyclicRound_dimensions p u l target
     (cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n).card
-  have hμ : (0 : ℝ) < 1/(8*(p : ℝ)) := by positivity
-  have hAI := SchurDominance.dominates_mono _ Finset.univ (cyclicPrincipalVertices s a n) _
-    (Finset.subset_univ _) hdom
-  have hmag : ∀ i ∈ cyclicPrincipalVertices s a n, ‖x i‖ ≤ 4*(2 : ℝ)^(p+8) := by
-    intro i hi
-    have h := SchurDominance.solves_bound _ _ _ hμ hAI x _ hx ((2 : ℝ)^2)
-      (fun j _ => (Complex.abs_re_le_norm _).trans (hrhs j)) i hi
-    rw [div_div_eq_mul_div,div_one] at h
-    have hpPow : (p : ℝ) ≤ (2 : ℝ)^p := by exact_mod_cast (Nat.lt_two_pow_self (n := p)).le
-    rw [Real.norm_eq_abs]
-    have hscale : 8*(p : ℝ)*(2 : ℝ)^2 ≤ 4*(2 : ℝ)^(p+8) := by
-      rw [pow_add]
-      norm_num
-      nlinarith only [hpPow,pow_nonneg (by norm_num : (0 : ℝ) ≤ 2) p]
-    exact h.trans (by simpa only [mul_comm] using hscale)
+  have hmag := cyclicPrincipal_round_magnitude hp hdom rhs hrhs x hx
   exact cyclicRealFinalRound_accuracy hA _ _ _ _ _ (p+8) a n hdim.1 hdim.2.1
     (by omega) ha G hreal hfits x _
     ((div_le_one (by positivity)).mpr (one_le_pow₀ (by norm_num))) hmag tail herror

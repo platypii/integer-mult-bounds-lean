@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4682 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4688 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -39962,3 +39962,97 @@ Collect the preceding scalar-generation, real-error bridge, canonical numerical
 budget and complete normalization lifecycle as one larger local checkpoint.
 No push; physical placement/common-width publication, replica reuse, uniform
 resources and full S4 acceptance remain open.
+
+### S4 physical cyclic normalization generates all of its private dimensions
+
+PhaseCellCyclicNormalizationWidth chooses B=size(P)+size(q)+6. Its generic
+room theorem covers P=2^15*p, 8*(p+2), and 2*q+8. The actual generator uses two
+restoring unarySize executions and six fixed ticks, paying 19*P+19*q+17 and
+changing only the width ruler. Guarded check passes at 1957.2 MiB.
+
+PhaseCellCyclicNormalizationLayout places a 25-variable scalar machine in
+registers 224--263, disjoint from the retained 224-register cyclic solver;
+registers 264--277 supply private conversion, rounding and count scratch.
+The prefix solver embedding and scalar map are proved injective and disjoint.
+Layout check passes at 1399.4 MiB.
+
+PhaseCellCyclicNormalizationControls generates width 94=2*q+8 and row count 95
+from retained precision 119 and endpoints 144/145/146. It reuses one generated
+word width, restoring copy/subtraction and one append. Only 94/95 change;
+all scratch restores. Exact cost is 8*q+4*(2*a+left+right)+21.
+Guarded check passes at 1937.8 MiB.
+
+PhaseCellPhysicalCyclicNormalization composes generated B, generated packet
+controls, normalizeCyclicInterval and disposal of 94/95/249. Its exact endpoint
+changes only output prefix 147, retains ambient/table/RHS data and all original
+rulers, and certifies normalized decoded accuracy and every emitted signed
+word fit. It assumes the input decoded solver certificate, not generated scalar
+values, a supplied binary width, a p ruler, byte clocks or final-state execution.
+The complete cost includes every generation, normalization and cleanup step.
+Guarded check passes without warnings at 3179.6 MiB.
+
+PhaseCellPublishCyclicRoundedInterval instantiates existing publishRoundedKey
+on the cyclic packet and derives its strict signed fits via cyclicFinalRound_fits.
+Common-width sign extension preserves coefficients and the same normalized
+error, with no seam/window-count factor. No new widening executor is introduced.
+Guarded check passes at 3095.9 MiB. Its publication headers still need to be
+produced in the complete physical caller.
+
+The cropped solver now exposes its proved retained P/q and endpoint masters
+and fresh normalization scratch. Its strengthened contract check passes at
+3417.5 MiB. Next embed that executed solver into the disjoint 280-register bank,
+apply physical normalization using canonical precision/magnitude/error lemmas,
+and compose common-width publication with paid header generation and cleanup.
+Do not add generated-header or exact-solve suppliers to the ordinary-input
+caller. Replica reuse, uniform scalar time/structural stock and broader S4
+locality/tensor/compiler acceptance remain open. No push; periodic WIP untouched.
+The guarded physical normalization/publication/cropped-caller build passes
+(15807 jobs, 8.1 GiB aggregate across parallel modules). The physical execution
+and common-width publication axiom audit reports only propext, Classical.choice
+and Quot.sound (9148.9 MiB temporary audit peak). Source integrity and whitespace
+checks pass; no proof limits changed. Keep this physical work for the next larger
+ordinary-input integration checkpoint; no new commit or push yet.
+
+### S4 ordinary-input cyclic recovery executes normalized decoded publication
+
+PhaseCellInitializedCyclicNormalizedRecovery embeds the actual cropped solver
+in the disjoint 280-register bank and executes physicalCyclicNormalization.
+It starts from the ordinary solver's same generated-setup inputs at target+1;
+the additional bank is blank workspace, not a supplied scalar view. The generic
+exec_emb_ovr theorem carries the actual trace while preserving all new registers.
+No execution supplier, precision schedule, p ruler, bit-width oracle or exact
+solution is added as an input premise.
+
+The original principal dominance supplies a comparison solution internally.
+cyclicPrincipal_round_magnitude factors the already-used sharp magnitude proof
+so execution and canonical output accuracy reuse it. Exact cyclic decoding and
+proved realness lift the solver's real certificate to the complex rounding
+language. Canonical dimensions come from cyclicRound_dimensions. After actual
+normalization, the final stream has exactly n*(2*p+13) symbols, every emitted
+word fits, and decoded error against every exact original principal solution is
+2/2^p+(1/2^(target+1))/2^shift. The comparison solution only establishes execution
+premises; the final correctness theorem is universally quantified over solutions.
+
+The returned state preserves external input/output, all left stacks, the original
+RHS and the ambient result above its computed boundary table. Its time interface
+identifies the actual prior cropped execution and adds the complete physical
+normalization cost. Every newly allocated scalar/control register is restored by
+the executed lifecycle. Guarded caller check passes without warnings at
+3427.9 MiB under default proof limits.
+
+Next integrate common-width publication before scalar disposal, reusing that
+same computed p rather than repeating scalar setup. Export the p ruler and
+one-replica control only for the publication callback, then erase them. Complete
+replica setup reuse and uniform time/structural stock before expanding tensor
+composition. Full S4 still requires locality, complex/axis/tensor/forward/error/
+support and final compiler acceptance. No push; periodic WIP untouched.
+The normalized caller additionally returns restoration of every register at
+or above 224 to its original contents, so the scalar workspace can be reused
+without reconstructing the internal normalization frame. The strengthened
+single-file check passes at 3428.3 MiB.
+The full ordinary-input normalized caller guarded build passes (15808 jobs,
+3.6 GiB aggregate). Its axiom audit reports only propext, Classical.choice and
+Quot.sound (9580.2 MiB temporary audit peak). Source integrity and whitespace
+checks pass; no proof limits changed. Collect the disjoint layout, generated
+width/controls, physical normalization, common-width adapter and full normalized
+caller as one larger local checkpoint. No push; periodic WIP untouched.
