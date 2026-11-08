@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4715 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4724 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -40405,3 +40405,125 @@ and combined execution/format/accuracy specification axiom audit reports only
 propext, Classical.choice and Quot.sound (9559.5 MiB temporary audit peak).
 All twelve new source files pass integrity and whitespace checks; no proof
 limits changed.
+
+### S4 actual cached residual packets feed one shared factorization and solve
+
+PhaseCellCyclicResidualBatchInput groups the existing ordinary geometry page,
+endpoint, arithmetic-bank and fresh-workspace prerequisites. It supplies no
+factor tables, folded numerical RHS rows or execution assumptions.
+
+PhaseCellGeneratedCyclicResidualBatch executes preparedExportCyclicResidualRows
+followed by constructedCyclicResidualBatch. The two cached archives are zipped
+in their actual order; ReplicaCouplingResidualSpec derives all row lengths and
+sharp coordinate bounds. The exporter computes packed volumes and counters,
+produces the physical RHS stream on 226, and retires its controls. One actual
+cyclic factor factory then generates columns and tables, and the existing
+prepared batch solves all rows. The theorem returns canonical tables, factor
+readiness and preservation, solution word format, exact output on 224,
+external/left-stack preservation and the full scalar bill. The factor input
+contract is on the explicitly computed exported state; deriving it from the
+combined global cached placement remains a caller obligation, not an assumed
+execution or a supplied factor bank.
+
+Review found that constructedCyclicResidualBatch discarded the factory's
+ColumnFamilyAccurate fact about the original cyclic Schur matrix, returning
+only PreparedBoundaryColumns stage/format. Propagate that existing fact through
+both batch theorems. This avoids losing the original-system connection needed
+for solution accuracy; no program or numerical construction changes.
+
+PhaseCellCyclicReplicaBoundarySolutionAccuracy instantiates the existing
+cyclicBoundary_solution_accuracy theorem at an arbitrary replica index. One
+joint interior inverse serves the archive; the actual sharp stencil norms and
+initialResidual_error_budget discharge its hypotheses. Every exact principal
+solution of the corresponding original RHS is approximated on the boundary
+within 3/2^target, with the stableInteriorExponent magnitude reserve. No replica
+case enumeration or new solve/error premise is introduced. The generated batch
+execution theorem now returns this numerical guarantee for its actual computed
+row list, alongside the residual/inverse certificate. Shared row-stream and
+row-lookup lemmas live in PhaseCellCyclicReplicaBoundaryRows; the older archive
+adapter reuses the stream lemma instead of proving it again.
+
+The complete generated batch guarded check passes at 3413.9 MiB. The numerical
+replica estimate builds successfully, and the complete generated/cached batch
+build passes (15770 jobs, 5.9 GiB combined build peak). These are production
+modules below the per-module limit, not temporary audit imports.
+
+PhaseCellPlacedReplicaBoundaryMask reuses metadataBoundaryMask in an arbitrary
+injective bank, relocating only its output to a disjoint owned port. The
+metadata returned by the cached pass and its existing coupling_geometry theorem
+supply all mask-generation bounds. The exact final state changes only the mask
+output, preserving the source bank including its original mask port. Guarded
+check: 2172.6 MiB.
+
+PhaseCellCyclicReplicaBoundaryMasks executes this producer for both retained
+metadata banks. Both complete bank projections are explicitly preserved; mask
+ports must be disjoint from both source banks. It generates the two packed
+boundary masks once, without counting the joint boundary again or touching
+residual/coefficient data. Guarded check: 2155.6 MiB; guarded build passes.
+
+Next combine the actual left/right cached pass execution, these two mask
+producers and generatedCyclicResidualBatch in one global placement. Use the
+existing generic embeddings and frame contracts; do not materialize ambient
+residuals or repay interior/factor setup per RHS. The mask producer and solver
+batch are now independently executed, but have not yet been composed with the
+original cached-pass executions in that placement. Then recover/publish every
+principal output, with structural stock and the uniform per-key/axis time bill
+carried alongside. Geometry fallback, broader locality/complex/axis/tensor/
+forward/error/support and compiler acceptance remain open. Keep this work for
+the next larger integration checkpoint; no commit or push; periodic WIP untouched.
+The generated execution/solution-accuracy theorem, arbitrary-replica numerical
+estimate, strengthened constructed batch and both mask executors' axiom audit
+reports only propext, Classical.choice and Quot.sound (9573.2 MiB temporary audit
+peak). Integrity and tracked/untracked whitespace checks pass; proof limits
+unchanged. No commit or push.
+
+### S4 global mask generation composes with residual export and preserves caches
+
+PhaseCellMaskedCyclicResidualExport executes both metadata-driven mask producers
+and the complete prepared residual exporter in one arbitrary injective global
+placement. Both cached source banks are disjoint from the 234-register consumer
+bank. The exact endpoint has the canonical exportedCyclicResidualRows local
+view and preserves both complete cached bank projections, including external
+streams and left stacks. No mask stream is supplied: the Inputs contract is on
+the explicitly computed mask/volume state. Guarded check: 2191.5 MiB.
+
+PhaseCellMaskedCyclicResidualExportState proves that export retirement removes
+the two temporary masks from the local view and from the surrounding global
+frame. The downstream factor caller therefore sees the same export endpoint
+relative to the original global state, without carrying mask contents in its
+preconditions. These proofs are structural over the bank injection and arbitrary
+rows. Guarded check: 2175.5 MiB.
+
+Host.EmbedBaseUpdate supplies the general frame fact used here: overwriting a
+whole bank ignores earlier writes inside that bank. Keep it in a small separate
+module rather than editing the heavily imported EmbedUpdate module and forcing
+unrelated rebuilds. Guarded check: 1377.6 MiB.
+
+Host.OrderedMoveStock proves that the existing moveRightOrdered transfers an
+archive with zero tape-stock growth. Its paired version transfers two archives
+through one shared blank buffer, preserves source order and borrowed destination
+suffixes, and proves ExecWithin at the original stock bound. Its exact scalar
+cost is 4*(leftArchiveBytes+rightArchiveBytes)+8. The proof composes the existing
+structural moveR_within theorem; it does not replace space by a multiple of time.
+This is the handoff needed from the cached passes' gather-125 ports to residual
+input ports 169/172. Guarded check: 1395.9 MiB.
+
+The global mask/export, ordered-move stock and generated shared-factor batch
+build passes (15772 jobs, 3.9 GiB combined build peak). Next compose the actual
+left/right initializedCachedReplicaInteriorCoupling executions, the ordered
+archive handoff and the global mask/export/factor blocks in one caller. The
+existing ReplicaRecoveryRhsHeaders source on gather-124 survives archive
+publication via its of_archive_frame theorem; retain it for the second interior
+passes. Do not copy whole ambient fields or repeat first-pass setup per RHS.
+The handoff now has a zero-growth stock proof, but mask/export/factor peak stock
+and the complete per-key ledger still require structural accounting. Every
+principal output still needs recovery/publication; geometry fallback and broader
+S4 locality/complex/axis/tensor/forward/error/support/compiler gates remain open.
+Collect the preceding shared-factor/accuracy and this global mask/frame work as
+one larger local checkpoint; no push; periodic WIP untouched.
+The generic override frame, paired zero-growth archive handoff, mask retirement,
+global mask/export and generated execution/accuracy theorem axiom audit reports
+only propext, Classical.choice and Quot.sound (9572.9 MiB temporary audit peak;
+the generic override frame does not need Classical.choice). All twelve changed
+or new source modules pass integrity and whitespace checks; proof limits
+unchanged.

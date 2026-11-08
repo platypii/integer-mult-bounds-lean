@@ -7,6 +7,7 @@ public import IntegerMultBounds.NLogN.PhaseCellCyclicBoundaryOrder
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.NLogN.PhaseCellMatrix
+  IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 
@@ -26,5 +27,25 @@ theorem cyclicReplicaBoundaryRow_real {s : ℕ} [NeZero s] (t band a n : ℕ)
   intro z hz
   obtain ⟨i,_,rfl⟩ := List.mem_map.mp hz
   rfl
+
+theorem cyclicReplicaBoundaryRows_stream {A s : ℕ} [NeZero s] (t band a n w : ℕ)
+    (pairs : List ((ZMod s → GaussianInt) × (ZMod s → GaussianInt))) :
+    pairs.flatMap (fun z => cstream A w (cyclicReplicaBoundaryRow t band a n z.1 z.2)) =
+      cstream A w ((pairs.map (fun z => cyclicReplicaBoundaryRow t band a n z.1 z.2)).flatten) := by
+  induction pairs with
+  | nil => rfl
+  | cons z pairs ih =>
+    simpa only [List.flatMap_cons,List.map_cons,List.flatten_cons,cstream_append] using
+      congrArg (cstream A w (cyclicReplicaBoundaryRow t band a n z.1 z.2) ++ ·) ih
+
+theorem cyclicReplicaBoundaryRows_getD {s : ℕ} [NeZero s] (t band a n j : ℕ)
+    (Cs Ds : List (ZMod s → GaussianInt)) (hC : j < Cs.length) (hD : j < Ds.length) :
+    ((Cs.zip Ds).map (fun z => cyclicReplicaBoundaryRow t band a n z.1 z.2)).getD j [] =
+      cyclicReplicaBoundaryRow t band a n (Cs.getD j (fun _ => 0)) (Ds.getD j (fun _ => 0)) := by
+  have hj : j < ((Cs.zip Ds).map (fun z => cyclicReplicaBoundaryRow t band a n z.1 z.2)).length := by
+    simp only [List.length_map,List.length_zip]
+    exact Nat.lt_min.mpr ⟨hC,hD⟩
+  rw [List.getD_eq_getElem _ _ hj,List.getElem_map,List.getElem_zip]
+  rw [List.getD_eq_getElem _ _ hC,List.getD_eq_getElem _ _ hD]
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -41,14 +41,7 @@ theorem cachedCyclicResidualRows_exec {s t : ℕ} [NeZero s]
     hst hA band a n ha hn (Cs.zip Ds) w leftTail rightTail v S ready
     (by rw [hleftPairs]; exact hleft) (by rw [hrightPairs]; exact hright)
     (by rw [hzip]; exact hreplicas) h176 h177 h178
-  have hstream (pairs : List ((ZMod s → GaussianInt) × (ZMod s → GaussianInt))) :
-      pairs.flatMap (fun z => cstream A w (cyclicReplicaBoundaryRow t band a n z.1 z.2)) =
-        cstream A w ((pairs.map (fun z => cyclicReplicaBoundaryRow t band a n z.1 z.2)).flatten) := by
-    induction pairs with
-    | nil => rfl
-    | cons z pairs ih =>
-      simpa only [List.flatMap_cons,List.map_cons,List.flatten_cons,cstream_append] using
-        congrArg (cstream A w (cyclicReplicaBoundaryRow t band a n z.1 z.2) ++ ·) ih
-  exact ⟨vf,m,hu,by simpa only [hzip] using hm,by simpa only [hstream] using he⟩
+  exact ⟨vf,m,hu,by simpa only [hzip] using hm,
+    by simpa only [cyclicReplicaBoundaryRows_stream] using he⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

@@ -69,6 +69,9 @@ theorem constructedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.state
         (constructedCyclicResidualBatch hR hQ) (mk v S) steps
         (mk v' F) ∧
       PreparedBoundaryColumns A p bits q w W B columns ∧
+      ColumnFamilyAccurate A q w B
+        (SchurDominance.run (realMatrix s t p u) (cyclicPrincipalVertices s a n)
+          (cyclicPrincipalInterior s t (PhaseCellBand.width p u) a n).toList).1 (1/(2 : ℝ)^bits) columns ∧
       BoundarySolveReady σ q w W B.card ∧
       σ .bo = cstream A w ((naturalLineLc q K W B.card AZ).map colC).flatten ∧
       σ .hf = cstream A w ((naturalLineUc q K W B.card AZ).map colC).flatten ∧
@@ -129,7 +132,7 @@ theorem constructedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.state
     (by rw [hprivate 229 (by decide)]; exact hcount)
     (by rw [hprivate 226 (by decide)]; exact hsource)
   refine ⟨v₃,page,m₁+m₃,columns,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hm₁ hm₃,
-    Exec.seq he₂ he₃,hprepared,?_,?_,?_,?_,?_,?_,hinp,hout,embOvr_left_of_eq S T₁ hL,?_,hprivate⟩
+    Exec.seq he₂ he₃,hprepared,hacc,?_,?_,?_,?_,?_,?_,hinp,hout,embOvr_left_of_eq S T₁ hL,?_,hprivate⟩
   · simpa only [hproj] using hsolve
   · simpa only [hproj] using hbo
   · simpa only [hproj] using hhf
