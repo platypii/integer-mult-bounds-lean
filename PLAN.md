@@ -35807,3 +35807,89 @@ setup/run/retire and stored-layout execution reports only standard Lean axioms
 (3903.1 MiB peak). No forbidden proof devices or raised limits occur in these
 eight modules. Plan-status and whitespace checks pass. Commit this accumulated
 integration chunk locally; do not push.
+
+### S4 explicit physical field order and complete mixed enumeration
+
+`Routing/FieldOrderLayout.lean` gives explicit row-major fibers and proves that
+rectangular transposition swaps the short local field with an arbitrary complete
+spectator while preserving both indices. `FieldOrderRun.forward_exec` and
+`backward_exec` instantiate the existing actual mixed-radix movement programs
+with these fibers. Their endpoints name the swapped indexed streams directly;
+shape is derived, no transpose-layout witness is supplied, and suffix/user/
+scratch restoration plus existing time and stock bounds are retained. Only the
+selected local field receives temporary padding. Guarded checks: 1938.5 MiB
+(layout; unused simp argument subsequently removed) and 1959.9 MiB (execution).
+The execution import-closure build passes (4039 jobs, 2.5 GiB peak).
+
+`Routing/CoordinateEnumeration.lean` structurally enumerates an arbitrary list
+of fields with runtime widths. It proves exact product length, membership as
+bounds plus preservation of unlisted coordinates, absence of duplicates and
+append/flatMap composition. `RetainedTensorEnumeration.lean` specializes this to
+the manuscript order: every coarse field precedes every local field. Each local
+width is its actual retained width, not a common padded length. For a complete
+distinct axis list it enumerates exactly all valid tensor coordinates, without
+duplicates, and its list length is exactly `RetainedHaloTensor.volume`.
+The first paired-axis enumeration was replaced before integration because it
+would interleave coarse/local fields rather than match the manuscript.
+Guarded checks: 1937.8 MiB (generic enumeration), 1941.6 MiB (mixed tensor).
+
+Next connect these concrete enumerations to the physical swap stream: split
+prefix/spectator/suffix lists using enumerate_append, represent the suffix as
+fixed-width records, and instantiate FieldOrderRun with the resulting indexed
+fibers. This bridge is not yet proved; the two verified components alone do not
+establish the complete transition between axes. Then generate the next axis's
+ordinary metadata masters and compose the existing dimensioned halo pass.
+Forward near-one geometry, numerical locality/error/support, shared initial
+exposure and compiler/root acceptance remain open. S4 remains incomplete.
+Keep these four modules uncommitted for a larger physical-regrouping integration
+chunk. No push is authorized; periodic-recovery work is untouched.
+
+Field-order/enumeration validation: final combined import-closure build passes
+(4042 jobs, 2.5 GiB aggregate peak). Temporary guarded audit of both actual swap
+orientations, generic duplicate-freedom, complete tensor membership and exact
+volume reports only standard Lean axioms (3886.0 MiB peak). Plan-status and
+whitespace checks pass. No commit or push was made for this follow-on chunk.
+
+### S4 field moves on the actual enumerated tensor stream
+
+`Routing/CoordinateFieldLayout.lean` derives a prefix/spectator/local-field view
+from the concrete lexicographic enumeration. Prefix and spectator indices are
+actual list positions, and suffix records are length-indexed lists with length
+proved from the suffix dimension product and coefficient width. An off-field
+update commutes structurally with enumeration. `stream_grouped` and
+`stream_swapped` identify both physical byte layouts with the corresponding
+complete field orders, including arbitrary spectator and suffix fields.
+No rectangular input/output witness is assumed. Guarded check: 1939.7 MiB;
+unused simp arguments were removed before the final dependency build.
+
+`Routing/CoordinateFieldRun.forward_exec` and `backward_exec` instantiate the
+existing physical field movers with those derived records. They execute
+`before ++ middle ++ [i] ++ suffix` to/from
+`before ++ [i] ++ middle ++ suffix` directly on the enumerated source, preserving
+coordinate values, the borrowed suffix, all ordinary masters, user state and
+scratch. Width and header conditions are ordinary dimension facts; no execution,
+layout or record supplier remains. Only field i is padded. Existing O(k*V)
+time and `1000*V` stock bounds apply, with V the one-field padded volume.
+Guarded check: 1943.6 MiB, no warnings/default-limit changes.
+
+`RetainedTensorEnumeration.stream_field_order` now identifies the encoded
+retained tensor with this same coarse-before-local field stream, and
+`stream_length` proves its exact byte length is retained volume times coefficient
+width. Guarded check: 1943.9 MiB. The two preceding component theorems are now
+connected: physical movement applies to actual enumerated tensor orders rather
+than requiring an independently supplied indexed array.
+
+Next instantiate the local-to-suffix move for the chosen axis, match its coarse/
+spectator enumeration to HaloAxisTensorLayout, execute the dimensioned halo pass,
+and restore the selected field using its enlarged current length. This complete
+sandwich and ordinary outer metadata generation remain open; the generic move
+alone is not a full consecutive-axis theorem. Forward near-one source geometry,
+numerical locality/error/support, shared initial exposure and compiler/root
+acceptance remain open. S4 is incomplete. Collect these six accumulated movement/
+enumeration modules as one local chunk after final audit; do not push.
+
+Final coordinate-field validation: combined import-closure build passes
+(4044 jobs, 2.5 GiB aggregate peak). Temporary guarded audit of both byte-layout
+identities, both actual movement directions and retained-stream identity/length
+reports only standard Lean axioms (3888.4 MiB peak). Plan-status and whitespace
+checks pass. Commit this six-module integration locally; no push authorized.
