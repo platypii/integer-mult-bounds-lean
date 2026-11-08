@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4588 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4603 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -38708,3 +38708,184 @@ collect all joint columns and instantiate the existing prepared-boundary factor
 contract and joint solve. Endpoint producer wiring, uniform resource/root bounds,
 axis/tensor/forward/error/support/final S4 acceptance remain open. These modules
 do not yet establish the complete S4 theorem.
+
+### S4 folded-page coordinate selection now drives the generated cyclic word reader
+
+PhaseCellSelectedCyclicColumnEntry fixes a 151-register entry layout. Its scalar
+bank reuses low registers 0..19 and borrows the resident page width at 115;
+conversion uses 20..24, private address 25, the actual two-residual source stays
+on 132, and selected output accumulates at 150. Existing coordinate selection
+supplies the original row at 139, and residentColumnWidth generates the numeric
+word width from retained q. No extra scalar width allocation is introduced.
+
+selectedCyclicColumnEntry_exec composes selectResidentCoordinate, numeric width
+generation, generatedCyclicResidualEntry and actual width/coordinate cleanup.
+The exact endpoint clears consumed index 0 and prepends only the selected word
+to 150, preserving the page, both residual streams, all retained geometry and
+other stacks. The theorem accepts an arbitrary folded boundary set. A numeric
+selectedCyclicColumnEntryCost includes all coordinate selection, conversion,
+scalar arithmetic, restoring lookup and cleanup; the generic scalar-loader
+cost is discharged from the retained ruler lengths. Address capacity s+s <=
+2^V is explicit and the existing publication geometry width can discharge it.
+
+Guarded check passes without warnings at 1998.5 MiB; guarded module build passes.
+Whitespace check passes. Next reuse the existing scan/IterSpec proof pattern
+with this entry operation, accumulating selected words in reverse folded-row
+order at 150 while restoring the traversal cursor/count. Full column-family
+collection, stream retirement, joint factor/solve, uniform resource/root and
+axis/tensor/forward/error/support/final S4 acceptance remain open. Retain for
+the next larger local commit; no push. Periodic WIP remains untouched.
+
+### S4 counted folded-row collection executes with cursor/count retirement
+
+PhaseCellWordCollectionScan factors the generic restoring word-collection
+argument over arbitrary registers, word width, row sequence, step program and
+per-step cost. A step that prepends its encoded word and advances a cursor
+lifts to the existing scanP/IterSpec machinery. The theorem proves reverse
+row order, the exact final register function and the summed scan cost, retaining
+both control registers correctly. The cyclic proof now reuses this structural
+scan theorem instead of repeating its output-order and control-state induction.
+
+PhaseCellCyclicColumnEntryStep combines a restoring cursor copy, the verified
+selected cyclic entry reader and one cursor increment. PhaseCellCyclicColumnEntryLoop
+instantiates the generic scan for an arbitrary contiguous folded-row interval,
+retaining the page and right ++ left residual bank. The actual output on 150
+is the reverse folded-row list of physically selected Gaussian words. Its
+cost sums the established numeric entry costs, including runtime address
+computation and cleanup once per row.
+
+PhaseCellCollectCyclicColumnEntries adds actual cursor/count disposal and proves
+the exact endpoint clears 137/138 and changes only collected output 150 otherwise.
+It accepts ordinary retained widths, geometry, page and two residual streams;
+no selected entries or per-row masks are caller premises. Runtime start/count
+rulers are still inputs and must be constructed by the band-collection caller.
+
+Guarded checks pass without warnings: generic scan 1937.8 MiB, cyclic step
+1981.0 MiB, cyclic loop 1986.2 MiB, collector/retirement 1977.9 MiB. Their guarded
+builds pass; whitespace check passes. Next reuse the band-range control generator
+at the joint folded width 24*band+1, compose this collector with the generated
+cyclic column, and retire its original/residual streams. Joint column-family
+factor/solve and uniform resource/root/tensor/final S4 acceptance remain open.
+Retain for the next larger local commit; no push. Periodic WIP remains untouched.
+
+### S4 joint-width band collection publishes and retires its source streams
+
+PhaseCellScaledBandControls generalizes the existing 12*band+1 control setup
+to factor*band+1. The old residentBandWidth/Controls definitions and statements
+are unchanged; their proofs delegate to factor 12 via a private proof import.
+The cyclic caller uses factor 24. The shared proof executes width construction,
+clipped cursor/count setup and width/index retirement with an exact final state.
+
+PhaseCellPreparedCyclicBandCollection executes those ordinary controls and the
+cyclic row collector at the proved folded width 24*band+1. Its output is exactly
+the reverse foldedBandRows list of selected physical residual words, and every
+control is retired. PhaseCellRetireCyclicColumnStreams generates one shared
+byte clock and uses the existing discardPrefix three times to retire the right
+residual, left residual and original column, preserving both borrowed suffixes.
+PhaseCellCollectRetireCyclicColumn composes these actual programs and bills.
+
+A concrete register check found that temporary collection output 150 is also
+arithmetic's relocated register 116. PhaseCellPublishCyclicBandColumn therefore
+moves the completed column from initially blank 150 to the existing table
+accumulator 132 after stream disposal, using moveRightOrdered through blank
+131. The exact endpoint clears the column cursor, restores original input 110,
+prefixes the selected band column to the borrowed table tail on 132, and frees
+150 for the next arithmetic call. No extra persistent table bank is introduced.
+publicationGeometryWidth_cyclic_address discharges doubled residual-bank
+address capacity from the existing geometry width whenever s <= t.
+
+Guarded checks pass without warnings: scaled controls 1936.5 MiB, interval proof
+wrappers 1929.6 MiB, prepared cyclic collector 2007.0 MiB, three-stream retirement
+1953.2 MiB, collect/retire composition 1987.4 MiB, final publication 1988.7 MiB.
+Guarded builds pass. The shared proof import triggered an 8.0-minute downstream
+rebuild (16060 jobs, 41.4 GiB aggregate); it successfully rebuilt the complete
+nonwrapping B0 pipeline. Subsequent cleanup/publication builds use the current
+cache. Avoid further old-module import changes until needed for integration.
+Whitespace check passes.
+
+Next lift generatedCyclicColumn through boundaryArithmeticReg and compose
+resident-coordinate selection, column generation, coordinate retirement and
+this band publication in the retained table-column caller. Keep the folded
+column index outside arithmetic (existing tableReg/151 pattern), since private
+coordinate 139 must be cleared before collection. Then instantiate the joint
+column-family/factor contract and solve. Boundary-page/endpoint producer wiring,
+uniform resource/root and tensor/forward/error/support/final S4 acceptance remain
+open. Retain for the next larger local commit; no push. Periodic WIP untouched.
+
+### S4 resident joint-boundary coordinate now executes cyclic column generation
+
+PhaseCellBoundaryArithmeticTwoPorts provides a structural projection/execution
+rule for arithmetic that changes source 110 and output 132 while the boundary
+page stays resident outside its register image. It preserves the exact two
+updated streams and outside frame, avoiding another concrete register proof.
+PhaseCellResidentCyclicColumn lifts generatedCyclicColumn through that existing
+boundaryArithmeticReg layout with the complete execution, cost, real/norm/error
+certificate and reusable projected solver readiness intact.
+
+PhaseCellIndexedCyclicColumn composes actual resident coordinate selection,
+that lifted cyclic column producer, and coordinate-ruler disposal. It selects
+j from the actual folded page of cyclicPrincipalBoundary, establishes its
+membership, and returns generated original column on 110 and right/left
+residuals on 132. The exact endpoint clears index 0 and restores coordinate 139;
+all other physical stacks, including page 109 and its headers, are preserved.
+Readiness is reconstructed structurally from the original cleared-index state
+with the generated source and output updates. No caller supplies the selected
+coordinate, its membership proof, original column or residuals.
+
+Guarded checks pass without warnings: two-port embedding 1382.8 MiB, resident
+cyclic producer 2162.3 MiB, indexed producer 2188.4 MiB. Combined indexed-producer/
+publication module build passes; whitespace check passes. A recursion-limit
+failure in a width proof was resolved by restricting nlinarith to its two
+relevant hypotheses and retaining the geometry-width expression, with default
+proof limits unchanged. Small-register facts use explicit Fin projections.
+
+Next retain the folded column index outside arithmetic using existing tableReg
+and tape 151, recopy it for publication after indexed generation, and compose
+publishCyclicBandColumn. Its cleanup will restore the original input suffix
+and table accumulator while freeing arithmetic's relocated tape 150. Joint
+column-family/factor/solve, generated boundary-page/endpoint wiring and uniform
+resource/root/tensor/final S4 acceptance remain open. Retain for the next larger
+local commit; no push. Separate periodic-recovery WIP remains untouched.
+
+### S4 one complete cyclic table column executes and restores solver readiness
+
+PhaseCellRetainedIndexedCyclicColumn uses the existing tableReg/tape-151 pattern
+to keep the folded column index outside arithmetic. A restoring copy supplies
+index 0 to indexed cyclic generation; its exact endpoint restores index 0 and
+changes only the internally generated original column and residual streams.
+The retained cursor survives, and a second restoring copy drives publication.
+
+PhaseCellCyclicTableColumn composes that generation, the second index copy and
+publishCyclicBandColumn. All collection parameters, scratch freshness, width
+room and arithmetic's temporary tape-150 blankness are derived from the initial
+projected LengthKeyReady, retained ordinary rulers and actual boundary page.
+The geometry-width bound discharges doubled residual-bank addressing. The full
+program selects its coordinate, computes the original column, executes both
+physical interior/residual passes, collects the joint folded band, retires all
+three ambient streams and publishes to the existing table accumulator.
+
+cyclicTableColumn_spec returns one Gaussian column field E. Its encoded words
+are real, bounded, fit the existing execution width via stableInteriorResidual_width,
+and approximate the original joint cyclic Schur column to 2^-target. Decoding
+is exact by fits; physical interval membership matches haloVertices directly.
+The exact final state changes only accumulator 132, prepending the reverse
+foldedBandRows list at width 24*band+1. Original input, boundary page/headers,
+retained column cursor, all geometry and every scratch stack are restored.
+Projected solver readiness is re-established for the original input tail and
+updated table accumulator. No original column, residual, mask, encoded input
+or selected coordinate is supplied by the caller.
+
+Guarded checks pass without warnings: retained index wrapper 2174.8 MiB;
+complete table column 2226.6 MiB. Guarded complete-column build succeeds (10351
+jobs, 2.7 GiB aggregate). Axiom audit reports only propext, Classical.choice and
+Quot.sound (7160.3 MiB audit peak). Source-integrity and whitespace checks pass.
+This is the next larger local integration checkpoint; periodic WIP is excluded
+and nothing is pushed.
+
+Next instantiate the existing generic TableLoopInvariant/scan machinery with
+cyclicTableColumn, producing the complete accurate formatted joint column
+family, then consume cyclicPreparedBoundaryColumns in the single factor/solve.
+The resident boundary page and retained geometry are still caller inputs here;
+their ordinary producers remain to be wired at the full caller. Uniform space/
+time/root discharge, axis/tensor/forward/error/support and final S4 acceptance
+remain open. The complete S4 theorem is not established by this checkpoint.
