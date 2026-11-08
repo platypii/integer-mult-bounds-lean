@@ -47,7 +47,7 @@ theorem placedNativeCyclicBoundaryBatch_exec {s t : ℕ} [NeZero s]
     (hready : BoundarySolveReady (boundaryFactorState
       (embStk (Fin.castLE (by decide : 224 ≤ 240)) (embStk recoveryBank S))) q w W
       (cyclicPrincipalBoundary s t band a n).card)
-    (hleft : ∀ i, S.L (recoveryBank i) = [])
+    (hleft : ∀ i : Fin 224, S.L (recoveryBank (sharedPageBoundaryUnfoldReg i)) = [])
     (hsource : S.R (recoveryBank 224) = rows.flatMap (cstream A w)++tail)
     (hmaskR : S.R (recoveryBank 238) = couplingSourceIntervalMaskSymbols true A s t band 0 (n-min n (s-a)) 0 (n-min n (s-a)))
     (hmaskL : S.R (recoveryBank 239) = couplingSourceIntervalMaskSymbols true A s t band a (a+min n (s-a)) a (min n (s-a)))

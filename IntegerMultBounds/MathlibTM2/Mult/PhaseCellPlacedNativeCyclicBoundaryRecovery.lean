@@ -65,7 +65,7 @@ theorem placedNativeCyclicBoundaryRecovery_exec {s t : ℕ} [NeZero s]
   let G := boundarySolutionField B solution
   obtain ⟨vi,m,hui,hm,hei⟩ := nativeCyclicBoundaryRecovery_exec
     (body := fun z : Empty => nomatch z) hst hA band a n ha hn solution w hlen
-    (embDn recoveryBank v) (embStk recoveryBank S) tail hleft hmul hcount hrows hw hsource hmaskR hmaskL
+    (embDn recoveryBank v) (embStk recoveryBank S) tail (fun i => hleft _) hmul hcount hrows hw hsource hmaskR hmaskL
     h217 h231 h232 h233 hclean
   obtain ⟨vf,_,hu,he⟩ := exec_emb_ovr (body' := body) (ι := Empty.elim)
     CyclicRecoveryPlacement.bank_injective (fun z => nomatch z) hei v rfl S rfl

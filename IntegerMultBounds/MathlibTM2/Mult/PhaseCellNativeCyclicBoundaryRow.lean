@@ -61,7 +61,7 @@ theorem nativeCyclicBoundaryRow_exec {s t : ℕ} [NeZero s]
     (hready : BoundarySolveReady (boundaryFactorState
       (embStk (Fin.castLE (by decide : 224 ≤ 240)) S)) q w W
       (cyclicPrincipalBoundary s t band a n).card)
-    (hleft : ∀ i, S.L i = [])
+    (hleft : ∀ i : Fin 224, S.L (sharedPageBoundaryUnfoldReg i) = [])
     (hsource : S.R 224 = cstream A w solution++tail)
     (hmaskR : S.R 238 = couplingSourceIntervalMaskSymbols true A s t band 0 (n-min n (s-a)) 0 (n-min n (s-a)))
     (hmaskL : S.R 239 = couplingSourceIntervalMaskSymbols true A s t band a (a+min n (s-a)) a (min n (s-a)))

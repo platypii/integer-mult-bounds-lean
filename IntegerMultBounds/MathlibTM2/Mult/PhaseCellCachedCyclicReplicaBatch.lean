@@ -89,6 +89,7 @@ theorem cachedCyclicReplicaBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
       ReplicaRecoveryRhsHeaders H left.plan.gather leftBuffers (embOvr factorReg F.get E) ∧
       ReplicaRecoveryRhsHeaders K right.plan.gather rightBuffers (embOvr factorReg F.get E) ∧
       NativeBoundaryUnfoldWorkspace B.card F ∧
+      BoundaryProjectionFrame Fs.length F ∧
       (∀ j : Fin Fs.length, ∀ x : ZMod s → ℝ,
         SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
           (fun k => (value q (Fs.reverse.getD (Fs.length-1-j.val) (fun _ => 0) k)).re) →
@@ -152,12 +153,12 @@ theorem cachedCyclicReplicaBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤ 
     rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
     all_goals exact (hRframe _ (by decide) (by decide)).trans (hfresh _ (by simp))
   obtain ⟨vf,page,m₂,columns,hu₂,hm₂,he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
-    hinp,houtp,hleft,h224,hprivate,hframe,hbankL,hbankR,hrhsL,hrhsR,hworkspace,haccuracy,hresidual⟩ :=
+    hinp,houtp,hleft,h224,hprivate,hframe,hbankL,hbankR,hrhsL,hrhsR,hworkspace,hprojection,haccuracy,hresidual⟩ :=
     cyclicReplicaConsumerBatch_spec (body := body) hR hQ hA axis ha hn Fs hF
       leftBuffers rightBuffers S mid Cs Ds v₁ producer (embStk factorReg S) tail pageTail hl hr
       factory hin hout hL hRframe hblank' hmaskL hmaskR hwork' hfresh'
   exact ⟨mid,producer,Cs,Ds,vf,page,m₁+m₂,columns,hl,hr,hu₂.trans hu₁,
     Nat.add_le_add hm₁ hm₂,Exec.seq he₁ he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
-    hinp,houtp,hleft,h224,hprivate,hframe,hbankL,hbankR,hrhsL,hrhsR,hworkspace,haccuracy,hresidual⟩
+    hinp,houtp,hleft,h224,hprivate,hframe,hbankL,hbankR,hrhsL,hrhsR,hworkspace,hprojection,haccuracy,hresidual⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

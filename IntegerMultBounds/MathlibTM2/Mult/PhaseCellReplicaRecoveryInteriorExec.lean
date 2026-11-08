@@ -35,6 +35,82 @@ noncomputable def replicaRecoveryInteriorWorkspace (H J : ReplicaHaloProblem s) 
           (J.keyWorkspace (A := A) (U := U) hQ R K)).sum))+
     2*realReplicaRowsCost J.Fs.length (J.span*J.wordWidth)
 
+theorem replicaInteriorFromArchive_exec_within (H J : ReplicaHaloProblem s)
+    (layout : H.SameLayout J)
+    (plan : ReplicaInteriorPlacement T) (source dst : Fin T)
+    (hsourceSep : ∀ k, plan.gather k ≠ source)
+    (hgd : ∀ k, plan.gather k ≠ dst) (hsd : ∀ k, plan.solver k ≠ dst)
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) (hA : 96 ≤ A)
+    (hp : 2 ≤ H.p) (hwidth : 8*H.p ≤ 2^H.u)
+    (hpad : 2*((s/(H.t-s)+1)-2*H.band) ≤ 2^H.l+1) (R K : ℕ)
+    (hpushR : mnProgPush (rpProg (P := Empty) (Q := Q) (A := A) (U := U)
+      Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR) ≤ R)
+    (hpushK : mnProgPush (cmulBlock cr (rmulOne (P := Empty) (Q := Q) (A := A) (U := U)
+      mul mul_injective (by decide) hQ cr)) ≤ K)
+    (buffers : ReplicaLoopBuffers A) (borrowed : List (Fin (A+4))) (v : HS T Q A U) (S : Stacks T A)
+    (headers : ReplicaLoopHeaders H plan.gather buffers S)
+    (hsource : S.R source = J.Fs.reverse.flatMap
+      (fun R => cstream A H.wordWidth (packedInterval H.origin H.span R))++borrowed)
+    (hbank : embStk weightCacheCoreReg (embStk plan.solver S) =
+      releasedCellBank [] buffers.rhsTail buffers.solverOutputTail S.inp S.out)
+    (hcache : S.R (plan.solver 117) = buffers.cacheTail)
+    (hsolverFresh : ∀ k ∈ [(118 : Fin 121),119,120], S.R (plan.solver k) = [])
+    (hinput : S.inp = buffers.input) (houtput : S.out = buffers.output)
+    (hkeys : S.R (plan.gather 87) = buffers.keyTail) (hdst : S.R dst = buffers.accumulatorTail)
+    (h86 : S.R (plan.gather 86) = []) (h119 : S.R (plan.gather 119) = []) (depth : ℕ) :
+    ∃ v' F n, v'.user = v.user ∧ n ≤ replicaRecoveryInteriorTime H J ∧
+      RealReplicaHaloOutput J dst buffers.accumulatorTail F ∧
+      (∀ k : Fin 126, k ≠ 87 → k ≠ 119 → k ≠ 124 → F.R (plan.gather k) = S.R (plan.gather k)) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth+
+        replicaRecoveryInteriorWorkspace (A := A) (U := U) H J hQ R K) depth
+        (replicaRecoveryInterior plan source dst hR hQ) (mk v S) n (mk v' F) ∧
+      (F.inp = buffers.input ∧ F.out = buffers.output) := by
+  let M := {S with R := Function.update S.R (plan.gather 124) (J.Fs.flatMap
+    (fun R => cstream A H.wordWidth (packedInterval H.origin H.span R))++S.R (plan.gather 124))}
+  let nextBuffers := {buffers with packedRhsTail := S.R (plan.gather 124), savedGather := embStk plan.gather M}
+  obtain ⟨v₀,n₀,hu₀,hn₀,he₀,hheaders⟩ := H.source_headers_exec_within (body := body) J layout
+    plan.gather plan.gather_injective source hsourceSep buffers borrowed v S headers hsource depth
+  have hsolver : embStk plan.solver M = embStk plan.solver S := by
+    refine Stacks.ext rfl rfl rfl ?_
+    funext k
+    simp [M,embStk,(plan.disjoint 124 k).symm]
+  have hg (k : Fin 126) (hk : k ≠ 124) : M.R (plan.gather k) = S.R (plan.gather k) := by
+    simp [M,plan.gather_injective.eq_iff,hk]
+  obtain ⟨v₁,F,n₁,hu₁,hn₁,hstate,he₁⟩ := initializedReplicaHaloLoop_exec_within (body := body)
+    J plan dst hgd hsd hR hQ hA (by simpa only [layout.t,layout.band,layout.l] using hpad) R K hpushR hpushK nextBuffers v₀ M hheaders
+    (by rw [hsolver]; exact hbank)
+    (by exact (congrFun (congrArg Stacks.R hsolver) 117).trans hcache)
+    (by intro k hk; exact (congrFun (congrArg Stacks.R hsolver) k).trans (hsolverFresh k hk))
+    hinput houtput rfl ((hg 87 (by decide)).trans hkeys)
+    (by simpa [M,(hgd 124).symm] using hdst)
+    ((hg 86 (by decide)).trans h86) ((hg 119 (by decide)).trans h119) depth
+  let W := 2*allocateZeroLineCost J.Fs.length (J.span*J.wordWidth)+
+    (3*placedHaloLengthKeysCost s J.t J.band J.origin (J.origin+J.span) J.metadataWidth+
+      ((haloLengthKeys s J.t J.band J.origin (J.origin+J.span)).map
+        (J.keyWorkspace (A := A) (U := U) hQ R K)).sum)
+  obtain ⟨v₂,G,n₂,hu₂,hn₂,he₂,hfields,hgather⟩ := realInitializedReplicaHaloLoop_finish (body := body)
+    J plan dst hgd hR hQ (by omega) nextBuffers v₀ v₁ M F n₁ depth W hu₁ he₁ hstate (J.dominates (by simpa only [layout.p] using hp) (by simpa only [layout.p,layout.u] using hwidth))
+  refine ⟨v₂,G,n₀+n₂,hu₂.trans hu₀,?_,hfields,?_,?_,
+    (congrArg Stacks.inp hgather).trans hstate.input,
+    (congrArg Stacks.out hgather).trans hstate.output⟩
+  · change n₀+n₂ ≤ replicaRecoveryInteriorTime H J
+    unfold replicaRecoveryInteriorTime
+    omega
+  · intro k h87 h119 h124
+    have hh : G.R (plan.gather k) = F.R (plan.gather k) := congrFun (congrArg Stacks.R hgather) k
+    exact hh.trans ((hstate.gatherFrame k h87 h119).trans (hg k h124))
+  · have hsize := he₀.final
+    change mnSize (mk v₀ M)+depth ≤ mnSize (mk v S)+depth+
+      2*reverseCopyRowsCost H.Fs.length (H.span*H.wordWidth) at hsize
+    apply ExecWithin.seq (he₀.mono ?_) (he₂.mono ?_)
+    all_goals
+      intro d z hz
+      change mnSize z+d ≤ mnSize (mk v S)+depth+
+        replicaRecoveryInteriorWorkspace (A := A) (U := U) H J hQ R K
+      unfold replicaRecoveryInteriorWorkspace
+      try dsimp only [W] at hz
+      omega
+
 theorem replicaRecoveryInterior_exec_within (H : ReplicaHaloProblem s) (target : ℕ) (X : ℕ → ZMod s → ℝ)
     (B : ReplicaRecoveryBatch H target X) (htarget)
     (plan : ReplicaInteriorPlacement T) (source dst : Fin T)
@@ -65,51 +141,8 @@ theorem replicaRecoveryInterior_exec_within (H : ReplicaHaloProblem s) (target :
         replicaRecoveryInteriorWorkspace (A := A) (U := U) H (B.problem htarget) hQ R K) depth
         (replicaRecoveryInterior plan source dst hR hQ) (mk v S) n (mk v' F) ∧
       (F.inp = buffers.input ∧ F.out = buffers.output) := by
-  let J := B.problem htarget
-  let M := {S with R := Function.update S.R (plan.gather 124) (B.inputs.flatMap
-    (fun R => cstream A H.wordWidth (packedInterval H.origin H.span R))++S.R (plan.gather 124))}
-  let nextBuffers := {buffers with packedRhsTail := S.R (plan.gather 124), savedGather := embStk plan.gather M}
-  obtain ⟨v₀,n₀,hu₀,hn₀,he₀,hheaders⟩ := B.source_headers_exec_within (body := body) htarget
-    plan.gather plan.gather_injective source hsourceSep buffers borrowed v S headers hsource depth
-  have hsolver : embStk plan.solver M = embStk plan.solver S := by
-    refine Stacks.ext rfl rfl rfl ?_
-    funext k
-    simp [M,embStk,(plan.disjoint 124 k).symm]
-  have hg (k : Fin 126) (hk : k ≠ 124) : M.R (plan.gather k) = S.R (plan.gather k) := by
-    simp [M,plan.gather_injective.eq_iff,hk]
-  obtain ⟨v₁,F,n₁,hu₁,hn₁,hstate,he₁⟩ := initializedReplicaHaloLoop_exec_within (body := body)
-    J plan dst hgd hsd hR hQ hA hpad R K hpushR hpushK nextBuffers v₀ M hheaders
-    (by rw [hsolver]; exact hbank)
-    (by exact (congrFun (congrArg Stacks.R hsolver) 117).trans hcache)
-    (by intro k hk; exact (congrFun (congrArg Stacks.R hsolver) k).trans (hsolverFresh k hk))
-    hinput houtput rfl ((hg 87 (by decide)).trans hkeys)
-    (by simpa [M,(hgd 124).symm] using hdst)
-    ((hg 86 (by decide)).trans h86) ((hg 119 (by decide)).trans h119) depth
-  let W := 2*allocateZeroLineCost J.Fs.length (J.span*J.wordWidth)+
-    (3*placedHaloLengthKeysCost s J.t J.band J.origin (J.origin+J.span) J.metadataWidth+
-      ((haloLengthKeys s J.t J.band J.origin (J.origin+J.span)).map
-        (J.keyWorkspace (A := A) (U := U) hQ R K)).sum)
-  obtain ⟨v₂,G,n₂,hu₂,hn₂,he₂,hfields,hgather⟩ := realInitializedReplicaHaloLoop_finish (body := body)
-    J plan dst hgd hR hQ (by omega) nextBuffers v₀ v₁ M F n₁ depth W hu₁ he₁ hstate (J.dominates hp hwidth)
-  refine ⟨v₂,G,n₀+n₂,hu₂.trans hu₀,?_,hfields,?_,?_,
-    (congrArg Stacks.inp hgather).trans hstate.input,
-    (congrArg Stacks.out hgather).trans hstate.output⟩
-  · change n₀+n₂ ≤ replicaRecoveryInteriorTime H J
-    unfold replicaRecoveryInteriorTime
-    omega
-  · intro k h87 h119 h124
-    have hh : G.R (plan.gather k) = F.R (plan.gather k) := congrFun (congrArg Stacks.R hgather) k
-    exact hh.trans ((hstate.gatherFrame k h87 h119).trans (hg k h124))
-  · have hsize := he₀.final
-    change mnSize (mk v₀ M)+depth ≤ mnSize (mk v S)+depth+
-      2*reverseCopyRowsCost H.Fs.length (H.span*H.wordWidth) at hsize
-    apply ExecWithin.seq (he₀.mono ?_) (he₂.mono ?_)
-    all_goals
-      intro d z hz
-      change mnSize z+d ≤ mnSize (mk v S)+depth+
-        replicaRecoveryInteriorWorkspace (A := A) (U := U) H J hQ R K
-      unfold replicaRecoveryInteriorWorkspace
-      try dsimp only [W] at hz
-      omega
+  exact replicaInteriorFromArchive_exec_within H (B.problem htarget) (B.problem_layout htarget)
+    plan source dst hsourceSep hgd hsd hR hQ hA hp hwidth hpad R K hpushR hpushK
+    buffers borrowed v S headers hsource hbank hcache hsolverFresh hinput houtput hkeys hdst h86 h119 depth
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

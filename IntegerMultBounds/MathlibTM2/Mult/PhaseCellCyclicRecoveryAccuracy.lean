@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicRecoveryRhs
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryRecoveryBudget
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryHaloRecoveryPrecision
 
 /-! Accuracy of the executed recovery fields against the original cyclic principal solution. -/
 @[expose] public section
@@ -118,6 +119,47 @@ theorem cyclicRecovery_solution_target {s t p u l a n : ℕ} [NeZero s] {alpha g
     (3/(2 : ℝ)^solveTarget) (1/(2 : ℝ)^recoveryTarget p bits) (by positivity)
     hmag herror hx hxI hD
   have hbudget := boundaryRecovery_published_error_budget p u l target B.card
+  intro i hi
+  exact (h.2 i hi).trans hbudget
+
+/-- The conserved format suffices for recovery at the joint boundary target. -/
+theorem cyclicRecovery_solution_shared_target {s t p u l a n : ℕ} [NeZero s] {alpha gap : ℝ}
+    (axis : RecoveryAxisBounds s t p u l alpha gap) (ha : a < s) (hn : n ≤ s) (target : ℕ) :
+    let band := PhaseCellBand.width p u
+    let I := cyclicPrincipalInterior s t band a n
+    let B := cyclicPrincipalBoundary s t band a n
+    let solveTarget := boundaryRecoveryTarget p target
+    let bits := boundaryTableBits p solveTarget 2 B.card
+    let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
+    ∀ (C : ZMod s → GaussianInt), (∀ i, ‖value q (C i)‖ ≤ (2 : ℝ)^2) →
+    ∀ (solution : List GaussianInt) (D E : ZMod s → GaussianInt) (x xI : ZMod s → ℝ),
+    let Y := boundarySolutionField B solution
+    let left := haloInterior s t band a (a+min n (s-a))
+    let R := fun i => if i ∈ left then
+      couplingRowField (2^15*p) q t u band a (a+min n (s-a)) true Y C i else
+      couplingRowField (2^15*p) q t u band 0 (n-min n (s-a)) true Y C i
+    let output := fun i => if i ∈ left then D i else E i
+    (∀ i < B.card, ‖value q (solution.getD i 0)‖ ≤ (2 : ℝ)^stableInteriorExponent p 2) →
+    (∀ i < B.card, ‖value q (solution.getD i 0)-(x (bFoldAt s B i) : ℂ)‖ ≤ 3/(2 : ℝ)^solveTarget) →
+    SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
+      (fun i => (value q (C i)).re) →
+    SchurDominance.Solves (realMatrix s t p u) I xI (fun i => (value q (R i)).re) →
+    PhaseCellInterface.ErrorOn I (fun i => (value q (output i)).re) xI
+      (1/(2 : ℝ)^boundaryHaloRecoveryTarget p solveTarget B.card) →
+    PhaseCellInterface.ErrorOn (cyclicPrincipalVertices s a n)
+      (SchurDominance.glue I (fun i => (value q (output i)).re) (fun i => (value q (Y i)).re)) x
+      (1/(2 : ℝ)^target) := by
+  dsimp only
+  intro C hC solution D E x xI hmag herror hx hxI hD
+  let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
+  let solveTarget := boundaryRecoveryTarget p target
+  let bits := boundaryTableBits p solveTarget 2 B.card
+  let w := executionWidth p l (initialSchurTarget p u bits 2) 2
+  have hw := (boundaryHaloRecovery_format p u l solveTarget 2 B.card).1
+  have h := cyclicRecovery_solution_error (w := w) axis ha hn hw C hC solution D E x xI
+    (3/(2 : ℝ)^solveTarget) (1/(2 : ℝ)^boundaryHaloRecoveryTarget p solveTarget B.card)
+    (by positivity) hmag herror hx hxI hD
+  have hbudget := boundaryHaloRecovery_error_budget p u l target 2 B.card
   intro i hi
   exact (h.2 i hi).trans hbudget
 

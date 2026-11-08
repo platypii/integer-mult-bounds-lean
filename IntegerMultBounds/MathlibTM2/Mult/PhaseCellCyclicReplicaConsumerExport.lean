@@ -46,8 +46,9 @@ theorem CyclicReplicaConsumerPost.afterExport {s : ℕ} [NeZero s]
     embStk left.coupling.bank (cyclicReplicaConsumerExportState S rows) = embStk left.coupling.bank S ∧
     embStk right.coupling.bank (cyclicReplicaConsumerExportState S rows) = embStk right.coupling.bank S ∧
     ReplicaRecoveryRhsHeaders H left.plan.gather leftBuffers (cyclicReplicaConsumerExportState S rows) ∧
-    ReplicaRecoveryRhsHeaders K right.plan.gather rightBuffers (cyclicReplicaConsumerExportState S rows) := by
-  refine ⟨?_,?_,?_,?_⟩
+    ReplicaRecoveryRhsHeaders K right.plan.gather rightBuffers (cyclicReplicaConsumerExportState S rows) ∧
+    (cyclicReplicaConsumerExportState S rows).R (factorReg 229) = List.replicate H.Fs.length tick := by
+  refine ⟨?_,?_,?_,?_,?_⟩
   · refine Eq.trans ?_ post.leftBank
     refine Stacks.ext rfl rfl ?_ ?_
     · funext i; exact (cyclicReplicaConsumerExportState_pass_frame S rows _ (Or.inl (.bank i))).1
@@ -60,6 +61,11 @@ theorem CyclicReplicaConsumerPost.afterExport {s : ℕ} [NeZero s]
       (fun i => (cyclicReplicaConsumerExportState_pass_frame S rows _ (Or.inl (.gather i))).2)
   · exact ReplicaRecoveryRhsHeaders.of_frame K right.plan.gather rightBuffers _ _ post.rightRhs
       (fun i => (cyclicReplicaConsumerExportState_pass_frame S rows _ (Or.inr (.gather i))).2)
+  · have hh := congrArg (fun F : Stacks 234 A => F.R 229) (cyclicReplicaConsumerExportState_factor S rows)
+    have hread : (cyclicReplicaConsumerExportState S rows).R (factorReg 229) =
+        (cyclicReplicaConsumerState S).R (factorReg 229) := by
+      simpa [embStk,exportedCyclicResidualRows,cyclicResidualRowsRetired] using hh
+    exact hread.trans post.replicas
 
 theorem cyclicReplicaConsumerExport_exec {s t : ℕ} [NeZero s]
     (hst : s < t) (hA : 4 ≤ A) (H K : ReplicaHaloProblem s)
@@ -92,7 +98,8 @@ theorem cyclicReplicaConsumerExport_exec {s t : ℕ} [NeZero s]
       embStk left.coupling.bank (cyclicReplicaConsumerExportState S rows) = embStk left.coupling.bank S ∧
       embStk right.coupling.bank (cyclicReplicaConsumerExportState S rows) = embStk right.coupling.bank S ∧
       ReplicaRecoveryRhsHeaders H left.plan.gather leftBuffers (cyclicReplicaConsumerExportState S rows) ∧
-      ReplicaRecoveryRhsHeaders K right.plan.gather rightBuffers (cyclicReplicaConsumerExportState S rows) := by
+      ReplicaRecoveryRhsHeaders K right.plan.gather rightBuffers (cyclicReplicaConsumerExportState S rows) ∧
+    (cyclicReplicaConsumerExportState S rows).R (factorReg 229) = List.replicate H.Fs.length tick := by
   obtain ⟨v₁,m₁,hu₁,hm₁,he₁,post⟩ := cyclicReplicaConsumerHandoff_exec
     (body := body) H K leftBuffers rightBuffers S₀ S₁ Cs Ds v S hl hr hblank
   let F := cyclicReplicaConsumerState S

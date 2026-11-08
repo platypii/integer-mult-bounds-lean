@@ -32,7 +32,7 @@ theorem residualBatchRecoveryInputCost_le (N w : ℕ) :
 theorem residualBatchRecoveryInput_exec {s : ℕ} [NeZero s] (hA : 4 ≤ A) (w : ℕ)
     (B : Finset (ZMod s)) (solution : List GaussianInt) (hlen : solution.length = B.card)
     (v : HS 240 Q A U) (S : Stacks 240 A) (tail : List (Fin (A+4)))
-    (hleft : ∀ i, S.L i = [])
+    (hleft : ∀ i : Fin 224, S.L (sharedPageBoundaryUnfoldReg i) = [])
     (hmul : ∀ i : Fin 64, (embStk sharedPageBoundaryUnfoldReg S).R (boundaryFactorMulReg i) = [])
     (hcount : (S.R 116).length = B.card) (hrows : (S.R 192).length = B.card)
     (hw : (S.R 160).length = w)

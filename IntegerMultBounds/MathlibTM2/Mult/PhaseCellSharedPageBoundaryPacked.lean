@@ -71,7 +71,7 @@ theorem sharedPageBoundaryPacked_exec (hA : 4 ≤ A) (s : ℕ) [NeZero s]
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hi ⊢
     tauto
   obtain ⟨v₁,n₁,hu₁,hn₁,he₁⟩ := residualBatchRecoveryInput_exec (body := body) hA w B solution hlen
-    v S tail hleft hm₁ (by rw [hc]; simp) hrows hwidth hsource
+    v S tail (fun i => hleft _) hm₁ (by rw [hc]; simp) hrows hwidth hsource
     (hclean _ (by simp)) (hclean _ (by simp)) (hclean _ (by simp)) (hclean _ (by simp)) hc₁
   let S₁ : Stacks 240 A := {S with R := Function.update S.R 237 natural}
   have hc₃ : ∀ i ∈ ([184,217,223,201,208,211,215,220] : List (Fin 240)), S₁.R i = [] := by

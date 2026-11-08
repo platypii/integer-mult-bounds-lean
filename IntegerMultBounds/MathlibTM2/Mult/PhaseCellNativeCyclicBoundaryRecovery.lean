@@ -40,7 +40,7 @@ theorem nativeCyclicBoundaryRecovery_exec {s t : ℕ} [NeZero s]
     (solution : List GaussianInt) (w : ℕ)
     (hlen : solution.length = (cyclicPrincipalBoundary s t band a n).card)
     (v : HS 240 Q A U) (S : Stacks 240 A) (tail : List (Fin (A+4)))
-    (hleft : ∀ i, S.L i = [])
+    (hleft : ∀ i : Fin 224, S.L (sharedPageBoundaryUnfoldReg i) = [])
     (hmul : ∀ i : Fin 64, (embStk sharedPageBoundaryUnfoldReg S).R (boundaryFactorMulReg i) = [])
     (hcount : (S.R 116).length = (cyclicPrincipalBoundary s t band a n).card)
     (hrows : (S.R 192).length = (cyclicPrincipalBoundary s t band a n).card)
@@ -97,7 +97,7 @@ theorem nativeCyclicBoundaryRecovery_exec_ready {s t : ℕ} [NeZero s]
     (hready : BoundarySolveReady (boundaryFactorState
       (embStk (Fin.castLE (by decide : 224 ≤ 240)) S)) q w W
       (cyclicPrincipalBoundary s t band a n).card)
-    (hleft : ∀ i, S.L i = [])
+    (hleft : ∀ i : Fin 224, S.L (sharedPageBoundaryUnfoldReg i) = [])
     (hsource : S.R 224 = cstream A w solution++tail)
     (hmaskR : S.R 238 = couplingSourceIntervalMaskSymbols true A s t band 0 (n-min n (s-a)) 0 (n-min n (s-a)))
     (hmaskL : S.R 239 = couplingSourceIntervalMaskSymbols true A s t band a (a+min n (s-a)) a (min n (s-a)))

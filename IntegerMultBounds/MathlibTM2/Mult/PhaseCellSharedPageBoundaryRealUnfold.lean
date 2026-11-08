@@ -32,7 +32,7 @@ def sharedPageBoundaryRealUnfold : Pr P 240 Q A U :=
 theorem sharedPageBoundaryRealUnfold_exec {s : ℕ} [NeZero s] (hA : 4 ≤ A) (w : ℕ)
     (B : Finset (ZMod s)) (solution : List GaussianInt) (hlen : solution.length = B.card)
     (v : HS 240 Q A U) (S : Stacks 240 A)
-    (hleft : ∀ i, S.L i = [])
+    (hleft : ∀ i : Fin 224, S.L (sharedPageBoundaryUnfoldReg i) = [])
     (hmul : ∀ i : Fin 64, (embStk sharedPageBoundaryUnfoldReg S).R (boundaryFactorMulReg i) = [])
     (hcount : (S.R 116).length = B.card) (hsrc : S.R 217 = cstream A w solution)
     (hw : (S.R 160).length = w)
@@ -49,7 +49,7 @@ theorem sharedPageBoundaryRealUnfold_exec {s : ℕ} [NeZero s] (hA : 4 ≤ A) (w
     rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
       exact hclean _ (by simp [sharedPageBoundaryUnfoldReg])
   obtain ⟨v₁,n,hu₁,hn,he⟩ := generatedBoundaryRealUnfold_exec (body := fun p : Empty => nomatch p) hA w B solution hlen
-    (embDn sharedPageBoundaryUnfoldReg v) T (fun i => hleft _) hmul hcount hsrc hw hcleanT
+    (embDn sharedPageBoundaryUnfoldReg v) T hleft hmul hcount hsrc hw hcleanT
   obtain ⟨v₂,hv₂,hu₂,he₂⟩ := exec_emb_ovr (ι := Empty.elim) (body' := body)
     sharedPageBoundaryUnfoldReg_injective (fun p => nomatch p) he v rfl S rfl
   refine ⟨v₂,n,hu₂.trans hu₁,?_,he₂.cast rfl ?_⟩

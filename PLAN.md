@@ -3911,10 +3911,14 @@ factor/solve batch. It derives row format/bounds from the cached certificates,
 retains original-system boundary accuracy and preserves both recovery banks
 and RHS queues. The actual producer is now prepended: cachedCyclicReplicaBatch_spec
 starts from ordinary cached-pass inputs and the original factor bank, without
-residual/mask/row-format or post-export readiness suppliers. Next execute both
-recovery passes from the one computed joint boundary row and publish at common
-width. Judge the next checkpoint by that executed caller and the supplier
-assumptions it removes.
+residual/mask/row-format or post-export readiness suppliers. The ordinary-input
+caller now also executes native projection and paired recovery-RHS coupling,
+preserving boundary accuracy for its actual solved rows. Next execute the second
+interior passes from those computed RHS streams and publish at common width.
+Use the joint boundary count in the conserved precision allowance for both
+pieces; do not require either piece's local boundary count to equal the joint
+count. Judge the next checkpoint by the executed final recovered solution and
+the supplier assumptions it removes.
 Keep geometry fallback and structural stock/uniform time visible as independent
 open gates; functional execution does not close them. No reliable percentage
 or completion-time estimate is available.
@@ -41375,3 +41379,156 @@ composition and root S4 acceptance remain open.
 The guarded temporary audit of solvedCyclicRecovery_exec, the actual-caller
 readiness bridge and cross-bank readiness transport reports only propext,
 Classical.choice and Quot.sound (9404.4 MiB audit peak; not a production module).
+
+
+### S4 actual caller lift and trace-to-recovery composition
+
+PhaseCellLiftedCyclicReplicaBatch defines the original cached caller embedded
+from 834 into 840 tapes and names its existing arithmetic body placement.
+cachedCyclicReplicaBatch_exec_lift uses exec_extendStacks with identity call
+reindexing: the actual original trace has exactly the same steps, and its final
+state is the original output with six blank tapes added. The companion readiness
+bridge derives both retained recovery contracts from the original caller's bank
+views and RHS headers on that extended endpoint. Guard: 3392.3 MiB.
+
+Integration found another overly strong premise: the boundary projection chain
+required every one of 240 left stacks to be blank, but inverse folding only
+reads sharedPageBoundaryUnfoldReg's 224-stack view. The existing ordinary factor
+input supplies the old 224-stack core, and extension supplies the new scratch
+left stacks; unrelated old private left stacks need not be blank. Weakened that
+premise throughout unfold / row / loop / batch / solved recovery. Existing
+packed/ambient/single-row wrappers keep their stronger public interfaces and
+adapt at the call. No numerical proof, runtime program or proof limit changed.
+
+PhaseCellCyclicBoundaryUnfoldLeft proves the mapped premise from the old core
+and new scratch, then instantiates it for the extended cyclic factor bank using
+the commuting core-view theorem and extendStacks_fresh. It splits only the four
+redirected scratch roles in the placement definition. Guard: 3266.0 MiB.
+Fresh guards after the refinement: shared unfold 3205.0 MiB, native boundary loop
+3215.0 MiB, solved recovery 3283.7 MiB.
+
+PhaseCellCachedCyclicReplicaRecovery defines the actual caller followed by
+solvedCyclicRecovery. Its composition theorem lifts the supplied original caller
+trace, derives recovery readiness from its producer/bank/header certificates,
+derives all six new scratch blanks from extension, transports the old factor
+workspace and controls, and executes recovery under the same lifted body.
+Its time bill is the original trace steps plus the complete recovery bill, and
+it returns the full computed/saved archive cursor. Guard: 3408.8 MiB.
+This is a trace-composition theorem, not yet an ordinary-input spec: it still
+receives the original caller's execution and endpoint control facts as premises.
+Those must be instantiated from cachedCyclicReplicaBatch_spec.
+
+Combined lifted recovery / packed / ambient / single-row compatibility build
+passes (15843 jobs, 3.5 GiB incremental combined peak). The broader left-premise
+rebuild also passes (15237 jobs, 9.4 GiB combined peak). All fourteen new/changed
+proof modules pass integrity/whitespace scans. No commit or push; collect the
+ordinary-input instantiation with this lift/refinement chunk. Periodic WIP is
+untouched.
+
+Next expose the projection controls already proved inside the original caller:
+old low-core left cleanliness, retained replica master 229 and blank private
+227/228/231/232/233. Prefer one small projection-frame contract rather than
+reconstructing hidden intermediate states. cyclicReplicaConsumerExport_exec has
+the retained master fact internally (from its handoff Post); carry it out once.
+The page's returned private frame and original ordinary input supply the blank
+private controls. Its left frame, the export's unchanged left stacks and the
+producer's existing factor-left frame supply low-core cleanliness. Then invoke
+the original ordinary-input spec and the checked trace composition, retaining
+the original boundary numerical accuracy. Second interior passes, final output
+assembly/publication, full-prefix/global stock, uniform time, fallback geometry,
+locality/error/tensor composition and root S4 acceptance remain open.
+
+The guarded temporary audit of trace composition and caller lift reports only
+propext, Classical.choice and Quot.sound; the mapped-left derivation uses only
+propext and Quot.sound (9589.1 MiB audit peak; not a production module).
+
+
+### S4 ordinary-input recovery and common second-pass sizing
+
+BoundaryProjectionFrame records exactly the low-core left cleanliness, retained
+replica master and private right blanks needed by native projection. The export
+and consumer/cached caller now return this frame from their existing input and
+state-preservation certificates. No runtime instructions or numerical estimates
+change. CachedCyclicReplicaRecovery consumes the single frame contract.
+
+PhaseCellExecutedCyclicReplicaRecovery invokes the original cached caller spec,
+lifts its actual trace and executes solved-state recovery from ordinary inputs.
+It returns the complete execution/time bound, original boundary accuracy for the
+same solved rows, both computed recovery RHS streams and saved boundary-field
+prefixes. No separately supplied old trace or endpoint projection controls are
+needed. This stops before the second interior solves. Guard: 3437.5 MiB.
+
+PhaseCellCoupledReplicaProblem constructs an ordinary ReplicaHaloProblem from
+an arbitrary list of boundary/RHS pairs. It proves the global guarded-coupling
+RHS bound once and uses executionSizing_of_allowance to retain precision, stage
+and word width. Its cyclic-piece instance uses the joint boundary row count,
+independent of either piece's boundary cardinality. Guard: 3408.1 MiB.
+cyclicRecovery_solution_shared_target composes the existing cyclic stability
+proof with boundaryHaloRecovery_error_budget: the same joint-count second-pass
+target suffices for final cyclic accuracy. Guard: 3390.2 MiB.
+
+The combined ordinary-input / coupled-problem / shared-target accuracy build
+passes (15842 jobs, 8.4 GiB combined peak). Whitespace and integrity scans of the
+three current proof additions/edits pass; no proof limits changed. These are
+phase checks, not full S4 acceptance. No commit or push in this checkpoint.
+
+Next instantiate the two recovery problems with the actual recovery row lists,
+identify their input streams with the returned coupling archives, and execute
+the existing interior batch controller. Preserve its retained control/bank facts
+in the ordinary endpoint contract rather than reconstructing hidden states.
+Then assemble and publish the saved boundary fields and computed interiors.
+Full-prefix/global stock, uniform time, fallback geometry, locality/error/tensor
+composition and root acceptance remain open. Periodic WIP remains untouched.
+
+The ordinary-input endpoint now also retains both CachedRecoveryCouplingReady
+certificates and RHS headers from its terminal cursor, with existential page
+tails. This avoids losing the numerical bank facts needed by the second pass.
+The strengthened theorem passes a fresh guarded check at 3436.9 MiB.
+
+
+### S4 second-pass executor reuse and actual recovery input identification
+
+PhaseCellReplicaProblemLayout defines SameLayout using exactly geometry,
+precision/stage/word width and replica count. Its replace_source theorem derives
+ordinary loop headers for a new RHS and target from the retained first-pass
+headers. The local recovery problem now supplies this layout certificate.
+
+The existing restoring source/header execution and second interior executor are
+generalized to any pair of problems with SameLayout. The source scan is still
+one structural reverseCopyRows call and the interior schedule is unchanged.
+replicaInteriorFromArchive_exec_within retains the complete time and shared
+scratch bounds; replicaRecoveryInterior_exec_within is its compatibility wrapper
+for the existing local-halo recovery batch. No per-replica setup is introduced.
+The old specialized source helper can be restored from 722d8f9a if required.
+
+cyclicRecoveryReplicaInputs constructs an ordinary second-pass problem for an
+arbitrary physical piece from the actual cyclicBoundaryRecoveryRows. It proves
+the RHS/boundary magnitude premises from membership in the zipped solved/original
+rows, preserves the shared layout, and identifies the explicit RHS list and both
+left/right reverse source streams with the actual coupling output language.
+The joint boundary count controls sizing independently of the piece boundary.
+The ordinary executed caller now returns unconditional solved-row magnitude
+bounds as well: existence of the original principal solution follows from axis
+diagonal dominance, so its existing accuracy certificate supplies these bounds.
+
+The generic executor/header build passes (14999 jobs, 3.4 GiB combined peak).
+The wider caller rebuild passes (15840 jobs, 13.2 GiB combined peak), including
+the new magnitude proof. The caller / actual-input / old recovery-finish /
+packed/ambient/native compatibility integration build passes (15849 jobs,
+3.5 GiB combined peak); the final explicit-input-list statement also builds.
+Seven fresh single-file checks are below 3.5 GiB. The guarded temporary audit of
+the ordinary caller, actual input bridge, generic executor and old wrapper
+reports only propext, Classical.choice and Quot.sound (9590.0 MiB audit peak;
+not a production module). Integrity and whitespace scans pass, with unchanged
+proof limits. Collect this and the preceding uncommitted caller/frame/sizing
+work in one larger local commit; exclude periodic WIP and do not push.
+
+Next physical obligation: the actual coupling endpoint retains native controls
+rather than the interior initializer's released bank, and gather 125 holds the
+saved boundary archive while the interior factory requires blank workspace
+there. Pay one native release per piece and preserve that archive while supplying
+the workspace, then apply the checked generic executor to the identified input
+problems. Carry the necessary retained gather/cache/left-frame facts from the
+producer instead of adding external suppliers. Both complete second-pass traces,
+final assembly/publication and the global stock/time/fallback/tensor/root gates
+remain open. These checks do not establish full S4 completion.

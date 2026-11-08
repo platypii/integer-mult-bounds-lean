@@ -1,6 +1,7 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicReplicaExportedBatch
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicBoundaryProjectionFrame
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicReplicaBoundarySolutionAccuracy
 
 /-! Cached residual certificates feed one executed export/factor/solve chain.
@@ -8,7 +9,7 @@ Both original RHS queues and cached banks survive for the recovery passes. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
-  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.MathlibTM2.Mult.ShortConv IntegerMultBounds.MathlibTM2.Mult.BandFactor
   IntegerMultBounds.NLogN IntegerMultBounds.NLogN.PhaseCellMatrix
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
@@ -90,6 +91,7 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       ReplicaRecoveryRhsHeaders H left.plan.gather leftBuffers (embOvr factorReg F.get E) ∧
       ReplicaRecoveryRhsHeaders K right.plan.gather rightBuffers (embOvr factorReg F.get E) ∧
       NativeBoundaryUnfoldWorkspace B.card F ∧
+      BoundaryProjectionFrame Fs.length F ∧
       (∀ j : Fin Fs.length, ∀ x : ZMod s → ℝ,
         SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
           (fun k => (value q (Fs.reverse.getD (Fs.length-1-j.val) (fun _ => 0) k)).re) →
@@ -125,7 +127,7 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   have hcount : (S.R (factorReg 116)).length = B.card := by
     rw [hRframe 116 (by decide) (by decide)]
     exact factory.rows
-  obtain ⟨v₁,m₁,hu₁,hm₁,he₁,hbankL,hbankR,hrhsL,hrhsR⟩ := cyclicReplicaConsumerExport_exec
+  obtain ⟨v₁,m₁,hu₁,hm₁,he₁,hbankL,hbankR,hrhsL,hrhsR,hreplicas⟩ := cyclicReplicaConsumerExport_exec
     (body := native) axis.hst (by omega) H K leftBuffers rightBuffers S₀ S₁ Cs Ds v S hl hr
     band a n ha hn rfl rfl rfl rfl rfl rfl hblank hleftMask hrightMask hcount hwork hfresh
   have hw : H.wordWidth = w := rfl
@@ -139,6 +141,9 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     simpa only [cyclicReplicaBoundaryRows_stream,hw,E,rows] using hrhsL
   have hrhsR' : ReplicaRecoveryRhsHeaders K right.plan.gather rightBuffers E := by
     simpa only [cyclicReplicaBoundaryRows_stream,hw,E,rows] using hrhsR
+  have hreplicasE : E.R (factorReg 229) = List.replicate Fs.length tick := by
+    have hFs : H.Fs = Fs := rfl
+    simpa only [cyclicReplicaBoundaryRows_stream,hw,E,rows,hFs] using hreplicas
   obtain ⟨hlen,hrows,hreal,hbound⟩ := cyclicReplicaBoundaryRows_format axis cellTarget 2 a n ha hn
     Fs hF Cs Ds hl.length hr.length hl.residual hr.residual
   have hrowsLen : rows.length = Fs.length := hlen
@@ -175,13 +180,25 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     · funext i; exact (hpass _ (Or.inr (.bank i))).2
   refine ⟨vf,page,m₁+m₂,columns,hu₂.trans hu₁,?_,Exec.seq he₁' he₂,
     hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,hinp,houtp,hleft,h224,hprivate,hframe,
-    hbankLG.trans hbankL',hbankRG.trans hbankR',?_,?_,hworkspace,?_,?_⟩
+    hbankLG.trans hbankL',hbankRG.trans hbankR',?_,?_,hworkspace,?_,?_,?_⟩
   · exact Nat.add_le_add hm₁ (by simpa only [hrowsLen] using hm₂)
   · exact ReplicaRecoveryRhsHeaders.of_frame H left.plan.gather leftBuffers E G hrhsL'
       (fun i => (hpass _ (Or.inl (.gather i))).2)
   · exact ReplicaRecoveryRhsHeaders.of_frame K right.plan.gather rightBuffers E G hrhsR'
       (fun i => (hpass _ (Or.inr (.gather i))).2)
 
+  · apply boundaryProjectionFrame_of_export Fs.length S raw page (cstream A w rows.flatten) _
+    · intro i
+      simpa only [preparedBoundaryBatchCoreReg,preparedBoundaryCoreReg,Fin.castLE] using factory.left i
+    · intro i hi
+      apply factory.privateFresh i
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl | rfl | rfl <;> simp
+    · exact hL
+    · exact hRframe
+    · exact hleft
+    · exact hprivate
+    · exact hreplicasE
   · intro j x hx
     have hjC : j.val < Cs.length := by rw [hl.length]; exact j.isLt
     have hjD : j.val < Ds.length := by rw [hr.length]; exact j.isLt
