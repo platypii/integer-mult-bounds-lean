@@ -57,6 +57,12 @@ theorem initializedCyclicRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       ∃ columns : List (ZMod s → GaussianInt), ∃ solution : List GaussianInt, ∃ D E : ZMod s → GaussianInt,
       solution.length = B.card ∧ (∀ z ∈ solution, Fits w z) ∧
       PreparedBoundaryColumns A p bits q w W B columns ∧
+      LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+        q l s t u band 0 0 (cstream A w (chirpLine s rhs)++tail)
+        (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg S')))) ∧
+      (S'.R 144).length = a ∧ (S'.R 145).length = a+min n (s-a) ∧
+      (S'.R 146).length = n-min n (s-a) ∧
+      (∀ k ∈ ([(138 : Fin 224),141,142,143]), S'.R k = []) ∧
       m₀ ≤ initializedCyclicUnscaledSolveCost (embStk boundaryFactorLegacyReg S).R p u l s t a n solveTarget ∧
       Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
         (embTab componentReg (embTab groupReg body))))) (initializedCyclicUnscaledSolve hR hQ)
@@ -106,8 +112,34 @@ theorem initializedCyclicRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states ≤
     (fun k hk => hfresh₁ k (List.mem_append_left [147] hk)) hfield
   let F : Stacks 224 A := {S₁ with R := (Function.update S₁.R 147
     (cstream A w (chirpLine s E)++(cstream A w (chirpLine s D)++S₁.R 147)))}
-  refine ⟨v₀,S₀,m₀,v₁,S₁,m₁,v₂,F,m₁+m₂,columns,solution,D,E,hlen,hfits,hprepared,
+  have hproject : embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg F))) =
+      embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg S₁))) := by
+    refine Stacks.ext rfl rfl rfl ?_
+    funext k
+    have hne : boundaryFactorLegacyReg (tableReg (boundaryArithmeticReg (componentReg k))) ≠ (147 : Fin 224) := by
+      intro he
+      have hv := congrArg (fun j : Fin 224 => j.val) he
+      have hk := k.isLt
+      dsimp [boundaryFactorLegacyReg,tableReg,boundaryArithmeticReg,componentReg] at hv
+      split_ifs at hv <;> simp_all
+      all_goals omega
+    simp only [F,embStk,Function.comp_apply,Function.update_of_ne hne]
+  have hreadyFinal : LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+      q l s t u band 0 0 (cstream A w (chirpLine s rhs)++tail)
+      (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg F)))) := by
+    rw [hproject]
+    exact hready₁
+  refine ⟨v₀,S₀,m₀,v₁,S₁,m₁,v₂,F,m₁+m₂,columns,solution,D,E,hlen,hfits,hprepared,hreadyFinal,?_,?_,?_,?_,
     hm₀,he₀,hm₁,he₁,hv₂.trans hv₁,?_,Exec.seq he₁ he₂,hinp,hout,hL,?_,?_,?_,?_⟩
+  · simpa [F] using h144
+  · simpa [F] using h145
+  · simpa [F] using h146
+  · intro k hk
+    have h147 : k ≠ 147 := by
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+      rcases hk with rfl | rfl | rfl | rfl <;> decide
+    have hc : S₁.R k = [] := hfresh₁ k (List.mem_cons_of_mem 127 (List.mem_append_left [147] hk))
+    simpa only [F,Function.update_of_ne h147] using hc
   · have h := Nat.add_le_add_left hm₂ m₁
     simpa only [Nat.add_assoc] using h
   · simpa [F] using h110
