@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4491 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4495 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -36628,3 +36628,81 @@ cyclic locality geometry, global accuracy and actual owned-row crop execution
 reports only standard Lean axioms (4124.2 MiB peak). Production checks remain
 below 2057 MiB. Plan-status and whitespace checks pass. Commit the accumulated
 ownership/locality/crop integration locally; no push.
+
+### S4 selected target-window payload matched to principal recovery
+
+`Mult/PhaseCellSelectedRecoveryPayload.lean` identifies the actual replica-major
+nearest-row gather output with the existing recovery kernel's cstream of packed
+source intervals. Target windows may cross the periodic target seam; the
+principal source interval in this handoff is nonwrapping. The source-function
+reference selectedRhsFields uses the original global rowIndex and preserves
+the input unit bound. No full source line is physically materialized by this
+byte identity. Guarded payload check passes at 2044.1 MiB without warnings.
+
+`Mult/PhaseCellSelectedTargetCoreRecovery.lean` is now verified against the
+existing computed cropped recovery stack. Its contract invokes the
+unchanged plan.croppedProgram on that selected payload, with explicit floor-owned
+J_k offsets/counts and the existing numerical/time/stock contracts. It contains
+mathematical RawRecoveryJob/InverseMasterInput data, ordinary initial headers,
+and no execution premise. The guarded check passes at 3414.8 MiB, below the
+4 GiB module target, with no new warnings or proof-limit changes. The previously
+unbuilt recovery dependency closure now passes (15905 jobs, 44.0 GiB aggregate
+peak, 11.1 minutes under the normal guard). This is a nonwrapping principal
+source window; its selected target storage may be cyclic. The theorem starts
+with those selected bytes on the recovery input bank. Register placement and
+actual handoff from the selection output remain to be composed. Diagonal D'
+normalization, cyclic principal machine execution, per-page factor reuse,
+retained tensor continuation, root sizing and final acceptance remain open.
+S4 is incomplete. Retain this small chunk for a larger handoff integration
+commit; no push. Separate periodic-recovery work remains untouched.
+
+Selected-recovery validation: final module build passes (15907 jobs, 3.5 GiB
+peak). Temporary guarded audit of payload identity, selected input bound and
+actual computed solve/owned crop reports only propext, Classical.choice and
+Quot.sound (9606.7 MiB peak; production check 3414.8 MiB). Plan-status and
+whitespace checks pass. No commit or push made; retain the two modules for
+physical selection-to-recovery handoff integration.
+
+### S4 physical selected-prefix handoff into principal solve and owned crop
+
+`Mult/PhaseCellCroppedRecoveryReady.lean` packages only ordinary raw-recovery
+headers, scratch and left-bank emptiness. cropSupport excludes the payload
+port by the existing plan separation facts. CroppedReady.of_frame is shared
+between actual handoff and later caller composition. CroppedReady.takePrefix_exec
+executes the existing ordered prefix move into plan.work 124, derives readiness
+of that actual state, preserves the borrowed suffix and total symbol stock, and
+bounds the transfer's intermediate stock. Guarded final check: 3423.5 MiB.
+
+`Mult/PhaseCellRoutedTargetCoreRecovery.routed_target_owned_exec` composes that
+physical move with the verified selected_target_owned_exec. The actual program
+is exactly takePrefix followed by the existing plan.croppedProgram, with no
+solver supplier. The final endpoint changes only archive source (advancing to
+its borrowed suffix) and crop destination (appending computed J_k rows). Private
+recovery input/scratch and ordinary masters restore. Numerical accuracy is the
+existing paired principal accuracy on the explicit floor-owned interval. Time
+adds 6*selectedPayloadBytes+6 to computed recovery/crop time; stock adds twice
+that transfer bill to the existing shared recovery reserve. Broad simplification
+of the final frame hit default recursion depth; explicit coordinate updates
+resolved it without changing proof limits. Final guarded check: 3432.6 MiB,
+no warnings. The source may be the real selection output with an external tail.
+
+selectedWindowPayload_length also identifies the needed prefix counter with
+N*sourceSpan*wordWidth; it need not count or inspect the external archive.
+Guarded payload module check: 2042.5 MiB. Actual generation of this ordinary
+transfer counter and concrete register placement with the selector are still
+caller work. The theorem currently starts AFTER selection has produced its
+prefix and from ordinary CroppedReady headers; it is not a full raw axis call.
+Next compose selector placement/counter setup and inverse master construction,
+then D' normalization, per-page reuse and retained tensor continuation. Cyclic
+principal machine execution, root sizing, forward near-one geometry, numerical
+tensor error/support and final root acceptance remain open. S4 is incomplete.
+Collect accumulated payload/selected-recovery/readiness/physical-handoff work
+as one larger local integration commit after final build/audit. No push;
+separate periodic-recovery work remains untouched.
+
+Final physical-handoff validation: complete dependency build passes
+(15909 jobs, 3.5 GiB peak). Guarded audit of payload length, readiness frame,
+executed handoff and actual routed principal recovery/owned crop reports only
+standard Lean axioms (9607.5 MiB peak; production checks below 3433 MiB).
+Plan-status and whitespace checks pass. Commit the four accumulated modules
+locally as one integration chunk; no push.
