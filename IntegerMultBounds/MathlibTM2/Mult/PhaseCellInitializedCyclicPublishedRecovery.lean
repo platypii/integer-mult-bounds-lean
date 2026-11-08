@@ -64,6 +64,12 @@ theorem initializedCyclicPublishedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.s
         (mk v S) m (mk v' S') ∧
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧ S'.R 110 = S.R 110 ∧ S'.R 147 = [] ∧
       S'.R 132 = cstream A w (chirpLine s G)++(bandTableWords A w B (24*band+1) columns 0++S.R 132) ∧
+      LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+        q l s t u band 0 0 (cstream A w (chirpLine s rhs)++tail)
+        (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg S')))) ∧
+      (S'.R 144).length = a ∧ (S'.R 145).length = a+min n (s-a) ∧
+      (S'.R 146).length = n-min n (s-a) ∧ (S'.R 119).length = q ∧
+      (∀ k ∈ ([(0 : Fin 224),1,2,3,4,5,6,7,94,138,141,143]), S'.R k = []) ∧
       (∀ i, Fits w (G i)) ∧
       ∀ x : ZMod s → ℝ,
         SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
@@ -127,8 +133,46 @@ theorem initializedCyclicPublishedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.s
     axis.hdom rhs G hrhs hreal hoff x₀ hx₀ (fun i hi => (hacc x₀ hx₀ i hi).trans hone)
   have hGfits : ∀ i, Fits w (G i) := hformat.2
   refine ⟨vc,Sc,mc,vd,F,mc+md,columns,G,hec,Nat.add_le_add_left hmd mc,hvd.trans hvc,
-    Exec.seq hec hed',hinp,hout,hL,?_,by simp [F],by simp [F,w,bits,B,band],hGfits,?_⟩
+    Exec.seq hec hed',hinp,hout,hL,?_,by simp [F],by simp [F,w,bits,B,band],?_,?_,?_,?_,?_,?_,hGfits,?_⟩
   · simpa [F] using h110
+  · have h : LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
+        q l s t u band 0 0 (cstream A w (chirpLine s rhs)++tail)
+        (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg
+          {Sc with R := (Function.update (Function.update Sc.R 147 []) 132
+            (cstream A (2*q+8) (chirpLine s G)++(bandTableWords A w B (24*band+1) columns 0++S.R 132)))})))) := hreadyD
+    rw [← hw] at h
+    exact h
+  · simpa [F] using h144
+  · simpa [F] using h145
+  · simpa [F] using h146
+  · have hq : (Sc.R 119).length = q := by
+      simpa [embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg,groupHeaderValue] using
+        hreadyC.masters (119,112) (by simp [groupHeaderCopies])
+    simpa [F] using hq
+  · intro k hk
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · simpa [F,embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+        hreadyC.blank 0 (by decide) (by decide) (by decide)
+    · simpa [F,embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+        hreadyC.blank 1 (by decide) (by decide) (by decide)
+    · simpa [F,embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+        hreadyC.blank 2 (by decide) (by decide) (by decide)
+    · simpa [F,embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+        hreadyC.blank 3 (by decide) (by decide) (by decide)
+    · simpa [F,embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+        hreadyC.blank 4 (by decide) (by decide) (by decide)
+    · simpa [F,embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+        hreadyC.blank 5 (by decide) (by decide) (by decide)
+    · simpa [F,embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+        hreadyC.blank 6 (by decide) (by decide) (by decide)
+    · simpa [F,embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+        hreadyC.blank 7 (by decide) (by decide) (by decide)
+    · simpa [F,embStk,componentReg,boundaryArithmeticReg,tableReg,boundaryFactorLegacyReg] using
+        hreadyC.blank 94 (by decide) (by decide) (by decide)
+    · simpa [F] using hfreshC 138 (by simp)
+    · simpa [F] using hfreshC 141 (by simp)
+    · simpa [F] using hfreshC 143 (by simp)
   · intro x hx
     refine ⟨hacc x hx,?_⟩
     intro i hi

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4668 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4676 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -39778,3 +39778,97 @@ Targeted guarded build passes (15789 jobs, 3.5 GiB aggregate). The full ordinary
 input published/decoded cyclic recovery axiom audit reports only propext,
 Classical.choice and Quot.sound (9575.2 MiB temporary audit peak). Source-integrity
 and whitespace checks pass; default proof limits unchanged.
+
+### S4 generated cyclic cropping reuses restoring slices and existing seam geometry
+
+PhaseCellCyclicSlice composes two existing copySlice executions on the retained
+ambient stream: wrapped prefix first, then the high physical interval. The
+existing cyclicInterval_split identity identifies their concatenation in cyclic
+order, without a case-generated crop proof. Source and controls restore exactly;
+only the destination prefix changes. The symbol time is 6*a*w+10*n*w+32.
+
+PhaseCellCyclicSliceControls derives the high-piece length by subtracting the
+retained start ruler 144 from endpoint 145, then generates start/high/low byte
+counts with three structural unaryProduct calls and temporary word width 94.
+The private difference ruler and arithmetic scratch restore. Its exact endpoint
+installs only the three byte counters, and its bill includes difference and
+product generation. Guarded check passes at 2115.5 MiB.
+
+PhaseCellGeneratedCyclicSlice composes control generation, the two restoring
+slices, and counter retirement. It starts from ordinary retained endpoint
+lengths and width, not supplied byte clocks. It prepends the exact cyclicInterval
+a n G stream to archive 147, preserves the ambient result/table stream on 132
+and all other tapes, and bills all setup/copy/cleanup. Guarded check passes
+without warnings at 2122.3 MiB.
+
+PhaseCellCyclicIntervalRead reuses packedIntervalRead at the original cyclic
+offset. It proves exact decoding at every principal ambient coordinate via
+cyclicPrincipalVertices_eq and cyclicInterval_get, then transfers field ErrorOn
+with no numerical loss. It handles seam-crossing storage without changing the
+original matrix or solution coordinates. Guarded check passes at 2046.4 MiB.
+
+Next expose the published caller's retained endpoint, width and fresh crop bank
+facts from its exact frame, compose generatedCyclicSlice and decoded cyclic
+accuracy into the ordinary-input caller, then proceed to normalization/replica
+reuse, uniform resources and broader S4 composition/acceptance gates. Full S4
+remains open. Keep for the next larger local checkpoint; no push; unrelated
+periodic WIP untouched.
+Targeted guarded build passes (9922 jobs, 2.7 GiB aggregate). Axiom audits for
+the generated crop execution and cyclic read/error transfer report only propext,
+Classical.choice and Quot.sound (7056.8 MiB temporary audit peak). Source-integrity
+and whitespace checks pass; default proof limits unchanged.
+
+
+### S4 ordinary-input cyclic recovery returns a decoded cropped stream
+
+PhaseCellPreparedCyclicSlice generates width 2*q+8 from precision master 119,
+uses the generated restoring crop, and retires width 94. No factor-width supplier
+is required. Its exact frame changes only destination 147 and pays generation,
+copying and cleanup. Guarded check passes at 2114.2 MiB.
+
+The published caller now exposes its proved endpoint rulers, precision master
+and fresh crop bank. PhaseCellInitializedCyclicCroppedRecovery composes that
+actual execution with preparedCyclicSlice: tape 147 contains exactly n*w symbols
+in cyclic principal order, tape 132 retains the ambient result and computed
+table, and the original RHS and external streams are preserved. The decoded
+cropped output satisfies the same 1/2^target error against every exact original
+principal solution. The error transfer introduces no new precision or loss.
+Guarded check passes at 3403.5 MiB, with default proof limits.
+
+Approach review: retain the manuscript's joint boundary/interior decomposition
+and structural crop/publication proofs. Next pin the normalized reusable output
+contract, reusing existing rounding programs rather than creating another
+arithmetic pipeline. Then close replica setup reuse and uniform time/structural
+stock before expanding tensor composition. The existing normalization wrapper
+uses noncyclic halo cardinality and packedInterval storage, so it cannot be
+instantiated unchanged for this cyclic boundary/interval. Separate generic
+rounding from those geometry-specific scalar producers. Full S4 remains open:
+locality, complex/axis/tensor/forward/error/support and final compiler acceptance
+still require proofs. No push; unrelated periodic WIP untouched.
+
+
+### S4 cyclic final rounding reuses the existing arbitrary-list executor
+
+PhaseCellCyclicRoundAccuracy proves exact physical decoding and normalized
+rounding at the original cyclic coordinates. It reuses finalRound_fits,
+value_finalRound, computed_solution_norm_of_error and scaleRound_error; seam
+handling is confined to the storage index identity. The error is exactly the
+existing 2/2^p+e/2^j, independent of window length. No input Fits premise is
+needed: the existing symZ decoding accounts for finite-width input.
+Guarded check passes at 3091.2 MiB.
+
+PhaseCellRoundCyclicInterval instantiates roundPackedKey directly on the
+cyclicInterval list, with retained row and word-width masters generating the
+symbol count. No new rounding program is introduced. The same execution
+preserves every stack except the normalized source prefix, includes the full
+rounding/control cleanup bill, and certifies that exact output's decoded error.
+Guarded check passes at 3101.8 MiB. This closes the generic execution/accuracy
+adapter, not ordinary-input normalization: the cyclic caller must still generate
+its scalar bank and establish target magnitude, precision and width room from
+its actual boundary cardinality. Replica setup reuse, uniform resources and
+full S4 composition/acceptance remain open. No push.
+
+The cropped caller and cyclic rounding adapter guarded builds pass (3.5 GiB and
+3.3 GiB aggregate peaks). Their axiom audit reports only propext,
+Classical.choice and Quot.sound (9581.3 MiB temporary audit peak). Source
+integrity and whitespace checks pass; no proof limits changed.
