@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4483 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4488 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -36450,3 +36450,91 @@ only propext, Classical.choice and Quot.sound (6989.3 MiB peak from the larger
 existing advance-controller import closure); production module checks remain
 under 2080 MiB. Plan-status and whitespace checks pass. Commit the accumulated
 generated-selection integration locally; no push.
+
+### S4 local selection from ordinary headers and manuscript guard containment
+
+`Mult/PhaseCellLocalRowHeaderLoad.lean` uses the existing chirpBankLoad on the
+117-tape workspace. Five ordinary binary scalars s,t,a,origin,n on 32--36,
+an empty zero source 37 and retained width rulers 114/115 determine the whole
+selector table. Fit of every scalar follows from the existing arithmetic room
+and first selected-row bound. All source headers and off-bank tapes restore.
+Exact load cost is 110*W+4*V+137. Guarded check passes at 1926.7 MiB.
+
+`Mult/PhaseCellPreparedLocalRowSelection.preparedLocalRowSelection_exec`
+composes that load with the complete generated selection sweep. No table,
+origin queue or controller is supplied. Empty initial table workspace restores,
+ordinary headers/source window and scratch restore; output RHS, retained
+controls, offsets and count have exact endpoints. Existing width/word rulers
+and the unit row ruler on 103 are ordinary inputs. Every phase is in the
+explicit time bill. Guarded check passes at 2080.7 MiB without warnings.
+
+`NLogN/PhaseCellRowSelectionGeometry.lean` proves a global-index nearest-row
+guard bound: under t <= 2s, adding R source rows advances nearest selection by
+at most 2R+1 target rows. Thus a guarded source core fits its target halo once
+its first/last owned rows fit and H >= 2R+1. This supplies the actual all-row
+containment premise for nonwrapping windows; it changes no phase-cell names.
+Guarded check passes at 1881.2 MiB.
+
+`NLogN/PhaseCellManuscriptGuard.manuscript_guard_room` matches this to the
+existing locality theorem. For p >= 1 and target precision <= 16p, the selected
+band is <= 5p, localityDepth <= 336p^2, and 2*radius+1 <= 4096p^3. Thus the
+manuscript halo covers both locality and nearest-row conversion. Guarded check
+passes at 1873.0 MiB, using the real existing localityDepth and band definitions.
+
+Next handle cyclic storage/selection across the physical seam using original
+ambient coordinates, then compose the retained RHS with the actual principal
+inverse and normalized owned-core publication/crop. The owned-core endpoint
+conditions still must be derived from the manuscript's J_k ownership; local
+selection alone is not a complete inverse. Root sizing, forward near-one
+geometry, numerical tensor error/support and final root acceptance remain open.
+S4 is incomplete. Keep these four modules uncommitted for the larger wrapping
+selection/inverse integration chunk. No push; periodic-recovery work untouched.
+
+Prepared-selection/guard validation: combined dependency build passes
+(9660 jobs, 2.5 GiB aggregate peak). Temporary guarded axiom audit reports
+only standard Lean axioms (6992.7 MiB peak; production checks below 2081 MiB).
+Plan-status and whitespace checks pass. No commit or push made.
+
+### S4 cyclic local selection on the actual retained halo storage
+
+`Mult/PhaseCellCyclicInterval.lean` represents a copied window as an ordered
+list of original ambient ZMod coordinates. It agrees with packedInterval away
+from the seam, and cyclicInterval_halo identifies it with the exact sourceIndex
+formula of the executed target-halo pass. Cyclic windows of at most one period
+split at the ORIGINAL seam into two packedInterval pieces, not a restarted
+periodic matrix. Append and origin-reduction laws preserve byte order.
+Guarded interval/split check passes at 2048.6 MiB; linter cleanup applied.
+
+`Mult/PhaseCellCyclicRowSelection.lean` proves the nearest quotient's exact
+period law and rowIndex_natCast for arbitrary unwrapped indices. Thus selected
+rows of a copied cyclic target window are exactly the cyclic source RHS under
+the same GLOBAL rowIndex, even across the seam. The actual ordered gather
+executes that byte identity with the existing local-window time bound.
+Guarded check passes at 2049.2 MiB without warnings.
+
+`generatedLocalRowSelection_exec_of_payload` and
+`preparedLocalRowSelection_exec_of_payload` now share execution/resource/frame
+proofs for arbitrary stored-window byte identities. The existing nonwrapping
+contracts remain corollaries. `preparedCyclicLocalRowSelection_exec` instantiates
+the same fixed prepared program on cyclic storage; no table, controller or
+origin supplier, and no nonwrapping source/target premise, is assumed. Ordinary
+headers/source/scratch restore; output and reusable controls have exact endpoints.
+Guarded generic prepared check: 2082.4 MiB; concrete cyclic check: 2064.8 MiB.
+
+This closes cyclic C-selection storage semantics and real local selection
+execution. It does NOT yet prove the cyclic principal solver/publication on
+that RHS: its matrix restriction and phase-cell seam must use the two original
+coordinate pieces, and owned-core endpoints still need the manuscript J_k
+geometry. Next compose that inverse and normalized owned-core crop with the
+retained tensor invariant. Root sizing, forward near-one geometry, numerical
+tensor error/support and final compiler/root acceptance remain open. S4 remains
+incomplete. Collect the accumulated header/guard/cyclic-selection work as one
+larger local integration commit after final build/audit. No push;
+periodic-recovery work remains untouched.
+
+Final cyclic-selection validation: combined dependency build passes
+(9698 jobs, 2.6 GiB aggregate peak). Temporary guarded audit of stored halo
+identity, original-seam split, global row selector period, byte payload and
+prepared cyclic execution reports only standard Lean axioms (7002.9 MiB peak;
+production checks below 2085 MiB). Plan-status and whitespace checks pass.
+Commit accumulated header/guard/cyclic selection integration locally; no push.
