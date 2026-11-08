@@ -3898,8 +3898,10 @@ remain available for the S2–S3 callers.
 `amortizedCoreWidth`; freeze routing and class-wrapper expansion unless a concrete
 caller obligation requires it. The selected per-class trace initializes and
 retires its input table and numerical geometry, restores exposure/routing
-workspace and includes complete phase bills. Actual outputs now yield certified
-publication rows, and the restoring copy resolves reverse job order.
+workspace and includes complete phase bills. This established publication
+machinery is available for reuse; the new S4 recovered archives still need their
+core/complex-output contract connected to it. The existing crop loop restores
+forward replica order as part of publication.
 
 Close the remaining obligations in this order:
 
@@ -3912,9 +3914,13 @@ principal window. Retained masks, widths and replica counts come from execution
 frames; assembly adds no repeated setup. The ordinary-input trace now executes
 both common-width normalizations, including generated scalar width, piece length
 and paid cleanup. Principal reference rows and piecewise acceptance are derived
-from the emitted fields. Next derive common-job Rows from those actual normalized
-archives, execute any required core crop/complex pairing/order conversion, and
-preserve reserved coordinates and suffixes. Keep the joint
+from the emitted fields. Ordinary fitting halos now execute through normalized
+core cropping, which restores forward replica order without a separate reversal.
+The real scalar rounding certificate is now 1/2^p, and the existing complex
+assembly machine accepts its two halves within the published budget. Next join
+that assembly to the ordinary core trace, identify the component input producer,
+and derive common-job Rows from the actual outputs, preserving reserved
+coordinates and suffixes. Keep the joint
 boundary count in both pieces' conserved precision allowance. Judge the next
 checkpoint by actual published recovered rows and eliminated supplier premises.
 Keep geometry fallback and structural stock/uniform time visible as independent
@@ -41933,3 +41939,152 @@ forward replica order by prepending cropped cores) and pairPackedBatches, then
 normalizedPackedComponents_generated_accuracy and PackedExactBatch.rows_of_outputs.
 Use those existing executors before adding a new crop/pair/row abstraction.
 No push is authorized; periodic WIP stays excluded.
+
+
+### S4 approach review after ordinary-input normalized execution
+
+Verified progress is now an ordinary-input scalar principal-window trace through
+normalized packed archives (commit 233a518b), under both cached geometry room
+hypotheses. This is not yet grouped full-tensor S4. The latest physical core-crop
+check passes at 2058.5 MiB: it reuses the existing generated crop machine,
+consumes tape 848, restores forward replica order on 850, preserves complex
+accuracy and reuses restored normalization workspace. It requires ordinary
+radius/core metadata and has not yet been composed with the preceding trace.
+
+The good decisions remain structural arbitrary-list proofs, existing interior
+solver reuse, shared Schur setup, packed rather than ambient storage, and exact
+executed-state acceptance. The crop refactor removes numerical premises from
+its existing runtime proof; the real compatibility theorem and complex wrapper
+both reuse it. Do not introduce another crop or pairing engine.
+
+The main efficiency risk is local state-placement work outpacing closure of the
+final contract. Judge the next checkpoint by a concrete accepted common-job core
+output, including executed complex assembly and explicit original replica order.
+Freeze layout/readiness abstraction growth except where that caller forces it.
+Once this contract is connected, prioritize whole-prefix stock and uniform cost
+before expanding more grouped wrappers: current detailed time bills are not the
+required uniform asymptotic estimate. Preserve fallback geometry as an explicit
+open obligation rather than strengthening the final theorem's hypotheses.
+
+Remaining acceptance groups: (1) actual core/complex publication and grouped
+caller/ordinary metadata producers, (2) geometry fallback, (3) whole-prefix space
+and uniform/amortized time including shared setup/exposure, (4) locality and
+axis/tensor error/support composition, (5) root/compiler/integrity acceptance.
+These are substantial proofs, not merely cleanup. No defensible completion
+percentage or calendar ETA follows from module/line counts or green helper
+builds. Retain manuscript core/halo/locality language and reuse existing
+normalizedPackedComponents_generated_accuracy and common-job Rows contracts.
+No push; periodic WIP remains out of scope.
+
+
+### S4 ordinary fitting halos execute normalized core publication in input order
+
+packedCoreArchiveFromDimensions_run factors execution from the existing real
+numerical certificate. The original real theorem remains a short compatibility
+wrapper over the same runtime proof. packedCoreArchiveFromDimensions_complex_exec
+reuses that runtime and packedInterval_crop_error to preserve complex error with
+no extra numerical loss. No crop program or per-replica proof is duplicated.
+
+normalizedCorePublication_exec connects source 848 to core output 850 using the
+existing generated crop controller. Its scratch reuses restored normalization
+tapes 851..860; borrowed common width remains on 906. Two explicit ordinary
+metadata words supply radius/core length on 907/908. The generated symbol counts,
+loop counter and slice rulers are consumed or erased; all other tapes restore.
+Cropping the reverse-chronological archive prepends cores in original input order.
+
+executedCyclicCorePublication_spec now composes this actual crop with the complete
+ordinary-input recovery/normalization trace. The normalized endpoint retains the
+control certificates needed to derive the actual replica ruler. A structural
+input view/override lemma preserves the two added metadata words through the
+embedded trace. The theorem returns original-order RHS-to-principal-solution
+alignment, exact normalized core output at 850, consumed source 848 and the same
+per-row error as normalization. Its bill adds every generated crop control,
+per-row crop/retirement and cleanup cost. Guarded full-caller check passes at
+3447.9 MiB. Fitting geometry is explicit; seam fallback remains open.
+
+Before complex assembly, sharpen real scalar final rounding from the generic
+2/2^p bound to 1/2^p. Pairing two loose 2/2^p certificates would overspend the
+common-job arithmetic budget. The actual fields and reference solutions are real,
+so the one-dimensional rho0 error gives the sharper estimate without changing
+execution or adding another rounding phase. Two scalar target+1 solve errors then
+sum to the intended target error, and their two real rounding losses sum to the
+existing 2/2^p complex allowance. Prove/use that sharp certificate, then reuse
+packedComplexBatchAssembly_exec and existing locality/RowOutput acceptance.
+Do not silently enlarge the final manuscript error budget.
+
+Still required: ordinary metadata producers/lifecycle at the grouped caller,
+actual complex assembly and common-job Rows, geometry fallback, whole-prefix
+stock/uniform time, and locality/tensor/shared-exposure/root acceptance. No push;
+periodic WIP stays excluded. Keep this work for a larger local checkpoint with
+the next accepted publication step.
+
+The ordinary-core / existing common-job publication-row integration build passes
+(15916 jobs; 6.0 GiB combined peak). This also rebuilds and checks existing real
+crop callers against the factored runtime/compatibility theorem. The earlier
+normalization-control retention rebuild passes (15888 jobs; 15.5 GiB combined
+peak). Full ordinary core caller passes at 3447.9 MiB; default proof limits are
+unchanged. Final source integrity and whitespace scans pass.
+
+Final guarded checks pass: factored crop runtime/real compatibility 2113.6 MiB,
+complex crop acceptance 2038.6 MiB, physical crop/frame 2056.8 MiB, strengthened
+ordinary normalized endpoint 3429.9 MiB. The complete ordinary core caller was
+checked at 3447.9 MiB. The guarded temporary audit of the complete core caller
+and original real crop theorem reports only propext, Classical.choice and
+Quot.sound (9601.4 MiB temporary audit peak, not a production module). Keep the
+verified crop work uncommitted for the larger complex-publication checkpoint;
+no push. Periodic WIP remains untouched.
+
+
+### S4 real rounding and complex assembly meet the existing arithmetic budget
+
+PhaseCellRealRoundAccuracy proves norm_rhoC_sub_real and scaleRound_real_error:
+rounding a real value has one coordinate of loss, at most 1/2^p. The packed real
+single-row and arbitrary-list lemmas reuse the existing finalRound reader,
+fixed-width reduction and magnitude bound. No runtime rounding changes.
+recoveredCyclicPackedNormalization_exec now derives both sharper piece
+certificates from the actual real recovered fields and principal solutions.
+The ordinary normalized and ordinary core callers retain this stronger bound
+1/2^p + 2^(-(target+1))/2^shift at their actual emitted words.
+
+normalizedCoreAssembly_exec reuses packedComplexBatchAssembly_exec, generating
+one core byte ruler from the retained core-length and common-width headers and
+erasing it afterward. It changes only core source 850. Its algebraic error
+statement combines two sharp scalar rows to exactly 2/2^p + 2^(-target)/2^shift,
+the existing complex arithmetic allowance. Counts and scratch restore; setup,
+pairing and erasure all appear in the time bill.
+
+normalizedComponentSolutions_certificate identifies actual scalar principal
+solutions with the existing componentSolution target by dominance uniqueness
+on the core. It preserves arbitrary-list component order and uses
+componentSolution_targets, not a caller-supplied target permutation. The small
+componentSolution_normalized identity expresses the result in precisely the
+scaled complex target language consumed by existing locality acceptance.
+
+assembleNormalizedComponentSolutions_exec executes that physical assembly from
+the actual scalar Solves/error certificates. It uses the existing halfCount to
+derive the complex replica ruler from retained scalar count 121, proves its
+length from the component/input/output Forall₂ relations, and erases the ruler
+after pairing. It restores all original count symbols and private scratch.
+No extra original-replica metadata word, new tape or halving engine is supplied.
+The ordinary core endpoint retains both control certificates for this next
+composition, avoiding reconstruction of hidden replica headers.
+
+The sharp ordinary-core build passes (15890 jobs; 3.5 GiB combined peak), and
+the component-identification/derived-count assembly module checks at 3093.8 MiB.
+Still open: join assembly to the ordinary core trace for the original complex
+component inputs, execute/reuse their input producer, apply existing locality
+and common-job RowOutput/Rows acceptance, then complete grouped metadata,
+fallback geometry, resource and tensor/root S4 gates. Do not claim the separate
+checked core trace and assembly theorem are already that composed complex caller.
+No push; unrelated periodic WIP remains untouched.
+
+Final sharp-core/component/old-publication integration passes (15919 jobs;
+5.8 GiB combined peak). All nine changed Lean modules pass guarded single-file
+checks: largest 3442.3 MiB for the complete ordinary core caller; normalized
+endpoint 3432.2 MiB, recovered sharp connection 3409.9 MiB, sharp rounding
+3095.1 MiB, derived-count component assembly 3094.0 MiB. The guarded temporary
+axiom audit of the complete core caller, derived-count assembly and real batch
+rounding reports only propext, Classical.choice and Quot.sound (9602.6 MiB
+temporary audit peak, not a production module). Integrity and whitespace scans
+pass; no proof limits were changed. Collect the nine Lean files and this plan
+as one larger local checkpoint, excluding periodic WIP. No push.

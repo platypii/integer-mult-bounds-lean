@@ -59,6 +59,8 @@ theorem executedCyclicPackedNormalization_spec (hR : rpStates ≤ Q) (hQ : SS.st
           PackedRecoveryNormalization.normalizationCost p q W 0 (n-min n (s-a)) Fs.length) ∧
       G.R 247 = buffersL.accumulatorTail ∧ G.R 547 = buffersR.accumulatorTail ∧
       G.R 125 = savedL ∧ G.R 425 = savedR ∧
+      ReplicaAssemblyControls H (CyclicPackedNormalizationPlacement.gather false) 839 G ∧
+      ReplicaAssemblyControls K (CyclicPackedNormalizationPlacement.gather true) 838 G ∧
       List.Forall₂ (fun rhs x => SchurDominance.Solves (realMatrix s t p u)
         (cyclicPrincipalVertices s a n) x (fun i => (value q (rhs i)).re)) Fs.reverse xs ∧
       Exec (embTab extendNormalization (embTab extendAssembly
@@ -73,11 +75,11 @@ theorem executedCyclicPackedNormalization_spec (hR : rpStates ≤ Q) (hQ : SS.st
       List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (haloVertices s a (a+min n (s-a)))
         (packedIntervalRead p W a (cstream A W (packedInterval a (min n (s-a)) D)))
         (fun i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*(x i : ℂ))
-        (2/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p)) xs Gs ∧
+        (1/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p)) xs Gs ∧
       List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (haloVertices s 0 (n-min n (s-a)))
         (packedIntervalRead p W 0 (cstream A W (packedInterval 0 (n-min n (s-a)) D)))
         (fun i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*(x i : ℂ))
-        (2/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p)) xs Gs := by
+        (1/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p)) xs Gs := by
   dsimp only
   let band := PhaseCellBand.width p u
   let B := cyclicPrincipalBoundary s t band a n
@@ -105,7 +107,7 @@ theorem executedCyclicPackedNormalization_spec (hR : rpStates ≤ Q) (hQ : SS.st
     (fun j => ⟨(hfields j).1,(hfields j).2.1,(hfields j).2.2.2⟩)
     W hW wide hwide vi G controlsL' controlsR' hwordsL hwordsR
   refine ⟨J,L,X,G,fields,xs,vf,m+k,savedL,savedR,huf.trans (huser.trans hu),
-    Nat.add_le_add hm hk,h247,h547,h125,h425,hsol,?_,haccL,haccR⟩
+    Nat.add_le_add hm hk,h247,h547,h125,h425,controlsL',controlsR',hsol,?_,haccL,haccR⟩
   exact Exec.seq helift henorm
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

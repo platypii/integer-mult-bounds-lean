@@ -18,12 +18,13 @@ def packedCoreArchiveFromDimensions (radiusHeader coreHeader replicas clock skip
     (packedCoreArchiveLoop clock skip count src dst savedSkip saved tmp rows width retireCount trash retireTmp))
       (clearWords [skip,count,rows])
 
+omit [NeZero s] in
 /-- Generate all slice controls and the loop count from borrowed dimensions,
 publish the reversed halo archive in input order, and erase owned controls. -/
-theorem packedCoreArchiveFromDimensions_exec
+theorem packedCoreArchiveFromDimensions_run
     (radiusHeader coreHeader replicas clock skip count src dst savedSkip saved tmp rows width retireCount trash retireTmp : Fin T)
     (hreg : [radiusHeader,coreHeader,replicas,clock,skip,count,src,dst,savedSkip,saved,tmp,rows,width,retireCount,trash,retireTmp].Nodup)
-    (v : HS T Q A U) (S : Stacks T A) (q w coreWidth k radius : ℕ)
+    (v : HS T Q A U) (S : Stacks T A) (w coreWidth k radius : ℕ)
     (hleft : radius ≤ coreStart coreWidth k)
     (hright : coreStart coreWidth k+coreLength s coreWidth k+radius ≤ s)
     (Ds : List (ZMod s → GaussianInt)) (tail : List (Fin (A+4)))
@@ -32,13 +33,7 @@ theorem packedCoreArchiveFromDimensions_exec
     (hR : (S.R radiusHeader).length = radius)
     (hL : (S.R coreHeader).length = coreLength s coreWidth k)
     (hw : (S.R width).length = w) (hN : (S.R replicas).length = Ds.length)
-    (hclean : ∀ i ∈ [clock,skip,count,rows,savedSkip,saved,tmp,retireCount,trash,retireTmp], S.R i = [])
-    (inputs : List ((ZMod s → GaussianInt) × (ZMod s → ℝ))) (e : ℝ)
-    (hgood : List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn
-      (haloVertices s (coreStart coreWidth k-radius) (coreStart coreWidth k+coreLength s coreWidth k+radius))
-      (fun i => (packedIntervalRead q w (coreStart coreWidth k-radius)
-        (cstream A w (packedInterval (coreStart coreWidth k-radius) (coreLength s coreWidth k+2*radius) D)) i).re)
-      x.2 e) inputs Ds) :
+    (hclean : ∀ i ∈ [clock,skip,count,rows,savedSkip,saved,tmp,retireCount,trash,retireTmp], S.R i = []) :
     ∃ v' F n, v'.user = v.user ∧
       n ≤ packedCoreArchiveControlsCost radius (coreLength s coreWidth k) w Ds.length+
         (Ds.length*(packedCoreArchiveStepCost radius (coreLength s coreWidth k)
@@ -48,10 +43,7 @@ theorem packedCoreArchiveFromDimensions_exec
         (mk v S) n (mk v' F) ∧
       F.R src = tail ∧ F.R dst = (Ds.map (fun D => cstream A w (ownedCoreWords coreWidth k D))).flatten++S.R dst ∧
       F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
-      (∀ i, i ≠ src → i ≠ dst → F.R i = S.R i) ∧
-      List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
-        (fun i => (packedIntervalRead q w (coreStart coreWidth k)
-          (cstream A w (ownedCoreWords coreWidth k D)++S.R dst) i).re) x.2 e) inputs Ds := by
+      (∀ i, i ≠ src → i ≠ dst → F.R i = S.R i) := by
   have hr := hreg
   regs_ne hr
   have hc : [radiusHeader,coreHeader,width,replicas,skip,count,rows,clock,trash,tmp].Nodup := by regs_nodup
@@ -86,16 +78,18 @@ theorem packedCoreArchiveFromDimensions_exec
       rcases hi with rfl | rfl | rfl | rfl | rfl | rfl
       all_goals first | assumption | (apply Ne.symm; assumption))]
     exact hz
-  obtain ⟨v₂,G,n₂,hu₂,hn₂,he₂,hsrc',hdst,hclock,hi,ho,hleft',hframe,hgood'⟩ := packedCoreArchiveLoop_accurate_exec (body := body)
+  obtain ⟨v₂,G,n₂,hu₂,hn₂,he₂,hsrc',hdst,hclock,hi,ho,hleft',hframe⟩ := packedCoreArchiveLoop_exec (body := body)
     clock skip count src dst savedSkip saved tmp rows width retireCount trash retireTmp hlp
-    v₁ B q w coreWidth k radius hleft hright Ds tail
+    v₁ B w coreWidth k radius hleft hright Ds.reverse tail
     (by rw [hB src ‹skip ≠ src›.symm ‹count ≠ src›.symm ‹src ≠ rows› ‹clock ≠ src›.symm]; exact hsrc)
     (by simp [B,packedCoreArchiveControlsState])
     (by simp (disch := first | assumption | (apply Ne.symm; assumption)) [B,packedCoreArchiveControlsState])
     (by simp (disch := first | assumption | (apply Ne.symm; assumption)) [B,packedCoreArchiveControlsState])
     (by simp (disch := first | assumption | (apply Ne.symm; assumption)) [B,packedCoreArchiveControlsState])
     (by rw [hB width ‹skip ≠ width›.symm ‹count ≠ width›.symm ‹rows ≠ width›.symm ‹clock ≠ width›.symm]; exact hw)
-    hz inputs e hgood
+    hz
+  simp only [List.reverse_reverse] at hdst
+  simp only [List.length_reverse] at hn₂
   have hdstB : B.R dst = S.R dst := hB dst ‹skip ≠ dst›.symm ‹count ≠ dst›.symm ‹dst ≠ rows› ‹clock ≠ dst›.symm
   have hskipG : (G.R skip).length = radius*w := by
     rw [hframe skip ‹skip ≠ src› ‹skip ≠ dst› ‹clock ≠ skip›.symm]
@@ -115,7 +109,7 @@ theorem packedCoreArchiveFromDimensions_exec
   rw [hn₃] at he₃
   have hF (i : Fin T) (hi : i ∉ [skip,count,rows]) : F.R i = G.R i := by simp only [F,ite_eq_right hi]
   refine ⟨v₃,F,n₁+n₂+(2*(radius*w+coreLength s coreWidth k*w+(coreLength s coreWidth k+2*radius))+7),hu₃.trans (hu₂.trans hu₁),Nat.add_le_add (Nat.add_le_add hn₁ hn₂) (Nat.le_refl _),
-    (by simpa only [packedCoreArchiveFromDimensions] using Exec.seq (Exec.seq he₁ he₂) he₃),?_,?_,hi,ho,hleft',?_,?_⟩
+    (by simpa only [packedCoreArchiveFromDimensions] using Exec.seq (Exec.seq he₁ he₂) he₃),?_,?_,hi,ho,hleft',?_⟩
   · rw [hF src (by simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]; exact ⟨‹skip ≠ src›.symm,‹count ≠ src›.symm,‹src ≠ rows›⟩),hsrc']
   · rw [hF dst (by simp only [List.mem_cons,List.not_mem_nil,or_false,not_or]; exact ⟨‹skip ≠ dst›.symm,‹count ≠ dst›.symm,‹dst ≠ rows›⟩),hdst,hdstB]
   · intro i his hid
@@ -133,6 +127,50 @@ theorem packedCoreArchiveFromDimensions_exec
       all_goals
         simp only [List.mem_cons,List.not_mem_nil,or_false,not_or] at hm
         first | exact hm.1 | exact hm.2.1 | exact hm.2.2 | exact hc
-  · simpa only [hdstB] using hgood'
+
+
+theorem packedCoreArchiveFromDimensions_exec
+    (radiusHeader coreHeader replicas clock skip count src dst savedSkip saved tmp rows width retireCount trash retireTmp : Fin T)
+    (hreg : [radiusHeader,coreHeader,replicas,clock,skip,count,src,dst,savedSkip,saved,tmp,rows,width,retireCount,trash,retireTmp].Nodup)
+    (v : HS T Q A U) (S : Stacks T A) (q w coreWidth k radius : ℕ)
+    (hleft : radius ≤ coreStart coreWidth k)
+    (hright : coreStart coreWidth k+coreLength s coreWidth k+radius ≤ s)
+    (Ds : List (ZMod s → GaussianInt)) (tail : List (Fin (A+4)))
+    (hsrc : S.R src = (Ds.reverse.map (fun D => cstream A w
+      (packedInterval (coreStart coreWidth k-radius) (coreLength s coreWidth k+2*radius) D))).flatten++tail)
+    (hR : (S.R radiusHeader).length = radius)
+    (hL : (S.R coreHeader).length = coreLength s coreWidth k)
+    (hw : (S.R width).length = w) (hN : (S.R replicas).length = Ds.length)
+    (hclean : ∀ i ∈ [clock,skip,count,rows,savedSkip,saved,tmp,retireCount,trash,retireTmp], S.R i = [])
+    (inputs : List ((ZMod s → GaussianInt) × (ZMod s → ℝ))) (e : ℝ)
+    (hgood : List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn
+      (haloVertices s (coreStart coreWidth k-radius) (coreStart coreWidth k+coreLength s coreWidth k+radius))
+      (fun i => (packedIntervalRead q w (coreStart coreWidth k-radius)
+        (cstream A w (packedInterval (coreStart coreWidth k-radius) (coreLength s coreWidth k+2*radius) D)) i).re)
+      x.2 e) inputs Ds) :
+    ∃ v' F n, v'.user = v.user ∧
+      n ≤ packedCoreArchiveControlsCost radius (coreLength s coreWidth k) w Ds.length+
+        (Ds.length*(packedCoreArchiveStepCost radius (coreLength s coreWidth k)
+          (coreLength s coreWidth k+2*radius) w+3)+2)+
+        (2*(radius*w+coreLength s coreWidth k*w+(coreLength s coreWidth k+2*radius))+7) ∧
+      Exec body (packedCoreArchiveFromDimensions radiusHeader coreHeader replicas clock skip count src dst savedSkip saved tmp rows width retireCount trash retireTmp)
+        (mk v S) n (mk v' F) ∧
+      F.R src = tail ∧ F.R dst = (Ds.map (fun D => cstream A w (ownedCoreWords coreWidth k D))).flatten++S.R dst ∧
+      F.inp = S.inp ∧ F.out = S.out ∧ F.L = S.L ∧
+      (∀ i, i ≠ src → i ≠ dst → F.R i = S.R i) ∧
+      List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
+        (fun i => (packedIntervalRead q w (coreStart coreWidth k)
+          (cstream A w (ownedCoreWords coreWidth k D)++S.R dst) i).re) x.2 e) inputs Ds := by
+  obtain ⟨v',F,n,hu,hn,he,hs,hd,hi,ho,hl,hframe⟩ := packedCoreArchiveFromDimensions_run (body := body)
+    radiusHeader coreHeader replicas clock skip count src dst savedSkip saved tmp rows width retireCount trash retireTmp
+    hreg v S w coreWidth k radius hleft hright Ds tail hsrc hR hL hw hN hclean
+  refine ⟨v',F,n,hu,hn,he,hs,hd,hi,ho,hl,hframe,?_⟩
+  apply List.Forall₂.imp (fun x D h => ?_) hgood
+  apply packedCore_error q w (coreStart coreWidth k-radius)
+    (coreStart coreWidth k+coreLength s coreWidth k+radius) coreWidth k D (S.R dst)
+    (by omega) (by omega) hright x.2 e
+  have hlength : coreStart coreWidth k+coreLength s coreWidth k+radius-(coreStart coreWidth k-radius) =
+      coreLength s coreWidth k+2*radius := by omega
+  simpa only [hlength] using h
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz

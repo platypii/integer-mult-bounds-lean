@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicPackedNormalizationPair
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicRecoveredRows
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRealRoundAccuracy
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicReplicaProblems
 
 /-! Actual recovered-field certificates supply both normalization calls.
@@ -52,11 +53,11 @@ theorem recoveredCyclicPackedNormalization_exec (hA : 4 ≤ A)
       List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (haloVertices s a (a+min n (s-a)))
         (packedIntervalRead p W a (cstream A W (packedInterval a (min n (s-a)) D)))
         (fun i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*(x i : ℂ))
-        (2/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p)) xs Gs ∧
+        (1/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p)) xs Gs ∧
       List.Forall₂ (fun x D => PhaseCellInterface.ErrorOn (haloVertices s 0 (n-min n (s-a)))
         (packedIntervalRead p W 0 (cstream A W (packedInterval 0 (n-min n (s-a)) D)))
         (fun i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*(x i : ℂ))
-        (2/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p)) xs Gs := by
+        (1/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p)) xs Gs := by
   dsimp only
   let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
   let cellTarget := initialSchurTarget p u (boundaryTableBits p (boundaryRecoveryTarget p (target+1)) 2 B.card) 2
@@ -99,7 +100,7 @@ theorem recoveredCyclicPackedNormalization_exec (hA : 4 ≤ A)
     simpa only [Ds,List.map_reverse,List.map_ofFn,Function.comp_def,List.append_nil] using hsrcL
   have hwordsR : S.R 849 = (Ds.map (fun D => cstream A w (packedInterval 0 (n-min n (s-a)) D))).flatten++[] := by
     simpa only [Ds,List.map_reverse,List.map_ofFn,Function.comp_def,List.append_nil] using hsrcR
-  obtain ⟨vf,steps,hu,ht,hexec,haccL,haccR⟩ := cyclicPackedNormalization_exec (body := body) hA H K rfl rfl W
+  obtain ⟨vf,steps,hu,ht,hexec,_haccL,_haccR⟩ := cyclicPackedNormalization_exec (body := body) hA H K rfl rfl W
     hdim.1 hdim.2.2 hW (haloVertices s a (a+min n (s-a))) (haloVertices s 0 (n-min n (s-a)))
     (by intro i hi; exact (mem_haloVertices _ _ i).mp hi)
     (by intro i hi hj; exact (mem_haloVertices _ _ i).mpr ⟨hi,hj⟩)
@@ -111,10 +112,24 @@ theorem recoveredCyclicPackedNormalization_exec (hA : 4 ≤ A)
     (List.Forall₂.imp (fun x D h i hi => h i (hleft i hi)) haccuracy)
     (List.Forall₂.imp (fun x D h i hi => h i (hright i hi)) haccuracy)
     v S controlsL controlsR hwordsL hwordsR
+  have hwpos : 1 ≤ w := by
+    dsimp only [w,executionWidth]
+    omega
+  have hsharpL := packedRealFinalRoundBatch_accuracy hA p q (inverseNormalizationShift p) w W (p+8)
+    a (min n (s-a)) hdim.1 hwpos (by omega) (haloVertices s a (a+min n (s-a))) (by omega)
+    (by intro i hi; exact (mem_haloVertices _ _ i).mp hi) xs Ds (1/(2 : ℝ)^(target+1)) he
+    (fun x hx i hi => hmag x hx i (hleft i hi)) hreal hfits []
+    (List.Forall₂.imp (fun x D h i hi => h i (hleft i hi)) haccuracy)
+  have hsharpR := packedRealFinalRoundBatch_accuracy hA p q (inverseNormalizationShift p) w W (p+8)
+    0 (n-min n (s-a)) hdim.1 hwpos (by omega) (haloVertices s 0 (n-min n (s-a))) (by omega)
+    (by intro i hi; simpa only [Nat.zero_add] using (mem_haloVertices _ _ i).mp hi)
+    xs Ds (1/(2 : ℝ)^(target+1)) he
+    (fun x hx i hi => hmag x hx i (hright i hi)) hreal hfits []
+    (List.Forall₂.imp (fun x D h i hi => h i (hright i hi)) haccuracy)
   refine ⟨xs,vf,steps,hsol,hu,?_,?_,?_,?_⟩
   · simpa only [hHp,hKp,hHq,hKq,hHo,hKo,hHs,hKs,hDlen] using ht
   · simpa only [hHp,hKp,hHq,hKq,hHw,hKw,hHo,hKo,hHs,hKs,Ds,List.append_nil] using hexec
-  · simpa only [hHp,hHq,hHw,hHo,hHs,Ds,List.append_nil] using haccL
-  · simpa only [hHp,hHq,hHw,hKo,hKs,Ds,List.append_nil] using haccR
+  · simpa only [Ds,List.append_nil] using hsharpL
+  · simpa only [Ds,List.append_nil] using hsharpR
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
