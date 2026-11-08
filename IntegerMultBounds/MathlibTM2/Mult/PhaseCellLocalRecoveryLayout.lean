@@ -4,7 +4,7 @@ public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryBanks
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCroppedRecoveryReady
 
 /-! A fixed disjoint allocation for the existing 117-tape selector, recovery
-banks and four handoff scratch ports. All separation is proved over role sums. -/
+banks, four handoff scratch ports and six batch ports. All separation is proved over role sums. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
@@ -30,7 +30,7 @@ noncomputable instance : Fintype RecoveryBank := Fintype.ofList
 namespace LocalRecoveryLayout
 noncomputable section
 
-abbrev Role := Fin 117 ⊕ (RecoveryBank ⊕ Fin 4)
+abbrev Role := Fin 117 ⊕ (RecoveryBank ⊕ Fin 10)
 def tapes : ℕ := Fintype.card Role
 def port : Role → Fin tapes := Fintype.equivFin Role
 
@@ -38,20 +38,41 @@ theorem port_injective : Function.Injective port := (Fintype.equivFin Role).inje
 
 def geometry (i : Fin 117) : Fin tapes := port (.inl i)
 def recovery (i : RecoveryBank) : Fin tapes := port (.inr (.inl i))
-def scratch (i : Fin 4) : Fin tapes := port (.inr (.inr i))
+def scratch (i : Fin 4) : Fin tapes := port (.inr (.inr (Fin.castAdd 6 i)))
+def batch (i : Fin 6) : Fin tapes := port (.inr (.inr (Fin.natAdd 4 i)))
 
 theorem geometry_injective : Function.Injective geometry := by
   intro i j h; exact Sum.inl.inj (port_injective h)
 theorem recovery_injective : Function.Injective recovery := by
   intro i j h; exact Sum.inl.inj (Sum.inr.inj (port_injective h))
 theorem scratch_injective : Function.Injective scratch := by
-  intro i j h; exact Sum.inr.inj (Sum.inr.inj (port_injective h))
+  intro i j h
+  have hh : (Fin.castAdd 6 i : Fin 10) = Fin.castAdd 6 j := Sum.inr.inj (Sum.inr.inj (port_injective h))
+  exact Fin.ext (congrArg (fun x : Fin 10 => x.val) hh)
 theorem geometry_ne_recovery (i : Fin 117) (j : RecoveryBank) : geometry i ≠ recovery j := by
   simp [geometry,recovery,port_injective.eq_iff]
 theorem scratch_ne_recovery (i : Fin 4) (j : RecoveryBank) : scratch i ≠ recovery j := by
   simp [scratch,recovery,port_injective.eq_iff]
 theorem geometry_ne_scratch (i : Fin 117) (j : Fin 4) : geometry i ≠ scratch j := by
   simp [geometry,scratch,port_injective.eq_iff]
+
+theorem batch_injective : Function.Injective batch := by
+  intro i j h; exact Fin.ext (by
+    have hv := congrArg Fin.val (Sum.inr.inj (Sum.inr.inj (port_injective h)))
+    change 4+i.val = 4+j.val at hv
+    omega)
+theorem geometry_ne_batch (i : Fin 117) (j : Fin 6) : geometry i ≠ batch j := by
+  simp [geometry,batch,port_injective.eq_iff]
+theorem batch_ne_recovery (i : Fin 6) (j : RecoveryBank) : batch i ≠ recovery j := by
+  simp [batch,recovery,port_injective.eq_iff]
+
+theorem scratch_ne_batch (i : Fin 4) (j : Fin 6) : scratch i ≠ batch j := by
+  intro h
+  have hh : (Fin.castAdd 6 i : Fin 10) = Fin.natAdd 4 j := Sum.inr.inj (Sum.inr.inj (port_injective h))
+  have hv := congrArg (fun x : Fin 10 => x.val) hh
+  change i.val = 4+j.val at hv
+  have hi := i.isLt
+  omega
 
 abbrev plan := RecoveryBanks.plan recovery recovery_injective
 abbrev crop := RecoveryBanks.crop recovery recovery_injective

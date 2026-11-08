@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4499 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4507 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -36789,3 +36789,110 @@ handoff reports only standard Lean axioms (9609.2 MiB audit peak). Production
 selection/handoff check is 3430.0 MiB. Plan-status and whitespace checks pass.
 Collect the generated transfer, routed recovery update and concrete placed
 selector/handoff as one larger local integration commit; no push.
+
+### S4 fixed bulk nearest-row selection with shared controls and source restoration
+
+`Mult/PhaseCellCyclicSelectionReplicaStep.lean` replays the existing restoring
+cyclicRowSelection using one retained localRowControls page. It borrows exactly
+one counted target-window prefix, gathers its selected source rows, and moves
+the restored window and selected output to reverse accumulators. Only queue,
+input archive and output accumulator change. All local gather scratch and the
+controller restore. The step cost is
+n*(14*w+25)+12*span*w+6*w+38 + 8*span*w+2*n*w+10.
+A broad propositional membership proof exhausted default heartbeats; structural
+List.mem_cons_of_mem and a separate five-port archive identity fixed this.
+No proof limits were changed. Initial step check: 2111.9 MiB, no warnings.
+
+`Mult/PhaseCellCyclicSelectionReplicaLoop.lean` instantiates the existing fixed
+countedLoop with a processed/remaining replica-list invariant. The shared gather
+controller, word width and per-window volume restore each iteration. The loop
+consumes exactly the owned replica prefixes and retains both archives as the
+reverse of the original flatMap, with an arbitrary borrowed queue suffix.
+There is no per-replica header/table/control generation. Guarded check:
+2125.7 MiB without warnings.
+
+`Mult/PhaseCellRestoringCyclicSelection.lean` finishes with two ordinary moves:
+restore the entire target bank to its original queue and restore the selected
+RHS to its original replica order. Its exact endpoint changes only the consumed
+loop clock and selection destination. The selected output is the existing
+selectedWindowPayload, using selectedWindowPayload_cyclic; no nonwrapping source
+assumption is needed for this byte identity. Existing nonwrapping principal
+recovery still has its original limitation. Time is
+N*(cyclicSelectionReplicaStepCost n span w+2*span*w+2*n*w+3)+6.
+The batch includes all intermediate stock under a twice-time native-action
+bound. Final guarded check: 2120.9 MiB, no warnings.
+
+`Mult/PhaseCellOrderedGatherStock.lean` supplies the shared structural
+naturalGather_native lemma (1930.8 MiB check). The step and completed batch
+reuse it rather than unfolding all gather actions in each caller.
+
+The batch currently starts with one prepared controller, an ordinary per-window
+volume ruler and a replica clock. Next execute that one-time preparation from
+ordinary headers, allocate the batch archive/clock/volume ports and join the
+actual bulk output to the generated routed recovery. Factor-page reuse and
+cyclic principal solve/D' normalization remain separate obligations. Tensor
+continuation, root sizing, forward geometry, accumulated error/support and final
+S4 acceptance remain open. Separate periodic-recovery work is untouched. Keep
+this bulk integration uncommitted for the larger ordinary-header caller chunk;
+no push.
+
+Bulk selection validation: complete build including the existing routed recovery
+passes (15919 jobs, 5.2 GiB aggregate peak). Guarded audit of native gather,
+replica step, fixed loop, restored bulk execution and cyclic payload identity
+reports only propext, Classical.choice and Quot.sound (7006.7 MiB audit peak;
+production batch check 2120.9 MiB). Plan-status and whitespace checks pass.
+No commit or push; retain the bulk caller chunk for one-time setup integration.
+
+### S4 ordinary-header preparation and concrete bulk selector caller
+
+LocalSelectionHeaders now lives in the narrow
+`Mult/PhaseCellLocalSelectionHeaders.lean`; the placed single-field caller
+imports the same contract. `Mult/PhaseCellPrepareLocalRowControls.lean` executes
+loadLocalRowHeaders followed by generatedLocalRowControls exactly once. It
+returns the retained controller on 91, binary origins on 109 and unary selected
+row count on 116. Ordinary headers restore and the table bank returns to its
+initial blank state. A shared native push bound of three uses tblCompile_native
+and chirpBankLoad_native rather than expanding the controller's concrete code.
+Initial execution check: 2078.5 MiB; native certificate builds successfully.
+
+LocalRecoveryLayout now reserves six batch ports alongside its four handoff
+scratch ports: loop clock, per-window volume, retained target queue, input
+archive, output accumulator and ordinary target-span ruler. The precision-
+independent role sum still gives structural injection and separation. Existing
+handoff scratch types stay Fin 4, and geometry/recovery maps retain their APIs.
+
+`Mult/PhaseCellPlacedBulkLocalRowSelection.lean` instantiates the verified batch
+loop on these actual ports and the existing geometry gather ports. No register
+supplier or execution premise remains. Its exact endpoint changes the private
+clock and real selection output only; ordinary CroppedReady is preserved.
+Time and intermediate stock are inherited from the shared restoring sweep.
+Guarded check: 3424.9 MiB, no warnings.
+
+`Mult/PhaseCellPreparedBulkLocalRowSelection.lean` composes embedded ordinary-
+header preparation and the concrete bulk sweep. The controller-generation bill
+is charged once, not per replica. The exact selectedWindowPayload is placed at
+the existing recovery handoff source. The theorem exposes the retained unary
+row count, restoration of the complete target queue, and preservation of every
+recovery register and handoff scratch register; callers need not recover these
+facts from an opaque intermediate bank. Stock is bounded over the complete
+execution by three times its explicit time bill. Final guarded check:
+3429.0 MiB, no warnings or changed proof limits.
+
+The entry state still has an ordinary replica clock and a per-window volume
+ruler. Next derive those by copying the retained replica ruler and multiplying
+ordinary target-span and word rulers, then retire that private volume after the
+sweep. Connect the resulting bulk caller to actual recovery-job/master
+construction and generated routed solve/crop. Cyclic principal execution, D'
+normalization, factor-page reuse, retained tensor continuation, root sizing,
+forward geometry, numerical error/support and final S4 acceptance remain open.
+Separate periodic-recovery work is untouched. Collect bulk loop, setup and
+placed caller together as one larger local integration commit after validation;
+no push.
+
+Final ordinary-header bulk validation: complete build of prepared bulk,
+existing placed single-field caller and routed recovery succeeds (15931 jobs,
+6.0 GiB aggregate peak). Expanded layout guarded check: 3419.4 MiB. The temporary
+prepared-bulk audit checks controller native/execution certificates and placed/
+prepared bulk execution; all report only propext, Classical.choice and Quot.sound.
+Plan-status and whitespace checks pass. Commit the accumulated bulk loop,
+ordinary setup and concrete caller as one local integration chunk; no push.

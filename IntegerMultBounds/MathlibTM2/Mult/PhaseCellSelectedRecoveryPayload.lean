@@ -17,6 +17,15 @@ def selectedWindowPayload {s t : ℕ} (A w a n origin span : ℕ) (Fs : List (ZM
   Fs.flatMap fun F => (localRowOrigins s t a n origin w).flatMap
     (fun p => ((cstream A w (cyclicInterval origin span F)).drop p).take w)
 
+theorem selectedWindowPayload_cyclic {s t : ℕ} [NeZero s] (A w a n origin span : ℕ)
+    (Fs : List (ZMod t → GaussianInt))
+    (hwindow : ∀ j < n, origin ≤ nearestNatural s t (a+j) ∧ nearestNatural s t (a+j) < origin+span) :
+    selectedWindowPayload (s := s) A w a n origin span Fs =
+      Fs.flatMap (fun F => cstream A w (cyclicInterval a n (fun j => F (rowIndex s t j)))) := by
+  apply List.flatMap_congr
+  intro F _
+  exact cyclicRowOrigins_payload A w a n origin span F hwindow
+
 theorem selectedWindowPayload_eq {s t : ℕ} [NeZero s] (A w a n origin span : ℕ)
     (Fs : List (ZMod t → GaussianInt)) (hsource : a+n ≤ s)
     (hwindow : ∀ j < n, origin ≤ nearestNatural s t (a+j) ∧ nearestNatural s t (a+j) < origin+span) :
