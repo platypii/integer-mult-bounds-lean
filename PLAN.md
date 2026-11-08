@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4526 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4539 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -37206,3 +37206,362 @@ Quot.sound for generic half-grid stability, derived owned-rounding magnitude
 and actual owned normalization (9553.2 MiB temporary audit peak). Production
 modules remain below 3.4 GiB. Plan-status and whitespace checks pass. Collect
 this verified diagonal/normalization milestone as one local chunk; no push.
+
+### S4 retained unary parameters composed through owned publication
+
+`Mult/PhaseCellQueuedOwnedNormalization.lean` composes the existing parameter
+queue program with generated interval publication. RecoveryParameterQueue.normalize_exec
+starts from retained unary parameter rulers and blank conversion scratch;
+there is no supplied binary parameter packet. The queue's exact endpoint
+provides ordinary inverseParameterWords to normalization. Header framing
+preserves all scalar/control/port readiness. The final endpoint restores the
+original header tail and publishes the normalized batch. Time is parameter
+conversion plus generatedIntervalTimeCost; stock composes as
+8*(2*(4*B+4))+13*generatedIntervalTimeCost. The theorem accepts an arbitrary
+starting call depth and returns the actual execution and trace at that depth.
+Guarded check succeeds without warnings at 3290.7 MiB.
+
+`Mult/PhaseCellActualOwnedNormalization.lean` now uses this queue composition,
+replacing its binary-packet premise with the actual retained unary parameter
+lengths, blank conversion scratch and original header tail. It still derives
+owned geometry, precision, width and reference magnitude from the axis facts.
+Final guarded check: 3382.9 MiB, no warnings. Combined build with actual bulk
+recovery succeeds (15948 jobs, 3.5 GiB aggregate peak). Temporary guarded audit
+of queued normalization and actual owned publication reports only propext,
+Classical.choice and Quot.sound (9553.7 MiB audit peak).
+
+Read-only inspection confirms bulkTargetCoreSpec exposes preservation of every
+recovery-bank coordinate before updating crop.reg 12; source clearing is on
+the disjoint geometry bank. Therefore ordinary publication readiness can be
+derived from CroppedReady and the bank wiring, without an intermediate-state
+supplier. Next discharge this frame/readiness bridge and physically compose
+the bulk and queued-publication programs, then D' page reuse across replicas.
+S4 remains incomplete; cyclic execution, tensor continuation, root sizing,
+forward geometry and accumulated error/acceptance remain open. Retain these
+two source changes for the larger physical-caller integration commit; no push.
+Separate periodic recovery work untouched.
+
+### S4 publication readiness derived at the exact bulk endpoint
+
+`Mult/PhaseCellRecoveryPublicationReady.lean` packages only the normalization
+controls read by the actual caller. publicationReady_of_cropped derives this
+certificate directly from the existing raw CroppedReady and RecoveryBanks
+wiring: scalar width/blankness, retained ordinary parameter rulers, empty
+parameter-conversion scratch/header, precision/common-width/row/replica rulers,
+normalization scratch/ports and blank inputWidth. No stronger readiness is
+assumed about the intermediate execution state.
+
+PublicationReady.of_bank_frame proves these controls are stable under a bank
+frame excluding cropDst, the accumulated output tape. publicationReady_after_bulk
+specializes it to the exact bulkTargetCoreSpec endpoint: a preserved recovery
+bank followed by clearing the disjoint external source and publishing an
+arbitrary cropped output packet. It needs only the frame/source separation
+already exposed by the actual bulk caller. Thus the next execution composition
+can discharge normalization's readiness premises from the original raw input.
+
+Final guarded check succeeds without warnings at 3423.6 MiB. Combined build
+with actual owned normalization and actual bulk recovery succeeds (15997 jobs,
+3.5 GiB aggregate peak). The initial dependency rebuild was necessary because
+older normalization-bank imports were stale; its aggregate peak was 8.3 GiB.
+No proof limits changed. Next instantiate this bridge on the concrete local
+layout and compose the actual bulk and queued-publication executions, then D'
+page reuse across replicas. S4 remains incomplete; cyclic principal execution,
+tensor continuation, root sizing, forward geometry and accumulated error/final
+acceptance remain open. Keep this with the physical-caller integration chunk;
+no commit or push. Separate periodic recovery work untouched.
+
+### S4 concrete executed publication at the bulk recovery endpoint
+
+`Mult/PhaseCellOwnedPublicationHandoff.lean` instantiates normalization and its
+parameter queue on LocalRecoveryLayout's recovery bank. owned_normalize_after_bulk
+accepts the original raw CroppedReady, the exact bank frame returned by bulk
+recovery and the produced cropped numerical family/error certificate. It
+constructs the exact intermediate endpoint (external source cleared, cropDst
+holding the cropped batch). publicationReady_after_bulk supplies every
+ordinary scalar/parameter/header/ruler/scratch premise of owned_normalize_exec.
+The replica ruler is matched by the produced-family length certificate.
+No normalization readiness, binary packet or computed byte ruler is supplied
+about the intermediate state. The theorem executes queued normalization there,
+returns p-grid owned packets and the scaled-reference error, and retains the
+explicit parameter-preparation/publication time and additive stock bound.
+
+Guarded check succeeds at 3424.7 MiB; the trivial intro suggestion was cleaned
+before the final build. Combined build with actual bulk recovery succeeds
+(15998 jobs, 3.5 GiB aggregate peak). Next join bulk recovery's execution to
+this concrete handoff with Exec.seq and compose their stock/time bounds, then
+attach reusable D' output. S4 remains incomplete; cyclic principal execution,
+tensor continuation, root sizing, forward geometry and accumulated error/final
+acceptance remain open. Keep this with the larger physical-caller integration
+chunk; no commit or push. Separate periodic recovery work untouched.
+
+### S4 one executed bulk selection, recovery, crop and normalized publication
+
+`Mult/PhaseCellBulkPublishedRecovery.lean` defines bulkPublishedProgram as the
+actual bulk recovery program followed by the concrete queued normalization
+program. bulk_published_exec_ofAxisBounds invokes the constructed bulk caller,
+extracts its produced reference family/order and bank frame, and passes these
+to owned_normalize_after_bulk. There is no supplied intermediate execution,
+normalization readiness, binary parameter queue or byte ruler. Exec.seq joins
+the actual executions; mn_seq_within_add joins their traces at arbitrary caller
+depth. The normalization header is restored to its original blank value and
+the cropDst update replaces the numerical prefix, yielding one exact endpoint.
+The retained target bank and recovery-bank frame remain exposed.
+
+The result contains the actual p-grid Gaussian family, original replica count,
+normalized scaled-reference error 2/2^p+2^(-target)/2^j, and combined explicit
+time and stock. Width/precision ABI identities are proved once before composing;
+in particular wordWidth=2*q+8 needs arithmetic, not definitional equality.
+Using these identities avoids unfolding the constructed jobs through large
+execution terms. No heartbeat or recursion limit was raised.
+
+Final guarded check succeeds without warnings at 3441.6 MiB. Combined build
+with the existing D' product succeeds (16004 jobs, 3.5 GiB aggregate peak).
+Temporary guarded audit of the full joined theorem reports only propext,
+Classical.choice and Quot.sound (9628.1 MiB audit peak).
+
+Next attach the existing local D' page/product, retaining one coefficient page
+across all replicas, and connect the normalized principal reference to the
+manuscript B0 target through the locality/factorization lemmas. Cyclic principal
+execution, tensor continuation, root sizing, forward geometry and accumulated
+error/final acceptance remain open. S4 remains incomplete. Keep the accumulated
+physical caller changes for a larger integration commit; no push. Separate
+periodic recovery work untouched.
+
+### S4 publication radius derived for the real diagonal multiplier
+
+The previous triangle bound 8*p became radius two after inverse normalization,
+leaving no rounding allowance. `Mult/PhaseCellOwnedRecoveryMagnitude.lean`
+now uses the squared real/imaginary bounds (each 4*p) to prove complex norm
+<= 6*p structurally, sharpening halfGridSolution_norm_le and ownedTargets_norm_le.
+No matrix or solve hypothesis changes. ownedTargets_normalized_norm_le combines
+this with 4*p <= 2^j to derive normalized reference norm <= 3/2. Existing
+rounding-magnitude and execution proofs still compile. Guarded magnitude check:
+3397.5 MiB, without warnings.
+
+`Mult/PhaseCellPublishedRadius.lean` bounds the inherited publication error by
+1/2 for p >= 3 and proves a generic decoded radius-two lemma. Its actual-owned
+specialization derives reference norm from the constructed solution family and
+restricts the halo stability certificate to J_k. It concludes decoded packet
+norm <= 2 directly from the published numerical error, without a separate
+magnitude supplier. Final guarded check: 3392.9 MiB, no warnings. Combined build
+with full bulk publication and existing D' product succeeds (16005 jobs,
+5.9 GiB aggregate peak).
+
+Next expose the actual rounded-field fits/decoder identity to turn the decoded
+radius bound into the value-field premise of diagonalPacket_accuracy, then
+execute one coefficient page across all replicas and compose D' output.
+S4 remains incomplete; cyclic principal execution, tensor continuation, root
+sizing, forward geometry and accumulated error/final acceptance remain open.
+Keep this sharpening with the larger diagonal-caller integration chunk; no
+commit or push. Separate periodic recovery work untouched.
+
+### S4 rounded field fits, decoder identity and complete D' numerical bridge
+
+`Mult/PhaseCellRoundedDiagonalAccuracy.lean` proves roundedDiagonal_accuracy
+from the incoming raw recovery packet's error and the reference bounds already
+derived from principal stability. It first derives each rounded Gaussian word's
+strict signed fit using computed_solution_norm_of_error and finalRound_fits.
+It then identifies packedIntervalRead with value p of that rounded field.
+Existing packedFinalRound_accuracy plus the normalized reference radius yields
+field norm <= 2, the exact hypothesis needed by the existing real-factor code.
+No rounded-output fit or radius premise is supplied. diagonalPacket_accuracy
+then yields decoded D' output error 8/2^p+2^(-target)/2^j against D' times the
+normalized principal reference, combining both rounding losses once.
+
+packedInterval_fits_of_active converts a pointwise fit certificate to the
+packed list format required by rsb_diagonalInterval_runs_within, given exact
+interval coverage. It uses list indexing and the original global coordinates,
+without per-row finite checks. The new module uses arbitrary intervals, not
+uniform source cores. Initial guarded checks stayed below 3391 MiB; the unused
+section-instance warning was removed before the final build. Combined build
+with full bulk publication succeeds (16006 jobs, 3.5 GiB aggregate peak).
+Temporary guarded audit of roundedDiagonal_accuracy reports only propext,
+Classical.choice and Quot.sound (9553.1 MiB audit peak).
+
+Next instantiate this numerical bridge on the actual owned solution family and
+use its derived list fits in the real-factor stream execution. The physical
+D' page lifecycle and replica reuse still need composition with bulk publication.
+S4 remains incomplete; cyclic principal execution, tensor continuation, root
+sizing, forward geometry and accumulated error/final acceptance remain open.
+Retain this with the larger physical diagonal integration chunk; no commit or
+push. Separate periodic recovery work untouched.
+
+### S4 executed real diagonal multiplication with derived recovery fits
+
+`Mult/PhaseCellRoundedDiagonalExec.lean` connects roundedDiagonal_accuracy to
+the existing actual rsb_diagonalInterval_runs_within executor. It starts from
+the incoming raw recovery error and reference stability bounds, identifies the
+published rounded input stream and generated coefficient page, derives every
+multiplier input fit with packedInterval_fits_of_active, and returns both the
+RsbRunsWithin execution certificate and decoded numerical D' accuracy. There
+is no supplied rounded-field fit or radius assumption. The reference bounds
+are the generic hypotheses already proved for the actual owned family.
+
+The exact final role bank changes only output o, prepending the product packet;
+source x and coefficient page y restore. This is the per-replica execution
+contract required for page reuse. Time remains n*(rmulCost W+6*W+2)+8, stock
+remains realWeightWorkspace C W n, and decoded error is
+8/2^p+2^(-target)/2^j. The same actual product field appears in both contracts.
+Guarded check succeeds without warnings at 3375.8 MiB. Combined build with
+full bulk publication succeeds (16007 jobs, 3.5 GiB aggregate peak).
+
+Next instantiate the generic reference bounds on the constructed owned family,
+then build the physical replica traversal that loads each published input,
+reuses one D' coefficient page, and accumulates output in the required order.
+Page generation/header release must be composed once per owned interval.
+S4 remains incomplete; cyclic principal execution, tensor continuation, root
+sizing, forward geometry and accumulated error/final acceptance remain open.
+Keep this with the larger physical diagonal integration chunk; no commit or
+push. Separate periodic recovery work untouched.
+
+### S4 actual owned-family real-factor execution
+
+`Mult/PhaseCellActualOwnedDiagonalExec.lean` specializes the actual real-factor
+stream to the constructed RecoveryAxisBounds owned family. The theorem derives
+packed precision and p <= q, the ambient common packet width, exact J_k interval
+fit/membership/cover, rounding magnitude and normalized reference radius. It
+uses the root's natural alpha directly, with the existing alpha^2 <= p table
+premise. No independent reference magnitude, radius, input-fit, output-fit or
+numerical accuracy supplier is introduced. Its remaining inputs describe the
+incoming recovery error and actual rounded source/coefficient-page tapes.
+The endpoint retains source and coefficient page, and returns the same exact
+product field in both machine and numerical contracts.
+
+The guarded check succeeds at 3375.8 MiB for the generic executor; the actual
+specialization's initial check passed and unused forall-binder warnings were
+removed before the final combined build. Combined actual-owned diagonal and
+full bulk-publication build succeeds (16008 jobs, 3.5 GiB aggregate peak).
+
+Read-only review identifies countedListLoop_exec_within as the existing batch
+abstraction: its fixed body and remaining-list invariant reuse one reserve,
+provided each iteration's boundary stock does not grow. For D' the body should
+move one published packet from the batch queue to the multiplier input, run
+the restoring real-factor stream with the retained coefficient page, then clear
+the consumed input. Equal input/output packet lengths pay the accumulated
+output without per-replica reserve growth. Next implement that concrete body
+and its endpoint/stock lemma, then instantiate the counted loop. Page generation
+and table-header release occur once per owned interval. S4 remains incomplete;
+cyclic principal execution, tensor continuation, root sizing, forward geometry
+and accumulated error/final acceptance remain open. No commit or push; retain
+this with the larger physical diagonal integration chunk. Periodic work untouched.
+
+### S4 consuming packet worker and constant boundary stock
+
+`Mult/PhaseCellRetiringPacketWorker.lean` defines a reusable physical worker:
+move one packet from a batch queue into an empty input, execute a restoring
+packet operation, then clear the restored input. retiringPacketWorker_exec
+composes the actual load/run/retire executions, preserves the queue suffix and
+borrowed scratch, and publishes the result prefix. Its generic operation
+contract is the exact restoring endpoint provided by the real-factor stream;
+the theorem does not encode or enumerate packet data.
+
+packet_replace_preserves_size proves that consuming a packet and publishing a
+different packet of equal length preserves boundary stack size. The worker
+therefore provides precisely the non-growing boundary premise required by
+countedListLoop_exec_within. Its time adds 6*bytes+6 for loading and 2*bytes+2
+for retirement to the operation cost. The all-depth trace adds
+2*(6*bytes+6) to the operation reserve; retirement pushes nothing. The native
+loading certificate and execution/stock proof use existing transfer, move and
+clear primitives with default proof limits.
+
+Final guarded check succeeds without warnings at 1946.5 MiB. Combined build
+with actual owned D' execution succeeds (15696 jobs, 2.6 GiB aggregate peak).
+Next turn the RsbHolds/RsbFr endpoint of the real-factor executor into the exact
+restoring state required by this worker, instantiate it, and close the
+remaining-list batch loop with a retained coefficient page and equal packet
+lengths. S4 remains incomplete; page generation lifecycle, cyclic principal
+execution, tensor continuation, root sizing, forward geometry and accumulated
+error/final acceptance remain open. No commit or push; retain this with the
+larger physical diagonal integration chunk. Separate periodic work untouched.
+
+### S4 exact role-bank endpoints and consuming-worker adapter
+
+`Mult/PhaseCellRestoringRolePacket.lean` proves RsbFr.eq_update_of_holds over an
+arbitrary injective role map: the standard restoring-operation holds/frame
+contract with only output changed yields the exact physical Stacks update.
+RsbRunsWithin.exec_update retains its actual execution and all-depth workspace
+trace at this exact endpoint. The proof is structural over arbitrary roles;
+no concrete bank enumeration is needed.
+
+retiringRolePacket_exec uses this endpoint conversion to instantiate the
+consuming packet worker for any restoring Rsb operation. It derives the loaded
+bank's holds and multiplier-cleanliness from the initial bank, role injection,
+external queue separation and register cleanliness. It then executes packet
+loading, the role operation and restored-input retirement, returning the exact
+queue/output endpoint, time, all-depth reserve and equal boundary stock. No
+supplied loaded intermediate state or loaded readiness is needed. The actual
+D' stream's RsbRunsWithin certificate has exactly this operation contract.
+
+Final guarded check succeeds without warnings at 1951.1 MiB. Combined build
+with actual owned D' execution succeeds (15697 jobs, 2.6 GiB aggregate peak).
+Next specialize the adapter to the diagonal stream and construct the batch
+remaining-list invariant, proving one coefficient page remains live across
+replicas and equal packet volumes keep the shared reserve independent of
+replica count. S4 remains incomplete; page generation lifecycle, cyclic
+principal execution, tensor continuation, root sizing, forward geometry and
+accumulated error/final acceptance remain open. Keep this with the physical
+batch integration chunk; no commit or push. Separate periodic work untouched.
+
+### S4 concrete consuming D' packet worker
+
+`Mult/PhaseCellDiagonalPacketWorker.lean` specializes retiringRolePacket_exec
+to the actual varying-real-factor D' stream. It derives loaded RsbReady by
+updating only the free input role, supplies the unchanged coefficient-page
+role, executes the existing diagonal stream, and retires the restored input.
+The exact final state changes only the batch queue suffix and accumulated
+product output. Source/coefficient roles, borrowed packet byte ruler, scratch
+and the rest of the role bank restore.
+
+Packet lengths derive from length_cstream and packedInterval_length, so
+packet_replace_preserves_size gives equal initial/final boundary stock for the
+actual worker. Time is 6*(n*w)+6 + [n*(rmulCost w+6*w+2)+8] + 2*(n*w)+2.
+All-depth reserve is 2*(6*(n*w)+6)+realWeightWorkspace C w n. The generic
+worker takes input fits; the prior actual rounded-diagonal theorem derives
+these from the recovery certificate before instantiation. No new evaluator or
+multiplier implementation is introduced. Final guarded check succeeds without
+warnings at 2058.0 MiB. Combined build with actual owned diagonal execution
+succeeds (15698 jobs, 2.7 GiB aggregate peak).
+
+Next instantiate countedListLoop_exec_within on the concrete worker with a
+remaining-packets invariant, accumulating product packets in reverse processing
+order while retaining the coefficient page and reusing the same reserve.
+Then restore the requested output order and join one-time page generation and
+release. S4 remains incomplete; cyclic principal execution, tensor continuation,
+root sizing, forward geometry and accumulated error/final acceptance remain
+open. Retain this with the larger batch integration chunk; no commit or push.
+Separate periodic recovery work untouched.
+
+### S4 concrete shared-page diagonal batch traversal
+
+`Mult/PhaseCellPacketBatchLoop.lean` specializes the existing counted-list loop
+to consuming equal-volume packet workers. Its processed/remaining invariant
+tracks the exact queue suffix and reverse accumulated output; arbitrary stable
+readiness is retained. Worker boundary size equality supplies the shared-reserve
+loop premise. The queue is consumed to its borrowed tail, the clock is emptied,
+and output is reverse processing order. Guarded check: 1944.5 MiB.
+
+`Mult/PhaseCellDiagonalBatch.lean` instantiates this traversal on the actual
+D' packet worker. Its readiness records multiplier cleanliness, unchanged
+nonoutput role coordinates, the byte ruler and blank borrowed scratch. Both
+clock updates and queue/output updates preserve it structurally. Each step
+uses the current output role with the same retained coefficient-page role,
+derives loaded RsbReady and actual multiplier execution, then retires input.
+The final theorem retains coefficient page y exactly and input x blank.
+Time is N times the packet-worker cost plus 3 per iteration and 2 loop overhead.
+Workspace remains 2*(6*(n*w)+6)+realWeightWorkspace C w n, independent of N.
+No per-replica page regeneration or duplicated page storage is introduced.
+The batch theorem's generic input-fit premise is discharged by the already
+proved actual rounded-field fits when joining the publication caller.
+
+Final guarded batch check succeeds without warnings at 2076.5 MiB. Combined
+build with actual owned D' execution and full bulk publication succeeds
+(16014 jobs, 2.7 GiB aggregate peak). Temporary guarded batch axiom audit reports
+only propext, Classical.choice and Quot.sound (6987.2 MiB audit peak).
+
+Next restore required packet order, join page generation/header release once
+per interval, and physically connect the batch input to the published recovery
+output using the derived fits and numerical certificates. Cyclic principal
+execution, tensor continuation, root sizing, forward geometry and accumulated
+error/final acceptance remain open. S4 remains incomplete. Collect the joined
+bulk-publication, numerical bridge and actual shared-page batch traversal as
+one larger local integration commit; do not push. Periodic work untouched.

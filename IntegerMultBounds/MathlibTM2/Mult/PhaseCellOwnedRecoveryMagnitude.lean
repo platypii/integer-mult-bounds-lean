@@ -20,7 +20,7 @@ theorem halfGridSolution_norm_le {s : ℕ} (p : ℕ) (hp : 0 < p)
     (F z : ZMod s → ℂ) (hF : ∀ i, ‖F i‖ ≤ 1)
     (hre : Solves M active (fun i => (z i).re) (fun i => ((1/2 : ℂ)*F i).re))
     (him : Solves M active (fun i => (z i).im) (fun i => ((1/2 : ℂ)*F i).im)) :
-    ∀ i ∈ active, ‖z i‖ ≤ 8*(p : ℝ) := by
+    ∀ i ∈ active, ‖z i‖ ≤ 6*(p : ℝ) := by
   have hpR : (0 : ℝ) < p := by exact_mod_cast hp
   have hunit i : ‖(1/2 : ℂ)*F i‖ ≤ (1/2 : ℝ) := by
     rw [norm_mul]
@@ -35,7 +35,12 @@ theorem halfGridSolution_norm_le {s : ℕ} (p : ℕ) (hp : 0 < p)
   have hr' := hr i hmem
   have hi' := hi i hmem
   rw [hquot] at hr' hi'
-  exact (Complex.norm_le_abs_re_add_abs_im _).trans (by linarith)
+  have hrSq := mul_self_le_mul_self (abs_nonneg ((z i).re)) hr'
+  have hiSq := mul_self_le_mul_self (abs_nonneg ((z i).im)) hi'
+  rw [abs_mul_abs_self] at hrSq hiSq
+  have hs := Complex.norm_mul_self_eq_normSq (z i)
+  rw [Complex.normSq_apply] at hs
+  nlinarith [norm_nonneg (z i)]
 
 namespace RecoveryAxisBounds
 variable {s t p u l : ℕ} [NeZero s] {α gap : ℝ}
@@ -49,7 +54,7 @@ theorem ownedTargets_norm_le (Fs : List (ZMod t → GaussianInt))
     (hF : ∀ F ∈ Fs, ∀ j, ‖value p (F j)‖ ≤ 1) :
     ∀ z ∈ h.ownedTargets target L k hnear hL ha hb hfit Fs,
       ∀ i ∈ haloVertices s (cut s t L k-localityDepth p target*PhaseCellBand.width p u)
-        (cut s t L (k+1)+localityDepth p target*PhaseCellBand.width p u), ‖z i‖ ≤ 8*(p : ℝ) := by
+        (cut s t L (k+1)+localityDepth p target*PhaseCellBand.width p u), ‖z i‖ ≤ 6*(p : ℝ) := by
   let active := haloVertices s (cut s t L k-localityDepth p target*PhaseCellBand.width p u)
     (cut s t L (k+1)+localityDepth p target*PhaseCellBand.width p u)
   have hdom := dominates_mono (realMatrix s t p u) Finset.univ active
@@ -71,6 +76,22 @@ theorem ownedTargets_norm_le (Fs : List (ZMod t → GaussianInt))
       exact halfGridSolution_norm_le p (by have := h.hp; omega) _ active hdom
         (fun i => value p (F (rowIndex s t i))) z (fun i => hF F (by simp) _) hpair.1 hpair.2 i hi
     · exact ih (fun F hmem => hF F (by simp [hmem])) z' hz i hi
+
+theorem ownedTargets_normalized_norm_le (Fs : List (ZMod t → GaussianInt))
+    (hF : ∀ F ∈ Fs, ∀ j, ‖value p (F j)‖ ≤ 1) :
+    ∀ z ∈ h.ownedTargets target L k hnear hL ha hb hfit Fs,
+      ∀ i ∈ haloVertices s (cut s t L k-localityDepth p target*PhaseCellBand.width p u)
+        (cut s t L (k+1)+localityDepth p target*PhaseCellBand.width p u),
+        ‖((2 : ℂ)^(inverseNormalizationShift p))⁻¹*z i‖ ≤ (3/2 : ℝ) := by
+  intro z hz i hi
+  have hbound := h.ownedTargets_norm_le target L k hnear hL ha hb hfit Fs hF z hz i hi
+  have hj := inverseNormalizationShift_large p
+  have hpos : (0 : ℝ) < (2 : ℝ)^(inverseNormalizationShift p) := by positivity
+  rw [norm_mul,norm_inv,norm_pow]
+  norm_num only [Complex.norm_ofNat]
+  rw [inv_mul_eq_div]
+  apply (div_le_iff₀ hpos).mpr
+  nlinarith
 
 theorem ownedTargets_round_magnitude (Fs : List (ZMod t → GaussianInt))
     (hF : ∀ F ∈ Fs, ∀ j, ‖value p (F j)‖ ≤ 1) :
