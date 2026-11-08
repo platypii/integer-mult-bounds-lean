@@ -3909,9 +3909,11 @@ projection, recovery RHS coupling, both second interior batches and both packed
 assembly loops. The actual piece streams represent the same full cyclic fields
 with error at most 1/2^target, fitting real words and zero support outside the
 principal window. Retained masks, widths and replica counts come from execution
-frames; assembly adds no repeated setup. Next restore replica order as required
-and connect these two computed piece archives to common-width publication using
-existing metadata, preserving reserved coordinates and suffixes. Keep the joint
+frames; assembly adds no repeated setup. Either physical piece now executes
+common-width normalization from retained headers, with generated scalar width,
+piece length and paid cleanup. Next compose both normalizations with the ordinary
+recovery trace, derive the common-job Rows from those actual outputs, and restore
+replica order as required, preserving reserved coordinates and suffixes. Keep the joint
 boundary count in both pieces' conserved precision allowance. Judge the next
 checkpoint by actual published recovered rows and eliminated supplier premises.
 Keep geometry fallback and structural stock/uniform time visible as independent
@@ -41719,3 +41721,128 @@ not the remaining common-format publication or full S4 resource/tensor gates.
 Next reuse PackedExactBatch.ofCommonCoreClass_rows_spec and existing selected
 publication machinery, deriving its Rows from these actual fields and metadata;
 keep routing/class-wrapper expansion frozen unless this concrete caller needs it.
+
+
+### S4 real recovery archives reuse the existing common-width normalization batch
+
+PhaseCellPackedRealRoundAccuracy bridges the actual real field/error certificates
+to decoded packed readers with arbitrary suffixes. normalizePackedRealBatch_exec
+uses this bridge and the existing normalizePackedBatch_exec to execute rounding
+and common-width publication for a whole physical piece archive. The exact
+endpoint preserves row order, suffixes and all other tapes. Its normalized error
+has no replica-count factor; its bill is the existing normalizePackedBatchCost.
+
+Review found that the first new rounding-only executor adapter duplicated the
+existing roundPackedBatch/normalizePackedBatch route. It was removed before
+commit, along with unused standalone real-rounding and fit wrappers. The final
+change retains only the real-reader bridge and a thin composition with the
+existing full normalization/publication executor.
+
+The first guarded check of the common-width real adapter passes at 3094.9 MiB.
+This is not yet physical composition with tapes 848/849: retained scalar
+installation, generated piece-volume headers, cleanup and explicit replica-order
+conversion still need to be connected to that actual endpoint. Full-prefix stock,
+uniform time, fallback geometry and locality/tensor/root S4 acceptance remain
+open. Collect changes into a larger local checkpoint; no push is authorized.
+Periodic WIP is untouched.
+
+
+### S4 packed real normalization owns its retained scalar lifecycle
+
+retainedNormalizePackedRealBatch executes installation from retained kernel-length
+and working-precision masters, computes the unary publication precision from the
+actual scalar bank, runs the existing whole-batch rounding/common-width publication,
+then erases both the generated precision ruler and scalar bank. The final state
+is exactly the original state with only the source output prefix changed; the
+borrowed scalar width, every outside register and source suffix are restored.
+No encoded scalar state, preloaded precision ruler or intermediate rounding
+output is supplied. One setup and one disposal serve the entire row list.
+The time statement includes retained installation, unary precision generation
+and erasure, normalization/publication, and scalar disposal.
+
+Guarded single-file check passes at 3183.9 MiB. This lifecycle is independent of
+solver geometry and uses the actual retained q, so both cyclic pieces can share
+its proof without forcing their local boundary counts to match the joint count.
+Still to compose at the actual packed endpoint: generate the scalar-bank width,
+piece-length and piece-volume rulers from the retained execution controls,
+place the disjoint bank, run the two physical sources and retire generated rulers.
+Then derive the common-job Rows and ordering contract from those executed outputs.
+Resource, fallback and broader S4 gates remain unchanged. No push.
+
+The retained-normalization / ordinary packed-recovery integration build passes
+(15870 jobs; 3.4 GiB combined peak). Whitespace and proof-integrity scans of the
+three new modules pass. All changes remain local and uncommitted for the next
+larger checkpoint; unrelated periodic WIP remains untouched.
+
+
+### S4 actual packed endpoint retains its normalization metadata
+
+ReplicaAssemblyControls now records the kernel length, working precision,
+interval origin/endpoint and packet byte volume as well as the mask, word width
+and replica count. These facts are extracted once from the existing resume
+headers; none is generated again. Its transport lemma consumes one finite port
+frame. resumedReplicaInterior_exec preserves exactly those additional read
+ports structurally, and cyclicSecondInterior_exec transports the complete
+certificate through both actual passes using the existing disjointness frames.
+
+executedCyclicPackedRecovery_spec now returns both strengthened certificates at
+its actual 850-tape endpoint. The assembly spectator frame transports all seven
+read ports and the masks without changing execution or its time bill. Thus
+normalization can directly borrow gather 114 (kernel), 112 (precision),
+111/113 (endpoints), 123 (piece byte volume) and 121 (replicas). In particular,
+the byte-volume supplier need not be regenerated from binary scalars.
+
+The dependency integration build passes (15863 jobs; 17.7 GiB combined peak),
+and the strengthened complete packed caller check passes at 3445.9 MiB.
+Next place a fresh scalar bank, derive its width with the existing generator,
+derive the piece length with withWidthDifference from endpoints, and invoke
+the retained normalization lifecycle using the already available volume ruler.
+No new numerical or routing language is required. Normalized physical outputs,
+common-job Rows/order, whole-prefix stock/uniform time, geometry fallback and
+locality/tensor/root acceptance remain open. No push; periodic WIP untouched.
+
+All four changed control/resume/second-pass modules also pass their guarded
+single-file checks below 3.5 GiB. Integrity and whitespace scans pass. Keep
+these changes with the retained-normalization work for a larger local checkpoint.
+
+
+### S4 either actual packed recovery archive executes common-width normalization
+
+PackedRecoveryNormalization.normalizePiece uses eight borrowed ports and a
+56-tape reusable workspace. It generates the scalar width from retained kernel
+length/precision, derives piece length from retained endpoints, invokes the
+retained whole-batch normalization/publication lifecycle, and erases both
+introduced rulers. Its exact endpoint changes only the borrowed source prefix.
+normalizationCost includes every generated control and scalar cleanup. A generic
+injective placement theorem lifts this no-call executor into any caller body.
+
+CyclicPackedNormalizationPlacement maps those borrowed ports to the actual left
+or right gather metadata and source 848/849. Both placements share fresh tapes
+850..905; tape 906 holds an explicit borrowed common-width metadata word. Only
+the fixed 64-port placements use small kernel checks. Row-list computation and
+numerical acceptance remain structural and reuse normalizePackedBatch_exec.
+
+cyclicPackedPieceNormalization_exec now starts from an arbitrary actual 850-tape
+recovery endpoint with its retained ReplicaAssemblyControls and its computed
+field certificates. It derives all local readiness for either physical source,
+including byte-volume, kernel, precision, endpoints and replica count. The input
+is its ordinary extension plus the explicit publication-width metadata word.
+It returns an exact update of source 848 or 849 to the normalized common-width
+row archive, preserving all other input tapes, shared workspace and source suffix.
+The existing accuracy/format certificates discharge the real-reader bridge.
+
+Guarded checks: local executor 3165.4 MiB; actual physical source theorem
+3324.8 MiB. No raised limits or new axioms. Still open: compose both calls with
+the ordinary packed-recovery trace (using the first call's restoration frame for
+the second), choose the original principal solution rows and restrict their error
+certificates to each piece, then derive common-job Rows/order. This physical
+piece executor does not yet close that ordinary-input composite. Global stock,
+uniform time, geometry fallback and locality/tensor/root acceptance remain open.
+No push; unrelated periodic WIP is untouched.
+
+Final integration build passes (15877 jobs; 5.9 GiB combined peak). All eight new
+normalization modules pass single-file memory checks: 1401.9–3391.2 MiB; actual
+physical source theorem 3324.8 MiB. The five changed recovery/control modules
+also passed their checks (complete packed caller 3445.9 MiB). Integrity and
+whitespace scans pass. Collect all thirteen Lean files plus this plan into one
+local checkpoint; exclude the unrelated periodic WIP and do not push.

@@ -123,12 +123,12 @@ theorem cyclicSecondInterior_exec (H K J L : ReplicaHaloProblem s)
     (harchR.trans (hright _ (.gather 125)).2).trans (hread _),Exec.seq heL heR,?_,?_,?_⟩
   · rw [hcost] at hmR
     exact Nat.add_le_add hmL hmR
-  · exact controlsL.transport (hnativeFrame 239)
-      (((hleft _ (.gather 94)).2.trans (hcontrolsL 94 (by simp))).trans (hread _))
-      (((hleft _ (.gather 121)).2.trans (hcontrolsL 121 (by simp))).trans (hread _))
-  · exact controlsR.transport (hnativeFrame 238)
-      ((hcontrolsR 94 (by simp)).trans ((hright _ (.gather 94)).2.trans (hread _)))
-      ((hcontrolsR 121 (by simp)).trans ((hright _ (.gather 121)).2.trans (hread _)))
+  · apply controlsL.transport (hnativeFrame 239)
+    intro i hi
+    exact (((hleft _ (.gather i)).2.trans (hcontrolsL i hi)).trans (hread _))
+  · apply controlsR.transport (hnativeFrame 238)
+    intro i hi
+    exact ((hcontrolsR i hi).trans ((hright _ (.gather i)).2.trans (hread _)))
   · intro k hkL hkR hk840 hk841
     have hl := hframeL k hkL hk840
     have hr := hframeR k hkR hk841

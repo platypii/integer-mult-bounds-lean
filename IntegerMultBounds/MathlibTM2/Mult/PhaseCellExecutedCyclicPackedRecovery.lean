@@ -58,6 +58,10 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
             (fun i => (value q (Fs.getD j.val (fun _ => 0) i)).re) →
           PhaseCellInterface.ErrorOn (cyclicPrincipalVertices s a n)
             (fun i => (value q (fields j i)).re) x (1/(2 : ℝ)^target)) ∧
+      ReplicaAssemblyControls H (extendAssembly ∘ CyclicSecondInteriorPlacement.left.plan.gather)
+        (extendAssembly (extendSecond (CyclicRecoveryPlacement.bank 239))) G ∧
+      ReplicaAssemblyControls K (extendAssembly ∘ CyclicSecondInteriorPlacement.right.plan.gather)
+        (extendAssembly (extendSecond (CyclicRecoveryPlacement.bank 238))) G ∧
       Exec (embTab extendAssembly (embTab extendSecond (embTab CyclicRecoveryPlacement.extend (cyclicReplicaCallerBody body))))
         (executedCyclicPackedRecovery hR hQ)
         (mk v (extendStacks (by decide : 842 ≤ 850) (extendStacks (by decide : 840 ≤ 842)
@@ -179,8 +183,33 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
   have hk' : k ≤ (Fs.length*(retainedPackedPublicationMergeCost H.span H.wordWidth+5)+4)+
       (Fs.length*(retainedPackedPublicationMergeCost K.span K.wordWidth+5)+4) := by
     simpa only [rowsL,rowsR,List.length_map,List.length_finRange] using hk
+  have hreadAssembly (i : Fin 842) :
+      (extendStacks (by decide : 842 ≤ 850) F).R (extendAssembly i) = F.R i :=
+    congrArg (fun C : Stacks 842 A => C.R i) (embStk_extendStacks (by decide : 842 ≤ 850) F)
+  have hcontrolsLF : ReplicaAssemblyControls H
+      (extendAssembly ∘ CyclicSecondInteriorPlacement.left.plan.gather)
+      (extendAssembly (extendSecond (CyclicRecoveryPlacement.bank 239))) G := by
+    apply hcontrolsL.transport
+    · exact (hframe _ (by decide)).trans (hreadAssembly _)
+    · intro i hi
+      have hoff : extendAssembly (CyclicSecondInteriorPlacement.left.plan.gather i) ∉
+          ([125,247,848,425,547,849] : List (Fin 850)) := by
+        simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+        rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide +kernel
+      exact (hframe _ hoff).trans (hreadAssembly _)
+  have hcontrolsRF : ReplicaAssemblyControls K
+      (extendAssembly ∘ CyclicSecondInteriorPlacement.right.plan.gather)
+      (extendAssembly (extendSecond (CyclicRecoveryPlacement.bank 238))) G := by
+    apply hcontrolsR.transport
+    · exact (hframe _ (by decide)).trans (hreadAssembly _)
+    · intro i hi
+      have hoff : extendAssembly (CyclicSecondInteriorPlacement.right.plan.gather i) ∉
+          ([125,247,848,425,547,849] : List (Fin 850)) := by
+        simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+        rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide +kernel
+      exact (hframe _ hoff).trans (hreadAssembly _)
   refine ⟨J,L,X,vf,G,fields,m+k,savedL,savedR,huf.trans (huser.trans hu),Nat.add_le_add hm hk',
-    hwordsL,hwordsR,h247,h547,h125,h425,?_,Exec.seq helift heAssembly.toExec⟩
+    hwordsL,hwordsR,h247,h547,h125,h425,?_,hcontrolsLF,hcontrolsRF,Exec.seq helift heAssembly.toExec⟩
   intro j
   exact ⟨(hgood j).2.2.1,cyclicPublicationField_im t band a n _ _ _ ,(hgood j).2.2.2.1,(hgood j).2.2.2.2⟩
 

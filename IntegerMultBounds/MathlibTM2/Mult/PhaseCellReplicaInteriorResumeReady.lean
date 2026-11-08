@@ -88,12 +88,24 @@ theorem ReplicaInteriorResumeReady.assembly_controls {s T A : ℕ} {H : ReplicaH
     (h : ReplicaInteriorResumeReady H job buffers S) (master : Fin T)
     (hmask : S.R master = couplingSourceIntervalMaskSymbols true A s H.t H.band H.origin
       (H.origin+H.span) H.origin H.span) : ReplicaAssemblyControls H job.plan.gather master S := by
-  refine ⟨hmask,?_,?_⟩
+  refine ⟨hmask,?_,?_,?_,?_,?_,?_,?_⟩
   · have hw := h.headers.masters (94,94) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide)
     simpa [Function.update_of_ne (job.plan.gather_injective.ne (by decide : (94 : Fin 126) ≠ 125)),
       replicaFactoryHeaderValue] using hw
   · have hn := h.headers.masters (121,113) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide)
     simpa [Function.update_of_ne (job.plan.gather_injective.ne (by decide : (121 : Fin 126) ≠ 125)),
       replicaFactoryHeaderValue] using hn
+  · have hk := h.headers.masters (114,114) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide)
+    simpa [Function.update_of_ne (job.plan.gather_injective.ne (by decide : (114 : Fin 126) ≠ 125)),
+      replicaFactoryHeaderValue] using hk
+  · have hq := h.headers.masters (112,112) (by simp [replicaFactoryHeaderCopies]) (by decide) (by decide)
+    simpa [Function.update_of_ne (job.plan.gather_injective.ne (by decide : (112 : Fin 126) ≠ 125)),
+      replicaFactoryHeaderValue] using hq
+  · simpa [Function.update_of_ne (job.plan.gather_injective.ne (by decide : (111 : Fin 126) ≠ 125))]
+      using h.headers.origin
+  · simpa [Function.update_of_ne (job.plan.gather_injective.ne (by decide : (113 : Fin 126) ≠ 125))]
+      using h.headers.endpoint
+  · simpa [Function.update_of_ne (job.plan.gather_injective.ne (by decide : (123 : Fin 126) ≠ 125))]
+      using h.headers.volume
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
