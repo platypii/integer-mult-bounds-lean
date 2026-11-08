@@ -3909,11 +3909,12 @@ projection, recovery RHS coupling, both second interior batches and both packed
 assembly loops. The actual piece streams represent the same full cyclic fields
 with error at most 1/2^target, fitting real words and zero support outside the
 principal window. Retained masks, widths and replica counts come from execution
-frames; assembly adds no repeated setup. Either physical piece now executes
-common-width normalization from retained headers, with generated scalar width,
-piece length and paid cleanup. Next compose both normalizations with the ordinary
-recovery trace, derive the common-job Rows from those actual outputs, and restore
-replica order as required, preserving reserved coordinates and suffixes. Keep the joint
+frames; assembly adds no repeated setup. The ordinary-input trace now executes
+both common-width normalizations, including generated scalar width, piece length
+and paid cleanup. Principal reference rows and piecewise acceptance are derived
+from the emitted fields. Next derive common-job Rows from those actual normalized
+archives, execute any required core crop/complex pairing/order conversion, and
+preserve reserved coordinates and suffixes. Keep the joint
 boundary count in both pieces' conserved precision allowance. Judge the next
 checkpoint by actual published recovered rows and eliminated supplier premises.
 Keep geometry fallback and structural stock/uniform time visible as independent
@@ -41846,3 +41847,89 @@ physical source theorem 3324.8 MiB. The five changed recovery/control modules
 also passed their checks (complete packed caller 3445.9 MiB). Integrity and
 whitespace scans pass. Collect all thirteen Lean files plus this plan into one
 local checkpoint; exclude the unrelated periodic WIP and do not push.
+
+
+### S4 both physical normalizations share restored workspace and computed references
+
+cyclicPackedNormalization_exec composes the actual left and right physical
+normalization programs. The left result changes only tape 848; transport of the
+right controls and the input-extension update lemma give the second call's exact
+starting state. Both calls use the same fresh workspace and borrowed common-width
+word, preserve physical row order, and return the two restrictions of the same
+normalized field list. The time bill is the sum of both complete lifecycle bills.
+No second workspace or per-replica setup is introduced.
+
+cyclicRecoveredRows uses axis diagonal dominance to choose principal solutions
+for the original RHS rows. It proves their global magnitude bound and their
+Forall₂ alignment with the actual recovered fields in reverse chronological
+storage. It retains the original principal Solves relation against Fs.reverse.
+The structural ofFn/Forall₂ proof treats arbitrary replica counts.
+
+recoveredCyclicPackedNormalization_exec connects those mathematical references
+to the paired physical executor from the actual packed-field certificate and
+retained controls. It derives both piece magnitude/error certificates by
+restriction to the two principal-window intervals; the caller supplies no
+reference solutions or per-piece numerical acceptance. It executes both source
+normalizations and returns their exact common-width archives and the existing
+normalized error 2/2^p + 2^(-(target+1))/2^shift. No replica or seam error factor
+is added. Precision uses the joint boundary count via cyclicRound_dimensions.
+
+The paired executor's guarded check passes; the recovered numerical/physical
+connection check passes at 3397.8 MiB. Still required for the next checkpoint:
+join this execution to executedCyclicPackedRecovery_spec at target+1, lifting
+that actual trace while retaining the ordinary publication-width metadata in
+the added spectator tape. Then derive common-job Rows/order from the emitted
+archives. The whole-prefix stock/uniform time, geometry fallback and broader
+locality/tensor/root S4 gates remain open. No push; periodic WIP untouched.
+
+Integration with the ordinary packed-recovery module passes (15883 jobs;
+3.5 GiB combined peak). Final principal-reference row check passes at
+3381.0 MiB; paired executor 3326.4 MiB. Integrity and whitespace scans pass.
+Keep these changes uncommitted until the ordinary-input trace composition
+is included in the next larger local checkpoint.
+
+
+### S4 ordinary inputs execute through both normalized packed archives
+
+exec_extendStacks_right lifts an arbitrary verified trace to an extended bank
+while preserving an ordinary metadata word in one added spectator tape. Its
+proof uses the existing injective execution embedding and structural bank frames,
+with no concrete-register enumeration or additional runtime instructions.
+
+executedCyclicPackedNormalization_spec now invokes the actual ordinary-input
+packed-recovery caller at target+1, carries the explicit common-width metadata
+through that trace, derives principal reference rows/magnitude/piece errors from
+its actual field certificate, and executes both physical normalization calls.
+Its exact final state contains both common-width archives at 848/849, in the same
+reverse replica order, with the original source suffix guarantees inherited from
+the actual recovered state. The original RHS-to-principal-solution Forall₂
+relation is retained. No recovered fields, reference solutions, scalar bank,
+normalization readiness or per-piece acceptance are supplied by the caller.
+
+The complete time bill includes original passes, shared Schur setup/solve,
+projection, coupling, both second interiors, packed assembly and both full
+normalization lifecycles. It retains the original finer recovery bill rather
+than replacing it with an unproved uniform estimate. Guarded complete-caller
+check passes at 3427.7 MiB. The spectator lemma's small module also builds.
+
+This closes ordinary-input execution through normalized piece publication under
+the existing two cached geometry hypotheses. Next connect the actual archives to
+common-job Rows, including executed core crop, complex pairing and order handling
+where required by that contract. This is not full S4: geometry fallback,
+whole-prefix stock, uniform/asymptotic time, locality/tensor/shared exposure and
+root/compiler acceptance remain open. No push; periodic WIP untouched.
+
+Final ordinary-normalization / existing publication-row integration build passes
+(15912 jobs; 5.9 GiB combined peak). The guarded axiom audit of the spectator
+lifting lemma, paired physical executor and complete ordinary normalized caller
+reports only propext, Classical.choice and Quot.sound (9598.1 MiB temporary audit
+peak; no production module uses that combined audit import). Production caller
+check remains 3427.7 MiB. Source integrity and whitespace scans pass.
+
+Collect the preceding paired-normalization/reference-row/acceptance work and
+this actual ordinary-input composition into one larger local checkpoint. The
+next concrete reuse surfaces are packedCoreArchiveLoop_exec (also restores
+forward replica order by prepending cropped cores) and pairPackedBatches, then
+normalizedPackedComponents_generated_accuracy and PackedExactBatch.rows_of_outputs.
+Use those existing executors before adding a new crop/pair/row abstraction.
+No push is authorized; periodic WIP stays excluded.
