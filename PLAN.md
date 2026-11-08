@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4488 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4491 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -36538,3 +36538,93 @@ identity, original-seam split, global row selector period, byte payload and
 prepared cyclic execution reports only standard Lean axioms (7002.9 MiB peak;
 production checks below 2085 MiB). Plan-status and whitespace checks pass.
 Commit accumulated header/guard/cyclic selection integration locally; no push.
+
+### S4 manuscript J_k ownership, guarded selection and exact cropped assembly
+
+Inspection of the actual principal/crop caller found that PackedNormalizedJob
+assumes uniform source cores coreStart(width,k). The manuscript instead owns
+J_k = [floor(k*L*s/t), floor((k+1)*L*s/t)); these lengths vary. Do not substitute
+nearest-row ownership or force J_k into that uniform wrapper. The underlying
+recovery crop already accepts an ordinary offset and row count and can be reused.
+The existing seam fallback computes a full ambient line; it is not evidence for
+the required polynomial-window cyclic principal inverse cost.
+
+`NLogN/PhaseCellTargetCoreOwnership.lean` implements those exact floor cuts.
+Structural proofs establish unique full coverage when Q*L=t, telescoping row
+counts, rows <= L when s <= t, and positive rows when t <= 2s and L >= 2.
+The standalone module's closure is small; its earlier check was 956.8 MiB.
+
+`NLogN/PhaseCellTargetCoreSelectionGeometry.lean` derives selected-row endpoints
+from the actual floor cuts. The lower endpoint has TWO rows of rounding slack;
+all selected owned rows lie below the target core's upper endpoint. Combined
+with the existing nearest-row radius bound, owned_halo_contained supplies the
+all-row local-selection premise for the guarded J_k interval. Guarded check:
+1875.2 MiB. The general containment theorem now includes this floor slack and
+uses H >= 2*radius+3, replacing its earlier tighter-ownership premise. The
+manuscript_guard_room theorem is strengthened to the same +3 bound; its existing
+4096*p^3 halo still suffices with no larger parameters. Check: 1873.3 MiB.
+
+`Mult/PhaseCellTargetCorePacked.lean` proves an arbitrary monotone-cut slice
+concatenation once, then instantiates J_k: its packed crops concatenate to the
+original increasing source line. targetCorePacked_crop identifies generic
+recovery cropping at offset radius and row count |J_k| with exactly that owned
+interval. No uniform-width source-core premise, sort or coordinate permutation
+is required. Final guarded check passes at 2034.0 MiB without warnings.
+
+Next instantiate the existing principal recovery/crop primitives on explicit
+J_k endpoints and lengths rather than the uniform-core job wrapper. The actual
+cyclic principal kernel must preserve the global phase-cell cut and cross-seam
+couplings; cyclic C-selection alone does not establish that kernel. Complete
+inverse/crop execution, normalization including D', retained tensor composition,
+root sizing, forward near-one geometry, numerical tensor error/support and final
+root acceptance remain open. S4 remains incomplete. Keep this ownership/geometry
+chunk uncommitted for larger principal/crop integration. No push; separate
+periodic-recovery work remains untouched.
+
+Ownership/crop validation: final ownership check passes at 960.4 MiB. Combined
+geometry/guard/crop build passes (4327 jobs, 5.7 GiB aggregate peak); final crop
+module rebuild passes (4318 jobs, 2.6 GiB peak). Guarded audit of partition, row
+bounds/positivity, guarded selection, strengthened manuscript halo room, crop
+and ordered concatenation reports only standard Lean axioms (4117.3 MiB peak).
+Plan-status and whitespace checks pass. No commit or push made.
+
+### S4 actual owned-row recovery crop and global/local error bridge
+
+`Mult/PhaseCellTargetCoreRecoveryCrop.targetCoreRecoveryCrop_exec` instantiates
+the EXISTING generatedRecoveryCrop program on explicit J_k endpoints. It
+executes the real crop/archive/retirement lifecycle from ordinary geometric
+masters, outputs exactly the floor-owned rows for every replica, preserves
+source suffix and surrounding state, retains the local numerical error, and
+includes the existing explicit time and stock bounds. No uniform source-core
+job or replacement recovery program is introduced. This nonwrapping execution
+requires an actual computed principal result as input. Guarded check: 2056.7 MiB.
+
+`NLogN/PhaseCellTargetCoreLocality.lean` identifies the interior layer of the
+actual guarded J_k interval exactly with its owned rows, and proves those same
+owned rows lie in the cyclic locality layer of the original matrix when the
+window fits one period. This changes only the chart used to describe storage;
+phase-cell names and cross-seam entries remain ambient. Check: 1866.0 MiB.
+
+`Mult/PhaseCellTargetCoreLocalAccuracy.lean` instantiates the existing locality
+theorems on these owned sets. ErrorOn.target_owned_global and its cyclic
+counterpart convert a local principal solve's arithmetic accuracy into global
+owned-row accuracy with one added 2^-target tail. There is no volume or number
+of windows factor. The real/imaginary solver components may use the same
+contract. Guarded check: 1861.0 MiB, no warnings/default-limit changes.
+
+Next connect the selected RHS physically to the existing principal recovery
+kernel with explicit owned endpoints, then compose normalization (including
+D'), local crop, per-page reuse and retained tensor continuation. In particular
+the current crop theorem does not create the principal solve; the cyclic math
+contract does not provide a cyclic machine execution. Root sizing, forward
+near-one geometry, numerical tensor error/support and final compiler/root
+acceptance remain open. S4 is incomplete. Collect accumulated ownership,
+geometry, locality and actual crop work as one local integration commit after
+final build/audit. No push; separate periodic-recovery work untouched.
+
+Final owned-core locality/crop validation: combined import closure builds
+successfully (4361 jobs, 2.5 GiB peak). Temporary guarded audit of ordinary and
+cyclic locality geometry, global accuracy and actual owned-row crop execution
+reports only standard Lean axioms (4124.2 MiB peak). Production checks remain
+below 2057 MiB. Plan-status and whitespace checks pass. Commit the accumulated
+ownership/locality/crop integration locally; no push.

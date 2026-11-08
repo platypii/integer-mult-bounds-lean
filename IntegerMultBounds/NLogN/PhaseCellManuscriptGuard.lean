@@ -18,7 +18,7 @@ theorem width_le_five_mul (p u : ℕ) (hp : 1 ≤ p) : PhaseCellBand.width p u �
   omega
 
 theorem manuscript_guard_room (p u target : ℕ) (hp : 1 ≤ p) (htarget : target ≤ 16*p) :
-    2*(localityDepth p target*PhaseCellBand.width p u)+1 ≤ 4096*p^3 := by
+    2*(localityDepth p target*PhaseCellBand.width p u)+3 ≤ 4096*p^3 := by
   have hsum : target+(p+4) ≤ 21*p := by omega
   have hdepth : localityDepth p target ≤ 336*p^2 := by
     have hh := Nat.mul_le_mul_left (16*p) hsum

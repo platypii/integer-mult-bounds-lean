@@ -21,8 +21,8 @@ theorem nearestNatural_add_le (s t i r : ℕ) (hs : 0 < s) (ht : t ≤ 2*s) :
 Wrapping cores are split into such original-coordinate intervals separately. -/
 theorem nearestNatural_halo_contained (s t a n radius base L H : ℕ)
     (hs : 0 < s) (ht : t ≤ 2*s) (hn : 0 < n) (ha : radius ≤ a) (hb : H ≤ base)
-    (hguard : 2*radius+1 ≤ H)
-    (hfirst : base ≤ nearestNatural s t a)
+    (hguard : 2*radius+3 ≤ H)
+    (hfirst : base ≤ nearestNatural s t a+2)
     (hlast : nearestNatural s t (a+n-1) < base+L) :
     ∀ j < n+2*radius, base-H ≤ nearestNatural s t (a-radius+j) ∧
       nearestNatural s t (a-radius+j) < base-H+(L+2*H) := by
