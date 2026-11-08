@@ -35893,3 +35893,98 @@ Final coordinate-field validation: combined import-closure build passes
 identities, both actual movement directions and retained-stream identity/length
 reports only standard Lean axioms (3888.4 MiB peak). Plan-status and whitespace
 checks pass. Commit this six-module integration locally; no push authorized.
+
+### S4 enumerated halo handoff and manuscript-order movement endpoints
+
+`Routing/HaloCoordinateLayout.lean` identifies the actual enumerated
+`before ++ [coarse_i] ++ middle ++ [local_i]` byte stream with the existing
+stored halo layout. Its coordinate base is computed from the prefix and
+spectator enumerations. The off-field update lemma proves the spectator base
+is independent of coarse_i, and unpacking its two slot updates gives exactly
+the selected (coarse,local) coordinate pair. Width framing shows inserting a
+retained halo changes neither prefix/spectator enumeration nor their base when
+they exclude local_i. Guarded check: 1956.4 MiB, no warnings.
+
+`Routing/HaloCoordinateAxis.run_exec` now executes the complete generated-header
+halo program directly on that enumerated tensor stream. No supplied coordinate
+base, rectangular-layout witness or entry invariant remains. The exact endpoint
+is the same enumerated field order with axis i inserted into the retained set.
+All derived controls retire and only source changes; ordinary masters, borrowed
+suffix, user state and scratch restore. Existing time/stock guarantees apply.
+Guarded check: 1954.6 MiB. Import-closure build passes (4096 jobs, 2.5 GiB peak).
+
+`Routing/HaloMixedOrder.lean` pins the actual manuscript views for an axis split
+`left ++ [i] ++ right`: move local_i past right's local fields to the suffix;
+run halos with left's coarse fields as prefix and all remaining coarse/local
+fields as spectator; return local_i to its original position. Byte identities
+identify both views exactly, and distinctness derives the needed exclusions.
+All dimension products are positive from ordinary axis positivity. The one
+unused simp argument and unused section instance were removed before the
+successful dependency build (4099 jobs, 2.5 GiB peak); initial check 1958.0 MiB.
+
+`Routing/HaloMixedOrderRun.toSuffix_exec` and `fromSuffix_exec` instantiate the
+actual physical moves on these views. The former goes from the full retained
+mixed tensor directly to HaloCoordinateAxis.source; the latter returns that
+source directly to the full mixed tensor. The outgoing theorem uses the current
+retained width, so it applies after halo enlargement. No array or byte-layout
+supplier is assumed. Both retain source-only endpoints and actual time/stock
+bounds. Guarded check: 1957.5 MiB, no warnings/default-limit changes.
+
+Next join the three executions with concrete ports and outgoing width/exponent
+header generation/retirement. Their semantic endpoints now match by theorem;
+full sequential execution and its summed bill are not yet established. Ordinary
+outer metadata/master production, forward near-one geometry, numerical locality/
+error/support, shared initial exposure and compiler/root acceptance remain open.
+S4 is incomplete. Keep these four modules uncommitted for the larger complete
+mixed-order axis chunk. No push authorized; periodic-recovery work untouched.
+
+Coordinate-halo validation: final complete import-closure build passes
+(4100 jobs, 2.5 GiB aggregate peak). Temporary guarded audit of stream/layout
+identity, base preservation, actual enumerated halo execution and both mixed-order
+movement directions reports only standard Lean axioms (3907.3 MiB peak).
+Plan-status and whitespace checks pass. No commit or push made for this chunk.
+
+### S4 complete mixed-order target-halo axis execution
+
+`Routing/HaloMixedPorts.lean` fixes the two short-field mover interfaces on the
+same scratch tapes as the halo pass. Incoming movement reads the original
+length/exponent; outgoing movement reads the enlarged length/return exponent.
+Ordinary outer prefix/spectator counts are retained on 70/71. Port injectivity
+and source identity are small kernel checks; movement freshness follows from
+the existing pass workspace contract. Guarded check: 1968.4 MiB.
+
+`Routing/HaloMixedReturn.run_exec` regenerates L+2H from the original L/H masters,
+returns the enlarged selected field to its manuscript position using the actual
+forward mover, and clears both generated width words. Only source changes;
+masters, user state, borrowed suffix and scratch restore. The exact time bound
+is width generation plus outgoing movement plus `2*(w+L+2H)+5`; stock is twice
+width-generation time plus one movement reserve. Guarded check: 1967.0 MiB.
+Complete return dependency build passes (4102 jobs, 2.5 GiB aggregate peak).
+
+`Routing/HaloMixedAxis.run_exec` now composes the complete fixed program:
+actual local-to-suffix movement, generated-header enumerated halo execution,
+and the restoring outgoing stage. It starts in the full encoded mixed tensor
+for retained set S and ends in the same mixed order for `insert i S`. The
+endpoint changes only source, preserving user state, source suffix, ordinary
+masters and all scratch. Prefix/spectator bases, rectangular layouts and byte
+handoffs are derived internally; no routing/execution supplier is assumed.
+Time is the sum of actual movement, halo and return bills; stock is the sum of
+their existing shared-workspace reserves, independent of binary refinement count.
+Guarded complete-axis check passes at 1977.2 MiB with no warnings or raised limits.
+
+The caller still supplies ordinary axis dimensions/exponents, unary full-move
+prefix/spectator counts on 70/71, and the halo prefix count on 64. Their production
+from the actual outer metadata remains open. Next implement that lifecycle and
+iterate this source-only mixed-order contract over axes, using the verified
+retained-volume bound. Forward near-one geometry, numerical locality/error/
+support, shared initial exposure and compiler/root acceptance remain open.
+S4 is incomplete. Collect these seven accumulated coordinate-layout/mixed-axis
+modules into one local integration commit after final validation; do not push.
+Periodic-recovery work remains untouched.
+
+Final mixed-axis validation: complete import-closure build passes (4103 jobs,
+2.5 GiB aggregate peak), with only existing dependency warnings replayed.
+Temporary guarded audit of the byte-layout bridge, enumerated halo execution,
+incoming movement, restoring return and complete mixed-order axis reports only
+standard Lean axioms (3906.1 MiB peak). Plan-status and whitespace checks pass.
+Commit the seven accumulated modules as one local integration chunk; no push.
