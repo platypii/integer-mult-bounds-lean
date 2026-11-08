@@ -41137,3 +41137,109 @@ that would reverse the replica order again and mismatch the reversed RHS loader.
 Then establish the second-interior problem at the common precision and execute
 its retained passes. Numerical ordering/accuracy, whole-batch stock, top-level
 sequencing and all broader S4 gates remain open.
+
+
+### S4 one paired recovery row consumes the native joint queue directly
+
+PhaseCellStageRetainedRecoveryField stages one packed boundary prefix from an
+external joint queue into coupling input 132. It reuses gather volume 123 and
+scratch 88/89, restores scratch and returns original RHS headers plus the
+coupling cache. No separate piece-specific replica archive is constructed.
+Guard: 2177.6 MiB.
+
+PhaseCellJointSourceRecoveryCoupling composes staging with the checked coupling
+and boundary-archive transition. Its exact endpoint restores the borrowed local
+132 suffix and changes only joint source, original RHS 93, computed RHS 110 and
+saved boundary archive 125. A structural four-write frame identifies every
+spectator tape. The ExecWithin bound charges all three phases. Guard before
+removing unused assumptions: 2188.6 MiB; updated module builds.
+
+PhaseCellCyclicRecoveryJobs lifts the existing left/right jobs to 840 tapes.
+The ownership-preserving reindex lemma supplies preimages with their original
+ownership proofs; existing disjointness and native-source separation then
+transport structurally. No tape enumeration is used. Guard: 3264.9 MiB.
+
+PhaseCellCyclicRecoveryCouplingRow executes left then right directly from one
+interleaved joint boundary row. Each call advances that same queue, consumes
+its matching original RHS, publishes its computed recovery RHS and saves its
+boundary field. The disjoint ownership frame transports the other piece's
+entire bank and headers through each call. Both header/cache invariants return;
+complete piece costs and storage allowances combine with SequentialBudget.
+Guard: 3289.8 MiB. No deinterleaving/reversal step changes replica order.
+
+PhaseCellJointSourceRecoveryCouplingStock instantiates existing
+mn_exchange_pair_size: two consumed prefixes are replaced by two equal-length
+archive prefixes. The endpoint stock is exactly unchanged, independently of
+borrowed suffixes and previously accumulated archives. Guard: 2171.2 MiB.
+This enables a shared scratch reserve in iteration; it does not by itself prove
+the intermediate whole-loop stock bound.
+
+The combined five-module build passes (15174 jobs, 4.9 GiB combined peak).
+Integrity/whitespace scans pass for all five files; proof limits unchanged.
+No commit or push; collect the paired joint traversal with these modules as the
+next larger checkpoint. Periodic WIP remains untouched.
+
+Next execute a structural loop of cyclicRecoveryCouplingRow over the actual
+joint solution list. Its queue invariant should retain left/right prefixes in
+each joint row, both reversed original RHS queues and both computed/saved
+archives. Use endpoint stock conservation to share the row scratch reserve,
+then copy/retire the master count once. Connect the original-RHS caller,
+projected field Fits/accuracy and preparation endpoints before claiming full
+recovery coupling. Second interior passes, final publication and broader S4
+acceptance gates remain open.
+
+
+### S4 direct paired coupling batch shares one scratch reserve
+
+PhaseCellCyclicRecoveryCouplingRowStock combines the existing two-prefix exchange
+balance for the left and right pieces. The complete paired row endpoint has
+exactly the starting stock. Guard: 3263.1 MiB.
+PhaseCellCyclicRecoveryCouplingRowReads derives the seven stream endpoints and
+spectator frame from the piece contracts, without expanding a concrete bank or
+enumerating tape cases. Guard: 3267.9 MiB.
+
+PhaseCellCyclicRecoveryCouplingCursor records remaining joint/original-RHS queues,
+reverse completed computed/saved archives, both header/cache contracts and the
+unchanged input/output/left stacks and right-bank frame. Private clock 228 is
+excluded. Native-bank ownership separation transports both cursor and reference
+state through clock initialization/pop. Guard of the complete cursor: 3275.0 MiB.
+
+PhaseCellCyclicRecoveryCouplingStep instantiates the actual paired executor,
+advances this cursor from row::todo to todo, returns its clock unchanged and
+proves endpoint stock nonincrease using the checked exchange equality. Execution
+uniqueness transports the fixed trace across arbitrary depth allowances. Guard:
+3318.7 MiB.
+PhaseCellCyclicRecoveryCouplingLoop instantiates the existing
+countedListLoop_exec_within, using a completed/remaining list split and the checked
+step. The storage allowance is initial stock plus ONE paired-row reserve,
+independent of replica count. Only the time bill multiplies row work by count.
+It returns both consumed queues, all four completed archives, caches/headers and
+the factor-bank frame through the terminal cursor. Guard: 3275.2 MiB.
+
+PhaseCellCyclicRecoveryCouplingBatch copies retained native master 229 into clock
+228 with scratch 227 once, runs that loop and restores clock and scratch. The
+complete ExecWithin bound charges count setup once and shares the numerical
+reserve. Its cursor is rebased to the actual original configuration; master and
+all spectator tapes remain framed. Guard: 3275.9 MiB.
+
+Removed the superseded piece-queue-only loop/batch; restore from bb0880e3 if needed.
+No Lean source imports the removed modules. The direct paired queue path now
+carries the stronger execution/storage contract without a deinterleaving phase.
+
+Combined coupling-batch / preparation-bridge / native-projection build passes
+(15201 jobs, 3.5 GiB combined peak). All eleven new modules pass integrity and
+whitespace scans; proof limits unchanged. Preserve periodic WIP. Collect this
+joint-queue and shared-stock chunk in one larger local commit; do not push.
+
+This closes the functional paired coupling traversal and its shared reserve,
+not complete S4. The batch still receives aligned encoded boundary/original-RHS
+queues and their Fits witnesses. Next derive those from the executed original-RHS
+boundary caller, native projection and recovery preparation, using structural
+reverse/index identities. Then instantiate the second interior problem at the
+same precision and execute its retained passes. Uniform global time/stock,
+geometry fallback, common-width publication, locality/error/tensor composition
+and root acceptance remain open.
+
+The guarded temporary audit of cyclicRecoveryCouplingBatch_exec_within and the
+paired stock balance reports only propext, Classical.choice and Quot.sound
+(9396.7 MiB audit peak; temporary audit is outside the production build).
