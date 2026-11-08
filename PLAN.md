@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4627 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4638 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -39156,3 +39156,101 @@ the executed residual certificate alone is not that conclusion. Uniform time/
 structural stock and widened root-format/remaining geometry budgets, axis/tensor/
 forward/error/support and final S4/compiler acceptance remain open. Keep for the
 next larger local checkpoint; no push. Periodic WIP untouched.
+
+
+### S4 cyclic coordinate generation reuses ordinary interval enumeration and tape folding
+
+NLogN.PhaseCellCyclicBoundaryOrder proves the general bOrder_union_of_separated
+lemma structurally from sortedness and membership. Its cyclic specialization
+shows that the lower physical interval boundary followed by the upper interval
+boundary is exactly the joint original-coordinate order, including empty pieces.
+There is no phase rotation, independent boundary solve or generated certificate.
+
+PhaseCellCyclicBoundaryPageData reuses ordinary boundaryIndexWords and
+boundaryOrderSymbols for those two pieces. Their concatenated coordinate words
+have exactly the joint boundary cardinality; the existing foldList produces
+exactly bFoldOrder of that joint boundary. Guarded check passes at 1953.9 MiB.
+
+PhaseCellRetainedCyclicEndpoints uses the already proved cyclicSplitRulers
+arithmetic and a restoring copy to consume ordinary start/span rulers on
+141/142, retain start on 144 and compute the two endpoints on 145/146. It frees
+private window tapes 141/142, restores scalar scratch and the borrowed width
+header, and bills the actual runtime arithmetic and retirement. Guarded check
+passes without warnings at 1969.3 MiB; guarded build passes.
+
+PhaseCellResidentBoundaryOrderPiece aliases the existing ordinary interval
+enumerator's geometry reads directly to retained masters 121/122/124 and
+left/right endpoint rulers. Its injective embedding uses register permutations;
+no extra header copies, coordinate arithmetic or membership checker is introduced.
+It restores every tape except prepending the actual coordinate stream on 109.
+Guarded check passes without warnings at 1975.9 MiB.
+
+PhaseCellResidentCyclicBoundaryOrder composes two such actual executions,
+emitting the joint boundary's original-coordinate words while preserving all
+ordinary geometry and scratch. It checks at 1986.4 MiB.
+PhaseCellCountedCyclicBoundaryOrder then reuses countWords to construct unary
+header 116 from that emitted page. No boundary row count is installed by the
+caller. Its exact endpoint contains the joint page and its proved actual count;
+it checks without warnings at 1969.5 MiB. The enum/fold producer dependency
+builds pass.
+
+PhaseCellRetainedCyclicBoundaryFold instantiates the existing band_foldLine_runs
+theorem and unchanged retainedBoundaryFold program with the joint coordinate
+list. It proves actual execution into the advertised folded page, exact frame
+and the existing linear fold cost, at 1961.7 MiB. No second tape-fold algorithm
+is added. Axiom audits for counted enumeration, cyclic folding and endpoint
+generation report only propext, Classical.choice and Quot.sound (6781.6 MiB
+audit peak). Source-integrity and whitespace checks pass. All new proofs
+retain the default proof limits.
+
+Next compose width generation, retained endpoints, counted enumeration, existing
+fold-counter setup, retained fold and low-control retirement into one owned
+joint-page producer. The individual programs are proved, but this complete
+producer and its composition with constructedGeneratedCyclicSolve remain open.
+The width header and fold counters are still ordinary inputs at the intermediate
+interfaces. Full recovery accuracy, uniform time/structural stock and widened
+root format/remaining geometry budgets, axis/tensor/forward/error/support and
+final S4/compiler acceptance remain open. Keep for the next larger local
+checkpoint; no push. Separate periodic WIP untouched.
+
+
+### S4 complete owned cyclic coordinate page and readiness now execute
+
+PhaseCellClosedCyclicPageFold generates all fold counters from the actual
+retained count/width, executes the unchanged joint tape fold, returns the folded
+page to 109 and retires half-count/parity/byte controls. It preserves every
+other tape, including the retained dimensions. Guarded check passes at
+2059.2 MiB; the unused simp argument was removed and the guarded build passes.
+
+PhaseCellPrepareCyclicBoundaryPage composes publication-width generation via
+the existing geometry alias, retained endpoint construction, counted two-piece
+enumeration and that complete fold/retirement. Its ordinary inputs are retained
+s/t/band and start/span rulers on 141/142 plus blank owned workspace. No page,
+width, endpoint, row count, fold counter or execution is installed by the caller.
+The exact endpoint consumes 141/142, retains start/left-end/right-end on
+144/145/146, installs computed width/count on 115/116 and the exact bFoldOrder
+page on 109, and restores every other tape and all left stacks. Numeric time
+bills include all setup, enumeration, counting, folding and cleanup. Guarded
+check passes without warnings at 2010.2 MiB; guarded build passes.
+
+PhaseCellLengthKeyReadFrame proves a structural readiness handoff using only
+the registers the invariant reads (below 141), rather than requiring equality
+of the entire register file. PhaseCellCyclicPageReady applies it through the
+relocated arithmetic view: page registers are outside the arithmetic image,
+endpoint rulers are outside the component image, and cleared private window
+ports 141/142 are not read by readiness. The generic handoff checks at
+2078.2 MiB. PhaseCellPrepareCyclicBoundaryPageReady packages actual execution,
+full billed cost, exact generated state and arithmetic readiness for the same
+input tail. It checks at 2093.8 MiB; the unused simp argument was removed and
+the guarded build passes (9853 jobs, 2.7 GiB aggregate). Axiom audits for the
+complete page producer and readiness endpoint report only propext,
+Classical.choice and Quot.sound (7049.5 MiB audit peak). Whitespace and
+proof-source checks pass; default proof limits are unchanged.
+
+Next embed this complete producer into the 224-tape caller and compose it with
+constructedGeneratedCyclicSolve, deriving all former page/header/endpoint
+premises from the exact emitted state. Full recovery accuracy still needs the
+joint boundary solution error/unscaling and interior reconstruction. Uniform
+time/structural stock, widened root format and remaining geometry room, setup
+reuse across replicas, axis/tensor/forward/error/support and final S4/compiler
+acceptance remain open. No push; separate periodic WIP remains untouched.
