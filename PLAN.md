@@ -35988,3 +35988,58 @@ Temporary guarded audit of the byte-layout bridge, enumerated halo execution,
 incoming movement, restoring return and complete mixed-order axis reports only
 standard Lean axioms (3906.1 MiB peak). Plan-status and whitespace checks pass.
 Commit the seven accumulated modules as one local integration chunk; no push.
+
+### S4 runtime metadata products and generated mixed-axis counts
+
+`Routing/DimensionProductStep.lean` consumes one binary dimension, multiplies
+its ordinary unary accumulator and retires the factor/product work words. Only
+queue and accumulator change. The explicit time bound is
+`6*a*x+11*a+14*x+19*V+36`; native push bound is three. Guarded check: 1963.3 MiB.
+
+`Routing/DimensionProduct.lean` instantiates the existing counted loop, with a
+structural list invariant for the consumed prefix and remaining metadata.
+For positive factors it bounds every intermediate multiplication by the final
+product, giving time `length*(31*(a*product)+19*V+39)+2`. The program is fixed:
+factor count and values are runtime data, not an unrolled axis list. Exactly the
+factor words are consumed; ordinary width/zero, unrelated tapes and scratch
+restore, and the private clock is emptied. Guarded check: 1951.0 MiB.
+
+`DimensionProductPrepare` initializes an empty output to one and copies a
+retained factor count into the private clock. `DimensionProductPacket` generates
+that factor count from a packet's binary length header and retires it afterward.
+It needs neither a prepared product nor a prepared clock. Empty factor lists
+produce one. Both retain exact endpoints and explicit time/stock bounds via the
+proved native push bound. Guarded checks: 1940.8 and 1946.9 MiB; unused simp
+arguments were removed before the final builds.
+
+`Routing/HaloMixedCountHeaders.run_exec` consumes three self-counted dimension
+packets and generates the actual halo-prefix/full-move-prefix/spectator counts
+on 64/70/71. One workspace serves all packets; factor words, product temporary,
+private clock and generated factor-count master restore empty. Only metadata
+queue and the three count headers change. Guarded check: 1961.7 MiB, no warnings.
+
+`Routing/HaloCountedMixedAxis.run_exec` composes count production, the complete
+mixed-order halo step and retirement of all three generated counts. Packet
+factors are exactly the prefix and spectator field widths from the actual
+axis split. The endpoint updates only tensor source and metadata queue, with
+all other state restored. No prepared outer-count premise remains. Explicit
+summed time/stock bounds include packet parsing, product construction and erasure.
+Guarded complete caller check: 2001.3 MiB, no warnings or proof-limit changes.
+
+Next generate/read ordinary axis dimensions and exponents from the outer
+metadata, install/release the per-axis masters, and iterate this contract over
+axes. The final tensor resource comparison still must absorb the explicit
+metadata-product setup bills; a native time-based setup reserve alone does not
+establish the manuscript's final global space bound. Forward near-one geometry,
+numerical locality/error/support, shared initial exposure and compiler/root
+acceptance remain open. S4 remains incomplete. Collect these six count-generation
+modules into one local integration chunk after final validation; no push.
+Periodic-recovery work remains untouched.
+
+Final count-production validation: complete import-closure build passes
+(4109 jobs, 2.5 GiB aggregate peak), with only existing dependency warnings.
+Temporary guarded audit of the factor step, fixed product loop, initialization,
+self-counted packet parser, concrete three-count producer and full counted
+mixed-axis execution reports only standard Lean axioms (3907.8 MiB peak).
+Plan-status and whitespace checks pass. Commit these six modules as one local
+integration chunk; do not push.
