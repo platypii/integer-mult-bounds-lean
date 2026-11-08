@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4703 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4715 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -40281,3 +40281,127 @@ volumes structurally. Full replica traversal/recovery/publication, geometry
 fallback, uniform resources and broader S4 acceptance remain open. Collect this
 physical staging work with the preceding cached-axis/accuracy bridge as one
 larger local checkpoint. No push; periodic WIP untouched.
+
+### S4 both cached residual archives execute as one ordered boundary batch
+
+PhaseCellCyclicReplicaBoundaryRows supplies the common real folded-row language
+for the producer and existing prepared residual solver. Its count and realness
+are structural facts about the folded boundary map.
+
+PhaseCellCyclicReplicaBoundaryBatchStep lifts the checked 176-register two-piece
+staging/fold executor into a 180-register bank and archives each row in reverse.
+CyclicReplicaBoundaryReady records the shared masks, packed volumes, width,
+boundary count and fold counters. Its frame lemma transfers readiness whenever
+only the two archive ports, replica clock and output archive change. The step
+consumes one row from each packed archive, clears the row port and restores all
+other stacks. Guarded check: 2086.3 MiB.
+
+PhaseCellCyclicReplicaBoundaryBatchLoop instantiates the existing relational
+countedLoop theorem over an arbitrary list of paired fields. Its invariant tracks
+unconsumed prefixes and the reversed stream of completed rows. The generic loop
+proves synchronization and source order without replica case enumeration or
+per-row control setup. Guarded check: 2080.9 MiB.
+
+PhaseCellCyclicReplicaBoundaryBatch generates the replica clock once from an
+ordinary retained count, executes that loop, and reverses its result once. The
+exact endpoint changes only the two input archives and the final row stream;
+all clock/archive temporaries, masks and fold controls restore. The exact cost is
+8+replicas*(28*n*w+10*n+76*N*w+69*N+60*w+137), bounded by
+137*replicas*(n+N+1)*(w+1)+8. This is a scalar-time bound, not a peak-stock claim.
+Guarded check: 2075.9 MiB before the small cost-polynomial lemmas; subsequent
+guarded builds check those lemmas too.
+
+PhaseCellCachedCyclicResidualRows adapts the two equal-length actual cached
+archives via zip and proves that the output is precisely cstream A w rows.flatten
+in the original archive order, as required by the prepared residual batch.
+No supplied folded-row stream or ambient expansion remains. Guarded check:
+2070.1 MiB.
+
+Integration exposed a magnitude mismatch: replicaResidualExponent is a coarse
+archive-width reserve, larger than the solver's required stencil-count bound.
+PhaseCellReplicaResidualSharpBound derives the sharp couplingCountExponent
+estimate directly from each existing ReplicaCouplingResidualSpec; no stronger
+RHS premise is added. PhaseCellCyclicReplicaBoundaryFormat derives row lengths,
+realness and exactly the solver's coordinate bounds for the zipped row list.
+Guarded checks: 2166.3 MiB and 3377.2 MiB.
+
+PhaseCellCachedCyclicResidualRowsSpec combines actual counted execution, all row
+format obligations and the existing joint original-system residual accuracy
+certificate. One mathematical interior inverse serves the whole archive, with
+the existing Fs.length-1-j lookup and unchanged haloResidualError. Guarded check:
+3380.0 MiB; guarded build passes (15708 jobs, 3.5 GiB).
+
+Next integrate generated/retired joint counters and masks with placement beside
+the shared-factor batch. The current readiness contract retains those controls;
+it does not yet generate their entire cyclic lifecycle or execute the original
+two cached passes in the combined physical placement. Reuse the existing packed
+mask producers and fold-counter generator. Keep archive volumes structural:
+N≤n means completed boundary rows can replace consumed packed residual rows
+without multiplying stock by traversal time, but intermediate execution stock
+still needs its own proof. Full recovery/publication of every replica, fallback
+outside cached geometry, uniform resources and broader S4 acceptance remain
+open. Keep this traversal and format work for the next larger integration
+checkpoint; no commit or push; periodic WIP untouched.
+The counted loop, full batch, linear scalar-time bound, sharp residual bound and
+combined execution/format/accuracy specification axiom audit reports only
+propext, Classical.choice and Quot.sound (9558.1 MiB temporary audit peak).
+Source integrity and tracked/untracked whitespace checks pass; proof limits
+unchanged. Production checks remain below 3.4 GiB.
+
+### S4 shared fold counters and packed volumes have an executed lifecycle
+
+Split CyclicReplicaBoundaryInputs from CyclicReplicaBoundaryReady: the former
+contains the retained masks, dimensions and workspace facts; the latter adds
+the three generated fold-counter facts. Existing field names and the structural
+right-frame theorem remain available to the counted traversal.
+
+PhaseCellInitializedCyclicReplicaBoundaryBatch embeds the existing
+packedBoundaryFoldCounters once, runs the complete paired archive traversal,
+and clears its three joint counters once. The exact final state again changes
+only the two consumed archives and the ordered real row output. Setup is
+boundaryFoldCountersCost N w; cleanup is bounded by 2*(N+N*w)+7, independent
+of replica count. No supplied half-count, parity or first-half byte clock is
+needed. Guarded check: 2097.4 MiB.
+
+PhaseCellExportCyclicResidualRows relocates the row output directly to the
+prepared residual solver's input port 226 and borrows its replica-count master
+229. It retires width, both volume headers and both masks after all rows. The
+consumed archive ports are empty. The exact endpoint is the named
+exportedCyclicResidualRows state; its unchanged external streams, left stacks
+and other right stacks are part of the execution theorem. Retirement costs
+exactly 2*(w+n*w+n)+11: each packed mask/header is charged once, not per RHS.
+Guarded check: 2097.6 MiB.
+
+PhaseCellCyclicReplicaBoundaryVolumes derives left/right packed symbol volumes
+from actual endpoint headers 144/145/146 and retained width 130, using existing
+unary copy/subtract/product programs. All product scratch restores. Its setup
+bill is at most 8*a+6*n+n*(4*w+9)+18; the origin scan is explicit one-time work
+that still needs inclusion in the uniform per-key resource ledger. Guarded
+check: 1949.9 MiB.
+
+PhaseCellPreparedExportCyclicResidualRows executes this volume producer before
+the exporter. Its Inputs premise is evaluated on the explicitly computed
+volume state, so both volume equations reduce to the construction rather than
+requiring pre-existing volume headers. It starts with those headers empty and
+derives them from the endpoint sources. Retirement erases them again, yielding
+the same exportedCyclicResidualRows endpoint relative to the original state.
+Guarded check: 2080.2 MiB.
+
+The prepared exporter and complete original-system residual specification
+guarded build passes (15712 jobs, 4.4 GiB combined build peak; production
+single-file checks remain below 3.4 GiB). Next physically generate/save the two
+boundary masks from the metadata returned by the cached passes, connect their
+actual execution in the combined placement, and compose the exported packets
+with constructedCyclicResidualBatch. The export now has the correct RHS port,
+retained count and cleared high workspace; that is not yet a proof of the
+combined factorization/solve execution. The shared factor tables themselves
+are already generated by the existing factory. Full replica recovery and
+publication, geometry fallback, structural stock/uniform time, and broader S4
+acceptance remain open. Collect this lifecycle/export work with the preceding
+traversal/format work as one larger local checkpoint; no push; periodic WIP
+untouched.
+The initialized batch, packed-volume generator, exact export, prepared exporter
+and combined execution/format/accuracy specification axiom audit reports only
+propext, Classical.choice and Quot.sound (9559.5 MiB temporary audit peak).
+All twelve new source files pass integrity and whitespace checks; no proof
+limits changed.
