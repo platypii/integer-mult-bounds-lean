@@ -1,7 +1,7 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellOriginRelease
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalOriginPackets
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTableRelease
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTableRealBits
 public import IntegerMultBounds.MathlibTM2.Fast.TableBounds
 
 /-! Publish one computed natural address as binary data and release its table. -/

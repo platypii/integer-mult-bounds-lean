@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4475 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4478 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -35313,3 +35313,161 @@ interval validity/output, regular execution, full periodic execution and stock
 reports only standard Lean axioms (3875.7 MiB audit peak). Plan-status and
 whitespace checks pass. Commit this accumulated geometry/preparation chunk
 locally; no push is authorized. This does not establish full axis or S4 acceptance.
+
+### S4 generated periodic-fiber controls and complete retirement
+
+`Routing/HaloHeaderSetup.lean` generates the full/band/skip byte headers from
+retained ordinary row length M, halo length H and word width w. It reuses two
+`resetProduct` operations, `resetCopy`, and `usub`; no new arithmetic interpreter
+or whole-source length scan is introduced. The exact outputs are unary M*w,
+H*w and (M-H)*w, with masters and scratch preserved. Time is at most
+`(M+H)*(8*w+9)+22`; native push bound is two. Guarded check: 1952.7 MiB,
+no warnings/default-limit changes.
+
+`Routing/PreparedPeriodicHalo.lean` composes actual control generation, periodic
+extension and concrete regular halo emission, then retires all three generated
+headers. It uses twenty fixed tapes, preserving the three retained dimensions
+and every transient header/scratch tape. The source, consumed pair clock and
+metadata queue are its only endpoint changes. `run_exec` no longer assumes
+preinstalled full/band/skip headers or their execution suppliers. Time is bounded
+by `(M+H)*(8*w+9)+(30*M+28*H)*w+34*((N*L+2*H)*w)+N*(76*V+149)+79`.
+For positive record width and H<=M this is linear payload traffic plus the
+per-window metadata charge. Native push bound three supplies total stock in
+three times the time bound. Final guarded check: 2015.9 MiB, no warnings.
+
+`NativePushBoundMono.lean` factors structural monotonicity of native push bounds
+into one narrow generic lemma. Both the prepared supplier and existing window
+controller use it; removed the old private duplicate in `HaloWindowRun`.
+Complete guarded import-closure build passes (4010 jobs, 4.1 GiB aggregate peak).
+
+The remaining runtime preparation gap is binary window-count metadata and its
+pair clock. Reuse `descriptorEnumeration_do` / `TblCode` arithmetic and
+`tablePacketHost_list_exec`, then the established binary bank-load/release
+pattern, instead of building a separate parser or interpreter. Regular rows
+need only endpoint differences with first/final/dummy handling; their list must
+be proved equal to the metadata consumed by the existing regular halo theorem.
+The complete axis still needs actual movement and retained-halo invariants;
+forward near-one window geometry, global initialization, tensor numerical
+locality/error/support and compiler/root gates remain open. These setup changes
+remain uncommitted pending the larger metadata-production chunk. No push is
+authorized; periodic-recovery work is untouched. Full S4 remains incomplete.
+
+Prepared-supplier validation: temporary guarded axiom audit of generated header
+execution, complete prepare/emit/retire execution and stock reports only standard
+Lean axioms (3874.9 MiB audit peak). Plan-status and whitespace checks pass.
+No commit or push was made. This is component validation, not S4 acceptance.
+
+### S4 generated regular-halo binary metadata
+
+`Routing/RegularHaloCountRow.lean` proves one fixed `TblCode` row computes the
+body/overlap counts of the current regular window. It selects first, interior,
+final or dummy counts from the runtime index, rather than unrolling cases over
+all windows. B denotes twice the one-sided halo byte width. Only scratch 8 may
+change; the row costs at most seven table atoms. Guarded check: 1403.2 MiB
+before replacing deprecated simp lemma names; the final dependency build passes
+without warnings.
+
+`Routing/RegularHaloCountCode.lean` initializes the common counts L-B and L+B,
+computes padded count `N+N%2`, and reuses `descriptorEnumeration_do` to enumerate
+all real windows and the odd dummy. `generate_do` executes actual arithmetic
+with at most `10*paddedCount N+11` table atoms. It needs only ordinary N, L and
+B inputs, the fit conditions B<=L, N+2<2^V and L+B<2^V, and no supplied arithmetic
+or enumeration execution. Its guarded build passes without warnings.
+
+`Routing/RegularHaloCountLayout.lean` identifies this generated count list with
+the exact metadata of `RegularHaloLayout.pairs`. The proof is structural in the
+number of windows, handles shifted starting indices and the odd dummy, and uses
+ordered endpoint differences rather than enumerating concrete window cases.
+It also proves `2*pairs.length = paddedCount N`, identifying the required pair
+clock value. Guarded check of the general correspondence: 1949.5 MiB; the
+specialized correspondence builds successfully.
+
+`Routing/RegularHaloCountHost.lean` reuses `tablePacketHost_list_exec` to execute
+the controller, publish actual binary count words in ordinary order and release
+the table workspace. `generateCounts_exec` states the output directly as
+`metadata V 0 (pairs L H 0 N)`, not an assumed equivalent descriptor list. Time
+is at most `(10*paddedCount N+11)*tblC V V+(4*paddedCount N+62)*V+65`.
+Guarded check: 1973.1 MiB, no warnings/default-limit changes.
+
+Remaining producer integration: load N/L/B from retained binary sources through
+the existing bank-load pattern; generate/publish the pair clock `paddedCount N/2`
+(and decode it using `readUnaryDimension`), then embed the released table bank
+and compose metadata generation with `PreparedPeriodicHalo.run`. The current
+host theorem still starts from an installed `tblHolds` bank; that precondition
+must not survive final S4 acceptance. Keep these metadata modules and prior
+header/prepared-supplier changes uncommitted until this larger preparation chunk
+is complete. No push is authorized. Axis/tensor/global/compiler/root gates remain
+open, and the user's periodic-recovery work remains untouched.
+
+Metadata validation exposed an avoidable import-cost issue: the first axiom audit
+loaded analytic origin-controller dependencies and peaked at 6752.6 MiB. Split
+the existing `originReg` bank, `tblPairs_real_bits`, and generic bank release into
+narrow `PhaseCellTableBank`, `PhaseCellTableRealBits`, and `PhaseCellTableRelease`
+modules. Original analytic modules re-export the same declarations; packet-host
+execution now imports only the reusable pieces. No definitions or proof claims
+were duplicated. The narrowed metadata import closure builds successfully
+(4012 jobs, 3.2 GiB aggregate peak), and the same guarded axiom audit reports
+only standard Lean axioms at 3881.8 MiB. This removes over 5000 unrelated build
+jobs from this metadata supplier's dependency closure. Recheck the old origin
+controller and representative existing packet-host consumers after the split.
+
+Compatibility validation after narrowing packet imports passes for the original
+origin release/controller path, existing core-halo packet host, and prepared
+periodic halo supplier (9345 jobs, 4.2 GiB aggregate guarded peak). The new
+metadata host and all audited producer/correspondence declarations use only
+standard Lean axioms. Plan-status and whitespace checks pass. No commit or push
+was made; metadata input loading/pair-clock integration and full S4 remain open.
+
+### S4 complete generated periodic target-halo supplier
+
+The regular count controller now emits the binary pair count before its window
+metadata. It divides the already computed padded count by two, then runs the
+same enumeration; its atom bound is `10*paddedCount N+13`. The host theorem
+publishes exactly `binSyms V pairs.length ++ metadata V 0 pairs` using the proved
+`2*pairs.length = paddedCount N` identity. No parity-specific program is added.
+
+`Routing/RegularHaloMetadata.lean` loads retained binary N, core byte width and
+complete overlap byte width through `chirpBankLoad`, executes the count/clock
+controller and releases the table bank. It then uses `readUnaryDimension` to
+consume the leading count word and install the actual unary loop clock. Its
+final endpoint changes only metadata queue 109 and clock 114; all source words,
+headers, table slots and decoder scratch are preserved/restored. The initial
+`tblHolds` precondition is discharged by actual bank-loading execution.
+`prepareCost N V = (10*paddedCount N+13)*tblC V V +
+(4*paddedCount N+193)*V + 6*paddedCount N+226` depends only on ordinary runtime
+N and V. Native bound three gives a shared stock bound in three times that cost.
+Guarded complete decoding check: 1965.2 MiB before the cost-only simplification;
+the final module builds successfully without warnings/default-limit changes.
+
+`Routing/GeneratedPeriodicHalo.lean` composes actual metadata/clock preparation
+with `PreparedPeriodicHalo.run` on the same fixed 117-tape bank. Starting from
+retained ordinary row/halo/word widths and binary N/core/overlap words, it
+generates all transient headers, pair clock and exact window metadata; extends
+only the current fiber; emits the manuscript's persistent target halos; and
+retires every temporary. `emit_exec` has a source-only endpoint, preserving
+user state, retained inputs and arbitrary borrowed suffix. No prepared-control,
+prepared-metadata, `tblHolds`, per-window execution or layout-correspondence
+supplier is assumed. Time combines `prepareCost` with the verified linear
+payload traffic and per-window metadata bill; native bound three yields total
+stock in three times the stated time bound. Guarded check: 1976.7 MiB; removed
+one unused simp argument afterward. Complete final import-closure build passes
+(4031 jobs, 2.5 GiB aggregate peak).
+
+This closes generation and execution of the current-fiber regular target-halo
+supplier from retained ordinary dimension words. The outer S4 driver must still
+produce those retained dimensions from its actual tensor metadata, place/reuse
+the fixed bank, and compose field movement plus this supplier into the
+retained-halo axis/tensor invariant. Forward near-one source windows require
+the separate manuscript geometry; global initialization, tensor numerical
+locality/error/support and compiler/root acceptance remain open. Commit the
+accumulated header/metadata/full-supplier and narrow shared-table refactor as
+one coherent local chunk after final audit. No push is authorized. The user's
+periodic-recovery work is untouched. Full S4 remains incomplete.
+
+Final generated-supplier audit: actual count/clock code, binary publication,
+retained-input loading, unary clock installation, complete source-only halo
+execution and stock all depend only on standard Lean axioms. Guarded temporary
+audit peak: 3887.1 MiB. Complete final build, plan-status and whitespace checks
+pass. This is acceptance of the concrete current-fiber target-halo supplier,
+not full axis/tensor or S4 acceptance. Commit this larger accumulated preparation
+chunk locally; no push is authorized.

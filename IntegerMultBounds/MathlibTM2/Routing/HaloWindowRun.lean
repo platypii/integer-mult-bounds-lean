@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Routing.HaloWindowCounts
 public import IntegerMultBounds.MathlibTM2.Routing.HaloWindowStep
+public import IntegerMultBounds.MathlibTM2.NativePushBoundMono
 public import IntegerMultBounds.MathlibTM2.Mult.ShortConvSetupStock
 
 /-! A complete metadata-driven monotone window: decode its varying counts,
@@ -19,22 +20,13 @@ def readEmitWindow (width queue binary duplicate work bodyCount keepCount src ar
     (.seq (emitWindow bodyCount keepCount src archive oldOverlap nextOverlap saved tmp)
       (clearWords [bodyCount,keepCount]))
 
-private theorem native_mono {c d : ℕ} (hcd : c ≤ d) (p : Pr P T Q A U)
-    (h : mnNativePushBound c p) : mnNativePushBound d p := by
-  induction p with
-  | act a => exact h.trans hcd
-  | seq p q ihp ihq => exact ⟨ihp h.1,ihq h.2⟩
-  | cond f p q ihp ihq => exact ⟨ihp h.1,ihq h.2⟩
-  | loop f p ih => exact ih h
-  | call f => exact h.elim
-
 theorem readEmitWindow_native
     (width queue binary duplicate work bodyCount keepCount src archive oldOverlap nextOverlap saved tmp : Fin T) :
     mnNativePushBound 3 (readEmitWindow (P := P) (Q := Q) (A := A) (U := U)
       width queue binary duplicate work bodyCount keepCount src archive oldOverlap nextOverlap saved tmp) :=
   ⟨readCounts_native _ _ _ _ _ _ _ _ _ _,
-    native_mono (by omega) _ (emitWindow_pushBound _ _ _ _ _ _ _ _),
-    native_mono (by omega) _ (clearWords_native _)⟩
+    mnNativePushBound_mono (by omega) (emitWindow_pushBound _ _ _ _ _ _ _ _),
+    mnNativePushBound_mono (by omega) (clearWords_native _)⟩
 
 theorem readEmitWindow_exec
     (width queue binary duplicate work bodyCount keepCount src archive oldOverlap nextOverlap saved tmp : Fin T)

@@ -1,7 +1,7 @@
 module
 
 public import IntegerMultBounds.NLogN.PhaseCellNaturalGroups
-public import IntegerMultBounds.MathlibTM2.Fast.TableVM
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTableRealBits
 
 /-! The natural schedule's emitted origins agree, in order and representation,
 with the binary control row ABI of the closed batch solver. -/
@@ -31,10 +31,6 @@ theorem naturalOriginPackets_eq_rows {A s : ℕ} [NeZero s] (V t band L : ℕ) :
   intro n hn
   rw [naturalGroupOrigin_val band L ⟨n, List.mem_range.mp hn⟩]
   rfl
-
-theorem tblPairs_real_bits {A V origin : ℕ} (hA : 4 ≤ A) (hfit : origin < 2^V) :
-    (tblPairs A V origin 0).map (fun sym => bitSymbol (pairRe sym)) = binSyms (A := A) V origin := by
-  simp [tblPairs, coeffSyms, binSyms, List.map_ofFn, Function.comp_def, pairRe_pairSym hA, Nat.mod_eq_of_lt hfit]
 
 theorem naturalOriginPairs_real_bits {A V s t band L : ℕ} (hA : 4 ≤ A) (hs : s ≤ 2^V) :
     ((naturalLengthGroup s t band L).flatMap (fun phase => tblPairs A V (naturalStart s t band phase) 0)).map

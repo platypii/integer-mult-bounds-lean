@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalGroupCode
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNaturalOriginPackets
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTableBank
 public import IntegerMultBounds.MathlibTM2.Fast.TableBounds
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCountWords
 
@@ -17,19 +18,6 @@ open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
   IntegerMultBounds.MathlibTM2.Node IntegerMultBounds.MathlibTM2.Fast
   IntegerMultBounds.MathlibTM2.Layer IntegerMultBounds.MathlibTM2.Fast.TableVM
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
-
-def originReg : TblR 16 → Fin 117
-  | .v i => ⟨i.val, by omega⟩
-  | .wr => 16 | .wn => 17 | .acc => 18
-  | .z i => ⟨19+i.val, by omega⟩
-
-theorem originReg_injective : Function.Injective originReg := by
-  intro x y h
-  cases x <;> cases y <;> simp_all [originReg, Fin.ext_iff]
-  all_goals omega
-
-theorem originReg_range (r : TblR 16) : (originReg r).val < 31 := by
-  cases r <;> simp [originReg] <;> omega
 
 variable {Q A : ℕ} {P₀ U : Type} {body : P₀ → Pr P₀ 117 Q A U}
 
