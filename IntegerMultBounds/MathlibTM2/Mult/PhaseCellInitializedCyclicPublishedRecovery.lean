@@ -70,7 +70,7 @@ theorem initializedCyclicPublishedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.s
       (S'.R 144).length = a ∧ (S'.R 145).length = a+min n (s-a) ∧
       (S'.R 146).length = n-min n (s-a) ∧ (S'.R 119).length = q ∧
       (∀ k ∈ ([(0 : Fin 224),1,2,3,4,5,6,7,94,138,141,143]), S'.R k = []) ∧
-      (∀ i, Fits w (G i)) ∧
+      (∀ i, (G i).im = 0) ∧ (∀ i, Fits w (G i)) ∧
       ∀ x : ZMod s → ℝ,
         SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
           (fun i => (value q (rhs i)).re) →
@@ -133,7 +133,7 @@ theorem initializedCyclicPublishedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.s
     axis.hdom rhs G hrhs hreal hoff x₀ hx₀ (fun i hi => (hacc x₀ hx₀ i hi).trans hone)
   have hGfits : ∀ i, Fits w (G i) := hformat.2
   refine ⟨vc,Sc,mc,vd,F,mc+md,columns,G,hec,Nat.add_le_add_left hmd mc,hvd.trans hvc,
-    Exec.seq hec hed',hinp,hout,hL,?_,by simp [F],by simp [F,w,bits,B,band],?_,?_,?_,?_,?_,?_,hGfits,?_⟩
+    Exec.seq hec hed',hinp,hout,hL,?_,by simp [F],by simp [F,w,bits,B,band],?_,?_,?_,?_,?_,?_,hreal,hGfits,?_⟩
   · simpa [F] using h110
   · have h : LengthKeyReady (2^15*p) (executionStagePrecision p l (initialSchurTarget p u bits 2) 2+1)
         q l s t u band 0 0 (cstream A w (chirpLine s rhs)++tail)

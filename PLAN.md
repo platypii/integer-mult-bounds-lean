@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4676 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4682 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -39872,3 +39872,93 @@ The cropped caller and cyclic rounding adapter guarded builds pass (3.5 GiB and
 3.3 GiB aggregate peaks). Their axiom audit reports only propext,
 Classical.choice and Quot.sound (9581.3 MiB temporary audit peak). Source
 integrity and whitespace checks pass; no proof limits changed.
+
+### S4 normalization scalars come from actual retained precision
+
+PhaseCellPrepareRetainedRound computes width 2*q+8 from scalar q in slot 18
+and reuses tblRoundSelection for shift Nat.size (4*p) and magnitude p+8.
+It does not recompute halo geometry or substitute a noncyclic cardinality.
+The table program preserves the ordinary inputs and precision and zeros the
+three rounding work slots. Guarded check passes at 2094.6 MiB.
+PhaseCellRetainedRoundScalars lifts this exact computation to execution and the
+existing inverseRoundVariables view; its generic cyclicRound_dimensions proves
+all rounding width room directly from the existing canonical solver precision
+at target+1, for arbitrary boundary cardinality. Check: 2084.3 MiB.
+
+PhaseCellInstallRetainedRoundScalars reuses installUnaryScalarInputs to generate
+the p/q binary words from ordinary retained unary masters, allocate the scalar
+bank and execute the above computation. It returns the exact rounding view,
+empty accumulator, fitting scalars, the complete setup bill and preservation
+outside the bank. No supplied binary inputs, geometry computation or shift
+oracle is required. Guarded check passes at 2085.2 MiB.
+
+The published/cropped cyclic callers now expose their existing proved realness
+fact for G. cyclicRealFinalRound_accuracy lifts their real field error into the
+complex rounding language without loss. Its check passes at 3093.1 MiB. The
+updated caller build passes at 5.0 GiB combined peak across parallel modules.
+Next compose generated scalar setup, cyclic rounding, common-width repacking
+and whole-bank disposal in the physical caller. Preserve setup sharing and then
+close replica reuse/resource gates before broader S4 tensor acceptance. These
+are normalization building blocks; full ordinary-input normalization and S4
+remain open. Keep this work for the next larger local checkpoint; no push.
+
+PhaseCellCyclicNormalizedRecoveryAccuracy derives the original principal solution's
+magnitude directly from dominates_mono/solves_bound and the actual RHS bound.
+Together with cyclicRound_dimensions and cyclicRealFinalRound_accuracy, this
+proves normalized decoded error for the rounded cyclic stream with no supplied
+magnitude or width-room premise. The canonical solver is run at target+1 and
+the error remains 2/2^p+(1/2^(target+1))/2^shift. Check: 3136.1 MiB;
+guarded build: 3.4 GiB aggregate.
+
+Physical integration detail: LengthKeyReady retains P=2^15*p on 117, q on 119,
+not an ordinary p ruler. The physical normalization producer must recover p
+from P with paid arithmetic (prefer binary division by a generated 2^15 in the
+scalar bank), or reuse a proved retained factor scalar; do not add a p-master
+premise to the ordinary-input caller. The installer now recovers p inside its scalar bank from the retained
+P/q masters; the physical bank placement remains to be built.
+The installed scalar producer and canonical normalized cyclic accuracy axiom
+audit reports only propext, Classical.choice and Quot.sound (9142.3 MiB temporary
+audit peak). Source integrity and whitespace checks pass. No new commit or push;
+retain these changes for the next larger integrated normalization checkpoint.
+
+
+### S4 retained kernel-length normalization owns its complete scalar lifecycle
+
+PhaseCellRecoverRoundPrecision generates divisor two and executes fifteen
+binary divisions to recover p from P=2^15*p. Its scalar proof uses a fixed
+18-instruction block, preserves q and the accumulator, and derives fitting
+results structurally. No 32768-branch unary program or new p ruler is required.
+Guarded check passes at 2079.6 MiB.
+
+PhaseCellInstallRetainedRoundScalars now loads actual P/q unary masters, recovers
+p, and invokes retained rounding setup. Its cost includes binary header creation,
+word allocation, all eighteen recovery instructions and shift/width generation.
+The extra binary-width room premise covers the actual P header. Updated check
+passes at 2098.4 MiB; guarded build at 2.7 GiB aggregate.
+
+PhaseCellNormalizeCyclicInterval composes this setup, the existing cyclic list
+rounding adapter and releaseScalarBank_to_state_exec. The executed endpoint is
+exactly the original stacks with only the normalized source prefix replaced;
+all scalar words and borrowed headers restore. Its bill includes setup, rounding
+and full bank disposal. The initial lifecycle check passes at 3153.6 MiB.
+The strengthened endpoint additionally derives Fits (2*p+13) for every emitted
+word using cyclicFinalRound_fits, including both sides of a seam. This fit proof
+reuses symZ decoding, computed_solution_norm_of_error and finalRound_fits and
+uses no input Fits premise or generated case certificate.
+
+Remaining physical composition must allocate a disjoint scalar bank, generate
+its width/row controls from the retained masters, execute this lifecycle and
+adapt the rounded prefix to the router's common width. Preserve the manuscript's
+setup reuse across replicas; do not rerun the boundary solver to normalize its
+output. Uniform time/structural stock, locality/tensor composition and final S4
+acceptance remain open. No push; unrelated periodic WIP untouched.
+The strengthened normalization lifecycle check passes at 3155.5 MiB without
+warnings. The grouped guarded build with canonical accuracy and the updated
+cropped caller passes (15803 jobs, 5.8 GiB combined peak). The normalization
+execution/cleanup theorem and canonical normalized accuracy axiom audit reports
+only propext, Classical.choice and Quot.sound (9143.6 MiB temporary audit peak).
+Source integrity and whitespace checks pass; proof limits are unchanged.
+Collect the preceding scalar-generation, real-error bridge, canonical numerical
+budget and complete normalization lifecycle as one larger local checkpoint.
+No push; physical placement/common-width publication, replica reuse, uniform
+resources and full S4 acceptance remain open.

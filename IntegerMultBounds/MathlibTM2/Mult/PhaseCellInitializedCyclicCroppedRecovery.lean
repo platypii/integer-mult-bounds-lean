@@ -66,7 +66,7 @@ theorem initializedCyclicCroppedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.sta
       S'.inp = S.inp ∧ S'.out = S.out ∧ S'.L = S.L ∧ S'.R 110 = S.R 110 ∧
       S'.R 132 = cstream A w (chirpLine s G)++(bandTableWords A w B (24*band+1) columns 0++S.R 132) ∧
       S'.R 147 = cstream A w (cyclicInterval a n G) ∧ (S'.R 147).length = n*w ∧
-      (∀ i, Fits w (G i)) ∧
+      (∀ i, (G i).im = 0) ∧ (∀ i, Fits w (G i)) ∧
       ∀ x : ZMod s → ℝ,
         SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
           (fun i => (value q (rhs i)).re) →
@@ -79,7 +79,7 @@ theorem initializedCyclicCroppedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.sta
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   obtain ⟨va,Sa,ma,vb,Sb,mb,columns,G,hea,hmb,hvb,heb,hinp,hout,hL,h110,h147,hfield,
-    hreadyB,h144,h145,h146,hq,hfreshB,hfits,haccuracy⟩ := initializedCyclicPublishedRecovery_spec
+    hreadyB,h144,h145,h146,hq,hfreshB,hreal,hfits,haccuracy⟩ := initializedCyclicPublishedRecovery_spec
       (body := body) hR hQ hA axis has hbs rhs hrhs v S tail hready haMaster hnMaster hfresh
       h0 h139 h127 h138 h143 h147 h151 h152 h153 hleft hnew
   have hw : w = 2*q+8 := by dsimp [w,q,executionWidth,executionPrecision]; omega
@@ -96,7 +96,7 @@ theorem initializedCyclicCroppedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.sta
       (embTab componentReg (embTab groupReg body))))) preparedCyclicSlice (mk vb Sb) mc (mk vc F) := by
     simpa only [F,hw,h147,List.append_nil] using hec
   refine ⟨vb,Sb,mb,vc,F,mb+mc,columns,G,heb,Nat.add_le_add_left hmc mb,hvc.trans hvb,
-    Exec.seq heb hec',hinp,hout,hL,?_,?_,?_,?_,hfits,?_⟩
+    Exec.seq heb hec',hinp,hout,hL,?_,?_,?_,?_,hreal,hfits,?_⟩
   · simpa [F] using h110
   · simpa [F] using hfield
   · simp [F,w,bits,B,band]
