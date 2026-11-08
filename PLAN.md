@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4615 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4621 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -38967,3 +38967,94 @@ width room and total setup/column-generation costs before extending the caller
 plumbing further. Resident boundary-page/endpoint producers, uniform resource
 discharge, axis/tensor/forward/error/support and final S4 acceptance remain open.
 No push; separate periodic-recovery WIP remains excluded.
+
+
+### S4 computed cyclic factorization and joint solve compose; root packet room is generated
+
+PhaseCellConstructedCyclicFactor embeds preparedCyclicFactorPage into the
+physical factor bank, derives every setup premise with boundaryFactorLegacy_input,
+and executes scaledInitializedBoundaryFactor at scale 2 and canonical
+boundaryTableBits precision. The computed accurate/formatted columns and
+PreparedBoundaryColumns certificate accompany actual lower/upper/reciprocal
+factor pages, solve readiness, exact legacy frame and permanent/header bounds.
+No computed columns, factor page, factor certificate or execution is supplied.
+The ordinary resident joint boundary page and retained endpoint rulers are still
+caller inputs. Guarded check passes without warnings at 3417.5 MiB.
+
+PhaseCellConstructedCyclicSolve composes this full factor producer with the
+existing generic gather/normalize/triangular-solve engine, at joint folded width
+24*band+1. It preserves the coordinate page and its suffix, original headers and
+ambient residual, retains all factor pages and returns the actual bounded
+solution page and reusable solve readiness. Guarded check passes without warnings
+at 3434.3 MiB. This endpoint accepts an ordinary ambient residual stream with
+its component bounds; connecting the physically generated two-interval residual
+bank to the joint solve input remains open. It does not establish final recovery
+accuracy, axis/tensor composition or full S4.
+
+The initial factor composition hit the default heartbeat limit because width
+unification tried to unfold the bandwidth definition when comparing 12*(2*band)
+with 24*band. A single explicit arithmetic rewrite fixes the application; no
+proof limits were raised.
+
+PhaseCellRecoveryMasterRoom adds structural widening of InverseMasterInput,
+preserving all ordinary data and room bounds. withPacketRoom chooses
+max oldB (Nat.size (4*packetWidth+2)). The actual ownedMasterInput constructor
+uses this format with packedHaloCommonWidth; ownedJob_packetRoom now proves
+4*r.W+2 < 2^d.B. PhaseCellBulkDiagonalRecovery removes that external hypothesis
+and derives it from the constructed job. This avoids the invalid inference
+from inversePrecisionRoom alone. The changed scalar width remains explicit
+in d.B-dependent time/stock bills; its final asymptotic budget is still owed.
+Guarded room check passes at 3204.1 MiB; changed owned-job check at 3390.0 MiB.
+
+The combined cyclic-solve and bulk-diagonal regression build passes (16095 jobs,
+15.8 GiB aggregate, 0.7 minutes). The changed bulk-diagonal theorem checks
+without warnings at 3478.4 MiB. Axiom audits for both integrated endpoints
+report only propext, Classical.choice and Quot.sound (9652.5 MiB audit peak).
+Whitespace/source-integrity checks pass. Next wire the two physical residual streams
+into joint boundary gather/solve and connect the ordinary boundary-page/endpoint
+producers. Total setup/column-generation time and structural stock bounds, the
+widened root scalar-format budget, remaining geometry room, axis/tensor/forward/
+error/support and final S4 acceptance remain open. Keep this work for the next
+larger local checkpoint; no push. Separate periodic WIP remains untouched.
+
+
+### S4 two physical residual streams feed one joint boundary solver
+
+PhaseCellCyclicBoundaryRhsPrepare reuses collectCyclicColumnEntries across the
+entire folded joint boundary. It generates the scan count from retained header
+116, selects each row from the right/left physical residual bank on 132 using
+the existing original-coordinate address program, and retires the cursor/count.
+The collector's reversed row list is put into solver order with the existing
+retainedReversePackedLines structural transducer. Word width is generated from
+master precision and retired afterward. Exact execution changes only output
+143; source streams, coordinate page, header and every scratch stack are restored.
+No selected-row list, installed scan count or assumed execution is supplied.
+Guarded check passes without warnings at 2000.5 MiB; guarded build passes.
+
+PhaseCellCyclicBoundaryRhsPhysical embeds this program directly into the factor
+bank's RHS port 206 while preserving its factor pages. It checks at 1992.6 MiB.
+PhaseCellGeneratedCyclicBoundaryGatherSolve composes this actual gather with
+the existing generatedBoundaryNormalizeSolve. It accepts the ordinary physical
+right/left residual streams, endpoint rulers, resident boundary page and retained
+factor-bank contract, and returns one joint triangular solve. The solved RHS is
+the original-coordinate piece selection in folded boundary order, not a sum of
+residuals; the numerical component bound is unchanged. Both source residuals and
+all legacy tapes are restored; the factor bank changes only the consumed RHS
+port and actual solution output on 217. Exact factor-bank frame and full billed
+gather/normalization/solve execution accompany the result. Guarded check passes
+without warnings at 3136.3 MiB; guarded build passes (3.4 GiB aggregate).
+Axiom audits for the structural gather and integrated gather/solve report only
+propext, Classical.choice and Quot.sound (9116.9 MiB audit peak). Whitespace
+and proof-source checks pass; default proof limits remain unchanged.
+
+The raw two-interval producer cyclicResidualPasses is already proved, but must
+now be embedded and run after constructedCyclicFactor, followed by this physical
+gather/solve. This ordering matters: factor construction retains its packed
+table on 132, so the new residual streams must be generated above that table
+as borrowed tail. Merely replacing the ambient gather in constructedCyclicSolve
+would read the table as residual data and is not the integration path. Next
+compose the residual producer and physical gather/solve, recover projected
+LengthKeyReady from the exact legacy factor frame, then retire the two residual
+prefixes. Resident boundary-page/endpoint producer wiring, uniform setup/time/
+structural stock and widened root-width budgets, axis/tensor/forward/error/
+support and final S4 acceptance remain open. No push; periodic WIP untouched.

@@ -40,7 +40,7 @@ theorem bulk_diagonal_exec_ofAxisBounds (b : RawRecoveryProgramBounds Q A U)
     (_ : r.problem.origin+r.problem.span+2*t*(r.problem.origin+r.problem.span)+3*s < 2^W)
     (_ : ∀ j < r.problem.span, targetOrigin ≤ nearestNatural s t (r.problem.origin+j) ∧
       nearestNatural s t (r.problem.origin+j) < targetOrigin+targetSpan)
-    (_ : 4*r.W+2 < 2^d.B) (_ : r.W < 2^V) (_ : targetSpan < 2^V) (_ : targetSpan*r.W < 2^V)
+    (_ : r.W < 2^V) (_ : targetSpan < 2^V) (_ : targetSpan*r.W < 2^V)
     (_ : V ≤ W) (_ : 4 ≤ A) (_ : 0 < V)
     (wl : List (Fin (A+4))) (_ : wl.length = d.B) (v : HS tapes Q A U) (S : Stacks tapes A)
     (_ : plan.CroppedReady crop d r Fs.length radius (rows s t L k) wl S)
@@ -86,11 +86,13 @@ theorem bulk_diagonal_exec_ofAxisBounds (b : RawRecoveryProgramBounds Q A U)
               (2*(6*((rows s t L k)*r.W)+6)+realWeightWorkspace Cdiag r.W (rows s t L k))))))
         depth (bulkDiagonalProgram b) (mk v S) steps (mk v' final) := by
   dsimp only
-  intro hwide hwindow hroom hwV hspanV hvol hVW hA hVpos wl hwl v S hready hheaders hspanRuler tail
+  intro hwide hwindow hwV hspanV hvol hVW hA hVpos wl hwl v S hready hheaders hspanRuler tail
     hqueue harchive hacc hdst hline hinput hblank hleft Cdiag Cprog depth hpush hbody hdiagPush
   let radius := localityDepth p target*PhaseCellBand.width p u
   let d := axis.ownedMasterInput target L k hnear hL ha hb
   let r := axis.ownedJob target L k hnear hL ha hb hfit Fs hF
+  have hroom : 4*r.W+2 < 2^d.B :=
+    axis.ownedJob_packetRoom target L k hnear hL ha hb hfit Fs hF
   let Zs := axis.ownedTargets target L k hnear hL ha hb hfit Fs
   obtain ⟨F,Gs,hGs,hfits,hq,hframe,hLframe,v₁,m₁,hv₁,hm₁,he₁,hdecoded,hvalue,ht₁⟩ :=
     bulk_published_exec_ofAxisBounds (body := body) b axis target L k hnear hL ha hb hfit

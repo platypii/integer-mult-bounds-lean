@@ -2,7 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRawRecoveryMasterValues
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoverySolutionOrder
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellInverseMasterInput
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryMasterRoom
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPackedCommonWidth
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedRecoveryPayload
 public import IntegerMultBounds.NLogN.PhaseCellTargetCoreWindow
@@ -76,10 +76,16 @@ theorem ownedBounds :
       norm_num) h.hdom
 
 noncomputable def ownedMasterInput : InverseMasterInput s :=
-  InverseMasterInput.ofCuts p u l target t
+  (InverseMasterInput.ofCuts p u l target t
     (cut s t L k-localityDepth p target*PhaseCellBand.width p u)
     (cut s t L (k+1)+localityDepth p target*PhaseCellBand.width p u)
-    h.hst (Nat.le_of_lt (owned_window_geometry s t L k _ (lt_trans (NeZero.pos s) h.hst) hnear hL ha hb).2.2) hb h.hband
+    h.hst (Nat.le_of_lt (owned_window_geometry s t L k _ (lt_trans (NeZero.pos s) h.hst) hnear hL ha hb).2.2) hb h.hband).withPacketRoom
+      (packedHaloCommonWidth p l s u (target+1) 2)
+
+theorem ownedMasterInput_packetRoom :
+    4*packedHaloCommonWidth p l s u (target+1) 2+2 <
+      2^(h.ownedMasterInput target L k hnear hL ha hb).B :=
+  InverseMasterInput.withPacketRoom_room _ _
 
 noncomputable def ownedJob (Fs : List (ZMod t → GaussianInt))
     (hF : ∀ F ∈ Fs, ∀ j, ‖value p (F j)‖ ≤ 1) : RawRecoveryJob s :=
@@ -89,6 +95,11 @@ noncomputable def ownedJob (Fs : List (ZMod t → GaussianInt))
     (packedHaloCommonWidth_fits p l s t u (target+1) 2 _ _)
 
 variable (Fs : List (ZMod t → GaussianInt)) (hF : ∀ F ∈ Fs, ∀ j, ‖value p (F j)‖ ≤ 1)
+
+theorem ownedJob_packetRoom :
+    4*(h.ownedJob target L k hnear hL ha hb hfit Fs hF).W+2 <
+      2^(h.ownedMasterInput target L k hnear hL ha hb).B :=
+  h.ownedMasterInput_packetRoom target L k hnear hL ha hb
 
 theorem ownedJob_profile :
     let r := h.ownedJob target L k hnear hL ha hb hfit Fs hF
