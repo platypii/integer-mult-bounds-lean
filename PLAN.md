@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4507 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4513 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -36896,3 +36896,113 @@ prepared-bulk audit checks controller native/execution certificates and placed/
 prepared bulk execution; all report only propext, Classical.choice and Quot.sound.
 Plan-status and whitespace checks pass. Commit the accumulated bulk loop,
 ordinary setup and concrete caller as one local integration chunk; no push.
+
+### S4 generated bulk counters and executed bulk selection through owned recovery
+
+`Mult/PhaseCellBulkSelectionCounts.lean` reuses ucopy and unaryProduct to
+construct a private replica clock and one-window symbol ruler. Inputs are the
+retained replica, target-span and word rulers; every input ruler and scratch
+register restores. Exact setup cost is 4*N+4+span*(4*w+9)+4; stock is bounded by
+twice setup time. No target archive or absolute endpoint is counted. Guarded
+check: 2934.4 MiB, no warnings.
+
+`Mult/PhaseCellCountedBulkLocalRowSelection.lean` executes that setup, the
+ordinary-header prepared bulk sweep, and retirement of the private volume
+ruler. The replica clock is consumed by the sweep. The entry state now needs
+ordinary dimensions and initially blank private counters, not a prepared
+replica clock or byte volume. The endpoint exposes the actual selected payload,
+retained unary source-row count, restored target queue, preserved recovery/
+handoff registers and both private counters empty. Complete execution stock
+is bounded by three times its explicit setup+sweep+retirement bill. Guarded
+check: 3430.7 MiB without warnings or raised limits.
+
+`Mult/PhaseCellBulkTargetCoreRecovery.lean` composes that actual generated bulk
+selection with plan.generatedRoutedTargetCoreProgram on the existing concrete
+ports. It starts from retained target-window bytes and ordinary selection and
+CroppedReady recovery headers. No selected payload, byte counter, solver
+execution or numerical supplier is assumed. The existing mathematical
+RawRecoveryJob and InverseMasterInput still parameterize the kernel. The
+actual program executes counter generation, one controller preparation, the
+replica sweep, generated handoff, computed principal solve, and exact J_k crop.
+The target bank is restored; recovery masters/scratch restore under the existing
+kernel contract. Its numerical conclusion is the existing owned-row principal
+error bound; time and shared stock add the proved selection and routed recovery
+bills. Final guarded check: 3430.2 MiB, no warnings.
+
+This is a nonwrapping principal source window; target storage may be cyclic.
+The caller still requires mathematical recovery-job/master construction and
+ordinary initial header placement from actual manuscript parameters. Cyclic
+principal machine execution, D' normalization, per-page factor reuse, tensor
+continuation, root sizing, forward geometry, accumulated error/support and
+final S4 acceptance remain open. S4 remains incomplete. Separate periodic
+recovery work is untouched. Retain this verified caller integration for the
+next larger job-construction commit; no push.
+
+Bulk-to-owned-recovery validation: complete build passes (15930 jobs, 3.5 GiB
+aggregate peak). Temporary guarded audit of generated counters, counted bulk
+execution and the actual bulk-selection/principal-solve/owned-crop theorem
+reports only propext, Classical.choice and Quot.sound (9609.6 MiB audit peak;
+production checks below 3431 MiB). Plan-status and whitespace checks pass.
+No commit or push; keep this three-module caller chunk for job construction.
+
+### S4 actual floor-owned recovery jobs, master agreement and reference solutions
+
+`NLogN/PhaseCellTargetCoreWindow.lean` proves the guarded J_k endpoint identity,
+exact variable span rows(s,t,L,k)+2*radius, nonwrapping interval geometry and
+separation from the uniform bound L+2*radius+band <= s. No uniformly spaced
+source core is substituted for the manuscript's floor-owned interval.
+
+`Mult/PhaseCellTargetOwnedRecoveryJob.lean` introduces RecoveryAxisBounds for
+analytic facts shared by all windows. The packet bound derives u >= 1; the
+existing matrix_gap theorem derives global diagonal dominance, so neither is
+an independent premise. ownedBounds instantiates the arbitrary-interval
+PackedHaloParameterBounds.ofAnalytic. The auxiliary bounded C field in that
+parameter language is unused by raw-job construction; zero discharges it
+without adding a spurious numerical input. ownedJob uses the existing
+RawRecoveryJob.ofComplexBounds on selectedRhsFields and the inherited unit
+bound. packedHaloCommonWidth supplies a packet width shared across the axis.
+ownedMasterInput uses the standard ordinary scalar-width constructor.
+ownedJob_profile, ownedJob_masterValues and ownedJob_solutionOrder derive the
+actual interval/field ABI, exact generated master values and reference target
+order. No solutions or executions are supplied. Final job check: 3390.6 MiB,
+without warnings or proof-limit changes.
+
+`Mult/PhaseCellTargetOwnedRecoverySolutions.lean` proves a Forall2 certificate
+linking each original target field to the constructed principal reference
+solution. It uses the original realMatrix and explicitly identifies the RHS
+as (1/2)*value p (F(rowIndex i)). This half is the existing packed input
+conversion's half-grid normalization; it must be accounted for in final
+scaling and D' normalization. The constructed target is not being claimed to
+solve the unscaled RHS. Initial solution-certificate check: 3374.0 MiB.
+
+`Mult/PhaseCellBulkTargetCoreRecovery.lean` factors its long execution/error/
+resource conclusion into bulkTargetCoreSpec, shared with the concrete job
+specialization. The shared contract avoids duplicating the execution statement
+and permits the extra-bit simplification without rebuilding the result tuple.
+No proof limits were raised. `Mult/PhaseCellActualBulkTargetCoreRecovery.lean` now invokes the actual
+bulk-selection/generated-handoff/principal-solve/J_k-crop caller on the
+constructed job, masters and reference family. The reference count/order,
+master equality and owned endpoints are derived. The constructor's extra bit
+pays real/imaginary assembly, yielding complex error 2^(-target) relative to
+the half-grid principal solution. Guarded specialization check: 3417.3 MiB,
+no warnings. Existing explicit time and shared-stock contracts are retained.
+
+The remaining input premises are shared analytic axis facts, nonwrapping
+owned-window fit/separation and ordinary machine/header readiness. Root-derived
+axis construction and initial ordinary header placement remain to be joined.
+Next close final scaling/D' normalization and resolve cyclic principal machine
+execution, while retaining original matrix couplings at the physical seam.
+Per-page factor reuse, tensor continuation, root sizing, forward geometry,
+accumulated numerical error/support and final S4 acceptance remain open.
+S4 is incomplete. Separate periodic-recovery work is untouched. Collect this
+job construction and the preceding generated bulk caller into one larger local
+integration commit after final validation; no push.
+
+Final actual-owned recovery validation: complete build of concrete execution
+and the exact principal-solution certificate succeeds (15936 jobs, 5.9 GiB
+aggregate peak). Guarded audit of owned geometry, derived matrix gap, master
+agreement, constructed solution order, half-grid principal solves and the
+actual bulk caller reports only standard Lean axioms (9615.0 MiB audit peak;
+production specialization check 3417.3 MiB). Plan-status and whitespace checks
+pass. Commit the accumulated generated bulk caller and actual job construction
+as one larger local integration chunk; no push.
