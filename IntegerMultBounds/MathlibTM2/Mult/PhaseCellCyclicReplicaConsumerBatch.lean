@@ -89,6 +89,7 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       embStk right.coupling.bank (embOvr factorReg F.get E) = embStk right.coupling.bank S ∧
       ReplicaRecoveryRhsHeaders H left.plan.gather leftBuffers (embOvr factorReg F.get E) ∧
       ReplicaRecoveryRhsHeaders K right.plan.gather rightBuffers (embOvr factorReg F.get E) ∧
+      NativeBoundaryUnfoldWorkspace B.card F ∧
       (∀ j : Fin Fs.length, ∀ x : ZMod s → ℝ,
         SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
           (fun k => (value q (Fs.reverse.getD (Fs.length-1-j.val) (fun _ => 0) k)).re) →
@@ -145,7 +146,7 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     rw [hrowsLen]
     exact hl.recoveryRhs.count
   obtain ⟨vf,page,m₂,columns,hu₂,hm₂,he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
-    hinp,houtp,hleft,h224,hprivate,hframe⟩ := cyclicReplicaExportedBatch_spec (body := body)
+    hinp,houtp,hleft,h224,hprivate,hframe,hworkspace⟩ := cyclicReplicaExportedBatch_spec (body := body)
     hR hQ hA axis ha hn v₁ S raw tail pageTail factory hin hout hL hRframe
     rows hrows hbound hcounter (hblank 229 (by simp))
   let W := 24*band+1
@@ -174,7 +175,7 @@ theorem cyclicReplicaConsumerBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     · funext i; exact (hpass _ (Or.inr (.bank i))).2
   refine ⟨vf,page,m₁+m₂,columns,hu₂.trans hu₁,?_,Exec.seq he₁' he₂,
     hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,hinp,houtp,hleft,h224,hprivate,hframe,
-    hbankLG.trans hbankL',hbankRG.trans hbankR',?_,?_,?_,?_⟩
+    hbankLG.trans hbankL',hbankRG.trans hbankR',?_,?_,hworkspace,?_,?_⟩
   · exact Nat.add_le_add hm₁ (by simpa only [hrowsLen] using hm₂)
   · exact ReplicaRecoveryRhsHeaders.of_frame H left.plan.gather leftBuffers E G hrhsL'
       (fun i => (hpass _ (Or.inl (.gather i))).2)

@@ -68,7 +68,8 @@ theorem cyclicReplicaExportedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       page.inp = T.inp ∧ page.out = T.out ∧ page.L = T.L ∧
       page.R 224 = T.R 224 ∧ (∀ k : Fin 234, 226 ≤ k.val → page.R k = T.R k) ∧
       (∀ k : Fin 834, (∀ j, factorReg j ≠ k) →
-        (embOvr factorReg F.get E).L k = E.L k ∧ (embOvr factorReg F.get E).R k = E.R k) := by
+        (embOvr factorReg F.get E).L k = E.L k ∧ (embOvr factorReg F.get E).R k = E.R k) ∧
+      NativeBoundaryUnfoldWorkspace B.card F := by
   dsimp only
   let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
   let bits := boundaryTableBits p target 2 B.card
@@ -106,7 +107,7 @@ theorem cyclicReplicaExportedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     have hh := congrArg (fun R => R.R 226) hp
     simpa [exportedCyclicResidualRows,cyclicResidualRowsRetired] using hh
   obtain ⟨vi,page,m,columns,hui,hm,hei,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
-    hinp,houtp,hleft,h224,hprivate⟩ := constructedCyclicResidualBatch_spec (body := body)
+    hinp,houtp,hleft,h224,hprivate,hworkspace⟩ := constructedCyclicResidualBatch_spec (body := body)
     hR hQ hA axis ha hn (embDn factorReg v) T tail pageTail
     inputs.rows inputs.pageWidth inputs.page inputs.arithmetic inputs.origin inputs.leftEnd inputs.rightEnd
     (inputs.fresh 141 (by simp)) (inputs.fresh 142 (by simp))
@@ -122,6 +123,6 @@ theorem cyclicReplicaExportedBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   obtain ⟨vf,_,hu,he⟩ := exec_emb_ovr (body := native) (body' := embTab factorReg native)
     (ι := id) factorReg_injective (by intro f; rfl) hei v rfl E rfl
   exact ⟨vf,page,m,columns,hu.trans hui,hm,he,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,
-    hfactor,hinp,houtp,hleft,h224,hprivate,fun _ hk => embOvr_off _ _ hk⟩
+    hfactor,hinp,houtp,hleft,h224,hprivate,(fun _ hk => embOvr_off _ _ hk),hworkspace⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

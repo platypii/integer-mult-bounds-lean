@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPreparedCyclicFactorFactory
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicPreparedResidualBatch
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellResidualBoundaryFormat
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNativeBoundaryUnfoldWorkspace
 
 /-! One executed cyclic factor setup serves the whole ordered residual batch. -/
 @[expose] public section
@@ -79,7 +80,8 @@ theorem constructedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.state
       (∀ b ∈ bs, (solve b).length = B.card ∧ ∀ z ∈ solve b, Fits w z) ∧
       boundaryFactorState (embStk preparedBoundaryCoreReg (embStk preparedBoundaryBatchCoreReg F)) = σ ∧
       page.inp = S.inp ∧ page.out = S.out ∧ page.L = S.L ∧
-      page.R 224 = S.R 224 ∧ (∀ k : Fin 234, 226 ≤ k.val → page.R k = S.R k) := by
+      page.R 224 = S.R 224 ∧ (∀ k : Fin 234, 226 ≤ k.val → page.R k = S.R k) ∧
+      NativeBoundaryUnfoldWorkspace B.card F := by
   dsimp only
   let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
   let bits := boundaryTableBits p target 2 B.card
@@ -92,7 +94,7 @@ theorem constructedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.state
     (embTab componentReg (embTab groupReg body))))
   let native := embTab preparedBoundaryCoreReg coreBody
   obtain ⟨v₁,T₁,m₁,columns,hu₁,hm₁,he₁,hprepared,hacc,hsolve,hbo,hhf,hdf,hvk,hdout,
-    hinp,hout,hL,htable,h224,h225',hmul,h119,h223,h184,h220,h221⟩ :=
+    hinp,hout,hL,htable,h224,h225',hmul,h119,h223,h184,h220,h221,h116⟩ :=
     preparedCyclicFactorFactory_spec (body := body) (rhsExp := 2) hR hQ hA axis has hbs
       (embDn preparedBoundaryBatchCoreReg v) T tail pageTail hrows hpageWidth hpage hready
       haSrc hleftEnd hrightEnd h141 h142 h0 h139 h127 h138 h143 h147 h151 h152 h153 hleft hnew
@@ -132,7 +134,7 @@ theorem constructedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.state
     (by rw [hprivate 229 (by decide)]; exact hcount)
     (by rw [hprivate 226 (by decide)]; exact hsource)
   refine ⟨v₃,page,m₁+m₃,columns,hu₃.trans (hu₂.trans hu₁),Nat.add_le_add hm₁ hm₃,
-    Exec.seq he₂ he₃,hprepared,hacc,?_,?_,?_,?_,?_,?_,hinp,hout,embOvr_left_of_eq S T₁ hL,?_,hprivate⟩
+    Exec.seq he₂ he₃,hprepared,hacc,?_,?_,?_,?_,?_,?_,hinp,hout,embOvr_left_of_eq S T₁ hL,?_,hprivate,?_⟩
   · simpa only [hproj] using hsolve
   · simpa only [hproj] using hbo
   · simpa only [hproj] using hhf
@@ -151,5 +153,14 @@ theorem constructedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.state
     simp only [preparedBoundaryBatchCoreReg,preparedBoundaryCoreReg] at hv
     omega
   · simpa [hread 224 (by decide),T,embStk,preparedBoundaryBatchCoreReg] using h224
+
+  · have hworkspace : NativeBoundaryUnfoldWorkspace B.card page := by
+      refine ⟨?_,(hread 184 (by decide)).trans h184,(hread 223 (by decide)).trans h223,?_⟩
+      · intro i
+        have hh := congrArg (fun S => S.R (preparedBoundaryCoreReg (boundaryFactorMulReg i))) hproj
+        exact hh.trans (hmul i)
+      · have hh := congrArg List.length ((hread 116 (by decide)).trans h116)
+        exact hh.trans hrows
+    exact hworkspace.updateR 224 _ (by decide) (by decide) (by decide) (by decide)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

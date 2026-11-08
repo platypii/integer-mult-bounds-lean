@@ -3909,9 +3909,12 @@ passes/masks and canonical placement are checked. The consumer now executes
 retained-master copies, ordered archive handoff, export and one shared
 factor/solve batch. It derives row format/bounds from the cached certificates,
 retains original-system boundary accuracy and preserves both recovery banks
-and RHS queues. Next prepend the actual pass producer to this consumer, then
-execute both recovery passes and common-width publication. Judge the next
-checkpoint by that executed caller and the supplier assumptions it removes.
+and RHS queues. The actual producer is now prepended: cachedCyclicReplicaBatch_spec
+starts from ordinary cached-pass inputs and the original factor bank, without
+residual/mask/row-format or post-export readiness suppliers. Next execute both
+recovery passes from the one computed joint boundary row and publish at common
+width. Judge the next checkpoint by that executed caller and the supplier
+assumptions it removes.
 Keep geometry fallback and structural stock/uniform time visible as independent
 open gates; functional execution does not close them. No reliable percentage
 or completion-time estimate is available.
@@ -40688,3 +40691,224 @@ The complete consumer, actual archive producer and packet-frame theorem axiom
 audit reports only propext, Classical.choice and Quot.sound (9578.5 MiB audit
 peak). All 16 new modules pass integrity/whitespace scans; no proof limits
 changed. Periodic recovery WIP is excluded from this checkpoint.
+
+
+### S4 original RHS inputs execute the complete cached boundary batch
+
+PhaseCellCachedCyclicReplicaProducer instantiates the existing paired executor
+at canonical left/right placements and factor-mask ports. It returns both full
+cached Post contracts and generated masks, input/output preservation, the whole
+factor left frame and factor right frame outside 170/173. Guard: 3382.1 MiB.
+PhaseCellCyclicResidualConsumerWorkspace derives every consumer workspace premise
+from the existing CyclicResidualBatchInput, except initial owned packet/count
+ports 226/229. The low arbitrary-register proof uses arithmetic blankness;
+retained width and high workspace use the existing factory fields. Guard:
+3406.5 MiB. No numerical row or factor suppliers are introduced.
+
+PhaseCellCachedCyclicReplicaBatch executes both original-RHS cached passes,
+mask generation, retained-master copying, archive transfer, export and one
+shared factor/solve batch. The source Cs/Ds and their certificates are existential
+execution outputs, rather than premises. Its assumptions are the two ordinary
+CachedReplicaPassInput contracts, the original factor bank's ordinary
+CyclicResidualBatchInput, owned empty packet/count ports and the explicit two
+span+band room conditions. All mask/workspace and factor-frame premises of the
+consumer are discharged by the producer frame and derived original workspace.
+The result retains full intermediate certificates, original-system boundary
+accuracy and stable norm for every RHS, one joint residual inverse/estimate,
+both cached bank views and both original recovery RHS queues. Every execution
+component is included in the time bill. Guard: 3430.3 MiB. Combined build passes
+(15785 jobs, 3.5 GiB combined peak); all three new files pass integrity and
+whitespace checks. Keep this work for the next larger local checkpoint; no push.
+
+Projection of a joint natural-order boundary row to both packed windows is now
+executed by cyclicPackedBoundaryPieces_exec (below). Next connect the retained
+solver endpoint's existing arbitrary-B inverse fold to that projection, then
+execute the two recovery batches against their retained coupling caches. The
+existing cachedBatchedReplicaRecovery path expects piece-specific boundary
+solutions/factors; it cannot be substituted unchanged for this joint cyclic
+boundary batch. Reuse packedBoundaryRecoveryUnfold_exec and the
+cyclicRecoveryRhs_spec error language. Do not materialize a full ambient boundary
+line per RHS or repeat piece factor factories. For final recovery accuracy instantiate this boundary batch's target
+at boundaryRecoveryTarget p finalTarget, as in the existing physical cyclic
+caller. Geometry fallback, uniform time/structural stock, publication and broader
+S4 acceptance remain open; this boundary caller is not full S4.
+
+The complete original-RHS boundary caller and consumer-workspace axiom audit
+reports only propext, Classical.choice and Quot.sound (9579.3 MiB audit peak).
+No proof limits changed; unrelated periodic recovery WIP remains untouched.
+
+
+### S4 native solved-row prefixes supply both packed recovery windows
+
+The existing cyclicPrincipalBoundary_order already gives right then left
+natural-order boundary entries. PhaseCellCyclicBoundaryStreams reuses it for
+encoded streams and proves the window-local support facts for the joint
+boundary field. No new sorting algorithm or ambient scan is introduced.
+Guard: 3192.1 MiB.
+
+PhaseCellPlacedPackedBoundaryPublish generalizes the masked publisher over its
+seven participating tape addresses and weakens global support to support inside
+the selected window. It executes spreadRecords directly and preserves the
+borrowed suffix and other tapes with the same N*(6*w+10)+6 bill. Guard:
+2069.7 MiB. This avoids reindexing or moving a complete factor bank.
+
+PhaseCellNativeCyclicBoundaryPieces instantiates that structural executor at
+the native inverse-fold endpoint: source 237, masks 238/239, width 160, scratch
+234/235/236, output 132. It consumes the joint natural-order stream, preserves
+both masks and the borrowed suffix, and prepends left-packed then right-packed
+windows to the output buffer. Total time is at most n*(6*w+10)+12. Guard:
+3216.2 MiB. Both empty-piece cases are included without replica enumeration.
+
+PhaseCellNativeCyclicBoundaryRecovery composes the existing
+residualBatchRecoveryInput_exec with this native projection. It borrows one
+solved-row prefix on 224, inverse folds once, and restores all tapes except 132,
+which receives both packed windows. The complete solved-row archive remains
+unchanged. nativeCyclicBoundaryRecoveryState_factor proves exact preservation
+of the shared native factor state. Guard: 3200.8 MiB. The earlier uncommitted
+248-register projection prototypes were removed once this native replacement
+checked; they had no callers and were never committed. Retain the ordered-stream
+and generic-address proofs, rather than duplicate layout-specific glue.
+
+The six-tape extension and mask generation are now checked below. The native
+240-register factor/recovery bank stays at offset 600 beside both cached banks.
+Derive row count, width and factor-role cleanup from the returned
+BoundarySolveReady and private/new workspace frames; initial left scratch remains
+an ordinary blank workspace obligation. Generate recovery masks once and reuse
+them across the replica loop. Then transfer the two packed prefixes into retained
+coupling caches, produce recovery RHS rows and execute the second interior
+passes. Use the existing common-width publication lifecycle. Recovery precision
+must match global cyclic boundary sizing, not separate piece factor factories.
+
+This native stage is now placed at 840 registers (below), but not yet composed
+with the original-RHS boundary caller.
+Full recovery, geometry fallback, uniform resource bounds, publication and
+broader S4 acceptance remain open. No commit or push; periodic WIP untouched.
+
+The native recovery / original-RHS boundary batch guarded build passes
+(15791 jobs, 3.4 GiB combined peak). The native recovery axiom audit reports only
+propext, Classical.choice and Quot.sound; exact factor preservation uses only
+propext and Quot.sound. Audit peak: 9279.1 MiB. The factor-preservation signature
+was inspected and has only its intended symbol-size, bank and two stream
+parameters. All four retained recovery modules pass integrity/whitespace scans;
+no imports of the removed prototypes remain. No proof limits changed.
+
+
+### S4 native recovery placement adds only six scratch tapes
+
+PhaseCellCyclicRecoveryPlacement embeds the old 834 tapes unchanged into 840
+and places the native 240-register bank at offset 600. bank_factor proves that
+its first 234 ports are exactly the old factor placement; bank_new identifies
+the six appended ports. Generic offset arithmetic proves the whole native bank
+is disjoint from both cached pass footprints. No tape enumeration or relocation
+is used. Guard: 3263.9 MiB.
+
+PhaseCellPlacedNativeCyclicBoundaryRecovery embeds the checked native program
+at that placement, preserving its time bill. Its endpoint is the global input
+bank with only recoveryBank 132 updated by the two packed piece fields. The
+pass-frame theorem preserves both complete cached footprints, including their
+original RHS queues, through the recovery projection. Guard: 3268.3 MiB.
+
+PhaseCellCyclicRecoveryMasks executes the existing metadata-driven pair of mask
+producers into new recoveryBank 239 (left) / 238 (right). Its old-view theorem
+preserves every tape of the entire prior 834-register caller, not just the
+cached coefficient banks. Its read/value lemmas expose the two generated masks
+and preservation of the four remaining new scratch ports. These masks can be
+generated once outside the replica loop and borrowed throughout recovery.
+Guard: 3267.8 MiB. The combined placement/masks/original-RHS batch build passes
+(15794 jobs, 5.8 GiB combined peak); production module peaks stay below 3.3 GiB.
+All three new files pass integrity/whitespace scans; proof limits unchanged.
+
+Next lift cachedCyclicReplicaBatch_spec through the unchanged 834-tape embedding.
+The readiness bridge below now derives word width / row count and factor-role
+empty buffers from the actual solver endpoint. Use bank_old_view to transport
+the retained workspace and factor readiness; discharge private/new scratch from
+the caller's original/returned workspace frames. Carry the two cached Post
+metadata/workspace facts through the bank frames into one executed recovery-mask
+setup. Then
+transfer each packed prefix to its corresponding coupling cache, form recovery
+RHS rows and execute the second interior passes. This is still not an executed
+full recovery batch or full S4. No commit or push; periodic WIP untouched.
+
+The placed recovery and mask setup axiom audit reports only propext,
+Classical.choice and Quot.sound; placement compatibility needs no
+Classical.choice (9397.3 MiB audit peak).
+
+
+### S4 solver endpoint retains the workspace needed by recovery
+
+PhaseCellNativeBoundaryUnfoldWorkspace records exactly the native facts absent
+from the numerical factor-state projection: low multiplier scratch, scalar 184,
+exponent 223, and the length of retained row-count header 116. Its structural
+frame/update lemmas preserve these facts through unrelated packet/output writes.
+Guard: 3081.9 MiB. The existing factor construction already proved the scratch
+facts but its batch wrapper dropped them. PreparedCyclicFactorFactory now also
+returns the already-proved frame of 116 from its legacy frame theorem. No
+runtime producer, extra copy/clear, numerical certificate or time bill is added.
+
+ConstructedCyclicResidualBatch returns NativeBoundaryUnfoldWorkspace at the
+actual solved endpoint. CyclicReplicaExportedBatch, CyclicReplicaConsumerBatch
+and CachedCyclicReplicaBatch carry that same contract through to their outputs;
+the alternate generated caller merely adapts its destructuring. All former
+numerical, cache, recovery and accuracy conclusions remain. The constructed
+batch guard passes at 3412.2 MiB; the full original-RHS caller guard passes at
+3430.8 MiB. The complete dependent build passes, including the generated caller
+(15792 jobs, 8.3 GiB combined peak).
+
+PhaseCellNativeBoundaryUnfoldControls derives physical headers 116/192/160,
+empty solution scratch 217, numerical cleanup 208/211/201/215 and the shared
+inverse-fold multiplier workspace from the retained workspace plus
+BoundarySolveReady. Guard: 3194.3 MiB. The local and placed *_exec_ready theorems
+now execute inverse-fold/two-piece projection with those contracts; separate
+count/width/multiplier/numerical-cleanup suppliers are removed. Only ordinary
+left workspace, private/new scratch, the actual solved-row prefix and retained
+masks remain. Guards: 3204.7 / 3275.3 MiB. bank_old_view identifies the new bank's
+first 234 tapes with the existing factor view under the unchanged caller
+embedding, so this transport needs no tape-wise enumeration or data movement.
+
+The final recovery-ready / masks / original-RHS / generated-caller build passes
+(15799 jobs, 5.8 GiB combined peak). All 11 changed proof modules pass integrity
+and whitespace scans; no proof limits changed. Next sequence the lifted actual
+boundary caller and once-only mask setup with this derived-ready stage, then
+produce both recovery RHS batches and execute second interior passes. This is
+not yet full recovery or full S4. No commit or push; periodic WIP untouched.
+
+The strengthened original-RHS caller and placed ready-executor axiom audit
+reports only propext, Classical.choice and Quot.sound. The control derivation
+uses only propext and Quot.sound (9581.4 MiB audit peak).
+
+
+### S4 executed mask setup returns native recovery readiness
+
+CyclicRecoveryPlacement.bank_core_view identifies the numerical 224-register
+core of the new recovery bank with the existing factor view under the unchanged
+caller embedding. Like bank_old_view, this is a structural commuting-view proof,
+not a concrete tape check. Guard: 3263.7 MiB.
+
+PhaseCellCyclicRecoveryMaskReady transports both NativeBoundaryUnfoldWorkspace
+and BoundarySolveReady through the executed mask setup. Its prepare executor
+returns those native-view contracts together with the exact old-caller frame
+and the existing two-mask cost. The cached executor derives mask metadata and
+blank low workspace directly from the actual cached Post contracts and returned
+bank views. These facts are no longer separate mask suppliers. Guard: 3267.5 MiB.
+The setup remains outside the replica loop: the projected-row stage borrows the
+same masks, so the proof does not charge or execute mask regeneration per RHS.
+
+Combined mask-ready / placed-recovery / original-RHS / generated-caller build
+passes (15800 jobs, 5.8 GiB combined peak). This closes transport of readiness
+through setup; it does not yet sequence the lifted original-RHS caller and all
+recovery iterations. Next use the actual caller's endpoint equality to obtain
+the old factor and cached bank views, transport private/new blank workspace,
+and run the derived-ready placed stage on each solved-row prefix. Then produce
+both recovery RHS batches and execute the second interior passes. Numerical
+precision alignment, publication, uniform resources, geometry fallback and
+broader S4 acceptance remain open.
+
+Collect the original-RHS producer/consumer composition, native projection and
+mask-ready transport as one larger local checkpoint. Preserve unrelated
+periodic recovery WIP. Never push without the user's instruction.
+
+The cached mask-ready setup, transported solve readiness and complete
+original-RHS caller axiom audit reports only propext, Classical.choice and
+Quot.sound; core-view transport needs no Classical.choice (9580.0 MiB audit
+peak). All 18 checkpoint proof modules pass integrity/whitespace scans; proof
+limits unchanged.

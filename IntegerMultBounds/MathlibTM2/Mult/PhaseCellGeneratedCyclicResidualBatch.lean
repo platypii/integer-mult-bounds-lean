@@ -138,7 +138,7 @@ theorem generatedCyclicResidualBatch_spec (hR : rpStates ≤ Q) (hQ : SS.states 
   have hsource : E.R 226 = cstream A w rows.flatten++[] := by
     simp [E,exportedCyclicResidualRows,cyclicResidualRowsRetired]
   obtain ⟨vf,page,m₂,columns,hu₂,hm₂,he₂,hprepared,hacc,hsolve,hbo,hhf,hdf,hformat,hfactor,
-    hinp,hout,hL,h224,hprivate⟩ := constructedCyclicResidualBatch_spec (body := body)
+    hinp,hout,hL,h224,hprivate,_⟩ := constructedCyclicResidualBatch_spec (body := body)
     hR hQ hA axis ha hn v₁ E tail pageTail factory.rows factory.pageWidth factory.page factory.arithmetic
     factory.origin factory.leftEnd factory.rightEnd
     (factory.fresh 141 (by simp)) (factory.fresh 142 (by simp))

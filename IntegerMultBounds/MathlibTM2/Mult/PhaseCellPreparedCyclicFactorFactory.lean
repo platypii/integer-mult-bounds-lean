@@ -64,7 +64,7 @@ theorem preparedCyclicFactorFactory_spec (hR : rpStates ≤ Q) (hQ : SS.states �
       S'.R 132 = bandTableWords A w B W columns 0++S.R 132 ∧
       S'.R 224 = S.R 224 ∧ S'.R 225 = S.R 225 ∧
       (∀ i : Fin 64, S'.R (preparedBoundaryCoreReg (boundaryFactorMulReg i)) = []) ∧
-      (S'.R 119).length = q ∧ S'.R 223 = [] ∧ S'.R 184 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] := by
+      (S'.R 119).length = q ∧ S'.R 223 = [] ∧ S'.R 184 = [] ∧ S'.R 220 = [] ∧ S'.R 221 = [] ∧ S'.R 116 = S.R 116 := by
   dsimp only
   let B := cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n
   let bits := boundaryTableBits p target rhsExp B.card
@@ -91,7 +91,7 @@ theorem preparedCyclicFactorFactory_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   have htable : T₁.R 132 = bandTableWords A w B W columns 0++T.R 132 := by
     simpa [embStk,boundaryFactorLegacyReg] using hlegacy 132 (by decide)
   refine ⟨v₂,F,m,columns,hu₂.trans hu₁,hm,he₂,hprepared,hacc,?_,?_,?_,?_,?_,?_,hinp,hout,
-    embOvr_left_of_eq S T₁ hL,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
+    embOvr_left_of_eq S T₁ hL,?_,?_,?_,?_,?_,?_,?_,?_,?_,?_⟩
   · simpa only [hproj] using hsolve
   · simpa only [hproj] using hbo'
   · simpa only [hproj] using hhf'
@@ -109,5 +109,9 @@ theorem preparedCyclicFactorFactory_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   · simpa [hread 184 (by decide)] using h184
   · simpa [hread 220 (by decide)] using h220
   · simpa [hread 221 (by decide)] using h221
+
+  · have h116 : T₁.R 116 = T.R 116 := by
+      simpa [embStk,boundaryFactorLegacyReg] using hlegacy 116 (by decide)
+    exact (hread 116 (by decide)).trans h116
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
