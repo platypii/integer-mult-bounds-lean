@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4513 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4526 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -37006,3 +37006,203 @@ actual bulk caller reports only standard Lean axioms (9615.0 MiB audit peak;
 production specialization check 3417.3 MiB). Plan-status and whitespace checks
 pass. Commit the accumulated generated bulk caller and actual job construction
 as one larger local integration chunk; no push.
+
+### S4 local D' page generation and the existing real-factor product
+
+The existing B0Generic/resampB0Of interface explicitly targets J(v/2). Thus the
+half-grid RHS identified in ownedTargets_solves is intentional and must be
+retained; an extra doubling would change the intended factorization. The
+missing operation after inverse normalization is the manuscript's normalized
+diagonal D', whose executable tableD and varying-real-factor arithmetic already
+exist. Reuse those implementations rather than introduce a new exponential
+or reciprocal evaluator.
+
+`Fast/TableDiagonalInterval.lean` uses TblDo.forFrom and the unchanged
+tblDiagBody_do over global indices c+j. DiagonalReady packages the nine shared
+scalar facts once; the loop retains them structurally. It emits exactly n
+coefficients for the owned interval, without scanning the prefix [0,c) or
+generating the ambient s-entry table. Guarded check: 1945.8 MiB.
+
+`Fast/TableDiagonalSetup.lean` computes piN, alpha^2 and the dyadic divisor
+from ordinary s,t,alpha,p table inputs. It retains the binary origin and upper
+bound. tblOwnedDiagonal_do composes that one-time setup with the interval
+stream, with atom bill 160*p+450+n*(310*p+123)+2. Both zero-length intervals and
+nonzero origins are covered structurally. Guarded check: 1932.4 MiB. No proof
+limits, generated certificates or per-index case splits were introduced.
+
+`Mult/PhaseCellOwnedDiagonalPage.lean` executes the actual compiled host and
+identifies its output with cstream of packedInterval c n diagonalField. The
+field uses the original global source coordinate and the established tableD.
+The page cost is the atom bill times tblC W w plus 2*n*w+2; all intermediate
+stock is bounded by three times this cost. The table holds its computed final
+state and registers outside the table/output are framed. Initial table values
+are ordinary scalar inputs with format bounds, not pi/scale or coefficient
+suppliers. Header loading and final table-bank release remain caller work.
+
+`Mult/PhaseCellDiagonalAccuracy.lean` derives coefficient error <= 2/2^p and
+norm <= 1 directly from tableD_spec. The exact real-product numerators are
+those of the existing multiplier. On the radius-two ball their D' error is
+<= 6/2^p; multiplication does not increase the computed norm. ErrorOn composes
+this grid error with the incoming inverse/publication error once, independently
+of row count. Guarded check: 2062.0 MiB.
+
+`Mult/PhaseCellOwnedDiagonalProduct.lean` instantiates the existing
+rsb_rmulStream_runs_within on the generated coefficient-page ABI. Packed
+zipWith gives the exact diagonalProduct field; the factor and source streams
+restore, enabling reuse across replicas. Coefficient fits derive from the
+table bounds. diagonalPacket_accuracy checks the decoded output, including
+output fits derived from the radius-two magnitude and w >= p+3; there is no
+output-fit/accuracy supplier. Guarded check: 2057.6 MiB, no warnings.
+
+These are verified page generation, product execution and numerical contracts,
+not yet their physical composition after bulk recovery. Next adapt the existing
+final-rounding wrapper to exact J_k offsets/lengths, load/release the local
+D' table bank and reuse the generated page across replicas in the actual
+caller. TableD currently uses the natural alpha of the root pipeline, with
+alpha^2 <= p as in the existing table API; joining this to RecoveryAxisBounds
+requires the ordinary root alpha/u identity. Cyclic principal execution,
+factor-page reuse, retained tensor continuation, root sizing, forward geometry,
+accumulated error/support and final S4 acceptance remain open. S4 is incomplete.
+Separate periodic-recovery work is untouched. Keep this diagonal chunk
+uncommitted for the larger normalization/caller integration; no push.
+
+Diagonal validation: complete build including the existing actual bulk inverse
+caller succeeds (15940 jobs, 2.7 GiB aggregate peak). Final page guarded check:
+2055.9 MiB. Temporary guarded audit of one-time setup/local generation, actual
+page execution, norm contraction, varying-factor execution and decoded packet
+accuracy reports only propext, Classical.choice and Quot.sound (6983.9 MiB audit
+peak; all new production checks below 2063 MiB). Plan-status and whitespace
+checks pass. No commit or push; retain the five modules for the larger final-
+rounding/diagonal caller integration.
+
+### S4 final publication on arbitrary owned intervals
+
+`Mult/PhaseCellNormalizeOwnedInterval.lean` factors the finished normalization
+execution away from PackedNormalizedJob and its uniform source-core geometry.
+RecoveryNormalizePlan.interval_exec accepts the existing InverseMasterInput,
+an arbitrary interval c,L and its active-set membership equivalence. It reuses
+ordinaryNormalizeNativeBatch_exec and the existing native-13 stock certificate,
+then consumes the input-width header. It returns the actual rounded packet
+family, exact endpoint, numerical error 2/2^p + 2^(-target)/2^j and explicit
+time/stock bounds. It preserves the intended inverse normalization shift j;
+there is no extra doubling. Thus exact manuscript J_k lengths can use the
+same publication program without introducing a uniform-core surrogate.
+
+Guarded check succeeds at 3283.4 MiB, without new warnings. Complete module
+build succeeds (14848 jobs, 3.5 GiB aggregate peak). A temporary guarded axiom
+audit reports only propext, Classical.choice and Quot.sound (9341.8 MiB audit
+peak). The audit is not a production module.
+
+Read-only inspection confirms computed cropped recovery clears all work tapes,
+including normalize.inputWidth = work 9. The physical composition must generate
+the L*(2*q+8) ruler again; it cannot reuse the earlier crop endpoint header.
+Next generate this ordinary ruler and the normalization parameter queue, derive
+owned-reference magnitude, and compose interval publication with actual bulk
+recovery and the D' page/product. Cyclic execution, replica page reuse, tensor
+continuation, root sizing, forward geometry and final error/acceptance remain
+open. S4 remains incomplete. Keep this module with the larger normalization
+integration chunk; no commit or push. Separate periodic recovery work untouched.
+
+### S4 normalization preparation from retained ordinary inputs
+
+`Mult/PhaseCellRecoveryParameterQueueExec.lean` executes the existing queue
+plan directly from the eight unary parameter rulers. It derives the exact
+inverseParameterWords byte packet, restores the source rulers and conversion
+scratch, and gives explicit time (sum of parameters)*(4*B+10)+8*(8*B+12)+1
+and stock 8*(2*(4*B+4)). It reuses binaryHeaderQueue_exec; no binary parameter
+packet is supplied. Guarded check: 3141.9 MiB, without new warnings.
+
+`Mult/PhaseCellRecoveryInputWidth.lean` regenerates the L*w byte ruler from a
+binary word for w and the retained row ruler. Existing toUnary_exec_linear
+converts w once, unaryProduct forms L*w, and uclear retires the temporary
+unary width. The exact endpoint changes only the byte ruler; binary width,
+row count and scratch restore. Time is 6*w+11*B+6+L*(4*w+9)+4+2*w+2, with
+native push bound 2 and explicit stock 2*time. Guarded check: 2940.9 MiB,
+without warnings. Combined build of both modules succeeds (14153 jobs,
+3.2 GiB aggregate peak).
+
+The existing prepareRoundScalars_exec already computes w=2*q+8 in scalar
+register 20. Therefore insert recoveryInputWidth after that setup and before
+normalizePackedBatch, using a temporary normalization port for the unary
+width. This reuses the computed precision instead of running a second inverse
+scalar calculation. The current ordinary normalization wrapper still requires
+the width header; these preparation modules have not yet been physically
+composed into a generated-width normalization caller. That composition,
+owned-reference magnitude and the D' caller remain next. S4 incomplete;
+no commit or push. Separate periodic recovery work untouched.
+
+### S4 composed normalization with generated byte count
+
+`Mult/PhaseCellGeneratedNormalizePackedBatch.lean` composes the existing scalar
+setup, recoveryInputWidth, normalizePackedBatch, byte-ruler retirement and
+scalar release into one executed program. The setup's scalar register 20
+supplies w=2*q+8. Port 0 temporarily holds the unary w ruler and is returned
+blank before the existing rounding operation. Row counts, scalar inputs,
+ports and scratch restore. Only the published output changes. The theorem
+starts with a blank inputWidth tape, retains the same decoded numerical error,
+and adds only recoveryInputWidthCost B L w+2*(L*w)+2 to the existing time bill.
+No second precision computation or supplied byte ruler is required.
+
+`Mult/PhaseCellOrdinaryGeneratedNormalize.lean` wraps actual ordinary parameter
+loading and scalar-bank release around this program. Its endpoint consumes
+the parameter queue and changes only output. `Mult/PhaseCellGeneratedNormalizeStock.lean`
+reuses the original normalization native certificate by structural projection;
+new width generation has native bound 2, below the inherited bound 13.
+`Mult/PhaseCellGeneratedNormalizeOwnedInterval.lean` exposes this actual program
+as RecoveryNormalizePlan.generated_interval_exec on arbitrary owned intervals,
+using InverseMasterInput and the existing packed-precision identity. It starts
+from blank byte-count storage and supplies time, native stock and decoded error
+2/2^p+2^(-target)/2^j. No uniform-core geometry is imposed.
+
+Final checks: generated batch builds without new warnings; ordinary wrapper
+check 3169.9 MiB, stock check 3134.9 MiB, owned-interval check 3264.2 MiB.
+Combined build with parameter preparation, D' product and actual bulk inverse
+succeeds (15949 jobs, 3.5 GiB aggregate peak). Guarded axiom audit of generated
+interval execution, parameter-queue execution and byte-count execution reports
+only propext, Classical.choice and Quot.sound (9347.4 MiB audit peak).
+
+Next derive owned-target magnitude from the constructed principal solutions,
+join the retained unary parameter queue to this generated caller, and physically
+compose bulk recovery, publication and replica-reused D' output. The earlier
+uncommitted supplied-width interval wrapper is superseded; remove it when
+collecting the final caller integration chunk. Cyclic execution, tensor
+continuation, root sizing, forward geometry and final error/acceptance remain
+open. S4 incomplete. No commit or push; separate periodic recovery untouched.
+
+### S4 actual owned-reference stability and executed publication
+
+`Mult/PhaseCellOwnedRecoveryMagnitude.lean` proves halfGridSolution_norm_le
+structurally for any principal matrix and complex half-grid RHS with unit
+input. Dominance gives real and imaginary bounds 4*p each, hence complex
+norm <= 8*p. ownedTargets_norm_le applies this to the constructed solution
+certificate, without numerical or magnitude suppliers. Restricting to J_k
+and reversing the replica list yields ownedTargets_round_magnitude, exactly
+the publication allowance 4*2^(p+8). owned_normalization_width follows directly
+from packedRound_dimensions at the ambient cardinality; no window-dependent
+format premise is introduced. Magnitude guarded checks stayed below 3395 MiB.
+
+`Mult/PhaseCellActualOwnedNormalization.lean` specializes generated interval
+publication to RecoveryAxisBounds. It derives the standard master input,
+packed precision, ambient common width, exact floor-owned interval membership
+and cover, and reference magnitude. From ordinary normalization tape readiness
+and the preceding cropped-recovery error certificate it executes the actual
+generated publication program, returns decoded normalized error, and retains
+the time and native-13 stock bounds. Final guarded check: 3380.2 MiB, no new
+warnings. Combined build with D' product, actual bulk recovery and ordinary
+parameter preparation succeeds (15952 jobs, 3.5 GiB aggregate peak).
+
+The uncommitted supplied-width interval wrapper is superseded by generated
+publication and has no consumers; removed from the source tree. Its temporary
+reference copy is /tmp/S4SupersededNormalizeOwnedInterval.lean (never committed).
+Next physically join bulk recovery's endpoint to parameter-queue preparation
+and this actual publication caller, then reuse the D' page across replicas.
+Cyclic principal execution, tensor continuation, root sizing, forward geometry
+and accumulated error/final acceptance remain open. S4 remains incomplete.
+Collect the accumulated diagonal and normalization construction into one larger
+local commit after the final axiom audit; do not push. Periodic work untouched.
+
+Final owned-publication axiom audit reports only propext, Classical.choice and
+Quot.sound for generic half-grid stability, derived owned-rounding magnitude
+and actual owned normalization (9553.2 MiB temporary audit peak). Production
+modules remain below 3.4 GiB. Plan-status and whitespace checks pass. Collect
+this verified diagonal/normalization milestone as one local chunk; no push.
