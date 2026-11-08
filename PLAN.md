@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4603 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4615 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -38889,3 +38889,81 @@ The resident boundary page and retained geometry are still caller inputs here;
 their ordinary producers remain to be wired at the full caller. Uniform space/
 time/root discharge, axis/tensor/forward/error/support and final S4 acceptance
 remain open. The complete S4 theorem is not established by this checkpoint.
+
+### S4 complete computed joint cyclic column family reaches the factor-input contract
+
+PhaseCellCyclicTableLoopStep reuses TableLoopInvariant for the joint cyclic
+boundary and folded width 24*band+1. One actual cyclicTableColumn execution
+appends its decoded-accurate Gaussian field, proves ColumnFamilyFormat from
+its real/norm bounds and the existing residual-width lemma, updates the packed
+page through bandTableWords_append, and advances retained cursor 151. No new
+column-family invariant or finite-case certificate is introduced.
+
+PhaseCellCyclicTableColumnsLoop instantiates scanInvariant_exec over the entire
+joint boundary cardinality. Its exact endpoint contains all computed band
+columns and the final cursor; it returns the full accurate/formatted family
+and solver readiness with the original input tail. PhaseCellPreparedCyclicColumns
+wraps this scan with a restoring copy from ordinary row-count header 116 to
+private count 152, then actual retirement of cursor/count 151/152. No installed
+scan count is supplied by its caller.
+
+preparedCyclicColumns_spec uses RecoveryAxisBounds to derive the existing
+PreparedBoundaryColumns contract from the computed family's length, format,
+accuracy, joint Schur stability and folded support. Its exact final state
+changes only packed table accumulator 132. All scan controls, original input,
+resident page, geometry and arithmetic scratch are restored. This constructs
+the factor-input numerical certificate from actual execution; it does not
+assume computed columns or a prepared factor certificate.
+
+Guarded checks pass without warnings: cyclic loop step 2184.1 MiB, full scan
+2175.2 MiB, complete prepared producer 3392.9 MiB. Prepared producer build passes
+(15722 jobs, 3.5 GiB aggregate). Axiom audit reports only propext, Classical.choice
+and Quot.sound (9561.5 MiB audit peak). Whitespace check passes. The check first
+refused a stale cyclic factor-contract import; rebuilt that dependency under
+the guard before checking. No proof limits were changed.
+
+Next construct the factor input window/input pages from this executed joint
+packed table and instantiate the single boundary factor/solve at width
+24*band+1. The numerical PreparedBoundaryColumns consumer contract is now
+produced, but physical factor setup/factor pages remain to be executed for the
+cyclic shape. Ordinary resident boundary-page/endpoint producer wiring, uniform
+resource/root and axis/tensor/forward/error/support/final S4 acceptance remain
+open. Retain for the next larger local commit; no push. Periodic WIP untouched.
+
+
+### S4 cyclic factor page and scaled physical factorization
+
+PhaseCellScaledFactorPageSetup and PhaseCellScaledFactorPageReady reuse the
+existing factor-page transducer at factor*band+1. PhaseCellPreparedCyclicFactorPage
+composes the computed joint cyclic column family with this transducer at factor
+24, emitting the complete physical window/input page on 140 while preserving
+the computed table and its PreparedBoundaryColumns certificate. Readiness is
+retained with the owned input page logically removed. No computed page is a
+caller assumption. Guarded check passes at 3389.4 MiB; guarded build passes.
+
+The factor engine itself already accepts arbitrary width. Its physical setup
+wrappers fixed the scale at 12. PhaseCellScaledFactorDimensions, HeaderSetup,
+Setup and SetupFacts generate arbitrary-scale dimensions through the existing
+structural UnarySetup interpreter, reusing multiplier setup and Newton constants.
+PhaseCellScaledFactorPrepared bridges scale 12*scale to the existing
+BoundaryFactorPrepared contract at effective factor bandwidth scale*band.
+The original master bandwidth remains unchanged; no borrowed-header mutation
+or second factorization algorithm is needed.
+
+PhaseCellScaledInitializedBoundaryFactor composes this generated setup with
+the existing physical factor engine. At scale 2 it executes joint width
+24*band+1, returns the actual lower/upper/reciprocal pages, BoundarySolveReady,
+exact legacy frame, header-volume and permanent-workspace bounds. Guarded check
+passes without warnings at 3111.4 MiB; guarded build passes (3.4 GiB aggregate).
+Scaled setup checks at 3094.0 MiB. Default proof limits are unchanged. Existing
+interval setup modules remain unchanged to avoid a broad dependency rebuild;
+consolidation of their proofs onto these scaled lemmas can be done when that
+rebuild is needed for integration.
+
+Next compose the computed cyclic factor page with this actual factor execution
+at canonical boundaryTableBits precision, then execute the joint boundary solve.
+The two verified programs are not yet one cyclic factor caller. Audit root
+width room and total setup/column-generation costs before extending the caller
+plumbing further. Resident boundary-page/endpoint producers, uniform resource
+discharge, axis/tensor/forward/error/support and final S4 acceptance remain open.
+No push; separate periodic-recovery WIP remains excluded.
