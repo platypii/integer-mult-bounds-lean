@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4638 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4643 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -39254,3 +39254,87 @@ joint boundary solution error/unscaling and interior reconstruction. Uniform
 time/structural stock, widened root format and remaining geometry room, setup
 reuse across replicas, axis/tensor/forward/error/support and final S4/compiler
 acceptance remain open. No push; separate periodic WIP remains untouched.
+
+
+### S4 initialized cyclic solver computes its own geometry and complete joint solve
+
+PhaseCellInitializedCyclicSolve embeds prepareCyclicBoundaryPage into the
+224-tape bank and composes it with constructedGeneratedCyclicSolve. It starts
+from ordinary retained dimensions, start/span rulers on 141/142, original RHS,
+analytic axis bounds and blank owned workspace. The former resident page, width,
+row count and endpoint inputs are all derived from actual setup execution.
+Master s/t/band and low setup freshness come from the existing projected
+LengthKeyReady; outer factor-workspace freshness follows from register-image
+exclusion. The exact page projection transfers reusable arithmetic readiness
+without rebuilding the factor/solve proof.
+
+The program computes endpoints, page/count/width, accurate joint Schur columns,
+physical factor pages, both original-RHS residuals, selected normalized boundary
+RHS and one joint triangular solution, then retires both residual prefixes. It
+consumes private start/span rulers, retains the computed geometry/page and packed
+table, preserves the original RHS and all unrelated legacy tapes, and retains
+lower/upper/reciprocal factor pages and the actual solution on 217. Its cost
+adds the complete ordinary setup bill to the existing complete solve bill.
+No prepared numerical supplier, installed page, factor bank, residual stream,
+interior inverse or assumed execution is a caller premise. Guarded check passes
+without warnings at 3461.4 MiB; guarded build passes (15760 jobs, 3.6 GiB aggregate).
+
+PhaseCellNormalizedBoundarySolutionBounds factors normalization and allocated
+solution bounds over an arbitrary boundary-row list. It reuses the existing
+precision split, residual normalization bound and generic band-line solver
+bounds. It checks without warnings at 3087.3 MiB. The actual generated cyclic
+residual/solve theorem instantiates it from its computed residual component
+bounds; solution length and the 8*p+1 component bounds are propagated through
+retirement, factor composition and the initialized caller. Programs and bills
+are unchanged by this proof-contract extension. These are the numerical format
+facts required for generatedBoundaryUnscale. Axiom audits of the initialized
+caller and generic solution-bound lemma report only propext, Classical.choice
+and Quot.sound (9569.1 MiB audit peak). Source-integrity and whitespace checks
+pass; default proof limits remain unchanged.
+
+Next retain or package the solved factor bank's unscale-readiness controls
+(RsbReady, master precision, multiplier freshness and private scratch) through
+the exact solved-state/frame theorem, then execute existing exact unscaling.
+The joint boundary solution error and full interior reconstruction still need
+the generic Schur/normalization accuracy lemmas instantiated for the cyclic
+principal system. Uniform time/structural stock, widened root format/remaining
+geometry budgets, setup reuse across replicas, axis/tensor/forward/error/support
+and final S4/compiler acceptance remain open. Keep for the next larger local
+checkpoint; no push. Separate periodic WIP untouched.
+
+### S4 actual cyclic unscaling and joint boundary accuracy
+
+PhaseCellBoundaryUnscaleReady packages the solved bank's left-stack,
+multiplier, RsbReady, precision-master and private-scratch controls. A generic
+frame lemma derives it from BoundarySolveReady and the existing actual solved
+state. It survives residual retirement and solution-tape updates. The generated,
+retired, constructed and initialized solve contracts retain this readiness,
+residual realness and residual norm bounds; their execution and bills are
+unchanged.
+
+PhaseCellInitializedCyclicUnscaledSolve composes the ordinary-input cyclic
+caller with existing generatedBoundaryUnscale. It derives the unscale precision
+room and normalized component bounds, executes the exact unscale, and changes
+only tape 217 to the unscaled solution. The complete setup/factor/residual/solve/
+retirement/unscale bill is included; input, geometry, packed table and factor
+pages remain available.
+
+PhaseCellCyclicBoundarySolutionAccuracy reuses boundary_residual_solution_accuracy
+on an arbitrary actual joint cyclic residual. The only adapters are the
+interior/boundary partition, dominance restriction, folded Schur table accuracy,
+and conversion of the retained norm and divided-error bounds. No independent
+piecewise boundary solves, new numerical error proof or finite certificates
+are introduced. The initialized unscaled caller now proves its actual emitted
+solution is within 3/2^target of every exact principal-system real solution on
+the folded boundary, with magnitude at most 2^stableInteriorExponent p 2.
+The exact principal solution is a correctness comparator, not program input.
+
+Guarded checks pass without warnings: cyclic accuracy 3379.7 MiB; complete
+accurate unscaled caller 3408.7 MiB. Guarded build passes (15763 jobs, 3.5 GiB
+aggregate). Next compose the boundary result with actual interior reconstruction
+and its accuracy. Uniform time/structural stock, replica setup reuse, remaining
+root/geometry budgets, axis/tensor/forward/error/support and final S4/compiler
+acceptance remain open. No push; separate periodic WIP untouched.
+Axiom audits for cyclicBoundary_solution_accuracy and the complete initialized
+unscaled caller report only propext, Classical.choice and Quot.sound; temporary
+audit peak 9568.0 MiB. Proof limits are unchanged.

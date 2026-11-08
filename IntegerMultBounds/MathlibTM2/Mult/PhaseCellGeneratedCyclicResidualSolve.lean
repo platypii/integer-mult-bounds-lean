@@ -1,5 +1,7 @@
 module
 
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellBoundaryUnscaleReady
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellNormalizedBoundarySolutionBounds
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicPreparedBoundaryColumns
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellPublicationWidth
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicResidualPhysical
@@ -57,9 +59,14 @@ theorem generatedCyclicResidualSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states 
         (naturalLineUc q K W B.card AZ) (naturalLineRcs q K W B.card AZ)
         (((List.range B.card).map (fun j => selected (bFoldAt s B j))).map (normalizeBoundaryWord q (q/2-1)))
       (∀ rhs, SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalInterior s t (PhaseCellBand.width p u) a n) (solver rhs) rhs) ∧
+      (∀ i, (C i).im = 0 ∧ (D i).im = 0) ∧
+      (∀ i, ‖value q (C i)‖ ≤ (2 : ℝ)^couplingRowExponent 2 (stableInteriorExponent p 2) (8*p+1) (couplingCountExponent p u) ∧
+        ‖value q (D i)‖ ≤ (2 : ℝ)^couplingRowExponent 2 (stableInteriorExponent p 2) (8*p+1) (couplingCountExponent p u)) ∧
       (∀ i ∈ B, |(value q (selected i)).re-SchurDominance.residual (realMatrix s t p u)
         (cyclicPrincipalInterior s t (PhaseCellBand.width p u) a n) solver (fun k => (value q (rhs k)).re) i| ≤
           (1/(2 : ℝ)^(recoveryTarget p bits+2))/(8*(p : ℝ))) ∧
+      solution.length = B.card ∧ (∀ z ∈ solution, |gv q z.re| ≤ 8*p+1 ∧ |gv q z.im| ≤ 8*p+1) ∧
+      BoundaryUnscaleReady q S' ∧
       v'.user = v.user ∧
       steps ≤ (windowedSchurResidualCost p l s t u bits 2 a (a+min n (s-a))+
         windowedSchurResidualCost p l s t u bits 2 0 (n-min n (s-a)))+
@@ -123,30 +130,52 @@ theorem generatedCyclicResidualSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states 
         by simpa [value,gv] using (Complex.abs_im_le_norm _).trans (hnorm i).1⟩
     · exact ⟨by simpa [value,gv] using (Complex.abs_re_le_norm _).trans (hnorm i).2,
         by simpa [value,gv] using (Complex.abs_im_le_norm _).trans (hnorm i).2⟩
+  let rows := (List.range B.card).map (fun j =>
+    let i := bFoldAt s B j
+    if a ≤ i.val ∧ i.val < a+min n (s-a) then C i else D i)
+  obtain ⟨hsolLen,hsolBounds⟩ := normalizedBoundarySolution_bounds A p u l target 2 B W columns
+    axis.hp (by omega) hprepared.length hprepared.format hprepared.stage rows (by simp [rows]) (by
+      intro z hz
+      obtain ⟨j,hj,rfl⟩ := List.mem_map.mp hz
+      exact hbound _ (bFoldAt_mem s B j (List.mem_range.mp hj)))
   have hwide : s+s ≤ 2^V := by
     have hfit := publicationGeometryWidth_fits t (PhaseCellBand.width p u)
     change s+s ≤ 2^(publicationGeometryWidth t (PhaseCellBand.width p u))
     nlinarith only [hfit,axis.hst]
+  have hmul₁ : ∀ i : Fin 64, S₁.R (boundaryFactorMulReg i) = [] := by
+    intro i
+    have hne : boundaryFactorMulReg i ≠ 132 := by
+      intro h
+      have hv := congrArg (fun k : Fin 224 => k.val) h
+      change i.val = 132 at hv
+      have := i.isLt
+      omega
+    simpa only [S₁,Function.update_of_ne hne] using hmul i
+  have hw : w = 2*q+8 := by dsimp [w,q,executionWidth,executionPrecision]; omega
+  have hsolve₁ : BoundarySolveReady (boundaryFactorState S₁) q (2*q+8) W B.card := by
+    rw [hstate]
+    have hh : BoundarySolveReady (boundaryFactorState S) q w W B.card := hsolve
+    simpa only [hw] using hh
   obtain ⟨v₂,S₂,m₂,hv₂,hm₂,he₂,hinp,hout,hL,hlegacy,hframe,hpost⟩ :=
     generatedCyclicBoundaryGatherSolve_exec
       (body := embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg (embTab componentReg (embTab groupReg body)))))
       hQ hA p u l target 2 B W V a (a+min n (s-a)) columns axis.hp hprepared.length
       hwide ha.le (by omega)
       hprepared.format hprepared.stage C D hbound pageTail (S.R 132) v₁ S₁
-      hleft (by
-        intro i
-        have hne : boundaryFactorMulReg i ≠ 132 := by
-          intro h
-          have hv := congrArg (fun k : Fin 224 => k.val) h
-          change i.val = 132 at hv
-          have := i.isLt
-          omega
-        simpa only [S₁,Function.update_of_ne hne] using hmul i) (by rw [hstate]; exact hsolve)
+      hleft hmul₁ (by rw [hstate]; exact hsolve)
       hq (by simpa [S₁] using h223) (by simpa [S₁] using h184) (by simpa [S₁] using h220) (by simpa [S₁] using h221)
       (by simpa [S₁] using hN) (by simpa [S₁] using hV) (by simpa [S₁] using hpage)
       hs (by simpa [S₁] using haSrc) (by simpa [S₁] using hleftEnd) (by rfl)
       (by change (boundaryFactorState S₁) .vk = []; rw [hstate]; exact hvk) hscratch (by simpa [hstate] using hbo) (by simpa [hstate] using hhf) (by simpa [hstate] using hdf)
-  refine ⟨v₂,S₂,m₁+m₂,C,D,R,T,hsolver,?_,hv₂.trans hv₁,Nat.add_le_add hm₁ hm₂,
+  have hUnscale : BoundaryUnscaleReady q S₂ := boundaryUnscaleReady_of_solved S₁ S₂ hleft hmul₁ hsolve₁ hq
+    (by intro k hk
+        simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+        rcases hk with rfl | rfl | rfl | rfl
+        · simpa [S₁] using h184
+        · simpa [S₁] using h220
+        · simpa [S₁] using h221
+        · simpa [S₁] using h223) hframe _ hpost
+  refine ⟨v₂,S₂,m₁+m₂,C,D,R,T,hsolver,hreal,hnorm,?_,hsolLen,hsolBounds,hUnscale,hv₂.trans hv₁,Nat.add_le_add hm₁ hm₂,
     Exec.seq he₁ he₂,hinp,hout,hL,?_,?_,?_⟩
   · intro i hi
     simpa only [mem_haloVertices,apply_ite] using herror i hi

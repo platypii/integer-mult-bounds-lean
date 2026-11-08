@@ -58,9 +58,14 @@ theorem retiredCyclicResidualSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states �
         (naturalLineUc q K W B.card AZ) (naturalLineRcs q K W B.card AZ)
         (((List.range B.card).map (fun j => selected (bFoldAt s B j))).map (normalizeBoundaryWord q (q/2-1)))
       (∀ rhs, SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalInterior s t (PhaseCellBand.width p u) a n) (solver rhs) rhs) ∧
+      (∀ i, (C i).im = 0 ∧ (D i).im = 0) ∧
+      (∀ i, ‖value q (C i)‖ ≤ (2 : ℝ)^couplingRowExponent 2 (stableInteriorExponent p 2) (8*p+1) (couplingCountExponent p u) ∧
+        ‖value q (D i)‖ ≤ (2 : ℝ)^couplingRowExponent 2 (stableInteriorExponent p 2) (8*p+1) (couplingCountExponent p u)) ∧
       (∀ i ∈ B, |(value q (selected i)).re-SchurDominance.residual (realMatrix s t p u)
         (cyclicPrincipalInterior s t (PhaseCellBand.width p u) a n) solver (fun k => (value q (rhs k)).re) i| ≤
           (1/(2 : ℝ)^(recoveryTarget p bits+2))/(8*(p : ℝ))) ∧
+      solution.length = B.card ∧ (∀ z ∈ solution, |gv q z.re| ≤ 8*p+1 ∧ |gv q z.im| ≤ 8*p+1) ∧
+      BoundaryUnscaleReady q S' ∧
       v'.user = v.user ∧
       steps ≤ (windowedSchurResidualCost p l s t u bits 2 a (a+min n (s-a))+
         windowedSchurResidualCost p l s t u bits 2 0 (n-min n (s-a)))+
@@ -79,7 +84,7 @@ theorem retiredCyclicResidualSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states �
   let q := executionPrecision p l (initialSchurTarget p u bits 2) 2
   let w := executionWidth p l (initialSchurTarget p u bits 2) 2
   intro hprepared rhs hrhs v S tail pageTail hready hleft hmul hsolve h223 h184 h220 h221 hN hV hpage haSrc hleftEnd hrightEnd hfresh hvk hbo hhf hdf
-  obtain ⟨v₁,S₁,m₁,C,D,R,T,hsolver,herror,hv₁,hm₁,he₁,hinp,hout,hL,hlegacy,hstream,hpost⟩ :=
+  obtain ⟨v₁,S₁,m₁,C,D,R,T,hsolver,hreal,hnorm,herror,hsolLen,hsolBounds,hUnscale,hv₁,hm₁,he₁,hinp,hout,hL,hlegacy,hstream,hpost⟩ :=
     generatedCyclicResidualSolve_spec (body := body) hR hQ hA axis ha hn columns
       hprepared rhs hrhs v S tail pageTail hready hleft hmul hsolve h223 h184 h220 h221 hN hV hpage
       haSrc hleftEnd hrightEnd hfresh hvk hbo hhf hdf
@@ -110,7 +115,7 @@ theorem retiredCyclicResidualSolve_spec (hR : rpStates ≤ Q) (hQ : SS.states �
     q s (cstream A w (chirpLine s D)) (cstream A w (chirpLine s C)) (S.R 132)
     (by simp [chirpLine,hw]) (by simp [chirpLine,hw]) v₁ S₁ hq hs hstream hscratch
   let S₂ : Stacks 224 A := {S₁ with R := Function.update S₁.R 132 (S.R 132)}
-  refine ⟨v₂,S₂,m₁+m₂,C,D,R,T,hsolver,herror,hv₂.trans hv₁,Nat.add_le_add hm₁ hm₂,
+  refine ⟨v₂,S₂,m₁+m₂,C,D,R,T,hsolver,hreal,hnorm,herror,hsolLen,hsolBounds,hUnscale.update_accumulator (S.R 132),hv₂.trans hv₁,Nat.add_le_add hm₁ hm₂,
     Exec.seq he₁ he₂,hinp,hout,hL,?_,?_⟩
   · intro i
     by_cases hi : i = 132

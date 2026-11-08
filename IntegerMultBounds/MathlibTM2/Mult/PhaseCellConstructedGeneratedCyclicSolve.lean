@@ -92,9 +92,14 @@ theorem constructedGeneratedCyclicSolve_spec (hR : rpStates ≤ Q) (hQ : SS.stat
           (cyclicPrincipalInterior s t (PhaseCellBand.width p u) a n).toList).1 (1/(2 : ℝ)^bits) columns ∧
       PreparedBoundaryColumns A p bits q w W B columns ∧
       (∀ rhs, SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalInterior s t (PhaseCellBand.width p u) a n) (solver rhs) rhs) ∧
+      (∀ i, (C i).im = 0 ∧ (D i).im = 0) ∧
+      (∀ i, ‖value q (C i)‖ ≤ (2 : ℝ)^couplingRowExponent 2 (stableInteriorExponent p 2) (8*p+1) (couplingCountExponent p u) ∧
+        ‖value q (D i)‖ ≤ (2 : ℝ)^couplingRowExponent 2 (stableInteriorExponent p 2) (8*p+1) (couplingCountExponent p u)) ∧
       (∀ i ∈ B, |(value q (selected i)).re-SchurDominance.residual (realMatrix s t p u)
         (cyclicPrincipalInterior s t (PhaseCellBand.width p u) a n) solver (fun k => (value q (rhs k)).re) i| ≤
           (1/(2 : ℝ)^(recoveryTarget p bits+2))/(8*(p : ℝ))) ∧
+      solution.length = B.card ∧ (∀ z ∈ solution, |gv q z.re| ≤ 8*p+1 ∧ |gv q z.im| ≤ 8*p+1) ∧
+      BoundaryUnscaleReady q S' ∧
       v'.user = v.user ∧
       steps ≤ constructedGeneratedCyclicSolveCost p u l s t a n target ∧
       Exec (embTab boundaryFactorLegacyReg (embTab tableReg (embTab boundaryArithmeticReg
@@ -126,7 +131,7 @@ theorem constructedGeneratedCyclicSolve_spec (hR : rpStates ≤ Q) (hQ : SS.stat
     simpa [embStk,hi,hi140] using hh
   have hready₁ := factorLegacyReady_of_frame hready hL₁ hkeep
   obtain ⟨hbo',hhf',hdf'⟩ := boundaryFactor_solve_tables q w K B W columns (boundaryFactorState S₁) hbo hhf hdf
-  obtain ⟨v₂,S₂,m₂,C,D,R,T,hsolver,herror,hv₂,hm₂,he₂,hinp₂,hout₂,hL₂,hlegacy₂,hpost⟩ :=
+  obtain ⟨v₂,S₂,m₂,C,D,R,T,hsolver,hreal,hnorm,herror,hsolLen,hsolBounds,hUnscale,hv₂,hm₂,he₂,hinp₂,hout₂,hL₂,hlegacy₂,hpost⟩ :=
     retiredCyclicResidualSolve_spec (body := body) hR hQ hA axis has hbs columns hprepared rhs hrhs
       v₁ S₁ tail pageTail hready₁ (by intro i; rw [hL₁]; exact hleft i) hmul hsolve h223 h184 h220 h221
       ((congrArg List.length (hkeep 116 (by decide))).trans hrows)
@@ -146,7 +151,7 @@ theorem constructedGeneratedCyclicSolve_spec (hR : rpStates ≤ Q) (hQ : SS.stat
           · exact (hkeep 143 (by decide)).trans h143
           · exact (hkeep 147 (by decide)).trans h147)
       hvk hbo' hhf' hdf'
-  refine ⟨v₂,S₂,m₁+m₂,columns,C,D,R,T,hlen,hacc,hprepared,hsolver,herror,
+  refine ⟨v₂,S₂,m₁+m₂,columns,C,D,R,T,hlen,hacc,hprepared,hsolver,hreal,hnorm,herror,hsolLen,hsolBounds,hUnscale,
     hv₂.trans hv₁,Nat.add_le_add hm₁ hm₂,Exec.seq he₁ he₂,hinp₂.trans hinp₁,hout₂.trans hout₁,hL₂.trans hL₁,?_,?_,
     congrFun hpost .dout,?_,?_,?_⟩
   · intro i hi
