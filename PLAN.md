@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4724 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4731 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -3902,6 +3902,19 @@ workspace and includes complete phase bills. Actual outputs now yield certified
 publication rows, and the restoring copy resolves reverse job order.
 
 Close the remaining obligations in this order:
+
+Current critical path (2026-11-08 review): finish the concrete 834-register
+cached caller before expanding the interface language. Both original-RHS
+passes/masks and canonical placement are checked. The consumer now executes
+retained-master copies, ordered archive handoff, export and one shared
+factor/solve batch. It derives row format/bounds from the cached certificates,
+retains original-system boundary accuracy and preserves both recovery banks
+and RHS queues. Next prepend the actual pass producer to this consumer, then
+execute both recovery passes and common-width publication. Judge the next
+checkpoint by that executed caller and the supplier assumptions it removes.
+Keep geometry fallback and structural stock/uniform time visible as independent
+open gates; functional execution does not close them. No reliable percentage
+or completion-time estimate is available.
 
 1. Instantiate the common-job publication batch from existing metadata; connect
    its computed rows to the fixed-bank transpose/scatter and retire the old
@@ -40527,3 +40540,151 @@ only propext, Classical.choice and Quot.sound (9572.9 MiB temporary audit peak;
 the generic override frame does not need Classical.choice). All twelve changed
 or new source modules pass integrity and whitespace checks; proof limits
 unchanged.
+
+### S4 original RHS headers execute both cached cyclic residual passes and masks
+
+PhaseCellCachedReplicaPassInput packages the existing placement's gather,
+numerical, coupling, output and RHS ports, with an inductive Owns predicate for
+their footprint. CachedReplicaPassInput groups only the ordinary input headers
+and released-bank/workspace prerequisites. Its frame theorem transports those
+facts through a disjoint execution, including the shared external streams.
+Guarded check: 3264.4 MiB.
+
+PhaseCellCachedReplicaPassPost retains the existing executor's complete local
+archive/residual, accuracy/format, metadata, coefficient-page, counter/native
+cleanup, retained-header and recovery-RHS language. These facts are not dropped
+when composing another pass. Its frame theorem preserves the local postcondition
+through unrelated writes. Its maskBlank theorem derives the low 32 blank mask
+workspace registers from the already-retained CClean numerical bank, eliminating
+an extra cleanup hypothesis. Guarded check: 3265.4 MiB.
+
+PhaseCellCachedReplicaPass wraps initializedCachedReplicaInteriorCoupling_exec
+without replacing its program. It instantiates the native push bounds at the
+actual program values and uses depth zero for the plain execution theorem;
+callers no longer supply artificial push bounds or a depth. The scalar cost is
+the existing executor's exact bill. It returns the Post contract and an explicit
+outside-footprint left/right frame. The guarded build passes (3.4 GiB combined).
+
+PhaseCellCachedReplicaPassPair executes two disjoint cached passes. The left
+frame transports the right input contract, and the right frame preserves the
+left postcondition. Both actual archives and every local cache/recovery fact
+survive in the final state. The total bill is the two existing cached-pass bills;
+no setup repeats per RHS. Guarded check: 3257.6 MiB.
+
+PhaseCellCachedReplicaPassMasks composes those actual passes with the two
+metadata-driven mask producers. Neither archive, residual certificate, metadata
+bank nor numerical mask is an input supplier. The mask workspace is derived
+from Post.maskBlank. Both cached Post contracts survive mask generation. Left
+stacks outside the two passes are explicitly preserved even at the mask output
+ports; right-stack framing excludes just the generated masks. This stronger left
+frame is needed to preserve the future factor bank's left-workspace invariant.
+Guarded check: 3266.3 MiB; final strengthened theorem builds successfully.
+
+PhaseCellCachedCyclicReplicaArchives instantiates the pair at the existing
+axis.cyclicLeftReplicaProblem / cyclicRightReplicaProblem constructors. Its
+inputs are the original RHS lists, bounded values and ordinary pass headers.
+It executes both cached passes and masks, returns both actual archive witnesses
+and full Post contracts, and derives all folded-row lengths, realness, sharp
+solver coordinate bounds and the joint original-system residual error with one
+interior inverse. No residual archive or certificate supplier remains. The exact
+two span+band≤s conditions are explicit; this does not change the unrestricted
+n≤s cyclic problem constructor or silently close the fallback cases. Guarded
+check: 3385.7 MiB before the small left-frame strengthening; final build passes.
+
+PhaseCellCyclicReplicaPlacement reuses the existing standard 300-register pass
+layout twice and places the existing 234-register Schur bank beside them, in
+834 registers. Generic reindexing transports the placement proofs. Offset
+arithmetic proves pass separation and that every factor register lies outside
+both footprints; no concrete tape enumeration or generated certificate is used.
+Guarded check: 3264.4 MiB. The actual cyclic archives/placement build passes
+(15709 jobs, 5.8 GiB combined peak), with production modules below 3.4 GiB.
+
+Next assemble the concrete 834-register caller: actual cyclic archives/masks,
+ordered handoff from the two gather-125 ports to factor ports 169/172, retained
+master copies, export, then the shared constructed factor/solve batch. The existing
+cachedCyclicReplicaArchives executor already generates masks: follow it with
+exportCyclicResidualRows after copying cached width/count/volumes, avoiding both
+volume recomputation and another mask-producing exporter. The
+alternate masked-export executor can be retired with a restore note once this
+caller is verified; keep its structural mask-retirement/frame lemmas. After
+archive consumption, retain Post's cache/metadata/recovery facts using their
+bank frames and ReplicaRecoveryRhsHeaders.of_archive_frame rather than claiming
+the original physical archive is still present. Then execute both recovery
+passes and publication. Peak stock, uniform per-key/axis time, geometry fallback
+and broader S4 locality/complex/axis/tensor/forward/error/support/compiler gates
+remain open. Keep these paired-pass and placement changes for a larger caller
+integration checkpoint; no commit or push; periodic WIP untouched.
+The input/post frame, derived mask workspace, actual paired execution and cyclic
+archive theorem axiom audit reports only propext, Classical.choice and Quot.sound;
+the concrete placement separation theorems do not require Classical.choice.
+Temporary audit peak: 9558.3 MiB. All seven new source modules pass integrity and
+whitespace checks; proof limits unchanged. No commit or push.
+
+
+### S4 retained masters and actual archives reach the shared consumer
+
+PhaseCellCyclicReplicaConsumerHandoff now composes the retained four-header
+copies with the ordered archive transfer. Its checked postcondition installs
+width, both packed volumes, replica count and both actual residual archives at
+the canonical factor ports, preserving both full cached numerical banks and
+original recovery RHS queues. The bill includes both copying and movement.
+The state-alias proof mismatches identified in the review are resolved.
+cyclicReplicaConsumerState_factor_read preserves every factor register except
+130,168,169,171,172,229, so generated masks and raw workspace remain reusable.
+The final single-file guard passes at 3276.4 MiB; the combined consumer/actual
+archives guarded build passes (15713 jobs, 3.5 GiB combined peak).
+
+Exporter readiness and the combined handoff/export execution are now checked
+in PhaseCellCyclicReplicaConsumerInputs / PhaseCellCyclicReplicaConsumerExport.
+Readiness uses installed width/volumes, generated masks and ordinary geometry /
+blank workspace. cyclicReplicaConsumerExport_exec executes both master copying
+and archive movement, then exportCyclicResidualRows; it returns both preserved
+cached banks and recovery RHS contracts and charges every component. It consumes
+Cs/Ds from actual pass Post contracts, aligns their zip structurally, and neither
+recomputes volumes nor regenerates masks. The exact final factor projection is
+exportedCyclicResidualRows, exposing the ordinary solver's row input directly.
+Final single-file guard: 3290.8 MiB.
+PhaseCellCyclicResidualBatchFrame now transfers ordinary factory readiness under
+an arbitrary packet/count-only update (226/229), preserving its entire arithmetic
+and workspace contract. PhaseCellCyclicReplicaConsumerFactoryInput applies it to
+the actual exported state: a pre-pass raw factor bank suffices, with the cached
+passes' frame outside the two mask ports. All seven retired controls are proved
+blank in the original bank from factory.arithmetic.wordWidth and factory.new;
+no additional cleanup or post-export factory supplier is required. Single-file
+peaks: 3396.0 / 3388.9 MiB. The guarded factory-input build passes (15767 jobs,
+3.5 GiB combined peak). Integrity and whitespace scans pass; no proof limits
+changed.
+PhaseCellCyclicReplicaExportedBatch now executes the existing constructed factor
+factory and all residual solves in the 834-register layout, starting from the
+actual consumer-export state. It derives factory readiness from the original raw
+bank and derives the installed replica counter from the retained gather-121
+master plus an initially blank destination. No manufactured-state factory or
+counter premise remains. The result retains the complete original numerical
+language: prepared columns, accuracy against the original Schur matrix, solve
+readiness, natural L/U/diagonal streams, row lengths/Fits, factor preservation,
+page/private framing, and an explicit outside-factor-bank frame preserving the
+cached recovery banks. The theorem still takes arbitrary row format/bounds;
+instantiate these with cyclicReplicaBoundaryRows_format from the cached Post
+residual certificates when sequencing the caller. Single-file guard: 3417.4 MiB.
+PhaseCellCyclicReplicaConsumerBatch now sequences the complete consumer:
+retained master copies, ordered archive handoff, residual export, one factor
+factory and every boundary solve. It derives row length/format/bounds from the
+cached Post residual certificates, rather than accepting numerical-row format
+suppliers. It retains all factor-language conclusions, both cached bank views,
+both original recovery RHS queues, boundary error ≤3/2^target and the stable
+output norm for each original RHS, plus the joint original-system residual
+estimate. The final guarded check passes at 3417.1 MiB; the combined consumer /
+actual archives guarded build passes (15782 jobs, 3.6 GiB combined peak).
+
+Next prepend the actual cyclic pass producer and use its disjoint factor frame
+to discharge the consumer's ordinary geometry/workspace transport. The consumer
+still begins from two CachedReplicaPassPost contracts. This is not yet the
+complete original-RHS caller. Both recovery passes/publication, geometry
+fallback, uniform time/structural stock and the broader S4 acceptance gates
+remain open. Collect the paired producer, placement and complete consumer in
+one larger local checkpoint; never push without the user's instruction.
+
+The complete consumer, actual archive producer and packet-frame theorem axiom
+audit reports only propext, Classical.choice and Quot.sound (9578.5 MiB audit
+peak). All 16 new modules pass integrity/whitespace scans; no proof limits
+changed. Periodic recovery WIP is excluded from this checkpoint.
