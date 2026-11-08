@@ -88,6 +88,10 @@ theorem normalizedCorePublication_exec {s : ℕ} [NeZero s]
       Exec body normalizedCorePublication (mk v E) n
         (mk vf {E with R := (Function.update (Function.update E.R 848 []) 850
           ((Ds.reverse.map (fun D => cstream A W (ownedCoreWords coreWidth k D))).flatten))}) ∧
+      (let F := {E with R := (Function.update (Function.update E.R 848 []) 850
+          ((Ds.reverse.map (fun D => cstream A W (ownedCoreWords coreWidth k D))).flatten))}
+       (F.R 121).length = Ds.length ∧ (F.R 908).length = coreLength s coreWidth k ∧
+       (F.R 906).length = W ∧ ∀ i ∈ ([(851 : Fin 909),852,853,854,855,856,857]), F.R i = []) ∧
       List.Forall₂ (fun z D => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
         (packedIntervalRead p W (coreStart coreWidth k) (cstream A W (ownedCoreWords coreWidth k D))) z e)
         Zs.reverse Ds.reverse := by
@@ -129,8 +133,23 @@ theorem normalizedCorePublication_exec {s : ℕ} [NeZero s]
     by_cases hd' : i = 850
     · subst i; simpa only [Function.update_self,hE850,List.append_nil] using hd
     simpa only [Function.update_of_ne hd',Function.update_of_ne hs'] using hframe i hs' hd'
-  refine ⟨vf,n,hu,by simpa only [List.length_reverse] using hn,?_,?_⟩
+  refine ⟨vf,n,hu,by simpa only [List.length_reverse] using hn,?_,?_,?_⟩
   · exact hex.cast rfl (congrArg (mk vf) hF)
+  · refine ⟨?_,?_,?_,?_⟩
+    · simpa only [Function.update_of_ne (by decide : (121 : Fin 909) ≠ 850),
+        Function.update_of_ne (by decide : (121 : Fin 909) ≠ 848)] using
+        (congrArg List.length (hread 121 (by decide))).trans hN
+    · simpa [E,normalizedCorePublicationInput] using hL
+    · simpa only [Function.update_of_ne (by decide : (906 : Fin 909) ≠ 850),
+        Function.update_of_ne (by decide : (906 : Fin 909) ≠ 848)] using
+        (congrArg List.length (hread 906 (by decide))).trans hw
+    · intro i hi
+      simp only [List.mem_cons,List.not_mem_nil,or_false] at hi
+      rcases hi with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+      all_goals
+        simp [Function.update_apply]
+        rw [hread _ (by decide)]
+        exact hfresh _ (by decide) (by decide)
   · simpa only [hE850,List.append_nil] using haccuracy
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

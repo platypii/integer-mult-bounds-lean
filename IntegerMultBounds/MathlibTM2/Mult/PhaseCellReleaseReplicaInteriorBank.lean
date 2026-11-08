@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReleaseReplicaCouplingNative
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaInteriorPlacement
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellReplicaInteriorResumeReady
+public import IntegerMultBounds.MathlibTM2.Host.ClearBankExcept
 
 /-! Release the native controls once before a second interior pass. Both payload
 ports, gather metadata and reserved solver tapes survive. -/
@@ -10,6 +11,7 @@ ports, gather metadata and reserved solver tapes survive. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Stack IntegerMultBounds.MathlibTM2.Fast
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
 variable {T Q A : ℕ} {P U : Type} {body : P → Pr P T Q A U}
@@ -34,6 +36,19 @@ theorem releaseReplicaInteriorBank_exec (plan : ReplicaInteriorPlacement T)
         (mk v' (releasedReplicaInteriorBank plan S)) := by
   apply clearWords_exec
   exact ((List.nodup_finRange 117).filter _).map (plan.solver_injective.comp weightCacheCoreReg_injective)
+
+/-- Retiring the first pass's controls uses no extra live space. The exact
+erasure time still charges every symbol present in the disposable ports. -/
+theorem releaseReplicaInteriorBank_exec_within (plan : ReplicaInteriorPlacement T)
+    (v : HS T Q A U) (S : Stacks T A) (depth : ℕ) :
+    ∃ v', v'.user = v.user ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+depth) depth
+        (releaseReplicaInteriorBank plan) (mk v S) (releaseReplicaInteriorBankCost plan S)
+        (mk v' (releasedReplicaInteriorBank plan S)) := by
+  obtain ⟨v',hu,he⟩ := releaseReplicaInteriorBank_exec (body := body) plan v S
+  refine ⟨v',hu,?_⟩
+  apply mn_native_exec_within he 0 (clearWords_native_zero _) depth _
+  omega
 
 theorem replicaInteriorReleasePorts_native (plan : ReplicaInteriorPlacement T) (i : Fin 117) :
     plan.solver (weightCacheCoreReg i) ∈ replicaInteriorReleasePorts plan ↔ i ≠ 93 ∧ i ≠ 110 := by

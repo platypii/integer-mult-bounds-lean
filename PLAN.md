@@ -42088,3 +42088,113 @@ rounding reports only propext, Classical.choice and Quot.sound (9602.6 MiB
 temporary audit peak, not a production module). Integrity and whitespace scans
 pass; no proof limits were changed. Collect the nine Lean files and this plan
 as one larger local checkpoint, excluding periodic WIP. No push.
+
+
+### S4 the composed complex core trace satisfies the established publication predicate
+
+executedCyclicComplexCore_spec now joins the complete scalar core trace to
+normalizedComponentSolutionsAssembly on the same 909-tape bank. Unit p-grid Fs
+supply shifted component RHS bounds through existing packedBatch_shift_bound and
+complexComponentFields_norm_le; actual component-input banks remain the explicit
+initial ABI. The retained cropped count, core-width and scratch facts are returned
+by the existing crop executor and propagated by the ordinary core theorem.
+The composed caller supplies no intermediate state, scalar-solution list,
+complex pairing count, target permutation or pairing readiness witness.
+
+Principal component solutions are chosen from axis diagonal dominance. Their
+Solves relation and the actual scalar core error feed the uniqueness/assembly
+certificate. The exact source 850 is updated to the paired complex core archive
+in original Fs order, with error 2/2^p + 2^(-target)/2^shift. The complete earlier
+phase bill and every half-count, byte-ruler, pairing and cleanup cost are retained.
+
+principalNormalizedOutput reuses normalizedPackedComponents_generated_accuracy
+to turn the actual local complex packet certificate into PackedNormalizedOutput.
+The composed execution theorem returns this established publication contract for
+any global reference family Y and generated-window geometry with matching halo.
+The global family may be specified at any qRef >= p+1: exact input shifting makes
+both RHS values equal to half the original p-grid input. This removes an otherwise
+unnecessary equality between the solver's joint-boundary precision and a job's
+reference precision. Existing PackedNormalizedJob.output_rows and batch Rows
+machinery can consume this predicate without another numerical abstraction.
+
+The composed accepted-core module initially checked at 3452.3 MiB; the final
+reference-precision generalization builds (15896 jobs; 3.5 GiB combined peak).
+This is a component-bank execution theorem: original complex-stream expansion,
+input-bank/header production and grouped callback wiring remain to be composed.
+Cached room/fitting geometry hypotheses are explicit; seam fallback is still open.
+
+The review's next priority now applies: audit/close whole-prefix space and uniform
+amortized time before expanding further routing/class wrappers. Current complete
+phase bills do not establish the final resource theorem. Keep grouped ordinary
+metadata/input producers, fallback, shared exposure, tensor/locality/support and
+root/compiler acceptance as independent open gates. No push; periodic WIP untouched.
+
+### S4 review: prioritize resource closure over further publication wrappers
+
+The final accepted-core checks pass: complex caller 3450.3 MiB, ordinary core
+3447.6 MiB, physical crop 2059.7 MiB, and reference-output bridge 3378.8 MiB.
+The temporary axiom audit reports only propext, Classical.choice and Quot.sound
+(9602.0 MiB audit peak; not a production module). No verification process remains
+running. This establishes the fitting component-bank-to-accepted-packet milestone,
+not full S4 or a new unconditional multiplication bound.
+
+The efficient next order is:
+1. Close uniform time and whole-prefix space for the composed fitting caller.
+   Reuse existing ExecWithin contracts and preserve SameLayout evidence across
+   recovery; bound state-dependent release costs structurally. Do not replace
+   the required space estimate with a coarse bound by elapsed time.
+2. Execute original complex-input expansion and shared header/bank production;
+   connect the accepted packet theorem to existing job output_rows machinery.
+3. Close seam/full fallback and grouped shared-exposure/metadata accounting.
+4. Complete tensor/locality/support and root/compiler acceptance, then audit
+   the actual S4 endpoint and its resource theorem.
+
+Keep the current Schur/interior/recovery decomposition, sharp real rounding,
+generic list assembly and precision-independent reference bridge. Avoid another
+routing/class abstraction until a concrete remaining obligation requires it.
+Remaining work includes substantive resource and all-input proofs, so neither a
+small finishing patch nor a defensible percentage/ETA follows from file counts.
+Use the four acceptance gates above to report progress. Collect coherent larger
+local commits; do not push without a new explicit instruction.
+
+The resource audit found an existing RecoveryResourceBudgets module whose
+equalities were tied to ReplicaRecoveryBatch.problem. It now also provides
+interiorTimeBudget and interiorWorkspaceBudget with explicit target/RHS exponent,
+and SameLayout equalities for arbitrary second-pass problems. These remove RHS
+and solution witnesses from both counters without rebuilding the solver or
+enumerating replicas. The guarded module check passes at 3376.0 MiB. Next use
+the cyclic executor's existing layout/target/exponent facts to replace its
+witness-dependent counters; release stock and global ExecWithin composition
+still require proof. This does not yet close the uniform resource gate.
+
+The cyclic second-interior executor now applies those layout equalities with
+its proved boundaryHaloRecoveryTarget and recoveryRhsExponent. Packed recovery,
+normalization, core publication and the final accepted complex caller all carry
+the resulting original-geometry budgets instead of replicaRecoveryInteriorTime
+at existential J/L. No extra caller assumptions or new execution are introduced.
+The full accepted-core build passes (15897 jobs; 3.6 GiB combined peak).
+Release costs still depend on the actual recovery state X; the new budgets are
+exact structural counters, not yet uniform asymptotic estimates. Whole-prefix
+ExecWithin remains open. No push; unrelated periodic work is excluded.
+
+The release audit found that CachedRecoveryCouplingReady's retained native
+interface leaves some disposable scratch unconstrained; its readiness alone
+does not justify a geometry-only release-time formula. Track that scratch from
+the producing execution rather than assume it empty. Meanwhile cleanup is now
+proved zero-growth: releaseReplicaInteriorBank_exec_within reuses the existing
+structural clearWords_native_zero (made public in Host/ClearBankExcept).
+resumedReplicaInterior_exec retains ExecWithin with the original arithmetic
+workspace allowance, composing zero-growth release with the existing archive
+solver guarantee. cyclicSecondInterior_exec now retains the composed two-pass
+ExecWithin bound, with the initial bank counted once and the two workspace
+allowances added. Existing ordinary callers use its toExec projection.
+The accepted-complex-core integration passes (15898 jobs; 6.0 GiB combined peak).
+This closes the local second-pass space composition, not the complete caller's
+whole-prefix space or asymptotic resource gate. No proof limits were changed.
+
+Final single-file checks: release 3265.2 MiB, resumed pass 3278.4 MiB, paired
+second pass 3290.4 MiB, accepted complex caller 3448.9 MiB. The temporary axiom
+audit of the paired second-pass and accepted-core theorems reports only propext,
+Classical.choice and Quot.sound (9604.7 MiB audit peak, not a production module).
+Whitespace checks pass. Collect this accepted-publication/resource-preservation
+work as one local checkpoint; exclude all periodic WIP and do not push.

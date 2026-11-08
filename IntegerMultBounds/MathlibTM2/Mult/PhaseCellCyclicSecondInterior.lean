@@ -9,6 +9,7 @@ Two blank extension tapes provide the disposable gather workspace. -/
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement
 open IntegerMultBounds IntegerMultBounds.MathlibTM2 IntegerMultBounds.MathlibTM2.Host
   IntegerMultBounds.MathlibTM2.Fast IntegerMultBounds.MathlibTM2.Stack
+  IntegerMultBounds.MathlibTM2.Fast.Main
   IntegerMultBounds.MathlibTM2.Mult.ShortConv
   IntegerMultBounds.NLogN.PhaseCellDiscreteGeometry
   IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz
@@ -73,7 +74,10 @@ theorem cyclicSecondInterior_exec (H K J L : ReplicaHaloProblem s)
       RealReplicaHaloOutput L right.output buffersR.accumulatorTail G ∧
       G.R (left.plan.gather 125) = S.R (CyclicRecoveryPlacement.leftJob.plan.gather 125) ∧
       G.R (right.plan.gather 125) = S.R (CyclicRecoveryPlacement.rightJob.plan.gather 125) ∧
-      Exec body (cyclicSecondInterior hR hQ) (mk v E) n (mk vf G) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v E)+
+        (resumedReplicaInteriorWorkspace (A := A) (U := U) H J hR hQ+
+          resumedReplicaInteriorWorkspace (A := A) (U := U) K L hR hQ)) 0
+        (cyclicSecondInterior hR hQ) (mk v E) n (mk vf G) ∧
       ReplicaAssemblyControls H left.plan.gather (extend (CyclicRecoveryPlacement.bank 239)) G ∧
       ReplicaAssemblyControls K right.plan.gather (extend (CyclicRecoveryPlacement.bank 238)) G ∧
       (∀ k, ¬left.Owns k → ¬right.Owns k → k ≠ 840 → k ≠ 841 → G.L k = E.L k ∧ G.R k = E.R k) := by
@@ -117,10 +121,21 @@ theorem cyclicSecondInterior_exec (H K J L : ReplicaHaloProblem s)
   have hnativeFrame (i : Fin 240) : G.R (extend (CyclicRecoveryPlacement.bank i)) = S.R (CyclicRecoveryPlacement.bank i) :=
     ((hframeR _ (hnative i).2 (fresh_ne_old 841 (by decide) _).symm).2.trans
       (hframeL _ (hnative i).1 (fresh_ne_old 840 (by decide) _).symm).2).trans (hread _)
+  have hsize := heL.final
+  have hwithin : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v E)+
+      (resumedReplicaInteriorWorkspace (A := A) (U := U) H J hR hQ+
+        resumedReplicaInteriorWorkspace (A := A) (U := U) K L hR hQ)) 0
+      (cyclicSecondInterior hR hQ) (mk v E) (m+n) (mk vf G) := by
+    refine .seq (heL.mono ?_) (heR.mono ?_)
+    all_goals
+      intro d z hz
+      change mnSize (mk vi F)+0 ≤ mnSize (mk v E)+
+        resumedReplicaInteriorWorkspace (A := A) (U := U) H J hR hQ at hsize
+      omega
   obtain ⟨fields,hlen,hencoded,hgood⟩ := hfieldsL
   refine ⟨vf,G,m+n,huR.trans huL,?_,⟨fields,hlen,(hleft _ .output).2.trans hencoded,hgood⟩,
     hfieldsR,((hleft _ (.gather 125)).2.trans harchL).trans (hread _),
-    (harchR.trans (hright _ (.gather 125)).2).trans (hread _),Exec.seq heL heR,?_,?_,?_⟩
+    (harchR.trans (hright _ (.gather 125)).2).trans (hread _),hwithin,?_,?_,?_⟩
   · rw [hcost] at hmR
     exact Nat.add_le_add hmL hmR
   · apply controlsL.transport (hnativeFrame 239)

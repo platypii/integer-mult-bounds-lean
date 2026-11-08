@@ -18,7 +18,8 @@ def bankExcept (work : Fin N → Fin T) (keep : Fin N) : List (Fin T) :=
 def clearBankExcept (work : Fin N → Fin T) (keep : Fin N) : Pr P T Q A U :=
   clearWords (bankExcept work keep)
 
-private theorem clearWords_native_zero (rs : List (Fin T)) :
+/-- Erasing any register list allocates no symbols, independently of its contents. -/
+theorem clearWords_native_zero (rs : List (Fin T)) :
     mnNativePushBound 0 (clearWords (P := P) (Q := Q) (A := A) (U := U) rs) := by
   induction rs with
   | nil => exact Nat.zero_le _

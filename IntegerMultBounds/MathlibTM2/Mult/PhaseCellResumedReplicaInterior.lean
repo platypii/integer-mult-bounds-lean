@@ -21,6 +21,14 @@ noncomputable def resumedReplicaInterior (job : CachedReplicaPassPlacement T) (f
   .seq (releaseReplicaInteriorBank job.plan)
     (replicaRecoveryInterior (job.plan.reserveArchive fresh hg hs) (job.plan.solver 110) job.output hR hQ)
 
+noncomputable def resumedReplicaInteriorWorkspace (H J : ReplicaHaloProblem s)
+    (hR : rpStates ≤ Q) (hQ : SS.states ≤ Q) : ℕ :=
+  replicaRecoveryInteriorWorkspace (A := A) (U := U) H J hQ
+    (mnProgPush (rpProg (P := Empty) (Q := Q) (A := A) (U := U)
+      Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR))
+    (mnProgPush (cmulBlock cr (rmulOne (P := Empty) (Q := Q) (A := A) (U := U)
+      mul mul_injective (by decide) hQ cr)))
+
 theorem resumedReplicaInterior_exec (H J : ReplicaHaloProblem s) (layout : H.SameLayout J)
     (job : CachedReplicaPassPlacement T) (fresh : Fin T)
     (hg : ∀ i, fresh ≠ job.plan.gather i) (hs : ∀ i, fresh ≠ job.plan.solver i)
@@ -36,7 +44,9 @@ theorem resumedReplicaInterior_exec (H J : ReplicaHaloProblem s) (layout : H.Sam
       RealReplicaHaloOutput J job.output buffers.accumulatorTail G ∧
       G.R (job.plan.gather 125) = S.R (job.plan.gather 125) ∧
       (G.inp = S.inp ∧ G.out = S.out) ∧
-      Exec body (resumedReplicaInterior job fresh hg hs hR hQ) (mk v S) n (mk v' G) ∧
+      ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+
+        resumedReplicaInteriorWorkspace (A := A) (U := U) H J hR hQ) 0
+        (resumedReplicaInterior job fresh hg hs hR hQ) (mk v S) n (mk v' G) ∧
       (∀ k, ¬job.Owns k → k ≠ fresh → G.L k = S.L k ∧ G.R k = S.R k) ∧
       (∀ i ∈ [(94 : Fin 126),121,114,112,111,113,123], G.R (job.plan.gather i) = S.R (job.plan.gather i)) := by
   let plan := job.plan.reserveArchive fresh hg hs
@@ -64,7 +74,7 @@ theorem resumedReplicaInterior_exec (H J : ReplicaHaloProblem s) (layout : H.Sam
     Fixed.ringReg Fixed.hostReg Fixed.layout.ι_inj (by decide) hR)
   let K := mnProgPush (cmulBlock cr (rmulOne (P := Empty) (Q := Q) (A := A) (U := U)
     mul mul_injective (by decide) hQ cr))
-  obtain ⟨v₀,hu₀,he₀⟩ := releaseReplicaInteriorBank_exec (body := body) job.plan v S
+  obtain ⟨v₀,hu₀,he₀⟩ := releaseReplicaInteriorBank_exec_within (body := body) job.plan v S 0
   obtain ⟨v',G,m,hu,hm,hfields,hgather,he,hstreams⟩ := replicaInteriorFromArchive_exec_within
     (body := body) H J layout plan (job.plan.solver 110) job.output (fun i => plan.disjoint i 110)
     hgd job.solver_output hR hQ hA hp hwidth hpad R K (le_refl _) (le_refl _) nextBuffers borrowed v₀ F
@@ -75,9 +85,22 @@ theorem resumedReplicaInterior_exec (H J : ReplicaHaloProblem s) (layout : H.Sam
     hR hQ (job.plan.reserveArchive_avoids fresh hg hs)
     (fun i => (job.plan.disjoint 125 i).symm) (job.plan.disjoint 125 110).symm
     (job.gather_output 125).symm he.toExec
+  have hbudget : replicaRecoveryInteriorWorkspace (A := A) (U := U) H J hQ R K =
+      resumedReplicaInteriorWorkspace (A := A) (U := U) H J hR hQ := rfl
+  have hsize := he₀.final
+  have hwithin : ExecWithin body (fun d z => mnSize z+d ≤ mnSize (mk v S)+
+      resumedReplicaInteriorWorkspace (A := A) (U := U) H J hR hQ) 0
+      (resumedReplicaInterior job fresh hg hs hR hQ) (mk v S)
+      (releaseReplicaInteriorBankCost job.plan S+m) (mk v' G) := by
+    rw [← hbudget]
+    refine .seq (he₀.mono ?_) (he.mono ?_)
+    all_goals
+      intro d z hz
+      change mnSize (mk v₀ F)+0 ≤ mnSize (mk v S)+0 at hsize
+      omega
   refine ⟨v',G,releaseReplicaInteriorBankCost job.plan S+m,hu.trans hu₀,
     Nat.add_le_add_left hm _,hfields,?_,⟨hstreams.1.trans ready.input.symm,hstreams.2.trans ready.output.symm⟩,
-    Exec.seq he₀ he.toExec,?_,?_⟩
+    hwithin,?_,?_⟩
   · exact harchive.2.trans (ite_eq_right (replicaInteriorReleasePorts_gather job.plan 125))
   · intro k hk hkfresh
     have hgk : ∀ i, plan.gather i ≠ k := by

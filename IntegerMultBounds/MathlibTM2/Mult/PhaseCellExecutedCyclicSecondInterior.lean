@@ -3,6 +3,7 @@ module
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellExecutedCyclicReplicaRecovery
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicRecoveryReplicaInputs
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCyclicSecondInterior
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellRecoveryResourceBudgets
 
 /-! Ordinary original-RHS inputs execute through both second interior solves.
 The computed joint boundary rows determine the actual recovery RHS problems. -/
@@ -57,8 +58,10 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       vf.user = v.user ∧
       steps ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n target q w B.card (24*band+1) Fs.length+
         solvedCyclicRecoveryCost H K Fs.length B.card n w+
-        (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.left.plan E+replicaRecoveryInteriorTime H J+
-          (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.right.plan E+replicaRecoveryInteriorTime K L)) ∧
+        (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.left.plan E+H.interiorTimeBudget (boundaryHaloRecoveryTarget p target B.card)
+            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u))+
+          (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.right.plan E+K.interiorTimeBudget (boundaryHaloRecoveryTarget p target B.card)
+            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u)))) ∧
       RealReplicaHaloOutput J CyclicSecondInteriorPlacement.left.output buffersL.accumulatorTail G ∧
       RealReplicaHaloOutput L CyclicSecondInteriorPlacement.right.output buffersR.accumulatorTail G ∧
       G.R (CyclicSecondInteriorPlacement.left.plan.gather 125) = rows.reverse.flatMap (fun row => cyclicRecoveryField H row.1)++savedL ∧
@@ -99,8 +102,12 @@ theorem executedCyclicSecondInterior_spec (hR : rpStates ≤ Q) (hQ : SS.states 
     buffersL buffersR buffersL.rhsTail buffersR.rhsTail zi X hreadyL hreadyR hcontrolsL hcontrolsR
     (hsourceL.trans (congrArg (fun xs => xs++buffersL.rhsTail) hJsource.symm))
     (hsourceR.trans (congrArg (fun xs => xs++buffersR.rhsTail) hLsource.symm))
+  have hLayoutL : H.SameLayout J := layoutL
+  have hLayoutR : K.SameLayout L := layoutR
+  rw [hLayoutL.interiorTime_eq_budget,hLayoutR.interiorTime_eq_budget,
+    hJtarget,hLtarget,hJexp,hLexp] at hk
   exact ⟨solutions,J,L,X,vf,G,m+k,savedL,savedR,hlen,hformat,haccuracy,layoutL,layoutR,hJtarget,hLtarget,hJexp,hLexp,hJFs,hLFs,
     huf.trans (huser.trans hu),Nat.add_le_add hm hk,hfieldsL,hfieldsR,harchL.trans harchiveL,
-    harchR.trans harchiveR,hcontrolsLF,hcontrolsRF,Exec.seq helift heSecond⟩
+    harchR.trans harchiveR,hcontrolsLF,hcontrolsRF,Exec.seq helift heSecond.toExec⟩
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

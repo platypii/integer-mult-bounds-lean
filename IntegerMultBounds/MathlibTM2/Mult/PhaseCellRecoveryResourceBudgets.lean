@@ -14,6 +14,49 @@ variable {s Q A : ℕ} [NeZero s] {U : Type}
 
 namespace ReplicaHaloProblem
 
+/-- A second pass has the original physical geometry, but its own accuracy
+target and RHS exponent. Its time counter does not depend on RHS values. -/
+def interiorTimeBudget (H : ReplicaHaloProblem s) (target rhsExp : ℕ) : ℕ :=
+  reverseCopyRowsCost H.Fs.length (H.span*H.wordWidth)+
+    (allocateZeroLineCost H.Fs.length (H.span*H.wordWidth)+
+      (placedHaloLengthKeysCost s H.t H.band H.origin (H.origin+H.span) H.metadataWidth+
+        (((haloLengthKeys s H.t H.band H.origin (H.origin+H.span)).map
+          (fun L => processGeneratedHaloReplicaKeyCost H.p H.l H.Fs.length H.metadataWidth
+            H.origin H.span L s H.t H.u target rhsExp+3)).sum+2)))+
+    realReplicaRowsCost H.Fs.length (H.span*H.wordWidth)
+
+omit [NeZero s] in
+theorem SameLayout.interiorTime_eq_budget {H J : ReplicaHaloProblem s}
+    (layout : H.SameLayout J) :
+    replicaRecoveryInteriorTime H J = H.interiorTimeBudget J.target J.rhsExp := by
+  simp only [replicaRecoveryInteriorTime,interiorTimeBudget,ReplicaHaloProblem.keyCost,
+    layout.p,layout.l,layout.count,layout.metadataWidth,layout.origin,layout.span,
+    layout.wordWidth,layout.t,layout.u,layout.band]
+
+noncomputable def interiorWorkspaceBudget (H : ReplicaHaloProblem s) (target rhsExp : ℕ)
+    (hQ : SS.states ≤ Q) (R K : ℕ) : ℕ :=
+  2*reverseCopyRowsCost H.Fs.length (H.span*H.wordWidth)+
+    (2*allocateZeroLineCost H.Fs.length (H.span*H.wordWidth)+
+      (3*placedHaloLengthKeysCost s H.t H.band H.origin (H.origin+H.span) H.metadataWidth+
+        ((haloLengthKeys s H.t H.band H.origin (H.origin+H.span)).map
+          (fun L => processGeneratedHaloReplicaKeyWorkspace (A := A) (U := U) hQ R K
+            H.p H.l H.Fs.length H.metadataWidth H.origin H.span L s H.t H.u target rhsExp)).sum))+
+    2*realReplicaRowsCost H.Fs.length (H.span*H.wordWidth)
+
+omit [NeZero s] in
+theorem SameLayout.interiorWorkspace_eq_budget {H J : ReplicaHaloProblem s}
+    (layout : H.SameLayout J) (hQ : SS.states ≤ Q) (R K : ℕ) :
+    replicaRecoveryInteriorWorkspace (A := A) (U := U) H J hQ R K =
+      H.interiorWorkspaceBudget (A := A) (U := U) J.target J.rhsExp hQ R K := by
+  have hkeys : J.keyWorkspace (A := A) (U := U) hQ R K =
+      fun L => processGeneratedHaloReplicaKeyWorkspace (A := A) (U := U) hQ R K
+        H.p H.l H.Fs.length H.metadataWidth H.origin H.span L s H.t H.u J.target J.rhsExp := by
+    funext L
+    simp only [ReplicaHaloProblem.keyWorkspace,layout.p,layout.l,layout.count,
+      layout.metadataWidth,layout.origin,layout.span,layout.t,layout.u]
+  simp only [replicaRecoveryInteriorWorkspace,interiorWorkspaceBudget,hkeys,
+    layout.count,layout.metadataWidth,layout.origin,layout.span,layout.wordWidth,layout.t,layout.band]
+
 def recoveryKeyCostBudget (H : ReplicaHaloProblem s) (target L : ℕ) : ℕ :=
   processGeneratedHaloReplicaKeyCost H.p H.l H.Fs.length H.metadataWidth H.origin H.span L s H.t H.u
     (H.recoveryTarget target) H.recoveryExponent

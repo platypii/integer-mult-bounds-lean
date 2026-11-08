@@ -60,8 +60,10 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
       vf.user = v.user ∧
       steps ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n solveTarget q w B.card (24*band+1) Fs.length+
         solvedCyclicRecoveryCost H K Fs.length B.card n w+
-        (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.left.plan E+replicaRecoveryInteriorTime H J+
-          (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.right.plan E+replicaRecoveryInteriorTime K L))+
+        (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.left.plan E+H.interiorTimeBudget (boundaryHaloRecoveryTarget p solveTarget B.card)
+            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u))+
+          (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.right.plan E+K.interiorTimeBudget (boundaryHaloRecoveryTarget p solveTarget B.card)
+            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u))))+
         ((Fs.length*(retainedPackedPublicationMergeCost H.span H.wordWidth+5)+4)+
           (Fs.length*(retainedPackedPublicationMergeCost K.span K.wordWidth+5)+4))+
         (PackedRecoveryNormalization.normalizationCost p q W a (min n (s-a)) Fs.length+
@@ -84,6 +86,10 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
             (extendStacks (by decide : 834 ≤ 840) S))) wide) radiusWord coreWord)) steps
         (mk vf {D with R := (Function.update (Function.update D.R 848 []) 850
           ((Gs.reverse.map (fun F => cstream A W (ownedCoreWords coreWidth k F))).flatten))}) ∧
+      (let output := {D with R := (Function.update (Function.update D.R 848 []) 850
+          ((Gs.reverse.map (fun F => cstream A W (ownedCoreWords coreWidth k F))).flatten))}
+       (output.R 121).length = Fs.length ∧ (output.R 908).length = coreLength s coreWidth k ∧
+       (output.R 906).length = W ∧ ∀ i ∈ ([(851 : Fin 909),852,853,854,855,856,857]), output.R i = []) ∧
       List.Forall₂ (fun x F => PhaseCellInterface.ErrorOn (ownedCore s coreWidth k)
         (packedIntervalRead p W (coreStart coreWidth k) (cstream A W (ownedCoreWords coreWidth k F)))
         (fun i => ((2 : ℂ)^inverseNormalizationShift p)⁻¹*(x i : ℂ))
@@ -164,12 +170,13 @@ theorem executedCyclicCorePublication_spec (hR : rpStates ≤ Q) (hQ : SS.states
         (1/(2 : ℝ)^p+(1/(2 : ℝ)^(target+1))/(2 : ℝ)^inverseNormalizationShift p)) xs Gs := haccL
     rw [hend,hmin] at hacc
     simpa only [haCore,hnCore] using hacc
-  obtain ⟨vf,nc,huf,hnc,hecrop,haccuracy⟩ := normalizedCorePublication_exec (body := callerBody)
+  obtain ⟨vf,nc,huf,hnc,hecrop,hready,haccuracy⟩ := normalizedCorePublication_exec (body := callerBody)
     p W coreWidth k radius hleft hright _ Gs _ hgood vi F radiusWord coreWord hRword hLword hsrc hw hN hfresh
   refine ⟨J,L,X,G,fields,xs,vf,m+nc,savedL,savedR,huf.trans (huser.trans hu),?_,
-    h247,h547,h125,h425,controlsL,controlsR,?_,Exec.seq helift' hecrop,?_⟩
+    h247,h547,h125,h425,controlsL,controlsR,?_,Exec.seq helift' hecrop,?_,?_⟩
   · simpa only [hDlen] using Nat.add_le_add hm hnc
   · simpa only [List.reverse_reverse] using List.forall₂_reverse_iff.mpr hsol
+  · simpa only [hDlen] using hready
   · exact List.forall₂_map_left_iff.mp (by simpa only [←List.map_reverse] using haccuracy)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement

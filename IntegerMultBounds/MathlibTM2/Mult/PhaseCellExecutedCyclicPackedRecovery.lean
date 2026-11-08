@@ -45,8 +45,10 @@ theorem executedCyclicPackedRecovery_spec (hR : rpStates ≤ Q) (hQ : SS.states 
       vf.user = v.user ∧
       steps ≤ cachedCyclicReplicaBoundaryBill H K p u l t a n solveTarget q w B.card (24*band+1) Fs.length+
         solvedCyclicRecoveryCost H K Fs.length B.card n w+
-        (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.left.plan E+replicaRecoveryInteriorTime H J+
-          (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.right.plan E+replicaRecoveryInteriorTime K L))+
+        (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.left.plan E+H.interiorTimeBudget (boundaryHaloRecoveryTarget p solveTarget B.card)
+            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u))+
+          (releaseReplicaInteriorBankCost CyclicSecondInteriorPlacement.right.plan E+K.interiorTimeBudget (boundaryHaloRecoveryTarget p solveTarget B.card)
+            (recoveryRhsExponent p 2 (stableInteriorExponent p 2) (couplingCountExponent p u))))+
         ((Fs.length*(retainedPackedPublicationMergeCost H.span H.wordWidth+5)+4)+
           (Fs.length*(retainedPackedPublicationMergeCost K.span K.wordWidth+5)+4)) ∧
       G.R 848 = (List.ofFn (fun j => cstream A w (packedInterval a (min n (s-a)) (fields j)))).reverse.flatten ∧
