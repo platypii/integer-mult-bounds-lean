@@ -36137,3 +36137,100 @@ set, shared-stock axis loop and count-reading wrapper reports only standard Lean
 axioms (3909.9 MiB peak). Plan-status and whitespace checks pass. Commit the six
 accumulated master-loading/schedule/loop modules locally as one integration chunk;
 do not push.
+
+### S4 real-volume resource comparison for movement, metadata and prefix scans
+
+`Routing/HaloMixedVolume.lean` proves the exact mixed-layout factorizations for
+outer field movement and halo exposure. Padding only the selected field is at
+most twice its real tensor volume (least-dyadic bounds reuse the existing
+capacity theorem), hence at most four original tensor byte volumes at any
+retained stage. The three generated count products each omit the selected local
+width, giving bounds by `currentVolume/currentLocalLength` and, before extending
+a fresh axis, by `floor(2*originalVolume/L)`. The coarse-page count has the same
+saving. No product of dyadic capacities for other axes appears. Guarded check:
+1967.9 MiB; small linter warnings were removed before the final build.
+
+`Routing/HaloCountResource.lean` rewrites the actual self-counted product packet
+bill as `length*(31*product+19*V+57)+19*V+35`. Combining exact field-list lengths
+with the count-product bounds prices all three packets by
+`3*(2*d*(31*floor(2*T/L)+19*V+57)+19*V+35)`. This preserves the 1/L setup saving
+instead of treating the output counts as full tensor volumes. Guarded check:
+1962.7 MiB; an unused section instance was removed before the final build.
+
+`Routing/HaloStreamResource.lean` bounds actual catalog generation by N times
+a quadratic metadata-width unit. The complete generated halo stream costs at
+most 160 times its real source bytes plus one metadata unit per coarse page.
+Over the whole tensor this is at most `320*T*w+floor(2*T/L)*haloUnit(V)`.
+The metadata term is charged per page, not per spectator record. Guarded check:
+1985.2 MiB, no warnings/default-limit changes.
+
+`Routing/HaloPassResource.lean` applies these facts to the actual executed
+forward/halo/return bill. Its total time over prefixes is bounded by
+`(240*k+256*r+3392)*T*w + floor(2*T/L)*(haloUnit(V)+3*k+3*r+4)`.
+Its corresponding shared-stock bill is bounded by
+`8960*T*w+3*floor(2*T/L)*haloUnit(V)`. Padding hypotheses are ordinary sizing
+facts implied by choosing the least exponents. The exact enlarged output byte
+volume is also identified with the retained tensor volume. Guarded check:
+1972.1 MiB, no warnings.
+
+`Routing/HaloPrefixResource.lean` prices the actual prepared ordered scan,
+including archive transfers, output growth and counter setup/retirement. The
+result is a real-byte bound plus a 1/L metadata term, with one stage reserve.
+Its stock bound is `9154*T*w+floor(2*T/L)*(3*haloUnit(V)+8)+68`.
+Guarded check: 1968.7 MiB, no warnings.
+
+These are concrete resource comparisons for the dominant executed components,
+not yet the full outer-loop C/R discharge. Next combine ordinary-master loading,
+derived pass-header setup and final restoration costs with these estimates;
+then instantiate the manuscript sizing inequalities and the outer loop budgets.
+Inverse/locality/crop integration, forward near-one geometry, numerical error/
+support, shared initial exposure and compiler/root acceptance remain open.
+S4 remains incomplete. Keep these five modules uncommitted for the larger
+complete resource-comparison chunk. No push; periodic-recovery work untouched.
+
+Resource-component validation: complete combined import-closure build passes
+(4119 jobs, 2.5 GiB aggregate peak), with only existing dependency warnings.
+Temporary guarded audit of movement/count volume bounds, metadata bills,
+forward/halo/return time and stock, and ordered-scan time and stock reports only
+standard Lean axioms (3912.6 MiB peak). Plan-status and whitespace checks pass.
+No commit or push made; retain this chunk for full stage-resource integration.
+
+### S4 complete halo stage bills and explicit runtime schedule budgets
+
+`Routing/HaloSetupResource.lean` prices ordinary unary/binary pass headers,
+width regeneration and seven-master loading. Its structural Bounds interface
+separates row-volume costs from products omitting a local field. The global
+instance currently requires coarse count N at least core width L; this is an
+explicit sizing obligation, not a consequence of Ready. Guarded check passes
+at 1995.0 MiB.
+
+`Routing/HaloStageResource.stage_bills_le` combines all executed setup,
+metadata-product, movement, halo, restoration and retirement costs. With
+Z = originalVolume*w and W = floor(2*originalVolume/L)*w, time is bounded by
+Z*(496*k+496*r+6652)+W*timeUnit(k,r,V,2*d), and shared stock by
+17318*Z+W*stockUnit(V,2*d). Local-let normalization resolved the arithmetic
+composition failure without changing limits or inflating constants. Guarded
+check passes at 1990.9 MiB; dependency build passes (4121 jobs, 2.5 GiB peak).
+
+`Routing/HaloScheduleResource.run_exec` applies these bounds directly to the
+existing metadata-driven runtime loop. If k,r are at most K and the explicit
+time/stock setup units are at most L, its stage budgets are
+Z*(992*K+6654) and 17320*Z. The executed loop therefore has time bounded by
+readCountCost+stageCount*(Z*(992*K+6654)+3)+2 and stock by
+initialStock+depth+3*readCountCost+17321*Z. It retains the exact source/metadata
+endpoint of PreparedHaloAxes, with no supplied C/R budget premise. Guarded
+check passes at 1976.1 MiB; complete closure build passes (4124 jobs, 2.5 GiB).
+
+Next discharge these explicit sizing hypotheses from the manuscript's actual
+parameters, including N >= L, least padding and setup-unit headroom; then use
+this theorem in the inverse/locality/crop continuation. Do not introduce a new
+execution architecture. Forward near-one geometry, numerical error/support,
+shared initial exposure and final compiler/root acceptance remain open. S4 is
+incomplete. Collect these eight resource modules as one local integration
+commit after axiom/status/whitespace checks. No push; periodic-recovery work
+remains untouched.
+
+Final complete-resource validation: the guarded audit of global movement/count
+geometry, stream/pass/scan bills, setup sizing, full stage estimates and actual
+schedule execution reports only propext, Classical.choice and Quot.sound
+(3915.3 MiB peak). Plan-status and whitespace checks pass.
