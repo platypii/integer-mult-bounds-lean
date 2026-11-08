@@ -35135,3 +35135,92 @@ extension already has `padPrefixInPlace_exec` in `Mult/PhaseCellPadPrefixInPlace
 and reuse its bounded whole-fiber prefix/suffix scans before rebuilding periodic
 halo setup. The new work needed is the monotone window/overlap emission itself
 and its axis invariant, not another general movement or publication branch.
+
+### S4 metadata-driven monotone halo window
+
+`Routing/HaloWindowStep.lean` executes one structural window: drain the old
+saved overlap to the archive, transfer the fresh body, copy only the new tail
+into the other overlap bank, and transfer that tail to the archive. Its exact
+cost is `2*old.length+4*fresh.length+14*kept.length+20`, with native push bound
+two. It supports empty first overlap and empty final tail without special cases.
+Guarded check: 1951.7 MiB.
+
+`Routing/HaloWindowCounts.lean` reuses `readUnaryDimension` twice to load the
+body and retained-tail byte counts from actual binary metadata. It preserves
+all other tapes, restores decoder scratch, and costs at most
+`38*V+12*B+12*K+48`. Guarded check: 1952.4 MiB, no warnings.
+
+`Routing/HaloWindowRun.lean` composes decoding, actual emission, and retirement
+of both counters. It uses thirteen distinct tapes, borrowing the initially empty
+next-overlap bank as the decoder's zero input. The exact endpoint changes only
+the metadata queue, source, archive and two overlap banks; all transient counts
+and decoder scratch are restored. Time is at most
+`2*old.length+18*fresh.length+28*kept.length+38*V+73`; native push bound three
+supplies the corresponding linear stock bound. Guarded check: 1966.7 MiB,
+no warnings and no raised proof limits. Replaced a broad membership tactic that
+exhausted default heartbeats with structural membership elimination.
+
+Next compose two windows with alternating overlap banks into a fixed pair body,
+then prove the counted scan over arbitrary metadata/window lists. Use the
+carried overlap length as a potential to charge each new byte a bounded number
+of times. Reuse existing periodic-prefix extension. Descriptor production from
+real endpoints, complete axis execution, retained-halo tensor invariant and all
+remaining global/compiler/root gates are still open. This is a concrete window
+execution theorem, not acceptance of the full scan or S4. Keep these files
+uncommitted until the larger scan chunk is ready; no push is authorized.
+
+Window validation: guarded import-closure build passes (3993 jobs, 2.5 GiB
+aggregate peak). Temporary guarded axiom audit of count decoding, complete
+window execution and stock theorem reports only standard Lean axioms
+(3870.4 MiB audit peak). Plan-status and whitespace checks pass. No commit or
+push was made; periodic-recovery work remains untouched.
+
+### S4 fixed monotone halo scan and ordinary output
+
+`Routing/HaloWindowPair.lean` composes two actual metadata-driven windows,
+swapping overlap-bank roles in the second. The carried overlap returns to the
+original bank and the spare bank is empty at pair boundaries. There is no parity
+flag, window-dependent program or assumed execution supplier. The pair costs
+at most `2*old+18*(fresh1+fresh2)+30*kept1+28*kept2+76*V+146`.
+
+`Routing/HaloScanLayout.lean` describes arbitrary pairs of new segments and
+retained tails. Structural recursion defines the emitted stream and final
+retained overlap. Its potential argument bounds loop cost by
+`2*old.length+30*newBytes+pairCount*(76*V+149)+1`. The output plus residual
+overlap has length at most `old.length+2*newBytes`: each new byte is read once
+and appears in at most two windows. This is independent of a maximum-window
+bound, so varying window sizes do not cause a quadratic estimate.
+
+`Routing/HaloScan.lean` executes the actual fixed counted loop over that data.
+Its proof inducts on the arbitrary pair list and composes real pop/window/peek
+traces. The exact endpoint consumes the clock and metadata, advances the source,
+accumulates reversed output, restores every transient register and leaves the
+structurally determined overlap in its bank. Guarded check: 1978.3 MiB, no
+warnings; the native push bound is three.
+
+`Routing/HaloStream.lean` adds the final archive-to-source transfer. With empty
+initial overlap/archive and empty final retained tail, `emit_exec` returns the
+complete ordinary-order stream and borrowed source suffix, with no residual
+scratch or overlap. Only source, consumed clock and metadata queue change.
+Time is at most `34*W+N*(76*V+149)+4` for new source byte volume W, pair count N
+and metadata bit width V. Native bound three gives a corresponding total stock
+bound. Guarded check: 1953.3 MiB, no warnings. Removed the unused draft per-window
+stock wrappers; the native bounds and final stream stock theorem suffice.
+
+This closes execution of the descriptor-driven monotone stream, not S4 or even
+the full geometric halo supplier. Next derive segment descriptors and their
+fit/coverage/terminal-overlap properties from actual monotone interval endpoints,
+handle an odd final window with a zero-output dummy after its empty retained
+tail, and connect the existing periodic-prefix extension. Then compose one full
+axis with the actual forward/current-length return movers and retained-halo
+invariant. Metadata/control production, regular initialization/global routing,
+full tensor numerical locality/error/support and compiler/root acceptance remain
+open. No execution supplier may survive as an assumption of final S4 acceptance.
+Collect these seven halo modules in one coherent local commit after validation.
+No push is authorized; preserve the user's periodic-recovery files.
+
+Final stream validation: guarded complete import-closure build passes (3998
+jobs, 2.5 GiB aggregate peak). Temporary guarded axiom audit of pair execution,
+amortized cost/output length, actual scan, ordinary stream endpoint and stock
+reports only standard Lean axioms (3872.0 MiB audit peak). Plan-status and
+whitespace checks pass. Component acceptance only; full S4 remains incomplete.
