@@ -1,7 +1,6 @@
 module
 
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellComputedCroppedRecoveryExec
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellTakePrefixStock
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellMovePrefix
 
 /-! Ordinary readiness for the raw principal solve/crop, independent of how
@@ -110,40 +109,6 @@ def inputState (plan : ComputedRecoveryPlan T) (source : Fin T)
     (payload tail : List (Fin (A+4))) (S : Stacks T A) : Stacks T A :=
   {S with R := (Function.update (Function.update S.R source tail) (plan.work 124) payload)}
 
-variable {Q : ℕ} {P U : Type} {body : P → Pr P T Q A U}
-
-/-- Move the actual owned prefix into the private recovery input. All ordinary
-readiness is preserved; borrowed suffix and total stock are independent. -/
-theorem CroppedReady.takePrefix_exec {plan : ComputedRecoveryPlan T} {crop : RecoveryCropPlacement plan}
-    {d : InverseMasterInput s} {r : RawRecoveryJob s} {N offset rows : ℕ}
-    {wl : List (Fin (A+4))} {S : Stacks T A}
-    (h : plan.CroppedReady crop d r N offset rows wl S)
-    (count source saved tmp : Fin T) (hreg : [count,source,plan.work 124,saved,tmp].Nodup)
-    (hoff : ∀ k, plan.cropSupport crop k → source ≠ k)
-    (payload tail : List (Fin (A+4))) (v : HS T Q A U)
-    (hsrc : S.R source = payload++tail) (hcount : (S.R count).length = payload.length)
-    (hinput : S.R (plan.work 124) = []) (hsaved : S.R saved = []) (htmp : S.R tmp = []) :
-    let F := plan.inputState source payload tail S
-    ∃ v', v'.user = v.user ∧ plan.CroppedReady crop d r N offset rows wl F ∧
-      mnSize (Host.mk v' F) = mnSize (Host.mk v S) ∧
-      Exec body (takePrefix count source (plan.work 124) saved tmp) (Host.mk v S) (6*payload.length+6) (Host.mk v' F) ∧
-      ∀ depth, ExecWithin body (fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+2*(6*payload.length+6))
-        depth (takePrefix count source (plan.work 124) saved tmp) (Host.mk v S) (6*payload.length+6) (Host.mk v' F) := by
-  dsimp only
-  have hr := hreg
-  regs_ne hr
-  obtain ⟨v',hu,he⟩ := PhaseCellToeplitz.takePrefix_exec (body := body) hreg v S payload tail hsrc hcount hsaved htmp
-  rw [hinput,List.append_nil] at he
-  have hready : plan.CroppedReady crop d r N offset rows wl (plan.inputState source payload tail S) := by
-    apply h.of_frame
-    · intro k hk
-      simp only [inputState,Function.update_of_ne (cropSupport_ne_payload plan crop k hk),
-        Function.update_of_ne (hoff k hk).symm]
-    · intro i; rfl
-  have hsize := movePrefix_preserves_size source (plan.work 124) ‹source ≠ plan.work 124›.symm
-    payload tail v v' S hsrc
-  rw [hinput,List.append_nil] at hsize
-  exact ⟨v',hu,hready,hsize,he,fun depth =>
-    mn_native_exec_within he 2 (takePrefix_native _ _ _ _ _) depth _ (by omega)⟩
+-- Supplied-counter handoff: restore from commit 221f84ae if needed.
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.ComputedRecoveryPlan

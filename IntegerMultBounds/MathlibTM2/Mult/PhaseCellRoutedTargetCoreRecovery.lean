@@ -1,10 +1,10 @@
 module
 
-public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellCroppedRecoveryReady
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSelectedTargetCoreRecovery
+public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellGeneratedRecoveryHandoff
 
-/-! Consume an owned selection prefix, run the existing computed principal
-recovery and crop J_k. The external archive suffix is never copied or scanned. -/
+/-! Generate the owned-prefix counter from retained selection dimensions, execute
+principal recovery and crop J_k. No byte counter is supplied by the caller. -/
 @[expose] public section
 namespace IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.ComputedRecoveryPlan
 open IntegerMultBounds IntegerMultBounds.Machine IntegerMultBounds.MathlibTM2
@@ -27,11 +27,12 @@ noncomputable def croppedReserve (plan : ComputedRecoveryPlan T) (b : RawRecover
   d.stock+recoveryLifecycleStock b plan.work r N Cprog+8*preparedPairRecoveryOutputCost r N+
     8*generatedRecoveryCropCost r.problem.precision r.problem.origin (r.problem.origin+r.problem.span) offset rows N
 
-noncomputable def routedTargetCoreProgram (plan : ComputedRecoveryPlan T) (b : RawRecoveryProgramBounds Q A U)
-    (crop : RecoveryCropPlacement plan) (count source saved tmp : Fin T) : Pr P T Q A U :=
-  .seq (takePrefix count source (plan.work 124) saved tmp) (plan.croppedProgram b crop)
+-- The supplied-counter route is recoverable from commit 221f84ae.
+noncomputable def generatedRoutedTargetCoreProgram (plan : ComputedRecoveryPlan T) (b : RawRecoveryProgramBounds Q A U)
+    (crop : RecoveryCropPlacement plan) (rowCount symbols count source saved tmp : Fin T) : Pr P T Q A U :=
+  .seq (generatedTakePrefix plan.replicas rowCount plan.packet symbols count source (plan.work 124) saved tmp) (plan.croppedProgram b crop)
 
-theorem routed_target_owned_exec (plan : ComputedRecoveryPlan T) (b : RawRecoveryProgramBounds Q A U)
+theorem generated_routed_target_owned_exec (plan : ComputedRecoveryPlan T) (b : RawRecoveryProgramBounds Q A U)
     (crop : RecoveryCropPlacement plan)
     (hreplicaCount : plan.replicas ≠ plan.count) (hreplicaSpare : plan.replicas ≠ plan.spare)
     (d : InverseMasterInput s) (r : RawRecoveryJob s) (hmastersEq : recoveryMasterValues r.problem = d.masters)
@@ -46,17 +47,18 @@ theorem routed_target_owned_exec (plan : ComputedRecoveryPlan T) (b : RawRecover
     (htargets : (List.finRange r.problem.Fs.length).reverse.map (fun j => r.solution j.val) = complexComponentTargets Zs)
     (wl : List (Fin (A+4))) (hwl : wl.length = d.B) (v : HS T Q A U) (S : Stacks T A)
     (hready : plan.CroppedReady crop d r Fs.length radius (rows s r.problem.t L k) wl S)
-    (count source saved tmp : Fin T) (hreg : [count,source,plan.work 124,saved,tmp].Nodup)
+    (rowCount symbols count source saved tmp : Fin T)
+    (hreg : [plan.replicas,rowCount,plan.packet,symbols,count,source,plan.work 124,saved,tmp].Nodup)
     (hoff : ∀ j, plan.cropSupport crop j → source ≠ j) (hsourceOut : source ≠ crop.reg 12)
     (tail : List (Fin (A+4)))
     (hsource : S.R source = selectedWindowPayload (s := s) A r.W r.problem.origin r.problem.span targetOrigin targetSpan Fs++tail)
-    (hcount : (S.R count).length = (selectedWindowPayload (s := s) A r.W r.problem.origin r.problem.span targetOrigin targetSpan Fs).length)
-    (hinput : S.R (plan.work 124) = []) (hsaved : S.R saved = []) (htmp : S.R tmp = []) :
+    (hrows : (S.R rowCount).length = r.problem.span)
+    (hinput : S.R (plan.work 124) = []) (hblank : ∀ j ∈ [symbols,count,saved,tmp], S.R j = []) :
     ∃ Gs : List (ZMod s → GaussianInt), Gs.length = Fs.length ∧
     ∃ v' n, v'.user = v.user ∧ n ≤
-      (6*(selectedWindowPayload (s := s) A r.W r.problem.origin r.problem.span targetOrigin targetSpan Fs).length+6)+
+      (generatedTakePrefixCost Fs.length r.problem.span r.W)+
         plan.croppedTime b d r radius (rows s r.problem.t L k) Fs.length ∧
-      Exec body (plan.routedTargetCoreProgram b crop count source saved tmp) (Host.mk v S) n
+      Exec body (plan.generatedRoutedTargetCoreProgram b crop rowCount symbols count source saved tmp) (Host.mk v S) n
         (Host.mk v' {S with R := (Function.update (Function.update S.R source tail) (crop.reg 12)
           ((Gs.reverse.map (fun D => cstream A r.problem.wordWidth
             (packedInterval (cut s r.problem.t L k) (rows s r.problem.t L k) D))).flatten++S.R (crop.reg 12)))}) ∧
@@ -69,9 +71,9 @@ theorem routed_target_owned_exec (plan : ComputedRecoveryPlan T) (b : RawRecover
             plan.work plan.src plan.saved plan.count plan.tmp plan.spare plan.result b.hR b.hQ)) ≤ Cprog →
         (∀ f, mnProgPush (body f) ≤ Cprog) → ∀ depth,
         ExecWithin body (fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+
-          (2*(6*(selectedWindowPayload (s := s) A r.W r.problem.origin r.problem.span targetOrigin targetSpan Fs).length+6)+
+          (2*(generatedTakePrefixCost Fs.length r.problem.span r.W)+
             plan.croppedReserve b d r radius (rows s r.problem.t L k) Fs.length Cprog)) depth
-          (plan.routedTargetCoreProgram b crop count source saved tmp) (Host.mk v S) n
+          (plan.generatedRoutedTargetCoreProgram b crop rowCount symbols count source saved tmp) (Host.mk v S) n
           (Host.mk v' {S with R := (Function.update (Function.update S.R source tail) (crop.reg 12)
             ((Gs.reverse.map (fun D => cstream A r.problem.wordWidth
               (packedInterval (cut s r.problem.t L k) (rows s r.problem.t L k) D))).flatten++S.R (crop.reg 12)))}) := by
@@ -79,8 +81,11 @@ theorem routed_target_owned_exec (plan : ComputedRecoveryPlan T) (b : RawRecover
   let H := plan.inputState source payload tail S
   have hr := hreg
   regs_ne hr
-  obtain ⟨v₁,hu₁,hreadyH,hsize,he₁,htrace₁⟩ := hready.takePrefix_exec (body := body)
-    count source saved tmp hreg hoff payload tail v hsource hcount hinput hsaved htmp
+  have hlenPayload : payload.length = Fs.length*(r.problem.span*r.W) := by
+    simpa only [payload,Nat.mul_assoc] using selectedWindowPayload_length A r.W r.problem.origin
+      r.problem.span targetOrigin targetSpan Fs r.problem.span_fit hwindow
+  obtain ⟨v₁,n₁,hu₁,hn₁,hreadyH,hsize,he₁,htrace₁⟩ := hready.generatedTakePrefix_exec (body := body)
+    rowCount symbols count source saved tmp hreg hoff payload tail hlenPayload v hsource hrows hinput hblank
   have hout : H.R (crop.reg 12) = S.R (crop.reg 12) := by
     have hne : crop.reg 12 ≠ plan.work 124 := fun he => (crop.external 12 (by simp)).1 (List.mem_ofFn.mpr ⟨124,he.symm⟩)
     simp [H,inputState,hne,hsourceOut.symm]
@@ -120,15 +125,15 @@ theorem routed_target_owned_exec (plan : ComputedRecoveryPlan T) (b : RawRecover
       change Function.update (Function.update S.R source tail) (plan.work 124) payload j = _
       rw [Function.update_of_ne hjpayload]
   rw [hfinal] at he₂
-  refine ⟨Gs,hGs,v₂,(6*payload.length+6)+n₂,hu₂.trans hu₁,Nat.add_le_add_left hn₂ _,
+  refine ⟨Gs,hGs,v₂,n₁+n₂,hu₂.trans hu₁,Nat.add_le_add hn₁ hn₂,
     Exec.seq he₁ he₂,?_,?_⟩
   · simpa only [hout] using hgood
   · intro Cprog hpush hbody depth
     have ht₂ := htrace₂ Cprog hpush hbody 0
     rw [hfinal] at ht₂
     have ht := mn_seq_within_add (htrace₁ 0) ht₂
-    simpa only [Nat.zero_add,routedTargetCoreProgram] using ht.shift depth (J := fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+
-      (2*(6*payload.length+6)+plan.croppedReserve b d r radius (rows s r.problem.t L k) Fs.length Cprog))
+    simpa only [Nat.zero_add,generatedRoutedTargetCoreProgram] using ht.shift depth (J := fun j z => mnSize z+j ≤ mnSize (Host.mk v S)+depth+
+      (2*(generatedTakePrefixCost Fs.length r.problem.span r.W)+plan.croppedReserve b d r radius (rows s r.problem.t L k) Fs.length Cprog))
       (by intro j z hz; dsimp only [croppedReserve]; omega)
 
 end IntegerMultBounds.MathlibTM2.Mult.PhaseCellToeplitz.ScalarPlacement.ComputedRecoveryPlan
