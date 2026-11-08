@@ -41056,3 +41056,84 @@ to an archive rather than discard it as the first-pass finish routine does.
 The existing takePrefix lifecycle can perform that transfer with the retained
 symbol-volume header. Then use a structural replica loop and execute second
 interior passes. No complete recovery loop or end-to-end S4 theorem is claimed.
+
+
+### S4 executed retained recovery row and boundary archive
+
+PhaseCellCachedRecoveryCouplingRow packages the exact reusable predicates needed
+by cachedLocalFeedCouplingInterval as CachedRecoveryCouplingReady: native
+readiness, retained coefficient page/counts, interval count, both selectors and
+six scratch ports. Its executor instantiates the actual multiplier push bound
+and derives width, geometry and coefficient Fits from ReplicaHaloProblem. The
+endpoint consumes original RHS 93, prepends computed RHS 110 and returns the
+same cache with its updated output archive. Advancing source 132 separately
+preserves this invariant. Initial row guard: 2178.8 MiB; updated module builds.
+
+PhaseCellPreparedRecoveryCouplingReady derives that complete invariant from the
+actual prepareRetainedReplicaRecoveryState endpoint and original cached Post,
+including selector values and retained coefficient page. It adds no numerical,
+selector or coefficient suppliers. Guard: 3258.7 MiB.
+
+PhaseCellPlacedCachedRecoveryCouplingRow embeds the worker in an arbitrary
+ReplicaCouplingPlacement, preserving its exact two-write endpoint, complete
+phase cost and ExecWithin bound. Guard: 2172.4 MiB.
+PhaseCellArchiveRetainedRecoveryField uses takePrefix with gather volume 123,
+archive 125 and scratch 88/89 to save and consume the used boundary-field prefix.
+It restores scratch, preserves original RHS headers and returns the coupling
+cache with advanced source. This retains boundary values required by final
+assembly instead of discarding them. Guard: 2177.5 MiB.
+
+PhaseCellRetainedRecoveryCouplingTransition composes these actual executors.
+Each row consumes original RHS, prepends computed recovery RHS, advances the
+boundary source and archives the boundary field. Its result retains both
+header and cache invariants; execWithin_seq_two_budget combines the full worker
+and archive allowances. Guard: 2175.9 MiB.
+The combined five-module guarded build passes (15173 jobs, 5.1 GiB combined
+peak); all five new files pass integrity/whitespace scans. No new commit/push;
+collect the replica traversal with this row transition as the next larger chunk.
+Periodic WIP remains untouched.
+
+Next instantiate countedLoop at released gather clock 122. Use an arbitrary
+list of matching boundary/original-RHS pairs, with a completed/remaining split.
+Keep two input queues and two reverse completed archives explicit. Clock writes
+preserve cache (the bank is disjoint) and RHS headers (122 is not a header port).
+The checked row transition supplies the step; copy retained master 121 to 122
+once outside the loop. Second interior passes, common-width publication and all
+broader S4 gates remain open; this is not a complete recovery batch yet.
+
+
+### S4 structural retained recovery traversal and master-count wrapper
+
+PhaseCellRetainedRecoveryCouplingLoop instantiates countedLoop at gather clock
+122 with an arbitrary list of matching boundary/original-RHS pairs. Its invariant
+splits the list into done/todo, identifies both remaining input queues and both
+reverse completed archives, and retains original RHS headers plus the complete
+coupling cache. Clock updates preserve the cache by bank/gather disjointness and
+preserve headers because 122 is not a recovery-header port. The existing checked
+row transition supplies every step. Final state consumes both queues, empties
+the clock and returns reusable headers/cache. Guard: 2209.0 MiB. No finite
+replica enumeration or numerical worker supplier is introduced.
+
+PhaseCellRetainedRecoveryCouplingBatch copies master 121 into clock 122 using
+existing scratch 89 once, then executes the traversal. The returned exact state
+restores clock and scratch, preserves the replica master and includes copying,
+all row lifecycles and loop control in its time bill. Guard: 2180.5 MiB.
+Per-row ExecWithin bounds remain checked; the batch theorem currently carries
+Exec/time, so whole-batch structural stock is still an open obligation.
+
+The combined seven-module cached-row / archive / transition / traversal build
+passes (15175 jobs, 2.8 GiB combined peak). Integrity and whitespace scans pass
+for all seven files. A guarded temporary axiom audit of the batch executor and
+preparation-to-cache bridge reports only propext, Classical.choice and Quot.sound
+(9397.0 MiB audit peak; the audit file is not a production module).
+Collect this row/loop/batch chunk as one larger local checkpoint; no push.
+
+The batch still assumes matching piece-specific source queues. The executed
+native boundary projector instead emits interleaved left/right row prefixes in
+one joint queue. Connect that exact endpoint next: preferably stage one left
+and right prefix per joint row and reuse the checked row transitions, retaining
+matching reversed original RHS queues. Do not silently deinterleave by prepend:
+that would reverse the replica order again and mismatch the reversed RHS loader.
+Then establish the second-interior problem at the common precision and execute
+its retained passes. Numerical ordering/accuracy, whole-batch stock, top-level
+sequencing and all broader S4 gates remain open.
