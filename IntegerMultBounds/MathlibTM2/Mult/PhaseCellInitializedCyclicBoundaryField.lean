@@ -56,6 +56,9 @@ theorem initializedCyclicBoundaryField_spec (hR : rpStates ≤ Q) (hQ : SS.state
       (executionPrecision p l (initialSchurTarget p u (boundaryTableBits p target 2 (cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n).card) 2) 2) l s t u (PhaseCellBand.width p u) 0 0
       (cstream A (executionWidth p l (initialSchurTarget p u (boundaryTableBits p target 2
         (cyclicPrincipalBoundary s t (PhaseCellBand.width p u) a n).card) 2) 2) (chirpLine s rhs)++tail) (embStk componentReg (embStk boundaryArithmeticReg (embStk tableReg (embStk boundaryFactorLegacyReg S')))) ∧
+      (S'.R 144).length = a ∧ (S'.R 145).length = a+min n (s-a) ∧
+      (S'.R 146).length = n-min n (s-a) ∧
+      (∀ k ∈ ([(127 : Fin 224),138,141,142,143,147]), S'.R k = []) ∧
       (∀ x : ZMod s → ℝ,
         SchurDominance.Solves (realMatrix s t p u) (cyclicPrincipalVertices s a n) x
           (fun k => (value q (rhs k)).re) →
@@ -154,8 +157,20 @@ theorem initializedCyclicBoundaryField_spec (hR : rpStates ≤ Q) (hQ : SS.state
         Function.update_of_ne (hne 142 (by simp)),Function.update_of_ne (hne 144 (by simp)),
         Function.update_of_ne (hne 145 (by simp)),Function.update_of_ne (hne 146 (by simp))]
       rfl
-  refine ⟨v₁,S₁,m₁,v₂,S₂,m₁+m₂,columns,solution,hsolLen,hsolFits,hprepared,hreadyFinal,?_,hv₂.trans hv₁,hm₁,he₁,
+  refine ⟨v₁,S₁,m₁,v₂,S₂,m₁+m₂,columns,solution,hsolLen,hsolFits,hprepared,hreadyFinal,?_,?_,?_,?_,?_,hv₂.trans hv₁,hm₁,he₁,
     Nat.add_le_add_left hm₂ m₁,Exec.seq he₁ he₂',hinp,hout,hL,?_,by simp [S₂],by simp [S₂],by simp [S₂],?_⟩
+  · simpa [S₂,embStk,boundaryFactorLegacyReg] using congrArg List.length (hlegacy 144 (by decide))
+  · simpa [S₂,embStk,boundaryFactorLegacyReg] using congrArg List.length (hlegacy 145 (by decide))
+  · simpa [S₂,embStk,boundaryFactorLegacyReg] using congrArg List.length (hlegacy 146 (by decide))
+  · intro k hk
+    simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl
+    · simpa [S₂,embStk,boundaryFactorLegacyReg,h127] using hlegacy 127 (by decide)
+    · simpa [S₂,embStk,boundaryFactorLegacyReg,h138] using hlegacy 138 (by decide)
+    · simpa [S₂,embStk,boundaryFactorLegacyReg] using hlegacy 141 (by decide)
+    · simpa [S₂,embStk,boundaryFactorLegacyReg] using hlegacy 142 (by decide)
+    · simpa [S₂,embStk,boundaryFactorLegacyReg,h143] using hlegacy 143 (by decide)
+    · simpa [S₂,embStk,boundaryFactorLegacyReg,h147] using hlegacy 147 (by decide)
   · intro x hx
     exact ⟨haccuracy x hx,boundarySolutionField_error q B solution x _ (fun i hi => (haccuracy x hx i hi).1)⟩
   · have hf := hlegacy 110 (by decide)

@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4654 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4659 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -39516,3 +39516,133 @@ windowed pass axiom audit reports only propext, Classical.choice and Quot.sound
 (7134.2 MiB temporary audit peak); source-integrity checks pass and proof limits
 are unchanged. Collected with initialized boundary-field integration and shared
 core extraction as one larger local checkpoint; no push.
+
+### S4 both cyclic interior recovery passes execute and join structurally
+
+PhaseCellCyclicRecoveryPasses instantiates archivedWindowedRecovery at retained
+144/145 for the left piece and zero ruler 138/right-end 146 for the right piece.
+The first pass's exact endpoint changes only archive 147, outside the component
+register image. This structural projection equality transfers arithmetic
+readiness to the second pass without new setup or scratch hypotheses. Both
+passes read the same original RHS and published joint boundary field.
+
+The combined exact endpoint prepends right and left computed ambient interior
+lines to archive 147 and restores every other tape. Its bill sums both complete
+windowed/coupling/interior/cleanup costs. It retains both computed magnitude
+bounds, exact local interior solutions and allocated approximation errors.
+The exact solutions join via cyclicPrincipalInterior_solves on the selected
+recovery RHS; disjoint interior membership joins the computed errors at the
+same 1/2^target bound. No doubled error or independent boundary solves occur.
+Guarded check passes without warnings at 3400.5 MiB.
+
+Next connect the computed couplingRowField RHS to cyclicRecoveryRhs_spec's
+same guarded fields, apply cyclicRecovery_interior_error against the original
+principal solution, and lift the two-pass executor into the initialized physical
+bank while retaining endpoint/scratch frames. Then compose the full principal
+accuracy budget. Uniform resource and full S4 composition gates remain open.
+Keep for a larger local checkpoint; no push; unrelated periodic WIP untouched.
+Targeted guarded build passes (15700 jobs, 3.5 GiB aggregate). The two-pass
+execution/join theorem axiom audit reports only propext, Classical.choice and
+Quot.sound (9555.5 MiB temporary audit peak). Source-integrity and whitespace
+checks pass; proof limits unchanged.
+
+### S4 cyclic recovery matches the original principal solution at the existing target
+
+PhaseCellCyclicRecoveryAccuracy bridges actual couplingRowField rows from the
+executor to the guarded rows of cyclicRecoveryRhs_spec, using the existing
+exact guardedCouplingRowField_eq on each physical interval. The generic
+cyclicRecovery_solution_error applies cyclicRecovery_interior_error to the
+selected Gaussian output and joint exact interior solution. Boundary and
+interior errors glue on the true cyclic principal partition, giving the full
+principal error max (eta+8*p*haloRecoveryRhsError epsilon) epsilon.
+
+cyclicRecovery_solution_target instantiates the existing boundary recovery
+budget and shared precision identity. The joint boundary list error
+3/2^boundaryRecoveryTarget and the allocated second-pass error
+1/2^recoveryTarget p bits yield 1/2^target on the complete cyclic principal set.
+There is no new precision schedule, doubled boundary error or independent
+piecewise boundary solve. Guarded check passes without warnings at 3385.8 MiB.
+
+This is the numerical correctness adapter for the two executed fields, not yet
+the composed ordinary-input physical recovery caller. Next instantiate it with
+cyclicRecoveryPasses_spec, lift the executor through the existing physical
+register placements, retain generated endpoint and scratch frames from the
+initialized field caller, and compose actual execution/accuracy. Uniform
+resources and full S4 composition/acceptance gates remain open. Collect for the
+next larger local checkpoint; no push; unrelated periodic WIP untouched.
+Targeted guarded build passes (15693 jobs, 3.5 GiB aggregate). The final cyclic
+recovery target theorem axiom audit reports only propext, Classical.choice and
+Quot.sound (9554.0 MiB temporary audit peak). Source-integrity and whitespace
+checks pass; default proof limits unchanged.
+
+### S4 the actual two-pass recovery executor carries target accuracy in the physical bank
+
+PhaseCellCyclicBoundaryRecovery instantiates cyclicRecoveryPasses with the joint
+boundarySolutionField, stable boundary magnitude, and the existing canonical
+shared precision. Its actual archived D/E outputs satisfy the full cyclic
+principal 1/2^target bound whenever the computed joint boundary list has its
+already-proved 3/2^boundaryRecoveryTarget accuracy. The exact interior solutions
+returned by execution are joined and discharged internally by
+cyclicRecovery_solution_target; no new exact solver or execution supplier is a
+caller premise. The statement keeps the same RHS/boundary streams and retained
+endpoint controls used by the initialized caller.
+
+PhaseCellPhysicalCyclicBoundaryRecovery lifts that execution through the existing
+boundaryArithmeticReg, tableReg and boundaryFactorLegacyReg placements. It
+reuses exec_emb_two_outputs with coincident archive ports, so the only physical
+update is the two computed ambient interior lines prepended to tape 147. Original
+RHS, boundary field, factor tables and all endpoint/control tapes are unchanged.
+The same complete scalar two-pass bill and principal accuracy theorem hold.
+Guarded checks pass without warnings: native accurate executor 3385.4 MiB;
+physical accurate executor 3385.6 MiB.
+
+Next expose retained endpoint lengths and scratch freshness from the initialized
+field caller's existing exact frame, instantiate boundary magnitude using the
+already-returned solution bounds, and compose physical recovery with that
+ordinary-input caller at boundaryRecoveryTarget. Then verify the resulting
+complete real principal recovery and proceed to output assembly/axis/tensor and
+uniform-resource gates. Full S4 remains open. Collect for the next larger local
+checkpoint; no push; unrelated periodic WIP untouched.
+Targeted guarded build passes (15705 jobs, 3.5 GiB aggregate). The complete
+physical execution/accuracy theorem axiom audit reports only propext,
+Classical.choice and Quot.sound (9556.3 MiB temporary audit peak). Source-integrity
+and whitespace checks pass; default proof limits unchanged.
+
+### S4 ordinary-input real cyclic principal recovery now executes with target accuracy
+
+The initialized boundary-field theorem now exposes endpoint lengths on
+144/145/146 and freshness of 127/138/141/142/143/147, derived directly from its
+existing exact solved/page/publication frame. No new caller premises or setup
+programs are added. Guarded check passes at 3441.2 MiB.
+
+PhaseCellInitializedCyclicRecovery composes initializedCyclicBoundaryField at
+boundaryRecoveryTarget with physicalCyclicBoundaryRecovery. Starting from the
+same ordinary dimensions/start/span/original RHS and blank owned workspace,
+it executes geometry, columns, factorization, residual generation, joint solve,
+unscale, real field publication and both second interior passes. Boundary
+magnitude follows from the computed solution contract; dominance supplies a
+comparison solution internally, rather than requiring a numerical supplier.
+The resulting archive on 147 contains the right and left computed interior
+lines, with the accurate joint boundary field retained above the computed packed
+table on 132. The original RHS and external input/output/left stacks are retained.
+
+For every exact solution of the original real cyclic principal system, the
+selected interior output glued to the computed boundary field has error at most
+1/2^target on the full principal set. This now accompanies actual execution from
+ordinary inputs. The bill retains identified actual intermediate executions for
+the existing initialized solver and field-publication costs, plus the complete
+scalar two-pass recovery bill. A uniform scalar time/structural stock theorem
+is still open. Profiling found a heartbeat timeout in tauto over the large
+composed context; replacing that search with direct List.mem_append_left closes
+the same freshness fact under default proof limits. Guarded final caller check
+passes without warnings at 3409.3 MiB.
+
+Next assemble the two archived interior lines and boundary field into the final
+published/cropped principal output, then complete setup reuse across replicas,
+uniform resources/root/geometry budgets, complex/axis/tensor/forward/error/
+support and final S4/compiler acceptance. The complete real recovery theorem
+is a milestone, not full S4. No push; unrelated periodic WIP untouched.
+Targeted guarded build passes (15780 jobs, 3.5 GiB aggregate). The complete
+ordinary-input real cyclic recovery execution/accuracy theorem axiom audit
+reports only propext, Classical.choice and Quot.sound (9573.8 MiB temporary
+audit peak). Source-integrity and whitespace checks pass; proof limits unchanged.
