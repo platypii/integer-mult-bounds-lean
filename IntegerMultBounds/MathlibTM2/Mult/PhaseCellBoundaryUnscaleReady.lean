@@ -16,7 +16,7 @@ structure BoundaryUnscaleReady {A : ℕ} (q : ℕ) (S : Stacks 224 A) : Prop whe
   mul : ∀ i : Fin 64, S.R (boundaryFactorMulReg i) = []
   ready : RsbReady (boundaryFactorState S) (2*q+8) q
   master : (S.R 119).length = q
-  clean : ∀ k ∈ [(184 : Fin 224),220,221,223,208,215], S.R k = []
+  clean : ∀ k ∈ [(184 : Fin 224),220,221,223,208,215,211,201,206], S.R k = []
 
 theorem boundaryUnscaleReady_of_solved {A q W N : ℕ} (S F : Stacks 224 A)
     (hleft : ∀ i, S.L i = []) (hmul : ∀ i : Fin 64, S.R (boundaryFactorMulReg i) = [])
@@ -38,7 +38,7 @@ theorem boundaryUnscaleReady_of_solved {A q W N : ℕ} (S F : Stacks 224 A)
     exact hmaster
   · intro k hk
     simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl
+    rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
     · exact (hframe.2.2.2 184 (fun r => (boundaryFactorReg_private r).1)).trans (hclean 184 (by simp))
     · have hh := congrFun hstate .dtab
       exact hh.trans (hclean 220 (by simp))
@@ -49,6 +49,13 @@ theorem boundaryUnscaleReady_of_solved {A q W N : ℕ} (S F : Stacks 224 A)
       exact hh.trans (hready.empty .ya (by simp [boundarySolveScratch]))
     · have hh := congrFun hstate .ac2
       exact hh.trans (hready.empty .ac2 (by simp [boundarySolveScratch]))
+    · have hh := congrFun hstate .xs
+      exact hh.trans (hready.empty .xs (by simp [boundarySolveScratch]))
+    · have hh := congrFun hstate .tC
+      exact hh.trans (hready.empty .tC (by simp [boundarySolveScratch]))
+    · have hh := congrFun hstate .vk
+      change F.R 206 = _ at hh
+      simpa using hh
 
 theorem BoundaryUnscaleReady.update_accumulator {A q : ℕ} {S : Stacks 224 A}
     (h : BoundaryUnscaleReady q S) (tail : List (Fin (A+4))) :
@@ -69,7 +76,7 @@ theorem BoundaryUnscaleReady.update_accumulator {A q : ℕ} {S : Stacks 224 A}
   · intro k hk
     have hne : k ≠ 132 := by
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
     simpa only [Function.update_of_ne hne] using h.clean k hk
 
 theorem BoundaryUnscaleReady.update_solution {A q : ℕ} {S : Stacks 224 A}
@@ -92,7 +99,7 @@ theorem BoundaryUnscaleReady.update_solution {A q : ℕ} {S : Stacks 224 A}
   · intro k hk
     have hne : k ≠ 217 := by
       simp only [List.mem_cons,List.not_mem_nil,or_false] at hk
-      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+      rcases hk with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
     simpa only [Function.update_of_ne hne] using h.clean k hk
 
 variable {Q A : ℕ} {P U : Type} {body : P → Pr P 224 Q A U}

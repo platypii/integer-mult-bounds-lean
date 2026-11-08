@@ -54,7 +54,7 @@ machine that multiplies every input pair correctly in worst-case time
 
 | Part of the proof | Source | Mathematics | Tape | Files |
 | --- | --- | --- | --- | --- |
-| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4643 |
+| [Proved Mathlib end-to-end multiplier](plan/C-mathlib-end-to-end.md) | — | ✅ 1/1 | ✅ 1/1 | 4647 |
 
 The [proof details](plan/C-mathlib-end-to-end.md) cover the numerical
 algorithm, recursive layers, transforms, resampling, CRT routing, exact
@@ -39338,3 +39338,85 @@ acceptance remain open. No push; separate periodic WIP untouched.
 Axiom audits for cyclicBoundary_solution_accuracy and the complete initialized
 unscaled caller report only propext, Classical.choice and Quot.sound; temporary
 audit peak 9568.0 MiB. Proof limits are unchanged.
+
+### S4 cyclic interior recovery uses the joint boundary field
+
+PhaseCellCyclicRecoveryPieces proves a structural row-support restriction of
+boundary coupling. On either physical interior, coupling to the complete cyclic
+boundary equals coupling to that interval's boundary. This uses existing
+haloInterior_row_support and disjoint physical pieces; it does not split the
+boundary solve or discard its cross-piece interactions.
+
+PhaseCellCyclicRecoveryRhs applies the existing guarded coupling-row estimate
+to the single boundarySolutionField of the joint unscaled output. Each physical
+interval reads the same field with its own mask; selection on interior membership
+assembles the recovery RHS. On the full cyclic interior it has the existing
+recovery magnitude, Fits w, and haloRecoveryRhsError bound. The proof factors the
+interval-independent argument into one local lemma and uses the structural
+coupling restriction to identify the exact full-system RHS.
+
+cyclicRecovery_interior_error applies recovery_solves_error to the actual cyclic
+partition. An eta-accurate interior solve of a delta-accurate recovery RHS has
+error eta+8*p*delta against the original principal solution. This is a numerical
+contract, not yet an execution of the second interior pass. Guarded checks pass
+without warnings: structural coupling 1865.6 MiB, recovery RHS and stability
+3394.8 MiB. Next execute publication and both recovery passes from the retained
+cyclic boundary output, compose the complete principal accuracy budget, then
+close the remaining uniform resources, replica reuse, axis/tensor and final S4
+gates. Keep this work for the next larger local checkpoint; no push.
+
+### S4 solved boundary words execute inverse folding and real projection
+
+BoundaryUnscaleReady now retains the solver's already-proved empty xs/tC/vk
+ports (211/201/206), including through unscaling and residual retirement.
+PhaseCellSolvedBoundaryUnfold composes existing preparedBoundaryUnfold and
+boundaryRealProjection directly from that solved-bank contract. It clears and
+bills the obsolete fold headers, consumes the folded solution on 217, and emits
+the exact natural-order real boundarySolutionField stream on 204. All other
+changes are the explicitly retired headers; the packed table, geometry and
+factor pages are retained. Its generic endpoint lemma derives the complete
+BoundaryPublicationReady contract from the retained ordinary dimension/count
+headers, with no newly installed numerical or scratch supplier.
+
+Guarded check passes without warnings at 3206.7 MiB. The remaining publication
+handoff must also reorder the retained coordinate page on 109: the initialized
+cyclic solver retains bFoldOrder, while generatedBoundaryPublish reads bOrder.
+Reuse inverse folding with a register permutation and fresh destination so the
+solution stream on 204 remains intact; do not assume a natural-order coordinate
+page. Then execute generated publication and both recovery passes, compose the
+already-proved recovery RHS/error contracts, and close the full principal
+accuracy budget. Full S4 resource and composition gates remain open. No push;
+collect with the preceding recovery mathematics in the next larger checkpoint.
+
+### S4 folded coordinates and solved words now publish through existing programs
+
+The coordinate handoff already exists as prepareBoundaryCoordinates: it applies
+prepared inverse folding under a register permutation, then uses two moves to
+restore natural order on 109 while protecting solution tape 204. Reuse it
+unchanged. PhaseCellSolvedBoundaryPublish composes it with generatedBoundaryPublish
+from BoundaryPublicationReady, the actual folded coordinate page, and the
+natural-order solution stream. It generates advances and scatter controls,
+consumes both streams, and prepends the exact ambient field above the retained
+packed table on 132. Only obsolete inverse-fold headers are retired; all other
+physical tapes are restored. The complete cost includes both coordinate moves,
+header retirement, control generation and publication.
+
+PhaseCellSolvedBoundaryField composes solution inverse folding/real projection
+with this publication. Starting from BoundaryUnscaleReady, the ordinary retained
+s/geometry/count headers, and the two actual folded streams, it executes the
+full field publication without a supplied natural coordinate page, publication
+control stream or assumed execution. It emits chirpLine of boundarySolutionField
+on 132, consumes 109/204/217 and restores publication scratch 206. Coordinate
+retirement costs only nine steps here because the preceding solution unfold
+already cleared those headers. Guarded checks pass without warnings at 3210.6
+MiB for publication and 3223.7 MiB for the composed field producer.
+
+Next compose this producer with the initialized cyclic caller and preserve its
+arithmetic readiness through publication, then execute the two interior recovery
+passes and instantiate cyclicRecoveryRhs_spec/cyclicRecovery_interior_error.
+Uniform resources, replica reuse, remaining geometry/root budgets and full S4
+composition/acceptance remain open. No push; unrelated periodic WIP untouched.
+Targeted guarded build passes (15697 jobs, 3.4 GiB aggregate); the complete
+field-producer axiom audit reports only propext, Classical.choice and Quot.sound
+(9275.3 MiB temporary audit peak). Source/whitespace checks pass; default proof
+limits remain unchanged.
