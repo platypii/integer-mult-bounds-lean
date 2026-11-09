@@ -46009,3 +46009,60 @@ Keep this numerical-publication/space checkpoint local; no push.
 The temporary audit of the executed, placed and prepared complex-core theorems
 and selected publication bound reports only propext, Classical.choice and
 Quot.sound (9824.8 MiB for the nonmodule audit).
+
+Selected normalization absorption now applies to the actual cyclic program's
+workspace. `cyclicNormalizationWorkspace_eq_shared_add` gives an exact affine
+split into zero-replica shared scratch and one linear per-replica routing bill.
+A generic common-scale lemma bounds the shared part cubically, reusing the
+existing table and one-word shift costs. The generated normalization width is
+bounded from its definition and `Nat.size_le`, so no width supplier is added.
+`selectedCyclicNormalizationWorkspace_zero_le` reuses the existing selected-axis
+polynomial-volume theorem for any fixed scale; the total lemma retains a
+linear `(32*cq+1800)*replicas*(L+1)*(W+1)` allowance.
+
+`selectedCyclicComplexCoreWorkspace_le` consumes these bounds for both physical
+pieces and the previous publication bound, for the exact workspace returned
+by `executedCyclicComplexCore_spec`. Under fitting geometry it leaves only
+`cyclicPackedRecoveryWorkspace` plus explicit linear replica payload and
+`3*Sizes.T n`. This isolates the next comparison: actual cached passes,
+shared factor/solve, recovery coupling and second interiors. It does not yet
+close selected S4 space or the remaining preparation/class/outer/fallback gates.
+The new selected complex-workspace module builds (16409 jobs, 3.6 GiB aggregate)
+and checks individually at 3502.4 MiB. Accumulate this cost work with the next
+recovery comparison for a larger local checkpoint; no push.
+The temporary normalization/combined-workspace audit reports only standard
+axioms (propext/Quot.sound for the exact affine split; Classical.choice as well
+for the inequalities), at 9782.6 MiB for the nonmodule audit.
+
+Solved cyclic recovery now has a selected-space bound with explicit replica
+traffic. `PhaseCellCyclicRecoveryWorkspace` separates shared mask/coupling
+scratch from all preparation copies and row staging. In particular, setting
+the loop count to zero is not enough: preparation still uses `H.Fs.length` and
+`K.Fs.length`. Their actual count equalities are required in the affine split.
+A generic scalar maximum lemma handles the two alternative execution phases
+without expanding concrete machine programs during arithmetic reasoning.
+The resulting solved-recovery allowance is shared scratch plus
+`replicas*(n*w+32*(H.span*H.wordWidth)+32*(K.span*K.wordWidth)+84)`.
+
+The actual cached recovery coupling worker embeds in the already-bounded
+retained preparation worker. `selectedCachedRecoveryCouplingWorkspace_le`
+therefore reuses `selectedCachedRecoveryPreparationWorkspace_volume_le`, with
+the actual multiplication push count, rather than reproving coefficient-page
+or arithmetic bounds. Together with existing selected mask initialization and
+native boundary-row bounds, `selectedSolvedCyclicRecoveryWorkspace_le` proves
+`workspace ≤ (65*cw+84)*replicas*t*p+5*Sizes.T n`. This includes the actual
+preparation copies; it is not a zero-loop estimate mislabelled as shared.
+Guarded build passes (15884 jobs, 3.5 GiB aggregate), and the selected module
+checks at 3403.2 MiB. One expression-matching recursion failure was resolved by
+keeping two inequalities separate, without changing proof limits.
+
+Next selected-space gates: cached first passes and masks, actual shared factor/
+residual solves, resumed second interiors, and the full callback's preparation.
+Then combine these comparisons with the already-proved normalization/publication
+comparison, and continue class scan/shared archive/outer/fallback/final S4 gates.
+Collect the normalization and recovery comparisons as one coherent local chunk;
+no push.
+Combined normalization/recovery integration passes (16469 jobs, 3.5 GiB
+aggregate). The temporary audit reports only standard axioms for the affine,
+shared-worker, selected solved-recovery and complete-tail comparisons (9798.8
+MiB for the nonmodule audit).
