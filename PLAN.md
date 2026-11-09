@@ -4269,6 +4269,66 @@ aggregate peak). Collect this and the exact-row/readiness work as one larger
 local checkpoint, excluding unrelated periodic-recovery/workspace drafts.
 No push. Full S4 remains open, including final outer/fallback/compiler gates.
 
+**One physical common-width archive pass checked.**
+`ExactCoreRows.widen` and its structural batch lift reuse the existing
+`widenedCoreRow_accurate` theorem for arbitrary source and destination widths.
+`widenExactCoreArchive_exec` runs the existing counted signed-widening program
+once on the complete encoded archive. The exact endpoint is the encoded list
+of those same transformed batches; their core/replica order, accuracy and
+unit-ball certificates are preserved. The suffix and every other stack restore.
+The same execution has time at most `40*(coefficients+1)*W` and an incremental
+native space bound `520*(coefficients+1)*W`, with no per-core finite checks or
+new numerical assumptions. Checks peak at 3115.5 MiB (row language) and 3132.2
+MiB (physical archive pass). This supplies representation conversion, not yet
+scatter/publication into complete ambient lines. Next feed the common-width
+rows to the existing publication machinery and compose with the concrete
+bulk/seam trace; header setup, outer axes and full S4 gates remain open.
+No push or new small commit; accumulate with the publication integration.
+
+**Exact row language connected to physical singleton publication.**
+`ExactCoreRows.publication_rows` derives the existing aligned normalized-target
+row interface structurally. `exactCorePublication_exec` constructs singleton
+replicas from those actual rows and ambient lines, runs the restoring replica
+sweep, and advances `PublicationBankPending` on exactly its written output.
+The physical source prefix is consumed, both borrowed suffixes survive, and
+every other stack restores. Its time and peak bounds concern that same trace.
+`widenedExactCorePublication_exec` additionally runs the existing signed-width
+conversion first, transports readiness internally through the existing executor,
+and certifies its actual widened/scattered lines without another numerical
+assumption. Checks peak at 3339.2 MiB (common-width publication) and 3336.3 MiB
+(widening plus publication).
+Efficiency constraint: use singleton ambient sweeps for the at-most-three seam
+cores. Bulk publication must retain the existing grouped path; iterating this
+singleton theorem over every bulk core would repeat full-axis traffic.
+Next instantiate the seam publication fold and connect grouped bulk publication
+to the common pending invariant, then compose with the selected execution.
+Ordinary initialization, outer scheduling and full S4 acceptance remain open.
+No push or new small commit; collect with the larger publication checkpoint.
+
+**Reuse fixed boundary publication instead of a new dynamic seam loop.**
+The existing `boundaryCropSchedule` is a safe three-slot superset of the full-
+period seam cores; `fullGather_or_boundaryCropSchedule` already proves coverage.
+It may overwrite a fitting core with its certified full-line value. This
+preserves correctness and the three-crop resource allowance while reusing
+existing binary metadata generation, restoration and the full publication fold.
+The selected seam executor and concrete bulk/seam composition now execute that
+fixed schedule, rather than only `coreSetupGroup`. The latter still supplies
+the disjoint geometric partition; do not claim the fixed physical crop schedule
+is disjoint from bulk.
+`ExactCoreRows.seam_rows_native` transfers the actual row witnesses directly
+into the existing boundary invariant. `exactBoundaryArchivePublication_exec`
+constructs that invariant from a properly accurate ambient bank plus exact
+boundary rows and executes the existing three-slot program. Its actual endpoint
+has full-axis accuracy/unit-ball guarantees, consumes the archive, restores all
+other state and does not increase final stock. Initial binary/control readiness
+and the ambient bank's bulk-class accuracy remain explicit; no publication
+execution or numerical-invariant supplier is assumed.
+Checks peak at 3413.6 MiB (fixed selected seam) and 3336.2 MiB (boundary fold).
+Next derive the proper ambient-bank certificate from actual grouped bulk
+publication, then join that with the selected bulk/seam and boundary traces.
+Avoid singleton sweeps over all bulk cores. Initial headers, outer axes and
+final S4 acceptance remain open. No push; collect a larger publication commit.
+
 **First acceptance target: one complete fitting batch.** From declared original
 complex streams and ordinary scalar headers, execute component production,
 prepare numerical data, reuse it across the batch, publish certified complex

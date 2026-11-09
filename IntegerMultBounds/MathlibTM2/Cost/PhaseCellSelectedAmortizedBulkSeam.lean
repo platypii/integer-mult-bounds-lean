@@ -85,7 +85,7 @@ theorem selectedAmortizedBulkSeam_exec (hR : rpStates ≤ Q) (hQ : SS.states ≤
       (input : FullLineInputPlan Ts) (producer : PackedProducerPlan Ts Q)
       (compatible : input.Compatible producer) (crops : SeamCropPlan Ts producer.result)
       (recovery : Bool),
-    let ks := coreSetupGroup s coreWidth (PhaseCellBand.width p u) depth (0,s)
+    let ks := boundaryCropSchedule s coreWidth
     ∀ (huSeam : 1 ≤ u) (hwidthSeam : 8*p ≤ 2^u)
       (hgapSeam : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1))
       (hbudgetSeam : (u : ℝ)*d ≤ p) (hbandSeam : PhaseCellBand.width p u ≤ s)

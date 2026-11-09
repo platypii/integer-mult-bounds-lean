@@ -17,6 +17,15 @@ theorem SeamCropRows.exact_rows_native (p width k : ℕ) (r : FamilyDispatchInpu
     ExactCoreRows (A := A) p (2*p+13) width k r.inputs.reverse (J r) rows :=
   ⟨h.2.length_eq.symm,h.1,h.2⟩
 
+/-- Native exact rows can enter the existing restoring boundary publisher
+without changing their witnesses or encoding. -/
+theorem ExactCoreRows.seam_rows_native (p width k : ℕ) (r : FamilyDispatchInput s A)
+    (J : FamilyDispatchInput s A → (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ))
+    (rows : List (List GaussianInt))
+    (h : ExactCoreRows (A := A) p (2*p+13) width k r.inputs.reverse (J r) rows) :
+    SeamCropRows p width r J k rows :=
+  ⟨h.2.1,h.2.2⟩
+
 theorem SeamCropRows.exact_rows (p width W k : ℕ) (hA : 4 ≤ A) (hW : 2*p+13 ≤ W)
     (r : FamilyDispatchInput s A)
     (J : FamilyDispatchInput s A → (ZMod s → ℂ) →L[ℂ] (ZMod s → ℂ))

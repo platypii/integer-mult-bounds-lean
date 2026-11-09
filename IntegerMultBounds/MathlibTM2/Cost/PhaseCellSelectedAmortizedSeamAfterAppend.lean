@@ -33,7 +33,7 @@ theorem selectedAmortizedSeamAfterAppend_exec (ct : ℕ) :
     let l := haloInverseRingLog s t
     ∀ (u target : ℕ) (d : ℝ),
     let coreWidth := amortizedCoreWidth ct p
-    let ks := coreSetupGroup s coreWidth (PhaseCellBand.width p u) (localityDepth p target) (0,s)
+    let ks := boundaryCropSchedule s coreWidth
     u ≤ p → target ≤ ct*p →
     ∀ (hu : 1 ≤ u) (hwidth : 8*p ≤ 2^u)
     (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1))

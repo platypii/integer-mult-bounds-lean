@@ -2,6 +2,7 @@ module
 
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedPlacedSeamRun
 public import IntegerMultBounds.MathlibTM2.Cost.PhaseCellSelectedGatherSchedule
+public import IntegerMultBounds.NLogN.PhaseCellBoundaryCropSchedule
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellSeamExactCoreRows
 public import IntegerMultBounds.MathlibTM2.Mult.PhaseCellFullLineSeamReady
 
@@ -30,7 +31,7 @@ theorem selectedAmortizedSeamProgram_exec (ct : ℕ) :
     let l := haloInverseRingLog s t
     ∀ (u target : ℕ) (d : ℝ),
     let coreWidth := amortizedCoreWidth ct p
-    let ks := coreSetupGroup s coreWidth (PhaseCellBand.width p u) (localityDepth p target) (0,s)
+    let ks := boundaryCropSchedule s coreWidth
     u ≤ p → target ≤ ct*p →
     ∀ (hu : 1 ≤ u) (hwidth : 8*p ≤ 2^u)
     (hgap : (1 : ℝ)/4 ≤ d*((t : ℝ)/s-1))
@@ -63,17 +64,18 @@ theorem selectedAmortizedSeamProgram_exec (ct : ℕ) :
   obtain ⟨D,hD,hseam⟩ := selectedPlacedSeamProgram_exec (T := T) (T' := T') (Q := Q) (A := A)
     (U := U) (body := body) ct
   refine ⟨D,hD,?_⟩
-  filter_upwards [hseam,selectedAmortizedGatherSchedule ct] with m hseam hschedule
+  filter_upwards [hseam,selectedAmortizedCoreGeometry ct] with m hseam hgeometry
   intro h i _ e he input producer hcompat crops recovery hA u target d huUpper htargetUpper
     hu hwidth hgap hbudget hband hpad htarget Fs hFs X Y hX hY J hJ
     v S ready depth
   let coreWidth := amortizedCoreWidth ct (Sizes.p m)
-  let ks := coreSetupGroup (Sizes.s m i) coreWidth (PhaseCellBand.width (Sizes.p m) u)
-    (localityDepth (Sizes.p m) target) (0,Sizes.s m i)
-  have hcount : ks.length ≤ 3 := (hschedule h i u target htargetUpper).2.2.2.2.2.1
-  have hstart (k : ℕ) (hk : k ∈ ks) : coreStart coreWidth k ≤ Sizes.s m i := by
-    have hmem := (mem_coreSetupGroup _ _ _ _ _ _).mp hk
-    exact (coreStart_lt_of_mem hmem.1).le
+  let ks := boundaryCropSchedule (Sizes.s m i) coreWidth
+  obtain ⟨hw,_,_,hroom,_⟩ := hgeometry h i u target htargetUpper
+  have hbandPos := PhaseCellBand.width_pos (Sizes.p m) u
+  have hspec := boundaryCropSchedule_spec (Sizes.s m i) coreWidth hw (by omega)
+  have hcount : ks.length ≤ 3 := hspec.1.le
+  have hstart (k : ℕ) (hk : k ∈ ks) : coreStart coreWidth k ≤ Sizes.s m i :=
+    (hspec.2.2 k hk).2.1.le
   obtain ⟨v',n,output,rss,huser,htime,hproduced,hrows,hwithin⟩ := hseam h i e he input producer hcompat crops coreWidth ks recovery hA u target d huUpper htargetUpper
     hu hwidth hgap hbudget hband hpad htarget Fs hFs X Y hX hY J hJ
     v S ready.input ready.bank ready.left ready.controls ready.crops hstart hcount ready.result depth
